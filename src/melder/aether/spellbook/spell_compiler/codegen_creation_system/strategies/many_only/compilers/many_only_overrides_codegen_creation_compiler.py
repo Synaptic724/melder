@@ -1808,78 +1808,35 @@ def _append_overrides_step_shape_source(
         - Preserves existing override-reuse and registration semantics.
         - Removes runtime target-kind and existence branch selection.
     """
+    _ = creations_target_kind
+    _ = existence
+    _ = use_spell_lock_hint
+    _ = must_register
+    _ = is_root_step
     use_no_override_fast_path = (
         not has_static_targeted_overrides and not has_static_root_positional_override
     )
     positional_args_possible = (
         use_positional_override or has_static_root_positional_override
     )
-    many_registration_static_enabled = (
-        existence is Existence.many
-        and must_register
-        and static_has_disposal_methods is True
-    )
-    many_registration_runtime_enabled = (
-        existence is Existence.many
-        and must_register
-        and static_has_disposal_methods is None
-    )
-    registration_metadata_required = (
-        existence is not Existence.many
-        or many_registration_static_enabled
-        or many_registration_runtime_enabled
-    )
     lines.extend([
         f"    plan_step_{step_index} = steps[{step_index}]",
         f"    spell_{step_index} = step_spells[{step_index}]",
+        f"    spell_id_{step_index} = step_spell_ids[{step_index}]",
     ])
-    if registration_metadata_required:
-        lines.append(
-            f"    spell_id_{step_index} = step_spell_ids[{step_index}]"
-        )
-        if existence is not Existence.many or many_registration_runtime_enabled:
-            lines.append(
-                (
-                    f"    has_disposal_methods_{step_index} = "
-                    f"step_has_disposal_methods[{step_index}]"
-                )
-            )
+    if static_has_disposal_methods is not False:
         lines.append(
             (
                 f"    disposal_methods_{step_index} = "
                 f"step_disposal_methods[{step_index}]"
             )
         )
-    if static_is_callable_spell is None:
-        lines.extend([
-            (
-                f"    is_callable_spell_{step_index} = "
-                f"step_is_callable_spell[{step_index}]"
-            ),
-        ])
-    effective_is_existing_unique_creation_static = static_is_existing_unique_creation
-    if existence is Existence.many:
-        effective_is_existing_unique_creation_static = False
-    else:
-        lines.extend([
-            (
-                f"    has_targeted_overrides_{step_index} = "
-                f"step_has_targeted_overrides[{step_index}]"
-            ),
-        ])
-        if effective_is_existing_unique_creation_static is None:
-            lines.extend([
-                (
-                    f"    is_existing_unique_creation_{step_index} = "
-                    f"step_is_existing_unique_creation[{step_index}]"
-                ),
-            ])
-    if not (existence is Existence.many and use_no_override_fast_path):
+    if not use_no_override_fast_path:
         lines.append(
             f"    override_targets_{step_index} = step_override_targets[{step_index}]"
         )
     if positional_args_possible:
-        if is_root_step:
+        if has_static_root_positional_override:
             lines.append(
                 f"    step_root_positional_override_{step_index} = root_positional_override"
             )
@@ -1887,331 +1844,52 @@ def _append_overrides_step_shape_source(
             lines.append(
                 f"    step_root_positional_override_{step_index} = None"
             )
+    lines.append(f"    creations_{step_index} = caller_creations")
 
-    if creations_target_kind in (
-            ManyOnlyCodegenPlanTargetKind.CALLER,
-            ManyOnlyCodegenPlanTargetKind.SPELLSPACE,
-    ):
-        lines.append(f"    creations_{step_index} = caller_creations")
-    elif creations_target_kind == ManyOnlyCodegenPlanTargetKind.OWNER:
-        _append_overrides_shape_owner_creations_source(
+    if use_no_override_fast_path:
+        _append_overrides_construct_no_overrides_source(
             lines=lines,
             step_index=step_index,
+            indent="    ",
+            positional_args_possible=positional_args_possible,
+            dependency_resolution_order=dependency_resolution_order,
+            contract_positional_override=contract_positional_override,
+            has_contract_payload=has_contract_payload,
+            contract_payload_items=contract_payload_items,
+            uses_positional_override=use_positional_override,
+            static_is_existing_unique_creation=False,
+            static_is_callable_spell=static_is_callable_spell,
         )
     else:
-        lines.extend([
-            "    raise RuntimeError(",
-            (
-                "        \"Unsupported creations target kind for spell "
-                f"'{spell_id}'.\""
-            ),
-            "    )",
-        ])
+        _append_overrides_construct_inline_source(
+            lines=lines,
+            step_index=step_index,
+            indent="    ",
+            static_override_target_count=static_override_target_count,
+            positional_args_possible=positional_args_possible,
+            dependency_resolution_order=dependency_resolution_order,
+            contract_positional_override=contract_positional_override,
+            has_contract_payload=has_contract_payload,
+            contract_payload_items=contract_payload_items,
+            uses_positional_override=use_positional_override,
+            static_is_existing_unique_creation=False,
+            static_is_callable_spell=static_is_callable_spell,
+        )
 
-    if existence is Existence.many:
-        if use_no_override_fast_path:
-            _append_overrides_construct_no_overrides_source(
-                lines=lines,
-                step_index=step_index,
-                indent="    ",
-                positional_args_possible=positional_args_possible,
-                dependency_resolution_order=dependency_resolution_order,
-                contract_positional_override=contract_positional_override,
-                has_contract_payload=has_contract_payload,
-                contract_payload_items=contract_payload_items,
-                uses_positional_override=use_positional_override,
-                static_is_existing_unique_creation=effective_is_existing_unique_creation_static,
-                static_is_callable_spell=static_is_callable_spell,
-            )
-        else:
-            _append_overrides_construct_inline_source(
-                lines=lines,
-                step_index=step_index,
-                indent="    ",
-                static_override_target_count=static_override_target_count,
-                positional_args_possible=positional_args_possible,
-                dependency_resolution_order=dependency_resolution_order,
-                contract_positional_override=contract_positional_override,
-                has_contract_payload=has_contract_payload,
-                contract_payload_items=contract_payload_items,
-                uses_positional_override=use_positional_override,
-                static_is_existing_unique_creation=effective_is_existing_unique_creation_static,
-                static_is_callable_spell=static_is_callable_spell,
-            )
-        if many_registration_static_enabled:
-            _append_overrides_many_register_inline_source(
-                lines=lines,
-                step_index=step_index,
-                indent="    ",
-                static_has_disposal_methods=True,
-            )
-        elif many_registration_runtime_enabled:
-            _append_overrides_many_register_inline_source(
-                lines=lines,
-                step_index=step_index,
-                indent="    ",
-                static_has_disposal_methods=None,
-            )
-    elif existence in (
-            Existence.unique_per_conduit,
-            Existence.unique_per_spell_space,
-    ):
-        lines.extend([
-            (
-                f"    instance_{step_index} = _get_existing_creation("
-                f"spell=spell_{step_index}, "
-                f"creations=creations_{step_index}, "
-                f"existence=plan_step_{step_index}.existence)"
-            ),
-            f"    if instance_{step_index} is not None:",
-            (
-                f"        _raise_override_on_existing_instance("
-                f"spell=spell_{step_index}, "
-                f"has_targeted_overrides=has_targeted_overrides_{step_index}, "
-                f"any_overrides_present=any_overrides_present, "
-                f"root_spell_id=root_spell_id)"
-            ),
-            "    else:",
-            f"        with creations_{step_index}._lock:",
-            (
-                f"            instance_{step_index} = _get_existing_creation("
-                f"spell=spell_{step_index}, "
-                f"creations=creations_{step_index}, "
-                f"existence=plan_step_{step_index}.existence)"
-            ),
-            f"            if instance_{step_index} is not None:",
-            (
-                f"                _raise_override_on_existing_instance("
-                f"spell=spell_{step_index}, "
-                f"has_targeted_overrides=has_targeted_overrides_{step_index}, "
-                f"any_overrides_present=any_overrides_present, "
-                f"root_spell_id=root_spell_id)"
-            ),
-            "            else:",
-        ])
-        if use_no_override_fast_path:
-            _append_overrides_construct_no_overrides_source(
-                lines=lines,
-                step_index=step_index,
-                indent="                ",
-                positional_args_possible=positional_args_possible,
-                dependency_resolution_order=dependency_resolution_order,
-                contract_positional_override=contract_positional_override,
-                has_contract_payload=has_contract_payload,
-                contract_payload_items=contract_payload_items,
-                uses_positional_override=use_positional_override,
-                static_is_existing_unique_creation=effective_is_existing_unique_creation_static,
-                static_is_callable_spell=static_is_callable_spell,
-            )
-        else:
-            _append_overrides_construct_inline_source(
-                lines=lines,
-                step_index=step_index,
-                indent="                ",
-                static_override_target_count=static_override_target_count,
-                positional_args_possible=positional_args_possible,
-                dependency_resolution_order=dependency_resolution_order,
-                contract_positional_override=contract_positional_override,
-                has_contract_payload=has_contract_payload,
-                contract_payload_items=contract_payload_items,
-                uses_positional_override=use_positional_override,
-                static_is_existing_unique_creation=effective_is_existing_unique_creation_static,
-                static_is_callable_spell=static_is_callable_spell,
-            )
-        lines.extend([
-            (
-                f"                _register_spell_instance_prebound("
-                f"spell_id=spell_id_{step_index}, "
-                f"instance=instance_{step_index}, "
-                f"creations=creations_{step_index}, "
-                f"existence=plan_step_{step_index}.existence, "
-                f"has_disposal_methods=has_disposal_methods_{step_index}, "
-                f"disposal_methods=disposal_methods_{step_index})"
-            ),
-        ])
-    elif use_spell_lock_hint:
-        lines.extend([
-            (
-                f"    use_spell_lock_{step_index} = not ("
-                f"caller_creations_lock_held and "
-                f"creations_{step_index} is caller_creations)"
-            ),
-            f"    if use_spell_lock_{step_index}:",
-            f"        with spell_{step_index}._lock:",
-            f"            with creations_{step_index}._lock:",
-            (
-                f"                instance_{step_index} = _get_existing_creation("
-                f"spell=spell_{step_index}, "
-                f"creations=creations_{step_index}, "
-                f"existence=plan_step_{step_index}.existence)"
-            ),
-            f"            if instance_{step_index} is not None:",
-            (
-                f"                _raise_override_on_existing_instance("
-                f"spell=spell_{step_index}, "
-                f"has_targeted_overrides=has_targeted_overrides_{step_index}, "
-                f"any_overrides_present=any_overrides_present, "
-                f"root_spell_id=root_spell_id)"
-            ),
-            "            else:",
-        ])
-        if use_no_override_fast_path:
-            _append_overrides_construct_no_overrides_source(
-                lines=lines,
-                step_index=step_index,
-                indent="                ",
-                positional_args_possible=positional_args_possible,
-                dependency_resolution_order=dependency_resolution_order,
-                contract_positional_override=contract_positional_override,
-                has_contract_payload=has_contract_payload,
-                contract_payload_items=contract_payload_items,
-                uses_positional_override=use_positional_override,
-                static_is_existing_unique_creation=effective_is_existing_unique_creation_static,
-                static_is_callable_spell=static_is_callable_spell,
-            )
-        else:
-            _append_overrides_construct_inline_source(
-                lines=lines,
-                step_index=step_index,
-                indent="                ",
-                static_override_target_count=static_override_target_count,
-                positional_args_possible=positional_args_possible,
-                dependency_resolution_order=dependency_resolution_order,
-                contract_positional_override=contract_positional_override,
-                has_contract_payload=has_contract_payload,
-                contract_payload_items=contract_payload_items,
-                uses_positional_override=use_positional_override,
-                static_is_existing_unique_creation=effective_is_existing_unique_creation_static,
-                static_is_callable_spell=static_is_callable_spell,
-            )
-        lines.extend([
-            f"                with creations_{step_index}._lock:",
-            (
-                f"                    _register_spell_instance_prebound("
-                f"spell_id=spell_id_{step_index}, "
-                f"instance=instance_{step_index}, "
-                f"creations=creations_{step_index}, "
-                f"existence=plan_step_{step_index}.existence, "
-                f"has_disposal_methods=has_disposal_methods_{step_index}, "
-                f"disposal_methods=disposal_methods_{step_index})"
-            ),
-            "    else:",
-            f"        with creations_{step_index}._lock:",
-            (
-                f"            instance_{step_index} = _get_existing_creation("
-                f"spell=spell_{step_index}, "
-                f"creations=creations_{step_index}, "
-                f"existence=plan_step_{step_index}.existence)"
-            ),
-            f"            if instance_{step_index} is not None:",
-            (
-                f"                _raise_override_on_existing_instance("
-                f"spell=spell_{step_index}, "
-                f"has_targeted_overrides=has_targeted_overrides_{step_index}, "
-                f"any_overrides_present=any_overrides_present, "
-                f"root_spell_id=root_spell_id)"
-            ),
-            "            else:",
-        ])
-        if use_no_override_fast_path:
-            _append_overrides_construct_no_overrides_source(
-                lines=lines,
-                step_index=step_index,
-                indent="                ",
-                positional_args_possible=positional_args_possible,
-                dependency_resolution_order=dependency_resolution_order,
-                contract_positional_override=contract_positional_override,
-                has_contract_payload=has_contract_payload,
-                contract_payload_items=contract_payload_items,
-                uses_positional_override=use_positional_override,
-                static_is_existing_unique_creation=effective_is_existing_unique_creation_static,
-                static_is_callable_spell=static_is_callable_spell,
-            )
-        else:
-            _append_overrides_construct_inline_source(
-                lines=lines,
-                step_index=step_index,
-                indent="                ",
-                static_override_target_count=static_override_target_count,
-                positional_args_possible=positional_args_possible,
-                dependency_resolution_order=dependency_resolution_order,
-                contract_positional_override=contract_positional_override,
-                has_contract_payload=has_contract_payload,
-                contract_payload_items=contract_payload_items,
-                uses_positional_override=use_positional_override,
-                static_is_existing_unique_creation=effective_is_existing_unique_creation_static,
-                static_is_callable_spell=static_is_callable_spell,
-            )
-        lines.extend([
-            (
-                f"                _register_spell_instance_prebound("
-                f"spell_id=spell_id_{step_index}, "
-                f"instance=instance_{step_index}, "
-                f"creations=creations_{step_index}, "
-                f"existence=plan_step_{step_index}.existence, "
-                f"has_disposal_methods=has_disposal_methods_{step_index}, "
-                f"disposal_methods=disposal_methods_{step_index})"
-            ),
-        ])
-    else:
-        lines.extend([
-            f"    with creations_{step_index}._lock:",
-            (
-                f"        instance_{step_index} = _get_existing_creation("
-                f"spell=spell_{step_index}, "
-                f"creations=creations_{step_index}, "
-                f"existence=plan_step_{step_index}.existence)"
-            ),
-            f"        if instance_{step_index} is not None:",
-            (
-                f"            _raise_override_on_existing_instance("
-                f"spell=spell_{step_index}, "
-                f"has_targeted_overrides=has_targeted_overrides_{step_index}, "
-                f"any_overrides_present=any_overrides_present, "
-                f"root_spell_id=root_spell_id)"
-            ),
-            "        else:",
-        ])
-        if use_no_override_fast_path:
-            _append_overrides_construct_no_overrides_source(
-                lines=lines,
-                step_index=step_index,
-                indent="            ",
-                positional_args_possible=positional_args_possible,
-                dependency_resolution_order=dependency_resolution_order,
-                contract_positional_override=contract_positional_override,
-                has_contract_payload=has_contract_payload,
-                contract_payload_items=contract_payload_items,
-                uses_positional_override=use_positional_override,
-                static_is_existing_unique_creation=effective_is_existing_unique_creation_static,
-                static_is_callable_spell=static_is_callable_spell,
-            )
-        else:
-            _append_overrides_construct_inline_source(
-                lines=lines,
-                step_index=step_index,
-                indent="            ",
-                static_override_target_count=static_override_target_count,
-                positional_args_possible=positional_args_possible,
-                dependency_resolution_order=dependency_resolution_order,
-                contract_positional_override=contract_positional_override,
-                has_contract_payload=has_contract_payload,
-                contract_payload_items=contract_payload_items,
-                uses_positional_override=use_positional_override,
-                static_is_existing_unique_creation=effective_is_existing_unique_creation_static,
-                static_is_callable_spell=static_is_callable_spell,
-            )
-        lines.extend([
-            (
-                f"            _register_spell_instance_prebound("
-                f"spell_id=spell_id_{step_index}, "
-                f"instance=instance_{step_index}, "
-                f"creations=creations_{step_index}, "
-                f"existence=plan_step_{step_index}.existence, "
-                f"has_disposal_methods=has_disposal_methods_{step_index}, "
-                f"disposal_methods=disposal_methods_{step_index})"
-            ),
-        ])
+    if static_has_disposal_methods is True:
+        _append_overrides_many_register_inline_source(
+            lines=lines,
+            step_index=step_index,
+            indent="    ",
+            static_has_disposal_methods=True,
+        )
+    elif static_has_disposal_methods is None:
+        _append_overrides_many_register_inline_source(
+            lines=lines,
+            step_index=step_index,
+            indent="    ",
+            static_has_disposal_methods=None,
+        )
 
     lines.append(
         f"    instance_results[step_instance_keys[{step_index}]] = instance_{step_index}"
