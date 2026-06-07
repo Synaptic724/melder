@@ -42,10 +42,10 @@ class AbstractElasticPool(Generic[_T], Cleanable, ABC):
 
     _DEFAULT_ENABLED: ClassVar[bool] = True
     _DEFAULT_BASELINE_IDLE: ClassVar[int] = 0
-    _DEFAULT_STRETCH_PERCENT: ClassVar[int] = 50
-    _DEFAULT_SETTLE_TIME_SECONDS: ClassVar[float] = 300.0
+    _DEFAULT_STRETCH_PERCENT: ClassVar[int] = 200
+    _DEFAULT_SETTLE_TIME_SECONDS: ClassVar[float] = 1800.0
     _DEFAULT_DECAY_PERCENT_PER_INTERVAL: ClassVar[int] = 10
-    _DEFAULT_DECAY_INTERVAL_SECONDS: ClassVar[float] = 60.0
+    _DEFAULT_DECAY_INTERVAL_SECONDS: ClassVar[float] = 600.0
 
     __slots__ = Cleanable.__slots__ + [
         "_baseline_idle",

@@ -1597,8 +1597,8 @@ class Conduit(Cleanable):
                 self._refresh_devops_identity_state()
                 self._conduit_pool = ConduitPool(
                     root_conduit=self,
-                    baseline_idle=10,
-                    max_idle=10,
+                    baseline_idle=20,
+                    max_idle=20,
                 )
 
                 # Step 2: Keep the current creations object.
