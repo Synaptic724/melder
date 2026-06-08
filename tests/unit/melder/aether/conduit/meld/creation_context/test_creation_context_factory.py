@@ -110,7 +110,7 @@ class _SpellStub:
         self._owner_creations = SimpleNamespace(_creations={}, _lock=RLock())
         self._spellbook = SimpleNamespace(
             _spell_id_pool={},
-            _emit_spell_cache=lambda spell, cached_codegen=None: True,
+            _emit_spell_cache=lambda spell: True,
         )
         self._crafter = object()
         self._creation_context = creation_context
@@ -281,8 +281,8 @@ def test_build_and_bind_for_spell_stages_cache_after_publish(
     calls: list[tuple[Any, Any]] = []
     spell._spellbook = SimpleNamespace(
         _spell_id_pool={},
-        _emit_spell_cache=lambda owner_spell, cached_codegen=None: calls.append(
-            (owner_spell, cached_codegen)
+        _emit_spell_cache=lambda owner_spell: calls.append(
+            (owner_spell, None)
         ) or True,
     )
     builder = _BuilderStub(build_result=built_context)
@@ -307,8 +307,8 @@ def test_get_or_build_for_spell_leader_path_stages_cache_after_publish(
     calls: list[tuple[Any, Any]] = []
     spell._spellbook = SimpleNamespace(
         _spell_id_pool={},
-        _emit_spell_cache=lambda owner_spell, cached_codegen=None: calls.append(
-            (owner_spell, cached_codegen)
+        _emit_spell_cache=lambda owner_spell: calls.append(
+            (owner_spell, None)
         ) or True,
     )
     builder = _BuilderStub(build_result=built_context)

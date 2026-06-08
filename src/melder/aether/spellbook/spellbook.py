@@ -766,7 +766,7 @@ and logging.
         Contract:
             - Returns early when the spell cache policy bit is disabled.
             - Requires the spell to belong to this Spellbook.
-            - Builds the spell payload from current spell/compiler state.
+            - Stages the current phase-11 artifact cache payload.
             - Hands the payload to the Spellbook-owned `CachingSystem`.
 
         Args:
@@ -786,20 +786,21 @@ and logging.
         caching_system = self._get_or_create_caching_system()
         if caching_system.has_spell_payload(spell.spell_id):
             return False
-        artifact = spell._compiler_artifact
-        if artifact is None or artifact._spell_codegen_creation is None:
-            return False
-        # Local import avoids a module-load cycle between Spellbook and the
-        # compiler-facing codec.
-        from melder.aether.conduit.meld.creation_context.creation_context_cache_codec import (
-            build_package,
-        )
         try:
+            artifact = spell._compiler_artifact
+            if (
+                    artifact is None
+                    or artifact._spell_codegen_creation is None
+            ):
+                return False
+            from melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation.spell_codegen_creation_cache import (
+                build_package,
+            )
             spell_payload = build_package(spell)
         except Exception as exc:
             if self._logger is not None:
                 self._logger.error(
-                    f"Failed to build cache payload for spell_id={spell.spell_id}: {exc}",
+                    f"Failed to stage cache payload for spell_id={spell.spell_id}: {exc}",
                     "_emit_spell_cache",
                     exc_info=True,
                 )

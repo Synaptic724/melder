@@ -1,5 +1,4 @@
-from types import MappingProxyType
-from typing import TYPE_CHECKING, Any, Callable, ClassVar, Mapping, Optional
+from typing import TYPE_CHECKING, Any, Callable, ClassVar, Optional
 
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.utilities.general_base.cleanable import Cleanable
@@ -38,7 +37,6 @@ class CreationContext(Cleanable):
         "_creation_gate_index_id",
         "_no_overrides_executor",
         "_overrides_executor",
-        "_cached_codegen",
     ]
 
     def __init__(
@@ -50,7 +48,6 @@ class CreationContext(Cleanable):
             creation_gate_index_id: Optional[str] = None,
             no_overrides_executor: Optional[Callable[..., Any]] = None,
             overrides_executor: Optional[Callable[..., Any]] = None,
-            cached_codegen: Optional[Mapping[str, Any]] = None,
     ) -> None:
         """
         Build one spell-bound runtime context.
@@ -70,10 +67,6 @@ class CreationContext(Cleanable):
             overrides_executor:
                 Phase-11-provided final overrides executor returning
                 `(instance, created)`.
-            cached_codegen:
-                Exact cache bundle for these phase-11 outputs when already
-                available. When omitted, the context captures the constructor
-                inputs as its cache bundle directly.
 
         Raises:
             ValueError:
@@ -92,13 +85,6 @@ class CreationContext(Cleanable):
         self._creation_gate_index_id = creation_gate_index_id
         self._no_overrides_executor = no_overrides_executor
         self._overrides_executor = overrides_executor
-        if cached_codegen is None:
-            self._cached_codegen = {
-                "no_overrides_executor": no_overrides_executor,
-                "overrides_executor": overrides_executor,
-            }
-        else:
-            self._cached_codegen = dict(cached_codegen)
 
     def cleanup(self) -> None:
         """
@@ -115,7 +101,6 @@ class CreationContext(Cleanable):
         del self._creation_gate_index_id
         del self._no_overrides_executor
         del self._overrides_executor
-        del self._cached_codegen
 
     @classmethod
     def load_cached(
@@ -127,7 +112,6 @@ class CreationContext(Cleanable):
             creation_gate_index_id: Optional[str] = None,
             no_overrides_executor: Optional[Callable[..., Any]],
             overrides_executor: Optional[Callable[..., Any]],
-            cached_codegen: Optional[Mapping[str, Any]] = None,
             publish: bool = False,
     ) -> "CreationContext":
         """
@@ -145,7 +129,6 @@ class CreationContext(Cleanable):
             creation_gate_index_id=creation_gate_index_id,
             no_overrides_executor=no_overrides_executor,
             overrides_executor=overrides_executor,
-            cached_codegen=cached_codegen,
         )
         if publish:
             previous_creation_context = spell._creation_context
@@ -164,47 +147,6 @@ class CreationContext(Cleanable):
                 except Exception:
                     pass
         return loaded_creation_context
-
-    @classmethod
-    def load_cached_bundle(
-            cls,
-            *,
-            spell: "Spell",
-            cached_codegen: Mapping[str, Any],
-            dynamic_environment: bool = False,
-            creation_gate: Optional["CreationGate"] = None,
-            creation_gate_index_id: Optional[str] = None,
-            publish: bool = False,
-    ) -> "CreationContext":
-        """
-        Build one generic CreationContext from a cache bundle.
-
-        Purpose:
-            Provide the cache-bundle load seam directly on `CreationContext` so
-            cache hydration does not need a separate builder layer.
-        """
-        no_overrides_executor = cached_codegen["no_overrides_executor"]
-        overrides_executor = cached_codegen["overrides_executor"]
-        return cls.load_cached(
-            spell=spell,
-            dynamic_environment=dynamic_environment,
-            creation_gate=creation_gate,
-            creation_gate_index_id=creation_gate_index_id,
-            no_overrides_executor=no_overrides_executor,
-            overrides_executor=overrides_executor,
-            cached_codegen=cached_codegen,
-            publish=publish,
-        )
-
-    def output_cache(self) -> Mapping[str, Any]:
-        """
-        Return the exact cached codegen bundle held by this CreationContext.
-
-        Returns:
-            Mapping[str, Any]:
-                Read-only cache bundle for the current phase-11 outputs.
-        """
-        return MappingProxyType(self._cached_codegen)
 
     def execute(
             self,

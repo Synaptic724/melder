@@ -1,5 +1,5 @@
 """
-Reloadable codec for CreationContext-facing phase-11 assets.
+Reloadable cache helper for phase-11 `SpellCodegenCreation` assets.
 
 Purpose:
     Build and reload the durable, conduit-agnostic cache payload for one
@@ -61,6 +61,11 @@ from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.g
     _normalize_transient_schema,
     _resolve_root_instance_key,
     _supports_transient_unrolled_plan,
+)
+from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_overrides_codegen_creation_compiler import (
+    compile_overrides_codegen_creation_executor_code_object,
+    compile_overrides_codegen_creation_executor_from_code_object,
+    emit_overrides_codegen_creation_executor_source,
 )
 from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.steps.generalized_finalize_creation_context_step import (
     GeneralizedFinalizeCreationContextStep,
@@ -188,12 +193,18 @@ def _build_overrides_subpackage(
         plan_rows=plan_rows,
     )
     empty_shape_key = (plan_signature, (), -1)
+    override_code_object = compile_overrides_codegen_creation_executor_code_object(
+        source=emit_overrides_codegen_creation_executor_source(
+            step_count=len(overrides_plan.steps),
+        ),
+    )
     return {
         "root_spell_id": overrides_plan.root_spell_id,
         "step_spell_ids": step_spell_ids,
         "plan_rows": plan_rows,
         "plan_signature": plan_signature,
         "empty_shape_key": empty_shape_key,
+        "code_object": override_code_object,
         "targets_by_spec": _serialize_targets_by_spec(
             override_targeting_shape.targets_by_spec,
         ),
@@ -241,18 +252,36 @@ def load_creation_context(
     if overrides_payload is None:
         outer_overrides = _build_missing_overrides_executor(spell)
     else:
-        inner_overrides = _build_inner_overrides_runtime(
-            spell=spell,
-            overrides_payload=overrides_payload,
-            base_no_overrides_executor=inner_no_overrides,
-        )
+        # Zero override work at cache load. Build the override runtime only on
+        # the first override-meld of this spell, never during load.
+        _override_runtime_cell: list = [None]
+
+        def _lazy_execute_with_overrides(
+                caller_creations: Any,
+                overrides: Optional[dict],
+                caller_creations_lock_held: bool,
+        ) -> Any:
+            override_runtime = _override_runtime_cell[0]
+            if override_runtime is None:
+                override_runtime = _build_inner_overrides_runtime(
+                    spell=spell,
+                    overrides_payload=overrides_payload,
+                    base_no_overrides_executor=inner_no_overrides,
+                )
+                _override_runtime_cell[0] = override_runtime
+            return override_runtime(
+                caller_creations,
+                overrides,
+                caller_creations_lock_held,
+            )
+
         outer_overrides = compile_creation_context_hooks_overrides_only_executor(
             resolve_route_key=resolve_route_key,
             spell=spell,
             spell_id=spell.spell_id,
             owner_creations=spell._owner_creations,
             no_overrides_executor=inner_no_overrides,
-            execute_with_overrides=inner_overrides,
+            execute_with_overrides=_lazy_execute_with_overrides,
             meld_execution_error_type=MeldExecutionError,
             spell_space_scope_error_type=SpellSpaceScopeError,
         )
@@ -351,6 +380,22 @@ def _build_inner_overrides_runtime(
     empty_shape_key = _as_tuple(overrides_payload["empty_shape_key"])
     plan_rows = list(overrides_payload["plan_rows"])
 
+    # Load the override baseline executor straight from the cached code object
+    # (exec, no compile). This is the override lane loaded as a cache item.
+    baseline_executor = None
+    cached_code_object = overrides_payload.get("code_object")
+    if cached_code_object is not None:
+        baseline_executor = compile_overrides_codegen_creation_executor_from_code_object(
+            code_object=cached_code_object,
+            execution_plan=None,
+            override_targets_by_spell_id={},
+            any_overrides_present=False,
+            path_registry=path_registry,
+            plan_rows=plan_rows,
+            root_spell_id=overrides_payload["root_spell_id"],
+            spell_lookup=spell_lookup,
+        )
+
     finalize_step = GeneralizedFinalizeCreationContextStep()
     return finalize_step._build_overrides_runtime(
         spell_codegen_model=None,
@@ -364,7 +409,7 @@ def _build_inner_overrides_runtime(
         override_root_spell_id=overrides_payload["root_spell_id"],
         spell_lookup=spell_lookup,
         empty_shape_key=empty_shape_key,
-        baseline_executor=None,
+        baseline_executor=baseline_executor,
     )
 
 

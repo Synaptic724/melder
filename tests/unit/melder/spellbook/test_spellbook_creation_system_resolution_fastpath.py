@@ -1747,24 +1747,16 @@ def test_load_cached_spell_payloads_for_conjure_loads_and_clears_resolution_flag
     """
     loaded_calls: List[tuple[str, Dict[str, Any], bool]] = []
 
-    def _fake_load_cached_bundle(
-            *,
+    def _fake_load_creation_context(
             spell: Any,
-            cached_codegen: Dict[str, Any],
-            dynamic_environment: bool = False,
-            creation_gate: Any = None,
-            creation_gate_index_id: Optional[str] = None,
+            cached_package: Dict[str, Any],
             publish: bool = True,
     ) -> object:
-        _ = dynamic_environment
-        _ = creation_gate
-        _ = creation_gate_index_id
-        loaded_calls.append((spell.spell_id, cached_codegen, publish))
+        loaded_calls.append((spell.spell_id, cached_package, publish))
         return object()
     monkeypatch.setattr(
-        CreationContext,
-        "load_cached_bundle",
-        staticmethod(_fake_load_cached_bundle),
+        "melder.aether.conduit.meld.creation_context.creation_context_cache_codec.load_creation_context",
+        _fake_load_creation_context,
     )
     creation_context_factory = types.SimpleNamespace(
         _resolve_runtime_gate_for_spell=lambda spell: (None, None),
