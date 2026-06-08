@@ -1,9 +1,9 @@
-"""Direct codegen contract tests for creation_context_codegen."""
+"""Direct codegen contract tests for the phase-11-owned route-door compiler."""
 from typing import Any, Callable, Dict, Optional, Sequence, Tuple
 
 import pytest
 
-import melder.aether.conduit.meld.creation_context.creation_context_codegen as codegen
+import melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.creation_runtime_door_compiler as codegen
 
 
 def test_compile_instance_overrides_only_executor_delegates_to_selected_template(
@@ -244,7 +244,7 @@ def test_build_with_overrides_lines_shared_route_contains_expected_branches() ->
         overrides_maybe_none=True,
     )
     joined = "\n".join(lines)
-    assert "creation = _owner_creations.get_creation(_spell_id)" in joined
+    assert "creation = _spell._owner_creations.get_creation(_spell_id)" in joined
     assert "with _spell._lock:" in joined
     assert "_existing_override_message" in joined
 

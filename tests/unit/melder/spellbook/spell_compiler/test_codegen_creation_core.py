@@ -39,9 +39,6 @@ from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.m
 from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.many_only_codegen_creation_state import (
     ManyOnlyCodegenCreationState,
 )
-from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.steps.many_only_creation_context_setup_step import (
-    ManyOnlyCreationContextSetupStep,
-)
 from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.steps.many_only_no_overrides_codegen_creation_step import (
     ManyOnlyNoOverridesCodegenCreationStep,
 )
@@ -50,9 +47,6 @@ from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.s
 )
 import melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.solo.steps.solo_no_overrides_codegen_creation_step as solo_no_overrides_step_module
 import melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.solo.steps.solo_overrides_codegen_creation_step as solo_overrides_step_module
-from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.steps.generalized_creation_context_setup_step import (
-    GeneralizedCreationContextSetupStep,
-)
 from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.steps.generalized_finalize_creation_context_step import (
     GeneralizedFinalizeCreationContextStep,
 )
@@ -319,78 +313,6 @@ def test_codegen_creation_system_build_runs_selected_strategy_chain_and_cleans_p
     assert creation.metadata["b"] is True
     assert previous_creation.cleanup_called is True
 
-
-def test_setup_step_records_route_and_transient_state() -> None:
-    """The generalized setup step should keep route but no longer own fast-transient state."""
-    step = GeneralizedCreationContextSetupStep()
-    plan = SpellCodegenPlan(
-        processor_strategy_ids=(),
-        plan_strategy_ids=(),
-        no_overrides_plan=type(
-            "LanePlanProbe",
-            (),
-            {"fast_transient_plan": object()},
-        )(),
-        overrides_plan=None,
-        metadata={},
-    )
-    creation = SpellCodegenCreation(
-        selected_strategy_ids=(),
-        discovery_reason=None,
-        no_overrides_executor=None,
-        overrides_executor=None,
-        metadata={},
-    )
-
-    state = _make_generalized_state(
-        spell_codegen_model=type(
-            "ModelProbe",
-            (),
-            {"build_kind": "construct", "route_family": "many"},
-        )(),
-        spell_codegen_plan=plan,
-        spell_codegen_creation=creation,
-    )
-    step.apply(state)
-
-    assert state.resolve_route_key == "many"
-
-
-def test_many_only_setup_step_records_many_route() -> None:
-    """The many-only setup step should resolve only the route key."""
-    step = ManyOnlyCreationContextSetupStep()
-    plan = SpellCodegenPlan(
-        processor_strategy_ids=(),
-        plan_strategy_ids=(),
-        no_overrides_plan=type(
-            "LanePlanProbe",
-            (),
-            {"fast_transient_plan": object()},
-        )(),
-        overrides_plan=None,
-        metadata={},
-    )
-    creation = SpellCodegenCreation(
-        selected_strategy_ids=(),
-        discovery_reason=None,
-        no_overrides_executor=None,
-        overrides_executor=None,
-        metadata={},
-    )
-
-    state = ManyOnlyCodegenCreationState(
-        spell_codegen_model=type(
-            "ModelProbe",
-            (),
-            {"build_kind": "construct", "route_family": "many"},
-        )(),
-        spell_codegen_plan=plan,
-        spell_codegen_creation=creation,
-    )
-    step.apply(state)
-
-    assert state.resolve_route_key == "many"
-    
 
 def test_no_overrides_step_records_base_executor_and_signature(
         monkeypatch: pytest.MonkeyPatch,
@@ -693,7 +615,6 @@ def test_general_creation_context_strategy_preserves_base_no_overrides_and_build
         spell_codegen_plan=plan,
         spell_codegen_creation=creation,
     )
-    family_state.resolve_route_key = "many"
     family_state.override_targeting = "targeting"
     family_state.override_plan_signature = ("sig",)
     family_state.override_path_registry = "registry"
