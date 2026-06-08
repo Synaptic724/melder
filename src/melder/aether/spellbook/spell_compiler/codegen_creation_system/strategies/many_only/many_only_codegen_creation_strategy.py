@@ -15,9 +15,6 @@ from melder.aether.spellbook.spell_compiler.codegen_creation_system.spell_codege
 from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.many_only_codegen_creation_state import (
     ManyOnlyCodegenCreationState,
 )
-from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.steps.many_only_creation_context_setup_step import (
-    ManyOnlyCreationContextSetupStep,
-)
 from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.steps.many_only_finalize_creation_context_step import (
     ManyOnlyFinalizeCreationContextStep,
 )
@@ -52,7 +49,6 @@ class ManyOnlyCodegenCreationStrategy(SpellCodegenStrategy):
         """
         super().__init__()
         self._steps: Tuple[CodegenCreationFamilyStep, ...] = (
-            ManyOnlyCreationContextSetupStep(),
             ManyOnlyNoOverridesCodegenCreationStep(),
             ManyOnlyOverridesCodegenCreationStep(),
             ManyOnlyFinalizeCreationContextStep(),

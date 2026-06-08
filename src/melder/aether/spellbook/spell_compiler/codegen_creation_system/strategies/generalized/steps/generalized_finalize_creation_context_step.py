@@ -69,9 +69,7 @@ class GeneralizedFinalizeCreationContextStep(CodegenCreationFamilyStep):
                 "Generalized finalize creation-context step requires an overrides_plan."
             )
 
-        route_key = state.resolve_route_key
-        if route_key is None:
-            route_key = self._resolve_route_key(spell_codegen_model)
+        route_key = self._resolve_route_key(spell_codegen_model)
         base_no_overrides_executor = state.base_no_overrides_executor
         if base_no_overrides_executor is None:
             base_no_overrides_executor = (

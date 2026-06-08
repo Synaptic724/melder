@@ -6,9 +6,6 @@ from melder.aether.spellbook.spell_compiler.codegen_creation_system.spell_codege
 from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.generalized_codegen_creation_state import (
     GeneralizedCodegenCreationState,
 )
-from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.steps.generalized_creation_context_setup_step import (
-    GeneralizedCreationContextSetupStep,
-)
 from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.steps.generalized_finalize_creation_context_step import (
     GeneralizedFinalizeCreationContextStep,
 )
@@ -59,7 +56,6 @@ class GeneralizedCodegenCreationStrategy(SpellCodegenStrategy):
         """
         super().__init__()
         self._steps: Tuple[CodegenCreationFamilyStep, ...] = (
-            GeneralizedCreationContextSetupStep(),
             GeneralizedNoOverridesCodegenCreationStep(),
             GeneralizedOverridesCodegenCreationStep(),
             GeneralizedFinalizeCreationContextStep(),

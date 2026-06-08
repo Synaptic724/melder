@@ -33,7 +33,6 @@ class GeneralizedCodegenCreationState:
         "spell_codegen_plan",
         "spell_codegen_creation",
         "root_spell",
-        "resolve_route_key",
         "base_no_overrides_executor",
         "override_targeting",
         "override_plan_signature",
@@ -68,7 +67,6 @@ class GeneralizedCodegenCreationState:
         self.spell_codegen_plan = spell_codegen_plan
         self.spell_codegen_creation = spell_codegen_creation
         self.root_spell: Optional[Any] = None
-        self.resolve_route_key: Optional[str] = None
         self.base_no_overrides_executor: Optional[Callable[..., Any]] = None
         self.override_targeting: Optional[Any] = None
         self.override_plan_signature: Optional[Tuple[Any, ...]] = None
