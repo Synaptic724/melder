@@ -1,5 +1,8 @@
 from types import SimpleNamespace
 from typing import Any, Callable, Dict, Optional, Sequence, Tuple, Union
+from melder.aether.spellbook.spell_compiler.executor_code_cache import (
+    get_or_compile_executor_code,
+)
 from melder.utilities.custom_exceptions.meld_execution_error import MeldExecutionError
 from melder.utilities.custom_exceptions.spell_space_scope_error import SpellSpaceScopeError
 
@@ -580,13 +583,16 @@ def _compile_emitted_no_overrides_executor(
     Contract:
         - Raises RuntimeError when source compilation/execution fails.
         - Raises RuntimeError when the emitted executor symbol is not callable.
-        - Uses direct `compile(...)` for emitted source.
+        - Uses the process-wide emitted-source code-object cache.
         - When `return_compiled_code_object` is true, also returns the
           compiled `CodeType`.
     """
     local_namespace: Dict[str, Any] = {}
     try:
-        code_object = compile(source, source_name, "exec")
+        code_object = get_or_compile_executor_code(
+            source=source,
+            source_name=source_name,
+        )
         exec(
             code_object,
             namespace,

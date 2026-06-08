@@ -4,7 +4,7 @@ from typing import Any, Dict, Iterable, Optional
 
 import pytest
 
-from melder.aether.conduit.meld.creation_context import creation_context_cache_codec
+from melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation import spell_codegen_creation_cache as creation_context_cache_codec
 from melder.aether.conduit.meld.creation_context.creation_context_factory import (
     CreationContextFactory,
 )

@@ -1,5 +1,8 @@
 from typing import Any, Callable, Dict, Optional, Sequence, Tuple, Union
 
+from melder.aether.spellbook.spell_compiler.executor_code_cache import (
+    get_or_compile_executor_code,
+)
 
 def compile_solo_overrides_codegen_creation_executor(
         *,
@@ -18,7 +21,7 @@ def compile_solo_overrides_codegen_creation_executor(
         - Preserves the current callable contract exactly.
         - Emits the same route/existence logic that previously lived in the
           handwritten closure branches in this file.
-        - Uses direct `compile(...)` for emitted source.
+        - Uses the process-wide emitted-source code-object cache.
         - When `return_compiled_code_object` is true, also returns the
           compiled `CodeType`.
     """
@@ -47,7 +50,10 @@ def compile_solo_overrides_codegen_creation_executor(
         "_invoke_with_overrides": _invoke_with_overrides,
     }
     try:
-        code_object = compile(source, source_name, "exec")
+        code_object = get_or_compile_executor_code(
+            source=source,
+            source_name=source_name,
+        )
         exec(code_object, namespace, local_namespace)
     except Exception as exc:
         raise RuntimeError(

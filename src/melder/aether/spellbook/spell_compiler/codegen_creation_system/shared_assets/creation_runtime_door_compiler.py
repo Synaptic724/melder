@@ -1,5 +1,8 @@
 from typing import Optional, Any, Callable, Sequence
 
+from melder.aether.spellbook.spell_compiler.executor_code_cache import (
+    get_or_compile_executor_code,
+)
 
 def compile_creation_context_instance_overrides_only_executor(
         *,
@@ -377,7 +380,10 @@ def _compile_creation_context_template_source(
     local_namespace: dict[str, Callable[..., Callable[..., Any]]] = {}
     try:
         exec(
-            compile(source, source_name, "exec"),
+            get_or_compile_executor_code(
+                source=source,
+                source_name=source_name,
+            ),
             {},
             local_namespace,
         )

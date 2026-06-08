@@ -3,6 +3,9 @@ from types import SimpleNamespace
 from typing import Any, Callable, Dict, Optional, Sequence, Tuple
 
 from melder.aether.spellbook.existence.existence import Existence
+from melder.aether.spellbook.spell_compiler.executor_code_cache import (
+    get_or_compile_executor_code,
+)
 from melder.aether.spellbook.spell_compiler.codegen_planner.data.spell_generalized_codegen_lane_plan import (
     SpellGeneralizedCodegenPlanTargetKind,
 )
@@ -127,15 +130,14 @@ def compile_overrides_codegen_creation_executor_code_object(
         - Source must be a non-empty string.
         - Returned code object is safe to execute against different namespaces.
         - Uses the same synthetic filename as direct override compilation.
-        - Uses direct `compile(...)` and returns the resulting `CodeType`.
+        - Uses the process-wide emitted-source code-object cache.
     """
     if not isinstance(source, str) or not source:
         raise ValueError("source must be a non-empty string.")
     try:
-        return compile(
-            source,
-            "<melder_overrides_codegen_creation_executor>",
-            "exec",
+        return get_or_compile_executor_code(
+            source=source,
+            source_name="<melder_overrides_codegen_creation_executor>",
         )
     except Exception as exc:
         raise RuntimeError(

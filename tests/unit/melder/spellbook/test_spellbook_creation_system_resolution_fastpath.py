@@ -1755,7 +1755,7 @@ def test_load_cached_spell_payloads_for_conjure_loads_and_clears_resolution_flag
         loaded_calls.append((spell.spell_id, cached_package, publish))
         return object()
     monkeypatch.setattr(
-        "melder.aether.conduit.meld.creation_context.creation_context_cache_codec.load_creation_context",
+        "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation.spell_codegen_creation_cache.load_creation_context",
         _fake_load_creation_context,
     )
     creation_context_factory = types.SimpleNamespace(

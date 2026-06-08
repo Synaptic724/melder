@@ -38,6 +38,9 @@ from typing import Any, Dict, Optional, Sequence, Tuple
 from melder.aether.conduit.meld.creation_context.creation_context import (
     CreationContext,
 )
+from melder.aether.spellbook.spell_compiler.executor_code_cache import (
+    get_or_compile_executor_code,
+)
 from melder.aether.spellbook.existence.existence import Existence
 from melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.creation_runtime_door_compiler import (
     compile_creation_context_hooks_no_overrides_executor,
@@ -157,7 +160,10 @@ def _build_no_overrides_subpackage(*, no_overrides_plan: Any) -> Dict[str, Any]:
         "steps_rows": steps_rows,
         "transient_schema": transient_schema,
         "source_name": source_name,
-        "code_object": compile(emitted_source, source_name, "exec"),
+        "code_object": get_or_compile_executor_code(
+            source=emitted_source,
+            source_name=source_name,
+        ),
     }
 
 
