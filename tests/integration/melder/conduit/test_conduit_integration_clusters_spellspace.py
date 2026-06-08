@@ -74,8 +74,8 @@ def test_conduit_cluster_join_leave_list_and_delete() -> None:
     )
     peer_book = Spellbook(configuration=configuration)
 
-    owner = owner_book.conjure(automatic=False, name="owner")
-    peer = peer_book.conjure(automatic=False, name="peer")
+    owner = owner_book.conjure(dynamic=True, name="owner")
+    peer = peer_book.conjure(dynamic=True, name="peer")
     try:
         cloud = owner._spellbook._aether.get_conduit_cloud(owner._aetheric_frame_name)
         cloud.create_cluster("cluster-a")
@@ -120,7 +120,7 @@ def test_conduit_conduit_cloud_register_unregister() -> None:
         permissions="create",
     )
 
-    conduit = spellbook.conjure(automatic=False, name="owner")
+    conduit = spellbook.conjure(dynamic=True, name="owner")
     lesser = conduit.create_lesser_conduit()
     try:
         cloud = conduit._spellbook._aether.get_conduit_cloud(conduit._aetheric_frame_name)

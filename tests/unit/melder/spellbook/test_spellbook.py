@@ -4859,7 +4859,6 @@ def test_conjure_hooks_fire_in_order(monkeypatch):
                 aetheric_frame=None,
                 policy=None,
                 dynamic=None,
-                automatic=None,
                 logger=None,
                 conduit_id=None,
                 creation_gate_controller=None,

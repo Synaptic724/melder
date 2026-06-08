@@ -180,8 +180,8 @@ def test_component_phase5_includes_contracted_dependency_in_index_and_blueprint(
             spellframe=BasicService.__name__,
         )
 
-        owner = owner_book.conjure(automatic=False, name="owner")
-        borrower = borrower_book.conjure(automatic=False, name="borrower")
+        owner = owner_book.conjure(dynamic=True, name="owner")
+        borrower = borrower_book.conjure(dynamic=True, name="borrower")
         assert owner.link(borrower) is True
         with borrower.transaction("link", conduits=[borrower, owner]):
             assert borrower.add_spell_to_contract(
@@ -273,8 +273,8 @@ def test_component_phase5_contract_dependencies_generate_nested_socket_paths() -
         leaf_a_id = depth_ids[Depth3LeafA]
         leaf_b_id = depth_ids[Depth3LeafB]
 
-        owner = owner_book.conjure(automatic=False, name="owner")
-        borrower = borrower_book.conjure(automatic=False, name="borrower")
+        owner = owner_book.conjure(dynamic=True, name="owner")
+        borrower = borrower_book.conjure(dynamic=True, name="borrower")
         assert owner.link(borrower) is True
         with borrower.transaction("link", conduits=[borrower, owner]):
             assert borrower.add_spell_to_contract_with_dependencies(
@@ -395,8 +395,8 @@ def test_component_phase5_contracts_exclude_uncontracted_remote_spells() -> None
             permissions="create",
         )
 
-        owner = owner_book.conjure(automatic=False, name="owner")
-        borrower = borrower_book.conjure(automatic=False, name="borrower")
+        owner = owner_book.conjure(dynamic=True, name="owner")
+        borrower = borrower_book.conjure(dynamic=True, name="borrower")
         assert owner.link(borrower) is True
         with borrower.transaction("link", conduits=[borrower, owner]):
             assert borrower.add_spell_to_contract(

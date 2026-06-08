@@ -443,11 +443,11 @@ def test_conduit_linked_concurrent_meld_across_four_conduits() -> None:
         get_depth_9_classes(),
         existence=Existence.unique_per_conduit,
     )
-    owner = owner_book.conjure(automatic=False, name="owner")
+    owner = owner_book.conjure(dynamic=True, name="owner")
     borrowers = [
-        borrower_books[0].conjure(automatic=False, name="borrower-1"),
-        borrower_books[1].conjure(automatic=False, name="borrower-2"),
-        borrower_books[2].conjure(automatic=False, name="borrower-3"),
+        borrower_books[0].conjure(dynamic=True, name="borrower-1"),
+        borrower_books[1].conjure(dynamic=True, name="borrower-2"),
+        borrower_books[2].conjure(dynamic=True, name="borrower-3"),
     ]
 
     try:
@@ -569,11 +569,11 @@ def test_conduit_concurrent_meld_across_linked_conduits_isolated_per_conduit() -
         get_depth_3_classes(),
         existence=Existence.unique_per_conduit,
     )
-    owner = owner_book.conjure(automatic=False, name="owner")
+    owner = owner_book.conjure(dynamic=True, name="owner")
     borrowers = [
-        borrower_books[0].conjure(automatic=False, name="borrower-1"),
-        borrower_books[1].conjure(automatic=False, name="borrower-2"),
-        borrower_books[2].conjure(automatic=False, name="borrower-3"),
+        borrower_books[0].conjure(dynamic=True, name="borrower-1"),
+        borrower_books[1].conjure(dynamic=True, name="borrower-2"),
+        borrower_books[2].conjure(dynamic=True, name="borrower-3"),
     ]
     try:
         for borrower in borrowers:
@@ -618,16 +618,16 @@ def test_conduit_cluster_concurrent_meld_unique_per_conduit_cluster_shared_insta
         existence=Existence.unique_per_conduit_cluster,
         permissions="create",
     )
-    owner = owner_book.conjure(automatic=False, name="owner")
+    owner = owner_book.conjure(dynamic=True, name="owner")
     borrower_books = [
         _make_dynamic_spellbook(),
         _make_dynamic_spellbook(),
         _make_dynamic_spellbook(),
     ]
     borrowers = [
-        borrower_books[0].conjure(automatic=False, name="borrower-1"),
-        borrower_books[1].conjure(automatic=False, name="borrower-2"),
-        borrower_books[2].conjure(automatic=False, name="borrower-3"),
+        borrower_books[0].conjure(dynamic=True, name="borrower-1"),
+        borrower_books[1].conjure(dynamic=True, name="borrower-2"),
+        borrower_books[2].conjure(dynamic=True, name="borrower-3"),
     ]
     try:
         for borrower in borrowers:
@@ -701,8 +701,8 @@ def test_conduit_concurrent_contract_additions_idempotent() -> None:
     )
     borrower_book = _make_dynamic_spellbook()
     _enable_queued_root_transactions(borrower_book)
-    owner = owner_book.conjure(automatic=False, name="owner")
-    borrower = borrower_book.conjure(automatic=False, name="borrower")
+    owner = owner_book.conjure(dynamic=True, name="owner")
+    borrower = borrower_book.conjure(dynamic=True, name="borrower")
     try:
         owner.link(borrower)
         barrier = Barrier(4)
@@ -832,9 +832,9 @@ def test_conduit_concurrent_shared_unique_contract_reuses_owner_instance() -> No
         existence=Existence.unique,
         permissions="create",
     )
-    owner = owner_book.conjure(automatic=False, name="owner")
+    owner = owner_book.conjure(dynamic=True, name="owner")
     borrower_book = _make_dynamic_spellbook()
-    borrower = borrower_book.conjure(automatic=False, name="borrower")
+    borrower = borrower_book.conjure(dynamic=True, name="borrower")
     try:
         owner.link(borrower)
         with borrower.transaction("link", conduits=[borrower, owner]):
@@ -963,19 +963,19 @@ def test_conduit_cluster_concurrent_meld_two_clusters_isolated() -> None:
     cluster_a_peer_book = _make_dynamic_spellbook(configuration=configuration)
     cluster_b_peer_book = _make_dynamic_spellbook(configuration=configuration)
     cluster_a_owner = cluster_a_owner_book.conjure(
-        automatic=False,
+        dynamic=True,
         name="cluster-a-owner",
     )
     cluster_a_peer = cluster_a_peer_book.conjure(
-        automatic=False,
+        dynamic=True,
         name="cluster-a-peer",
     )
     cluster_b_owner = cluster_b_owner_book.conjure(
-        automatic=False,
+        dynamic=True,
         name="cluster-b-owner",
     )
     cluster_b_peer = cluster_b_peer_book.conjure(
-        automatic=False,
+        dynamic=True,
         name="cluster-b-peer",
     )
     try:
@@ -1035,8 +1035,8 @@ def test_conduit_concurrent_contract_additions_multiple_spells() -> None:
     )
     borrower_book = _make_dynamic_spellbook()
     _enable_queued_root_transactions(borrower_book)
-    owner = owner_book.conjure(automatic=False, name="owner")
-    borrower = borrower_book.conjure(automatic=False, name="borrower")
+    owner = owner_book.conjure(dynamic=True, name="owner")
+    borrower = borrower_book.conjure(dynamic=True, name="borrower")
     try:
         owner.link(borrower)
 
@@ -1104,16 +1104,16 @@ def test_conduit_concurrent_contract_additions_same_spell_multiple_borrowers() -
         existence=Existence.unique,
         permissions="create",
     )
-    owner = owner_book.conjure(automatic=False, name="owner")
+    owner = owner_book.conjure(dynamic=True, name="owner")
     borrower_books = [
         _make_dynamic_spellbook(),
         _make_dynamic_spellbook(),
         _make_dynamic_spellbook(),
     ]
     borrowers = [
-        borrower_books[0].conjure(automatic=False, name="borrower-1"),
-        borrower_books[1].conjure(automatic=False, name="borrower-2"),
-        borrower_books[2].conjure(automatic=False, name="borrower-3"),
+        borrower_books[0].conjure(dynamic=True, name="borrower-1"),
+        borrower_books[1].conjure(dynamic=True, name="borrower-2"),
+        borrower_books[2].conjure(dynamic=True, name="borrower-3"),
     ]
     try:
         for borrower in borrowers:
@@ -1194,16 +1194,16 @@ def test_conduit_concurrent_meld_many_across_borrowers_distinct_instances() -> N
         existence=Existence.many,
         permissions="create",
     )
-    owner = owner_book.conjure(automatic=False, name="owner")
+    owner = owner_book.conjure(dynamic=True, name="owner")
     borrower_books = [
         _make_dynamic_spellbook(),
         _make_dynamic_spellbook(),
         _make_dynamic_spellbook(),
     ]
     borrowers = [
-        borrower_books[0].conjure(automatic=False, name="borrower-1"),
-        borrower_books[1].conjure(automatic=False, name="borrower-2"),
-        borrower_books[2].conjure(automatic=False, name="borrower-3"),
+        borrower_books[0].conjure(dynamic=True, name="borrower-1"),
+        borrower_books[1].conjure(dynamic=True, name="borrower-2"),
+        borrower_books[2].conjure(dynamic=True, name="borrower-3"),
     ]
     try:
         for borrower in borrowers:
@@ -1281,16 +1281,16 @@ def test_conduit_concurrent_meld_unique_across_multiple_borrowers_shared_instanc
         existence=Existence.unique,
         permissions="create",
     )
-    owner = owner_book.conjure(automatic=False, name="owner")
+    owner = owner_book.conjure(dynamic=True, name="owner")
     borrower_books = [
         _make_dynamic_spellbook(),
         _make_dynamic_spellbook(),
         _make_dynamic_spellbook(),
     ]
     borrowers = [
-        borrower_books[0].conjure(automatic=False, name="borrower-1"),
-        borrower_books[1].conjure(automatic=False, name="borrower-2"),
-        borrower_books[2].conjure(automatic=False, name="borrower-3"),
+        borrower_books[0].conjure(dynamic=True, name="borrower-1"),
+        borrower_books[1].conjure(dynamic=True, name="borrower-2"),
+        borrower_books[2].conjure(dynamic=True, name="borrower-3"),
     ]
     try:
         for borrower in borrowers:
@@ -1432,10 +1432,10 @@ def test_conduit_concurrent_link_separate_pairs() -> None:
     book_b = _make_dynamic_spellbook(configuration=configuration)
     book_c = _make_dynamic_spellbook(configuration=configuration)
     book_d = _make_dynamic_spellbook(configuration=configuration)
-    conduit_a = book_a.conjure(automatic=False, name="conduit-a")
-    conduit_b = book_b.conjure(automatic=False, name="conduit-b")
-    conduit_c = book_c.conjure(automatic=False, name="conduit-c")
-    conduit_d = book_d.conjure(automatic=False, name="conduit-d")
+    conduit_a = book_a.conjure(dynamic=True, name="conduit-a")
+    conduit_b = book_b.conjure(dynamic=True, name="conduit-b")
+    conduit_c = book_c.conjure(dynamic=True, name="conduit-c")
+    conduit_d = book_d.conjure(dynamic=True, name="conduit-d")
     try:
         def link_ab() -> bool:
             """
@@ -1547,8 +1547,8 @@ def test_conduit_concurrent_bulk_contract_additions() -> None:
     )
     borrower_book = _make_dynamic_spellbook()
     _enable_queued_root_transactions(borrower_book)
-    owner = owner_book.conjure(automatic=False, name="owner")
-    borrower = borrower_book.conjure(automatic=False, name="borrower")
+    owner = owner_book.conjure(dynamic=True, name="owner")
+    borrower = borrower_book.conjure(dynamic=True, name="borrower")
     try:
         owner.link(borrower)
         spell_ids_a = [depth3_ids[Depth3Root], depth5_ids[Depth5Root]]

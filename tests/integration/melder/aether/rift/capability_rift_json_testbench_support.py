@@ -143,11 +143,11 @@ class CapabilityRiftJsonBench:
         automatic = not self.dynamic_frame
         self.left_conduit = self.left_spellbook.conjure(
             name="left",
-            automatic=automatic,
+            dynamic=(not automatic),
         )
         self.right_conduit = self.right_spellbook.conjure(
             name="right",
-            automatic=automatic,
+            dynamic=(not automatic),
         )
         self.initial_lesser = self.left_conduit.create_lesser_conduit()
         self.live_spell_object = self.left_conduit.meld(spell=self.left_spell_id)

@@ -110,8 +110,8 @@ def test_spellbook_public_api_contracted_spells_mapping_read_only() -> None:
     )
     borrower_book = Spellbook(configuration=configuration)
 
-    owner = owner_book.conjure(automatic=False, name="owner")
-    borrower = borrower_book.conjure(automatic=False, name="borrower")
+    owner = owner_book.conjure(dynamic=True, name="owner")
+    borrower = borrower_book.conjure(dynamic=True, name="borrower")
     try:
         owner.link(borrower)
         with borrower.transaction("link", conduits=[borrower, owner]):
@@ -215,7 +215,7 @@ def test_spellbook_public_api_describe_spells_returns_detached_sorted_runtime_du
     config.set_property("phase_scheduler_workers_per_spellbook", 1)
     apply_dynamic_defaults_for_spellbook_configuration(config)
 
-    conduit = spellbook.conjure(automatic=False, name="root")
+    conduit = spellbook.conjure(dynamic=True, name="root")
     try:
         with spellbook.transaction("bind"):
             spellbook.bind(

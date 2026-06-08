@@ -259,7 +259,7 @@ def _build_melder_spellspace_runtime(
     )
     conduit = spellbook.conjure(
         name="spellspace-cycle-experiment",
-        automatic=automatic,
+        dynamic=(not automatic),
     )
 
     def enter_scope() -> Any:
@@ -313,11 +313,11 @@ def _measure_normal_and_lesser_conduit_cycle(
                 shape,
                 existence=Existence.unique_per_conduit,
                 frame_name="conduit-cycle-experiment",
-                automatic=automatic,
+                dynamic=(not automatic),
             )
             conduit = spellbook.conjure(
                 name="conduit-cycle-experiment",
-                automatic=automatic,
+                dynamic=(not automatic),
             )
             return spellbook, conduit, root_id
 
@@ -359,11 +359,11 @@ def _measure_normal_and_lesser_conduit_cycle(
             shape,
             existence=Existence.unique_per_conduit,
             frame_name="lesser-conduit-cycle-experiment",
-            automatic=automatic,
+            dynamic=(not automatic),
         )
         root_conduit = spellbook.conjure(
             name="lesser-conduit-cycle-experiment",
-            automatic=automatic,
+            dynamic=(not automatic),
         )
         try:
             def build_lesser() -> Any:
@@ -412,7 +412,7 @@ def _run_shape(
     """
     enter_scope, meld_in_scope, exit_scope, cleanup = _build_melder_spellspace_runtime(
         shape,
-        automatic=automatic,
+        dynamic=(not automatic),
     )
     mode_label = "automatic" if automatic else "dynamic"
     try:
@@ -443,7 +443,7 @@ def _run_shape(
     normal_metrics, lesser_metrics = _measure_normal_and_lesser_conduit_cycle(
         shape,
         iters=iters,
-        automatic=automatic,
+        dynamic=(not automatic),
     )
     normal_build_ns, normal_first_ns, normal_cached_ns, normal_cleanup_ns = normal_metrics
     lesser_build_ns, lesser_first_ns, lesser_cached_ns, lesser_cleanup_ns = lesser_metrics
@@ -475,7 +475,7 @@ def _run_bench() -> None:
     iters = 500
     for automatic in (True, False):
         for shape in (_solo_shape(), _shallow_shape(), _deep_shape()):
-            _run_shape(shape, iters=iters, automatic=automatic)
+            _run_shape(shape, iters=iters, dynamic=(not automatic))
     print("OK_MELDER_SPELLSPACE_CYCLE_EXPERIMENT")
 
 

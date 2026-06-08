@@ -157,8 +157,8 @@ def test_aether_conduit_cloud_isolated_by_frame() -> None:
         permissions="create",
     )
 
-    conduit_a = book_a.conjure(automatic=False, name="root-a")
-    conduit_b = book_b.conjure(automatic=False, name="root-b")
+    conduit_a = book_a.conjure(dynamic=True, name="root-a")
+    conduit_b = book_b.conjure(dynamic=True, name="root-b")
     try:
         cloud_a = Aether().get_conduit_cloud("frame-a")
         cloud_b = Aether().get_conduit_cloud("frame-b")

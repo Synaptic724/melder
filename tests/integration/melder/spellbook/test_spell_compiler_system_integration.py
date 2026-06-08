@@ -284,7 +284,7 @@ def test_integration_spell_compiler_system_post_conjure_local_phases_scope_to_ne
         apply_dynamic_defaults_for_spellbook_configuration(
             spellbook.get_configuration()
         )
-        conduit = spellbook.conjure(automatic=False, name="root")
+        conduit = spellbook.conjure(dynamic=True, name="root")
         conduit_id = conduit._id
         try:
             spellbook.begin_transaction("bind")
@@ -318,7 +318,7 @@ def test_integration_spell_compiler_system_post_conjure_local_plan_phases_build_
         apply_dynamic_defaults_for_spellbook_configuration(
             spellbook.get_configuration()
         )
-        conduit = spellbook.conjure(automatic=False, name="root")
+        conduit = spellbook.conjure(dynamic=True, name="root")
         conduit_id = conduit._id
         try:
             spellbook.begin_transaction("bind")
@@ -356,7 +356,7 @@ def test_integration_spell_compiler_system_local_scope_helpers_work_after_post_c
         apply_dynamic_defaults_for_spellbook_configuration(
             spellbook.get_configuration()
         )
-        conduit = spellbook.conjure(automatic=False, name="root")
+        conduit = spellbook.conjure(dynamic=True, name="root")
         conduit_id = conduit._id
         try:
             spellbook.begin_transaction("bind")
@@ -390,7 +390,7 @@ def test_integration_spell_compiler_system_local_scope_spell_ids_include_depende
         apply_dynamic_defaults_for_spellbook_configuration(
             spellbook.get_configuration()
         )
-        conduit = spellbook.conjure(automatic=False, name="root")
+        conduit = spellbook.conjure(dynamic=True, name="root")
         conduit_id = conduit._id
         try:
             spellbook.begin_transaction("bind")

@@ -174,8 +174,8 @@ def test_component_conduit_validate_resolution_reports_missing_dependencies() ->
         permissions="create",
     )
 
-    owner = owner_book.conjure(automatic=False, name="owner")
-    borrower = borrower_book.conjure(automatic=False, name="borrower")
+    owner = owner_book.conjure(dynamic=True, name="owner")
+    borrower = borrower_book.conjure(dynamic=True, name="borrower")
     try:
         assert owner.link(borrower) is True
         with borrower.transaction("link", conduits=[borrower, owner]):
@@ -228,8 +228,8 @@ def test_component_conduit_validate_resolution_returns_valid_state() -> None:
         permissions="create",
     )
 
-    owner = owner_book.conjure(automatic=False, name="owner")
-    borrower = borrower_book.conjure(automatic=False, name="borrower")
+    owner = owner_book.conjure(dynamic=True, name="owner")
+    borrower = borrower_book.conjure(dynamic=True, name="borrower")
     try:
         assert owner.link(borrower) is True
         with borrower.transaction("link", conduits=[borrower, owner]):
@@ -271,8 +271,8 @@ def test_component_conduit_add_spell_to_contract_requires_link_transaction() -> 
         permissions="create",
     )
 
-    owner = owner_book.conjure(automatic=False, name="owner")
-    borrower = borrower_book.conjure(automatic=False, name="borrower")
+    owner = owner_book.conjure(dynamic=True, name="owner")
+    borrower = borrower_book.conjure(dynamic=True, name="borrower")
     try:
         assert owner.link(borrower) is True
         with pytest.raises(RuntimeError, match="link transaction"):
@@ -319,7 +319,7 @@ def test_component_conduit_upgrade_seeds_resolution_state_from_root() -> None:
         existence=Existence.unique,
     )
 
-    root = spellbook.conjure(automatic=False, name="root")
+    root = spellbook.conjure(dynamic=True, name="root")
     lesser = root.create_lesser_conduit()
     try:
         original_id = lesser.id
@@ -360,7 +360,7 @@ def test_component_conduit_validate_resolution_matches_get_resolution_state() ->
         permissions="create",
     )
 
-    conduit = spellbook.conjure(automatic=False, name="root")
+    conduit = spellbook.conjure(dynamic=True, name="root")
     try:
         state = conduit.validate_resolution()
         assert state is not None
@@ -388,7 +388,7 @@ def test_component_conduit_resolution_state_cleaned_on_conduit_cleanup() -> None
         permissions="create",
     )
 
-    conduit = spellbook.conjure(automatic=False, name="root")
+    conduit = spellbook.conjure(dynamic=True, name="root")
     state = conduit.validate_resolution()
     conduit.permanent_cleanup()
 
@@ -415,7 +415,7 @@ def test_component_conduit_validate_resolution_raises_when_cleaned() -> None:
         permissions="create",
     )
 
-    conduit = spellbook.conjure(automatic=False, name="root")
+    conduit = spellbook.conjure(dynamic=True, name="root")
     conduit.permanent_cleanup()
 
     with pytest.raises(RuntimeError):
@@ -475,7 +475,7 @@ def test_component_meld_revalidation_uses_local_phase_lane(
         "change_control_local",
     )
 
-    conduit = spellbook.conjure(automatic=False, name="root")
+    conduit = spellbook.conjure(dynamic=True, name="root")
     try:
         assert counters["root_blueprints"] == 1
         assert counters["system_validation"] == 1

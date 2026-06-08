@@ -112,8 +112,8 @@ def test_spell_contract_resolves_by_explicit_spell_class_binding_normalized() ->
         permissions="create",
     )
 
-    owner = owner_book.conjure(automatic=False, name="owner")
-    borrower = borrower_book.conjure(automatic=False, name="borrower")
+    owner = owner_book.conjure(dynamic=True, name="owner")
+    borrower = borrower_book.conjure(dynamic=True, name="borrower")
     try:
         owner.link(borrower)
         with borrower.transaction("link", conduits=[borrower, owner]):
@@ -158,7 +158,7 @@ def test_spell_contract_string_frame_missing_provider_raises() -> None:
         permissions="create",
     )
 
-    conduit = spellbook.conjure(automatic=False, name="local")
+    conduit = spellbook.conjure(dynamic=True, name="local")
     try:
         assert conduit.validate_contracts_and_define() == {}
         with pytest.raises(SpellbookValidationError, match="Spellbook validation failed"):
@@ -194,8 +194,8 @@ def test_spell_contract_dual_occurrence_many_providers_distinct() -> None:
         permissions="create",
     )
 
-    owner = owner_book.conjure(automatic=False, name="owner")
-    borrower = borrower_book.conjure(automatic=False, name="borrower")
+    owner = owner_book.conjure(dynamic=True, name="owner")
+    borrower = borrower_book.conjure(dynamic=True, name="borrower")
     try:
         owner.link(borrower)
         with borrower.transaction("link", conduits=[borrower, owner]):
@@ -243,8 +243,8 @@ def test_spell_contract_dual_occurrence_unique_providers_shared() -> None:
         permissions="create",
     )
 
-    owner = owner_book.conjure(automatic=False, name="owner")
-    borrower = borrower_book.conjure(automatic=False, name="borrower")
+    owner = owner_book.conjure(dynamic=True, name="owner")
+    borrower = borrower_book.conjure(dynamic=True, name="borrower")
     try:
         owner.link(borrower)
         with borrower.transaction("link", conduits=[borrower, owner]):
@@ -291,8 +291,8 @@ def test_spell_contract_override_list_payload_applies() -> None:
         permissions="create",
     )
 
-    owner = owner_book.conjure(automatic=False, name="owner")
-    borrower = borrower_book.conjure(automatic=False, name="borrower")
+    owner = owner_book.conjure(dynamic=True, name="owner")
+    borrower = borrower_book.conjure(dynamic=True, name="borrower")
     try:
         owner.link(borrower)
         with borrower.transaction("link", conduits=[borrower, owner]):
@@ -338,8 +338,8 @@ def test_spell_contract_override_tuple_payload_applies() -> None:
         permissions="create",
     )
 
-    owner = owner_book.conjure(automatic=False, name="owner")
-    borrower = borrower_book.conjure(automatic=False, name="borrower")
+    owner = owner_book.conjure(dynamic=True, name="owner")
+    borrower = borrower_book.conjure(dynamic=True, name="borrower")
     try:
         owner.link(borrower)
         with borrower.transaction("link", conduits=[borrower, owner]):
@@ -385,8 +385,8 @@ def test_spell_contract_override_dict_args_payload_applies() -> None:
         permissions="create",
     )
 
-    owner = owner_book.conjure(automatic=False, name="owner")
-    borrower = borrower_book.conjure(automatic=False, name="borrower")
+    owner = owner_book.conjure(dynamic=True, name="owner")
+    borrower = borrower_book.conjure(dynamic=True, name="borrower")
     try:
         owner.link(borrower)
         with borrower.transaction("link", conduits=[borrower, owner]):
@@ -424,7 +424,7 @@ def test_spell_contract_missing_provider_raises() -> None:
         permissions="create",
     )
 
-    conduit = spellbook.conjure(automatic=False, name="root")
+    conduit = spellbook.conjure(dynamic=True, name="root")
     try:
         with pytest.raises(SpellbookValidationError, match="Spellbook validation failed"):
             conduit.meld(spell=consumer_id)
@@ -506,8 +506,8 @@ def test_spell_contract_missing_dependency_does_not_gate_provider_state() -> Non
         permissions="create",
     )
 
-    owner = owner_book.conjure(automatic=False, name="owner")
-    borrower = borrower_book.conjure(automatic=False, name="borrower")
+    owner = owner_book.conjure(dynamic=True, name="owner")
+    borrower = borrower_book.conjure(dynamic=True, name="borrower")
     try:
         owner.link(borrower)
         with borrower.transaction("link", conduits=[borrower, owner]):
@@ -579,8 +579,8 @@ def test_spell_contract_runtime_error_does_not_gate_provider_state() -> None:
         permissions="create",
     )
 
-    owner = owner_book.conjure(automatic=False, name="owner")
-    borrower = borrower_book.conjure(automatic=False, name="borrower")
+    owner = owner_book.conjure(dynamic=True, name="owner")
+    borrower = borrower_book.conjure(dynamic=True, name="borrower")
     try:
         owner.link(borrower)
         with borrower.transaction("link", conduits=[borrower, owner]):
@@ -639,8 +639,8 @@ def test_spell_contract_contract_removed_raises_without_provider() -> None:
         permissions="create",
     )
 
-    owner = owner_book.conjure(automatic=False, name="owner")
-    borrower = borrower_book.conjure(automatic=False, name="borrower")
+    owner = owner_book.conjure(dynamic=True, name="owner")
+    borrower = borrower_book.conjure(dynamic=True, name="borrower")
     try:
         owner.link(borrower)
         with borrower.transaction("link", conduits=[borrower, owner]):
@@ -692,8 +692,8 @@ def test_spell_contract_secondary_binding_resolves() -> None:
         permissions="create",
     )
 
-    owner = owner_book.conjure(automatic=False, name="owner")
-    borrower = borrower_book.conjure(automatic=False, name="borrower")
+    owner = owner_book.conjure(dynamic=True, name="owner")
+    borrower = borrower_book.conjure(dynamic=True, name="borrower")
     try:
         owner.link(borrower)
         with borrower.transaction("link", conduits=[borrower, owner]):
@@ -738,8 +738,8 @@ def test_spell_contract_config_frame_resolves() -> None:
         permissions="create",
     )
 
-    owner = owner_book.conjure(automatic=False, name="owner")
-    borrower = borrower_book.conjure(automatic=False, name="borrower")
+    owner = owner_book.conjure(dynamic=True, name="owner")
+    borrower = borrower_book.conjure(dynamic=True, name="borrower")
     try:
         owner.link(borrower)
         with borrower.transaction("link", conduits=[borrower, owner]):
@@ -785,8 +785,8 @@ def test_spell_contract_transfer_ownership_force_unshare_blocks_contract() -> No
         permissions="create",
     )
 
-    owner = owner_book.conjure(automatic=False, name="owner")
-    borrower = borrower_book.conjure(automatic=False, name="borrower")
+    owner = owner_book.conjure(dynamic=True, name="owner")
+    borrower = borrower_book.conjure(dynamic=True, name="borrower")
     try:
         owner.link(borrower)
         with borrower.transaction("link", conduits=[borrower, owner]):

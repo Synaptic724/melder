@@ -73,7 +73,7 @@ def test_conduit_spellspace_nesting_and_cleanup() -> None:
         existence=Existence.unique_per_spell_space,
         permissions="create",
     )
-    conduit = spellbook.conjure(automatic=False, name="root")
+    conduit = spellbook.conjure(dynamic=True, name="root")
     try:
         assert conduit.get_active_spellspace() is None
         with conduit.enter_spellspace() as outer:
@@ -253,8 +253,8 @@ def test_conduit_hooks_fire_for_meld_link_contract_and_cleanup() -> None:
         existence=Existence.unique,
         permissions="create",
     )
-    owner = owner_book.conjure(automatic=False, name="owner")
-    borrower = borrower_book.conjure(automatic=False, name="borrower")
+    owner = owner_book.conjure(dynamic=True, name="owner")
+    borrower = borrower_book.conjure(dynamic=True, name="borrower")
     try:
         assert owner.link(borrower) is True
         with borrower.transaction("link", conduits=[borrower, owner]):
@@ -349,7 +349,7 @@ def test_conduit_hooks_fire_for_lesser_conduit_creation() -> None:
         existence=Existence.unique,
         permissions="create",
     )
-    owner = owner_book.conjure(automatic=False, name="owner")
+    owner = owner_book.conjure(dynamic=True, name="owner")
     pre_calls.clear()
     activated_calls.clear()
     post_calls.clear()

@@ -410,8 +410,8 @@ def test_spellbook_fluent_as_unique_per_conduit_cluster_shares_across_cluster() 
     spell_id = binder.bind(BasicService).as_unique_per_conduit_cluster().finalize()
 
     borrower_book = Spellbook(configuration=configuration)
-    owner = owner_book.conjure(automatic=False, name="owner")
-    borrower = borrower_book.conjure(automatic=False, name="borrower")
+    owner = owner_book.conjure(dynamic=True, name="owner")
+    borrower = borrower_book.conjure(dynamic=True, name="borrower")
     try:
         owner.link(borrower)
         cloud = owner._spellbook._aether.get_conduit_cloud(owner._aetheric_frame_name)

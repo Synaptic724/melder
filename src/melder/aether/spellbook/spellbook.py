@@ -3890,8 +3890,6 @@ and logging.
             dynamic: bool = False,
             name: Optional[str] = None,
             conduit_logger: Optional[Any] = None,
-            *,
-            automatic: Optional[bool] = None,
     ) -> Conduit:
         """
         Public API
@@ -3915,8 +3913,6 @@ and logging.
                 An optional name for the conduit.
             conduit_logger (Any, optional):
                 An optional logger instance to attach to the conduit for logging purposes.
-            automatic (Optional[bool], optional):
-                Backward-compatible alias for the older posture flag.
 
         Returns:
             Conduit: The newly created Conduit instance.
@@ -3981,13 +3977,6 @@ and logging.
                     f"(spellbook_id={self._id}, conduit_id={conduit_id}, "
                     f"conduit_name={conduit_name})"
                 )
-
-            if automatic is not None:
-                if dynamic and automatic:
-                    raise ValueError(
-                        "Cannot request both dynamic=True and automatic=True."
-                    )
-                dynamic = not automatic
 
             spellbook_creation_system = SpellbookCreationSystem(
                 spellbook=self,

@@ -112,7 +112,7 @@ def test_change_control_bind_transaction_opens_and_closes_embargoes() -> None:
     frame_name = "frame-cc-bind"
     configuration = _make_configuration(aether_frame=frame_name, dynamic=True)
     spellbook = Spellbook(aetheric_frame=frame_name, configuration=configuration)
-    conduit = spellbook.conjure(automatic=False, name="root")
+    conduit = spellbook.conjure(dynamic=True, name="root")
     change_control = Aether()._get_change_control_manager(frame_name)
     embargo_manager = change_control.embargo_manager()
     transaction_manager = change_control.transaction_manager()
@@ -155,7 +155,7 @@ def test_change_control_update_staged_request_extends_embargo_scopes() -> None:
     frame_name = "frame-cc-staged"
     configuration = _make_configuration(aether_frame=frame_name, dynamic=True)
     spellbook = Spellbook(aetheric_frame=frame_name, configuration=configuration)
-    conduit = spellbook.conjure(automatic=False, name="root")
+    conduit = spellbook.conjure(dynamic=True, name="root")
     change_control = Aether()._get_change_control_manager(frame_name)
     embargo_manager = change_control.embargo_manager()
     transaction_manager = change_control.transaction_manager()
@@ -198,8 +198,8 @@ def test_change_control_disable_allows_overlapping_requests() -> None:
     configuration = _make_configuration(aether_frame=frame_name, dynamic=True)
     spellbook_a = Spellbook(aetheric_frame=frame_name, configuration=configuration)
     spellbook_b = Spellbook(aetheric_frame=frame_name, configuration=configuration)
-    conduit_a = spellbook_a.conjure(automatic=False, name="root-a")
-    conduit_b = spellbook_b.conjure(automatic=False, name="root-b")
+    conduit_a = spellbook_a.conjure(dynamic=True, name="root-a")
+    conduit_b = spellbook_b.conjure(dynamic=True, name="root-b")
     change_control = Aether()._get_change_control_manager(frame_name)
     change_control.disable_change_control()
 
@@ -233,8 +233,8 @@ def test_change_control_scope_hash_conflict_rejects_overlap() -> None:
     configuration = _make_configuration(aether_frame=frame_name, dynamic=True)
     spellbook_a = Spellbook(aetheric_frame=frame_name, configuration=configuration)
     spellbook_b = Spellbook(aetheric_frame=frame_name, configuration=configuration)
-    conduit_a = spellbook_a.conjure(automatic=False, name="root-a")
-    conduit_b = spellbook_b.conjure(automatic=False, name="root-b")
+    conduit_a = spellbook_a.conjure(dynamic=True, name="root-a")
+    conduit_b = spellbook_b.conjure(dynamic=True, name="root-b")
     scope_hash = hashlib.sha256("shared-scope".encode("utf-8")).hexdigest()
 
     spellbook_a.begin_transaction("bind", scope_hashes=[scope_hash])
@@ -272,9 +272,9 @@ def test_change_control_disable_allows_overlapping_requests_for_three_roots() ->
     spellbook_a = Spellbook(aetheric_frame=frame_name, configuration=configuration)
     spellbook_b = Spellbook(aetheric_frame=frame_name, configuration=configuration)
     spellbook_c = Spellbook(aetheric_frame=frame_name, configuration=configuration)
-    conduit_a = spellbook_a.conjure(automatic=False, name="root-a")
-    conduit_b = spellbook_b.conjure(automatic=False, name="root-b")
-    conduit_c = spellbook_c.conjure(automatic=False, name="root-c")
+    conduit_a = spellbook_a.conjure(dynamic=True, name="root-a")
+    conduit_b = spellbook_b.conjure(dynamic=True, name="root-b")
+    conduit_c = spellbook_c.conjure(dynamic=True, name="root-c")
     change_control = Aether()._get_change_control_manager(frame_name)
     change_control.disable_change_control()
 
@@ -316,9 +316,9 @@ def test_change_control_mediator_disabled_allows_three_threaded_root_binds_to_en
     spellbook_a = Spellbook(aetheric_frame=frame_name, configuration=configuration)
     spellbook_b = Spellbook(aetheric_frame=frame_name, configuration=configuration)
     spellbook_c = Spellbook(aetheric_frame=frame_name, configuration=configuration)
-    conduit_a = spellbook_a.conjure(automatic=False, name="root-a")
-    conduit_b = spellbook_b.conjure(automatic=False, name="root-b")
-    conduit_c = spellbook_c.conjure(automatic=False, name="root-c")
+    conduit_a = spellbook_a.conjure(dynamic=True, name="root-a")
+    conduit_b = spellbook_b.conjure(dynamic=True, name="root-b")
+    conduit_c = spellbook_c.conjure(dynamic=True, name="root-c")
     change_control = Aether()._get_change_control_manager(frame_name)
     mediator = change_control.transaction_mediator()
     mediator.configure(
@@ -412,9 +412,9 @@ def test_change_control_scope_hash_conflict_rejects_overlap_for_three_roots() ->
     spellbook_a = Spellbook(aetheric_frame=frame_name, configuration=configuration)
     spellbook_b = Spellbook(aetheric_frame=frame_name, configuration=configuration)
     spellbook_c = Spellbook(aetheric_frame=frame_name, configuration=configuration)
-    conduit_a = spellbook_a.conjure(automatic=False, name="root-a")
-    conduit_b = spellbook_b.conjure(automatic=False, name="root-b")
-    conduit_c = spellbook_c.conjure(automatic=False, name="root-c")
+    conduit_a = spellbook_a.conjure(dynamic=True, name="root-a")
+    conduit_b = spellbook_b.conjure(dynamic=True, name="root-b")
+    conduit_c = spellbook_c.conjure(dynamic=True, name="root-c")
     change_control = Aether()._get_change_control_manager(frame_name)
     change_control.transaction_mediator().configure(
         change_control_mode="strict",
@@ -461,9 +461,9 @@ def test_change_control_queue_allows_three_roots_one_by_one_in_fifo_order() -> N
     spellbook_a = Spellbook(aetheric_frame=frame_name, configuration=configuration)
     spellbook_b = Spellbook(aetheric_frame=frame_name, configuration=configuration)
     spellbook_c = Spellbook(aetheric_frame=frame_name, configuration=configuration)
-    conduit_a = spellbook_a.conjure(automatic=False, name="root-a")
-    conduit_b = spellbook_b.conjure(automatic=False, name="root-b")
-    conduit_c = spellbook_c.conjure(automatic=False, name="root-c")
+    conduit_a = spellbook_a.conjure(dynamic=True, name="root-a")
+    conduit_b = spellbook_b.conjure(dynamic=True, name="root-b")
+    conduit_c = spellbook_c.conjure(dynamic=True, name="root-c")
     change_control = Aether()._get_change_control_manager(frame_name)
     change_control.transaction_mediator().configure(
         change_control_mode="strict",
@@ -557,9 +557,9 @@ def test_change_control_warn_allows_three_threaded_root_binds_without_queueing()
     spellbook_a = Spellbook(aetheric_frame=frame_name, configuration=configuration)
     spellbook_b = Spellbook(aetheric_frame=frame_name, configuration=configuration)
     spellbook_c = Spellbook(aetheric_frame=frame_name, configuration=configuration)
-    conduit_a = spellbook_a.conjure(automatic=False, name="root-a")
-    conduit_b = spellbook_b.conjure(automatic=False, name="root-b")
-    conduit_c = spellbook_c.conjure(automatic=False, name="root-c")
+    conduit_a = spellbook_a.conjure(dynamic=True, name="root-a")
+    conduit_b = spellbook_b.conjure(dynamic=True, name="root-b")
+    conduit_c = spellbook_c.conjure(dynamic=True, name="root-c")
     change_control = Aether()._get_change_control_manager(frame_name)
     mediator = change_control.transaction_mediator()
     mediator.configure(
@@ -658,9 +658,9 @@ def test_change_control_queue_blocks_other_transaction_families_too() -> None:
     spellbook_a = Spellbook(aetheric_frame=frame_name, configuration=configuration)
     spellbook_b = Spellbook(aetheric_frame=frame_name, configuration=configuration)
     spellbook_c = Spellbook(aetheric_frame=frame_name, configuration=configuration)
-    conduit_a = spellbook_a.conjure(automatic=False, name="root-a")
-    conduit_b = spellbook_b.conjure(automatic=False, name="root-b")
-    conduit_c = spellbook_c.conjure(automatic=False, name="root-c")
+    conduit_a = spellbook_a.conjure(dynamic=True, name="root-a")
+    conduit_b = spellbook_b.conjure(dynamic=True, name="root-b")
+    conduit_c = spellbook_c.conjure(dynamic=True, name="root-c")
     change_control = Aether()._get_change_control_manager(frame_name)
     change_control.transaction_mediator().configure(
         change_control_mode="strict",
@@ -724,8 +724,8 @@ def test_change_control_link_transaction_embargoes_conduit_scopes() -> None:
     configuration = _make_configuration(aether_frame=frame_name, dynamic=True)
     owner_book = Spellbook(aetheric_frame=frame_name, configuration=configuration)
     borrower_book = Spellbook(aetheric_frame=frame_name, configuration=configuration)
-    owner = owner_book.conjure(automatic=False, name="owner")
-    borrower = borrower_book.conjure(automatic=False, name="borrower")
+    owner = owner_book.conjure(dynamic=True, name="owner")
+    borrower = borrower_book.conjure(dynamic=True, name="borrower")
     change_control = Aether()._get_change_control_manager(frame_name)
     embargo_manager = change_control.embargo_manager()
     transaction_manager = change_control.transaction_manager()
@@ -765,8 +765,8 @@ def test_change_control_link_contract_registers_link_mirror() -> None:
         existence=Existence.unique,
         permissions="create",
     )
-    owner = owner_book.conjure(automatic=False, name="owner")
-    borrower = borrower_book.conjure(automatic=False, name="borrower")
+    owner = owner_book.conjure(dynamic=True, name="owner")
+    borrower = borrower_book.conjure(dynamic=True, name="borrower")
     change_control = Aether()._get_change_control_manager(frame_name)
     transaction_manager = change_control.transaction_manager()
     try:
@@ -807,8 +807,8 @@ def test_change_control_sever_link_clears_link_registry_mirror() -> None:
         existence=Existence.unique,
         permissions="create",
     )
-    owner = owner_book.conjure(automatic=False, name="owner")
-    borrower = borrower_book.conjure(automatic=False, name="borrower")
+    owner = owner_book.conjure(dynamic=True, name="owner")
+    borrower = borrower_book.conjure(dynamic=True, name="borrower")
     change_control = Aether()._get_change_control_manager(frame_name)
     registry = change_control.devops_information_registry()
     assert registry is not None
@@ -851,7 +851,7 @@ def test_change_control_bind_transaction_registers_live_registry_session() -> No
     frame_name = "frame-cc-bind-registry"
     configuration = _make_configuration(aether_frame=frame_name, dynamic=True)
     spellbook = Spellbook(aetheric_frame=frame_name, configuration=configuration)
-    conduit = spellbook.conjure(automatic=False, name="root")
+    conduit = spellbook.conjure(dynamic=True, name="root")
     change_control = Aether()._get_change_control_manager(frame_name)
     registry = change_control.devops_information_registry()
     assert registry is not None
@@ -890,7 +890,7 @@ def test_change_control_post_conjure_bind_updates_staged_binding_keys() -> None:
     frame_name = "frame-cc-bind-staged-keys"
     configuration = _make_configuration(aether_frame=frame_name, dynamic=True)
     spellbook = Spellbook(aetheric_frame=frame_name, configuration=configuration)
-    conduit = spellbook.conjure(automatic=False, name="root")
+    conduit = spellbook.conjure(dynamic=True, name="root")
     change_control = Aether()._get_change_control_manager(frame_name)
     registry = change_control.devops_information_registry()
     assert registry is not None
@@ -931,8 +931,8 @@ def test_change_control_link_transaction_registers_live_registry_session() -> No
     configuration = _make_configuration(aether_frame=frame_name, dynamic=True)
     owner_book = Spellbook(aetheric_frame=frame_name, configuration=configuration)
     borrower_book = Spellbook(aetheric_frame=frame_name, configuration=configuration)
-    owner = owner_book.conjure(automatic=False, name="owner")
-    borrower = borrower_book.conjure(automatic=False, name="borrower")
+    owner = owner_book.conjure(dynamic=True, name="owner")
+    borrower = borrower_book.conjure(dynamic=True, name="borrower")
     change_control = Aether()._get_change_control_manager(frame_name)
     registry = change_control.devops_information_registry()
     assert registry is not None
@@ -978,8 +978,8 @@ def test_change_control_link_transaction_session_stays_live_during_contract_add(
         existence=Existence.unique,
         permissions="create",
     )
-    owner = owner_book.conjure(automatic=False, name="owner")
-    borrower = borrower_book.conjure(automatic=False, name="borrower")
+    owner = owner_book.conjure(dynamic=True, name="owner")
+    borrower = borrower_book.conjure(dynamic=True, name="borrower")
     change_control = Aether()._get_change_control_manager(frame_name)
     registry = change_control.devops_information_registry()
     assert registry is not None
@@ -1022,7 +1022,7 @@ def test_change_control_bind_transaction_abort_clears_registry_session() -> None
     frame_name = "frame-cc-bind-abort-registry"
     configuration = _make_configuration(aether_frame=frame_name, dynamic=True)
     spellbook = Spellbook(aetheric_frame=frame_name, configuration=configuration)
-    conduit = spellbook.conjure(automatic=False, name="root")
+    conduit = spellbook.conjure(dynamic=True, name="root")
     change_control = Aether()._get_change_control_manager(frame_name)
     registry = change_control.devops_information_registry()
     assert registry is not None
@@ -1055,8 +1055,8 @@ def test_change_control_link_transaction_abort_clears_registry_session() -> None
     configuration = _make_configuration(aether_frame=frame_name, dynamic=True)
     owner_book = Spellbook(aetheric_frame=frame_name, configuration=configuration)
     borrower_book = Spellbook(aetheric_frame=frame_name, configuration=configuration)
-    owner = owner_book.conjure(automatic=False, name="owner")
-    borrower = borrower_book.conjure(automatic=False, name="borrower")
+    owner = owner_book.conjure(dynamic=True, name="owner")
+    borrower = borrower_book.conjure(dynamic=True, name="borrower")
     registry = Aether()._get_change_control_manager(frame_name).devops_information_registry()
     assert registry is not None
 
@@ -1101,8 +1101,8 @@ def test_change_control_link_transaction_respects_frame_disable_flags(
     owner_book = Spellbook(aetheric_frame=frame_name, configuration=configuration)
     borrower_book = Spellbook(aetheric_frame=frame_name, configuration=configuration)
     getattr(borrower_book._aetheric_frame_configuration, f"with_{flag_name}")(True)
-    owner = owner_book.conjure(automatic=False, name="owner")
-    borrower = borrower_book.conjure(automatic=False, name="borrower")
+    owner = owner_book.conjure(dynamic=True, name="owner")
+    borrower = borrower_book.conjure(dynamic=True, name="borrower")
     registry = Aether()._get_change_control_manager(frame_name).devops_information_registry()
     assert registry is not None
 
@@ -1141,7 +1141,7 @@ def test_change_control_conduit_bind_respects_frame_disable_flags(
     configuration = _make_configuration(aether_frame=frame_name, dynamic=True)
     spellbook = Spellbook(aetheric_frame=frame_name, configuration=configuration)
     getattr(spellbook._aetheric_frame_configuration, f"with_{flag_name}")(True)
-    conduit = spellbook.conjure(automatic=False, name="root")
+    conduit = spellbook.conjure(dynamic=True, name="root")
     registry = Aether()._get_change_control_manager(frame_name).devops_information_registry()
     assert registry is not None
 
@@ -1178,8 +1178,8 @@ def test_change_control_transfer_transaction_registers_live_registry_session() -
         existence=Existence.unique,
         permissions="create",
     )
-    owner = owner_book.conjure(automatic=False, name="owner")
-    target = target_book.conjure(automatic=False, name="target")
+    owner = owner_book.conjure(dynamic=True, name="owner")
+    target = target_book.conjure(dynamic=True, name="target")
     change_control = Aether()._get_change_control_manager(frame_name)
     registry = change_control.devops_information_registry()
     assert registry is not None
@@ -1239,8 +1239,8 @@ def test_change_control_transfer_spell_ownership_moves_lineage_and_clears_regist
         existence=Existence.unique,
         permissions="create",
     )
-    owner = owner_book.conjure(automatic=False, name="owner")
-    target = target_book.conjure(automatic=False, name="target")
+    owner = owner_book.conjure(dynamic=True, name="owner")
+    target = target_book.conjure(dynamic=True, name="target")
     change_control = Aether()._get_change_control_manager(frame_name)
     registry = change_control.devops_information_registry()
     assert registry is not None
@@ -1287,8 +1287,8 @@ def test_change_control_transfer_transaction_abort_clears_registry_and_preserves
         existence=Existence.unique,
         permissions="create",
     )
-    owner = owner_book.conjure(automatic=False, name="owner")
-    target = target_book.conjure(automatic=False, name="target")
+    owner = owner_book.conjure(dynamic=True, name="owner")
+    target = target_book.conjure(dynamic=True, name="target")
     registry = Aether()._get_change_control_manager(frame_name).devops_information_registry()
     assert registry is not None
     spell = _get_local_spell_by_version_id(owner_book, spell_id)
@@ -1330,8 +1330,8 @@ def test_change_control_cluster_link_transaction_registers_live_registry_session
     configuration = _make_configuration(aether_frame=frame_name, dynamic=True)
     owner_book = Spellbook(aetheric_frame=frame_name, configuration=configuration)
     borrower_book = Spellbook(aetheric_frame=frame_name, configuration=configuration)
-    owner = owner_book.conjure(automatic=False, name="owner")
-    borrower = borrower_book.conjure(automatic=False, name="borrower")
+    owner = owner_book.conjure(dynamic=True, name="owner")
+    borrower = borrower_book.conjure(dynamic=True, name="borrower")
     change_control = Aether()._get_change_control_manager(frame_name)
     registry = change_control.devops_information_registry()
     assert registry is not None
@@ -1379,8 +1379,8 @@ def test_change_control_cluster_link_transaction_abort_clears_registry_session()
     configuration = _make_configuration(aether_frame=frame_name, dynamic=True)
     owner_book = Spellbook(aetheric_frame=frame_name, configuration=configuration)
     borrower_book = Spellbook(aetheric_frame=frame_name, configuration=configuration)
-    owner = owner_book.conjure(automatic=False, name="owner")
-    borrower = borrower_book.conjure(automatic=False, name="borrower")
+    owner = owner_book.conjure(dynamic=True, name="owner")
+    borrower = borrower_book.conjure(dynamic=True, name="borrower")
     registry = Aether()._get_change_control_manager(frame_name).devops_information_registry()
     assert registry is not None
 
@@ -1423,8 +1423,8 @@ def test_change_control_cluster_join_shares_spell_and_tracks_registry_membership
         existence=Existence.unique_per_conduit_cluster,
         permissions="create",
     )
-    owner = owner_book.conjure(automatic=False, name="owner")
-    borrower = borrower_book.conjure(automatic=False, name="borrower")
+    owner = owner_book.conjure(dynamic=True, name="owner")
+    borrower = borrower_book.conjure(dynamic=True, name="borrower")
     change_control = Aether()._get_change_control_manager(frame_name)
     registry = change_control.devops_information_registry()
     assert registry is not None
@@ -1461,8 +1461,8 @@ def test_change_control_refresh_cluster_shares_propagates_new_cluster_spell() ->
     configuration = _make_configuration(aether_frame=frame_name, dynamic=True)
     owner_book = Spellbook(aetheric_frame=frame_name, configuration=configuration)
     borrower_book = Spellbook(aetheric_frame=frame_name, configuration=configuration)
-    owner = owner_book.conjure(automatic=False, name="owner")
-    borrower = borrower_book.conjure(automatic=False, name="borrower")
+    owner = owner_book.conjure(dynamic=True, name="owner")
+    borrower = borrower_book.conjure(dynamic=True, name="borrower")
     change_control = Aether()._get_change_control_manager(frame_name)
     registry = change_control.devops_information_registry()
     assert registry is not None
@@ -1515,8 +1515,8 @@ def test_change_control_remove_conduit_from_cluster_strips_contracts_and_members
         existence=Existence.unique_per_conduit_cluster,
         permissions="create",
     )
-    owner = owner_book.conjure(automatic=False, name="owner")
-    borrower = borrower_book.conjure(automatic=False, name="borrower")
+    owner = owner_book.conjure(dynamic=True, name="owner")
+    borrower = borrower_book.conjure(dynamic=True, name="borrower")
     change_control = Aether()._get_change_control_manager(frame_name)
     registry = change_control.devops_information_registry()
     assert registry is not None
@@ -1573,8 +1573,8 @@ def test_change_control_transfer_transaction_respects_frame_disable_flags(
         permissions="create",
     )
     getattr(owner_book._aetheric_frame_configuration, f"with_{flag_name}")(True)
-    owner = owner_book.conjure(automatic=False, name="owner")
-    target = target_book.conjure(automatic=False, name="target")
+    owner = owner_book.conjure(dynamic=True, name="owner")
+    target = target_book.conjure(dynamic=True, name="target")
     registry = Aether()._get_change_control_manager(frame_name).devops_information_registry()
     assert registry is not None
     spell = _get_local_spell_by_version_id(owner_book, spell_id)
@@ -1624,8 +1624,8 @@ def test_change_control_cluster_link_transaction_respects_frame_disable_flags(
     owner_book = Spellbook(aetheric_frame=frame_name, configuration=configuration)
     borrower_book = Spellbook(aetheric_frame=frame_name, configuration=configuration)
     getattr(borrower_book._aetheric_frame_configuration, f"with_{flag_name}")(True)
-    owner = owner_book.conjure(automatic=False, name="owner")
-    borrower = borrower_book.conjure(automatic=False, name="borrower")
+    owner = owner_book.conjure(dynamic=True, name="owner")
+    borrower = borrower_book.conjure(dynamic=True, name="borrower")
     registry = Aether()._get_change_control_manager(frame_name).devops_information_registry()
     assert registry is not None
 
@@ -1670,7 +1670,7 @@ def test_change_control_create_cluster_respects_frame_disable_flags(
     configuration = _make_configuration(aether_frame=frame_name, dynamic=True)
     spellbook = Spellbook(aetheric_frame=frame_name, configuration=configuration)
     getattr(spellbook._aetheric_frame_configuration, f"with_{flag_name}")(True)
-    conduit = spellbook.conjure(automatic=False, name="root")
+    conduit = spellbook.conjure(dynamic=True, name="root")
     cloud = conduit.get_conduit_cloud()
 
     with pytest.raises(RuntimeError, match="disabled"):
@@ -1707,7 +1707,7 @@ def test_change_control_refresh_cluster_shares_respects_frame_disable_flags(
     configuration = _make_configuration(aether_frame=frame_name, dynamic=True)
     spellbook = Spellbook(aetheric_frame=frame_name, configuration=configuration)
     getattr(spellbook._aetheric_frame_configuration, f"with_{flag_name}")(True)
-    conduit = spellbook.conjure(automatic=False, name="root")
+    conduit = spellbook.conjure(dynamic=True, name="root")
     cloud = conduit.get_conduit_cloud()
 
     with pytest.raises(RuntimeError, match="disabled"):
@@ -1743,7 +1743,7 @@ def test_change_control_add_conduit_to_cluster_respects_frame_disable_flags(
     configuration = _make_configuration(aether_frame=frame_name, dynamic=True)
     spellbook = Spellbook(aetheric_frame=frame_name, configuration=configuration)
     getattr(spellbook._aetheric_frame_configuration, f"with_{flag_name}")(True)
-    conduit = spellbook.conjure(automatic=False, name="root")
+    conduit = spellbook.conjure(dynamic=True, name="root")
     cloud = conduit.get_conduit_cloud()
 
     with pytest.raises(RuntimeError, match="disabled"):
@@ -1779,7 +1779,7 @@ def test_change_control_remove_conduit_from_cluster_respects_frame_disable_flags
     configuration = _make_configuration(aether_frame=frame_name, dynamic=True)
     spellbook = Spellbook(aetheric_frame=frame_name, configuration=configuration)
     getattr(spellbook._aetheric_frame_configuration, f"with_{flag_name}")(True)
-    conduit = spellbook.conjure(automatic=False, name="root")
+    conduit = spellbook.conjure(dynamic=True, name="root")
     cloud = conduit.get_conduit_cloud()
 
     with pytest.raises(RuntimeError, match="disabled"):
@@ -1815,7 +1815,7 @@ def test_change_control_delete_cluster_respects_frame_disable_flags(
     configuration = _make_configuration(aether_frame=frame_name, dynamic=True)
     spellbook = Spellbook(aetheric_frame=frame_name, configuration=configuration)
     getattr(spellbook._aetheric_frame_configuration, f"with_{flag_name}")(True)
-    conduit = spellbook.conjure(automatic=False, name="root")
+    conduit = spellbook.conjure(dynamic=True, name="root")
     cloud = conduit.get_conduit_cloud()
 
     with pytest.raises(RuntimeError, match="disabled"):
@@ -1852,8 +1852,8 @@ def test_change_control_transfer_transaction_requires_complete_metadata(
     configuration = _make_configuration(aether_frame=frame_name, dynamic=True)
     owner_book = Spellbook(aetheric_frame=frame_name, configuration=configuration)
     target_book = Spellbook(aetheric_frame=frame_name, configuration=configuration)
-    owner = owner_book.conjure(automatic=False, name="owner")
-    target = target_book.conjure(automatic=False, name="target")
+    owner = owner_book.conjure(dynamic=True, name="owner")
+    target = target_book.conjure(dynamic=True, name="target")
     registry = Aether()._get_change_control_manager(frame_name).devops_information_registry()
     assert registry is not None
     normalized_metadata = dict(metadata)

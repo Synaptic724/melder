@@ -76,7 +76,7 @@ def test_conduit_spellspace_context_isolation_across_threads() -> None:
         existence=Existence.unique_per_spell_space,
         permissions="create",
     )
-    conduit = spellbook.conjure(automatic=False, name="root")
+    conduit = spellbook.conjure(dynamic=True, name="root")
     barrier = Barrier(2)
     lock = Lock()
     instances: list[object] = []
@@ -142,7 +142,7 @@ def test_conduit_spellspace_pool_reuses_ids_after_concurrent_threads() -> None:
         existence=Existence.unique_per_spell_space,
         permissions="create",
     )
-    conduit = spellbook.conjure(automatic=False, name="root")
+    conduit = spellbook.conjure(dynamic=True, name="root")
     barrier = Barrier(2)
     lock = Lock()
     errors: list[Exception] = []
@@ -292,8 +292,8 @@ def test_conduit_spellspace_contract_isolation_between_owner_and_borrower() -> N
         permissions="create",
     )
 
-    owner = owner_book.conjure(automatic=False, name="owner")
-    borrower = borrower_book.conjure(automatic=False, name="borrower")
+    owner = owner_book.conjure(dynamic=True, name="owner")
+    borrower = borrower_book.conjure(dynamic=True, name="borrower")
     try:
         assert owner.link(borrower) is True
         with borrower.transaction("link", conduits=[borrower, owner]):

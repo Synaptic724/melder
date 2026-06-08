@@ -186,7 +186,7 @@ def _bind_service_in_spellbook(
         existence=Existence.unique,
         permissions="create",
     )
-    conduit = spellbook.conjure(name=conduit_name, automatic=False)
+    conduit = spellbook.conjure(name=conduit_name, dynamic=True)
     return spellbook, conduit, spell_id
 
 

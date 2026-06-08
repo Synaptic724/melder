@@ -119,7 +119,7 @@ def test_creation_context_cache_asset_experiment() -> None:
     Spellbook._aether = aether
     Conduit._aether = aether
     spellbook = _make_dynamic_spellbook(frame_name)
-    conduit = spellbook.conjure(automatic=False, name="root")
+    conduit = spellbook.conjure(dynamic=True, name="root")
     try:
         with spellbook.transaction("bind"):
             root_spell_id = spellbook.bind(

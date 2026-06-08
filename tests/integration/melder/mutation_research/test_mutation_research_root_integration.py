@@ -87,7 +87,7 @@ def test_integration_dynamic_conduit_returns_shared_root(case_index: int) -> Non
         existence=Existence.unique,
         permissions="create",
     )
-    conduit = spellbook.conjure(automatic=False, name=f"root-{case_index:02d}")
+    conduit = spellbook.conjure(dynamic=True, name=f"root-{case_index:02d}")
     try:
         assert conduit.get_mutation_research() is conduit._aether.mutation_research
     finally:
@@ -112,7 +112,7 @@ def test_integration_create_mutation_frame_is_wired_to_live_frame_services(case_
         existence=Existence.unique,
         permissions="create",
     )
-    conduit = spellbook.conjure(automatic=False, name=f"root-{case_index:02d}")
+    conduit = spellbook.conjure(dynamic=True, name=f"root-{case_index:02d}")
     try:
         placeholder = conduit._aether.mutation_research.create_mutation_frame(frame_name)
         assert isinstance(placeholder, MutationFrame)
@@ -140,7 +140,7 @@ def test_integration_root_session_management_works_across_frames(case_index: int
         existence=Existence.unique,
         permissions="create",
     )
-    conduit = spellbook.conjure(automatic=False, name=f"root-{case_index:02d}")
+    conduit = spellbook.conjure(dynamic=True, name=f"root-{case_index:02d}")
     try:
         spell = spellbook.find_spell_by_id(spell_id)
         assert spell is not None

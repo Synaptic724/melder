@@ -201,7 +201,7 @@ def test_conduit_integration_upgrade_transfers_lesser_creations() -> None:
         existence=Existence.many,
         permissions="create",
     )
-    root = spellbook.conjure(automatic=False, name="root")
+    root = spellbook.conjure(dynamic=True, name="root")
     lesser = root.create_lesser_conduit()
     try:
         unique_instance = lesser.meld(spell=unique_id)

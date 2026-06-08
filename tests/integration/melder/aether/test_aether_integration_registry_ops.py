@@ -136,7 +136,7 @@ def test_aether_conduit_cloud_unregister_removes_entry() -> None:
         existence=Existence.unique,
         permissions="create",
     )
-    conduit = spellbook.conjure(automatic=False, name="root")
+    conduit = spellbook.conjure(dynamic=True, name="root")
     aether = Aether()
     try:
         cloud = aether._ensure_frame(frame_name)._conduit_cloud

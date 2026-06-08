@@ -129,7 +129,7 @@ def test_component_conduit_cloud_create_cluster_registers_identity_and_lookup() 
     """
     frame_name = "component-cloud-create"
     spellbook = _make_spellbook(frame_name=frame_name, dynamic=True)
-    conduit = spellbook.conjure(automatic=False, name="root")
+    conduit = spellbook.conjure(dynamic=True, name="root")
     registry = conduit._aetheric_frame.devops_information_registry
     cloud = conduit.get_conduit_cloud()
     try:
@@ -183,8 +183,8 @@ def test_component_conduit_cloud_add_conduit_to_cluster_tracks_membership_in_reg
     frame_name = "component-cloud-membership"
     owner_book = _make_spellbook(frame_name=frame_name, dynamic=True)
     borrower_book = _make_spellbook(frame_name=frame_name, dynamic=True)
-    owner = owner_book.conjure(automatic=False, name="owner")
-    borrower = borrower_book.conjure(automatic=False, name="borrower")
+    owner = owner_book.conjure(dynamic=True, name="owner")
+    borrower = borrower_book.conjure(dynamic=True, name="borrower")
     cloud = owner.get_conduit_cloud()
     registry = owner._aetheric_frame.devops_information_registry
     try:
@@ -222,8 +222,8 @@ def test_component_conduit_cloud_add_conduit_to_cluster_shares_existing_cluster_
         existence=Existence.unique_per_conduit_cluster,
         permissions="create",
     )
-    owner = owner_book.conjure(automatic=False, name="owner")
-    borrower = borrower_book.conjure(automatic=False, name="borrower")
+    owner = owner_book.conjure(dynamic=True, name="owner")
+    borrower = borrower_book.conjure(dynamic=True, name="borrower")
     cloud = owner.get_conduit_cloud()
     registry = owner._aetheric_frame.devops_information_registry
     try:
@@ -255,8 +255,8 @@ def test_component_conduit_cloud_refresh_cluster_shares_propagates_late_cluster_
     frame_name = "component-cloud-refresh"
     owner_book = _make_spellbook(frame_name=frame_name, dynamic=True)
     borrower_book = _make_spellbook(frame_name=frame_name, dynamic=True)
-    owner = owner_book.conjure(automatic=False, name="owner")
-    borrower = borrower_book.conjure(automatic=False, name="borrower")
+    owner = owner_book.conjure(dynamic=True, name="owner")
+    borrower = borrower_book.conjure(dynamic=True, name="borrower")
     cloud = owner.get_conduit_cloud()
     registry = owner._aetheric_frame.devops_information_registry
     try:
@@ -304,8 +304,8 @@ def test_component_conduit_cloud_remove_conduit_from_cluster_clears_membership_a
         existence=Existence.unique_per_conduit_cluster,
         permissions="create",
     )
-    owner = owner_book.conjure(automatic=False, name="owner")
-    borrower = borrower_book.conjure(automatic=False, name="borrower")
+    owner = owner_book.conjure(dynamic=True, name="owner")
+    borrower = borrower_book.conjure(dynamic=True, name="borrower")
     cloud = owner.get_conduit_cloud()
     registry = owner._aetheric_frame.devops_information_registry
     try:
@@ -343,8 +343,8 @@ def test_component_conduit_cloud_delete_cluster_cleans_registry_identity_and_mem
     frame_name = "component-cloud-delete"
     owner_book = _make_spellbook(frame_name=frame_name, dynamic=True)
     borrower_book = _make_spellbook(frame_name=frame_name, dynamic=True)
-    owner = owner_book.conjure(automatic=False, name="owner")
-    borrower = borrower_book.conjure(automatic=False, name="borrower")
+    owner = owner_book.conjure(dynamic=True, name="owner")
+    borrower = borrower_book.conjure(dynamic=True, name="borrower")
     cloud = owner.get_conduit_cloud()
     registry = owner._aetheric_frame.devops_information_registry
     try:
@@ -468,7 +468,7 @@ def test_component_conduit_cloud_cluster_operations_respect_disable_all_transact
     spellbook._aetheric_frame_configuration.with_disable_all_transactions_after_conjure(
         True
     )
-    conduit = spellbook.conjure(automatic=False, name="root")
+    conduit = spellbook.conjure(dynamic=True, name="root")
     cloud = conduit.get_conduit_cloud()
     try:
         with pytest.raises(RuntimeError, match="disabled"):
@@ -516,7 +516,7 @@ def test_component_conduit_cloud_cluster_operations_respect_disable_cluster_flag
     frame_name = f"component-cloud-disable-cluster-{operation_name}"
     spellbook = _make_spellbook(frame_name=frame_name, dynamic=True)
     spellbook._aetheric_frame_configuration.with_disable_conduit_cluster(True)
-    conduit = spellbook.conjure(automatic=False, name="root")
+    conduit = spellbook.conjure(dynamic=True, name="root")
     cloud = conduit.get_conduit_cloud()
     try:
         with pytest.raises(RuntimeError, match="disabled"):
@@ -562,7 +562,7 @@ def test_component_conduit_cloud_missing_cluster_operations_raise_value_error(
     """
     frame_name = f"component-cloud-missing-{operation_name}"
     spellbook = _make_spellbook(frame_name=frame_name, dynamic=True)
-    conduit = spellbook.conjure(automatic=False, name="root")
+    conduit = spellbook.conjure(dynamic=True, name="root")
     cloud = conduit.get_conduit_cloud()
     try:
         with pytest.raises(ValueError, match="does not exist"):

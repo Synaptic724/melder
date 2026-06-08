@@ -68,8 +68,8 @@ def test_conduit_initiated_and_provider_accessors_empty_when_unlinked() -> None:
     owner_book = Spellbook(configuration=configuration)
     borrower_book = Spellbook(configuration=configuration)
 
-    owner = owner_book.conjure(automatic=False, name="owner")
-    borrower = borrower_book.conjure(automatic=False, name="borrower")
+    owner = owner_book.conjure(dynamic=True, name="owner")
+    borrower = borrower_book.conjure(dynamic=True, name="borrower")
     try:
         assert owner.get_initiated_conduit(borrower.id) is None
         assert borrower.get_provider_conduit(owner.id) is None
@@ -96,8 +96,8 @@ def test_conduit_initiated_and_provider_accessors_clear_after_sever() -> None:
     owner_book = Spellbook(configuration=configuration)
     borrower_book = Spellbook(configuration=configuration)
 
-    owner = owner_book.conjure(automatic=False, name="owner")
-    borrower = borrower_book.conjure(automatic=False, name="borrower")
+    owner = owner_book.conjure(dynamic=True, name="owner")
+    borrower = borrower_book.conjure(dynamic=True, name="borrower")
     try:
         assert owner.link(borrower) is True
         assert owner.get_initiated_conduit(borrower.id) is borrower
@@ -134,8 +134,8 @@ def test_conduit_add_spell_to_contract_with_dependencies_requires_link() -> None
     )
     borrower_book = Spellbook(configuration=configuration)
 
-    owner = owner_book.conjure(automatic=False, name="owner")
-    borrower = borrower_book.conjure(automatic=False, name="borrower")
+    owner = owner_book.conjure(dynamic=True, name="owner")
+    borrower = borrower_book.conjure(dynamic=True, name="borrower")
     try:
         with borrower.transaction("link", conduits=[borrower, owner]):
             with pytest.raises(RuntimeError, match="No contract found"):

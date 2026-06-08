@@ -208,7 +208,7 @@ def test_component_conduit_meld_with_creation_gate_blocks_until_enabled() -> Non
         existence=Existence.unique,
         permissions="create",
     )
-    conduit = spellbook.conjure(name="root", automatic=False)
+    conduit = spellbook.conjure(name="root", dynamic=True)
     try:
         conduit._creation_gate = CreationGate()
         conduit.disable_meld()
@@ -244,7 +244,7 @@ def test_component_conduit_meld_with_creation_gate_terminal_close_raises() -> No
         existence=Existence.unique,
         permissions="create",
     )
-    conduit = spellbook.conjure(name="root", automatic=False)
+    conduit = spellbook.conjure(name="root", dynamic=True)
     try:
         conduit._creation_gate = CreationGate()
         conduit._creation_gate.close_and_wait_until_free(timeout=0.1, interval=0.01)
@@ -262,7 +262,7 @@ def test_component_conduit_meld_with_creation_gate_ticket_tracking_success(
         Verify ticket tracking returns to zero after successful meld call.
     """
     spellbook = _make_dynamic_spellbook()
-    conduit = spellbook.conjure(name="root", automatic=False)
+    conduit = spellbook.conjure(name="root", dynamic=True)
     try:
         conduit._creation_gate = CreationGate()
         meld_mock = MagicMock(return_value="ok")
@@ -286,7 +286,7 @@ def test_component_conduit_meld_with_creation_gate_ticket_tracking_exception(
         Verify ticket tracking returns to zero after failing meld call.
     """
     spellbook = _make_dynamic_spellbook()
-    conduit = spellbook.conjure(name="root", automatic=False)
+    conduit = spellbook.conjure(name="root", dynamic=True)
     try:
         conduit._creation_gate = CreationGate()
         meld_mock = MagicMock(side_effect=RuntimeError("boom"))

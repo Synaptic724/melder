@@ -4637,7 +4637,7 @@ def test_capability_room_can_access_conduit_cloud_on_dynamic_frame() -> None:
         aetheric_frame="ops_capability_dynamic",
         configuration=configuration,
     )
-    conduit = spellbook.conjure(name="root", automatic=False)
+    conduit = spellbook.conjure(name="root", dynamic=True)
     try:
         space = CapabilityRiftSpace(rift=_make_detached_rift_projection_owner(), owner_rift_id="rift-1", space_name="main")
         viewer = _build_descriptor_backed_viewer("ops")
@@ -4754,7 +4754,7 @@ def test_capability_room_can_manage_clusters_on_dynamic_frame() -> None:
         aetheric_frame="ops_capability_dynamic_cluster",
         configuration=configuration,
     )
-    conduit = spellbook.conjure(name="root", automatic=False)
+    conduit = spellbook.conjure(name="root", dynamic=True)
     try:
         space = CapabilityRiftSpace(rift=_make_detached_rift_projection_owner(), owner_rift_id="rift-1", space_name="main")
         viewer = _build_descriptor_backed_viewer("ops")
@@ -4839,8 +4839,8 @@ def test_capability_room_can_link_on_dynamic_frame() -> None:
         aetheric_frame="ops_capability_dynamic_link",
         configuration=configuration,
     )
-    left_conduit = left_spellbook.conjure(name="left", automatic=False)
-    right_conduit = right_spellbook.conjure(name="right", automatic=False)
+    left_conduit = left_spellbook.conjure(name="left", dynamic=True)
+    right_conduit = right_spellbook.conjure(name="right", dynamic=True)
     try:
         space = CapabilityRiftSpace(rift=_make_detached_rift_projection_owner(), owner_rift_id="rift-1", space_name="main")
         viewer = _build_descriptor_backed_viewer("ops")

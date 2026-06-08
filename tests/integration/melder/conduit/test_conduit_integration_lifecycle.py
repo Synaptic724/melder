@@ -142,8 +142,8 @@ def test_conduit_cleanup_unregisters_from_aether_and_cloud() -> None:
     )
     observer_book = Spellbook(configuration=configuration)
 
-    owner = owner_book.conjure(automatic=False, name="owner")
-    observer = observer_book.conjure(automatic=False, name="observer")
+    owner = owner_book.conjure(dynamic=True, name="owner")
+    observer = observer_book.conjure(dynamic=True, name="observer")
     try:
         owner_id = owner.id
         owner_name = owner.name
@@ -190,8 +190,8 @@ def test_conduit_cleanup_severs_links_and_clears_contracts() -> None:
     )
     borrower_book = Spellbook(configuration=configuration)
 
-    owner = owner_book.conjure(automatic=False, name="owner")
-    borrower = borrower_book.conjure(automatic=False, name="borrower")
+    owner = owner_book.conjure(dynamic=True, name="owner")
+    borrower = borrower_book.conjure(dynamic=True, name="borrower")
     owner_id = owner.id
     try:
         assert owner.link(borrower) is True
@@ -237,7 +237,7 @@ def test_conduit_cleanup_cleans_lesser_conduits() -> None:
         permissions="create",
     )
 
-    root = spellbook.conjure(automatic=False, name="root")
+    root = spellbook.conjure(dynamic=True, name="root")
     lesser = root.create_lesser_conduit()
     nested = lesser.create_lesser_conduit()
     try:
@@ -304,8 +304,8 @@ def test_conduit_set_new_policy_inbound_only_blocks_outbound_links() -> None:
     )
     borrower_book = Spellbook(configuration=configuration)
 
-    owner = owner_book.conjure(automatic=False, name="owner")
-    borrower = borrower_book.conjure(automatic=False, name="borrower")
+    owner = owner_book.conjure(dynamic=True, name="owner")
+    borrower = borrower_book.conjure(dynamic=True, name="borrower")
     try:
         owner.set_new_policy("inbound_only")
         with pytest.raises(RuntimeError, match="inbound_only"):
@@ -336,7 +336,7 @@ def test_conduit_upgrade_to_normal_allows_binding_and_lookup() -> None:
         permissions="create",
     )
 
-    root = spellbook.conjure(automatic=False, name="root")
+    root = spellbook.conjure(dynamic=True, name="root")
     lesser = root.create_lesser_conduit()
     try:
         lesser.upgrade_to_normal(name="upgraded")
@@ -373,7 +373,7 @@ def test_conduit_upgrade_to_normal_rejects_duplicate_root_name() -> None:
         permissions="create",
     )
 
-    root = spellbook.conjure(automatic=False, name="root")
+    root = spellbook.conjure(dynamic=True, name="root")
     lesser = root.create_lesser_conduit()
     try:
         with pytest.raises(ValueError, match="Conduit with name root already exists"):
@@ -404,8 +404,8 @@ def test_conduit_transfer_spell_ownership_moves_registry_and_meld() -> None:
     )
     target_book = Spellbook(configuration=configuration)
 
-    owner = owner_book.conjure(automatic=False, name="owner")
-    target = target_book.conjure(automatic=False, name="target")
+    owner = owner_book.conjure(dynamic=True, name="owner")
+    target = target_book.conjure(dynamic=True, name="target")
     try:
         summary = owner.transfer_spell_ownership(
             spell=spell_id,
@@ -444,8 +444,8 @@ def test_conduit_transfer_spell_ownership_with_dependencies() -> None:
     )
     target_book = Spellbook(configuration=configuration)
 
-    owner = owner_book.conjure(automatic=False, name="owner")
-    target = target_book.conjure(automatic=False, name="target")
+    owner = owner_book.conjure(dynamic=True, name="owner")
+    target = target_book.conjure(dynamic=True, name="target")
     try:
         owner.meld(spell=depth3_ids[Depth3Root])
 
@@ -490,8 +490,8 @@ def test_conduit_transfer_spell_ownership_ignores_spellspace_local_creations() -
     )
     target_book = Spellbook(configuration=configuration)
 
-    owner = owner_book.conjure(automatic=False, name="owner")
-    target = target_book.conjure(automatic=False, name="target")
+    owner = owner_book.conjure(dynamic=True, name="owner")
+    target = target_book.conjure(dynamic=True, name="target")
     try:
         source_space = owner.create_spellspace()
         source_instance = source_space.meld(spell=spell_id)
@@ -542,8 +542,8 @@ def test_conduit_find_contracted_spell_returns_contract_entry() -> None:
     )
     borrower_book = Spellbook(configuration=configuration)
 
-    owner = owner_book.conjure(automatic=False, name="owner")
-    borrower = borrower_book.conjure(automatic=False, name="borrower")
+    owner = owner_book.conjure(dynamic=True, name="owner")
+    borrower = borrower_book.conjure(dynamic=True, name="borrower")
     try:
         owner.link(borrower)
         with borrower.transaction("link", conduits=[borrower, owner]):
@@ -583,8 +583,8 @@ def test_conduit_find_contracted_spell_returns_none_after_remove() -> None:
     )
     borrower_book = Spellbook(configuration=configuration)
 
-    owner = owner_book.conjure(automatic=False, name="owner")
-    borrower = borrower_book.conjure(automatic=False, name="borrower")
+    owner = owner_book.conjure(dynamic=True, name="owner")
+    borrower = borrower_book.conjure(dynamic=True, name="borrower")
     try:
         assert owner.link(borrower) is True
         with borrower.transaction("link", conduits=[borrower, owner]):
@@ -627,7 +627,7 @@ def test_conduit_get_mutation_research_dynamic_returns_manager() -> None:
         permissions="create",
     )
 
-    conduit = spellbook.conjure(automatic=False, name="root")
+    conduit = spellbook.conjure(dynamic=True, name="root")
     try:
         manager = conduit.get_mutation_research()
         assert manager is not None
@@ -686,7 +686,7 @@ def test_root_conduit_defaults_name_before_dynamic_registration() -> None:
 
     conduit = None
     try:
-        conduit = spellbook.conjure(automatic=False)
+        conduit = spellbook.conjure(dynamic=True)
         assert conduit.name == "default"
     finally:
         if conduit is not None:

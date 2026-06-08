@@ -87,7 +87,7 @@ def _build_spellspace_runtime() -> Tuple[Spellbook, Conduit, str]:
         existence=Existence.unique_per_spell_space,
         permissions="create",
     )
-    conduit = spellbook.conjure(automatic=False, name="thread_root")
+    conduit = spellbook.conjure(dynamic=True, name="thread_root")
     return spellbook, conduit, spell_id
 
 

@@ -70,7 +70,7 @@ def test_component_conduit_returns_aether_owned_mutation_research(case_index: in
         existence=Existence.unique,
         permissions="create",
     )
-    conduit = spellbook.conjure(automatic=False, name=f"root-{case_index:02d}")
+    conduit = spellbook.conjure(dynamic=True, name=f"root-{case_index:02d}")
     try:
         manager = conduit.get_mutation_research()
         assert manager is conduit._aether.mutation_research
@@ -97,7 +97,7 @@ def test_component_root_create_mutation_conduit_returns_placeholder(case_index: 
         existence=Existence.unique,
         permissions="create",
     )
-    conduit = spellbook.conjure(automatic=False, name=f"root-{case_index:02d}")
+    conduit = spellbook.conjure(dynamic=True, name=f"root-{case_index:02d}")
     try:
         placeholder = conduit._aether.mutation_research.create_mutation_conduit(conduit)
         assert isinstance(placeholder, MutationConduit)
@@ -126,7 +126,7 @@ def test_component_root_create_mutation_frame_returns_placeholder(case_index: in
         existence=Existence.unique,
         permissions="create",
     )
-    conduit = spellbook.conjure(automatic=False, name=f"root-{case_index:02d}")
+    conduit = spellbook.conjure(dynamic=True, name=f"root-{case_index:02d}")
     try:
         placeholder = conduit._aether.mutation_research.create_mutation_frame(frame_name)
         assert isinstance(placeholder, MutationFrame)

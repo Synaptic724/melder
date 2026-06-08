@@ -188,7 +188,7 @@ def _build_runtime() -> Tuple[Spellbook, Conduit, Dict[str, str], Dict[str, Any]
     }
     conduit = spellbook.conjure(
         name="targeted-cycle-harness",
-        automatic=True,
+        dynamic=False,
     )
 
     spells = {}

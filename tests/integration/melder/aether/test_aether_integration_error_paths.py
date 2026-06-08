@@ -379,7 +379,7 @@ def test_aether_conduit_cloud_duplicate_name_raises() -> None:
         existence=Existence.unique,
         permissions="create",
     )
-    conduit_a = book_a.conjure(automatic=False, name="root")
+    conduit_a = book_a.conjure(dynamic=True, name="root")
     try:
         book_b = Spellbook(aetheric_frame=frame_name)
         book_b.bind(
@@ -388,7 +388,7 @@ def test_aether_conduit_cloud_duplicate_name_raises() -> None:
             permissions="create",
         )
         with pytest.raises(ValueError, match="already exists"):
-            book_b.conjure(automatic=False, name="root")
+            book_b.conjure(dynamic=True, name="root")
         book_b.cleanup()
     finally:
         conduit_a.cleanup()

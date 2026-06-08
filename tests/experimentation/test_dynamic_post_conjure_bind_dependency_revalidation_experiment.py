@@ -149,7 +149,7 @@ def test_dynamic_post_conjure_bind_dependency_revalidation_experiment() -> None:
     Spellbook._aether = aether
     Conduit._aether = aether
     spellbook = _make_dynamic_spellbook(frame_name)
-    conduit = spellbook.conjure(automatic=False, name="root")
+    conduit = spellbook.conjure(dynamic=True, name="root")
     try:
         with spellbook.transaction("bind"):
             provider_a_id = spellbook.bind(

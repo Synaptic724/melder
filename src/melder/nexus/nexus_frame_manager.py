@@ -1,4 +1,4 @@
-﻿import threading
+import threading
 from typing import Dict, Optional, Set, Tuple, TYPE_CHECKING
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
@@ -958,7 +958,7 @@ class NexusFrameManager(Cleanable):
         )
         return spellbook.conjure(
             name=configuration.root_conduit_name,
-            automatic=False,
+            dynamic=True,
         )
 
     def _get_required_root_conduit_for_frame(

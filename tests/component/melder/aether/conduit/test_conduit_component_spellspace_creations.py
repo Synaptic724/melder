@@ -111,7 +111,7 @@ def test_component_conduit_registers_existing_object_after_conjure() -> None:
         permissions="create",
     )
     spellbook._aetheric_frame_configuration.with_system_state("dynamic")
-    conduit = spellbook.conjure(automatic=False, name="root")
+    conduit = spellbook.conjure(dynamic=True, name="root")
     existing = BasicService(marker="existing")
     try:
         spellbook.begin_transaction("bind")

@@ -273,7 +273,7 @@ def create_live_sim_dynamic_owner(
     """
     spellbook = Spellbook(configuration=configuration)
     bindings = bind_live_sim_dependencies(spellbook)
-    conduit = spellbook.conjure(automatic=False, name=name)
+    conduit = spellbook.conjure(dynamic=True, name=name)
     return LiveSimDynamicOwner(
         spellbook=spellbook,
         conduit=conduit,
@@ -300,7 +300,7 @@ def create_live_sim_dynamic_borrower(
     """
     spellbook = Spellbook(configuration=configuration)
     application_id = bind_live_sim_application(spellbook)
-    conduit = spellbook.conjure(automatic=False, name=name)
+    conduit = spellbook.conjure(dynamic=True, name=name)
     return LiveSimDynamicBorrower(
         spellbook=spellbook,
         conduit=conduit,

@@ -223,7 +223,7 @@ def test_component_conduit_creation_gate_blocks_until_enabled() -> None:
         existence=Existence.unique,
         permissions="create",
     )
-    conduit = spellbook.conjure(name="root", automatic=False)
+    conduit = spellbook.conjure(name="root", dynamic=True)
     try:
         conduit.disable_meld()
         started = threading.Event()
@@ -266,7 +266,7 @@ def test_component_conduit_uses_devops_creation_gate_controller() -> None:
         existence=Existence.unique,
         permissions="create",
     )
-    conduit = spellbook.conjure(name="root", automatic=False)
+    conduit = spellbook.conjure(name="root", dynamic=True)
     lesser = None
     try:
         devops = spellbook._aether._get_devops_manager(spellbook._aetheric_frame)

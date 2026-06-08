@@ -96,8 +96,8 @@ def test_conduit_link_and_sever_updates_links() -> None:
     )
     borrower_book = Spellbook(configuration=configuration)
 
-    owner = owner_book.conjure(automatic=False, name="owner")
-    borrower = borrower_book.conjure(automatic=False, name="borrower")
+    owner = owner_book.conjure(dynamic=True, name="owner")
+    borrower = borrower_book.conjure(dynamic=True, name="borrower")
     try:
         assert owner.link(borrower) is True
         assert borrower in owner.get_links()
@@ -132,8 +132,8 @@ def test_conduit_initiated_and_provider_accessors() -> None:
     )
     borrower_book = Spellbook(configuration=configuration)
 
-    owner = owner_book.conjure(automatic=False, name="owner")
-    borrower = borrower_book.conjure(automatic=False, name="borrower")
+    owner = owner_book.conjure(dynamic=True, name="owner")
+    borrower = borrower_book.conjure(dynamic=True, name="borrower")
     try:
         owner.link(borrower)
 
@@ -174,8 +174,8 @@ def test_conduit_contract_add_remove_and_lookup() -> None:
     )
     borrower_book = Spellbook(configuration=configuration)
 
-    owner = owner_book.conjure(automatic=False, name="owner")
-    borrower = borrower_book.conjure(automatic=False, name="borrower")
+    owner = owner_book.conjure(dynamic=True, name="owner")
+    borrower = borrower_book.conjure(dynamic=True, name="borrower")
     try:
         owner.link(borrower)
 
@@ -248,8 +248,8 @@ def test_conduit_remove_root_from_contracts_clears_root() -> None:
     )
     borrower_book = Spellbook(configuration=configuration)
 
-    owner = owner_book.conjure(automatic=False, name="owner")
-    borrower = borrower_book.conjure(automatic=False, name="borrower")
+    owner = owner_book.conjure(dynamic=True, name="owner")
+    borrower = borrower_book.conjure(dynamic=True, name="borrower")
     try:
         owner.link(borrower)
         with borrower.transaction("link", conduits=[borrower, owner]):
@@ -382,8 +382,8 @@ def test_conduit_spell_contract_resolves_after_dynamic_link() -> None:
         permissions="create",
     )
 
-    owner = owner_book.conjure(automatic=False, name="owner")
-    borrower = borrower_book.conjure(automatic=False, name="borrower")
+    owner = owner_book.conjure(dynamic=True, name="owner")
+    borrower = borrower_book.conjure(dynamic=True, name="borrower")
     try:
         owner.link(borrower)
         with borrower.transaction("link", conduits=[borrower, owner]):
@@ -478,7 +478,7 @@ def test_conduit_spell_contract_missing_provider_raises() -> None:
         permissions="create",
     )
 
-    conduit = spellbook.conjure(automatic=False, name="local")
+    conduit = spellbook.conjure(dynamic=True, name="local")
     try:
         assert conduit.validate_contracts_and_define() == {}
         with pytest.raises(SpellbookValidationError, match="Spellbook validation failed"):
@@ -572,8 +572,8 @@ def test_conduit_spell_contract_prefers_contracted_spell() -> None:
         permissions="create",
     )
 
-    owner = owner_book.conjure(automatic=False, name="owner")
-    borrower = borrower_book.conjure(automatic=False, name="borrower")
+    owner = owner_book.conjure(dynamic=True, name="owner")
+    borrower = borrower_book.conjure(dynamic=True, name="borrower")
     try:
         owner.link(borrower)
         with borrower.transaction("link", conduits=[borrower, owner]):
@@ -649,8 +649,8 @@ def test_conduit_spell_contract_applies_override_payload() -> None:
         permissions="create",
     )
 
-    owner = owner_book.conjure(automatic=False, name="owner")
-    borrower = borrower_book.conjure(automatic=False, name="borrower")
+    owner = owner_book.conjure(dynamic=True, name="owner")
+    borrower = borrower_book.conjure(dynamic=True, name="borrower")
     try:
         owner.link(borrower)
         with borrower.transaction("link", conduits=[borrower, owner]):
@@ -755,9 +755,9 @@ def test_conduit_spell_contract_ambiguous_contracted_raises() -> None:
         permissions="create",
     )
 
-    owner_a = owner_a_book.conjure(automatic=False, name="owner_a")
-    owner_b = owner_b_book.conjure(automatic=False, name="owner_b")
-    borrower = borrower_book.conjure(automatic=False, name="borrower")
+    owner_a = owner_a_book.conjure(dynamic=True, name="owner_a")
+    owner_b = owner_b_book.conjure(dynamic=True, name="owner_b")
+    borrower = borrower_book.conjure(dynamic=True, name="borrower")
     try:
         owner_a.link(borrower)
         owner_b.link(borrower)

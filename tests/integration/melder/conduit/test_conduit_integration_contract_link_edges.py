@@ -133,8 +133,8 @@ def test_conduit_remove_all_spells_from_contract_clears_inbound_keeps_link() -> 
     )
     borrower_book = Spellbook(configuration=configuration)
 
-    owner = owner_book.conjure(automatic=False, name="owner")
-    borrower = borrower_book.conjure(automatic=False, name="borrower")
+    owner = owner_book.conjure(dynamic=True, name="owner")
+    borrower = borrower_book.conjure(dynamic=True, name="borrower")
     try:
         assert owner.link(borrower) is True
         with borrower.transaction("link", conduits=[borrower, owner]):
@@ -186,8 +186,8 @@ def test_conduit_describe_contract_reports_spell_count_and_permissions() -> None
     )
     borrower_book = Spellbook(configuration=configuration)
 
-    owner = owner_book.conjure(automatic=False, name="owner")
-    borrower = borrower_book.conjure(automatic=False, name="borrower")
+    owner = owner_book.conjure(dynamic=True, name="owner")
+    borrower = borrower_book.conjure(dynamic=True, name="borrower")
     try:
         assert owner.link(borrower) is True
         with borrower.transaction("link", conduits=[borrower, owner]):
@@ -237,8 +237,8 @@ def test_conduit_add_spell_to_contract_permission_mismatch_raises() -> None:
     )
     borrower_book = Spellbook(configuration=configuration)
 
-    owner = owner_book.conjure(automatic=False, name="owner")
-    borrower = borrower_book.conjure(automatic=False, name="borrower")
+    owner = owner_book.conjure(dynamic=True, name="owner")
+    borrower = borrower_book.conjure(dynamic=True, name="borrower")
     try:
         assert owner.link(borrower) is True
         with borrower.transaction("link", conduits=[borrower, owner]):
@@ -273,8 +273,8 @@ def test_conduit_sever_link_raises_when_unlinked() -> None:
     owner_book = Spellbook(configuration=configuration)
     borrower_book = Spellbook(configuration=configuration)
 
-    owner = owner_book.conjure(automatic=False, name="owner")
-    borrower = borrower_book.conjure(automatic=False, name="borrower")
+    owner = owner_book.conjure(dynamic=True, name="owner")
+    borrower = borrower_book.conjure(dynamic=True, name="borrower")
     try:
         with pytest.raises(RuntimeError, match="No contract found"):
             owner.sever_link(borrower)
@@ -304,8 +304,8 @@ def test_conduit_remove_root_from_contracts_preserves_shared_dependencies() -> N
     )
     borrower_book = Spellbook(configuration=configuration)
 
-    owner = owner_book.conjure(automatic=False, name="owner")
-    borrower = borrower_book.conjure(automatic=False, name="borrower")
+    owner = owner_book.conjure(dynamic=True, name="owner")
+    borrower = borrower_book.conjure(dynamic=True, name="borrower")
     try:
         assert owner.link(borrower) is True
         with borrower.transaction("link", conduits=[borrower, owner]):

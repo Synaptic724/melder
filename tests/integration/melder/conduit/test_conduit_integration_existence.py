@@ -230,10 +230,10 @@ def test_conduit_unique_per_conduit_cluster_shares_across_cluster() -> None:
         existence=Existence.unique_per_conduit_cluster,
         permissions="create",
     )
-    owner = owner_book.conjure(automatic=False, name="owner")
+    owner = owner_book.conjure(dynamic=True, name="owner")
 
     borrower_book = Spellbook()
-    borrower = borrower_book.conjure(automatic=False, name="borrower")
+    borrower = borrower_book.conjure(dynamic=True, name="borrower")
 
     owner_spell = owner.get_spell_by_id(spell_id)
     assert owner_spell is not None
@@ -309,10 +309,10 @@ def test_conduit_contract_by_spell_id_dynamic_link() -> None:
         existence=Existence.many,
         permissions="create",
     )
-    owner = owner_book.conjure(automatic=False, name="owner")
+    owner = owner_book.conjure(dynamic=True, name="owner")
 
     borrower_book = Spellbook()
-    borrower = borrower_book.conjure(automatic=False, name="borrower")
+    borrower = borrower_book.conjure(dynamic=True, name="borrower")
 
     owner.link(borrower)
     try:
@@ -361,10 +361,10 @@ def test_conduit_contract_by_spell_object_dynamic_link() -> None:
         existence=Existence.many,
         permissions="create",
     )
-    owner = owner_book.conjure(automatic=False, name="owner")
+    owner = owner_book.conjure(dynamic=True, name="owner")
 
     borrower_book = Spellbook()
-    borrower = borrower_book.conjure(automatic=False, name="borrower")
+    borrower = borrower_book.conjure(dynamic=True, name="borrower")
 
     owner_spell = owner.get_spell_by_id(spell_id)
     assert owner_spell is not None

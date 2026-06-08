@@ -365,7 +365,7 @@ def test_component_spellbook_transaction_context_allows_post_conjure_bind() -> N
     """
     spellbook = _make_spellbook()
     spellbook._aetheric_frame_configuration.with_system_state("dynamic")
-    conduit = spellbook.conjure(automatic=False, name="root")
+    conduit = spellbook.conjure(dynamic=True, name="root")
     try:
         first_spell_id = spellbook.bind(
             spell=BasicService,
@@ -476,7 +476,7 @@ def test_component_spellbook_bind_respects_disable_all_transactions_after_conjur
     spellbook._aetheric_frame_configuration.with_disable_all_transactions_after_conjure(
         True
     )
-    conduit = spellbook.conjure(automatic=False, name="root")
+    conduit = spellbook.conjure(dynamic=True, name="root")
     try:
         with pytest.raises(RuntimeError, match="disabled"):
             spellbook.bind(
@@ -505,7 +505,7 @@ def test_component_spellbook_scan_respects_disable_all_transactions_after_conjur
     spellbook._aetheric_frame_configuration.with_disable_all_transactions_after_conjure(
         True
     )
-    conduit = spellbook.conjure(automatic=False, name="root")
+    conduit = spellbook.conjure(dynamic=True, name="root")
     try:
         with pytest.raises(RuntimeError, match="disabled"):
             spellbook.scan(scan_bind_module_core)
@@ -531,7 +531,7 @@ def test_component_spellbook_begin_transaction_bind_respects_disable_all_transac
     spellbook._aetheric_frame_configuration.with_disable_all_transactions_after_conjure(
         True
     )
-    conduit = spellbook.conjure(automatic=False, name="root")
+    conduit = spellbook.conjure(dynamic=True, name="root")
     registry = conduit._aetheric_frame.devops_information_registry
     try:
         with pytest.raises(RuntimeError, match="disabled"):
@@ -646,7 +646,7 @@ def test_component_spellbook_end_transaction_wrong_type_keeps_binding_active() -
     """
     spellbook = _make_spellbook()
     spellbook._aetheric_frame_configuration.with_system_state("dynamic")
-    conduit = spellbook.conjure(automatic=False, name="root")
+    conduit = spellbook.conjure(dynamic=True, name="root")
     try:
         spellbook.begin_transaction("bind")
         with pytest.raises(RuntimeError, match="does not match"):
@@ -683,7 +683,7 @@ def test_component_spellbook_transaction_context_closes_on_exception() -> None:
     """
     spellbook = _make_spellbook()
     spellbook._aetheric_frame_configuration.with_system_state("dynamic")
-    conduit = spellbook.conjure(automatic=False, name="root")
+    conduit = spellbook.conjure(dynamic=True, name="root")
     try:
         with pytest.raises(RuntimeError, match="boom"):
             with spellbook.transaction("bind"):
@@ -733,7 +733,7 @@ def test_component_spellbook_begin_transaction_disabled_change_control_tracks_re
     """
     spellbook = _make_spellbook()
     spellbook._aetheric_frame_configuration.with_system_state("dynamic")
-    conduit = spellbook.conjure(automatic=False, name="root")
+    conduit = spellbook.conjure(dynamic=True, name="root")
     change_control = Aether()._get_change_control_manager("default")
     try:
         change_control.disable_change_control()
@@ -763,7 +763,7 @@ def test_component_spellbook_begin_transaction_with_conduit_id_tracks_scope() ->
     """
     spellbook = _make_spellbook()
     spellbook._aetheric_frame_configuration.with_system_state("dynamic")
-    conduit = spellbook.conjure(automatic=False, name="root")
+    conduit = spellbook.conjure(dynamic=True, name="root")
     change_control = Aether()._get_change_control_manager("default")
     try:
         spellbook.begin_transaction("bind", conduit_id=conduit.id)
@@ -789,7 +789,7 @@ def test_component_spellbook_begin_transaction_registers_live_registry_session()
     """
     spellbook = _make_spellbook()
     spellbook._aetheric_frame_configuration.with_system_state("dynamic")
-    conduit = spellbook.conjure(automatic=False, name="root")
+    conduit = spellbook.conjure(dynamic=True, name="root")
     registry = conduit._aetheric_frame.devops_information_registry
     try:
         spellbook.begin_transaction("bind")
@@ -819,7 +819,7 @@ def test_component_spellbook_end_transaction_clears_live_registry_session() -> N
     """
     spellbook = _make_spellbook()
     spellbook._aetheric_frame_configuration.with_system_state("dynamic")
-    conduit = spellbook.conjure(automatic=False, name="root")
+    conduit = spellbook.conjure(dynamic=True, name="root")
     registry = conduit._aetheric_frame.devops_information_registry
     try:
         spellbook.begin_transaction("bind")
@@ -846,7 +846,7 @@ def test_component_spellbook_post_conjure_bind_updates_staged_binding_keys() -> 
     """
     spellbook = _make_spellbook()
     spellbook._aetheric_frame_configuration.with_system_state("dynamic")
-    conduit = spellbook.conjure(automatic=False, name="root")
+    conduit = spellbook.conjure(dynamic=True, name="root")
     registry = conduit._aetheric_frame.devops_information_registry
     try:
         spellbook.begin_transaction("bind")
@@ -881,7 +881,7 @@ def test_component_spellbook_transaction_context_exposes_active_request() -> Non
     """
     spellbook = _make_spellbook()
     spellbook._aetheric_frame_configuration.with_system_state("dynamic")
-    conduit = spellbook.conjure(automatic=False, name="root")
+    conduit = spellbook.conjure(dynamic=True, name="root")
     mediator = spellbook._get_required_transaction_mediator()
     try:
         with spellbook.transaction("bind"):
@@ -907,7 +907,7 @@ def test_component_spellbook_transaction_context_abort_clears_live_registry_sess
     """
     spellbook = _make_spellbook()
     spellbook._aetheric_frame_configuration.with_system_state("dynamic")
-    conduit = spellbook.conjure(automatic=False, name="root")
+    conduit = spellbook.conjure(dynamic=True, name="root")
     registry = conduit._aetheric_frame.devops_information_registry
     try:
         with pytest.raises(RuntimeError, match="boom"):
@@ -1040,7 +1040,7 @@ def test_component_spellbook_describe_spells_runtime_dump_includes_owner_and_sha
     config.set_property("phase_scheduler_workers_per_spellbook", 1)
 
     spellbook._aetheric_frame_configuration.with_system_state("dynamic")
-    conduit = spellbook.conjure(automatic=False, name="root")
+    conduit = spellbook.conjure(dynamic=True, name="root")
     try:
         with spellbook.transaction("bind"):
             spellbook.bind(
@@ -1107,7 +1107,7 @@ def test_component_spellbook_post_conjure_bind_publishes_incremental_nexus_spell
     spellbook_id = spellbook.id
 
     spellbook._aetheric_frame_configuration.with_system_state("dynamic")
-    conduit = spellbook.conjure(automatic=False, name="root")
+    conduit = spellbook.conjure(dynamic=True, name="root")
     late_spell_id = None
     try:
         with spellbook.transaction("bind"):
@@ -1148,7 +1148,7 @@ def test_component_spellbook_post_conjure_scan_publishes_passive_nexus_spell_rec
     spellbook_id = spellbook.id
 
     spellbook._aetheric_frame_configuration.with_system_state("dynamic")
-    conduit = spellbook.conjure(automatic=False, name="root")
+    conduit = spellbook.conjure(dynamic=True, name="root")
     spell_ids = []
     try:
         with spellbook.transaction("bind"):

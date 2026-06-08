@@ -137,7 +137,7 @@ def test_forced_phase14_wipe_after_late_bind_single_spell_experiment() -> None:
     Spellbook._aether = aether
     Conduit._aether = aether
     spellbook = _make_dynamic_spellbook(frame_name)
-    conduit = spellbook.conjure(automatic=False, name="root")
+    conduit = spellbook.conjure(dynamic=True, name="root")
     try:
         with spellbook.transaction("bind"):
             root_spell_id = spellbook.bind(
@@ -183,7 +183,7 @@ def test_forced_phase14_wipe_after_late_bind_pair_experiment() -> None:
     Spellbook._aether = aether
     Conduit._aether = aether
     spellbook = _make_dynamic_spellbook(frame_name)
-    conduit = spellbook.conjure(automatic=False, name="root")
+    conduit = spellbook.conjure(dynamic=True, name="root")
     try:
         with spellbook.transaction("bind"):
             provider_id = spellbook.bind(

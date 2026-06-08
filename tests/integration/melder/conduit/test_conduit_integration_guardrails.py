@@ -104,7 +104,7 @@ def test_conduit_link_rejects_self_and_lesser_targets() -> None:
         existence=Existence.unique,
         permissions="create",
     )
-    root = spellbook.conjure(automatic=False, name="root")
+    root = spellbook.conjure(dynamic=True, name="root")
     lesser = root.create_lesser_conduit()
     try:
         with pytest.raises(RuntimeError, match="Cannot link a conduit to itself."):
@@ -135,8 +135,8 @@ def test_conduit_link_rejects_outbound_only_target() -> None:
         permissions="create",
     )
     target_book = Spellbook(configuration=configuration)
-    owner = owner_book.conjure(automatic=False, name="owner")
-    target = target_book.conjure(automatic=False, name="target")
+    owner = owner_book.conjure(dynamic=True, name="owner")
+    target = target_book.conjure(dynamic=True, name="target")
     try:
         target.set_new_policy(Policies.outbound_only.name)
         with pytest.raises(RuntimeError, match="outbound_only"):
@@ -165,8 +165,8 @@ def test_conduit_set_new_policy_block_all_rejects_with_contracts() -> None:
         permissions="create",
     )
     borrower_book = Spellbook(configuration=configuration)
-    owner = owner_book.conjure(automatic=False, name="owner")
-    borrower = borrower_book.conjure(automatic=False, name="borrower")
+    owner = owner_book.conjure(dynamic=True, name="owner")
+    borrower = borrower_book.conjure(dynamic=True, name="borrower")
     try:
         owner.link(borrower)
         with borrower.transaction("link", conduits=[borrower, owner]):
@@ -203,7 +203,7 @@ def test_conduit_set_new_policy_rejects_lesser() -> None:
         existence=Existence.unique,
         permissions="create",
     )
-    root = spellbook.conjure(automatic=False, name="root")
+    root = spellbook.conjure(dynamic=True, name="root")
     lesser = root.create_lesser_conduit()
     try:
         with pytest.raises(RuntimeError, match="Cannot set policy on a lesser Conduit."):

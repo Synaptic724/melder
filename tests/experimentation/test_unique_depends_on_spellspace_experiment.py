@@ -104,7 +104,7 @@ def _build_runtime() -> tuple[Spellbook, Conduit]:
         existence=Existence.unique,
         permissions="create",
     )
-    conduit = spellbook.conjure(automatic=False, name="root")
+    conduit = spellbook.conjure(dynamic=True, name="root")
     return spellbook, conduit
 
 

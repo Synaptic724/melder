@@ -134,8 +134,8 @@ def test_conduit_validate_resolution_reports_missing_contract_dependencies() -> 
         permissions="create",
     )
 
-    owner = owner_book.conjure(automatic=False, name="owner")
-    borrower = borrower_book.conjure(automatic=False, name="borrower")
+    owner = owner_book.conjure(dynamic=True, name="owner")
+    borrower = borrower_book.conjure(dynamic=True, name="borrower")
     try:
         assert owner.link(borrower) is True
         with borrower.transaction("link", conduits=[borrower, owner]):
@@ -184,8 +184,8 @@ def test_conduit_validate_resolution_recovers_after_contract_changes() -> None:
         permissions="create",
     )
 
-    owner = owner_book.conjure(automatic=False, name="owner")
-    borrower = borrower_book.conjure(automatic=False, name="borrower")
+    owner = owner_book.conjure(dynamic=True, name="owner")
+    borrower = borrower_book.conjure(dynamic=True, name="borrower")
     try:
         assert owner.link(borrower) is True
         with borrower.transaction("link", conduits=[borrower, owner]):
@@ -256,8 +256,8 @@ def test_conduit_validate_resolution_for_lesser_uses_root_and_survives_cleanup()
         permissions="create",
     )
 
-    owner = owner_book.conjure(automatic=False, name="owner")
-    borrower = borrower_book.conjure(automatic=False, name="borrower")
+    owner = owner_book.conjure(dynamic=True, name="owner")
+    borrower = borrower_book.conjure(dynamic=True, name="borrower")
     try:
         assert owner.link(borrower) is True
         with borrower.transaction("link", conduits=[borrower, owner]):
@@ -319,8 +319,8 @@ def test_conduit_validate_resolution_matches_get_resolution_state() -> None:
         permissions="create",
     )
 
-    owner = owner_book.conjure(automatic=False, name="owner")
-    borrower = borrower_book.conjure(automatic=False, name="borrower")
+    owner = owner_book.conjure(dynamic=True, name="owner")
+    borrower = borrower_book.conjure(dynamic=True, name="borrower")
     try:
         assert owner.link(borrower) is True
         with borrower.transaction("link", conduits=[borrower, owner]):
@@ -358,7 +358,7 @@ def test_conduit_resolution_state_cleaned_on_conduit_cleanup() -> None:
         permissions="create",
     )
 
-    conduit = spellbook.conjure(automatic=False, name="root")
+    conduit = spellbook.conjure(dynamic=True, name="root")
     state = conduit.validate_resolution()
     conduit.permanent_cleanup()
 
@@ -385,7 +385,7 @@ def test_conduit_validate_resolution_raises_when_lesser_cleaned() -> None:
         permissions="create",
     )
 
-    root = spellbook.conjure(automatic=False, name="root")
+    root = spellbook.conjure(dynamic=True, name="root")
     lesser = root.create_lesser_conduit()
     try:
         lesser.permanent_cleanup()
@@ -417,7 +417,7 @@ def test_conduit_upgrade_to_normal_preserves_id_and_resolution_state() -> None:
         existence=Existence.unique,
     )
 
-    root = spellbook.conjure(automatic=False, name="root")
+    root = spellbook.conjure(dynamic=True, name="root")
     lesser = root.create_lesser_conduit()
     try:
         original_id = lesser.id

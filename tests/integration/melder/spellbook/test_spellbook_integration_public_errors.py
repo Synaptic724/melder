@@ -57,19 +57,19 @@ def test_spellbook_conjure_rejects_invalid_policy_string() -> None:
     )
 
     with pytest.raises(ValueError, match="Invalid value"):
-        spellbook.conjure(policy="not-a-policy", automatic=True, name="root")
+        spellbook.conjure(policy="not-a-policy", dynamic=False, name="root")
 
 
-def test_spellbook_conjure_rejects_dynamic_policy_when_automatic_true() -> None:
+def test_spellbook_conjure_rejects_dynamic_policy_when_non_dynamic() -> None:
     """
     Purpose:
-        Validate conjure rejects dynamic-only policies in automatic mode.
+        Validate conjure rejects dynamic-only policies in non-dynamic mode.
     Contract:
-        - automatic=True rejects non-default policies.
+        - dynamic=False rejects non-default policies.
     Returns:
         None.
     Raises:
-        AssertionError: If dynamic policies are accepted in automatic mode.
+        AssertionError: If dynamic policies are accepted in non-dynamic mode.
     """
     configuration = SpellbookConfiguration()
     apply_dynamic_defaults_for_spellbook_configuration(configuration)
@@ -83,7 +83,7 @@ def test_spellbook_conjure_rejects_dynamic_policy_when_automatic_true() -> None:
     )
 
     with pytest.raises(RuntimeError, match="Dynamic-only policies"):
-        spellbook.conjure(policy="whitelist_all", automatic=True, name="root")
+        spellbook.conjure(policy="whitelist_all", dynamic=False, name="root")
 
 
 def test_spellbook_conjure_rejects_dynamic_mode_in_automatic_system_state() -> None:
@@ -91,7 +91,7 @@ def test_spellbook_conjure_rejects_dynamic_mode_in_automatic_system_state() -> N
     Purpose:
         Validate conjure rejects dynamic mode when system_state is automatic.
     Contract:
-        - automatic=False raises when system_state is automatic.
+        - dynamic=True raises when system_state is automatic.
     Returns:
         None.
     Raises:
@@ -107,7 +107,7 @@ def test_spellbook_conjure_rejects_dynamic_mode_in_automatic_system_state() -> N
     )
 
     with pytest.raises(RuntimeError, match="automatic system_state"):
-        spellbook.conjure(policy="default", automatic=False, name="root")
+        spellbook.conjure(policy="default", dynamic=True, name="root")
 
 
 def test_spellbook_bind_rejects_invalid_permissions() -> None:

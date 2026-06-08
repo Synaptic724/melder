@@ -359,8 +359,8 @@ def test_conduit_begin_transaction_sets_conduit_scope_key() -> None:
     configuration.finalize()
     spellbook_a = Spellbook(aetheric_frame=frame_name, configuration=configuration)
     spellbook_b = Spellbook(aetheric_frame=frame_name, configuration=configuration)
-    conduit_a = spellbook_a.conjure(automatic=False, name="conduit-a")
-    conduit_peer = spellbook_b.conjure(automatic=False, name="conduit-peer")
+    conduit_a = spellbook_a.conjure(dynamic=True, name="conduit-a")
+    conduit_peer = spellbook_b.conjure(dynamic=True, name="conduit-peer")
     change_control = spellbook_a._aether._get_change_control_manager(frame_name)
     scope_key = change_control.transaction_manager().make_scope_key_conduit(conduit_a.id)
     try:

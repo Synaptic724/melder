@@ -427,8 +427,8 @@ def test_multithreading_bind_transaction_then_contract_uncontract_recontract() -
         permissions="create",
     )
 
-    owner = owner_book.conjure(automatic=False, name="owner-bind-contract")
-    borrower = borrower_book.conjure(automatic=False, name="borrower-bind-contract")
+    owner = owner_book.conjure(dynamic=True, name="owner-bind-contract")
+    borrower = borrower_book.conjure(dynamic=True, name="borrower-bind-contract")
 
     try:
         assert owner.link(borrower) is True
@@ -558,8 +558,8 @@ def test_multithreading_sever_link_blocks_contract_mutation_until_relink() -> No
         permissions="create",
     )
 
-    owner = owner_book.conjure(automatic=False, name="owner-link-guard")
-    borrower = borrower_book.conjure(automatic=False, name="borrower-link-guard")
+    owner = owner_book.conjure(dynamic=True, name="owner-link-guard")
+    borrower = borrower_book.conjure(dynamic=True, name="borrower-link-guard")
 
     try:
         assert owner.link(borrower) is True
@@ -696,9 +696,9 @@ def test_multithreading_uncontract_isolated_to_one_borrower_then_restore() -> No
         permissions="create",
     )
 
-    owner = owner_book.conjure(automatic=False, name="owner-uncontract-isolation")
-    borrower_a = borrower_a_book.conjure(automatic=False, name="borrower-a-uncontract")
-    borrower_b = borrower_b_book.conjure(automatic=False, name="borrower-b-uncontract")
+    owner = owner_book.conjure(dynamic=True, name="owner-uncontract-isolation")
+    borrower_a = borrower_a_book.conjure(dynamic=True, name="borrower-a-uncontract")
+    borrower_b = borrower_b_book.conjure(dynamic=True, name="borrower-b-uncontract")
 
     try:
         assert owner.link(borrower_a) is True
@@ -876,9 +876,9 @@ def test_multithreading_live_link_unlink_and_contract_churn_cycles() -> None:
         permissions="create",
     )
 
-    owner = owner_book.conjure(automatic=False, name="owner-live-cycle")
-    borrower_a = borrower_a_book.conjure(automatic=False, name="borrower-a-live-cycle")
-    borrower_b = borrower_b_book.conjure(automatic=False, name="borrower-b-live-cycle")
+    owner = owner_book.conjure(dynamic=True, name="owner-live-cycle")
+    borrower_a = borrower_a_book.conjure(dynamic=True, name="borrower-a-live-cycle")
+    borrower_b = borrower_b_book.conjure(dynamic=True, name="borrower-b-live-cycle")
 
     steps = [
         "stable_0",

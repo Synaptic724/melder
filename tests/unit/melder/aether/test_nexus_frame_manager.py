@@ -917,8 +917,8 @@ def test_nexus_frame_manager_bootstrap_root_conduit_binds_and_refreshes_overview
             self.aetheric_frame = aetheric_frame
             self.configuration = configuration
 
-        def conjure(self, name: str, automatic: bool):
-            calls.append(("conjure", name, automatic))
+        def conjure(self, name: str, dynamic: bool):
+            calls.append(("conjure", name, dynamic))
             nexus._aether.bound_configurations["ops"] = self.configuration
             nexus._aether.bound_frame_configurations["ops"] = (
                 _build_configuration("ops").to_aetheric_frame_configuration()

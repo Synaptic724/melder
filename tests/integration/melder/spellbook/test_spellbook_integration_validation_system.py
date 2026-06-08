@@ -125,8 +125,8 @@ def test_validation_system_resolves_contracted_dependency_without_dangling() -> 
             existence=Existence.unique,
             permissions="create",
         )
-        owner = owner_book.conjure(automatic=False, name="owner")
-        borrower = borrower_book.conjure(automatic=False, name="borrower")
+        owner = owner_book.conjure(dynamic=True, name="owner")
+        borrower = borrower_book.conjure(dynamic=True, name="borrower")
         assert owner.link(borrower) is True
         with borrower.transaction("link", conduits=[borrower, owner]):
             assert borrower.add_spell_to_contract(
@@ -243,8 +243,8 @@ def test_validation_system_duplicate_spell_name_across_contracted() -> None:
             existence=Existence.unique,
             permissions="create",
         )
-        owner = owner_book.conjure(automatic=False, name="owner")
-        borrower = borrower_book.conjure(automatic=False, name="borrower")
+        owner = owner_book.conjure(dynamic=True, name="owner")
+        borrower = borrower_book.conjure(dynamic=True, name="borrower")
         assert owner.link(borrower) is True
         with borrower.transaction("link", conduits=[borrower, owner]):
             assert borrower.add_spell_to_contract(
@@ -330,8 +330,8 @@ def test_validation_system_updates_after_contract_removal_and_readd() -> None:
             permissions="create",
         )
 
-        owner = owner_book.conjure(automatic=False, name="owner")
-        borrower = borrower_book.conjure(automatic=False, name="borrower")
+        owner = owner_book.conjure(dynamic=True, name="owner")
+        borrower = borrower_book.conjure(dynamic=True, name="borrower")
         assert owner.link(borrower) is True
         with borrower.transaction("link", conduits=[borrower, owner]):
             assert borrower.add_spell_to_contract(
@@ -451,8 +451,8 @@ def test_validation_system_reports_dangling_after_sever_link() -> None:
             permissions="create",
         )
 
-        owner = owner_book.conjure(automatic=False, name="owner")
-        borrower = borrower_book.conjure(automatic=False, name="borrower")
+        owner = owner_book.conjure(dynamic=True, name="owner")
+        borrower = borrower_book.conjure(dynamic=True, name="borrower")
         assert owner.link(borrower) is True
         with borrower.transaction("link", conduits=[borrower, owner]):
             assert borrower.add_spell_to_contract(
@@ -536,8 +536,8 @@ def test_validation_system_detects_cross_boundary_cycle() -> None:
             permissions="create",
         )
 
-        owner = owner_book.conjure(automatic=False, name="owner")
-        borrower = borrower_book.conjure(automatic=False, name="borrower")
+        owner = owner_book.conjure(dynamic=True, name="owner")
+        borrower = borrower_book.conjure(dynamic=True, name="borrower")
         assert owner.link(borrower) is True
         with borrower.transaction("link", conduits=[borrower, owner]):
             assert borrower.add_spell_to_contract(
@@ -658,8 +658,8 @@ def test_validation_system_duplicate_name_clears_after_unlink() -> None:
             existence=Existence.unique,
             permissions="create",
         )
-        owner = owner_book.conjure(automatic=False, name="owner")
-        borrower = borrower_book.conjure(automatic=False, name="borrower")
+        owner = owner_book.conjure(dynamic=True, name="owner")
+        borrower = borrower_book.conjure(dynamic=True, name="borrower")
         assert owner.link(borrower) is True
         with borrower.transaction("link", conduits=[borrower, owner]):
             assert borrower.add_spell_to_contract(

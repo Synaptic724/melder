@@ -122,8 +122,8 @@ def test_conduit_add_spell_to_contract_with_dependencies_links_transitive_depend
     )
     borrower_book = Spellbook(configuration=configuration)
 
-    owner = owner_book.conjure(automatic=False, name="owner")
-    borrower = borrower_book.conjure(automatic=False, name="borrower")
+    owner = owner_book.conjure(dynamic=True, name="owner")
+    borrower = borrower_book.conjure(dynamic=True, name="borrower")
     try:
         assert owner.link(borrower) is True
         with borrower.transaction("link", conduits=[borrower, owner]):
@@ -159,7 +159,7 @@ def test_conduit_refresh_cluster_shares_noop_when_no_clusters() -> None:
     """
     configuration = _make_dynamic_configuration()
     spellbook = Spellbook(configuration=configuration)
-    conduit = spellbook.conjure(automatic=False, name="owner")
+    conduit = spellbook.conjure(dynamic=True, name="owner")
     try:
         cloud = conduit._spellbook._aether.get_conduit_cloud(conduit._aetheric_frame_name)
         assert cloud.get_clusters_for_conduit(conduit._id) == []

@@ -401,7 +401,7 @@ def test_component_conduit_upgrade_transfers_lesser_creations_and_reuses_unique(
         existence=Existence.many,
         permissions="create",
     )
-    root = spellbook.conjure(automatic=False, name="root")
+    root = spellbook.conjure(dynamic=True, name="root")
     lesser = root.create_lesser_conduit()
     try:
         unique_instance = lesser.meld(spell=unique_id)

@@ -122,8 +122,8 @@ def test_conduit_cluster_auto_link_dependencies_toggle() -> None:
     depth3_ids = _bind_depth3_cluster_root(owner_book)
     borrower_book = Spellbook(configuration=configuration)
 
-    owner = owner_book.conjure(automatic=False, name="owner")
-    borrower = borrower_book.conjure(automatic=False, name="borrower")
+    owner = owner_book.conjure(dynamic=True, name="owner")
+    borrower = borrower_book.conjure(dynamic=True, name="borrower")
     try:
         assert owner.link(borrower) is True
         cloud = owner._spellbook._aether.get_conduit_cloud(owner._aetheric_frame_name)
@@ -166,8 +166,8 @@ def test_conduit_cluster_refresh_shares_after_new_bind() -> None:
     )
     borrower_book = Spellbook(configuration=configuration)
 
-    owner = owner_book.conjure(automatic=False, name="owner")
-    borrower = borrower_book.conjure(automatic=False, name="borrower")
+    owner = owner_book.conjure(dynamic=True, name="owner")
+    borrower = borrower_book.conjure(dynamic=True, name="borrower")
     try:
         assert owner.link(borrower) is True
         cloud = owner._spellbook._aether.get_conduit_cloud(owner._aetheric_frame_name)
@@ -213,8 +213,8 @@ def test_conduit_cluster_leave_preserves_manual_contracts() -> None:
     )
     borrower_book = Spellbook(configuration=configuration)
 
-    owner = owner_book.conjure(automatic=False, name="owner")
-    borrower = borrower_book.conjure(automatic=False, name="borrower")
+    owner = owner_book.conjure(dynamic=True, name="owner")
+    borrower = borrower_book.conjure(dynamic=True, name="borrower")
     try:
         assert owner.link(borrower) is True
         cloud = owner._spellbook._aether.get_conduit_cloud(owner._aetheric_frame_name)

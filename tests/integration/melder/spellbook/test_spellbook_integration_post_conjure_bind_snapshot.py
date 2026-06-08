@@ -152,7 +152,7 @@ def test_post_conjure_bind_collection_dependencies_require_rerun() -> None:
     apply_dynamic_defaults_for_spellbook_configuration(
         spellbook.get_configuration()
     )
-    conduit = spellbook.conjure(automatic=False, name="post_conjure_snapshot")
+    conduit = spellbook.conjure(dynamic=True, name="post_conjure_snapshot")
     try:
         consumer_spell = conduit.get_spell_by_id(consumer_id)
         assert consumer_spell is not None
@@ -315,8 +315,8 @@ def test_post_conjure_bind_collection_dependencies_isolated_by_spellbook() -> No
     apply_dynamic_defaults_for_spellbook_configuration(
         spellbook_b.get_configuration()
     )
-    conduit_a = spellbook_a.conjure(automatic=False, name="conduit_a")
-    conduit_b = spellbook_b.conjure(automatic=False, name="conduit_b")
+    conduit_a = spellbook_a.conjure(dynamic=True, name="conduit_a")
+    conduit_b = spellbook_b.conjure(dynamic=True, name="conduit_b")
     try:
         consumer_a_spell = conduit_a.get_spell_by_id(consumer_a_id, aetheric_frame_name="shared")
         consumer_b_spell = conduit_b.get_spell_by_id(consumer_b_id, aetheric_frame_name="shared")
@@ -436,8 +436,8 @@ def test_post_conjure_contract_addition_marks_local_collection_consumers() -> No
         permissions="create",
     )
 
-    owner = owner_book.conjure(automatic=False, name="owner")
-    borrower = borrower_book.conjure(automatic=False, name="borrower")
+    owner = owner_book.conjure(dynamic=True, name="owner")
+    borrower = borrower_book.conjure(dynamic=True, name="borrower")
     try:
         owner_consumer_spell = owner.get_spell_by_id(owner_consumer_id)
         borrower_consumer_spell = borrower.get_spell_by_id(borrower_consumer_id)

@@ -123,8 +123,8 @@ def test_component_conduit_begin_transaction_link_registers_in_flight() -> None:
     """
     owner_book = _make_spellbook(dynamic=True)
     borrower_book = _make_spellbook(dynamic=True)
-    owner = owner_book.conjure(automatic=False, name="owner")
-    borrower = borrower_book.conjure(automatic=False, name="borrower")
+    owner = owner_book.conjure(dynamic=True, name="owner")
+    borrower = borrower_book.conjure(dynamic=True, name="borrower")
     change_control = Aether()._get_change_control_manager("default")
     try:
         borrower.begin_transaction("link", conduits=[borrower, owner])
@@ -155,8 +155,8 @@ def test_component_conduit_transaction_context_closes_in_flight() -> None:
     """
     owner_book = _make_spellbook(dynamic=True)
     borrower_book = _make_spellbook(dynamic=True)
-    owner = owner_book.conjure(automatic=False, name="owner")
-    borrower = borrower_book.conjure(automatic=False, name="borrower")
+    owner = owner_book.conjure(dynamic=True, name="owner")
+    borrower = borrower_book.conjure(dynamic=True, name="borrower")
     change_control = Aether()._get_change_control_manager("default")
     try:
         with borrower.transaction("link", conduits=[borrower, owner]):
@@ -180,7 +180,7 @@ def test_component_conduit_begin_transaction_bind_registers_spellbook_session_in
         AssertionError: If the live bind session is not mirrored correctly.
     """
     spellbook = _make_spellbook(dynamic=True)
-    conduit = spellbook.conjure(automatic=False, name="root")
+    conduit = spellbook.conjure(dynamic=True, name="root")
     registry = conduit._aetheric_frame.devops_information_registry
     try:
         conduit.begin_transaction("bind")
@@ -208,7 +208,7 @@ def test_component_conduit_end_transaction_bind_clears_spellbook_session_registr
         AssertionError: If the live bind session remains mirrored after end.
     """
     spellbook = _make_spellbook(dynamic=True)
-    conduit = spellbook.conjure(automatic=False, name="root")
+    conduit = spellbook.conjure(dynamic=True, name="root")
     registry = conduit._aetheric_frame.devops_information_registry
     try:
         conduit.begin_transaction("bind")
@@ -233,7 +233,7 @@ def test_component_conduit_bind_transaction_context_exposes_active_request() -> 
         AssertionError: If the active request is missing or wrong.
     """
     spellbook = _make_spellbook(dynamic=True)
-    conduit = spellbook.conjure(automatic=False, name="root")
+    conduit = spellbook.conjure(dynamic=True, name="root")
     mediator = spellbook._get_required_transaction_mediator()
     try:
         with conduit.transaction("bind"):
@@ -259,8 +259,8 @@ def test_component_conduit_begin_transaction_link_registers_live_registry_sessio
     """
     owner_book = _make_spellbook(dynamic=True)
     borrower_book = _make_spellbook(dynamic=True)
-    owner = owner_book.conjure(automatic=False, name="owner")
-    borrower = borrower_book.conjure(automatic=False, name="borrower")
+    owner = owner_book.conjure(dynamic=True, name="owner")
+    borrower = borrower_book.conjure(dynamic=True, name="borrower")
     registry = borrower._aetheric_frame.devops_information_registry
     try:
         borrower.begin_transaction("link", conduits=[borrower, owner])
@@ -302,8 +302,8 @@ def test_component_conduit_begin_transaction_link_respects_frame_disable_flags(
     owner_book = _make_spellbook(dynamic=True)
     borrower_book = _make_spellbook(dynamic=True)
     getattr(borrower_book._aetheric_frame_configuration, f"with_{flag_name}")(True)
-    owner = owner_book.conjure(automatic=False, name="owner")
-    borrower = borrower_book.conjure(automatic=False, name="borrower")
+    owner = owner_book.conjure(dynamic=True, name="owner")
+    borrower = borrower_book.conjure(dynamic=True, name="borrower")
     try:
         with pytest.raises(RuntimeError, match="disabled"):
             borrower.begin_transaction("link", conduits=[borrower, owner])
@@ -336,7 +336,7 @@ def test_component_conduit_bind_respects_frame_disable_flags(
     """
     spellbook = _make_spellbook(dynamic=True)
     getattr(spellbook._aetheric_frame_configuration, f"with_{flag_name}")(True)
-    conduit = spellbook.conjure(automatic=False, name="root")
+    conduit = spellbook.conjure(dynamic=True, name="root")
     try:
         with pytest.raises(RuntimeError, match="disabled"):
             conduit.bind(
@@ -369,8 +369,8 @@ def test_component_conduit_begin_transaction_transfer_registers_live_registry_se
         existence=Existence.unique,
         permissions="create",
     )
-    owner = owner_book.conjure(automatic=False, name="owner")
-    target = target_book.conjure(automatic=False, name="target")
+    owner = owner_book.conjure(dynamic=True, name="owner")
+    target = target_book.conjure(dynamic=True, name="target")
     registry = owner._aetheric_frame.devops_information_registry
     spell = _get_local_spell_by_version_id(owner_book, spell_id)
     assert spell is not None
@@ -423,8 +423,8 @@ def test_component_conduit_transfer_transaction_context_clears_live_registry_ses
         existence=Existence.unique,
         permissions="create",
     )
-    owner = owner_book.conjure(automatic=False, name="owner")
-    target = target_book.conjure(automatic=False, name="target")
+    owner = owner_book.conjure(dynamic=True, name="owner")
+    target = target_book.conjure(dynamic=True, name="target")
     registry = owner._aetheric_frame.devops_information_registry
     spell = _get_local_spell_by_version_id(owner_book, spell_id)
     assert spell is not None
@@ -474,8 +474,8 @@ def test_component_conduit_transfer_spell_ownership_moves_spell_and_clears_regis
         existence=Existence.unique,
         permissions="create",
     )
-    owner = owner_book.conjure(automatic=False, name="owner")
-    target = target_book.conjure(automatic=False, name="target")
+    owner = owner_book.conjure(dynamic=True, name="owner")
+    target = target_book.conjure(dynamic=True, name="target")
     registry = owner._aetheric_frame.devops_information_registry
     spell = _get_local_spell_by_version_id(owner_book, spell_id)
     assert spell is not None
@@ -521,8 +521,8 @@ def test_component_conduit_transfer_transaction_abort_clears_registry_and_preser
         existence=Existence.unique,
         permissions="create",
     )
-    owner = owner_book.conjure(automatic=False, name="owner")
-    target = target_book.conjure(automatic=False, name="target")
+    owner = owner_book.conjure(dynamic=True, name="owner")
+    target = target_book.conjure(dynamic=True, name="target")
     registry = owner._aetheric_frame.devops_information_registry
     spell = _get_local_spell_by_version_id(owner_book, spell_id)
     assert spell is not None
@@ -562,8 +562,8 @@ def test_component_conduit_begin_transaction_cluster_link_registers_live_registr
     """
     owner_book = _make_spellbook(dynamic=True)
     borrower_book = _make_spellbook(dynamic=True)
-    owner = owner_book.conjure(automatic=False, name="owner")
-    borrower = borrower_book.conjure(automatic=False, name="borrower")
+    owner = owner_book.conjure(dynamic=True, name="owner")
+    borrower = borrower_book.conjure(dynamic=True, name="borrower")
     registry = borrower._aetheric_frame.devops_information_registry
     started = False
     try:
@@ -606,8 +606,8 @@ def test_component_conduit_cluster_link_transaction_context_clears_live_registry
     """
     owner_book = _make_spellbook(dynamic=True)
     borrower_book = _make_spellbook(dynamic=True)
-    owner = owner_book.conjure(automatic=False, name="owner")
-    borrower = borrower_book.conjure(automatic=False, name="borrower")
+    owner = owner_book.conjure(dynamic=True, name="owner")
+    borrower = borrower_book.conjure(dynamic=True, name="borrower")
     registry = borrower._aetheric_frame.devops_information_registry
     try:
         with borrower.transaction(
@@ -647,8 +647,8 @@ def test_component_conduit_cluster_link_transaction_abort_clears_live_registry_s
     """
     owner_book = _make_spellbook(dynamic=True)
     borrower_book = _make_spellbook(dynamic=True)
-    owner = owner_book.conjure(automatic=False, name="owner")
-    borrower = borrower_book.conjure(automatic=False, name="borrower")
+    owner = owner_book.conjure(dynamic=True, name="owner")
+    borrower = borrower_book.conjure(dynamic=True, name="borrower")
     registry = borrower._aetheric_frame.devops_information_registry
     try:
         with pytest.raises(RuntimeError, match="boom"):
@@ -698,8 +698,8 @@ def test_component_conduit_begin_transaction_transfer_respects_frame_disable_fla
         permissions="create",
     )
     getattr(owner_book._aetheric_frame_configuration, f"with_{flag_name}")(True)
-    owner = owner_book.conjure(automatic=False, name="owner")
-    target = target_book.conjure(automatic=False, name="target")
+    owner = owner_book.conjure(dynamic=True, name="owner")
+    target = target_book.conjure(dynamic=True, name="target")
     spell = _get_local_spell_by_version_id(owner_book, spell_id)
     assert spell is not None
     try:
@@ -747,8 +747,8 @@ def test_component_conduit_transfer_spell_ownership_respects_frame_disable_flags
         permissions="create",
     )
     getattr(owner_book._aetheric_frame_configuration, f"with_{flag_name}")(True)
-    owner = owner_book.conjure(automatic=False, name="owner")
-    target = target_book.conjure(automatic=False, name="target")
+    owner = owner_book.conjure(dynamic=True, name="owner")
+    target = target_book.conjure(dynamic=True, name="target")
     try:
         with pytest.raises(RuntimeError, match="disabled"):
             owner.transfer_spell_ownership(
@@ -785,8 +785,8 @@ def test_component_conduit_begin_transaction_cluster_link_respects_frame_disable
     owner_book = _make_spellbook(dynamic=True)
     borrower_book = _make_spellbook(dynamic=True)
     getattr(borrower_book._aetheric_frame_configuration, f"with_{flag_name}")(True)
-    owner = owner_book.conjure(automatic=False, name="owner")
-    borrower = borrower_book.conjure(automatic=False, name="borrower")
+    owner = owner_book.conjure(dynamic=True, name="owner")
+    borrower = borrower_book.conjure(dynamic=True, name="borrower")
     try:
         with pytest.raises(RuntimeError, match="disabled"):
             borrower.begin_transaction(
@@ -827,8 +827,8 @@ def test_component_conduit_begin_transaction_transfer_requires_complete_metadata
     """
     owner_book = _make_spellbook(dynamic=True)
     target_book = _make_spellbook(dynamic=True)
-    owner = owner_book.conjure(automatic=False, name="owner")
-    target = target_book.conjure(automatic=False, name="target")
+    owner = owner_book.conjure(dynamic=True, name="owner")
+    target = target_book.conjure(dynamic=True, name="target")
     registry = owner._aetheric_frame.devops_information_registry
     normalized_metadata = dict(metadata)
     if normalized_metadata.get("target_conduit_id") == "target-only":

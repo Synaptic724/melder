@@ -571,8 +571,8 @@ def test_multithreading_orchestrated_two_threads_contract_toggle() -> None:
         permissions="create",
     )
 
-    owner = owner_book.conjure(automatic=False, name="owner-two")
-    borrower = borrower_book.conjure(automatic=False, name="borrower-two")
+    owner = owner_book.conjure(dynamic=True, name="owner-two")
+    borrower = borrower_book.conjure(dynamic=True, name="borrower-two")
 
     try:
         assert owner.link(borrower) is True
@@ -646,9 +646,9 @@ def test_multithreading_orchestrated_three_threads_unlink_restore() -> None:
         permissions="create",
     )
 
-    owner = owner_book.conjure(automatic=False, name="owner-three")
-    borrower_one = borrower_one_book.conjure(automatic=False, name="borrower-one-three")
-    borrower_two = borrower_two_book.conjure(automatic=False, name="borrower-two-three")
+    owner = owner_book.conjure(dynamic=True, name="owner-three")
+    borrower_one = borrower_one_book.conjure(dynamic=True, name="borrower-one-three")
+    borrower_two = borrower_two_book.conjure(dynamic=True, name="borrower-two-three")
 
     try:
         assert owner.link(borrower_one) is True
@@ -742,10 +742,10 @@ def test_multithreading_orchestrated_four_threads_mixed_mutations() -> None:
         permissions="create",
     )
 
-    owner = owner_book.conjure(automatic=False, name="owner-four")
-    borrower_one = borrower_one_book.conjure(automatic=False, name="borrower-one-four")
-    borrower_two = borrower_two_book.conjure(automatic=False, name="borrower-two-four")
-    borrower_three = borrower_three_book.conjure(automatic=False, name="borrower-three-four")
+    owner = owner_book.conjure(dynamic=True, name="owner-four")
+    borrower_one = borrower_one_book.conjure(dynamic=True, name="borrower-one-four")
+    borrower_two = borrower_two_book.conjure(dynamic=True, name="borrower-two-four")
+    borrower_three = borrower_three_book.conjure(dynamic=True, name="borrower-three-four")
 
     try:
         assert owner.link(borrower_one) is True
@@ -862,11 +862,11 @@ def test_multithreading_orchestrated_five_threads_with_mid_cleanup() -> None:
         permissions="create",
     )
 
-    owner = owner_book.conjure(automatic=False, name="owner-five")
-    borrower_one = borrower_one_book.conjure(automatic=False, name="borrower-one-five")
-    borrower_two = borrower_two_book.conjure(automatic=False, name="borrower-two-five")
-    borrower_three = borrower_three_book.conjure(automatic=False, name="borrower-three-five")
-    borrower_four = borrower_four_book.conjure(automatic=False, name="borrower-four-five")
+    owner = owner_book.conjure(dynamic=True, name="owner-five")
+    borrower_one = borrower_one_book.conjure(dynamic=True, name="borrower-one-five")
+    borrower_two = borrower_two_book.conjure(dynamic=True, name="borrower-two-five")
+    borrower_three = borrower_three_book.conjure(dynamic=True, name="borrower-three-five")
+    borrower_four = borrower_four_book.conjure(dynamic=True, name="borrower-four-five")
 
     try:
         assert owner.link(borrower_one) is True
