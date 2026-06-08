@@ -3,15 +3,8 @@ from typing import TYPE_CHECKING, Any, Callable, Optional
 from melder.aether.conduit.meld.creation_context.creation_context import (
     CreationContext,
 )
-from melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.creation_runtime_door_compiler import (
-    compile_creation_context_hooks_no_overrides_executor,
-    compile_creation_context_hooks_overrides_only_executor,
-)
 from melder.utilities.custom_exceptions.meld_execution_error import (
     MeldExecutionError,
-)
-from melder.utilities.custom_exceptions.spell_space_scope_error import (
-    SpellSpaceScopeError,
 )
 
 if TYPE_CHECKING:
@@ -47,34 +40,11 @@ class CreationContextBuilder:
         artifact = spell._compiler_artifact
         spell_codegen_creation = artifact._spell_codegen_creation
         if spell.is_existing_creation:
-            base_no_overrides_executor = CreationContextBuilder._build_existing_creation_no_overrides_executor(
+            no_overrides_executor = CreationContextBuilder._build_existing_creation_no_overrides_executor(
                 spell
             )
-            base_overrides_executor = CreationContextBuilder._build_existing_creation_overrides_executor(
+            overrides_executor = CreationContextBuilder._build_existing_creation_overrides_executor(
                 spell
-            )
-            no_overrides_executor = (
-                compile_creation_context_hooks_no_overrides_executor(
-                    resolve_route_key=CreationContext.ROUTE_EXISTING_CREATION,
-                    fast_transient_no_overrides_enabled=False,
-                    spell=spell,
-                    spell_id=spell.spell_id,
-                    owner_creations=spell._owner_creations,
-                    no_overrides_executor=base_no_overrides_executor,
-                    spell_space_scope_error_type=SpellSpaceScopeError,
-                )
-            )
-            overrides_executor = (
-                compile_creation_context_hooks_overrides_only_executor(
-                    resolve_route_key=CreationContext.ROUTE_EXISTING_CREATION,
-                    spell=spell,
-                    spell_id=spell.spell_id,
-                    owner_creations=spell._owner_creations,
-                    no_overrides_executor=base_no_overrides_executor,
-                    execute_with_overrides=base_overrides_executor,
-                    meld_execution_error_type=MeldExecutionError,
-                    spell_space_scope_error_type=SpellSpaceScopeError,
-                )
             )
         else:
             if spell_codegen_creation is None:
@@ -107,13 +77,13 @@ class CreationContextBuilder:
             spell: "Spell",
     ) -> Callable[..., Any]:
         """
-        Build the existing-creation base no-overrides executor input.
+        Build the final no-overrides executor for an existing-creation spell.
         """
         def execute(
                 caller_creations: Any,
                 owner_creations: Any = None,
                 caller_creations_lock_held: bool = False,
-        ) -> Any:
+        ) -> tuple[Any, bool]:
             _ = caller_creations
             _ = owner_creations
             _ = caller_creations_lock_held
@@ -123,7 +93,7 @@ class CreationContextBuilder:
                     "[MELD] EXISTING_CREATION spell has no `user_created_object` "
                     f"(spell_id={spell.spell_id})."
                 )
-            return instance
+            return instance, False
 
         return execute
 
@@ -132,22 +102,30 @@ class CreationContextBuilder:
             spell: "Spell",
     ) -> Callable[..., Any]:
         """
-        Build the existing-creation base override executor input.
+        Build the final overrides executor for an existing-creation spell.
         """
         def execute(
                 caller_creations: Any,
                 overrides: Optional[dict[str, Any]],
                 caller_creations_lock_held: bool = False,
-        ) -> Any:
+        ) -> tuple[Any, bool]:
             _ = caller_creations
-            _ = overrides
             _ = caller_creations_lock_held
+            if overrides is not None:
+                raise MeldExecutionError(
+                    spell_id=spell.spell_index.current,
+                    spell_name=spell.spell_name,
+                    message=(
+                        "Overrides were supplied for a spell instance that already exists. "
+                        "Shared instances cannot be overridden after creation."
+                    ),
+                )
             instance = spell.user_created_object
             if instance is None:
                 raise RuntimeError(
                     "[MELD] EXISTING_CREATION spell has no `user_created_object` "
                     f"(spell_id={spell.spell_id})."
                 )
-            return instance
+            return instance, False
 
         return execute

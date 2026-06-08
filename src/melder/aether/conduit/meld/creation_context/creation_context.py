@@ -30,12 +30,6 @@ class CreationContext(Cleanable):
     """
 
     __melder_internal__: ClassVar[object] = _mrg.sentinel
-    ROUTE_EXISTING_CREATION: ClassVar[str] = "existing_creation"
-    ROUTE_SPELLSPACE: ClassVar[str] = "spellspace"
-    ROUTE_UNIQUE_PER_CONDUIT: ClassVar[str] = "unique_per_conduit"
-    ROUTE_MANY: ClassVar[str] = "many"
-    ROUTE_SHARED: ClassVar[str] = "shared"
-
     __slots__ = Cleanable.__slots__ + [
         "_spell",
         "_spell_id",
