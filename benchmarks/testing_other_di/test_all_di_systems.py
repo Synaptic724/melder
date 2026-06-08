@@ -113,6 +113,14 @@ def _build_melder_depth9(*, existence: Existence, frame: str, conjure_name: str)
     spellbook = Spellbook(aetheric_frame=frame)
     cfg = spellbook.get_configuration()
     cfg.set_property("phase_scheduler_workers_per_spellbook", 1)
+    # Benchmark the core runtime without the cache lane so cache I/O and
+    # package-build overhead do not contaminate DI hotpath comparisons.
+    spellbook.configure_aether_frame(
+        system_state=None,
+        disposal=None,
+        disposal_method_names=None,
+        system_caching_enabled=True,
+    )
 
     root_id = _melder_bind_depth9_all(spellbook, existence=existence)
 
