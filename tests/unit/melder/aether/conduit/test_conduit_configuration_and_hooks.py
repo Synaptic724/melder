@@ -57,7 +57,6 @@ def _build_conduit(
     creation_gate: object | None = None,
     dev_ops_manager: MagicMock | None = None,
     conduit_cloud: MagicMock | None = None,
-    automatic: bool | None = None,
 ) -> Conduit:
     """
     Build a Conduit with the current injected-service constructor contract.
@@ -68,8 +67,6 @@ def _build_conduit(
           current conduit runtime expects.
         - Provides a default root_conduit_id for lesser-conduit construction.
     """
-    if automatic is not None:
-        dynamic = not automatic
     if dev_ops_manager is None:
         creation_gate_controller = CreationGateController()
     else:
@@ -1389,7 +1386,7 @@ def test_cleanup_normal_unregisters_root_state_and_removes_spells(
         conduit_state=ConduitState.normal,
         aetheric_frame="default",
         policy=Policies.default,
-        automatic=False,
+        dynamic=True,
         name="alpha",
     )
     try:
@@ -1425,4 +1422,5 @@ def test_cleanup_spellspaces_flushes_stack(
 
     assert space.permanent_cleanup.called is True
     assert conduit_lesser._spellspace_stack.get() == []
+
 

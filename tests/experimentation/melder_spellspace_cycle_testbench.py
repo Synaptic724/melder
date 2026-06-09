@@ -168,16 +168,16 @@ def _build_spellbook_and_ids(
         *,
         existence: Existence,
         frame_name: str,
-        automatic: bool,
+        dynamic: bool,
 ) -> tuple[Spellbook, str]:
     """
     Build one spellbook and bind the benchmark classes under the requested existence.
     """
     cfg = SpellbookConfiguration(frame_name)
-    if automatic:
-        apply_automatic_defaults_for_spellbook_configuration(cfg)
-    else:
+    if dynamic:
         apply_dynamic_defaults_for_spellbook_configuration(cfg)
+    else:
+        apply_automatic_defaults_for_spellbook_configuration(cfg)
     cfg.set_property("phase_scheduler_workers_per_spellbook", 1)
     spellbook = Spellbook(
         aetheric_frame=frame_name,
@@ -241,7 +241,7 @@ def _average_conduit_cycle_metrics_ns(
 def _build_melder_spellspace_runtime(
         shape: RuntimeBenchShape,
         *,
-        automatic: bool,
+        dynamic: bool,
 ) -> tuple[Callable[[], Any], Callable[[Any], Any], Callable[[Any], None], Callable[[], None]]:
     """
     Build one Melder runtime for a focused spellspace bench shape.
@@ -255,11 +255,11 @@ def _build_melder_spellspace_runtime(
         shape,
         existence=Existence.unique_per_spell_space,
         frame_name="spellspace-cycle-experiment",
-        automatic=automatic,
+        dynamic=dynamic,
     )
     conduit = spellbook.conjure(
         name="spellspace-cycle-experiment",
-        dynamic=(not automatic),
+        dynamic=dynamic,
     )
 
     def enter_scope() -> Any:
@@ -295,7 +295,7 @@ def _measure_normal_and_lesser_conduit_cycle(
         shape: RuntimeBenchShape,
         *,
         iters: int,
-        automatic: bool,
+        dynamic: bool,
 ) -> tuple[tuple[float, float, float, float], tuple[float, float, float, float]]:
     """
     Measure one normal-conduit and one lesser-conduit cycle for the given shape.
@@ -313,11 +313,11 @@ def _measure_normal_and_lesser_conduit_cycle(
                 shape,
                 existence=Existence.unique_per_conduit,
                 frame_name="conduit-cycle-experiment",
-                dynamic=(not automatic),
+                dynamic=dynamic,
             )
             conduit = spellbook.conjure(
                 name="conduit-cycle-experiment",
-                dynamic=(not automatic),
+                dynamic=dynamic,
             )
             return spellbook, conduit, root_id
 
@@ -405,16 +405,16 @@ def _run_shape(
         shape: RuntimeBenchShape,
         *,
         iters: int,
-        automatic: bool,
+        dynamic: bool,
 ) -> None:
     """
     Run one Melder spellspace-cycle timing shape and print the result.
     """
     enter_scope, meld_in_scope, exit_scope, cleanup = _build_melder_spellspace_runtime(
         shape,
-        dynamic=(not automatic),
+        dynamic=dynamic,
     )
-    mode_label = "automatic" if automatic else "dynamic"
+    mode_label = "dynamic" if dynamic else "automatic"
     try:
         build_ns, first_ns, cached_ns, exit_ns, total_ns = (
             _average_spellspace_cycle_metrics_ns(
@@ -473,11 +473,12 @@ def _run_bench() -> None:
     Execute the focused Melder spellspace-cycle experiment.
     """
     iters = 500
-    for automatic in (True, False):
+    for dynamic in (False, True):
         for shape in (_solo_shape(), _shallow_shape(), _deep_shape()):
-            _run_shape(shape, iters=iters, dynamic=(not automatic))
+            _run_shape(shape, iters=iters, dynamic=dynamic)
     print("OK_MELDER_SPELLSPACE_CYCLE_EXPERIMENT")
 
 
 if __name__ == "__main__":
     _run_bench()
+

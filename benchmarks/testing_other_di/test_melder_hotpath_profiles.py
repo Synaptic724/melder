@@ -214,7 +214,7 @@ def test_profile_conjure_depth9_hotpaths() -> None:
     if PROFILE_RECORD_PHASE_TIMINGS:
         with _phase_timing_recorder() as timings:
             t0 = time.perf_counter()
-            conduit = spellbook.conjure(name="profile-conjure-depth9", automatic=True)
+            conduit = spellbook.conjure(name="profile-conjure-depth9", dynamic=False)
             conjure_s = time.perf_counter() - t0
 
         print(f"Conjure total (ms): {_ms(conjure_s):.3f}")
@@ -222,7 +222,7 @@ def test_profile_conjure_depth9_hotpaths() -> None:
             print(f"Phase {phase_name} (ms): {_ms(elapsed):.3f}")
     else:
         t0 = time.perf_counter()
-        conduit = spellbook.conjure(name="profile-conjure-depth9", automatic=True)
+        conduit = spellbook.conjure(name="profile-conjure-depth9", dynamic=False)
         conjure_s = time.perf_counter() - t0
         print(f"Conjure total (ms): {_ms(conjure_s):.3f}")
 
@@ -231,7 +231,7 @@ def test_profile_conjure_depth9_hotpaths() -> None:
     def _conjure_only_profile() -> None:
         sb, _ = _build_depth9_spellbook("profile-conjure-depth9-cprofile")
         t0_inner = time.perf_counter()
-        conduit_inner = sb.conjure(name="profile-conjure-depth9-cprofile", automatic=True)
+        conduit_inner = sb.conjure(name="profile-conjure-depth9-cprofile", dynamic=False)
         elapsed = time.perf_counter() - t0_inner
         print(f"Conjure (cprofile target) (ms): {_ms(elapsed):.3f}")
         conduit_inner.cleanup()
@@ -263,7 +263,7 @@ def test_profile_meld_depth9_hotpaths() -> None:
     top = PROFILE_TOP
 
     spellbook, root_id = _build_depth9_spellbook("profile-meld-depth9")
-    conduit = spellbook.conjure(name="profile-meld-depth9", automatic=True)
+    conduit = spellbook.conjure(name="profile-meld-depth9", dynamic=False)
     try:
         t0 = time.perf_counter()
         root1 = conduit.meld(spell=root_id)
@@ -290,7 +290,7 @@ def test_profile_meld_depth9_hotpaths() -> None:
 
         def _meld_cold_profile() -> None:
             sb, root = _build_depth9_spellbook("profile-meld-depth9-cold")
-            cd = sb.conjure(name="profile-meld-depth9-cold", automatic=True)
+            cd = sb.conjure(name="profile-meld-depth9-cold", dynamic=False)
             try:
                 _ = cd.meld(spell=root)
             finally:
@@ -298,7 +298,7 @@ def test_profile_meld_depth9_hotpaths() -> None:
 
         def _meld_warm_profile() -> None:
             sb, root = _build_depth9_spellbook("profile-meld-depth9-warm")
-            cd = sb.conjure(name="profile-meld-depth9-warm", automatic=True)
+            cd = sb.conjure(name="profile-meld-depth9-warm", dynamic=False)
             try:
                 _ = cd.meld(spell=root)
                 _ = cd.meld(spell=root)
@@ -335,7 +335,7 @@ def test_profile_cycle_conjure_meld_cleanup_depth9() -> None:
     for i in range(cycles):
         spellbook, root_id = _build_depth9_spellbook(f"profile-cycle-depth9-{i}")
         t0 = time.perf_counter()
-        conduit = spellbook.conjure(name=f"profile-cycle-depth9-{i}", automatic=True)
+        conduit = spellbook.conjure(name=f"profile-cycle-depth9-{i}", dynamic=False)
         conjure_times.append(time.perf_counter() - t0)
         try:
             t0 = time.perf_counter()
@@ -349,3 +349,4 @@ def test_profile_cycle_conjure_meld_cleanup_depth9() -> None:
     _summarize_samples("cycle conjure", conjure_times)
     _summarize_samples("cycle meld", meld_times)
     _summarize_samples("cycle cleanup", cleanup_times)
+

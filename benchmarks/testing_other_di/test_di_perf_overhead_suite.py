@@ -275,7 +275,7 @@ def _melder_run(s: PerfScenario, mode: str) -> PerfRow:
     config_id = spellbook.bind(spell=s.config_cls, existence=existence, permissions="create")
     logger_id = spellbook.bind(spell=s.logger_cls, existence=existence, permissions="create")
     service_id = spellbook.bind(spell=s.service_cls, existence=existence, permissions="create")
-    conduit = spellbook.conjure(name=f"perf-{s.name}-{mode}", automatic=True)
+    conduit = spellbook.conjure(name=f"perf-{s.name}-{mode}", dynamic=False)
     build_ns = _ns() - t0
 
     try:
@@ -813,3 +813,4 @@ def test_perf_realistic_heavy_graph_transient_all_frameworks() -> None:
         tries=s.settings.tries,
         warmup=s.settings.warmup,
     )
+

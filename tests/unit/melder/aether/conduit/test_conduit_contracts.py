@@ -1,4 +1,4 @@
-﻿import time
+import time
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -26,14 +26,13 @@ def _build_conduit(
     conduit_state: ConduitState,
     aetheric_frame: str = "default",
     policy: Policies = Policies.default,
-    automatic: bool = True,
+    dynamic: bool = False,
     name: str | None = None,
     root_conduit_id: str | None = None,
 ) -> Conduit:
     """
     Build a Conduit with the current injected-service constructor contract.
     """
-    dynamic = not automatic
     creation_gate_controller = CreationGateController()
     aetheric_frame_object = MagicMock()
     aetheric_frame_object._conduits = {}
@@ -278,7 +277,7 @@ def test_link_publishes_peer_record_when_target_participates_in_nexus(
         conduit_state=ConduitState.normal,
         aetheric_frame="default",
         policy=Policies.default,
-        automatic=False,
+        dynamic=True,
     )
     try:
         target._nexus_publish_enabled = True
@@ -421,7 +420,7 @@ def test_sever_link_publishes_peer_record_when_target_participates_in_nexus(
         conduit_state=ConduitState.normal,
         aetheric_frame="default",
         policy=Policies.default,
-        automatic=False,
+        dynamic=True,
     )
     try:
         target._nexus_publish_enabled = True
@@ -1545,5 +1544,6 @@ def test_cleanup_lesser_conduits_delegates(conduit_normal: Conduit) -> None:
     conduit_normal.cleanup_lesser_conduits()
 
     conduit_normal._conduit_ward.cleanup_all_lesser_conduits.assert_called_once_with()
+
 
 

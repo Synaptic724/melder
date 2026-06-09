@@ -965,7 +965,7 @@ def _build_runtime_melder() -> _RuntimeOps:
             existence = Existence.many
         spell_ids[cls] = spellbook.bind(spell=cls, existence=existence, permissions="create")
 
-    conduit = spellbook.conjure(name="real-world-gauntlet", automatic=True)
+    conduit = spellbook.conjure(name="real-world-gauntlet", dynamic=False)
 
     def _get(cls: type) -> Any:
         root = conduit.meld(spell=spell_ids[cls])
@@ -1575,3 +1575,4 @@ def test_real_world_gauntlet() -> None:
             "Shared real-world gauntlet runner failed with exit code "
             f"{completed.returncode}."
         )
+

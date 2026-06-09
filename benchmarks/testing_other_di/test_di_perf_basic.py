@@ -233,7 +233,7 @@ def _melder_run(mode: str) -> _PerfRow:
     )
 
     t0 = _ns()
-    conduit = spellbook.conjure(name=f"perf-{mode}", automatic=True)
+    conduit = spellbook.conjure(name=f"perf-{mode}", dynamic=False)
     build_ns = _ns() - t0
 
     try:
@@ -585,3 +585,4 @@ def test_perf_small_graph_singletons_all_frameworks() -> None:
 def test_perf_small_graph_transient_all_frameworks() -> None:
     rows = _run_all_frameworks(mode="transient")
     _print_table("Small graph perf (TRANSIENT / MANY semantics) — avg over many resolves (build excluded)", rows)
+

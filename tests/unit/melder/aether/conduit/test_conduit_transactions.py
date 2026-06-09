@@ -1,4 +1,4 @@
-﻿from unittest.mock import MagicMock
+from unittest.mock import MagicMock
 
 import pytest
 
@@ -23,13 +23,12 @@ def _build_conduit(
     conduit_state: ConduitState,
     aetheric_frame: str = "default",
     policy: Policies = Policies.default,
-    automatic: bool = True,
+    dynamic: bool = False,
     root_conduit_id: str | None = None,
 ) -> Conduit:
     """
     Build a Conduit with the current injected-service constructor contract.
     """
-    dynamic = not automatic
     aetheric_frame_object = MagicMock()
     aetheric_frame_object._conduits = {}
     conduit_cloud = MagicMock()
@@ -100,7 +99,7 @@ def test_conduit_begin_transaction_link_accepts_conduits_list(
         conduit_state=ConduitState.normal,
         aetheric_frame="default",
         policy=Policies.default,
-        automatic=False,
+        dynamic=True,
     )
     try:
         mediator = MagicMock(get_active_request=lambda: None)
@@ -235,7 +234,7 @@ def test_conduit_begin_transaction_link_auto_adds_local_conduit(
         conduit_state=ConduitState.normal,
         aetheric_frame="default",
         policy=Policies.default,
-        automatic=False,
+        dynamic=True,
     )
     try:
         mediator = MagicMock(get_active_request=lambda: None)
@@ -400,5 +399,6 @@ def test_conduit_transaction_context_ends_on_exception(
         "bind",
         success=False,
     )
+
 
 

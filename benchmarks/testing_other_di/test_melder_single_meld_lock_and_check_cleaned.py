@@ -339,7 +339,7 @@ def _build_runtime() -> Tuple[Spellbook, Conduit, Dict[type, str]]:
             permissions="create",
         )
 
-    conduit = spellbook.conjure(name="single-meld-lock-bench", automatic=True)
+    conduit = spellbook.conjure(name="single-meld-lock-bench", dynamic=False)
     return spellbook, conduit, spell_ids
 
 
@@ -438,3 +438,4 @@ def test_melder_single_meld_lock_and_check_cleaned() -> None:
         raise AssertionError("Expected at least one check_cleaned() call in first meld.")
     if second_report["check_cleaned_total"] <= 0:
         raise AssertionError("Expected at least one check_cleaned() call in second meld.")
+

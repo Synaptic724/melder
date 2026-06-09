@@ -113,7 +113,7 @@ def _build_runtime_melder() -> _support.RuntimeOps:
             permissions="create",
         )
 
-    conduit = spellbook.conjure(name="real-world-gauntlet", automatic=True)
+    conduit = spellbook.conjure(name="real-world-gauntlet", dynamic=False)
 
     def _get(cls: type) -> Any:
         resolved = conduit.meld(spell=spell_ids[cls])
@@ -315,3 +315,4 @@ def test_melder_gauntlet() -> None:
 
 if __name__ == "__main__":
     test_melder_gauntlet()
+

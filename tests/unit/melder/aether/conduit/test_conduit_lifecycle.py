@@ -38,7 +38,7 @@ def _build_conduit(
     conduit_state: ConduitState,
     aetheric_frame: str = "default",
     policy: Policies = Policies.default,
-    automatic: bool = True,
+    dynamic: bool = False,
     name: str | None = None,
     logger: object | None = None,
     conduit_id: str | None = None,
@@ -48,7 +48,6 @@ def _build_conduit(
     """
     Build a Conduit with the current injected-service constructor contract.
     """
-    dynamic = not automatic
     creation_gate_controller = CreationGateController()
     aetheric_frame_object = MagicMock()
     aetheric_frame_object._conduits = {}

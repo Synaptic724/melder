@@ -217,7 +217,7 @@ class CodegenBenchmarkSession:
 
         self._conduit = self._spellbook.conjure(
             name=frame_name,
-            automatic=True,
+            dynamic=False,
         )
         if prewarm_root:
             self.resolve_root_once()
@@ -1522,3 +1522,4 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
+
