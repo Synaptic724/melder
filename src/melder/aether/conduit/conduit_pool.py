@@ -25,7 +25,8 @@ class ConduitPool(AbstractElasticPool[Any]):
         - Never constructs a new conduit itself.
 
     Threading:
-        - Inherits pool policy locking from `AbstractElasticPool`.
+        - Idle deque operations follow the base pool's deque-first advisory
+          policy.
         - Adds no extra shared mutable state beyond the root-conduit reference.
     """
 
@@ -88,14 +89,13 @@ class ConduitPool(AbstractElasticPool[Any]):
             - Returns `None` when the pool is empty.
             - Returns the lesser unattached so the caller still owns new-lesser
               creation, hook order, and lineage-link timing.
-            - Skips generic diagnostic in-use bookkeeping because this trusted
-              private fixed-capacity hot path does not use the generic elastic
-              accounting contract.
+            - Uses one direct deque pop miss path instead of pre-checking idle
+              state under an outer Python lock.
         """
-        with self._lock:
-            if not self._enabled or not self._idle:
-                return None
+        try:
             return self._idle.pop()
+        except IndexError:
+            return None
 
     def destroy_object(self, obj: Conduit) -> None:
         """
@@ -115,24 +115,18 @@ class ConduitPool(AbstractElasticPool[Any]):
             Support soft lesser cleanup before full pool-acquire wiring exists.
 
         Contract:
-            - Retains the conduit when idle capacity allows.
-            - Destroys the conduit through the hard lane when the pool is
-              disabled or already full.
             - Assumes trusted private callers return each conduit at most once.
-            - Applies at most one decay step only when the idle list is already
-              at the current retained limit.
-            - Skips generic diagnostic in-use bookkeeping because this trusted
-              private fixed-capacity hot path does not use the generic elastic
-              accounting contract.
+            - Appends the returned conduit first.
+            - Retains the conduit while idle capacity remains at or below the
+              current target.
+            - Evicts one cold idle conduit with `popleft()` when retained
+              capacity is exceeded.
         """
-        with self._lock:
-            if self._enabled and len(self._idle) < self._target_idle:
-                self._idle.append(conduit)
-                return
-            if self._enabled and not self._is_fixed_capacity_target_locked():
-                now = self._time_func()
-                self._apply_decay_once_locked(now)
-                if self._enabled and len(self._idle) < self._target_idle:
-                    self._idle.append(conduit)
-                    return
-            self.destroy_object(conduit)
+        self._idle.append(conduit)
+        if len(self._idle) <= self._target_idle:
+            return
+        try:
+            overflow_conduit = self._idle.popleft()
+        except IndexError:
+            return
+        self.destroy_object(overflow_conduit)

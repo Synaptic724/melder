@@ -108,13 +108,12 @@ class SpellSpacePool(AbstractElasticPool[SpellSpace]):
             - Creates one new spellspace when the idle pool is empty.
             - Returns the spellspace with `_registry_tracked == False`.
             - Performs no registry add and no `prepare_object(...)` call.
-            - Skips generic diagnostic in-use bookkeeping because this trusted
-              private fixed-capacity hot path does not use the generic elastic
-              accounting contract.
+            - Uses one direct deque pop miss path instead of pre-checking idle
+              state under an outer Python lock.
         """
-        with self._lock:
-            if self._enabled and self._idle:
-                return self._idle.pop()
+        try:
+            return self._idle.pop()
+        except IndexError:
             return self.create_object(*args, **kwargs)
 
     def acquire(
@@ -128,9 +127,9 @@ class SpellSpacePool(AbstractElasticPool[SpellSpace]):
 
         Purpose:
             SpellSpace pools are created with fixed `baseline_idle == max_idle`,
-            so the generic elastic-pool stretch/decay bookkeeping does not add
-            value on the hot path. This override keeps the same external acquire
-            contract while skipping the generic time-based policy work.
+            so the generic elastic-pool synchronization work does not add value
+            on the hot path. This override keeps the same external acquire
+            contract while making the direct deque pop the first operation.
 
         Contract:
             - Reuses one idle spellspace when available.
@@ -138,15 +137,13 @@ class SpellSpacePool(AbstractElasticPool[SpellSpace]):
             - Preserves manual-path registry tracking when `track_registry=True`.
             - Leaves managed-path spellspaces untracked in the registry when
               `track_registry=False`.
-            - Skips generic diagnostic in-use bookkeeping because this trusted
-              private fixed-capacity hot path does not use the generic elastic
-              accounting contract.
+            - Uses one direct deque pop miss path instead of pre-checking idle
+              state under an outer Python lock.
         """
-        with self._lock:
-            if self._enabled and self._idle:
-                pooled_space = self._idle.pop()
-            else:
-                pooled_space = self.create_object(*args, **kwargs)
+        try:
+            pooled_space = self._idle.pop()
+        except IndexError:
+            pooled_space = self.create_object(*args, **kwargs)
         return self.prepare_object(
             pooled_space,
             *args,
@@ -168,16 +165,17 @@ class SpellSpacePool(AbstractElasticPool[SpellSpace]):
             - Uses a conduit-local fixed-capacity fast path.
             - Assumes trusted private callers do not double-return the same
               spellspace shell.
-            - Retains returned spellspaces while idle capacity remains below the
-              current target.
-            - Destroys excess spellspaces immediately instead of paying generic
-              elastic-pool time/decay bookkeeping that this pool does not need.
-            - Skips generic diagnostic in-use bookkeeping because this trusted
-              private fixed-capacity hot path does not use the generic elastic
-              accounting contract.
+            - Appends the returned spellspace first.
+            - Retains returned spellspaces while idle capacity remains at or
+              below the current target.
+            - Evicts one cold idle spellspace with `popleft()` when retained
+              capacity is exceeded.
         """
-        with self._lock:
-            if self._enabled and len(self._idle) < self._target_idle:
-                self._idle.append(obj)
-                return
-            self.destroy_object(obj)
+        self._idle.append(obj)
+        if len(self._idle) <= self._target_idle:
+            return
+        try:
+            overflow_space = self._idle.popleft()
+        except IndexError:
+            return
+        self.destroy_object(overflow_space)
