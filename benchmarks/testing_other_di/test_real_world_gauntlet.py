@@ -951,6 +951,12 @@ def _build_runtime_melder() -> _RuntimeOps:
 
     spellbook = Spellbook(aetheric_frame="real-world-gauntlet")
     cfg = spellbook.get_configuration()
+    spellbook.configure_aether_frame(
+        system_state=None,
+        disposal=None,
+        disposal_method_names=None,
+        system_caching_enabled=True,
+    )
     cfg.set_property("phase_scheduler_workers_per_spellbook", 3)
 
     spell_ids: dict[type, str] = {}

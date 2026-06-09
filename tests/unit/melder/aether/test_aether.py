@@ -1560,44 +1560,50 @@ def test_aether_configuration_builder_hands_off_activated_configuration() -> Non
     assert builder.cleaned is True
 
 
-def test_aether_configuration_defaults_enable_system_caching() -> None:
+def test_aetheric_frame_configuration_defaults_disable_system_caching() -> None:
     """
-    Verify root Aether configuration defaults system caching on.
+    Verify frame configuration defaults system caching off.
 
     Contract:
-    - Fresh AetherConfiguration instances expose system_caching_enabled=True.
+    - Fresh AethericFrameConfiguration instances expose
+      system_caching_enabled=False.
     - The stored cache-root fragment is package-relative `__melder_cache__`.
     """
     from pathlib import Path
 
-    configuration = Aether().create_configuration()
+    configuration = AethericFrameConfiguration(
+        origin_spellbook_id="spellbook-alpha",
+        system_state=SystemState.automatic,
+        ai_native_enabled=False,
+        rift_enabled=False,
+    )
 
-    assert configuration.system_caching_enabled is True
+    assert configuration.system_caching_enabled is False
     assert configuration.system_cache_root_path == Path("__melder_cache__")
 
 
-def test_aether_configuration_builder_can_disable_system_caching() -> None:
+def test_aetheric_frame_configuration_mutator_can_disable_system_caching() -> None:
     """
-    Verify the Aether configuration builder can override the cache policy flag.
+    Verify the frame-configuration mutator can override the cache policy flag.
 
     Contract:
-    - Builder passthrough updates the root configuration flag before handoff.
-    - The handed-off configuration preserves the selected bool value.
+    - The mutator updates the frame configuration cache policy flag.
+    - The updated configuration preserves the selected bool value.
     """
-    builder = Aether().create_configuration_builder()
-
-    configuration = (
-        builder
-        .with_system_caching_enabled(False)
-        .build()
+    configuration = AethericFrameConfiguration(
+        origin_spellbook_id="spellbook-alpha",
+        system_state=SystemState.automatic,
+        ai_native_enabled=False,
+        rift_enabled=False,
     )
+    configuration.with_system_caching_enabled(False)
 
     assert configuration.system_caching_enabled is False
 
 
-def test_aether_configuration_resolves_cache_root_under_package_root() -> None:
+def test_aetheric_frame_configuration_resolves_cache_root_under_package_root() -> None:
     """
-    Verify the cache-root fragment resolves under the installed package root.
+    Verify the frame cache-root fragment resolves under the installed package root.
 
     Contract:
     - The stored config value remains relative.
@@ -1606,9 +1612,14 @@ def test_aether_configuration_resolves_cache_root_under_package_root() -> None:
     import inspect
     from pathlib import Path
 
-    configuration = Aether().create_configuration()
+    configuration = AethericFrameConfiguration(
+        origin_spellbook_id="spellbook-alpha",
+        system_state=SystemState.automatic,
+        ai_native_enabled=False,
+        rift_enabled=False,
+    )
     expected_root = (
-        Path(inspect.getfile(AetherConfiguration)).resolve().parent.parent
+        Path(inspect.getfile(AethericFrameConfiguration)).resolve().parent.parent.parent
         / "__melder_cache__"
     )
 

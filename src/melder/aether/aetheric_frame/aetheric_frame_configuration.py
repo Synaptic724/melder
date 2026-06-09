@@ -78,7 +78,7 @@ class AethericFrameConfiguration(Cleanable):
             ai_native_enabled: bool,
             rift_enabled: bool,
             shared_framewide_spellbook_configuration: bool = False,
-            system_caching_enabled: bool = True,
+            system_caching_enabled: bool = False,
             system_cache_root_path: Optional[Union[str, Path]] = None,
             disable_all_transactions_after_conjure: bool = False,
             disable_mutations: bool = True,
@@ -594,7 +594,7 @@ class AethericFrameConfiguration(Cleanable):
             self._ai_native_enabled = False
             self._rift_enabled = False
             self._shared_framewide_spellbook_configuration = False
-            self._system_caching_enabled = True
+            self._system_caching_enabled = False
             self._system_cache_root_path = (
                 self._build_default_system_cache_root_path()
             )

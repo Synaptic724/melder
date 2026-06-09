@@ -188,7 +188,7 @@ and logging.
         self._nexus: Nexus = Nexus()
         self._conjured = False
         self._cache_emit_required: bool = False
-        self._caching_enabled: bool = True
+        self._caching_enabled: bool = False
         self._caching_system: Optional[CachingSystem] = None
         self._pending_binding_frame_keys: Set[str] = set()
         self._pending_structural_spells: List[Spell] = []

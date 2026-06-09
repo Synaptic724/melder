@@ -1,7 +1,8 @@
+from collections import deque
 import threading
 import time
 from abc import ABC, abstractmethod
-from typing import Any, Callable, ClassVar, Dict, Generic, List, Optional, TypeVar
+from typing import Any, Callable, ClassVar, Deque, Dict, Generic, Optional, TypeVar
 
 from melder.utilities.general_base.cleanable import Cleanable
 
@@ -138,7 +139,7 @@ class AbstractElasticPool(Generic[_T], Cleanable, ABC):
                 * (float(self._decay_percent_per_interval) / 100.0)
             ),
         )
-        self._idle: List[_T] = []
+        self._idle: Deque[_T] = deque()
         self._in_use_count: int = 0
         self._lock: threading.RLock = threading.RLock()
         self._time_func: Callable[[], float] = time.monotonic if time_func is None else time_func
