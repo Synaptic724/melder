@@ -160,9 +160,9 @@ def test_acquire_reuses_retained_object() -> None:
     assert pool.created_ids == [1]
 
 
-def test_release_without_matching_acquire_raises() -> None:
+def test_release_without_matching_acquire_retains_when_capacity_allows() -> None:
     """
-    Releasing without an in-use object count should raise.
+    Releasing without an in-use object count should not hard-fail the hot path.
     """
     clock = _Clock()
     pool = _TestElasticPool(
@@ -171,16 +171,16 @@ def test_release_without_matching_acquire_raises() -> None:
         time_func=clock,
     )
 
-    try:
-        pool.release({"id": 1, "prepared_tag": None, "reset_count": 0})
-    except RuntimeError:
-        return
-    raise AssertionError("Expected RuntimeError when release has no in-use object.")
+    pool.release({"id": 1, "prepared_tag": None, "reset_count": 0})
+
+    assert pool.in_use_count == 0
+    assert pool.idle_count == 1
+    assert pool.destroyed_ids == []
 
 
 def test_acquire_stretches_target_when_demand_exceeds_capacity() -> None:
     """
-    Acquire should stretch target idle once demand exceeds prepared capacity.
+    Acquire should stretch target idle on each direct miss until capped.
     """
     clock = _Clock()
     pool = _TestElasticPool(
@@ -197,7 +197,7 @@ def test_acquire_stretches_target_when_demand_exceeds_capacity() -> None:
     assert first["id"] == 1
     assert second["id"] == 2
     assert third["id"] == 3
-    assert pool.target_idle == 3
+    assert pool.target_idle == 6
     assert pool.in_use_count == 3
 
 
@@ -219,7 +219,7 @@ def test_acquire_does_not_stretch_when_reusing_idle_object() -> None:
     reused = pool.acquire()
 
     assert reused is first
-    assert pool.target_idle == 2
+    assert pool.target_idle == 4
     assert pool.in_use_count == 2
 
 
@@ -246,7 +246,7 @@ def test_stretch_caps_at_max_idle() -> None:
 
 def test_release_destroys_excess_when_idle_already_full() -> None:
     """
-    Release should destroy returned objects once idle retention is full.
+    Release should destroy the cold retained object once idle retention is full.
     """
     clock = _Clock()
     pool = _TestElasticPool(
@@ -261,12 +261,12 @@ def test_release_destroys_excess_when_idle_already_full() -> None:
     pool.release(second)
 
     assert pool.idle_count == 1
-    assert pool.destroyed_ids == [2]
+    assert pool.destroyed_ids == [1]
 
 
 def test_no_decay_before_cooldown_elapses() -> None:
     """
-    Decay should not start before settle time has elapsed.
+    Overflow trim should not decay before settle time has elapsed.
     """
     clock = _Clock()
     pool = _TestElasticPool(
@@ -282,18 +282,21 @@ def test_no_decay_before_cooldown_elapses() -> None:
     pool.acquire()
     pool.acquire()
     pool.acquire()
-    assert pool.target_idle == 3
+    assert pool.target_idle == 6
+
+    for item_id in range(100, 106):
+        pool._idle.append({"id": item_id, "prepared_tag": None, "reset_count": 0})
 
     clock.value = 9.0
     returned = {"id": 999, "prepared_tag": None, "reset_count": 0}
     pool.release(returned)
 
-    assert pool.target_idle == 3
+    assert pool.target_idle == 6
 
 
 def test_decay_reduces_target_after_cooldown() -> None:
     """
-    Decay should reduce the target idle toward baseline after cooldown.
+    Overflow trim should reduce target idle by one step after cooldown.
     """
     clock = _Clock()
     pool = _TestElasticPool(
@@ -309,17 +312,20 @@ def test_decay_reduces_target_after_cooldown() -> None:
     pool.acquire()
     pool.acquire()
     pool.acquire()
-    assert pool.target_idle == 3
+    assert pool.target_idle == 6
+
+    for item_id in range(100, 106):
+        pool._idle.append({"id": item_id, "prepared_tag": None, "reset_count": 0})
 
     clock.value = 16.0
     pool.release({"id": 999, "prepared_tag": None, "reset_count": 0})
 
-    assert pool.target_idle == 2
+    assert pool.target_idle == 5
 
 
-def test_decay_applies_multiple_intervals() -> None:
+def test_decay_applies_single_step_per_overflow() -> None:
     """
-    Decay should apply multiple steps when several intervals have elapsed.
+    Overflow-triggered decay should apply only one step per release.
     """
     clock = _Clock()
     pool = _TestElasticPool(
@@ -334,17 +340,20 @@ def test_decay_applies_multiple_intervals() -> None:
 
     for _ in range(11):
         pool.acquire()
-    assert pool.target_idle == 20
+    assert pool.target_idle == 100
+
+    for item_id in range(1000, 1100):
+        pool._idle.append({"id": item_id, "prepared_tag": None, "reset_count": 0})
 
     clock.value = 31.0
     pool.release({"id": 999, "prepared_tag": None, "reset_count": 0})
 
-    assert pool.target_idle == 10
+    assert pool.target_idle == 90
 
 
 def test_decay_never_drops_below_baseline() -> None:
     """
-    Decay should stop at baseline_idle even after long quiet periods.
+    Overflow-triggered decay should stop at baseline_idle.
     """
     clock = _Clock()
     pool = _TestElasticPool(
@@ -359,31 +368,17 @@ def test_decay_never_drops_below_baseline() -> None:
 
     for _ in range(4):
         pool.acquire()
-    assert pool.target_idle == 6
+    assert pool.target_idle == 48
+
+    for item_id in range(2000, 2048):
+        pool._idle.append({"id": item_id, "prepared_tag": None, "reset_count": 0})
 
     clock.value = 100.0
     pool.release({"id": 999, "prepared_tag": None, "reset_count": 0})
+    clock.value = 101.0
+    pool.release({"id": 1000, "prepared_tag": None, "reset_count": 0})
 
     assert pool.target_idle == 3
-
-
-def test_disabled_pool_destroys_on_release() -> None:
-    """
-    Disabled pools should destroy returned objects instead of retaining them.
-    """
-    clock = _Clock()
-    pool = _TestElasticPool(
-        enabled=False,
-        baseline_idle=2,
-        max_idle=10,
-        time_func=clock,
-    )
-    obj = pool.acquire()
-
-    pool.release(obj)
-
-    assert pool.idle_count == 0
-    assert pool.destroyed_ids == [1]
 
 
 def test_describe_reports_current_pool_state() -> None:
@@ -403,9 +398,8 @@ def test_describe_reports_current_pool_state() -> None:
     pool.acquire(prepared_tag="x")
     snapshot = pool.describe()
 
-    assert snapshot["enabled"] is True
     assert snapshot["baseline_idle"] == 4
-    assert snapshot["target_idle"] == 4
+    assert snapshot["target_idle"] == 5
     assert snapshot["max_idle"] == 12
     assert snapshot["idle_count"] == 0
     assert snapshot["in_use_count"] == 1

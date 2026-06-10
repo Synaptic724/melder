@@ -120,7 +120,7 @@ def test_conduit_pool_destroy_object_calls_permanent_cleanup() -> None:
 
 def test_conduit_pool_fixed_capacity_full_path_skips_decay_clock() -> None:
     """
-    Verify a full fixed-capacity pool destroys overflow without clock access.
+    Verify a full fixed-capacity pool trims overflow without clock access.
     """
     root = _RootConduitStub("root-1")
     pool = ConduitPool(
@@ -162,5 +162,5 @@ def test_conduit_pool_fixed_capacity_full_path_skips_decay_clock() -> None:
     pool.return_lesser_conduit(overflow)
 
     assert pool.idle_count == 1
-    assert retained.cleanup_calls == 0
-    assert overflow.cleanup_calls == 1
+    assert retained.cleanup_calls == 1
+    assert overflow.cleanup_calls == 0
