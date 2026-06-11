@@ -1657,33 +1657,28 @@ def test_sha256_profile_changes_with_binding_signature_existence_and_disposal():
     profile = class_profile(method_names=["cleanup"])
     base = Bind.sha256_profile(
         profile,
-        spell_name="Service",
         existence=Existence.unique,
         disposal_method_names=(),
     )
     with_binding_name = Bind.sha256_profile(
         profile,
-        spell_name="Service",
         binding_name="primary",
         existence=Existence.unique,
         disposal_method_names=(),
     )
     with_frame = Bind.sha256_profile(
         profile,
-        spell_name="Service",
         spellframe="Frame",
         existence=Existence.unique,
         disposal_method_names=(),
     )
     with_existence = Bind.sha256_profile(
         profile,
-        spell_name="Service",
         existence=Existence.many,
         disposal_method_names=(),
     )
     with_disposal = Bind.sha256_profile(
         profile,
-        spell_name="Service",
         existence=Existence.unique,
         disposal_method_names=("cleanup",),
     )
@@ -1705,6 +1700,7 @@ def test_bind_resolves_disposal_metadata_during_bind(monkeypatch):
         Existence.unique,
         aetheric_frame="f",
         spell=RealClassImplementingProto,
+        configured_disposal_method_names=frozenset({"cleanup", "dispose"}),
     )
     assert spell.kwargs["disposal_method_names"] == frozenset({"cleanup"})
 

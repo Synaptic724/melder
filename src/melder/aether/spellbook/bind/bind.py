@@ -194,7 +194,7 @@ class Bind(Cleanable):
             existence: Existence,
             permissions: Permissions,
             aetheric_frame: str,
-            configured_disposal_method_names: Optional[frozenset[str]],
+            configured_disposal_method_names: Optional[frozenset[str]] = None,
             profile: str = "general",
     ) -> Spell:
         """
@@ -272,6 +272,7 @@ class Bind(Cleanable):
                     "General profile creation must return SpellGeneralProfile."
                 )
             binding_profile: SpellBindingProfile = provisional_general_profile.binding_profile
+            spell_name = getattr(spell, "__name__", type(spell).__name__)
             resolved_disposal_method_names: frozenset[str] = frozenset()
             if (
                     configured_disposal_method_names
@@ -314,7 +315,6 @@ class Bind(Cleanable):
                         spell, spellframe
                     )
                     if not ok:
-                        spell_name = getattr(spell, "__name__", type(spell).__name__)
                         missing_str = ", ".join(sorted(missing_members))
                         raise TypeError(
                             f"Class '{spell_name}' does not structurally implement "
@@ -342,7 +342,7 @@ class Bind(Cleanable):
                 spell_index=spell_index,
                 spellframe=spellframe,
                 binding_name=binding_name,
-                spell_name=str(getattr(spell, "__name__", type(spell).__name__)),
+                spell_name=str(spell_name),
                 existence=existence,
                 spell_type=spell_type,
                 profile=provisional_general_profile,
@@ -364,6 +364,7 @@ class Bind(Cleanable):
             spell: Any,
             *,
             spellframe: Any = None,
+            spell_name: Optional[str] = None,
             binding_name: Optional[str] = None,
             existence: Existence = Existence.unique,
             disposal_method_names: Sequence[str] = (),
@@ -392,6 +393,7 @@ class Bind(Cleanable):
         return Bind.sha256_profile(
             profile.binding_profile,
             spellframe=spellframe,
+            spell_name=spell_name,
             binding_name=binding_name,
             existence=existence,
             disposal_method_names=tuple(disposal_method_names),
@@ -402,6 +404,7 @@ class Bind(Cleanable):
             profile: SpellBindingProfile,
             *,
             spellframe: Any = None,
+            spell_name: Optional[str] = None,
             binding_name: Optional[str] = None,
             existence: Optional[Existence] = None,
             disposal_method_names: Sequence[str] = (),
@@ -420,9 +423,9 @@ class Bind(Cleanable):
               runtime object identity.
             - Uses the explicit `v3-binding` schema prefix so future
               fingerprint-shape changes can version cleanly.
-            - Includes the bind-time lookup signature, lifecycle existence,
-              and resolved disposal metadata because those values shape later
-              compiler/runtime behavior.
+            - Includes the direct bind-time parameters that shape later
+              compiler/runtime behavior: spell_name, spellframe, binding_name,
+              existence, and resolved disposal metadata.
             - Equal bind signatures produce equal hashes; materially different
               signatures should produce different hashes.
         Returns:
@@ -475,6 +478,8 @@ class Bind(Cleanable):
             # Absolute fallback – should effectively never happen.
             parts.append(repr(type(profile)))
 
+        if spell_name is not None:
+            parts.append(spell_name)
         if spellframe is not None:
             parts.append(str(spellframe))
         if binding_name is not None:

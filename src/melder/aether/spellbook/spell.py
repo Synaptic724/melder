@@ -1,4 +1,14 @@
-from typing import TYPE_CHECKING, Optional, List, Any, Callable, Sequence, ClassVar, Union
+from typing import (
+    TYPE_CHECKING,
+    Optional,
+    List,
+    Any,
+    Callable,
+    Sequence,
+    ClassVar,
+    Union,
+    FrozenSet,
+)
 import ulid
 from threading import RLock
 from types import TracebackType
@@ -256,7 +266,7 @@ class Spell(Cleanable):
             spellbook: "Spellbook",
             profile: Optional[Any] = None,
             existing_object: Optional[object] = None,
-            disposal_method_names: Sequence[str] = (),
+            disposal_method_names: FrozenSet[str] = frozenset(),
             *args: Any,
             **kwargs: Any,
     ):
