@@ -78,13 +78,7 @@ class StubConfiguration:
 class StubSpellbook:
     def __init__(self, disposal_method_names=()):
         self._configuration = StubConfiguration(disposal_method_names)
-        self._bound_disposal_method_names_minimum = frozenset(disposal_method_names)
-
-    def get_configuration(self):
-        return self._configuration
-
-    def _get_bound_disposal_method_names_minimum(self):
-        return self._bound_disposal_method_names_minimum
+        self._configured_disposal_method_names = frozenset(disposal_method_names)
 
 
 class StubGeneralProfile(SpellGeneralProfile):
@@ -1712,7 +1706,7 @@ def test_bind_resolves_disposal_metadata_during_bind(monkeypatch):
         aetheric_frame="f",
         spell=RealClassImplementingProto,
     )
-    assert spell.kwargs["disposal_method_names"] == ["cleanup"]
+    assert spell.kwargs["disposal_method_names"] == frozenset({"cleanup"})
 
 
 # Additional SpellType coverage ---------------------------------------

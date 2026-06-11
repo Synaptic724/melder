@@ -343,7 +343,7 @@ class Spell(Cleanable):
         self.tags = list(args) if args else []
         self.metadata = kwargs if kwargs else {}
         self._mutation_override: Optional[dict[str, Any]] = None
-        self.disposal_method_names: List[str] = list(disposal_method_names)
+        self.disposal_method_names: frozenset[str] = frozenset(disposal_method_names)
         self.has_disposal_methods: bool = bool(self.disposal_method_names)
 
         # Hooks (private storage; Spellbook controls mutation)
@@ -477,8 +477,6 @@ class Spell(Cleanable):
                 self._mutation_override.clear()
             if self.dependencies:
                 self.dependencies.clear()
-            if self.disposal_method_names:
-                self.disposal_method_names.clear()
             self._cleaned = True
             self._hooks_enabled = False
 

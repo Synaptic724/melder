@@ -118,6 +118,7 @@ class Bind(Cleanable):
             spell: Any = None,
             spellframe: Any = None,
             binding_name: Optional[str] = None,
+            configured_disposal_method_names: Optional[frozenset[str]] = None,
             profile: str = "general",
     ) -> Union[Spell, Any]:
         """
@@ -167,6 +168,7 @@ class Bind(Cleanable):
                     existence,
                     permissions,
                     aetheric_frame,
+                    configured_disposal_method_names,
                     profile,
                 )
 
@@ -180,6 +182,7 @@ class Bind(Cleanable):
                 existence,
                 permissions,
                 aetheric_frame,
+                configured_disposal_method_names,
                 profile,
             )
 
@@ -191,6 +194,7 @@ class Bind(Cleanable):
             existence: Existence,
             permissions: Permissions,
             aetheric_frame: str,
+            configured_disposal_method_names: Optional[frozenset[str]],
             profile: str = "general",
     ) -> Spell:
         """
@@ -268,18 +272,20 @@ class Bind(Cleanable):
                     "General profile creation must return SpellGeneralProfile."
                 )
             binding_profile: SpellBindingProfile = provisional_general_profile.binding_profile
-            resolved_disposal_method_names: Sequence[str] = ()
-            if isinstance(binding_profile, ClassBindingProfile):
-                if self._spellbook._get_bound_disposal_method_names_minimum():
-                    resolved_disposal_method_names = sorted(
-                        self._spellbook._get_bound_disposal_method_names_minimum(
-                        ).intersection(binding_profile.method_names)
-                    )
+            resolved_disposal_method_names: frozenset[str] = frozenset()
+            if (
+                    configured_disposal_method_names
+                    and isinstance(binding_profile, ClassBindingProfile)
+            ):
+                resolved_disposal_method_names = frozenset(
+                    method_name
+                    for method_name in binding_profile.method_names
+                    if method_name in configured_disposal_method_names
+                )
             fingerprint: str = Bind.sha256_profile(
                 binding_profile,
                 spellframe=spellframe,
                 binding_name=binding_name,
-                spell_name=str(getattr(spell, "__name__", type(spell).__name__)),
                 existence=existence,
                 disposal_method_names=resolved_disposal_method_names,
             )

@@ -136,7 +136,7 @@ and logging.
         "_lookup_spells",
         "_pending_binding_frame_keys",
         "_pending_structural_spells",
-        "_bound_disposal_method_names_minimum",
+        "_configured_disposal_method_names",
         "_spell_id_pool",
         "_spell_system_states",
         "_spell_versions",
@@ -193,7 +193,7 @@ and logging.
         self._caching_system: Optional[CachingSystem] = None
         self._pending_binding_frame_keys: Set[str] = set()
         self._pending_structural_spells: List[Spell] = []
-        self._bound_disposal_method_names_minimum: Optional[frozenset[str]] = None
+        self._configured_disposal_method_names: Optional[frozenset[str]] = None
         self._conduit: Optional[Conduit] = None
         self._nexus_publish_enabled: bool = False
         self._aetheric_frame: str = aetheric_frame
@@ -548,7 +548,7 @@ and logging.
         del self._transaction_identity
         del self._pending_binding_frame_keys
         del self._pending_structural_spells
-        del self._bound_disposal_method_names_minimum
+        del self._configured_disposal_method_names
         del self._spell_system_states
         del self._configuration_locked
         del self._spellbook_validation_required
@@ -2938,6 +2938,7 @@ and logging.
             permissions: str | Permissions = "create",
             spellframe: Any = None,
             binding_name: Optional[str] = None,
+            disposal_method_names: Optional[Sequence[str]] = None,
             profile: str = "general",
             **kwargs: Any,
     ) -> str:
@@ -2970,6 +2971,20 @@ and logging.
         try:
             permissions_enum = EnumHelpers.convert_enum_and_check(permissions, Permissions)
             existence_enum = EnumHelpers.convert_enum_and_check(existence, Existence)
+            if self._configured_disposal_method_names is None:
+                if disposal_method_names is not None:
+                    self._configured_disposal_method_names = frozenset(
+                        disposal_method_names
+                    )
+                elif (
+                        self._configuration is not None
+                        and self._configuration.has_property("disposal_method_names")
+                ):
+                    self._configured_disposal_method_names = frozenset(
+                        self._configuration.get_property("disposal_method_names")
+                    )
+                else:
+                    self._configured_disposal_method_names = frozenset()
 
             new_spell = self._bind.bind(
                 permissions=permissions_enum,
@@ -2979,6 +2994,7 @@ and logging.
                 profile=profile,
                 existence=existence_enum,
                 aetheric_frame=self._aetheric_frame,
+                configured_disposal_method_names=self._configured_disposal_method_names,
             )
 
             if Spellbook._aether._check_for_spell(new_spell.spell_id, self._aetheric_frame):
@@ -3087,6 +3103,7 @@ and logging.
             permissions: str | Permissions = "create",
             spellframe: Any = None,
             binding_name: Optional[str] = None,
+            disposal_method_names: Optional[Sequence[str]] = None,
             profile: str = "general",
             **kwargs: Any,
     ) -> str:
@@ -3150,6 +3167,7 @@ and logging.
                 permissions=permissions,
                 spellframe=spellframe,
                 binding_name=binding_name,
+                disposal_method_names=disposal_method_names,
                 profile=profile,
                 **kwargs,
             )
@@ -3169,6 +3187,7 @@ and logging.
                 permissions=permissions,
                 spellframe=spellframe,
                 binding_name=binding_name,
+                disposal_method_names=disposal_method_names,
                 profile=profile,
                 **kwargs,
             )
@@ -3980,6 +3999,19 @@ and logging.
                     f"(spellbook_id={self._id}, conduit_id={conduit_id}, "
                     f"conduit_name={conduit_name})"
                 )
+
+            if self._configured_disposal_method_names is not None:
+                for spell in self._spells.values():
+                    if not isinstance(spell.disposal_method_names, frozenset):
+                        raise RuntimeError(
+                            "Spell disposal metadata must be frozen before conjure."
+                        )
+                    if spell.has_disposal_methods != bool(
+                            spell.disposal_method_names
+                    ):
+                        raise RuntimeError(
+                            "Spell disposal flags are inconsistent before conjure."
+                        )
 
             spellbook_creation_system = SpellbookCreationSystem(
                 spellbook=self,
