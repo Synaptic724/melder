@@ -52,8 +52,39 @@ class StubExaminer:
         self.profile = None
 
 
+class StubConfiguration:
+    def __init__(self, disposal_method_names=()):
+        self._disposal_method_names = tuple(disposal_method_names)
+
+    def has_property(self, key):
+        return key == "disposal_method_names"
+
+    def get_property(self, key):
+        if key != "disposal_method_names":
+            raise KeyError(key)
+        return list(self._disposal_method_names)
+
+    def resolve_disposal_methods_for_binding_profile(self, binding_profile):
+        if isinstance(binding_profile, ClassBindingProfile):
+            method_names = set(binding_profile.method_names)
+            return tuple(
+                method_name
+                for method_name in self._disposal_method_names
+                if method_name in method_names
+            )
+        return ()
+
+
 class StubSpellbook:
-    pass
+    def __init__(self, disposal_method_names=()):
+        self._configuration = StubConfiguration(disposal_method_names)
+        self._bound_disposal_method_names_minimum = frozenset(disposal_method_names)
+
+    def get_configuration(self):
+        return self._configuration
+
+    def _get_bound_disposal_method_names_minimum(self):
+        return self._bound_disposal_method_names_minimum
 
 
 class StubGeneralProfile(SpellGeneralProfile):
@@ -1626,6 +1657,62 @@ def test_sha256_instance_vs_other_profiles():
     ip = instance_profile(type_name="T")
     op = other_profile(type_name="T")
     assert Bind.sha256_profile(ip) == Bind.sha256_profile(op)
+
+
+def test_sha256_profile_changes_with_binding_signature_existence_and_disposal():
+    profile = class_profile(method_names=["cleanup"])
+    base = Bind.sha256_profile(
+        profile,
+        spell_name="Service",
+        existence=Existence.unique,
+        disposal_method_names=(),
+    )
+    with_binding_name = Bind.sha256_profile(
+        profile,
+        spell_name="Service",
+        binding_name="primary",
+        existence=Existence.unique,
+        disposal_method_names=(),
+    )
+    with_frame = Bind.sha256_profile(
+        profile,
+        spell_name="Service",
+        spellframe="Frame",
+        existence=Existence.unique,
+        disposal_method_names=(),
+    )
+    with_existence = Bind.sha256_profile(
+        profile,
+        spell_name="Service",
+        existence=Existence.many,
+        disposal_method_names=(),
+    )
+    with_disposal = Bind.sha256_profile(
+        profile,
+        spell_name="Service",
+        existence=Existence.unique,
+        disposal_method_names=("cleanup",),
+    )
+    assert base != with_binding_name
+    assert base != with_frame
+    assert base != with_existence
+    assert base != with_disposal
+
+
+def test_bind_resolves_disposal_metadata_during_bind(monkeypatch):
+    profile = class_profile(method_names=["cleanup", "close"])
+    monkeypatch.setattr(
+        "melder.aether.spellbook.bind.bind.SpellExaminer",
+        lambda: StubExaminer(profile),
+    )
+    b = Bind(StubSpellbook(("cleanup", "dispose")))
+    spell = b.bind(
+        Permissions.read,
+        Existence.unique,
+        aetheric_frame="f",
+        spell=RealClassImplementingProto,
+    )
+    assert spell.kwargs["disposal_method_names"] == ["cleanup"]
 
 
 # Additional SpellType coverage ---------------------------------------

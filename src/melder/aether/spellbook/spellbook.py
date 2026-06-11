@@ -136,6 +136,7 @@ and logging.
         "_lookup_spells",
         "_pending_binding_frame_keys",
         "_pending_structural_spells",
+        "_bound_disposal_method_names_minimum",
         "_spell_id_pool",
         "_spell_system_states",
         "_spell_versions",
@@ -192,6 +193,7 @@ and logging.
         self._caching_system: Optional[CachingSystem] = None
         self._pending_binding_frame_keys: Set[str] = set()
         self._pending_structural_spells: List[Spell] = []
+        self._bound_disposal_method_names_minimum: Optional[frozenset[str]] = None
         self._conduit: Optional[Conduit] = None
         self._nexus_publish_enabled: bool = False
         self._aetheric_frame: str = aetheric_frame
@@ -546,6 +548,7 @@ and logging.
         del self._transaction_identity
         del self._pending_binding_frame_keys
         del self._pending_structural_spells
+        del self._bound_disposal_method_names_minimum
         del self._spell_system_states
         del self._configuration_locked
         del self._spellbook_validation_required
@@ -2985,11 +2988,11 @@ and logging.
                     exc_info=True,
                 )
                 raise RuntimeError(
-                    "Spell ID collision detected. spell_id is computed from the spell's structural \n"
-                    "fingerprint (e.g., module, qualname, signature, defaults). The existing spell \n"
-                    "with this id is already registered in the Aether for this frame. If you intended \n"
-                    "to register a distinct spell, ensure its structure (or binding/frame/name) differs \n"
-                    "so it produces a unique spell_id."
+                    "Spell ID collision detected. spell_id is computed from the spell's bind-time \n"
+                    "fingerprint (e.g., structural profile, lookup signature, existence, and resolved \n"
+                    "disposal metadata). The existing spell with this id is already registered in the \n"
+                    "Aether for this frame. If you intended to register a distinct spell, ensure its \n"
+                    "bind-time fingerprint differs so it produces a unique spell_id."
                 )
 
             self._assert_lookup_key_available(

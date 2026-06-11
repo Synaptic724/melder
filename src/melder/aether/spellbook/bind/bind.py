@@ -1,7 +1,7 @@
 import inspect
 import threading
 import hashlib
-from typing import TYPE_CHECKING, Any, Optional, Union, ClassVar
+from typing import TYPE_CHECKING, Any, Optional, Sequence, Union, ClassVar
 
 if TYPE_CHECKING:
     from melder.aether.spellbook.spellbook import Spellbook
@@ -268,7 +268,21 @@ class Bind(Cleanable):
                     "General profile creation must return SpellGeneralProfile."
                 )
             binding_profile: SpellBindingProfile = provisional_general_profile.binding_profile
-            fingerprint: str = Bind.sha256_profile(binding_profile)
+            resolved_disposal_method_names: Sequence[str] = ()
+            if isinstance(binding_profile, ClassBindingProfile):
+                if self._spellbook._get_bound_disposal_method_names_minimum():
+                    resolved_disposal_method_names = sorted(
+                        self._spellbook._get_bound_disposal_method_names_minimum(
+                        ).intersection(binding_profile.method_names)
+                    )
+            fingerprint: str = Bind.sha256_profile(
+                binding_profile,
+                spellframe=spellframe,
+                binding_name=binding_name,
+                spell_name=str(getattr(spell, "__name__", type(spell).__name__)),
+                existence=existence,
+                disposal_method_names=resolved_disposal_method_names,
+            )
             spell_index = SpellIndex(initial_id=fingerprint)
 
             # Check if this should be treated as an "existing creation"
@@ -314,9 +328,6 @@ class Bind(Cleanable):
                 spellframe=spellframe,
             )
 
-            # Resolve spell name
-            spell_name = getattr(spell, "__name__", type(spell).__name__)
-
             # ------------------------------------------------------------------
             # 6. Construct the Spell object
             # ------------------------------------------------------------------
@@ -325,7 +336,7 @@ class Bind(Cleanable):
                 spell_index=spell_index,
                 spellframe=spellframe,
                 binding_name=binding_name,
-                spell_name=str(spell_name),
+                spell_name=str(getattr(spell, "__name__", type(spell).__name__)),
                 existence=existence,
                 spell_type=spell_type,
                 profile=provisional_general_profile,
@@ -334,6 +345,7 @@ class Bind(Cleanable):
                 aetheric_frame=aetheric_frame,
                 existing_object=spell if is_instance else None,
                 spellbook=self._spellbook,
+                disposal_method_names=resolved_disposal_method_names,
             )
 
             provisional_general_profile.complete_with_spell(new_spell)
@@ -342,7 +354,14 @@ class Bind(Cleanable):
 
     #region Spell Inspector Helpers
     @staticmethod
-    def spell_id_inspector(spell: Any) -> str:
+    def spell_id_inspector(
+            spell: Any,
+            *,
+            spellframe: Any = None,
+            binding_name: Optional[str] = None,
+            existence: Existence = Existence.unique,
+            disposal_method_names: Sequence[str] = (),
+    ) -> str:
         """
         Compute the canonical spell fingerprint without registering the spell.
 
@@ -356,7 +375,7 @@ class Bind(Cleanable):
             - Builds the same `SpellGeneralProfile` / `SpellBindingProfile`
               chain used by the real binding path.
             - Returns the same fingerprint that `_bind_logic(...)` would use
-              for the same binding target.
+              when the same optional bind inputs are supplied.
             - Does not register anything into a spellbook or mutate runtime
               binding state.
 
@@ -364,10 +383,23 @@ class Bind(Cleanable):
             str: A unique identifier string (SHA256 hash) for the spell.
         """
         profile = SpellGeneralProfile.create_from_target(spell)
-        return Bind.sha256_profile(profile.binding_profile)
+        return Bind.sha256_profile(
+            profile.binding_profile,
+            spellframe=spellframe,
+            binding_name=binding_name,
+            existence=existence,
+            disposal_method_names=tuple(disposal_method_names),
+        )
 
     @staticmethod
-    def sha256_profile(profile: SpellBindingProfile) -> str:
+    def sha256_profile(
+            profile: SpellBindingProfile,
+            *,
+            spellframe: Any = None,
+            binding_name: Optional[str] = None,
+            existence: Optional[Existence] = None,
+            disposal_method_names: Sequence[str] = (),
+    ) -> str:
         """
         Computes the SHA256 hash of a spell's binding profile metadata.
 
@@ -378,17 +410,20 @@ class Bind(Cleanable):
         dataclasses rather than the heavier inspector profiles.
 
         Contract:
-            - Fingerprints only normalized binding metadata, not transient
-              object identity.
-            - Uses the explicit `v2-binding` schema prefix so future
+            - Fingerprints normalized bind-time metadata only, not transient
+              runtime object identity.
+            - Uses the explicit `v3-binding` schema prefix so future
               fingerprint-shape changes can version cleanly.
-            - Equal binding profiles produce equal hashes; materially different
-              profiles should produce different hashes.
+            - Includes the bind-time lookup signature, lifecycle existence,
+              and resolved disposal metadata because those values shape later
+              compiler/runtime behavior.
+            - Equal bind signatures produce equal hashes; materially different
+              signatures should produce different hashes.
         Returns:
             str: Deterministic SHA256 fingerprint for the supplied binding
                 profile.
         """
-        parts: list[str] = ["v2-binding"]  # fingerprint schema version
+        parts: list[str] = ["v3-binding"]  # fingerprint schema version
 
         if isinstance(profile, ClassBindingProfile):
             parts += [
@@ -433,6 +468,16 @@ class Bind(Cleanable):
         else:
             # Absolute fallback – should effectively never happen.
             parts.append(repr(type(profile)))
+
+        if spellframe is not None:
+            parts.append(str(spellframe))
+        if binding_name is not None:
+            parts.append(binding_name)
+
+        if existence is not None:
+            parts.append(existence.name)
+
+        parts.extend(tuple(disposal_method_names))
 
         key = "::".join(parts)
         return hashlib.sha256(key.encode("utf-8")).hexdigest()

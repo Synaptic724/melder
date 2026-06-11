@@ -87,7 +87,7 @@ class Spell(Cleanable):
     - Manages permission control via the `Permissions` enum.
     - Enables hook-based lifecycle support (pre, activation, post).
     - Acts as a source of truth for spell identity and access.
-    - Stores conjure-time disposal metadata (matched method names + boolean flag).
+    - Stores bind-time resolved disposal metadata (matched method names + boolean flag).
     - Tracks whether runtime resolution is still required before the first context build.
     - Caches the Phase 11 execution-plan dispatch-route hint used by current
       runtime path selection.
@@ -101,7 +101,7 @@ class Spell(Cleanable):
           still allowed.
 
     Key Concepts:
-        - Each spell has a unique SHA256 `spell_id`, generated from its structural fingerprint.
+        - Each spell has a unique SHA256 `spell_id`, generated from its bind-time fingerprint.
         - `spellframe` distinguishes the context it was declared in (e.g., Protocol, class,
           or string frame).
         - Spells may be cleaned (`cleanup()`), after which modification is disallowed.
@@ -256,6 +256,7 @@ class Spell(Cleanable):
             spellbook: "Spellbook",
             profile: Optional[Any] = None,
             existing_object: Optional[object] = None,
+            disposal_method_names: Sequence[str] = (),
             *args: Any,
             **kwargs: Any,
     ):
@@ -275,6 +276,7 @@ class Spell(Cleanable):
             aetheric_frame (str): Aether frame identifier this spell belongs to.
             profile (Optional[Any]): Binding/introspection profile attached by the examiner.
             existing_object (Optional[object]): Pre-created instance for EXISTING_CREATION* spell types.
+            disposal_method_names (Sequence[str]): Resolved disposal methods for this spell.
             spellbook (Spellbook): Back-reference to the owning spellbook for coordination.
             *args: Optional positional metadata tags.
             **kwargs: Optional keyword metadata map attached to this spell.
@@ -341,8 +343,8 @@ class Spell(Cleanable):
         self.tags = list(args) if args else []
         self.metadata = kwargs if kwargs else {}
         self._mutation_override: Optional[dict[str, Any]] = None
-        self.disposal_method_names: List[str] = []
-        self.has_disposal_methods: bool = False
+        self.disposal_method_names: List[str] = list(disposal_method_names)
+        self.has_disposal_methods: bool = bool(self.disposal_method_names)
 
         # Hooks (private storage; Spellbook controls mutation)
         self._hooks_enabled: bool = False

@@ -10,7 +10,6 @@ from melder.__melder_registration_guard__ import __melder_registration_guard__ a
 from melder.utilities.general_base.cleanable import Cleanable
 
 
-
 class SpellbookConfiguration(Cleanable):
     """
     Mutable build-time configuration surface for one spellbook/runtime context.
