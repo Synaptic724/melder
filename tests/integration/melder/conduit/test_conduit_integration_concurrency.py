@@ -85,23 +85,21 @@ def _enable_queued_root_transactions(spellbook: Spellbook) -> None:
 
     Purpose:
         Align concurrency tests to the live mediator contract, where each
-        worker thread owns its own root transaction and competing roots may
-        queue for their turn.
+        worker thread owns its own root transaction and overlapping scope
+        claims wait for release.
 
     Args:
-        spellbook: Spellbook whose frame-owned posture should enable queueing.
+        spellbook: Spellbook whose frame-owned wait bound should apply.
 
     Returns:
         None.
     """
     frame_configuration = spellbook._aetheric_frame_configuration
-    frame_configuration.with_queue_competing_root_transactions(True)
     change_control_manager = Spellbook._aether._get_change_control_manager(
         spellbook._aetheric_frame
     )
     mediator = change_control_manager.transaction_mediator()
     mediator.configure(
-        queue_competing_root_transactions=True,
         max_transaction_wait_time_in_seconds=(
             frame_configuration.max_transaction_wait_time_in_seconds
         ),

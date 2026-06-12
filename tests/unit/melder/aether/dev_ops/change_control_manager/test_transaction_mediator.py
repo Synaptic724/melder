@@ -129,16 +129,15 @@ def test_transaction_mediator_allows_cross_thread_root_begin_by_default() -> Non
     assert mediator.describe()["active_session_count"] == 2
 
 
-def test_transaction_mediator_deprecated_queue_flag_does_not_block_cross_thread_roots() -> None:
-    """The deprecated queue flag must not delay disjoint cross-thread root starts.
+def test_transaction_mediator_disjoint_cross_thread_roots_start_immediately() -> None:
+    """Disjoint cross-thread root starts must not be delayed by an active root.
 
     Root arbitration is scope-driven under the acquisition contract; `begin_frame`
     hosts pre-admitted requests, so a competing thread proceeds immediately even
-    while another root session is active and the legacy flag is set.
+    while another root session is active.
     """
     _tm, _em, _orch, request, staged, mediator = _build_admitted_bundle()
     mediator.configure(
-        queue_competing_root_transactions=True,
         max_transaction_wait_time_in_seconds=1.0,
     )
     mediator.begin_frame(request=request, staged=staged)
@@ -183,16 +182,15 @@ def test_transaction_mediator_deprecated_queue_flag_does_not_block_cross_thread_
     mediator.end_frame(success=True)
 
 
-def test_transaction_mediator_deprecated_queue_flag_never_times_out_root_starts() -> None:
-    """The deprecated queue flag must not impose FIFO timeouts on root starts.
+def test_transaction_mediator_disjoint_root_starts_ignore_wait_bound() -> None:
+    """Root starts without scope conflicts must never hit the wait bound.
 
     Pre-acquisition timeouts belong to scope waiting only; a disjoint root start
-    completes even when another root session never finishes and the legacy flag
-    plus a tiny wait bound are configured.
+    completes even when another root session never finishes and a tiny wait
+    bound is configured.
     """
     _tm, _em, _orch, request, staged, mediator = _build_admitted_bundle()
     mediator.configure(
-        queue_competing_root_transactions=True,
         max_transaction_wait_time_in_seconds=0.05,
     )
     mediator.begin_frame(request=request, staged=staged)
@@ -244,7 +242,6 @@ def test_transaction_mediator_concurrent_disjoint_root_starts_proceed_without_fi
     """
     _tm, _em, _orch, request, staged, mediator = _build_admitted_bundle()
     mediator.configure(
-        queue_competing_root_transactions=True,
         max_transaction_wait_time_in_seconds=1.0,
     )
     mediator.begin_frame(request=request, staged=staged)

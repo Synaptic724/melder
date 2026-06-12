@@ -810,9 +810,6 @@ class TransactionMediator(Cleanable):
         
         with self._lock:
             return {
-                "queue_competing_root_transactions": (
-                    self._queue_competing_root_transactions
-                ),
                 "max_transaction_wait_time_in_seconds": (
                     self._max_transaction_wait_time_in_seconds
                 ),

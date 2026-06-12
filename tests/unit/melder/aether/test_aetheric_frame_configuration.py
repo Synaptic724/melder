@@ -209,7 +209,6 @@ def test_aetheric_frame_configuration_exposes_id_and_describe_posture() -> None:
         "disable_conduit_cluster": False,
         "disable_transfer_of_ownership": False,
         "disable_contract_mutation": False,
-        "queue_competing_root_transactions": False,
         "max_transaction_wait_time_in_seconds": 30.0,
     }
 
@@ -257,7 +256,6 @@ def test_aetheric_frame_configuration_change_control_defaults() -> None:
     assert frame_configuration.disable_conduit_cluster is False
     assert frame_configuration.disable_transfer_of_ownership is False
     assert frame_configuration.disable_contract_mutation is False
-    assert frame_configuration.queue_competing_root_transactions is False
     assert frame_configuration.max_transaction_wait_time_in_seconds == 30.0
 
 def test_aetheric_frame_configuration_with_defaults_resets_change_control_flags() -> None:
@@ -274,7 +272,6 @@ def test_aetheric_frame_configuration_with_defaults_resets_change_control_flags(
         disable_conduit_cluster=True,
         disable_transfer_of_ownership=True,
         disable_contract_mutation=True,
-        queue_competing_root_transactions=True,
         max_transaction_wait_time_in_seconds=5.0,
     )
 
@@ -287,7 +284,6 @@ def test_aetheric_frame_configuration_with_defaults_resets_change_control_flags(
     assert frame_configuration.disable_conduit_cluster is False
     assert frame_configuration.disable_transfer_of_ownership is False
     assert frame_configuration.disable_contract_mutation is False
-    assert frame_configuration.queue_competing_root_transactions is False
     assert frame_configuration.max_transaction_wait_time_in_seconds == 30.0
 
 
@@ -316,10 +312,6 @@ def test_aetheric_frame_configuration_rejects_invalid_transaction_wait_time() ->
         ("with_disable_conduit_cluster", "disable_conduit_cluster"),
         ("with_disable_transfer_of_ownership", "disable_transfer_of_ownership"),
         ("with_disable_contract_mutation", "disable_contract_mutation"),
-        (
-            "with_queue_competing_root_transactions",
-            "queue_competing_root_transactions",
-        ),
     ),
 )
 def test_aetheric_frame_configuration_boolean_mutators_update_flags(
@@ -360,10 +352,6 @@ def test_aetheric_frame_configuration_boolean_mutators_update_flags(
             "with_disable_contract_mutation",
             "disable_contract_mutation must be a bool.",
         ),
-        (
-            "with_queue_competing_root_transactions",
-            "queue_competing_root_transactions must be a bool.",
-        ),
     ),
 )
 def test_aetheric_frame_configuration_boolean_mutators_reject_non_bool(
@@ -396,7 +384,6 @@ def test_aetheric_frame_configuration_boolean_mutators_reject_non_bool(
         "with_disable_conduit_cluster",
         "with_disable_transfer_of_ownership",
         "with_disable_contract_mutation",
-        "with_queue_competing_root_transactions",
         "with_max_transaction_wait_time_in_seconds",
         "with_defaults",
     ),
@@ -436,8 +423,6 @@ def test_aetheric_frame_configuration_mutators_reject_after_freeze(
             frame_configuration.with_disable_transfer_of_ownership(True)
         elif setter_name == "with_disable_contract_mutation":
             frame_configuration.with_disable_contract_mutation(True)
-        elif setter_name == "with_queue_competing_root_transactions":
-            frame_configuration.with_queue_competing_root_transactions(True)
         elif setter_name == "with_max_transaction_wait_time_in_seconds":
             frame_configuration.with_max_transaction_wait_time_in_seconds(5.0)
         else:
@@ -477,11 +462,6 @@ def test_aetheric_frame_configuration_transaction_wait_mutator_normalizes_int_to
         (
             "disable_contract_mutation",
             "with_disable_contract_mutation",
-            True,
-        ),
-        (
-            "queue_competing_root_transactions",
-            "with_queue_competing_root_transactions",
             True,
         ),
         (

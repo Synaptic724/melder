@@ -522,8 +522,6 @@ def test_component_change_control_transaction_mediator_scope_turn_taking() -> No
           root session is open.
         - After the owning thread ends its session, the waiting thread admits
           and commits its own root session successfully.
-        - The deprecated queue flag is accepted by `configure(...)` but does
-          not change scope-driven behavior.
     Returns:
         None.
     Raises:
@@ -535,7 +533,6 @@ def test_component_change_control_transaction_mediator_scope_turn_taking() -> No
         system_state="automatic",
         ai_native_enabled=False,
         rift_enabled=False,
-        queue_competing_root_transactions=True,
         max_transaction_wait_time_in_seconds=5.0,
     )
     frame.bind_frame_configuration(frame_configuration)
@@ -544,9 +541,6 @@ def test_component_change_control_transaction_mediator_scope_turn_taking() -> No
     manager = frame.dev_ops_manager.change_control_manager
     try:
         manager.transaction_mediator().configure(
-            queue_competing_root_transactions=(
-                bound_configuration.queue_competing_root_transactions
-            ),
             max_transaction_wait_time_in_seconds=(
                 bound_configuration.max_transaction_wait_time_in_seconds
             ),

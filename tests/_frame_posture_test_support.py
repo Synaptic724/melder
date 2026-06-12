@@ -75,9 +75,6 @@ def _sync_detached_frame_posture_to_aether(
     frame_configuration.with_disable_contract_mutation(
         detached_configuration.disable_contract_mutation
     )
-    frame_configuration.with_queue_competing_root_transactions(
-        detached_configuration.queue_competing_root_transactions
-    )
     frame_configuration.with_max_transaction_wait_time_in_seconds(
         detached_configuration.max_transaction_wait_time_in_seconds
     )
@@ -259,9 +256,6 @@ def build_aetheric_frame_configuration_for_spellbook_configuration(
         ),
         disable_contract_mutation=(
             frame_configuration.disable_contract_mutation
-        ),
-        queue_competing_root_transactions=(
-            frame_configuration.queue_competing_root_transactions
         ),
         max_transaction_wait_time_in_seconds=(
             frame_configuration.max_transaction_wait_time_in_seconds
