@@ -3865,6 +3865,8 @@ and logging.
                 Optional disposal toggle for the rich spellbook configuration.
             disposal_method_names:
                 Optional replacement disposal-method list.
+            system_caching_enabled:
+                Optional replacement system-caching-enabled toggle.
         """
         self.check_cleaned()
         frame_configuration = self._aetheric_frame_configuration

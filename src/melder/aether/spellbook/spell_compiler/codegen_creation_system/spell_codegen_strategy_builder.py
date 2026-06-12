@@ -8,6 +8,9 @@ from melder.aether.spellbook.spell_compiler.codegen_creation_system.spell_codege
 from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.generalized_codegen_creation_strategy import (
     GeneralizedCodegenCreationStrategy,
 )
+from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized_cache.generalized_cache_codegen_creation_strategy import (
+    GeneralizedCacheCodegenCreationStrategy,
+)
 from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.fallback_no_overrides.fallback_no_overrides_codegen_creation_strategy import (
     FallbackNoOverridesCodegenCreationStrategy,
 )
@@ -77,6 +80,12 @@ class SpellCodegenStrategyBuilder(Cleanable):
         self._strategies_by_name[
             generalized_codegen_creation_strategy.strategy_id
         ] = generalized_codegen_creation_strategy
+        generalized_cache_codegen_creation_strategy = (
+            GeneralizedCacheCodegenCreationStrategy()
+        )
+        self._strategies_by_name[
+            generalized_cache_codegen_creation_strategy.strategy_id
+        ] = generalized_cache_codegen_creation_strategy
         generalized_no_overrides_codegen_creation_strategy = (
             FallbackNoOverridesCodegenCreationStrategy()
         )

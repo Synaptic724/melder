@@ -119,7 +119,7 @@ def _build_melder_depth9(*, existence: Existence, frame: str, conjure_name: str)
         system_state=None,
         disposal=None,
         disposal_method_names=None,
-        system_caching_enabled=True,
+        system_caching_enabled=False,
     )
 
     root_id = _melder_bind_depth9_all(spellbook, existence=existence)

@@ -94,6 +94,12 @@ def _build_runtime_melder() -> _support.RuntimeOps:
     Conduit._aether = aether
 
     spellbook = Spellbook(aetheric_frame="real-world-gauntlet")
+    spellbook.configure_aether_frame(
+        system_state=None,
+        disposal=None,
+        disposal_method_names=None,
+        system_caching_enabled=True,
+    )
     configuration = spellbook.get_configuration()
     configuration.set_property("phase_scheduler_workers_per_spellbook", 1)
 
