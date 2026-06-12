@@ -116,6 +116,11 @@ def main() -> None:
         stats.print_callees("conduit_meld.py.*meld")
         stats.print_callees("spellspace_meld.py.*meld")
 
+        report_stream.write("=" * 78 + "\n")
+        report_stream.write("RLOCK CALLERS (who pays the per-meld lock tax)\n")
+        report_stream.write("=" * 78 + "\n")
+        stats.print_callers("RLock")
+
         report_text = report_stream.getvalue()
         output_path = Path(__file__).resolve().parent / "melder_hot_path_profile.txt"
         output_path.write_text(report_text, encoding="utf-8")

@@ -1,5 +1,5 @@
 """
-Family-owned no-overrides lane compiler for generalized.
+Family-owned no-overrides lane compiler for the generalized family.
 
 This module owns the no-overrides lane end to end:
     - row-driven source emission (manifest rows in, factory source out;
@@ -8,11 +8,12 @@ This module owns the no-overrides lane end to end:
     - hydration through the process-wide executor factory cache (one compile
       plus one exec per source shape per process; one factory call per spell).
 
-Emission semantics are a faithful port of the generalized step-plan emitter:
-per-step inlined existence/lock/reuse/register routing, inlined constructor
-calls for the common shape, and the generic `construct_spell_instance`
-fallback for every other shape. The transient unrolled lane delegates source
-emission to the bridged pure schema builder and owns its bindings here.
+Emission semantics are a faithful port of the legacy step-plan emitter with
+one deliberate hot-path improvement: reuse reads are inlined as direct
+`creations._creations.get(spell_id)` dict reads. The existence routing the
+legacy `_get_existing_creation` helper performed at runtime is compile-time
+constant per step, and `Creations.get_creation` is a bare dict read, so the
+two-call helper chain is pure overhead on the meld hot path.
 
 Row requirements beyond the shared phase-11 row schema:
     - `spell_is_callable`: class/method/lambda flag, stamped by the family
@@ -28,7 +29,6 @@ from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.g
     SpellGeneralizedCodegenPlanTargetKind,
     build_transient_no_overrides_source,
     construct_spell_instance,
-    get_existing_creation,
     normalize_transient_schema,
     raise_meld_construction_error,
     register_spell_instance,
@@ -76,7 +76,6 @@ _STEP_STATIC_NAMESPACE = {
     "SpellGeneralizedCodegenPlanTargetKind": SpellGeneralizedCodegenPlanTargetKind,
     "_construct_spell_instance": construct_spell_instance,
     "_raise_meld_construction_error": raise_meld_construction_error,
-    "_get_existing_creation": get_existing_creation,
     "_register_spell_instance_prebound": register_spell_instance_prebound,
     "_register_spell_instance": register_spell_instance,
 }
@@ -84,12 +83,6 @@ _STEP_STATIC_NAMESPACE = {
 _TRANSIENT_STATIC_NAMESPACE = {
     "MeldExecutionError": MeldExecutionError,
 }
-
-_SHARED_EXISTENCES = (
-    Existence.unique,
-    Existence.unique_per_conduit_cluster,
-    Existence.unique_per_conduit_lineage,
-)
 
 _TRANSIENT_SCHEMA_SEQUENCE_FIELDS = (
     "dep1",
@@ -121,9 +114,9 @@ def hydrate_no_overrides_executor(
     Contract:
         - Emission is a pure function of rows/schema; live spells are touched
           only by bindings construction.
-        - Transient unrolled emission is used exactly under the generalized
-          rule: schema present, every step `many`, no step registering, and
-          all call modes supported by the unrolled builder.
+        - Transient unrolled emission is used exactly under the legacy rule:
+          schema present, every step `many`, no step registering, and all
+          call modes supported by the unrolled builder.
         - One compile + one exec per source shape per process via the factory
           cache; one factory call here.
 
@@ -197,9 +190,10 @@ def emit_step_plan_source(
 
     Contract:
         - Pure function of row data; no live objects consulted.
-        - Faithful port of the generalized step-plan emission semantics:
-          identical existence routing, lock disciplines, registration calls,
-          inlined common-shape constructors, and root verification.
+        - Faithful port of the legacy step-plan emission semantics (existence
+          routing, lock disciplines, registration calls, inlined common-shape
+          constructors, root verification) with reuse reads inlined as direct
+          `_creations.get` dict reads.
     """
     lines = [
         f"def {EXECUTOR_NAME}(",
@@ -218,7 +212,6 @@ def emit_step_plan_source(
         "        SpellGeneralizedCodegenPlanTargetKind=SpellGeneralizedCodegenPlanTargetKind,",
         "        _construct_spell_instance=_construct_spell_instance,",
         "        _raise_meld_construction_error=_raise_meld_construction_error,",
-        "        _get_existing_creation=_get_existing_creation,",
         "        _register_spell_instance_prebound=_register_spell_instance_prebound,",
         "        MeldExecutionError=MeldExecutionError,",
         "        SpellSpaceScopeError=SpellSpaceScopeError,",
@@ -304,18 +297,14 @@ def _append_step_resolution_source(
     ):
         lines.extend([
             (
-                f"    instance_{step_index} = _get_existing_creation("
-                f"spell=spell_{step_index}, "
-                f"creations=creations_{step_index}, "
-                f"existence=plan_step_{step_index}.existence)"
+                f"    instance_{step_index} = "
+                f"creations_{step_index}._creations.get(spell_id_{step_index})"
             ),
             f"    if instance_{step_index} is None:",
             f"        with creations_{step_index}._lock:",
             (
-                f"            instance_{step_index} = _get_existing_creation("
-                f"spell=spell_{step_index}, "
-                f"creations=creations_{step_index}, "
-                f"existence=existence_{step_index})"
+                f"            instance_{step_index} = "
+                f"creations_{step_index}._creations.get(spell_id_{step_index})"
             ),
             f"            if instance_{step_index} is None:",
         ])
@@ -345,20 +334,16 @@ def _append_step_resolution_source(
             "    ):",
             f"        use_spell_lock_{step_index} = False",
             (
-                f"    instance_{step_index} = _get_existing_creation("
-                f"spell=spell_{step_index}, "
-                f"creations=creations_{step_index}, "
-                f"existence=existence_{step_index})"
+                f"    instance_{step_index} = "
+                f"creations_{step_index}._creations.get(spell_id_{step_index})"
             ),
             f"    if instance_{step_index} is None:",
             f"        if use_spell_lock_{step_index}:",
             f"            with spell_{step_index}._lock:",
             f"                with creations_{step_index}._lock:",
             (
-                f"                    instance_{step_index} = _get_existing_creation("
-                f"spell=spell_{step_index}, "
-                f"creations=creations_{step_index}, "
-                f"existence=existence_{step_index})"
+                f"                    instance_{step_index} = "
+                f"creations_{step_index}._creations.get(spell_id_{step_index})"
             ),
             f"                if instance_{step_index} is None:",
         ])
@@ -379,10 +364,8 @@ def _append_step_resolution_source(
             "        else:",
             f"            with creations_{step_index}._lock:",
             (
-                f"                instance_{step_index} = _get_existing_creation("
-                f"spell=spell_{step_index}, "
-                f"creations=creations_{step_index}, "
-                f"existence=existence_{step_index})"
+                f"                instance_{step_index} = "
+                f"creations_{step_index}._creations.get(spell_id_{step_index})"
             ),
             f"                if instance_{step_index} is None:",
         ])
@@ -405,18 +388,14 @@ def _append_step_resolution_source(
 
     lines.extend([
         (
-            f"    instance_{step_index} = _get_existing_creation("
-            f"spell=spell_{step_index}, "
-            f"creations=creations_{step_index}, "
-            f"existence=existence_{step_index})"
+            f"    instance_{step_index} = "
+            f"creations_{step_index}._creations.get(spell_id_{step_index})"
         ),
         f"    if instance_{step_index} is None:",
         f"        with creations_{step_index}._lock:",
         (
-            f"            instance_{step_index} = _get_existing_creation("
-            f"spell=spell_{step_index}, "
-            f"creations=creations_{step_index}, "
-            f"existence=existence_{step_index})"
+            f"            instance_{step_index} = "
+            f"creations_{step_index}._creations.get(spell_id_{step_index})"
         ),
         f"            if instance_{step_index} is None:",
     ])
@@ -580,7 +559,7 @@ def row_inlinable_common_shape(
     Return inlinable (param_name, dependency_key) pairs from one manifest row.
 
     Contract:
-        - Row-driven port of the generalized inlinable-shape rule: callable,
+        - Row-driven port of the legacy inlinable-shape rule: callable,
           non-existing-creation spells with no contract payload, no positional
           override, and exactly one dependency per parameter.
         - Requires the family row flags `spell_is_callable` and

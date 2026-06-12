@@ -1,0 +1,141 @@
+==============================================================================
+TOP 45 BY TOTTIME (self time - where cycles are actually spent)
+==============================================================================
+         315414 function calls (314964 primitive calls) in 0.124 seconds
+
+   Ordered by: internal time
+   List reduced from 138 to 45 due to restriction <45>
+
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+      667    0.030    0.000    0.043    0.000 <melder_generalized_no_overrides_step_factory>:11(_no_overrides_codegen_creation_executor)
+       50    0.021    0.000    0.126    0.003 {method 'join' of '_thread._ThreadHandle' objects}
+    56019    0.006    0.000    0.006    0.000 {method '__enter__' of '_thread.RLock' objects}
+    15331    0.005    0.000    0.010    0.000 generalized_no_overrides_codegen_creation_compiler.py:1325(_get_existing_creation)
+    56019    0.005    0.000    0.005    0.000 {method '__exit__' of '_thread.RLock' objects}
+      500    0.004    0.000    0.094    0.000 test_melder_gauntlet.py:136(_run_in_lesser_and_spellspace)
+    18831    0.004    0.000    0.006    0.000 creations.py:261(get_creation)
+     2319    0.003    0.000    0.066    0.000 spellspace_meld.py:107(meld)
+     2250    0.003    0.000    0.018    0.000 conduit_meld.py:96(meld)
+     2069    0.003    0.000    0.052    0.000 <creation_context_no_overrides_only_template:many:0:1>:10(_creation_context_execute_no_overrides_only)
+    23400    0.002    0.000    0.002    0.000 {method 'get' of 'dict' objects}
+     2500    0.002    0.000    0.020    0.000 <creation_context_no_overrides_only_template:unique_per_conduit:0:1>:10(_creation_context_execute_no_overrides_only)
+       50    0.002    0.000    0.105    0.002 threading.py:1064(_bootstrap_inner)
+    34870    0.002    0.000    0.002    0.000 melder_gauntlet_support.py:86(__init__)
+     4569    0.001    0.000    0.074    0.000 creation_context.py:192(execute_no_hooks)
+       50    0.001    0.000    0.101    0.002 melder_gauntlet_support.py:631(worker)
+       50    0.001    0.000    0.001    0.000 {built-in method _thread.start_joinable_thread}
+     2250    0.001    0.000    0.019    0.000 conduit.py:2821(meld)
+     4569    0.001    0.000    0.002    0.000 meld.py:1187(_resolve_spell_by_id)
+  600/250    0.001    0.000    0.000    0.000 {method 'acquire' of '_thread.lock' objects}
+      500    0.001    0.000    0.003    0.000 conduit.py:1710(create_lesser_conduit)
+     4569    0.001    0.000    0.001    0.000 counter_switch.py:99(state)
+      500    0.001    0.000    0.001    0.000 conduit_ward.py:972(_link_lesser_conduit)
+     6300    0.001    0.000    0.001    0.000 {built-in method time.perf_counter_ns}
+     8238    0.001    0.000    0.001    0.000 {built-in method builtins.isinstance}
+     2319    0.001    0.000    0.066    0.000 spell_space.py:241(meld)
+     1000    0.001    0.000    0.001    0.000 creations.py:432(reset_for_pool)
+      500    0.001    0.000    0.003    0.000 conduit.py:447(_prepare_for_pool)
+       50    0.001    0.000    0.137    0.003 melder_gauntlet_support.py:592(run_gauntlet_once)
+     2000    0.001    0.000    0.001    0.000 creations.py:185(add_creation)
+      500    0.001    0.000    0.095    0.000 test_melder_gauntlet.py:201(request_scope_cycle)
+     1250    0.001    0.000    0.007    0.000 test_melder_gauntlet.py:118(_get)
+      500    0.001    0.000    0.002    0.000 spell_space.py:148(recycle_from_managed_context)
+      150    0.001    0.000    0.001    0.000 {built-in method _thread.get_ident}
+     5819    0.001    0.000    0.001    0.000 {built-in method builtins.len}
+      500    0.000    0.000    0.052    0.000 test_melder_gauntlet.py:202(variant_call)
+      500    0.000    0.000    0.001    0.000 conduit_ward.py:336(_detach_for_pool)
+      500    0.000    0.000    0.003    0.000 conduit.py:105(__exit__)
+       50    0.000    0.000    0.003    0.000 threading.py:773(_wait)
+     3550    0.000    0.000    0.000    0.000 {method 'append' of 'list' objects}
+     4569    0.000    0.000    0.000    0.000 spellbook.py:830(_emit_cache_file_if_required)
+      500    0.000    0.000    0.001    0.000 conduit.py:82(__enter__)
+     3487    0.000    0.000    0.000    0.000 melder_gauntlet_support.py:199(__init__)
+     4569    0.000    0.000    0.000    0.000 spell.py:1177(mutation_override)
+      500    0.000    0.000    0.001    0.000 conduit.py:470(_cleanup_spellspaces_for_pool)
+
+
+==============================================================================
+TOP 45 BY CUMULATIVE (call-tree hotspots)
+==============================================================================
+         315414 function calls (314964 primitive calls) in 0.124 seconds
+
+   Ordered by: cumulative time
+   List reduced from 138 to 45 due to restriction <45>
+
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+       50    0.001    0.000    0.137    0.003 melder_gauntlet_support.py:592(run_gauntlet_once)
+       50    0.000    0.000    0.128    0.003 threading.py:1096(join)
+       50    0.021    0.000    0.126    0.003 {method 'join' of '_thread._ThreadHandle' objects}
+       50    0.000    0.000    0.105    0.002 threading.py:1029(_bootstrap)
+       50    0.002    0.000    0.105    0.002 threading.py:1064(_bootstrap_inner)
+       50    0.000    0.000    0.103    0.002 {method 'run' of '_contextvars.Context' objects}
+       50    0.000    0.000    0.103    0.002 threading.py:1012(run)
+       50    0.001    0.000    0.101    0.002 melder_gauntlet_support.py:631(worker)
+      500    0.001    0.000    0.095    0.000 test_melder_gauntlet.py:201(request_scope_cycle)
+      500    0.004    0.000    0.094    0.000 test_melder_gauntlet.py:136(_run_in_lesser_and_spellspace)
+     4569    0.001    0.000    0.074    0.000 creation_context.py:192(execute_no_hooks)
+     2319    0.001    0.000    0.066    0.000 spell_space.py:241(meld)
+     2319    0.003    0.000    0.066    0.000 spellspace_meld.py:107(meld)
+     2069    0.003    0.000    0.052    0.000 <creation_context_no_overrides_only_template:many:0:1>:10(_creation_context_execute_no_overrides_only)
+      500    0.000    0.000    0.052    0.000 test_melder_gauntlet.py:202(variant_call)
+      667    0.030    0.000    0.043    0.000 <melder_generalized_no_overrides_step_factory>:11(_no_overrides_codegen_creation_executor)
+     2500    0.002    0.000    0.020    0.000 <creation_context_no_overrides_only_template:unique_per_conduit:0:1>:10(_creation_context_execute_no_overrides_only)
+     2250    0.001    0.000    0.019    0.000 conduit.py:2821(meld)
+     2250    0.003    0.000    0.018    0.000 conduit_meld.py:96(meld)
+    15331    0.005    0.000    0.010    0.000 generalized_no_overrides_codegen_creation_compiler.py:1325(_get_existing_creation)
+       50    0.000    0.000    0.008    0.000 test_melder_gauntlet.py:131(bootstrap_fanout)
+     1250    0.001    0.000    0.007    0.000 test_melder_gauntlet.py:118(_get)
+    56019    0.006    0.000    0.006    0.000 {method '__enter__' of '_thread.RLock' objects}
+    18831    0.004    0.000    0.006    0.000 creations.py:261(get_creation)
+    56019    0.005    0.000    0.005    0.000 {method '__exit__' of '_thread.RLock' objects}
+   100/50    0.000    0.000    0.004    0.000 threading.py:718(wait)
+      500    0.000    0.000    0.003    0.000 conduit.py:416(cleanup)
+       50    0.000    0.000    0.003    0.000 threading.py:773(_wait)
+      500    0.001    0.000    0.003    0.000 conduit.py:447(_prepare_for_pool)
+      500    0.001    0.000    0.003    0.000 conduit.py:1710(create_lesser_conduit)
+      500    0.000    0.000    0.003    0.000 conduit.py:105(__exit__)
+    23400    0.002    0.000    0.002    0.000 {method 'get' of 'dict' objects}
+       50    0.000    0.000    0.002    0.000 threading.py:385(wait_for)
+    34870    0.002    0.000    0.002    0.000 melder_gauntlet_support.py:86(__init__)
+      500    0.001    0.000    0.002    0.000 spell_space.py:148(recycle_from_managed_context)
+     4569    0.001    0.000    0.002    0.000 meld.py:1187(_resolve_spell_by_id)
+       50    0.001    0.000    0.001    0.000 {built-in method _thread.start_joinable_thread}
+     4569    0.001    0.000    0.001    0.000 counter_switch.py:99(state)
+      500    0.001    0.000    0.001    0.000 conduit_ward.py:972(_link_lesser_conduit)
+     1000    0.001    0.000    0.001    0.000 creations.py:432(reset_for_pool)
+      100    0.000    0.000    0.001    0.000 threading.py:651(wait)
+      500    0.000    0.000    0.001    0.000 conduit.py:82(__enter__)
+       50    0.000    0.000    0.001    0.000 threading.py:974(start)
+      500    0.000    0.000    0.001    0.000 random.py:294(randrange)
+     6300    0.001    0.000    0.001    0.000 {built-in method time.perf_counter_ns}
+
+
+==============================================================================
+MELD FRONT DOOR CALLERS/CALLEES
+==============================================================================
+   Ordered by: cumulative time
+   List reduced from 138 to 1 due to restriction <'conduit_meld.py.*meld'>
+
+Function                  called...
+                              ncalls  tottime  cumtime
+conduit_meld.py:96(meld)  ->    2250    0.000    0.001  counter_switch.py:99(state)
+                                2250    0.001    0.013  creation_context.py:192(execute_no_hooks)
+                                2250    0.001    0.001  meld.py:1187(_resolve_spell_by_id)
+                                2250    0.000    0.000  spell.py:1177(mutation_override)
+                                2250    0.000    0.000  spellbook.py:830(_emit_cache_file_if_required)
+                                2250    0.000    0.000  {built-in method builtins.isinstance}
+
+
+   Ordered by: cumulative time
+   List reduced from 138 to 1 due to restriction <'spellspace_meld.py.*meld'>
+
+Function                      called...
+                                  ncalls  tottime  cumtime
+spellspace_meld.py:107(meld)  ->    2319    0.000    0.001  counter_switch.py:99(state)
+                                    2319    0.001    0.061  creation_context.py:192(execute_no_hooks)
+                                    2319    0.000    0.001  meld.py:1187(_resolve_spell_by_id)
+                                    2319    0.000    0.000  spell.py:1177(mutation_override)
+                                    2319    0.000    0.000  spellbook.py:830(_emit_cache_file_if_required)
+                                    2319    0.000    0.000  {built-in method builtins.isinstance}
+
+
