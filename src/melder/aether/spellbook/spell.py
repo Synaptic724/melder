@@ -209,6 +209,7 @@ class Spell(Cleanable):
         "_creation_context_switch",
         "_caching_enabled",
         "_compiler_artifact",
+        "_door_epoch",
         "_dynamic_environment",
         "_hooks_enabled",
         "_id",
@@ -358,6 +359,14 @@ class Spell(Cleanable):
 
         # Hooks (private storage; Spellbook controls mutation)
         self._hooks_enabled: bool = False
+        # Fast-meld-door invalidation epoch: bumped by every spell-level
+        # invalidation chokepoint (hook attach, resolution invalidation,
+        # creation-context cleanup/reset). Fast-door entries capture this
+        # value at build time and compare it per hit, replacing per-hit
+        # reads of the individual guard flags (shared-object traffic).
+        # Bump sites assume chokepoints are serialized per spell (they run
+        # under spell/spellbook locks or single-threaded build phases).
+        self._door_epoch: int = 0
         self._pre_hooks: List[Callable[..., Any]] = []
         self._activation_hooks: List[Callable[..., Any]] = []
         self._post_hooks: List[Callable[..., Any]] = []
@@ -560,6 +569,8 @@ class Spell(Cleanable):
             self._hooks_enabled = bool(
                 self._pre_hooks or self._activation_hooks or self._post_hooks
             )
+            # Invalidate fast-meld-door entries: the hook gate changed.
+            self._door_epoch += 1
 
     def _cleanup_creation_context(self) -> None:
         """
@@ -575,6 +586,10 @@ class Spell(Cleanable):
             - Resets `_creation_context_switch` to idle state (`0`) so
               future `get_or_build` calls can elect a new leader.
         """
+        # Invalidate fast-meld-door entries before the teardown: covers the
+        # context clear AND the switch reset (a reset without replacement
+        # would otherwise pass the door's context-identity pin).
+        self._door_epoch += 1
         if self._creation_context is not None:
             try:
                 self._creation_context.cleanup()

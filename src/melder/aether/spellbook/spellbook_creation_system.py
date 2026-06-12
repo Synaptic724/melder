@@ -939,6 +939,9 @@ class SpellbookCreationSystem(Cleanable):
             if spell is None:
                 continue
             spell.resolution_required = True
+            # Invalidate fast-meld-door entries: this spell now requires a
+            # deferred-resolution pass before any fast-lane execution.
+            spell._door_epoch += 1
 
     @staticmethod
     def _stage_spell_payloads_at_conjure_end(

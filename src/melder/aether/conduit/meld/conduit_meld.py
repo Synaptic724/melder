@@ -158,9 +158,10 @@ class ConduitMeld(Meld):
             - Warm id-string melds may take the guarded fast meld door: after
               one successful normal-lane meld in non-dynamic, no-hooks,
               no-override posture, later identical requests execute through a
-              memoized `(spell, context, creations)` entry validated per call
-              by live guards (hook state, context-switch state, context
-              identity, validation/resolution flags), with the executor read
+              memoized `(spell, context, creations, epoch)` entry validated
+              per call by live guards (door-epoch compare covering the
+              spell-level chokepoints, context identity, spellbook
+              validation flag), with the executor read
               per hit through the live context slot so phase-11 hot-swapped
               doors are always honored. Any guard miss falls back to this
               normal lane and rebuilds the entry on success, so fast-lane
@@ -199,25 +200,34 @@ class ConduitMeld(Meld):
                 # which rebuilds the entry in place after it succeeds.
                 fast_entry = self._fast_meld_doors.get(spell)
                 if fast_entry is not None:
-                    door_spell, captured_context, fast_creations = fast_entry
+                    (
+                        door_spell,
+                        captured_context,
+                        fast_creations,
+                        captured_epoch,
+                    ) = fast_entry
                     fast_executor = None
                     try:
                         # Guard ladder (live reads only):
                         # - meld-hooks map read live because it is shared by
                         #   reference and may be mutated in place
-                        # - spell hook gate, context-switch state, and context
-                        #   identity cover spell-level invalidation (all
-                        #   context replacement funnels through
-                        #   Spell._cleanup_creation_context)
-                        # - validation/resolution flags cover RiskManager and
-                        #   deferred-resolution gating
+                        # - the door epoch replaces the old per-flag reads
+                        #   (hook gate, switch fast_state, resolution flag):
+                        #   every spell-level invalidation chokepoint bumps
+                        #   `Spell._door_epoch`, so one int compare covers
+                        #   them with one shared-object hop instead of three
+                        #   (measured pure-door inflation 2.6x/4.2x at
+                        #   threads=3/5 from shared-line traffic)
+                        # - context identity covers context replacement (all
+                        #   replacement funnels through
+                        #   Spell._cleanup_creation_context, which also bumps)
+                        # - the spellbook-wide validation flag stays a live
+                        #   read: it is not a per-spell chokepoint
                         if (
                             not self._meld_hooks
-                            and not door_spell._hooks_enabled
-                            and door_spell._creation_context_switch.fast_state >= 2
+                            and door_spell._door_epoch == captured_epoch
                             and door_spell._creation_context is captured_context
                             and not self._spellbook._spellbook_validation_required
-                            and not door_spell.resolution_required
                         ):
                             # The executor slot is read through the live
                             # context PER HIT, never captured in the entry:
@@ -301,6 +311,11 @@ class ConduitMeld(Meld):
         creations = self._creations
         meld_hooks = self._meld_hooks
         spell_hooks_enabled = target_spell._hooks_enabled
+        # Captured BEFORE execution: if any invalidation chokepoint bumps the
+        # epoch while this meld is executing, the entry built below carries
+        # the pre-bump value, so the next fast-door attempt misses and
+        # rebuilds instead of trusting a stale posture.
+        door_epoch_at_entry = target_spell._door_epoch
         if not (meld_hooks or spell_hooks_enabled):
             if target_spell._creation_context_switch.fast_state >= 2:
                 creation_context = target_spell._creation_context
@@ -337,6 +352,7 @@ class ConduitMeld(Meld):
                         target_spell,
                         creation_context,
                         creations,
+                        door_epoch_at_entry,
                     )
             else:
                 instance = creation_context._overrides_executor(

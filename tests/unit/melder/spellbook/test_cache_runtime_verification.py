@@ -54,6 +54,9 @@ class _RecordingSpell:
         self._caching_enabled = caching_enabled
         self._dynamic_environment = False
         self._creation_context = object()
+        # Mirror the live Spell contract: fast-meld-door invalidation epoch
+        # bumped by the cache-rehydration regating chokepoint.
+        self._door_epoch = 0
         # Mirror the live Spell contract consumed by the cache-state live-set
         # filter: constructed spells are payload-eligible.
         self.is_existing_creation = False

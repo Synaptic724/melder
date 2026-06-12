@@ -65,15 +65,21 @@ class Meld(Cleanable, ABC):
       recompilation ownership work
     - own the per-door fast meld door registry (`_fast_meld_doors`): a plain
       success-only memoization dict, keyed by spell-id string, mapping to
-      `(spell, captured_context, creations_store)` tuples used by the
-      concrete doors' guarded warm fast lane. The executor is deliberately
-      not part of the entry: it is read per hit through the captured
-      context's `_no_overrides_executor` slot because phase-11 hydration
-      hot-swaps that slot in place (cold door -> hot door) on first
-      execution. Cardinality is bounded by construction because entries are
-      inserted only after a successful normal-lane meld, so the keyspace is
-      the bound-spell registry, not caller input. The registry is deleted in
-      `cleanup()`.
+      `(spell, captured_context, creations_store, captured_epoch)` tuples
+      used by the concrete doors' guarded warm fast lane. `captured_epoch`
+      is the spell's `_door_epoch` read BEFORE the building meld executed;
+      every spell-level invalidation chokepoint (hook attach, resolution
+      invalidation, creation-context cleanup/reset) bumps the live epoch,
+      so a hit needs one int compare plus the context-identity pin instead
+      of re-reading each guard flag (shared-object traffic measured at
+      2.6x/4.2x pure-door inflation at threads=3/5). The executor is
+      deliberately not part of the entry: it is read per hit through the
+      captured context's `_no_overrides_executor` slot because phase-11
+      hydration hot-swaps that slot in place (cold door -> hot door) on
+      first execution. Cardinality is bounded by construction because
+      entries are inserted only after a successful normal-lane meld, so the
+      keyspace is the bound-spell registry, not caller input. The registry
+      is deleted in `cleanup()`.
 
     High-level activation flow:
     1. Resolve the target spell from the requested identity inputs.
@@ -210,7 +216,7 @@ class Meld(Cleanable, ABC):
         # registry-bounded by the success-only insertion rule.
         self._fast_meld_doors: Dict[
             str,
-            Tuple[Spell, CreationContext, Creations],
+            Tuple[Spell, CreationContext, Creations, int],
         ] = {}
 
     def cleanup(self) -> None:
@@ -621,6 +627,8 @@ class Meld(Cleanable, ABC):
             except Exception:
                 spell.resolution_complete = False
                 spell.resolution_required = True
+                # Invalidate fast-meld-door entries: resolution regressed.
+                spell._door_epoch += 1
                 raise
 
             spell.resolution_complete = True

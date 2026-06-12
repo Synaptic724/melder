@@ -198,13 +198,14 @@ def _poison_entry(meld: object, spell_id: str) -> None:
     Returns:
         None.
     """
-    door_spell, captured_context, _creations_store = (
+    door_spell, captured_context, _creations_store, captured_epoch = (
         meld._fast_meld_doors[spell_id]
     )
     meld._fast_meld_doors[spell_id] = (
         door_spell,
         captured_context,
         _PoisonCreations(),
+        captured_epoch,
     )
 
 
@@ -458,6 +459,44 @@ def test_component_fast_door_guard_trips_on_context_invalidation() -> None:
         assert conduit.meld(spell=spell_id) is first
         entry = conduit._meld._fast_meld_doors[spell_id]
         assert entry[1] is spell._creation_context
+    finally:
+        conduit.permanent_cleanup()
+
+
+def test_component_fast_door_epoch_invalidates_on_hook_attach() -> None:
+    """
+    Purpose:
+        Pin the door-epoch guard: attaching spell hooks through the real
+        chokepoint bumps `Spell._door_epoch`, so a previously built fast
+        entry misses and the meld routes through the hook lane.
+    Contract:
+        - The built entry captures the spell's epoch at build time.
+        - `Spell._set_hooks` bumps the live epoch (entry now stale).
+        - The next meld returns the reuse-correct instance AND fires the
+          attached hook, proving the stale fast entry was not served.
+    """
+    spellbook = _make_spellbook()
+    spell_id = spellbook.bind(
+        spell=_UniquePerConduitService,
+        existence=Existence.unique_per_conduit,
+        permissions="create",
+    )
+    conduit = spellbook.conjure(name="root")
+    try:
+        first = conduit.meld(spell=spell_id)
+        entry = conduit._meld._fast_meld_doors[spell_id]
+        spell = spellbook._spell_id_pool[spell_id]
+        assert entry[3] == spell._door_epoch
+
+        fired: list = []
+        spell._set_hooks(post_hooks=[lambda: fired.append(True)])
+        assert spell._door_epoch != entry[3]
+
+        again = conduit.meld(spell=spell_id)
+        assert again is first
+        # Hook executed => the meld took the normal hook lane, not the
+        # stale fast entry.
+        assert fired
     finally:
         conduit.permanent_cleanup()
 
