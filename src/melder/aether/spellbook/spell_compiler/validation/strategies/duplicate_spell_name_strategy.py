@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Dict, List, Any
+from typing import TYPE_CHECKING, Dict, List, Any, Optional
 
 
 
@@ -76,20 +76,34 @@ class DuplicateSpellNameStrategy(SpellValidationStrategy):
             # Nothing to check if this spell has no name.
             return
 
-        # Build a collision list for diagnostics.
-        collisions: List[Dict[str, Any]] = []
-        for spell_id, other_spell in spellbook._spell_id_pool.items():
-            if other_spell.spell_name != spell_name:
-                continue
-            index = other_spell.spell_index
-            collisions.append(
-                {
-                    "spell_index_id": index.id,
-                    "spell_id": spell_id,
-                    "spellframe": other_spell.spellframe,
-                    "binding_name": other_spell.binding_name,
-                }
-            )
+        # Pass-scoped memo: the name->collisions map derives only from
+        # bind-transactional pool truth, so one build serves every spell in
+        # the validation pass (mirrors the binding-graph memo). Without a
+        # pass cache (deferred single-spell paths) the map is built fresh,
+        # matching the previous per-spell scan byte-for-byte.
+        pass_cache = context.validation_pass_cache
+        name_collisions: Optional[Dict[str, List[Dict[str, Any]]]] = None
+        if pass_cache is not None:
+            name_collisions = pass_cache.get("duplicate_name_collisions")
+        if name_collisions is None:
+            name_collisions = {}
+            for spell_id, other_spell in spellbook._spell_id_pool.items():
+                other_name = other_spell.spell_name
+                if not other_name:
+                    continue
+                index = other_spell.spell_index
+                name_collisions.setdefault(other_name, []).append(
+                    {
+                        "spell_index_id": index.id,
+                        "spell_id": spell_id,
+                        "spellframe": other_spell.spellframe,
+                        "binding_name": other_spell.binding_name,
+                    }
+                )
+            if pass_cache is not None:
+                pass_cache["duplicate_name_collisions"] = name_collisions
+
+        collisions = name_collisions.get(spell_name, [])
 
         # If this spell is the only one with that name, we're fine.
         if len(collisions) <= 1:

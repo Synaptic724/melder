@@ -1,4 +1,4 @@
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 from typing import TYPE_CHECKING
 
@@ -67,14 +67,25 @@ class CircularDependencyStrategy(SpellValidationStrategy):
             # Without a Spellbook, we cannot reason about global cycles.
             return
 
-        # Build adjacency: version_id -> [dependency_ids...]
-        adjacency: Dict[str, List[str]] = {}
-        for spell_id, spell in spellbook._spell_id_pool.items():
-            if cancel_event is not None and cancel_event.is_set:
-                cancel_event.throw_if_set()
+        # Pass-scoped memo: dependencies are final once the phase-3 group
+        # barrier drops, so the frame adjacency is pass-invariant during the
+        # validation group and one build serves every spell (mirrors the
+        # binding-graph memo). Without a pass cache (deferred single-spell
+        # paths) the adjacency is built fresh, identical to the old scan.
+        pass_cache = context.validation_pass_cache
+        adjacency: Optional[Dict[str, List[str]]] = None
+        if pass_cache is not None:
+            adjacency = pass_cache.get("circular_dependency_adjacency")
+        if adjacency is None:
+            adjacency = {}
+            for spell_id, spell in spellbook._spell_id_pool.items():
+                if cancel_event is not None and cancel_event.is_set:
+                    cancel_event.throw_if_set()
 
-            deps: List[str] = spell.dependencies
-            adjacency[spell_id] = list(deps) if deps else []
+                deps: List[str] = spell.dependencies
+                adjacency[spell_id] = list(deps) if deps else []
+            if pass_cache is not None:
+                pass_cache["circular_dependency_adjacency"] = adjacency
 
         root_id = context.spell.spell_index.current
         if root_id is None:

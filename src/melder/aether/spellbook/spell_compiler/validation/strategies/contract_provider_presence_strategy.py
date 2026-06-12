@@ -86,21 +86,32 @@ class ContractProviderPresenceStrategy(SpellValidationStrategy):
                 except Exception:
                     system_state = None
 
-        provider_map: Dict[Tuple[str, str], List[str]] = {}
-        if spellbook is not None:
-            for contracted in spellbook._contracted_spells.values():
-                for index, provider_spell in contracted.items():
-                    if cancel_event is not None and cancel_event.is_set:
-                        cancel_event.throw_if_set()
-                    key = SpellInputUtils.make_spell_key_from_parts(
-                        spellframe=provider_spell.spellframe,
-                        spell_name=provider_spell.spell_name,
-                        binding_name=provider_spell.binding_name,
-                    )
-                    provider_spell_id = index.current
-                    if provider_spell_id is None:
-                        provider_spell_id = provider_spell.spell_id
-                    provider_map.setdefault(key, []).append(provider_spell_id)
+        # Pass-scoped memo: contracted-spell maps are bind-transactional, so
+        # the provider enumeration is pass-invariant and one build serves
+        # every spell in the validation pass. Without a pass cache (deferred
+        # single-spell paths) the map is built fresh, identical to before.
+        pass_cache = context.validation_pass_cache
+        provider_map: Optional[Dict[Tuple[str, str], List[str]]] = None
+        if pass_cache is not None:
+            provider_map = pass_cache.get("contract_provider_map")
+        if provider_map is None:
+            provider_map = {}
+            if spellbook is not None:
+                for contracted in spellbook._contracted_spells.values():
+                    for index, provider_spell in contracted.items():
+                        if cancel_event is not None and cancel_event.is_set:
+                            cancel_event.throw_if_set()
+                        key = SpellInputUtils.make_spell_key_from_parts(
+                            spellframe=provider_spell.spellframe,
+                            spell_name=provider_spell.spell_name,
+                            binding_name=provider_spell.binding_name,
+                        )
+                        provider_spell_id = index.current
+                        if provider_spell_id is None:
+                            provider_spell_id = provider_spell.spell_id
+                        provider_map.setdefault(key, []).append(provider_spell_id)
+            if pass_cache is not None and spellbook is not None:
+                pass_cache["contract_provider_map"] = provider_map
 
         automatic_mode = system_state is SystemState.automatic
         current_spell_id = spell.spell_index.current
