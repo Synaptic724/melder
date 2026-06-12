@@ -1,7 +1,7 @@
 from contextlib import contextmanager
 from types import MappingProxyType, ModuleType, TracebackType
 from typing import TYPE_CHECKING, Optional, List, Any, Mapping, Sequence, Dict, Set, Iterable, Tuple, Generator, Union, \
-    ClassVar
+    ClassVar, Type
 import threading
 import time
 
@@ -136,6 +136,7 @@ and logging.
         "_lookup_spells",
         "_pending_binding_frame_keys",
         "_pending_structural_spells",
+        "_phase_scheduler",
         "_configured_disposal_method_names",
         "_spell_id_pool",
         "_spell_system_states",
@@ -193,6 +194,11 @@ and logging.
         self._caching_system: Optional[CachingSystem] = None
         self._pending_binding_frame_keys: Set[str] = set()
         self._pending_structural_spells: List[Spell] = []
+        # Spellbook-owned persistent phase scheduler (lazy): one worker pool
+        # reused across every conjure phase group and lazy revalidation run.
+        # Created on first phase run; cleaned (sentinels + joins) exactly
+        # once in Spellbook cleanup.
+        self._phase_scheduler: Optional[PhaseScheduler] = None
         self._configured_disposal_method_names: Optional[frozenset[str]] = None
         self._conduit: Optional[Conduit] = None
         self._nexus_publish_enabled: bool = False
@@ -309,6 +315,19 @@ and logging.
         """
         if self._conduit is not None:
             self._unregister_conduit_from_risk_manager(self._conduit._id)
+        # 0) Stop the persistent phase-worker pool before registries die so
+        # no in-flight phase unit can observe a half-torn Spellbook. This is
+        # the single place pool threads are sentinelled and joined.
+        if self._phase_scheduler is not None:
+            try:
+                self._phase_scheduler.cleanup()
+            except Exception as e:
+                self._logger.error(
+                    f"Error cleaning phase scheduler: {e}",
+                    "_cleanup_components",
+                    exc_info=True,
+                )
+        del self._phase_scheduler
         self._remove_spells_from_nexus()
         # 1) Clean ONLY local spells (not contracted)
         self._cleanup_spells()
@@ -4143,6 +4162,69 @@ and logging.
             spellbook=self,
             phase_scheduler_cls=PhaseScheduler,
         )
+
+    def _get_or_create_phase_scheduler(
+            self,
+            phase_scheduler_cls: Type[PhaseScheduler],
+    ) -> PhaseScheduler:
+        """
+        Internal
+
+        Return the Spellbook-owned persistent phase scheduler, creating it
+        lazily on first use.
+
+        Purpose:
+            Provide the single long-lived scheduler (and its worker pool)
+            that every conjure phase group and lazy revalidation run borrows,
+            replacing the per-group construct/spawn/join lifecycle.
+
+        Contract:
+            - Creates the scheduler on first call with this Spellbook and its
+              active configuration; later calls return the same instance.
+            - Preserves the `phase_scheduler_cls` patch seam: when a caller
+              supplies a different scheduler class than the live instance's
+              type (test stubs), the live instance is cleaned and replaced so
+              patched runs are deterministic.
+            - The returned scheduler's worker pool is spawned lazily on its
+              first run, not here.
+
+        Args:
+            phase_scheduler_cls:
+                Scheduler class to instantiate (patch point; defaults to
+                `PhaseScheduler` at every call site).
+
+        Returns:
+            PhaseScheduler: The live Spellbook-owned scheduler.
+
+        Raises:
+            RuntimeError: If the Spellbook has been cleaned.
+
+        Threading:
+            Callers hold the Spellbook lock on every phase-run path, so
+            lazy creation does not race itself.
+        """
+        self.check_cleaned()
+        scheduler = self._phase_scheduler
+        if scheduler is not None and type(scheduler) is phase_scheduler_cls:
+            return scheduler
+        if scheduler is not None:
+            # Patch-seam replacement: a different scheduler class was
+            # requested than the live instance (test stubs). Retire the old
+            # pool deterministically before installing the new one.
+            try:
+                scheduler.cleanup()
+            except Exception as e:
+                self._logger.error(
+                    f"Error cleaning replaced phase scheduler: {e}",
+                    "_get_or_create_phase_scheduler",
+                    exc_info=True,
+                )
+        scheduler = phase_scheduler_cls(
+            spellbook=self,
+            configuration=self._configuration,
+        )
+        self._phase_scheduler = scheduler
+        return scheduler
 
     def _run_post_conjure_structural_phases(self, spells: Sequence[Spell]) -> None:
         """

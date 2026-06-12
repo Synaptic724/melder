@@ -1,3 +1,4 @@
+import inspect
 from enum import Enum, auto
 from typing import Any, Dict, List, Optional, ClassVar
 
@@ -83,7 +84,9 @@ class ClassBindingProfile(SpellBindingProfile):
         "annotations",
         "origin_file",
         "origin_line",
-        "source_preview",
+        "init_signature",
+        "_source_preview_value",
+        "_source_preview_loaded",
         "is_dataclass",
         "decorated",
         "method_names",
@@ -102,6 +105,7 @@ class ClassBindingProfile(SpellBindingProfile):
             annotations: Optional[Dict[str, Any]] = None,
             origin_file: Optional[str] = None,
             origin_line: Optional[int] = None,
+            init_signature: Optional[str] = None,
             source_preview: Optional[str] = None,
             is_dataclass: bool = False,
             decorated: bool = False,
@@ -131,8 +135,15 @@ class ClassBindingProfile(SpellBindingProfile):
                 Optional source file path.
             origin_line:
                 Optional source line number.
+            init_signature:
+                Optional constructor signature string (`str(inspect.signature(cls))`).
+                Part of the v4 fingerprint: constructor-shape changes must
+                change the spell id so stale cache bundles cannot full-hit.
             source_preview:
-                Optional truncated source preview.
+                Optional truncated source preview. When omitted, the preview
+                is read lazily from `original_object` on first access
+                (descriptor/diagnostic consumers only); the bind hot path
+                never pays the source-file read.
             is_dataclass:
                 Whether the class is a dataclass.
             decorated:
@@ -152,10 +163,38 @@ class ClassBindingProfile(SpellBindingProfile):
         self.annotations: Dict[str, Any] = dict(annotations) if annotations is not None else {}
         self.origin_file: Optional[str] = origin_file
         self.origin_line: Optional[int] = origin_line
-        self.source_preview: Optional[str] = source_preview
+        self.init_signature: Optional[str] = init_signature
+        self._source_preview_value: Optional[str] = source_preview
+        self._source_preview_loaded: bool = source_preview is not None
         self.is_dataclass: bool = is_dataclass
         self.decorated: bool = decorated
         self.method_names: List[str] = list(method_names) if method_names is not None else []
+
+    @property
+    def source_preview(self) -> Optional[str]:
+        """
+        Return the truncated class source preview, reading it lazily.
+
+        Contract:
+            - First access without an explicit constructor value reads the
+              first 5 source lines of `original_object` (same shape the
+              eager builder used to produce) and caches the result.
+            - Unreadable sources (builtins, REPL classes, frozen modules)
+              cache None instead of raising.
+            - Concurrent first reads are benign: the computation is
+              idempotent and the last writer wins with an identical value.
+        """
+        if self._source_preview_loaded:
+            return self._source_preview_value
+        preview: Optional[str] = None
+        try:
+            lines, _ = inspect.getsourcelines(self.original_object)
+            preview = "".join(lines[:5]).strip()
+        except Exception:
+            preview = None
+        self._source_preview_value = preview
+        self._source_preview_loaded = True
+        return preview
 
     def cleanup(self) -> None:
         """
@@ -174,7 +213,9 @@ class ClassBindingProfile(SpellBindingProfile):
 
         del self.origin_file
         del self.origin_line
-        del self.source_preview
+        del self.init_signature
+        del self._source_preview_value
+        del self._source_preview_loaded
         del self.is_dataclass
         del self.decorated
         del self.name

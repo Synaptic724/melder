@@ -1,5 +1,5 @@
 import threading
-from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple
+from typing import TYPE_CHECKING, Dict, Optional, Tuple
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 if TYPE_CHECKING:
@@ -7,7 +7,10 @@ if TYPE_CHECKING:
     from melder.aether.aetheric_frame.aetheric_frame_configuration import (
         AethericFrameConfiguration,
     )
+    from melder.aether.conduit.conduit import Conduit
     from melder.aether.conduit.conduit_ward.conduit_ward import ConduitWard
+    from melder.aether.spellbook.spell import Spell
+    from melder.aether.spellbook.spellbook import Spellbook
 
 from melder.nexus.frame_descriptor.conduit_descriptor_payload import (
     ConduitDescriptorPayload,
@@ -224,7 +227,7 @@ class FrameDescriptorManager(Cleanable):
             return None
         return frame_posture
 
-    def _publish_frame_record(self, spellbook: Any) -> bool:
+    def _publish_frame_record(self, spellbook: Spellbook) -> bool:
         """
         Publish or update one canonical frame record.
 
@@ -307,7 +310,7 @@ class FrameDescriptorManager(Cleanable):
             descriptor.set_frame_overview(frame_record)
             return True
 
-    def _publish_conduit_record(self, conduit: Any) -> bool:
+    def _publish_conduit_record(self, conduit: Conduit) -> bool:
         """
         Publish or update one canonical conduit record.
 
@@ -382,13 +385,14 @@ class FrameDescriptorManager(Cleanable):
             return True
 
     @staticmethod
-    def _resolve_parent_conduit_id(conduit: Any) -> Optional[str]:
+    def _resolve_parent_conduit_id(conduit: Conduit) -> Optional[str]:
         """
         Resolve the published parent conduit id for one conduit.
 
         Args:
             conduit:
-                Conduit-like object being published.
+                Conduit being published. Test doubles may satisfy this shape
+                structurally; the annotation states the runtime contract.
 
         Returns:
             Optional[str]: Parent conduit id when present; otherwise None.
@@ -405,13 +409,14 @@ class FrameDescriptorManager(Cleanable):
         return parent_conduit_id
 
     @classmethod
-    def _compute_lineage_depth(cls, conduit: Any) -> int:
+    def _compute_lineage_depth(cls, conduit: Conduit) -> int:
         """
         Compute zero-based lineage depth for one conduit.
 
         Args:
             conduit:
-                Conduit-like object being published.
+                Conduit being published. Test doubles may satisfy this shape
+                structurally; the annotation states the runtime contract.
 
         Returns:
             int: Zero-based lineage depth from the published conduit to the
@@ -463,8 +468,8 @@ class FrameDescriptorManager(Cleanable):
 
     def _publish_spell_record(
             self,
-            spellbook: Any,
-            spell: Any,
+            spellbook: Spellbook,
+            spell: Spell,
             owner_conduit_id: Optional[str],
     ) -> bool:
         """

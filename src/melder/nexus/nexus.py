@@ -5,10 +5,15 @@ from melder.__melder_registration_guard__ import __melder_registration_guard__ a
 
 if TYPE_CHECKING:
     from melder.aether.aether import Aether
+    from melder.aether.aetheric_frame.aetheric_frame_configuration import (
+        AethericFrameConfiguration,
+    )
     from melder.aether.conduit.conduit import Conduit
     from melder.aether.spellbook.configuration.spellbook_configuration import (
         SpellbookConfiguration,
     )
+    from melder.aether.spellbook.spell import Spell
+    from melder.aether.spellbook.spellbook import Spellbook
     from melder.nexus.frame_descriptor.frame_descriptor import FrameDescriptor
     from melder.nexus.rift.rift import Rift
     from melder.nexus.acl.builder.frame_acl_builder import FrameACLBuilder
@@ -967,7 +972,7 @@ class Nexus(Cleanable):
             "remove_rift",
         )
 
-    def _publish_frame_record(self, spellbook: Any) -> bool:
+    def _publish_frame_record(self, spellbook: Spellbook) -> bool:
         """
         Internal
 
@@ -986,7 +991,7 @@ class Nexus(Cleanable):
             self._ensure_frame_acl_container(spellbook._aetheric_frame)
         return published
 
-    def _publish_conduit_record(self, conduit: Any) -> bool:
+    def _publish_conduit_record(self, conduit: Conduit) -> bool:
         """
         Internal
 
@@ -1036,8 +1041,8 @@ class Nexus(Cleanable):
 
     def _publish_spell_record(
             self,
-            spellbook: Any,
-            spell: Any,
+            spellbook: Spellbook,
+            spell: Spell,
             owner_conduit_id: Optional[str],
     ) -> bool:
         """
@@ -2490,29 +2495,28 @@ class Nexus(Cleanable):
     def _get_required_target_frame_runtime_configuration(
             self,
             target_frame_name: str,
-    ) -> Any:
+    ) -> AethericFrameConfiguration:
         """
         Internal
 
         Return the AR-relevant runtime posture for one target frame.
 
         Purpose:
-            Prefer the dedicated `AethericFrameConfiguration` when one has been
-            bound during conjure, but tolerate older/manual paths by deriving
-            the same narrow posture from the full bound Spellbook
-            `Configuration` when needed.
+            Resolve the dedicated `AethericFrameConfiguration` bound during
+            conjure for the target frame; AR use requires that bound posture
+            and there is no fallback derivation path.
 
         Args:
             target_frame_name:
                 Target frame name being validated.
 
         Returns:
-            Any: Runtime posture object exposing `system_state`,
-            `ai_native_enabled`, and `rift_enabled`.
+            AethericFrameConfiguration: Bound runtime posture exposing
+            `system_state`, `ai_native_enabled`, and `rift_enabled`.
 
         Raises:
-            ValueError: If the target frame does not exist or neither frame
-                posture nor full configuration is available.
+            ValueError: If the target frame does not exist or has no bound
+                `AethericFrameConfiguration`.
         """
         try:
             target_frame_configuration = self._aether._get_aetheric_frame_configuration(

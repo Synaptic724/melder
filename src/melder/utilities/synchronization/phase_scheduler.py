@@ -1,5 +1,4 @@
 import threading
-from concurrent.futures import FIRST_EXCEPTION, Future, wait
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -11,7 +10,7 @@ from typing import (
     Tuple,
     ClassVar,
 )
-from queue import SimpleQueue, Empty as QueueEmpty
+from queue import SimpleQueue
 
 
 
@@ -23,6 +22,7 @@ from melder.utilities.synchronization.cancellation_event_signal import (
     CancellationEvent,
     CancellationEventSignal,
 )
+from melder.utilities.synchronization.phase_latch import PhaseLatch
 from melder.utilities.custom_exceptions.operation_cancelled_error import OperationCancelledError
 from melder.utilities.custom_exceptions.phase_scheduler_error import PhaseSchedulerError
 from melder.utilities.custom_exceptions.phase_execution_error import PhaseExecutionError
@@ -39,41 +39,62 @@ class PhaseScheduler(Cleanable):
     """
     Coordinated, multiphase scheduler for Spellbook resolution.
 
-    This is a **one-shot**, per-Spellbook pipeline runner that:
+    This is a **persistent**, per-Spellbook pipeline runner that:
 
     - Uses configuration to determine:
         * Worker count (phase_scheduler_workers_per_spellbook)
         * Barrier timeout in ms (phase_scheduler_barrier_timeout_milliseconds)
     - Owns:
-        * A shared CancellationEventSignal for cooperative cancellation.
-        * A single ConcurrentQueue feeding all worker threads.
-        * A fixed pool of worker threads reused across all phases.
+        * A fixed pool of worker threads, spawned lazily once and reused
+          across ALL runs for the scheduler's lifetime (v2: the pool is no
+          longer torn down per conjure group; thread spawn/join cost moves
+          to Spellbook teardown).
+        * A single queue feeding all worker threads. Workers block on the
+          queue (no idle polling) and exit only on an explicit sentinel.
+        * A per-run CancellationEventSignal: every `run_all_phases(...)`
+          call begins a fresh cooperative-cancellation scope, so one run's
+          failure can never poison a later run on the same pool.
     - Executes phases in **registration order**, enforcing:
-        * Phase barrier: all UoWs for that phase must be complete.
+        * Phase barrier: all units for that phase must be complete, tracked
+          by one `PhaseLatch` per phase (one event wait) instead of
+          per-unit Future waits.
         * Timeout: if the barrier is not reached in time, the phase aborts.
-        * Cancellation: any error or timeout cancels the entire pipeline.
+        * Fail-fast: a unit failure wakes the barrier immediately and
+          cancels the rest of the run.
 
     Lifespan
     --------
-    - Intended for **one run** per Spellbook conjuration.
-    - After `run_all_phases(...)` returns (or raises), call `cleanup()`.
-      Once cleaned, the scheduler is permanently broken by design.
+    - Intended to live as long as its owning Spellbook and be reused for
+      every phase run (conjure groups and lazy revalidations).
+    - Phase registrations are per-run state: they are consumed by
+      `run_all_phases(...)` and cleared afterward (or via `clear_phases()`).
+    - `cleanup()` permanently breaks the scheduler: workers are sentinelled
+      and joined exactly once, at owner teardown.
 
     Integration pattern
     -------------------
-        scheduler = PhaseScheduler(
-            spellbook=spellbook,
-            configuration=cfg,
-        )
+        scheduler = spellbook-owned PhaseScheduler(...)
 
         scheduler.register_phase("scan_spells", phase1_factory)
         scheduler.register_phase("build_graphs", phase2_factory)
-        scheduler.register_phase("build_dags", phase3_factory)
-
         results = scheduler.run_all_phases()
-        # results[ "scan_spells"] -> Sequence[UnitOfWork] (inspect .result())
+        # registrations are cleared; the scheduler is immediately reusable:
+        scheduler.register_phase("root_blueprints", phase5_factory)
+        results = scheduler.run_all_phases()
 
+        ... at Spellbook teardown ...
         scheduler.cleanup()
+
+    Control contract (why workers never run inline)
+    -----------------------------------------------
+    Units always execute on worker threads, even with one worker. An inline
+    workers==1 fast path was tried and reverted: synchronous execution in
+    the caller thread cannot honor the scheduler's async control contract.
+    A unit blocked on an external signal deadlocks the caller (external
+    cancel can never be observed), and preemptive barrier timeouts
+    (PhaseTimeoutError while a unit is still running) are impossible
+    without a separate execution thread. The persistent pool in this
+    version is the sanctioned answer to single-run thread-spawn overhead.
 
     Notes
     -----
@@ -81,8 +102,9 @@ class PhaseScheduler(Cleanable):
       It only coordinates UnitOfWork instances.
     - Phase strategies/factories are responsible for:
       * Inspecting the Spellbook.
-      * Creating appropriately labelled UnitOfWork instances via: meth:`create_unit_of_work` so that all work items share the
-        scheduler's CancellationEvent.
+      * Creating appropriately labelled UnitOfWork instances via
+        :meth:`create_unit_of_work` so that all work items share the
+        CURRENT RUN's CancellationEvent.
     """
     __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
@@ -123,11 +145,14 @@ class PhaseScheduler(Cleanable):
         self._workers: int = self._get_worker_count(configuration)
         self._barrier_timeout_ms: int = self._get_timeout_ms(configuration)
 
-        # Cancellation + queue + worker state
+        # Per-run cancellation scope. A fresh signal is installed at the top
+        # of every run_all_phases() call; between runs these hold the most
+        # recent run's (tripped or untripped) scope so `cancel()` and
+        # `is_cancelled` stay meaningful to external observers.
         self._cancel_signal: CancellationEventSignal = CancellationEventSignal()
         self._cancel_event: CancellationEvent = self._cancel_signal.event
 
-        # Use concurrent containers for shared state.
+        # Shared work queue: workers block on get() and exit on sentinel.
         self._queue: SimpleQueue[Any] = SimpleQueue()
         self._threads: List[threading.Thread] = []
         self._workers_started: bool = False
@@ -135,7 +160,7 @@ class PhaseScheduler(Cleanable):
 
         self._lock: threading.RLock = threading.RLock()
 
-        # Phase registry (concurrent containers).
+        # Per-run phase registry (consumed and cleared by run_all_phases).
         self._phase_factories: Dict[str, Callable[[], Sequence[UnitOfWork]]] = {}
         self._phase_order: List[str] = []
 
@@ -200,10 +225,15 @@ class PhaseScheduler(Cleanable):
 
         Behaviour:
             - Idempotent.
-            - Signals cancellation.
+            - Signals cancellation for the current run scope.
             - Sends a sentinel to each worker thread and lets them exit.
-            - Nulls out references (spellbook, configuration, queue, threads).
+            - Joins worker threads (bounded), then nulls owned references.
             - Marks the scheduler as cleaned; further use is illegal.
+
+        Ordering:
+            This is the ONLY place pool threads are joined. Owners (the
+            Spellbook) call this once at their own teardown, which is where
+            per-conjure thread churn moved in the persistent-pool design.
         """
         if self._cleaned:
             return
@@ -215,7 +245,7 @@ class PhaseScheduler(Cleanable):
             self._cleaned = True
             self._shutdown = True
 
-            # Signal global cancellation.
+            # Trip the current run scope so in-flight units fast-return.
             self._cancel_signal.cancel()
 
             # Send a sentinel to each worker if they've been started and the queue exists.
@@ -261,22 +291,23 @@ class PhaseScheduler(Cleanable):
     @property
     def cancel_event(self) -> CancellationEvent:
         """
-        Shared CancellationEvent used by all Units of Work.
+        CancellationEvent for the CURRENT run scope.
 
         Phase factories should NOT construct their own events; instead they
-        should call: meth:`create_unit_of_work` so this event is wired in
-        automatically.
+        should call :meth:`create_unit_of_work` so this event is wired in
+        automatically. Factories execute inside `run_all_phases(...)`, so
+        they always observe the active run's event.
 
         Returns:
-            CancellationEvent: Shared cooperative-cancellation view used by all
-            units created by this scheduler.
+            CancellationEvent: Cooperative-cancellation view for the current
+            (or most recent) run scope.
         """
         return self._cancel_event
 
     @property
     def is_cancelled(self) -> bool:
         """
-        Return whether a scheduler-wide cancellation has been signalled.
+        Return whether the current run scope has been cancelled.
         """
         return self._cancel_signal.is_set
 
@@ -309,12 +340,12 @@ class PhaseScheduler(Cleanable):
     ) -> UnitOfWork:
         """
         Convenience factory for creating a UnitOfWork that is already wired to
-        this scheduler's shared CancellationEvent.
+        the CURRENT run's CancellationEvent.
 
         Phase factories should prefer this instead of constructing UnitOfWork
         directly so that:
 
-            - All work items participate in scheduler-driven cooperative
+            - All work items participate in run-scoped cooperative
               cancellation.
             - The wiring of CancellationEvent is centralized inside the
               scheduler.
@@ -332,8 +363,8 @@ class PhaseScheduler(Cleanable):
                 Optional metadata describing this unit (spell id, phase, etc.).
 
         Returns:
-            UnitOfWork: A newly constructed UnitOfWork bound to this scheduler's
-            CancellationEvent.
+            UnitOfWork: A newly constructed UnitOfWork bound to the current
+            run's CancellationEvent.
         """
         self.check_cleaned()
 
@@ -352,17 +383,22 @@ class PhaseScheduler(Cleanable):
 
     def register_phase(self, name: str, factory: Callable[[], Sequence[UnitOfWork]]) -> None:
         """
-        Register a phase in the scheduler.
+        Register a phase for the NEXT run.
 
-        Phases execute in the order they are registered.
+        Phases execute in the order they are registered. Registrations are
+        per-run state: `run_all_phases(...)` consumes and clears them, and
+        callers that abort between registration and run must call
+        :meth:`clear_phases` so stale registrations cannot leak into a
+        later run on this persistent scheduler.
 
         Args:
             name:
                 Logical phase name (e.g. "scan_spells", "build_graphs").
             factory:
                 Callable[[] -> Sequence[UnitOfWork]] that, when invoked, builds
-                all UnitsOfWork for this phase. Factories should use: meth:`create_unit_of_work` to ensure each unit is bound to
-                this scheduler's CancellationEvent.
+                all UnitsOfWork for this phase. Factories should use
+                :meth:`create_unit_of_work` to ensure each unit is bound to
+                the current run's CancellationEvent.
 
         Raises:
             RuntimeError: If the scheduler has been cleaned.
@@ -383,17 +419,38 @@ class PhaseScheduler(Cleanable):
             self._phase_factories[name] = factory
             self._phase_order.append(name)
 
+    def clear_phases(self) -> None:
+        """
+        Clear all per-run phase registrations.
+
+        Contract:
+            - Idempotent; safe when no phases are registered.
+            - Called automatically at the end of `run_all_phases(...)`;
+              exposed for callers whose registration step fails before the
+              run starts, so a persistent scheduler never carries stale
+              registrations into the next run.
+
+        Returns:
+            None.
+        """
+        if self._cleaned:
+            return
+        with self._lock:
+            self._phase_factories.clear()
+            self._phase_order.clear()
+
     # ------------------------------------------------------------------
     # Worker pool
     # ------------------------------------------------------------------
 
     def _start_workers_if_needed(self) -> None:
         """
-        Start the worker pool once and only once.
+        Start the worker pool once and only once for the scheduler lifetime.
 
         Contract:
             - Returns immediately when workers are already running.
-            - Creates exactly "self._workers" daemon threads on the first start.
+            - Creates exactly "self._workers" daemon threads on the first
+              start; the pool is then reused by every later run.
         """
         if self._workers_started:
             return
@@ -413,77 +470,50 @@ class PhaseScheduler(Cleanable):
 
             self._workers_started = True
 
-    @staticmethod
-    def _build_wait_targets(
-            units: Sequence[UnitOfWork],
-    ) -> Tuple[Future[Any], ...]:
-        """
-        Return the concrete Future targets consumed by `wait(...)`.
-
-        Args:
-            units:
-                Phase units to wait on.
-
-        Returns:
-            Tuple[Future[Any], ...]: Concrete Future-backed wait targets in the
-            same order as the supplied units.
-
-        Raises:
-            TypeError:
-                If any supplied unit does not satisfy the concrete
-                `concurrent.futures.Future` runtime contract required by
-                `wait(...)`.
-        """
-        wait_targets: List[Future[Any]] = []
-        for unit in units:
-            if not isinstance(unit, Future):
-                raise TypeError(
-                    "PhaseScheduler requires Future-backed UnitOfWork values."
-                )
-            wait_targets.append(unit)
-        return tuple(wait_targets)
-
     def _worker_loop(self) -> None:
         """
         Worker thread loop.
 
-        Continuously pulls UnitOfWork instances off the shared queue and
-        executes them until:
+        Blocks on the shared queue for `(unit, latch)` work items and
+        executes them until the shutdown sentinel arrives.
 
-            - A sentinel is received, or
-            - The scheduler is shut down, or
-            - Cancellation is signalled.
-
-        Exceptions thrown by UoW execution:
-            - OperationCancelledError:
-                Treated as expected cooperative cancellation.
-            - Any other BaseException:
-                Triggers global cancellation via `cancel()`, but the worker
-                continues its loop until shutdown.
+        Contract:
+            - Fully blocking dequeue: idle workers consume zero CPU (no
+              polling); shutdown is sentinel-only.
+            - Workers are run-agnostic: they never read scheduler-level
+              cancellation state. Cancellation is observed per unit through
+              the unit's own captured run event, and abandoned-run items
+              report into their own (abandoned) latch, which by construction
+              cannot touch a newer run's barrier.
+            - Every dequeued unit reports into its latch exactly once:
+              success and cooperative cancellation report `complete()`;
+              failures report `record_error(...)` (fail-fast wake).
+            - Workers never die from unit exceptions; the latch carries the
+              failure to the control thread.
         """
+        queue_get = self._queue.get
+        sentinel = self._sentinel
         while True:
-            if self._shutdown or self._cancel_signal.is_set:
+            item = queue_get()
+            if item is sentinel:
                 break
 
-            # Non-blocking dequeue using ConcurrentQueue.
-            # If empty, briefly sleep to avoid a hot spin.
+            uow, latch = item
             try:
-                uow = self._queue.get(timeout=0.1)
-            except QueueEmpty:
-                continue
-
-            if uow is self._sentinel:
-                # Sentinel: worker is being shut down.
-                break
-
-            try:
-                uow()
-            except OperationCancelledError:
-                # Cooperative cancellation already recorded into the Future.
-                pass
-            except BaseException:
-                # Record failure via Future + propagate cancellation to the pipeline.
-                self._cancel_signal.cancel()
+                failure = uow.run_for_scheduler()
+            except BaseException as exc:
+                # Defensive boundary: run_for_scheduler() itself should not
+                # raise (it records outcomes), but the latch must always make
+                # progress or the control thread would have to wait for the
+                # full barrier timeout to discover the problem.
+                failure = exc
+            if failure is None or isinstance(failure, OperationCancelledError):
+                # Cooperative cancellation is an expected non-error outcome:
+                # it only happens after the run was already aborted (the
+                # control thread has the original failure) or pre-cancelled.
+                latch.complete()
+            else:
+                latch.record_error(failure)
 
     # ------------------------------------------------------------------
     # Phase execution / barrier
@@ -499,8 +529,8 @@ class PhaseScheduler(Cleanable):
         Run a single phase:
 
             1. Ask the factory for UnitsOfWork.
-            2. Enqueue all UoWs onto the shared worker queue.
-            3. Wait for completion (or timeout) using Future.wait().
+            2. Enqueue all units (each paired with this phase's latch).
+            3. Wait on the latch: all-done, first-error, or timeout.
             4. Aggregate any exceptions and raise PhaseExecutionError.
 
         Args:
@@ -518,9 +548,11 @@ class PhaseScheduler(Cleanable):
         Raises:
             PhaseTimeoutError: If the barrier timeout is exceeded.
             PhaseExecutionError: If any UoW raises an exception.
+            PhaseSchedulerError: If the run was cancelled before/with no unit
+                error of its own.
         """
         if self._cancel_signal.is_set:
-            # Upstream failure or explicit cancel â€“ short-circuit this phase.
+            # Upstream failure or explicit cancel - short-circuit this phase.
             raise PhaseSchedulerError(
                 f"Phase '{phase_name}' skipped because cancellation has already been signalled."
             )
@@ -538,51 +570,39 @@ class PhaseScheduler(Cleanable):
         # control contract. A unit blocked on an external signal deadlocks
         # the caller (external cancel can never be observed), and preemptive
         # barrier timeouts (PhaseTimeoutError while a unit is still running)
-        # are impossible without a separate execution thread. If single-worker
-        # overhead ever matters again, the correct shape is a persistent
-        # scheduler-lifetime worker, not inline execution.
+        # are impossible without a separate execution thread. The persistent
+        # pool IS the sanctioned single-worker-overhead answer.
 
-        # Make sure workers are up.
+        # Make sure workers are up (first run only).
         self._start_workers_if_needed()
 
-        # Enqueue all units.
+        # One latch per phase: the only barrier synchronization object.
+        latch = PhaseLatch(len(units))
+        queue_put = self._queue.put
         for uow in units:
-            self._queue.put(uow)
+            queue_put((uow, latch))
 
         timeout_sec = self._barrier_timeout_ms / 1000.0
 
-        # One wait call:
-        # - returns early on first exception (fail-fast)
-        # - otherwise returns when all complete
-        # - or returns at timeout with pending non-empty
-        wait_targets = self._build_wait_targets(units)
-        done, pending = wait(
-            wait_targets,
-            timeout=timeout_sec,
-            return_when=FIRST_EXCEPTION,
-        )
-
-        # If any completed unit failed, fail fast.
-        errors: List[BaseException] = []
-        for future in done:
-            try:
-                exc = future.exception()
-            except BaseException as e:
-                # Defensive: Future.exception() can raise (e.g. CancelledError).
-                exc = e
-            if exc is not None:
-                errors.append(exc)
+        # One event wait:
+        # - wakes early on first unit error (fail-fast)
+        # - otherwise wakes when all units complete
+        # - or returns False at timeout
+        finished = latch.wait(timeout_sec)
+        errors = latch.errors
 
         if errors:
-            # Cancel downstream phases.
+            # Cancel the rest of this run; stragglers of this phase observe
+            # the cancel event at their pre-run check and report cancelled.
             self._cancel_signal.cancel()
 
             # Best-effort: mark unfinished units as cancelled so nothing is left "pending forever".
-            # IMPORTANT: do NOT call uow.cancel() here because workers still dequeue and call uow().
-            for future in pending:
-                if not future.done():
+            # IMPORTANT: do NOT call uow.cancel() here because workers still dequeue and call the unit;
+            # the unit-side outcome writes are race-guarded.
+            for uow in units:
+                if not uow.done():
                     try:
-                        future.set_exception(
+                        uow.set_exception(
                             OperationCancelledError(
                                 f"Phase '{phase_name}' aborted due to an earlier failure."
                             )
@@ -594,21 +614,19 @@ class PhaseScheduler(Cleanable):
             raise PhaseExecutionError(phase_name, errors)
 
         # If cancelled externally (no unit error yet), treat as cancellation.
-        # NOTE: This will only be observed after wait() returns. If you need an immediate response to
-        # external cancel, you must add a cancel-aware wakeup (see notes below).
         if self._cancel_signal.is_set:
             raise PhaseSchedulerError(
                 f"Phase '{phase_name}' cancelled during execution."
             )
 
         # Timeout: no exception, but not all units finished.
-        if pending:
+        if not finished:
             self._cancel_signal.cancel()
 
-            for future in pending:
-                if not future.done():
+            for uow in units:
+                if not uow.done():
                     try:
-                        future.set_exception(
+                        uow.set_exception(
                             OperationCancelledError(
                                 f"Phase '{phase_name}' timed out after {self._barrier_timeout_ms}ms."
                             )
@@ -627,7 +645,15 @@ class PhaseScheduler(Cleanable):
 
     def run_all_phases(self, conduit_id: Optional[str] = None) -> Dict[str, Sequence[UnitOfWork]]:
         """
-        Execute all registered phases in the registration order.
+        Execute all registered phases in the registration order as one run.
+
+        Run semantics (persistent scheduler):
+            - A fresh CancellationEventSignal is installed at the start, so
+              this run's cancellation scope is isolated from every previous
+              run on the same pool.
+            - Phase registrations are consumed by this call and cleared in
+              all outcomes (success, failure, timeout), leaving the
+              scheduler immediately reusable.
 
         Args:
             conduit_id:
@@ -647,8 +673,12 @@ class PhaseScheduler(Cleanable):
         """
         self.check_cleaned()
 
-        # Snapshot the phase in order to avoid surprises if someone tweaks it
-        # concurrently (ConcurrentList is safe, but we still want a stable run view).
+        # Fresh per-run cancellation scope: one run's abort can never poison
+        # the next run on this persistent pool.
+        self._cancel_signal = CancellationEventSignal()
+        self._cancel_event = self._cancel_signal.event
+
+        # Snapshot the phase order for a stable run view.
         phase_names = list(self._phase_order)
 
         if not phase_names:
@@ -656,29 +686,33 @@ class PhaseScheduler(Cleanable):
 
         results: Dict[str, Sequence[UnitOfWork]] = {}
 
-        for name in phase_names:
-            factory = self._phase_factories.get(name)
-            if factory is None:
-                raise PhaseSchedulerError(
-                    f"Internal error: phase '{name}' has no registered factory."
-                )
+        try:
+            for name in phase_names:
+                factory = self._phase_factories.get(name)
+                if factory is None:
+                    raise PhaseSchedulerError(
+                        f"Internal error: phase '{name}' has no registered factory."
+                    )
 
-            units = self._run_single_phase(name, factory)
-            results[name] = units
+                units = self._run_single_phase(name, factory)
+                results[name] = units
 
-            if self._cancel_signal.is_set:
-                # Upstream phase signalled cancellation; do not proceed further.
-                break
+                if self._cancel_signal.is_set:
+                    # Upstream phase signalled cancellation; do not proceed further.
+                    break
+        finally:
+            # Registrations are per-run state on a persistent scheduler.
+            self.clear_phases()
 
         return results
 
     def cancel(self) -> None:
         """
-        Explicitly signal cancellation for all phases and workers.
+        Explicitly signal cancellation for the current run scope.
 
-        This is idempotent and can be called from any thread. It does not join
-        workers or clean the scheduler; it only trips the shared cancellation
-        signal.
+        This is idempotent and can be called from any thread. It does not
+        join workers or clean the scheduler; it only trips the current run's
+        cancellation signal. Workers themselves are unaffected (they exit on
+        sentinel only); in-flight units observe the event cooperatively.
         """
         self._cancel_signal.cancel()
-

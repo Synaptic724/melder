@@ -1,7 +1,10 @@
 from contextlib import contextmanager
 import threading
-from typing import Any, Callable, Dict, Optional, Tuple
+from typing import Any, Callable, Dict, Optional, TYPE_CHECKING, Tuple
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
+
+if TYPE_CHECKING:
+    from melder.nexus.rift.rift import Rift
 
 from melder.nexus.configuration.rift_space_type import RiftSpaceType
 from melder.nexus.rift.frame_viewer.frame_viewer import FrameViewer
@@ -108,7 +111,7 @@ class RiftSpace(Cleanable):
             self,
             owner_rift_id: str,
             *,
-            rift: Any,
+            rift: Rift,
             space_name: Optional[str] = None,
             space_kind: str = "base",
             metadata: Optional[Dict[str, object]] = None,
@@ -459,7 +462,7 @@ class RiftSpace(Cleanable):
         with self._lock:
             return self._command_system
 
-    def _create_command_system(self, rift: Any) -> CommandSystem:
+    def _create_command_system(self, rift: Rift) -> CommandSystem:
         """
         Build the room-local command system owned by this space.
 

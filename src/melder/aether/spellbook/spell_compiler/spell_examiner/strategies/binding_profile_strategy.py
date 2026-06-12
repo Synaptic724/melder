@@ -1,5 +1,5 @@
 import inspect
-from typing import TYPE_CHECKING, Any, List, ClassVar
+from typing import TYPE_CHECKING, Any, List, ClassVar, Optional
 
 
 
@@ -86,12 +86,17 @@ class BindingProfileStrategy:
         except Exception:
             origin_file = None
 
+        # No source-file read here: the v4 fingerprint hashes the constructor
+        # signature instead of a source preview, and the preview itself is
+        # served lazily by ClassBindingProfile.source_preview for descriptor
+        # and diagnostic consumers. `__firstlineno__` (3.13+) supplies the
+        # origin line without touching the file system.
+        origin_line = getattr(cls, "__firstlineno__", None)
+
         try:
-            lines, origin_line = inspect.getsourcelines(cls)
-            source_preview = "".join(lines[:5]).strip()
+            init_signature: Optional[str] = str(inspect.signature(cls))
         except Exception:
-            origin_line = None
-            source_preview = None
+            init_signature = None
 
         bases: list[str] = [base.__name__ for base in getattr(cls, "__bases__", ())]
         mro: list[str] = [m.__name__ for m in inspect.getmro(cls)]
@@ -118,7 +123,7 @@ class BindingProfileStrategy:
             annotations=annotations,
             origin_file=origin_file,
             origin_line=origin_line,
-            source_preview=source_preview,
+            init_signature=init_signature,
             is_dataclass=is_dataclass,
             decorated=decorated,
             method_names=method_names,

@@ -1,5 +1,5 @@
 import threading
-from concurrent.futures import Future
+from concurrent.futures import Future, InvalidStateError
 from typing import Any, Callable, Dict, Literal, Optional, Tuple, ClassVar
 from types import TracebackType
 # Melder imports
@@ -328,3 +328,69 @@ class UnitOfWork(Cleanable, Future):
             Any: Result of the wrapped callable, exactly as returned by: meth:`run_synchronously`.
         """
         return self.run_synchronously()
+
+    def run_for_scheduler(self) -> Optional[BaseException]:
+        """
+        Execute this unit on a scheduler worker thread, lock-free.
+
+        Purpose:
+            Provide the PhaseScheduler hot-path execution lane without the
+            per-instance `_lock` acquisition and without exception
+            re-raising: outcomes are recorded on the Future surface and the
+            failure (if any) is RETURNED so the worker can report it into
+            the phase latch.
+
+        Contract:
+            - Thread confinement by construction justifies the lock-free
+              read of `_func`/`_args`/`_kwargs`/`_cancel_event`: a scheduler
+              unit is built by the control thread, handed to exactly one
+              worker through the queue (the synchronization point), executed
+              once, and inspected only after the phase barrier. No second
+              thread touches these fields during execution, and scheduler
+              units are never cleaned mid-run.
+            - Outcome writes (`set_result` / `set_exception`) are
+              race-guarded against the control thread's barrier-abort
+              writes (timeout/fail-fast `set_exception`): losing that race
+              is expected and the control thread's outcome wins.
+            - Cooperative cancellation: when the captured run event is set
+              before execution, the unit records and returns an
+              `OperationCancelledError` without invoking the callable.
+            - Never raises; always returns the failure or None.
+
+        Returns:
+            Optional[BaseException]:
+                None on success (or when the outcome was already decided by
+                the control thread); the recorded exception otherwise.
+        """
+        if self._cleaned or self.done():
+            # Cleaned units cannot run; already-done units were decided by
+            # the control thread's barrier abort. Either way: no-op success
+            # so the latch still progresses.
+            return None
+
+        if self._cancel_event is not None and self._cancel_event.is_set:
+            exc: BaseException = OperationCancelledError(
+                f"UnitOfWork{f'[{self._label}]' if self._label else ''} "
+                f"aborted before start due to cancellation."
+            )
+            try:
+                self.set_exception(exc)
+            except InvalidStateError:
+                # Control thread already aborted this unit; its outcome wins.
+                pass
+            return exc
+
+        try:
+            result = self._func(*self._args, **self._kwargs)
+        except BaseException as run_exc:
+            try:
+                self.set_exception(run_exc)
+            except InvalidStateError:
+                pass
+            return run_exc
+        try:
+            self.set_result(result)
+        except InvalidStateError:
+            # Lost the race against a barrier abort; the abort outcome wins.
+            pass
+        return None

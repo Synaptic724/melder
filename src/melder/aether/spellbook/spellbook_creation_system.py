@@ -1678,21 +1678,25 @@ class SpellbookCreationSystem(Cleanable):
     ) -> PhaseScheduler:
         """
         Purpose:
-            Construct a phase scheduler bound to the supplied Spellbook/configuration.
+            Return the Spellbook-owned persistent phase scheduler for one
+            orchestration run.
         Contract:
-            - Creates one scheduler instance for a single orchestration run.
+            - Borrows (lazily creating) the Spellbook's long-lived scheduler
+              instead of constructing a fresh one per orchestration run, so
+              every conjure group and revalidation reuses one worker pool.
+            - Preserves the `phase_scheduler_cls` patch seam through the
+              Spellbook accessor (a stub class replaces the live instance).
+            - The historical name is retained as the single creation-system
+              acquisition point so callers and patches stay stable.
         Args:
             spellbook: Owning Spellbook instance.
-            phase_scheduler_cls: Scheduler class to instantiate.
+            phase_scheduler_cls: Scheduler class to instantiate (patch point).
         Returns:
-            PhaseScheduler: New scheduler instance.
+            PhaseScheduler: The Spellbook-owned scheduler.
         Raises:
             Exception: Propagates constructor failures from `phase_scheduler_cls`.
         """
-        return phase_scheduler_cls(
-            spellbook=spellbook,
-            configuration=spellbook._configuration,
-        )
+        return spellbook._get_or_create_phase_scheduler(phase_scheduler_cls)
 
     @staticmethod
     def _cleanup_phase_scheduler(
@@ -1702,13 +1706,19 @@ class SpellbookCreationSystem(Cleanable):
     ) -> None:
         """
         Purpose:
-            Execute scheduler cleanup with standardized error logging.
+            Release a borrowed persistent scheduler after one orchestration
+            run, with standardized error logging.
         Contract:
-            - Never raises cleanup failures.
-            - Emits context-aware error logs on cleanup exceptions.
+            - Does NOT clean the scheduler: the pool is Spellbook-owned and
+              torn down exactly once in Spellbook cleanup. This release only
+              clears per-run phase registrations so a registration failure
+              before `run_all_phases(...)` can never leak stale phases into
+              the next run on the same pool.
+            - Never raises release failures.
+            - Emits context-aware error logs on release exceptions.
         Args:
             spellbook: Owning Spellbook instance.
-            scheduler: Scheduler to clean up.
+            scheduler: Borrowed scheduler to release.
             context_name: Logging context label.
         Returns:
             None.
@@ -1716,10 +1726,10 @@ class SpellbookCreationSystem(Cleanable):
             None.
         """
         try:
-            scheduler.cleanup()
+            scheduler.clear_phases()
         except Exception:
             spellbook._logger.error(
-                f"PhaseScheduler.cleanup() raised during {context_name}",
+                f"PhaseScheduler.clear_phases() raised during {context_name}",
                 context_name,
                 exc_info=True,
             )

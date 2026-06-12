@@ -6,6 +6,9 @@ if TYPE_CHECKING:
     from melder.nexus.acl.frame_acl_compiled_access_surface import (
         CompiledFrameACLAccessSurface,
     )
+    from melder.nexus.rift.rift import Rift
+    from melder.nexus.rift.rift_space.rift_space import RiftSpace
+    from melder.nexus.rift.rift_space.workstation import Workstation
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 from melder.aether.aether import Aether
@@ -56,7 +59,13 @@ class CommandSystem(Cleanable):
     )
     _aether = Aether()
 
-    def __init__(self, *, rift: Any, space: Any, workstation: Any) -> None:
+    def __init__(
+            self,
+            *,
+            rift: Rift,
+            space: RiftSpace,
+            workstation: Workstation,
+    ) -> None:
         """
         Internal
 
@@ -88,9 +97,9 @@ class CommandSystem(Cleanable):
         self._id: str = IDBuilder.create_id()
         self._owner_space_id: str = space.space_id
         self._lock: threading.RLock = threading.RLock()
-        self._rift: Any = rift
-        self._space: Any = space
-        self._workstation: Any = workstation
+        self._rift: Rift = rift
+        self._space: RiftSpace = space
+        self._workstation: Workstation = workstation
 
     def cleanup(self) -> None:
         """
