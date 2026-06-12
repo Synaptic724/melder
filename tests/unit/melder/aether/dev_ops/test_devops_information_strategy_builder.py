@@ -70,7 +70,8 @@ def test_devops_information_strategy_builder_registers_and_resolves_strategy() -
     builder.register_strategy(" Echo ", _EchoInformationStrategy)
 
     assert builder.resolve("echo") is _EchoInformationStrategy
-    assert builder.list_registered_strategy_names() == ("echo",)
+    # The default catalog is pre-registered; the new name joins it.
+    assert "echo" in builder.list_registered_strategy_names()
 
 
 def test_devops_information_strategy_builder_rejects_unknown_strategy() -> None:

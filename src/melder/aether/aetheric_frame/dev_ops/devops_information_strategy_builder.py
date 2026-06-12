@@ -3,6 +3,21 @@ from typing import TYPE_CHECKING, Dict, Tuple, Type
 from melder.aether.aetheric_frame.dev_ops.devops_information_strategy import (
     DevopsInformationStrategy,
 )
+from melder.aether.aetheric_frame.dev_ops.information_strategies.cluster_fanout_strategy import (
+    ClusterFanoutStrategy,
+)
+from melder.aether.aetheric_frame.dev_ops.information_strategies.frame_operational_view_strategy import (
+    FrameOperationalViewStrategy,
+)
+from melder.aether.aetheric_frame.dev_ops.information_strategies.registry_consistency_audit_strategy import (
+    RegistryConsistencyAuditStrategy,
+)
+from melder.aether.aetheric_frame.dev_ops.information_strategies.transaction_activity_view_strategy import (
+    TransactionActivityViewStrategy,
+)
+from melder.aether.aetheric_frame.dev_ops.information_strategies.transfer_blast_radius_strategy import (
+    TransferBlastRadiusStrategy,
+)
 
 if TYPE_CHECKING:
     from melder.aether.aetheric_frame.dev_ops.devops_information_registry import (
@@ -23,12 +38,17 @@ class DevopsInformationStrategyBuilder:
         - Owns one internal strategy registry keyed by normalized strategy name.
         - Stores strategy classes directly; it does not own strategy instances.
         - Exposes registration, resolution, execution, and name-listing helpers.
+        - Registers the default information-strategy catalog at construction;
+          callers may register additional strategies on top.
+        - Counts successful executions per normalized strategy name so the
+          control plane can see which information checks actually run.
         - Does not mutate the registry by itself outside strategy execution.
     """
 
     __slots__ = [
         "_devops_information_registry",
         "_strategies_by_name",
+        "_execution_counts_by_name",
     ]
 
     def __init__(
@@ -53,6 +73,40 @@ class DevopsInformationStrategyBuilder:
             devops_information_registry
         )
         self._strategies_by_name: Dict[str, Type[DevopsInformationStrategy]] = {}
+        self._execution_counts_by_name: Dict[str, int] = {}
+        self._register_default_strategies()
+
+    def _register_default_strategies(self) -> None:
+        """
+        Register the built-in information-strategy catalog.
+
+        Contract:
+            - Registers the five default strategies: transaction activity
+              view, cluster fanout, transfer blast radius, frame operational
+              view, and registry consistency audit.
+            - Idempotent by construction order; later explicit registrations
+              under the same names override the defaults.
+
+        Returns:
+            None.
+        """
+        self.register_strategy(
+            "transaction_activity_view",
+            TransactionActivityViewStrategy,
+        )
+        self.register_strategy("cluster_fanout", ClusterFanoutStrategy)
+        self.register_strategy(
+            "transfer_blast_radius",
+            TransferBlastRadiusStrategy,
+        )
+        self.register_strategy(
+            "frame_operational_view",
+            FrameOperationalViewStrategy,
+        )
+        self.register_strategy(
+            "registry_consistency_audit",
+            RegistryConsistencyAuditStrategy,
+        )
 
     def register_strategy(
             self,
@@ -117,11 +171,40 @@ class DevopsInformationStrategyBuilder:
             Dict[str, object]:
                 Detached strategy result payload.
         """
-        strategy_class = self.resolve(strategy_name)
-        return strategy_class.execute(
+        normalized_name = self._normalize_strategy_name(strategy_name)
+        strategy_class = self.resolve(normalized_name)
+        result = strategy_class.execute(
             devops_information_registry=self._devops_information_registry,
             metadata=metadata,
         )
+        self._execution_counts_by_name[normalized_name] = (
+            self._execution_counts_by_name.get(normalized_name, 0) + 1
+        )
+        return result
+
+    def get_execution_count(self, strategy_name: str) -> int:
+        """
+        Return how many times one strategy completed successfully.
+
+        Args:
+            strategy_name:
+                Strategy key to look up.
+
+        Returns:
+            int: Successful execution count (0 when never run).
+        """
+        normalized_name = self._normalize_strategy_name(strategy_name)
+        return self._execution_counts_by_name.get(normalized_name, 0)
+
+    def list_execution_counts(self) -> Dict[str, int]:
+        """
+        Return a detached copy of all successful execution counts.
+
+        Returns:
+            Dict[str, int]: Normalized strategy name to successful execution
+            count, for strategies that have run at least once.
+        """
+        return dict(self._execution_counts_by_name)
 
     def list_registered_strategy_names(self) -> Tuple[str, ...]:
         """

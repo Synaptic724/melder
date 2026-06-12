@@ -1553,3 +1553,109 @@ class DevopsInformationRegistry(Cleanable):
                     for cluster_id, conduit_ids in self._cluster_to_conduits.items()
                 },
             }
+
+    def snapshot_relationship_maps(self) -> Dict[str, Any]:
+        """
+        Build one detached snapshot of every relationship and reverse index.
+
+        Purpose:
+            Give information strategies (operational rollups, consistency
+            audits) one coherent same-lock picture of all mirrored maps
+            without exposing live object references or handing out the lock.
+
+        Contract:
+            - All maps are copied under one lock acquisition, so forward and
+              reverse maps in the result describe the same instant.
+            - Identity-tuple keys are rendered as "kind:id" strings so the
+              payload stays plain and serializable.
+            - Set values are rendered as sorted tuples.
+
+        Returns
+        -------
+        Dict[str, Any]
+            Detached mapping with keys: "spellbook_to_conduits",
+            "conduit_to_spellbook", "provider_to_borrowers",
+            "borrower_to_providers", "cluster_to_conduits",
+            "conduit_to_clusters", "transaction_ids_by_scope",
+            "transaction_scope_keys_by_id", "transaction_ids_by_type",
+            "transaction_type_by_id", "transaction_ids_by_identity",
+            "transaction_identity_keys_by_id".
+
+        Raises
+        ------
+        RuntimeError
+            If the registry has been cleaned.
+        """
+        self.check_cleaned()
+        with self._lock:
+            return {
+                "spellbook_to_conduits": {
+                    spellbook_id: tuple(sorted(conduit_ids))
+                    for spellbook_id, conduit_ids in (
+                        self._spellbook_to_conduits.items()
+                    )
+                },
+                "conduit_to_spellbook": dict(self._conduit_to_spellbook),
+                "provider_to_borrowers": {
+                    provider_id: tuple(sorted(borrower_ids))
+                    for provider_id, borrower_ids in (
+                        self._provider_to_borrowers.items()
+                    )
+                },
+                "borrower_to_providers": {
+                    borrower_id: tuple(sorted(provider_ids))
+                    for borrower_id, provider_ids in (
+                        self._borrower_to_providers.items()
+                    )
+                },
+                "cluster_to_conduits": {
+                    cluster_id: tuple(sorted(conduit_ids))
+                    for cluster_id, conduit_ids in (
+                        self._cluster_to_conduits.items()
+                    )
+                },
+                "conduit_to_clusters": {
+                    conduit_id: tuple(sorted(cluster_ids))
+                    for conduit_id, cluster_ids in (
+                        self._conduit_to_clusters.items()
+                    )
+                },
+                "transaction_ids_by_scope": {
+                    scope_key: tuple(sorted(transaction_ids))
+                    for scope_key, transaction_ids in (
+                        self._transaction_ids_by_scope.items()
+                    )
+                },
+                "transaction_scope_keys_by_id": {
+                    transaction_id: tuple(sorted(scope_keys))
+                    for transaction_id, scope_keys in (
+                        self._transaction_scope_keys_by_id.items()
+                    )
+                },
+                "transaction_ids_by_type": {
+                    transaction_type: tuple(sorted(transaction_ids))
+                    for transaction_type, transaction_ids in (
+                        self._transaction_ids_by_type.items()
+                    )
+                },
+                "transaction_type_by_id": dict(self._transaction_type_by_id),
+                "transaction_ids_by_identity": {
+                    f"{identity_key[0]}:{identity_key[1]}": tuple(
+                        sorted(transaction_ids)
+                    )
+                    for identity_key, transaction_ids in (
+                        self._transaction_ids_by_identity.items()
+                    )
+                },
+                "transaction_identity_keys_by_id": {
+                    transaction_id: tuple(
+                        sorted(
+                            f"{identity_key[0]}:{identity_key[1]}"
+                            for identity_key in identity_keys
+                        )
+                    )
+                    for transaction_id, identity_keys in (
+                        self._transaction_identity_keys_by_id.items()
+                    )
+                },
+            }
