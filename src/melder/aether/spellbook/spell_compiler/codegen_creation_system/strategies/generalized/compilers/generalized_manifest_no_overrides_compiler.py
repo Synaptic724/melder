@@ -157,7 +157,10 @@ def hydrate_no_overrides_executor(
         explicit_root_instance_key=root_instance_key,
         root_spell_id=root_spell_id,
     )
-    inner_source = emit_step_plan_source(rows=rows)
+    inner_source = emit_step_plan_source(
+        rows=rows,
+        root_instance_key=resolved_root_instance_key,
+    )
     bindings = _build_step_bindings(
         rows=rows,
         runtime_rows=runtime_rows,
@@ -183,17 +186,53 @@ def hydrate_no_overrides_executor(
 def emit_step_plan_source(
         *,
         rows: Sequence[Dict[str, Any]],
+        root_instance_key: Tuple[str, Any],
 ) -> str:
     """
     Emit the inner no-overrides step-plan executor source from manifest rows.
 
     Contract:
-        - Pure function of row data; no live objects consulted.
+        - Pure function of row data plus the root key's POSITION (the emitted
+          source embeds step indices only, never identity values, so factory
+          sharing across same-shape spells is preserved).
         - Faithful port of the legacy step-plan emission semantics (existence
-          routing, lock disciplines, registration calls, inlined common-shape
-          constructors, root verification) with reuse reads inlined as direct
-          `_creations.get` dict reads.
+          routing, lock disciplines, registration stores, inlined common-shape
+          constructors) with reuse reads inlined as direct `_creations.get`
+          dict reads.
+        - LOCALS MODE: when every step is inlinable and every dependency key
+          resolves to an emitted step, step results live in per-step local
+          variables and dependency reads compile to direct local loads - no
+          `instance_results` dict, no tuple-key hashing, and no runtime root
+          presence check (root assignment is statically guaranteed).
+        - DICT MODE: any generic-constructor step falls back to the
+          `instance_results` dict so `_construct_spell_instance` keeps its
+          full recipe surface.
     """
+    key_to_step_index: Dict[Any, int] = {}
+    for step_index, row in enumerate(rows):
+        key_to_step_index[tuple(row["instance_key"])] = step_index
+
+    locals_mode = True
+    normalized_root_key = (root_instance_key[0], root_instance_key[1])
+    if normalized_root_key not in key_to_step_index:
+        locals_mode = False
+    if locals_mode:
+        for row in rows:
+            inlinable_params = row_inlinable_common_shape(row)
+            if inlinable_params is None:
+                locals_mode = False
+                break
+            for _param_name, dependency_key in inlinable_params:
+                dependency_key_tuple = (
+                    dependency_key[0],
+                    dependency_key[1],
+                )
+                if dependency_key_tuple not in key_to_step_index:
+                    locals_mode = False
+                    break
+            if not locals_mode:
+                break
+
     lines = [
         f"def {EXECUTOR_NAME}(",
         "        caller_creations=None,",
@@ -214,23 +253,30 @@ def emit_step_plan_source(
         "        MeldExecutionError=MeldExecutionError,",
         "        SpellSpaceScopeError=SpellSpaceScopeError,",
         "    ):",
-        "    instance_results = {}",
     ]
+    if not locals_mode:
+        lines.append("    instance_results = {}")
     for step_index, row in enumerate(rows):
         _append_step_resolution_source(
             lines=lines,
             step_index=step_index,
             row=row,
+            key_to_step_index=key_to_step_index if locals_mode else None,
         )
-    lines.extend([
-        "    if root_instance_key not in instance_results:",
-        "        raise MeldExecutionError(",
-        "            spell_id=root_instance_key[0],",
-        "            spell_name=root_instance_key[0],",
-        "            message=f\"No-overrides codegen root instance '{root_instance_key[0]}' is missing.\",",
-        "        )",
-        "    return instance_results[root_instance_key]",
-    ])
+    if locals_mode:
+        lines.append(
+            f"    return instance_{key_to_step_index[normalized_root_key]}"
+        )
+    else:
+        lines.extend([
+            "    if root_instance_key not in instance_results:",
+            "        raise MeldExecutionError(",
+            "            spell_id=root_instance_key[0],",
+            "            spell_name=root_instance_key[0],",
+            "            message=f\"No-overrides codegen root instance '{root_instance_key[0]}' is missing.\",",
+            "        )",
+            "    return instance_results[root_instance_key]",
+        ])
     return "\n".join(lines)
 
 
@@ -239,9 +285,15 @@ def _append_step_resolution_source(
         lines: list,
         step_index: int,
         row: Dict[str, Any],
+        key_to_step_index: Optional[Dict[Any, int]] = None,
 ) -> None:
     """
     Append emitted source for one step from its manifest row.
+
+    Contract:
+        - When `key_to_step_index` is supplied (locals mode), step results
+          are plain locals: no `instance_results` stores are emitted and
+          inlined constructor dependencies compile to direct local loads.
     """
     existence = Existence[row["existence"]]
     inlinable_params = row_inlinable_common_shape(row)
@@ -275,7 +327,7 @@ def _append_step_resolution_source(
             f"    disposal_methods_{step_index} = "
             f"step_disposal_methods[{step_index}]"
         )
-    if inlinable_params:
+    if inlinable_params and key_to_step_index is None:
         lines.append(
             f"    step_dep_keys_{step_index} = step_dep_keys[{step_index}]"
         )
@@ -291,6 +343,7 @@ def _append_step_resolution_source(
             step_index=step_index,
             inlinable_params=inlinable_params,
             indent="    ",
+            key_to_step_index=key_to_step_index,
         )
         if has_disposal_methods:
             # Disposal presence is emit-time row truth, so the lock and the
@@ -304,9 +357,10 @@ def _append_step_resolution_source(
                 existence=existence,
                 has_disposal_methods=has_disposal_methods,
             )
-        lines.append(
-            f"    instance_results[step_instance_keys[{step_index}]] = instance_{step_index}"
-        )
+        if key_to_step_index is None:
+            lines.append(
+                f"    instance_results[step_instance_keys[{step_index}]] = instance_{step_index}"
+            )
         return
 
     if existence in (
@@ -331,6 +385,7 @@ def _append_step_resolution_source(
             step_index=step_index,
             inlinable_params=inlinable_params,
             indent="                ",
+            key_to_step_index=key_to_step_index,
         )
         _append_register_source(
             lines=lines,
@@ -339,9 +394,10 @@ def _append_step_resolution_source(
             existence=existence,
             has_disposal_methods=has_disposal_methods,
         )
-        lines.append(
-            f"    instance_results[step_instance_keys[{step_index}]] = instance_{step_index}"
-        )
+        if key_to_step_index is None:
+            lines.append(
+                f"    instance_results[step_instance_keys[{step_index}]] = instance_{step_index}"
+            )
         return
 
     if row["use_spell_lock_hint"]:
@@ -371,6 +427,7 @@ def _append_step_resolution_source(
             step_index=step_index,
             inlinable_params=inlinable_params,
             indent="                    ",
+            key_to_step_index=key_to_step_index,
         )
         lines.append(f"                    with creations_{step_index}._lock:")
         _append_register_source(
@@ -394,6 +451,7 @@ def _append_step_resolution_source(
             step_index=step_index,
             inlinable_params=inlinable_params,
             indent="                    ",
+            key_to_step_index=key_to_step_index,
         )
         _append_register_source(
             lines=lines,
@@ -402,9 +460,10 @@ def _append_step_resolution_source(
             existence=existence,
             has_disposal_methods=has_disposal_methods,
         )
-        lines.append(
-            f"    instance_results[step_instance_keys[{step_index}]] = instance_{step_index}"
-        )
+        if key_to_step_index is None:
+            lines.append(
+                f"    instance_results[step_instance_keys[{step_index}]] = instance_{step_index}"
+            )
         return
 
     lines.extend([
@@ -433,9 +492,10 @@ def _append_step_resolution_source(
         existence=existence,
         has_disposal_methods=has_disposal_methods,
     )
-    lines.append(
-        f"    instance_results[step_instance_keys[{step_index}]] = instance_{step_index}"
-    )
+    if key_to_step_index is None:
+        lines.append(
+            f"    instance_results[step_instance_keys[{step_index}]] = instance_{step_index}"
+        )
 
 
 def _append_creations_target_source(
@@ -487,9 +547,15 @@ def _emit_construct_instance(
         step_index: int,
         inlinable_params: Optional[Tuple[Tuple[str, Any], ...]],
         indent: str,
+        key_to_step_index: Optional[Dict[Any, int]] = None,
 ) -> None:
     """
     Append construction source for one step at `indent`.
+
+    Contract:
+        - In locals mode (`key_to_step_index` supplied), dependency arguments
+          compile to direct per-step local loads instead of tuple-keyed
+          `instance_results` reads.
     """
     if inlinable_params is None:
         lines.append(
@@ -503,13 +569,22 @@ def _emit_construct_instance(
         lines.append(
             f"{indent}    instance_{step_index} = spell_{step_index}.spell("
         )
-        for arg_index, (param_name, _dependency_key) in enumerate(
+        for arg_index, (param_name, dependency_key) in enumerate(
                 inlinable_params,
         ):
-            lines.append(
-                f"{indent}        {param_name}="
-                f"instance_results[step_dep_keys_{step_index}[{arg_index}]],"
-            )
+            if key_to_step_index is not None:
+                dependency_step_index = key_to_step_index[
+                    (dependency_key[0], dependency_key[1])
+                ]
+                lines.append(
+                    f"{indent}        {param_name}="
+                    f"instance_{dependency_step_index},"
+                )
+            else:
+                lines.append(
+                    f"{indent}        {param_name}="
+                    f"instance_results[step_dep_keys_{step_index}[{arg_index}]],"
+                )
         lines.append(f"{indent}    )")
     else:
         lines.append(
