@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Tuple, ClassVar
+from typing import TYPE_CHECKING, Any, ClassVar, Dict, Optional, Tuple
 
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.aether.spellbook.spell_compiler.spell_analyzer.spell_analyzer_strategy_builder import (
@@ -85,6 +85,7 @@ class SpellAnalyzer(Cleanable):
             self,
             spell: "Spell",
             artifact: "SpellCompilerArtifact",
+            analysis_pass_cache: Optional[Dict[str, Any]] = None,
     ) -> None:
         """
         Run all registered occurrence-analysis strategies.
@@ -116,6 +117,7 @@ class SpellAnalyzer(Cleanable):
             ),
             spell=spell,
             artifact=artifact,
+            analysis_pass_cache=analysis_pass_cache,
         )
 
     def _run_strategy_chain(
@@ -124,6 +126,7 @@ class SpellAnalyzer(Cleanable):
             strategy_ids: Tuple[str, ...],
             spell: "Spell",
             artifact: "SpellCompilerArtifact",
+            analysis_pass_cache: Optional[Dict[str, Any]] = None,
     ) -> None:
         """
         Run one explicit analyzer strategy chain against the spell/artifact pair.
@@ -141,4 +144,4 @@ class SpellAnalyzer(Cleanable):
         artifact.check_cleaned()
         strategies = self._strategy_builder.get_strategies(strategy_ids)
         for strategy in strategies:
-            strategy.analyze(spell, artifact)
+            strategy.analyze(spell, artifact, analysis_pass_cache=analysis_pass_cache)

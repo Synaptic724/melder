@@ -30,6 +30,10 @@ Env knobs:
     BENCH_CONTENTION_SECONDS   seconds per sweep (default 5.0)
     BENCH_CONTENTION_MELDS     "1" adds gauntlet-lite melds per cycle (default 1)
     BENCH_CONTENTION_STALL_MS  stall threshold in ms (default 1.0)
+    BENCH_CONTENTION_MICRO     "1" runs repeat-meld micro loops instead of
+                               cycle sweeps: pure fast-door per-op ns for
+                               outer and request melds at each thread count
+    BENCH_CONTENTION_MICRO_ITERS  micro loop iterations (default 200000)
 """
 
 import os
@@ -72,6 +76,10 @@ WITH_MELDS = os.environ.get("BENCH_CONTENTION_MELDS", "1") == "1"
 STALL_NS = int(
     max(0.05, float(os.environ.get("BENCH_CONTENTION_STALL_MS", "1.0"))) * 1e6
 )
+MICRO_MODE = os.environ.get("BENCH_CONTENTION_MICRO", "0") == "1"
+MICRO_ITERS = max(
+    1000, int(os.environ.get("BENCH_CONTENTION_MICRO_ITERS", "200000"))
+)
 
 
 @dataclass
@@ -85,9 +93,11 @@ class ThreadStats:
     lock_wait_ns: List[int] = field(default_factory=list)
     cleanup_ns: List[int] = field(default_factory=list)
     meld_ns: List[int] = field(default_factory=list)
-    outer_meld_ns: List[int] = field(default_factory=list)
+    outer_meld1_ns: List[int] = field(default_factory=list)
+    outer_meld2_ns: List[int] = field(default_factory=list)
     space_enter_ns: List[int] = field(default_factory=list)
-    request_meld_ns: List[int] = field(default_factory=list)
+    request_meld1_ns: List[int] = field(default_factory=list)
+    request_meld2_ns: List[int] = field(default_factory=list)
     space_exit_ns: List[int] = field(default_factory=list)
     stalls: List[str] = field(default_factory=list)
 
@@ -184,19 +194,24 @@ def _worker(
         lesser = root.create_lesser_conduit()
         create_ns = time.perf_counter_ns() - create_t0
         meld_ns = 0
-        outer_ns = 0
+        outer1_ns = 0
+        outer2_ns = 0
         enter_ns = 0
-        request_ns = 0
+        request1_ns = 0
+        request2_ns = 0
         exit_ns = 0
         if WITH_MELDS:
-            # Sub-attributed meld segments: outer (unique_per_conduit) melds,
-            # spellspace enter, request (unique_per_spell_space) melds, and
-            # spellspace exit are timed separately so cross-thread inflation
-            # can be pinned to a storage surface, not just "melds".
+            # Sub-attributed meld segments. meld#1 of each family is the
+            # CONSTRUCTION lane (storage was reset by the pool cycle, so the
+            # executor builds the instance even on a fast-door hit); meld#2
+            # is the pure repeat-door lane (cached instance read). Timing
+            # them separately attributes per-cycle cost to the right lane.
             seg_t0 = time.perf_counter_ns()
             lesser.meld(spell=outer_id)
+            outer1_ns = time.perf_counter_ns() - seg_t0
+            seg_t0 = time.perf_counter_ns()
             lesser.meld(spell=outer_id)
-            outer_ns = time.perf_counter_ns() - seg_t0
+            outer2_ns = time.perf_counter_ns() - seg_t0
             space_cm = lesser.enter_spellspace()
             seg_t0 = time.perf_counter_ns()
             space = space_cm.__enter__()
@@ -204,13 +219,18 @@ def _worker(
             try:
                 seg_t0 = time.perf_counter_ns()
                 space.meld(spell=request_id)
+                request1_ns = time.perf_counter_ns() - seg_t0
+                seg_t0 = time.perf_counter_ns()
                 space.meld(spell=request_id)
-                request_ns = time.perf_counter_ns() - seg_t0
+                request2_ns = time.perf_counter_ns() - seg_t0
             finally:
                 seg_t0 = time.perf_counter_ns()
                 space_cm.__exit__(None, None, None)
                 exit_ns = time.perf_counter_ns() - seg_t0
-            meld_ns = outer_ns + enter_ns + request_ns + exit_ns
+            meld_ns = (
+                outer1_ns + outer2_ns + enter_ns
+                + request1_ns + request2_ns + exit_ns
+            )
         cleanup_t0 = time.perf_counter_ns()
         lesser.cleanup()
         cleanup_ns = time.perf_counter_ns() - cleanup_t0
@@ -221,16 +241,20 @@ def _worker(
         stats.cleanup_ns.append(cleanup_ns)
         if WITH_MELDS:
             stats.meld_ns.append(meld_ns)
-            stats.outer_meld_ns.append(outer_ns)
+            stats.outer_meld1_ns.append(outer1_ns)
+            stats.outer_meld2_ns.append(outer2_ns)
             stats.space_enter_ns.append(enter_ns)
-            stats.request_meld_ns.append(request_ns)
+            stats.request_meld1_ns.append(request1_ns)
+            stats.request_meld2_ns.append(request2_ns)
             stats.space_exit_ns.append(exit_ns)
         for surface, value in (
                 ("root_lock_wait", lock_wait),
                 ("create", create_ns),
-                ("outer_melds", outer_ns),
+                ("outer_meld1", outer1_ns),
+                ("outer_meld2", outer2_ns),
                 ("space_enter", enter_ns),
-                ("request_melds", request_ns),
+                ("request_meld1", request1_ns),
+                ("request_meld2", request2_ns),
                 ("space_exit", exit_ns),
                 ("cleanup", cleanup_ns),
         ):
@@ -291,9 +315,11 @@ def _run_sweep(thread_count: int) -> None:
             merged["create"].extend(stats.create_ns)
             merged["cleanup"].extend(stats.cleanup_ns)
             merged["melds"].extend(stats.meld_ns)
-            merged["outer_melds"].extend(stats.outer_meld_ns)
+            merged["outer_meld1"].extend(stats.outer_meld1_ns)
+            merged["outer_meld2"].extend(stats.outer_meld2_ns)
             merged["space_enter"].extend(stats.space_enter_ns)
-            merged["request_melds"].extend(stats.request_meld_ns)
+            merged["request_meld1"].extend(stats.request_meld1_ns)
+            merged["request_meld2"].extend(stats.request_meld2_ns)
             merged["space_exit"].extend(stats.space_exit_ns)
             for stall in stats.stalls:
                 stall_counts[stall.split(" ")[0]] += 1
@@ -316,9 +342,11 @@ def _run_sweep(thread_count: int) -> None:
         print(_series_line("create", merged["create"]))
         if WITH_MELDS:
             print(_series_line("melds", merged["melds"]))
-            print(_series_line("  outer_melds", merged["outer_melds"]))
+            print(_series_line("  outer_meld1", merged["outer_meld1"]))
+            print(_series_line("  outer_meld2", merged["outer_meld2"]))
             print(_series_line("  space_enter", merged["space_enter"]))
-            print(_series_line("  request_melds", merged["request_melds"]))
+            print(_series_line("  request_meld1", merged["request_meld1"]))
+            print(_series_line("  request_meld2", merged["request_meld2"]))
             print(_series_line("  space_exit", merged["space_exit"]))
         print(_series_line("cleanup", merged["cleanup"]))
         print(
@@ -337,9 +365,101 @@ def _run_sweep(thread_count: int) -> None:
         spellbook.cleanup()
 
 
+def _micro_worker(
+        *,
+        root: Any,
+        outer_id: str,
+        request_id: str,
+        barrier: "threading.Barrier",
+        results: Dict[str, float],
+) -> None:
+    """
+    Run tight repeat-meld loops on one private lesser conduit.
+
+    Contract:
+        - All iterations after warmup are pure fast-door hits (cached
+          instance reads); the loop measures the door itself, isolated
+          from scope-cycle machinery.
+        - Threads start together via the barrier so cross-thread door
+          inflation (shared spell/spellbook/context guard reads) shows
+          in the per-op time.
+    """
+    lesser = root.create_lesser_conduit()
+    try:
+        for _ in range(1000):
+            lesser.meld(spell=outer_id)
+        barrier.wait(timeout=10)
+        loop_t0 = time.perf_counter_ns()
+        for _ in range(MICRO_ITERS):
+            lesser.meld(spell=outer_id)
+        results["outer_door_ns"] = (
+            (time.perf_counter_ns() - loop_t0) / MICRO_ITERS
+        )
+        space_cm = lesser.enter_spellspace()
+        space = space_cm.__enter__()
+        try:
+            for _ in range(1000):
+                space.meld(spell=request_id)
+            barrier.wait(timeout=10)
+            loop_t0 = time.perf_counter_ns()
+            for _ in range(MICRO_ITERS):
+                space.meld(spell=request_id)
+            results["request_door_ns"] = (
+                (time.perf_counter_ns() - loop_t0) / MICRO_ITERS
+            )
+        finally:
+            space_cm.__exit__(None, None, None)
+    finally:
+        lesser.cleanup()
+
+
+def _run_micro(thread_count: int) -> None:
+    """
+    Run one repeat-meld micro sweep and print per-op door costs.
+    """
+    spellbook, root, spell_ids = _build_root()
+    try:
+        outer_id = spell_ids[_support.OUTER_SCOPED_TYPES[0]]
+        request_id = spell_ids[_support.REQUEST_SCOPED_TYPES[0]]
+        barrier = threading.Barrier(thread_count)
+        all_results: List[Dict[str, float]] = [
+            {} for _ in range(thread_count)
+        ]
+        threads = [
+            threading.Thread(
+                target=_micro_worker,
+                kwargs={
+                    "root": root,
+                    "outer_id": outer_id,
+                    "request_id": request_id,
+                    "barrier": barrier,
+                    "results": all_results[index],
+                },
+                name=f"micro-{index}",
+            )
+            for index in range(thread_count)
+        ]
+        for thread in threads:
+            thread.start()
+        for thread in threads:
+            thread.join()
+        print(f"\n--- micro threads={thread_count} iters={MICRO_ITERS} ---")
+        for key in ("outer_door_ns", "request_door_ns"):
+            values = [result[key] for result in all_results if key in result]
+            if values:
+                per_thread = ", ".join(f"{value:7.1f}" for value in values)
+                print(
+                    f"{key:16s} avg={statistics.fmean(values):7.1f}ns "
+                    f"per-thread=[{per_thread}]"
+                )
+    finally:
+        root.permanent_cleanup()
+        spellbook.cleanup()
+
+
 def main() -> None:
     """
-    Run the contention sweeps and print the report.
+    Run the contention sweeps (or micro mode) and print the report.
     """
     gil_probe = getattr(sys, "_is_gil_enabled", None)
     gil_text = "enabled" if (gil_probe is None or gil_probe()) else "disabled"
@@ -351,6 +471,10 @@ def main() -> None:
         f"gil={gil_text}"
     )
     print("=" * 78)
+    if MICRO_MODE:
+        for thread_count in THREAD_SWEEP:
+            _run_micro(thread_count)
+        return
     for thread_count in THREAD_SWEEP:
         _run_sweep(thread_count)
 

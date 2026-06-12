@@ -143,7 +143,7 @@ def test_compiler_phase_methods_delegate_to_current_phase_surfaces(
         ("phase6_local", (spell, artifact, spellbook, spell_system_states, "cid"), {"cancel_event": "cancel"}),
         ("phase7_frame", (artifact, spellbook, "cid"), {}),
         ("phase7_local", (artifact, spellbook, "cid"), {}),
-        ("phase8", (spell, artifact, spellbook, spell_system_states), {}),
+        ("phase8", (spell, artifact, spellbook, spell_system_states), {"analysis_pass_cache": None}),
         ("phase9", (spell, artifact), {}),
         ("phase10", (spell, artifact), {}),
         ("phase11", (spell, artifact, spellbook), {}),

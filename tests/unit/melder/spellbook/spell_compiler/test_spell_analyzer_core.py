@@ -40,10 +40,12 @@ class _StrategyProbe:
             self,
             spell: Any,
             artifact: Any,
+            analysis_pass_cache: Any = None,
     ) -> None:
         """Record the dispatch event for this strategy."""
         _ = spell
         _ = artifact
+        _ = analysis_pass_cache
         self._events.append(self.strategy_id)
 
 

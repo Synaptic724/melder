@@ -55,6 +55,16 @@ def _register_spellbook_identity(
     )
     spellbook = MagicMock()
     identity.attach_registry(frame.devops_information_registry, object_ref=spellbook)
+    if conduit_id is not None:
+        # Topology truth is registered explicitly: the registry no longer
+        # derives spellbook<->conduit ownership from identity metadata (the
+        # eager metadata-derived rebuild path was removed), and runtime
+        # ownership edges are owned by frame boundary writes / transaction
+        # commit deltas.
+        frame.devops_information_registry.register_spellbook_conduit_ownership(
+            spellbook_id=spellbook_id,
+            conduit_id=conduit_id,
+        )
     return identity, spellbook
 
 

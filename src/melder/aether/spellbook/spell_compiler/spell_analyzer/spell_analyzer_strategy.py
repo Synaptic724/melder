@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, ClassVar
+from typing import TYPE_CHECKING, Any, ClassVar, Dict, Optional
 
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
@@ -69,9 +69,15 @@ class SpellAnalyzerStrategy(ABC):
             self,
             spell: "Spell",
             artifact: "SpellCompilerArtifact",
+            analysis_pass_cache: Optional[Dict[str, Any]] = None,
     ) -> None:
         """
         Analyze the current spell/artifact pair and enrich the artifact.
+
+        `analysis_pass_cache`, when supplied, is one pass-scoped memo dict
+        shared by every analyzer unit in the current pass so strategies can
+        reuse pass-invariant artifacts instead of rebuilding them per spell.
+        It dies with the pass units; no invalidation protocol exists.
 
         Purpose:
             Let one concrete analyzer strategy inspect the current spell / compiler truth and add one bounded family of analysis artifacts back onto

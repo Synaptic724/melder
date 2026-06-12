@@ -553,13 +553,15 @@ def test_component_change_control_transaction_mediator_scope_turn_taking() -> No
         )
 
         def _identity(owner_id: str) -> DevopsIdentity:
-            return DevopsIdentity(
+            identity = DevopsIdentity(
                 owner_kind="conduit",
                 owner_id=owner_id,
                 aetheric_frame_name=frame.name,
                 metadata={},
                 available_transactions=("link",),
             )
+            identity.attach_registry(frame.devops_information_registry)
+            return identity
 
         shared_scope = ["scope:conduit:shared"]
         holder_started = threading.Event()

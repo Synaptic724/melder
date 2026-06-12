@@ -204,15 +204,17 @@ def test_occurrence_graph_analyzer_fast_key_serializes_visible_state() -> None:
         ],
     )
 
-    fast_key = strategy._build_occurrence_graph_fast_key(
-        root_blueprint=blueprint,
-        spell_lookup=spellbook._spell_id_pool,
+    graph_shape = strategy._build_graph_shape_rows(
         spellbook=spellbook,
         spell_system_states=spell_system_states,
+    )
+    fast_key = strategy._build_occurrence_graph_fast_key(
+        root_blueprint=blueprint,
         spell_rows=(
             ("dep", "dep", Existence.unique.name, False),
             ("spell-1", "spell-1", Existence.unique.name, False),
         ),
+        graph_shape=graph_shape,
     )
 
     assert fast_key == (

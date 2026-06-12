@@ -338,6 +338,7 @@ class SpellCompilerSystem(Cleanable):
             self,
             spellbook: Spellbook,
             spell: Spell,
+            analysis_pass_cache: Optional[Dict[str, Any]] = None,
     ) -> None:
         """
         Phase 8 - Analyzer occurrence compilation (front-facing compiler-system facade).
@@ -367,6 +368,7 @@ class SpellCompilerSystem(Cleanable):
             spell._compiler_artifact,
             spellbook,
             spellbook._spell_system_states,
+            analysis_pass_cache=analysis_pass_cache,
         )
 
     def run_phase_injection_plan(

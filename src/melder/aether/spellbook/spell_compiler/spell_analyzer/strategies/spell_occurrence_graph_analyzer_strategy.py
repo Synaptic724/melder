@@ -96,6 +96,7 @@ class SpellOccurrenceGraphAnalyzerStrategy(SpellAnalyzerStrategy):
             self,
             spell: "Spell",
             artifact: "SpellCompilerArtifact",
+            analysis_pass_cache: Optional[Dict[str, Any]] = None,
     ) -> None:
         """
         Build and publish the occurrence-graph analysis artifact.
@@ -131,9 +132,16 @@ class SpellOccurrenceGraphAnalyzerStrategy(SpellAnalyzerStrategy):
             raise RuntimeError(
                 "SpellOccurrenceGraphAnalyzerStrategy requires Phase 5 root blueprint truth."
             )
+        # Pass-scoped reuse: the spell walk and the graph-shape rows are
+        # identical for every spell analyzed in one pass (only the root-
+        # specific blueprint rows differ), so both are memoized in the
+        # shared `analysis_pass_cache` dict when one is supplied. The dict
+        # dies with the pass units, so no invalidation protocol exists --
+        # the same lifetime contract as the phase-3/phase-4 pass caches.
         spell_rows_and_existence = self._build_spell_rows_and_existence_occurrence_analysis(
             root_spell_id=root_blueprint.root_spell_id,
             spell_lookup=spellbook._spell_id_pool,
+            analysis_pass_cache=analysis_pass_cache,
         )
         if spell_rows_and_existence is None:
             spell_rows = None
@@ -141,19 +149,20 @@ class SpellOccurrenceGraphAnalyzerStrategy(SpellAnalyzerStrategy):
         else:
             spell_rows, existence_occurrence_analysis = spell_rows_and_existence
 
-        fast_key = self._build_occurrence_graph_fast_key(
-            root_blueprint=root_blueprint,
-            spell_lookup=spellbook._spell_id_pool,
+        graph_shape = self._build_graph_shape_rows(
             spellbook=spellbook,
             spell_system_states=spell._spell_system_states,
+            analysis_pass_cache=analysis_pass_cache,
+        )
+        fast_key = self._build_occurrence_graph_fast_key(
+            root_blueprint=root_blueprint,
             spell_rows=spell_rows,
+            graph_shape=graph_shape,
         )
         input_signature = self._build_occurrence_graph_input_signature(
             root_blueprint=root_blueprint,
-            spell_lookup=spellbook._spell_id_pool,
-            spellbook=spellbook,
-            spell_system_states=spell._spell_system_states,
             spell_rows=spell_rows,
+            graph_shape=graph_shape,
         )
         if (
                 fast_key is not None
@@ -227,107 +236,26 @@ class SpellOccurrenceGraphAnalyzerStrategy(SpellAnalyzerStrategy):
             self,
             *,
             root_blueprint: "RootResolutionBlueprint",
-            spell_lookup: Dict[str, "Spell"],
-            spellbook: "Spellbook",
-            spell_system_states: Optional["SpellSystemStates"],
             spell_rows: Optional[Tuple[Any, ...]],
+            graph_shape: Optional[Tuple[Any, ...]],
     ) -> Optional[Tuple[Any, ...]]:
         """
         Build a lightweight deterministic key for graph-analysis reuse.
 
-        Purpose:
-            Avoid recomputing the deep graph input signature when the upstream
-            graph-shape inputs have not changed and no mutation overrides are
-            present.
-
         Contract:
             - Returns `None` when required inputs are unavailable.
-            - Returns `None` when any spell carries a mutation override,
-              forcing the deep signature path.
-            - Tracks blueprint identity, visible spell rows, local topology
-              rows, and contracted provider routing rows.
+            - Root-specific blueprint rows are computed here (cheap, own
+              subtree only); the graph-wide rows arrive pre-built in
+              `graph_shape` (pass-memoized; see `_build_graph_shape_rows`).
         """
-        if root_blueprint is None or spell_lookup is None:
+        if root_blueprint is None or spell_rows is None or graph_shape is None:
             return None
 
-        try:
-            ordered_node_ids = tuple(root_blueprint.ordered_node_ids)
-            path_registry_identity = id(root_blueprint.path_registry)
-            blueprint_socket_rows = tuple(
-                (
-                    socket_ref.node_id,
-                    socket_ref.param_name,
-                    socket_ref.param_path_id,
-                    socket_ref.socket_kind.value,
-                )
-                for socket_ref in (root_blueprint.socket_refs or ())
-            )
-        except Exception:
+        root_rows = self._build_root_blueprint_rows(root_blueprint)
+        if root_rows is None:
             return None
-
-        if spell_rows is None:
-            return None
-
-        topology_rows: Tuple[Any, ...] = ()
-        local_topologies = None
-        if spell_system_states is not None:
-            local_topologies = spell_system_states._local_topologies
-        if local_topologies is not None:
-            try:
-                topology_rows_list: List[Tuple[Any, ...]] = []
-                for spell_id in sorted(local_topologies.keys()):
-                    topology = local_topologies.get(spell_id)
-                    if topology is None:
-                        continue
-                    socket_rows = tuple(
-                        (
-                            socket.param_name,
-                            tuple(sorted(socket.target_spell_ids)),
-                        )
-                        for socket in topology.sockets
-                    )
-                    topology_rows_list.append((spell_id, socket_rows))
-                topology_rows = tuple(topology_rows_list)
-            except Exception:
-                return None
-
-        try:
-            contracted_lookup = spellbook._lookup_contracted_spells
-            contracted_maps = spellbook._contracted_spells
-            frame_configuration = spellbook._aetheric_frame_configuration
-            if frame_configuration is None:
-                return None
-            system_state = frame_configuration.system_state
-        except Exception:
-            return None
-
-        try:
-            contracted_rows_list: List[Tuple[Any, ...]] = []
-            for conduit_id in sorted(contracted_lookup.keys()):
-                lookup_map = contracted_lookup.get(conduit_id)
-                if lookup_map is None:
-                    continue
-                contracted_map = contracted_maps.get(conduit_id)
-                for contract_key in sorted(lookup_map.keys()):
-                    spell_index = lookup_map.get(contract_key)
-                    if spell_index is None:
-                        continue
-                    provider_spell_id = None
-                    if contracted_map is not None:
-                        provider_spell = contracted_map.get(spell_index)
-                        if provider_spell is not None:
-                            provider_spell_id = provider_spell.spell_index.current
-                    contracted_rows_list.append(
-                        (
-                            conduit_id,
-                            contract_key[0],
-                            contract_key[1],
-                            provider_spell_id,
-                        )
-                    )
-            contracted_rows = tuple(contracted_rows_list)
-        except Exception:
-            return None
+        ordered_node_ids, path_registry_identity, blueprint_socket_rows = root_rows
+        topology_rows, contracted_rows, system_state = graph_shape
 
         return (
             root_blueprint.root_spell_id,
@@ -344,10 +272,8 @@ class SpellOccurrenceGraphAnalyzerStrategy(SpellAnalyzerStrategy):
             self,
             *,
             root_blueprint: "RootResolutionBlueprint",
-            spell_lookup: Dict[str, "Spell"],
-            spellbook: "Spellbook",
-            spell_system_states: Optional["SpellSystemStates"],
             spell_rows: Optional[Tuple[Any, ...]],
+            graph_shape: Optional[Tuple[Any, ...]],
     ) -> Optional[str]:
         """
         Build a deterministic graph-analysis input signature.
@@ -361,12 +287,42 @@ class SpellOccurrenceGraphAnalyzerStrategy(SpellAnalyzerStrategy):
         Contract:
             - Returns `None` when required inputs are unavailable, forcing a
               rebuild.
-            - Includes blueprint shape, spell mutation/existence rows, local
-              topology rows, and contracted provider routing rows.
+            - Hashes exactly the same row layout the fast key tracks; the
+              graph-wide rows arrive pre-built in `graph_shape`.
         """
-        if root_blueprint is None or spell_lookup is None:
+        if root_blueprint is None or spell_rows is None or graph_shape is None:
             return None
 
+        root_rows = self._build_root_blueprint_rows(root_blueprint)
+        if root_rows is None:
+            return None
+        ordered_node_ids, path_registry_identity, blueprint_socket_rows = root_rows
+        topology_rows, contracted_rows, system_state = graph_shape
+
+        return SharedCompilerExecutions.hash_codegen_signature(
+            root_blueprint.root_spell_id,
+            ordered_node_ids,
+            path_registry_identity,
+            blueprint_socket_rows,
+            spell_rows,
+            topology_rows,
+            system_state,
+            contracted_rows,
+        )
+
+    @staticmethod
+    def _build_root_blueprint_rows(
+            root_blueprint: "RootResolutionBlueprint",
+    ) -> Optional[Tuple[Tuple[Any, ...], int, Tuple[Any, ...]]]:
+        """
+        Build the root-specific blueprint rows shared by fast key + signature.
+
+        Contract:
+            - Cost is proportional to the root's own blueprint, never to the
+              full spell pool.
+            - Returns `None` on any extraction failure (callers treat that as
+              "force the rebuild path").
+        """
         try:
             ordered_node_ids = tuple(root_blueprint.ordered_node_ids)
             path_registry_identity = id(root_blueprint.path_registry)
@@ -381,9 +337,35 @@ class SpellOccurrenceGraphAnalyzerStrategy(SpellAnalyzerStrategy):
             )
         except Exception:
             return None
+        return ordered_node_ids, path_registry_identity, blueprint_socket_rows
 
-        if spell_rows is None:
-            return None
+    def _build_graph_shape_rows(
+            self,
+            *,
+            spellbook: "Spellbook",
+            spell_system_states: Optional["SpellSystemStates"],
+            analysis_pass_cache: Optional[Dict[str, Any]] = None,
+    ) -> Optional[Tuple[Any, ...]]:
+        """
+        Build (or reuse) the pass-invariant graph-wide signature rows.
+
+        Purpose:
+            Topology rows and contracted provider routing rows are identical
+            for every spell analyzed in one pass; building them per spell made
+            phase 8 O(spells^2). With a pass cache they are built once.
+
+        Contract:
+            - Returns `(topology_rows, contracted_rows, system_state)` or
+              `None` on failure (callers force the rebuild path).
+            - Failures are never cached; every spell retries the build.
+            - The cached tuple is immutable; concurrent unit workers may race
+              to build it, which is benign (identical values, last write
+              wins).
+        """
+        if analysis_pass_cache is not None:
+            shared = analysis_pass_cache.get("phase8_graph_shape_rows")
+            if shared is not None:
+                return shared
 
         topology_rows: Tuple[Any, ...] = ()
         local_topologies = None
@@ -446,36 +428,84 @@ class SpellOccurrenceGraphAnalyzerStrategy(SpellAnalyzerStrategy):
         except Exception:
             return None
 
-        return SharedCompilerExecutions.hash_codegen_signature(
-            root_blueprint.root_spell_id,
-            ordered_node_ids,
-            path_registry_identity,
-            blueprint_socket_rows,
-            spell_rows,
-            topology_rows,
-            system_state,
-            contracted_rows,
-        )
+        shared = (topology_rows, contracted_rows, system_state)
+        if analysis_pass_cache is not None:
+            analysis_pass_cache["phase8_graph_shape_rows"] = shared
+        return shared
 
     def _build_spell_rows_and_existence_occurrence_analysis(
             self,
             *,
             root_spell_id: str,
             spell_lookup: Dict[str, "Spell"],
+            analysis_pass_cache: Optional[Dict[str, Any]] = None,
     ) -> Optional[Tuple[Tuple[Any, ...], SpellExistenceOccurrenceAnalysis]]:
         """
-        Build fast-key/input-signature spell rows plus existence-occurrence data in one walk.
+        Build fast-key/input-signature spell rows plus existence-occurrence data.
+
+        Contract:
+            - The full-pool walk is root-independent and is pass-memoized when
+              an `analysis_pass_cache` is supplied (it made phase 8
+              O(spells^2) when rebuilt per spell).
+            - Only `root_existence` differs per spell; the per-spell analysis
+              object is assembled cheaply over the SHARED immutable row
+              tuples. `SpellExistenceOccurrenceAnalysis` is frozen and the
+              graph-analysis cleanup only drops its reference, so sharing is
+              cross-artifact safe.
         """
         if not root_spell_id or spell_lookup is None:
             return None
 
+        shared = None
+        if analysis_pass_cache is not None:
+            shared = analysis_pass_cache.get("phase8_spell_walk")
+        if shared is None:
+            shared = self._build_spell_walk_rows(spell_lookup=spell_lookup)
+            if shared is None:
+                return None
+            if analysis_pass_cache is not None:
+                analysis_pass_cache["phase8_spell_walk"] = shared
+
+        (
+            spell_rows,
+            occurrence_rows,
+            existence_counts,
+            disposal_enabled_spell_count,
+            existence_disposal_counts,
+            existence_by_spell_id,
+        ) = shared
+
+        analysis = SpellExistenceOccurrenceAnalysis(
+            root_existence=existence_by_spell_id.get(root_spell_id),
+            total_spell_count=len(occurrence_rows),
+            spell_existence_rows=occurrence_rows,
+            existence_counts=existence_counts,
+            disposal_enabled_spell_count=disposal_enabled_spell_count,
+            existence_disposal_counts=existence_disposal_counts,
+        )
+        return spell_rows, analysis
+
+    @staticmethod
+    def _build_spell_walk_rows(
+            *,
+            spell_lookup: Dict[str, "Spell"],
+    ) -> Optional[Tuple[Any, ...]]:
+        """
+        Walk the full spell pool once and freeze every root-independent row.
+
+        Contract:
+            - Returns an immutable bundle (tuples + one read-only dict) safe
+              to share across all per-spell analyses in one pass; concurrent
+              builders may race benignly (identical values, last write wins).
+            - Returns `None` on any walk failure.
+        """
         try:
             spell_rows_list: List[Tuple[Any, ...]] = []
             occurrence_rows_list: List[SpellExistenceOccurrence] = []
             existence_counts_by_name: Dict[Existence, int] = {}
             existence_disposal_counts_by_name: Dict[Tuple[Existence, bool], int] = {}
+            existence_by_spell_id: Dict[str, Existence] = {}
             disposal_enabled_spell_count = 0
-            root_existence: Optional[Existence] = None
 
             for spell_id, candidate_spell in sorted(spell_lookup.items()):
                 current_spell_id = candidate_spell.spell_index.current
@@ -496,6 +526,7 @@ class SpellOccurrenceGraphAnalyzerStrategy(SpellAnalyzerStrategy):
                         has_disposal_methods=has_disposal_methods,
                     )
                 )
+                existence_by_spell_id[spell_id] = existence
                 current_count = existence_counts_by_name.get(existence, 0)
                 existence_counts_by_name[existence] = current_count + 1
                 current_pair_count = existence_disposal_counts_by_name.get(
@@ -507,8 +538,6 @@ class SpellOccurrenceGraphAnalyzerStrategy(SpellAnalyzerStrategy):
                 ] = current_pair_count + 1
                 if has_disposal_methods:
                     disposal_enabled_spell_count += 1
-                if spell_id == root_spell_id:
-                    root_existence = existence
         except Exception:
             return None
 
@@ -527,15 +556,14 @@ class SpellOccurrenceGraphAnalyzerStrategy(SpellAnalyzerStrategy):
                 ),
             )
         )
-        analysis = SpellExistenceOccurrenceAnalysis(
-            root_existence=root_existence,
-            total_spell_count=len(occurrence_rows_list),
-            spell_existence_rows=tuple(occurrence_rows_list),
-            existence_counts=existence_counts,
-            disposal_enabled_spell_count=disposal_enabled_spell_count,
-            existence_disposal_counts=existence_disposal_counts,
+        return (
+            tuple(spell_rows_list),
+            tuple(occurrence_rows_list),
+            existence_counts,
+            disposal_enabled_spell_count,
+            existence_disposal_counts,
+            existence_by_spell_id,
         )
-        return tuple(spell_rows_list), analysis
 
     @staticmethod
     def _cleanup_previous(

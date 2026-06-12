@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, ClassVar, Optional
+from typing import TYPE_CHECKING, Any, ClassVar, Dict, Optional
 
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.aether.spellbook.spell_compiler.spell_analyzer.spell_analyzer import (
@@ -79,6 +79,7 @@ class CompilerPhase8(Cleanable):
             artifact: "SpellCompilerArtifact",
             spellbook: "Spellbook",
             spell_system_states: Optional["SpellSystemStates"],
+            analysis_pass_cache: Optional[Dict[str, Any]] = None,
     ) -> None:
         """
         Execute the analyzer-backed live phase 8.
@@ -114,4 +115,8 @@ class CompilerPhase8(Cleanable):
         """
         _ = spellbook
         _ = spell_system_states
-        self._spell_analyzer.analyze_occurrence(spell, artifact)
+        self._spell_analyzer.analyze_occurrence(
+            spell,
+            artifact,
+            analysis_pass_cache=analysis_pass_cache,
+        )

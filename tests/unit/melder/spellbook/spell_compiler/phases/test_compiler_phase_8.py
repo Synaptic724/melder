@@ -20,8 +20,9 @@ class _AnalyzerStub:
         self.analyze_calls = []
         self.cleanup_calls = 0
 
-    def analyze_occurrence(self, spell, artifact) -> None:
+    def analyze_occurrence(self, spell, artifact, analysis_pass_cache=None) -> None:
         """Record the delegated analyze call."""
+        _ = analysis_pass_cache
         self.analyze_calls.append((spell, artifact))
 
     def cleanup(self) -> None:

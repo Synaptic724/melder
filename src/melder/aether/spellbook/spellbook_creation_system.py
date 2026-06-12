@@ -2800,13 +2800,18 @@ class SpellbookCreationSystem(Cleanable):
         cancel_event = scheduler.cancel_event
         create_unit_of_work = scheduler.create_unit_of_work
         phase_func = compiler_system.run_phase_occurrence_plan
+        # Pass-scoped memo shared by every phase-8 unit in this pass: the
+        # full-pool spell walk and the graph-wide shape rows are built once
+        # and reused by all per-spell analyses (same lifetime contract as
+        # the phase-3/phase-4 pass caches: dies with the units).
+        analysis_pass_cache: Dict[str, Any] = {}
         units: List[UnitOfWork] = []
         for spell in eligible_spells:
             spell_id = spell.spell_id
             units.append(
                 create_unit_of_work(
                     func=phase_func,
-                    args=(spellbook, spell),
+                    args=(spellbook, spell, analysis_pass_cache),
                     label=f"occurrence_plan:{spell_id}",
                     metadata={
                         "phase": "occurrence_plan",
@@ -3018,8 +3023,12 @@ class SpellbookCreationSystem(Cleanable):
         run_patch_maps = compiler_system.run_phase_patch_maps
         run_execution = compiler_system.run_phase_execution_plan
 
+        # Pass-scoped memo shared by every fused plan-group chunk in this
+        # pass (see `phase_occurrence_plan_factory` for the contract).
+        analysis_pass_cache: Dict[str, Any] = {}
+
         def _spell_runner(spell: Spell) -> None:
-            run_occurrence(spellbook, spell)
+            run_occurrence(spellbook, spell, analysis_pass_cache)
             run_injection(spell)
             run_patch_maps(spell)
             run_execution(spellbook, spell)

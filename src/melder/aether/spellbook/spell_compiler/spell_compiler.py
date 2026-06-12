@@ -579,6 +579,7 @@ class SpellCompiler(Cleanable):
             artifact: SpellCompilerArtifact,
             spellbook: Spellbook,
             spell_system_states: Optional[SpellSystemStates],
+            analysis_pass_cache: Optional[Dict[str, Any]] = None,
     ) -> None:
         """
         Run compiler phase 8 (occurrence plan).
@@ -613,6 +614,7 @@ class SpellCompiler(Cleanable):
             artifact,
             spellbook,
             spell_system_states,
+            analysis_pass_cache=analysis_pass_cache,
         )
 
     def run_phase_injection_plan(
