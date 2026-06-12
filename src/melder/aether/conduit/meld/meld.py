@@ -266,9 +266,9 @@ class Meld(Cleanable, ABC):
     @abstractmethod
     def meld(
             self,
-            spell_name: str | None = None,
-            *,
             spell: str | object | None = None,
+            *,
+            spell_name: str | None = None,
             spellframe: str | object | None = None,
             binding_name: str | None = None,
             spell_override: Optional[dict | list | tuple] = None,
@@ -279,21 +279,29 @@ class Meld(Cleanable, ABC):
         This method orchestrates the full lifecycle: resolution, reuse, instantiation,
         hook execution, and registration.
 
-        Args:
-            spell_name (str):
-                spell_name of the spell to meld
+        Call shape:
+            `spell` is the only positional parameter, so the dominant warm
+            pattern is the cheapest possible call: `meld(spell_id)` passes
+            one positional argument with no keyword marshaling and routes
+            straight into the id-string fast lane. All other entry modes
+            (`spell_name`, `spellframe`, `binding_name`, `spell_override`)
+            are keyword-only.
 
-                When provided without an explicit spell or spellframe, this is
-                treated as the **logical name key** used by the resolution pipeline.
-                In other words, meld(spell_name=\"MyService\") becomes equivalent
-                to a name-based lookup driven by the Spellbook / SpellIndex mappings.
+        Args:
             spell (str | object | None):
-                The primary spell identifier.
+                The primary spell identifier (first positional parameter).
                 - If a **string**, treated as the unique `spell_id` (typically the
                   SHA256 structural fingerprint for the SpellIndex).
                 - If an **object** (e.g., a class or function), used together with
                   `spellframe` and `binding_name` to form the DI identity key via the
                   `SpellInputUtils` normalization helpers.
+            spell_name (str):
+                spell_name of the spell to meld (keyword-only).
+
+                When provided without an explicit spell or spellframe, this is
+                treated as the **logical name key** used by the resolution pipeline.
+                In other words, meld(spell_name=\"MyService\") becomes equivalent
+                to a name-based lookup driven by the Spellbook / SpellIndex mappings.
             spellframe (str | object | None):
                 Optional Spellframe / Protocol / class used as the primary DI identity.
                 Often redundant if `spell` is the class/protocol itself. Spellframes
@@ -334,44 +342,11 @@ class Meld(Cleanable, ABC):
         """
         raise NotImplementedError("Concrete Meld subclasses must implement meld().")
 
-    @abstractmethod
-    def meld_id(self, spell_id: str, /) -> Optional[Any]:
-        """
-        Minimal-arity fast meld entry for current spell-id strings.
-
-        Purpose:
-            Provide the cheapest possible public call shape for the dominant
-            warm pattern (meld by known spell-id with no overrides): one
-            positional argument, no keyword marshaling, straight to the fast
-            meld door, falling back to the full `meld(...)` lane on any miss.
-
-        Contract:
-            - `spell_id` is positional-only and should be the current
-              spell-id string; other hashable inputs are tolerated and simply
-              fall through to the full lane's normalization.
-            - A fast-door hit behaves exactly like
-              `meld(spell=spell_id)` in no-hooks, no-override, non-dynamic
-              posture: same guards, same executor dispatch, same staged-cache
-              emit check.
-            - Any guard miss, cold spell, or non-fast posture falls back to
-              `self.meld(spell=spell_id)` unchanged, so results are always
-              identical to the full lane.
-
-        Args:
-            spell_id:
-                Current spell-id string (positional-only).
-
-        Returns:
-            Optional[Any]: The resolved instance, exactly as `meld(...)`
-            would return it.
-
-        Raises:
-            Whatever the full `meld(...)` lane raises on fallback (KeyError
-            for unknown ids, validation errors, and so on).
-        """
-        raise NotImplementedError(
-            "Concrete Meld subclasses must implement meld_id()."
-        )
+    # Note: a dedicated `meld_id(spell_id, /)` fast entry briefly existed on
+    # this surface. It was removed in favor of the single `meld(...)` API:
+    # `spell` now rides the positional seat, so `meld(spell_id)` is the
+    # supported minimal-arity warm call shape and no second public resolution
+    # method is required.
 
     @abstractmethod
     def meld_existing_spell(

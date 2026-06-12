@@ -213,11 +213,6 @@ def test_build_conjure_cache_state_classifies_live_vs_cached_spell_sets(
         caching_enabled=caching_enabled,
         caching_system=caching_system,
     )
-    monkeypatch.setattr(
-        SpellbookCreationSystem,
-        "_read_full_ahead_of_time_compilation",
-        staticmethod(lambda **kwargs: True),
-    )
 
     cache_state = SpellbookCreationSystem._build_conjure_cache_state(
         spellbook=spellbook,
@@ -231,37 +226,24 @@ def test_build_conjure_cache_state_classifies_live_vs_cached_spell_sets(
     assert cache_state["is_full_miss"] is expected_full_miss
 
 
-@pytest.mark.parametrize(
-    ("full_aot", "expected_jit"),
-    [
-        (True, False),
-        (False, True),
-    ],
-)
-def test_build_conjure_cache_state_preserves_aot_vs_jit_posture(
-        monkeypatch: pytest.MonkeyPatch,
-        full_aot: bool,
-        expected_jit: bool,
+@pytest.mark.parametrize("dynamic", [True, False])
+def test_build_conjure_cache_state_preserves_runtime_posture(
+        dynamic: bool,
 ) -> None:
-    """Verify cache-state includes the current AOT/JIT posture flags."""
+    """Verify cache-state includes the dynamic/automatic posture flags."""
     spellbook = _make_spellbook_stub(
         live_spell_ids=("spell-a",),
         caching_enabled=False,
     )
-    monkeypatch.setattr(
-        SpellbookCreationSystem,
-        "_read_full_ahead_of_time_compilation",
-        staticmethod(lambda **kwargs: full_aot),
-    )
 
     cache_state = SpellbookCreationSystem._build_conjure_cache_state(
         spellbook=spellbook,
-        dynamic=True,
+        dynamic=dynamic,
         conduit_name="root",
     )
 
-    assert cache_state["full_ahead_of_time_compilation"] is full_aot
-    assert cache_state["jit_mode"] is expected_jit
+    assert cache_state["dynamic_mode"] is dynamic
+    assert cache_state["automatic_mode"] is (not dynamic)
 
 
 def test_build_conjure_cache_state_passes_conduit_name_into_cache_system(
@@ -277,11 +259,6 @@ def test_build_conjure_cache_state_passes_conduit_name_into_cache_system(
     )
     spellbook._get_or_create_caching_system = lambda conduit_name=None: (
         seen_conduit_names.append(conduit_name) or caching_system
-    )
-    monkeypatch.setattr(
-        SpellbookCreationSystem,
-        "_read_full_ahead_of_time_compilation",
-        staticmethod(lambda **kwargs: True),
     )
 
     SpellbookCreationSystem._build_conjure_cache_state(

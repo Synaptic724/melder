@@ -77,7 +77,6 @@ def _make_spellbook(
     spellbook = Spellbook(aetheric_frame=frame_name)
     configuration = spellbook.get_configuration()
     configuration.set_property("phase_scheduler_workers_per_spellbook", 1)
-    configuration.set_property("full_ahead_of_time_compilation", True)
     spellbook.configure_aether_frame(
         system_state="dynamic" if dynamic else None,
         disposal=None,

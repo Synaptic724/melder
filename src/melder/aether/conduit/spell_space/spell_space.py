@@ -348,15 +348,22 @@ class SpellSpace(Cleanable):
 
     def meld(
             self,
-            spell_name: Optional[str] = None,
-            *,
             spell: Optional[Union[str, object]] = None,
+            *,
+            spell_name: Optional[str] = None,
             spellframe: Optional[Union[str, object]] = None,
             binding_name: Optional[str] = None,
             spell_override: Optional[Union[dict, list, tuple]] = None,
     ) -> object:
         """
         Delegate one meld call through the injected Meld runtime.
+
+        Call shape:
+            `spell` is the only positional parameter, so the dominant warm
+            pattern is the cheapest possible call: `meld(spell_id)` passes
+            one positional argument with no keyword marshaling straight
+            through to the spellspace door's id-string fast lane. All other
+            entry modes are keyword-only.
 
         Contract:
             - Delegates resolution and lifecycle behavior to the shared
@@ -366,37 +373,17 @@ class SpellSpace(Cleanable):
         Returns:
             object: The resolved runtime object returned by the shared meld runtime.
         """
+        # Hot path: `spell` rides positionally end to end so the dominant
+        # id-string call never pays keyword marshaling.
         return self._meld.meld(
+            spell,
             spell_name=spell_name,
-            spell=spell,
             spellframe=spellframe,
             binding_name=binding_name,
             spell_override=spell_override,
         )
 
-    def meld_id(self, spell_id: str, /) -> object:
-        """
-        Minimal-arity fast meld entry for current spell-id strings.
-
-        Purpose:
-            Provide the cheapest public call shape for the dominant warm
-            pattern (meld by known spell-id, no overrides) on this scope:
-            one positional argument, no keyword marshaling, straight to the
-            spellspace door's fast meld lane.
-
-        Contract:
-            - Behaviorally identical to `meld(spell=spell_id)`: a fast-door
-              miss or any non-fast posture falls back to the full lane inside
-              the door, so results never differ.
-            - `spell_id` is positional-only; non-id hashable inputs fall
-              through to the full lane's normalization.
-
-        Args:
-            spell_id:
-                Current spell-id string (positional-only).
-
-        Returns:
-            object: The resolved runtime object, exactly as `meld(...)`
-            would return it.
-        """
-        return self._meld.meld_id(spell_id)
+    # Note: a dedicated `meld_id(spell_id, /)` fast entry briefly existed on
+    # this scope. It was removed in favor of the single `meld(...)` API:
+    # `spell` rides the positional seat, so `meld(spell_id)` is the supported
+    # minimal-arity warm call shape and reaches the same door fast lane.

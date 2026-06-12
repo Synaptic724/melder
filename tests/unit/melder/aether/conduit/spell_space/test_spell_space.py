@@ -70,9 +70,9 @@ class _SpellSpaceMeldDelegateStub:
 
     def meld(
             self,
-            spell_name: Optional[str] = None,
-            *,
             spell: Optional[Union[str, object]] = None,
+            *,
+            spell_name: Optional[str] = None,
             spellframe: Optional[Union[str, object]] = None,
             binding_name: Optional[str] = None,
             spell_override: Optional[Union[dict, list, tuple]] = None,

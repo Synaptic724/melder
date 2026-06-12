@@ -424,7 +424,6 @@ class DummyConfig:
             system_state=None,
             frozen=False,
             validate_ok=True,
-            full_ahead_of_time_compilation: bool = True,
     ):
         """
         Purpose:
@@ -436,14 +435,11 @@ class DummyConfig:
             system_state: Optional SystemState override.
             frozen: Initial frozen flag.
             validate_ok: Whether validate() should succeed.
-            full_ahead_of_time_compilation: Optional runtime mode flag returned by
-                get_property("full_ahead_of_time_compilation").
         Returns:
             None.
         """
         self._hooks = hooks or {}
         self._system_state = system_state or SystemState.automatic
-        self._full_ahead_of_time_compilation = full_ahead_of_time_compilation
         self.cleaned = False
         self._aether_frame = "default"
         self._frozen = frozen
@@ -480,8 +476,8 @@ class DummyConfig:
         Purpose:
             Provide access to configuration properties.
         Contract:
-            Returns system_state, disposal_method_names, or
-            full_ahead_of_time_compilation when requested, otherwise None.
+            Returns system_state or disposal_method_names when requested,
+            otherwise None.
         Args:
             name: Property name to fetch.
         Returns:
@@ -491,8 +487,6 @@ class DummyConfig:
             return self._system_state
         if name == "disposal_method_names":
             return []
-        if name == "full_ahead_of_time_compilation":
-            return self._full_ahead_of_time_compilation
         return None
 
     def has_property(self, name):
@@ -510,7 +504,6 @@ class DummyConfig:
         return name in {
             "system_state",
             "disposal_method_names",
-            "full_ahead_of_time_compilation",
         }
 
     def validate(self):
@@ -2326,54 +2319,25 @@ def test_define_conduit_stamps_owner_and_primes_existing():
     assert spell_normal.resolution_complete is False
 
 
-def test_define_conduit_sets_resolution_required_when_jit_enabled():
+def test_bind_after_conjure_preserves_ownership_and_registrations(monkeypatch):
     """
     Purpose:
-        Verify conjure ownership wiring marks spells as runtime-resolution-required
-        when full AOT compilation is disabled.
+        Verify late binds wire ownership and registrations with eager
+        compilation semantics.
     Contract:
-        SpellbookCreationSystem.define_conduit_into_spells sets
-        `resolution_required=True` for local spells when
-        full_ahead_of_time_compilation=False.
-    Returns:
-        None.
-    Raises:
-        AssertionError: If propagation is not applied.
-    """
-    frame_name = "jit_propagation_test_frame"
-    cfg = DummyConfig(full_ahead_of_time_compilation=False)
-    cfg._aether_frame = frame_name
-    sb = Spellbook(aetheric_frame=frame_name, configuration=cfg)
-    conduit = DummyConduit()
-    spell = DummySpell()
-    idx = DummySpellIndex()
-    spell.spell_index = idx
-    sb._spells = {idx: spell}
-    sb._logger = DummySafeLogger()
-
-    SpellbookCreationSystem.define_conduit_into_spells(sb, conduit)
-
-    assert spell.resolution_required is True
-    assert spell.resolution_complete is False
-
-
-def test_bind_after_conjure_sets_resolution_required_when_jit_enabled(monkeypatch):
-    """
-    Purpose:
-        Verify late binds inherit JIT runtime-resolution requirements.
-    Contract:
-        When a conduit already exists and full AOT is disabled, `bind()` stamps
-        `resolution_required=True` while preserving ownership, creations
-        registration, lineage registration, and risk-manager registration.
+        When a conduit already exists, `bind()` stamps
+        `resolution_required=False` (compilation is always full/eager) while
+        preserving ownership, creations registration, lineage registration,
+        and risk-manager registration.
     Args:
         monkeypatch: Pytest fixture for patching Aether helpers.
     Returns:
         None.
     Raises:
-        AssertionError: If propagation or existing side effects are missing.
+        AssertionError: If stamping or existing side effects are missing.
     """
     frame_name = "bind_post_conjure_jit_frame"
-    cfg = DummyConfig(full_ahead_of_time_compilation=False)
+    cfg = DummyConfig()
     cfg._aether_frame = frame_name
     sb = Spellbook(aetheric_frame=frame_name, configuration=cfg)
     sb._logger = DummySafeLogger()
@@ -2415,7 +2379,7 @@ def test_bind_after_conjure_sets_resolution_required_when_jit_enabled(monkeypatc
     result = sb.bind(spell=object(), existence=Existence.unique, permissions="create")
 
     assert result == "jit-sid"
-    assert new_spell.resolution_required is True
+    assert new_spell.resolution_required is False
     assert new_spell.resolution_complete is False
     assert new_spell._owner[0] == "jit-cid"
     assert sb._conduit.registered == [(new_spell, "existing")]
@@ -2425,22 +2389,22 @@ def test_bind_after_conjure_sets_resolution_required_when_jit_enabled(monkeypatc
     assert register_single_calls == [("jit-cid", idx, frame_name)]
 
 
-def test_bind_after_conjure_keeps_resolution_required_false_when_aot_enabled(monkeypatch):
+def test_bind_after_conjure_stamps_resolution_required_false(monkeypatch):
     """
     Purpose:
-        Verify late binds preserve default AOT runtime-resolution semantics.
+        Verify late binds always clear any pre-set deferred-resolution flag.
     Contract:
-        When full AOT remains enabled, `bind()` stamps
-        `resolution_required=False` for newly bound spells after conjure.
+        `bind()` stamps `resolution_required=False` for newly bound spells
+        after conjure, even when the spell arrives with the flag set.
     Args:
         monkeypatch: Pytest fixture for patching Aether helpers.
     Returns:
         None.
     Raises:
-        AssertionError: If default AOT propagation is not preserved.
+        AssertionError: If the eager-compilation stamp is not applied.
     """
     frame_name = "bind_post_conjure_aot_frame"
-    cfg = DummyConfig(full_ahead_of_time_compilation=True)
+    cfg = DummyConfig()
     cfg._aether_frame = frame_name
     sb = Spellbook(aetheric_frame=frame_name, configuration=cfg)
     sb._logger = DummySafeLogger()

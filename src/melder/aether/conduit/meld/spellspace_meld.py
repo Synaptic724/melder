@@ -106,9 +106,9 @@ class SpellSpaceMeld(Meld):
 
     def meld(
             self,
-            spell_name: str | None = None,
-            *,
             spell: str | object | None = None,
+            *,
+            spell_name: str | None = None,
             spellframe: str | object | None = None,
             binding_name: str | None = None,
             spell_override: Optional[dict | list | tuple] = None,
@@ -119,21 +119,28 @@ class SpellSpaceMeld(Meld):
         This method orchestrates the full lifecycle: resolution, reuse, instantiation,
         hook execution, and registration.
 
-        Args:
-            spell_name (str):
-                spell_name of the spell to meld
+        Call shape:
+            `spell` is the only positional parameter, so the dominant warm
+            pattern is the cheapest possible call: `meld(spell_id)` passes
+            one positional argument with no keyword marshaling and routes
+            straight into the id-string fast lane below. All other entry
+            modes are keyword-only.
 
-                When provided without an explicit spell or spellframe, this is
-                treated as the **logical name key** used by the resolution pipeline.
-                In other words, meld(spell_name=\"MyService\") becomes equivalent
-                to a name-based lookup driven by the Spellbook / SpellIndex mappings.
+        Args:
             spell (str | object | None):
-                The primary spell identifier.
+                The primary spell identifier (first positional parameter).
                 - If a **string**, treated as the unique `spell_id` (typically the
                   SHA256 structural fingerprint for the SpellIndex).
                 - If an **object** (e.g., a class or function), used together with
                   `spellframe` and `binding_name` to form the DI identity key via the
                   `SpellInputUtils` normalization helpers.
+            spell_name (str):
+                spell_name of the spell to meld (keyword-only).
+
+                When provided without an explicit spell or spellframe, this is
+                treated as the **logical name key** used by the resolution pipeline.
+                In other words, meld(spell_name=\"MyService\") becomes equivalent
+                to a name-based lookup driven by the Spellbook / SpellIndex mappings.
             spellframe (str | object | None):
                 Optional Spellframe / Protocol / class used as the primary DI identity.
                 Often redundant if `spell` is the class/protocol itself. Spellframes
@@ -385,56 +392,11 @@ class SpellSpaceMeld(Meld):
 
             # 3) Return the resolved instance.
             return instance
-    def meld_id(self, spell_id: str, /) -> Optional[Any]:
-        """
-        Minimal-arity fast meld entry for current spell-id strings.
 
-        Contract:
-            - One positional argument, no keyword marshaling: the lane is
-              dict hit -> guard ladder -> hot executor, with the executor
-              read per hit through the live context so phase-11 hot swaps
-              are honored.
-            - The captured creations store already encodes the bind-time
-              existence routing (spellspace-local vs owner-conduit), exactly
-              like the fast lane inside `meld(...)`.
-            - Guards and emit semantics are identical to that lane; any miss
-              falls back to `self.meld(spell=spell_id)` unchanged, which also
-              rebuilds the fast-door entry on success.
-            - Tolerates non-id hashable inputs by falling through to the full
-              lane's normalization.
-
-        Args:
-            spell_id:
-                Current spell-id string (positional-only).
-
-        Returns:
-            Optional[Any]: The resolved instance, exactly as `meld(...)`
-            would return it.
-        """
-        fast_entry = self._fast_meld_doors.get(spell_id)
-        if fast_entry is not None:
-            door_spell, captured_context, fast_creations = fast_entry
-            fast_executor = None
-            try:
-                # Same live guard ladder as the meld(...) fast lane; see that
-                # lane for the per-guard rationale.
-                if (
-                    not self._meld_hooks
-                    and not door_spell._hooks_enabled
-                    and door_spell._creation_context_switch.fast_state >= 2
-                    and door_spell._creation_context is captured_context
-                    and not self._spellbook._spellbook_validation_required
-                    and not door_spell.resolution_required
-                ):
-                    fast_executor = captured_context._no_overrides_executor
-            except AttributeError:
-                fast_executor = None
-            if fast_executor is not None:
-                instance = fast_executor(fast_creations)[0]
-                if self._spellbook._cache_emit_required:
-                    self._spellbook._emit_cache_file_if_required()
-                return instance
-        return self.meld(spell=spell_id)
+    # Note: a dedicated `meld_id(spell_id, /)` fast entry briefly existed on
+    # this door. It was removed in favor of the single `meld(...)` API:
+    # `spell` rides the positional seat, so `meld(spell_id)` is the supported
+    # minimal-arity warm call shape and reaches the same fast lane above.
 
     def meld_existing_spell(
             self,

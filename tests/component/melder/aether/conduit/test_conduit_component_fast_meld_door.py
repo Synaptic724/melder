@@ -511,16 +511,17 @@ def test_component_fast_door_registry_deleted_on_cleanup() -> None:
     assert not hasattr(meld, "_fast_meld_doors")
 
 
-def test_component_meld_id_matches_meld_results_per_existence() -> None:
+def test_component_positional_meld_matches_keyword_meld_per_existence() -> None:
     """
     Purpose:
-        Verify the minimal-arity `meld_id` entry is behaviorally identical to
-        `meld(spell=...)` across reuse semantics.
+        Verify the positional call shape `meld(spell_id)` is behaviorally
+        identical to `meld(spell=spell_id)` across reuse semantics now that
+        `spell` rides the positional seat.
     Contract:
-        - unique / unique_per_conduit: `meld_id` returns the same instance as
-          `meld`, warm and cold.
-        - many: `meld_id` constructs a new instance per call.
-        - Spellspace door: `meld_id` serves scope-correct
+        - unique / unique_per_conduit: positional and keyword calls return
+          the same instance, warm and cold.
+        - many: the positional call constructs a new instance per call.
+        - Spellspace door: the positional call serves scope-correct
           `unique_per_spell_space` instances.
     """
     spellbook = _make_spellbook()
@@ -546,40 +547,40 @@ def test_component_meld_id_matches_meld_results_per_existence() -> None:
     )
     conduit = spellbook.conjure(name="root")
     try:
-        # Cold meld_id falls back to the full lane and builds the entry.
-        unique_first = conduit.meld_id(unique_id)
+        # Cold positional meld runs the full lane and builds the entry.
+        unique_first = conduit.meld(unique_id)
         assert isinstance(unique_first, _SharedUniqueService)
         assert unique_id in conduit._meld._fast_meld_doors
 
-        # Warm meld_id and meld agree on reuse identity.
-        assert conduit.meld_id(unique_id) is unique_first
+        # Warm positional and keyword melds agree on reuse identity.
+        assert conduit.meld(unique_id) is unique_first
         assert conduit.meld(spell=unique_id) is unique_first
 
         per_conduit_first = conduit.meld(spell=per_conduit_id)
-        assert conduit.meld_id(per_conduit_id) is per_conduit_first
+        assert conduit.meld(per_conduit_id) is per_conduit_first
 
-        many_first = conduit.meld_id(many_id)
-        many_second = conduit.meld_id(many_id)
+        many_first = conduit.meld(many_id)
+        many_second = conduit.meld(many_id)
         assert isinstance(many_second, _ManyService)
         assert many_second is not many_first
 
         with conduit.enter_spellspace() as space:
-            marker = space.meld_id(marker_id)
+            marker = space.meld(marker_id)
             assert isinstance(marker, _SpaceMarkerService)
-            assert space.meld_id(marker_id) is marker
+            assert space.meld(marker_id) is marker
             assert space.meld(spell=marker_id) is marker
     finally:
         conduit.permanent_cleanup()
 
 
-def test_component_meld_id_warm_call_executes_fast_lane() -> None:
+def test_component_positional_meld_warm_call_executes_fast_lane() -> None:
     """
     Purpose:
-        Prove the warm `meld_id` call actually executes through the fast
-        door, not the full lane.
+        Prove the warm positional `meld(spell_id)` call actually executes
+        through the fast door, not the full lane.
     Contract:
-        - With a poisoned entry store, a warm `meld_id` raises from the
-          poisoned fast-lane execution, demonstrating the lane was taken.
+        - With a poisoned entry store, a warm positional meld raises from
+          the poisoned fast-lane execution, demonstrating the lane was taken.
     """
     spellbook = _make_spellbook()
     spell_id = spellbook.bind(
@@ -589,22 +590,22 @@ def test_component_meld_id_warm_call_executes_fast_lane() -> None:
     )
     conduit = spellbook.conjure(name="root")
     try:
-        conduit.meld_id(spell_id)
+        conduit.meld(spell_id)
         _poison_entry(conduit._meld, spell_id)
         with pytest.raises(AssertionError, match="poisoned"):
-            conduit.meld_id(spell_id)
+            conduit.meld(spell_id)
     finally:
         conduit.permanent_cleanup()
 
 
-def test_component_meld_id_non_id_input_falls_back_to_full_lane() -> None:
+def test_component_positional_meld_class_input_resolves_via_normalization() -> None:
     """
     Purpose:
-        Verify non-id inputs (class objects) fall through to the full lane's
-        normalization and resolve correctly.
+        Verify non-id positional inputs (class objects) route through the
+        full lane's normalization and resolve correctly.
     Contract:
-        - `meld_id(SomeBoundClass)` resolves exactly like
-          `meld(spell=SomeBoundClass)`.
+        - `meld(SomeBoundClass)` resolves exactly like
+          `meld(spell=SomeBoundClass)` and agrees with id-based resolution.
     """
     spellbook = _make_spellbook()
     spell_id = spellbook.bind(
@@ -614,20 +615,20 @@ def test_component_meld_id_non_id_input_falls_back_to_full_lane() -> None:
     )
     conduit = spellbook.conjure(name="root")
     try:
-        by_id = conduit.meld_id(spell_id)
-        by_class = conduit.meld_id(_UniquePerConduitService)
+        by_id = conduit.meld(spell_id)
+        by_class = conduit.meld(_UniquePerConduitService)
         assert by_class is by_id
     finally:
         conduit.permanent_cleanup()
 
 
-def test_component_meld_id_raises_canonical_error_after_cleanup() -> None:
+def test_component_positional_meld_raises_canonical_error_after_cleanup() -> None:
     """
     Purpose:
-        Verify the cleaned-conduit guard on the minimal lane.
+        Verify the cleaned-conduit guard on the positional call shape.
     Contract:
-        - `meld_id` on a cleaned conduit raises the canonical
-          `check_cleaned` RuntimeError, identical to `meld(...)`.
+        - Positional `meld(spell_id)` on a cleaned conduit raises the
+          canonical `check_cleaned` RuntimeError, identical to keyword melds.
     """
     spellbook = _make_spellbook()
     spell_id = spellbook.bind(
@@ -636,10 +637,10 @@ def test_component_meld_id_raises_canonical_error_after_cleanup() -> None:
         permissions="create",
     )
     conduit = spellbook.conjure(name="root")
-    conduit.meld_id(spell_id)
+    conduit.meld(spell_id)
     conduit.permanent_cleanup()
     with pytest.raises(RuntimeError, match="cleaned"):
-        conduit.meld_id(spell_id)
+        conduit.meld(spell_id)
 
 
 def test_component_spellspace_nested_scope_stack_isolation() -> None:

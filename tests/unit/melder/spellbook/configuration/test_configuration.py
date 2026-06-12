@@ -19,7 +19,6 @@ def test_load_defaults_populates_all_required_properties():
     for key in cfg.available_properties:
         assert cfg.has_property(key)
     assert cfg.get_property("disposal_method_names") == []
-    assert cfg.get_property("full_ahead_of_time_compilation") is True
     frame_configuration = build_aetheric_frame_configuration_for_spellbook_configuration(cfg, )
     assert frame_configuration.system_state == SystemState.automatic
     assert frame_configuration.shared_framewide_spellbook_configuration is False
@@ -129,10 +128,10 @@ def test_validate_ai_native_allowed_in_dynamic_system_state():
     assert cfg.validate() is True
 
 
-def test_validate_full_ahead_of_time_compilation_type():
+def test_validate_disposal_type():
     cfg = SpellbookConfiguration()
     cfg.load_default_dictionary()
-    cfg.set_property("full_ahead_of_time_compilation", "yes")
+    cfg.set_property("disposal", "yes")
     with pytest.raises(ValueError):
         cfg.validate()
 
@@ -249,7 +248,7 @@ def test_iter_returns_keys():
     cfg.load_default_dictionary()
     keys = set(iter(cfg))
     assert "disposal" in keys
-    assert "full_ahead_of_time_compilation" in keys
+    assert "disposal_method_names" in keys
 
 
 def test_cleanup_idempotent_and_nulls_references():
@@ -331,7 +330,6 @@ def test_validate_disposal_method_names_type():
     cfg = SpellbookConfiguration()
     cfg.set_property("disposal", False)
     cfg.set_property("disposal_method_names", "not-a-list")
-    cfg.set_property("full_ahead_of_time_compilation", True)
     cfg.set_property("phase_scheduler_workers_per_spellbook", 1)
     cfg.set_property("phase_scheduler_barrier_timeout_milliseconds", 1)
     with pytest.raises(ValueError):
@@ -403,25 +401,6 @@ def test_with_disposal_method_names_rejects_non_list():
     cfg = SpellbookConfiguration()
     with pytest.raises(TypeError):
         cfg.with_disposal_method_names("not-list")  # type: ignore[arg-type]
-
-
-def test_with_full_ahead_of_time_compilation_sets_value():
-    cfg = SpellbookConfiguration()
-    returned = cfg.with_full_ahead_of_time_compilation(False)
-    assert returned is cfg
-    assert cfg.get_property("full_ahead_of_time_compilation") is False
-
-
-def test_with_full_ahead_of_time_compilation_rejects_non_bool():
-    cfg = SpellbookConfiguration()
-    with pytest.raises(TypeError):
-        cfg.with_full_ahead_of_time_compilation("false")  # type: ignore[arg-type]
-
-
-def test_with_defaults_allows_overriding_full_ahead_of_time_compilation():
-    cfg = SpellbookConfiguration().with_defaults()
-    cfg.with_full_ahead_of_time_compilation(False)
-    assert cfg.get_property("full_ahead_of_time_compilation") is False
 
 
 def test_finalize_twice_is_idempotent():

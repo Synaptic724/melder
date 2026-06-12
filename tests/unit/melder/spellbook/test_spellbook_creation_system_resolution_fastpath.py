@@ -81,29 +81,19 @@ class _StubSpellbook:
         - Test-only helper with no cleanup requirements.
     """
 
-    def __init__(
-            self,
-            *,
-            full_ahead_of_time_compilation: bool = True,
-    ) -> None:
+    def __init__(self) -> None:
         """
         Purpose:
             Initialize invocation counters for Spellbook surface probes.
         Contract:
             - Starts with zero check_cleaned invocations.
             - Exposes minimal configuration/logging surfaces required by the
-              tested runtime-mode gate.
-        Args:
-            full_ahead_of_time_compilation:
-                Runtime mode flag returned by
-                `get_property("full_ahead_of_time_compilation")`.
+              tested orchestration paths.
         Returns:
             None.
         """
         self.check_cleaned_calls = 0
-        self._configuration = _StubConfiguration(
-            full_ahead_of_time_compilation=full_ahead_of_time_compilation,
-        )
+        self._configuration = _StubConfiguration()
         self._logger = _StubLogger()
         self._spells: Dict[Any, Any] = {}
 
@@ -122,44 +112,25 @@ class _StubSpellbook:
 class _StubConfiguration:
     """
     Purpose:
-        Provide minimal configuration property access for runtime-mode tests.
+        Provide minimal configuration property access for orchestration tests.
     Contract:
-        - Returns the configured full-AOT boolean for the expected property key.
-        - Raises KeyError for unknown property names.
+        - Raises KeyError for every property name (tested paths must not
+          depend on configuration reads).
     Lifecycle:
-        - Test-only helper with immutable configuration value.
+        - Test-only helper with no state.
     """
-
-    def __init__(self, *, full_ahead_of_time_compilation: bool) -> None:
-        """
-        Purpose:
-            Initialize the test configuration state.
-        Contract:
-            - Stores one boolean mode flag for property lookup.
-        Args:
-            full_ahead_of_time_compilation:
-                Runtime mode flag exposed through `get_property`.
-        Returns:
-            None.
-        """
-        self._full_ahead_of_time_compilation = full_ahead_of_time_compilation
 
     def get_property(self, name: str) -> Any:
         """
         Purpose:
-            Return the requested test configuration property value.
+            Reject configuration property reads in tested orchestration paths.
         Contract:
-            - Supports `full_ahead_of_time_compilation` only.
-            - Raises KeyError for unknown keys.
+            - Raises KeyError for every key.
         Args:
             name: Requested property key.
-        Returns:
-            Any: Requested property value.
         Raises:
-            KeyError: If `name` is unsupported.
+            KeyError: Always.
         """
-        if name == "full_ahead_of_time_compilation":
-            return self._full_ahead_of_time_compilation
         raise KeyError(name)
 
 
@@ -241,28 +212,17 @@ class _StubCachingSystem:
 
 class _HookConfiguration:
     """
-    Minimal hook/configuration double for hook-map and AOT helper tests.
+    Minimal hook/configuration double for hook-map helper tests.
     """
 
     def __init__(
             self,
             *,
-            property_value: Any = True,
             hook_map: Optional[Mapping[str, List[Callable]]] = None,
-            property_error: Optional[Exception] = None,
             hooks_error: Optional[Exception] = None,
     ) -> None:
-        self._property_value = property_value
         self._hook_map = hook_map
-        self._property_error = property_error
         self._hooks_error = hooks_error
-
-    def get_property(self, name: str) -> Any:
-        if self._property_error is not None:
-            raise self._property_error
-        if name != "full_ahead_of_time_compilation":
-            raise KeyError(name)
-        return self._property_value
 
     def get_conduit_hooks(self, owner_id: str) -> Optional[Mapping[str, List[Callable]]]:
         if self._hooks_error is not None:
@@ -491,20 +451,21 @@ def test_run_resolution_phases_for_conduit_skips_plan_group_when_foundational_er
     }
 
 
-def test_run_resolution_phases_for_conduit_skips_plan_group_when_jit_mode_is_enabled(
+def test_run_resolution_phases_for_conduit_skips_plan_group_when_force_skip_is_set(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """
     Purpose:
-        Verify runtime JIT mode skips conduit plan phases during conjure prep.
+        Verify the cache full-hit path skips conduit plan phases.
     Contract:
-        - Foundational factories still execute once in JIT mode.
-        - Plan factories do not execute when full-AOT compilation is disabled.
+        - Foundational factories still execute once.
+        - Plan factories do not execute when `force_skip_plan_phases=True`
+          (phases 8-11 hydrate from the cache bundle instead).
         - Returned results include only foundational phase outputs.
     Returns:
         None.
     """
-    spellbook = _StubSpellbook(full_ahead_of_time_compilation=False)
+    spellbook = _StubSpellbook()
     scheduler_run_calls = {"count": 0}
     cleanup_calls = {"count": 0}
     phase_calls: Dict[str, int] = {}
@@ -547,7 +508,8 @@ def test_run_resolution_phases_for_conduit_skips_plan_group_when_jit_mode_is_ena
 
     results = SpellbookCreationSystem.run_resolution_phases_for_conduit(
         spellbook=spellbook,
-        conduit_id="cid-jit",
+        conduit_id="cid-cache-full-hit",
+        force_skip_plan_phases=True,
     )
 
     assert spellbook.check_cleaned_calls == 1
@@ -620,46 +582,6 @@ def test_creation_system_cleanup_rechecks_cleaned_state_under_lock() -> None:
         system._lock = original_lock
 
     assert system.cleaned is True
-
-
-def test_read_full_ahead_of_time_compilation_handles_none_keyerror_and_logging() -> None:
-    spellbook = _StubSpellbook()
-    spellbook._configuration = None
-    assert (
-        SpellbookCreationSystem._read_full_ahead_of_time_compilation(
-            spellbook=spellbook,
-            context_name="ctx",
-        )
-        is True
-    )
-
-    spellbook._configuration = _HookConfiguration(property_error=KeyError("missing"))
-    assert (
-        SpellbookCreationSystem._read_full_ahead_of_time_compilation(
-            spellbook=spellbook,
-            context_name="ctx",
-        )
-        is True
-    )
-
-    spellbook._configuration = _HookConfiguration(property_value=False)
-    assert (
-        SpellbookCreationSystem._read_full_ahead_of_time_compilation(
-            spellbook=spellbook,
-            context_name="ctx",
-        )
-        is False
-    )
-
-    spellbook._configuration = _HookConfiguration(property_value="bad")
-    assert (
-        SpellbookCreationSystem._read_full_ahead_of_time_compilation(
-            spellbook=spellbook,
-            context_name="ctx",
-        )
-        is True
-    )
-    assert len(spellbook._logger.error_calls) >= 1
 
 
 def test_get_conjure_hook_map_and_fire_conjure_hooks_cover_fallbacks() -> None:
@@ -788,19 +710,6 @@ def test_prepare_spellbook_for_conjure_runs_structural_phases_without_disposal_r
     assert calls == [(spellbook, _SchedulerProbe)]
     assert spellbook._spells["a"].disposal_method_names == frozenset({"cleanup"})
     assert spellbook._spells["a"].has_disposal_methods is True
-
-
-def test_read_full_ahead_of_time_compilation_returns_true_for_none_value() -> None:
-    spellbook = _StubSpellbook()
-    spellbook._configuration = _HookConfiguration(property_value=None)
-
-    assert (
-        SpellbookCreationSystem._read_full_ahead_of_time_compilation(
-            spellbook=spellbook,
-            context_name="ctx",
-        )
-        is True
-    )
 
 
 def test_run_resolution_phases_rejects_empty_conduit_id() -> None:
@@ -1560,9 +1469,7 @@ def test_run_deferred_resolution_phases_for_target_spell_success_and_non_visibil
         )
 
 
-def test_build_conjure_cache_state_reports_disabled_path(
-        monkeypatch: pytest.MonkeyPatch,
-) -> None:
+def test_build_conjure_cache_state_reports_disabled_path() -> None:
     """
     Verify disabled Spellbook cache posture returns the disabled cache path.
 
@@ -1573,11 +1480,6 @@ def test_build_conjure_cache_state_reports_disabled_path(
         _spell_id_pool={"spell-a": types.SimpleNamespace(is_existing_creation=False)},
         _system_caching_enabled_in_aether=lambda: False,
     )
-    monkeypatch.setattr(
-        SpellbookCreationSystem,
-        "_read_full_ahead_of_time_compilation",
-        staticmethod(lambda **kwargs: True),
-    )
 
     cache_state = SpellbookCreationSystem._build_conjure_cache_state(
         spellbook=spellbook,
@@ -1587,17 +1489,13 @@ def test_build_conjure_cache_state_reports_disabled_path(
     assert cache_state["caching_enabled"] is False
     assert cache_state["dynamic_mode"] is True
     assert cache_state["automatic_mode"] is False
-    assert cache_state["full_ahead_of_time_compilation"] is True
-    assert cache_state["jit_mode"] is False
     assert cache_state["cache_path"] == "disabled"
     assert cache_state["caching_system"] is None
     assert cache_state["live_spell_ids"] == {"spell-a"}
     assert cache_state["cached_spell_ids"] == set()
 
 
-def test_build_conjure_cache_state_reports_full_hit_path(
-        monkeypatch: pytest.MonkeyPatch,
-) -> None:
+def test_build_conjure_cache_state_reports_full_hit_path() -> None:
     """
     Verify live spell-id subset coverage is classified as a full cache hit.
 
@@ -1618,11 +1516,6 @@ def test_build_conjure_cache_state_reports_full_hit_path(
         _system_caching_enabled_in_aether=lambda: True,
         _get_or_create_caching_system=lambda conduit_name=None: caching_system,
     )
-    monkeypatch.setattr(
-        SpellbookCreationSystem,
-        "_read_full_ahead_of_time_compilation",
-        staticmethod(lambda **kwargs: True),
-    )
 
     cache_state = SpellbookCreationSystem._build_conjure_cache_state(
         spellbook=spellbook,
@@ -1641,9 +1534,7 @@ def test_build_conjure_cache_state_reports_full_hit_path(
     assert cache_state["stale_cached_spell_ids"] == set()
 
 
-def test_build_conjure_cache_state_reports_mixed_path(
-        monkeypatch: pytest.MonkeyPatch,
-) -> None:
+def test_build_conjure_cache_state_reports_mixed_path() -> None:
     """
     Verify partial coverage is classified as a mixed cache run.
 
@@ -1664,19 +1555,12 @@ def test_build_conjure_cache_state_reports_mixed_path(
         _system_caching_enabled_in_aether=lambda: True,
         _get_or_create_caching_system=lambda conduit_name=None: caching_system,
     )
-    monkeypatch.setattr(
-        SpellbookCreationSystem,
-        "_read_full_ahead_of_time_compilation",
-        staticmethod(lambda **kwargs: False),
-    )
 
     cache_state = SpellbookCreationSystem._build_conjure_cache_state(
         spellbook=spellbook,
         dynamic=True,
     )
 
-    assert cache_state["full_ahead_of_time_compilation"] is False
-    assert cache_state["jit_mode"] is True
     assert cache_state["cache_path"] == "mixed"
     assert cache_state["is_full_hit"] is False
     assert cache_state["is_mixed"] is True
@@ -1686,9 +1570,7 @@ def test_build_conjure_cache_state_reports_mixed_path(
     assert cache_state["stale_cached_spell_ids"] == {"stale-spell"}
 
 
-def test_build_conjure_cache_state_treats_stale_surplus_cache_as_full_hit(
-        monkeypatch: pytest.MonkeyPatch,
-) -> None:
+def test_build_conjure_cache_state_treats_stale_surplus_cache_as_full_hit() -> None:
     """
     Verify stale extra cached spell ids do not force recompilation.
 
@@ -1709,11 +1591,6 @@ def test_build_conjure_cache_state_treats_stale_surplus_cache_as_full_hit(
         },
         _system_caching_enabled_in_aether=lambda: True,
         _get_or_create_caching_system=lambda conduit_name=None: caching_system,
-    )
-    monkeypatch.setattr(
-        SpellbookCreationSystem,
-        "_read_full_ahead_of_time_compilation",
-        staticmethod(lambda **kwargs: True),
     )
 
     cache_state = SpellbookCreationSystem._build_conjure_cache_state(

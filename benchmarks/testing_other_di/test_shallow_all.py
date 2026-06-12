@@ -426,37 +426,6 @@ def _env_bool(name: str, default: bool) -> bool:
     return default
 
 
-def _melder_compilation_mode() -> str:
-    """
-    Resolve benchmark Melder compilation mode from environment.
-
-    Contract:
-        - Reads `DI_MELDER_COMPILATION_MODE`.
-        - Supports `default`, `jit`, and `aot`.
-        - Unset/empty values resolve to `default`.
-        - Raises AssertionError for unsupported values.
-    """
-    mode = _env_str("DI_MELDER_COMPILATION_MODE", "default").strip().lower()
-    if mode not in ("default", "jit", "aot"):
-        raise AssertionError("DI_MELDER_COMPILATION_MODE must be: default|jit|aot")
-    return mode
-
-
-def _apply_melder_compilation_mode(cfg: Any) -> None:
-    """
-    Apply benchmark Melder compilation mode to the provided configuration object.
-
-    Contract:
-        - `default`: leaves configuration untouched so library defaults apply.
-        - `jit`: sets `full_ahead_of_time_compilation=False`.
-        - `aot`: sets `full_ahead_of_time_compilation=True`.
-    """
-    mode = _melder_compilation_mode()
-    if mode == "default":
-        return
-    cfg.set_property("full_ahead_of_time_compilation", mode == "aot")
-
-
 def _parse_csv(value: str) -> list[str]:
     parts = [p.strip() for p in value.split(",")]
     return [p for p in parts if p]
@@ -1210,7 +1179,6 @@ def _build_runtime_melder(g: _GraphSpec) -> _RuntimeOps:
     spellbook = Spellbook(aetheric_frame="threaded-di-stress")
     cfg = spellbook.get_configuration()
     cfg.set_property("phase_scheduler_workers_per_spellbook", 1)
-    _apply_melder_compilation_mode(cfg)
 
     ids_a: dict[type, str] = {}
     for cls in g.root_a_classes:
@@ -1611,7 +1579,6 @@ def _build_rotation_melder(graphs: list[_GraphSpec]) -> _RotationOps:
     spellbook = Spellbook(aetheric_frame="threaded-di-stress-rotation")
     cfg = spellbook.get_configuration()
     cfg.set_property("phase_scheduler_workers_per_spellbook", 1)
-    _apply_melder_compilation_mode(cfg)
 
     # Bind everything once
     all_classes = _union_classes(graphs)
@@ -1780,68 +1747,6 @@ def test_single_resolve_timings(graph: str, lib: str) -> None:
         )
     finally:
         ops.cleanup()
-
-
-class _SetPropertyCapture:
-    """
-    Record benchmark configuration property writes for helper tests.
-
-    Contract:
-        - Collects `(name, value)` writes in insertion order.
-        - Exposes writes via `.calls`.
-    """
-
-    def __init__(self) -> None:
-        """
-        Initialize an empty write log.
-        """
-        self.calls: list[tuple[str, Any]] = []
-
-    def set_property(self, name: str, value: Any) -> None:
-        """
-        Append a configuration write to the capture log.
-        """
-        self.calls.append((name, value))
-
-
-def test_melder_compilation_mode_default_keeps_config_untouched(monkeypatch: pytest.MonkeyPatch) -> None:
-    """
-    Verify unset mode keeps benchmark Melder configuration at library default.
-    """
-    # Force empty value so ambient process env cannot leak non-default mode into this test.
-    monkeypatch.setenv("DI_MELDER_COMPILATION_MODE", "")
-    capture = _SetPropertyCapture()
-    _apply_melder_compilation_mode(capture)
-    assert capture.calls == []
-
-
-def test_melder_compilation_mode_jit_sets_full_aot_false(monkeypatch: pytest.MonkeyPatch) -> None:
-    """
-    Verify `jit` mode writes `full_ahead_of_time_compilation=False`.
-    """
-    monkeypatch.setenv("DI_MELDER_COMPILATION_MODE", "jit")
-    capture = _SetPropertyCapture()
-    _apply_melder_compilation_mode(capture)
-    assert capture.calls == [("full_ahead_of_time_compilation", False)]
-
-
-def test_melder_compilation_mode_aot_sets_full_aot_true(monkeypatch: pytest.MonkeyPatch) -> None:
-    """
-    Verify explicit `aot` mode writes `full_ahead_of_time_compilation=True`.
-    """
-    monkeypatch.setenv("DI_MELDER_COMPILATION_MODE", "aot")
-    capture = _SetPropertyCapture()
-    _apply_melder_compilation_mode(capture)
-    assert capture.calls == [("full_ahead_of_time_compilation", True)]
-
-
-def test_melder_compilation_mode_invalid_value_raises(monkeypatch: pytest.MonkeyPatch) -> None:
-    """
-    Verify invalid mode values fail fast with a clear assertion.
-    """
-    monkeypatch.setenv("DI_MELDER_COMPILATION_MODE", "weird")
-    with pytest.raises(AssertionError, match="DI_MELDER_COMPILATION_MODE must be: default\\|jit\\|aot"):
-        _melder_compilation_mode()
 
 
 # ======================================================================================

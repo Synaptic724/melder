@@ -724,8 +724,6 @@ class FakeSpellbook:
 
     class _ConfigurationStub:
         def get_property(self, key: str) -> bool:
-            if key == "full_ahead_of_time_compilation":
-                return True
             raise KeyError(key)
 
     def __init__(

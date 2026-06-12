@@ -2876,9 +2876,9 @@ class Conduit(Cleanable):
 
     def meld(
             self,
-            spell_name: str | None = None,
-            *,
             spell: str | object | None = None,
+            *,
+            spell_name: str | None = None,
             spellframe: str | object | None = None,
             binding_name: str | None = None,
             spell_override: Optional[dict | list | tuple] = None,
@@ -2895,6 +2895,13 @@ class Conduit(Cleanable):
         - `spell` as a **spell object** (class/function), or
         - `spellframe` as a **frame/protocol** (or string frame key), or
         - `spell_name` as a **logical name key** (string).
+
+        Call shape:
+            `spell` is the only positional parameter, so the dominant warm
+            pattern is the cheapest possible call: `meld(spell_id)` passes
+            one positional argument with no keyword marshaling straight
+            through to the door's id-string fast lane. All other entry modes
+            are keyword-only.
 
         These inputs are normalized and delegated to the underlying `Meld`
         instance, which resolves a concrete spell_id via SpellInputUtils.
@@ -2913,14 +2920,16 @@ class Conduit(Cleanable):
               can track active work and drain safely during shutdown.
 
         Args:
-            spell_name:
-                Logical spell name (string). When provided without an explicit
-                `spell` or `spellframe`, this is treated as the name-based key
-                for resolution (via SpellInputUtils normalization).
             spell:
-                Primary spell identifier. If a string, this is treated as the
-                unique spell_id (typically the SHA256 version ID). If an
-                object (class/function), it participates in key normalization.
+                Primary spell identifier (first positional parameter). If a
+                string, this is treated as the unique spell_id (typically the
+                SHA256 version ID). If an object (class/function), it
+                participates in key normalization.
+            spell_name:
+                Logical spell name (string, keyword-only). When provided
+                without an explicit `spell` or `spellframe`, this is treated
+                as the name-based key for resolution (via SpellInputUtils
+                normalization).
             spellframe:
                 Optional spellframe / protocol / string frame key used for
                 resolution. If provided, it becomes the primary frame key.
@@ -2973,9 +2982,11 @@ class Conduit(Cleanable):
             try:
                 # Track active melds for shutdown/drain semantics.
                 creation_gate.register_ticket()
+                # Hot path: `spell` rides positionally end to end so the
+                # dominant id-string call never pays keyword marshaling.
                 return meld_component.meld(
+                    spell,
                     spell_name=spell_name,
-                    spell=spell,
                     spellframe=spellframe,
                     binding_name=binding_name,
                     spell_override=spell_override,
@@ -2983,55 +2994,20 @@ class Conduit(Cleanable):
             finally:
                 creation_gate.unregister_ticket()
 
+        # Hot path: `spell` rides positionally end to end so the dominant
+        # id-string call never pays keyword marshaling.
         return meld_component.meld(
+            spell,
             spell_name=spell_name,
-            spell=spell,
             spellframe=spellframe,
             binding_name=binding_name,
             spell_override=spell_override,
         )
 
-    def meld_id(self, spell_id: str, /) -> Optional[Any]:
-        """
-        Public API
-
-        Minimal-arity fast meld entry for current spell-id strings.
-
-        Purpose:
-            Provide the cheapest public call shape for the dominant warm
-            pattern (meld by known spell-id, no overrides): one positional
-            argument, no keyword marshaling, straight to the conduit door's
-            fast meld lane.
-
-        Contract:
-            - Behaviorally identical to `meld(spell=spell_id)`: a fast-door
-              miss or any non-fast posture falls back to the full lane, so
-              results never differ.
-            - Dynamic-mode conduits delegate to `meld(...)` so CreationGate
-              admission and ticketing semantics are fully preserved; the
-              minimal lane exists only for the non-dynamic posture where the
-              fast door can serve.
-            - `spell_id` is positional-only; non-id hashable inputs fall
-              through to the full lane's normalization.
-
-        Args:
-            spell_id:
-                Current spell-id string (positional-only).
-
-        Returns:
-            Optional[Any]: The resolved instance, exactly as `meld(...)`
-            would return it.
-
-        Raises:
-            RuntimeError: If the conduit has been cleaned, plus whatever the
-                full `meld(...)` lane raises on fallback.
-        """
-        # Zero-cost guard on the live path; canonical error on the dead one.
-        if self._cleaned:
-            self.check_cleaned()
-        if self.__dynamic_environment__:
-            return self.meld(spell=spell_id)
-        return self._meld.meld_id(spell_id)
+    # Note: a dedicated `meld_id(spell_id, /)` fast entry briefly existed on
+    # this facade. It was removed in favor of the single `meld(...)` API:
+    # `spell` rides the positional seat, so `meld(spell_id)` is the supported
+    # minimal-arity warm call shape and reaches the same door fast lane.
 
     def meld_existing_spell(
             self,
