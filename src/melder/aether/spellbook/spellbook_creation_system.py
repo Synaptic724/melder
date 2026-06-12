@@ -1751,19 +1751,25 @@ class SpellbookCreationSystem(Cleanable):
         Raises:
             Exception: Propagates scheduler registration and execution failures.
         """
-        scheduler = SpellbookCreationSystem._new_phase_scheduler(
-            spellbook=spellbook,
-            phase_scheduler_cls=phase_scheduler_cls,
-        )
-        try:
-            register_phases(scheduler)
-            return scheduler.run_all_phases()
-        finally:
-            SpellbookCreationSystem._cleanup_phase_scheduler(
+        # Run serialization: the persistent scheduler's phase registry is
+        # per-run state, and meld-time revalidations can hit this path from
+        # multiple threads without the Spellbook lock. The Spellbook-owned
+        # run lock makes register/run/release atomic per run so concurrent
+        # runs queue instead of corrupting each other's registrations.
+        with spellbook._phase_run_lock:
+            scheduler = SpellbookCreationSystem._new_phase_scheduler(
                 spellbook=spellbook,
-                scheduler=scheduler,
-                context_name=context_name,
+                phase_scheduler_cls=phase_scheduler_cls,
             )
+            try:
+                register_phases(scheduler)
+                return scheduler.run_all_phases()
+            finally:
+                SpellbookCreationSystem._cleanup_phase_scheduler(
+                    spellbook=spellbook,
+                    scheduler=scheduler,
+                    context_name=context_name,
+                )
 
     @staticmethod
     def _register_structural_phases(

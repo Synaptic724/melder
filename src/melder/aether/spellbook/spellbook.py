@@ -137,6 +137,7 @@ and logging.
         "_pending_binding_frame_keys",
         "_pending_structural_spells",
         "_phase_scheduler",
+        "_phase_run_lock",
         "_configured_disposal_method_names",
         "_spell_id_pool",
         "_spell_system_states",
@@ -199,6 +200,15 @@ and logging.
         # Created on first phase run; cleaned (sentinels + joins) exactly
         # once in Spellbook cleanup.
         self._phase_scheduler: Optional[PhaseScheduler] = None
+        # Serializes phase RUNS on the shared persistent scheduler: the
+        # per-run phase registry is scheduler state, so concurrent meld-time
+        # revalidations (which do not hold the Spellbook lock) must not
+        # interleave register/run/clear cycles. RLock so a thread that
+        # already owns a run can re-enter (conjure runs structural then
+        # resolution back-to-back). Runs must never be initiated from inside
+        # a phase unit (worker thread) - that would deadlock against the
+        # owning control thread.
+        self._phase_run_lock: threading.RLock = threading.RLock()
         self._configured_disposal_method_names: Optional[frozenset[str]] = None
         self._conduit: Optional[Conduit] = None
         self._nexus_publish_enabled: bool = False
@@ -328,6 +338,7 @@ and logging.
                     exc_info=True,
                 )
         del self._phase_scheduler
+        del self._phase_run_lock
         self._remove_spells_from_nexus()
         # 1) Clean ONLY local spells (not contracted)
         self._cleanup_spells()

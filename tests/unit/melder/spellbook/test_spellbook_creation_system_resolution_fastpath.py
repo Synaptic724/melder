@@ -275,10 +275,10 @@ def _install_stub_phase_factories(
     _install("phase_root_blueprints_factory", "root_blueprints")
     _install("phase_system_validation_factory", "system_validation")
     _install("phase_change_control_factory", "change_control")
-    _install("phase_occurrence_plan_factory", "occurrence_plan")
-    _install("phase_injection_plan_factory", "injection_plan")
-    _install("phase_patch_maps_factory", "patch_maps")
-    _install("phase_execution_plan_factory", "execution_plan")
+    # The fused plan_group factory replaced the four separate plan-phase
+    # registrations (8-11 now run fused per spell). The historical per-phase
+    # factories still exist as public surfaces but are no longer registered.
+    _install("phase_plan_group_factory", "plan_group")
 
 
 def test_run_resolution_phases_for_conduit_uses_one_scheduler_lifecycle(
@@ -343,26 +343,17 @@ def test_run_resolution_phases_for_conduit_uses_one_scheduler_lifecycle(
         "root_blueprints",
         "system_validation",
         "change_control",
-        "occurrence_plan",
-        "injection_plan",
-        "patch_maps",
-        "execution_plan",
+        "plan_group",
     ]
     assert results["root_blueprints"] == ["root_blueprints"]
     assert results["system_validation"] == ["system_validation"]
     assert results["change_control"] == ["change_control"]
-    assert results["occurrence_plan"] == ["occurrence_plan"]
-    assert results["injection_plan"] == ["injection_plan"]
-    assert results["patch_maps"] == ["patch_maps"]
-    assert results["execution_plan"] == ["execution_plan"]
+    assert results["plan_group"] == ["plan_group"]
     assert phase_calls == {
         "root_blueprints": 1,
         "system_validation": 1,
         "change_control": 1,
-        "occurrence_plan": 1,
-        "injection_plan": 1,
-        "patch_maps": 1,
-        "execution_plan": 1,
+        "plan_group": 1,
     }
 
 
@@ -444,10 +435,7 @@ def test_run_resolution_phases_for_conduit_skips_plan_group_when_foundational_er
         "root_blueprints": 1,
         "system_validation": 1,
         "change_control": 1,
-        "occurrence_plan": 0,
-        "injection_plan": 0,
-        "patch_maps": 0,
-        "execution_plan": 0,
+        "plan_group": 0,
     }
 
 
@@ -527,10 +515,7 @@ def test_run_resolution_phases_for_conduit_skips_plan_group_when_force_skip_is_s
         "root_blueprints": 1,
         "system_validation": 1,
         "change_control": 1,
-        "occurrence_plan": 0,
-        "injection_plan": 0,
-        "patch_maps": 0,
-        "execution_plan": 0,
+        "plan_group": 0,
     }
 
 
@@ -1228,25 +1213,12 @@ def test_run_conduit_foundational_and_plan_resolution_phase_wrappers_register_ex
         "phase_change_control_factory",
         staticmethod(lambda spellbook, scheduler, compiler_system, conduit_id: ["change_control"]),
     )
+    # The fused plan_group factory replaced the four separate plan-phase
+    # registrations (phases 8-11 run fused per spell).
     monkeypatch.setattr(
         SpellbookCreationSystem,
-        "phase_occurrence_plan_factory",
-        staticmethod(lambda spellbook, scheduler, compiler_system, conduit_id: ["occurrence_plan"]),
-    )
-    monkeypatch.setattr(
-        SpellbookCreationSystem,
-        "phase_injection_plan_factory",
-        staticmethod(lambda spellbook, scheduler, compiler_system, conduit_id: ["injection_plan"]),
-    )
-    monkeypatch.setattr(
-        SpellbookCreationSystem,
-        "phase_patch_maps_factory",
-        staticmethod(lambda spellbook, scheduler, compiler_system, conduit_id: ["patch_maps"]),
-    )
-    monkeypatch.setattr(
-        SpellbookCreationSystem,
-        "phase_execution_plan_factory",
-        staticmethod(lambda spellbook, scheduler, compiler_system, conduit_id: ["execution_plan"]),
+        "phase_plan_group_factory",
+        staticmethod(lambda spellbook, scheduler, compiler_system, conduit_id: ["plan_group"]),
     )
     foundational = SpellbookCreationSystem._run_conduit_foundational_resolution_phases(
         spellbook=_StubSpellbook(),
@@ -1264,12 +1236,7 @@ def test_run_conduit_foundational_and_plan_resolution_phase_wrappers_register_ex
         "system_validation",
         "change_control",
     }
-    assert set(plan.keys()) >= {
-        "occurrence_plan",
-        "injection_plan",
-        "patch_maps",
-        "execution_plan",
-    }
+    assert set(plan.keys()) >= {"plan_group"}
     assert recorded_scheduler_runs[0][0] == "_run_resolution_phases_for_conduit"
     assert recorded_scheduler_runs[1][0] == "_run_resolution_phases_for_conduit"
 
@@ -1311,25 +1278,12 @@ def test_run_conduit_foundational_and_plan_resolution_phase_wrappers_register_ex
         "phase_change_control_factory",
         staticmethod(lambda spellbook, scheduler, compiler_system, conduit_id: ["change_control"]),
     )
+    # The fused plan_group factory replaced the four separate plan-phase
+    # registrations (phases 8-11 run fused per spell).
     monkeypatch.setattr(
         SpellbookCreationSystem,
-        "phase_occurrence_plan_factory",
-        staticmethod(lambda spellbook, scheduler, compiler_system, conduit_id: ["occurrence_plan"]),
-    )
-    monkeypatch.setattr(
-        SpellbookCreationSystem,
-        "phase_injection_plan_factory",
-        staticmethod(lambda spellbook, scheduler, compiler_system, conduit_id: ["injection_plan"]),
-    )
-    monkeypatch.setattr(
-        SpellbookCreationSystem,
-        "phase_patch_maps_factory",
-        staticmethod(lambda spellbook, scheduler, compiler_system, conduit_id: ["patch_maps"]),
-    )
-    monkeypatch.setattr(
-        SpellbookCreationSystem,
-        "phase_execution_plan_factory",
-        staticmethod(lambda spellbook, scheduler, compiler_system, conduit_id: ["execution_plan"]),
+        "phase_plan_group_factory",
+        staticmethod(lambda spellbook, scheduler, compiler_system, conduit_id: ["plan_group"]),
     )
 
     foundational = SpellbookCreationSystem._run_conduit_foundational_resolution_phases(
@@ -1348,12 +1302,7 @@ def test_run_conduit_foundational_and_plan_resolution_phase_wrappers_register_ex
         "system_validation",
         "change_control",
     }
-    assert set(plan.keys()) >= {
-        "occurrence_plan",
-        "injection_plan",
-        "patch_maps",
-        "execution_plan",
-    }
+    assert set(plan.keys()) >= {"plan_group"}
     assert recorded_scheduler_runs[0][0] == "_run_resolution_phases_for_conduit"
     assert recorded_scheduler_runs[1][0] == "_run_resolution_phases_for_conduit"
 

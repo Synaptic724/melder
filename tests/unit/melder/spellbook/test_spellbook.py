@@ -818,15 +818,19 @@ class DummyPhaseScheduler:
     Contract:
         Captures registered phases and can execute factories.
     """
-    def __init__(self, spellbook, configuration):
+    def __init__(self, spellbook, configuration, workers=1):
         """
         Purpose:
             Initialize the scheduler stub.
         Contract:
             Stores spellbook/configuration and initializes phase registry.
+            Mirrors the persistent-scheduler surface consumed by the
+            creation system: `workers` (chunk fan-out) and `clear_phases()`
+            (per-run registration release).
         Args:
             spellbook: Spellbook under test.
             configuration: Configuration used by the scheduler.
+            workers: Worker count exposed to chunked unit builders.
         Returns:
             None.
         """
@@ -835,6 +839,20 @@ class DummyPhaseScheduler:
         self.phases = {}
         self.cancel_event = types.SimpleNamespace(is_set=False)
         self.cleaned = False
+        self.workers = workers
+        self.phases_cleared = False
+
+    def clear_phases(self):
+        """
+        Purpose:
+            Mirror the persistent scheduler's per-run registration release.
+        Contract:
+            Clears the phase registry and records that a release happened.
+        Returns:
+            None.
+        """
+        self.phases.clear()
+        self.phases_cleared = True
 
     def register_phase(self, name, factory):
         """
@@ -2508,10 +2526,14 @@ def test_phase_factories_build_units_and_label():
     patch_units = SpellbookCreationSystem.phase_patch_maps_factory(sb, scheduler, compiler_system, "cid")
     sys_units = SpellbookCreationSystem.phase_system_validation_factory(sb, scheduler, compiler_system, "cid")
     change_units = SpellbookCreationSystem.phase_change_control_factory(sb, scheduler, compiler_system, "cid")
-    assert req_units[0]["label"] == "requirements:x"
-    assert sym_units[0]["label"] == "symbolic_graph:x"
-    assert loc_units[0]["label"] == "local_frame:x"
-    assert val_units[0]["label"] == "validation:x"
+    # Per-spell phases dispatch as worker-sized chunks now; their labels are
+    # chunk-indexed and the covered spells ride in metadata["spell_ids"].
+    # Lead-spell frame phases keep their spell-id labels.
+    assert req_units[0]["label"] == "requirements:chunk0"
+    assert req_units[0]["metadata"]["spell_ids"] == ["x"]
+    assert sym_units[0]["label"] == "symbolic_graph:chunk0"
+    assert loc_units[0]["label"] == "local_frame:chunk0"
+    assert val_units[0]["label"] == "validation:chunk0"
     assert root_units[0]["label"] == "root_blueprints:x"
     assert occ_units[0]["label"] == "occurrence_plan:x"
     assert inj_units[0]["label"] == "injection_plan:x"
@@ -2557,18 +2579,17 @@ def test_run_resolution_phases_success(monkeypatch):
     sb._spells = {DummySpellIndex(): spell}
     sb._logger = DummySafeLogger()
     results = _run_resolution_phases(sb, "cid")
+    # Fused phase map: 1+2 ride together as requirements_symbolic and the
+    # whole 8-11 sequence rides as plan_group (per-spell fusion deleted the
+    # barriers between those phases).
     assert set(results.keys()) == {
-        "requirements",
-        "symbolic_graph",
+        "requirements_symbolic",
         "local_frame",
         "validation",
         "root_blueprints",
-        "occurrence_plan",
-        "injection_plan",
-        "execution_plan",
-        "patch_maps",
         "system_validation",
         "change_control",
+        "plan_group",
     }
 
 
@@ -2945,12 +2966,14 @@ def test_context_manager_acquires_and_releases_lock():
     sb._lock.release()
 
 
-def test_run_resolution_phases_scheduler_cleanup_failure_logged(monkeypatch):
+def test_run_resolution_phases_scheduler_release_failure_logged(monkeypatch):
     """
     Purpose:
-        Ensure scheduler cleanup failures are swallowed and logged.
+        Ensure per-run registration-release failures are swallowed and logged.
     Contract:
-        SpellbookCreationSystem.run_resolution_phases completes even if scheduler.cleanup fails.
+        SpellbookCreationSystem.run_resolution_phases completes even if the
+        scheduler's `clear_phases` release raises (the persistent scheduler's
+        per-run release replaced the historical per-run cleanup).
     Args:
         monkeypatch: Pytest fixture for patching PhaseScheduler.
     Returns:
@@ -2960,17 +2983,17 @@ def test_run_resolution_phases_scheduler_cleanup_failure_logged(monkeypatch):
     """
     sb = Spellbook()
     sb._spells = {DummySpellIndex(): DummySpell()}
-    class CleanupBoomScheduler(DummyPhaseScheduler):
+    class ReleaseBoomScheduler(DummyPhaseScheduler):
         """
         Purpose:
-            Provide a scheduler stub that fails during cleanup.
+            Provide a scheduler stub that fails during registration release.
         Contract:
-            cleanup raises RuntimeError.
+            clear_phases raises RuntimeError.
         """
-        def cleanup(self):
+        def clear_phases(self):
             """
             Purpose:
-                Simulate cleanup failure.
+                Simulate registration-release failure.
             Contract:
                 Raises RuntimeError unconditionally.
             Raises:
@@ -2978,10 +3001,10 @@ def test_run_resolution_phases_scheduler_cleanup_failure_logged(monkeypatch):
             """
             raise RuntimeError("fail")
 
-    monkeypatch.setattr("melder.aether.spellbook.spellbook.PhaseScheduler", CleanupBoomScheduler)
+    monkeypatch.setattr("melder.aether.spellbook.spellbook.PhaseScheduler", ReleaseBoomScheduler)
     sb._logger = DummySafeLogger()
     results = _run_resolution_phases(sb, "cid")
-    assert "requirements" in results
+    assert "requirements_symbolic" in results
 
 
 # -------------------------
@@ -3254,18 +3277,17 @@ def test_run_resolution_phases_with_multiple_spells():
     sb._spells = {DummySpellIndex(sid="a"): spell1, DummySpellIndex(sid="b"): spell2}
     sb._logger = DummySafeLogger()
     results = _run_resolution_phases(sb, "cid")
+    # Fused phase map: 1+2 ride together as requirements_symbolic and the
+    # whole 8-11 sequence rides as plan_group (per-spell fusion deleted the
+    # barriers between those phases).
     assert set(results.keys()) == {
-        "requirements",
-        "symbolic_graph",
+        "requirements_symbolic",
         "local_frame",
         "validation",
         "root_blueprints",
-        "occurrence_plan",
-        "injection_plan",
-        "execution_plan",
-        "patch_maps",
         "system_validation",
         "change_control",
+        "plan_group",
     }
 
 
@@ -3689,18 +3711,21 @@ def test_cleanup_core_swallows_logger_cleanup_errors():
     assert not hasattr(sb, "_logger")
 
 
-def test_run_resolution_phases_cleans_scheduler_even_on_error(monkeypatch):
+def test_run_resolution_phases_releases_scheduler_registrations_even_on_error(monkeypatch):
     """
     Purpose:
-        Ensure scheduler cleanup runs even when phases fail.
+        Ensure per-run scheduler registrations are released when phases fail.
     Contract:
-        SpellbookCreationSystem.run_resolution_phases raises and still cleans the scheduler.
+        SpellbookCreationSystem.run_resolution_phases raises, releases the
+        run's phase registrations (`clear_phases`), and does NOT clean the
+        persistent Spellbook-owned scheduler (pool teardown happens once at
+        Spellbook cleanup).
     Args:
         monkeypatch: Pytest fixture for patching PhaseScheduler.
     Returns:
         None.
     Raises:
-        AssertionError: If scheduler is not cleaned.
+        AssertionError: If registrations are retained or the pool was torn down.
     """
     class ExplodingScheduler(DummyPhaseScheduler):
         """
@@ -3727,7 +3752,11 @@ def test_run_resolution_phases_cleans_scheduler_even_on_error(monkeypatch):
     monkeypatch.setattr("melder.aether.spellbook.spellbook.PhaseScheduler", lambda *a, **k: sched)
     with pytest.raises(RuntimeError):
         _run_resolution_phases(sb, "cid")
-    assert sched.cleaned is True
+    # Persistent-scheduler contract: a failed run releases its per-run
+    # registrations but does NOT tear down the Spellbook-owned pool; the
+    # scheduler is cleaned exactly once at Spellbook teardown.
+    assert sched.phases_cleared is True
+    assert sched.cleaned is False
 
 
 def test_find_spell_count_reports_len():
@@ -3805,7 +3834,13 @@ def test_phase_factories_metadata_contains_spell_id():
         SpellbookCreationSystem.phase_system_validation_factory(sb, scheduler, compiler_system, "cid"),
         SpellbookCreationSystem.phase_change_control_factory(sb, scheduler, compiler_system, "cid"),
     ):
-        assert units[0]["metadata"]["spell_id"] == "abc"
+        # Chunked per-spell phases carry covered ids in "spell_ids";
+        # lead-spell frame phases keep the single "spell_id" field.
+        metadata = units[0]["metadata"]
+        if "spell_ids" in metadata:
+            assert metadata["spell_ids"] == ["abc"]
+        else:
+            assert metadata["spell_id"] == "abc"
 
 
 def test_context_manager_after_cleanup_raises_on_lock_use():
@@ -4075,10 +4110,16 @@ def test_phase_factories_return_distinct_labels_per_spell():
     s1 = DummySpell(spell_id="a")
     s2 = DummySpell(spell_id="b")
     sb._spells = {DummySpellIndex(sid="a"): s1, DummySpellIndex(sid="b"): s2}
-    scheduler = DummyPhaseScheduler(sb, None)
+    # Two workers force two chunks so per-spell coverage is provable through
+    # the chunked unit shape (one spell per chunk, order preserved).
+    scheduler = DummyPhaseScheduler(sb, None, workers=2)
     compiler_system = SpellCompilerSystem()
     req_units = SpellbookCreationSystem.phase_requirements_factory(sb, scheduler, compiler_system)
-    assert {u["label"] for u in req_units} == {"requirements:a", "requirements:b"}
+    assert {u["label"] for u in req_units} == {
+        "requirements:chunk0",
+        "requirements:chunk1",
+    }
+    assert [u["metadata"]["spell_ids"] for u in req_units] == [["a"], ["b"]]
 
 
 def test_set_policy_state_resets_flags_on_default():
@@ -4742,9 +4783,16 @@ def test_run_resolution_phases_cleans_scheduler_on_success(monkeypatch):
         return sched
     monkeypatch.setattr(spellbook_module, "PhaseScheduler", _make_scheduler)
     results = _run_resolution_phases(sb, "cid")
-    assert "requirements" in results
+    assert "requirements_symbolic" in results
     assert schedulers
-    assert all(sched.cleaned is True for sched in schedulers)
+    # Persistent-scheduler contract under a function-factory patch: the
+    # Spellbook accessor retires (cleans) a live scheduler whenever the
+    # requested class identity differs, so every instance except the last
+    # is cleaned by replacement; the surviving instance keeps its pool and
+    # only releases its per-run registrations.
+    assert all(sched.cleaned is True for sched in schedulers[:-1])
+    assert schedulers[-1].cleaned is False
+    assert schedulers[-1].phases_cleared is True
 
 
 def test_conjure_hooks_fire_in_order(monkeypatch):
