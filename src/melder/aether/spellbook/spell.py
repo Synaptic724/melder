@@ -9,7 +9,6 @@ from typing import (
     Union,
     FrozenSet,
 )
-import ulid
 from threading import RLock
 from types import TracebackType
 
@@ -21,6 +20,7 @@ from melder.aether.conduit.meld.creation_context.creation_context_factory import
 )
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.general_helpers import SpellInputUtils
+from melder.utilities.helpers.ulid_factory import new_ulid
 
 from melder.utilities.synchronization.counter_switch import CounterSwitch
 from melder.aether.spellbook.spell_types.spell_types import SpellType
@@ -298,7 +298,7 @@ class Spell(Cleanable):
         """
         super().__init__()
         self._lock = RLock()
-        self._id: str = str(ulid.ULID())  # Unique internal ID for tracking
+        self._id: str = new_ulid()  # Unique internal ID for tracking
 
         # Spell Data
         self.spell_index: SpellIndex = spell_index

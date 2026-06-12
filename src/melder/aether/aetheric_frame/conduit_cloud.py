@@ -4,9 +4,10 @@ from typing import TYPE_CHECKING, Dict, List, Optional, Tuple, ClassVar
 if TYPE_CHECKING:
     from melder.aether.aetheric_frame.aetheric_frame import AethericFrame
     from melder.aether.conduit.conduit import Conduit
-import ulid
 
 from types import TracebackType
+
+from melder.utilities.helpers.ulid_factory import new_ulid
 
 # Melder imports
 from melder.aether.conduit.conduit_cluster import ConduitCluster
@@ -92,7 +93,7 @@ class ConduitCloud(Cleanable):
         self._conduits: Dict[str, "Conduit"] = conduits
         self._conduit_ids_by_name: Dict[str, str] = conduit_ids_by_name
         self._conduit_clusters: Dict[str, ConduitCluster] = {}
-        self._id: str = str(ulid.ULID())
+        self._id: str = new_ulid()
         self._devops_information_registry: DevopsInformationRegistry = (
             devops_information_registry
         )

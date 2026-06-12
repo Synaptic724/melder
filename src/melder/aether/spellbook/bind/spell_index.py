@@ -1,11 +1,11 @@
 import threading
-import ulid
 from types import TracebackType
 from typing import TYPE_CHECKING, Optional, Dict, Tuple, ClassVar
 
 
 # Melder Imports
 from melder.utilities.general_base.cleanable import Cleanable
+from melder.utilities.helpers.ulid_factory import new_ulid
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 if TYPE_CHECKING:
     from melder.aether.spellbook.spell import Spell
@@ -66,7 +66,7 @@ class SpellIndex(Cleanable):
         """
         super().__init__()
         # The permanent, hashable identity for this key.
-        self._id: str = str(ulid.ULID())
+        self._id: str = new_ulid()
         self._lock: threading.RLock = threading.RLock()
         # The dynamic pointer to the version, which can be updated.
         self._current_id: str = initial_id

@@ -635,9 +635,11 @@ def test_meld_forwards_non_string_spell_name(conduit_lesser: Conduit) -> None:
     result = conduit_lesser.meld(spell_name=123)
 
     assert result == "result"
+    # Delegation contract: `spell` rides positionally end to end; all other
+    # entry modes stay keyword-only.
     conduit_lesser._meld.meld.assert_called_once_with(
+        None,
         spell_name=123,
-        spell=None,
         spellframe=None,
         binding_name=None,
         spell_override=None,
@@ -664,9 +666,11 @@ def test_meld_forwards_non_string_binding_name(conduit_lesser: Conduit) -> None:
     result = conduit_lesser.meld(spell="sha-1", binding_name=5)
 
     assert result == "result"
+    # Delegation contract: `spell` rides positionally end to end; all other
+    # entry modes stay keyword-only.
     conduit_lesser._meld.meld.assert_called_once_with(
+        "sha-1",
         spell_name=None,
-        spell="sha-1",
         spellframe=None,
         binding_name=5,
         spell_override=None,
@@ -698,9 +702,11 @@ def test_meld_delegates_to_meld_instance(conduit_lesser: Conduit) -> None:
         spell_override={"k": "v"},
     )
 
+    # Delegation contract: `spell` rides positionally end to end; all other
+    # entry modes stay keyword-only.
     conduit_lesser._meld.meld.assert_called_once_with(
+        "sha-1",
         spell_name="Spell",
-        spell="sha-1",
         spellframe="frame",
         binding_name="bind",
         spell_override={"k": "v"},

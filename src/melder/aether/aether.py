@@ -2,7 +2,8 @@
 from threading import RLock
 from types import TracebackType
 from typing import TYPE_CHECKING, Optional, Any, Dict, Set, Tuple, ClassVar
-import ulid
+
+from melder.utilities.helpers.ulid_factory import new_ulid
 
 
 # Melder Imports
@@ -104,7 +105,7 @@ class Aether(Cleanable):
         if not Aether._initialized:
             try:
                 super().__init__()
-                self._id: str = str(ulid.ULID())
+                self._id: str = new_ulid()
                 self._configuration: Optional[AetherConfiguration] = None
                 self._configured: bool = False
                 self._activated: bool = False

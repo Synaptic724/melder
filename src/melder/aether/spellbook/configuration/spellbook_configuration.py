@@ -1,10 +1,9 @@
 import threading
 from typing import Any, Callable, ClassVar, Dict, Iterator, List, Tuple, Type
 
-import ulid
-
 
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
+from melder.utilities.helpers.ulid_factory import new_ulid
 
 # Melder imports
 from melder.utilities.general_base.cleanable import Cleanable
@@ -91,7 +90,7 @@ class SpellbookConfiguration(Cleanable):
         """
         # Thread-safe lock for concurrent access
         super().__init__()
-        self._id = str(ulid.ULID())
+        self._id = new_ulid()
         self._lock = threading.RLock()
         self._aether_frame: str = aether_frame
         self._frozen = False

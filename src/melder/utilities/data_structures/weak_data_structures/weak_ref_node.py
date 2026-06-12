@@ -1,4 +1,3 @@
-import ulid
 import weakref
 from typing import Generic, TypeVar, Optional, Callable, List, Any, Literal, overload
 
@@ -6,6 +5,7 @@ from typing import Generic, TypeVar, Optional, Callable, List, Any, Literal, ove
 
 # Melder Imports
 from melder.utilities.custom_exceptions.dead_reference_error import DeadReferenceError
+from melder.utilities.helpers.ulid_factory import new_ulid
 from melder.utilities.general_base.cleanable import Cleanable
 
 _T = TypeVar("_T")
@@ -72,7 +72,7 @@ class WeakRefNode(Cleanable, Generic[_T]):
             TypeError: If the `target` object does not support weak references.
         """
         super().__init__()
-        self._id: str = str(ulid.ULID())
+        self._id: str = new_ulid()
         self._dead: bool = False
         self._on_collect: Optional[_OnCollect] = on_collect
         self._callbacks: List[_OnCollect] = []

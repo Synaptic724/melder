@@ -3,9 +3,9 @@ import types
 from functools import update_wrapper
 from threading import RLock
 from types import SimpleNamespace
-import ulid
 
 from melder.utilities.general_base.cleanable import Cleanable
+from melder.utilities.helpers.ulid_factory import new_ulid
 from typing import (
     Callable,
     Generic,
@@ -122,7 +122,7 @@ class Package(Cleanable, Generic[P, R]):
                             "or Pack.many() for collections.")
 
         self._lock: RLock = RLock()
-        self._id = str(ulid.ULID())
+        self._id = new_ulid()
         normalized = self._normalize_task(func)  # Use helper for validation
 
         # Check if the normalized function is a coroutine and store the flag.

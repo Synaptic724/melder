@@ -2,11 +2,11 @@ import weakref
 import threading
 from typing import Any, Callable, Generic, Iterator, Optional, TypeVar, Union, ClassVar
 from contextlib import contextmanager
-import ulid
 
 
 # Command Ops imports
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
+from melder.utilities.helpers.ulid_factory import new_ulid
 from melder.utilities.general_base.sync import Sync
 
 T = TypeVar("T")
@@ -106,7 +106,7 @@ class SyncWeakRef(Sync, Generic[T]):
             once the target dies.
         """
         self._cleaned: bool = False
-        self._id = str(ulid.ULID())
+        self._id = new_ulid()
         self._on_collect: Optional[_OnCollect] = on_collect
         self._auto_cleanup: bool = auto_cleanup
         self._phantom_fired: bool = False

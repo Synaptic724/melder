@@ -1,4 +1,4 @@
-import ulid
+from melder.utilities.helpers.ulid_factory import new_ulid
 
 
 
@@ -23,7 +23,7 @@ class IDBuilder:
         - Produces a fresh globally sortable ULID string on each call.
         - Used for object identity, not for human-readable names.
         """
-        return str(ulid.ULID())
+        return new_ulid()
 
     # ---------------------------------------------------------------------
     # Object-aware composition helpers

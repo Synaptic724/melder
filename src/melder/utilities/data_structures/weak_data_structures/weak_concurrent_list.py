@@ -1,5 +1,4 @@
 import threading
-import ulid
 from types import TracebackType
 from typing import Any, Callable, Optional, List, TypeVar, Generic, cast, ClassVar
 from collections.abc import Iterable, Iterator
@@ -11,6 +10,7 @@ from functools import reduce as _reduce
 from melder.utilities.custom_exceptions.dead_reference_error import DeadReferenceError
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.data_structures.weak_data_structures.weak_ref_node import WeakRefNode
+from melder.utilities.helpers.ulid_factory import new_ulid
 
 
 _T = TypeVar("_T")
@@ -57,7 +57,7 @@ class WeakConcurrentList(Generic[_T], Cleanable):
                 If True, enables GC callbacks to attempt to prune dead nodes immediately. Defaults to False.
         """
         super().__init__()
-        self._id: str = str(ulid.ULID())
+        self._id: str = new_ulid()
         self._lock: threading.RLock = threading.RLock()
 
         self._list: List[WeakRefNode[_T]] = []
@@ -590,7 +590,7 @@ class WeakConcurrentList(Generic[_T], Cleanable):
         """
         Restore this list from a pickled or deep-copied state payload.
         """
-        self._id = state.get("_id", str(ulid.ULID()))
+        self._id = state.get("_id", new_ulid())
         self._freeze = state.get("_freeze", False)
         self._auto_prune = state.get("_auto_prune", False)
         self._cleaned = state.get("_cleaned", False)

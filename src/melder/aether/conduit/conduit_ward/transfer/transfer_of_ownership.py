@@ -1,5 +1,4 @@
 import threading
-import ulid
 from functools import partial
 from typing import (
     TYPE_CHECKING,
@@ -164,7 +163,7 @@ class TransferOfOwnership(Cleanable):
         self._change_control_manager: ChangeControlManager = change_control_manager
         self._incident_manager: IncidentManager = self._aether._get_incident_manager(self._frame_name)
         self._rollback_actions: List[Callable[[], object]] = []
-        self._op_id: str = str(ulid.ULID())
+        self._op_id: str = new_ulid()
 
 
     def cleanup(self) -> None:
