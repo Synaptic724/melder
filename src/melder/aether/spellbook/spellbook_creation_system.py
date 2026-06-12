@@ -2636,6 +2636,11 @@ class SpellbookCreationSystem(Cleanable):
         Raises:
             RuntimeError: If the spellbook has already been cleaned.
         """
+        # Pass-scoped memo shared by every phase-3 unit in this pass: the
+        # candidate index over the live spell pool is built once and reused
+        # by all per-spell resolutions (same lifetime contract as the
+        # phase-4 `validation_pass_cache` below: dies with the units).
+        resolution_pass_cache: Dict[str, Any] = {}
         return SpellbookCreationSystem._build_per_spell_phase_units(
             spellbook=spellbook,
             scheduler=scheduler,
@@ -2646,6 +2651,7 @@ class SpellbookCreationSystem(Cleanable):
                 spellbook,
                 spell,
                 cancel_event,
+                resolution_pass_cache,
             ),
         )
 

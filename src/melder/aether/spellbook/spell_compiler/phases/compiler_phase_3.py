@@ -249,11 +249,195 @@ class CompilerPhase3:
 
         return False
 
+    @staticmethod
+    def _eq_safe_object(candidate: Any) -> bool:
+        """
+        Return True when equality on `candidate` is provably identity/str-like.
+
+        Purpose:
+            The pass-scoped candidate index replaces `is`/`==` scans with
+            bucket lookups. That substitution is only exact when no bound
+            spell object or spellframe carries a custom `__eq__` that could
+            match objects beyond identity (or plain string equality).
+
+        Contract:
+            - None, str, classes with the default `type.__eq__` metaclass
+              behavior, and instances whose type uses `object.__eq__` are
+              safe.
+            - Anything else (custom `__eq__`, custom metaclass `__eq__`)
+              flags the whole pass as eq-risky and disables the index so the
+              original scan semantics are preserved byte-for-byte.
+        """
+        if candidate is None or isinstance(candidate, str):
+            return True
+        if isinstance(candidate, type):
+            return type(candidate).__eq__ is type.__eq__
+        return type(candidate).__eq__ is object.__eq__
+
+    def _build_candidate_index(self, spellbook: Spellbook) -> Dict[str, Any]:
+        """
+        Build the pass-scoped phase-3 candidate index over the live pool.
+
+        Purpose:
+            Collapse the O(dependencies x spells) annotation scans into
+            bucket lookups. All bucket keys derive from inputs that are
+            pass-invariant (binds are transactional and the resolution pass
+            runs post-bind): spell_name, spellframe, spell object identity,
+            spell_type, binding_name.
+
+        Contract:
+            - Entries are `(pool_position, spell_index, spell_obj)` so any
+              bucket union can be re-sorted into `_spell_id_pool` iteration
+              order, keeping collection-injection order identical to the
+              scan implementation.
+            - `eq_risky` is True when any spell/frame object fails
+              `_eq_safe_object`; consumers must then fall back to scans.
+
+        Returns:
+            Dict[str, Any]: Index buckets plus the `eq_risky` flag.
+        """
+        ann_str: Dict[str, List[Tuple[int, Any, Spell]]] = {}
+        ident: Dict[int, List[Tuple[int, Any, Spell]]] = {}
+        frame_str: Dict[str, List[Tuple[int, Any, Spell]]] = {}
+        frame_ident: Dict[int, List[Tuple[int, Any, Spell]]] = {}
+        frame_none: List[Tuple[int, Any, Spell]] = []
+        eq_risky = False
+
+        position = 0
+        for index, spell_obj in self._iter_all_spells(spellbook):
+            entry = (position, index, spell_obj)
+            position += 1
+
+            bound_object = spell_obj.spell
+            frame = spell_obj.spellframe
+            if not (
+                    self._eq_safe_object(bound_object)
+                    and self._eq_safe_object(frame)
+            ):
+                eq_risky = True
+
+            string_keys = set()
+            spell_name = spell_obj.spell_name
+            if isinstance(spell_name, str):
+                string_keys.add(spell_name)
+            if isinstance(frame, str):
+                string_keys.add(frame)
+                frame_str.setdefault(frame, []).append(entry)
+            elif inspect.isclass(frame):
+                string_keys.add(frame.__name__)
+            for string_key in string_keys:
+                ann_str.setdefault(string_key, []).append(entry)
+
+            if bound_object is not None:
+                ident.setdefault(id(bound_object), []).append(entry)
+            if frame is not None:
+                ident.setdefault(id(frame), []).append(entry)
+                frame_ident.setdefault(id(frame), []).append(entry)
+            else:
+                frame_none.append(entry)
+
+        return {
+            "eq_risky": eq_risky,
+            "ann_str": ann_str,
+            "ident": ident,
+            "frame_str": frame_str,
+            "frame_ident": frame_ident,
+            "frame_none": frame_none,
+        }
+
+    def _get_candidate_index(
+            self,
+            spellbook: Spellbook,
+            resolution_pass_cache: Optional[Dict[str, Any]],
+    ) -> Optional[Dict[str, Any]]:
+        """
+        Return the usable pass-scoped candidate index, building it lazily.
+
+        Contract:
+            - Returns None (scan path) when no pass cache was supplied or
+              when the built index is eq-risky.
+            - Benign build race under multi-worker scheduling: the build is
+              idempotent over pass-invariant inputs and the last writer wins
+              with an equivalent value (same contract as the phase-4
+              binding-graph memo in `validation_pass_cache`).
+        """
+        if resolution_pass_cache is None:
+            return None
+        index = resolution_pass_cache.get("phase3_candidate_index")
+        if index is None:
+            index = self._build_candidate_index(spellbook)
+            resolution_pass_cache["phase3_candidate_index"] = index
+        if index["eq_risky"]:
+            return None
+        return index
+
+    def _indexed_annotation_candidates(
+            self,
+            candidate_index: Dict[str, Any],
+            annotation: Any,
+            *,
+            require_class_spell: bool,
+    ) -> Dict[Any, "Spell"]:
+        """
+        Bucket-lookup equivalent of the `_matches_annotation` scan.
+
+        Contract:
+            - Only called when the index is not eq-risky, where bucket
+              membership provably equals scan membership:
+              string annotations match via spell_name / str-frame /
+              class-frame-name buckets plus identity (a bound str object can
+              identity-match a str annotation); non-string annotations match
+              via spell/frame identity buckets only, because `==` beyond
+              identity requires a custom `__eq__` (excluded by the guard).
+            - `binding_name` filtering is omitted because both annotation
+              resolvers pass None today (scan applies the filter only when a
+              binding name is present).
+            - `require_class_spell=True` applies the same METHOD/LAMBDA
+              exclusions as the scan.
+        """
+        buckets: List[List[Tuple[int, Any, Spell]]] = []
+        if isinstance(annotation, str):
+            string_bucket = candidate_index["ann_str"].get(annotation)
+            if string_bucket is not None:
+                buckets.append(string_bucket)
+        identity_bucket = candidate_index["ident"].get(id(annotation))
+        if identity_bucket is not None:
+            buckets.append(identity_bucket)
+
+        # Replicate the scan's dict semantics exactly: when one SpellIndex
+        # matches through multiple pool entries (version lineages), the scan
+        # keeps the FIRST insertion position but the LAST matching spell
+        # object (dict insert-then-overwrite). Bucket union order is not
+        # global pool order, so track min/max positions explicitly.
+        # collected: id(index) -> [first_pos, value_pos, index, spell_obj]
+        collected: Dict[int, List[Any]] = {}
+        for bucket in buckets:
+            for position, index, spell_obj in bucket:
+                if require_class_spell and spell_obj.spell_type in (
+                        SpellType.METHOD,
+                        SpellType.METHOD_WITH_BINDING_NAME,
+                        SpellType.LAMBDA_METHOD_WITH_BINDING_NAME,
+                ):
+                    continue
+                record = collected.get(id(index))
+                if record is None:
+                    collected[id(index)] = [position, position, index, spell_obj]
+                    continue
+                if position < record[0]:
+                    record[0] = position
+                if position > record[1]:
+                    record[1] = position
+                    record[3] = spell_obj
+
+        ordered = sorted(collected.values(), key=lambda record: record[0])
+        return {record[2]: record[3] for record in ordered}
+
     def _resolve_single_by_annotation(
             self,
             spell: Spell,
             spellbook: Spellbook,
             dep: SpellSymbolicDependency,
+            candidate_index: Optional[Dict[str, Any]] = None,
     ) -> Dict[Any, Spell]:
         """
         Resolve a SINGLE_BY_ANNOTATION dependency to exactly one class/creation
@@ -278,16 +462,22 @@ class CompilerPhase3:
         annotation = self._normalize_annotation_for_matching(dep.target_annotation)
         binding_name: Optional[str] = None
 
-        candidates: Dict[Any, Spell] = {}
-
-        for index, spell_obj in self._iter_all_spells(spellbook):
-            if self._matches_annotation(
-                    annotation,
-                    binding_name,
-                    spell_obj,
-                    require_class_spell=True,
-            ):
-                candidates[index] = spell_obj
+        if candidate_index is not None:
+            candidates = self._indexed_annotation_candidates(
+                candidate_index,
+                annotation,
+                require_class_spell=True,
+            )
+        else:
+            candidates = {}
+            for index, spell_obj in self._iter_all_spells(spellbook):
+                if self._matches_annotation(
+                        annotation,
+                        binding_name,
+                        spell_obj,
+                        require_class_spell=True,
+                ):
+                    candidates[index] = spell_obj
 
         if not candidates:
             raise RuntimeError(
@@ -316,6 +506,7 @@ class CompilerPhase3:
             self,
             spellbook: Spellbook,
             dep: SpellSymbolicDependency,
+            candidate_index: Optional[Dict[str, Any]] = None,
     ) -> Dict[Any, Spell]:
         """
             Resolve a COLLECTION_BY_ANNOTATION dependency to **all** matching
@@ -330,6 +521,13 @@ class CompilerPhase3:
         """
         annotation = self._normalize_annotation_for_matching(dep.target_annotation)
         binding_name: Optional[str] = None
+
+        if candidate_index is not None:
+            return self._indexed_annotation_candidates(
+                candidate_index,
+                annotation,
+                require_class_spell=False,
+            )
 
         candidates: Dict[Any, Spell] = {}
 
@@ -557,6 +755,7 @@ class CompilerPhase3:
             cancellation_event: Optional[CancellationEvent],
             *,
             return_dependencies: bool = False,
+            resolution_pass_cache: Optional[Dict[str, Any]] = None,
     ) -> Union[DirectedAcyclicWorkGraph, Tuple[DirectedAcyclicWorkGraph, List[str]]]:
         """
             Internal helper for Phase 3.
@@ -602,6 +801,13 @@ class CompilerPhase3:
         root_id = self._get_required_current_spell_id(spell)
         dag = DirectedAcyclicWorkGraph()
 
+        # Pass-scoped candidate index (None -> original scan semantics).
+        # Built lazily once per resolution pass; eq-risky pools disable it.
+        candidate_index = self._get_candidate_index(
+            spellbook,
+            resolution_pass_cache,
+        )
+
         # Register the root node first.
         dag.add_node(key=root_id, payload=spell)
 
@@ -619,9 +825,18 @@ class CompilerPhase3:
 
             # Only "normal" DI shapes produce concrete DAG edges for now.
             if di_shape is ParameterDIShape.SINGLE_BY_ANNOTATION:
-                resolved = self._resolve_single_by_annotation(spell, spellbook, dep)
+                resolved = self._resolve_single_by_annotation(
+                    spell,
+                    spellbook,
+                    dep,
+                    candidate_index,
+                )
             elif di_shape is ParameterDIShape.COLLECTION_BY_ANNOTATION:
-                resolved = self._resolve_collection_by_annotation(spellbook, dep)
+                resolved = self._resolve_collection_by_annotation(
+                    spellbook,
+                    dep,
+                    candidate_index,
+                )
             elif di_shape is ParameterDIShape.SPELLMAP_DEFAULT:
                 resolved = self._resolve_spellmap_default(spell, spellbook, dep)
             else:
@@ -675,6 +890,7 @@ class CompilerPhase3:
             spellbook: Spellbook,
             spell_system_states: SpellSystemStates,
             cancel_event: Optional[CancellationEvent] = None,
+            resolution_pass_cache: Optional[Dict[str, Any]] = None,
     ) -> None:
         """
         Phase 3 - Build the local-frame DAG and constructor topology.
@@ -742,6 +958,7 @@ class CompilerPhase3:
             graph=artifact._symbolic_graph,
             cancellation_event=cancel_event,
             return_dependencies=True,
+            resolution_pass_cache=resolution_pass_cache,
         )
         if not isinstance(dag_with_dependencies, tuple):
             raise RuntimeError(

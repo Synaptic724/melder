@@ -210,6 +210,7 @@ class SpellCompiler(Cleanable):
             spellbook: Spellbook,
             spell_system_states: SpellSystemStates,
             cancel_event: Optional[CancellationEvent] = None,
+            resolution_pass_cache: Optional[Dict[str, Any]] = None,
     ) -> None:
         """
             Phase 3 - Build the local-frame DAG and constructor topology.
@@ -259,6 +260,7 @@ class SpellCompiler(Cleanable):
             spellbook,
             spell_system_states,
             cancel_event=cancel_event,
+            resolution_pass_cache=resolution_pass_cache,
         )
 
     def run_phase_validation(
