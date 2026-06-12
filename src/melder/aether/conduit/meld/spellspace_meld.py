@@ -165,6 +165,15 @@ class SpellSpaceMeld(Meld):
               `owner_creations`.
             - Does not depend on the conduit's active spellspace stack once the
               caller already holds this explicit spellspace front door.
+            - Warm id-string melds may take the guarded fast meld door: after
+              one successful normal-lane meld in non-dynamic, no-hooks,
+              no-override posture, later identical requests execute through a
+              memoized `(spell, context, executor, creations)` entry validated
+              per call by live guards (hook state, context-switch state,
+              context identity, validation/resolution flags). Any guard miss
+              falls back to this normal lane and rebuilds the entry on
+              success, so fast-lane results are always identical to
+              normal-lane results.
 
         Raises:
             ValueError:
@@ -184,7 +193,53 @@ class SpellSpaceMeld(Meld):
         """
         # 1) Resolve the spell object from the Spellbook / SpellIndex.
         target_spell: Optional[Spell] = None
+        fast_door_key: Optional[str] = None
         if isinstance(spell, str):
+            if spell_override is None:
+                # Fast meld door: success-only memoized warm lane for id-string
+                # melds. Every guard below is a live read of state maintained by
+                # existing invalidation chokepoints, so a hit has zero staleness
+                # window; any failed guard falls through to the normal lane,
+                # which rebuilds the entry in place after it succeeds. The
+                # captured creations store already encodes the bind-time
+                # existence routing (spellspace-local vs owner-conduit).
+                fast_entry = self._fast_meld_doors.get(spell)
+                if fast_entry is not None:
+                    (
+                        door_spell,
+                        captured_context,
+                        fast_executor,
+                        fast_creations,
+                    ) = fast_entry
+                    try:
+                        # Guard ladder (live reads only):
+                        # - meld-hooks map read live because it is shared by
+                        #   reference and may be mutated in place
+                        # - spell hook gate, context-switch state, and context
+                        #   identity cover spell-level invalidation (all
+                        #   context replacement funnels through
+                        #   Spell._cleanup_creation_context)
+                        # - validation/resolution flags cover RiskManager and
+                        #   deferred-resolution gating
+                        fast_lane_open = (
+                            not self._meld_hooks
+                            and not door_spell._hooks_enabled
+                            and door_spell._creation_context_switch.fast_state >= 2
+                            and door_spell._creation_context is captured_context
+                            and not self._spellbook._spellbook_validation_required
+                            and not door_spell.resolution_required
+                        )
+                    except AttributeError:
+                        # Lifecycle-ambiguous read: a cleaned spell/switch has
+                        # deleted slots. Treat as a guard miss so the normal
+                        # lane produces the canonical error or rebuilds.
+                        fast_lane_open = False
+                    if fast_lane_open:
+                        instance = fast_executor(fast_creations)[0]
+                        if self._spellbook._cache_emit_required:
+                            self._spellbook._emit_cache_file_if_required()
+                        return instance
+            fast_door_key = spell
             # Hot path: inline the dominant spell-id-pool hit so warm id-string
             # melds resolve with one dict read instead of one helper frame.
             target_spell = self._spell_id_pool.get(spell)
@@ -253,15 +308,33 @@ class SpellSpaceMeld(Meld):
             # Hot path: in non-dynamic mode dispatch the phase-11 runtime door
             # directly so the no-hooks lane skips the `execute_no_hooks`
             # wrapper frame. The executor reference is read through the live
-            # context per call and is never cached on this door, so a
-            # recompiled/cleaned context can never leak a stale executor.
+            # context on this normal-lane pass; the only place it is retained
+            # is the guarded fast-door entry built below, whose per-call
+            # context-identity guard prevents a recompiled/cleaned context
+            # from ever serving a stale executor.
             if creation_context._dynamic_environment:
                 instance = creation_context.execute_no_hooks(
                     creations,
                     override_map,
                 )
             elif override_map is None:
-                instance = creation_context._no_overrides_executor(creations)[0]
+                no_overrides_executor = creation_context._no_overrides_executor
+                instance = no_overrides_executor(creations)[0]
+                if fast_door_key is not None:
+                    # Success-only fast-door memoization. This arm is exactly
+                    # the fast-lane posture (non-dynamic, no hooks, no
+                    # override payload), and execution above just succeeded,
+                    # so the entry is built from proven-live collaborators.
+                    # The captured `creations` already encodes this spell's
+                    # bind-time existence routing for this spellspace door.
+                    # Reaching here with an existing entry means a guard
+                    # missed; the write below is the in-place rebuild.
+                    self._fast_meld_doors[fast_door_key] = (
+                        target_spell,
+                        creation_context,
+                        no_overrides_executor,
+                        creations,
+                    )
             else:
                 instance = creation_context._overrides_executor(
                     creations,

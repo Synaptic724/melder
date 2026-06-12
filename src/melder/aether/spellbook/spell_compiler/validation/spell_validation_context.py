@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Optional, List, ClassVar
+from typing import TYPE_CHECKING, Any, Dict, Optional, List, ClassVar
 
 if TYPE_CHECKING:
     from melder.aether.spellbook.spell import Spell
@@ -48,6 +48,13 @@ class SpellValidationContext(Cleanable):
         Optional cancellation token for long-running validations.
     issues:
         Shared, mutable list that all strategies append issues into.
+    validation_pass_cache:
+        Optional dict shared by every per-spell validation in one scheduler
+        pass. Strategies may memoize pass-invariant artifacts here (for
+        example the frame-wide binding graph). Entries must be treated as
+        immutable once published; the dict's lifetime is exactly one pass,
+        so no invalidation protocol exists or is needed. None on single-spell
+        validation paths, where strategies fall back to local computation.
 
     Contract:
     - Holds one spell plus the validation artifacts already produced for that
@@ -66,6 +73,7 @@ class SpellValidationContext(Cleanable):
         "resolution_frame",
         "cancel_event",
         "issues",
+        "validation_pass_cache",
         "_cleanup_artifacts",
     ]
 
@@ -79,6 +87,7 @@ class SpellValidationContext(Cleanable):
             cancel_event: Optional[CancellationEvent],
             issues: List['SpellValidationIssue'],
             cleanup_artifacts: bool = True,
+            validation_pass_cache: Optional[Dict[str, Any]] = None,
     ) -> None:
         """
         Initialize one per-spell validation context.
@@ -94,6 +103,9 @@ class SpellValidationContext(Cleanable):
             issues: Shared issue list that strategies append into.
             cleanup_artifacts: True when context cleanup should also clean owned
                 artifact objects.
+            validation_pass_cache: Optional pass-scoped memo dict shared across
+                all spells validated in one scheduler pass; None on
+                single-spell paths.
         Contract:
             - `spell` and `issues` are required.
             - Holds references only; it does not clone the incoming artifacts.
@@ -117,6 +129,7 @@ class SpellValidationContext(Cleanable):
         # NOTE: this list is shared with the caller (SpellValidationSystem);
         # cleanup must not mutate the underlying list contents.
         self.issues: List['SpellValidationIssue'] = issues
+        self.validation_pass_cache: Optional[Dict[str, Any]] = validation_pass_cache
         self._cleanup_artifacts: bool = cleanup_artifacts
 
     def cleanup(self) -> None:
@@ -147,6 +160,7 @@ class SpellValidationContext(Cleanable):
         del self.symbolic_graph
         del self.resolution_frame
         del self.cancel_event
+        del self.validation_pass_cache
 
         # Detach our reference to the shared issues list without mutating it.
         del self.issues

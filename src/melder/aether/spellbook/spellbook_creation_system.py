@@ -2549,6 +2549,11 @@ class SpellbookCreationSystem(Cleanable):
             Build phase-4 validation units for all local spells.
         Contract:
             - Produces one unit per local spell.
+            - Creates one pass-scoped memo dict shared by every unit in this
+              pass so strategies can reuse pass-invariant artifacts (for
+              example the frame-wide binding graph) instead of rebuilding them
+              per spell. The dict dies with the units, so its lifetime IS the
+              pass and no invalidation protocol exists.
         Args:
             spellbook: Owning Spellbook instance.
             scheduler: Scheduler creating units of work.
@@ -2558,6 +2563,7 @@ class SpellbookCreationSystem(Cleanable):
         Raises:
             RuntimeError: If the spellbook has already been cleaned.
         """
+        validation_pass_cache: Dict[str, Any] = {}
         return SpellbookCreationSystem._build_per_spell_phase_units(
             spellbook=spellbook,
             scheduler=scheduler,
@@ -2568,6 +2574,7 @@ class SpellbookCreationSystem(Cleanable):
                 spellbook,
                 spell,
                 cancel_event,
+                validation_pass_cache,
             ),
         )
 

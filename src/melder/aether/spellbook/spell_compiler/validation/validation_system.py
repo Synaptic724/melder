@@ -1,5 +1,5 @@
 from threading import RLock
-from typing import TYPE_CHECKING, Dict, List, Optional, ClassVar
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, ClassVar
 
 if TYPE_CHECKING:
     from melder.aether.spellbook.spell import Spell
@@ -247,6 +247,7 @@ class SpellValidationSystem(Cleanable):
             symbolic_graph: Optional[SpellSymbolicGraph],
             resolution_frame: Optional[SpellResolutionFrame],
             cancel_event: Optional[CancellationEvent] = None,
+            validation_pass_cache: Optional[Dict[str, Any]] = None,
     ) -> SpellValidationResult:
         """
         Validate a single spell using all registered strategies.
@@ -264,6 +265,9 @@ class SpellValidationSystem(Cleanable):
             symbolic_graph: Phase 2 symbolic graph, if available.
             resolution_frame: Phase 3 resolution frame, if available.
             cancel_event: Optional cancellation token.
+            validation_pass_cache: Optional pass-scoped memo dict shared across
+                all spells validated in one scheduler pass; strategies use it
+                to reuse pass-invariant artifacts. None on single-spell paths.
         Returns:
             SpellValidationResult: Aggregated issues for the spell.
         Raises:
@@ -290,6 +294,7 @@ class SpellValidationSystem(Cleanable):
             cancel_event=cancel_event,
             issues=issues,
             cleanup_artifacts=False,
+            validation_pass_cache=validation_pass_cache,
         )
 
         # Snapshot strategies under the lock, then run them.

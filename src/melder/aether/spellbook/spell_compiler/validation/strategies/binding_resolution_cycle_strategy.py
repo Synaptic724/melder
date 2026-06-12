@@ -1,7 +1,7 @@
 from typing import TYPE_CHECKING, Dict, List, Optional, Set, Tuple
 
 if TYPE_CHECKING:
-    from melder.aether.spellbook.spell import Spell
+    from melder.aether.spellbook.spellbook import Spellbook
     from melder.aether.spellbook.spell_compiler.spell_requirements_finder.spell_parameter_requirements import (
         SpellParameterRequirement,
     )
@@ -58,6 +58,12 @@ class BindingResolutionCycleStrategy(SpellValidationStrategy):
             Surface resolution loops that can cause re-entrancy during meld.
         Contract:
             - Scans available requirements to build a binding-key graph.
+            - The graph is pass-invariant (a pure function of the pool's
+              phase-1 requirements, which are frozen by the phase barrier
+              before phase 4 starts), so it is built once per validation pass
+              through `context.validation_pass_cache` and reused read-only by
+              every spell validated in that pass. Single-spell paths carry no
+              pass cache and build locally.
             - Emits at least one diagnostic per reachable cycle.
             - Skips validation if the spellbook is unavailable.
         Args:
@@ -67,6 +73,10 @@ class BindingResolutionCycleStrategy(SpellValidationStrategy):
         Raises:
             OperationCancelledError:
                 If ``cancel_event`` is set during scanning or traversal.
+        Threading:
+            - Pass-cache publication is a single idempotent dict-key write;
+              concurrent phase-4 workers may build the graph redundantly but
+              always publish equal values, so the race is benign.
         """
         self.check_cleaned()
 
@@ -79,36 +89,18 @@ class BindingResolutionCycleStrategy(SpellValidationStrategy):
         if spell is None or spellbook is None:
             return
 
-        root_key = self._spell_key(spell)
+        root_key = spell.key
 
-        binding_graph: Dict[Tuple[str, str], Set[Tuple[str, str]]] = {}
-
-        for spell_id, spell_instance in spellbook._spell_id_pool.items():
-            if cancel_event is not None and cancel_event.is_set:
-                cancel_event.throw_if_set()
-
-            requirements = spell_instance.requirements
-            if requirements is None:
-                continue
-            if requirements.cleaned:
-                continue
-            try:
-                parameters = requirements.parameters
-            except RuntimeError:
-                continue
-
-            spell_key = self._spell_key(spell_instance)
-            adjacency: Optional[Set[Tuple[str, str]]] = None
-            for param in parameters:
-                target_key = self._binding_key_for_requirement(param)
-                if target_key is None:
-                    continue
-                if adjacency is None:
-                    adjacency = binding_graph.get(spell_key)
-                    if adjacency is None:
-                        adjacency = set()
-                        binding_graph[spell_key] = adjacency
-                adjacency.add(target_key)
+        pass_cache = context.validation_pass_cache
+        binding_graph: Optional[
+            Dict[Tuple[str, str], Set[Tuple[str, str]]]
+        ] = None
+        if pass_cache is not None:
+            binding_graph = pass_cache.get("binding_resolution_graph")
+        if binding_graph is None:
+            binding_graph = self._build_binding_graph(spellbook, cancel_event)
+            if pass_cache is not None:
+                pass_cache["binding_resolution_graph"] = binding_graph
 
         cycles = self._detect_cycles(root_key, binding_graph, cancel_event)
         if not cycles:
@@ -122,7 +114,7 @@ class BindingResolutionCycleStrategy(SpellValidationStrategy):
         for spell_id, spell_instance in spellbook._spell_id_pool.items():
             if cancel_event is not None and cancel_event.is_set:
                 cancel_event.throw_if_set()
-            spell_key = self._spell_key(spell_instance)
+            spell_key = spell_instance.key
             if spell_key not in cycle_key_set:
                 continue
             existing = binding_to_spells.get(spell_key)
@@ -153,6 +145,65 @@ class BindingResolutionCycleStrategy(SpellValidationStrategy):
                     },
                 )
             )
+
+    def _build_binding_graph(
+        self,
+        spellbook: Spellbook,
+        cancel_event: Optional[CancellationEvent],
+    ) -> Dict[Tuple[str, str], Set[Tuple[str, str]]]:
+        """
+        Build the frame-wide binding-key adjacency graph from pool truth.
+
+        Purpose:
+            Model every spell's DI requirements as binding-key edges so cycle
+            traversal can run per spell against one shared structure.
+        Contract:
+            - Pure read over `spellbook._spell_id_pool` and each spell's
+              phase-1 requirements; mutates nothing on spells or spellbook.
+            - Spell node keys come from `Spell.key`, the bind-time normalized
+              canonical key, so no per-build re-normalization happens here.
+            - The result is treated as immutable by all consumers; pass-cache
+              reuse depends on that.
+        Args:
+            spellbook: Owning Spellbook whose local pool should be modeled.
+            cancel_event: Optional cancellation signal checked per spell.
+        Returns:
+            Dict[Tuple[str, str], Set[Tuple[str, str]]]:
+                Binding-key adjacency map.
+        Raises:
+            OperationCancelledError:
+                If ``cancel_event`` is set during the pool sweep.
+        """
+        binding_graph: Dict[Tuple[str, str], Set[Tuple[str, str]]] = {}
+
+        for spell_id, spell_instance in spellbook._spell_id_pool.items():
+            if cancel_event is not None and cancel_event.is_set:
+                cancel_event.throw_if_set()
+
+            requirements = spell_instance.requirements
+            if requirements is None:
+                continue
+            if requirements.cleaned:
+                continue
+            try:
+                parameters = requirements.parameters
+            except RuntimeError:
+                continue
+
+            spell_key = spell_instance.key
+            adjacency: Optional[Set[Tuple[str, str]]] = None
+            for param in parameters:
+                target_key = self._binding_key_for_requirement(param)
+                if target_key is None:
+                    continue
+                if adjacency is None:
+                    adjacency = binding_graph.get(spell_key)
+                    if adjacency is None:
+                        adjacency = set()
+                        binding_graph[spell_key] = adjacency
+                adjacency.add(target_key)
+
+        return binding_graph
 
     def _binding_key_for_requirement(
         self,
@@ -201,21 +252,6 @@ class BindingResolutionCycleStrategy(SpellValidationStrategy):
             return contract.canonical_key
 
         return None
-
-    def _spell_key(self, spell: Spell) -> Tuple[str, str]:
-        """
-        Resolve the canonical binding key for a spell-like object.
-
-        Purpose:
-            Resolve one live spell into its canonical binding key.
-        Contract:
-            - Uses normalized frame/name/binding parts from the spell surface.
-        """
-        return SpellInputUtils.make_spell_key_from_parts(
-            spellframe=spell.spellframe,
-            spell_name=spell.spell_name,
-            binding_name=spell.binding_name,
-        )
 
     def _detect_cycles(
         self,

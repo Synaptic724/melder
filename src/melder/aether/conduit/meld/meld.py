@@ -38,6 +38,7 @@ if TYPE_CHECKING:
     from melder.aether.aetheric_frame.dev_ops.change_control_manager.change_control_manager import ChangeControlManager
     from melder.aether.aetheric_frame.dev_ops.spell_system_states.conduit_resolution_state import ConduitResolutionState
     from melder.aether.conduit.creations.creations import Creations
+    from melder.aether.conduit.meld.creation_context.creation_context import CreationContext
 
 class Meld(Cleanable, ABC):
     """
@@ -62,6 +63,13 @@ class Meld(Cleanable, ABC):
     - run pre-cast, activation, post-cast, and meld-level hooks when present
     - own the foundation runtime compiler system surface for later dynamic
       recompilation ownership work
+    - own the per-door fast meld door registry (`_fast_meld_doors`): a plain
+      success-only memoization dict, keyed by spell-id string, mapping to
+      `(spell, captured_context, no_overrides_executor, creations_store)`
+      tuples used by the concrete doors' guarded warm fast lane. Cardinality
+      is bounded by construction because entries are inserted only after a
+      successful normal-lane meld, so the keyspace is the bound-spell
+      registry, not caller input. The registry is deleted in `cleanup()`.
 
     High-level activation flow:
     1. Resolve the target spell from the requested identity inputs.
@@ -90,6 +98,7 @@ class Meld(Cleanable, ABC):
         "_change_control_manager_by_frame",
         "_meld_hooks",
         "_spell_compiler_system",
+        "_fast_meld_doors",
     ]
     def __init__(
             self,
@@ -185,6 +194,20 @@ class Meld(Cleanable, ABC):
             meld_hooks if meld_hooks is not None else {}
         )
 
+        # Fast meld door registry: success-only memoization of warm id-string
+        # melds. Entries are (spell, captured_context, no_overrides_executor,
+        # creations_store) tuples built by the concrete doors only after one
+        # full normal-lane meld succeeded for that spell id, and validated per
+        # hit by a live guard ladder (context identity, validation/resolution
+        # flags, hook state). Plain dict on purpose: per-op dict atomicity
+        # covers the access pattern, racing first-builds converge
+        # last-write-wins, and cardinality is registry-bounded by the
+        # success-only insertion rule.
+        self._fast_meld_doors: Dict[
+            str,
+            Tuple[Spell, CreationContext, Callable[..., Any], Creations],
+        ] = {}
+
     def cleanup(self) -> None:
         """
         Permanently retire the shared meld runtime core.
@@ -192,8 +215,9 @@ class Meld(Cleanable, ABC):
         Contract:
             - Idempotent: repeated calls are safe.
             - Thread-safe: guarded by the internal lock.
-            - Clears spellbook map references, front-door caches, change-control
-              manager cache, and optional compiler-system helper.
+            - Clears spellbook map references, front-door caches (including the
+              fast meld door registry), change-control manager cache, and
+              optional compiler-system helper.
             - Does not cleanup caller-owned creations directly; those belong to
               the concrete subclass or the owning conduit/spellspace surface.
             - After cleanup, this meld instance no longer exposes any live
@@ -227,6 +251,9 @@ class Meld(Cleanable, ABC):
             del self._input_resolution_cache
             del self._max_resolution_cache_size
             del self._change_control_manager_by_frame
+            # Fast-door entries hold spell/context/executor/creations refs;
+            # dropping the dict here is the owner-driven release point.
+            del self._fast_meld_doors
             if self._spell_compiler_system is not None:
                 self._spell_compiler_system.cleanup()
             del self._spell_compiler_system

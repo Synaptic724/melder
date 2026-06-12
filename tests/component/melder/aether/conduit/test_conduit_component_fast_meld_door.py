@@ -1,0 +1,511 @@
+from __future__ import annotations
+
+import pytest
+from melder import Aether, Conduit
+from melder.aether.spellbook.configuration.spellbook_configuration import SpellbookConfiguration
+from melder.aether.spellbook.existence.existence import Existence
+from melder.aether.spellbook.spellbook import Spellbook
+from tests._frame_posture_test_support import configure_frame_posture_for_spellbook_configuration
+
+
+@pytest.fixture(autouse=True)
+def reset_aether_singleton_for_component_fast_meld_door() -> None:
+    """
+    Purpose:
+        Ensure fast-meld-door component tests start with a clean Aether singleton.
+    Contract:
+        - Resets the Aether singleton before the test runs.
+        - Rebinds Spellbook._aether and Conduit._aether to the new instance.
+        - Resets the singleton again after the test for isolation.
+    Returns:
+        None.
+    """
+    Aether._reset_singleton_for_tests()
+    aether = Aether()
+    Spellbook._aether = aether
+    Conduit._aether = aether
+    yield
+    Aether._reset_singleton_for_tests()
+    aether = Aether()
+    Spellbook._aether = aether
+    Conduit._aether = aether
+
+
+def _make_spellbook() -> Spellbook:
+    """
+    Purpose:
+        Provide a non-dynamic Spellbook configured for fast-door tests.
+    Contract:
+        - Non-dynamic posture, which is the only posture the fast lane builds in.
+        - phase_scheduler_workers_per_spellbook is set to 1 for determinism.
+    Returns:
+        Spellbook: Configured Spellbook instance.
+    """
+    configuration = SpellbookConfiguration()
+    configuration.load_default_dictionary()
+    configure_frame_posture_for_spellbook_configuration(
+        configuration,
+        dynamic=False,
+    )
+    configuration.set_property("phase_scheduler_workers_per_spellbook", 1)
+    return Spellbook(configuration=configuration)
+
+
+class _UniquePerConduitService:
+    """
+    Purpose:
+        Service type for unique_per_conduit fast-door tests.
+    Contract:
+        - Instances are distinguishable by identity.
+    """
+
+    def __init__(self) -> None:
+        """
+        Purpose:
+            Initialize an identity marker.
+        Contract:
+            - marker is unique per instance.
+        Returns:
+            None.
+        """
+        self.marker = object()
+
+
+class _SharedUniqueService:
+    """
+    Purpose:
+        Service type for shared `unique` fast-door tests.
+    Contract:
+        - Instances are distinguishable by identity.
+    """
+
+    def __init__(self) -> None:
+        """
+        Purpose:
+            Initialize an identity marker.
+        Contract:
+            - marker is unique per instance.
+        Returns:
+            None.
+        """
+        self.marker = object()
+
+
+class _ManyService:
+    """
+    Purpose:
+        Service type for Existence.many fast-door tests.
+    Contract:
+        - Instances are distinguishable by identity.
+    """
+
+    def __init__(self) -> None:
+        """
+        Purpose:
+            Initialize an identity marker.
+        Contract:
+            - marker is unique per instance.
+        Returns:
+            None.
+        """
+        self.marker = object()
+
+
+class _SpaceMarkerService:
+    """
+    Purpose:
+        Service type for unique_per_spell_space fast-door tests.
+    Contract:
+        - Instances are distinguishable by identity.
+    """
+
+    def __init__(self) -> None:
+        """
+        Purpose:
+            Initialize an identity marker.
+        Contract:
+            - marker is unique per instance.
+        Returns:
+            None.
+        """
+        self.marker = object()
+
+
+class _OverridableService:
+    """
+    Purpose:
+        Service type proving override payloads bypass the fast lane.
+    Contract:
+        - `value` records the constructor input observable from tests.
+    """
+
+    def __init__(self, value: int = 0) -> None:
+        """
+        Purpose:
+            Record the constructor input for override-path assertions.
+        Contract:
+            - Defaults to 0 when melded without an override payload.
+        Args:
+            value: Optional override-supplied constructor input.
+        Returns:
+            None.
+        """
+        self.value = value
+
+
+def _poison_entry(meld: object, spell_id: str) -> None:
+    """
+    Purpose:
+        Replace one fast-door entry's executor with a callable that raises.
+    Contract:
+        - The poisoned executor raises AssertionError if the fast lane
+          executes the entry, making lane hits and bypasses observable.
+        - All other tuple fields are preserved so the guard ladder evaluates
+          against the genuine captured collaborators.
+    Args:
+        meld: Meld front door owning the fast-door registry.
+        spell_id: Spell id key whose entry should be poisoned.
+    Returns:
+        None.
+    """
+    door_spell, captured_context, _executor, creations_store = (
+        meld._fast_meld_doors[spell_id]
+    )
+
+    def _poisoned_executor(_creations: object) -> tuple:
+        raise AssertionError("fast lane executed a poisoned entry")
+
+    meld._fast_meld_doors[spell_id] = (
+        door_spell,
+        captured_context,
+        _poisoned_executor,
+        creations_store,
+    )
+
+
+def test_component_fast_door_builds_entry_and_serves_warm_hits() -> None:
+    """
+    Purpose:
+        Verify first id-string meld builds an entry and later melds hit it.
+    Contract:
+        - First meld populates `_fast_meld_doors[spell_id]`.
+        - Second meld returns the reuse-correct instance.
+        - A poisoned entry raises on the next meld, proving the warm call
+          actually executed through the fast lane.
+    """
+    spellbook = _make_spellbook()
+    spell_id = spellbook.bind(
+        spell=_UniquePerConduitService,
+        existence=Existence.unique_per_conduit,
+        permissions="create",
+    )
+    conduit = spellbook.conjure(name="root")
+    try:
+        first = conduit.meld(spell=spell_id)
+        assert spell_id in conduit._meld._fast_meld_doors
+        second = conduit.meld(spell=spell_id)
+        assert second is first
+
+        _poison_entry(conduit._meld, spell_id)
+        with pytest.raises(AssertionError, match="poisoned"):
+            conduit.meld(spell=spell_id)
+    finally:
+        conduit.permanent_cleanup()
+
+
+def test_component_fast_door_preserves_reuse_semantics_per_existence() -> None:
+    """
+    Purpose:
+        Verify fast-lane results match normal-lane reuse semantics.
+    Contract:
+        - unique / unique_per_conduit: warm melds return the same instance.
+        - many: warm melds return a new instance per call.
+    """
+    spellbook = _make_spellbook()
+    unique_id = spellbook.bind(
+        spell=_SharedUniqueService,
+        existence=Existence.unique,
+        permissions="create",
+    )
+    per_conduit_id = spellbook.bind(
+        spell=_UniquePerConduitService,
+        existence=Existence.unique_per_conduit,
+        permissions="create",
+    )
+    many_id = spellbook.bind(
+        spell=_ManyService,
+        existence=Existence.many,
+        permissions="create",
+    )
+    conduit = spellbook.conjure(name="root")
+    try:
+        unique_first = conduit.meld(spell=unique_id)
+        per_conduit_first = conduit.meld(spell=per_conduit_id)
+        many_first = conduit.meld(spell=many_id)
+
+        # Warm passes ride the fast lane for all three routes.
+        assert conduit.meld(spell=unique_id) is unique_first
+        assert conduit.meld(spell=per_conduit_id) is per_conduit_first
+        many_second = conduit.meld(spell=many_id)
+        assert many_second is not many_first
+        assert isinstance(many_second, _ManyService)
+    finally:
+        conduit.permanent_cleanup()
+
+
+def test_component_fast_door_skipped_for_override_payloads() -> None:
+    """
+    Purpose:
+        Verify caller override payloads always take the normal lane.
+    Contract:
+        - Override melds construct with the override payload applied.
+        - A poisoned fast-door entry is not executed by an override meld.
+    """
+    spellbook = _make_spellbook()
+    spell_id = spellbook.bind(
+        spell=_OverridableService,
+        existence=Existence.many,
+        permissions="create",
+    )
+    conduit = spellbook.conjure(name="root")
+    try:
+        plain = conduit.meld(spell=spell_id)
+        assert plain.value == 0
+        assert spell_id in conduit._meld._fast_meld_doors
+
+        _poison_entry(conduit._meld, spell_id)
+        overridden = conduit.meld(spell=spell_id, spell_override={"value": 7})
+        assert overridden.value == 7
+    finally:
+        conduit.permanent_cleanup()
+
+
+def test_component_fast_door_guard_trips_on_validation_required() -> None:
+    """
+    Purpose:
+        Verify the validation-required flag bypasses the fast lane.
+    Contract:
+        - With `_spellbook_validation_required` True, a poisoned entry is not
+          executed and the normal lane serves a correct instance.
+        - The normal-lane pass rebuilds the entry in place (poison replaced).
+    """
+    spellbook = _make_spellbook()
+    spell_id = spellbook.bind(
+        spell=_UniquePerConduitService,
+        existence=Existence.unique_per_conduit,
+        permissions="create",
+    )
+    conduit = spellbook.conjure(name="root")
+    try:
+        first = conduit.meld(spell=spell_id)
+        _poison_entry(conduit._meld, spell_id)
+
+        spellbook._set_spellbook_validation_required(True)
+        bypassed = conduit.meld(spell=spell_id)
+        assert bypassed is first
+
+        # The normal-lane pass replaced the poisoned entry; once validation
+        # relaxes, the rebuilt entry serves the fast lane again.
+        spellbook._set_spellbook_validation_required(False)
+        assert conduit.meld(spell=spell_id) is first
+    finally:
+        conduit.permanent_cleanup()
+
+
+def test_component_fast_door_guard_trips_on_spell_hooks() -> None:
+    """
+    Purpose:
+        Verify spell-level hooks bypass the fast lane so hooks always fire.
+    Contract:
+        - After hooks attach, a poisoned entry is not executed and the
+          pre-cast hook fires on the hooks lane.
+        - After hooks detach, the fast lane serves again.
+    """
+    spellbook = _make_spellbook()
+    spell_id = spellbook.bind(
+        spell=_UniquePerConduitService,
+        existence=Existence.unique_per_conduit,
+        permissions="create",
+    )
+    conduit = spellbook.conjure(name="root")
+    try:
+        first = conduit.meld(spell=spell_id)
+        _poison_entry(conduit._meld, spell_id)
+
+        hook_calls: list[str] = []
+        spell = spellbook._spell_id_pool[spell_id]
+        spell._set_hooks(pre_hooks=[lambda: hook_calls.append("pre")])
+
+        hooked = conduit.meld(spell=spell_id)
+        assert hooked is first
+        assert hook_calls == ["pre"]
+
+        # Detach hooks: the previously captured entry is genuinely valid
+        # again (nothing about the context changed), so the fast lane may
+        # serve it. Restore a real entry first by removing the poison via one
+        # normal-lane rebuild trigger.
+        spell._set_hooks(pre_hooks=[])
+        del conduit._meld._fast_meld_doors[spell_id]
+        rebuilt = conduit.meld(spell=spell_id)
+        assert rebuilt is first
+        assert conduit.meld(spell=spell_id) is first
+    finally:
+        conduit.permanent_cleanup()
+
+
+def test_component_fast_door_guard_trips_on_meld_hooks_in_place_mutation() -> None:
+    """
+    Purpose:
+        Verify in-place meld-hook map mutation bypasses the fast lane.
+    Contract:
+        - Mutating the shared hooks map without calling `set_meld_hooks` is
+          observed by the live guard read; the poisoned entry is not executed
+          and the meld-level hook fires.
+        - This pins the design decision that replaced the door change counter
+          with a live `not self._meld_hooks` read.
+    """
+    spellbook = _make_spellbook()
+    spell_id = spellbook.bind(
+        spell=_UniquePerConduitService,
+        existence=Existence.unique_per_conduit,
+        permissions="create",
+    )
+    conduit = spellbook.conjure(name="root")
+    try:
+        first = conduit.meld(spell=spell_id)
+        _poison_entry(conduit._meld, spell_id)
+
+        hook_calls: list[object] = []
+        meld = conduit._meld
+        if meld._meld_hooks is None:
+            meld._meld_hooks = {}
+        # In-place mutation, deliberately not via set_meld_hooks.
+        meld._meld_hooks["on_meld_pre_resolve"] = [
+            lambda target: hook_calls.append(target)
+        ]
+
+        hooked = conduit.meld(spell=spell_id)
+        assert hooked is first
+        assert len(hook_calls) == 1
+    finally:
+        conduit.permanent_cleanup()
+
+
+def test_component_fast_door_guard_trips_on_context_invalidation() -> None:
+    """
+    Purpose:
+        Verify context invalidation bypasses and rebuilds the fast lane.
+    Contract:
+        - `Spell._cleanup_creation_context()` is the funnel chokepoint for all
+          context replacement; after it runs, a poisoned entry is not
+          executed.
+        - The normal lane rebuilds the context and replaces the entry; warm
+          hits resume against the new context.
+    """
+    spellbook = _make_spellbook()
+    spell_id = spellbook.bind(
+        spell=_UniquePerConduitService,
+        existence=Existence.unique_per_conduit,
+        permissions="create",
+    )
+    conduit = spellbook.conjure(name="root")
+    try:
+        first = conduit.meld(spell=spell_id)
+        _poison_entry(conduit._meld, spell_id)
+
+        spell = spellbook._spell_id_pool[spell_id]
+        spell._cleanup_creation_context()
+
+        rebuilt = conduit.meld(spell=spell_id)
+        assert rebuilt is first
+
+        # Entry was replaced in place by the normal-lane pass: a warm hit now
+        # executes the rebuilt executor (poison is gone).
+        assert conduit.meld(spell=spell_id) is first
+        entry = conduit._meld._fast_meld_doors[spell_id]
+        assert entry[1] is spell._creation_context
+    finally:
+        conduit.permanent_cleanup()
+
+
+def test_component_fast_door_mutation_override_requires_dynamic_pin() -> None:
+    """
+    Purpose:
+        Pin the posture wall that excludes mutation overrides from the lane.
+    Contract:
+        - `apply_mutation_override` raises RuntimeError on a spell owned by a
+          non-dynamic conduit, so a non-dynamic fast door can never observe a
+          non-None `_mutation_override`.
+    """
+    spellbook = _make_spellbook()
+    spell_id = spellbook.bind(
+        spell=_UniquePerConduitService,
+        existence=Existence.unique_per_conduit,
+        permissions="create",
+    )
+    conduit = spellbook.conjure(name="root")
+    try:
+        conduit.meld(spell=spell_id)
+        spell = spellbook._spell_id_pool[spell_id]
+        with pytest.raises(RuntimeError, match="[Dd]ynamic"):
+            spell.apply_mutation_override({"value": 1})
+        assert spell._mutation_override is None
+    finally:
+        conduit.permanent_cleanup()
+
+
+def test_component_fast_door_registry_deleted_on_cleanup() -> None:
+    """
+    Purpose:
+        Verify the fast-door registry dies with the meld front door.
+    Contract:
+        - `Meld.cleanup()` deletes `_fast_meld_doors` so retained entries are
+          released at the owner-driven teardown point.
+    """
+    spellbook = _make_spellbook()
+    spell_id = spellbook.bind(
+        spell=_UniquePerConduitService,
+        existence=Existence.unique_per_conduit,
+        permissions="create",
+    )
+    conduit = spellbook.conjure(name="root")
+    meld = conduit._meld
+    conduit.meld(spell=spell_id)
+    assert spell_id in meld._fast_meld_doors
+
+    conduit.permanent_cleanup()
+    assert not hasattr(meld, "_fast_meld_doors")
+
+
+def test_component_fast_door_spellspace_scopes_stay_isolated() -> None:
+    """
+    Purpose:
+        Verify spellspace fast doors serve scope-correct instances across
+        pooled spellspace reuse.
+    Contract:
+        - Within one spellspace, warm marker melds return the same instance.
+        - A later spellspace (pooled reuse of the same shell) returns a new
+          marker instance even though the fast-door entry stayed warm,
+          because the captured store identity persists while its contents are
+          cleared per recycle.
+    """
+    spellbook = _make_spellbook()
+    marker_id = spellbook.bind(
+        spell=_SpaceMarkerService,
+        existence=Existence.unique_per_spell_space,
+        permissions="create",
+    )
+    conduit = spellbook.conjure(name="root")
+    try:
+        with conduit.enter_spellspace() as space:
+            first = space.meld(spell=marker_id)
+            assert space.meld(spell=marker_id) is first
+            assert marker_id in space._meld._fast_meld_doors
+
+        with conduit.enter_spellspace() as next_space:
+            second = next_space.meld(spell=marker_id)
+            assert isinstance(second, _SpaceMarkerService)
+            assert second is not first
+            assert next_space.meld(spell=marker_id) is second
+    finally:
+        conduit.permanent_cleanup()

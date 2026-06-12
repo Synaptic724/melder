@@ -1,5 +1,5 @@
 import time
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Any, Dict, Optional
 
 
 
@@ -60,6 +60,7 @@ class CompilerPhase4:
             spell_validator: SpellValidationSystem,
             spell_system_states: Optional[SpellSystemStates],
             cancel_event: Optional[CancellationEvent] = None,
+            validation_pass_cache: Optional[Dict[str, Any]] = None,
     ) -> None:
         """
         Phase 4 - Per-spell validation using SpellValidationSystem.
@@ -101,6 +102,9 @@ class CompilerPhase4:
                 validity changes.
             cancel_event:
                 Optional cancellation signal shared across the scheduler.
+            validation_pass_cache:
+                Optional pass-scoped memo dict shared by all phase-4 units in
+                one scheduler pass; None on single-spell validation paths.
         """
         artifact.check_cleaned()
         CompilerPhaseUtility.throw_if_cancelled(cancel_event)
@@ -132,6 +136,7 @@ class CompilerPhase4:
             symbolic_graph=artifact._symbolic_graph,
             resolution_frame=artifact._resolution_frame,
             cancel_event=cancel_event,
+            validation_pass_cache=validation_pass_cache,
         )
 
         # Cache result + flags on the artifact.

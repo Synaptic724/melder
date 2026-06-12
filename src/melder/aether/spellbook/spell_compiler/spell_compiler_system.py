@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Optional, Set, Tuple, ClassVar
+from typing import TYPE_CHECKING, Any, Dict, Optional, Set, Tuple, ClassVar
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 # Melder imports
@@ -214,6 +214,7 @@ class SpellCompilerSystem(Cleanable):
             spellbook: Spellbook,
             spell: Spell,
             cancel_event: Optional[CancellationEvent] = None,
+            validation_pass_cache: Optional[Dict[str, Any]] = None,
     ) -> None:
         """
             Phase 4 - Per-spell validation using SpellValidationSystem.
@@ -247,6 +248,7 @@ class SpellCompilerSystem(Cleanable):
             self._spell_validator,
             spellbook._spell_system_states,
             cancel_event=cancel_event,
+            validation_pass_cache=validation_pass_cache,
         )
 
     def run_phase_root_blueprints(

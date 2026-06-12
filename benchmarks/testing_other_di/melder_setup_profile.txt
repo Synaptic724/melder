@@ -1,152 +1,148 @@
 ==============================================================================
 [build-1 (disk state as-is)] TOP 50 BY TOTTIME (self time)
 ==============================================================================
-         500118 function calls (490942 primitive calls) in 0.328 seconds
+         367160 function calls (357974 primitive calls) in 0.295 seconds
 
    Ordered by: internal time
-   List reduced from 2545 to 50 due to restriction <50>
+   List reduced from 2338 to 50 due to restriction <50>
 
    ncalls  tottime  percall  cumtime  percall filename:lineno(function)
-      391    0.050    0.000    0.050    0.000 {built-in method _io.open_code}
-      392    0.022    0.000    0.022    0.000 {built-in method marshal.loads}
-     2379    0.019    0.000    0.019    0.000 {built-in method nt.stat}
-     3547    0.012    0.000    0.018    0.000 <frozen importlib._bootstrap_external>:101(_path_join)
-      391    0.010    0.000    0.010    0.000 {method 'read' of '_io.BufferedReader' objects}
-    427/1    0.007    0.000    0.233    0.233 {built-in method builtins.exec}
+      392    0.049    0.000    0.049    0.000 {built-in method _io.open_code}
+      393    0.022    0.000    0.022    0.000 {built-in method marshal.loads}
+     2382    0.019    0.000    0.019    0.000 {built-in method nt.stat}
+      392    0.016    0.000    0.016    0.000 {method 'read' of '_io.BufferedReader' objects}
+     3552    0.012    0.000    0.018    0.000 <frozen importlib._bootstrap_external>:101(_path_join)
+    428/2    0.007    0.000    0.237    0.119 {built-in method builtins.exec}
       137    0.006    0.000    0.006    0.000 {built-in method nt.listdir}
-      391    0.005    0.000    0.027    0.000 <frozen importlib._bootstrap_external>:512(_compile_bytecode)
-2586/2457    0.005    0.000    0.006    0.000 {built-in method __new__ of type object at 0x00007FFDAA2267D0}
-      563    0.004    0.000    0.044    0.000 <frozen importlib._bootstrap_external>:1360(find_spec)
-        1    0.004    0.004    0.004    0.004 __init__.py:334(__new__)
-      395    0.003    0.000    0.003    0.000 {method '__exit__' of '_io._IOBase' objects}
-      516    0.003    0.000    0.061    0.000 <frozen importlib._bootstrap>:1243(_find_spec)
+      392    0.005    0.000    0.027    0.000 <frozen importlib._bootstrap_external>:512(_compile_bytecode)
+2587/2458    0.005    0.000    0.006    0.000 {built-in method __new__ of type object at 0x00007FFD846567D0}
+      564    0.004    0.000    0.043    0.000 <frozen importlib._bootstrap_external>:1360(find_spec)
+        1    0.003    0.003    0.003    0.003 __init__.py:334(__new__)
+      396    0.003    0.000    0.003    0.000 {method '__exit__' of '_io._IOBase' objects}
+      517    0.003    0.000    0.060    0.000 <frozen importlib._bootstrap>:1243(_find_spec)
   445/444    0.003    0.000    0.020    0.000 {built-in method builtins.__build_class__}
-    19130    0.002    0.000    0.003    0.000 {method 'get' of 'dict' objects}
-      492    0.002    0.000    0.004    0.000 codegen_creation_schema_helpers.py:221(build_phase11_step_ir_row)
-       58    0.002    0.000    0.007    0.000 spell_generalized_codegen_lane_plan.py:1061(_build_lane_plan_from_model)
-      391    0.002    0.000    0.103    0.000 <frozen importlib._bootstrap_external>:829(get_code)
-    19662    0.002    0.000    0.002    0.000 {method 'append' of 'list' objects}
-     1569    0.002    0.000    0.002    0.000 {built-in method _pickle.dumps}
-    518/1    0.002    0.000    0.234    0.234 <frozen importlib._bootstrap>:1308(_find_and_load_unlocked)
-23817/23815    0.002    0.000    0.002    0.000 {built-in method builtins.len}
-    27740    0.002    0.000    0.002    0.000 cleanable.py:64(check_cleaned)
-      663    0.002    0.000    0.006    0.000 <frozen importlib._bootstrap>:304(acquire)
-    18512    0.002    0.000    0.002    0.000 {built-in method builtins.isinstance}
-       29    0.002    0.000    0.004    0.000 spell_occurrence_graph_analyzer_strategy.py:460(_build_spell_rows_and_existence_occurrence_analysis)
-    518/1    0.002    0.000    0.234    0.234 <frozen importlib._bootstrap>:1360(_find_and_load)
-      782    0.002    0.000    0.009    0.000 <frozen importlib._bootstrap_external>:243(cache_from_source)
-       29    0.002    0.000    0.003    0.000 spell_generalized_codegen_lane_plan.py:1594(_build_fast_plan_data)
-    14280    0.002    0.000    0.002    0.000 {method 'endswith' of 'str' objects}
+      392    0.002    0.000    0.108    0.000 <frozen importlib._bootstrap_external>:829(get_code)
+    519/2    0.002    0.000    0.238    0.119 <frozen importlib._bootstrap>:1308(_find_and_load_unlocked)
+    18630    0.002    0.000    0.002    0.000 {built-in method builtins.isinstance}
+      664    0.002    0.000    0.006    0.000 <frozen importlib._bootstrap>:304(acquire)
+19942/19940    0.002    0.000    0.002    0.000 {built-in method builtins.len}
+    519/2    0.002    0.000    0.238    0.119 <frozen importlib._bootstrap>:1360(_find_and_load)
+      784    0.002    0.000    0.009    0.000 <frozen importlib._bootstrap_external>:243(cache_from_source)
+ 2291/603    0.002    0.000    0.005    0.000 <frozen importlib._bootstrap_external>:1120(_recalculate)
+    20419    0.002    0.000    0.002    0.000 cleanable.py:64(check_cleaned)
        29    0.002    0.000    0.007    0.000 binding_resolution_cycle_strategy.py:53(validate)
- 2285/602    0.002    0.000    0.005    0.000 <frozen importlib._bootstrap_external>:1120(_recalculate)
-     6570    0.001    0.000    0.001    0.000 {method 'join' of 'str' objects}
-     8174    0.001    0.000    0.001    0.000 {built-in method builtins.getattr}
-    11464    0.001    0.000    0.001    0.000 {method 'rstrip' of 'str' objects}
-     2407    0.001    0.000    0.003    0.000 <frozen importlib._bootstrap_external>:1116(_get_parent_path)
-     5859    0.001    0.000    0.002    0.000 {built-in method builtins.sorted}
-      516    0.001    0.000    0.008    0.000 <frozen importlib._bootstrap>:736(_init_module_attrs)
-      663    0.001    0.000    0.002    0.000 <frozen importlib._bootstrap>:429(_get_module_lock)
-     9928    0.001    0.000    0.001    0.000 {method 'startswith' of 'str' objects}
-    516/1    0.001    0.000    0.234    0.234 <frozen importlib._bootstrap>:914(_load_unlocked)
-     4018    0.001    0.000    0.002    0.000 cancellation_event_signal.py:85(is_set)
-     9023    0.001    0.000    0.001    0.000 {method '__enter__' of '_thread.RLock' objects}
-       19    0.001    0.000    0.001    0.000 {built-in method builtins.compile}
-      514    0.001    0.000    0.053    0.000 <frozen importlib._bootstrap_external>:1258(_get_spec)
-      287    0.001    0.000    0.001    0.000 {built-in method _abc._abc_init}
+    11696    0.002    0.000    0.002    0.000 {method 'append' of 'list' objects}
+    14301    0.001    0.000    0.001    0.000 {method 'endswith' of 'str' objects}
+     2413    0.001    0.000    0.003    0.000 <frozen importlib._bootstrap_external>:1116(_get_parent_path)
+     8187    0.001    0.000    0.001    0.000 {built-in method builtins.getattr}
+    11481    0.001    0.000    0.001    0.000 {method 'rstrip' of 'str' objects}
+     6474    0.001    0.000    0.001    0.000 {method 'join' of 'str' objects}
+     9298    0.001    0.000    0.001    0.000 {method 'get' of 'dict' objects}
+     9942    0.001    0.000    0.001    0.000 {method 'startswith' of 'str' objects}
+      517    0.001    0.000    0.008    0.000 <frozen importlib._bootstrap>:736(_init_module_attrs)
+    517/2    0.001    0.000    0.238    0.119 <frozen importlib._bootstrap>:914(_load_unlocked)
+      664    0.001    0.000    0.002    0.000 <frozen importlib._bootstrap>:429(_get_module_lock)
+     3902    0.001    0.000    0.002    0.000 cancellation_event_signal.py:85(is_set)
      1827    0.001    0.000    0.003    0.000 binding_resolution_cycle_strategy.py:157(_binding_key_for_requirement)
-     5197    0.001    0.000    0.001    0.000 {method 'rpartition' of 'str' objects}
-     3270    0.001    0.000    0.002    0.000 spell_index.py:112(current)
-     9023    0.001    0.000    0.001    0.000 {method '__exit__' of '_thread.RLock' objects}
+       19    0.001    0.000    0.001    0.000 {built-in method builtins.compile}
+     5209    0.001    0.000    0.001    0.000 {method 'rpartition' of 'str' objects}
+      664    0.001    0.000    0.002    0.000 <frozen importlib._bootstrap>:372(release)
+      515    0.001    0.000    0.053    0.000 <frozen importlib._bootstrap_external>:1258(_get_spec)
+      664    0.001    0.000    0.002    0.000 <frozen importlib._bootstrap>:124(setdefault)
+      287    0.001    0.000    0.001    0.000 {built-in method _abc._abc_init}
+     1168    0.001    0.000    0.001    0.000 {built-in method _pickle.dumps}
+      146    0.001    0.000    0.003    0.000 shared_compiler_executions.py:113(hash_codegen_signature)
+      392    0.001    0.000    0.070    0.000 <frozen importlib._bootstrap_external>:950(get_data)
+ 2291/603    0.001    0.000    0.005    0.000 <frozen importlib._bootstrap_external>:1134(__iter__)
+      393    0.001    0.000    0.002    0.000 <frozen importlib._bootstrap_external>:563(spec_from_file_location)
+      126    0.001    0.000    0.007    0.000 <frozen importlib._bootstrap_external>:1411(_fill_cache)
+      784    0.001    0.000    0.002    0.000 <frozen importlib._bootstrap_external>:137(_path_split)
 
 
 ==============================================================================
 [build-1 (disk state as-is)] TOP 50 BY CUMULATIVE (call tree)
 ==============================================================================
-         500118 function calls (490942 primitive calls) in 0.328 seconds
+         367160 function calls (357974 primitive calls) in 0.295 seconds
 
    Ordered by: cumulative time
-   List reduced from 2545 to 50 due to restriction <50>
+   List reduced from 2338 to 50 due to restriction <50>
 
    ncalls  tottime  percall  cumtime  percall filename:lineno(function)
-        1    0.000    0.000    0.329    0.329 test_melder_gauntlet.py:72(_build_runtime_melder)
-        4    0.000    0.000    0.244    0.061 __init__.py:1(<module>)
-    518/1    0.002    0.000    0.234    0.234 <frozen importlib._bootstrap>:1360(_find_and_load)
-    518/1    0.002    0.000    0.234    0.234 <frozen importlib._bootstrap>:1308(_find_and_load_unlocked)
-   1057/1    0.000    0.000    0.234    0.234 <frozen importlib._bootstrap>:483(_call_with_frames_removed)
-    146/1    0.000    0.000    0.234    0.234 {built-in method builtins.__import__}
-    516/1    0.001    0.000    0.234    0.234 <frozen importlib._bootstrap>:914(_load_unlocked)
-    391/1    0.001    0.000    0.234    0.234 <frozen importlib._bootstrap_external>:756(exec_module)
-    427/1    0.007    0.000    0.233    0.233 {built-in method builtins.exec}
+        1    0.000    0.000    0.295    0.295 test_melder_gauntlet.py:72(_build_runtime_melder)
+        4    0.000    0.000    0.248    0.062 __init__.py:1(<module>)
+    519/2    0.002    0.000    0.238    0.119 <frozen importlib._bootstrap>:1360(_find_and_load)
+    519/2    0.002    0.000    0.238    0.119 <frozen importlib._bootstrap>:1308(_find_and_load_unlocked)
+    517/2    0.001    0.000    0.238    0.119 <frozen importlib._bootstrap>:914(_load_unlocked)
+    392/2    0.001    0.000    0.238    0.119 <frozen importlib._bootstrap_external>:756(exec_module)
+   1059/3    0.000    0.000    0.238    0.079 <frozen importlib._bootstrap>:483(_call_with_frames_removed)
+    146/1    0.000    0.000    0.238    0.238 {built-in method builtins.__import__}
+    428/2    0.007    0.000    0.237    0.119 {built-in method builtins.exec}
         1    0.000    0.000    0.152    0.152 spellbook.py:1(<module>)
-        1    0.000    0.000    0.114    0.114 spellbook_creation_system.py:1(<module>)
-        1    0.000    0.000    0.108    0.108 conduit.py:1(<module>)
-      391    0.002    0.000    0.103    0.000 <frozen importlib._bootstrap_external>:829(get_code)
-        1    0.000    0.000    0.101    0.101 conduit_meld.py:1(<module>)
-        1    0.000    0.000    0.101    0.101 meld.py:1(<module>)
-        1    0.000    0.000    0.100    0.100 spell_compiler_system.py:1(<module>)
-        1    0.000    0.000    0.090    0.090 spell_compiler.py:1(<module>)
-        1    0.000    0.000    0.079    0.079 spellbook.py:3977(conjure)
-        1    0.000    0.000    0.079    0.079 spellbook_creation_system.py:148(conjure)
-        2    0.000    0.000    0.075    0.038 spellbook_creation_system.py:1732(_run_scheduler_with_phases)
-        2    0.000    0.000    0.075    0.038 phase_scheduler.py:678(run_all_phases)
-       11    0.000    0.000    0.075    0.007 phase_scheduler.py:543(_run_single_phase)
-       11    0.000    0.000    0.074    0.007 phase_scheduler.py:488(_run_units_inline)
-      235    0.000    0.000    0.073    0.000 unit_of_work.py:317(__call__)
-      235    0.000    0.000    0.073    0.000 unit_of_work.py:262(run_synchronously)
-      391    0.001    0.000    0.065    0.000 <frozen importlib._bootstrap_external>:950(get_data)
-      516    0.003    0.000    0.061    0.000 <frozen importlib._bootstrap>:1243(_find_spec)
-      514    0.000    0.000    0.055    0.000 <frozen importlib._bootstrap_external>:1287(find_spec)
-      514    0.001    0.000    0.053    0.000 <frozen importlib._bootstrap_external>:1258(_get_spec)
-        1    0.000    0.000    0.052    0.052 spellbook_creation_system.py:255(_prepare_resolution_for_conjure)
-        1    0.000    0.000    0.052    0.052 spellbook_creation_system.py:1352(run_resolution_phases_for_conduit)
-        1    0.000    0.000    0.052    0.052 nexus.py:1(<module>)
-      391    0.050    0.000    0.050    0.000 {built-in method _io.open_code}
-      563    0.004    0.000    0.044    0.000 <frozen importlib._bootstrap_external>:1360(find_spec)
+        1    0.000    0.000    0.112    0.112 spellbook_creation_system.py:1(<module>)
+      392    0.002    0.000    0.108    0.000 <frozen importlib._bootstrap_external>:829(get_code)
+        1    0.000    0.000    0.104    0.104 conduit.py:1(<module>)
+        1    0.000    0.000    0.097    0.097 conduit_meld.py:1(<module>)
+        1    0.000    0.000    0.097    0.097 meld.py:1(<module>)
+        1    0.000    0.000    0.096    0.096 spell_compiler_system.py:1(<module>)
+        1    0.000    0.000    0.085    0.085 spell_compiler.py:1(<module>)
+      392    0.001    0.000    0.070    0.000 <frozen importlib._bootstrap_external>:950(get_data)
+      517    0.003    0.000    0.060    0.000 <frozen importlib._bootstrap>:1243(_find_spec)
+        1    0.000    0.000    0.055    0.055 nexus.py:1(<module>)
+      515    0.000    0.000    0.054    0.000 <frozen importlib._bootstrap_external>:1287(find_spec)
+      515    0.001    0.000    0.053    0.000 <frozen importlib._bootstrap_external>:1258(_get_spec)
+      392    0.049    0.000    0.049    0.000 {built-in method _io.open_code}
+      564    0.004    0.000    0.043    0.000 <frozen importlib._bootstrap_external>:1360(find_spec)
+        1    0.000    0.000    0.040    0.040 spellbook.py:3977(conjure)
+        1    0.000    0.000    0.040    0.040 spellbook_creation_system.py:148(conjure)
+        2    0.000    0.000    0.035    0.018 spellbook_creation_system.py:1792(_run_scheduler_with_phases)
+        2    0.000    0.000    0.035    0.018 phase_scheduler.py:678(run_all_phases)
+       11    0.000    0.000    0.035    0.003 phase_scheduler.py:543(_run_single_phase)
+        7    0.000    0.000    0.034    0.005 phase_scheduler.py:488(_run_units_inline)
         1    0.000    0.000    0.034    0.034 compiler_phase_11.py:1(<module>)
-        1    0.000    0.000    0.033    0.033 codegen_creation_system.py:1(<module>)
-        1    0.000    0.000    0.031    0.031 aether.py:1(<module>)
-        1    0.000    0.000    0.028    0.028 spell_codegen_strategy_builder.py:1(<module>)
-      391    0.005    0.000    0.027    0.000 <frozen importlib._bootstrap_external>:512(_compile_bytecode)
-        1    0.000    0.000    0.024    0.024 spellbook_creation_system.py:226(_prepare_spellbook_for_conjure)
-        1    0.000    0.000    0.024    0.024 spellbook_creation_system.py:1235(run_structural_phases)
-        1    0.000    0.000    0.023    0.023 aetheric_frame.py:1(<module>)
-      392    0.022    0.000    0.022    0.000 {built-in method marshal.loads}
+      119    0.000    0.000    0.034    0.000 unit_of_work.py:317(__call__)
+      119    0.000    0.000    0.034    0.000 unit_of_work.py:262(run_synchronously)
+        1    0.000    0.000    0.034    0.034 codegen_creation_system.py:1(<module>)
+        1    0.000    0.000    0.033    0.033 aether.py:1(<module>)
+        1    0.000    0.000    0.029    0.029 spell_codegen_strategy_builder.py:1(<module>)
+      392    0.005    0.000    0.027    0.000 <frozen importlib._bootstrap_external>:512(_compile_bytecode)
+        1    0.000    0.000    0.025    0.025 spellbook_creation_system.py:226(_prepare_spellbook_for_conjure)
+        1    0.000    0.000    0.025    0.025 spellbook_creation_system.py:1295(run_structural_phases)
+        1    0.000    0.000    0.024    0.024 aetheric_frame.py:1(<module>)
+      393    0.022    0.000    0.022    0.000 {built-in method marshal.loads}
   445/444    0.003    0.000    0.020    0.000 {built-in method builtins.__build_class__}
-     2338    0.001    0.000    0.020    0.000 <frozen importlib._bootstrap_external>:145(_path_stat)
-     2379    0.019    0.000    0.019    0.000 {built-in method nt.stat}
-     3547    0.012    0.000    0.018    0.000 <frozen importlib._bootstrap_external>:101(_path_join)
-        1    0.000    0.000    0.016    0.016 frame_descriptor_manager.py:1(<module>)
-        1    0.000    0.000    0.015    0.015 frame_acl_manager.py:1(<module>)
-        1    0.000    0.000    0.015    0.015 dev_ops_manager.py:1(<module>)
+     2341    0.001    0.000    0.019    0.000 <frozen importlib._bootstrap_external>:145(_path_stat)
+     2382    0.019    0.000    0.019    0.000 {built-in method nt.stat}
+     3552    0.012    0.000    0.018    0.000 <frozen importlib._bootstrap_external>:101(_path_join)
+        1    0.000    0.000    0.017    0.017 frame_descriptor_manager.py:1(<module>)
+      392    0.016    0.000    0.016    0.000 {method 'read' of '_io.BufferedReader' objects}
+        1    0.000    0.000    0.016    0.016 frame_acl_manager.py:1(<module>)
+        1    0.000    0.000    0.016    0.016 dev_ops_manager.py:1(<module>)
+        1    0.000    0.000    0.013    0.013 general_profile.py:1(<module>)
 
 
 ==============================================================================
 [build-1 (disk state as-is)] PHASE AND BIND ATTRIBUTION
 ==============================================================================
-         500118 function calls (490942 primitive calls) in 0.328 seconds
+         367160 function calls (357974 primitive calls) in 0.295 seconds
 
    Ordered by: cumulative time
-   List reduced from 2545 to 66 due to restriction <'compiler_phase_'>
+   List reduced from 2338 to 62 due to restriction <'compiler_phase_'>
 
    ncalls  tottime  percall  cumtime  percall filename:lineno(function)
         1    0.000    0.000    0.034    0.034 compiler_phase_11.py:1(<module>)
-       29    0.000    0.000    0.013    0.000 compiler_phase_8.py:76(run)
-       29    0.000    0.000    0.011    0.000 compiler_phase_4.py:56(run)
-        1    0.000    0.000    0.011    0.011 compiler_phase_6.py:1(<module>)
-        1    0.000    0.000    0.010    0.010 compiler_phase_10.py:1(<module>)
-       29    0.000    0.000    0.010    0.000 compiler_phase_11.py:66(run)
-        1    0.000    0.000    0.009    0.009 compiler_phase_9.py:1(<module>)
-       29    0.000    0.000    0.008    0.000 compiler_phase_9.py:64(run)
-       29    0.000    0.000    0.008    0.000 compiler_phase_10.py:63(run)
-        1    0.000    0.000    0.008    0.008 compiler_phase_5.py:458(run_frame_wide)
-        1    0.000    0.000    0.007    0.007 compiler_phase_3.py:1(<module>)
-        1    0.000    0.000    0.007    0.007 compiler_phase_8.py:1(<module>)
-       29    0.000    0.000    0.006    0.000 compiler_phase_3.py:671(run)
+       29    0.000    0.000    0.012    0.000 compiler_phase_4.py:56(run)
+        1    0.000    0.000    0.010    0.010 compiler_phase_6.py:1(<module>)
+        1    0.000    0.000    0.009    0.009 compiler_phase_10.py:1(<module>)
+        1    0.000    0.000    0.008    0.008 compiler_phase_3.py:1(<module>)
+        1    0.000    0.000    0.008    0.008 compiler_phase_9.py:1(<module>)
+        1    0.000    0.000    0.007    0.007 compiler_phase_5.py:458(run_frame_wide)
+       29    0.000    0.000    0.007    0.000 compiler_phase_3.py:671(run)
         1    0.000    0.000    0.005    0.005 compiler_phase_5.py:309(_attach_phase5_artifacts_for_snapshot)
         1    0.000    0.000    0.005    0.005 compiler_phase_5.py:1(<module>)
        29    0.000    0.000    0.005    0.000 compiler_phase_3.py:550(_build_local_frame_dag)
+        1    0.000    0.000    0.004    0.004 compiler_phase_8.py:1(<module>)
        29    0.000    0.000    0.003    0.000 compiler_phase_1.py:101(run)
-        1    0.000    0.000    0.002    0.002 compiler_phase_6.py:325(run_frame_wide)
+        1    0.000    0.000    0.003    0.003 compiler_phase_6.py:325(run_frame_wide)
         1    0.000    0.000    0.002    0.002 compiler_phase_2.py:1(<module>)
        29    0.000    0.000    0.002    0.000 compiler_phase_5.py:162(_set_root_blueprint_phase5)
        63    0.001    0.000    0.002    0.000 compiler_phase_3.py:252(_resolve_single_by_annotation)
@@ -160,54 +156,54 @@
      1890    0.000    0.000    0.000    0.000 compiler_phase_3.py:118(_iter_all_spells)
         1    0.000    0.000    0.000    0.000 compiler_phase_5.py:257(_build_system_index_for_snapshot)
        63    0.000    0.000    0.000    0.000 compiler_phase_3.py:139(_normalize_annotation_for_matching)
-        1    0.000    0.000    0.000    0.000 compiler_phase_7.py:55(run_frame_wide)
-        1    0.000    0.000    0.000    0.000 compiler_phase_7.py:111(_ensure_change_control_ready)
         3    0.000    0.000    0.000    0.000 compiler_phase_11.py:49(__init__)
-       87    0.000    0.000    0.000    0.000 compiler_phase_3.py:72(_get_required_current_spell_id)
       126    0.000    0.000    0.000    0.000 compiler_phase_3.py:347(_socket_kind_for_dep)
+        1    0.000    0.000    0.000    0.000 compiler_phase_7.py:55(run_frame_wide)
         1    0.000    0.000    0.000    0.000 compiler_phase_5.py:366(_filter_snapshot_to_visible_spells)
+        1    0.000    0.000    0.000    0.000 compiler_phase_7.py:111(_ensure_change_control_ready)
         3    0.000    0.000    0.000    0.000 compiler_phase_10.py:46(__init__)
         3    0.000    0.000    0.000    0.000 compiler_phase_9.py:47(__init__)
        29    0.000    0.000    0.000    0.000 compiler_phase_5.py:131(_get_required_spell_state_by_spell_id)
+       87    0.000    0.000    0.000    0.000 compiler_phase_3.py:72(_get_required_current_spell_id)
         1    0.000    0.000    0.000    0.000 compiler_phase_4.py:1(<module>)
         3    0.000    0.000    0.000    0.000 compiler_phase_8.py:55(__init__)
         1    0.000    0.000    0.000    0.000 compiler_phase_7.py:1(<module>)
         3    0.000    0.000    0.000    0.000 compiler_phase_11.py:56(cleanup)
         3    0.000    0.000    0.000    0.000 compiler_phase_10.py:53(cleanup)
-        3    0.000    0.000    0.000    0.000 compiler_phase_9.py:54(cleanup)
         3    0.000    0.000    0.000    0.000 compiler_phase_8.py:66(cleanup)
+        3    0.000    0.000    0.000    0.000 compiler_phase_9.py:54(cleanup)
         1    0.000    0.000    0.000    0.000 compiler_phase_6.py:286(_build_strategies)
         1    0.000    0.000    0.000    0.000 compiler_phase_3.py:55(CompilerPhase3)
         2    0.000    0.000    0.000    0.000 compiler_phase_5.py:426(_filter_root_blueprints_to_owned)
-        1    0.000    0.000    0.000    0.000 compiler_phase_5.py:49(CompilerPhase5)
         1    0.000    0.000    0.000    0.000 compiler_phase_11.py:17(CompilerPhase11)
-        1    0.000    0.000    0.000    0.000 compiler_phase_10.py:16(CompilerPhase10)
+        1    0.000    0.000    0.000    0.000 compiler_phase_5.py:49(CompilerPhase5)
        29    0.000    0.000    0.000    0.000 compiler_phase_3.py:95(_get_required_spell_system_states)
-        1    0.000    0.000    0.000    0.000 compiler_phase_6.py:109(CompilerPhase6)
-        1    0.000    0.000    0.000    0.000 compiler_phase_9.py:16(CompilerPhase9)
        30    0.000    0.000    0.000    0.000 compiler_phase_5.py:107(_get_required_spell_system_states)
-        1    0.000    0.000    0.000    0.000 compiler_phase_8.py:20(CompilerPhase8)
+        1    0.000    0.000    0.000    0.000 compiler_phase_9.py:16(CompilerPhase9)
+        1    0.000    0.000    0.000    0.000 compiler_phase_6.py:109(CompilerPhase6)
+        1    0.000    0.000    0.000    0.000 compiler_phase_10.py:16(CompilerPhase10)
         1    0.000    0.000    0.000    0.000 compiler_phase_1.py:26(CompilerPhase1)
-        1    0.000    0.000    0.000    0.000 compiler_phase_2.py:33(CompilerPhase2)
+        1    0.000    0.000    0.000    0.000 compiler_phase_8.py:20(CompilerPhase8)
         1    0.000    0.000    0.000    0.000 compiler_phase_7.py:20(CompilerPhase7)
         1    0.000    0.000    0.000    0.000 compiler_phase_4.py:39(CompilerPhase4)
         2    0.000    0.000    0.000    0.000 compiler_phase_5.py:66(_get_required_spellbook_frame_name)
-        1    0.000    0.000    0.000    0.000 compiler_phase_6.py:144(_get_required_spell_system_index_phase5)
+        1    0.000    0.000    0.000    0.000 compiler_phase_2.py:33(CompilerPhase2)
         1    0.000    0.000    0.000    0.000 compiler_phase_7.py:37(_get_required_entire_dag_blueprint_phase5)
         1    0.000    0.000    0.000    0.000 compiler_phase_6.py:126(_get_required_entire_dag_blueprint_phase5)
+        1    0.000    0.000    0.000    0.000 compiler_phase_6.py:144(_get_required_spell_system_index_phase5)
 
 
-         500118 function calls (490942 primitive calls) in 0.328 seconds
+         367160 function calls (357974 primitive calls) in 0.295 seconds
 
    Ordered by: cumulative time
-   List reduced from 2545 to 31 due to restriction <'spell_requirements_finder|spell_examiner|bind.py'>
+   List reduced from 2338 to 31 due to restriction <'spell_requirements_finder|spell_examiner|bind.py'>
 
    ncalls  tottime  percall  cumtime  percall filename:lineno(function)
-       29    0.000    0.000    0.010    0.000 bind.py:112(bind)
-       29    0.000    0.000    0.010    0.000 bind.py:189(_bind_logic)
-       58    0.000    0.000    0.006    0.000 spell_requirements_finder.py:163(build_requirements)
+       29    0.000    0.000    0.011    0.000 bind.py:112(bind)
+       29    0.000    0.000    0.011    0.000 bind.py:189(_bind_logic)
+       58    0.000    0.000    0.007    0.000 spell_requirements_finder.py:163(build_requirements)
        58    0.001    0.000    0.006    0.000 spell_requirements_finder.py:917(_build_parameter_requirements)
-       29    0.000    0.000    0.004    0.000 spell_examiner.py:168(create_profile)
+       29    0.000    0.000    0.005    0.000 spell_examiner.py:168(create_profile)
        29    0.000    0.000    0.004    0.000 spell_examiner.py:230(<lambda>)
         1    0.000    0.000    0.004    0.004 spell_requirements_finder.py:1(<module>)
        58    0.000    0.000    0.001    0.000 spell_requirements_finder.py:374(_resolve_parameter_annotations)
@@ -222,217 +218,212 @@
        58    0.000    0.000    0.000    0.000 spell_requirements_finder.py:92(__init__)
        29    0.000    0.000    0.000    0.000 bind.py:663(_is_protocol_type)
         1    0.000    0.000    0.000    0.000 spell_examiner.py:1(<module>)
-      126    0.000    0.000    0.000    0.000 spell_requirements_finder.py:1144(_unwrap_optional)
         1    0.000    0.000    0.000    0.000 bind.py:68(__init__)
+      126    0.000    0.000    0.000    0.000 spell_requirements_finder.py:1144(_unwrap_optional)
        58    0.000    0.000    0.000    0.000 spell_requirements_finder.py:268(_resolve_call_target)
         1    0.000    0.000    0.000    0.000 spell_examiner.py:48(__init__)
+        1    0.000    0.000    0.000    0.000 spell_requirements_finder.py:31(SpellRequirementsFinder)
        29    0.000    0.000    0.000    0.000 bind.py:590(_determine_spell_type)
-        1    0.000    0.000    0.000    0.000 bind.py:37(Bind)
        58    0.000    0.000    0.000    0.000 spell_requirements_finder.py:329(_should_resolve_annotations)
        29    0.000    0.000    0.000    0.000 bind.py:567(_existence_check)
-        1    0.000    0.000    0.000    0.000 spell_requirements_finder.py:31(SpellRequirementsFinder)
-        1    0.000    0.000    0.000    0.000 spell_examiner.py:16(SpellExaminer)
+        1    0.000    0.000    0.000    0.000 bind.py:37(Bind)
         1    0.000    0.000    0.000    0.000 spell_examiner.py:214(_register_default_profile_builders)
+        1    0.000    0.000    0.000    0.000 spell_examiner.py:16(SpellExaminer)
         2    0.000    0.000    0.000    0.000 spell_examiner.py:97(register_profile_builder)
 
 
-         500118 function calls (490942 primitive calls) in 0.328 seconds
+         367160 function calls (357974 primitive calls) in 0.295 seconds
 
    Ordered by: cumulative time
-   List reduced from 2545 to 4 due to restriction <'hash_codegen_signature|sha256'>
+   List reduced from 2338 to 3 due to restriction <'hash_codegen_signature|sha256'>
 
    ncalls  tottime  percall  cumtime  percall filename:lineno(function)
-      175    0.001    0.000    0.004    0.000 shared_compiler_executions.py:113(hash_codegen_signature)
-       90    0.000    0.000    0.001    0.000 codegen_creation_schema_helpers.py:63(hash_codegen_signature)
+      146    0.001    0.000    0.003    0.000 shared_compiler_executions.py:113(hash_codegen_signature)
        29    0.000    0.000    0.000    0.000 bind.py:401(sha256_profile)
-      316    0.000    0.000    0.000    0.000 {built-in method _hashlib.openssl_sha256}
+      197    0.000    0.000    0.000    0.000 {built-in method _hashlib.openssl_sha256}
 
 
 ==============================================================================
 [build-2 (warm cache)] TOP 50 BY TOTTIME (self time)
 ==============================================================================
-         293128 function calls (291599 primitive calls) in 0.123 seconds
+         159878 function calls (158349 primitive calls) in 0.053 seconds
 
    Ordered by: internal time
-   List reduced from 1186 to 50 due to restriction <50>
+   List reduced from 978 to 50 due to restriction <50>
 
    ncalls  tottime  percall  cumtime  percall filename:lineno(function)
-     3270    0.012    0.000    0.013    0.000 spell_index.py:112(current)
-     3690    0.005    0.000    0.005    0.000 enum.py:186(__get__)
-      492    0.005    0.000    0.017    0.000 codegen_creation_schema_helpers.py:221(build_phase11_step_ir_row)
-     1569    0.003    0.000    0.003    0.000 {built-in method _pickle.dumps}
-       29    0.002    0.000    0.003    0.000 generalized_manifest.py:279(serialize_targets_by_spec)
-       58    0.002    0.000    0.008    0.000 spell_generalized_codegen_lane_plan.py:1061(_build_lane_plan_from_model)
-    15997    0.002    0.000    0.002    0.000 {method 'get' of 'dict' objects}
-    27033    0.002    0.000    0.002    0.000 cleanable.py:64(check_cleaned)
-       29    0.002    0.000    0.004    0.000 spell_occurrence_graph_analyzer_strategy.py:460(_build_spell_rows_and_existence_occurrence_analysis)
-     5016    0.002    0.000    0.002    0.000 {method 'update' of '_hashlib.HASH' objects}
-       29    0.002    0.000    0.002    0.000 spell_generalized_codegen_lane_plan.py:1594(_build_fast_plan_data)
-       29    0.001    0.000    0.006    0.000 binding_resolution_cycle_strategy.py:53(validate)
-     5766    0.001    0.000    0.002    0.000 {built-in method builtins.sorted}
-    12358    0.001    0.000    0.002    0.000 {built-in method builtins.isinstance}
-     4018    0.001    0.000    0.002    0.000 cancellation_event_signal.py:85(is_set)
-       29    0.001    0.000    0.006    0.000 generalized_binding_resolver.py:47(__init__)
-    12209    0.001    0.000    0.001    0.000 {method 'append' of 'list' objects}
-      246    0.001    0.000    0.002    0.000 codegen_creation_schema_helpers.py:286(build_no_overrides_codegen_creation_step_signature_row)
-     7436    0.001    0.000    0.001    0.000 {method '__enter__' of '_thread.RLock' objects}
-     1879    0.001    0.000    0.001    0.000 {method 'values' of 'dict' objects}
+       29    0.002    0.000    0.007    0.000 binding_resolution_cycle_strategy.py:53(validate)
+    19712    0.001    0.000    0.001    0.000 cleanable.py:64(check_cleaned)
+     3902    0.001    0.000    0.002    0.000 cancellation_event_signal.py:85(is_set)
+    12473    0.001    0.000    0.001    0.000 {built-in method builtins.isinstance}
      1827    0.001    0.000    0.003    0.000 binding_resolution_cycle_strategy.py:157(_binding_key_for_requirement)
-      175    0.001    0.000    0.004    0.000 shared_compiler_executions.py:113(hash_codegen_signature)
-     7436    0.001    0.000    0.001    0.000 {method '__exit__' of '_thread.RLock' objects}
-       29    0.001    0.000    0.002    0.000 spell_occurrence_graph_analyzer_strategy.py:226(_build_occurrence_graph_fast_key)
-       29    0.001    0.000    0.003    0.000 spell_occurrence_graph_analyzer_strategy.py:343(_build_occurrence_graph_input_signature)
-     9746    0.001    0.000    0.001    0.000 {built-in method builtins.len}
-       29    0.001    0.000    0.003    0.000 spell_override_targeting_processor_strategy.py:43(process)
-      235    0.001    0.000    0.099    0.000 unit_of_work.py:262(run_synchronously)
-     6451    0.001    0.000    0.001    0.000 {method 'add' of 'set' objects}
-     4516    0.001    0.000    0.001    0.000 enum.py:1298(__hash__)
-   174/58    0.001    0.000    0.003    0.000 inspect.py:2403(_signature_from_callable)
-     3843    0.001    0.000    0.001    0.000 spell_parameter_requirements.py:190(annotation)
-      235    0.001    0.000    0.001    0.000 _base.py:457(exception)
+     1168    0.001    0.000    0.001    0.000 {built-in method _pickle.dumps}
+      146    0.001    0.000    0.003    0.000 shared_compiler_executions.py:113(hash_codegen_signature)
+     1890    0.001    0.000    0.001    0.000 general_helpers.py:240(normalize_spell_key)
+     6160    0.001    0.000    0.001    0.000 {method 'get' of 'dict' objects}
+        1    0.001    0.001    0.001    0.001 {built-in method marshal.loads}
      1827    0.001    0.000    0.001    0.000 compiler_phase_3.py:177(_matches_annotation)
        29    0.001    0.000    0.002    0.000 spell_system_root_blueprint_builder.py:437(_overlay_sockets_and_index)
-     1890    0.001    0.000    0.001    0.000 general_helpers.py:240(normalize_spell_key)
-     1322    0.001    0.000    0.001    0.000 tokenize.py:575(_generate_tokens_from_c_tokenizer)
-     2130    0.001    0.000    0.002    0.000 shared_compiler_executions.py:59(serialize_codegen_signature_part)
-      737    0.001    0.000    0.001    0.000 threading.py:316(__exit__)
-      294    0.001    0.000    0.001    0.000 {built-in method _hashlib.openssl_sha256}
-       29    0.001    0.000    0.002    0.000 inspect.py:1109(getblock)
-      492    0.001    0.000    0.001    0.000 generalized_manifest.py:251(_enrich_phase11_row)
-        1    0.001    0.001    0.001    0.001 {built-in method marshal.loads}
-       58    0.001    0.000    0.006    0.000 spell_requirements_finder.py:917(_build_parameter_requirements)
-      146    0.001    0.000    0.005    0.000 shared_compiler_executions.py:265(capture_phase2_5_codegen_ir)
        63    0.001    0.000    0.002    0.000 compiler_phase_3.py:252(_resolve_single_by_annotation)
-       90    0.001    0.000    0.004    0.000 codegen_creation_schema_helpers.py:63(hash_codegen_signature)
-       29    0.001    0.000    0.001    0.000 spell_injection_processor_strategy.py:112(_build_instance_specs)
-       29    0.001    0.000    0.002    0.000 spell_occurrence_graph_analyzer_strategy.py:600(_build_occurrence_graph)
-      235    0.001    0.000    0.001    0.000 _base.py:531(set_result)
+   174/58    0.001    0.000    0.003    0.000 inspect.py:2403(_signature_from_callable)
+     3843    0.001    0.000    0.001    0.000 spell_parameter_requirements.py:190(annotation)
+     3796    0.001    0.000    0.001    0.000 {method 'update' of '_hashlib.HASH' objects}
+     1322    0.001    0.000    0.001    0.000 tokenize.py:575(_generate_tokens_from_c_tokenizer)
+      146    0.001    0.000    0.006    0.000 shared_compiler_executions.py:265(capture_phase2_5_codegen_ir)
+       29    0.001    0.000    0.002    0.000 inspect.py:1109(getblock)
+       58    0.001    0.000    0.006    0.000 spell_requirements_finder.py:917(_build_parameter_requirements)
+     1898    0.001    0.000    0.002    0.000 shared_compiler_executions.py:59(serialize_codegen_signature_part)
+       63    0.000    0.000    0.001    0.000 directed_acyclic_work_graph.py:235(topological_sort)
+     4004    0.000    0.000    0.001    0.000 {method 'add' of 'set' objects}
+     3150    0.000    0.000    0.000    0.000 {method '__enter__' of '_thread.RLock' objects}
+       58    0.000    0.000    0.001    0.000 spell_requirements_finder.py:374(_resolve_parameter_annotations)
+     5856    0.000    0.000    0.000    0.000 {built-in method builtins.len}
+      417    0.000    0.000    0.001    0.000 base32.py:170(encode_randomness)
+     4233    0.000    0.000    0.000    0.000 {method 'append' of 'list' objects}
+       29    0.000    0.000    0.009    0.000 validation_system.py:242(validate_spell)
+      417    0.000    0.000    0.001    0.000 __init__.py:72(randomness)
+     2331    0.000    0.000    0.001    0.000 spell_parameter_requirements.py:261(di_shape)
+  834/417    0.000    0.000    0.003    0.000 __init__.py:119(__init__)
+      417    0.000    0.000    0.002    0.000 __init__.py:138(from_timestamp)
+      461    0.000    0.000    0.001    0.000 shared_compiler_executions.py:285(<genexpr>)
+      417    0.000    0.000    0.000    0.000 base32.py:152(encode_timestamp)
+       58    0.000    0.000    0.001    0.000 inspect.py:2297(_signature_from_function)
+     1251    0.000    0.000    0.000    0.000 __init__.py:63(timestamp)
+  834/417    0.000    0.000    0.002    0.000 __init__.py:46(wrapped)
+     1293    0.000    0.000    0.001    0.000 __init__.py:453(_make)
+     3150    0.000    0.000    0.000    0.000 {method '__exit__' of '_thread.RLock' objects}
+      928    0.000    0.000    0.000    0.000 general_helpers.py:201(make_spell_key_from_parts)
+       29    0.000    0.000    0.005    0.000 compiler_phase_3.py:550(_build_local_frame_dag)
+      417    0.000    0.000    0.001    0.000 base32.py:144(encode)
+       29    0.000    0.000    0.001    0.000 circular_dependency_strategy.py:46(validate)
+      329    0.000    0.000    0.000    0.000 dag_index.py:106(extend_path)
+       29    0.000    0.000    0.000    0.000 {built-in method nt.stat}
+     1080    0.000    0.000    0.000    0.000 threading.py:126(RLock)
+     1015    0.000    0.000    0.000    0.000 spell_requirements.py:178(parameters)
+       29    0.000    0.000    0.004    0.000 binding_profile_strategy.py:69(_build_class_profile)
+      116    0.000    0.000    0.000    0.000 inspect.py:2962(__init__)
 
 
 ==============================================================================
 [build-2 (warm cache)] TOP 50 BY CUMULATIVE (call tree)
 ==============================================================================
-         293128 function calls (291599 primitive calls) in 0.123 seconds
+         159878 function calls (158349 primitive calls) in 0.053 seconds
 
    Ordered by: cumulative time
-   List reduced from 1186 to 50 due to restriction <50>
+   List reduced from 978 to 50 due to restriction <50>
 
    ncalls  tottime  percall  cumtime  percall filename:lineno(function)
-        1    0.000    0.000    0.123    0.123 test_melder_gauntlet.py:72(_build_runtime_melder)
-        1    0.000    0.000    0.107    0.107 spellbook.py:3977(conjure)
-        1    0.000    0.000    0.107    0.107 spellbook_creation_system.py:148(conjure)
-        2    0.000    0.000    0.102    0.051 spellbook_creation_system.py:1732(_run_scheduler_with_phases)
-        2    0.000    0.000    0.102    0.051 phase_scheduler.py:678(run_all_phases)
-       11    0.000    0.000    0.102    0.009 phase_scheduler.py:543(_run_single_phase)
-       11    0.000    0.000    0.100    0.009 phase_scheduler.py:488(_run_units_inline)
-      235    0.000    0.000    0.099    0.000 unit_of_work.py:317(__call__)
-      235    0.001    0.000    0.099    0.000 unit_of_work.py:262(run_synchronously)
-        1    0.000    0.000    0.081    0.081 spellbook_creation_system.py:255(_prepare_resolution_for_conjure)
-        1    0.000    0.000    0.081    0.081 spellbook_creation_system.py:1352(run_resolution_phases_for_conduit)
-       29    0.000    0.000    0.037    0.001 spell_compiler_system.py:398(run_phase_execution_plan)
-       29    0.000    0.000    0.037    0.001 spell_compiler.py:648(run_phase_execution_plan)
-       29    0.000    0.000    0.037    0.001 compiler_phase_11.py:66(run)
-       29    0.000    0.000    0.037    0.001 codegen_creation_system.py:60(build)
-       29    0.000    0.000    0.036    0.001 generalized_codegen_creation_strategy.py:73(apply)
-       29    0.000    0.000    0.029    0.001 generalized_manifest_step.py:38(apply)
-       29    0.000    0.000    0.029    0.001 generalized_manifest.py:37(build_generalized_manifest)
-        1    0.000    0.000    0.023    0.023 spellbook_creation_system.py:226(_prepare_spellbook_for_conjure)
-        1    0.000    0.000    0.023    0.023 spellbook_creation_system.py:1235(run_structural_phases)
-      492    0.005    0.000    0.017    0.000 codegen_creation_schema_helpers.py:221(build_phase11_step_ir_row)
-       29    0.000    0.000    0.016    0.001 generalized_manifest.py:143(_build_overrides_lane_payload)
-       29    0.000    0.000    0.013    0.000 spell_compiler_system.py:333(run_phase_occurrence_plan)
-       29    0.000    0.000    0.013    0.000 spell_compiler.py:572(run_phase_occurrence_plan)
-       29    0.000    0.000    0.013    0.000 compiler_phase_8.py:76(run)
-       29    0.000    0.000    0.013    0.000 spell_analyzer.py:84(analyze_occurrence)
-       29    0.000    0.000    0.013    0.000 spell_analyzer.py:121(_run_strategy_chain)
-       29    0.000    0.000    0.013    0.000 spell_occurrence_graph_analyzer_strategy.py:95(analyze)
-     3270    0.012    0.000    0.013    0.000 spell_index.py:112(current)
-       29    0.000    0.000    0.013    0.000 generalized_manifest.py:100(_build_no_overrides_lane_payload)
-       29    0.000    0.000    0.011    0.000 spellbook.py:3164(bind)
-       29    0.000    0.000    0.011    0.000 spellbook.py:2999(_bind_under_active_transaction)
-       29    0.000    0.000    0.010    0.000 spell_compiler_system.py:212(run_phase_validation)
-       29    0.000    0.000    0.010    0.000 spell_compiler.py:264(run_phase_validation)
-       29    0.000    0.000    0.010    0.000 compiler_phase_4.py:56(run)
-      275    0.000    0.000    0.010    0.000 generalized_manifest.py:152(<genexpr>)
-       29    0.000    0.000    0.010    0.000 bind.py:112(bind)
-       29    0.000    0.000    0.010    0.000 bind.py:189(_bind_logic)
+        1    0.000    0.000    0.053    0.053 test_melder_gauntlet.py:72(_build_runtime_melder)
+        1    0.000    0.000    0.038    0.038 spellbook.py:3977(conjure)
+        1    0.000    0.000    0.038    0.038 spellbook_creation_system.py:148(conjure)
+        2    0.000    0.000    0.034    0.017 spellbook_creation_system.py:1792(_run_scheduler_with_phases)
+        2    0.000    0.000    0.034    0.017 phase_scheduler.py:678(run_all_phases)
+       11    0.000    0.000    0.034    0.003 phase_scheduler.py:543(_run_single_phase)
+        7    0.000    0.000    0.033    0.005 phase_scheduler.py:488(_run_units_inline)
+      119    0.000    0.000    0.033    0.000 unit_of_work.py:317(__call__)
+      119    0.000    0.000    0.033    0.000 unit_of_work.py:262(run_synchronously)
+        1    0.000    0.000    0.025    0.025 spellbook_creation_system.py:226(_prepare_spellbook_for_conjure)
+        1    0.000    0.000    0.024    0.024 spellbook_creation_system.py:1295(run_structural_phases)
+       29    0.000    0.000    0.011    0.000 spell_compiler_system.py:212(run_phase_validation)
+       29    0.000    0.000    0.011    0.000 spell_compiler.py:264(run_phase_validation)
+       29    0.000    0.000    0.011    0.000 compiler_phase_4.py:56(run)
+        1    0.000    0.000    0.011    0.011 spellbook_creation_system.py:255(_prepare_resolution_for_conjure)
+        1    0.000    0.000    0.011    0.011 spellbook_creation_system.py:1412(run_resolution_phases_for_conduit)
+       29    0.000    0.000    0.010    0.000 spellbook.py:3164(bind)
+       29    0.000    0.000    0.010    0.000 spellbook.py:2999(_bind_under_active_transaction)
        29    0.000    0.000    0.009    0.000 validation_system.py:242(validate_spell)
-       29    0.000    0.000    0.008    0.000 spell_compiler_system.py:383(run_phase_patch_maps)
-       29    0.000    0.000    0.008    0.000 spell_compiler.py:631(run_phase_patch_maps)
-       29    0.000    0.000    0.008    0.000 compiler_phase_10.py:63(run)
-       29    0.000    0.000    0.008    0.000 spell_codegen_planner.py:63(build)
-      275    0.000    0.000    0.008    0.000 generalized_manifest.py:108(<genexpr>)
-       29    0.000    0.000    0.008    0.000 spell_generalized_codegen_plan_strategy.py:38(apply)
-       29    0.000    0.000    0.008    0.000 spell_compiler_system.py:368(run_phase_injection_plan)
-       29    0.000    0.000    0.008    0.000 spell_compiler.py:614(run_phase_injection_plan)
-       29    0.000    0.000    0.008    0.000 compiler_phase_9.py:64(run)
-       58    0.000    0.000    0.008    0.000 spell_generalized_codegen_lane_plan.py:1047(build)
-       29    0.000    0.000    0.008    0.000 spell_artifact_processor.py:64(process)
+       29    0.000    0.000    0.009    0.000 bind.py:112(bind)
+       29    0.000    0.000    0.009    0.000 bind.py:189(_bind_logic)
+        1    0.000    0.000    0.007    0.007 spell_compiler_system.py:252(run_phase_root_blueprints)
+        1    0.000    0.000    0.007    0.007 spell_compiler.py:306(run_phase_root_blueprints)
+        1    0.000    0.000    0.007    0.007 compiler_phase_5.py:458(run_frame_wide)
+       29    0.000    0.000    0.007    0.000 spell_compiler_system.py:156(run_phase_local_frame)
+       29    0.000    0.000    0.007    0.000 spell_compiler.py:206(run_phase_local_frame)
+       29    0.000    0.000    0.007    0.000 compiler_phase_3.py:671(run)
+       29    0.002    0.000    0.007    0.000 binding_resolution_cycle_strategy.py:53(validate)
+       58    0.000    0.000    0.006    0.000 spell_requirements_finder.py:163(build_requirements)
+       58    0.001    0.000    0.006    0.000 spell_requirements_finder.py:917(_build_parameter_requirements)
+      146    0.001    0.000    0.006    0.000 shared_compiler_executions.py:265(capture_phase2_5_codegen_ir)
+       29    0.000    0.000    0.005    0.000 compiler_phase_3.py:550(_build_local_frame_dag)
+        1    0.000    0.000    0.005    0.005 compiler_phase_5.py:309(_attach_phase5_artifacts_for_snapshot)
+        1    0.000    0.000    0.005    0.005 aether.py:83(__init__)
+        2    0.000    0.000    0.004    0.002 nexus.py:129(__init__)
+        1    0.000    0.000    0.004    0.004 frame_acl_manager.py:74(__init__)
+        1    0.000    0.000    0.004    0.004 frame_acl_profile_builder.py:94(__init__)
+       29    0.000    0.000    0.004    0.000 spell_examiner.py:168(create_profile)
+       29    0.000    0.000    0.004    0.000 spell_examiner.py:230(<lambda>)
+       29    0.000    0.000    0.004    0.000 general_profile.py:80(create_from_target)
+      353    0.000    0.000    0.004    0.000 id_builder.py:17(create_id)
+       29    0.000    0.000    0.004    0.000 binding_profile_strategy.py:44(build_profile)
+       29    0.000    0.000    0.004    0.000 binding_profile_strategy.py:69(_build_class_profile)
+       29    0.000    0.000    0.003    0.000 spell_compiler_system.py:87(run_phase_requirements)
+       29    0.000    0.000    0.003    0.000 spell_compiler.py:140(run_phase_requirements)
+       29    0.000    0.000    0.003    0.000 compiler_phase_1.py:101(run)
+       29    0.000    0.000    0.003    0.000 general_profile.py:119(complete_with_spell)
+       29    0.000    0.000    0.003    0.000 resolution_profile_strategy.py:35(build_profile)
+       58    0.000    0.000    0.003    0.000 inspect.py:3309(signature)
+       58    0.000    0.000    0.003    0.000 inspect.py:3022(from_callable)
 
 
 ==============================================================================
 [build-2 (warm cache)] PHASE AND BIND ATTRIBUTION
 ==============================================================================
-         293128 function calls (291599 primitive calls) in 0.123 seconds
+         159878 function calls (158349 primitive calls) in 0.053 seconds
 
    Ordered by: cumulative time
-   List reduced from 1186 to 44 due to restriction <'compiler_phase_'>
+   List reduced from 978 to 40 due to restriction <'compiler_phase_'>
 
    ncalls  tottime  percall  cumtime  percall filename:lineno(function)
-       29    0.000    0.000    0.037    0.001 compiler_phase_11.py:66(run)
-       29    0.000    0.000    0.013    0.000 compiler_phase_8.py:76(run)
-       29    0.000    0.000    0.010    0.000 compiler_phase_4.py:56(run)
-       29    0.000    0.000    0.008    0.000 compiler_phase_10.py:63(run)
-       29    0.000    0.000    0.008    0.000 compiler_phase_9.py:64(run)
+       29    0.000    0.000    0.011    0.000 compiler_phase_4.py:56(run)
         1    0.000    0.000    0.007    0.007 compiler_phase_5.py:458(run_frame_wide)
-       29    0.000    0.000    0.006    0.000 compiler_phase_3.py:671(run)
+       29    0.000    0.000    0.007    0.000 compiler_phase_3.py:671(run)
+       29    0.000    0.000    0.005    0.000 compiler_phase_3.py:550(_build_local_frame_dag)
         1    0.000    0.000    0.005    0.005 compiler_phase_5.py:309(_attach_phase5_artifacts_for_snapshot)
-       29    0.000    0.000    0.004    0.000 compiler_phase_3.py:550(_build_local_frame_dag)
        29    0.000    0.000    0.003    0.000 compiler_phase_1.py:101(run)
         1    0.000    0.000    0.002    0.002 compiler_phase_6.py:325(run_frame_wide)
-       29    0.000    0.000    0.002    0.000 compiler_phase_5.py:162(_set_root_blueprint_phase5)
        63    0.001    0.000    0.002    0.000 compiler_phase_3.py:252(_resolve_single_by_annotation)
+       29    0.000    0.000    0.002    0.000 compiler_phase_5.py:162(_set_root_blueprint_phase5)
        29    0.000    0.000    0.001    0.000 compiler_phase_2.py:49(run)
        29    0.000    0.000    0.001    0.000 compiler_phase_5.py:189(_set_spell_system_index_phase5)
      1827    0.001    0.000    0.001    0.000 compiler_phase_3.py:177(_matches_annotation)
        29    0.000    0.000    0.001    0.000 compiler_phase_3.py:485(_build_local_topology)
        29    0.000    0.000    0.000    0.000 compiler_phase_1.py:42(_build_phase1_requirements_shape_profile)
-     1890    0.000    0.000    0.000    0.000 compiler_phase_3.py:118(_iter_all_spells)
        63    0.000    0.000    0.000    0.000 compiler_phase_3.py:441(_dependency_key_for_dep)
+     1890    0.000    0.000    0.000    0.000 compiler_phase_3.py:118(_iter_all_spells)
        63    0.000    0.000    0.000    0.000 compiler_phase_3.py:139(_normalize_annotation_for_matching)
         1    0.000    0.000    0.000    0.000 compiler_phase_5.py:257(_build_system_index_for_snapshot)
-        3    0.000    0.000    0.000    0.000 compiler_phase_11.py:49(__init__)
-       87    0.000    0.000    0.000    0.000 compiler_phase_3.py:72(_get_required_current_spell_id)
       126    0.000    0.000    0.000    0.000 compiler_phase_3.py:347(_socket_kind_for_dep)
+        3    0.000    0.000    0.000    0.000 compiler_phase_11.py:49(__init__)
         1    0.000    0.000    0.000    0.000 compiler_phase_5.py:366(_filter_snapshot_to_visible_spells)
-        3    0.000    0.000    0.000    0.000 compiler_phase_10.py:46(__init__)
         1    0.000    0.000    0.000    0.000 compiler_phase_7.py:55(run_frame_wide)
         1    0.000    0.000    0.000    0.000 compiler_phase_7.py:111(_ensure_change_control_ready)
-        3    0.000    0.000    0.000    0.000 compiler_phase_9.py:47(__init__)
+        3    0.000    0.000    0.000    0.000 compiler_phase_10.py:46(__init__)
        29    0.000    0.000    0.000    0.000 compiler_phase_5.py:131(_get_required_spell_state_by_spell_id)
+        3    0.000    0.000    0.000    0.000 compiler_phase_9.py:47(__init__)
+       87    0.000    0.000    0.000    0.000 compiler_phase_3.py:72(_get_required_current_spell_id)
         3    0.000    0.000    0.000    0.000 compiler_phase_8.py:55(__init__)
         3    0.000    0.000    0.000    0.000 compiler_phase_11.py:56(cleanup)
         3    0.000    0.000    0.000    0.000 compiler_phase_10.py:53(cleanup)
-        3    0.000    0.000    0.000    0.000 compiler_phase_8.py:66(cleanup)
         3    0.000    0.000    0.000    0.000 compiler_phase_9.py:54(cleanup)
+        3    0.000    0.000    0.000    0.000 compiler_phase_8.py:66(cleanup)
         1    0.000    0.000    0.000    0.000 compiler_phase_6.py:286(_build_strategies)
-       29    0.000    0.000    0.000    0.000 compiler_phase_3.py:95(_get_required_spell_system_states)
         2    0.000    0.000    0.000    0.000 compiler_phase_5.py:426(_filter_root_blueprints_to_owned)
+       29    0.000    0.000    0.000    0.000 compiler_phase_3.py:95(_get_required_spell_system_states)
        30    0.000    0.000    0.000    0.000 compiler_phase_5.py:107(_get_required_spell_system_states)
         2    0.000    0.000    0.000    0.000 compiler_phase_5.py:66(_get_required_spellbook_frame_name)
+        1    0.000    0.000    0.000    0.000 compiler_phase_6.py:144(_get_required_spell_system_index_phase5)
         1    0.000    0.000    0.000    0.000 compiler_phase_7.py:37(_get_required_entire_dag_blueprint_phase5)
         1    0.000    0.000    0.000    0.000 compiler_phase_6.py:126(_get_required_entire_dag_blueprint_phase5)
-        1    0.000    0.000    0.000    0.000 compiler_phase_6.py:144(_get_required_spell_system_index_phase5)
 
 
-         293128 function calls (291599 primitive calls) in 0.123 seconds
+         159878 function calls (158349 primitive calls) in 0.053 seconds
 
    Ordered by: cumulative time
-   List reduced from 1186 to 25 due to restriction <'spell_requirements_finder|spell_examiner|bind.py'>
+   List reduced from 978 to 25 due to restriction <'spell_requirements_finder|spell_examiner|bind.py'>
 
    ncalls  tottime  percall  cumtime  percall filename:lineno(function)
-       29    0.000    0.000    0.010    0.000 bind.py:112(bind)
-       29    0.000    0.000    0.010    0.000 bind.py:189(_bind_logic)
+       29    0.000    0.000    0.009    0.000 bind.py:112(bind)
+       29    0.000    0.000    0.009    0.000 bind.py:189(_bind_logic)
        58    0.000    0.000    0.006    0.000 spell_requirements_finder.py:163(build_requirements)
        58    0.001    0.000    0.006    0.000 spell_requirements_finder.py:917(_build_parameter_requirements)
        29    0.000    0.000    0.004    0.000 spell_examiner.py:168(create_profile)
@@ -447,10 +438,10 @@
       184    0.000    0.000    0.000    0.000 spell_requirements_finder.py:250(_throw_if_cancelled)
        58    0.000    0.000    0.000    0.000 spell_requirements_finder.py:92(__init__)
        29    0.000    0.000    0.000    0.000 bind.py:663(_is_protocol_type)
-        1    0.000    0.000    0.000    0.000 bind.py:68(__init__)
       126    0.000    0.000    0.000    0.000 spell_requirements_finder.py:1144(_unwrap_optional)
-        1    0.000    0.000    0.000    0.000 spell_examiner.py:48(__init__)
+        1    0.000    0.000    0.000    0.000 bind.py:68(__init__)
        58    0.000    0.000    0.000    0.000 spell_requirements_finder.py:268(_resolve_call_target)
+        1    0.000    0.000    0.000    0.000 spell_examiner.py:48(__init__)
        29    0.000    0.000    0.000    0.000 bind.py:590(_determine_spell_type)
        58    0.000    0.000    0.000    0.000 spell_requirements_finder.py:329(_should_resolve_annotations)
        29    0.000    0.000    0.000    0.000 bind.py:567(_existence_check)
@@ -458,15 +449,14 @@
         2    0.000    0.000    0.000    0.000 spell_examiner.py:97(register_profile_builder)
 
 
-         293128 function calls (291599 primitive calls) in 0.123 seconds
+         159878 function calls (158349 primitive calls) in 0.053 seconds
 
    Ordered by: cumulative time
-   List reduced from 1186 to 4 due to restriction <'hash_codegen_signature|sha256'>
+   List reduced from 978 to 3 due to restriction <'hash_codegen_signature|sha256'>
 
    ncalls  tottime  percall  cumtime  percall filename:lineno(function)
-      175    0.001    0.000    0.004    0.000 shared_compiler_executions.py:113(hash_codegen_signature)
-       90    0.001    0.000    0.004    0.000 codegen_creation_schema_helpers.py:63(hash_codegen_signature)
-      294    0.001    0.000    0.001    0.000 {built-in method _hashlib.openssl_sha256}
+      146    0.001    0.000    0.003    0.000 shared_compiler_executions.py:113(hash_codegen_signature)
        29    0.000    0.000    0.000    0.000 bind.py:401(sha256_profile)
+      175    0.000    0.000    0.000    0.000 {built-in method _hashlib.openssl_sha256}
 
 
