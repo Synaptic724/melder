@@ -270,17 +270,48 @@ def run_cycle(
         conjure_profiler.disable()
 
     # ---- resolution lane (first meld of every spell) ----
+    # Spellspace-scoped spells (request/worker markers and any subtree that
+    # depends on them) reject root-conduit melds by contract, so the sweep
+    # partitions on the same flag meld checks and resolves those inside one
+    # lesser conduit + spellspace, exactly like the real-world gauntlet. The
+    # scope create/cleanup cost is part of the real first-resolution price,
+    # so it stays inside the timed region.
     try:
         if meld_sweep:
+            direct_ids: List[Tuple[type, str]] = []
+            spellspace_ids: List[Tuple[type, str]] = []
+            for cls, spell_id in spell_ids.items():
+                spell_obj = spellbook._spell_id_pool.get(spell_id)
+                needs_space = bool(
+                    spell_obj is not None
+                    and getattr(spell_obj, "requires_spellspace_request", False)
+                )
+                (spellspace_ids if needs_space else direct_ids).append(
+                    (cls, spell_id)
+                )
+
             if meld_profiler is not None:
                 meld_profiler.enable()
             meld_t0 = time.perf_counter_ns()
-            for cls, spell_id in spell_ids.items():
+            for cls, spell_id in direct_ids:
                 resolved = conduit.meld(spell=spell_id)
                 if not isinstance(resolved, cls):
                     raise AssertionError(
                         f"meld returned wrong type for {cls.__name__}"
                     )
+            if spellspace_ids:
+                lesser = conduit.create_lesser_conduit()
+                try:
+                    with lesser.enter_spellspace() as space:
+                        for cls, spell_id in spellspace_ids:
+                            resolved = space.meld(spell=spell_id)
+                            if not isinstance(resolved, cls):
+                                raise AssertionError(
+                                    "spellspace meld returned wrong type "
+                                    f"for {cls.__name__}"
+                                )
+                finally:
+                    lesser.cleanup()
             timings.first_meld_ns = time.perf_counter_ns() - meld_t0
             if meld_profiler is not None:
                 meld_profiler.disable()
