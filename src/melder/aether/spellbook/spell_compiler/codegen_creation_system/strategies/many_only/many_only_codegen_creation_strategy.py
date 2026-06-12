@@ -15,14 +15,11 @@ from melder.aether.spellbook.spell_compiler.codegen_creation_system.spell_codege
 from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.many_only_codegen_creation_state import (
     ManyOnlyCodegenCreationState,
 )
-from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.steps.many_only_finalize_creation_context_step import (
-    ManyOnlyFinalizeCreationContextStep,
+from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.steps.many_only_lazy_door_step import (
+    ManyOnlyLazyDoorStep,
 )
-from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.steps.many_only_no_overrides_codegen_creation_step import (
-    ManyOnlyNoOverridesCodegenCreationStep,
-)
-from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.steps.many_only_overrides_codegen_creation_step import (
-    ManyOnlyOverridesCodegenCreationStep,
+from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.steps.many_only_manifest_step import (
+    ManyOnlyManifestStep,
 )
 from melder.aether.spellbook.spell_compiler.codegen_planner.spell_codegen_plan import (
     SpellCodegenPlan,
@@ -31,12 +28,22 @@ from melder.aether.spellbook.spell_compiler.codegen_planner.spell_codegen_plan i
 
 class ManyOnlyCodegenCreationStrategy(SpellCodegenStrategy):
     """
-    Many-only phase-11 family facade.
+    Manifest-first phase-11 family for many-only planner output.
 
     Purpose:
-        Consume the dedicated phase-10 many-only plan family through a real
-        many-only creation-family id and state surface instead of routing
-        many-only plans back through generalized creation discovery.
+        Modeled on the generalized and solo families: a marshal-safe manifest
+        is built first, then both final runtime doors are published as lazy
+        closures that hydrate at first meld through one shared hydrator.
+        Cache export is "persist the manifest"; cache load is "hydrate the
+        manifest" - the same single assembly program the live path runs.
+
+    Contract:
+        - Phase-11 conjure cost for this family is manifest construction
+          only; executor compile and door work happens at first meld.
+        - Final runtime output remains exactly one `SpellCodegenCreation`
+          carrying the two route-keyed doors.
+        - Publishes the manifest into `SpellCodegenCreation.metadata` under
+          the shared manifest key for the cross-family cache envelope.
     """
 
     __slots__ = [
@@ -45,13 +52,12 @@ class ManyOnlyCodegenCreationStrategy(SpellCodegenStrategy):
 
     def __init__(self) -> None:
         """
-        Build the many-only family facade and its ordered internal steps.
+        Build the many_only family facade and its ordered steps.
         """
         super().__init__()
         self._steps: Tuple[CodegenCreationFamilyStep, ...] = (
-            ManyOnlyNoOverridesCodegenCreationStep(),
-            ManyOnlyOverridesCodegenCreationStep(),
-            ManyOnlyFinalizeCreationContextStep(),
+            ManyOnlyManifestStep(),
+            ManyOnlyLazyDoorStep(),
         )
 
     @property
@@ -68,7 +74,7 @@ class ManyOnlyCodegenCreationStrategy(SpellCodegenStrategy):
             spell_codegen_creation: SpellCodegenCreation,
     ) -> None:
         """
-        Execute the many-only family over one mutable many-only state object.
+        Execute the many_only family over one mutable state object.
         """
         state = ManyOnlyCodegenCreationState(
             spell_codegen_model=spell_codegen_model,

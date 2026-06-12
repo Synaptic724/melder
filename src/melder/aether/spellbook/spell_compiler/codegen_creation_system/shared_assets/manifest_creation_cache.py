@@ -31,6 +31,7 @@ PACKAGE_VERSION = 2
 
 GENERALIZED_FAMILY_ID = "generalized_codegen_creation"
 SOLO_FAMILY_ID = "solo_codegen_creation"
+MANY_ONLY_FAMILY_ID = "many_only_codegen_creation"
 
 
 def build_package(spell: Any) -> Dict[str, Any]:
@@ -111,6 +112,11 @@ def load_creation_context_lazy(
             load_creation_context_lazy as load_solo_lazy,
         )
         return load_solo_lazy(spell, package, publish=publish)
+    if family_id == MANY_ONLY_FAMILY_ID:
+        from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.many_only_creation_cache import (
+            load_creation_context_lazy as load_many_only_lazy,
+        )
+        return load_many_only_lazy(spell, package, publish=publish)
     raise RuntimeError(
         f"Unknown manifest family '{family_id}' in cache package."
     )

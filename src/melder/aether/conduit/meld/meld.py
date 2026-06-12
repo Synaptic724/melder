@@ -1089,7 +1089,12 @@ class Meld(Cleanable, ABC):
         if isinstance(spell_override, dict):
             if not spell_override:
                 return None
-            return dict(spell_override)
+            # Hot path: the payload is consumed read-only downstream (the
+            # split helper builds new dicts when it reshapes, targeting only
+            # reads, executors consume the socket-keyed map), so the legacy
+            # defensive shallow copy was one dict allocation per override
+            # meld protecting against a mutation that never happens.
+            return spell_override
 
         if isinstance(spell_override, (list, tuple)):
             return {"__args__": list(spell_override)}

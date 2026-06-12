@@ -62,7 +62,6 @@ _STEP_BINDING_NAMES = (
     "steps",
     "step_spells",
     "step_spell_ids",
-    "step_has_disposal_methods",
     "step_disposal_methods",
     "step_existences",
     "step_instance_keys",
@@ -203,7 +202,6 @@ def emit_step_plan_source(
         "        steps=steps,",
         "        step_spells=step_spells,",
         "        step_spell_ids=step_spell_ids,",
-        "        step_has_disposal_methods=step_has_disposal_methods,",
         "        step_disposal_methods=step_disposal_methods,",
         "        step_existences=step_existences,",
         "        step_instance_keys=step_instance_keys,",
@@ -247,21 +245,36 @@ def _append_step_resolution_source(
     """
     existence = Existence[row["existence"]]
     inlinable_params = row_inlinable_common_shape(row)
+    # Bind-time spell truth stamped by the manifest builder; disposal facts
+    # compose into the spell fingerprint, so this can never go stale without
+    # rolling the spell version (and with it, this manifest).
+    has_disposal_methods = bool(row["spell_has_disposal_methods"])
+    needs_register_block = not (
+        existence is Existence.many and not has_disposal_methods
+    )
 
-    lines.extend([
-        f"    plan_step_{step_index} = steps[{step_index}]",
-        f"    spell_{step_index} = step_spells[{step_index}]",
-        f"    spell_id_{step_index} = step_spell_ids[{step_index}]",
-        (
-            f"    has_disposal_methods_{step_index} = "
-            f"step_has_disposal_methods[{step_index}]"
-        ),
-        (
+    # Emit only the aliases this step's branches actually read. existence_N
+    # died with the inlined reuse reads; plan_step_N exists only for the
+    # generic constructor path; disposal aliases exist only when a register
+    # block is emitted; many-without-disposal needs no spell_id at all.
+    if inlinable_params is None:
+        lines.append(f"    plan_step_{step_index} = steps[{step_index}]")
+    if (
+            inlinable_params is not None
+            or row["creations_target_kind"]
+            == SpellGeneralizedCodegenPlanTargetKind.OWNER
+            or existence is not Existence.many
+    ):
+        lines.append(f"    spell_{step_index} = step_spells[{step_index}]")
+    if existence is not Existence.many or needs_register_block:
+        lines.append(
+            f"    spell_id_{step_index} = step_spell_ids[{step_index}]"
+        )
+    if needs_register_block and has_disposal_methods:
+        lines.append(
             f"    disposal_methods_{step_index} = "
             f"step_disposal_methods[{step_index}]"
-        ),
-        f"    existence_{step_index} = step_existences[{step_index}]",
-    ])
+        )
     if inlinable_params:
         lines.append(
             f"    step_dep_keys_{step_index} = step_dep_keys[{step_index}]"
@@ -279,13 +292,18 @@ def _append_step_resolution_source(
             inlinable_params=inlinable_params,
             indent="    ",
         )
-        lines.append(f"    with creations_{step_index}._lock:")
-        _append_register_source(
-            lines=lines,
-            step_index=step_index,
-            indent="        ",
-            existence=existence,
-        )
+        if has_disposal_methods:
+            # Disposal presence is emit-time row truth, so the lock and the
+            # registration stores are emitted only when registration actually
+            # happens; disposal-free many steps pay zero lock cycles here.
+            lines.append(f"    with creations_{step_index}._lock:")
+            _append_register_source(
+                lines=lines,
+                step_index=step_index,
+                indent="        ",
+                existence=existence,
+                has_disposal_methods=has_disposal_methods,
+            )
         lines.append(
             f"    instance_results[step_instance_keys[{step_index}]] = instance_{step_index}"
         )
@@ -319,6 +337,7 @@ def _append_step_resolution_source(
             step_index=step_index,
             indent="                ",
             existence=existence,
+            has_disposal_methods=has_disposal_methods,
         )
         lines.append(
             f"    instance_results[step_instance_keys[{step_index}]] = instance_{step_index}"
@@ -359,6 +378,7 @@ def _append_step_resolution_source(
             step_index=step_index,
             indent="                        ",
             existence=existence,
+            has_disposal_methods=has_disposal_methods,
         )
         lines.extend([
             "        else:",
@@ -380,6 +400,7 @@ def _append_step_resolution_source(
             step_index=step_index,
             indent="                    ",
             existence=existence,
+            has_disposal_methods=has_disposal_methods,
         )
         lines.append(
             f"    instance_results[step_instance_keys[{step_index}]] = instance_{step_index}"
@@ -410,6 +431,7 @@ def _append_step_resolution_source(
         step_index=step_index,
         indent="                ",
         existence=existence,
+        has_disposal_methods=has_disposal_methods,
     )
     lines.append(
         f"    instance_results[step_instance_keys[{step_index}]] = instance_{step_index}"
@@ -505,9 +527,24 @@ def _append_register_source(
         step_index: int,
         indent: str,
         existence: Existence,
+        has_disposal_methods: bool,
 ) -> None:
     """
-    Append registration source specialized for one existence mode.
+    Append inline registration stores specialized for one existence mode.
+
+    Contract:
+        - Emits direct `_creations` / `_disposable_creations` stores instead
+          of `add_creation` / `add_many_creations` calls. The store methods
+          are lock-free with caller-held locking, and every branch inside
+          them is decided by fingerprint-stable facts (existence, disposal),
+          so the call is pure dispatch overhead on this path.
+        - The legacy duplicate-key guard is intentionally not emitted: every
+          caller registers under `creations._lock` immediately after a locked
+          re-check found no live entry, and disposal/live slots are co-written
+          only by this path, so duplicates are structurally impossible here.
+        - The `many` slot is always a list for this spell id because existence
+          is fingerprint-stable; the legacy non-list slot guard is likewise
+          structurally unreachable.
     """
     if existence in (
             Existence.unique,
@@ -516,34 +553,47 @@ def _append_register_source(
             Existence.unique_per_conduit_lineage,
             Existence.unique_per_spell_space,
     ):
-        lines.extend([
-            f"{indent}creations_{step_index}.add_creation(",
-            f"{indent}    spell_id_{step_index},",
-            f"{indent}    instance_{step_index},",
-            (
-                f"{indent}    has_disposal_methods="
-                f"has_disposal_methods_{step_index},"
-            ),
-            f"{indent}    disposal_methods=disposal_methods_{step_index},",
-            f"{indent})",
-        ])
+        lines.append(
+            f"{indent}creations_{step_index}._creations"
+            f"[spell_id_{step_index}] = instance_{step_index}"
+        )
+        if has_disposal_methods:
+            lines.append(
+                f"{indent}creations_{step_index}._disposable_creations"
+                f"[spell_id_{step_index}] = "
+                f"(instance_{step_index}, list(disposal_methods_{step_index}))"
+            )
         return
 
     if existence is Existence.many:
+        # Callers emit this block only when disposal truth is present.
         lines.extend([
-            f"{indent}if has_disposal_methods_{step_index}:",
-            f"{indent}    creations_{step_index}.add_many_creations(",
-            f"{indent}        spell_id_{step_index},",
-            f"{indent}        instance_{step_index},",
             (
-                f"{indent}        has_disposal_methods="
-                f"has_disposal_methods_{step_index},"
+                f"{indent}many_live_{step_index} = "
+                f"creations_{step_index}._creations.get(spell_id_{step_index})"
+            ),
+            f"{indent}if many_live_{step_index} is None:",
+            f"{indent}    many_live_{step_index} = []",
+            (
+                f"{indent}    creations_{step_index}._creations"
+                f"[spell_id_{step_index}] = many_live_{step_index}"
+            ),
+            f"{indent}many_live_{step_index}.append(instance_{step_index})",
+            (
+                f"{indent}many_disposable_{step_index} = "
+                f"creations_{step_index}._disposable_creations"
+                f".get(spell_id_{step_index})"
+            ),
+            f"{indent}if many_disposable_{step_index} is None:",
+            f"{indent}    many_disposable_{step_index} = []",
+            (
+                f"{indent}    creations_{step_index}._disposable_creations"
+                f"[spell_id_{step_index}] = many_disposable_{step_index}"
             ),
             (
-                f"{indent}        disposal_methods="
-                f"disposal_methods_{step_index},"
+                f"{indent}many_disposable_{step_index}.append("
+                f"(instance_{step_index}, list(disposal_methods_{step_index})))"
             ),
-            f"{indent}    )",
         ])
         return
 
@@ -609,10 +659,6 @@ def _build_step_bindings(
         ),
         "step_spell_ids": tuple(
             runtime_row.spell.spell_id
-            for runtime_row in runtime_rows
-        ),
-        "step_has_disposal_methods": tuple(
-            runtime_row.spell.has_disposal_methods
             for runtime_row in runtime_rows
         ),
         "step_disposal_methods": tuple(
