@@ -66,6 +66,15 @@ class SpellbookCreationSystem(Cleanable):
 
     __melder_internal__: ClassVar[object] = _mrg.sentinel
     _DEFAULT_ROOT_CONDUIT_NAME: ClassVar[str] = "default"
+    # Chunk-granularity factor for the fused plan_group (phases 8-11) phase.
+    # Measurement basis (29-class gauntlet graph, workers=5, repeats=5):
+    # multiplier 1 -> barrier wall 5.22ms, worker load skew 2.46x,
+    # parallel efficiency 0.64; multiplier 2 -> wall 4.42ms, skew 1.52x,
+    # efficiency 0.80; multiplier 4 regressed (busy time inflated
+    # 16.7 -> 22.2ms by cross-thread contention). 2 is the evidence-backed
+    # production value; revisit only with new breakdown-harness numbers
+    # (`benchmarks/testing_other_di/profile_phase_scheduler_breakdown.py`).
+    PLAN_GROUP_CHUNK_MULTIPLIER: ClassVar[int] = 2
     __slots__ = Cleanable.__slots__ + [
         "_dynamic",
         "_conduit_logger",
@@ -2423,11 +2432,12 @@ class SpellbookCreationSystem(Cleanable):
             phase_name: str,
             spells: List[Spell],
             spell_runner: Callable[[Spell], None],
+            chunk_multiplier: int = 1,
     ) -> Sequence[UnitOfWork]:
         """
         Purpose:
-            Build at most `scheduler.workers` chunk units for one phase,
-            instead of one unit per spell.
+            Build at most `scheduler.workers * chunk_multiplier` chunk units
+            for one phase, instead of one unit per spell.
         Contract:
             - Static batch dispatch: phase membership is known up front, so
               spells are partitioned into contiguous chunks (one unit per
@@ -2435,6 +2445,15 @@ class SpellbookCreationSystem(Cleanable):
               cuts per-phase Future/queue/wakeup overhead by the chunk
               factor while preserving barrier semantics exactly (the phase
               completes when all chunks complete).
+            - `chunk_multiplier > 1` requests finer granularity than the
+              worker count so the shared queue load-balances heterogeneous
+              per-spell costs (a worker that drew a cheap chunk pulls the
+              next one instead of idling at the barrier). Measured on the
+              29-class gauntlet graph at workers=5: multiplier 2 cut the
+              plan_group barrier wall 5.22 -> 4.42ms and load skew
+              2.46x -> 1.52x; multiplier 4 over-fragmented (busy time
+              inflated by cross-thread contention). Keep 1 for phases whose
+              per-spell work is small or homogeneous.
             - Unit shape: `label="<phase_name>:chunk<i>"`,
               `metadata={"phase", "chunk_index", "spell_ids"}`.
         Args:
@@ -2442,6 +2461,7 @@ class SpellbookCreationSystem(Cleanable):
             phase_name: Phase label prefix and metadata phase value.
             spells: Ordered spell batch for this phase.
             spell_runner: Callable executing the phase step(s) for one spell.
+            chunk_multiplier: Chunk-granularity factor (>= 1) over workers.
         Returns:
             Sequence[UnitOfWork]: Chunk units for the requested phase.
         """
@@ -2451,7 +2471,7 @@ class SpellbookCreationSystem(Cleanable):
         create_unit_of_work = scheduler.create_unit_of_work
         chunks = SpellbookCreationSystem._chunk_spells(
             spells,
-            max(1, scheduler.workers),
+            max(1, scheduler.workers * max(1, chunk_multiplier)),
         )
         units: List[UnitOfWork] = []
         for index, chunk in enumerate(chunks):
@@ -2995,11 +3015,17 @@ class SpellbookCreationSystem(Cleanable):
             run_patch_maps(spell)
             run_execution(spellbook, spell)
 
+        # Fused plan sequences have strongly heterogeneous per-spell costs
+        # (deep roots cost multiples of leaves: e.g. RequestRoot ~2.3ms vs
+        # ~0.1ms leaves on the gauntlet graph), so this phase requests finer
+        # chunks than workers and lets the shared queue level the load. See
+        # `PLAN_GROUP_CHUNK_MULTIPLIER` for the measurement basis.
         return SpellbookCreationSystem._build_chunked_phase_units(
             scheduler=scheduler,
             phase_name="plan_group",
             spells=eligible_spells,
             spell_runner=_spell_runner,
+            chunk_multiplier=SpellbookCreationSystem.PLAN_GROUP_CHUNK_MULTIPLIER,
         )
 
     @staticmethod

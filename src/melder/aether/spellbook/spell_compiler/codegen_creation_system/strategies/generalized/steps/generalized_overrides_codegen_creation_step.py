@@ -96,7 +96,10 @@ class GeneralizedOverridesCodegenCreationStep(CodegenCreationFamilyStep):
         """
         Build the spell-static override runtime scratch inputs.
         """
-        steps_rows = self._build_steps_rows(overrides_plan.steps)
+        steps_rows = SharedCompilerExecutions.get_phase11_step_ir_rows(
+            overrides_plan,
+            include_override_metadata=True,
+        )
         steps_rows_signature = SharedCompilerExecutions.hash_codegen_signature(
             steps_rows
         )

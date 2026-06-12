@@ -174,7 +174,9 @@ def _install_instrumentation(chunk_mult: int) -> None:
     spellbook_module.PhaseScheduler = BreakdownPhaseScheduler
 
     if not _ORIGINAL_CHUNK_SPELLS:
-        _ORIGINAL_CHUNK_SPELLS.append(SpellbookCreationSystem._chunk_spells.__func__)
+        # Class-attribute access on a staticmethod already yields the plain
+        # function in Python 3; no `__func__` indirection exists here.
+        _ORIGINAL_CHUNK_SPELLS.append(SpellbookCreationSystem._chunk_spells)
     original_chunk_spells = _ORIGINAL_CHUNK_SPELLS[0]
 
     def _multiplied_chunk_spells(spells: List[Any], chunk_count: int) -> List[Tuple[Any, ...]]:

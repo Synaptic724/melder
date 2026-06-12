@@ -492,6 +492,8 @@ class SpellGeneralizedCodegenLanePlan(Cleanable):
         "_fast_has_contract_payloads",
         "_fast_has_existing_creations",
         "_metadata",
+        "_phase11_rows_no_meta",
+        "_phase11_rows_with_meta",
     ]
 
     def __init__(
@@ -660,6 +662,11 @@ class SpellGeneralizedCodegenLanePlan(Cleanable):
         self._fast_has_contract_payloads = fast_has_contract_payloads
         self._fast_has_existing_creations = fast_has_existing_creations
         self._metadata = metadata if metadata is not None else {}
+        # Lazily memoized phase-11 schema rows (built once per plan; the
+        # plan and its steps are immutable after construction). Consumers go
+        # through `SharedCompilerExecutions.get_phase11_step_ir_rows`.
+        self._phase11_rows_no_meta: Optional[Tuple[Dict[str, Any], ...]] = None
+        self._phase11_rows_with_meta: Optional[Tuple[Dict[str, Any], ...]] = None
 
     def cleanup(self) -> None:
         """
@@ -858,6 +865,8 @@ class SpellGeneralizedCodegenLanePlan(Cleanable):
         del self._fast_has_contract_payloads
         del self._fast_has_existing_creations
         del self._metadata
+        del self._phase11_rows_no_meta
+        del self._phase11_rows_with_meta
 
     @property
     def lane_id(self) -> str:

@@ -265,15 +265,21 @@ def _enrich_phase11_row(
           plumbing for disposal data.
         - Additive only; shared row fields are never mutated.
     """
+    # Copy before stamping: the contract line below ("never mutated") was
+    # previously violated by in-place key writes, harmless only because every
+    # consumer rebuilt rows from scratch. With plan-level row memoization in
+    # the SharedCompilerExecutions lane, in-place stamping of a shared row
+    # would poison sibling consumers, so enrichment operates on a copy.
     spell = step.spell
-    row["spell_is_callable"] = bool(
+    enriched = dict(row)
+    enriched["spell_is_callable"] = bool(
         spell.is_class_spell
         or spell.is_method_spell
         or spell.is_lambda_spell
     )
-    row["spell_is_existing_creation"] = bool(spell.is_existing_creation)
-    row["spell_has_disposal_methods"] = bool(spell.has_disposal_methods)
-    return row
+    enriched["spell_is_existing_creation"] = bool(spell.is_existing_creation)
+    enriched["spell_has_disposal_methods"] = bool(spell.has_disposal_methods)
+    return enriched
 
 
 def serialize_targets_by_spec(

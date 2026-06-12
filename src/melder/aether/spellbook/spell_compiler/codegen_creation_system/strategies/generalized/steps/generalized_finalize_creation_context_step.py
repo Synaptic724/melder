@@ -235,7 +235,10 @@ class GeneralizedFinalizeCreationContextStep(CodegenCreationFamilyStep):
             graph_shape = spell_codegen_model.graph_shape
             path_registry = None if graph_shape is None else graph_shape.path_registry
         if plan_rows is None:
-            plan_rows = self._build_override_plan_rows(overrides_plan.steps)
+            plan_rows = SharedCompilerExecutions.get_phase11_step_ir_rows(
+                overrides_plan,
+                include_override_metadata=True,
+            )
         if spell_lookup is None:
             spell_lookup = self._build_spell_lookup(overrides_plan.steps)
         if plan_signature is None:

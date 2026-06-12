@@ -1,5 +1,6 @@
-import traceback
-from typing import Any, Dict, List, Optional
+import gc
+import inspect
+from typing import Any, Dict, List
 
 import pytest
 from melder import Aether, Conduit
@@ -8,7 +9,6 @@ from melder.aether.spellbook.configuration.spellbook_configuration import (
 )
 from melder.aether.spellbook.existence.existence import Existence
 from melder.aether.spellbook.spellbook import Spellbook
-from melder.aether.conduit.creations.creations import Creations
 from tests._frame_posture_test_support import (
     configure_frame_posture_for_spellbook_configuration,
 )
@@ -79,150 +79,83 @@ class _SpaceMarker:
         self.marker = object()
 
 
-class _TracingDict(dict):
+def _describe_referrers(target: Dict[str, Any]) -> List[str]:
     """
     Purpose:
-        Inner-storage dict that records a stack trace for every mutation so
-        the caller that empties a spellspace store names itself.
+        Describe every live referrer of one inner-storage dict so the layer
+        holding a captured alias names itself.
     Contract:
-        - Behaves exactly like the dict it replaces (subclass, contents
-          copied on install) so runtime behavior is unchanged.
-        - Records `clear`, `pop`, `popitem`, `__delitem__`, and
-          `__setitem__` events into the shared event list with a full
-          formatted stack, then delegates to the real dict operation.
-        - Never raises from instrumentation.
-    """
-
-    def __init__(
-            self,
-            label: str,
-            events: List[Dict[str, Any]],
-            initial: Dict[str, Any],
-    ) -> None:
-        """
-        Purpose:
-            Build one tracing dict seeded with the store's current contents.
-        Args:
-            label: Human-readable store label (e.g. "scope_c").
-            events: Shared mutation-event sink owned by the test.
-            initial: Current inner-dict contents to copy in.
-        Returns:
-            None.
-        """
-        super().__init__(initial)
-        self._label = label
-        self._events = events
-
-    def _record(self, op: str, key: Optional[str]) -> None:
-        """
-        Purpose:
-            Append one mutation event with the caller's formatted stack.
-        Args:
-            op: Mutation operation name.
-            key: Affected key when the operation is key-targeted.
-        Returns:
-            None.
-        """
-        self._events.append(
-            {
-                "store": self._label,
-                "op": op,
-                "key": key,
-                "stack": "".join(traceback.format_stack()[:-2]),
-            }
-        )
-
-    def clear(self) -> None:
-        self._record("clear", None)
-        super().clear()
-
-    def pop(self, *args: Any) -> Any:
-        self._record("pop", args[0] if args else None)
-        return super().pop(*args)
-
-    def popitem(self) -> Any:
-        self._record("popitem", None)
-        return super().popitem()
-
-    def __delitem__(self, key: Any) -> None:
-        self._record("delitem", key)
-        super().__delitem__(key)
-
-    def __setitem__(self, key: Any, value: Any) -> None:
-        self._record("setitem", key)
-        super().__setitem__(key, value)
-
-
-def _install_tracer(
-        store: Creations,
-        label: str,
-        events: List[Dict[str, Any]],
-) -> _TracingDict:
-    """
-    Purpose:
-        Replace one Creations inner dict with a tracing dict in place.
-    Contract:
-        - Copies current contents so reads stay identical.
-        - Returns the tracer so the test can later detect rebinds
-          (clear_all/cleanup paths rebind `_creations` to a fresh dict,
-          which bypasses in-place tracing but is caught by identity check).
+        - Filters interpreter frames (the test's own locals).
+        - Enriches container referrers with shape hints (length, key sample)
+          so a fast-door registry or store wrapper is recognizable on sight.
+        - Pure reads; never mutates the referrer graph.
     Args:
-        store: Live Creations wrapper to instrument.
-        label: Store label recorded on each event.
-        events: Shared mutation-event sink.
+        target: The inner dict whose holders are being identified.
     Returns:
-        _TracingDict: The installed tracer.
+        List[str]: One descriptive line per non-frame referrer.
     """
-    tracer = _TracingDict(label, events, store._creations)
-    store._creations = tracer
-    return tracer
+    lines: List[str] = []
+    for referrer in gc.get_referrers(target):
+        if inspect.isframe(referrer):
+            continue
+        type_name = f"{type(referrer).__module__}.{type(referrer).__name__}"
+        detail = ""
+        if isinstance(referrer, dict):
+            key_sample = [str(key)[:24] for key in list(referrer)[:4]]
+            detail = f" len={len(referrer)} keys~{key_sample}"
+        elif isinstance(referrer, (list, tuple, set)):
+            detail = f" len={len(referrer)}"
+        lines.append(f"{type_name} id=0x{id(referrer):x}{detail}")
+    return lines
 
 
 def _format_report(
-        events: List[Dict[str, Any]],
-        scope_c_rebound: bool,
-        scope_d_rebound: bool,
+        *,
+        case: str,
+        depth_referrers: List[str],
+        pre_exit_referrers: List[str],
+        post_exit_referrers: List[str],
 ) -> str:
     """
     Purpose:
-        Render every captured mutation event plus rebind verdicts.
+        Render the forensic report for the cross-clear investigation.
     Args:
-        events: Captured mutation events.
-        scope_c_rebound: True when scope_c's inner dict was rebound
-            (clear_all/cleanup ran against scope_c's wrapper).
-        scope_d_rebound: True when scope_d's inner dict was rebound.
+        case: Post-exit classification of scope C's storage state.
+        depth_referrers: Holders of C's inner dict right after C's meld.
+        pre_exit_referrers: Holders right before D's exit.
+        post_exit_referrers: Holders right after D's exit.
     Returns:
         str: Multi-line forensic report.
     """
     lines = [
-        "NESTED SPELLSPACE CROSS-CLEAR FORENSICS",
-        f"scope_c inner dict rebound (clear_all/cleanup on c): {scope_c_rebound}",
-        f"scope_d inner dict rebound (clear_all/cleanup on d): {scope_d_rebound}",
-        f"captured mutation events: {len(events)}",
+        "NESTED SPELLSPACE CROSS-CLEAR REFERRER FORENSICS",
+        f"case: {case}",
+        f"--- holders of C's inner dict after C's meld ({len(depth_referrers)}) ---",
+        *depth_referrers,
+        f"--- holders right before D's exit ({len(pre_exit_referrers)}) ---",
+        *pre_exit_referrers,
+        f"--- holders right after D's exit ({len(post_exit_referrers)}) ---",
+        *post_exit_referrers,
     ]
-    for index, event in enumerate(events):
-        lines.append(
-            f"--- event {index}: store={event['store']} op={event['op']} "
-            f"key={event['key']} ---"
-        )
-        lines.append(event["stack"])
     return "\n".join(lines)
 
 
 def test_repro_nested_spellspace_cross_clear() -> None:
     """
     Purpose:
-        Reproduce the nested-spellspace store cross-clear with forensic
-        instrumentation that names the code path mutating scope_c's store.
+        Reproduce the nested-spellspace store cross-clear WITHOUT mutating
+        any storage identity, and name the holder of the captured alias via
+        GC referrer snapshots.
     Contract:
-        - Mirrors the failing component flow: A -> B -> C melds, then a D
-          cycle (meld, warm re-meld, exit).
-        - scope_c and scope_d inner dicts are tracing dicts during the D
-          cycle; every destructive mutation records a full stack.
-        - On marker loss, the test fails with the complete forensic report
-          (also printed), pinpointing the guilty caller.
-        - On no loss, the test passes: the repro then no longer reproduces
-          and the component failure needs a wider net.
+        - Mirrors the failing component flow exactly: A -> B -> C melds,
+          full depth diagnostics, then a D cycle (meld, warm re-meld, exit).
+        - No tracing dicts and no rebinds: the v1 instrumentation made the
+          bug vanish by detaching the captured alias, proving the guilty
+          clear travels through a non-wrapper reference to C's inner dict.
+        - Snapshots `gc.get_referrers` of C's inner dict at three points;
+          on marker loss the report classifies the case (in-place clear vs
+          wrapper rebind) and lists every holder so the capturing layer is
+          identified.
     """
     spellbook = _make_spellbook()
     marker_id = spellbook.bind(
@@ -231,7 +164,6 @@ def test_repro_nested_spellspace_cross_clear() -> None:
         permissions="create",
     )
     conduit = spellbook.conjure(name="root")
-    events: List[Dict[str, Any]] = []
     try:
         with conduit.enter_spellspace() as scope_a:
             marker_a = scope_a.meld(spell=marker_id)
@@ -241,31 +173,64 @@ def test_repro_nested_spellspace_cross_clear() -> None:
                 with conduit.enter_spellspace() as scope_c:
                     marker_c = scope_c.meld(spell=marker_id)
                     assert marker_c is not marker_b
-                    # Instrument C before the D cycle: every later mutation
-                    # of c's storage is captured with the caller's stack.
-                    tracer_c = _install_tracer(scope_c._creations, "scope_c", events)
-                    assert tracer_c.get(marker_id) is marker_c
+                    assert marker_c is not marker_a
+                    # Identity-preserving capture of C's inner storage dict.
+                    c_inner = scope_c._creations._creations
+                    assert c_inner.get(marker_id) is marker_c
+                    depth_referrers = _describe_referrers(c_inner)
                     with conduit.enter_spellspace() as scope_d:
-                        # Instrument D before its first meld so its expected
-                        # store/clear traffic is captured for contrast.
-                        tracer_d = _install_tracer(
-                            scope_d._creations, "scope_d", events
-                        )
                         marker_d = scope_d.meld(spell=marker_id)
+                        # Mirror the component test's depth diagnostics
+                        # (pure reads, kept so the flow matches exactly).
+                        assert (
+                            len({id(scope_a), id(scope_b), id(scope_c), id(scope_d)})
+                            == 4
+                        )
+                        assert (
+                            len(
+                                {
+                                    id(scope_a._creations),
+                                    id(scope_b._creations),
+                                    id(scope_c._creations),
+                                    id(scope_d._creations),
+                                }
+                            )
+                            == 4
+                        )
+                        assert scope_c._creations.get_creation(marker_id) is marker_c
                         assert marker_d is not marker_c
                         assert scope_d.meld(spell=marker_id) is marker_d
-                    # D exited. Forensics on C's storage.
-                    scope_c_rebound = scope_c._creations._creations is not tracer_c
-                    scope_d_rebound = scope_d._creations._creations is not tracer_d
-                    survived = (
-                        scope_c._creations.get_creation(marker_id) is marker_c
-                    )
-                    if not survived:
-                        report = _format_report(
-                            events, scope_c_rebound, scope_d_rebound
+                        pre_exit_referrers = _describe_referrers(c_inner)
+                    # D exited. Referrer + storage forensics on C.
+                    post_exit_referrers = _describe_referrers(c_inner)
+                    rebound = scope_c._creations._creations is not c_inner
+                    marker_in_original = c_inner.get(marker_id) is marker_c
+                    wrapper_read = scope_c._creations.get_creation(marker_id)
+                    if rebound:
+                        case = (
+                            "WRAPPER REBOUND: a clear_all/cleanup-style path ran "
+                            "against scope_c's wrapper during scope_d's exit"
                         )
-                        print(report)
-                        raise AssertionError(report)
+                    elif not marker_in_original:
+                        case = (
+                            "IN-PLACE CLEAR: scope_c's inner dict was emptied "
+                            "through a captured non-wrapper reference"
+                        )
+                    elif wrapper_read is not marker_c:
+                        case = (
+                            "LOOKUP DIVERGENCE: inner dict intact but wrapper "
+                            "read missed (read-path bug)"
+                        )
+                    else:
+                        case = "NO LOSS: repro did not trigger in this run"
+                    report = _format_report(
+                        case=case,
+                        depth_referrers=depth_referrers,
+                        pre_exit_referrers=pre_exit_referrers,
+                        post_exit_referrers=post_exit_referrers,
+                    )
+                    print(report)
+                    assert wrapper_read is marker_c, report
                     assert scope_c.meld(spell=marker_id) is marker_c
                 assert scope_b.meld(spell=marker_id) is marker_b
             assert scope_a.meld(spell=marker_id) is marker_a

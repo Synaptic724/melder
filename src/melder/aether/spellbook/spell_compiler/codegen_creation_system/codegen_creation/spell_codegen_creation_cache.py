@@ -136,12 +136,9 @@ def build_package(spell: Any) -> Dict[str, Any]:
 def _build_no_overrides_subpackage(*, no_overrides_plan: Any) -> Dict[str, Any]:
     """Build the row-only + inner-code no_overrides subpackage."""
     steps = tuple(no_overrides_plan.steps)
-    steps_rows = tuple(
-        SharedCompilerExecutions.build_phase11_step_ir_row(
-            step,
-            include_override_metadata=False,
-        )
-        for step in steps
+    steps_rows = SharedCompilerExecutions.get_phase11_step_ir_rows(
+        no_overrides_plan,
+        include_override_metadata=False,
     )
     step_spell_ids = tuple(
         step.spell.spell_index.current
@@ -183,12 +180,9 @@ def _build_overrides_subpackage(
     if overrides_plan is None or override_targeting_shape is None:
         return None
 
-    plan_rows = tuple(
-        SharedCompilerExecutions.build_phase11_step_ir_row(
-            step,
-            include_override_metadata=True,
-        )
-        for step in overrides_plan.steps
+    plan_rows = SharedCompilerExecutions.get_phase11_step_ir_rows(
+        overrides_plan,
+        include_override_metadata=True,
     )
     step_spell_ids = tuple(
         step.spell.spell_index.current

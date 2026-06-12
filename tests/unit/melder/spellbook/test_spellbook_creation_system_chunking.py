@@ -155,3 +155,54 @@ def test_build_chunked_phase_units_empty_batch_returns_empty():
         assert units == []
     finally:
         scheduler.cleanup()
+
+
+def test_build_chunked_phase_units_applies_chunk_multiplier():
+    # Load-balancing contract: chunk_multiplier requests finer granularity
+    # than workers so the queue levels heterogeneous per-spell costs; the
+    # chunk count is workers * multiplier, still capped by the spell count.
+    scheduler = PhaseScheduler(
+        spellbook=object(),
+        configuration=_SchedulerConfig(workers=2),
+    )
+    try:
+        spells = _spell_stubs(8)
+        units = SpellbookCreationSystem._build_chunked_phase_units(
+            scheduler=scheduler,
+            phase_name="phase-x",
+            spells=spells,
+            spell_runner=lambda spell: None,
+        )
+        assert len(units) == 2
+        multiplied_units = SpellbookCreationSystem._build_chunked_phase_units(
+            scheduler=scheduler,
+            phase_name="phase-x",
+            spells=spells,
+            spell_runner=lambda spell: None,
+            chunk_multiplier=2,
+        )
+        assert len(multiplied_units) == 4
+        covered = [
+            spell_id
+            for unit in multiplied_units
+            for spell_id in unit.metadata["spell_ids"]
+        ]
+        assert covered == [spell.spell_id for spell in spells]
+        # Spell-count cap still applies under the multiplier.
+        capped_units = SpellbookCreationSystem._build_chunked_phase_units(
+            scheduler=scheduler,
+            phase_name="phase-x",
+            spells=_spell_stubs(3),
+            spell_runner=lambda spell: None,
+            chunk_multiplier=4,
+        )
+        assert len(capped_units) == 3
+    finally:
+        scheduler.cleanup()
+
+
+def test_plan_group_chunk_multiplier_constant_is_evidence_backed_value():
+    # Pins the production value chosen from the breakdown-harness
+    # measurements (multiplier 2; see the class-constant comment for the
+    # numbers). A change here must come with fresh harness evidence.
+    assert SpellbookCreationSystem.PLAN_GROUP_CHUNK_MULTIPLIER == 2

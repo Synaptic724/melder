@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+import gc
+import inspect
+
 import pytest
 from melder import Aether, Conduit
 from melder.aether.spellbook.configuration.spellbook_configuration import SpellbookConfiguration
@@ -643,6 +646,36 @@ def test_component_positional_meld_raises_canonical_error_after_cleanup() -> Non
         conduit.meld(spell_id)
 
 
+def _describe_dict_referrers(target: dict) -> list[str]:
+    """
+    Purpose:
+        Describe every live referrer of one inner-storage dict so the layer
+        holding a captured alias names itself in the failure report.
+    Contract:
+        - Filters interpreter frames (the test's own locals).
+        - Enriches container referrers with shape hints (length, key sample)
+          so a fast-door registry or store wrapper is recognizable on sight.
+        - Pure reads; never mutates the referrer graph.
+    Args:
+        target: The inner dict whose holders are being identified.
+    Returns:
+        list[str]: One descriptive line per non-frame referrer.
+    """
+    lines: list[str] = []
+    for referrer in gc.get_referrers(target):
+        if inspect.isframe(referrer):
+            continue
+        type_name = f"{type(referrer).__module__}.{type(referrer).__name__}"
+        detail = ""
+        if isinstance(referrer, dict):
+            key_sample = [str(key)[:24] for key in list(referrer)[:4]]
+            detail = f" len={len(referrer)} keys~{key_sample}"
+        elif isinstance(referrer, (list, tuple, set)):
+            detail = f" len={len(referrer)}"
+        lines.append(f"{type_name} id=0x{id(referrer):x}{detail}")
+    return lines
+
+
 def test_component_spellspace_nested_scope_stack_isolation() -> None:
     """
     Purpose:
@@ -656,6 +689,13 @@ def test_component_spellspace_nested_scope_stack_isolation() -> None:
           scopes exit (LIFO unwind does not disturb outer storage).
         - The spellspace acts as its own context manager: the object yielded
           by `with` IS the spellspace returned by `enter_spellspace()`.
+    Forensics:
+        The known cross-clear failure travels through a captured non-wrapper
+        reference to scope C's inner dict (the standalone repro passes both
+        with and without identity-preserving instrumentation, while this
+        test fails solo). The referrer snapshots below run in the failing
+        environment itself so the holder of the captured alias is named in
+        the failure report.
     """
     spellbook = _make_spellbook()
     marker_id = spellbook.bind(
@@ -674,6 +714,12 @@ def test_component_spellspace_nested_scope_stack_isolation() -> None:
                     marker_c = scope_c.meld(spell=marker_id)
                     assert marker_c is not marker_b
                     assert marker_c is not marker_a
+                    # Identity-preserving forensic capture of C's inner
+                    # storage dict (no rebinds: rebinding detaches the
+                    # captured alias and hides the bug).
+                    c_inner = scope_c._creations._creations
+                    assert c_inner.get(marker_id) is marker_c
+                    depth_referrers = _describe_dict_referrers(c_inner)
                     with conduit.enter_spellspace() as scope_d:
                         marker_d = scope_d.meld(spell=marker_id)
                         # Diagnostic layer pinpointing: shells and their
@@ -708,13 +754,43 @@ def test_component_spellspace_nested_scope_stack_isolation() -> None:
                         # Each scope's own warm re-meld stays scope-correct
                         # at full depth.
                         assert scope_d.meld(spell=marker_id) is marker_d
-                # Diagnostic layer pinpointing after scope_d's exit:
-                # storage-layer check first (did anything cross-clear
-                # scope_c's store?), then lane wiring (does scope_c's fast
-                # entry still capture scope_c's own store?), then behavior.
-                assert (
-                    scope_c._creations.get_creation(marker_id) is marker_c
-                ), "scope_c store lost marker_c after scope_d exit (cross-clear)"
+                        pre_exit_referrers = _describe_dict_referrers(c_inner)
+                # Referrer + storage forensics after scope_d's exit: classify
+                # the loss case and name every holder of C's inner dict.
+                post_exit_referrers = _describe_dict_referrers(c_inner)
+                rebound = scope_c._creations._creations is not c_inner
+                marker_in_original = c_inner.get(marker_id) is marker_c
+                wrapper_read = scope_c._creations.get_creation(marker_id)
+                if rebound:
+                    case = (
+                        "WRAPPER REBOUND: a clear_all/cleanup-style path ran "
+                        "against scope_c's wrapper during scope_d's exit"
+                    )
+                elif not marker_in_original:
+                    case = (
+                        "IN-PLACE CLEAR: scope_c's inner dict was emptied "
+                        "through a captured non-wrapper reference"
+                    )
+                elif wrapper_read is not marker_c:
+                    case = (
+                        "LOOKUP DIVERGENCE: inner dict intact but wrapper "
+                        "read missed (read-path bug)"
+                    )
+                else:
+                    case = "NO LOSS"
+                forensic_report = "\n".join(
+                    [
+                        "scope_c cross-clear forensics",
+                        f"case: {case}",
+                        f"--- holders after C's meld ({len(depth_referrers)}) ---",
+                        *depth_referrers,
+                        f"--- holders before D's exit ({len(pre_exit_referrers)}) ---",
+                        *pre_exit_referrers,
+                        f"--- holders after D's exit ({len(post_exit_referrers)}) ---",
+                        *post_exit_referrers,
+                    ]
+                )
+                assert wrapper_read is marker_c, forensic_report
                 fast_entry = scope_c._meld._fast_meld_doors.get(marker_id)
                 if fast_entry is not None:
                     assert (
