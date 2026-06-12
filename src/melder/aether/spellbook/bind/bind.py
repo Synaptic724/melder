@@ -242,9 +242,8 @@ class Bind(Cleanable):
             _mrg.assert_allowed(spell, context="bind")
             # 0.1 Reject modules outright.
             if inspect.ismodule(spell):
-                mod_name = getattr(spell, "__name__", repr(spell))
                 raise TypeError(
-                    f"Cannot bind module '{mod_name}'. Provide a class/function/object instead."
+                    f"Cannot bind module '{spell.__name__}'. Provide a class/function/object instead."
                 )
 
             # ------------------------------------------------------------------
@@ -254,9 +253,8 @@ class Bind(Cleanable):
             # Users may use Protocols as `spellframe` values, but cannot bind
             # a Protocol itself as a Spell.
             if Bind._is_protocol_type(spell):
-                spell_name = getattr(spell, "__name__", repr(spell))
                 raise TypeError(
-                    f"Cannot bind Protocol '{spell_name}' as a concrete spell. "
+                    f"Cannot bind Protocol '{spell.__name__}' as a concrete spell. "
                     f"Protocols may only be used as spellframes (DI contracts)."
                 )
 
@@ -286,6 +284,7 @@ class Bind(Cleanable):
             fingerprint: str = Bind.sha256_profile(
                 binding_profile,
                 spellframe=spellframe,
+                spell_name=spell_name,
                 binding_name=binding_name,
                 existence=existence,
                 disposal_method_names=resolved_disposal_method_names,

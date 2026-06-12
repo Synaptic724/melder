@@ -12,13 +12,6 @@ from melder.aether.spellbook.spell_compiler.spell_compiler_system import (
     SpellCompilerSystem,
 )
 from melder.aether.spellbook.spellbook_creation_system import SpellbookCreationSystem
-from melder.aether.spellbook.spell_compiler.spell_examiner.profiles.binding_profile import (
-    ClassBindingProfile,
-    SpellBindingKind,
-)
-from melder.aether.spellbook.spell_compiler.spell_examiner.profiles.general_profile import (
-    SpellGeneralProfile,
-)
 
 
 class _SchedulerProbe:
@@ -760,58 +753,38 @@ def test_cleanup_phase_artifacts_after_resolution_cleans_all_and_scoped_spells(
     assert scoped_failing_spell.cleanup_calls == 1
 
 
-def test_define_disposal_metadata_on_spells_matches_class_profile_methods() -> None:
-    spellbook = _StubSpellbook()
-    spellbook._configuration = types.SimpleNamespace(
-        get_property=lambda name: ["cleanup", "close"]
+def test_prepare_spellbook_for_conjure_runs_structural_phases_without_disposal_rewrite(
+        monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    spellbook = types.SimpleNamespace(
+        is_configuration_locked=lambda: True,
+        _spells={
+            "a": types.SimpleNamespace(
+                disposal_method_names=frozenset({"cleanup"}),
+                has_disposal_methods=True,
+            )
+        },
     )
-    class_bound = types.SimpleNamespace(
-        profile=ClassBindingProfile(
-            kind=SpellBindingKind.CLASS,
-            original_object=object(),
-            name="Demo",
-            qualname="Demo",
-            module="tests",
-            method_names=["cleanup", "run"],
-        ),
-        disposal_method_names=[],
-        has_disposal_methods=False,
-    )
-    wrapped_profile = SpellGeneralProfile(
-        binding_profile=ClassBindingProfile(
-            kind=SpellBindingKind.CLASS,
-            original_object=object(),
-            name="Wrapped",
-            qualname="Wrapped",
-            module="tests",
-            method_names=["close"],
-        ),
-        resolution_profile=object(),
-    )
-    wrapped_bound = types.SimpleNamespace(
-        profile=wrapped_profile,
-        disposal_method_names=[],
-        has_disposal_methods=False,
-    )
-    non_class = types.SimpleNamespace(
-        profile=object(),
-        disposal_method_names=[],
-        has_disposal_methods=False,
-    )
-    spellbook._spells = {
-        "a": class_bound,
-        "b": wrapped_bound,
-        "c": non_class,
-    }
+    calls: List[tuple[Any, Any]] = []
 
-    SpellbookCreationSystem.define_disposal_metadata_on_spells(spellbook)
+    monkeypatch.setattr(
+        SpellbookCreationSystem,
+        "run_structural_phases",
+        staticmethod(
+            lambda *, spellbook, phase_scheduler_cls: calls.append(
+                (spellbook, phase_scheduler_cls)
+            )
+        ),
+    )
 
-    assert class_bound.disposal_method_names == ["cleanup"]
-    assert class_bound.has_disposal_methods is True
-    assert wrapped_bound.disposal_method_names == ["close"]
-    assert wrapped_bound.has_disposal_methods is True
-    assert non_class.disposal_method_names == []
-    assert non_class.has_disposal_methods is False
+    SpellbookCreationSystem._prepare_spellbook_for_conjure(
+        spellbook=spellbook,
+        phase_scheduler_cls=_SchedulerProbe,
+    )
+
+    assert calls == [(spellbook, _SchedulerProbe)]
+    assert spellbook._spells["a"].disposal_method_names == frozenset({"cleanup"})
+    assert spellbook._spells["a"].has_disposal_methods is True
 
 
 def test_read_full_ahead_of_time_compilation_returns_true_for_none_value() -> None:

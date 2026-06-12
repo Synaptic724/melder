@@ -1660,6 +1660,12 @@ def test_sha256_profile_changes_with_binding_signature_existence_and_disposal():
         existence=Existence.unique,
         disposal_method_names=(),
     )
+    with_spell_name = Bind.sha256_profile(
+        profile,
+        spell_name="NamedService",
+        existence=Existence.unique,
+        disposal_method_names=(),
+    )
     with_binding_name = Bind.sha256_profile(
         profile,
         binding_name="primary",
@@ -1682,6 +1688,7 @@ def test_sha256_profile_changes_with_binding_signature_existence_and_disposal():
         existence=Existence.unique,
         disposal_method_names=("cleanup",),
     )
+    assert base != with_spell_name
     assert base != with_binding_name
     assert base != with_frame
     assert base != with_existence

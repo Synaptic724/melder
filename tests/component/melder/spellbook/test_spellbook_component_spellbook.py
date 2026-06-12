@@ -545,11 +545,12 @@ def test_component_spellbook_begin_transaction_bind_respects_disable_all_transac
 def test_component_spellbook_conjure_sets_disposal_metadata() -> None:
     """
     Purpose:
-        Validate conjure computes per-spell disposal metadata from configuration.
+        Validate bind-owned disposal metadata survives conjure unchanged.
     Contract:
-        - Class spells record configured disposal methods present on the class.
-        - Non-class spells record an empty disposal method list.
-        - has_disposal_methods is True only when the list is non-empty.
+        - Class spells keep the resolved frozen disposal-method set computed at bind.
+        - Non-class spells keep an empty frozen disposal-method set.
+        - Conjure does not run a second disposal rewrite pass.
+        - has_disposal_methods is True only when the frozen set is non-empty.
     Returns:
         None.
     Raises:
@@ -619,12 +620,12 @@ def test_component_spellbook_conjure_sets_disposal_metadata() -> None:
         try:
             disposable_spell = _get_spell_by_version_id(spellbook, disposable_id)
             assert disposable_spell is not None
-            assert disposable_spell.disposal_method_names == ["cleanup", "close"]
+            assert disposable_spell.disposal_method_names == frozenset({"cleanup", "close"})
             assert disposable_spell.has_disposal_methods is True
 
             callable_spell = _get_spell_by_version_id(spellbook, callable_id)
             assert callable_spell is not None
-            assert callable_spell.disposal_method_names == []
+            assert callable_spell.disposal_method_names == frozenset()
             assert callable_spell.has_disposal_methods is False
         finally:
             conduit.permanent_cleanup()

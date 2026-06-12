@@ -14,9 +14,6 @@ from melder.aether.spellbook.spell_compiler.spell_compiler_system import (
 from melder.aether.conduit.conduit_state.conduit_state import ConduitState
 from melder.aether.conduit.conduit_ward.policies.policies import Policies
 from melder.aether.spellbook.configuration.system_state import SystemState
-from melder.aether.spellbook.spell_compiler.spell_examiner.profiles.binding_profile import (
-    ClassBindingProfile,
-)
 from melder.aether.spellbook.spell_compiler.system.system_diagnostic import (
     SystemDiagnostic,
     SystemDiagnosticSeverity,
@@ -26,12 +23,6 @@ from melder.utilities.custom_exceptions.spellbook_validation_error import Spellb
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.general_helpers import EnumHelpers
 from melder.utilities.helpers.id_builder import IDBuilder
-from melder.aether.spellbook.spell_compiler.spell_examiner.profiles.detailed_profile import (
-    SpellDetailedProfile,
-)
-from melder.aether.spellbook.spell_compiler.spell_examiner.profiles.general_profile import (
-    SpellGeneralProfile,
-)
 from melder.utilities.synchronization.cancellation_event_signal import CancellationEventSignal
 from melder.utilities.synchronization.phase_scheduler import PhaseScheduler
 from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_state_change_reason import SpellStateChangeReason
@@ -61,8 +52,8 @@ class SpellbookCreationSystem(Cleanable):
     Contract:
         - Uses Spellbook methods for overlapping behaviour (configuration
           freeze/bind, structural phases, resolution phases, and spell checks).
-        - Owns conjure-only orchestration helpers (hook flow, policy gate,
-          disposal metadata pass, and conduit ownership stamping).
+        - Owns conjure-only orchestration helpers (hook flow, policy gate, and
+          conduit ownership stamping).
         - Cleanup is deterministic and idempotent; once cleaned, this instance
           cannot be reused.
 
@@ -243,7 +234,7 @@ class SpellbookCreationSystem(Cleanable):
             Prepare Spellbook state required before conduit construction.
         Contract:
             - Freezes and binds configuration when not already locked.
-            - Executes structural phases and disposal metadata wiring.
+            - Executes structural phases before conduit construction.
         Args:
             spellbook: Owning Spellbook instance.
             phase_scheduler_cls: Scheduler class used for phase execution.
@@ -260,7 +251,6 @@ class SpellbookCreationSystem(Cleanable):
             spellbook=spellbook,
             phase_scheduler_cls=phase_scheduler_cls,
         )
-        SpellbookCreationSystem.define_disposal_metadata_on_spells(spellbook)
 
     @staticmethod
     def _prepare_resolution_for_conjure(
@@ -1005,45 +995,6 @@ class SpellbookCreationSystem(Cleanable):
                 f"(policy={policy_enum}, dynamic={dynamic}, system_state={system_state}). "
                 "Set system_state to 'dynamic' in the configuration or call conjure(dynamic=False)."
             )
-
-    @staticmethod
-    def define_disposal_metadata_on_spells(spellbook: Spellbook) -> None:
-        """
-        Purpose:
-            Precompute spell disposal metadata from configured method names.
-        Contract:
-            - Class-bound spells receive matched disposal methods.
-            - Non-class spells or missing profiles receive empty metadata.
-            - Updates "disposal_method_names" and "has_disposal_methods".
-        Args:
-            spellbook: Owning Spellbook instance.
-        Returns:
-            None.
-        Raises:
-            Exception: Propagates configuration property access failures.
-        """
-        if spellbook._configuration is None:
-            raise RuntimeError(
-                "Cannot define disposal metadata without a configuration. "
-                f"(spellbook={spellbook})"
-            )
-        target_methods = list(spellbook._configuration.get_property("disposal_method_names"))
-        if len(target_methods) == 0:
-            return
-
-        for spell in spellbook._spells.values():
-            matched: List[str] = []
-            profile = spell.profile
-            binding_profile = profile
-            if isinstance(profile, (SpellGeneralProfile, SpellDetailedProfile)):
-                binding_profile = profile.binding_profile
-            if isinstance(binding_profile, ClassBindingProfile):
-                method_names = set(binding_profile.method_names)
-                for method_name in target_methods:
-                    if method_name in method_names:
-                        matched.append(method_name)
-            spell.disposal_method_names = matched
-            spell.has_disposal_methods = bool(matched)
 
     @staticmethod
     def define_conduit_into_spells(spellbook: Spellbook, conduit: Conduit) -> None:

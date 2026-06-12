@@ -3999,7 +3999,6 @@ and logging.
                     f"(spellbook_id={self._id}, conduit_id={conduit_id}, "
                     f"conduit_name={conduit_name})"
                 )
-
             if self._configured_disposal_method_names is not None:
                 for spell in self._spells.values():
                     if not isinstance(spell.disposal_method_names, frozenset):
