@@ -1,13 +1,14 @@
+import threading
 from typing import TYPE_CHECKING, ClassVar
 
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
-from melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_system import (
-    CodegenCreationSystem,
-)
 from melder.utilities.general_base.cleanable import Cleanable
 
 if TYPE_CHECKING:
     from melder.aether.spellbook.spell import Spell
+    from melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_system import (
+        CodegenCreationSystem,
+    )
     from melder.aether.spellbook.spell_compiler.spell_compiler_artifact import (
         SpellCompilerArtifact,
     )
@@ -46,12 +47,25 @@ class CompilerPhase11(Cleanable):
         "_codegen_creation_system",
     ]
 
+    # Lazy-import guard shared across instances (rare path: first creation
+    # build in the process). The codegen_creation_system subtree (~28ms
+    # import, 77 modules) is deferred so cache full-hit conjures, which
+    # never run phase 11, never load it. Manifest hydration loads its own
+    # narrow slice through the existing function-level cache imports.
+    _lazy_import_lock: ClassVar[threading.Lock] = threading.Lock()
+
     def __init__(self) -> None:
         """
         Build the live phase-11 wrapper.
+
+        Contract:
+            - Defers codegen-creation construction (and the
+              codegen_creation_system module import) to the first `run(...)`
+              call so phase objects stay free to construct on conjure paths
+              that skip plan phases.
         """
         super().__init__()
-        self._codegen_creation_system = CodegenCreationSystem()
+        self._codegen_creation_system: "CodegenCreationSystem | None" = None
 
     def cleanup(self) -> None:
         """
@@ -60,7 +74,8 @@ class CompilerPhase11(Cleanable):
         if self._cleaned:
             return
         self._cleaned = True
-        self._codegen_creation_system.cleanup()
+        if self._codegen_creation_system is not None:
+            self._codegen_creation_system.cleanup()
         del self._codegen_creation_system
 
     def run(
@@ -100,4 +115,15 @@ class CompilerPhase11(Cleanable):
         """
         _ = spell
         _ = spellbook
-        self._codegen_creation_system.build(artifact)
+        creation_system = self._codegen_creation_system
+        if creation_system is None:
+            with CompilerPhase11._lazy_import_lock:
+                creation_system = self._codegen_creation_system
+                if creation_system is None:
+                    from melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_system import (
+                        CodegenCreationSystem,
+                    )
+
+                    creation_system = CodegenCreationSystem()
+                    self._codegen_creation_system = creation_system
+        creation_system.build(artifact)

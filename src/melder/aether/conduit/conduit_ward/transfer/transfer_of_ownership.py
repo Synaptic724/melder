@@ -20,6 +20,7 @@ from melder.aether.conduit.conduit_ward.permissions.permissions import Permissio
 from melder.aether.conduit.conduit_ward.policies.policies import Policies
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.aether.spellbook.bind.spell_index import SpellIndex
+from melder.utilities.helpers.ulid_factory import new_ulid
 from melder.utilities.synchronization.safeguard import SafeGuard
 from melder.aether.conduit.conduit_ward.contract.detail_reason import DetailReason
 from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_state_change_reason import SpellStateChangeReason

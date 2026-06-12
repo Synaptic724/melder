@@ -28,10 +28,10 @@ from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_state_change
 )
 from melder.aether.conduit.meld.contracts.spell_contract import SpellContract
 from melder.aether.spellbook.existence.existence import Existence
-from melder.aether.spellbook.spell_compiler.spell_compiler_system import (
-    SpellCompilerSystem,
-)
 if TYPE_CHECKING:
+    from melder.aether.spellbook.spell_compiler.spell_compiler_system import (
+        SpellCompilerSystem,
+    )
     from melder.aether.spellbook.spell import Spell
     from melder.aether.spellbook.spellbook import Spellbook
     from melder.aether.spellbook.bind.spell_index import SpellIndex
@@ -988,14 +988,15 @@ class Meld(Cleanable, ABC):
 
         return resolution_state.get_spell_validity(spell_id)
 
-    def _get_spell_compiler_system(self) -> SpellCompilerSystem:
+    def _get_spell_compiler_system(self) -> "SpellCompilerSystem":
         """
         Return the compiler-system helper, creating it on first demand.
 
         Purpose:
             Keep the heavy compiler/validation foundation off the hot lesser-
             conduit path until one actual validation or root-check path needs
-            it.
+            it. The module import itself is also deferred to this point so
+            `import meld` does not pull the compiler package eagerly.
 
         Contract:
             - Creates exactly one SpellCompilerSystem per Meld instance.
@@ -1010,6 +1011,10 @@ class Meld(Cleanable, ABC):
         with self._lock:
             compiler_system = self._spell_compiler_system
             if compiler_system is None:
+                from melder.aether.spellbook.spell_compiler.spell_compiler_system import (
+                    SpellCompilerSystem,
+                )
+
                 compiler_system = SpellCompilerSystem()
                 self._spell_compiler_system = compiler_system
         return compiler_system

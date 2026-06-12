@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import threading
 from types import SimpleNamespace
-from typing import Any, Callable, Dict, List, Optional, Set
+from typing import Any, Callable, Dict, List, Optional, Set, Tuple
 
 import pytest
 
@@ -3479,15 +3479,23 @@ def test_flip_registry_and_spellbooks_republishes_spell_to_nexus() -> None:
     ]
 
 
-def test_flip_registry_and_spellbooks_stamps_resolution_required_from_target_defaults() -> None:
+def test_flip_registry_and_spellbooks_resets_resolution_flags_for_eager_recompilation() -> None:
     """
-    Verify ownership flip reapplies target runtime-resolution defaults.
+    Verify ownership flip resets resolution flags for eager recompilation.
 
     Contract:
-    - `resolution_required` is recomputed from target spellbook config.
+    - Compilation is always full/eager (the AOT/JIT knob was removed), so
+      the flip stamps `resolution_required = False` unconditionally; it is
+      no longer recomputed from target spellbook config.
+    - Post-transfer recompilation is guaranteed by
+      `resolution_complete = False` plus cleared phase artifacts, not by a
+      deferred-resolution flag.
     """
     env = build_environment()
-    env.spell.resolution_required = False
+    # Seed both flags opposite to the expected post-flip values so the test
+    # proves the flip stamps them rather than passing on stale state.
+    env.spell.resolution_required = True
+    env.spell.resolution_complete = True
     env.source._spellbook._configuration = SimpleNamespace(
         get_property=lambda name: True
     )
@@ -3502,7 +3510,8 @@ def test_flip_registry_and_spellbooks_stamps_resolution_required_from_target_def
 
     transfer._flip_registry_and_spellbooks(env.spell)
 
-    assert env.spell.resolution_required is True
+    assert env.spell.resolution_required is False
+    assert env.spell.resolution_complete is False
 
 
 def test_transfer_flip_and_rollback_keep_contracted_maps_unchanged() -> None:
