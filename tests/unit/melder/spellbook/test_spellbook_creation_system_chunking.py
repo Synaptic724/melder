@@ -206,3 +206,24 @@ def test_plan_group_chunk_multiplier_constant_is_evidence_backed_value():
     # measurements (multiplier 2; see the class-constant comment for the
     # numbers). A change here must come with fresh harness evidence.
     assert SpellbookCreationSystem.PLAN_GROUP_CHUNK_MULTIPLIER == 2
+
+
+def test_chunk_multiplier_is_gated_off_at_one_worker():
+    # No-parallelism gate: with one worker there is nothing to balance and
+    # extra chunks are pure dispatch tax (bind/compiler-lane measurement:
+    # +1-1.6ms cold setup at workers=1 before this gate landed).
+    scheduler = PhaseScheduler(
+        spellbook=object(),
+        configuration=_SchedulerConfig(workers=1),
+    )
+    try:
+        units = SpellbookCreationSystem._build_chunked_phase_units(
+            scheduler=scheduler,
+            phase_name="phase-x",
+            spells=_spell_stubs(8),
+            spell_runner=lambda spell: None,
+            chunk_multiplier=4,
+        )
+        assert len(units) == 1
+    finally:
+        scheduler.cleanup()

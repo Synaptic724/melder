@@ -219,6 +219,56 @@ class CodegenCreationSchemaHelpers:
         )
 
     @staticmethod
+    def get_phase11_step_ir_rows(
+            plan: Any,
+            *,
+            include_override_metadata: bool,
+    ) -> Tuple[Dict[str, Any], ...]:
+        """
+        Return the plan's phase-11 schema rows, memoized on the plan.
+
+        Purpose:
+            Phase-11 build, conjure-end cache export, override
+            specialization, and the family manifest each rowified the same
+            immutable plan steps independently (up to 4x per lane on a cold
+            pass). Every one of those consumers resolves to THIS class's
+            `build_phase11_step_ir_row` (several import it under the alias
+            `SharedCompilerExecutions`), so one memo on the plan serves them
+            all without crossing builder surfaces.
+
+        Contract:
+            - Memo slots (`_phase11_rows_no_meta` / `_phase11_rows_with_meta`)
+              are optional: plan families without the slots (or legacy/stub
+              plans) silently fall back to a fresh build, byte-identical to
+              the previous behavior.
+            - Consumers MUST NOT mutate returned rows; enrichment-style
+              consumers (the manifest) copy per row before stamping.
+            - Benign build race under multi-worker scheduling: the build is
+              idempotent over immutable inputs and the last writer wins with
+              an equivalent tuple.
+        """
+        memo_attr = (
+            "_phase11_rows_with_meta"
+            if include_override_metadata
+            else "_phase11_rows_no_meta"
+        )
+        rows = getattr(plan, memo_attr, None)
+        if rows is not None:
+            return rows
+        rows = tuple(
+            CodegenCreationSchemaHelpers.build_phase11_step_ir_row(
+                step,
+                include_override_metadata=include_override_metadata,
+            )
+            for step in plan.steps
+        )
+        try:
+            setattr(plan, memo_attr, rows)
+        except AttributeError:
+            pass
+        return rows
+
+    @staticmethod
     def build_phase11_step_ir_row(
             step: Any,
             *,

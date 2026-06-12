@@ -74,6 +74,9 @@ class SpellbookCreationSystem(Cleanable):
     # 16.7 -> 22.2ms by cross-thread contention). 2 is the evidence-backed
     # production value; revisit only with new breakdown-harness numbers
     # (`benchmarks/testing_other_di/profile_phase_scheduler_breakdown.py`).
+    # At workers == 1 the multiplier is gated off inside
+    # `_build_chunked_phase_units` (bind/compiler-lane measurement showed
+    # +1-1.6ms cold-setup tax from no-parallelism chunk splitting).
     PLAN_GROUP_CHUNK_MULTIPLIER: ClassVar[int] = 2
     __slots__ = Cleanable.__slots__ + [
         "_dynamic",
@@ -2454,6 +2457,10 @@ class SpellbookCreationSystem(Cleanable):
               2.46x -> 1.52x; multiplier 4 over-fragmented (busy time
               inflated by cross-thread contention). Keep 1 for phases whose
               per-spell work is small or homogeneous.
+            - The multiplier is ignored at `workers == 1`: with no
+              parallelism there is nothing to balance and the extra chunks
+              are pure dispatch tax (measured by the bind/compiler lane as
+              +1-1.6ms on workers=1 cold setup before this gate).
             - Unit shape: `label="<phase_name>:chunk<i>"`,
               `metadata={"phase", "chunk_index", "spell_ids"}`.
         Args:
@@ -2469,9 +2476,11 @@ class SpellbookCreationSystem(Cleanable):
             return []
         cancel_event = scheduler.cancel_event
         create_unit_of_work = scheduler.create_unit_of_work
+        workers = max(1, scheduler.workers)
+        effective_multiplier = max(1, chunk_multiplier) if workers > 1 else 1
         chunks = SpellbookCreationSystem._chunk_spells(
             spells,
-            max(1, scheduler.workers * max(1, chunk_multiplier)),
+            workers * effective_multiplier,
         )
         units: List[UnitOfWork] = []
         for index, chunk in enumerate(chunks):

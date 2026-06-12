@@ -106,14 +106,14 @@ def _build_no_overrides_lane_payload(
     """
     steps = tuple(no_overrides_plan.steps)
     steps_rows = tuple(
-        _enrich_phase11_row(
-            CodegenCreationSchemaHelpers.build_phase11_step_ir_row(
-                step,
+        _enrich_phase11_row(row, step)
+        for row, step in zip(
+            CodegenCreationSchemaHelpers.get_phase11_step_ir_rows(
+                no_overrides_plan,
                 include_override_metadata=False,
             ),
-            step,
+            steps,
         )
-        for step in steps
     )
     transient_schema = CodegenCreationSchemaHelpers.build_fast_transient_schema(
         no_overrides_plan.fast_transient_plan,
@@ -150,14 +150,14 @@ def _build_overrides_lane_payload(
     """
     steps = tuple(overrides_plan.steps)
     plan_rows = tuple(
-        _enrich_phase11_row(
-            CodegenCreationSchemaHelpers.build_phase11_step_ir_row(
-                step,
+        _enrich_phase11_row(row, step)
+        for row, step in zip(
+            CodegenCreationSchemaHelpers.get_phase11_step_ir_rows(
+                overrides_plan,
                 include_override_metadata=True,
             ),
-            step,
+            steps,
         )
-        for step in steps
     )
     plan_signature = build_override_plan_signature(
         overrides_plan=overrides_plan,

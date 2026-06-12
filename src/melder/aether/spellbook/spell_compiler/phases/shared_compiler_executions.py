@@ -1000,58 +1000,12 @@ class SharedCompilerExecutions:
             )
         return tuple(rows)
 
-    @staticmethod
-    def get_phase11_step_ir_rows(
-            plan: Any,
-            *,
-            include_override_metadata: bool,
-    ) -> Tuple[Dict[str, Any], ...]:
-        """
-        Return the plan's phase-11 schema rows, memoized on the plan.
-
-        Purpose:
-            Phase-11 build, conjure-end cache export, and override
-            specialization each rowified the same immutable plan steps
-            independently (up to 3x per lane on a cold pass). The lane plan
-            is immutable after construction, so the rows are computed once
-            and reused by every SharedCompilerExecutions consumer.
-
-        Contract:
-            - Memo slots (`_phase11_rows_no_meta` / `_phase11_rows_with_meta`)
-              are optional: plan families without the slots (or legacy/stub
-              plans) silently fall back to a fresh build, byte-identical to
-              the previous behavior.
-            - Consumers MUST NOT mutate returned rows; enrichment-style
-              consumers must copy per row first.
-            - Benign build race under multi-worker scheduling: the build is
-              idempotent over immutable inputs and the last writer wins with
-              an equivalent tuple.
-            - The CodegenCreationSchemaHelpers manifest stack is intentionally
-              NOT routed through this memo: its row builder is a separate
-              surface and sharing one memo across the two stacks could
-              silently change manifest content if the builders ever drift.
-        """
-        memo_attr = (
-            "_phase11_rows_with_meta"
-            if include_override_metadata
-            else "_phase11_rows_no_meta"
-        )
-        rows = getattr(plan, memo_attr, None)
-        if rows is not None:
-            return rows
-        rows = tuple(
-            SharedCompilerExecutions.build_phase11_step_ir_row(
-                step,
-                include_override_metadata=include_override_metadata,
-            )
-            for step in plan.steps
-        )
-        try:
-            setattr(plan, memo_attr, rows)
-        except AttributeError:
-            pass
-        return rows
-
+    # NOTE: the phase-11 row memo helper (`get_phase11_step_ir_rows`) lives
+    # on `CodegenCreationSchemaHelpers`, NOT here. Every production consumer
+    # of phase-11 rows (cache export, codegen steps, family manifests)
+    # imports that class — several under the alias `SharedCompilerExecutions`
+    # — so this module's `build_phase11_step_ir_row` below is a legacy twin
+    # retained for compatibility, not the canonical builder.
     @staticmethod
     def build_phase11_step_ir_row(
             step: Any,
