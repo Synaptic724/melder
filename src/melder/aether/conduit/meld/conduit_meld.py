@@ -151,12 +151,13 @@ class ConduitMeld(Meld):
             - Warm id-string melds may take the guarded fast meld door: after
               one successful normal-lane meld in non-dynamic, no-hooks,
               no-override posture, later identical requests execute through a
-              memoized `(spell, context, executor, creations)` entry validated
-              per call by live guards (hook state, context-switch state,
-              context identity, validation/resolution flags). Any guard miss
-              falls back to this normal lane and rebuilds the entry on
-              success, so fast-lane results are always identical to
-              normal-lane results.
+              memoized `(spell, context, creations)` entry validated per call
+              by live guards (hook state, context-switch state, context
+              identity, validation/resolution flags), with the executor read
+              per hit through the live context slot so phase-11 hot-swapped
+              doors are always honored. Any guard miss falls back to this
+              normal lane and rebuilds the entry on success, so fast-lane
+              results are always identical to normal-lane results.
 
         Returns:
             Optional[Any]:
@@ -313,19 +314,21 @@ class ConduitMeld(Meld):
                     override_map,
                 )
             elif override_map is None:
-                no_overrides_executor = creation_context._no_overrides_executor
-                instance = no_overrides_executor(creations)[0]
+                instance = creation_context._no_overrides_executor(creations)[0]
                 if fast_door_key is not None:
                     # Success-only fast-door memoization. This arm is exactly
                     # the fast-lane posture (non-dynamic, no hooks, no
                     # override payload), and execution above just succeeded,
                     # so the entry is built from proven-live collaborators.
-                    # Reaching here with an existing entry means a guard
-                    # missed; the write below is the in-place rebuild.
+                    # The executor is deliberately NOT stored: phase-11
+                    # hydration hot-swaps the context executor slots in place
+                    # on first execution, so the fast lane re-reads the slot
+                    # per hit through the captured context. Reaching here with
+                    # an existing entry means a guard missed; the write below
+                    # is the in-place rebuild.
                     self._fast_meld_doors[fast_door_key] = (
                         target_spell,
                         creation_context,
-                        no_overrides_executor,
                         creations,
                     )
             else:

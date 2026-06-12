@@ -638,7 +638,16 @@ def test_general_creation_context_strategy_preserves_base_no_overrides_and_build
 def test_solo_codegen_creation_strategy_builds_solo_owned_runtime_doors(
         monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """The solo phase-11 family should use solo-owned steps and publish narrow runtime metadata."""
+    """
+    The solo phase-11 family publishes lazy cold doors and manifest metadata.
+
+    Manifest-first contract: phase 11 compiles nothing for this family. The
+    published doors are cold closures that hydrate on first meld, code-object
+    fields stay None (the manifest is the cache currency), and runtime
+    metadata carries the lazy-hydration parity keys. The legacy eager compile
+    seams are patched with sentinels purely to prove the strategy never calls
+    them at phase-11 time.
+    """
     sentinel_no_overrides = lambda caller_creations=None, owner_creations=None, caller_creations_lock_held=False: "plain"
     sentinel_overrides = lambda caller_creations, overrides, caller_creations_lock_held=False: "override"
     monkeypatch.setattr(
@@ -695,10 +704,14 @@ def test_solo_codegen_creation_strategy_builds_solo_owned_runtime_doors(
 
     assert callable(creation.no_overrides_executor)
     assert callable(creation.overrides_executor)
-    assert creation.no_overrides_code_object is not None
-    assert creation.overrides_code_object is not None
+    # Lazy-door contract: nothing compiles at phase 11, so the published
+    # doors are cold sentinel-free closures and code objects stay None.
+    assert creation.no_overrides_executor is not sentinel_no_overrides
+    assert creation.overrides_executor is not sentinel_overrides
+    assert creation.no_overrides_code_object is None
+    assert creation.overrides_code_object is None
     assert "resolve_route_key" not in creation.metadata
     assert "fast_transient_no_overrides_enabled" not in creation.metadata
-    assert creation.metadata["creation_context_strategy"] == "solo_codegen_creation"
+    assert creation.metadata["hydration"] == "lazy_first_meld"
     assert creation.metadata["no_overrides_step_count"] == 1
     assert creation.metadata["override_step_count"] == 1

@@ -136,7 +136,7 @@ def test_compiler_phase_methods_delegate_to_current_phase_surfaces(
         ("phase1", (spell, artifact), {"cancel_event": "cancel"}),
         ("phase2", (spell, artifact), {"cancel_event": "cancel"}),
         ("phase3", (spell, artifact, spellbook, spell_system_states), {"cancel_event": "cancel"}),
-        ("phase4", (spell, artifact, "validator", spell_system_states), {"cancel_event": "cancel"}),
+        ("phase4", (spell, artifact, "validator", spell_system_states), {"cancel_event": "cancel", "validation_pass_cache": None}),
         ("phase5_frame", (spell, artifact, spellbook, spell_system_states, "cid"), {"cancel_event": "cancel"}),
         ("phase5_local", (spell, artifact, spellbook, spell_system_states, "cid"), {"cancel_event": "cancel"}),
         ("phase6_frame", (artifact, spellbook, spell_system_states, "cid"), {"cancel_event": "cancel"}),

@@ -485,58 +485,6 @@ class PhaseScheduler(Cleanable):
                 # Record failure via Future + propagate cancellation to the pipeline.
                 self._cancel_signal.cancel()
 
-    def _run_units_inline(
-            self,
-            phase_name: str,
-            units: Sequence[UnitOfWork],
-    ) -> Sequence[UnitOfWork]:
-        """
-        Execute one phase's units synchronously in the caller thread.
-
-        Contract:
-            - Used only when the scheduler is configured with one worker, so
-              execution order matches the single-worker queue order exactly.
-            - Each unit records its own result/exception on its Future when
-              called, identical to worker-loop execution.
-            - Fail-fast parity with the threaded barrier: after the first
-              recorded failure, remaining units are marked cancelled without
-              executing, the pipeline cancel signal fires, and one
-              `PhaseExecutionError` aggregates the failures.
-
-        Raises:
-            PhaseExecutionError: If any unit records an exception.
-        """
-        errors: List[BaseException] = []
-        for uow in units:
-            if errors:
-                try:
-                    uow.set_exception(
-                        OperationCancelledError(
-                            f"Phase '{phase_name}' aborted due to an earlier failure."
-                        )
-                    )
-                except Exception:
-                    pass
-                continue
-            try:
-                uow()
-            except OperationCancelledError:
-                pass
-            except BaseException:
-                # Failure is recorded on the unit's Future by the unit itself.
-                pass
-            try:
-                exc = uow.exception()
-            except BaseException as defensive_exc:
-                exc = defensive_exc
-            if exc is not None:
-                errors.append(exc)
-
-        if errors:
-            self._cancel_signal.cancel()
-            raise PhaseExecutionError(phase_name, errors)
-        return units
-
     # ------------------------------------------------------------------
     # Phase execution / barrier
     # ------------------------------------------------------------------
@@ -584,13 +532,15 @@ class PhaseScheduler(Cleanable):
         if not units:
             return units
 
-        # Single-worker inline fast path: with one worker the queue, worker
-        # thread, futures wait, and sentinel machinery add pure overhead, so
-        # units execute synchronously in the caller thread with identical
-        # fail-fast semantics (first failure cancels the remainder and the
-        # pipeline). No worker thread is ever spawned in this mode.
-        if self._workers == 1:
-            return self._run_units_inline(phase_name, units)
+        # NOTE: units always execute on worker threads, even with one worker.
+        # An inline workers==1 fast path was tried and reverted: synchronous
+        # execution in the caller thread cannot honor the scheduler's async
+        # control contract. A unit blocked on an external signal deadlocks
+        # the caller (external cancel can never be observed), and preemptive
+        # barrier timeouts (PhaseTimeoutError while a unit is still running)
+        # are impossible without a separate execution thread. If single-worker
+        # overhead ever matters again, the correct shape is a persistent
+        # scheduler-lifetime worker, not inline execution.
 
         # Make sure workers are up.
         self._start_workers_if_needed()

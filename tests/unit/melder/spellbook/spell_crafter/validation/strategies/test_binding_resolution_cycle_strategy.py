@@ -13,6 +13,7 @@ from melder.aether.spellbook.spell_compiler.validation.spell_validation_context 
 from melder.aether.spellbook.spell_compiler.validation.strategies.binding_resolution_cycle_strategy import (
     BindingResolutionCycleStrategy,
 )
+from melder.utilities.helpers.general_helpers import SpellInputUtils
 
 
 class _SpellIndexStub:
@@ -179,6 +180,13 @@ class _SpellStub:
         self.binding_name = binding_name
         self.requirements = requirements
         self._crafter = _CrafterStub(requirements)
+        # Mirror the live Spell contract: `key` is the bind-time precomputed
+        # canonical (frame_key, binding_key) tuple the strategy reads directly.
+        self.key = SpellInputUtils.make_spell_key_from_parts(
+            spellframe=spellframe,
+            spell_name=spell_name,
+            binding_name=binding_name,
+        )
 
 
 class _SpellbookStub:
@@ -677,12 +685,13 @@ def test_binding_resolution_cycle_helper_methods_cover_fallbacks() -> None:
     class FrameA:
         pass
 
-    fallback_spell = type(
-        "_FallbackSpell",
-        (),
-        {"spellframe": FrameA, "spell_name": "SpellA", "binding_name": None},
-    )()
-    assert strategy._spell_key(fallback_spell) == ("framea", "__default__")  # noqa: SLF001
+    # Node keys now come from the bind-time `Spell.key` contract; the strategy
+    # no longer owns a per-spell key normalization helper.
+    assert SpellInputUtils.make_spell_key_from_parts(
+        spellframe=FrameA,
+        spell_name="SpellA",
+        binding_name=None,
+    ) == ("framea", "__default__")
 
     assert strategy._normalize_cycle([]) == ()  # noqa: SLF001
     assert strategy._normalize_cycle(  # noqa: SLF001

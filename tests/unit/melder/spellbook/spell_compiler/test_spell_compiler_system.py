@@ -73,7 +73,7 @@ def test_run_phase_validation_uses_owned_validator(monkeypatch: pytest.MonkeyPat
         (),
         {
             "run_phase_validation": staticmethod(
-                lambda spell, artifact, validator, spell_system_states, cancel_event=None: calls.append(
+                lambda spell, artifact, validator, spell_system_states, cancel_event=None, validation_pass_cache=None: calls.append(
                     (spell, artifact, validator, spell_system_states, cancel_event)
                 )
             )

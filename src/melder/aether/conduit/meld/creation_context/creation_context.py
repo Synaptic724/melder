@@ -33,6 +33,12 @@ class CreationContext(Cleanable):
           through the live spell-published context and are never cached on
           the doors, so context replacement/cleanup semantics are unchanged.
           Renaming or repurposing these slots requires updating both doors.
+        - Executor slots are SELF-REPLACING: generalized hydration installs
+          cold delegating doors first and hot-swaps the final hydrated
+          executors into `_no_overrides_executor` / `_overrides_executor` in
+          place on first execution. Any reader that retains an executor
+          reference across calls pins the cold door and defeats the swap;
+          readers must re-read the slot per call.
     """
 
     __melder_internal__: ClassVar[object] = _mrg.sentinel

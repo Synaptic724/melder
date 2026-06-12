@@ -46,6 +46,10 @@ class _SpellbookStub:
         self._contracted_spells_by_id: dict[str, dict[str, Any]] = {}
         self._spell_id_pool: dict[str, Any] = {}
         self._spellbook_validation_required = False
+        # Mirror the real Spellbook staged-cache flag the meld doors check
+        # inline before entering the emit helper. False means the helper is
+        # never called, matching the common no-cache-staged posture.
+        self._cache_emit_required = False
 
 
 class _CreationContextStub:
@@ -72,6 +76,26 @@ class _CreationContextStub:
         self._no_hooks_overrides_result = no_hooks_overrides_result
         self._hooks_no_overrides_result = hooks_no_overrides_result
         self._hooks_overrides_result = hooks_overrides_result
+        # Mirror the real CreationContext door-facing surface: the meld doors
+        # branch on `_dynamic_environment` and, in non-dynamic mode, dispatch
+        # the executor slots directly. The stub executors delegate through
+        # `self.execute_no_hooks` (late-bound attribute read) so call
+        # recording and per-test monkeypatching of `execute_no_hooks` keep
+        # working, and they return `(instance, created)` tuples to match the
+        # real two-tuple executor contract.
+        self._dynamic_environment = False
+
+        def _stub_no_overrides_executor(caller_creations: Any) -> tuple[Any, bool]:
+            return (self.execute_no_hooks(caller_creations, None), True)
+
+        def _stub_overrides_executor(
+                caller_creations: Any,
+                overrides: dict[str, Any] | None,
+        ) -> tuple[Any, bool]:
+            return (self.execute_no_hooks(caller_creations, overrides), True)
+
+        self._no_overrides_executor = _stub_no_overrides_executor
+        self._overrides_executor = _stub_overrides_executor
 
     def execute_no_hooks(
             self,
@@ -149,12 +173,17 @@ class _SpellStub:
         self._post_hooks: list[Callable[..., Any]] = []
         self._creation_context = creation_context
         self._creation_context_factory = None
+        # fast_state mirrors the real CounterSwitch hot-path slot the meld
+        # doors read instead of the `state` property.
         self._creation_context_switch = SimpleNamespace(
-            state=2 if creation_context is not None else 0
+            state=2 if creation_context is not None else 0,
+            fast_state=2 if creation_context is not None else 0,
         )
         self.is_existing_creation = is_existing_creation
         self.user_created_object = user_created_object
         self.mutation_override = None
+        # Mirror the real Spell storage slot read directly by the meld doors.
+        self._mutation_override = None
         if requires_spellspace_request is None:
             requires_spellspace_request = (
                 existence is Existence.unique_per_spell_space
@@ -176,6 +205,7 @@ class _SpellStub:
         creation_context = self._creation_context_factory.get_or_build_for_spell(self)
         self._creation_context = creation_context
         self._creation_context_switch.state = 2
+        self._creation_context_switch.fast_state = 2
         return creation_context
 
 

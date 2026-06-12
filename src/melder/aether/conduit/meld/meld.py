@@ -65,11 +65,15 @@ class Meld(Cleanable, ABC):
       recompilation ownership work
     - own the per-door fast meld door registry (`_fast_meld_doors`): a plain
       success-only memoization dict, keyed by spell-id string, mapping to
-      `(spell, captured_context, no_overrides_executor, creations_store)`
-      tuples used by the concrete doors' guarded warm fast lane. Cardinality
-      is bounded by construction because entries are inserted only after a
-      successful normal-lane meld, so the keyspace is the bound-spell
-      registry, not caller input. The registry is deleted in `cleanup()`.
+      `(spell, captured_context, creations_store)` tuples used by the
+      concrete doors' guarded warm fast lane. The executor is deliberately
+      not part of the entry: it is read per hit through the captured
+      context's `_no_overrides_executor` slot because phase-11 hydration
+      hot-swaps that slot in place (cold door -> hot door) on first
+      execution. Cardinality is bounded by construction because entries are
+      inserted only after a successful normal-lane meld, so the keyspace is
+      the bound-spell registry, not caller input. The registry is deleted in
+      `cleanup()`.
 
     High-level activation flow:
     1. Resolve the target spell from the requested identity inputs.
@@ -195,17 +199,18 @@ class Meld(Cleanable, ABC):
         )
 
         # Fast meld door registry: success-only memoization of warm id-string
-        # melds. Entries are (spell, captured_context, no_overrides_executor,
-        # creations_store) tuples built by the concrete doors only after one
-        # full normal-lane meld succeeded for that spell id, and validated per
-        # hit by a live guard ladder (context identity, validation/resolution
-        # flags, hook state). Plain dict on purpose: per-op dict atomicity
-        # covers the access pattern, racing first-builds converge
-        # last-write-wins, and cardinality is registry-bounded by the
-        # success-only insertion rule.
+        # melds. Entries are (spell, captured_context, creations_store)
+        # tuples built by the concrete doors only after one full normal-lane
+        # meld succeeded for that spell id, and validated per hit by a live
+        # guard ladder (context identity, validation/resolution flags, hook
+        # state). The executor is read per hit through the captured context
+        # slot because phase-11 hydration hot-swaps it in place. Plain dict on
+        # purpose: per-op dict atomicity covers the access pattern, racing
+        # first-builds converge last-write-wins, and cardinality is
+        # registry-bounded by the success-only insertion rule.
         self._fast_meld_doors: Dict[
             str,
-            Tuple[Spell, CreationContext, Callable[..., Any], Creations],
+            Tuple[Spell, CreationContext, Creations],
         ] = {}
 
     def cleanup(self) -> None:
@@ -1083,8 +1088,10 @@ class Meld(Cleanable, ABC):
             - Treated as keyword-style overrides:
               {"param_name": value, "other_param": other_value}.
             - Empty dict payloads are normalized to None (no overrides).
-            - A shallow copy is created to avoid accidental mutation of the
-              caller's dictionary.
+            - Non-empty dict payloads are returned AS-IS (no copy): the
+              payload is consumed read-only downstream, so the legacy
+              defensive shallow copy was removed as a documented hot-path
+              decision. Callers must not mutate a payload after passing it.
 
         * list / tuple:
             - Treated as **positional argument** overrides.

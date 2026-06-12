@@ -245,6 +245,7 @@ class _ContextStub:
         cancel_event: Optional[object],
         issues: list,
         cleanup_artifacts: bool = True,
+        validation_pass_cache: Optional[dict] = None,
     ) -> None:
         """
         Purpose:
@@ -260,6 +261,8 @@ class _ContextStub:
             cancel_event: Cancellation event or None.
             issues: Shared issues list.
             cleanup_artifacts: Whether to clean artifacts during context cleanup.
+            validation_pass_cache: Optional pass-scoped memo dict mirrored from
+                the live context contract.
         Returns:
             None.
         """
@@ -271,6 +274,7 @@ class _ContextStub:
         self.cancel_event = cancel_event
         self.issues = issues
         self.cleanup_artifacts = cleanup_artifacts
+        self.validation_pass_cache = validation_pass_cache
         self.cleanup_calls = 0
         self.cleaned = False
         _ContextStub.last_instance = self

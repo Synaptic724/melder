@@ -316,6 +316,10 @@ class _SpellStub:
         if mutation_override is None and has_mutation_override:
             mutation_override = {"mutation": "default"}
         self.mutation_override = dict(mutation_override) if mutation_override is not None else None
+        # Mirror the real Spell storage slot: the meld doors read
+        # `_mutation_override` directly on the hot path, while the public
+        # `mutation_override` surface stays for property-style readers.
+        self._mutation_override = self.mutation_override
         self.has_mutation_override = bool(self.mutation_override)
         self.requires_spellspace_request = (
             existence is Existence.unique_per_spell_space
@@ -329,9 +333,11 @@ class _SpellStub:
         self._creation_context = creation_context
         self._creation_context_factory = None
         if creation_context is None:
-            self._creation_context_switch = SimpleNamespace(state=0)
+            # fast_state mirrors the real CounterSwitch hot-path slot the
+            # meld doors read instead of the `state` property.
+            self._creation_context_switch = SimpleNamespace(state=0, fast_state=0)
         else:
-            self._creation_context_switch = SimpleNamespace(state=2)
+            self._creation_context_switch = SimpleNamespace(state=2, fast_state=2)
         self._pre_hooks: list[Callable[..., Any]] = []
         self._activation_hooks: list[Callable[..., Any]] = []
         self._post_hooks: list[Callable[..., Any]] = []
@@ -392,6 +398,7 @@ class _SpellStub:
         creation_context = factory.get_or_build_for_spell(self)
         self._creation_context = creation_context
         self._creation_context_switch.state = 2
+        self._creation_context_switch.fast_state = 2
         return creation_context
 
 
@@ -442,6 +449,10 @@ class _SpellbookStub:
             for conduit_id, spell_map in self._contracted_spells.items()
         }
         self._spellbook_validation_required = True
+        # Mirror the real Spellbook staged-cache flag the meld doors check
+        # inline before entering the emit helper. False means the helper is
+        # never called, matching the common no-cache-staged posture.
+        self._cache_emit_required = False
         self._spell_id_pool: Dict[str, 'SpellIndex'] = {}
         self._logger = MagicMock()
 
@@ -660,6 +671,26 @@ class _CreationContextStub:
         self._no_hooks_overrides_result = no_hooks_overrides_result
         self._hooks_no_overrides_result = hooks_no_overrides_result
         self._hooks_overrides_result = hooks_overrides_result
+        # Mirror the real CreationContext door-facing surface: the meld doors
+        # branch on `_dynamic_environment` and, in non-dynamic mode, dispatch
+        # the executor slots directly. The stub executors delegate through
+        # `self.execute_no_hooks` (late-bound attribute read) so call
+        # recording and per-test monkeypatching of `execute_no_hooks` keep
+        # working, and they return `(instance, created)` tuples to match the
+        # real two-tuple executor contract.
+        self._dynamic_environment = False
+
+        def _stub_no_overrides_executor(caller_creations: Any) -> tuple[Any, bool]:
+            return (self.execute_no_hooks(caller_creations, None), True)
+
+        def _stub_overrides_executor(
+                caller_creations: Any,
+                overrides: dict[str, Any] | None,
+        ) -> tuple[Any, bool]:
+            return (self.execute_no_hooks(caller_creations, overrides), True)
+
+        self._no_overrides_executor = _stub_no_overrides_executor
+        self._overrides_executor = _stub_overrides_executor
 
     def execute_no_hooks(
             self,
@@ -1120,6 +1151,8 @@ def test_meld_rebuilds_context_when_switch_is_not_open(monkeypatch: pytest.Monke
     spell._hooks_enabled = False
     spell._compiler_artifact._root_blueprint_phase5 = None
     spell._creation_context_switch.state = 0
+    # Keep the hot-path mirror aligned with the forced switch state.
+    spell._creation_context_switch.fast_state = 0
     resolve_spell_by_id = MagicMock(return_value=spell)
     _patch_meld_method(monkeypatch, "_resolve_spell_by_id", resolve_spell_by_id)
 
@@ -1151,19 +1184,21 @@ def test_normalize_spell_override_none_returns_none() -> None:
     assert meld._normalize_spell_override(None) is None
 
 
-def test_normalize_spell_override_dict_returns_copy() -> None:
+def test_normalize_spell_override_dict_passthrough_without_copy() -> None:
     """
-    Verify dict overrides are shallow-copied.
+    Verify non-empty dict overrides are passed through without a copy.
 
     Contract:
         - Returned overrides equal the input mapping.
-        - Returned mapping is a distinct object.
+        - The same object is returned: the payload is consumed read-only
+          downstream, so the legacy defensive shallow copy was removed as a
+          documented hot-path decision.
     """
     meld = _make_meld()
     payload = {"a": 1}
     normalized = meld._normalize_spell_override(payload)
     assert normalized == payload
-    assert normalized is not payload
+    assert normalized is payload
 
 
 def test_normalize_spell_override_empty_dict_returns_none() -> None:

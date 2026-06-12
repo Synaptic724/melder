@@ -7,6 +7,9 @@ from melder.aether.conduit.meld.creation_context.creation_context import (
     CreationContext,
 )
 from melder.utilities.custom_exceptions.phase_execution_error import PhaseExecutionError
+from melder.utilities.custom_exceptions.spellbook_validation_error import (
+    SpellbookValidationError,
+)
 from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_validity import SpellValidity
 from melder.aether.spellbook.spell_compiler.spell_compiler_system import (
     SpellCompilerSystem,
@@ -1012,9 +1015,18 @@ def test_register_target_single_phase_builds_local_scope_unit() -> None:
     assert phase_calls == []
 
 
-def test_run_resolution_phases_for_target_spell_foundational_error_short_circuits(
+def test_run_resolution_phases_for_target_spell_foundational_error_raises_validation_error(
         monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    """
+    Gated foundational resolution must surface as SpellbookValidationError.
+
+    Regression contract: the old silent return left callers marking the spell
+    resolution-complete with no phase-11 creation built, so meld failed deep
+    in the context builder with an opaque RuntimeError. The gate now raises
+    the same validation contract as the conduit-wide path, after cleaning the
+    scoped phase artifacts.
+    """
     spellbook = _StubSpellbook()
     cleanup_calls = []
 
@@ -1034,13 +1046,13 @@ def test_run_resolution_phases_for_target_spell_foundational_error_short_circuit
         staticmethod(lambda *, spellbook, spell_ids=None: cleanup_calls.append(set(spell_ids))),
     )
 
-    result = SpellbookCreationSystem.run_resolution_phases_for_target_spell(
-        spellbook=spellbook,
-        conduit_id="cid",
-        target_spell=types.SimpleNamespace(spell_id="spell-1"),
-    )
+    with pytest.raises(SpellbookValidationError):
+        SpellbookCreationSystem.run_resolution_phases_for_target_spell(
+            spellbook=spellbook,
+            conduit_id="cid",
+            target_spell=types.SimpleNamespace(spell_id="spell-1"),
+        )
 
-    assert result == {"root_blueprints_local": ["rb"]}
     assert cleanup_calls == [{"spell-1"}]
 
 
@@ -1558,7 +1570,7 @@ def test_build_conjure_cache_state_reports_disabled_path(
         None.
     """
     spellbook = types.SimpleNamespace(
-        _spell_id_pool={"spell-a": object()},
+        _spell_id_pool={"spell-a": types.SimpleNamespace(is_existing_creation=False)},
         _system_caching_enabled_in_aether=lambda: False,
     )
     monkeypatch.setattr(
@@ -1599,7 +1611,10 @@ def test_build_conjure_cache_state_reports_full_hit_path(
         }
     )
     spellbook = types.SimpleNamespace(
-        _spell_id_pool={"spell-a": object(), "spell-b": object()},
+        _spell_id_pool={
+            "spell-a": types.SimpleNamespace(is_existing_creation=False),
+            "spell-b": types.SimpleNamespace(is_existing_creation=False),
+        },
         _system_caching_enabled_in_aether=lambda: True,
         _get_or_create_caching_system=lambda conduit_name=None: caching_system,
     )
@@ -1642,7 +1657,10 @@ def test_build_conjure_cache_state_reports_mixed_path(
         }
     )
     spellbook = types.SimpleNamespace(
-        _spell_id_pool={"spell-a": object(), "spell-b": object()},
+        _spell_id_pool={
+            "spell-a": types.SimpleNamespace(is_existing_creation=False),
+            "spell-b": types.SimpleNamespace(is_existing_creation=False),
+        },
         _system_caching_enabled_in_aether=lambda: True,
         _get_or_create_caching_system=lambda conduit_name=None: caching_system,
     )
@@ -1685,7 +1703,10 @@ def test_build_conjure_cache_state_treats_stale_surplus_cache_as_full_hit(
         }
     )
     spellbook = types.SimpleNamespace(
-        _spell_id_pool={"spell-a": object(), "spell-b": object()},
+        _spell_id_pool={
+            "spell-a": types.SimpleNamespace(is_existing_creation=False),
+            "spell-b": types.SimpleNamespace(is_existing_creation=False),
+        },
         _system_caching_enabled_in_aether=lambda: True,
         _get_or_create_caching_system=lambda conduit_name=None: caching_system,
     )

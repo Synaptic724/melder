@@ -1,94 +1,93 @@
 ==============================================================================
 TOP 45 BY TOTTIME (self time - where cycles are actually spent)
 ==============================================================================
-         166807 function calls (166357 primitive calls) in 0.073 seconds
+         154600 function calls (154150 primitive calls) in 0.069 seconds
 
    Ordered by: internal time
-   List reduced from 133 to 45 due to restriction <45>
+   List reduced from 130 to 45 due to restriction <45>
 
    ncalls  tottime  percall  cumtime  percall filename:lineno(function)
-       50    0.016    0.000    0.072    0.001 {method 'join' of '_thread._ThreadHandle' objects}
+       50    0.017    0.000    0.069    0.001 {method 'join' of '_thread._ThreadHandle' objects}
       667    0.011    0.000    0.014    0.000 <melder_generalized_no_overrides_step_factory>:10(_no_overrides_codegen_creation_executor)
-      500    0.003    0.000    0.046    0.000 test_melder_gauntlet.py:136(_run_in_lesser_and_spellspace)
-     4069    0.002    0.000    0.030    0.000 generalized_hydrator.py:197(_cold_no_overrides_door)
+      500    0.003    0.000    0.043    0.000 test_melder_gauntlet.py:136(_run_in_lesser_and_spellspace)
     23400    0.002    0.000    0.002    0.000 {method 'get' of 'dict' objects}
-     2500    0.002    0.000    0.010    0.000 <creation_context_no_overrides_only_template:unique_per_conduit:0:1>:10(_creation_context_execute_no_overrides_only)
-       50    0.002    0.000    0.056    0.001 threading.py:1064(_bootstrap_inner)
-     2319    0.002    0.000    0.025    0.000 spellspace_meld.py:107(meld)
-     2250    0.002    0.000    0.010    0.000 conduit_meld.py:96(meld)
+       50    0.002    0.000    0.052    0.001 threading.py:1064(_bootstrap_inner)
+     2500    0.002    0.000    0.009    0.000 <creation_context_no_overrides_only_template:unique_per_conduit:0:1>:10(_creation_context_execute_no_overrides_only)
+     2319    0.002    0.000    0.023    0.000 spellspace_meld.py:107(meld)
+     2250    0.002    0.000    0.008    0.000 conduit_meld.py:96(meld)
     34870    0.002    0.000    0.002    0.000 melder_gauntlet_support.py:86(__init__)
      2069    0.001    0.000    0.017    0.000 <creation_context_no_overrides_only_template:many:0:1>:10(_creation_context_execute_no_overrides_only)
        50    0.001    0.000    0.001    0.000 {built-in method _thread.start_joinable_thread}
-       50    0.001    0.000    0.052    0.001 melder_gauntlet_support.py:631(worker)
-     2250    0.001    0.000    0.011    0.000 conduit.py:2824(meld)
+       50    0.001    0.000    0.049    0.001 melder_gauntlet_support.py:631(worker)
   600/250    0.001    0.000    0.000    0.000 {method 'acquire' of '_thread.lock' objects}
+     2250    0.001    0.000    0.009    0.000 conduit.py:2824(meld)
       500    0.001    0.000    0.002    0.000 conduit.py:1713(create_lesser_conduit)
-     1000    0.001    0.000    0.001    0.000 creations.py:432(reset_for_pool)
-     6150    0.001    0.000    0.001    0.000 {method '__enter__' of '_thread.RLock' objects}
      6300    0.001    0.000    0.001    0.000 {built-in method time.perf_counter_ns}
+     6150    0.001    0.000    0.001    0.000 {method '__enter__' of '_thread.RLock' objects}
      3500    0.001    0.000    0.001    0.000 creations.py:261(get_creation)
-     2319    0.001    0.000    0.026    0.000 spell_space.py:257(meld)
+     2319    0.001    0.000    0.024    0.000 spell_space.py:257(meld)
+     1000    0.001    0.000    0.001    0.000 creations.py:432(reset_for_pool)
      6150    0.001    0.000    0.001    0.000 {method '__exit__' of '_thread.RLock' objects}
-       50    0.001    0.000    0.080    0.002 melder_gauntlet_support.py:592(run_gauntlet_once)
      7738    0.001    0.000    0.001    0.000 {built-in method builtins.isinstance}
-     4069    0.001    0.000    0.001    0.000 generalized_hydrator.py:187(_swap_hot_doors)
-      500    0.001    0.000    0.003    0.000 conduit.py:447(_prepare_for_pool)
+       50    0.001    0.000    0.076    0.002 melder_gauntlet_support.py:592(run_gauntlet_once)
+      500    0.001    0.000    0.002    0.000 conduit.py:447(_prepare_for_pool)
       500    0.001    0.000    0.001    0.000 conduit_ward.py:972(_link_lesser_conduit)
-     1250    0.001    0.000    0.005    0.000 test_melder_gauntlet.py:118(_get)
-      500    0.000    0.000    0.046    0.000 test_melder_gauntlet.py:201(request_scope_cycle)
-      500    0.000    0.000    0.018    0.000 test_melder_gauntlet.py:202(variant_call)
-       50    0.000    0.000    0.003    0.000 threading.py:773(_wait)
-     3550    0.000    0.000    0.000    0.000 {method 'append' of 'list' objects}
-      500    0.000    0.000    0.001    0.000 conduit_ward.py:336(_detach_for_pool)
-     4069    0.000    0.000    0.000    0.000 generalized_hydrator.py:162(_hydrate_once)
-      500    0.000    0.000    0.002    0.000 conduit.py:105(__exit__)
+     1250    0.000    0.000    0.004    0.000 test_melder_gauntlet.py:118(_get)
+      500    0.000    0.000    0.043    0.000 test_melder_gauntlet.py:201(request_scope_cycle)
       150    0.000    0.000    0.000    0.000 {built-in method _thread.get_ident}
+      500    0.000    0.000    0.018    0.000 test_melder_gauntlet.py:202(variant_call)
+     3550    0.000    0.000    0.000    0.000 {method 'append' of 'list' objects}
+       50    0.000    0.000    0.003    0.000 threading.py:773(_wait)
+      500    0.000    0.000    0.001    0.000 conduit_ward.py:336(_detach_for_pool)
+       50    0.000    0.000    0.004    0.000 test_melder_gauntlet.py:131(bootstrap_fanout)
+      500    0.000    0.000    0.002    0.000 conduit.py:105(__exit__)
      3487    0.000    0.000    0.000    0.000 melder_gauntlet_support.py:199(__init__)
       500    0.000    0.000    0.001    0.000 conduit.py:82(__enter__)
       500    0.000    0.000    0.003    0.000 conduit.py:416(cleanup)
-       50    0.000    0.000    0.005    0.000 test_melder_gauntlet.py:131(bootstrap_fanout)
       500    0.000    0.000    0.001    0.000 spell_space.py:148(recycle_from_managed_context)
-      200    0.000    0.000    0.000    0.000 {method 'release' of '_thread.lock' objects}
+   100/50    0.000    0.000    0.001    0.000 threading.py:337(wait)
+   100/50    0.000    0.000    0.003    0.000 threading.py:718(wait)
       500    0.000    0.000    0.001    0.000 random.py:294(randrange)
-   100/50    0.000    0.000    0.000    0.000 threading.py:337(wait)
-       50    0.000    0.000    0.054    0.001 threading.py:1012(run)
+     2750    0.000    0.000    0.000    0.000 cleanable.py:64(check_cleaned)
+      500    0.000    0.000    0.000    0.000 random.py:245(_randbelow_with_getrandbits)
+      500    0.000    0.000    0.000    0.000 spell_space_thread_state.py:114(push)
+      500    0.000    0.000    0.000    0.000 spell_space_pool.py:160(release)
 
 
 ==============================================================================
 TOP 45 BY CUMULATIVE (call-tree hotspots)
 ==============================================================================
-         166807 function calls (166357 primitive calls) in 0.073 seconds
+         154600 function calls (154150 primitive calls) in 0.069 seconds
 
    Ordered by: cumulative time
-   List reduced from 133 to 45 due to restriction <45>
+   List reduced from 130 to 45 due to restriction <45>
 
    ncalls  tottime  percall  cumtime  percall filename:lineno(function)
-       50    0.001    0.000    0.080    0.002 melder_gauntlet_support.py:592(run_gauntlet_once)
-       50    0.000    0.000    0.073    0.001 threading.py:1096(join)
-       50    0.016    0.000    0.072    0.001 {method 'join' of '_thread._ThreadHandle' objects}
-       50    0.000    0.000    0.056    0.001 threading.py:1029(_bootstrap)
-       50    0.002    0.000    0.056    0.001 threading.py:1064(_bootstrap_inner)
-       50    0.000    0.000    0.054    0.001 {method 'run' of '_contextvars.Context' objects}
-       50    0.000    0.000    0.054    0.001 threading.py:1012(run)
-       50    0.001    0.000    0.052    0.001 melder_gauntlet_support.py:631(worker)
-      500    0.000    0.000    0.046    0.000 test_melder_gauntlet.py:201(request_scope_cycle)
-      500    0.003    0.000    0.046    0.000 test_melder_gauntlet.py:136(_run_in_lesser_and_spellspace)
-     4069    0.002    0.000    0.030    0.000 generalized_hydrator.py:197(_cold_no_overrides_door)
-     2319    0.001    0.000    0.026    0.000 spell_space.py:257(meld)
-     2319    0.002    0.000    0.025    0.000 spellspace_meld.py:107(meld)
+       50    0.001    0.000    0.076    0.002 melder_gauntlet_support.py:592(run_gauntlet_once)
+       50    0.000    0.000    0.071    0.001 threading.py:1096(join)
+       50    0.017    0.000    0.069    0.001 {method 'join' of '_thread._ThreadHandle' objects}
+       50    0.000    0.000    0.052    0.001 threading.py:1029(_bootstrap)
+       50    0.002    0.000    0.052    0.001 threading.py:1064(_bootstrap_inner)
+       50    0.000    0.000    0.050    0.001 {method 'run' of '_contextvars.Context' objects}
+       50    0.000    0.000    0.050    0.001 threading.py:1012(run)
+       50    0.001    0.000    0.049    0.001 melder_gauntlet_support.py:631(worker)
+      500    0.000    0.000    0.043    0.000 test_melder_gauntlet.py:201(request_scope_cycle)
+      500    0.003    0.000    0.043    0.000 test_melder_gauntlet.py:136(_run_in_lesser_and_spellspace)
+     2319    0.001    0.000    0.024    0.000 spell_space.py:257(meld)
+     2319    0.002    0.000    0.023    0.000 spellspace_meld.py:107(meld)
       500    0.000    0.000    0.018    0.000 test_melder_gauntlet.py:202(variant_call)
      2069    0.001    0.000    0.017    0.000 <creation_context_no_overrides_only_template:many:0:1>:10(_creation_context_execute_no_overrides_only)
       667    0.011    0.000    0.014    0.000 <melder_generalized_no_overrides_step_factory>:10(_no_overrides_codegen_creation_executor)
-     2250    0.001    0.000    0.011    0.000 conduit.py:2824(meld)
-     2500    0.002    0.000    0.010    0.000 <creation_context_no_overrides_only_template:unique_per_conduit:0:1>:10(_creation_context_execute_no_overrides_only)
-     2250    0.002    0.000    0.010    0.000 conduit_meld.py:96(meld)
-       50    0.000    0.000    0.005    0.000 test_melder_gauntlet.py:131(bootstrap_fanout)
-     1250    0.001    0.000    0.005    0.000 test_melder_gauntlet.py:118(_get)
+     2500    0.002    0.000    0.009    0.000 <creation_context_no_overrides_only_template:unique_per_conduit:0:1>:10(_creation_context_execute_no_overrides_only)
+     2250    0.001    0.000    0.009    0.000 conduit.py:2824(meld)
+     2250    0.002    0.000    0.008    0.000 conduit_meld.py:96(meld)
+       50    0.000    0.000    0.004    0.000 test_melder_gauntlet.py:131(bootstrap_fanout)
+     1250    0.000    0.000    0.004    0.000 test_melder_gauntlet.py:118(_get)
    100/50    0.000    0.000    0.003    0.000 threading.py:718(wait)
        50    0.000    0.000    0.003    0.000 threading.py:773(_wait)
       500    0.000    0.000    0.003    0.000 conduit.py:416(cleanup)
-      500    0.001    0.000    0.003    0.000 conduit.py:447(_prepare_for_pool)
     23400    0.002    0.000    0.002    0.000 {method 'get' of 'dict' objects}
+      500    0.001    0.000    0.002    0.000 conduit.py:447(_prepare_for_pool)
        50    0.000    0.000    0.002    0.000 threading.py:385(wait_for)
       500    0.000    0.000    0.002    0.000 conduit.py:105(__exit__)
       500    0.001    0.000    0.002    0.000 conduit.py:1713(create_lesser_conduit)
@@ -100,36 +99,38 @@ TOP 45 BY CUMULATIVE (call-tree hotspots)
       100    0.000    0.000    0.001    0.000 threading.py:651(wait)
        50    0.000    0.000    0.001    0.000 threading.py:974(start)
       500    0.000    0.000    0.001    0.000 conduit.py:82(__enter__)
-     6150    0.001    0.000    0.001    0.000 {method '__enter__' of '_thread.RLock' objects}
      6300    0.001    0.000    0.001    0.000 {built-in method time.perf_counter_ns}
+     6150    0.001    0.000    0.001    0.000 {method '__enter__' of '_thread.RLock' objects}
       500    0.001    0.000    0.001    0.000 conduit_ward.py:972(_link_lesser_conduit)
       500    0.000    0.000    0.001    0.000 random.py:294(randrange)
      6150    0.001    0.000    0.001    0.000 {method '__exit__' of '_thread.RLock' objects}
       200    0.000    0.000    0.001    0.000 threading.py:438(notify_all)
      7738    0.001    0.000    0.001    0.000 {built-in method builtins.isinstance}
-     4069    0.001    0.000    0.001    0.000 generalized_hydrator.py:187(_swap_hot_doors)
+      500    0.000    0.000    0.001    0.000 conduit_ward.py:336(_detach_for_pool)
+   100/50    0.000    0.000    0.001    0.000 threading.py:337(wait)
 
 
 ==============================================================================
 MELD FRONT DOOR CALLERS/CALLEES
 ==============================================================================
    Ordered by: cumulative time
-   List reduced from 133 to 1 due to restriction <'conduit_meld.py.*meld'>
+   List reduced from 130 to 1 due to restriction <'conduit_meld.py.*meld'>
 
 Function                  called...
                               ncalls  tottime  cumtime
-conduit_meld.py:96(meld)  ->    2250    0.001    0.008  generalized_hydrator.py:197(_cold_no_overrides_door)
+conduit_meld.py:96(meld)  ->    1250    0.000    0.001  <creation_context_no_overrides_only_template:many:0:1>:10(_creation_context_execute_no_overrides_only)
+                                1000    0.001    0.004  <creation_context_no_overrides_only_template:unique_per_conduit:0:1>:10(_creation_context_execute_no_overrides_only)
                                 2250    0.000    0.000  {built-in method builtins.isinstance}
                                 2250    0.000    0.000  {method 'get' of 'dict' objects}
 
 
    Ordered by: cumulative time
-   List reduced from 133 to 1 due to restriction <'spellspace_meld.py.*meld'>
+   List reduced from 130 to 1 due to restriction <'spellspace_meld.py.*meld'>
 
 Function                      called...
                                   ncalls  tottime  cumtime
-spellspace_meld.py:107(meld)  ->     500    0.000    0.000  <creation_context_no_overrides_only_template:unique_per_conduit:0:1>:10(_creation_context_execute_no_overrides_only)
-                                    1819    0.001    0.023  generalized_hydrator.py:197(_cold_no_overrides_door)
+spellspace_meld.py:107(meld)  ->     819    0.001    0.016  <creation_context_no_overrides_only_template:many:0:1>:10(_creation_context_execute_no_overrides_only)
+                                    1500    0.001    0.005  <creation_context_no_overrides_only_template:unique_per_conduit:0:1>:10(_creation_context_execute_no_overrides_only)
                                     2319    0.000    0.000  {built-in method builtins.isinstance}
                                     2319    0.000    0.000  {method 'get' of 'dict' objects}
 
@@ -138,7 +139,7 @@ spellspace_meld.py:107(meld)  ->     500    0.000    0.000  <creation_context_no
 RLOCK CALLERS (who pays the per-meld lock tax)
 ==============================================================================
    Ordered by: cumulative time
-   List reduced from 133 to 2 due to restriction <'RLock'>
+   List reduced from 130 to 2 due to restriction <'RLock'>
 
 Function                                         was called by...
                                                      ncalls  tottime  cumtime

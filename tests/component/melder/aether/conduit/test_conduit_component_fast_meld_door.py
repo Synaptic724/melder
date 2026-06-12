@@ -153,33 +153,58 @@ class _OverridableService:
         self.value = value
 
 
+class _PoisonCreations:
+    """
+    Purpose:
+        Creations stand-in that raises on any attribute access.
+    Contract:
+        - Any attribute read raises AssertionError, so an executor receiving
+          this store fails loudly the moment it touches storage.
+        - Used to prove fast-lane execution: only the fast lane passes the
+          entry's captured store to the executor; the normal lane uses its
+          own door-owned stores and never sees this object.
+    """
+
+    def __getattr__(self, name: str) -> object:
+        """
+        Purpose:
+            Fail loudly on any storage access from a fast-lane execution.
+        Contract:
+            - Always raises; never returns.
+        Args:
+            name: Attribute being accessed by the executor.
+        Raises:
+            AssertionError: Always, tagging the access as a poisoned hit.
+        """
+        raise AssertionError(
+            "fast lane executed a poisoned entry (attribute: {0})".format(name)
+        )
+
+
 def _poison_entry(meld: object, spell_id: str) -> None:
     """
     Purpose:
-        Replace one fast-door entry's executor with a callable that raises.
+        Replace one fast-door entry's creations store with a poison object.
     Contract:
-        - The poisoned executor raises AssertionError if the fast lane
-          executes the entry, making lane hits and bypasses observable.
-        - All other tuple fields are preserved so the guard ladder evaluates
-          against the genuine captured collaborators.
+        - The fast lane passes the captured store to the executor, so a
+          poisoned store raises AssertionError on a fast-lane hit, making
+          lane hits and bypasses observable.
+        - Spell and context fields are preserved so the guard ladder evaluates
+          against the genuine captured collaborators. (The executor is not
+          part of the entry: it is read per hit through the live context.)
     Args:
         meld: Meld front door owning the fast-door registry.
         spell_id: Spell id key whose entry should be poisoned.
     Returns:
         None.
     """
-    door_spell, captured_context, _executor, creations_store = (
+    door_spell, captured_context, _creations_store = (
         meld._fast_meld_doors[spell_id]
     )
-
-    def _poisoned_executor(_creations: object) -> tuple:
-        raise AssertionError("fast lane executed a poisoned entry")
-
     meld._fast_meld_doors[spell_id] = (
         door_spell,
         captured_context,
-        _poisoned_executor,
-        creations_store,
+        _PoisonCreations(),
     )
 
 

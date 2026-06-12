@@ -168,12 +168,13 @@ class SpellSpaceMeld(Meld):
             - Warm id-string melds may take the guarded fast meld door: after
               one successful normal-lane meld in non-dynamic, no-hooks,
               no-override posture, later identical requests execute through a
-              memoized `(spell, context, executor, creations)` entry validated
-              per call by live guards (hook state, context-switch state,
-              context identity, validation/resolution flags). Any guard miss
-              falls back to this normal lane and rebuilds the entry on
-              success, so fast-lane results are always identical to
-              normal-lane results.
+              memoized `(spell, context, creations)` entry validated per call
+              by live guards (hook state, context-switch state, context
+              identity, validation/resolution flags), with the executor read
+              per hit through the live context slot so phase-11 hot-swapped
+              doors are always honored. Any guard miss falls back to this
+              normal lane and rebuilds the entry on success, so fast-lane
+              results are always identical to normal-lane results.
 
         Raises:
             ValueError:
@@ -205,12 +206,8 @@ class SpellSpaceMeld(Meld):
                 # existence routing (spellspace-local vs owner-conduit).
                 fast_entry = self._fast_meld_doors.get(spell)
                 if fast_entry is not None:
-                    (
-                        door_spell,
-                        captured_context,
-                        fast_executor,
-                        fast_creations,
-                    ) = fast_entry
+                    door_spell, captured_context, fast_creations = fast_entry
+                    fast_executor = None
                     try:
                         # Guard ladder (live reads only):
                         # - meld-hooks map read live because it is shared by
@@ -221,20 +218,30 @@ class SpellSpaceMeld(Meld):
                         #   Spell._cleanup_creation_context)
                         # - validation/resolution flags cover RiskManager and
                         #   deferred-resolution gating
-                        fast_lane_open = (
+                        if (
                             not self._meld_hooks
                             and not door_spell._hooks_enabled
                             and door_spell._creation_context_switch.fast_state >= 2
                             and door_spell._creation_context is captured_context
                             and not self._spellbook._spellbook_validation_required
                             and not door_spell.resolution_required
-                        )
+                        ):
+                            # The executor slot is read through the live
+                            # context PER HIT, never captured in the entry:
+                            # phase-11 hydration hot-swaps this slot in place
+                            # on first execution (cold door -> hot door), and
+                            # a captured reference would pin the cold-door
+                            # wrapper forever.
+                            fast_executor = (
+                                captured_context._no_overrides_executor
+                            )
                     except AttributeError:
-                        # Lifecycle-ambiguous read: a cleaned spell/switch has
-                        # deleted slots. Treat as a guard miss so the normal
-                        # lane produces the canonical error or rebuilds.
-                        fast_lane_open = False
-                    if fast_lane_open:
+                        # Lifecycle-ambiguous read: a cleaned spell/switch/
+                        # context has deleted slots. Treat as a guard miss so
+                        # the normal lane produces the canonical error or
+                        # rebuilds.
+                        fast_executor = None
+                    if fast_executor is not None:
                         instance = fast_executor(fast_creations)[0]
                         if self._spellbook._cache_emit_required:
                             self._spellbook._emit_cache_file_if_required()
@@ -318,8 +325,7 @@ class SpellSpaceMeld(Meld):
                     override_map,
                 )
             elif override_map is None:
-                no_overrides_executor = creation_context._no_overrides_executor
-                instance = no_overrides_executor(creations)[0]
+                instance = creation_context._no_overrides_executor(creations)[0]
                 if fast_door_key is not None:
                     # Success-only fast-door memoization. This arm is exactly
                     # the fast-lane posture (non-dynamic, no hooks, no
@@ -327,12 +333,15 @@ class SpellSpaceMeld(Meld):
                     # so the entry is built from proven-live collaborators.
                     # The captured `creations` already encodes this spell's
                     # bind-time existence routing for this spellspace door.
-                    # Reaching here with an existing entry means a guard
-                    # missed; the write below is the in-place rebuild.
+                    # The executor is deliberately NOT stored: phase-11
+                    # hydration hot-swaps the context executor slots in place
+                    # on first execution, so the fast lane re-reads the slot
+                    # per hit through the captured context. Reaching here with
+                    # an existing entry means a guard missed; the write below
+                    # is the in-place rebuild.
                     self._fast_meld_doors[fast_door_key] = (
                         target_spell,
                         creation_context,
-                        no_overrides_executor,
                         creations,
                     )
             else:

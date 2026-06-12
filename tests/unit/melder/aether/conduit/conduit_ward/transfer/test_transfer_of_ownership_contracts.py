@@ -770,6 +770,18 @@ class FakeSpellbook:
             raise RuntimeError(f"spell_id_pool mapped to a different spell (spell_id={spell_id}).")
         self._spell_id_pool.pop(spell_id, None)
 
+    def _resolve_system_caching_enabled(self) -> bool:
+        """
+        Return the fake spellbook caching posture for transfer-time ownership restamping.
+
+        Contract:
+            Mirrors the live spellbook helper consumed by
+            `TransferOfOwnership._flip_registry_and_spellbooks(...)`.
+        Returns:
+            bool: True for the fake spellbook test surface.
+        """
+        return True
+
 
 class FakeConduitWard:
     """
