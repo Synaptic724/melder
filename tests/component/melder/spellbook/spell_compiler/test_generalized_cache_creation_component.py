@@ -20,27 +20,22 @@ from melder.aether.spellbook.spell_compiler.codegen_planner.spell_codegen_plan i
 )
 
 
-def _build_plan(metadata: dict) -> SpellCodegenPlan:
-    """Build one minimal planner output shell for discovery slices."""
+def _build_generalized_plan() -> SpellCodegenPlan:
+    """Build one minimal generalized planner output shell for discovery slices."""
     return SpellCodegenPlan(
         processor_strategy_ids=(),
         plan_strategy_ids=("generalized_codegen_plan",),
         no_overrides_plan=None,
         overrides_plan=None,
-        metadata=metadata,
+        metadata={"selected_strategy_id": "generalized_codegen_plan"},
     )
 
 
-def test_component_generalized_cache_discovery_claims_stamped_generalized_plan() -> None:
-    """A stamped generalized plan should route to the generalized_cache family."""
+def test_component_generalized_cache_discovery_claims_generalized_plans() -> None:
+    """Every generalized plan must now route to the generalized_cache family."""
     discovery = CodegenCreationDiscoverySystem().discover(
         object(),
-        _build_plan(
-            {
-                "selected_strategy_id": "generalized_codegen_plan",
-                "codegen_creation_family": "generalized_cache",
-            }
-        ),
+        _build_generalized_plan(),
     )
 
     assert isinstance(discovery, CodegenCreationDiscovery)
@@ -48,28 +43,12 @@ def test_component_generalized_cache_discovery_claims_stamped_generalized_plan()
         "generalized_cache_codegen_creation",
     )
     assert discovery.discovery_reason == (
-        "metadata_selected_generalized_cache_family"
-    )
-
-
-def test_component_generalized_cache_discovery_declines_unstamped_plan() -> None:
-    """An unstamped generalized plan must keep the existing generalized chain."""
-    discovery = CodegenCreationDiscoverySystem().discover(
-        object(),
-        _build_plan(
-            {
-                "selected_strategy_id": "generalized_codegen_plan",
-            }
-        ),
-    )
-
-    assert discovery.selected_strategy_ids == (
-        "generalized_codegen_creation",
+        "generalized_plan_generalized_cache_family"
     )
 
 
 def test_component_generalized_cache_discovery_declines_non_generalized_plan() -> None:
-    """A stamp on a non-generalized plan must not capture the owning family."""
+    """Non-generalized plans must keep routing to their owning families."""
     discovery = CodegenCreationDiscoverySystem().discover(
         object(),
         SpellCodegenPlan(
@@ -77,10 +56,7 @@ def test_component_generalized_cache_discovery_declines_non_generalized_plan() -
             plan_strategy_ids=("generalized_solo_codegen_plan",),
             no_overrides_plan=None,
             overrides_plan=None,
-            metadata={
-                "selected_strategy_id": "generalized_solo_codegen_plan",
-                "codegen_creation_family": "generalized_cache",
-            },
+            metadata={"selected_strategy_id": "generalized_solo_codegen_plan"},
         ),
     )
 
@@ -90,10 +66,15 @@ def test_component_generalized_cache_discovery_declines_non_generalized_plan() -
 
 
 def test_component_generalized_cache_discovery_registers_ahead_of_generalized() -> None:
-    """Discovery registration order must let the stamped family claim first."""
+    """Discovery registration order must keep the new family claiming first.
+
+    The legacy generalized discovery strategy stays registered behind the
+    generalized_cache strategy as the rollback seam.
+    """
     registered = CodegenCreationDiscoveryStrategyBuilder().registered_strategy_names()
 
     assert "generalized_cache_codegen_creation_discovery" in registered
+    assert "generalized_codegen_creation_discovery" in registered
     assert registered.index(
         "generalized_cache_codegen_creation_discovery"
     ) < registered.index("generalized_codegen_creation_discovery")

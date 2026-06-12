@@ -23,6 +23,7 @@ Bridging note:
     `shared_assets/` and the private imports below removed.
 """
 
+import threading
 from types import SimpleNamespace
 from typing import Any, Callable, Dict, Optional, Tuple
 
@@ -51,6 +52,9 @@ from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.g
 )
 from melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_override_targeting_analysis import (
     SpellOverrideTargetRef,
+)
+from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized_cache.hydration.generalized_cache_binding_resolver import (
+    SpellbookBindingResolver,
 )
 from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized_cache.manifest.generalized_cache_manifest import (
     coerce_manifest_sequences,
@@ -144,6 +148,85 @@ class GeneralizedCacheHydratedExecutors:
         self.overrides_executor = overrides_executor
         self.no_overrides_code_object = no_overrides_code_object
         self.overrides_code_object = overrides_code_object
+
+
+def build_lazy_creation_executors(
+        *,
+        manifest: Dict[str, Any],
+        spell: Any,
+) -> Tuple[Callable[..., Any], Callable[..., Any]]:
+    """
+    Build cold runtime doors that hydrate on first call, not at build time.
+
+    Purpose:
+        Make door construction free at conjure/cache-load time. The returned
+        doors close over (manifest, spell) only. The first meld call through
+        either door runs `hydrate_creation_executors` exactly once (leader
+        hydrates under the lock, followers wait), swaps the hot doors into the
+        spell's currently published `CreationContext` executor slots, then
+        delegates. Every later meld runs the unwrapped hot path because meld
+        re-reads the context slots per call.
+
+    Contract:
+        - Zero hydration work at build time: validation plus closure
+          construction only.
+        - Hydration always resolves through `SpellbookBindingResolver`, so the
+          live phase-11 path and the cache-load path execute one identical
+          assembly program at one identical time (first meld).
+        - Requires phases 1-7 live and ownership wiring at first meld, which
+          meld's structural gates already guarantee.
+        - If no context is published when hydration completes (publish=False
+          loads), the cold doors keep delegating correctly; only the
+          swap-to-hot optimization is skipped.
+
+    Args:
+        manifest:
+            Validated family manifest.
+        spell:
+            Root spell whose creation these doors serve.
+
+    Returns:
+        Tuple[Callable[..., Any], Callable[..., Any]]:
+            ``(cold_no_overrides_door, cold_overrides_door)``.
+    """
+    validate_generalized_cache_manifest(manifest)
+    hydration_lock = threading.Lock()
+    hydrated_cell: list = [None]
+
+    def _hydrate_once() -> GeneralizedCacheHydratedExecutors:
+        hydrated = hydrated_cell[0]
+        if hydrated is not None:
+            return hydrated
+        with hydration_lock:
+            hydrated = hydrated_cell[0]
+            if hydrated is not None:
+                return hydrated
+            resolver = SpellbookBindingResolver(spell=spell)
+            hydrated = hydrate_creation_executors(
+                manifest=manifest,
+                resolver=resolver,
+            )
+            hydrated_cell[0] = hydrated
+            published_context = spell._creation_context
+            if published_context is not None:
+                published_context._no_overrides_executor = (
+                    hydrated.no_overrides_executor
+                )
+                published_context._overrides_executor = (
+                    hydrated.overrides_executor
+                )
+            return hydrated
+
+    def _cold_no_overrides_door(caller_creations: Any) -> Any:
+        return _hydrate_once().no_overrides_executor(caller_creations)
+
+    def _cold_overrides_door(
+            caller_creations: Any,
+            overrides: Optional[dict],
+    ) -> Any:
+        return _hydrate_once().overrides_executor(caller_creations, overrides)
+
+    return _cold_no_overrides_door, _cold_overrides_door
 
 
 def hydrate_creation_executors(

@@ -13,27 +13,27 @@ from melder.aether.spellbook.spell_compiler.codegen_planner.spell_codegen_plan i
     SpellCodegenPlan,
 )
 
-FAMILY_SELECTION_METADATA_KEY = "codegen_creation_family"
-FAMILY_SELECTION_METADATA_VALUE = "generalized_cache"
-
 
 class GeneralizedCacheCodegenCreationDiscoveryStrategy(
     CodegenCreationDiscoveryStrategy
 ):
     """
-    Opt-in phase-11 discovery strategy for the generalized_cache family.
+    Phase-11 discovery strategy for the generalized_cache family.
 
     Purpose:
-        Route generalized planner output to the experimental manifest-first
-        creation family, but only when the plan is explicitly stamped for it.
-        Unstamped plans fall through to the existing discovery chain, so
-        production selection behavior is untouched.
+        Route generalized planner output to the manifest-first creation
+        family. Registered ahead of the legacy generalized discovery
+        strategy, so every generalized plan now resolves to the
+        generalized_cache family concretely - no stamp, no config gate.
 
     Contract:
-        - Claims only when `spell_codegen_plan.metadata` carries
-          `codegen_creation_family == "generalized_cache"`.
-        - Claims only generalized planner output; a stamp on a non-generalized
-          plan declines so the owning family can claim it instead.
+        - Claims exactly the plans `generalized_codegen_creation_discovery`
+          used to claim (`selected_strategy_id == "generalized_codegen_plan"`).
+        - Declines every other plan family so solo/many_only routing is
+          untouched.
+        - The legacy generalized discovery strategy stays registered behind
+          this one as the rollback seam: removing this strategy from the
+          discovery registry restores the previous selection behavior.
         - Chooses the concrete codegen style exactly like the generalized
           discovery strategy.
     """
@@ -53,14 +53,9 @@ class GeneralizedCacheCodegenCreationDiscoveryStrategy(
             spell_codegen_plan: SpellCodegenPlan,
     ) -> Optional[CodegenCreationDiscovery]:
         """
-        Claim stamped generalized planner output for the manifest-first family.
+        Claim generalized planner output for the manifest-first family.
         """
         _ = spell_codegen_model
-        selected_family = spell_codegen_plan.metadata.get(
-            FAMILY_SELECTION_METADATA_KEY
-        )
-        if selected_family != FAMILY_SELECTION_METADATA_VALUE:
-            return None
         selected_plan_strategy_id = spell_codegen_plan.metadata.get(
             "selected_strategy_id"
         )
@@ -76,6 +71,6 @@ class GeneralizedCacheCodegenCreationDiscoveryStrategy(
             selected_strategy_ids=(
                 "generalized_cache_codegen_creation",
             ),
-            discovery_reason="metadata_selected_generalized_cache_family",
+            discovery_reason="generalized_plan_generalized_cache_family",
             selected_codegen_style_id=selected_codegen_style_id,
         )

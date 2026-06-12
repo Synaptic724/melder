@@ -129,8 +129,8 @@ def test_component_codegen_plan_discovery_system_prefers_solo_and_many_only_befo
     assert many_discovery.selected_strategy_id == "many_only_codegen_plan"
 
 
-def test_component_codegen_creation_discovery_system_uses_generalized_chain_for_generalized_plan() -> None:
-    """The real phase-11 discovery system should still resolve the generalized creation chain for generalized planner output."""
+def test_component_codegen_creation_discovery_system_uses_generalized_cache_chain_for_generalized_plan() -> None:
+    """The real phase-11 discovery system now routes generalized planner output to the generalized_cache creation chain."""
     discovery = CodegenCreationDiscoverySystem().discover(
         object(),
         SpellCodegenPlan(
@@ -144,7 +144,10 @@ def test_component_codegen_creation_discovery_system_uses_generalized_chain_for_
 
     assert isinstance(discovery, CodegenCreationDiscovery)
     assert discovery.selected_strategy_ids == (
-        "generalized_codegen_creation",
+        "generalized_cache_codegen_creation",
+    )
+    assert discovery.discovery_reason == (
+        "generalized_plan_generalized_cache_family"
     )
 
 

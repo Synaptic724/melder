@@ -8,24 +8,31 @@ from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.g
     PlanBindingResolver,
 )
 from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized_cache.hydration.generalized_cache_hydrator import (
-    hydrate_creation_executors,
+    build_lazy_creation_executors,
 )
 
 
-class GeneralizedCacheHydrateStep(CodegenCreationFamilyStep):
+class GeneralizedCacheLazyDoorStep(CodegenCreationFamilyStep):
     """
-    Executor hydration step for the generalized_cache family.
+    Lazy-door publication step for the generalized_cache family.
 
     Purpose:
-        Build both final runtime doors from the manifest through the family's
-        single hydrator, using the live plan-backed binding resolver.
+        Publish both runtime doors WITHOUT hydrating anything at phase-11
+        time. Conjure-time phase-11 cost for this family is the manifest step
+        only; the doors published here are cold closures over
+        (manifest, root spell) that hydrate once on the first meld call and
+        then swap the hot executors into the published `CreationContext`.
 
     Contract:
-        - Consumes only `state.manifest` plus model/plan identity through the
-          resolver. Never reads plan steps directly, so the live build path
-          exercises exactly the assembly program cache loads will use.
-        - Publishes the two final doors, both code objects, and the metadata
-          parity keys the generalized family publishes.
+        - No spell-lookup, step hydration, source emission, compile, exec, or
+          door-template work happens here.
+        - The only live object touched is the root spell reference, resolved
+          from plan/runtime-shape truth.
+        - Hydration at first meld runs the exact same assembly program the
+          cache-load path runs (`hydrate_creation_executors` via
+          `SpellbookBindingResolver`).
+        - Code-object fields stay `None`; this family's cache currency is the
+          manifest, not compiled code objects.
     """
 
     __slots__ = ()
@@ -33,47 +40,45 @@ class GeneralizedCacheHydrateStep(CodegenCreationFamilyStep):
     @property
     def step_id(self) -> str:
         """
-        Return the stable hydration step id.
+        Return the stable lazy-door step id.
         """
-        return "generalized_cache_hydrate"
+        return "generalized_cache_lazy_doors"
 
     def apply(
             self,
             state: GeneralizedCacheCodegenCreationState,
     ) -> None:
         """
-        Hydrate and publish both runtime doors from manifest truth.
+        Publish cold doors and metadata parity keys from manifest truth.
         """
         manifest = state.manifest
         if manifest is None:
             raise RuntimeError(
-                "generalized_cache hydrate step requires a built manifest."
+                "generalized_cache lazy-door step requires a built manifest."
             )
         resolver = PlanBindingResolver(
             spell_codegen_model=state.spell_codegen_model,
             spell_codegen_plan=state.spell_codegen_plan,
         )
-        hydrated = hydrate_creation_executors(
-            manifest=manifest,
-            resolver=resolver,
+        root_spell = resolver.resolve_spell(manifest["root_spell_id"])
+
+        cold_no_overrides_door, cold_overrides_door = (
+            build_lazy_creation_executors(
+                manifest=manifest,
+                spell=root_spell,
+            )
         )
-        state.hydrated_executors = hydrated
 
         spell_codegen_creation = state.spell_codegen_creation
-        spell_codegen_creation.no_overrides_executor = (
-            hydrated.no_overrides_executor
-        )
-        spell_codegen_creation.overrides_executor = hydrated.overrides_executor
-        spell_codegen_creation.no_overrides_code_object = (
-            hydrated.no_overrides_code_object
-        )
-        spell_codegen_creation.overrides_code_object = (
-            hydrated.overrides_code_object
-        )
+        spell_codegen_creation.no_overrides_executor = cold_no_overrides_door
+        spell_codegen_creation.overrides_executor = cold_overrides_door
+        spell_codegen_creation.no_overrides_code_object = None
+        spell_codegen_creation.overrides_code_object = None
 
         no_overrides_payload = manifest["no_overrides"]
         overrides_payload = manifest["overrides"]
         metadata = spell_codegen_creation.metadata
+        metadata["hydration"] = "lazy_first_meld"
         metadata["no_overrides_lane_id"] = no_overrides_payload["lane_id"]
         metadata["no_overrides_root_spell_id"] = (
             no_overrides_payload["root_spell_id"]
@@ -82,7 +87,7 @@ class GeneralizedCacheHydrateStep(CodegenCreationFamilyStep):
             no_overrides_payload["steps_rows"]
         )
         metadata["no_overrides_fast_transient_available"] = (
-            hydrated.fast_transient_no_overrides
+            no_overrides_payload["transient_schema"] is not None
         )
         metadata["no_overrides_executor_signature"] = (
             no_overrides_payload["executor_signature"]
@@ -97,3 +102,7 @@ class GeneralizedCacheHydrateStep(CodegenCreationFamilyStep):
             overrides_payload["plan_signature"][2]
         )
         metadata["route_key"] = manifest["route_key"]
+
+
+# Backwards-compatible alias for the original step name.
+GeneralizedCacheHydrateStep = GeneralizedCacheLazyDoorStep

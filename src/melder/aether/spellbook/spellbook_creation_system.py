@@ -458,11 +458,27 @@ class SpellbookCreationSystem(Cleanable):
 
         Contract:
             - Cache selection is already spell-id keyed before this runs.
+            - generalized_cache family packages publish a lazy context with
+              ZERO conjure-time hydration; the first meld hydrates once and
+              swaps the hot doors into the published context.
             - When the payload already carries live executors, it publishes
               directly through `CreationContext.load_cached(...)`.
-            - When the payload carries a phase-11 cache package, it delegates
-              to the cache-load seam that rebuilds executors after phases 1-7.
+            - When the payload carries a legacy phase-11 cache package, it
+              delegates to the cache-load seam that rebuilds executors after
+              phases 1-7.
         """
+        from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized_cache.generalized_cache_creation_cache import (
+            is_generalized_cache_package,
+            load_creation_context_lazy,
+        )
+
+        if is_generalized_cache_package(spell_payload):
+            load_creation_context_lazy(
+                spell,
+                dict(spell_payload),
+                publish=True,
+            )
+            return
         creation_context_factory = spell._creation_context_factory
         if creation_context_factory is None:
             raise RuntimeError("Spell has no CreationContextFactory.")
@@ -850,7 +866,13 @@ class SpellbookCreationSystem(Cleanable):
             spellbook=spellbook,
             conduit=conduit,
         )
-        if cache_state is not None and cache_state.get("cache_path") == "full_hit":
+        if cache_state is not None and cache_state.get("cache_path") in (
+                "full_hit",
+                "mixed",
+        ):
+            # Lazy family loads are free at conjure, so mixed caches now load
+            # every matched spell instead of requiring a full hit. Missed
+            # spells stay `resolution_required=True` and JIT at first meld.
             SpellbookCreationSystem._load_cached_creation_contexts_for_conjure(
                 spellbook=spellbook,
                 cache_state=cache_state,
@@ -1015,14 +1037,13 @@ class SpellbookCreationSystem(Cleanable):
         Raises:
             None.
         """
-        full_ahead_of_time_compilation = (
-            SpellbookCreationSystem._read_full_ahead_of_time_compilation(
-                spellbook=spellbook,
-                context_name="_define_conduit_into_spells",
-            )
-        )
         caching_enabled = spellbook._resolve_system_caching_enabled()
-        resolution_required: bool = not full_ahead_of_time_compilation
+        # BREAKING DEFAULT (manifest-first runtime): every spell defers
+        # phases 8-11 to its first meld. Cache-loaded spells are flipped back
+        # to `resolution_required=False` immediately afterwards by
+        # `_load_cached_creation_contexts_for_conjure`, so a warm cache skips
+        # phases 8-11 entirely and hydrates lazily at first meld.
+        resolution_required: bool = True
         with spellbook._lock:
             for spell in spellbook._spells.values():
                 try:
@@ -1364,13 +1385,14 @@ class SpellbookCreationSystem(Cleanable):
             raise ValueError("conduit_id must not be empty.")
 
         if force_skip_plan_phases is None:
-            full_ahead_of_time_compilation = (
-                SpellbookCreationSystem._read_full_ahead_of_time_compilation(
-                    spellbook=spellbook,
-                    context_name="_run_resolution_phases_for_conduit",
-                )
-            )
-            resolved_skip_plan_phases = not full_ahead_of_time_compilation
+            # BREAKING DEFAULT (manifest-first runtime): conjure never runs
+            # plan phases 8-11 anymore. Conjure is phases 1-7 only; phases
+            # 8-11 run lazily at first meld per spell, where the
+            # generalized_cache family publishes cold doors and hydrates on
+            # first call. `full_ahead_of_time_compilation` no longer controls
+            # conjure-time plan compilation. Explicit `force_skip_plan_phases`
+            # callers keep their requested behavior.
+            resolved_skip_plan_phases = True
         else:
             resolved_skip_plan_phases = bool(force_skip_plan_phases)
         plan_skip_state: List[Optional[bool]] = [None]

@@ -2,16 +2,16 @@
 Experiment exercising the generalized_cache phase-11 family end to end.
 
 Purpose:
-    Prove the manifest-first family on a live runtime by:
-    - conjuring a dynamic conduit and binding a small dependency graph,
-    - melding through the default generalized family as a behavior baseline,
-    - stamping the phase-10 plan and re-running phase 11 so discovery routes
-      to the generalized_cache family,
-    - exporting the family cache package, round-tripping it through marshal,
-    - clearing the live CreationContext and reloading it through the family
+    Prove the manifest-first family on a live runtime. Generalized planner
+    output now routes to the generalized_cache family directly through
+    phase-11 discovery, so this experiment:
+    - conjures a dynamic conduit and binds a small dependency graph,
+    - melds through both lanes and asserts the new family produced the doors,
+    - exports the family cache package and round-trips it through marshal,
+    - clears the live CreationContext and reloads it through the family
       codec (which hydrates through the same single hydrator the live path
       used),
-    - melding again through both lanes and asserting behavior parity.
+    - melds again through both lanes and asserts behavior parity.
 
 This is an experimentation surface, not production runtime code.
 """
@@ -45,12 +45,10 @@ from melder.aether.spellbook.configuration.spellbook_configuration import (
 )
 from melder.aether.spellbook.existence.existence import Existence
 from melder.aether.spellbook.spellbook import Spellbook
-from melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_system import (
-    CodegenCreationSystem,
-)
 from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized_cache.generalized_cache_creation_cache import (
     build_package,
     load_creation_context,
+    load_creation_context_lazy,
 )
 from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized_cache.manifest.generalized_cache_manifest import (
     MANIFEST_METADATA_KEY,
@@ -109,11 +107,10 @@ def test_generalized_cache_strategy_experiment() -> None:
 
     Contract:
         - Uses dynamic mode and post-conjure binding.
-        - Baseline melds run through the default generalized family.
-        - Re-running phase 11 with the stamped plan must route discovery to
-          the generalized_cache family and publish manifest-backed doors.
+        - Live melds must run through generalized_cache doors (the family now
+          claims generalized plans directly in phase-11 discovery).
         - The codec package must survive a real marshal round-trip.
-        - Reloaded doors must reproduce baseline lane behavior for both the
+        - Reloaded doors must reproduce live lane behavior for both the
           no-overrides and overrides lanes.
     """
     frame_name = "generalized-cache-strategy-experiment"
@@ -138,68 +135,46 @@ def test_generalized_cache_strategy_experiment() -> None:
         _ = leaf_spell_id
 
         # ------------------------------------------------------------------
-        # Baseline through the default generalized family.
+        # Live melds through the generalized_cache family.
         # ------------------------------------------------------------------
-        baseline_plain = conduit.meld(spell=root_spell_id)
-        assert isinstance(baseline_plain, _Root)
-        assert baseline_plain.label == "default"
+        live_plain = conduit.meld(spell=root_spell_id)
+        assert isinstance(live_plain, _Root)
+        assert live_plain.label == "default"
 
-        baseline_overridden = conduit.meld(
+        live_overridden = conduit.meld(
             spell=root_spell_id,
             spell_override={"label": "patched"},
         )
-        assert isinstance(baseline_overridden, _Root)
-        assert baseline_overridden.label == "patched"
-        assert baseline_overridden is not baseline_plain
-        assert baseline_overridden.leaf is baseline_plain.leaf
+        assert isinstance(live_overridden, _Root)
+        assert live_overridden.label == "patched"
+        assert live_overridden is not live_plain
+        assert live_overridden.leaf is live_plain.leaf
 
         root_spell = _get_spell(spellbook, root_spell_id)
         artifact = root_spell._compiler_artifact
-        baseline_creation = artifact._spell_codegen_creation
-        assert baseline_creation is not None
-        assert baseline_creation.metadata.get("creation_context_strategy") == (
-            "generalized_codegen_creation"
-        )
-
-        # ------------------------------------------------------------------
-        # Stamp the plan and re-run phase 11 through discovery.
-        # ------------------------------------------------------------------
-        spell_codegen_plan = artifact._spell_codegen_plan
-        assert spell_codegen_plan is not None
-        spell_codegen_plan.metadata["codegen_creation_family"] = (
-            "generalized_cache"
-        )
-        codegen_creation_system = CodegenCreationSystem()
-        try:
-            codegen_creation_system.build(artifact)
-        finally:
-            codegen_creation_system.cleanup()
-
-        rebuilt_creation = artifact._spell_codegen_creation
-        assert rebuilt_creation is not None
-        assert rebuilt_creation.metadata.get("creation_context_strategy") == (
+        creation = artifact._spell_codegen_creation
+        assert creation is not None
+        assert creation.metadata.get("creation_context_strategy") == (
             "generalized_cache_codegen_creation"
         )
-        assert rebuilt_creation.no_overrides_executor is not None
-        assert rebuilt_creation.overrides_executor is not None
-        manifest = rebuilt_creation.metadata.get(MANIFEST_METADATA_KEY)
+        assert creation.selected_strategy_ids == (
+            "generalized_cache_codegen_creation",
+        )
+        manifest = creation.metadata.get(MANIFEST_METADATA_KEY)
         assert manifest is not None
         assert manifest["route_key"] == "many"
-        print("GENERALIZED_CACHE_DISCOVERY")
+        print("GENERALIZED_CACHE_LIVE")
         print(
             {
-                "selected_strategy_ids": rebuilt_creation.selected_strategy_ids,
-                "discovery_reason": rebuilt_creation.discovery_reason,
-                "no_overrides_steps": rebuilt_creation.metadata.get(
+                "discovery_reason": creation.discovery_reason,
+                "no_overrides_steps": creation.metadata.get(
                     "no_overrides_step_count"
                 ),
-                "override_steps": rebuilt_creation.metadata.get(
-                    "override_step_count"
+                "override_steps": creation.metadata.get("override_step_count"),
+                "fast_transient": creation.metadata.get(
+                    "no_overrides_fast_transient_available"
                 ),
             }
-        )
-        assert rebuilt_creation.selected_strategy_ids == (
-            "generalized_cache_codegen_creation",
         )
 
         # ------------------------------------------------------------------
@@ -235,8 +210,8 @@ def test_generalized_cache_strategy_experiment() -> None:
         reloaded_plain = conduit.meld(spell=root_spell_id)
         assert isinstance(reloaded_plain, _Root)
         assert reloaded_plain.label == "default"
-        assert reloaded_plain is not baseline_plain
-        assert reloaded_plain.leaf is baseline_plain.leaf
+        assert reloaded_plain is not live_plain
+        assert reloaded_plain.leaf is live_plain.leaf
 
         reloaded_overridden = conduit.meld(
             spell=root_spell_id,
@@ -244,9 +219,49 @@ def test_generalized_cache_strategy_experiment() -> None:
         )
         assert isinstance(reloaded_overridden, _Root)
         assert reloaded_overridden.label == "reloaded"
-        assert reloaded_overridden.leaf is baseline_plain.leaf
+        assert reloaded_overridden.leaf is live_plain.leaf
 
         assert executor_factory_cache_size() >= 1
+
+        # ------------------------------------------------------------------
+        # Lazy load: zero hydration at publish, hot-door swap on first meld.
+        # ------------------------------------------------------------------
+        root_spell._cleanup_creation_context()
+        lazy_context = load_creation_context_lazy(
+            root_spell,
+            marshal.loads(marshal.dumps(package)),
+            publish=True,
+        )
+        assert lazy_context is root_spell._creation_context
+        cold_no_overrides_door = lazy_context._no_overrides_executor
+        cold_overrides_door = lazy_context._overrides_executor
+
+        lazy_plain = conduit.meld(spell=root_spell_id)
+        assert isinstance(lazy_plain, _Root)
+        assert lazy_plain.label == "default"
+        assert lazy_plain.leaf is live_plain.leaf
+        # First meld must have swapped the hot doors into the context slots.
+        assert lazy_context._no_overrides_executor is not cold_no_overrides_door
+        assert lazy_context._overrides_executor is not cold_overrides_door
+
+        lazy_overridden = conduit.meld(
+            spell=root_spell_id,
+            spell_override={"label": "lazy"},
+        )
+        assert isinstance(lazy_overridden, _Root)
+        assert lazy_overridden.label == "lazy"
+        print("GENERALIZED_CACHE_LAZY")
+        print(
+            {
+                "hot_swap_no_overrides": (
+                    lazy_context._no_overrides_executor
+                    is not cold_no_overrides_door
+                ),
+                "hot_swap_overrides": (
+                    lazy_context._overrides_executor is not cold_overrides_door
+                ),
+            }
+        )
 
     finally:
         try:

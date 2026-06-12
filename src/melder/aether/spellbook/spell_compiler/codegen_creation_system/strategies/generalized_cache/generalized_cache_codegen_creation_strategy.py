@@ -16,7 +16,7 @@ from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.g
     GeneralizedCacheCodegenCreationState,
 )
 from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized_cache.steps.generalized_cache_hydrate_step import (
-    GeneralizedCacheHydrateStep,
+    GeneralizedCacheLazyDoorStep,
 )
 from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized_cache.steps.generalized_cache_manifest_step import (
     GeneralizedCacheManifestStep,
@@ -59,7 +59,7 @@ class GeneralizedCacheCodegenCreationStrategy(SpellCodegenStrategy):
         super().__init__()
         self._steps: Tuple[CodegenCreationFamilyStep, ...] = (
             GeneralizedCacheManifestStep(),
-            GeneralizedCacheHydrateStep(),
+            GeneralizedCacheLazyDoorStep(),
         )
 
     @property
