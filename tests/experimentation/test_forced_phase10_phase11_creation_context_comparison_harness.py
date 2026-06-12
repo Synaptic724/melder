@@ -384,6 +384,17 @@ def _make_spell_for_existence(
     """
     reset_aether_runtime()
     spellbook = make_spellbook()
+    # This harness exists to force phase-10/11 builds against LIVE phase-9
+    # artifacts. With system caching default-on, a bundle persisted by a
+    # previous run makes conjure full-hit and skip phases 8-11 entirely,
+    # leaving no `_spell_codegen_model` for the forced builds. Caching is
+    # therefore disabled for the experiment's runtime.
+    spellbook.configure_aether_frame(
+        system_state=None,
+        disposal=None,
+        disposal_method_names=None,
+        system_caching_enabled=False,
+    )
     conduit = None
     try:
         if bind_mode == "existing_creation":

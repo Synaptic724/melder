@@ -424,8 +424,13 @@ def test_component_fast_door_guard_trips_on_context_invalidation() -> None:
         - `Spell._cleanup_creation_context()` is the funnel chokepoint for all
           context replacement; after it runs, a poisoned entry is not
           executed.
-        - The normal lane rebuilds the context and replaces the entry; warm
-          hits resume against the new context.
+        - In production, every caller of that chokepoint (phase-5 rebuilds,
+          ownership transfer, re-stamping) pairs it with resolution regating,
+          so this test sets the deferred-resolution flags the same way; the
+          meld-time deferred pass then rebuilds phases 8-11 and republishes
+          the context.
+        - The normal lane replaces the entry; warm hits resume against the
+          new context.
     """
     spellbook = _make_spellbook()
     spell_id = spellbook.bind(
@@ -439,7 +444,11 @@ def test_component_fast_door_guard_trips_on_context_invalidation() -> None:
         _poison_entry(conduit._meld, spell_id)
 
         spell = spellbook._spell_id_pool[spell_id]
+        # Mirror the production chokepoint pairing: context teardown plus
+        # deferred-resolution regating, never teardown alone.
         spell._cleanup_creation_context()
+        spell.resolution_required = True
+        spell.resolution_complete = False
 
         rebuilt = conduit.meld(spell=spell_id)
         assert rebuilt is first
@@ -666,6 +675,28 @@ def test_component_spellspace_nested_scope_stack_isolation() -> None:
                     assert marker_c is not marker_a
                     with conduit.enter_spellspace() as scope_d:
                         marker_d = scope_d.meld(spell=marker_id)
+                        # Diagnostic layer pinpointing: shells and their
+                        # stores must be four distinct objects, and each
+                        # scope's marker must live in that scope's own store.
+                        assert (
+                            len({id(scope_a), id(scope_b), id(scope_c), id(scope_d)})
+                            == 4
+                        ), "pooled shells aliased across nested scopes"
+                        assert (
+                            len(
+                                {
+                                    id(scope_a._creations),
+                                    id(scope_b._creations),
+                                    id(scope_c._creations),
+                                    id(scope_d._creations),
+                                }
+                            )
+                            == 4
+                        ), "spellspace stores aliased across nested scopes"
+                        assert (
+                            scope_c._creations.get_creation(marker_id)
+                            is marker_c
+                        ), "marker_c missing from scope_c store at depth"
                         distinct = {
                             id(marker_a),
                             id(marker_b),
@@ -676,6 +707,18 @@ def test_component_spellspace_nested_scope_stack_isolation() -> None:
                         # Each scope's own warm re-meld stays scope-correct
                         # at full depth.
                         assert scope_d.meld(spell=marker_id) is marker_d
+                # Diagnostic layer pinpointing after scope_d's exit:
+                # storage-layer check first (did anything cross-clear
+                # scope_c's store?), then lane wiring (does scope_c's fast
+                # entry still capture scope_c's own store?), then behavior.
+                assert (
+                    scope_c._creations.get_creation(marker_id) is marker_c
+                ), "scope_c store lost marker_c after scope_d exit (cross-clear)"
+                fast_entry = scope_c._meld._fast_meld_doors.get(marker_id)
+                if fast_entry is not None:
+                    assert (
+                        fast_entry[2] is scope_c._creations
+                    ), "scope_c fast entry captured a foreign store"
                 # LIFO unwind: outer scopes keep their live instances.
                 assert scope_c.meld(spell=marker_id) is marker_c
             assert scope_b.meld(spell=marker_id) is marker_b

@@ -294,6 +294,7 @@ def test_cleanup_returns_spellspace_to_pool(
         conduit_meld=conduit_meld_stub,
         owner_conduit_creations=owner_conduit_creations_stub,
         spellspace_registry=spellspace_registry,
+        spellspace_stack_state=SpellSpaceThreadState(),
         baseline_idle=1,
         max_idle=1,
     )
@@ -322,6 +323,7 @@ def test_recycle_from_managed_context_returns_untracked_spellspace_to_pool(
         conduit_meld=conduit_meld_stub,
         owner_conduit_creations=owner_conduit_creations_stub,
         spellspace_registry=spellspace_registry,
+        spellspace_stack_state=SpellSpaceThreadState(),
         baseline_idle=1,
         max_idle=1,
     )
@@ -350,6 +352,7 @@ def test_pool_reuses_spellspace_after_cleanup(
         conduit_meld=conduit_meld_stub,
         owner_conduit_creations=owner_conduit_creations_stub,
         spellspace_registry=spellspace_registry,
+        spellspace_stack_state=SpellSpaceThreadState(),
         baseline_idle=1,
         max_idle=1,
     )
@@ -377,6 +380,7 @@ def test_permanent_cleanup_bypasses_pool_reuse_and_drops_owned_fields(
         conduit_meld=conduit_meld_stub,
         owner_conduit_creations=owner_conduit_creations_stub,
         spellspace_registry=spellspace_registry,
+        spellspace_stack_state=SpellSpaceThreadState(),
         baseline_idle=1,
         max_idle=1,
     )

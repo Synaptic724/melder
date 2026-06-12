@@ -91,11 +91,14 @@ def test_component_bind_creates_class_spell_with_metadata() -> None:
         assert isinstance(spell.profile, SpellGeneralProfile)
         assert isinstance(spell.profile.binding_profile, ClassBindingProfile)
         assert spell._spellbook is spellbook
-        # The fingerprint composes bind-time facts (lookup signature,
-        # existence, resolved disposal metadata), so the inspector matches the
-        # bound id only when supplied the same facts the bind resolved.
+        # The fingerprint composes bind-time facts: _bind_logic hashes the
+        # RESOLVED spell name (derived from the class), the lookup signature,
+        # existence, and resolved disposal metadata. The inspector passes its
+        # inputs through unresolved, so parity requires supplying the same
+        # resolved facts the bind computed.
         assert Bind.spell_id_inspector(
             BasicService,
+            spell_name=spell.spell_name,
             existence=spell.existence,
             disposal_method_names=sorted(spell.disposal_method_names),
         ) == spell.spell_id

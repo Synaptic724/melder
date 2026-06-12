@@ -385,13 +385,34 @@ def _load_no_overrides_executor_from_asset(
         namespace,
         local_namespace,
     )
-    executor = local_namespace.get(_NO_OVERRIDES_EXECUTOR_NAME)
-    if not callable(executor):
+    raw_executor = local_namespace.get(_NO_OVERRIDES_EXECUTOR_NAME)
+    if not callable(raw_executor):
         raise RuntimeError(
             "Cached no-overrides payload did not define a callable "
             f"{_NO_OVERRIDES_EXECUTOR_NAME}."
         )
-    return executor
+
+    def execute_no_overrides(
+            caller_creations: Any,
+            owner_creations: Any = None,
+            caller_creations_lock_held: bool = False,
+    ) -> Any:
+        """
+        Adapt the legacy emitted executor to the current door contract.
+
+        Contract:
+            The legacy eager emitter this experiment persists returns the
+            bare root instance, while the runtime doors now consume
+            `(instance, created)` tuples and index `[0]`. This experiment-
+            boundary adapter bridges that drift without porting the retired
+            emitter; the production path for cached contexts is the
+            manifest envelope, not this asset format.
+        """
+        _ = owner_creations
+        _ = caller_creations_lock_held
+        return (raw_executor(caller_creations), True)
+
+    return execute_no_overrides
 
 
 def _validate_cache_asset(cache_asset: Dict[str, Any]) -> None:
@@ -667,7 +688,7 @@ def _load_overrides_executor_from_asset(
     def execute_with_overrides(
             caller_creations: Any,
             overrides: Optional[dict[str, Any]],
-            caller_creations_lock_held: bool,
+            caller_creations_lock_held: bool = False,
     ) -> Any:
         if not overrides:
             raise RuntimeError(
@@ -705,7 +726,7 @@ def _build_overrides_stub() -> Any:
     def execute_with_overrides(
             caller_creations: Any,
             overrides: Optional[dict[str, Any]],
-            caller_creations_lock_held: bool,
+            caller_creations_lock_held: bool = False,
     ) -> Any:
         _ = caller_creations
         _ = overrides

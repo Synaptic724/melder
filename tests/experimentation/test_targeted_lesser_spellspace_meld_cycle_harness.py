@@ -274,6 +274,55 @@ def _measure_average_ns(
     return (end_ns - start_ns) / float(iterations)
 
 
+def _snapshot_pool_policy(pool: Any) -> Tuple[int, int]:
+    """
+    Snapshot the elastic-pool retention policy fields for later restore.
+
+    Contract:
+        Pools are elastic now (`AbstractElasticPool`); there is no boolean
+        enabled flag. Retention is governed by `_target_idle` (release keeps
+        while `len(_idle) <= _target_idle` after append-then-trim) and
+        `_max_idle` (stretch ceiling), so those two fields ARE the policy
+        this harness toggles.
+    """
+    return (pool._target_idle, pool._max_idle)
+
+
+def _set_pool_pooled(pool: Any) -> None:
+    """
+    Force the elastic pool into a retaining posture for warm measurement.
+
+    Contract:
+        A small floor on target/max guarantees single-threaded cycle reuse
+        regardless of the configured baseline; existing larger policies are
+        left untouched.
+    """
+    pool._target_idle = max(pool._target_idle, 8)
+    pool._max_idle = max(pool._max_idle, 8)
+
+
+def _set_pool_unpooled(pool: Any) -> None:
+    """
+    Force the elastic pool into a non-retaining posture for cold measurement.
+
+    Contract:
+        With `_target_idle == 0` release's append-then-trim destroys every
+        returned object, and with `_max_idle == 0` the post-miss stretch path
+        returns immediately, so retention cannot re-enable mid-measurement.
+    """
+    with pool._lock:
+        pool._idle.clear()
+    pool._target_idle = 0
+    pool._max_idle = 0
+
+
+def _restore_pool_policy(pool: Any, policy: Tuple[int, int]) -> None:
+    """
+    Restore a previously snapshotted elastic-pool retention policy.
+    """
+    pool._target_idle, pool._max_idle = policy
+
+
 def _measure_lesser_cycle_components(
     root_conduit: Conduit,
     *,
@@ -285,14 +334,12 @@ def _measure_lesser_cycle_components(
     Measure lesser acquire and cleanup cost separately and together.
     """
     pool = root_conduit._conduit_pool
-    previous_enabled = pool._enabled
+    previous_policy = _snapshot_pool_policy(pool)
     if pooled:
+        _set_pool_pooled(pool)
         _prime_lesser_pool(root_conduit)
-        pool._enabled = True
     else:
-        with pool._lock:
-            pool._idle.clear()
-        pool._enabled = False
+        _set_pool_unpooled(pool)
 
     def acquire_only() -> Conduit:
         return root_conduit.create_lesser_conduit()
@@ -319,7 +366,7 @@ def _measure_lesser_cycle_components(
             cleanup_total_ns += cleanup_t2 - acquire_t1
             cycle_total_ns += cleanup_t2 - cycle_t0
     finally:
-        pool._enabled = previous_enabled
+        _restore_pool_policy(pool, previous_policy)
 
     _ = cycle_action
     return {
@@ -340,14 +387,12 @@ def _measure_spellspace_cycle_components(
     Measure spellspace enter and exit cost separately and together.
     """
     pool = lesser._spellspace_pool
-    previous_enabled = pool._enabled
+    previous_policy = _snapshot_pool_policy(pool)
     if pooled:
+        _set_pool_pooled(pool)
         _prime_spellspace_pool(lesser)
-        pool._enabled = True
     else:
-        with pool._lock:
-            pool._idle.clear()
-        pool._enabled = False
+        _set_pool_unpooled(pool)
 
     try:
         for _ in range(warmup):
@@ -369,7 +414,7 @@ def _measure_spellspace_cycle_components(
             exit_total_ns += exit_t2 - enter_t1
             cycle_total_ns += exit_t2 - cycle_t0
     finally:
-        pool._enabled = previous_enabled
+        _restore_pool_policy(pool, previous_policy)
 
     return {
         "spellspace_enter_ns": enter_total_ns / float(iterations),
@@ -393,14 +438,12 @@ def _measure_recursive_spellspace_cycle_components(
         raise AssertionError("depth must be > 0")
 
     pool = lesser._spellspace_pool
-    previous_enabled = pool._enabled
+    previous_policy = _snapshot_pool_policy(pool)
     if pooled:
+        _set_pool_pooled(pool)
         _prime_spellspace_pool_depth(lesser, depth)
-        pool._enabled = True
     else:
-        with pool._lock:
-            pool._idle.clear()
-        pool._enabled = False
+        _set_pool_unpooled(pool)
 
     def enter_nested() -> list[Any]:
         stack = []
@@ -432,7 +475,7 @@ def _measure_recursive_spellspace_cycle_components(
             exit_total_ns += exit_t2 - enter_t1
             cycle_total_ns += exit_t2 - cycle_t0
     finally:
-        pool._enabled = previous_enabled
+        _restore_pool_policy(pool, previous_policy)
 
     return {
         "spellspace_enter_ns": enter_total_ns / float(iterations),
@@ -468,14 +511,12 @@ def _measure_spellspace_cycle_with_use_components(
         - exit spellspace
     """
     pool = lesser._spellspace_pool
-    previous_enabled = pool._enabled
+    previous_policy = _snapshot_pool_policy(pool)
     if pooled:
+        _set_pool_pooled(pool)
         _prime_spellspace_pool(lesser)
-        pool._enabled = True
     else:
-        with pool._lock:
-            pool._idle.clear()
-        pool._enabled = False
+        _set_pool_unpooled(pool)
 
     def reset_external_state() -> None:
         lesser._creations.clear_all()
@@ -527,7 +568,7 @@ def _measure_spellspace_cycle_with_use_components(
             exit_total_ns += exit_ns
             cycle_total_ns += cycle_ns
     finally:
-        pool._enabled = previous_enabled
+        _restore_pool_policy(pool, previous_policy)
 
     return {
         "spellspace_enter_ns": enter_total_ns / float(iterations),

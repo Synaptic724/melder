@@ -137,8 +137,12 @@ def test_creation_context_cache_asset_experiment() -> None:
         print("CREATION_CONTEXT_CACHE_ASSET_BEFORE_CLEAR")
         print(before_clear)
 
-        cache_path = Path(
-            "tests/experimentation/creation_context_cache_asset_experiment.json"
+        # Anchor to this test file so the asset lands here regardless of the
+        # pytest invocation directory (a CWD-relative path breaks when the
+        # suite is run from inside tests/).
+        cache_path = (
+            Path(__file__).resolve().parent
+            / "creation_context_cache_asset_experiment.json"
         )
         original_compiler_artifact = root_spell._compiler_artifact
         try:
