@@ -129,8 +129,13 @@ def test_transaction_mediator_allows_cross_thread_root_begin_by_default() -> Non
     assert mediator.describe()["active_session_count"] == 2
 
 
-def test_transaction_mediator_queue_waits_then_allows_next_root_start() -> None:
-    """Queued mode should let a competing thread begin after the root finishes."""
+def test_transaction_mediator_deprecated_queue_flag_does_not_block_cross_thread_roots() -> None:
+    """The deprecated queue flag must not delay disjoint cross-thread root starts.
+
+    Root arbitration is scope-driven under the acquisition contract; `begin_frame`
+    hosts pre-admitted requests, so a competing thread proceeds immediately even
+    while another root session is active and the legacy flag is set.
+    """
     _tm, _em, _orch, request, staged, mediator = _build_admitted_bundle()
     mediator.configure(
         queue_competing_root_transactions=True,
@@ -169,18 +174,22 @@ def test_transaction_mediator_queue_waits_then_allows_next_root_start() -> None:
         finally:
             finished.set()
 
-    thread = threading.Thread(target=_run, name="mediator-queued")
+    thread = threading.Thread(target=_run, name="mediator-disjoint-root")
     thread.start()
-    assert finished.wait(timeout=0.05) is False
-    mediator.end_frame(success=True)
     assert finished.wait(timeout=1.0) is True
     thread.join(timeout=5)
     assert thread.is_alive() is False
     assert failures == []
+    mediator.end_frame(success=True)
 
 
-def test_transaction_mediator_queue_times_out_when_root_never_finishes() -> None:
-    """Queued mode should time out if the active root session never ends."""
+def test_transaction_mediator_deprecated_queue_flag_never_times_out_root_starts() -> None:
+    """The deprecated queue flag must not impose FIFO timeouts on root starts.
+
+    Pre-acquisition timeouts belong to scope waiting only; a disjoint root start
+    completes even when another root session never finishes and the legacy flag
+    plus a tiny wait bound are configured.
+    """
     _tm, _em, _orch, request, staged, mediator = _build_admitted_bundle()
     mediator.configure(
         queue_competing_root_transactions=True,
@@ -207,24 +216,32 @@ def test_transaction_mediator_queue_times_out_when_root_never_finishes() -> None
     )
 
     failures: list[BaseException] = []
+    completed = threading.Event()
 
     def _run() -> None:
         try:
             mediator.begin_frame(request=other_request, staged=other_staged)
+            mediator.end_frame(success=True)
+            completed.set()
         except BaseException as exc:
             failures.append(exc)
 
-    thread = threading.Thread(target=_run, name="mediator-timeout")
+    thread = threading.Thread(target=_run, name="mediator-no-timeout")
     thread.start()
     thread.join(timeout=5)
     assert thread.is_alive() is False
-    assert len(failures) == 1
-    assert isinstance(failures[0], RuntimeError)
-    assert "Timed out waiting" in str(failures[0])
+    assert failures == []
+    assert completed.is_set()
+    mediator.end_frame(success=True)
 
 
-def test_transaction_mediator_queue_drains_five_waiters_one_by_one_in_fifo_order() -> None:
-    """Queued mode should drain five waiting root starts one by one in FIFO order."""
+def test_transaction_mediator_concurrent_disjoint_root_starts_proceed_without_fifo() -> None:
+    """Disjoint cross-thread root starts proceed concurrently with no FIFO drain.
+
+    Five workers host pre-admitted disjoint requests while one root session is
+    already active; all complete without waiting on each other because overlap,
+    not arrival order, is the only serialization criterion.
+    """
     _tm, _em, _orch, request, staged, mediator = _build_admitted_bundle()
     mediator.configure(
         queue_competing_root_transactions=True,
@@ -253,26 +270,19 @@ def test_transaction_mediator_queue_drains_five_waiters_one_by_one_in_fifo_order
         )
         worker_payloads.append((idx, req, staged_req))
 
-    acquisition_order: list[int] = []
+    completion_order: list[int] = []
     failures: list[BaseException] = []
-    active_count = 0
-    max_active = 0
     state_lock = threading.Lock()
     finished_events = [threading.Event() for _ in range(5)]
 
     def _run(index: int, req, staged_req, finished: threading.Event) -> None:
-        nonlocal active_count, max_active
         try:
             session = mediator.begin_frame(request=req, staged=staged_req)
-            with state_lock:
-                acquisition_order.append(index)
-                active_count += 1
-                max_active = max(max_active, active_count)
             time.sleep(0.02)
-            with state_lock:
-                active_count -= 1
             mediator.end_frame(success=True)
             assert session.request is req
+            with state_lock:
+                completion_order.append(index)
         except BaseException as exc:
             failures.append(exc)
         finally:
@@ -280,33 +290,23 @@ def test_transaction_mediator_queue_drains_five_waiters_one_by_one_in_fifo_order
 
     threads = []
     for idx, req, staged_req in worker_payloads:
-        finished = finished_events[idx]
         thread = threading.Thread(
             target=_run,
-            args=(idx, req, staged_req, finished),
-            name=f"mediator-queued-five-{idx}",
+            args=(idx, req, staged_req, finished_events[idx]),
+            name=f"mediator-disjoint-five-{idx}",
         )
         thread.start()
         threads.append(thread)
-        deadline = time.monotonic() + 1.0
-        while True:
-            with mediator._lock:  # unit-test-only internal check to confirm queue ordering
-                pending_count = len(mediator._pending_root_starts)
-            if pending_count >= idx + 1:
-                break
-            if time.monotonic() >= deadline:
-                raise AssertionError("Worker did not enter the pending-start queue in time.")
-            time.sleep(0.005)
 
-    assert all(event.wait(timeout=0.05) is False for event in finished_events)
-    mediator.end_frame(success=True)
+    for event in finished_events:
+        assert event.wait(timeout=5.0) is True
     for thread in threads:
         thread.join(timeout=5)
         assert thread.is_alive() is False
 
     assert failures == []
-    assert acquisition_order == [0, 1, 2, 3, 4]
-    assert max_active == 1
+    assert sorted(completion_order) == [0, 1, 2, 3, 4]
+    mediator.end_frame(success=True)
 
 
 def test_transaction_mediator_root_success_commits_and_clears_session() -> None:

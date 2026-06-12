@@ -85,6 +85,7 @@ class ClassBindingProfile(SpellBindingProfile):
         "origin_file",
         "origin_line",
         "init_signature",
+        "init_signature_object",
         "_source_preview_value",
         "_source_preview_loaded",
         "is_dataclass",
@@ -106,6 +107,7 @@ class ClassBindingProfile(SpellBindingProfile):
             origin_file: Optional[str] = None,
             origin_line: Optional[int] = None,
             init_signature: Optional[str] = None,
+            init_signature_object: Optional[Any] = None,
             source_preview: Optional[str] = None,
             is_dataclass: bool = False,
             decorated: bool = False,
@@ -164,6 +166,10 @@ class ClassBindingProfile(SpellBindingProfile):
         self.origin_file: Optional[str] = origin_file
         self.origin_line: Optional[int] = origin_line
         self.init_signature: Optional[str] = init_signature
+        # The live inspect.Signature behind `init_signature`. Immutable and
+        # borrowable: the requirements finder reuses it under an identity
+        # guard so each class is signature-inspected exactly once per bind.
+        self.init_signature_object: Optional[Any] = init_signature_object
         self._source_preview_value: Optional[str] = source_preview
         self._source_preview_loaded: bool = source_preview is not None
         self.is_dataclass: bool = is_dataclass
@@ -214,6 +220,7 @@ class ClassBindingProfile(SpellBindingProfile):
         del self.origin_file
         del self.origin_line
         del self.init_signature
+        del self.init_signature_object
         del self._source_preview_value
         del self._source_preview_loaded
         del self.is_dataclass

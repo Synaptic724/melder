@@ -93,9 +93,12 @@ class BindingProfileStrategy:
         # origin line without touching the file system.
         origin_line = getattr(cls, "__firstlineno__", None)
 
+        init_signature_object: Optional[Any] = None
         try:
-            init_signature: Optional[str] = str(inspect.signature(cls))
+            init_signature_object = inspect.signature(cls)
+            init_signature: Optional[str] = str(init_signature_object)
         except Exception:
+            init_signature_object = None
             init_signature = None
 
         bases: list[str] = [base.__name__ for base in getattr(cls, "__bases__", ())]
@@ -124,6 +127,7 @@ class BindingProfileStrategy:
             origin_file=origin_file,
             origin_line=origin_line,
             init_signature=init_signature,
+            init_signature_object=init_signature_object,
             is_dataclass=is_dataclass,
             decorated=decorated,
             method_names=method_names,

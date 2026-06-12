@@ -296,6 +296,33 @@ class SpellRequirementsFinder(Cleanable):
 
         return spell.spell
 
+    def _borrow_bind_time_signature(self, call_target: Any) -> Optional[Any]:
+        """
+        Return the profile-owned Signature when it targets `call_target`.
+
+        Contract:
+            - Borrow only: the binding profile owns the Signature object;
+              this finder never mutates or disposes it (Signature is
+              immutable anyway).
+            - The identity guard (`original_object is call_target`) makes
+              reuse provably exact: the profile computed
+              `inspect.signature` on that very object.
+            - Never raises: any lifecycle-ambiguous read (cleaned profile,
+              stub spells without profiles) falls back to fresh computation.
+        """
+        try:
+            profile = self._spell.profile
+            if profile is None:
+                return None
+            binding_profile = profile.binding_profile
+            if binding_profile is None:
+                return None
+            if binding_profile.original_object is not call_target:
+                return None
+            return binding_profile.init_signature_object
+        except AttributeError:
+            return None
+
     def _annotation_needs_resolution(self, annotation: Any) -> bool:
         """
         Decide whether a single annotation requires forward-ref resolution.
@@ -953,12 +980,20 @@ class SpellRequirementsFinder(Cleanable):
             list[SpellParameterRequirement]:
                 Ordered requirement records mirroring the target signature.
         """
-        try:
-            signature = inspect.signature(call_target)
-        except (TypeError, ValueError):
-            # Some exotic / builtin callables may not expose a usable signature.
-            # In that case, we treat them as having no DI-visible parameters.
-            return []
+        # Borrow the bind-time Signature when it provably targets the same
+        # object: `_build_class_profile` already computed
+        # `inspect.signature(cls)` for the v4 `init_signature`, and for class
+        # spells the finder's call target IS that class object
+        # (`_resolve_call_target`). Signature objects are immutable, so
+        # sharing is thread-safe; the identity guard makes the reuse exact.
+        signature = self._borrow_bind_time_signature(call_target)
+        if signature is None:
+            try:
+                signature = inspect.signature(call_target)
+            except (TypeError, ValueError):
+                # Some exotic / builtin callables may not expose a usable signature.
+                # In that case, we treat them as having no DI-visible parameters.
+                return []
 
         requirements: List[SpellParameterRequirement] = []
         needs_resolution = self._should_resolve_annotations(

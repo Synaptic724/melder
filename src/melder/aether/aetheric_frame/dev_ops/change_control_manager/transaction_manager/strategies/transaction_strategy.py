@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Dict
+from typing import TYPE_CHECKING, Dict, Optional
 
 from melder.aether.aetheric_frame.dev_ops.devops_information_registry import (
     DevopsInformationRegistry,
@@ -9,6 +9,9 @@ from melder.aether.aetheric_frame.dev_ops.devops_identity import (
 )
 
 if TYPE_CHECKING:
+    from melder.aether.aetheric_frame.dev_ops.change_control_manager.orchestrator.staged_mutation import (
+        ChangeControlStagedMutation,
+    )
     from melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.transaction_manager import (
         ChangeControlTransactionManager,
     )
@@ -36,7 +39,11 @@ class TransactionStrategy(ABC):
           admission succeeds.
         - `on_end(...)` runs local strategy-owned end side effects during
           transaction finalization.
-        - Registered strategies must implement all three methods.
+        - `apply_commit_delta(...)` applies the family's registry delta at
+          commit time, while the transaction still holds its scope claims.
+          The base class provides a fact-record-stamping default; families
+          override it when they own relational registry truth.
+        - Registered strategies must implement the three abstract methods.
     """
 
     @staticmethod
@@ -112,3 +119,66 @@ class TransactionStrategy(ABC):
                 Metadata associated with the resolved transaction start.
         """
         raise NotImplementedError
+
+    @classmethod
+    def apply_commit_delta(
+            cls,
+            *,
+            devops_information_registry: Optional[DevopsInformationRegistry],
+            identity: DevopsIdentity,
+            staged: "ChangeControlStagedMutation",
+    ) -> None:
+        """
+        Apply this family's registry delta for one committing transaction.
+
+        Purpose:
+            Make transactions the only maintainers of mirrored registry truth.
+            The default implementation stamps last-reported fact records for
+            every region the staged mutation names, establishing the baseline
+            that lets information strategies skip re-derivation when all
+            changes since the baseline flowed through the plane.
+
+        Contract:
+            - Runs while the transaction still holds its scope claims; deltas
+              are race-free against overlapping writers by construction.
+            - The default stamps fact records only; it performs no relational
+              registry writes. Families override this method when their
+              runtime callers supply unambiguous relational deltas (edge
+              direction, share/unshare intent) in staged metadata.
+            - No-ops when the registry is absent.
+            - Failures propagate and poison the commit like commit-hook
+              failures.
+
+        Args:
+            devops_information_registry:
+                Frame-local registry to update, when present.
+            identity:
+                Submitter identity that originated the transaction.
+            staged:
+                Immutable staged mutation for the committing request.
+
+        Returns:
+            None.
+        """
+        if devops_information_registry is None:
+            return
+        fact_family = (
+            staged.request_type.value
+            if hasattr(staged.request_type, "value")
+            else str(staged.request_type)
+        )
+        reporter = staged.request_id
+        if staged.spellbook_id:
+            devops_information_registry.report_fact(
+                fact_family=fact_family,
+                region=f"spellbook:{staged.spellbook_id}",
+                reporter=reporter,
+            )
+        for conduit_id in staged.conduit_ids:
+            if not conduit_id:
+                continue
+            devops_information_registry.report_fact(
+                fact_family=fact_family,
+                region=f"conduit:{conduit_id}",
+                reporter=reporter,
+            )

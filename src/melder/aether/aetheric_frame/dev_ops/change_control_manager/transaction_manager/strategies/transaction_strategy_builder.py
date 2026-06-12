@@ -60,6 +60,9 @@ from melder.aether.aetheric_frame.dev_ops.devops_identity import (
 )
 
 if TYPE_CHECKING:
+    from melder.aether.aetheric_frame.dev_ops.change_control_manager.orchestrator.staged_mutation import (
+        ChangeControlStagedMutation,
+    )
     from melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.transaction_manager import (
         ChangeControlTransactionManager,
     )
@@ -262,6 +265,46 @@ class TransactionStrategyBuilder:
             devops_information_registry=self._devops_information_registry,
             identity=identity,
             metadata=metadata,
+        )
+
+    def apply_commit_delta(
+            self,
+            *,
+            transaction_type: Union[ChangeTransactionType, str],
+            identity: DevopsIdentity,
+            staged: "ChangeControlStagedMutation",
+    ) -> None:
+        """
+        Apply the registered family's registry commit delta.
+
+        Purpose:
+            Give the mediator one registry-backed dispatch point for
+            commit-time registry maintenance without exposing strategy
+            selection details.
+
+        Contract:
+            - No-ops when this builder holds no registry reference.
+            - Delegates to the resolved strategy class, which decides what
+              (if anything) to write; the base default stamps fact records.
+
+        Args:
+            transaction_type:
+                Transaction kind to resolve.
+            identity:
+                Submitter identity that originated the transaction.
+            staged:
+                Immutable staged mutation for the committing request.
+
+        Returns:
+            None.
+        """
+        if self._devops_information_registry is None:
+            return
+        strategy_class = self.resolve(transaction_type)
+        strategy_class.apply_commit_delta(
+            devops_information_registry=self._devops_information_registry,
+            identity=identity,
+            staged=staged,
         )
 
     def _register_default_strategies(self) -> None:

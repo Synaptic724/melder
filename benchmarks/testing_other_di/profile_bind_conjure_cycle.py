@@ -28,6 +28,18 @@ Env knobs:
     BENCH_CYCLE_REPEATS timed repeats per posture (default 9)
     BENCH_CYCLE_WORKERS phase_scheduler_workers_per_spellbook (default 1)
     BENCH_CYCLE_KEEP_CACHE "1" keeps the bench cache dir after the run
+    BENCH_CYCLE_SYNTH_CLASSES   N > 0 swaps the 29-class gauntlet graph for a
+                                generated N-class layered DAG (see below)
+
+Synthetic graph mode:
+    `BENCH_CYCLE_SYNTH_CLASSES=200` generates 200 classes in three tiers:
+    leaf singletons (no deps), mid classes (2 leaf deps), top classes (one
+    mid + one leaf dep). Dependencies are expressed as real constructor
+    annotations referencing the dependency CLASS OBJECT, so phase-3
+    resolution exercises the identity bucket exactly like user code. Depth
+    is capped at 3 so the first-meld sweep stays O(n) and the measurement
+    isolates compile-pipeline scaling (the O(n^2)->O(n) phase-3/phase-4
+    cuts) instead of transient-construction fanout.
 
 Contract:
     - Uses the exact real-world gauntlet class graph (29 binds) so numbers
@@ -97,6 +109,76 @@ CACHE_FRAGMENT = Path("__melder_cache__") / "bench_bind_conjure_cycle"
 REPEATS = max(1, int(os.environ.get("BENCH_CYCLE_REPEATS", "9")))
 WORKERS = max(1, int(os.environ.get("BENCH_CYCLE_WORKERS", "1")))
 KEEP_CACHE = os.environ.get("BENCH_CYCLE_KEEP_CACHE", "0") == "1"
+SYNTH_CLASSES = max(0, int(os.environ.get("BENCH_CYCLE_SYNTH_CLASSES", "0")))
+
+
+def _build_synthetic_support(count: int) -> Any:
+    """
+    Generate a layered N-class dependency DAG shaped like the gauntlet support
+    namespace (ALL_CLASSES / *_TYPES tuples).
+
+    Contract:
+        - Tier 0 (leaves, ~count/20, min 4): no dependencies, bound as
+          Existence.unique so resolution shares instances.
+        - Tier 1 (~count/4): two distinct tier-0 constructor dependencies.
+        - Tier 2 (rest): one tier-1 + one tier-0 dependency. Max depth 3.
+        - Dependencies are real annotated `__init__` parameters whose
+          annotation is the dependency class object (phase-3 identity
+          bucket), generated via exec so `inspect.signature` and the v4
+          fingerprint see ordinary constructors.
+        - Classes are generated ONCE at module import; identical class
+          objects across cycles keep warm repeats classifiable as cache
+          full-hits.
+    """
+    from types import SimpleNamespace
+
+    namespace: Dict[str, Any] = {"__name__": "melder_synth_graph"}
+    classes: List[type] = []
+    tier0_end = max(4, count // 20)
+    tier1_end = min(count, tier0_end + max(1, count // 4))
+
+    for index in range(count):
+        name = f"SynthSpell{index:04d}"
+        if index < tier0_end:
+            source = (
+                f"class {name}:\n"
+                f"    def __init__(self) -> None:\n"
+                f"        self.tag = {index}\n"
+            )
+        elif index < tier1_end:
+            dep_a = classes[index % tier0_end].__name__
+            dep_b = classes[(index + 1) % tier0_end].__name__
+            source = (
+                f"class {name}:\n"
+                f"    def __init__(self, leaf_a: {dep_a}, leaf_b: {dep_b}) -> None:\n"
+                f"        self.leaf_a = leaf_a\n"
+                f"        self.leaf_b = leaf_b\n"
+            )
+        else:
+            mid = classes[tier0_end + (index % (tier1_end - tier0_end))].__name__
+            leaf = classes[(index * 5 + 1) % tier0_end].__name__
+            source = (
+                f"class {name}:\n"
+                f"    def __init__(self, mid: {mid}, leaf: {leaf}) -> None:\n"
+                f"        self.mid = mid\n"
+                f"        self.leaf = leaf\n"
+            )
+        exec(compile(source, f"<synth:{name}>", "exec"), namespace)
+        classes.append(namespace[name])
+
+    return SimpleNamespace(
+        ALL_CLASSES=classes,
+        SINGLETON_TYPES=tuple(classes[:tier0_end]),
+        OUTER_SCOPED_TYPES=(),
+        REQUEST_SCOPED_TYPES=(),
+    )
+
+
+if SYNTH_CLASSES:
+    _support = _build_synthetic_support(SYNTH_CLASSES)
+    FRAME_NAME = f"bench-cycle-synth-{SYNTH_CLASSES}"
+    CONDUIT_NAME = FRAME_NAME
+    CACHE_FRAGMENT = Path("__melder_cache__") / f"bench_cycle_synth_{SYNTH_CLASSES}"
 
 
 # ======================================================================================

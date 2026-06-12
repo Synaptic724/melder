@@ -24,6 +24,8 @@ Design notes:
 """
 
 import threading
+import time
+from dataclasses import dataclass
 from typing import Any, Dict, Iterable, List, Optional, Set, Tuple, TYPE_CHECKING, ClassVar
 
 from melder.__melder_registration_guard__ import (
@@ -36,6 +38,35 @@ from melder.utilities.general_base.cleanable import Cleanable
 
 if TYPE_CHECKING:
     from melder.aether.aetheric_frame.dev_ops.devops_identity import DevopsIdentity
+
+
+@dataclass(frozen=True)
+class DevopsFactRecord:
+    """
+    Immutable last-reported fact baseline for one fact family in one region.
+
+    Purpose:
+        Record when one fact family for one region was last reported and by
+        whom, so information strategies can skip re-derivation when every
+        change since the baseline flowed through the transaction plane.
+
+    Contract:
+        - `fact_family` names the reported truth class (normally a
+          transaction-type value such as `"bind"` or `"link"`).
+        - `region` is a scope-shaped region key such as `"conduit:<id>"` or
+          `"spellbook:<id>"`.
+        - `last_reporter` is the request id or strategy execution that
+          established the baseline; every fact traces to its reporter.
+        - `generation` increments once per report for the same
+          `(fact_family, region)` key.
+        - Records are immutable and safe to share across threads.
+    """
+    __melder_internal__: ClassVar[object] = _mrg.sentinel
+    fact_family: str
+    region: str
+    last_reported_at: float
+    last_reporter: str
+    generation: int
 
 
 class DevopsInformationRegistry(Cleanable):
@@ -91,6 +122,7 @@ class DevopsInformationRegistry(Cleanable):
         "_transaction_identity_keys_by_id",
         "_transaction_scope_keys_by_id",
         "_transaction_type_by_id",
+        "_fact_records",
     ]
 
     def __init__(self, aetheric_frame_name: str) -> None:
@@ -146,6 +178,7 @@ class DevopsInformationRegistry(Cleanable):
         self._transaction_identity_keys_by_id: Dict[str, Set[Tuple[str, str]]] = {}
         self._transaction_scope_keys_by_id: Dict[str, Set[str]] = {}
         self._transaction_type_by_id: Dict[str, str] = {}
+        self._fact_records: Dict[Tuple[str, str], "DevopsFactRecord"] = {}
 
     def cleanup(self) -> None:
         """
@@ -211,6 +244,7 @@ class DevopsInformationRegistry(Cleanable):
             self._transaction_identity_keys_by_id.clear()
             self._transaction_scope_keys_by_id.clear()
             self._transaction_type_by_id.clear()
+            self._fact_records.clear()
 
             del self._identities_by_key
             del self._objects_by_key
@@ -229,6 +263,7 @@ class DevopsInformationRegistry(Cleanable):
             del self._transaction_identity_keys_by_id
             del self._transaction_scope_keys_by_id
             del self._transaction_type_by_id
+            del self._fact_records
             del self._aetheric_frame_name
         del self._lock
 
@@ -260,8 +295,131 @@ class DevopsInformationRegistry(Cleanable):
         DevopsInformationStrategyBuilder
             Builder that resolves registry-local information strategies.
         """
-        
+
         return self._information_strategy_builder
+
+    def report_fact(
+            self,
+            *,
+            fact_family: str,
+            region: str,
+            reporter: str,
+    ) -> DevopsFactRecord:
+        """
+        Record one last-reported fact baseline for a fact family and region.
+
+        Parameters
+        ----------
+        fact_family:
+            Truth class being reported (normally a transaction-type value).
+        region:
+            Scope-shaped region key such as "conduit:<id>" or
+            "spellbook:<id>".
+        reporter:
+            Request id or strategy execution that establishes the baseline.
+
+        Returns
+        -------
+        DevopsFactRecord
+            The newly stored immutable record, with `generation` incremented
+            from any prior record for the same key.
+
+        Raises
+        ------
+        ValueError
+            If any argument is empty.
+        RuntimeError
+            If the registry has been cleaned.
+
+        Notes
+        -----
+        Transactions are the intended reporters: strategy commit deltas call
+        this while the committing transaction still holds its scope claims,
+        so baselines can never race overlapping writers.
+        """
+        self.check_cleaned()
+        if not fact_family or not region or not reporter:
+            raise ValueError("fact_family, region, and reporter are required.")
+        with self._lock:
+            key = (fact_family, region)
+            previous = self._fact_records.get(key)
+            record = DevopsFactRecord(
+                fact_family=fact_family,
+                region=region,
+                last_reported_at=time.time(),
+                last_reporter=reporter,
+                generation=(previous.generation + 1) if previous is not None else 1,
+            )
+            self._fact_records[key] = record
+            return record
+
+    def get_fact_record(
+            self,
+            *,
+            fact_family: str,
+            region: str,
+    ) -> Optional[DevopsFactRecord]:
+        """
+        Return the last-reported fact baseline for one family and region.
+
+        Parameters
+        ----------
+        fact_family:
+            Truth class to look up.
+        region:
+            Scope-shaped region key to look up.
+
+        Returns
+        -------
+        Optional[DevopsFactRecord]
+            The current baseline record, or None when the fact has never been
+            reported (cold start; the asking strategy should derive and seed).
+
+        Raises
+        ------
+        RuntimeError
+            If the registry has been cleaned.
+        """
+        self.check_cleaned()
+        with self._lock:
+            return self._fact_records.get((fact_family, region))
+
+    def list_fact_records(
+            self,
+            *,
+            region: Optional[str] = None,
+    ) -> Tuple[DevopsFactRecord, ...]:
+        """
+        Return a snapshot of fact baselines, optionally filtered by region.
+
+        Parameters
+        ----------
+        region:
+            Optional region key; when supplied, only records for that region
+            are returned.
+
+        Returns
+        -------
+        Tuple[DevopsFactRecord, ...]
+            Detached snapshot of matching records in stable key order.
+
+        Raises
+        ------
+        RuntimeError
+            If the registry has been cleaned.
+        """
+        self.check_cleaned()
+        with self._lock:
+            if region is None:
+                return tuple(
+                    self._fact_records[key]
+                    for key in sorted(self._fact_records.keys())
+                )
+            return tuple(
+                self._fact_records[key]
+                for key in sorted(self._fact_records.keys())
+                if key[1] == region
+            )
 
     def register_identity(
             self,

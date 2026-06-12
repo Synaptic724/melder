@@ -7,6 +7,7 @@ import pytest
 
 from melder.aether.aether import Aether
 from melder.aether.conduit.conduit import Conduit
+from melder.aether.conduit.conduit_pool import ConduitPool
 from melder.aether.spellbook.configuration.spellbook_configuration import SpellbookConfiguration
 from melder.aether.spellbook.existence.existence import Existence
 from melder.aether.spellbook.spellbook import Spellbook
@@ -1596,3 +1597,138 @@ def test_conduit_concurrent_bulk_contract_additions() -> None:
     finally:
         borrower.cleanup()
         owner.cleanup()
+
+
+def test_concurrent_lesser_creation_from_one_root_links_each_child_once() -> None:
+    """
+    Purpose:
+        Stress the narrowed parent-lock window in create_lesser_conduit:
+        many threads run full lesser scope cycles against ONE shared root.
+    Contract:
+        - Every cycle yields a live, distinct lesser conduit (no two threads
+          ever hold the same shell at the same time).
+        - Per-conduit melds inside each lesser resolve correctly.
+        - After all cycles, the root ward retains no lesser children and the
+          root still creates working lessers (registry consistent).
+    Returns:
+        None.
+    Raises:
+        AssertionError: If a shell is double-issued, a meld fails, or the
+            ward registry is left inconsistent.
+    """
+    spellbook = _make_dynamic_spellbook()
+    depth3_ids = _bind_graph(
+        spellbook,
+        get_depth_3_classes(),
+        existence=Existence.unique_per_conduit,
+    )
+    root = spellbook.conjure(name="root")
+    thread_count = 4
+    cycles_per_thread = 50
+    barrier = Barrier(thread_count)
+    lock = Lock()
+    active_ids: set[str] = set()
+    errors: list[Exception] = []
+
+    def worker() -> None:
+        """
+        Purpose:
+            Run repeated lesser scope cycles against the shared root.
+        Contract:
+            - Tracks active shell ids to detect double-issuance.
+        Returns:
+            None.
+        """
+        try:
+            barrier.wait(timeout=5)
+            for _ in range(cycles_per_thread):
+                lesser = root.create_lesser_conduit()
+                with lock:
+                    assert lesser._id not in active_ids
+                    active_ids.add(lesser._id)
+                melded = lesser.meld(spell=depth3_ids[Depth3Root])
+                _assert_depth3_root(melded)
+                with lock:
+                    active_ids.discard(lesser._id)
+                lesser.cleanup()
+        except Exception as exc:
+            with lock:
+                errors.append(exc)
+
+    threads = [Thread(target=worker) for _ in range(thread_count)]
+    try:
+        for thread in threads:
+            thread.start()
+        for thread in threads:
+            thread.join()
+        assert errors == []
+        assert active_ids == set()
+        # Ward registry consistent: no lesser children remain linked.
+        assert root._conduit_ward._lesser_conduits == {}
+        # Root still issues working lessers after the storm.
+        survivor = root.create_lesser_conduit()
+        _assert_depth3_root(survivor.meld(spell=depth3_ids[Depth3Root]))
+        survivor.cleanup()
+    finally:
+        root.cleanup()
+
+
+def test_create_lesser_conduit_racing_parent_cleanup_unwinds_cleanly() -> None:
+    """
+    Purpose:
+        Pin the unwind path of the narrowed parent-lock window: the parent
+        is cleaned between pool acquisition and the link window.
+    Contract:
+        - create_lesser_conduit raises the standard cleaned RuntimeError
+          instead of linking a child into a torn-down lineage.
+        - The orphan shell is recycled (no child remains linked anywhere).
+        - Subsequent create_lesser_conduit calls keep raising on the
+          cleaned parent.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If the racing create links a child or fails to
+            surface the cleaned error.
+    """
+    spellbook = _make_dynamic_spellbook()
+    depth3_ids = _bind_graph(
+        spellbook,
+        get_depth_3_classes(),
+        existence=Existence.unique_per_conduit,
+    )
+    root = spellbook.conjure(name="root")
+    # Pre-warm the pool so the racing create acquires a pooled shell
+    # deterministically (a fresh-construction race would hit the cleaned
+    # frame earlier with a different error surface).
+    warm = root.create_lesser_conduit()
+    warm.cleanup()
+    # ConduitPool uses __slots__, so the racing-cleanup seam is installed at
+    # class level and restored in finally.
+    original_create_object = ConduitPool.create_object
+
+    def hijacked_create_object(pool_self: ConduitPool) -> object:
+        """
+        Purpose:
+            Simulate the parent being cleaned mid-create, after pool
+            acquisition but before the link window.
+        Contract:
+            - Pops the shell first, then runs the real parent cleanup.
+        Returns:
+            object: The popped pooled shell (or None on a cold pool).
+        """
+        shell = original_create_object(pool_self)
+        root.cleanup()
+        return shell
+
+    ConduitPool.create_object = hijacked_create_object
+    try:
+        with pytest.raises(RuntimeError):
+            root.create_lesser_conduit()
+        assert root._cleaned is True
+        # The cleaned parent keeps rejecting creation attempts.
+        with pytest.raises(RuntimeError):
+            root.create_lesser_conduit()
+    finally:
+        ConduitPool.create_object = original_create_object
+        if not root._cleaned:
+            root.cleanup()

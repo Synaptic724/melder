@@ -67,14 +67,21 @@ class TransactionMediator(Cleanable):
     Contract:
         - Root sessions are keyed by admitted request id.
         - Same-thread nested work joins the active root session.
-        - Cross-thread root starts are allowed by default unless coarse
-          queueing is explicitly enabled.
+        - Cross-thread root starts are always allowed; overlap is decided by
+          scope-claim acquisition at admission, not by thread arbitration.
+        - A request blocked by scope overlap waits scope-locally (woken on
+          claim release) and retries admission until it admits or the
+          configured wait bound expires.
         - Only the outermost frame finalizes commit or abort through the
-          existing orchestrator path.
+          existing orchestrator path; strategy commit deltas run after the
+          session commit pipeline and before orchestrator commit, while the
+          transaction still holds its scopes.
 
     Threading:
         - Shared mediator state is guarded by an internal `RLock`.
         - Active execution frame stacks are stored in `threading.local()`.
+        - Scope waiting blocks on the embargo manager's condition, never while
+          holding the mediator lock.
     """
 
     __melder_internal__: ClassVar[object] = _mrg.sentinel
@@ -91,7 +98,6 @@ class TransactionMediator(Cleanable):
         "_admit_request",
         "_strategy_builder",
         "_sessions_by_request_id",
-        "_pending_root_starts",
         "_thread_local",
     ]
 
@@ -120,9 +126,12 @@ class TransactionMediator(Cleanable):
             orchestrator:
                 Admission/commit/abort orchestration helper.
             queue_competing_root_transactions:
-                Whether competing root starts should wait in FIFO order.
+                Deprecated no-op retained for signature compatibility. Root
+                arbitration is scope-driven; this flag no longer changes
+                behavior.
             max_transaction_wait_time_in_seconds:
-                Maximum seconds a competing root start may wait for the slot.
+                Maximum seconds a scope-blocked root start may wait for its
+                claims before admission times out.
             admit_request_fn:
                 Optional frame-owned admission facade. When supplied, root
                 transaction admission goes through that facade instead of
@@ -178,7 +187,6 @@ class TransactionMediator(Cleanable):
             )
         )
         self._sessions_by_request_id: Dict[str, TransactionSession] = {}
-        self._pending_root_starts: List[int] = []
         self._thread_local: threading.local = threading.local()
 
     def cleanup(self) -> None:
@@ -198,14 +206,13 @@ class TransactionMediator(Cleanable):
             if self._sessions_by_request_id is not None:
                 for session in list(self._sessions_by_request_id.values()):
                     try:
+                        # Best-effort teardown of abandoned sessions; mediator
+                        # cleanup must complete even when one session resists.
                         session.cleanup()
                     except Exception:
                         pass
                 self._sessions_by_request_id.clear()
-            if self._pending_root_starts is not None:
-                self._pending_root_starts.clear()
             del self._sessions_by_request_id
-            del self._pending_root_starts
             del self._transaction_manager
             del self._conflict_manager
             del self._embargo_manager
@@ -312,7 +319,19 @@ class TransactionMediator(Cleanable):
             )
 
         with self._lock:
-            self._wait_for_turn_locked(current_thread_id)
+            existing = self._sessions_by_request_id.get(request.request_id)
+            if existing is not None:
+                # One admitted request owns exactly one root session. Hosting
+                # the same request from a second thread would silently alias
+                # the session registry entry, so cross-thread re-begin fails
+                # fast instead.
+                raise RuntimeError(
+                    "Transaction request '{0}' is already hosted by an active "
+                    "root session on thread {1}.".format(
+                        request.request_id,
+                        existing.owner_thread_id,
+                    )
+                )
             session = TransactionSession(
                 request=request,
                 staged=staged,
@@ -335,6 +354,7 @@ class TransactionMediator(Cleanable):
             spellbook_id: Optional[str] = None,
             conduit_ids: Optional[Iterable[str]] = None,
             scope_keys: Optional[Iterable[str]] = None,
+            scope_claims: Optional[Iterable[tuple[str, str]]] = None,
             scope_hashes: Optional[Iterable[str]] = None,
             binding_keys: Optional[Iterable[tuple[str, str]]] = None,
             contract_keys: Optional[Iterable[tuple[str, str, str]]] = None,
@@ -351,7 +371,7 @@ class TransactionMediator(Cleanable):
             mediator. This method handles:
             - identity validation
             - same-thread nested joins for one already-active local request
-            - queued waiting for competing root starts
+            - scope-local waiting and admission retry for scope-blocked starts
             - request building
             - orchestrator admission
             - root session creation
@@ -373,6 +393,9 @@ class TransactionMediator(Cleanable):
                 Optional participating conduits.
             scope_keys:
                 Optional normalized scope keys.
+            scope_claims:
+                Optional `(scope_key, mode)` pairs declaring per-scope claim
+                modes for acquisition; unspecified keys default to exclusive.
             scope_hashes:
                 Optional normalized scope hashes.
             binding_keys:
@@ -427,46 +450,24 @@ class TransactionMediator(Cleanable):
             )
             return active
 
+        request = self._transaction_manager.build_request(
+            request_type=transaction_type,
+            initiator_conduit_id=(
+                initiator_conduit_id
+                if initiator_conduit_id is not None
+                else identity.owner_id
+            ),
+            spellbook_id=spellbook_id,
+            conduit_ids=conduit_ids,
+            scope_keys=scope_keys,
+            scope_claims=scope_claims,
+            scope_hashes=scope_hashes,
+            binding_keys=binding_keys,
+            contract_keys=contract_keys,
+            metadata=normalized_metadata,
+        )
+        self._admit_with_scope_wait(request)
         with self._lock:
-            self._wait_for_turn_locked(
-                current_thread_id,
-                allow_same_thread_parallel=True,
-            )
-            request = self._transaction_manager.build_request(
-                request_type=transaction_type,
-                initiator_conduit_id=(
-                    initiator_conduit_id
-                    if initiator_conduit_id is not None
-                    else identity.owner_id
-                ),
-                spellbook_id=spellbook_id,
-                conduit_ids=conduit_ids,
-                scope_keys=scope_keys,
-                scope_hashes=scope_hashes,
-                binding_keys=binding_keys,
-                contract_keys=contract_keys,
-                metadata=normalized_metadata,
-            )
-            if self._admit_request is not None:
-                admission = self._admit_request(request)
-            else:
-                admission = self._orchestrator.admit_request(
-                    request,
-                    transaction_manager=self._transaction_manager,
-                    conflict_manager=self._conflict_manager,
-                    embargo_manager=self._embargo_manager,
-                )
-            if not admission.admitted:
-                details: list[str] = []
-                if admission.conflicts:
-                    details.append(f"conflicts={admission.conflicts}")
-                if admission.embargoes:
-                    details.append(f"embargoes={admission.embargoes}")
-                detail_msg = "; ".join(details) if details else "no conflict metadata available"
-                raise RuntimeError(
-                    "[TRANSACTION_MEDIATOR] Change-control admission denied "
-                    f"(reasons={admission.reasons}). {detail_msg}"
-                )
             staged = self._orchestrator.get_staged(request.request_id)
             if staged is None:
                 from melder.aether.aetheric_frame.dev_ops.change_control_manager.orchestrator.staged_mutation import (
@@ -855,6 +856,7 @@ class TransactionMediator(Cleanable):
         session.mark_committing()
         try:
             session.run_commit_pipeline()
+            self._apply_strategy_commit_delta(session)
             self._orchestrator.commit_request(
                 session.request.request_id,
                 transaction_manager=self._transaction_manager,
@@ -873,6 +875,49 @@ class TransactionMediator(Cleanable):
         else:
             session.mark_committed()
 
+    def _apply_strategy_commit_delta(self, session: TransactionSession) -> None:
+        """
+        Apply the owning strategy's registry commit delta for one root session.
+
+        Purpose:
+            Make transactions the maintainers of mirrored registry truth:
+            after the session commit pipeline succeeds and before the
+            orchestrator releases the transaction's scope claims, the family
+            strategy applies its registry delta and stamps last-reported fact
+            records.
+
+        Contract:
+            - Runs while the transaction still holds its scopes, so deltas are
+              race-free against overlapping writers by construction.
+            - Skips silently when the session has no submitter identity (raw
+              `begin_frame` sessions) or when no strategy family is registered
+              for the request type.
+            - Delta failures propagate and poison the commit exactly like
+              commit-hook failures.
+
+        Args:
+            session:
+                Root session being committed.
+
+        Returns:
+            None.
+        """
+        identity = session.submitter_identity
+        if identity is None:
+            return
+        transaction_name = self._normalize_transaction_name(
+            session.request.request_type
+        )
+        try:
+            self._strategy_builder.resolve(transaction_name)
+        except NotImplementedError:
+            return
+        self._strategy_builder.apply_commit_delta(
+            transaction_type=transaction_name,
+            identity=identity,
+            staged=session.staged,
+        )
+
     def _get_stack(self) -> List[str]:
         """
         Return the thread-local request-id stack for the current thread.
@@ -884,59 +929,77 @@ class TransactionMediator(Cleanable):
             self._thread_local.request_stack = stack
         return stack
 
-    def _wait_for_turn_locked(
+    def _admit_with_scope_wait(
             self,
-            thread_id: int,
-            *,
-            allow_same_thread_parallel: bool = False,
-    ) -> None:
+            request: "ChangeControlTransactionRequest",
+    ) -> ChangeControlAdmissionResult:
         """
-        Wait in FIFO order for a root-session slot when queueing is enabled.
+        Admit one request, waiting scope-locally while claims are blocked.
+
+        Purpose:
+            Own the pending model for root starts: a request rejected for
+            scope overlap waits on the lock table's release condition and
+            retries admission until it admits or the configured wait bound
+            expires.
 
         Contract:
-            - Returns immediately when no root session is active.
-            - Returns immediately when queueing is disabled.
-            - When queueing is enabled, waits until this thread is the queue
-              head and no root sessions remain active.
-        """
-        if not self._sessions_by_request_id:
-            return
-        if allow_same_thread_parallel:
-            # Distinct local roots on the same thread should still be allowed
-            # to reach normal admission/conflict handling. The block/wait
-            # policy only applies when another thread currently owns the frame
-            # mutation domain.
-            owner_thread_ids = {
-                session.owner_thread_id
-                for session in self._sessions_by_request_id.values()
-            }
-            if owner_thread_ids == {thread_id}:
-                return
-        if not self._queue_competing_root_transactions:
-            return
+            - Admission attempts route through the frame-owned facade when one
+              was supplied, so manager-level policy (change-control
+              disablement) still applies.
+            - Only rejections that carry blocking-scope evidence are waitable;
+              any other rejection raises immediately.
+            - The mediator lock is never held while waiting.
+            - Timeout raises `RuntimeError` naming the blocking scope keys and
+              holder request ids from the last rejection.
 
-        self._pending_root_starts.append(thread_id)
+        Args:
+            request:
+                Built immutable request to admit.
+
+        Returns:
+            ChangeControlAdmissionResult: The successful admission result.
+
+        Raises:
+            RuntimeError: On non-waitable denial or on scope-wait timeout.
+        """
         deadline = time.monotonic() + self._max_transaction_wait_time_in_seconds
-        try:
-            while True:
-                is_head = bool(self._pending_root_starts) and self._pending_root_starts[0] == thread_id
-                if is_head and not self._sessions_by_request_id:
-                    self._pending_root_starts.pop(0)
-                    return
-                remaining = deadline - time.monotonic()
-                if remaining <= 0:
-                    self._pending_root_starts = [
-                        pending_id
-                        for pending_id in self._pending_root_starts
-                        if pending_id != thread_id
-                    ]
+        while True:
+            if self._admit_request is not None:
+                admission = self._admit_request(request)
+            else:
+                admission = self._orchestrator.admit_request(
+                    request,
+                    transaction_manager=self._transaction_manager,
+                    conflict_manager=self._conflict_manager,
+                    embargo_manager=self._embargo_manager,
+                )
+            if admission.admitted:
+                return admission
+            waitable = bool(admission.embargoes)
+            remaining = deadline - time.monotonic()
+            if not waitable or remaining <= 0:
+                details: List[str] = []
+                if admission.conflicts:
+                    details.append(f"holders={admission.conflicts}")
+                if admission.embargoes:
+                    details.append(f"blocking_scopes={admission.embargoes}")
+                detail_msg = (
+                    "; ".join(details) if details else "no blocking metadata available"
+                )
+                if waitable:
                     raise RuntimeError(
-                        "Timed out waiting for the active root transaction session to finish."
+                        "[TRANSACTION_MEDIATOR] Timed out waiting for blocked "
+                        f"scopes (reasons={admission.reasons}). {detail_msg}"
                     )
-                self._wait_condition.wait(timeout=remaining)
-        except Exception:
-            self._wait_condition.notify_all()
-            raise
+                raise RuntimeError(
+                    "[TRANSACTION_MEDIATOR] Change-control admission denied "
+                    f"(reasons={admission.reasons}). {detail_msg}"
+                )
+            # Wait in bounded slices: a release notification that lands in the
+            # narrow window between this admission attempt and the wait would
+            # otherwise be missed until the full deadline; slicing caps that
+            # worst case at one second per retry.
+            self._embargo_manager.wait_for_release(timeout=min(remaining, 1.0))
 
     def _remove_request_id_from_stack(self, request_id: str) -> None:
         """
@@ -1102,6 +1165,7 @@ class TransactionMediator(Cleanable):
             spellbook_id=bind_request["spellbook_id"],
             conduit_ids=bind_request["conduit_ids"],
             scope_keys=bind_request["scope_keys"],
+            scope_claims=bind_request.get("scope_claims"),
             scope_hashes=bind_request["scope_hashes"],
             binding_keys=bind_request["binding_keys"],
             contract_keys=bind_request["contract_keys"],

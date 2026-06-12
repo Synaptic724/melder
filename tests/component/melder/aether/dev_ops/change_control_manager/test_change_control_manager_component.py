@@ -4,6 +4,7 @@ import time
 
 from melder.aether.aether import Aether
 from melder.aether.aetheric_frame.aetheric_frame import AethericFrame
+from melder.aether.aetheric_frame.dev_ops.devops_identity import DevopsIdentity
 from melder.aether.aetheric_frame.aetheric_frame_configuration import (
     AethericFrameConfiguration,
 )
@@ -512,27 +513,30 @@ def test_component_change_control_transaction_mediator_rejects_five_threads_agai
         frame.cleanup()
 
 
-def test_component_change_control_transaction_mediator_queue_turn_taking() -> None:
+def test_component_change_control_transaction_mediator_scope_turn_taking() -> None:
     """
     Purpose:
-        Validate queued turn-taking on the real frame-owned mediator surface.
+        Validate scope-driven turn-taking on the real frame-owned mediator.
     Contract:
-        - A competing thread waits while the active root session is open.
-        - After the owning thread ends the root session, the waiting thread
-          begins and commits its own root session successfully.
+        - A competing thread claiming the same scope waits while the holder's
+          root session is open.
+        - After the owning thread ends its session, the waiting thread admits
+          and commits its own root session successfully.
+        - The deprecated queue flag is accepted by `configure(...)` but does
+          not change scope-driven behavior.
     Returns:
         None.
     Raises:
-        AssertionError: If queueing or wakeup behavior drifts.
+        AssertionError: If scope waiting or wakeup behavior drifts.
     """
-    frame = AethericFrame(Aether(), "component-ccm-mediator-queue")
+    frame = AethericFrame(Aether(), "component-ccm-mediator-scope-turns")
     frame_configuration = AethericFrameConfiguration(
         origin_spellbook_id=None,
         system_state="automatic",
         ai_native_enabled=False,
         rift_enabled=False,
         queue_competing_root_transactions=True,
-        max_transaction_wait_time_in_seconds=1.0,
+        max_transaction_wait_time_in_seconds=5.0,
     )
     frame.bind_frame_configuration(frame_configuration)
     bound_configuration = frame.frame_configuration
@@ -540,10 +544,6 @@ def test_component_change_control_transaction_mediator_queue_turn_taking() -> No
     manager = frame.dev_ops_manager.change_control_manager
     try:
         manager.transaction_mediator().configure(
-            change_control_mode=bound_configuration.change_control_mode,
-            allow_multiple_root_transactions=(
-                bound_configuration.allow_multiple_root_transactions
-            ),
             queue_competing_root_transactions=(
                 bound_configuration.queue_competing_root_transactions
             ),
@@ -552,85 +552,67 @@ def test_component_change_control_transaction_mediator_queue_turn_taking() -> No
             ),
         )
 
-        request = manager.transaction_manager().build_request(
-            request_type=ChangeTransactionType.BIND,
-            initiator_conduit_id="conduit-1",
-            spellbook_id="spellbook-1",
-            scope_keys=["scope:spellbook:spellbook-1"],
-        )
-        admission = manager.admit_request(request)
-        assert admission.admitted is True
-        staged = manager.orchestrator().get_staged(request.request_id)
-        assert staged is not None
-
-        manager.transaction_mediator().begin_frame(
-            request=request,
-            staged=staged,
-            capabilities=("bind",),
-        )
-
-        worker_payloads = []
-        for idx in range(5):
-            other_request = manager.transaction_manager().build_request(
-                request_type=ChangeTransactionType.LINK,
-                initiator_conduit_id=f"conduit-{idx + 2}",
-                spellbook_id=f"spellbook-{idx + 2}",
-                scope_keys=[f"scope:spellbook:spellbook-{idx + 2}"],
+        def _identity(owner_id: str) -> DevopsIdentity:
+            return DevopsIdentity(
+                owner_kind="conduit",
+                owner_id=owner_id,
+                aetheric_frame_name=frame.name,
+                metadata={},
+                available_transactions=("link",),
             )
-            other_admission = manager.admit_request(other_request)
-            assert other_admission.admitted is True
-            other_staged = manager.orchestrator().get_staged(other_request.request_id)
-            assert other_staged is not None
-            worker_payloads.append((idx, other_request, other_staged))
 
-        finished_events = [threading.Event() for _ in range(5)]
+        shared_scope = ["scope:conduit:shared"]
+        holder_started = threading.Event()
+        release_holder = threading.Event()
+        waiter_admitted = threading.Event()
         failures: list[BaseException] = []
-        acquisition_order: list[int] = []
-        active_count = 0
-        max_active = 0
-        state_lock = threading.Lock()
 
-        def _run(index: int, other_request, other_staged, finished: threading.Event) -> None:
-            nonlocal active_count, max_active
+        def _holder() -> None:
             try:
-                manager.transaction_mediator().begin_frame(
-                    request=other_request,
-                    staged=other_staged,
+                session = manager.transaction_mediator().begin_transaction(
+                    identity=_identity("conduit-holder"),
+                    transaction_type=ChangeTransactionType.LINK,
+                    scope_keys=shared_scope,
                 )
-                with state_lock:
-                    acquisition_order.append(index)
-                    active_count += 1
-                    max_active = max(max_active, active_count)
-                time.sleep(0.02)
-                with state_lock:
-                    active_count -= 1
-                manager.transaction_mediator().end_frame(success=True)
+                holder_started.set()
+                release_holder.wait(timeout=5.0)
+                manager.transaction_mediator().end_transaction_by_request_id(
+                    session.request.request_id,
+                )
             except BaseException as exc:
                 failures.append(exc)
-            finally:
-                finished.set()
+                holder_started.set()
 
-        threads = []
-        for idx, other_request, other_staged in worker_payloads:
-            finished = finished_events[idx]
-            thread = threading.Thread(
-                target=_run,
-                args=(idx, other_request, other_staged, finished),
-                name=f"ccm-mediator-queue-peer-{idx}",
-            )
-            thread.start()
-            threads.append(thread)
+        def _waiter() -> None:
+            try:
+                holder_started.wait(timeout=5.0)
+                session = manager.transaction_mediator().begin_transaction(
+                    identity=_identity("conduit-waiter"),
+                    transaction_type=ChangeTransactionType.LINK,
+                    scope_keys=shared_scope,
+                )
+                waiter_admitted.set()
+                manager.transaction_mediator().end_transaction_by_request_id(
+                    session.request.request_id,
+                )
+            except BaseException as exc:
+                failures.append(exc)
 
-        assert all(event.wait(timeout=0.05) is False for event in finished_events)
-        manager.transaction_mediator().end_frame(success=True)
-        for event in finished_events:
-            assert event.wait(timeout=1.0) is True
-        for thread in threads:
-            thread.join(timeout=5)
-            assert thread.is_alive() is False
+        holder_thread = threading.Thread(target=_holder, name="ccm-scope-holder")
+        waiter_thread = threading.Thread(target=_waiter, name="ccm-scope-waiter")
+        holder_thread.start()
+        waiter_thread.start()
+
+        assert holder_started.wait(timeout=5.0) is True
+        time.sleep(0.1)
+        assert waiter_admitted.is_set() is False
+        release_holder.set()
+        waiter_thread.join(timeout=5.0)
+        holder_thread.join(timeout=5.0)
+        assert holder_thread.is_alive() is False
+        assert waiter_thread.is_alive() is False
         assert failures == []
-        assert sorted(acquisition_order) == [0, 1, 2, 3, 4]
-        assert max_active == 1
+        assert waiter_admitted.is_set() is True
     finally:
         frame.cleanup()
 
@@ -808,14 +790,18 @@ def test_component_change_control_describe_includes_manager_snapshots() -> None:
 def test_component_change_control_admit_request_scope_hash_conflict() -> None:
     """
     Purpose:
-        Validate scope-hash conflicts are detected in admission.
+        Validate the acquisition-contract roles of scope keys versus hashes.
     Contract:
-        - Request with overlapping hash is denied.
-        - Conflict evidence contains the first request id.
+        - Scope KEYS are the admission vocabulary: overlapping keys are denied
+          with holder evidence under the lock-table contract.
+        - Scope HASHES are payload metadata only: a hash-only request carries
+          no claims and admits. Hash-claim admission is a recorded follow-up
+          for external hash-only requesters (see patch lane
+          `devops_scope_acquisition_2026_06_12`).
     Returns:
         None.
     Raises:
-        AssertionError: If hash conflicts are not enforced.
+        AssertionError: If key/hash admission roles drift.
     """
     frame = AethericFrame(Aether(), "component-ccm-hash-conflict")
     manager = frame.dev_ops_manager.change_control_manager
@@ -825,15 +811,26 @@ def test_component_change_control_admit_request_scope_hash_conflict() -> None:
             initiator_conduit_id="conduit-a",
             scope_keys=["scope:shared"],
         )
-        request_b = manager.transaction_manager().build_request(
+        hash_only_request = manager.transaction_manager().build_request(
             request_type=ChangeTransactionType.BIND,
             initiator_conduit_id="conduit-b",
             scope_hashes=request_a.scope_hashes,
         )
+        key_overlap_request = manager.transaction_manager().build_request(
+            request_type=ChangeTransactionType.BIND,
+            initiator_conduit_id="conduit-c",
+            scope_keys=["scope:shared"],
+        )
         assert manager.admit_request(request_a).admitted is True
-        admission_b = manager.admit_request(request_b)
-        assert admission_b.admitted is False
-        assert admission_b.conflicts == (request_a.request_id,)
+
+        hash_only_admission = manager.admit_request(hash_only_request)
+        assert hash_only_admission.admitted is True
+
+        key_overlap_admission = manager.admit_request(key_overlap_request)
+        assert key_overlap_admission.admitted is False
+        assert key_overlap_admission.reasons == ("scope_conflict",)
+        assert key_overlap_admission.conflicts == (request_a.request_id,)
+        assert "scope:shared" in key_overlap_admission.embargoes
     finally:
         frame.cleanup()
 
@@ -995,7 +992,9 @@ def test_component_change_control_admit_request_rejects_embargo() -> None:
         assert manager.admit_request(request_a).admitted is True
         admission_b = manager.admit_request(request_b)
         assert admission_b.admitted is False
-        assert admission_b.conflicts == ()
+        # Acquisition evidence names the holder of the blocking claim; the
+        # first admitted request owns the binding scope.
+        assert admission_b.conflicts == (request_a.request_id,)
         assert admission_b.embargoes == (binding_scope,)
     finally:
         frame.cleanup()

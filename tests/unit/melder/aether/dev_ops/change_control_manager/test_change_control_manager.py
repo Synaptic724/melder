@@ -636,7 +636,7 @@ def test_change_control_manager_admit_request_reports_conflict_reason(manager) -
     admission = manager.admit_request(second)
 
     assert admission.admitted is False
-    assert admission.reasons == ("conflict", "embargo")
+    assert admission.reasons == ("scope_conflict",)
     assert admission.conflicts == (first.request_id,)
     assert "scope:shared" in admission.embargoes
 
@@ -659,8 +659,8 @@ def test_change_control_manager_admit_request_reports_embargo_without_conflict(m
     admission = manager.admit_request(request)
 
     assert admission.admitted is False
-    assert admission.reasons == ("embargo",)
-    assert admission.conflicts == ()
+    assert admission.reasons == ("scope_conflict",)
+    assert admission.conflicts == ("req-existing",)
     assert admission.embargoes == ("scope:embargoed",)
 
 

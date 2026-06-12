@@ -8,13 +8,6 @@ Lightweight dependency injection system designed for high-performance modular Py
 import sys
 import warnings
 
-from melder.__architecture__ import __architecture__
-from melder.__author__ import CREATOR as __author__
-from melder.__components__ import __components__
-from melder.__description__ import __description__
-from melder.__graph_details__ import __graph_details__
-from melder.__graph_network__ import __graph_network__
-from melder.__license__ import __license__
 from melder.__melder_registration_guard__ import MelderRegistrationGuard
 from melder.__version__ import __version__ as base_version
 from melder.aether.aether_configuration import AetherConfiguration
@@ -77,6 +70,40 @@ def _detect_nogil_mode() -> None:
 
 _detect_nogil_mode()
 
+
+# --------------------------------------------------------------------------
+# Lazy package metadata (PEP 562).
+#
+# The static system documents (__architecture__, __components__, the graph
+# documents) pull in the json/document stack, which costs real milliseconds
+# on the cold import path while serving zero runtime traffic. They are now
+# resolved on first attribute access and cached in the module dict, so the
+# second access is a plain global read. `from melder import *` still exports
+# them (star-import resolves __all__ names through this hook).
+# --------------------------------------------------------------------------
+_LAZY_METADATA = {
+    "__architecture__": ("melder.__architecture__", "__architecture__"),
+    "__author__": ("melder.__author__", "CREATOR"),
+    "__components__": ("melder.__components__", "__components__"),
+    "__description__": ("melder.__description__", "__description__"),
+    "__graph_details__": ("melder.__graph_details__", "__graph_details__"),
+    "__graph_network__": ("melder.__graph_network__", "__graph_network__"),
+    "__license__": ("melder.__license__", "__license__"),
+}
+
+
+def __getattr__(name: str):
+    """
+    Resolve lazy package-metadata attributes on first access (PEP 562).
+    """
+    target = _LAZY_METADATA.get(name)
+    if target is None:
+        raise AttributeError(f"module 'melder' has no attribute {name!r}")
+    import importlib
+
+    value = getattr(importlib.import_module(target[0]), target[1])
+    globals()[name] = value
+    return value
 
 
 __all__ = [

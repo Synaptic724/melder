@@ -150,6 +150,7 @@ class ChangeControlTransactionManager(Cleanable):
             spellbook_id: Optional[str] = None,
             conduit_ids: Optional[Iterable[str]] = None,
             scope_keys: Optional[Iterable[str]] = None,
+            scope_claims: Optional[Iterable[Tuple[str, str]]] = None,
             scope_hashes: Optional[Iterable[str]] = None,
             binding_keys: Optional[Iterable[Tuple[str, str]]] = None,
             contract_keys: Optional[Iterable[Tuple[str, str, str]]] = None,
@@ -161,6 +162,9 @@ class ChangeControlTransactionManager(Cleanable):
         Contract:
         - Generates a fresh `request_id` and `created_at` timestamp.
         - Normalizes iterable fields into tuples.
+        - Validates `scope_claims` modes through `ClaimMode` and stores them
+          as `(scope_key, mode_value)` pairs; keys without explicit claims
+          default to exclusive mode at admission.
         - Derives scope hashes from `scope_keys` when hashes are omitted.
         - Does not register the request as in-flight or mutate manager state.
 
@@ -175,6 +179,8 @@ class ChangeControlTransactionManager(Cleanable):
             spellbook_id: Optional spellbook id associated with the request.
             conduit_ids: Optional conduit ids touched by the request.
             scope_keys: Optional normalized scope keys.
+            scope_claims: Optional `(scope_key, mode)` pairs declaring
+                per-scope claim modes for acquisition.
             scope_hashes: Optional normalized scope hashes.
             binding_keys: Optional binding keys affected by the request.
             contract_keys: Optional contract keys affected by the request.
@@ -198,6 +204,16 @@ class ChangeControlTransactionManager(Cleanable):
         request_id = f"tx-{uuid.uuid4().hex}"
         created_at = time.time()
         normalized_scope_keys = tuple(scope_keys) if scope_keys else ()
+        normalized_scope_claims: Tuple[Tuple[str, str], ...] = ()
+        if scope_claims:
+            from melder.aether.aetheric_frame.dev_ops.change_control_manager.embargo_manager.embargo_manager import (
+                ClaimMode,
+            )
+            normalized_scope_claims = tuple(
+                (scope_key, ClaimMode(raw_mode).value)
+                for scope_key, raw_mode in scope_claims
+                if scope_key
+            )
         normalized_scope_hashes = tuple(scope_hashes) if scope_hashes else ()
         if normalized_scope_keys and not normalized_scope_hashes:
             normalized_scope_hashes = self._normalize_scope_hashes(normalized_scope_keys)
@@ -209,6 +225,7 @@ class ChangeControlTransactionManager(Cleanable):
             spellbook_id=spellbook_id,
             conduit_ids=tuple(conduit_ids) if conduit_ids else (),
             scope_keys=normalized_scope_keys,
+            scope_claims=normalized_scope_claims,
             scope_hashes=normalized_scope_hashes,
             binding_keys=tuple(binding_keys) if binding_keys else (),
             contract_keys=tuple(contract_keys) if contract_keys else (),

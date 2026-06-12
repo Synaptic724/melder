@@ -1792,6 +1792,15 @@ class Conduit(Cleanable):
                    Signature:
                        hook(parent_conduit, new_conduit)
 
+        Concurrency:
+            The parent lock is held only for the cleaned re-check and the
+            ward link (a narrow window inside `_link_new_lesser_under_lock`).
+            Pool acquisition, fresh construction, pooled-shell reactivation,
+            hook firing, and Nexus publishing run outside the parent lock,
+            so concurrent lesser creation from many threads does not
+            serialize on this parent. Hook implementations must be
+            thread-safe under concurrent lesser creation.
+
         Returns:
             Conduit: The newly created lesser Conduit instance.
 
@@ -1800,98 +1809,137 @@ class Conduit(Cleanable):
         """
         self.check_cleaned()
 
-        with self._lock:
-            root_conduit: Optional["Conduit"]
-            if self._conduit_state == ConduitState.normal:
-                root_conduit = self
-            else:
-                if self._conduit_ward is None:
-                    raise RuntimeError("Root conduit is not set for this lineage.")
-                root_conduit = self._conduit_ward.root_conduit
-            if root_conduit is None:
+        root_conduit: Optional["Conduit"]
+        if self._conduit_state == ConduitState.normal:
+            root_conduit = self
+        else:
+            if self._conduit_ward is None:
                 raise RuntimeError("Root conduit is not set for this lineage.")
-            if root_conduit._conduit_state != ConduitState.normal:
-                raise RuntimeError("Root conduit must be a normal conduit.")
-            root_conduit_id = root_conduit._id
-            if self._conduit_hooks or self._local_conduit_hooks:
-                # 1) Pre-create hook on the parent, if any.
-                self._fire_conduit_hooks(
-                    "on_conduit_pre_created",
-                    self,  # parent_conduit
+            root_conduit = self._conduit_ward.root_conduit
+        if root_conduit is None:
+            raise RuntimeError("Root conduit is not set for this lineage.")
+        if root_conduit._conduit_state != ConduitState.normal:
+            raise RuntimeError("Root conduit must be a normal conduit.")
+        root_conduit_id = root_conduit._id
+        if self._conduit_hooks or self._local_conduit_hooks:
+            # 1) Pre-create hook on the parent, if any.
+            self._fire_conduit_hooks(
+                "on_conduit_pre_created",
+                self,  # parent_conduit
+            )
+            # 2) Construct the lesser conduit (activation point).
+            new_conduit = root_conduit._conduit_pool.create_object()
+            reused_from_pool = new_conduit is not None
+            if new_conduit is None:
+                new_conduit = Conduit(
+                    spellbook=self._spellbook,
+                    configuration=self._configuration,
+                    conduit_state=ConduitState.lesser,
+                    aetheric_frame_name=self._aetheric_frame_name,
+                    aetheric_frame=self._aetheric_frame,
+                    policy=Policies.default,
+                    dynamic=self.__dynamic_environment__,
+                    logger=logger,
+                    root_conduit_id=root_conduit_id,
+                    creation_gate_controller=self._creation_gate_controller,
+                    conduit_hooks=root_conduit._conduit_hooks,
+                    meld_hooks=root_conduit._meld_hooks,
                 )
-                # 2) Construct the lesser conduit (activation point).
-                new_conduit = root_conduit._conduit_pool.create_object()
-                reused_from_pool = new_conduit is not None
-                if new_conduit is None:
-                    new_conduit = Conduit(
-                        spellbook=self._spellbook,
-                        configuration=self._configuration,
-                        conduit_state=ConduitState.lesser,
-                        aetheric_frame_name=self._aetheric_frame_name,
-                        aetheric_frame=self._aetheric_frame,
-                        policy=Policies.default,
-                        dynamic=self.__dynamic_environment__,
-                        logger=logger,
-                        root_conduit_id=root_conduit_id,
-                        creation_gate_controller=self._creation_gate_controller,
-                        conduit_hooks=root_conduit._conduit_hooks,
-                        meld_hooks=root_conduit._meld_hooks,
-                    )
-                if reused_from_pool:
-                    # Only pooled shells need the pooled_lesser -> lesser
-                    # transition; freshly constructed conduits already
-                    # initialized both state fields as lesser.
-                    new_conduit._conduit_state = ConduitState.lesser
-                    new_conduit._conduit_ward._conduit_type = ConduitState.lesser
-                new_conduit._nexus_publish_enabled = self._nexus_publish_enabled
+            if reused_from_pool:
+                # Only pooled shells need the pooled_lesser -> lesser
+                # transition; freshly constructed conduits already
+                # initialized both state fields as lesser.
+                new_conduit._conduit_state = ConduitState.lesser
+                new_conduit._conduit_ward._conduit_type = ConduitState.lesser
+            new_conduit._nexus_publish_enabled = self._nexus_publish_enabled
 
-                # Fire activation hook with the new conduit instance.
-                self._fire_conduit_hooks(
-                    "on_conduit_activated",
-                    new_conduit,  # new lesser conduit
+            # Fire activation hook with the new conduit instance.
+            self._fire_conduit_hooks(
+                "on_conduit_activated",
+                new_conduit,  # new lesser conduit
+            )
+
+            # 3) Link the lesser conduit into the parent's ConduitWard
+            #    inside the narrow parent-lock window.
+            self._link_new_lesser_under_lock(new_conduit)
+
+            # Fire post-create hook with both parent and child.
+            self._fire_conduit_hooks(
+                "on_conduit_post_created",
+                self,         # parent_conduit
+                new_conduit,  # child_conduit
+            )
+            if not reused_from_pool:
+                new_conduit._publish_conduit_record_to_nexus()
+        else:
+            new_conduit = root_conduit._conduit_pool.create_object()
+            reused_from_pool = new_conduit is not None
+            if new_conduit is None:
+                new_conduit = Conduit(
+                    spellbook=self._spellbook,
+                    configuration=self._configuration,
+                    conduit_state=ConduitState.lesser,
+                    aetheric_frame_name=self._aetheric_frame_name,
+                    aetheric_frame=self._aetheric_frame,
+                    policy=Policies.default,
+                    dynamic=self.__dynamic_environment__,
+                    logger=logger,
+                    root_conduit_id=root_conduit_id,
+                    creation_gate_controller=self._creation_gate_controller,
+                    conduit_hooks=root_conduit._conduit_hooks,
+                    meld_hooks=root_conduit._meld_hooks,
                 )
-
-                # 3) Link the lesser conduit into the parent's ConduitWard.
-                self._conduit_ward._link_lesser_conduit(new_conduit)
-
-                # Fire post-create hook with both parent and child.
-                self._fire_conduit_hooks(
-                    "on_conduit_post_created",
-                    self,         # parent_conduit
-                    new_conduit,  # child_conduit
-                )
-                if not reused_from_pool:
-                    new_conduit._publish_conduit_record_to_nexus()
-            else:
-                new_conduit = root_conduit._conduit_pool.create_object()
-                reused_from_pool = new_conduit is not None
-                if new_conduit is None:
-                    new_conduit = Conduit(
-                        spellbook=self._spellbook,
-                        configuration=self._configuration,
-                        conduit_state=ConduitState.lesser,
-                        aetheric_frame_name=self._aetheric_frame_name,
-                        aetheric_frame=self._aetheric_frame,
-                        policy=Policies.default,
-                        dynamic=self.__dynamic_environment__,
-                        logger=logger,
-                        root_conduit_id=root_conduit_id,
-                        creation_gate_controller=self._creation_gate_controller,
-                        conduit_hooks=root_conduit._conduit_hooks,
-                        meld_hooks=root_conduit._meld_hooks,
-                    )
-                if reused_from_pool:
-                    # Only pooled shells need the pooled_lesser -> lesser
-                    # transition; freshly constructed conduits already
-                    # initialized both state fields as lesser.
-                    new_conduit._conduit_state = ConduitState.lesser
-                    new_conduit._conduit_ward._conduit_type = ConduitState.lesser
-                new_conduit._nexus_publish_enabled = self._nexus_publish_enabled
-                self._conduit_ward._link_lesser_conduit(new_conduit)
-                if not reused_from_pool:
-                    new_conduit._publish_conduit_record_to_nexus()
+            if reused_from_pool:
+                # Only pooled shells need the pooled_lesser -> lesser
+                # transition; freshly constructed conduits already
+                # initialized both state fields as lesser.
+                new_conduit._conduit_state = ConduitState.lesser
+                new_conduit._conduit_ward._conduit_type = ConduitState.lesser
+            new_conduit._nexus_publish_enabled = self._nexus_publish_enabled
+            self._link_new_lesser_under_lock(new_conduit)
+            if not reused_from_pool:
+                new_conduit._publish_conduit_record_to_nexus()
 
         return new_conduit
+
+    def _link_new_lesser_under_lock(self, new_conduit: "Conduit") -> None:
+        """
+        Internal
+
+        Link one just-acquired lesser conduit inside the narrow parent-lock
+        window.
+
+        Contract:
+            - Holds the parent lock ONLY for the cleaned re-check and the
+              ward link. Pool acquisition, fresh construction, pooled-shell
+              reactivation, hook firing, and Nexus publishing all run
+              outside this lock. (Contention harness, melds-off mode: the
+              previous whole-body hold cost 58-73% of thread-time in
+              root-lock wait at threads=3/5 with negative throughput
+              scaling; see profile_scope_cycle_contention.py.)
+            - Create racing parent cleanup stays safe: cleanup holds this
+              same lock, so the re-check either links before the teardown
+              sweep observes the child or takes the unwind path below.
+            - Unwind path: the shell is unlinked and invisible to the
+              lineage, so it is recycled through its own `cleanup()` (ward
+              detach tolerates a missing parent) before the standard
+              cleaned error surfaces to the caller.
+
+        Args:
+            new_conduit (Conduit): The unlinked lesser conduit to link.
+
+        Raises:
+            RuntimeError: If this parent conduit was cleaned concurrently.
+        """
+        with self._lock:
+            if not self._cleaned:
+                self._conduit_ward._link_lesser_conduit(new_conduit)
+                return
+        # Parent cleaned between shell acquisition and the link window:
+        # recycle the orphan shell, then raise the standard cleaned error.
+        new_conduit.cleanup()
+        self.check_cleaned()
+        raise RuntimeError("Conduit has been cleaned.")
 
 
 

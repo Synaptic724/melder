@@ -701,9 +701,12 @@ def test_orchestrator_rejects_with_conflict_and_embargo() -> None:
     )
 
     assert rejected.admitted is False
-    assert "conflict" in rejected.reasons
-    assert "embargo" in rejected.reasons
-    assert rejected.conflicts == (active.request_id,)
+    assert rejected.reasons == ("scope_conflict",)
+    # Acquisition evidence names the claim holder. The in-flight request was
+    # registered directly (no acquisition), so the embargo owner is the
+    # blocking holder under the lock-table admission contract.
+    assert rejected.conflicts == ("tx-embargo",)
+    assert "scope-a" in rejected.embargoes
     assert transaction_manager.get_in_flight(incoming.request_id) is None
 
 

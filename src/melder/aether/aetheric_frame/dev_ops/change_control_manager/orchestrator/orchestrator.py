@@ -353,51 +353,64 @@ class ChangeControlOrchestrator(Cleanable):
             commit or abort.
         Contract:
             - Admission is serialized under the orchestrator lock.
-            - Rejected requests return explicit rejection evidence and leave the
-              transaction manager untouched.
-            - Successful admission registers the request as in-flight, applies
-              implicit embargoes, and stages the request before returning.
+            - The decision is one atomic scope-claim acquisition against the
+              embargo-owned lock table (`try_acquire`); the legacy in-flight
+              conflict scan is retired and `conflict_manager` is accepted for
+              signature compatibility only.
+            - Rejected requests return explicit blocking evidence (scope keys
+              in `embargoes`, holder request ids in `conflicts`) and leave the
+              transaction manager and lock table untouched.
+            - Successful admission has already acquired the claims; the
+              request is then registered as in-flight and staged before
+              returning.
         Args:
             request:
                 Transaction request to admit.
             transaction_manager:
                 In-flight registry manager.
             conflict_manager:
-                Scope-overlap evaluator.
+                Retained for signature compatibility; not consulted.
             embargo_manager:
-                Embargo registry for gating.
+                Lock table that decides and records the acquisition.
         Returns:
             ChangeControlAdmissionResult:
-                Admission decision with evidence for rejection.
+                Admission decision with blocking evidence on rejection.
         Raises:
             RuntimeError: If the orchestrator has been cleaned.
         Threading:
             Acquires the admission lock for the entire decision path.
         """
-        
+
         with self._lock:
-            conflicts = conflict_manager.find_conflicts(
-                request,
-                transaction_manager.list_in_flight(),
+            scope_claims = embargo_manager.collect_scope_claims(request)
+            decision = embargo_manager.try_acquire(
+                owner_request_id=request.request_id,
+                claims=scope_claims,
+                reason_tag=(
+                    request.request_type.value
+                    if hasattr(request.request_type, "value")
+                    else str(request.request_type)
+                ),
             )
-            embargo_scope_keys = embargo_manager.collect_scope_keys(request)
-            embargoes = embargo_manager.find_embargoes(embargo_scope_keys)
-            if conflicts or embargoes:
-                reasons = []
-                if conflicts:
-                    reasons.append("conflict")
-                if embargoes:
-                    reasons.append("embargo")
+            if not decision.acquired:
+                blocking_scope_keys = tuple(
+                    sorted({scope_key for scope_key, _, _ in decision.blocking})
+                )
+                blocking_holder_ids = tuple(
+                    sorted({holder_id for _, holder_id, _ in decision.blocking})
+                )
                 return ChangeControlAdmissionResult(
                     admitted=False,
-                    reasons=tuple(reasons),
-                    conflicts=tuple(conflicts),
-                    embargoes=tuple(embargoes),
+                    reasons=("scope_conflict",),
+                    conflicts=blocking_holder_ids,
+                    embargoes=blocking_scope_keys,
                 )
 
             transaction_manager.add_in_flight(request)
-            embargo_manager.apply_implicit_embargoes(request)
-            self._stage_request(request, embargo_scope_keys)
+            self._stage_request(
+                request,
+                tuple(scope_key for scope_key, _ in scope_claims),
+            )
             return ChangeControlAdmissionResult(admitted=True)
 
     def commit_request(

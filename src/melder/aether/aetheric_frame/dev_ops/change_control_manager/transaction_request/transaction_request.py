@@ -70,6 +70,10 @@ class ChangeControlTransactionRequest:
             Conduit ids participating in the request.
         scope_keys:
             Normalized scope keys derived by the caller.
+        scope_claims:
+            Optional `(scope_key, mode)` pairs declaring per-scope claim modes
+            for acquisition. Keys without an explicit pair default to
+            exclusive mode at admission.
         scope_hashes:
             Normalized scope hashes derived by the caller.
         binding_keys:
@@ -95,6 +99,7 @@ class ChangeControlTransactionRequest:
     spellbook_id: Optional[str] = None
     conduit_ids: Tuple[str, ...] = ()
     scope_keys: Tuple[str, ...] = ()
+    scope_claims: Tuple[Tuple[str, str], ...] = ()
     scope_hashes: Tuple[str, ...] = ()
     binding_keys: Tuple[Tuple[str, str], ...] = ()
     contract_keys: Tuple[Tuple[str, str, str], ...] = ()

@@ -19,8 +19,8 @@ from melder.aether.aetheric_frame.aetheric_frame import AethericFrame
 from melder.aether.aetheric_frame.aetheric_frame_configuration import AethericFrameConfiguration
 from melder.utilities.helpers.init_helpers import InitHelpers
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
-from melder.mutation_research.mutation_research import MutationResearch
 if TYPE_CHECKING:
+    from melder.mutation_research.mutation_research import MutationResearch
     from melder.aether.conduit.conduit import Conduit
     from melder.aether.aetheric_frame.dev_ops.change_control_manager.change_control_manager import ChangeControlManager
     from melder.aether.aetheric_frame.conduit_cloud import ConduitCloud
@@ -117,7 +117,11 @@ class Aether(Cleanable):
                 self._aetheric_frames["default"] = default_frame
                 self._default_frame = default_frame
                 self._crystallizer: Crystallizer = Crystallizer(aether=self)
-                self._mutation_research: MutationResearch = MutationResearch(aether=self)
+                # MutationResearch is constructed lazily on first access
+                # (`_get_mutation_research`): its import chain and root build
+                # cost several milliseconds on the cold import path (Aether()
+                # runs at package import) while serving zero boot traffic.
+                self._mutation_research: Optional["MutationResearch"] = None
                 self._nexus: Nexus = Nexus(aether=self)
                 Aether._initialized = True
             except Exception:
@@ -1500,20 +1504,41 @@ class Aether(Cleanable):
 
     def _get_mutation_research(self) -> "MutationResearch":
         """
-        Return the Aether-owned MutationResearch root.
+        Return the Aether-owned MutationResearch root, building it on first use.
 
         Internal use only.
+
+        Contract:
+            - Lazily constructs the MutationResearch root on first access
+              (deferred out of `__init__` to keep the import-time `Aether()`
+              bootstrap off the mutation_research import chain).
+            - Double-checked under the singleton lock; exactly one instance
+              is ever built per Aether lifetime.
+            - A cleaned (but not yet del'd) root still raises, preserving the
+              pre-lazy contract: cleanup never silently re-creates the root.
 
         Returns:
             MutationResearch: The hosted mutation-research singleton.
 
         Raises:
-            RuntimeError: If the Aether has been cleaned.
+            RuntimeError: If the Aether or the root has been cleaned.
         """
         self.check_cleaned()
-        if self._mutation_research is None or self._mutation_research.cleaned:
+        research = self._mutation_research
+        if research is None:
+            with self._lock:
+                self.check_cleaned()
+                research = self._mutation_research
+                if research is None:
+                    from melder.mutation_research.mutation_research import (
+                        MutationResearch,
+                    )
+
+                    research = MutationResearch(aether=self)
+                    self._mutation_research = research
+        if research.cleaned:
             raise RuntimeError("MutationResearch has been cleaned or is unavailable.")
-        return self._mutation_research
+        return research
 
     #endregion Mutation Research
     #region DevOps Management
