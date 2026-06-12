@@ -325,7 +325,8 @@ def test_set_root_blueprint_phase5_sets_value_and_refreshes_ir(
     assert spell._compiler_artifact._root_blueprint_phase5 is blueprint
     assert spell._compiler_artifact._requires_spellspace_request_phase5 is False
     assert spell.requires_spellspace_request is False
-    assert captured["capture"] == [(spell, spell._compiler_artifact)]
+    # Eager phase2_5 IR capture removed (write-only snapshot).
+    assert captured["capture"] == []
 
 
 def test_set_root_blueprint_phase5_sets_spellspace_request_flag(
@@ -355,7 +356,8 @@ def test_set_root_blueprint_phase5_sets_spellspace_request_flag(
     assert spell._compiler_artifact._root_blueprint_phase5 is blueprint
     assert spell._compiler_artifact._requires_spellspace_request_phase5 is True
     assert spell.requires_spellspace_request is True
-    assert captured["capture"] == [(spell, spell._compiler_artifact)]
+    # Eager phase2_5 IR capture removed (write-only snapshot).
+    assert captured["capture"] == []
 
 
 def test_set_spell_system_index_phase5_rejects_none(
@@ -402,7 +404,8 @@ def test_set_spell_system_index_phase5_sets_value_and_refreshes_ir(
     phase._set_spell_system_index_phase5(spell, spell._compiler_artifact, index)
 
     assert spell._compiler_artifact._spell_system_index_phase5 is index
-    assert captured["capture"] == [(spell, spell._compiler_artifact)]
+    # Eager phase2_5 IR capture removed (write-only snapshot).
+    assert captured["capture"] == []
 
 
 def test_run_frame_wide_builds_index_and_attaches_blueprints(
@@ -479,7 +482,8 @@ def test_run_frame_wide_builds_index_and_attaches_blueprints(
     assert root_spell._compiler_artifact._entire_dag_blueprint_phase5 == {
         "root": blueprint,
     }
-    assert captured["capture"][-1] == (root_spell, root_spell._compiler_artifact)
+    # Eager phase2_5 IR capture removed (write-only snapshot).
+    assert captured["capture"] == []
 
 
 def test_run_frame_wide_attaches_fallback_blueprint_when_root_missing(

@@ -7,6 +7,7 @@ if TYPE_CHECKING:
     from melder.aether.aetheric_frame.aetheric_frame_configuration import (
         AethericFrameConfiguration,
     )
+    from melder.aether.conduit.conduit_ward.conduit_ward import ConduitWard
 
 from melder.nexus.frame_descriptor.conduit_descriptor_payload import (
     ConduitDescriptorPayload,

@@ -143,9 +143,13 @@ def test_frame_acl_manager_exposes_family_current_configs() -> None:
     """
     manager = FrameACLManager()
 
-    view_configuration = manager._get_current_view_acl_configuration("ops")
-    command_configuration = manager._get_current_command_acl_configuration("ops")
-    codegen_configuration = manager._get_current_codegen_acl_configuration("ops")
+    view_configuration = manager._get_current_view_frame_acl_configuration("ops")
+    command_configuration = manager._get_current_command_frame_acl_configuration(
+        "ops"
+    )
+    codegen_configuration = manager._get_current_codegen_frame_acl_configuration(
+        "ops"
+    )
 
     assert view_configuration.profile_name == "safe"
     assert command_configuration.profile_name == "safe"

@@ -798,6 +798,14 @@ class NexusFrameManager(Cleanable):
             viewer and inventory surfaces can inspect the rooted frame
             immediately after creation.
 
+        Contract:
+            - Reads frame-owned conduit/cloud state under the frame lock so the
+              published snapshot matches the locking discipline used by
+              `FrameDescriptorManager._publish_frame_record`.
+            - Sources `conduit_cloud_names` from
+              `ConduitCloud.list_cloud_names()` (the dynamic cloud-entry view),
+              matching the descriptor-manager publication path.
+
         Args:
             frame_name:
                 Managed frame name being published.
@@ -820,16 +828,24 @@ class NexusFrameManager(Cleanable):
         descriptor = self._nexus._get_or_create_frame_descriptor(
             frame_name
         )
-        root_conduit_ids = tuple(sorted(frame._conduits.keys()))
-        named_root_conduits = tuple(
-            sorted(
-                (conduit._id, conduit._name)
-                for conduit in frame._conduits.values()
-                if conduit is not None and conduit._name is not None
+        with frame:
+            root_conduit_ids = tuple(sorted(frame._conduits.keys()))
+            named_root_conduits = tuple(
+                sorted(
+                    (conduit._id, conduit._name)
+                    for conduit in frame._conduits.values()
+                    if conduit is not None and conduit._name is not None
+                )
             )
-        )
-        conduit_cloud_names = tuple(sorted(frame._conduit_cloud.list_conduit_names()))
-        cluster_names = tuple(sorted(frame._conduit_cloud.list_cluster_names()))
+            conduit_cloud_names: Tuple[str, ...] = tuple()
+            cluster_names: Tuple[str, ...] = tuple()
+            if frame._conduit_cloud is not None:
+                conduit_cloud_names = tuple(
+                    sorted(frame._conduit_cloud.list_cloud_names())
+                )
+                cluster_names = tuple(
+                    sorted(frame._conduit_cloud.list_cluster_names())
+                )
         payload = FrameDescriptorPayload(
             system_state=frame_configuration.system_state,
             ai_native_enabled=frame_configuration.ai_native_enabled,
@@ -1029,7 +1045,12 @@ class NexusFrameManager(Cleanable):
                 accessible_frame_names = set(
                     self.list_accessible_frame_names_for_rift(rift_id)
                 )
-            except Exception:
+            except ValueError:
+                # The rift was removed between the registry snapshot and this
+                # accessibility check; a vanished rift cannot hold the frame
+                # in active use, so skip it. Other errors (disabled Nexus,
+                # corrupt configuration) must propagate because non-use cannot
+                # be proven in those states.
                 continue
             if frame_name in accessible_frame_names:
                 return True

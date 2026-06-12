@@ -138,7 +138,9 @@ def test_run_caches_clean_validation_and_marks_lineage_valid(
     assert state.set_validity_calls[-1]["flags_to_remove"] == [
         compiler_phase_4_module.SpellState.contract_unvalidated
     ]
-    assert captured_calls == [(spell, artifact)]
+    # Eager phase2_5 IR capture was removed from the phase body (write-only
+    # snapshot, discarded same pass); guard against reintroduction.
+    assert captured_calls == []
 
 
 def test_run_marks_lineage_invalid_when_validation_has_errors() -> None:

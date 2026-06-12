@@ -4,10 +4,13 @@ from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Mapping, Optional, 
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 if TYPE_CHECKING:
+    from melder.aether.aether import Aether
     from melder.aether.conduit.conduit import Conduit
     from melder.aether.spellbook.configuration.spellbook_configuration import (
         SpellbookConfiguration,
     )
+    from melder.nexus.frame_descriptor.frame_descriptor import FrameDescriptor
+    from melder.nexus.rift.rift import Rift
     from melder.nexus.acl.builder.frame_acl_builder import FrameACLBuilder
     from melder.nexus.acl.configurations.frame_acl_command_configuration import (
         FrameACLCommandConfiguration,
@@ -48,7 +51,6 @@ from melder.aether.spellbook.configuration.system_state import SystemState
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
 from melder.utilities.helpers.init_helpers import InitHelpers
-from melder.nexus.acl.frame_acl_configuration import FrameACLConfiguration
 
 class Nexus(Cleanable):
     """
@@ -129,7 +131,7 @@ class Nexus(Cleanable):
     def __init__(
             self,
             *,
-            aether: Optional["Aether"] = None,
+            aether: Optional[Aether] = None,
             configuration: Optional[NexusConfiguration] = None,
             logger: Optional[Any] = None,
     ) -> None:
@@ -182,7 +184,7 @@ class Nexus(Cleanable):
             super().__init__()
             self._id: str = IDBuilder.create_id()
             self._logger = InitHelpers.resolve_safe_logger(None)
-            self._aether: "Aether" = aether
+            self._aether: Aether = aether
             self._configuration: Optional[NexusConfiguration] = configuration
             self._configured: bool = configuration is not None
             self._enabled: bool = False
@@ -301,7 +303,10 @@ class Nexus(Cleanable):
         Returns:
             None.
         """
-        previous_logger = getattr(self, "_logger", None)
+        # Both call paths (__init__ first boot and re-init logger refresh)
+        # assign self._logger before this method runs, so direct access is the
+        # truthful owned-field contract here.
+        previous_logger = self._logger
         try:
             if logger is not None:
                 next_logger = InitHelpers.resolve_safe_logger(logger)
@@ -313,16 +318,20 @@ class Nexus(Cleanable):
                     props=self._get_default_logger_properties(),
                     channels="system",
                 )
-            if previous_logger is not None and previous_logger is not next_logger:
+            if previous_logger is not next_logger:
                 try:
+                    # Best-effort teardown of the displaced logger; a logger
+                    # swap must never fail because old-handle cleanup raised.
                     previous_logger.cleanup()
                 except Exception:
                     pass
             self._logger = next_logger
         except Exception as e:
             fallback_logger = InitHelpers.resolve_safe_logger(None)
-            if previous_logger is not None and previous_logger is not fallback_logger:
+            if previous_logger is not fallback_logger:
                 try:
+                    # Best-effort teardown of the displaced logger; the silent
+                    # fallback path must always complete.
                     previous_logger.cleanup()
                 except Exception:
                     pass
@@ -2076,11 +2085,12 @@ class Nexus(Cleanable):
                 rift.refresh_runtime_projections(
                     frame_names=frame_names_by_rift_id[rift.id]
                 )
-        except Exception:
-            raise
         finally:
             for rift_id in disabled_rift_ids:
                 try:
+                    # Best-effort gate reopen: every gate disabled above must
+                    # get its reopen attempt even when refresh failed or an
+                    # earlier reopen raised.
                     self.enable_rift_gate(rift_id)
                 except Exception:
                     pass
@@ -2691,7 +2701,7 @@ class Nexus(Cleanable):
     def _get_required_frame_descriptor(
             self,
             frame_name: str,
-    ) -> IFrameDescriptor:
+    ) -> FrameDescriptor:
         """
         Internal
 
@@ -2709,7 +2719,7 @@ class Nexus(Cleanable):
     def _get_or_create_frame_descriptor(
             self,
             frame_name: str,
-    ) -> IFrameDescriptor:
+    ) -> FrameDescriptor:
         """
         Internal
 

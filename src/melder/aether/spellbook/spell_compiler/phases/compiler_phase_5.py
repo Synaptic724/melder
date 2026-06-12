@@ -181,7 +181,9 @@ class CompilerPhase5:
         artifact._root_blueprint_phase5 = blueprint
         artifact._requires_spellspace_request_phase5 = blueprint.requires_spellspace_request
         spell.requires_spellspace_request = blueprint.requires_spellspace_request
-        SharedCompilerExecutions.capture_phase2_5_codegen_ir(spell, artifact)
+        # Eager phase2_5 IR capture removed (write-only; see compiler_phase_2).
+        # The downstream invalidations below are real state transitions and
+        # must stay.
         artifact._cleanup_occurrence_analysis_artifacts()
         artifact._cleanup_codegen_outputs()
         spell._cleanup_creation_context()
@@ -205,7 +207,7 @@ class CompilerPhase5:
         if index is None:
             raise ValueError("index must not be None.")
         artifact._spell_system_index_phase5 = index
-        SharedCompilerExecutions.capture_phase2_5_codegen_ir(spell, artifact)
+        # Eager phase2_5 IR capture removed (write-only; see compiler_phase_2).
         artifact._cleanup_occurrence_analysis_artifacts()
         artifact._cleanup_codegen_outputs()
         spell._cleanup_creation_context()
@@ -529,7 +531,7 @@ class CompilerPhase5:
             root_id: blueprint
             for root_id, blueprint in root_blueprints.items()
         }
-        SharedCompilerExecutions.capture_phase2_5_codegen_ir(spell, artifact)
+        # Eager phase2_5 IR capture removed (write-only; see compiler_phase_2).
         artifact._cleanup_occurrence_analysis_artifacts()
         artifact._cleanup_codegen_outputs()
         spell._cleanup_creation_context()
@@ -684,7 +686,7 @@ class CompilerPhase5:
             root_id: blueprint
             for root_id, blueprint in local_root_blueprints.items()
         }
-        SharedCompilerExecutions.capture_phase2_5_codegen_ir(spell, artifact)
+        # Eager phase2_5 IR capture removed (write-only; see compiler_phase_2).
         artifact._cleanup_occurrence_analysis_artifacts()
         artifact._cleanup_codegen_outputs()
         spell._cleanup_creation_context()

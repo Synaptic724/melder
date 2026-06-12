@@ -73,6 +73,7 @@ class SpellCompilerArtifact(Cleanable):
         "_lock",
         "spell_id",
         "_requirements",
+        "_requirements_borrowed",
         "_requirements_shape_profile_phase1",
         "_symbolic_graph",
         "_resolution_frame",
@@ -120,6 +121,10 @@ class SpellCompilerArtifact(Cleanable):
         self._lock: threading.RLock = threading.RLock()
         self.spell_id: str = spell_id
         self._requirements: Optional[SpellRequirements] = None
+        # True when `_requirements` is borrowed from the spell's bind-time
+        # resolution profile: the profile owns disposal, phase cleanup must
+        # only null the slot, never cleanup() through it.
+        self._requirements_borrowed: bool = False
         self._requirements_shape_profile_phase1: Optional[Dict[str, Any]] = None
         self._symbolic_graph: Optional[SpellSymbolicGraph] = None
         self._resolution_frame: Optional[SpellResolutionFrame] = None
@@ -260,7 +265,7 @@ class SpellCompilerArtifact(Cleanable):
                 - Refreshes the phase2_5 codegen snapshot after the structural
                   layers are cleared.
         """
-        if self._requirements is not None:
+        if self._requirements is not None and not self._requirements_borrowed:
             try:
                 self._requirements.cleanup()
             except Exception:
@@ -292,6 +297,7 @@ class SpellCompilerArtifact(Cleanable):
 
         self._resolution_frame = None
         self._requirements = None
+        self._requirements_borrowed = False
         self._requirements_shape_profile_phase1 = None
         self._symbolic_graph = None
         self._validation_result_phase4 = None

@@ -15,6 +15,7 @@ if TYPE_CHECKING:
     from melder.aether.conduit.conduit import Conduit
     from melder.nexus.nexus import Nexus
     from melder.nexus.configuration.rift_configuration import RiftConfiguration
+    from melder.nexus.rift.frame_viewer.frame_viewer import FrameViewer
     from melder.nexus.rift.projection.codegen_projection import CodegenProjection
     from melder.nexus.rift.projection.command_projection import CommandProjection
     from melder.nexus.rift.projection.frame_projection_set import FrameProjectionSet
@@ -59,9 +60,11 @@ class Rift(Cleanable):
           - Lower Melder frame/runtime truth still decides what actually works.
         - `codegen`
           - Programs `CodegenRiftSpace`.
-          - Currently shares the same broad manual runtime posture as
-          capability.
-          - Reserved for later codegen-oriented differentiation.
+          - Keeps a selected slim runtime-helper subset rather than capability
+            parity.
+          - Owns one internal `CodegenSystem`; `CodegenCommandSystem`
+            delegates `validate_codegen(...)` / `execute_codegen(...)` into
+            that engine and emits full-source codegen room-memory records.
 
     Lifecycle:
         Created by `Nexus`, then registered into the Nexus registry. Cleanup

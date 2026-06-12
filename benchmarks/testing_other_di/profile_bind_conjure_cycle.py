@@ -12,28 +12,28 @@ Purpose:
       - full cycle:       bind + conjure + first-meld sweep per posture
 
 Postures:
-    disabled   caching off            -> conjure runs phases 1-11, zero cache IO
-    cold       caching on, cache wiped-> phases 1-11 + staging + bundle emit
-    warm       caching on, pre-seeded -> full-hit, phases 1-7 + lazy hydration
+    disabled   caching off -> conjure runs phases 1-11, zero cache IO
+    cold caching on, cache wiped-> phases 1-11 + staging + bundle emit
+    warm caching on, pre-seeded -> full-hit, phases 1-7 + lazy hydration
 
 Usage:
     Wall timings (run under the native free-threaded posture):
         .venv_new\\Scripts\\python.exe benchmarks\\testing_other_di\\profile_bind_conjure_cycle.py
 
     cProfile attribution (re-execs under PYTHON_GIL=1; relative attribution
-    is the deliverable, absolute numbers are inflated by the profiler):
+    is the deliverable, the profiler inflates absolute numbers):
         .venv_new\\Scripts\\python.exe benchmarks\\testing_other_di\\profile_bind_conjure_cycle.py --profile
 
 Env knobs:
-    BENCH_CYCLE_REPEATS      timed repeats per posture (default 9)
-    BENCH_CYCLE_WORKERS      phase_scheduler_workers_per_spellbook (default 1)
-    BENCH_CYCLE_KEEP_CACHE   "1" keeps the bench cache dir after the run
+    BENCH_CYCLE_REPEATS timed repeats per posture (default 9)
+    BENCH_CYCLE_WORKERS phase_scheduler_workers_per_spellbook (default 1)
+    BENCH_CYCLE_KEEP_CACHE "1" keeps the bench cache dir after the run
 
 Contract:
     - Uses the exact real-world gauntlet class graph (29 binds) so numbers
       line up with the competitive suite's melder setup figure.
     - Each cycle starts from a fresh Aether singleton; frame + conduit names
-      are constant so warm cycles classify as cache full-hits.
+      are constant, so warm cycles classify as cache full-hits.
     - The bench cache lives under `src/melder/__melder_cache__/` (the runtime
       requires package-root-relative fragments) in its own subfolder and is
       removed at exit unless BENCH_CYCLE_KEEP_CACHE=1.
@@ -589,7 +589,7 @@ def run_profile_suite() -> None:
 
 def main() -> None:
     """
-    Run the wall-timing suite, and the cProfile suite when --profile is set.
+    Run the wall-timing suite and the cProfile suite when --profile is set.
     """
     try:
         if "--profile" in sys.argv:

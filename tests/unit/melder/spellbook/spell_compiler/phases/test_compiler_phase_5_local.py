@@ -348,7 +348,8 @@ def test_attach_phase5_artifacts_for_snapshot_scopes_spell_updates(
     assert existing_spell._compiler_artifact._root_blueprint_phase5 is None
     assert outside_spell._compiler_artifact._root_blueprint_phase5 is None
     assert root_builder.build_blueprint_for_spell_id_calls == [("dep", snapshot)]
-    assert captured["capture"] != []
+    # Eager phase2_5 IR capture removed (write-only snapshot).
+    assert captured["capture"] == []
 
 
 def test_run_local_scopes_to_dependency_closure(
@@ -432,4 +433,5 @@ def test_run_local_scopes_to_dependency_closure(
     assert root_spell._compiler_artifact._root_blueprint_phase5 is not None
     assert dep_spell._compiler_artifact._root_blueprint_phase5 is not None
     assert outside_spell._compiler_artifact._root_blueprint_phase5 is None
-    assert captured["capture"][-1] == (root_spell, root_spell._compiler_artifact)
+    # Eager phase2_5 IR capture removed (write-only snapshot).
+    assert captured["capture"] == []

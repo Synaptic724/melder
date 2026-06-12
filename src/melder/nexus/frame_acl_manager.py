@@ -510,54 +510,6 @@ class FrameACLManager(Cleanable):
             contract_name=contract_name,
         )
 
-    def _get_current_view_acl_configuration(
-            self,
-            frame_name: str,
-            *,
-            contract_name: str = "default",
-    ) -> FrameACLViewConfiguration:
-        """
-        Return the current selected view configuration for one frame/contract.
-
-        Returns:
-            FrameACLViewConfiguration: Current selected view configuration.
-        """
-        self.check_cleaned()
-        container = self._ensure_frame_acl_container(frame_name)
-        return container.get_current_view_configuration(contract_name)
-
-    def _get_current_command_acl_configuration(
-            self,
-            frame_name: str,
-            *,
-            contract_name: str = "default",
-    ) -> FrameACLCommandConfiguration:
-        """
-        Return the current selected command configuration for one frame/contract.
-
-        Returns:
-            FrameACLCommandConfiguration: Current selected command configuration.
-        """
-        self.check_cleaned()
-        container = self._ensure_frame_acl_container(frame_name)
-        return container.get_current_command_configuration(contract_name)
-
-    def _get_current_codegen_acl_configuration(
-            self,
-            frame_name: str,
-            *,
-            contract_name: str = "default",
-    ) -> FrameACLCodegenConfiguration:
-        """
-        Return the current selected codegen configuration for one frame/contract.
-
-        Returns:
-            FrameACLCodegenConfiguration: Current selected codegen configuration.
-        """
-        self.check_cleaned()
-        container = self._ensure_frame_acl_container(frame_name)
-        return container.get_current_codegen_configuration(contract_name)
-
     def _validate_frame_acl_configuration_against_descriptor(
             self,
             frame_name: str,

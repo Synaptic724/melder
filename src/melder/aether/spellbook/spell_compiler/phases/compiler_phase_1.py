@@ -142,11 +142,66 @@ class CompilerPhase1:
         if artifact._requirements is not None:
             return
 
+        borrowed_requirements = self._borrow_bind_time_requirements(spell)
+        if borrowed_requirements is not None:
+            artifact._requirements = borrowed_requirements
+            artifact._requirements_borrowed = True
+            artifact._requirements_shape_profile_phase1 = (
+                self._build_phase1_requirements_shape_profile(
+                    borrowed_requirements
+                )
+            )
+            return
+
         finder = SpellRequirementsFinder(spell)
         requirements = finder.build_requirements(cancel_event=cancel_event)
         # We deliberately do not call finder.cleanup() here, because the finder
         # owns the same SpellRequirements instance we are going to retain.
         artifact._requirements = requirements
+        artifact._requirements_borrowed = False
         artifact._requirements_shape_profile_phase1 = (
             self._build_phase1_requirements_shape_profile(requirements)
         )
+
+    @staticmethod
+    def _borrow_bind_time_requirements(spell: "Spell") -> Optional[Any]:
+        """
+        Return the bind-time requirements artifact when it is still live.
+
+        Purpose:
+            Bind already ran `SpellRequirementsFinder` on this exact spell
+            (`SpellGeneralProfile.complete_with_spell`), so the resolution
+            pass can reuse that artifact instead of re-reflecting the
+            constructor (`inspect.signature` + annotation resolution per
+            spell, every pass).
+
+        Contract:
+            - Borrow only: ownership stays with the spell profile. The
+              caller must set `artifact._requirements_borrowed = True` so
+              phase-artifact cleanup nulls the slot without disposing
+              profile-owned state.
+            - Returns None when the profile chain is absent, cleaned, or
+              keyed to a different spell id (staleness guard: rebinds mint
+              new Spell objects with fresh profiles, so an id mismatch
+              means this object must not be trusted).
+            - Never raises: any lifecycle-ambiguous read falls back to the
+              fresh-reflection path.
+
+        Returns:
+            Optional[Any]: Live `SpellRequirements` to borrow, or None.
+        """
+        try:
+            profile = spell.profile
+            if profile is None:
+                return None
+            resolution_profile = profile.resolution_profile
+            if resolution_profile is None:
+                return None
+            requirements = resolution_profile.requirements
+            if requirements is None or requirements.cleaned:
+                return None
+            if requirements.spell_id != spell.spell_id:
+                return None
+            return requirements
+        except AttributeError:
+            return None

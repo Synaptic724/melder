@@ -168,7 +168,9 @@ def test_run_builds_graph_for_supported_dependency_shapes(
     assert dependencies["spellmap"].spellmap_default is spellmap_default
     assert dependencies["plain"].target_annotation is float
     assert dependencies["contract"].contract_key == ("frame-a", "__default__")
-    assert captured_calls == [(spell, artifact)]
+    # Eager phase2_5 IR capture was removed from the phase body (write-only
+    # snapshot, discarded same pass); guard against reintroduction.
+    assert captured_calls == []
 
 
 def test_run_honors_cancellation_before_graph_build() -> None:
