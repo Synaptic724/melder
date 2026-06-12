@@ -83,24 +83,61 @@ def main() -> None:
         return original(source=source, source_name=source_name)
 
     executor_code_cache.get_or_compile_executor_code = _capturing
-    # Patch the name as imported into every consumer module (from-import
-    # binds module-locally, so the cache-module patch alone misses them).
-    import melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.creation_runtime_door_compiler as door_compiler  # noqa: E501
-    import melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_no_overrides_codegen_creation_compiler as gen_no_compiler  # noqa: E501
-    import melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_overrides_codegen_creation_compiler as gen_ov_compiler  # noqa: E501
-    import melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation.spell_codegen_creation_cache as creation_cache_module  # noqa: E501
-    patched_modules = []
-    for module in (
-            door_compiler,
-            gen_no_compiler,
-            gen_ov_compiler,
-            creation_cache_module,
+    # from-import binds the chokepoint module-locally in every consumer, so
+    # sweep sys.modules and patch EVERY module holding a reference to the
+    # original function. New consumers can never silently dodge the capture.
+    # NOTE: the codegen stack is lazily imported at first conjure, so force
+    # the full package import BEFORE the sweep.
+    import importlib
+    import pkgutil
+
+    import melder.aether.spellbook.spell_compiler.codegen_creation_system as _ccs
+
+    for module_info in pkgutil.walk_packages(
+            _ccs.__path__, prefix=_ccs.__name__ + "."
     ):
-        if hasattr(module, "get_or_compile_executor_code"):
+        try:
+            importlib.import_module(module_info.name)
+        except Exception:
+            pass
+
+    patched_modules = []
+    for module in list(sys.modules.values()):
+        if module is None or module is executor_code_cache:
+            continue
+        if getattr(module, "get_or_compile_executor_code", None) is original:
             patched_modules.append(
                 (module, module.get_or_compile_executor_code)
             )
             module.get_or_compile_executor_code = _capturing
+    print(f"patched {len(patched_modules)} consumer modules + cache module")
+
+    # Belt and braces: the step factory provably does NOT pass through the
+    # cache chokepoint in the disabled-caching posture (a finding in itself),
+    # so also capture at builtins.compile, filtered to melder's synthetic
+    # executor filenames. Nothing emitted can dodge this.
+    import builtins
+
+    compile_original = builtins.compile
+
+    def _capturing_compile(source, filename, mode, *args, **kwargs):
+        if (
+                isinstance(filename, str)
+                and isinstance(source, str)
+                and filename.startswith("<")
+                and (
+                    "melder" in filename
+                    or "creation_context" in filename
+                    or "executor" in filename
+                )
+        ):
+            digest = executor_code_cache._hash_source(source)
+            if digest not in seen_hashes:
+                seen_hashes.add(digest)
+                captured.append((f"[raw-compile] {filename}", source))
+        return compile_original(source, filename, mode, *args, **kwargs)
+
+    builtins.compile = _capturing_compile
 
     try:
         from melder.aether.spellbook.spellbook import Spellbook
@@ -135,6 +172,7 @@ def main() -> None:
         root.cleanup()
         _reset_runtime()
     finally:
+        builtins.compile = compile_original
         executor_code_cache.get_or_compile_executor_code = original
         for module, module_original in patched_modules:
             module.get_or_compile_executor_code = module_original

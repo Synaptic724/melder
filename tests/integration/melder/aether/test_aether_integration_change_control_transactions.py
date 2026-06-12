@@ -216,17 +216,20 @@ def test_change_control_disable_allows_overlapping_requests() -> None:
     spellbook_b.cleanup()
 
 
-def test_change_control_scope_hash_conflict_rejects_overlap() -> None:
+def test_change_control_scope_hash_only_roots_admit_independently() -> None:
     """
     Purpose:
-        Validate same-thread bind starts join before conflict admission.
+        Validate hash-only scope evidence never gates root admission.
     Contract:
-        - A second same-thread bind start does not open a second root request.
-        - The active bind root remains the single in-flight request.
+        - Scope KEYS are the admission vocabulary; scope hashes are advisory
+          identity evidence and carry no claims.
+        - A second root bind whose hashes overlap an active root's hashes
+          admits as its own independent in-flight request.
+        - Ending each root retires its own request only.
     Returns:
         None.
     Raises:
-        AssertionError: If the second bind opens another root request.
+        AssertionError: If hash overlap blocks admission or aliases roots.
     """
     frame_name = "frame-cc-hash"
     configuration = _make_configuration(aether_frame=frame_name, dynamic=True)
@@ -235,16 +238,21 @@ def test_change_control_scope_hash_conflict_rejects_overlap() -> None:
     conduit_a = spellbook_a.conjure(dynamic=True, name="root-a")
     conduit_b = spellbook_b.conjure(dynamic=True, name="root-b")
     scope_hash = hashlib.sha256("shared-scope".encode("utf-8")).hexdigest()
+    transaction_manager = Aether()._get_change_control_manager(
+        frame_name
+    ).transaction_manager()
 
     spellbook_a.begin_transaction("bind", scope_hashes=[scope_hash])
     try:
-        with pytest.raises(RuntimeError, match="Change-control admission denied"):
-            spellbook_b.begin_transaction("bind", scope_hashes=[scope_hash])
-        assert len(
-            Aether()._get_change_control_manager(frame_name).transaction_manager().list_in_flight()
-        ) == 1
+        # Hash-only scopes carry no admission claims, so the overlapping
+        # second root opens its own in-flight request.
+        spellbook_b.begin_transaction("bind", scope_hashes=[scope_hash])
+        assert len(transaction_manager.list_in_flight()) == 2
+        spellbook_b.end_transaction("bind")
+        assert len(transaction_manager.list_in_flight()) == 1
     finally:
         spellbook_a.end_transaction("bind")
+    assert transaction_manager.list_in_flight() == []
 
     conduit_a.cleanup()
     conduit_b.cleanup()
@@ -389,19 +397,21 @@ def test_change_control_disjoint_scope_roots_admit_in_parallel_across_threads() 
     spellbook_c.cleanup()
 
 
-def test_change_control_scope_hash_conflict_times_out_overlapping_roots() -> None:
+def test_change_control_scope_key_conflict_times_out_overlapping_roots() -> None:
     """
     Purpose:
-        Validate overlapping scope-hash root binds wait and then time out.
+        Validate overlapping scope-key root binds wait and then time out.
     Contract:
-        - The first root bind is admitted and holds the shared scope hash.
-        - The second and third overlapping root binds wait for release and
-          raise the scope-wait timeout while the holder stays active.
+        - The first root bind is admitted and holds the shared scope key.
+        - Second and third roots claiming the same key on OTHER threads
+          (scope hashes carry no claims, and only keys enter admission)
+          wait for release and raise the scope-wait timeout while the
+          holder stays active.
         - The active bind root remains the single in-flight request.
     Returns:
         None.
     Raises:
-        AssertionError: If overlapping scope-hash roots admit while held.
+        AssertionError: If overlapping scope-key roots admit while held.
     """
     frame_name = "frame-cc-overlap-three-roots"
     configuration = _make_configuration(aether_frame=frame_name, dynamic=True)
@@ -415,14 +425,46 @@ def test_change_control_scope_hash_conflict_times_out_overlapping_roots() -> Non
     change_control.transaction_mediator().configure(
         max_transaction_wait_time_in_seconds=0.2,
     )
-    scope_hash = hashlib.sha256("shared-scope".encode("utf-8")).hexdigest()
+    shared_scope_key = "scope-overlap-shared"
 
-    spellbook_a.begin_transaction("bind", scope_hashes=[scope_hash])
+    timeouts: list[str] = []
+    failures: list[BaseException] = []
+
+    def _attempt_overlap(label: str, spellbook: Spellbook) -> None:
+        try:
+            spellbook.begin_transaction("bind", scope_keys=[shared_scope_key])
+            spellbook.end_transaction("bind")
+            failures.append(
+                AssertionError(f"root {label} admitted while the scope was held")
+            )
+        except RuntimeError as exc:
+            if "Timed out waiting for blocked" in str(exc):
+                timeouts.append(label)
+            else:
+                failures.append(exc)
+        except BaseException as exc:
+            failures.append(exc)
+
+    spellbook_a.begin_transaction("bind", scope_keys=[shared_scope_key])
     try:
-        with pytest.raises(RuntimeError, match="Timed out waiting for blocked"):
-            spellbook_b.begin_transaction("bind", scope_hashes=[scope_hash])
-        with pytest.raises(RuntimeError, match="Timed out waiting for blocked"):
-            spellbook_c.begin_transaction("bind", scope_hashes=[scope_hash])
+        thread_b = threading.Thread(
+            target=_attempt_overlap,
+            args=("b", spellbook_b),
+            name="overlap-bind-root-b",
+        )
+        thread_c = threading.Thread(
+            target=_attempt_overlap,
+            args=("c", spellbook_c),
+            name="overlap-bind-root-c",
+        )
+        thread_b.start()
+        thread_c.start()
+        thread_b.join(timeout=5)
+        thread_c.join(timeout=5)
+        assert thread_b.is_alive() is False
+        assert thread_c.is_alive() is False
+        assert failures == []
+        assert sorted(timeouts) == ["b", "c"]
         assert len(change_control.transaction_manager().list_in_flight()) == 1
     finally:
         spellbook_a.end_transaction("bind")
