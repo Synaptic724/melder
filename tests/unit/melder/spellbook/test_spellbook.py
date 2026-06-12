@@ -495,6 +495,24 @@ class DummyConfig:
             return self._full_ahead_of_time_compilation
         return None
 
+    def has_property(self, name):
+        """
+        Purpose:
+            Report whether the stub exposes the requested property key.
+        Contract:
+            Mirrors the Spellbook bind-time configuration probe for known
+            property names used by the tests.
+        Args:
+            name: Property name to check.
+        Returns:
+            bool: True when the property is supported by this stub.
+        """
+        return name in {
+            "system_state",
+            "disposal_method_names",
+            "full_ahead_of_time_compilation",
+        }
+
     def validate(self):
         """
         Purpose:

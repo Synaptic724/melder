@@ -54,7 +54,9 @@ class _RecordingSpell:
         self._caching_enabled = caching_enabled
         self._dynamic_environment = False
         self._creation_context = object()
-        self._compiler_artifact = SimpleNamespace(_spell_codegen_creation=object())
+        self._compiler_artifact = SimpleNamespace(
+            _spell_codegen_creation=SimpleNamespace(metadata={})
+        )
         self._creation_context_factory = SimpleNamespace(
             _resolve_runtime_gate_for_spell=lambda spell: (None, None)
         )

@@ -44,6 +44,14 @@ class _SpellbookStub:
         self._spell_id_pool = {}
         self._lookup_spells = {}
         self._lookup_contracted_spells = {}
+        self.cleanup_calls = []
+
+    def cleanup_and_remove_spell(self, spell):
+        """Mirror spellbook-owned spell teardown delegation for the foundation tests."""
+        self.cleanup_calls.append(spell)
+        spell._spellbook_cleanup = True
+        spell.cleanup()
+        return None
 
 
 class _CreationStoreStub:

@@ -941,7 +941,7 @@ def test_nexus_frame_manager_bootstrap_root_conduit_binds_and_refreshes_overview
 
     assert conduit.name == "root"
     assert calls[0][0] == "init"
-    assert calls[1] == ("conjure", "root", False)
+    assert calls[1] == ("conjure", "root", True)
 
 
 @pytest.mark.parametrize(

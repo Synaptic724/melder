@@ -1779,6 +1779,51 @@ and logging.
         """
         with self._lock:
             try:
+                # The spell fingerprint composes bind-time facts (existence,
+                # disposal methods, binding name, spell name) that a bare
+                # class/function/instance cannot supply, so re-deriving the
+                # id from the object alone can never match a registered
+                # binding. Resolve by object identity against this
+                # Spellbook's registered spells first; fall back to the
+                # legacy default-fact fingerprint for foreign objects so
+                # cross-book inspection semantics stay unchanged.
+                for candidate_spell in self._spells.values():
+                    if (
+                            candidate_spell.spell is spell
+                            or candidate_spell.user_created_object is spell
+                    ):
+                        candidate_spell_id = candidate_spell.spell_index.current
+                        found = Spellbook._aether._check_for_spell(
+                            candidate_spell_id,
+                            aetheric_frame,
+                        )
+                        return candidate_spell_id if found else None
+                # Frame-wide object inspection: walk the frame's registered
+                # conduits' spellbooks so foreign spells (cluster shares,
+                # dynamic-link providers) remain inspectable by object, which
+                # the legacy fingerprint path provided before bind-time facts
+                # joined the id composition.
+                if aetheric_frame != "default":
+                    frame = Spellbook._aether._aetheric_frames[aetheric_frame]
+                else:
+                    frame = Spellbook._aether._ensure_default_frame()
+                for frame_conduit in frame._conduits.values():
+                    conduit_spellbook = frame_conduit._spellbook
+                    if conduit_spellbook is None or conduit_spellbook is self:
+                        continue
+                    for candidate_spell in conduit_spellbook._spells.values():
+                        if (
+                                candidate_spell.spell is spell
+                                or candidate_spell.user_created_object is spell
+                        ):
+                            candidate_spell_id = (
+                                candidate_spell.spell_index.current
+                            )
+                            found = Spellbook._aether._check_for_spell(
+                                candidate_spell_id,
+                                aetheric_frame,
+                            )
+                            return candidate_spell_id if found else None
                 spell_id = self._bind.spell_id_inspector(spell)
                 found = Spellbook._aether._check_for_spell(spell_id, aetheric_frame)
                 return spell_id if found else None

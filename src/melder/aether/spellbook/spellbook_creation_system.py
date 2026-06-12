@@ -1468,7 +1468,13 @@ class SpellbookCreationSystem(Cleanable):
                 spellbook=spellbook,
                 spell_ids={target_spell_id},
             )
-            return results
+            # Gated resolution must surface as a validation failure, exactly
+            # like the conduit-wide path. Returning here was a silent success:
+            # callers marked the spell resolution-complete with no phase-11
+            # creation built, and meld then failed deep in the context
+            # builder with an opaque RuntimeError instead of the validation
+            # contract callers rely on.
+            raise SpellbookValidationError([target_spell])
 
         scoped_spell_ids, scoped_root_ids = SpellbookCreationSystem._collect_target_resolution_scope(
             target_spell=target_spell,

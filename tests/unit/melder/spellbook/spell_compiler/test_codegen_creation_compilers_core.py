@@ -192,11 +192,14 @@ def test_overrides_compiler_code_object_entrypoints_validate_and_delegate(
             source="",
         )
 
+    compile_calls = []
     monkeypatch.setattr(
         overrides_compiler_module,
-        "compile",
-        lambda source, source_name, mode: ("compiled", source, source_name, mode),
-        raising=False,
+        "get_or_compile_executor_code",
+        lambda *, source, source_name: (
+            compile_calls.append((source, source_name)) or
+            ("compiled", source, source_name)
+        ),
     )
     code_object = overrides_compiler_module.compile_overrides_codegen_creation_executor_code_object(
         source="print('x')",
@@ -205,8 +208,10 @@ def test_overrides_compiler_code_object_entrypoints_validate_and_delegate(
         "compiled",
         "print('x')",
         "<melder_overrides_codegen_creation_executor>",
-        "exec",
     )
+    assert compile_calls == [
+        ("print('x')", "<melder_overrides_codegen_creation_executor>")
+    ]
 
     calls = []
     monkeypatch.setattr(
@@ -280,18 +285,17 @@ def _make_recording_creations() -> SimpleNamespace:
 def test_solo_no_overrides_compiler_emits_compiled_code_and_preserves_registration(
         monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Solo no-overrides should emit source, compile directly, and preserve route behavior."""
+    """Solo no-overrides should compile through the shared code-cache seam and preserve route behavior."""
     compile_calls = []
 
-    def _compile_direct(source: str, source_name: str, mode: str):
-        compile_calls.append((source, source_name, mode))
+    def _compile_via_cache(*, source: str, source_name: str):
+        compile_calls.append((source, source_name))
         return compile(source, source_name, "exec")
 
     monkeypatch.setattr(
         solo_no_overrides_compiler_module,
-        "compile",
-        _compile_direct,
-        raising=False,
+        "get_or_compile_executor_code",
+        _compile_via_cache,
     )
 
     spell = _make_spell("solo-no")
@@ -309,7 +313,6 @@ def test_solo_no_overrides_compiler_emits_compiled_code_and_preserves_registrati
     assert result == "value:solo-no"
     assert len(compile_calls) == 1
     assert compile_calls[0][1].startswith("<solo_no_overrides_codegen_creation:")
-    assert compile_calls[0][2] == "exec"
     assert caller_creations.add_creation_calls == [
         (("solo-no", "value:solo-no"), {})
     ]
@@ -319,18 +322,17 @@ def test_solo_no_overrides_compiler_emits_compiled_code_and_preserves_registrati
 def test_solo_overrides_compiler_emits_compiled_code_and_preserves_override_behavior(
         monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Solo overrides should emit source, compile directly, and preserve root-only override behavior."""
+    """Solo overrides should compile through the shared code-cache seam and preserve root-only override behavior."""
     compile_calls = []
 
-    def _compile_direct(source: str, source_name: str, mode: str):
-        compile_calls.append((source, source_name, mode))
+    def _compile_via_cache(*, source: str, source_name: str):
+        compile_calls.append((source, source_name))
         return compile(source, source_name, "exec")
 
     monkeypatch.setattr(
         solo_overrides_compiler_module,
-        "compile",
-        _compile_direct,
-        raising=False,
+        "get_or_compile_executor_code",
+        _compile_via_cache,
     )
 
     def _call_target(*args, **kwargs):
@@ -365,7 +367,6 @@ def test_solo_overrides_compiler_emits_compiled_code_and_preserves_override_beha
     }
     assert len(compile_calls) == 1
     assert compile_calls[0][1].startswith("<solo_overrides_codegen_creation:")
-    assert compile_calls[0][2] == "exec"
     assert caller_creations.add_creation_calls == [
         (("solo-over", result), {})
     ]

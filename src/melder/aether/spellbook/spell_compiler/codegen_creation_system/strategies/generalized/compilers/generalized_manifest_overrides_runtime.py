@@ -115,11 +115,10 @@ def build_overrides_execute_runtime(
     bound_executor_cache: Dict[Tuple[Any, ...], Callable[..., Any]] = {}
     prefilter_step_targets_cache: Dict[Tuple[Any, ...], Tuple[Tuple[Any, ...], ...]] = {}
     prefilter_path_metadata_cache: Dict[Any, Tuple[Any, Any]] = {}
-    last_state: Dict[str, Any] = {
-        "socket_shape": None,
-        "root_positional_arity": -2,
-        "executor": None,
-    }
+    # Last-shape fast path uses one 3-slot list instead of a string-keyed
+    # dict: indexed loads/stores beat hashed lookups on the per-meld path.
+    # Slots: [socket_shape, root_positional_arity, executor].
+    last_state: list = [None, -2, None]
 
     def _get_or_bind_executor(
             *,
@@ -198,57 +197,58 @@ def build_overrides_execute_runtime(
         root_spell.spell_index.current or root_spell.spell_id
     )
 
-    def execute_with_overrides(
+    # Raw-key-shape cache: the user-facing override KEY SET fully determines
+    # targeting, socket shape, and executor selection (values never affect
+    # routing). Each entry resolves the target/path pipeline ONCE per key
+    # shape and stores: [key_match_pairs, executors_by_arity, has_positional,
+    # overlapping]. Overlapping shapes (one socket reachable from multiple
+    # keys) keep the legacy per-call resolution because equal-specificity
+    # conflict detection is value-dependent by contract.
+    raw_shape_cache: Dict[Tuple[str, ...], list] = {}
+
+    def _execute_resolved(
             caller_creations: Any,
             overrides: Optional[dict],
             caller_creations_lock_held: bool,
+            owner_creations: Any,
     ) -> Any:
-        owner_creations = root_spell._owner_creations
-        override_payload = overrides
+        """
+        Legacy full-resolution path: per-call targeting and shape dispatch.
+        """
         root_positional_override: Optional[Sequence[Any]] = None
         override_map: Dict[Any, Any] = {}
         socket_shape: Tuple[Tuple[Any, ...], ...] = ()
 
-        if override_payload is None:
-            return baseline_executor(
-                caller_creations,
-                override_map,
-                root_positional_override,
-                owner_creations=owner_creations,
-                caller_creations_lock_held=caller_creations_lock_held,
-            )
-
-        if override_payload:
-            target_payload, root_positional_override = _split_override_payload(
-                spell=root_spell,
-                override_payload=override_payload,
-            )
-            if target_payload:
-                try:
-                    override_map, socket_shape = (
-                        override_targeting._apply_with_socket_shape_prechecked(
-                            spell_override=target_payload,
-                        )
+        target_payload, root_positional_override = _split_override_payload(
+            spell=root_spell,
+            override_payload=overrides,
+        )
+        if target_payload:
+            try:
+                override_map, socket_shape = (
+                    override_targeting._apply_with_socket_shape_prechecked(
+                        spell_override=target_payload,
                     )
-                except MeldExecutionError:
-                    raise
-                except Exception as exc:
-                    raise MeldExecutionError(
-                        spell_id=current_root_spell_id,
-                        spell_name=root_spell.spell_name,
-                        message="Failed to apply overrides.",
-                        inner=exc,
-                    ) from exc
+                )
+            except MeldExecutionError:
+                raise
+            except Exception as exc:
+                raise MeldExecutionError(
+                    spell_id=current_root_spell_id,
+                    spell_name=root_spell.spell_name,
+                    message="Failed to apply overrides.",
+                    inner=exc,
+                ) from exc
 
         if root_positional_override is None:
             root_positional_arity = -1
         else:
             root_positional_arity = len(root_positional_override)
         if (
-                socket_shape is last_state["socket_shape"]
-                and root_positional_arity == last_state["root_positional_arity"]
+                socket_shape is last_state[0]
+                and root_positional_arity == last_state[1]
         ):
-            executor = last_state["executor"]
+            executor = last_state[2]
         else:
             executor = None
 
@@ -273,9 +273,165 @@ def build_overrides_execute_runtime(
                 any_overrides_present=overrides is not None,
                 prefilter_cache_key=(plan_signature, socket_shape),
             )
-            last_state["socket_shape"] = socket_shape
-            last_state["root_positional_arity"] = root_positional_arity
-            last_state["executor"] = executor
+            last_state[0] = socket_shape
+            last_state[1] = root_positional_arity
+            last_state[2] = executor
+
+        return executor(
+            caller_creations,
+            override_map,
+            root_positional_override,
+            owner_creations=owner_creations,
+            caller_creations_lock_held=caller_creations_lock_held,
+        )
+
+    def _prepare_raw_shape(
+            raw_keys: Tuple[str, ...],
+            overrides: dict,
+    ) -> list:
+        """
+        Resolve targeting once for one raw key shape and freeze the routing.
+
+        Contract:
+            - Runs the exact legacy pipeline (split + targeting) to compute
+              the socket shape and the per-key socket matches.
+            - `executors_by_arity` memoizes the bound executor per root
+              positional arity (-1 for none), because `__args__` length may
+              vary per call within one key shape.
+        """
+        target_payload, root_positional_override = _split_override_payload(
+            spell=root_spell,
+            override_payload=overrides,
+        )
+        key_match_pairs: list = []
+        socket_shape: Tuple[Tuple[Any, ...], ...] = ()
+        overlapping = False
+        if target_payload:
+            try:
+                override_map, socket_shape = (
+                    override_targeting._apply_with_socket_shape_prechecked(
+                        spell_override=target_payload,
+                    )
+                )
+            except MeldExecutionError:
+                raise
+            except Exception as exc:
+                raise MeldExecutionError(
+                    spell_id=current_root_spell_id,
+                    spell_name=root_spell.spell_name,
+                    message="Failed to apply overrides.",
+                    inner=exc,
+                ) from exc
+            seen_sockets: set = set()
+            for raw_key in target_payload:
+                matches, _, _ = override_targeting._resolve_targets_for_raw_key(
+                    raw_key
+                )
+                key_match_pairs.append((raw_key, matches))
+                for socket_ref in matches:
+                    if socket_ref in seen_sockets:
+                        overlapping = True
+                    seen_sockets.add(socket_ref)
+
+        if root_positional_override is None:
+            root_positional_arity = -1
+        else:
+            root_positional_arity = len(root_positional_override)
+        if socket_shape:
+            override_targets_by_spell_id = (
+                _collect_override_targets_from_socket_shape(
+                    override_map={
+                        socket_ref: None
+                        for _raw_key, matches in key_match_pairs
+                        for socket_ref in matches
+                    },
+                    socket_shape=socket_shape,
+                )
+            )
+        else:
+            override_targets_by_spell_id = {}
+        executor = _get_or_bind_executor(
+            shape_key=(plan_signature, socket_shape, root_positional_arity),
+            override_targets_by_spell_id=override_targets_by_spell_id,
+            any_overrides_present=True,
+            prefilter_cache_key=(plan_signature, socket_shape),
+        )
+        prepared = [
+            tuple(key_match_pairs),
+            {root_positional_arity: executor},
+            "__args__" in overrides,
+            overlapping,
+            socket_shape,
+            override_targets_by_spell_id,
+        ]
+        raw_shape_cache[raw_keys] = prepared
+        return prepared
+
+    def execute_with_overrides(
+            caller_creations: Any,
+            overrides: Optional[dict],
+            caller_creations_lock_held: bool,
+    ) -> Any:
+        owner_creations = root_spell._owner_creations
+
+        if overrides is None:
+            return baseline_executor(
+                caller_creations,
+                {},
+                None,
+                owner_creations=owner_creations,
+                caller_creations_lock_held=caller_creations_lock_held,
+            )
+
+        if len(overrides) == 1:
+            raw_keys = tuple(overrides)
+        else:
+            raw_keys = tuple(sorted(overrides))
+        prepared = raw_shape_cache.get(raw_keys)
+        if prepared is None:
+            prepared = _prepare_raw_shape(raw_keys, overrides)
+        if prepared[3]:
+            # Overlapping targets: value-dependent conflict semantics, keep
+            # the legacy per-call resolution path.
+            return _execute_resolved(
+                caller_creations,
+                overrides,
+                caller_creations_lock_held,
+                owner_creations,
+            )
+
+        root_positional_override: Optional[Sequence[Any]] = None
+        root_positional_arity = -1
+        if prepared[2]:
+            raw_args = overrides["__args__"]
+            if isinstance(raw_args, tuple):
+                root_positional_override = raw_args
+            elif isinstance(raw_args, list):
+                root_positional_override = tuple(raw_args)
+            else:
+                raise MeldExecutionError(
+                    spell_id=current_root_spell_id,
+                    spell_name=root_spell.spell_name,
+                    message="__args__ override must be a list or tuple.",
+                )
+            root_positional_arity = len(root_positional_override)
+
+        override_map: Dict[Any, Any] = {}
+        for raw_key, matches in prepared[0]:
+            value = overrides[raw_key]
+            for socket_ref in matches:
+                override_map[socket_ref] = value
+
+        executors_by_arity = prepared[1]
+        executor = executors_by_arity.get(root_positional_arity)
+        if executor is None:
+            executor = _get_or_bind_executor(
+                shape_key=(plan_signature, prepared[4], root_positional_arity),
+                override_targets_by_spell_id=prepared[5],
+                any_overrides_present=True,
+                prefilter_cache_key=(plan_signature, prepared[4]),
+            )
+            executors_by_arity[root_positional_arity] = executor
 
         return executor(
             caller_creations,

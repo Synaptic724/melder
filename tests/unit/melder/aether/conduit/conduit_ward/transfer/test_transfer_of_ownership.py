@@ -809,6 +809,18 @@ class FakeSpellbook:
             }
         )
 
+    def _resolve_system_caching_enabled(self) -> bool:
+        """
+        Return the target spellbook caching posture for transfer-time ownership restamping.
+
+        Contract:
+            Mirrors the live spellbook helper used by TransferOfOwnership when it
+            reattaches a spell to the target conduit.
+        Returns:
+            bool: Cached full-AOT/caching posture for the fake spellbook.
+        """
+        return True
+
 
 class FakeConduitWard:
     """
