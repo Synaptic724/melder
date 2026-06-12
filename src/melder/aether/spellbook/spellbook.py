@@ -796,7 +796,7 @@ and logging.
                     or artifact._spell_codegen_creation is None
             ):
                 return False
-            from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized_cache.manifest.generalized_cache_manifest import (
+            from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.manifest.generalized_manifest import (
                 MANIFEST_METADATA_KEY,
             )
             if (
@@ -805,13 +805,13 @@ and logging.
                     )
                     is not None
             ):
-                # generalized_cache family output: the manifest already IS the
+                # Manifest-first family output: the manifest already IS the
                 # cache payload, so export is a metadata read instead of a
                 # full both-lane recompile.
-                from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized_cache.generalized_cache_creation_cache import (
-                    build_package as build_generalized_cache_package,
+                from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.generalized_creation_cache import (
+                    build_package as build_generalized_manifest_package,
                 )
-                spell_payload = build_generalized_cache_package(spell)
+                spell_payload = build_generalized_manifest_package(spell)
             else:
                 from melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation.spell_codegen_creation_cache import (
                     build_package,

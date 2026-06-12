@@ -1,5 +1,5 @@
 """
-Quarantined import manifest for the generalized_cache family.
+Quarantined import manifest for the generalized family.
 
 Every symbol the family still consumes from the generalized compilers passes
 through this single module, so the remaining coupling surface is one visible,

@@ -1,5 +1,5 @@
 """
-Binding resolvers for the generalized_cache codegen-creation family.
+Binding resolvers for the generalized codegen-creation family.
 
 A binding resolver is the single seam where executor hydration touches live
 runtime state. Everything else the hydrator consumes is manifest data.
@@ -123,7 +123,7 @@ class SpellbookBindingResolver:
         resolved_spell = spellbook._spell_id_pool.get(spell_id)
         if resolved_spell is None:
             raise RuntimeError(
-                "generalized_cache manifest references unknown spell_id "
+                "generalized manifest references unknown spell_id "
                 f"'{spell_id}'."
             )
         return resolved_spell

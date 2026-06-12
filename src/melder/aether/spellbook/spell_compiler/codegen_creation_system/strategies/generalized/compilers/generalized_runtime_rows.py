@@ -1,5 +1,5 @@
 """
-Slotted runtime step rows for the generalized_cache family.
+Slotted runtime step rows for the generalized family.
 
 Replaces the generalized compilers' per-load `SimpleNamespace` step adapters
 with one family-owned `__slots__` class: faster attribute access on the hot
@@ -118,14 +118,14 @@ def build_runtime_rows(
         for field_name in _REQUIRED_ROW_FIELDS:
             if field_name not in row:
                 raise RuntimeError(
-                    "generalized_cache runtime row is missing required field "
+                    "generalized runtime row is missing required field "
                     f"'{field_name}' at index {row_index}."
                 )
         spell_id = row["spell_id"]
         spell = spell_lookup.get(spell_id)
         if spell is None:
             raise RuntimeError(
-                "generalized_cache runtime row references unknown spell_id "
+                "generalized runtime row references unknown spell_id "
                 f"'{spell_id}'."
             )
         existence_name = row["existence"]
@@ -133,7 +133,7 @@ def build_runtime_rows(
             existence = Existence[existence_name]
         except KeyError as exc:
             raise RuntimeError(
-                "generalized_cache runtime row contains unknown existence "
+                "generalized runtime row contains unknown existence "
                 f"'{existence_name}' at index {row_index}."
             ) from exc
 

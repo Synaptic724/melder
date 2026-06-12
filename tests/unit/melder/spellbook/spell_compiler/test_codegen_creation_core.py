@@ -134,8 +134,8 @@ def _make_generalized_state(
     )
 
 
-def test_codegen_creation_discovery_system_selects_generalized_cache_chain_by_default() -> None:
-    """The discovery system now routes generalized planner output to the generalized_cache family by default."""
+def test_codegen_creation_discovery_system_selects_generalized_chain_by_default() -> None:
+    """The discovery system should extend the generalized chain with the final creation-context strategy."""
     discovery = CodegenCreationDiscoverySystem().discover(
         object(),
         SpellCodegenPlan(
@@ -148,7 +148,7 @@ def test_codegen_creation_discovery_system_selects_generalized_cache_chain_by_de
     )
 
     assert discovery.selected_strategy_ids == (
-        "generalized_cache_codegen_creation",
+        "generalized_codegen_creation",
     )
 
 
@@ -214,7 +214,6 @@ def test_spell_codegen_strategy_builder_registers_extended_order() -> None:
         "solo_codegen_creation",
         "many_only_codegen_creation",
         "generalized_codegen_creation",
-        "generalized_cache_codegen_creation",
         "generalized_no_overrides_codegen_creation",
     )
     assert isinstance(

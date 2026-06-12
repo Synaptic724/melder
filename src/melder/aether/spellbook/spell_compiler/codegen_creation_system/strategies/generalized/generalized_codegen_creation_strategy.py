@@ -1,28 +1,25 @@
 from typing import Tuple
 
-from melder.aether.spellbook.spell_compiler.codegen_creation_system.spell_codegen_strategy import (
-    SpellCodegenStrategy,
-)
-from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.generalized_codegen_creation_state import (
-    GeneralizedCodegenCreationState,
-)
-from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.steps.generalized_finalize_creation_context_step import (
-    GeneralizedFinalizeCreationContextStep,
-)
-from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.steps.generalized_no_overrides_codegen_creation_step import (
-    GeneralizedNoOverridesCodegenCreationStep,
-)
-from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.steps.generalized_overrides_codegen_creation_step import (
-    GeneralizedOverridesCodegenCreationStep,
-)
-from melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.codegen_creation_family_step import (
-    CodegenCreationFamilyStep,
-)
 from melder.aether.spellbook.spell_compiler.artifact_processor.spell_codegen_model import (
     SpellCodegenModel,
 )
 from melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation.spell_codegen_creation import (
     SpellCodegenCreation,
+)
+from melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.codegen_creation_family_step import (
+    CodegenCreationFamilyStep,
+)
+from melder.aether.spellbook.spell_compiler.codegen_creation_system.spell_codegen_strategy import (
+    SpellCodegenStrategy,
+)
+from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.generalized_manifest_state import (
+    GeneralizedManifestState,
+)
+from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.steps.generalized_lazy_door_step import (
+    GeneralizedLazyDoorStep,
+)
+from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.steps.generalized_manifest_step import (
+    GeneralizedManifestStep,
 )
 from melder.aether.spellbook.spell_compiler.codegen_planner.spell_codegen_plan import (
     SpellCodegenPlan,
@@ -31,19 +28,25 @@ from melder.aether.spellbook.spell_compiler.codegen_planner.spell_codegen_plan i
 
 class GeneralizedCodegenCreationStrategy(SpellCodegenStrategy):
     """
-    Generalized phase-11 family facade.
+    Manifest-first phase-11 family for generalized planner output.
 
     Purpose:
-        Preserve the current generalized phase-11 behavior behind one public
-        strategy id, while the internal work is split into ordered family-local
-        steps that operate on one mutable state object.
+        The generalized family flows the entire build through
+        serialization-shaped data: a marshal-safe manifest is built first,
+        then both final runtime doors are published as lazy closures that
+        hydrate from that manifest at first meld through one shared hydrator.
+        Cache export is "persist the manifest"; cache load is "hydrate the
+        manifest" - the same single assembly program the live path runs.
 
     Contract:
-        - This is the public phase-11 generalized family id selected by
-          discovery.
-        - Internal steps may change over time without widening the external
-          `CodegenCreationSystem` contract.
-        - Final runtime output remains exactly one `SpellCodegenCreation`.
+        - Phase-11 conjure cost for this family is manifest construction
+          only; executor compile/exec/door work happens at first meld.
+        - Final runtime output remains exactly one `SpellCodegenCreation`
+          carrying the two route-keyed doors.
+        - Publishes the manifest into `SpellCodegenCreation.metadata` for the
+          family cache codec (`generalized_creation_cache`).
+        - This family is the modeling template for solo/many_only ports:
+          manifest step -> lazy-door step -> shared hydrator -> codec.
     """
 
     __slots__ = [
@@ -52,13 +55,12 @@ class GeneralizedCodegenCreationStrategy(SpellCodegenStrategy):
 
     def __init__(self) -> None:
         """
-        Build the generalized family facade and its ordered internal steps.
+        Build the generalized family facade and its ordered steps.
         """
         super().__init__()
         self._steps: Tuple[CodegenCreationFamilyStep, ...] = (
-            GeneralizedNoOverridesCodegenCreationStep(),
-            GeneralizedOverridesCodegenCreationStep(),
-            GeneralizedFinalizeCreationContextStep(),
+            GeneralizedManifestStep(),
+            GeneralizedLazyDoorStep(),
         )
 
     @property
@@ -77,7 +79,7 @@ class GeneralizedCodegenCreationStrategy(SpellCodegenStrategy):
         """
         Execute the generalized family over one mutable state object.
         """
-        state = GeneralizedCodegenCreationState(
+        state = GeneralizedManifestState(
             spell_codegen_model=spell_codegen_model,
             spell_codegen_plan=spell_codegen_plan,
             spell_codegen_creation=spell_codegen_creation,

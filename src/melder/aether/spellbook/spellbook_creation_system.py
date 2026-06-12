@@ -458,7 +458,7 @@ class SpellbookCreationSystem(Cleanable):
 
         Contract:
             - Cache selection is already spell-id keyed before this runs.
-            - generalized_cache family packages publish a lazy context with
+            - Manifest-first family packages publish a lazy context with
               ZERO conjure-time hydration; the first meld hydrates once and
               swaps the hot doors into the published context.
             - When the payload already carries live executors, it publishes
@@ -467,12 +467,12 @@ class SpellbookCreationSystem(Cleanable):
               delegates to the cache-load seam that rebuilds executors after
               phases 1-7.
         """
-        from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized_cache.generalized_cache_creation_cache import (
-            is_generalized_cache_package,
+        from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.generalized_creation_cache import (
+            is_generalized_manifest_package,
             load_creation_context_lazy,
         )
 
-        if is_generalized_cache_package(spell_payload):
+        if is_generalized_manifest_package(spell_payload):
             load_creation_context_lazy(
                 spell,
                 dict(spell_payload),

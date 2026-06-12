@@ -1,5 +1,5 @@
 """
-Family-owned no-overrides lane compiler for generalized_cache.
+Family-owned no-overrides lane compiler for generalized.
 
 This module owns the no-overrides lane end to end:
     - row-driven source emission (manifest rows in, factory source out;
@@ -24,7 +24,7 @@ Row requirements beyond the shared phase-11 row schema:
 from typing import Any, Callable, Dict, Optional, Sequence, Tuple
 
 from melder.aether.spellbook.existence.existence import Existence
-from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized_cache.compilers.generalized_bridge import (
+from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_runtime_library import (
     SpellGeneralizedCodegenPlanTargetKind,
     build_transient_no_overrides_source,
     construct_spell_instance,
@@ -34,7 +34,7 @@ from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.g
     register_spell_instance,
     register_spell_instance_prebound,
 )
-from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized_cache.compilers.generalized_cache_runtime_rows import (
+from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_runtime_rows import (
     CodegenStepRuntimeRow,
     build_runtime_rows,
 )
@@ -52,10 +52,10 @@ from melder.utilities.custom_exceptions.spell_space_scope_error import (
 EXECUTOR_NAME = "_no_overrides_codegen_creation_executor"
 
 _STEP_FACTORY_SOURCE_NAME = (
-    "<melder_generalized_cache_no_overrides_step_factory>"
+    "<melder_generalized_no_overrides_step_factory>"
 )
 _TRANSIENT_FACTORY_SOURCE_NAME = (
-    "<melder_generalized_cache_no_overrides_transient_factory>"
+    "<melder_generalized_no_overrides_transient_factory>"
 )
 
 _STEP_BINDING_NAMES = (
@@ -675,7 +675,7 @@ def _build_transient_bindings(
     step_count = normalized_schema["step_count"]
     if step_count != len(runtime_rows):
         raise RuntimeError(
-            "generalized_cache transient schema step_count does not match rows."
+            "generalized transient schema step_count does not match rows."
         )
     transient_targets = []
     for step_index, runtime_row in enumerate(runtime_rows):
@@ -686,7 +686,7 @@ def _build_transient_bindings(
                 or spell.is_lambda_spell
         ):
             raise RuntimeError(
-                "generalized_cache transient lane requires callable steps; "
+                "generalized transient lane requires callable steps; "
                 f"step {step_index} is not callable."
             )
         transient_targets.append(spell.spell)
@@ -740,6 +740,6 @@ def resolve_root_instance_key_from_rows(
             if instance_key[0] == root_spell_id:
                 return (instance_key[0], instance_key[1])
     raise RuntimeError(
-        "generalized_cache no-overrides lane could not resolve a root "
+        "generalized no-overrides lane could not resolve a root "
         "instance key."
     )

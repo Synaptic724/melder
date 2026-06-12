@@ -1,5 +1,5 @@
 """
-Single executor hydrator for the generalized_cache codegen-creation family.
+Single executor hydrator for the generalized codegen-creation family.
 
 `hydrate_creation_executors(manifest, resolver)` is the one assembly program
 for this family. The live phase-11 step publishes lazy doors over it; the
@@ -8,16 +8,12 @@ first meld, so cache loads can never drift from live builds.
 
 Hydration shape:
     1. Resolve live identity (spells, path registry) through the resolver.
-    2. Build slotted runtime rows from manifest rows (family-owned).
+    2. Build slotted runtime rows from manifest rows.
     3. Hydrate the inner no-overrides executor through the family compiler
        (row-driven emission, process-wide factory cache).
     4. Build the family override runtime (process-wide shape source +
        factory caches; per-spell bound-executor memo).
     5. Wrap both lanes in the shared route-keyed CreationContext doors.
-
-Coupling note:
-    Every remaining import from the generalized compilers flows through
-    `compilers/generalized_bridge.py` - one quarantined, documented seam.
 """
 
 import threading
@@ -30,25 +26,25 @@ from melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_asset
 from melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_override_targeting_analysis import (
     SpellOverrideTargetRef,
 )
-from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized_cache.compilers.generalized_bridge import (
+from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_runtime_library import (
     SpellOverrideTargetingCodegenCreation,
 )
-from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized_cache.compilers.generalized_cache_no_overrides_compiler import (
+from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_manifest_no_overrides_compiler import (
     hydrate_no_overrides_executor,
     resolve_root_instance_key_from_rows,
 )
-from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized_cache.compilers.generalized_cache_overrides_runtime import (
+from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_manifest_overrides_runtime import (
     build_overrides_execute_runtime,
 )
-from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized_cache.compilers.generalized_cache_runtime_rows import (
+from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_runtime_rows import (
     build_runtime_rows,
 )
-from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized_cache.hydration.generalized_cache_binding_resolver import (
+from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.hydration.generalized_binding_resolver import (
     SpellbookBindingResolver,
 )
-from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized_cache.manifest.generalized_cache_manifest import (
+from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.manifest.generalized_manifest import (
     coerce_manifest_sequences,
-    validate_generalized_cache_manifest,
+    validate_generalized_manifest,
 )
 from melder.utilities.custom_exceptions.meld_execution_error import (
     MeldExecutionError,
@@ -58,14 +54,13 @@ from melder.utilities.custom_exceptions.spell_space_scope_error import (
 )
 
 
-class GeneralizedCacheHydratedExecutors:
+class GeneralizedHydratedExecutors:
     """
     Hydration result container for one spell.
 
     Contract:
         - `no_overrides_executor` and `overrides_executor` are the final
-          route-keyed CreationContext doors, identical in shape to the
-          generalized family's published executors.
+          route-keyed CreationContext doors.
         - `inner_no_overrides_executor` is exposed for diagnostics only.
     """
 
@@ -130,22 +125,12 @@ def build_lazy_creation_executors(
         - If no context is published when hydration completes (publish=False
           loads), the cold doors keep delegating correctly; only the
           swap-to-hot optimization is skipped.
-
-    Args:
-        manifest:
-            Validated family manifest.
-        spell:
-            Root spell whose creation these doors serve.
-
-    Returns:
-        Tuple[Callable[..., Any], Callable[..., Any]]:
-            ``(cold_no_overrides_door, cold_overrides_door)``.
     """
-    validate_generalized_cache_manifest(manifest)
+    validate_generalized_manifest(manifest)
     hydration_lock = threading.Lock()
     hydrated_cell: list = [None]
 
-    def _hydrate_once() -> GeneralizedCacheHydratedExecutors:
+    def _hydrate_once() -> GeneralizedHydratedExecutors:
         hydrated = hydrated_cell[0]
         if hydrated is not None:
             return hydrated
@@ -185,21 +170,16 @@ def hydrate_creation_executors(
         *,
         manifest: Dict[str, Any],
         resolver: Any,
-) -> GeneralizedCacheHydratedExecutors:
+) -> GeneralizedHydratedExecutors:
     """
     Hydrate both final runtime doors from one manifest plus one resolver.
-
-    Purpose:
-        Provide the single assembly program for this family. Lazy doors built
-        by the live phase-11 step and by the cache codec both call exactly
-        this function at first meld.
 
     Raises:
         RuntimeError:
             When the manifest is invalid or required identity cannot be
             resolved.
     """
-    validate_generalized_cache_manifest(manifest)
+    validate_generalized_manifest(manifest)
     route_key = manifest["route_key"]
     root_spell = resolver.resolve_spell(manifest["root_spell_id"])
 
@@ -245,7 +225,7 @@ def hydrate_creation_executors(
         spell_space_scope_error_type=SpellSpaceScopeError,
     )
 
-    return GeneralizedCacheHydratedExecutors(
+    return GeneralizedHydratedExecutors(
         route_key=route_key,
         fast_transient_no_overrides=fast_transient_no_overrides,
         inner_no_overrides_executor=inner_no_overrides_executor,
@@ -264,10 +244,6 @@ def _hydrate_overrides_runtime(
 ) -> Callable[..., Any]:
     """
     Hydrate the family override runtime from manifest rows.
-
-    Contract:
-        - Per-shape override executors still compile lazily at meld time, but
-          emitted source and exec'd factories are shared process-wide.
     """
     plan_rows = list(overrides_payload["plan_rows"])
     spell_lookup = _resolve_spell_lookup(

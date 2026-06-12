@@ -1,5 +1,5 @@
 """
-Family-owned override runtime for generalized_cache, with process-wide
+Family-owned override runtime for generalized, with process-wide
 shape caches.
 
 Replaces the bridged `GeneralizedFinalizeCreationContextStep._build_overrides_runtime`
@@ -23,7 +23,7 @@ import threading
 from typing import Any, Callable, Dict, Optional, Sequence, Tuple
 
 from melder.aether.spellbook.existence.existence import Existence
-from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized_cache.compilers.generalized_bridge import (
+from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_runtime_library import (
     EMPTY_OVERRIDE_VALUES,
     MISSING,
     SpellGeneralizedCodegenPlanTargetKind,
@@ -38,7 +38,7 @@ from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.g
     raise_override_on_existing_instance,
     register_spell_instance_prebound,
 )
-from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized_cache.compilers.generalized_cache_runtime_rows import (
+from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_runtime_rows import (
     CodegenStepRuntimeRow,
 )
 from melder.aether.spellbook.spell_compiler.executor_factory_cache import (
@@ -52,7 +52,7 @@ from melder.utilities.custom_exceptions.meld_execution_error import (
 OVERRIDES_EXECUTOR_NAME = "_overrides_codegen_creation_executor"
 
 _OVERRIDES_FACTORY_SOURCE_NAME = (
-    "<melder_generalized_cache_overrides_shape_factory>"
+    "<melder_generalized_overrides_shape_factory>"
 )
 
 _OVERRIDES_STATIC_NAMESPACE = {

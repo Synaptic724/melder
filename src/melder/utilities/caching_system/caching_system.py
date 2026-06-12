@@ -50,7 +50,10 @@ class CachingSystem(Cleanable):
     """
 
     __melder_internal__: ClassVar[object] = _mrg.sentinel
-    CURRENT_VERSION: ClassVar[int] = 1
+    # Version 2: spell payloads are manifest-first family packages
+    # (generalized_codegen_creation). Version-1 bundles carried legacy
+    # executor payload shapes and are treated as cold cache and regenerated.
+    CURRENT_VERSION: ClassVar[int] = 2
     BUNDLE_SUFFIX: ClassVar[str] = ".melc"
 
     __slots__ = Cleanable.__slots__ + [

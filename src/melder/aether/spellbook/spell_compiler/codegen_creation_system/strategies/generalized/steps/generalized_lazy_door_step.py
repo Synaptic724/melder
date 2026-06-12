@@ -1,20 +1,20 @@
 from melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.codegen_creation_family_step import (
     CodegenCreationFamilyStep,
 )
-from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized_cache.generalized_cache_codegen_creation_state import (
-    GeneralizedCacheCodegenCreationState,
+from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.generalized_manifest_state import (
+    GeneralizedManifestState,
 )
-from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized_cache.hydration.generalized_cache_binding_resolver import (
+from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.hydration.generalized_binding_resolver import (
     PlanBindingResolver,
 )
-from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized_cache.hydration.generalized_cache_hydrator import (
+from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.hydration.generalized_hydrator import (
     build_lazy_creation_executors,
 )
 
 
-class GeneralizedCacheLazyDoorStep(CodegenCreationFamilyStep):
+class GeneralizedLazyDoorStep(CodegenCreationFamilyStep):
     """
-    Lazy-door publication step for the generalized_cache family.
+    Lazy-door publication step for the generalized family.
 
     Purpose:
         Publish both runtime doors WITHOUT hydrating anything at phase-11
@@ -42,11 +42,11 @@ class GeneralizedCacheLazyDoorStep(CodegenCreationFamilyStep):
         """
         Return the stable lazy-door step id.
         """
-        return "generalized_cache_lazy_doors"
+        return "generalized_lazy_doors"
 
     def apply(
             self,
-            state: GeneralizedCacheCodegenCreationState,
+            state: GeneralizedManifestState,
     ) -> None:
         """
         Publish cold doors and metadata parity keys from manifest truth.
@@ -54,7 +54,7 @@ class GeneralizedCacheLazyDoorStep(CodegenCreationFamilyStep):
         manifest = state.manifest
         if manifest is None:
             raise RuntimeError(
-                "generalized_cache lazy-door step requires a built manifest."
+                "generalized lazy-door step requires a built manifest."
             )
         resolver = PlanBindingResolver(
             spell_codegen_model=state.spell_codegen_model,
@@ -102,7 +102,3 @@ class GeneralizedCacheLazyDoorStep(CodegenCreationFamilyStep):
             overrides_payload["plan_signature"][2]
         )
         metadata["route_key"] = manifest["route_key"]
-
-
-# Backwards-compatible alias for the original step name.
-GeneralizedCacheHydrateStep = GeneralizedCacheLazyDoorStep

@@ -1,17 +1,18 @@
 """
-Experiment exercising the generalized_cache phase-11 family end to end.
+Experiment exercising the promoted manifest-first generalized family.
 
-Purpose:
-    Prove the manifest-first family on a live runtime. Generalized planner
-    output now routes to the generalized_cache family directly through
-    phase-11 discovery, so this experiment:
-    - conjures a dynamic conduit and binds a small dependency graph,
-    - melds through both lanes and asserts the new family produced the doors,
-    - exports the family cache package and round-trips it through marshal,
-    - clears the live CreationContext and reloads it through the family
-      codec (which hydrates through the same single hydrator the live path
-      used),
-    - melds again through both lanes and asserts behavior parity.
+Note: this file kept its historical name from the generalized_cache
+experiment; the family it covers is now `generalized_codegen_creation`.
+Safe to rename to `test_generalized_manifest_strategy_experiment.py`.
+
+Flow:
+    - conjure a dynamic conduit and bind a small dependency graph,
+    - meld through both lanes; the live build is manifest-first with lazy
+      doors hydrated at first meld,
+    - export the family cache package and round-trip it through marshal,
+    - clear the live CreationContext and reload it through the eager codec,
+    - meld again through both lanes and assert behavior parity,
+    - reload again through the lazy codec and assert the hot-door swap.
 
 This is an experimentation surface, not production runtime code.
 """
@@ -45,12 +46,12 @@ from melder.aether.spellbook.configuration.spellbook_configuration import (
 )
 from melder.aether.spellbook.existence.existence import Existence
 from melder.aether.spellbook.spellbook import Spellbook
-from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized_cache.generalized_cache_creation_cache import (
+from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.generalized_creation_cache import (
     build_package,
     load_creation_context,
     load_creation_context_lazy,
 )
-from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized_cache.manifest.generalized_cache_manifest import (
+from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.manifest.generalized_manifest import (
     MANIFEST_METADATA_KEY,
 )
 from melder.aether.spellbook.spell_compiler.executor_factory_cache import (
@@ -101,19 +102,18 @@ def _get_spell(spellbook: Spellbook, spell_id: str) -> Any:
     return spell
 
 
-def test_generalized_cache_strategy_experiment() -> None:
+def test_generalized_manifest_strategy_experiment() -> None:
     """
-    Run the generalized_cache family end to end against a live conduit.
+    Run the promoted manifest-first generalized family end to end.
 
     Contract:
         - Uses dynamic mode and post-conjure binding.
-        - Live melds must run through generalized_cache doors (the family now
-          claims generalized plans directly in phase-11 discovery).
+        - Live melds run through manifest-backed lazy doors.
         - The codec package must survive a real marshal round-trip.
         - Reloaded doors must reproduce live lane behavior for both the
           no-overrides and overrides lanes.
     """
-    frame_name = "generalized-cache-strategy-experiment"
+    frame_name = "generalized-manifest-strategy-experiment"
     Aether._reset_singleton_for_tests()
     aether = Aether()
     Spellbook._aether = aether
@@ -135,7 +135,7 @@ def test_generalized_cache_strategy_experiment() -> None:
         _ = leaf_spell_id
 
         # ------------------------------------------------------------------
-        # Live melds through the generalized_cache family.
+        # Live melds through the manifest-first generalized family.
         # ------------------------------------------------------------------
         live_plain = conduit.meld(spell=root_spell_id)
         assert isinstance(live_plain, _Root)
@@ -155,15 +155,14 @@ def test_generalized_cache_strategy_experiment() -> None:
         creation = artifact._spell_codegen_creation
         assert creation is not None
         assert creation.metadata.get("creation_context_strategy") == (
-            "generalized_cache_codegen_creation"
+            "generalized_codegen_creation"
         )
-        assert creation.selected_strategy_ids == (
-            "generalized_cache_codegen_creation",
-        )
+        assert creation.metadata.get("hydration") == "lazy_first_meld"
         manifest = creation.metadata.get(MANIFEST_METADATA_KEY)
         assert manifest is not None
+        assert manifest["family_id"] == "generalized_codegen_creation"
         assert manifest["route_key"] == "many"
-        print("GENERALIZED_CACHE_LIVE")
+        print("GENERALIZED_MANIFEST_LIVE")
         print(
             {
                 "discovery_reason": creation.discovery_reason,
@@ -178,7 +177,7 @@ def test_generalized_cache_strategy_experiment() -> None:
         )
 
         # ------------------------------------------------------------------
-        # Export, marshal round-trip, clear, reload through the codec.
+        # Export, marshal round-trip, clear, reload through the eager codec.
         # ------------------------------------------------------------------
         package = build_package(root_spell)
         decoded_package = marshal.loads(marshal.dumps(package))
@@ -196,7 +195,7 @@ def test_generalized_cache_strategy_experiment() -> None:
         )
         assert reloaded_context is root_spell._creation_context
         assert root_spell._creation_context_switch.state >= 2
-        print("GENERALIZED_CACHE_RELOAD")
+        print("GENERALIZED_MANIFEST_RELOAD")
         print(
             {
                 "factory_cache_before": factory_cache_size_before_load,
@@ -250,7 +249,7 @@ def test_generalized_cache_strategy_experiment() -> None:
         )
         assert isinstance(lazy_overridden, _Root)
         assert lazy_overridden.label == "lazy"
-        print("GENERALIZED_CACHE_LAZY")
+        print("GENERALIZED_MANIFEST_LAZY")
         print(
             {
                 "hot_swap_no_overrides": (

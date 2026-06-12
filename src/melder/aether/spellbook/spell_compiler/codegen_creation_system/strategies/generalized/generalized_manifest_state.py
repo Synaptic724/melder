@@ -12,9 +12,9 @@ if TYPE_CHECKING:
     )
 
 
-class GeneralizedCacheCodegenCreationState:
+class GeneralizedManifestState:
     """
-    Family-local mutable state for the generalized_cache creation strategy.
+    Family-local mutable state for the generalized creation strategy.
 
     Purpose:
         Carry the manifest and hydration result across ordered internal steps
@@ -44,7 +44,7 @@ class GeneralizedCacheCodegenCreationState:
             spell_codegen_creation: "SpellCodegenCreation",
     ) -> None:
         """
-        Build one generalized_cache family state object.
+        Build one generalized family state object.
 
         Args:
             spell_codegen_model:

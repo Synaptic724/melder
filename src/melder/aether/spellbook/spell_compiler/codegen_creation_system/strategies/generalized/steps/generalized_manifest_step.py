@@ -1,18 +1,18 @@
 from melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.codegen_creation_family_step import (
     CodegenCreationFamilyStep,
 )
-from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized_cache.generalized_cache_codegen_creation_state import (
-    GeneralizedCacheCodegenCreationState,
+from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.generalized_manifest_state import (
+    GeneralizedManifestState,
 )
-from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized_cache.manifest.generalized_cache_manifest import (
+from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.manifest.generalized_manifest import (
     MANIFEST_METADATA_KEY,
-    build_generalized_cache_manifest,
+    build_generalized_manifest,
 )
 
 
-class GeneralizedCacheManifestStep(CodegenCreationFamilyStep):
+class GeneralizedManifestStep(CodegenCreationFamilyStep):
     """
-    Manifest build step for the generalized_cache family.
+    Manifest build step for the generalized family.
 
     Purpose:
         Convert phase-9 model and phase-10 plan truth into the family's
@@ -33,16 +33,16 @@ class GeneralizedCacheManifestStep(CodegenCreationFamilyStep):
         """
         Return the stable manifest step id.
         """
-        return "generalized_cache_manifest"
+        return "generalized_manifest"
 
     def apply(
             self,
-            state: GeneralizedCacheCodegenCreationState,
+            state: GeneralizedManifestState,
     ) -> None:
         """
         Build and publish the family manifest.
         """
-        manifest = build_generalized_cache_manifest(
+        manifest = build_generalized_manifest(
             spell_codegen_model=state.spell_codegen_model,
             spell_codegen_plan=state.spell_codegen_plan,
         )
