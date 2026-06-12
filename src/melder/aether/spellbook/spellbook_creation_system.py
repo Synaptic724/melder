@@ -467,12 +467,12 @@ class SpellbookCreationSystem(Cleanable):
               delegates to the cache-load seam that rebuilds executors after
               phases 1-7.
         """
-        from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.generalized_creation_cache import (
-            is_generalized_manifest_package,
+        from melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.manifest_creation_cache import (
+            is_manifest_package,
             load_creation_context_lazy,
         )
 
-        if is_generalized_manifest_package(spell_payload):
+        if is_manifest_package(spell_payload):
             load_creation_context_lazy(
                 spell,
                 dict(spell_payload),

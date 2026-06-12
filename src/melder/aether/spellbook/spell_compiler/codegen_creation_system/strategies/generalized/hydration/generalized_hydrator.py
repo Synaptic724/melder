@@ -52,9 +52,10 @@ from melder.utilities.custom_exceptions.meld_execution_error import (
 from melder.utilities.custom_exceptions.spell_space_scope_error import (
     SpellSpaceScopeError,
 )
+from melder.utilities.general_base.cleanable import Cleanable
 
 
-class GeneralizedHydratedExecutors:
+class GeneralizedHydratedExecutors(Cleanable):
     """
     Hydration result container for one spell.
 
@@ -62,9 +63,16 @@ class GeneralizedHydratedExecutors:
         - `no_overrides_executor` and `overrides_executor` are the final
           route-keyed CreationContext doors.
         - `inner_no_overrides_executor` is exposed for diagnostics only.
+
+    Lifecycle / Cleanup:
+        - Owned by the lazy-door closure that hydrated it; lives for the
+          executor lifetime so cold doors can delegate before the hot swap.
+        - `cleanup()` is idempotent and deletes every field. Executors are
+          plain callables (no child cleanup); code objects are shared via the
+          process-wide caches and are referenced, never owned.
     """
 
-    __slots__ = (
+    __slots__ = Cleanable.__slots__ + [
         "route_key",
         "fast_transient_no_overrides",
         "inner_no_overrides_executor",
@@ -72,7 +80,7 @@ class GeneralizedHydratedExecutors:
         "overrides_executor",
         "no_overrides_code_object",
         "overrides_code_object",
-    )
+    ]
 
     def __init__(
             self,
@@ -88,6 +96,7 @@ class GeneralizedHydratedExecutors:
         """
         Build one hydration result container.
         """
+        super().__init__()
         self.route_key = route_key
         self.fast_transient_no_overrides = fast_transient_no_overrides
         self.inner_no_overrides_executor = inner_no_overrides_executor
@@ -95,6 +104,26 @@ class GeneralizedHydratedExecutors:
         self.overrides_executor = overrides_executor
         self.no_overrides_code_object = no_overrides_code_object
         self.overrides_code_object = overrides_code_object
+
+    def cleanup(self) -> None:
+        """
+        Deterministically release the hydration container surface.
+
+        Contract:
+            - Idempotent. Every field is deleted; no child cleanup runs
+              because executors and code objects are referenced callables and
+              cache-shared code, not owned resources.
+        """
+        if self._cleaned:
+            return
+        self._cleaned = True
+        del self.route_key
+        del self.fast_transient_no_overrides
+        del self.inner_no_overrides_executor
+        del self.no_overrides_executor
+        del self.overrides_executor
+        del self.no_overrides_code_object
+        del self.overrides_code_object
 
 
 def build_lazy_creation_executors(
@@ -143,6 +172,7 @@ def build_lazy_creation_executors(
                 manifest=manifest,
                 resolver=resolver,
             )
+            resolver.cleanup()
             hydrated_cell[0] = hydrated
             published_context = spell._creation_context
             if published_context is not None:
@@ -154,14 +184,32 @@ def build_lazy_creation_executors(
                 )
             return hydrated
 
+    def _swap_hot_doors(hydrated: GeneralizedHydratedExecutors) -> None:
+        published_context = spell._creation_context
+        if published_context is not None:
+            published_context._no_overrides_executor = (
+                hydrated.no_overrides_executor
+            )
+            published_context._overrides_executor = (
+                hydrated.overrides_executor
+            )
+
     def _cold_no_overrides_door(caller_creations: Any) -> Any:
-        return _hydrate_once().no_overrides_executor(caller_creations)
+        # Self-healing swap: every cold-path call re-targets the CURRENT
+        # published context. A rebuilt context starts with cold doors copied
+        # from the creation artifact; its first call lands here and gets the
+        # hot doors installed, so cold indirection never persists per meld.
+        hydrated = _hydrate_once()
+        _swap_hot_doors(hydrated)
+        return hydrated.no_overrides_executor(caller_creations)
 
     def _cold_overrides_door(
             caller_creations: Any,
             overrides: Optional[dict],
     ) -> Any:
-        return _hydrate_once().overrides_executor(caller_creations, overrides)
+        hydrated = _hydrate_once()
+        _swap_hot_doors(hydrated)
+        return hydrated.overrides_executor(caller_creations, overrides)
 
     return _cold_no_overrides_door, _cold_overrides_door
 

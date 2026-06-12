@@ -583,13 +583,14 @@ def row_inlinable_common_shape(
         - Row-driven port of the generalized inlinable-shape rule: callable,
           non-existing-creation spells with no contract payload, no positional
           override, and exactly one dependency per parameter.
-        - Requires the family-extra row flags `spell_is_callable` and
-          `spell_is_existing_creation`; absent flags mean not inlinable, which
-          degrades to the proven generic constructor path.
+        - Requires the family row flags `spell_is_callable` and
+          `spell_is_existing_creation`. Family manifest rows always carry
+          them (the manifest builder stamps both), so access is direct; a
+          missing flag is a row-contract violation and raises KeyError.
     """
-    if not row.get("spell_is_callable", False):
+    if not row["spell_is_callable"]:
         return None
-    if row.get("spell_is_existing_creation", True):
+    if row["spell_is_existing_creation"]:
         return None
     if row["has_contract_payload"]:
         return None

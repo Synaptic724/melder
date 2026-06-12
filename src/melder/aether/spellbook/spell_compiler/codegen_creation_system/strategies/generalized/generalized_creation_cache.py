@@ -169,6 +169,7 @@ def load_creation_context(
         manifest=manifest,
         resolver=resolver,
     )
+    resolver.cleanup()
 
     creation_context_factory = spell._creation_context_factory
     if creation_context_factory is None:

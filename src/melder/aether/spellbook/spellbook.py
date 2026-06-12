@@ -796,8 +796,9 @@ and logging.
                     or artifact._spell_codegen_creation is None
             ):
                 return False
-            from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.manifest.generalized_manifest import (
+            from melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.manifest_creation_cache import (
                 MANIFEST_METADATA_KEY,
+                build_package as build_manifest_package,
             )
             if (
                     artifact._spell_codegen_creation.metadata.get(
@@ -805,13 +806,10 @@ and logging.
                     )
                     is not None
             ):
-                # Manifest-first family output: the manifest already IS the
-                # cache payload, so export is a metadata read instead of a
-                # full both-lane recompile.
-                from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.generalized_creation_cache import (
-                    build_package as build_generalized_manifest_package,
-                )
-                spell_payload = build_generalized_manifest_package(spell)
+                # Manifest-first family output (generalized, solo, ...): the
+                # manifest already IS the cache payload, so export is a
+                # metadata read instead of a full both-lane recompile.
+                spell_payload = build_manifest_package(spell)
             else:
                 from melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation.spell_codegen_creation_cache import (
                     build_package,
@@ -850,6 +848,12 @@ and logging.
             bool:
                 True when a cache file emit occurred, otherwise False.
         """
+        # Lock-free fast path: this runs on every meld, and the flag is False
+        # for all but the one meld that follows fresh cache staging. A stale
+        # read here only delays the emit to the next meld boundary; the locked
+        # re-check below keeps the actual emit single-shot.
+        if not self._cache_emit_required:
+            return False
         with self._lock:
             if not self._cache_emit_required:
                 return False

@@ -163,6 +163,7 @@ def _build_runtime_melder() -> _support.RuntimeOps:
             request_create_ns = _support.time.perf_counter_ns() - request_create_t0
             try:
                 marker1 = space.meld(spell=spell_ids[request_marker_cls])
+
                 marker2 = space.meld(spell=spell_ids[request_marker_cls])
                 if not isinstance(marker1, request_marker_cls):
                     raise AssertionError(

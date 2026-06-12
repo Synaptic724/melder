@@ -1,19 +1,26 @@
 """
 Slotted runtime step rows for the generalized family.
 
-Replaces the generalized compilers' per-load `SimpleNamespace` step adapters
-with one family-owned `__slots__` class: faster attribute access on the hot
-construction path, cheaper hydration, and an explicit attribute contract
-instead of an ad-hoc namespace bag.
+Replaces the per-load `SimpleNamespace` step adapters with one family-owned
+`__slots__` class: faster attribute access on the hot construction path,
+cheaper hydration, and an explicit attribute contract instead of an ad-hoc
+namespace bag.
 
-The attribute surface mirrors exactly what the emitted source and the bridged
+The attribute surface mirrors exactly what the emitted source and the family
 runtime helpers (`construct_spell_instance`, `get_existing_creation`,
 registration) read off a plan step.
+
+Ownership:
+    Runtime rows REFERENCE the live spell; they never own it. Rows are owned
+    by the hydrated executor bindings that close over them and live for the
+    executor's lifetime. `cleanup()` drops the row's reference surface for
+    deterministic teardown by that owner.
 """
 
 from typing import Any, Dict, Optional, Sequence, Tuple
 
 from melder.aether.spellbook.existence.existence import Existence
+from melder.utilities.general_base.cleanable import Cleanable
 
 _REQUIRED_ROW_FIELDS = (
     "instance_key",
@@ -27,21 +34,30 @@ _REQUIRED_ROW_FIELDS = (
     "contract_payload_items",
     "use_spell_lock_hint",
     "must_register",
+    "shared_instance",
+    "override_match_prefix",
+    "override_match_prefix_len",
 )
 
 
-class CodegenStepRuntimeRow:
+class CodegenStepRuntimeRow(Cleanable):
     """
     One hydrated, slotted runtime step row.
 
     Contract:
-        - Carries exactly the attributes emitted source and bridged runtime
+        - Carries exactly the attributes emitted source and family runtime
           helpers consume from a plan step.
-        - `spell` is the only live-object field; everything else is manifest
-          row data.
+        - `spell` is a REFERENCE to the live spell, not an owned resource;
+          every other field is manifest row data.
+
+    Lifecycle / Cleanup:
+        - Owned by the executor bindings that close over the row tuple.
+        - `cleanup()` is idempotent and deletes every field so the row stops
+          exposing stale state after teardown. No child object owns cleanup
+          here because the spell is referenced, never owned.
     """
 
-    __slots__ = (
+    __slots__ = Cleanable.__slots__ + [
         "instance_key",
         "spell",
         "existence",
@@ -56,7 +72,7 @@ class CodegenStepRuntimeRow:
         "shared_instance",
         "override_match_prefix",
         "override_match_prefix_len",
-    )
+    ]
 
     def __init__(
             self,
@@ -79,6 +95,7 @@ class CodegenStepRuntimeRow:
         """
         Build one slotted runtime row.
         """
+        super().__init__()
         self.instance_key = instance_key
         self.spell = spell
         self.existence = existence
@@ -94,6 +111,33 @@ class CodegenStepRuntimeRow:
         self.override_match_prefix = override_match_prefix
         self.override_match_prefix_len = override_match_prefix_len
 
+    def cleanup(self) -> None:
+        """
+        Deterministically release this row's reference surface.
+
+        Contract:
+            - Idempotent.
+            - The spell is referenced, not owned, so no child cleanup runs;
+              every field is deleted so post-cleanup access raises.
+        """
+        if self._cleaned:
+            return
+        self._cleaned = True
+        del self.instance_key
+        del self.spell
+        del self.existence
+        del self.creations_target_kind
+        del self.dependency_resolution_order
+        del self.uses_positional_override
+        del self.contract_positional_override
+        del self.has_contract_payload
+        del self.contract_payload
+        del self.use_spell_lock_hint
+        del self.must_register
+        del self.shared_instance
+        del self.override_match_prefix
+        del self.override_match_prefix_len
+
 
 def build_runtime_rows(
         *,
@@ -105,7 +149,9 @@ def build_runtime_rows(
 
     Contract:
         - Validates required row fields and existence names with explicit
-          error messages.
+          error messages. Family manifest rows always carry the full field
+          set (both lane variants of `build_phase11_step_ir_row` emit every
+          field), so access below is direct, not defensive.
         - The only live resolution performed is the spell_id -> Spell mapping
           supplied by the caller; everything else is pure row data.
 
@@ -164,11 +210,9 @@ def build_runtime_rows(
                 contract_payload=contract_payload,
                 use_spell_lock_hint=bool(row["use_spell_lock_hint"]),
                 must_register=bool(row["must_register"]),
-                shared_instance=bool(row.get("shared_instance", False)),
-                override_match_prefix=row.get("override_match_prefix"),
-                override_match_prefix_len=int(
-                    row.get("override_match_prefix_len", 0) or 0
-                ),
+                shared_instance=bool(row["shared_instance"]),
+                override_match_prefix=row["override_match_prefix"],
+                override_match_prefix_len=int(row["override_match_prefix_len"]),
             )
         )
     return tuple(runtime_rows)

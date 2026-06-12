@@ -224,11 +224,12 @@ class AethericFrameConfiguration(Cleanable):
     @staticmethod
     def _build_default_system_cache_root_path() -> Path:
         """
-        Build the default package-relative cache root fragment.
+        Build the default cache root fragment.
 
         Returns:
             Path: Relative `__melder_cache__` fragment resolved later against
-            the installed `melder` package root.
+            the `melder` package root (site-packages when installed,
+            `src/melder` in a source checkout).
         """
         return Path("__melder_cache__")
 
@@ -594,7 +595,10 @@ class AethericFrameConfiguration(Cleanable):
             self._ai_native_enabled = False
             self._rift_enabled = False
             self._shared_framewide_spellbook_configuration = False
-            self._system_caching_enabled = False
+            # Caching is enabled by default everywhere: the constructor
+            # defaults to True and posture resets must not silently disable
+            # the system cache.
+            self._system_caching_enabled = True
             self._system_cache_root_path = (
                 self._build_default_system_cache_root_path()
             )
@@ -720,10 +724,17 @@ class AethericFrameConfiguration(Cleanable):
 
     def resolve_system_cache_root_path(self) -> Path:
         """
-        Resolve the cache-root fragment against the installed melder package root.
+        Resolve the cache-root fragment against the melder package root.
+
+        Contract:
+            - The cache always lives under the `melder` package root itself:
+              `<site-packages>/melder/<fragment>` for installed runs and
+              `src/melder/<fragment>` for source-checkout runs.
+            - Never resolves against the caller's working directory, so cache
+              placement is independent of where the process is launched from.
 
         Returns:
-            Path: Absolute cache root path under the installed `melder` package.
+            Path: Absolute cache root path under the `melder` package root.
         """
         self.check_cleaned()
         with self._lock:

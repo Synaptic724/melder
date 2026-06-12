@@ -15,17 +15,11 @@ from melder.aether.spellbook.spell_compiler.codegen_creation_system.spell_codege
 from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.solo.solo_codegen_creation_state import (
     SoloCodegenCreationState,
 )
-from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.solo.steps.solo_creation_context_setup_step import (
-    SoloCreationContextSetupStep,
+from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.solo.steps.solo_lazy_door_step import (
+    SoloLazyDoorStep,
 )
-from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.solo.steps.solo_finalize_creation_context_step import (
-    SoloFinalizeCreationContextStep,
-)
-from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.solo.steps.solo_no_overrides_codegen_creation_step import (
-    SoloNoOverridesCodegenCreationStep,
-)
-from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.solo.steps.solo_overrides_codegen_creation_step import (
-    SoloOverridesCodegenCreationStep,
+from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.solo.steps.solo_manifest_step import (
+    SoloManifestStep,
 )
 from melder.aether.spellbook.spell_compiler.codegen_planner.spell_codegen_plan import (
     SpellCodegenPlan,
@@ -34,12 +28,22 @@ from melder.aether.spellbook.spell_compiler.codegen_planner.spell_codegen_plan i
 
 class SoloCodegenCreationStrategy(SpellCodegenStrategy):
     """
-    Solo phase-11 family facade.
+    Manifest-first phase-11 family for solo planner output.
 
     Purpose:
-        Consume the dedicated phase-10 solo plan family through a real
-        solo-owned phase-11 path instead of routing solo plans through
-        generalized creation steps or generalized compiler helpers.
+        Modeled on the generalized family: a marshal-safe manifest is built
+        first, then both final runtime doors are published as lazy closures
+        that compile the root-only solo executors at first meld. Cache export
+        is "persist the manifest"; cache load is "hydrate the manifest" - the
+        same single assembly program the live path runs.
+
+    Contract:
+        - Phase-11 conjure cost for this family is manifest construction
+          only; executor compile and door work happens at first meld.
+        - Final runtime output remains exactly one `SpellCodegenCreation`
+          carrying the two route-keyed doors.
+        - Publishes the manifest into `SpellCodegenCreation.metadata` under
+          the shared manifest key for the cross-family cache envelope.
     """
 
     __slots__ = [
@@ -48,14 +52,12 @@ class SoloCodegenCreationStrategy(SpellCodegenStrategy):
 
     def __init__(self) -> None:
         """
-        Build the solo family facade and its ordered internal steps.
+        Build the solo family facade and its ordered steps.
         """
         super().__init__()
         self._steps: Tuple[CodegenCreationFamilyStep, ...] = (
-            SoloCreationContextSetupStep(),
-            SoloNoOverridesCodegenCreationStep(),
-            SoloOverridesCodegenCreationStep(),
-            SoloFinalizeCreationContextStep(),
+            SoloManifestStep(),
+            SoloLazyDoorStep(),
         )
 
     @property
@@ -81,3 +83,6 @@ class SoloCodegenCreationStrategy(SpellCodegenStrategy):
         )
         for step in self._steps:
             step.apply(state)
+        spell_codegen_creation.metadata["creation_context_strategy"] = (
+            self.strategy_id
+        )
