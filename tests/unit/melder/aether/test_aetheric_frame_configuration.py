@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import pytest
 
 from melder.aether.aether import Aether
@@ -198,6 +200,8 @@ def test_aetheric_frame_configuration_exposes_id_and_describe_posture() -> None:
         "ai_native_enabled": True,
         "rift_enabled": False,
         "shared_framewide_spellbook_configuration": False,
+        "system_caching_enabled": True,
+        "system_cache_root_path": Path("__melder_cache__"),
         "disable_all_transactions_after_conjure": False,
         "disable_mutations": True,
         "disable_linking": False,

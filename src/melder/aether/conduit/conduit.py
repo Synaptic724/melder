@@ -12,7 +12,6 @@ from typing import (
     Dict,
     Generator,
     ClassVar,
-    Type,
 )
 # Melder Imports
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
@@ -56,72 +55,12 @@ if TYPE_CHECKING:
     from melder.utilities.synchronization.creation_gate_controller import CreationGateController
 
 
-class _SpellSpaceContextManager:
-    """
-    Lightweight spellspace context manager for one conduit.
-
-    Purpose:
-        Preserve the public `with conduit.enter_spellspace()` API while
-        avoiding generator-based `@contextmanager` overhead on the hot path.
-
-    Contract:
-        - Acquires one spellspace on `__enter__`.
-        - Pushes that spellspace onto the conduit's current-thread stack.
-        - Enforces LIFO integrity on `__exit__`.
-        - Cleans the spellspace exactly once on exit.
-        - Releases held references after exit so this temporary wrapper does
-          not retain conduit or spellspace state longer than necessary.
-    """
-
-    __slots__ = ["_conduit", "_space"]
-
-    def __init__(self, conduit: "Conduit") -> None:
-        self._conduit = conduit
-        self._space: Optional[SpellSpace] = None
-
-    def __enter__(self) -> SpellSpace:
-        """
-        Acquire and activate one spellspace for this conduit.
-
-        Contract:
-            - Acquires one managed spellspace through the owning conduit pool.
-            - Pushes that spellspace onto the current-thread stack.
-        """
-        self._space = self._conduit._spellspace_pool.acquire_untracked()
-        self._conduit._spellspace_stack.push(self._space)
-        return self._space
-
-    def cleanup(self) -> None:
-        """
-        Release the wrapper-owned references.
-
-        Contract:
-            - Does not manage spellspace lifecycle.
-            - Releases only the wrapper's own held references.
-        """
-        del self._space
-        del self._conduit
-
-    def __exit__(
-            self,
-            exc_type: Optional[Type[BaseException]],
-            exc_value: Optional[BaseException],
-            traceback: Optional[TracebackType],
-    ) -> None:
-        """
-        Pop the active spellspace and clean it.
-
-        Contract:
-            - Validates that the current-thread active spellspace matches the
-              spellspace acquired by this wrapper.
-            - Pops exactly one spellspace from the current-thread stack.
-            - Recycles the owned spellspace through the managed pooled fast
-              path before releasing wrapper references.
-        """
-        self._conduit._spellspace_stack.pop_expected(self._space)
-        self._space.recycle_from_managed_context()
-        self.cleanup()
-        return None
+# NOTE: the former `_SpellSpaceContextManager` wrapper was removed:
+# `SpellSpace` is now its own context manager, so the managed
+# `with conduit.enter_spellspace() as space:` lane allocates zero per-cycle
+# wrapper objects. Activation (pool acquire + thread-stack push) happens in
+# `Conduit.enter_spellspace()`; LIFO-validated exit and pooled recycling live
+# on `SpellSpace.__exit__`.
 
 #region Conduit
 
@@ -355,6 +294,7 @@ class Conduit(Cleanable):
             conduit_meld=self._meld,
             owner_conduit_creations=self._creations,
             spellspace_registry=self._spellspace_registry,
+            spellspace_stack_state=self._spellspace_stack,
             baseline_idle=20,
             max_idle=20,
         )
@@ -910,30 +850,135 @@ class Conduit(Cleanable):
         """
         self._spellspace_registry.discard(space)
 
-    def enter_spellspace(self) -> _SpellSpaceContextManager:
+    def enter_spellspace(self) -> SpellSpace:
         """
-        Context-managed SpellSpace. Pushes one thread-local scope, yields it,
-        and cleans it on exit.
+        Acquire and activate one managed spellspace scope.
 
         Usage:
             with conduit.enter_spellspace() as space:
                 space.meld(...)
 
-        Ensures:
-            - SpellSpace is activated before use as the current top-of-stack.
-            - SpellSpace is cleaned on exit, even on exceptions.
-            - Nested spellspace activation on the same thread is supported by
-              push/pop stack semantics.
-            - Stack integrity is validated to detect misuse.
+        Contract:
+            - Acquires one pooled spellspace and pushes it onto the calling
+              thread's active-scope stack immediately (activation happens
+              here, not in `__enter__`), then returns the space itself, which
+              acts as its own context manager. No per-cycle wrapper object is
+              allocated.
+            - Nested activation is first-class: calling this inside an active
+              scope pushes a new independent scope (A -> B -> C -> D to any
+              depth); exits must unwind in LIFO order and are validated.
+            - The space is cleaned (recycled to the conduit-local pool) on
+              `with`-block exit, even on exceptions.
+            - Callers that do not use a `with` block own the exit: they must
+              call `space.__exit__(None, None, None)` (or unwind through
+              conduit cleanup, which drains abandoned scopes best-effort).
 
-        Yields:
-            SpellSpace: The newly created, active spellspace for the duration of the context.
+        Returns:
+            SpellSpace: The newly activated spellspace, already the current
+            top-of-stack scope for the calling thread.
 
         Raises:
             SpellSpaceScopeError:
-                If stack integrity is violated on exit.
+                On scope exit, if stack integrity is violated.
         """
-        return _SpellSpaceContextManager(self)
+        space = self._spellspace_pool.acquire_untracked()
+        self._spellspace_stack.push(space)
+        return space
+
+    def prewarm_spellspaces(self, count: int) -> int:
+        """
+        Public API
+
+        Ensure pooled spellspace shells exist before traffic arrives.
+
+        Purpose:
+            Move first-use spellspace construction cost (the shell, its
+            spellspace-local creations registry, and its meld front door) from
+            the first scope cycles to an explicit, owner-chosen moment.
+
+        Contract:
+            - Acquires and immediately releases pooled spellspaces so the
+              idle pool holds at least `min(count, pool.max_idle)` shells.
+            - Clamped to pool capacity: never builds shells the pool would
+              immediately evict and destroy.
+            - Prewarmed shells carry no scope contents and are not pushed on
+              any thread's active-scope stack.
+            - Idempotent in effect: already-idle shells count toward the
+              target and are reused, not rebuilt.
+
+        Args:
+            count:
+                Requested number of idle pooled spellspace shells. Must be
+                positive.
+
+        Returns:
+            int: Number of idle shells ensured (the capacity-clamped target).
+
+        Raises:
+            ValueError: If `count` is not positive.
+            RuntimeError: If the conduit has been cleaned.
+        """
+        self.check_cleaned()
+        if count <= 0:
+            raise ValueError(
+                "prewarm_spellspaces requires a positive count; got "
+                f"{count}. Provide how many idle shells should exist."
+            )
+        pool = self._spellspace_pool
+        target = min(count, pool.max_idle)
+        held = [pool.acquire_untracked() for _ in range(target)]
+        for space in held:
+            pool.release(space)
+        return target
+
+    def prewarm_lesser_conduits(self, count: int) -> int:
+        """
+        Public API
+
+        Ensure pooled lesser-conduit shells exist before traffic arrives.
+
+        Purpose:
+            Move first-use lesser construction cost (conduit shell, ward,
+            creations registry, meld door, spellspace pool) from the first
+            scope cycles to an explicit, owner-chosen moment. Useful for
+            burst-concurrency starts; irrelevant for steady single-threaded
+            reuse where one shell cycles forever.
+
+        Contract:
+            - Creates and immediately soft-cleans lesser conduits through the
+              normal `create_lesser_conduit()` / `cleanup()` lanes, so all
+              lifecycle hooks configured for lesser creation fire per shell
+              exactly as they would for real traffic.
+            - Clamped to pool capacity: ensures at most
+              `min(count, pool.max_idle)` idle shells.
+            - Idempotent in effect: already-idle shells are drained and
+              returned, not duplicated.
+
+        Args:
+            count:
+                Requested number of idle pooled lesser shells. Must be
+                positive.
+
+        Returns:
+            int: Number of idle shells ensured (the capacity-clamped target).
+
+        Raises:
+            ValueError: If `count` is not positive.
+            RuntimeError: If the conduit has been cleaned or lesser creation
+                is invalid for this conduit's lineage.
+        """
+        self.check_cleaned()
+        if count <= 0:
+            raise ValueError(
+                "prewarm_lesser_conduits requires a positive count; got "
+                f"{count}. Provide how many idle shells should exist."
+            )
+        pool = self._conduit_pool
+        target = min(count, pool.max_idle)
+        held = [self.create_lesser_conduit() for _ in range(target)]
+        for lesser in held:
+            lesser.cleanup()
+        return target
 
 
 
@@ -1792,8 +1837,12 @@ class Conduit(Cleanable):
                         conduit_hooks=root_conduit._conduit_hooks,
                         meld_hooks=root_conduit._meld_hooks,
                     )
-                new_conduit._conduit_state = ConduitState.lesser
-                new_conduit._conduit_ward._conduit_type = ConduitState.lesser
+                if reused_from_pool:
+                    # Only pooled shells need the pooled_lesser -> lesser
+                    # transition; freshly constructed conduits already
+                    # initialized both state fields as lesser.
+                    new_conduit._conduit_state = ConduitState.lesser
+                    new_conduit._conduit_ward._conduit_type = ConduitState.lesser
                 new_conduit._nexus_publish_enabled = self._nexus_publish_enabled
 
                 # Fire activation hook with the new conduit instance.
@@ -1831,8 +1880,12 @@ class Conduit(Cleanable):
                         conduit_hooks=root_conduit._conduit_hooks,
                         meld_hooks=root_conduit._meld_hooks,
                     )
-                new_conduit._conduit_state = ConduitState.lesser
-                new_conduit._conduit_ward._conduit_type = ConduitState.lesser
+                if reused_from_pool:
+                    # Only pooled shells need the pooled_lesser -> lesser
+                    # transition; freshly constructed conduits already
+                    # initialized both state fields as lesser.
+                    new_conduit._conduit_state = ConduitState.lesser
+                    new_conduit._conduit_ward._conduit_type = ConduitState.lesser
                 new_conduit._nexus_publish_enabled = self._nexus_publish_enabled
                 self._conduit_ward._link_lesser_conduit(new_conduit)
                 if not reused_from_pool:
@@ -2937,6 +2990,48 @@ class Conduit(Cleanable):
             binding_name=binding_name,
             spell_override=spell_override,
         )
+
+    def meld_id(self, spell_id: str, /) -> Optional[Any]:
+        """
+        Public API
+
+        Minimal-arity fast meld entry for current spell-id strings.
+
+        Purpose:
+            Provide the cheapest public call shape for the dominant warm
+            pattern (meld by known spell-id, no overrides): one positional
+            argument, no keyword marshaling, straight to the conduit door's
+            fast meld lane.
+
+        Contract:
+            - Behaviorally identical to `meld(spell=spell_id)`: a fast-door
+              miss or any non-fast posture falls back to the full lane, so
+              results never differ.
+            - Dynamic-mode conduits delegate to `meld(...)` so CreationGate
+              admission and ticketing semantics are fully preserved; the
+              minimal lane exists only for the non-dynamic posture where the
+              fast door can serve.
+            - `spell_id` is positional-only; non-id hashable inputs fall
+              through to the full lane's normalization.
+
+        Args:
+            spell_id:
+                Current spell-id string (positional-only).
+
+        Returns:
+            Optional[Any]: The resolved instance, exactly as `meld(...)`
+            would return it.
+
+        Raises:
+            RuntimeError: If the conduit has been cleaned, plus whatever the
+                full `meld(...)` lane raises on fallback.
+        """
+        # Zero-cost guard on the live path; canonical error on the dead one.
+        if self._cleaned:
+            self.check_cleaned()
+        if self.__dynamic_environment__:
+            return self.meld(spell=spell_id)
+        return self._meld.meld_id(spell_id)
 
     def meld_existing_spell(
             self,

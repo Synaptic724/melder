@@ -475,6 +475,7 @@ class _SpellValidationSystemStub:
         symbolic_graph: object,
         resolution_frame: object,
         cancel_event: object = None,
+        validation_pass_cache: object = None,
     ) -> _ValidationResultStub:
         """
         Purpose:
@@ -487,6 +488,8 @@ class _SpellValidationSystemStub:
             symbolic_graph: Phase 2 symbolic graph.
             resolution_frame: Phase 3 resolution frame.
             cancel_event: Optional cancellation event.
+            validation_pass_cache: Optional pass-scoped memo dict mirrored
+                from the live validator contract.
         Returns:
             _ValidationResultStub: The configured validation result.
         """

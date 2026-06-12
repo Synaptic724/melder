@@ -41,13 +41,20 @@ def _package_root() -> Path:
     """
     Return the installed melder package root used by AethericFrameConfiguration.
 
+    Contract:
+        Must resolve to the SAME root the runtime anchors relative cache
+        fragments against (`src/melder`); `AethericFrameConfiguration` lives
+        three parents below it. The old two-parent version resolved to
+        `src/melder/aether`, so prepared cache roots and expected bundle paths
+        pointed at decoy directories the runtime never used.
+
     Returns:
         Path:
             Absolute melder package root.
     """
     return Path(
         inspect.getfile(AethericFrameConfiguration)
-    ).resolve().parent.parent
+    ).resolve().parents[2]
 
 
 def _prepare_cache_root(path: Path) -> Path:
@@ -102,7 +109,10 @@ def _activate_aether_cache_configuration(
         AethericFrameConfiguration:
             Active frame configuration updated for the target frame.
     """
-    frame = Aether()._get_existing_frame(frame_name)
+    # Ensure-the-frame semantics: custom frames (e.g. "ops") may not exist yet
+    # when activation runs before any Spellbook touches them, and frame
+    # creation eagerly attaches a default AethericFrameConfiguration.
+    frame = Aether()._ensure_frame(frame_name)
     configuration = frame.frame_configuration
     assert configuration is not None
     configuration.with_system_caching_enabled(enabled)
@@ -284,7 +294,13 @@ def test_component_spell_stamps_caching_disabled_from_root_posture() -> None:
 
 def test_component_spellbook_does_not_build_caching_system_until_first_request() -> None:
     """
-    Verify the utility remains lazy even after conjure.
+    Verify the utility stays unbuilt until the first cache request.
+
+    Contract:
+        Conjure is now the first cache request: conjure cache orchestration
+        classifies the live spell set against the conduit cache, which builds
+        the Spellbook-owned utility. Laziness therefore holds up to conjure,
+        not past it.
 
     Returns:
         None.
@@ -298,9 +314,12 @@ def test_component_spellbook_does_not_build_caching_system_until_first_request()
         enabled=True,
     )
     spellbook = _make_spellbook()
-    _conjure_root(spellbook, name="root")
 
     assert spellbook._caching_system is None
+
+    _conjure_root(spellbook, name="root")
+
+    assert isinstance(spellbook._caching_system, CachingSystem)
 
 
 def test_component_spellbook_lazily_builds_caching_system_when_enabled() -> None:
@@ -325,7 +344,7 @@ def test_component_spellbook_lazily_builds_caching_system_when_enabled() -> None
 
     assert isinstance(caching_system, CachingSystem)
     assert caching_system.bundle_path == (
-        cache_root_path / "default" / "root" / "bundle.json"
+        cache_root_path / "default" / "root.melc"
     )
 
 
@@ -350,7 +369,7 @@ def test_component_spellbook_uses_custom_conduit_name_in_cache_path() -> None:
     caching_system = spellbook._get_or_create_caching_system()
 
     assert caching_system.bundle_path == (
-        cache_root_path / "default" / "alpha" / "bundle.json"
+        cache_root_path / "default" / "alpha.melc"
     )
 
 
@@ -365,9 +384,13 @@ def test_component_spellbook_uses_frame_name_in_cache_path() -> None:
         _package_root() / "tests/component/melder/spellbook/_cache_frame_name"
     )
     cache_root_fragment = _build_cache_root_fragment(cache_root_path)
+    # Activation must target the SAME frame the Spellbook conjures on; the
+    # cache root is frame-configuration-owned, so activating the default
+    # frame here would leave the "ops" frame on the package-root default.
     _activate_aether_cache_configuration(
         cache_root_fragment=cache_root_fragment,
         enabled=True,
+        frame_name="ops",
     )
     spellbook = _make_spellbook(frame_name="ops")
     _conjure_root(spellbook, name="root")
@@ -375,7 +398,7 @@ def test_component_spellbook_uses_frame_name_in_cache_path() -> None:
     caching_system = spellbook._get_or_create_caching_system()
 
     assert caching_system.bundle_path == (
-        cache_root_path / "ops" / "root" / "bundle.json"
+        cache_root_path / "ops" / "root.melc"
     )
 
 
@@ -470,7 +493,9 @@ def test_component_spellbook_bundle_path_uses_relative_config_fragment() -> None
     caching_system = spellbook._get_or_create_caching_system()
 
     assert configuration.system_cache_root_path == cache_root_fragment
-    assert caching_system.bundle_path.parent.parent == cache_root_path / "default"
+    # Bundle layout is <cache_root>/<frame>/<conduit>.melc, so the bundle's
+    # parent directory is the frame directory under the configured root.
+    assert caching_system.bundle_path.parent == cache_root_path / "default"
 
 
 def test_component_spell_emit_cache_writes_payload_into_spellbook_cache() -> None:
@@ -494,21 +519,34 @@ def test_component_spell_emit_cache_writes_payload_into_spellbook_cache() -> Non
     assert spell is not None
     spell._get_or_build_creation_context()
 
+    # Conjure is the staging boundary: every constructed spell's payload is
+    # staged at conjure end and the bundle is written once there, so the file
+    # already exists before any context build or meld.
     caching_system = spellbook._get_or_create_caching_system()
     assert caching_system.has_spell_payload(spell_id) is True
-    assert caching_system.bundle_path.exists() is False
+    assert caching_system.bundle_path.exists() is True
     spell_payload = caching_system.get_spell_payload(spell_id)
     assert spell_payload is not None
+    # Manifest-first envelope shape: the manifest is the cache currency and
+    # no compiled code objects are persisted.
     assert "resolve_route_key" not in spell_payload
-    assert "no_overrides" in spell_payload
-    assert "overrides" in spell_payload
-    assert isinstance(spell_payload["no_overrides"]["code_object"], CodeType)
+    assert isinstance(spell_payload["family_id"], str)
+    assert spell_payload["spell_id"] == spell_id
+    assert isinstance(spell_payload["manifest"], dict)
+    assert spell_payload["manifest"]["family_id"] == spell_payload["family_id"]
     assert spell.emit_cache() is False
 
 
-def test_component_conduit_meld_emits_cache_file_after_new_context_publish() -> None:
+def test_component_conduit_meld_does_not_reemit_after_conjure_staged_cache() -> None:
     """
-    Verify a top-level meld emits the cache file once after staging new cache.
+    Verify the conjure-end emit is single-shot: a later meld that stages
+    nothing new must not rewrite the bundle.
+
+    Contract:
+        Conjure stages every constructed spell and writes the bundle once.
+        The meld-boundary emit seam still exists for JIT-staged work, but a
+        meld whose payloads are already staged leaves the emit-required flag
+        untouched, so the bundle file is not rewritten.
 
     Returns:
         None.
@@ -522,7 +560,7 @@ def test_component_conduit_meld_emits_cache_file_after_new_context_publish() -> 
         enabled=True,
         frame_name="ops",
     )
-    spellbook = _make_spellbook()
+    spellbook = _make_spellbook(frame_name="ops")
     spell_id = spellbook.bind(
         spell=BasicService,
         existence="unique",
@@ -531,12 +569,14 @@ def test_component_conduit_meld_emits_cache_file_after_new_context_publish() -> 
     _conjure_root(spellbook, name="root")
 
     caching_system = spellbook._get_or_create_caching_system()
-    assert caching_system.bundle_path.exists() is False
+    assert caching_system.bundle_path.exists() is True
+    bundle_mtime_ns = caching_system.bundle_path.stat().st_mtime_ns
 
     instance = spellbook._conduit.meld(spell=spell_id)
 
     assert isinstance(instance, BasicService)
     assert caching_system.bundle_path.exists() is True
+    assert caching_system.bundle_path.stat().st_mtime_ns == bundle_mtime_ns
 
 
 def test_component_spell_emit_cache_skips_existing_spell_id_payload() -> None:

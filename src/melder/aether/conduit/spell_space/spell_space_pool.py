@@ -11,6 +11,9 @@ if TYPE_CHECKING:
         ConduitCreations,
     )
     from melder.aether.conduit.meld.conduit_meld import ConduitMeld
+    from melder.aether.conduit.spell_space.spell_space_thread_state import (
+        SpellSpaceThreadState,
+    )
 
 
 class SpellSpacePool(AbstractElasticPool[SpellSpace]):
@@ -33,6 +36,7 @@ class SpellSpacePool(AbstractElasticPool[SpellSpace]):
         "_conduit_meld",
         "_owner_conduit_id",
         "_spellspace_registry",
+        "_spellspace_stack_state",
     ]
 
     def __init__(
@@ -42,6 +46,7 @@ class SpellSpacePool(AbstractElasticPool[SpellSpace]):
             conduit_meld: ConduitMeld,
             owner_conduit_creations: ConduitCreations,
             spellspace_registry: set[SpellSpace],
+            spellspace_stack_state: SpellSpaceThreadState,
             **kwargs: Any,
     ) -> None:
         """
@@ -58,6 +63,11 @@ class SpellSpacePool(AbstractElasticPool[SpellSpace]):
                 when they need conduit-scoped routing.
             spellspace_registry:
                 Conduit-owned registry used for spellspace bookkeeping.
+            spellspace_stack_state:
+                Conduit-owned per-thread active-scope stack holder injected
+                into pooled spellspaces so each space can perform its own
+                managed context-manager exit. Referenced, never owned, by the
+                pool and its spellspaces.
             **kwargs:
                 Elastic pool policy arguments forwarded to the base pool.
         """
@@ -66,6 +76,9 @@ class SpellSpacePool(AbstractElasticPool[SpellSpace]):
         self._conduit_meld: ConduitMeld = conduit_meld
         self._owner_conduit_creations: ConduitCreations = owner_conduit_creations
         self._spellspace_registry: set[SpellSpace] = spellspace_registry
+        self._spellspace_stack_state: SpellSpaceThreadState = (
+            spellspace_stack_state
+        )
 
     def create_object(self, *args: Any, **kwargs: Any) -> SpellSpace:
         """
@@ -77,6 +90,7 @@ class SpellSpacePool(AbstractElasticPool[SpellSpace]):
             owner_conduit_creations=self._owner_conduit_creations,
             spellspace_registry=self._spellspace_registry,
             spellspace_pool=self,
+            spellspace_stack_state=self._spellspace_stack_state,
         )
 
     def prepare_object(

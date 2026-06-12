@@ -335,6 +335,45 @@ class Meld(Cleanable, ABC):
         raise NotImplementedError("Concrete Meld subclasses must implement meld().")
 
     @abstractmethod
+    def meld_id(self, spell_id: str, /) -> Optional[Any]:
+        """
+        Minimal-arity fast meld entry for current spell-id strings.
+
+        Purpose:
+            Provide the cheapest possible public call shape for the dominant
+            warm pattern (meld by known spell-id with no overrides): one
+            positional argument, no keyword marshaling, straight to the fast
+            meld door, falling back to the full `meld(...)` lane on any miss.
+
+        Contract:
+            - `spell_id` is positional-only and should be the current
+              spell-id string; other hashable inputs are tolerated and simply
+              fall through to the full lane's normalization.
+            - A fast-door hit behaves exactly like
+              `meld(spell=spell_id)` in no-hooks, no-override, non-dynamic
+              posture: same guards, same executor dispatch, same staged-cache
+              emit check.
+            - Any guard miss, cold spell, or non-fast posture falls back to
+              `self.meld(spell=spell_id)` unchanged, so results are always
+              identical to the full lane.
+
+        Args:
+            spell_id:
+                Current spell-id string (positional-only).
+
+        Returns:
+            Optional[Any]: The resolved instance, exactly as `meld(...)`
+            would return it.
+
+        Raises:
+            Whatever the full `meld(...)` lane raises on fallback (KeyError
+            for unknown ids, validation errors, and so on).
+        """
+        raise NotImplementedError(
+            "Concrete Meld subclasses must implement meld_id()."
+        )
+
+    @abstractmethod
     def meld_existing_spell(
             self,
             spell_name: str | None = None,

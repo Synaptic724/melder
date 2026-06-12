@@ -1,5 +1,6 @@
 import threading
-from typing import TYPE_CHECKING, Optional, Union, ClassVar
+from types import TracebackType
+from typing import TYPE_CHECKING, Optional, Type, Union, ClassVar
 
 from melder.__melder_registration_guard__ import (
     __melder_registration_guard__ as _mrg,
@@ -14,6 +15,9 @@ if TYPE_CHECKING:
     from melder.aether.conduit.meld.conduit_meld import ConduitMeld
     from melder.aether.conduit.meld.spellspace_meld import SpellSpaceMeld
     from melder.aether.conduit.spell_space.spell_space_pool import SpellSpacePool
+    from melder.aether.conduit.spell_space.spell_space_thread_state import (
+        SpellSpaceThreadState,
+    )
 
 
 
@@ -33,9 +37,27 @@ class SpellSpace(Cleanable):
         - Clears spellspace-scoped instances through the injected `Creations`.
         - Unregisters itself from the injected spellspace registry on cleanup.
         - Does not own conduit-wide resolution caches or control-plane state.
+        - Acts as its own context manager for the managed
+          `with conduit.enter_spellspace() as space:` lane:
+          `enter_spellspace()` acquires and activates the space (pool acquire
+          plus thread-stack push) before the `with` statement runs, so
+          `__enter__` is a trivial self-return and `__exit__` performs the
+          LIFO pop-validated recycle. No per-cycle wrapper object exists.
+        - Nested managed scopes are first-class: each `enter_spellspace()`
+          call pushes one new independent scope onto the per-thread stack
+          (A -> B -> C -> D to any depth), each scope owns its own
+          spellspace-local storage, and exits must unwind in LIFO order.
+        - One managed activation per acquisition: after `__exit__` recycles
+          the space back to the pool, re-entering the same object is a caller
+          contract violation (the trusted-private-caller posture documented
+          on `SpellSpacePool.release`); LIFO validation in `pop_expected`
+          fails fast on the common misuse shapes.
 
     Threading:
         - Uses an internal `RLock` for cleanup/reset idempotence.
+        - The managed enter/exit lane itself is thread-confined by
+          construction (pool deque hand-off plus per-thread stack), matching
+          the `recycle_from_managed_context` confinement contract.
 
     Lifecycle:
         - Created by `Conduit.create_spellspace(...)` or `Conduit.enter_spellspace(...)`.
@@ -54,6 +76,7 @@ class SpellSpace(Cleanable):
         "_registry_tracked",
         "_spellspace_registry",
         "_spellspace_pool",
+        "_spellspace_stack_state",
         "_permanent_cleanup_requested",
     ]
 
@@ -65,6 +88,7 @@ class SpellSpace(Cleanable):
             owner_conduit_creations: ConduitCreations,
             spellspace_registry: set["SpellSpace"],
             spellspace_pool: SpellSpacePool,
+            spellspace_stack_state: SpellSpaceThreadState,
     ) -> None:
         """
         Create one explicit spellspace scope.
@@ -85,6 +109,11 @@ class SpellSpace(Cleanable):
             spellspace_pool:
                 Conduit-local pool that should receive this spellspace on
                 normal cleanup.
+            spellspace_stack_state:
+                Conduit-owned per-thread active-scope stack holder. Injected
+                (not owned) so `__exit__` can perform the LIFO pop-validated
+                managed exit without a per-cycle wrapper object. The conduit
+                owns its lifecycle; this spellspace only references it.
 
         """
         super().__init__()
@@ -110,7 +139,63 @@ class SpellSpace(Cleanable):
         self._registry_tracked: bool = False
         self._spellspace_registry: set[SpellSpace] = spellspace_registry
         self._spellspace_pool: SpellSpacePool = spellspace_pool
+        self._spellspace_stack_state: SpellSpaceThreadState = (
+            spellspace_stack_state
+        )
         self._permanent_cleanup_requested: bool = False
+
+    def __enter__(self) -> "SpellSpace":
+        """
+        Return this already-activated managed spellspace.
+
+        Contract:
+            - `Conduit.enter_spellspace()` performs the real activation work
+              (pool acquisition plus per-thread stack push) before the `with`
+              statement begins, so this method is a trivial self-return on
+              the hot path.
+            - Valid only for spaces handed out by `enter_spellspace()`; using
+              a manually created (`create_spellspace()`) space as a context
+              manager raises `SpellSpaceScopeError` on exit because it was
+              never pushed onto the per-thread stack.
+
+        Returns:
+            SpellSpace: This spellspace, active as the current top-of-stack
+            scope for the calling thread.
+        """
+        return self
+
+    def __exit__(
+            self,
+            exc_type: Optional[Type[BaseException]],
+            exc_value: Optional[BaseException],
+            traceback: Optional[TracebackType],
+    ) -> None:
+        """
+        Pop this scope off the per-thread stack and recycle it.
+
+        Contract:
+            - Validates LIFO integrity: this space must be the current
+              top-of-stack scope for the calling thread (nested scopes must
+              unwind innermost-first).
+            - Recycles through the managed pooled fast lane, which clears
+              spellspace-local creations before pool return so scope teardown
+              stays deterministic and owner-driven.
+            - Runs on exceptions too, exactly like the former wrapper.
+            - After exit this object belongs to the pool again; re-entering
+              it without a fresh `enter_spellspace()` acquisition is a caller
+              contract violation.
+
+        Raises:
+            SpellSpaceScopeError:
+                If this space is not the calling thread's active top-of-stack
+                scope.
+
+        Returns:
+            None.
+        """
+        self._spellspace_stack_state.pop_expected(self)
+        self.recycle_from_managed_context()
+        return None
 
     def cleanup(self) -> None:
         """
@@ -172,9 +257,13 @@ class SpellSpace(Cleanable):
               `pop_expected(...)` validates LIFO ownership before this method
               runs. The pool's deque append on release is the hand-off point
               to the next acquiring thread.
-            - `Creations.reset_for_pool()` keeps its own internal lock; the
-              spellspace-local clear remains explicit and immediate, not
-              deferred.
+            - The spellspace-local clear uses
+              `Creations.reset_for_pool_unlocked()`: the same thread
+              confinement that justifies skipping the spellspace lock also
+              covers the store's internal lock on this lane. The clear remains
+              explicit and immediate, not deferred; disposal-bearing stores
+              still fall back to the fully locked teardown flow inside that
+              method.
             - Concurrent external `cleanup()` / `permanent_cleanup()` against
               an in-flight managed spellspace is a caller contract violation
               (the object is not idle in the pool and not registry-tracked),
@@ -186,10 +275,12 @@ class SpellSpace(Cleanable):
         if self._permanent_cleanup_requested or self._registry_tracked:
             self.cleanup()
             return
-        # Hot path: lock-free by the thread-confinement contract above. The
-        # explicit spellspace-local clear still happens before pool return so
-        # scope teardown stays deterministic and owner-driven.
-        self._creations.reset_for_pool()
+        # Hot path: fully lock-free by the thread-confinement contract above.
+        # The unlocked variant is valid here precisely because this lane is
+        # the confinement-guaranteed managed exit; the explicit
+        # spellspace-local clear still happens before pool return so scope
+        # teardown stays deterministic and owner-driven.
+        self._creations.reset_for_pool_unlocked()
         self._spellspace_pool.release(self)
         
     def _cleanup_for_pool_reuse(self) -> None:
@@ -232,6 +323,7 @@ class SpellSpace(Cleanable):
         del self._creations
         del self._owner_conduit_creations
         del self._spellspace_pool
+        del self._spellspace_stack_state
         del self._permanent_cleanup_requested
 
     @property
@@ -281,3 +373,30 @@ class SpellSpace(Cleanable):
             binding_name=binding_name,
             spell_override=spell_override,
         )
+
+    def meld_id(self, spell_id: str, /) -> object:
+        """
+        Minimal-arity fast meld entry for current spell-id strings.
+
+        Purpose:
+            Provide the cheapest public call shape for the dominant warm
+            pattern (meld by known spell-id, no overrides) on this scope:
+            one positional argument, no keyword marshaling, straight to the
+            spellspace door's fast meld lane.
+
+        Contract:
+            - Behaviorally identical to `meld(spell=spell_id)`: a fast-door
+              miss or any non-fast posture falls back to the full lane inside
+              the door, so results never differ.
+            - `spell_id` is positional-only; non-id hashable inputs fall
+              through to the full lane's normalization.
+
+        Args:
+            spell_id:
+                Current spell-id string (positional-only).
+
+        Returns:
+            object: The resolved runtime object, exactly as `meld(...)`
+            would return it.
+        """
+        return self._meld.meld_id(spell_id)

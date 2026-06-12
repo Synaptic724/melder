@@ -174,7 +174,7 @@ class StaticRiftJsonBench:
         self._bind_spells()
         self.root_conduit = self.spellbook.conjure(
             name="root",
-            automatic=not self.dynamic_frame,
+            dynamic=self.dynamic_frame,
         )
         self.lesser_conduit = self.root_conduit.create_lesser_conduit()
         self._live_objects_by_case_name: Dict[str, object] = {}

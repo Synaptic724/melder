@@ -34,10 +34,22 @@ def reset_runtime_for_cache_integration() -> None:
 
 
 def _package_root() -> Path:
-    """Return the installed melder package root for relative cache fragments."""
+    """
+    Return the installed melder package root for relative cache fragments.
+
+    Contract:
+        Must resolve to the SAME root the runtime anchors relative cache
+        fragments against (`src/melder`). `AethericFrameConfiguration` lives at
+        `src/melder/aether/aetheric_frame/aetheric_frame_configuration.py`, so
+        the package root is three parents up. The old two-parent version
+        resolved to `src/melder/aether`, which made `_prepare_case_cache_root`
+        clean empty decoy directories while the runtime's real cache
+        directories accumulated stale bundles across pytest sessions and
+        poisoned every namespace-sensitive cache assertion in this module.
+    """
     return Path(
         inspect.getfile(AethericFrameConfiguration)
-    ).resolve().parent.parent
+    ).resolve().parents[2]
 
 
 def _prepare_case_cache_root(label: str) -> Path:
@@ -122,8 +134,20 @@ def _cache_bundle_path(spellbook: Spellbook, *, conduit_name: str) -> Path:
 
 
 @pytest.mark.parametrize("dynamic", [False, True])
-def test_cache_integration_conjure_does_not_emit_before_runtime_publish(dynamic: bool) -> None:
-    """Verify bare conjure does not create a cache file before any context publish."""
+def test_cache_integration_bare_conjure_stages_and_emits_all_spells(dynamic: bool) -> None:
+    """
+    Verify a bare non-full-hit conjure stages every constructed spell and
+    emits the bundle at conjure end.
+
+    Contract:
+        Conjure is the staging boundary: dependency-only spells never receive
+        their own runtime publish, so meld-time staging alone can never
+        complete the bundle and the conduit cache would stay permanently
+        mixed. After phases 8-11 build each artifact, conjure stages every
+        missing constructed spell and writes the bundle once, so the next
+        identical conjure full-hits without requiring each spell to be melded
+        directly first.
+    """
     cache_root_path = _prepare_case_cache_root(
         f"_cache_runtime_no_emit_before_publish_{'dynamic' if dynamic else 'automatic'}"
     )
@@ -132,10 +156,13 @@ def test_cache_integration_conjure_does_not_emit_before_runtime_publish(dynamic:
         cache_root_fragment=_build_cache_root_fragment(cache_root_path),
         dynamic=dynamic,
     )
-    spell_ids = _bind_simple_spells(spellbook)
+    spell_ids = _bind_simple_spells(spellbook, include_logger=True)
     conduit = _conjure(spellbook, conduit_name="root", dynamic=dynamic)
     try:
-        assert _cache_bundle_path(spellbook, conduit_name="root").exists() is False
+        assert _cache_bundle_path(spellbook, conduit_name="root").exists() is True
+        caching_system = spellbook._get_or_create_caching_system()
+        for spell_id in spell_ids.values():
+            assert caching_system.has_spell_payload(spell_id) is True
     finally:
         conduit.cleanup()
 

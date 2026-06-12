@@ -502,6 +502,279 @@ def test_component_fast_door_registry_deleted_on_cleanup() -> None:
     assert not hasattr(meld, "_fast_meld_doors")
 
 
+def test_component_meld_id_matches_meld_results_per_existence() -> None:
+    """
+    Purpose:
+        Verify the minimal-arity `meld_id` entry is behaviorally identical to
+        `meld(spell=...)` across reuse semantics.
+    Contract:
+        - unique / unique_per_conduit: `meld_id` returns the same instance as
+          `meld`, warm and cold.
+        - many: `meld_id` constructs a new instance per call.
+        - Spellspace door: `meld_id` serves scope-correct
+          `unique_per_spell_space` instances.
+    """
+    spellbook = _make_spellbook()
+    unique_id = spellbook.bind(
+        spell=_SharedUniqueService,
+        existence=Existence.unique,
+        permissions="create",
+    )
+    per_conduit_id = spellbook.bind(
+        spell=_UniquePerConduitService,
+        existence=Existence.unique_per_conduit,
+        permissions="create",
+    )
+    many_id = spellbook.bind(
+        spell=_ManyService,
+        existence=Existence.many,
+        permissions="create",
+    )
+    marker_id = spellbook.bind(
+        spell=_SpaceMarkerService,
+        existence=Existence.unique_per_spell_space,
+        permissions="create",
+    )
+    conduit = spellbook.conjure(name="root")
+    try:
+        # Cold meld_id falls back to the full lane and builds the entry.
+        unique_first = conduit.meld_id(unique_id)
+        assert isinstance(unique_first, _SharedUniqueService)
+        assert unique_id in conduit._meld._fast_meld_doors
+
+        # Warm meld_id and meld agree on reuse identity.
+        assert conduit.meld_id(unique_id) is unique_first
+        assert conduit.meld(spell=unique_id) is unique_first
+
+        per_conduit_first = conduit.meld(spell=per_conduit_id)
+        assert conduit.meld_id(per_conduit_id) is per_conduit_first
+
+        many_first = conduit.meld_id(many_id)
+        many_second = conduit.meld_id(many_id)
+        assert isinstance(many_second, _ManyService)
+        assert many_second is not many_first
+
+        with conduit.enter_spellspace() as space:
+            marker = space.meld_id(marker_id)
+            assert isinstance(marker, _SpaceMarkerService)
+            assert space.meld_id(marker_id) is marker
+            assert space.meld(spell=marker_id) is marker
+    finally:
+        conduit.permanent_cleanup()
+
+
+def test_component_meld_id_warm_call_executes_fast_lane() -> None:
+    """
+    Purpose:
+        Prove the warm `meld_id` call actually executes through the fast
+        door, not the full lane.
+    Contract:
+        - With a poisoned entry store, a warm `meld_id` raises from the
+          poisoned fast-lane execution, demonstrating the lane was taken.
+    """
+    spellbook = _make_spellbook()
+    spell_id = spellbook.bind(
+        spell=_UniquePerConduitService,
+        existence=Existence.unique_per_conduit,
+        permissions="create",
+    )
+    conduit = spellbook.conjure(name="root")
+    try:
+        conduit.meld_id(spell_id)
+        _poison_entry(conduit._meld, spell_id)
+        with pytest.raises(AssertionError, match="poisoned"):
+            conduit.meld_id(spell_id)
+    finally:
+        conduit.permanent_cleanup()
+
+
+def test_component_meld_id_non_id_input_falls_back_to_full_lane() -> None:
+    """
+    Purpose:
+        Verify non-id inputs (class objects) fall through to the full lane's
+        normalization and resolve correctly.
+    Contract:
+        - `meld_id(SomeBoundClass)` resolves exactly like
+          `meld(spell=SomeBoundClass)`.
+    """
+    spellbook = _make_spellbook()
+    spell_id = spellbook.bind(
+        spell=_UniquePerConduitService,
+        existence=Existence.unique_per_conduit,
+        permissions="create",
+    )
+    conduit = spellbook.conjure(name="root")
+    try:
+        by_id = conduit.meld_id(spell_id)
+        by_class = conduit.meld_id(_UniquePerConduitService)
+        assert by_class is by_id
+    finally:
+        conduit.permanent_cleanup()
+
+
+def test_component_meld_id_raises_canonical_error_after_cleanup() -> None:
+    """
+    Purpose:
+        Verify the cleaned-conduit guard on the minimal lane.
+    Contract:
+        - `meld_id` on a cleaned conduit raises the canonical
+          `check_cleaned` RuntimeError, identical to `meld(...)`.
+    """
+    spellbook = _make_spellbook()
+    spell_id = spellbook.bind(
+        spell=_UniquePerConduitService,
+        existence=Existence.unique_per_conduit,
+        permissions="create",
+    )
+    conduit = spellbook.conjure(name="root")
+    conduit.meld_id(spell_id)
+    conduit.permanent_cleanup()
+    with pytest.raises(RuntimeError, match="cleaned"):
+        conduit.meld_id(spell_id)
+
+
+def test_component_spellspace_nested_scope_stack_isolation() -> None:
+    """
+    Purpose:
+        Verify recursive spellspace activation: a stack of independent scopes
+        (A -> B -> C -> D) with per-level storage isolation and LIFO unwind.
+    Contract:
+        - Each nested `enter_spellspace()` pushes a new independent scope.
+        - Every level resolves its own `unique_per_spell_space` marker; no
+          level observes another level's instance.
+        - Outer-level markers are still alive and identical after inner
+          scopes exit (LIFO unwind does not disturb outer storage).
+        - The spellspace acts as its own context manager: the object yielded
+          by `with` IS the spellspace returned by `enter_spellspace()`.
+    """
+    spellbook = _make_spellbook()
+    marker_id = spellbook.bind(
+        spell=_SpaceMarkerService,
+        existence=Existence.unique_per_spell_space,
+        permissions="create",
+    )
+    conduit = spellbook.conjure(name="root")
+    try:
+        with conduit.enter_spellspace() as scope_a:
+            marker_a = scope_a.meld(spell=marker_id)
+            with conduit.enter_spellspace() as scope_b:
+                marker_b = scope_b.meld(spell=marker_id)
+                assert marker_b is not marker_a
+                with conduit.enter_spellspace() as scope_c:
+                    marker_c = scope_c.meld(spell=marker_id)
+                    assert marker_c is not marker_b
+                    assert marker_c is not marker_a
+                    with conduit.enter_spellspace() as scope_d:
+                        marker_d = scope_d.meld(spell=marker_id)
+                        distinct = {
+                            id(marker_a),
+                            id(marker_b),
+                            id(marker_c),
+                            id(marker_d),
+                        }
+                        assert len(distinct) == 4
+                        # Each scope's own warm re-meld stays scope-correct
+                        # at full depth.
+                        assert scope_d.meld(spell=marker_id) is marker_d
+                # LIFO unwind: outer scopes keep their live instances.
+                assert scope_c.meld(spell=marker_id) is marker_c
+            assert scope_b.meld(spell=marker_id) is marker_b
+        # The yielded object is the spellspace itself (no wrapper exists).
+        from melder.aether.conduit.spell_space.spell_space import SpellSpace
+
+        assert isinstance(scope_a, SpellSpace)
+    finally:
+        conduit.permanent_cleanup()
+
+
+def test_component_enter_spellspace_manual_protocol_compatibility() -> None:
+    """
+    Purpose:
+        Verify the manual `cm = enter_spellspace(); cm.__enter__()` pattern
+        used by the benchmark harnesses keeps working with the space as its
+        own context manager.
+    Contract:
+        - `enter_spellspace()` returns the already-activated space.
+        - `__enter__` returns the same object.
+        - `__exit__(None, None, None)` pops and recycles it; the pool then
+          serves the same shell to the next acquisition.
+    """
+    spellbook = _make_spellbook()
+    marker_id = spellbook.bind(
+        spell=_SpaceMarkerService,
+        existence=Existence.unique_per_spell_space,
+        permissions="create",
+    )
+    conduit = spellbook.conjure(name="root")
+    try:
+        manual_cm = conduit.enter_spellspace()
+        space = manual_cm.__enter__()
+        assert space is manual_cm
+        marker = space.meld(spell=marker_id)
+        assert space.meld(spell=marker_id) is marker
+        manual_cm.__exit__(None, None, None)
+
+        # Pooled reuse: same shell, fresh scope contents.
+        with conduit.enter_spellspace() as next_space:
+            assert next_space is space
+            assert next_space.meld(spell=marker_id) is not marker
+    finally:
+        conduit.permanent_cleanup()
+
+
+def test_component_prewarm_pools_retain_idle_shells() -> None:
+    """
+    Purpose:
+        Verify prewarm APIs build pooled shells ahead of traffic.
+    Contract:
+        - `prewarm_spellspaces(n)` leaves n idle spellspace shells (capacity
+          clamped) and later scopes reuse them without construction.
+        - `prewarm_lesser_conduits(n)` leaves n idle lesser shells and the
+          next `create_lesser_conduit()` serves a prewarmed shell.
+        - Prewarm counts are clamped to pool capacity instead of building
+          shells the pool would evict.
+    """
+    spellbook = _make_spellbook()
+    marker_id = spellbook.bind(
+        spell=_SpaceMarkerService,
+        existence=Existence.unique_per_spell_space,
+        permissions="create",
+    )
+    conduit = spellbook.conjure(name="root")
+    try:
+        ensured_spaces = conduit.prewarm_spellspaces(3)
+        assert ensured_spaces == 3
+        assert conduit._spellspace_pool.idle_count == 3
+
+        with conduit.enter_spellspace() as space:
+            # Acquisition drains the idle pool instead of constructing.
+            assert conduit._spellspace_pool.idle_count == 2
+            assert isinstance(space.meld(spell=marker_id), _SpaceMarkerService)
+        assert conduit._spellspace_pool.idle_count == 3
+
+        ensured_lessers = conduit.prewarm_lesser_conduits(2)
+        assert ensured_lessers == 2
+        assert conduit._conduit_pool.idle_count == 2
+
+        lesser = conduit.create_lesser_conduit()
+        try:
+            assert conduit._conduit_pool.idle_count == 1
+        finally:
+            lesser.cleanup()
+        assert conduit._conduit_pool.idle_count == 2
+
+        # Capacity clamp: a huge request never exceeds the pool ceiling.
+        ensured_capped = conduit.prewarm_spellspaces(10_000)
+        assert ensured_capped == conduit._spellspace_pool.max_idle
+
+        with pytest.raises(ValueError, match="positive"):
+            conduit.prewarm_spellspaces(0)
+        with pytest.raises(ValueError, match="positive"):
+            conduit.prewarm_lesser_conduits(-1)
+    finally:
+        conduit.permanent_cleanup()
+
+
 def test_component_fast_door_spellspace_scopes_stay_isolated() -> None:
     """
     Purpose:

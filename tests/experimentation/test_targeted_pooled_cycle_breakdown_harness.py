@@ -27,7 +27,13 @@ def _ensure_src_on_path() -> None:
 _ensure_src_on_path()
 
 from melder.aether.conduit.conduit import Conduit
-from melder.aether.conduit.conduit import _SpellSpaceContextManager
+# `SpellSpace` is now its own context manager: the former
+# `_SpellSpaceContextManager` wrapper was removed, so the context
+# enter/exit timing rows patch `SpellSpace.__enter__` / `SpellSpace.__exit__`
+# directly. Note the semantics shift: activation (pool acquire + stack push)
+# now happens inside `Conduit.enter_spellspace()`, so `context_enter_ns`
+# measures only the trivial self-return.
+from melder.aether.conduit.spell_space.spell_space import SpellSpace as _SpellSpaceForContextTiming
 from melder.aether.conduit.conduit_pool import ConduitPool
 from melder.aether.conduit.conduit_ward.conduit_ward import ConduitWard
 from melder.aether.conduit.creations.creations import Creations
@@ -442,7 +448,7 @@ def _measure_pooled_spellspace_breakdown(
         return wrapped
 
     def make_context_enter_wrapper(original: Callable[..., Any]) -> Callable[..., Any]:
-        def wrapped(self: _SpellSpaceContextManager) -> Any:
+        def wrapped(self: _SpellSpaceForContextTiming) -> Any:
             return _timed_call(
                 totals,
                 "context_enter_ns",
@@ -453,7 +459,7 @@ def _measure_pooled_spellspace_breakdown(
 
     def make_context_exit_wrapper(original: Callable[..., Any]) -> Callable[..., Any]:
         def wrapped(
-                self: _SpellSpaceContextManager,
+                self: _SpellSpaceForContextTiming,
                 exc_type: Any,
                 exc_value: Any,
                 traceback: Any,
@@ -555,10 +561,10 @@ def _measure_pooled_spellspace_breakdown(
             _patch_method(SpellSpacePool, "acquire_untracked", make_pool_acquire_wrapper)
         )
         stack.enter_context(
-            _patch_method(_SpellSpaceContextManager, "__enter__", make_context_enter_wrapper)
+            _patch_method(_SpellSpaceForContextTiming, "__enter__", make_context_enter_wrapper)
         )
         stack.enter_context(
-            _patch_method(_SpellSpaceContextManager, "__exit__", make_context_exit_wrapper)
+            _patch_method(_SpellSpaceForContextTiming, "__exit__", make_context_exit_wrapper)
         )
         stack.enter_context(
             _patch_method(SpellSpacePool, "prepare_object", make_pool_prepare_wrapper)
@@ -701,13 +707,13 @@ def _run_pooled_breakdown_harness() -> List[Dict[str, str]]:
                         "enter_total_ns": "full enter_spellspace steady-state enter",
                         "exit_total_ns": "full spellspace context exit",
                         "cycle_total_ns": "outer steady-state pooled spellspace cycle",
-                        "context_manager_create_ns": "Conduit.enter_spellspace() wrapper construction",
+                        "context_manager_create_ns": "Conduit.enter_spellspace() acquire+push (space is its own CM)",
                         "pool_acquire_ns": "AbstractElasticPool.acquire on SpellSpacePool",
                         "pool_acquire_core_ns": "pool acquire excluding prepare_object",
-                        "context_enter_ns": "_SpellSpaceContextManager.__enter__",
+                        "context_enter_ns": "SpellSpace.__enter__ (trivial self-return)",
                         "pool_prepare_ns": "SpellSpacePool.prepare_object",
                         "stack_push_ns": "SpellSpaceThreadState.push during enter",
-                        "context_exit_ns": "_SpellSpaceContextManager.__exit__",
+                        "context_exit_ns": "SpellSpace.__exit__ (pop_expected + recycle)",
                         "stack_get_active_ns": "SpellSpaceThreadState.get_active during exit",
                         "stack_pop_ns": "SpellSpaceThreadState.pop during exit",
                         "spellspace_cleanup_total_ns": "SpellSpace.cleanup",

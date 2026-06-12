@@ -295,7 +295,7 @@ def test_bind_transaction_strategy_builds_post_conjure_plan_with_cluster_scope()
         transaction_manager=transaction_manager,
         devops_information_registry=registry,
         identity=spellbook_identity,
-        metadata={},
+        metadata={"conduit_id": "conduit-1"},
     )
 
     assert plan["initiator_conduit_id"] == "conduit-1"
@@ -414,6 +414,14 @@ def test_link_transaction_strategy_builds_spellbook_conduit_and_ward_scopes() ->
     )
     for identity in (source_identity, peer_identity, spellbook_a, spellbook_b):
         registry.register_identity(identity)
+    registry.register_spellbook_conduit_ownership(
+        spellbook_id="spellbook-1",
+        conduit_id="conduit-1",
+    )
+    registry.register_spellbook_conduit_ownership(
+        spellbook_id="spellbook-2",
+        conduit_id="conduit-2",
+    )
 
     plan = LinkTransactionStrategy.build_start_plan(
         transaction_manager=transaction_manager,
@@ -517,6 +525,14 @@ def test_cluster_link_transaction_strategy_builds_cluster_and_spellbook_scopes()
     )
     for identity in (cluster_identity, conduit_a, conduit_b, spellbook_a, spellbook_b):
         registry.register_identity(identity)
+    registry.register_spellbook_conduit_ownership(
+        spellbook_id="spellbook-1",
+        conduit_id="conduit-1",
+    )
+    registry.register_spellbook_conduit_ownership(
+        spellbook_id="spellbook-2",
+        conduit_id="conduit-2",
+    )
 
     plan = ClusterLinkTransactionStrategy.build_start_plan(
         transaction_manager=transaction_manager,

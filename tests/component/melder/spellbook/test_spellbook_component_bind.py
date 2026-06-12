@@ -91,7 +91,14 @@ def test_component_bind_creates_class_spell_with_metadata() -> None:
         assert isinstance(spell.profile, SpellGeneralProfile)
         assert isinstance(spell.profile.binding_profile, ClassBindingProfile)
         assert spell._spellbook is spellbook
-        assert Bind.spell_id_inspector(BasicService) == spell.spell_id
+        # The fingerprint composes bind-time facts (lookup signature,
+        # existence, resolved disposal metadata), so the inspector matches the
+        # bound id only when supplied the same facts the bind resolved.
+        assert Bind.spell_id_inspector(
+            BasicService,
+            existence=spell.existence,
+            disposal_method_names=sorted(spell.disposal_method_names),
+        ) == spell.spell_id
     finally:
         binder.cleanup()
         spellbook.cleanup()

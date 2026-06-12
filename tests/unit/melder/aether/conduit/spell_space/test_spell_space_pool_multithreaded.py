@@ -6,6 +6,9 @@ import pytest
 
 from melder.aether.conduit.spell_space.spell_space import SpellSpace
 from melder.aether.conduit.spell_space.spell_space_pool import SpellSpacePool
+from melder.aether.conduit.spell_space.spell_space_thread_state import (
+    SpellSpaceThreadState,
+)
 
 
 class _ConduitCreationsStub:
@@ -62,6 +65,7 @@ def _build_pool(*, baseline_idle: int, max_idle: int) -> tuple[SpellSpacePool, s
         conduit_meld=conduit_meld,
         owner_conduit_creations=creations,
         spellspace_registry=registry,
+        spellspace_stack_state=SpellSpaceThreadState(),
         baseline_idle=baseline_idle,
         max_idle=max_idle,
     )

@@ -1281,13 +1281,18 @@ def test_bind_rejects_module_as_spell() -> None:
 def test_type_hint_di_ambiguous_concrete_class_raises() -> None:
     """
     Purpose:
-        Validate duplicate spell_id bindings are rejected at bind time.
+        Validate ambiguous type-hint DI for one concrete class fails at build.
     Contract:
-        - Duplicate spell_id bindings raise before conjure.
+        - The spell fingerprint composes bind-time facts including the lookup
+          signature, so the same class under two binding names registers as
+          two distinct spells; binding no longer collides.
+        - A consumer whose constructor type-hints the concrete class then has
+          two single-DI candidates, and Phase 3 rejects the ambiguity at
+          conjure with disambiguation guidance.
     Returns:
         None.
     Raises:
-        AssertionError: If duplicate binding does not raise.
+        AssertionError: If the ambiguous conjure does not raise.
     """
     class _Repo:
         """
@@ -1296,7 +1301,7 @@ def test_type_hint_di_ambiguous_concrete_class_raises() -> None:
         Contract:
             Stores a stable marker for assertions.
         """
-        def __init__(self, marker: str) -> None:
+        def __init__(self, marker: str = "repo") -> None:
             """
             Purpose:
                 Initialize the repository marker.
@@ -1309,6 +1314,26 @@ def test_type_hint_di_ambiguous_concrete_class_raises() -> None:
             """
             self.marker = marker
 
+    class _Consumer:
+        """
+        Purpose:
+            Provide a consumer that type-hints the ambiguous concrete class.
+        Contract:
+            Stores the injected repository for assertions.
+        """
+        def __init__(self, repo: _Repo) -> None:
+            """
+            Purpose:
+                Capture the injected repository dependency.
+            Contract:
+                Stores the repository on the instance.
+            Args:
+                repo: Injected repository instance.
+            Returns:
+                None.
+            """
+            self.repo = repo
+
     spellbook = Spellbook()
     config = spellbook.get_configuration()
     config.set_property("phase_scheduler_workers_per_spellbook", 1)
@@ -1319,14 +1344,20 @@ def test_type_hint_di_ambiguous_concrete_class_raises() -> None:
         permissions="create",
         binding_name="primary",
     )
-    with pytest.raises(RuntimeError) as excinfo:
-        spellbook.bind(
-            spell=_Repo,
-            existence=Existence.unique,
-            permissions="create",
-            binding_name="secondary",
-        )
-    assert "spell_id collision" in str(excinfo.value)
+    spellbook.bind(
+        spell=_Repo,
+        existence=Existence.unique,
+        permissions="create",
+        binding_name="secondary",
+    )
+    spellbook.bind(
+        spell=_Consumer,
+        existence=Existence.unique,
+        permissions="create",
+    )
+    with pytest.raises(PhaseExecutionError) as excinfo:
+        spellbook.conjure(name="ambiguous-concrete", dynamic=False)
+    assert "multiple DI candidates" in str(excinfo.value)
 
 
 def test_meld_by_spell_id_resolves_class_instance_unique() -> None:

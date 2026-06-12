@@ -333,6 +333,78 @@ def test_reset_for_pool_skips_disposal_flow_when_no_disposable_entries(
     assert creations._disposable_creations == {}
 
 
+def test_reset_for_pool_unlocked_clears_live_state_without_locking(
+        creations: Creations,
+        monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """
+    Verify the unlocked managed-exit clear empties live state lock-free.
+
+    Contract:
+        - Same observable result as `reset_for_pool()` on the
+          no-disposables path: live registry emptied, object untouched.
+        - The instance lock is never acquired on that path (the
+          thread-confinement contract makes it unnecessary).
+    """
+    obj = Probe()
+    creations.add_creation(
+        "spell-u",
+        obj,
+        has_disposal_methods=False,
+        disposal_methods=None,
+    )
+
+    class _PoisonLock:
+        """Lock stand-in that fails the test if entered."""
+
+        def __enter__(self) -> "_PoisonLock":
+            raise AssertionError(
+                "reset_for_pool_unlocked must not take the instance lock "
+                "on the no-disposables path."
+            )
+
+        def __exit__(self, exc_type: object, exc: object, tb: object) -> None:
+            return None
+
+    monkeypatch.setattr(creations, "_lock", _PoisonLock())
+
+    creations.reset_for_pool_unlocked()
+
+    assert obj.calls == []
+    assert creations._creations == {}
+    assert creations._disposable_creations == {}
+
+    # Empty repeat call stays lock-free and is a no-op.
+    creations.reset_for_pool_unlocked()
+    assert creations._creations == {}
+
+
+def test_reset_for_pool_unlocked_routes_disposables_through_locked_clear(
+        creations: Creations,
+) -> None:
+    """
+    Verify disposal-bearing stores fall back to the fully locked clear.
+
+    Contract:
+        - Disposal of user objects is never run lock-free: when disposable
+          metadata exists, the unlocked variant delegates to `clear_all()`,
+          which detaches under the instance lock and runs disposal methods.
+    """
+    obj = Probe()
+    creations.add_creation(
+        "spell-u",
+        obj,
+        has_disposal_methods=True,
+        disposal_methods=["dispose"],
+    )
+
+    creations.reset_for_pool_unlocked()
+
+    assert obj.calls == ["dispose"]
+    assert creations._creations == {}
+    assert creations._disposable_creations == {}
+
+
 def test_cleanup_is_idempotent(creations: Creations) -> None:
     """
     Verify cleanup only disposes tracked entries once.

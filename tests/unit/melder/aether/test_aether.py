@@ -1562,12 +1562,12 @@ def test_aether_configuration_builder_hands_off_activated_configuration() -> Non
 
 def test_aetheric_frame_configuration_defaults_disable_system_caching() -> None:
     """
-    Verify frame configuration defaults system caching off.
+    Verify frame configuration defaults system caching on.
 
     Contract:
-    - Fresh AethericFrameConfiguration instances expose
-      system_caching_enabled=False.
-    - The stored cache-root fragment is package-relative `__melder_cache__`.
+        - Fresh AethericFrameConfiguration instances expose
+          system_caching_enabled=True.
+        - The stored cache-root fragment is package-relative `__melder_cache__`.
     """
     from pathlib import Path
 
@@ -1578,7 +1578,7 @@ def test_aetheric_frame_configuration_defaults_disable_system_caching() -> None:
         rift_enabled=False,
     )
 
-    assert configuration.system_caching_enabled is False
+    assert configuration.system_caching_enabled is True
     assert configuration.system_cache_root_path == Path("__melder_cache__")
 
 

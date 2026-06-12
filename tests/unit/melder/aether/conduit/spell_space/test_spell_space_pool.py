@@ -5,6 +5,9 @@ from typing import Any, Optional, Union
 
 from melder.aether.conduit.spell_space.spell_space import SpellSpace
 from melder.aether.conduit.spell_space.spell_space_pool import SpellSpacePool
+from melder.aether.conduit.spell_space.spell_space_thread_state import (
+    SpellSpaceThreadState,
+)
 
 
 class _ConduitCreationsStub:
@@ -75,6 +78,7 @@ def test_spellspace_pool_create_object_binds_fixed_runtime_collaborators() -> No
         conduit_meld=conduit_meld,
         owner_conduit_creations=creations,
         spellspace_registry=registry,
+        spellspace_stack_state=SpellSpaceThreadState(),
         baseline_idle=1,
         max_idle=1,
     )
@@ -103,6 +107,7 @@ def test_spellspace_pool_prepare_object_readds_spellspace_to_registry() -> None:
         conduit_meld=conduit_meld,
         owner_conduit_creations=creations,
         spellspace_registry=registry,
+        spellspace_stack_state=SpellSpaceThreadState(),
         baseline_idle=1,
         max_idle=1,
     )
@@ -126,6 +131,7 @@ def test_spellspace_pool_acquire_untracked_skips_registry_reactivation() -> None
         conduit_meld=conduit_meld,
         owner_conduit_creations=creations,
         spellspace_registry=registry,
+        spellspace_stack_state=SpellSpaceThreadState(),
         baseline_idle=1,
         max_idle=1,
     )
@@ -149,6 +155,7 @@ def test_spellspace_pool_destroy_object_uses_permanent_cleanup() -> None:
         conduit_meld=conduit_meld,
         owner_conduit_creations=creations,
         spellspace_registry=registry,
+        spellspace_stack_state=SpellSpaceThreadState(),
         baseline_idle=1,
         max_idle=1,
     )
@@ -173,6 +180,7 @@ def test_spellspace_pool_cleanup_destroys_idle_spellspaces() -> None:
         conduit_meld=conduit_meld,
         owner_conduit_creations=creations,
         spellspace_registry=registry,
+        spellspace_stack_state=SpellSpaceThreadState(),
         baseline_idle=1,
         max_idle=1,
     )

@@ -585,7 +585,7 @@ def test_binding_resolution_cycle_collects_duplicate_spells_per_binding_key() ->
 
     assert len(issues) == 1
     cycle_spells = issues[0].details["cycle_spells"]
-    root_key = strategy._format_key(strategy._spell_key(root_spell))  # noqa: SLF001
+    root_key = strategy._format_key(root_spell.key)  # noqa: SLF001
     assert cycle_spells[root_key] == ["a", "a-copy"]
     assert "str:x" not in cycle_spells
 

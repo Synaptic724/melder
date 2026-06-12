@@ -448,6 +448,44 @@ class Creations(Cleanable):
                 return
         self.clear_all()
 
+    def reset_for_pool_unlocked(self) -> None:
+        """
+        Clear all live scoped state without taking the instance lock.
+
+        Purpose:
+            Provide the managed spellspace exit lane with a lock-free scope
+            clear, removing the last per-cycle lock acquisition from the
+            `with conduit.enter_spellspace():` hot path.
+
+        Contract:
+            - Same observable result as `reset_for_pool()` for the caller.
+            - Caller-guaranteed thread confinement is REQUIRED: this method
+              may only be called when the owning scope object is confined to
+              the calling thread, as on the managed spellspace exit lane
+              (pool deque hand-off in, per-thread stack while live,
+              LIFO-validated exit out; the pool deque ops are the cross-thread
+              synchronization points). Calling it on a store that other
+              threads may be reading or mutating concurrently is a caller
+              contract violation.
+            - Disposal work stays safe: when disposable metadata is present,
+              this method falls back to the fully locked `clear_all()` flow,
+              because explicit teardown of user objects is never run
+              lock-free.
+
+        Threading:
+            - No lock is taken on the fast (no-disposables) path by design;
+              see the confinement contract above.
+
+        Returns:
+            None.
+        """
+        if not self._disposable_creations:
+            creations = self._creations
+            if creations:
+                creations.clear()
+            return
+        self.clear_all()
+
     @property
     def owner_conduit_id(self) -> str:
         """

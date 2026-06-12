@@ -16,6 +16,9 @@ import pytest
 
 from melder.aether.conduit.spell_space.spell_space import SpellSpace
 from melder.aether.conduit.spell_space.spell_space_pool import SpellSpacePool
+from melder.aether.conduit.spell_space.spell_space_thread_state import (
+    SpellSpaceThreadState,
+)
 
 
 class _ConduitCreationsStub:
@@ -138,14 +141,26 @@ def _build_space(
         owner_conduit_creations: _ConduitCreationsStub,
         spellspace_registry: set[SpellSpace],
         spellspace_pool: _PoolStub,
+        spellspace_stack_state: Optional[SpellSpaceThreadState] = None,
 ) -> SpellSpace:
-    """Build one direct SpellSpace under the current constructor contract."""
+    """Build one direct SpellSpace under the current constructor contract.
+
+    A fresh `SpellSpaceThreadState` is supplied by default because the
+    constructor requires the injected per-thread stack collaborator; tests
+    exercising the managed context-manager lane can pass their own holder to
+    observe push/pop behavior.
+    """
     return SpellSpace(
         owner_conduit_id=owner_conduit_id,
         conduit_meld=conduit_meld,
         owner_conduit_creations=owner_conduit_creations,
         spellspace_registry=spellspace_registry,
         spellspace_pool=spellspace_pool,
+        spellspace_stack_state=(
+            spellspace_stack_state
+            if spellspace_stack_state is not None
+            else SpellSpaceThreadState()
+        ),
     )
 
 
