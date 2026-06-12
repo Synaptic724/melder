@@ -18,6 +18,7 @@ from melder.aether.spellbook.spell_compiler.system.system_diagnostic import (
     SystemDiagnostic,
     SystemDiagnosticSeverity,
 )
+from melder.utilities.custom_exceptions.operation_cancelled_error import OperationCancelledError
 from melder.utilities.custom_exceptions.phase_execution_error import PhaseExecutionError
 from melder.utilities.custom_exceptions.spellbook_validation_error import SpellbookValidationError
 from melder.utilities.general_base.cleanable import Cleanable
@@ -1403,6 +1404,10 @@ class SpellbookCreationSystem(Cleanable):
         finally:
             compiler_system.cleanup()
         if plan_skip_state[0]:
+            # The fused plan phase replaces the historical four plan phases;
+            # the old keys are popped too in case a patched scheduler class
+            # still reports them.
+            results.pop("plan_group", None)
             results.pop("occurrence_plan", None)
             results.pop("injection_plan", None)
             results.pop("patch_maps", None)
@@ -1646,27 +1651,15 @@ class SpellbookCreationSystem(Cleanable):
                 plan_skip_state[0] = sampled_skip
             return sampled_skip
 
+        # Phases 8-11 are fused per spell: each step consumes only the same
+        # spell's previous artifact (occurrence analysis -> model -> plan ->
+        # codegen creation; phase 8's spellbook parameter is an explicitly
+        # unused compatibility argument), so the three inter-phase barriers
+        # carried no data contract and were deleted. One chunked phase runs
+        # the whole plan sequence per eligible spell.
         scheduler.register_phase(
-            "occurrence_plan",
-            lambda: [] if _should_skip_plan_phases() else SpellbookCreationSystem.phase_occurrence_plan_factory(
-                spellbook, scheduler, compiler_system, conduit_id
-            ),
-        )
-        scheduler.register_phase(
-            "injection_plan",
-            lambda: [] if _should_skip_plan_phases() else SpellbookCreationSystem.phase_injection_plan_factory(
-                spellbook, scheduler, compiler_system, conduit_id
-            ),
-        )
-        scheduler.register_phase(
-            "patch_maps",
-            lambda: [] if _should_skip_plan_phases() else SpellbookCreationSystem.phase_patch_maps_factory(
-                spellbook, scheduler, compiler_system, conduit_id
-            ),
-        )
-        scheduler.register_phase(
-            "execution_plan",
-            lambda: [] if _should_skip_plan_phases() else SpellbookCreationSystem.phase_execution_plan_factory(
+            "plan_group",
+            lambda: [] if _should_skip_plan_phases() else SpellbookCreationSystem.phase_plan_group_factory(
                 spellbook, scheduler, compiler_system, conduit_id
             ),
         )
@@ -1790,15 +1783,16 @@ class SpellbookCreationSystem(Cleanable):
         Returns:
             None.
         """
+        # Phases 1 and 2 are fused per spell: both read only the spell's own
+        # artifact state (phase 2 consumes the same spell's phase-1
+        # requirements and never reads other spells), so the barrier between
+        # them carried no data contract and was deleted. Phase 3 reads the
+        # whole live spell pool (`_iter_all_spells`) and therefore keeps hard
+        # barriers on both sides; phase 4 runs per-spell parallel against
+        # bind-time-static metadata behind the phase-3 barrier.
         scheduler.register_phase(
-            "requirements",
-            lambda: SpellbookCreationSystem.phase_requirements_factory(
-                spellbook, scheduler, compiler_system
-            ),
-        )
-        scheduler.register_phase(
-            "symbolic_graph",
-            lambda: SpellbookCreationSystem.phase_symbolic_graph_factory(
+            "requirements_symbolic",
+            lambda: SpellbookCreationSystem.phase_requirements_symbolic_factory(
                 spellbook, scheduler, compiler_system
             ),
         )
@@ -2308,13 +2302,15 @@ class SpellbookCreationSystem(Cleanable):
     ) -> Sequence[UnitOfWork]:
         """
         Purpose:
-            Build one unit-of-work per local spell for repeated per-spell phases.
+            Build chunked units of work for repeated per-spell phases.
         Contract:
             - Returns an empty list when no local spells exist.
-            - Preserves existing label and metadata shape:
-              `label="<phase_name>:<spell_id>"`,
-              `metadata={"phase": <phase_name>, "spell_id": <spell_id>}`.
-            - Uses the supplied compiler-system front method for all units.
+            - Dispatches at most `scheduler.workers` chunk units per phase
+              (see `_build_chunked_phase_units` for the unit shape); the
+              historical one-unit-per-spell shape was retired with the
+              persistent-pool scheduler because per-spell Future/queue
+              overhead dominated the tiny per-spell phase steps.
+            - Uses the supplied compiler-system front method for all spells.
             - Uses the provided `args_factory` to keep phase argument shape exact.
         Args:
             spellbook: Owning Spellbook instance.
@@ -2335,19 +2331,133 @@ class SpellbookCreationSystem(Cleanable):
             return []
 
         cancel_event = scheduler.cancel_event
-        create_unit_of_work = scheduler.create_unit_of_work
-        units: List[UnitOfWork] = []
         phase_func = getattr(compiler_system, phase_callable_attr)
-        for spell in spells.values():
-            spell_id = spell.spell_id
+
+        def _spell_runner(spell: Spell) -> None:
+            phase_func(*args_factory(spell, cancel_event))
+
+        return SpellbookCreationSystem._build_chunked_phase_units(
+            scheduler=scheduler,
+            phase_name=phase_name,
+            spells=list(spells.values()),
+            spell_runner=_spell_runner,
+        )
+
+    @staticmethod
+    def _chunk_spells(
+            spells: List[Spell],
+            chunk_count: int,
+    ) -> List[Tuple[Spell, ...]]:
+        """
+        Purpose:
+            Partition a spell batch into at most `chunk_count` contiguous
+            chunks for one phase dispatch.
+        Contract:
+            - Preserves spell order within and across chunks.
+            - Never returns empty chunks; chunk sizes differ by at most one.
+        Args:
+            spells: Ordered spell batch for one phase.
+            chunk_count: Maximum number of chunks (>= 1).
+        Returns:
+            List[Tuple[Spell, ...]]: Non-empty contiguous chunks.
+        """
+        total = len(spells)
+        effective = min(chunk_count, total)
+        base_size, remainder = divmod(total, effective)
+        chunks: List[Tuple[Spell, ...]] = []
+        start = 0
+        for index in range(effective):
+            size = base_size + (1 if index < remainder else 0)
+            chunks.append(tuple(spells[start:start + size]))
+            start += size
+        return chunks
+
+    @staticmethod
+    def _run_spell_chunk(
+            spell_runner: Callable[[Spell], None],
+            chunk: Tuple[Spell, ...],
+            cancel_event: Any,
+            phase_name: str,
+    ) -> None:
+        """
+        Purpose:
+            Execute one phase step for every spell in one dispatched chunk.
+        Contract:
+            - Runs spells sequentially on one worker; chunks of the same
+              phase run in parallel across workers.
+            - Checks the run cancel event before each spell so an aborted
+              run stops promptly at spell granularity.
+            - Raises the FIRST failing spell's original exception unchanged
+              (no wrapping), preserving exception-type contracts for
+              upstream consumers (e.g. SpellbookValidationError matching);
+              the failing spell remains identifiable from the exception and
+              the chunk unit's metadata spell-id list.
+        Args:
+            spell_runner: Callable executing the phase step(s) for one spell.
+            chunk: Spells assigned to this worker for this phase.
+            cancel_event: Current run's cooperative cancellation view.
+            phase_name: Phase label used in cancellation messages.
+        Returns:
+            None.
+        Raises:
+            OperationCancelledError: When the run is cancelled mid-chunk.
+            BaseException: First failing spell's original exception.
+        """
+        for spell in chunk:
+            if cancel_event is not None and cancel_event.is_set:
+                raise OperationCancelledError(
+                    f"Phase '{phase_name}' chunk aborted due to run cancellation."
+                )
+            spell_runner(spell)
+
+    @staticmethod
+    def _build_chunked_phase_units(
+            *,
+            scheduler: PhaseScheduler,
+            phase_name: str,
+            spells: List[Spell],
+            spell_runner: Callable[[Spell], None],
+    ) -> Sequence[UnitOfWork]:
+        """
+        Purpose:
+            Build at most `scheduler.workers` chunk units for one phase,
+            instead of one unit per spell.
+        Contract:
+            - Static batch dispatch: phase membership is known up front, so
+              spells are partitioned into contiguous chunks (one unit per
+              chunk) rather than streamed as per-spell queue items. This
+              cuts per-phase Future/queue/wakeup overhead by the chunk
+              factor while preserving barrier semantics exactly (the phase
+              completes when all chunks complete).
+            - Unit shape: `label="<phase_name>:chunk<i>"`,
+              `metadata={"phase", "chunk_index", "spell_ids"}`.
+        Args:
+            scheduler: Scheduler creating units of work.
+            phase_name: Phase label prefix and metadata phase value.
+            spells: Ordered spell batch for this phase.
+            spell_runner: Callable executing the phase step(s) for one spell.
+        Returns:
+            Sequence[UnitOfWork]: Chunk units for the requested phase.
+        """
+        if not spells:
+            return []
+        cancel_event = scheduler.cancel_event
+        create_unit_of_work = scheduler.create_unit_of_work
+        chunks = SpellbookCreationSystem._chunk_spells(
+            spells,
+            max(1, scheduler.workers),
+        )
+        units: List[UnitOfWork] = []
+        for index, chunk in enumerate(chunks):
             units.append(
                 create_unit_of_work(
-                    func=phase_func,
-                    args=args_factory(spell, cancel_event),
-                    label=f"{phase_name}:{spell_id}",
+                    func=SpellbookCreationSystem._run_spell_chunk,
+                    args=(spell_runner, chunk, cancel_event, phase_name),
+                    label=f"{phase_name}:chunk{index}",
                     metadata={
                         "phase": phase_name,
-                        "spell_id": spell_id,
+                        "chunk_index": index,
+                        "spell_ids": [spell.spell_id for spell in chunk],
                     },
                 )
             )
@@ -2448,6 +2558,56 @@ class SpellbookCreationSystem(Cleanable):
             phase_name="symbolic_graph",
             phase_callable_attr="run_phase_symbolic_graph",
             args_factory=lambda spell, cancel_event: (spell, cancel_event),
+        )
+
+    @staticmethod
+    def phase_requirements_symbolic_factory(
+            spellbook: Spellbook,
+            scheduler: PhaseScheduler,
+            compiler_system: SpellCompilerSystem,
+    ) -> Sequence[UnitOfWork]:
+        """
+        Purpose:
+            Build fused phase-1+2 units: one chunked unit stream where each
+            spell runs requirements and then its symbolic graph back-to-back.
+        Contract:
+            - Fusion legality: phase 2 consumes only the SAME spell's
+              phase-1 requirements (`artifact._requirements`) and never
+              reads other spells, so no cross-spell barrier is required
+              between phases 1 and 2.
+            - Produces at most `scheduler.workers` chunk units; per spell,
+              `run_phase_requirements` then `run_phase_symbolic_graph`
+              execute sequentially with the run cancel event threaded
+              through both, preserving each phase's cooperative-cancellation
+              checks.
+            - Returns an empty list when no local spells exist.
+        Args:
+            spellbook: Owning Spellbook instance.
+            scheduler: Scheduler creating units of work.
+            compiler_system: Compiler-system instance used for this run.
+        Returns:
+            Sequence[UnitOfWork]: Fused requirements+symbolic chunk units.
+        Raises:
+            RuntimeError: If the spellbook has already been cleaned.
+        """
+        spellbook.check_cleaned()
+        spells = spellbook._spells
+        if not spells:
+            return []
+
+        cancel_event = scheduler.cancel_event
+        run_requirements = compiler_system.run_phase_requirements
+        run_symbolic = compiler_system.run_phase_symbolic_graph
+
+        def _spell_runner(spell: Spell) -> None:
+            run_requirements(spell, cancel_event)
+            run_symbolic(spell, cancel_event)
+
+        return SpellbookCreationSystem._build_chunked_phase_units(
+            scheduler=scheduler,
+            phase_name="requirements_symbolic",
+            spells=list(spells.values()),
+            spell_runner=_spell_runner,
         )
 
     @staticmethod
@@ -2764,6 +2924,71 @@ class SpellbookCreationSystem(Cleanable):
                 )
             )
         return units
+
+    @staticmethod
+    def phase_plan_group_factory(
+            spellbook: Spellbook,
+            scheduler: PhaseScheduler,
+            compiler_system: SpellCompilerSystem,
+            conduit_id: str,
+    ) -> Sequence[UnitOfWork]:
+        """
+        Purpose:
+            Build fused phase-8-to-11 units: one chunked unit stream where
+            each eligible spell runs occurrence analysis, model, plan, and
+            codegen creation back-to-back.
+        Contract:
+            - Fusion legality: every step consumes only the SAME spell's
+              previous artifact; none of the four phase implementations read
+              other spells (phase 8's spellbook parameter is documented as
+              an unused compatibility argument). The historical inter-phase
+              barriers carried no data contract.
+            - Eligibility matches the historical per-phase gates exactly
+              (`_is_spell_plan_phase_eligible`); existing-creation spells
+              skip the whole fused sequence as before.
+            - A spell failing mid-sequence raises its original exception
+              unchanged; its remaining fused steps do not run, and the run's
+              cancel event stops other chunks at spell granularity —
+              equivalent fail-fast posture to the historical four-barrier
+              layout, with slightly better isolation.
+            - Produces at most `scheduler.workers` chunk units.
+            - Returns an empty list when no eligible spells exist.
+        Args:
+            spellbook: Owning Spellbook instance.
+            scheduler: Scheduler creating units of work.
+            compiler_system: Compiler-system instance used for this run.
+            conduit_id: Conduit scope id (carried for signature parity).
+        Returns:
+            Sequence[UnitOfWork]: Fused plan-group chunk units.
+        Raises:
+            RuntimeError: If the spellbook has already been cleaned.
+        """
+        spellbook.check_cleaned()
+        eligible_spells = [
+            spell
+            for spell in spellbook._spells.values()
+            if SpellbookCreationSystem._is_spell_plan_phase_eligible(spell)
+        ]
+        if not eligible_spells:
+            return []
+
+        run_occurrence = compiler_system.run_phase_occurrence_plan
+        run_injection = compiler_system.run_phase_injection_plan
+        run_patch_maps = compiler_system.run_phase_patch_maps
+        run_execution = compiler_system.run_phase_execution_plan
+
+        def _spell_runner(spell: Spell) -> None:
+            run_occurrence(spellbook, spell)
+            run_injection(spell)
+            run_patch_maps(spell)
+            run_execution(spellbook, spell)
+
+        return SpellbookCreationSystem._build_chunked_phase_units(
+            scheduler=scheduler,
+            phase_name="plan_group",
+            spells=eligible_spells,
+            spell_runner=_spell_runner,
+        )
 
     @staticmethod
     def phase_system_validation_factory(

@@ -636,6 +636,20 @@ class PhaseScheduler(Cleanable):
 
             raise PhaseTimeoutError(phase_name, self._barrier_timeout_ms)
 
+        # Contract-preserving post-scan: the historical barrier collected
+        # stored exceptions from DONE futures, which covers units handed to
+        # the scheduler with a pre-recorded failure (the worker skips
+        # already-done units, so the latch never sees such errors). All
+        # units are done here, so these are non-blocking reads.
+        stored_errors: List[BaseException] = []
+        for uow in units:
+            exc = uow.exception()
+            if exc is not None:
+                stored_errors.append(exc)
+        if stored_errors:
+            self._cancel_signal.cancel()
+            raise PhaseExecutionError(phase_name, stored_errors)
+
         return units
 
 

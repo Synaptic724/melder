@@ -121,7 +121,7 @@ def patch_assert_allowed(monkeypatch):
 # Profile builders ----------------------------------------------------
 
 
-def class_profile(name="C", bases=None, mro=None, annotations=None, method_names=None, source_preview="", is_dataclass=False, decorated=False, origin_file=None, origin_line=None):
+def class_profile(name="C", bases=None, mro=None, annotations=None, method_names=None, source_preview="", is_dataclass=False, decorated=False, origin_file=None, origin_line=None, init_signature=None):
     return ClassBindingProfile(
         kind=SpellBindingKind.CLASS,
         original_object=RealClassImplementingProto,
@@ -133,6 +133,7 @@ def class_profile(name="C", bases=None, mro=None, annotations=None, method_names
         annotations=annotations or {},
         origin_file=origin_file,
         origin_line=origin_line,
+        init_signature=init_signature,
         source_preview=source_preview,
         is_dataclass=is_dataclass,
         decorated=decorated,
@@ -641,10 +642,18 @@ def test_sha256_parameters_kind_affects_hash():
 
 # Additional SHA stability/diff cases ----------------------------------
 
-def test_sha256_class_source_preview_changes_hash():
-    p1 = class_profile(source_preview="one")
-    p2 = class_profile(source_preview="two")
+def test_sha256_class_init_signature_changes_hash():
+    """v4 contract: constructor-shape changes must change the fingerprint."""
+    p1 = class_profile(init_signature="(a: int)")
+    p2 = class_profile(init_signature="(a: int, b: str)")
     assert Bind.sha256_profile(p1) != Bind.sha256_profile(p2)
+
+
+def test_sha256_class_source_preview_no_longer_affects_hash():
+    """v4 contract: docstring/source-text edits must NOT churn the cache."""
+    p1 = class_profile(source_preview="one", init_signature="(a: int)")
+    p2 = class_profile(source_preview="two", init_signature="(a: int)")
+    assert Bind.sha256_profile(p1) == Bind.sha256_profile(p2)
 
 
 def test_sha256_class_annotations_order_irrelevant():

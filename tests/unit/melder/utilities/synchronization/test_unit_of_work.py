@@ -190,3 +190,67 @@ def test_cancel_event_throw_if_set_integration():
     signal.cancel()
     with pytest.raises(OperationCancelledError):
         event.throw_if_set()
+
+
+def test_run_for_scheduler_success_records_result_and_returns_none():
+    uow = UnitOfWork(lambda: 7)
+    failure = uow.run_for_scheduler()
+    assert failure is None
+    assert uow.done() is True
+    assert uow.result() == 7
+
+
+def test_run_for_scheduler_failure_returns_exception_without_raising():
+    err = ValueError("bad")
+    uow = UnitOfWork(lambda: (_ for _ in ()).throw(err))
+    failure = uow.run_for_scheduler()
+    assert failure is err
+    assert isinstance(uow.exception(), ValueError)
+
+
+def test_run_for_scheduler_cancelled_returns_cancellation_without_running():
+    signal = CancellationEventSignal()
+    signal.cancel()
+    counter = {"n": 0}
+
+    def _fn():
+        counter["n"] += 1
+
+    uow = UnitOfWork(_fn, cancel_event=signal.event, label="C")
+    failure = uow.run_for_scheduler()
+    assert isinstance(failure, OperationCancelledError)
+    assert "C" in str(failure)
+    assert counter["n"] == 0
+    assert isinstance(uow.exception(), OperationCancelledError)
+
+
+def test_run_for_scheduler_skips_already_done_unit():
+    counter = {"n": 0}
+
+    def _fn():
+        counter["n"] += 1
+        return counter["n"]
+
+    uow = UnitOfWork(_fn)
+    uow.run_synchronously()
+    failure = uow.run_for_scheduler()
+    assert failure is None
+    assert counter["n"] == 1
+    assert uow.result() == 1
+
+
+def test_run_for_scheduler_control_thread_abort_outcome_wins():
+    # A barrier abort (control-thread set_exception) decided this unit's
+    # outcome; the worker's late execution must not overwrite or raise.
+    uow = UnitOfWork(lambda: "late")
+    abort = OperationCancelledError("aborted by barrier")
+    uow.set_exception(abort)
+    failure = uow.run_for_scheduler()
+    assert failure is None
+    assert uow.exception() is abort
+
+
+def test_run_for_scheduler_on_cleaned_unit_is_noop():
+    uow = UnitOfWork(lambda: 1)
+    uow.cleanup()
+    assert uow.run_for_scheduler() is None

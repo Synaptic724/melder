@@ -420,8 +420,14 @@ class Bind(Cleanable):
         Contract:
             - Fingerprints normalized bind-time metadata only, not transient
               runtime object identity.
-            - Uses the explicit `v3-binding` schema prefix so future
-              fingerprint-shape changes can version cleanly.
+            - Uses the explicit `v4-binding` schema prefix so future
+              fingerprint-shape changes can version cleanly. v4 replaced the
+              class source preview (first-5-lines text: docstring-sensitive,
+              constructor-blind, and the only source-file read on the bind
+              hot path) with the constructor signature string, so the
+              fingerprint tracks exactly the shape compiled wiring depends
+              on: constructor changes invalidate caches, docstring edits do
+              not.
             - Includes the direct bind-time parameters that shape later
               compiler/runtime behavior: spell_name, spellframe, binding_name,
               existence, and resolved disposal metadata.
@@ -431,7 +437,7 @@ class Bind(Cleanable):
             str: Deterministic SHA256 fingerprint for the supplied binding
                 profile.
         """
-        parts: list[str] = ["v3-binding"]  # fingerprint schema version
+        parts: list[str] = ["v4-binding"]  # fingerprint schema version
 
         if isinstance(profile, ClassBindingProfile):
             parts += [
@@ -442,7 +448,7 @@ class Bind(Cleanable):
                 ",".join(sorted(profile.mro)),
                 ",".join(sorted(profile.annotations.keys())),
                 ",".join(sorted(profile.method_names)),
-                (profile.source_preview or "").strip(),
+                profile.init_signature or "",
             ]
         elif isinstance(profile, CallableBindingProfile):
             param_parts = [

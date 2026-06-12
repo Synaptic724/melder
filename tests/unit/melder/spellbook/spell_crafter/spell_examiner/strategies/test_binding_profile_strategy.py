@@ -261,7 +261,11 @@ def test_binding_profile_strategy_class_profile_fallbacks_clear_optional_source_
         Verify class-profile building tolerates annotation/file/source failures.
     Contract:
         - Failed annotation resolution falls back to an empty dict.
-        - Missing file/source information falls back to None.
+        - Missing file information falls back to None.
+        - origin_line now comes from `__firstlineno__` (no source-file read),
+          so it survives unreadable sources.
+        - The lazy `source_preview` property degrades to None when the
+          source read fails on first access.
     Returns:
         None.
     """
@@ -280,7 +284,7 @@ def test_binding_profile_strategy_class_profile_fallbacks_clear_optional_source_
 
     assert profile.annotations == {}
     assert profile.origin_file is None
-    assert profile.origin_line is None
+    assert profile.origin_line == getattr(Sample, "__firstlineno__", None)
     assert profile.source_preview is None
 
 

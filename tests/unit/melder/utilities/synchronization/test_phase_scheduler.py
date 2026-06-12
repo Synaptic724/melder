@@ -213,3 +213,123 @@ def test_idle_workers_survive_empty_queue_timeouts_between_phases():
         assert scheduler.alive_before_phase["p2"] == scheduler.workers
     finally:
         scheduler.cleanup()
+
+
+def test_persistent_pool_reuses_same_threads_across_runs():
+    # v2 contract: one worker pool serves every run for the scheduler's
+    # lifetime; a second run spawns no new threads.
+    cfg = DummyConfig(workers=3, timeout_ms=2000)
+    scheduler = PhaseScheduler(spellbook=object(), configuration=cfg)
+    try:
+        scheduler.register_phase(
+            "run1",
+            lambda: [scheduler.create_unit_of_work(lambda: "a")],
+        )
+        scheduler.run_all_phases("cid")
+        first_threads = list(scheduler._threads)
+        assert len(first_threads) == 3
+
+        scheduler.register_phase(
+            "run2",
+            lambda: [scheduler.create_unit_of_work(lambda: "b")],
+        )
+        results = scheduler.run_all_phases("cid")
+        assert results["run2"][0].result() == "b"
+        assert scheduler._threads == first_threads
+        assert all(thread.is_alive() for thread in scheduler._threads)
+    finally:
+        scheduler.cleanup()
+
+
+def test_per_run_cancellation_scope_does_not_poison_next_run():
+    # v2 contract: a failed/aborted run's cancellation cannot leak into the
+    # next run on the same persistent pool.
+    cfg = DummyConfig(workers=2, timeout_ms=2000)
+    scheduler = PhaseScheduler(spellbook=object(), configuration=cfg)
+    try:
+        err = RuntimeError("boom")
+        scheduler.register_phase(
+            "failing",
+            lambda: [
+                scheduler.create_unit_of_work(
+                    lambda: (_ for _ in ()).throw(err)
+                )
+            ],
+        )
+        with pytest.raises(PhaseExecutionError):
+            scheduler.run_all_phases("cid")
+        assert scheduler.is_cancelled is True
+
+        scheduler.register_phase(
+            "healthy",
+            lambda: [scheduler.create_unit_of_work(lambda: "ok")],
+        )
+        results = scheduler.run_all_phases("cid")
+        assert results["healthy"][0].result() == "ok"
+        assert scheduler.is_cancelled is False
+    finally:
+        scheduler.cleanup()
+
+
+def test_registrations_are_cleared_after_every_run_outcome():
+    # v2 contract: phase registrations are per-run state in all outcomes.
+    cfg = DummyConfig(workers=1, timeout_ms=2000)
+    scheduler = PhaseScheduler(spellbook=object(), configuration=cfg)
+    try:
+        scheduler.register_phase(
+            "p1",
+            lambda: [scheduler.create_unit_of_work(lambda: 1)],
+        )
+        scheduler.run_all_phases("cid")
+        assert scheduler.run_all_phases("cid") == {}
+
+        scheduler.register_phase(
+            "failing",
+            lambda: [
+                scheduler.create_unit_of_work(
+                    lambda: (_ for _ in ()).throw(RuntimeError("boom"))
+                )
+            ],
+        )
+        with pytest.raises(PhaseExecutionError):
+            scheduler.run_all_phases("cid")
+        assert scheduler.run_all_phases("cid") == {}
+    finally:
+        scheduler.cleanup()
+
+
+def test_clear_phases_discards_stale_registrations_before_run():
+    cfg = DummyConfig(workers=1, timeout_ms=2000)
+    scheduler = PhaseScheduler(spellbook=object(), configuration=cfg)
+    try:
+        scheduler.register_phase(
+            "stale",
+            lambda: [scheduler.create_unit_of_work(lambda: "stale")],
+        )
+        scheduler.clear_phases()
+        assert scheduler.run_all_phases("cid") == {}
+        # The name is reusable after clearing.
+        scheduler.register_phase(
+            "stale",
+            lambda: [scheduler.create_unit_of_work(lambda: "fresh")],
+        )
+        results = scheduler.run_all_phases("cid")
+        assert results["stale"][0].result() == "fresh"
+    finally:
+        scheduler.cleanup()
+
+
+def test_cleanup_terminates_pool_threads():
+    cfg = DummyConfig(workers=4, timeout_ms=2000)
+    scheduler = PhaseScheduler(spellbook=object(), configuration=cfg)
+    scheduler.register_phase(
+        "p1",
+        lambda: [scheduler.create_unit_of_work(lambda: "x")],
+    )
+    scheduler.run_all_phases("cid")
+    threads = list(scheduler._threads)
+    assert len(threads) == 4
+    scheduler.cleanup()
+    for thread in threads:
+        thread.join(timeout=5.0)
+    assert not any(thread.is_alive() for thread in threads)
