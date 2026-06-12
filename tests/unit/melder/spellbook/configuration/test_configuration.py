@@ -129,11 +129,27 @@ def test_validate_ai_native_allowed_in_dynamic_system_state():
 
 
 def test_validate_disposal_type():
+    # `disposal` is idempotent and pre-set by load_default_dictionary(), so a
+    # badly typed value can only enter as the FIRST set on a defaults-free
+    # configuration. The other schema properties are supplied with valid
+    # values so validation fails on the disposal type specifically.
+    cfg = SpellbookConfiguration()
+    cfg.set_property("disposal", "yes")
+    cfg.set_property("disposal_method_names", [])
+    cfg.set_property("phase_scheduler_workers_per_spellbook", 1)
+    cfg.set_property("phase_scheduler_barrier_timeout_milliseconds", 1000)
+    with pytest.raises(ValueError, match="disposal"):
+        cfg.validate()
+
+
+def test_disposal_is_locked_once_defaults_are_loaded():
+    # Pins the idempotency contract that replaced free re-assignment:
+    # load_default_dictionary() seeds `disposal`, and idempotent properties
+    # are set-once, so any later set raises.
     cfg = SpellbookConfiguration()
     cfg.load_default_dictionary()
-    cfg.set_property("disposal", "yes")
-    with pytest.raises(ValueError):
-        cfg.validate()
+    with pytest.raises(RuntimeError, match="idempotent"):
+        cfg.set_property("disposal", True)
 
 
 def test_freeze_is_idempotent_and_blocks_mutation():

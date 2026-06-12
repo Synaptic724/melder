@@ -767,6 +767,6 @@ class CompilerPhase3:
         except AttributeError:
             # Test stubs may not implement the build-details hook.
             pass
-        SharedCompilerExecutions.capture_phase2_5_codegen_ir(spell, artifact)
+        # Eager phase2_5 IR capture removed (write-only; see compiler_phase_2).
 
 

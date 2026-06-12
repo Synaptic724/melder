@@ -175,7 +175,4 @@ class CompilerPhase4:
                             change_reason=SpellStateChangeReason.validation_passed,
                             flags_to_remove=[SpellState.contract_unvalidated],
                         )
-        SharedCompilerExecutions.capture_phase2_5_codegen_ir(
-            spell,
-            artifact,
-        )
+        # Eager phase2_5 IR capture removed (write-only; see compiler_phase_2).

@@ -176,7 +176,9 @@ class CompilerPhase2:
             spell_version_id=version_id,
             dependencies=deps,
         )
-        SharedCompilerExecutions.capture_phase2_5_codegen_ir(
-            spell,
-            artifact,
-        )
+        # NOTE: the eager `capture_phase2_5_codegen_ir` export that used to
+        # run here (and in phases 3-5) was removed: the snapshot had no
+        # production readers and `reset_phase2_5_codegen_ir` discarded it at
+        # the end of the same resolution pass. The capture helper remains in
+        # SharedCompilerExecutions as the seam for a future incremental
+        # recompile path; call it on demand if that path materializes.
