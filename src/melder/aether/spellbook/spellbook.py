@@ -3106,10 +3106,6 @@ and logging.
             # resolution defaults for the new spell. Existing-object spells are
             # also eagerly registered into Creations.
             if self._conjured and self._conduit is not None:
-                full_ahead_of_time_compilation = self._get_required_configuration().get_property(
-                    "full_ahead_of_time_compilation"
-                )
-
                 conduit = self._get_required_conduit_surface()
                 caching_enabled = self._resolve_system_caching_enabled()
                 new_spell._add_owned_conduit(
@@ -3121,7 +3117,10 @@ and logging.
                     caching_enabled=caching_enabled,
                 )
                 spell_index._set_owner_conduit_id(conduit._id)
-                new_spell.resolution_required = not full_ahead_of_time_compilation
+                # Compilation is always full/eager (AOT/JIT knob removed);
+                # post-conjure spells get compiled via the gated revalidation
+                # paths, not via a deferred-resolution flag.
+                new_spell.resolution_required = False
                 if new_spell.user_created_object is not None:
                     try:
                         conduit._register_to_creations(

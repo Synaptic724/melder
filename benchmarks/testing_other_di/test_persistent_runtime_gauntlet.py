@@ -139,7 +139,7 @@ class PersistentConfig:
     def from_env(scenario: str) -> "PersistentConfig":
         cfg = PersistentConfig(
             scenario=scenario,
-            duration_s=_env_float("PERSISTENT_GAUNTLET_SECONDS", 120.0),
+            duration_s=_env_float("PERSISTENT_GAUNTLET_SECONDS", 300.0),
             warmup_s=_env_float("PERSISTENT_GAUNTLET_WARMUP_SECONDS", 10.0),
             threads=_env_int("PERSISTENT_GAUNTLET_THREADS", 10),
             sample_every=max(1, _env_int("PERSISTENT_GAUNTLET_SAMPLE_EVERY", 1000)),

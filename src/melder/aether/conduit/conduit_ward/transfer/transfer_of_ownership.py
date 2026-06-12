@@ -867,8 +867,10 @@ class TransferOfOwnership(Cleanable):
             spell_obj._owner_conduit_id = self.source_conduit._id
         except Exception:
             pass
-        source_resolution_required = self._get_resolution_required_for_spellbook(src_book)
-        spell_obj.resolution_required = source_resolution_required
+        # Compilation is always full/eager (AOT/JIT knob removed). Post-transfer
+        # recompilation is guaranteed by resolution_complete=False plus the
+        # cleared phase artifacts, not by a deferred-resolution flag.
+        spell_obj.resolution_required = False
         spell_obj.resolution_complete = False
         src_states = src_book._spell_system_states
         tgt_states = tgt_book._spell_system_states
@@ -877,33 +879,6 @@ class TransferOfOwnership(Cleanable):
         if tgt_states is not None and tgt_states is not src_states:
             tgt_states.unregister_index(spell_obj.spell_index)
         src_states.register_index(spell_obj.spell_index)
-
-    def _get_resolution_required_for_spellbook(self, spellbook: Any) -> bool:
-        """
-        Compute transfer-time runtime-resolution gating for a spellbook owner.
-
-        Contract:
-            - Returns False when the owner has no configuration object (test-stub fallback).
-            - Otherwise trusts `full_ahead_of_time_compilation` from configuration
-              and returns the inverse runtime gate flag.
-        Args:
-            spellbook: Owning spellbook for the post-transfer spell.
-        Returns:
-            bool: True when runtime resolution is required for this owner.
-        Raises:
-            Any exception from `configuration.get_property` when configuration exists.
-        """
-        self.check_cleaned()
-        try:
-            configuration = spellbook._configuration
-        except AttributeError:
-            return False
-        if configuration is None:
-            return False
-        full_ahead_of_time_compilation = configuration.get_property(
-            "full_ahead_of_time_compilation"
-        )
-        return not full_ahead_of_time_compilation
 
     def _unshare_target_conduit_contract(self, spell_obj: Any) -> None:
         """
@@ -1414,10 +1389,9 @@ class TransferOfOwnership(Cleanable):
                 creation_gate_controller=self.target_conduit._creation_gate_controller,
                 caching_enabled=caching_enabled,
             )
-            target_resolution_required = self._get_resolution_required_for_spellbook(
-                tgt_book
-            )
-            spell_obj.resolution_required = target_resolution_required
+            # Same contract as the source-side rollback path: eager compilation
+            # everywhere, recompile driven by resolution_complete=False.
+            spell_obj.resolution_required = False
             spell_obj.resolution_complete = False
             tgt_book._publish_spell_record_to_nexus(spell_obj)
         except Exception as e:

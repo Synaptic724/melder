@@ -101,7 +101,6 @@ class SpellbookConfiguration(Cleanable):
         self.available_properties: Dict[str, Type] = {
             "disposal": bool,
             "disposal_method_names": list,
-            "full_ahead_of_time_compilation": bool,
             "phase_scheduler_workers_per_spellbook": int,
             "phase_scheduler_barrier_timeout_milliseconds": int,
         }
@@ -367,7 +366,6 @@ class SpellbookConfiguration(Cleanable):
         defaults = {
             "disposal": False,
             "disposal_method_names": [],
-            "full_ahead_of_time_compilation": True,
             "phase_scheduler_workers_per_spellbook": 5,
             "phase_scheduler_barrier_timeout_milliseconds": 60000,
         }
@@ -636,31 +634,6 @@ class SpellbookConfiguration(Cleanable):
         self.set_property("phase_scheduler_barrier_timeout_milliseconds", timeout_milliseconds)
         return self
 
-    def with_full_ahead_of_time_compilation(self, enabled: bool = True) -> "SpellbookConfiguration":
-        """
-        Fluent
-
-        Set whether spells should be fully ahead-of-time compiled at conjuring.
-
-        Semantics:
-        - "True": Full AOT mode. Conjure/runtime behaviour follows the current eager compilation flow.
-        - "False": JIT mode. Downstream runtime gates may defer selected
-          resolution work until the first runtime use.
-
-        Args:
-            enabled (bool): Desired compilation mode flag.
-
-        Returns:
-            SpellbookConfiguration: This same configuration instance (for chaining).
-
-        Raises:
-            TypeError: If "enabled" is not a bool.
-        """
-        if not isinstance(enabled, bool):
-            raise TypeError("full_ahead_of_time_compilation must be a bool.")
-        self.set_property("full_ahead_of_time_compilation", enabled)
-        return self
-
     def with_hook(self, spellbook_id: str, hook_name: str, hook: Callable[..., Any]) -> "SpellbookConfiguration":
         """
         Fluent
@@ -713,8 +686,7 @@ class SpellbookConfiguration(Cleanable):
 
         Behaviour:
         - Sets local rich-config defaults:
-          disposal=False, disposal_method_names=[],
-          full_ahead_of_time_compilation=True.
+          disposal=False, disposal_method_names=[].
         - Respects idempotency and immutability rules (raises if frozen or cleaned).
 
         Returns:

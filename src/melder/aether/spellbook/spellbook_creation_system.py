@@ -299,8 +299,7 @@ class SpellbookCreationSystem(Cleanable):
 
         Contract:
             - Uses the Spellbook-owned cache-enabled bool as the first gate.
-            - Reads dynamic/automatic posture from the caller and AOT/JIT
-              posture from configuration.
+            - Reads dynamic/automatic posture from the caller.
             - Builds exact-match, mixed, and miss sets from live spell ids and
               cached spell ids.
             - Live spell ids cover payload-eligible spells only:
@@ -322,12 +321,6 @@ class SpellbookCreationSystem(Cleanable):
                 Cache-state summary containing the cache utility, runtime
                 posture flags, spell-id sets, and the classified cache path.
         """
-        full_ahead_of_time_compilation = (
-            SpellbookCreationSystem._read_full_ahead_of_time_compilation(
-                spellbook=spellbook,
-                context_name="_build_conjure_cache_state",
-            )
-        )
         caching_enabled = spellbook._system_caching_enabled_in_aether()
         live_spell_ids = {
             spell_id
@@ -352,8 +345,6 @@ class SpellbookCreationSystem(Cleanable):
             "caching_system": caching_system,
             "dynamic_mode": bool(dynamic),
             "automatic_mode": not bool(dynamic),
-            "full_ahead_of_time_compilation": full_ahead_of_time_compilation,
-            "jit_mode": not full_ahead_of_time_compilation,
             "live_spell_ids": live_spell_ids,
             "cached_spell_ids": cached_spell_ids,
             "matched_spell_ids": matched_spell_ids,
@@ -1091,14 +1082,11 @@ class SpellbookCreationSystem(Cleanable):
         Raises:
             None.
         """
-        full_ahead_of_time_compilation = (
-            SpellbookCreationSystem._read_full_ahead_of_time_compilation(
-                spellbook=spellbook,
-                context_name="_define_conduit_into_spells",
-            )
-        )
         caching_enabled = spellbook._resolve_system_caching_enabled()
-        resolution_required: bool = not full_ahead_of_time_compilation
+        # Conjure-time compilation is always full/eager now (the AOT/JIT knob
+        # was removed once caching became the default skip mechanism), so no
+        # spell starts life owing deferred resolution work.
+        resolution_required: bool = False
         with spellbook._lock:
             for spell in spellbook._spells.values():
                 try:
@@ -1128,53 +1116,6 @@ class SpellbookCreationSystem(Cleanable):
                         "_define_conduit_into_spells",
                         exc_info=True,
                     )
-
-    @staticmethod
-    def _read_full_ahead_of_time_compilation(
-            *,
-            spellbook: Spellbook,
-            context_name: str,
-    ) -> bool:
-        """
-        Purpose:
-            Read `full_ahead_of_time_compilation` from the configuration.
-        Contract:
-            - Defaults to `True` when configuration does not expose a value.
-            - Accepts only boolean configuration values.
-            - Logs retrieval failures and falls back to `True`.
-        Args:
-            spellbook: Owning Spellbook instance.
-            context_name: Logging context for fallback diagnostics.
-        Returns:
-            bool: True for AOT mode; False for JIT/deferred mode.
-        Raises:
-            None.
-        """
-        full_ahead_of_time_compilation: bool = True
-        configuration = spellbook._configuration
-        if configuration is None:
-            return full_ahead_of_time_compilation
-        try:
-            configured_value = configuration.get_property(
-                "full_ahead_of_time_compilation"
-            )
-            if configured_value is None:
-                return full_ahead_of_time_compilation
-            if not isinstance(configured_value, bool):
-                raise TypeError(
-                    "full_ahead_of_time_compilation must be a bool. "
-                    f"Got {type(configured_value).__name__}."
-                )
-            return configured_value
-        except KeyError:
-            return full_ahead_of_time_compilation
-        except Exception as exc:
-            spellbook._logger.error(
-                f"Failed to read full_ahead_of_time_compilation; defaulting to True: {exc}",
-                context_name,
-                exc_info=True,
-            )
-            return full_ahead_of_time_compilation
 
     @staticmethod
     def get_conjure_hook_map(spellbook: Spellbook) -> Optional[Mapping[str, List[Callable]]]:
@@ -1423,13 +1364,16 @@ class SpellbookCreationSystem(Cleanable):
         Contract:
             - Requires a non-empty conduit id.
             - Runs foundational phases first.
-            - Runs plan phases only when foundational phases have no errors and
-              `full_ahead_of_time_compilation` is enabled.
+            - Runs plan phases whenever foundational phases have no errors,
+              unless the caller forces a skip (cache full-hit path).
             - Cleans per-spell phase artifacts before returning.
         Args:
             spellbook: Owning Spellbook instance.
             conduit_id: Conduit id used for resolution scope.
             phase_scheduler_cls: Phase scheduler class to instantiate.
+            force_skip_plan_phases: True only on the cache full-hit path,
+                where plan phases (8-11) are hydrated from the cache bundle
+                instead of recompiled. None/False means run them.
         Returns:
             Dict[str, Sequence[UnitOfWork]]: Phase result mapping.
         Raises:
@@ -1439,16 +1383,7 @@ class SpellbookCreationSystem(Cleanable):
         if not conduit_id:
             raise ValueError("conduit_id must not be empty.")
 
-        if force_skip_plan_phases is None:
-            full_ahead_of_time_compilation = (
-                SpellbookCreationSystem._read_full_ahead_of_time_compilation(
-                    spellbook=spellbook,
-                    context_name="_run_resolution_phases_for_conduit",
-                )
-            )
-            resolved_skip_plan_phases = not full_ahead_of_time_compilation
-        else:
-            resolved_skip_plan_phases = bool(force_skip_plan_phases)
+        resolved_skip_plan_phases = bool(force_skip_plan_phases)
         plan_skip_state: List[Optional[bool]] = [None]
         compiler_system = SpellCompilerSystem()
         try:
