@@ -256,6 +256,23 @@ def emit_step_plan_source(
     ]
     if not locals_mode:
         lines.append("    instance_results = {}")
+    # Hoist the caller_creations guard: it is call-constant, so checking it
+    # once replaces the per-step re-checks the CALLER/SPELLSPACE routing
+    # used to emit (6-7 redundant branches per body on the gauntlet graph).
+    if any(
+            row["creations_target_kind"]
+            in (
+                SpellGeneralizedCodegenPlanTargetKind.CALLER,
+                SpellGeneralizedCodegenPlanTargetKind.SPELLSPACE,
+            )
+            for row in rows
+    ):
+        lines.extend([
+            "    if caller_creations is None:",
+            "        raise RuntimeError(",
+            "            \"No-overrides codegen CALLER/SPELLSPACE execution requires caller_creations.\"",
+            "        )",
+        ])
     for step_index, row in enumerate(rows):
         _append_step_resolution_source(
             lines=lines,
@@ -335,6 +352,11 @@ def _append_step_resolution_source(
         lines=lines,
         step_index=step_index,
         target_kind=row["creations_target_kind"],
+        # many-without-disposal steps are pure constructor calls: no
+        # registration block, no lock, so their creations alias is dead.
+        needs_creations_alias=not (
+            existence is Existence.many and not has_disposal_methods
+        ),
     )
 
     if existence is Existence.many:
@@ -401,18 +423,19 @@ def _append_step_resolution_source(
         return
 
     if row["use_spell_lock_hint"]:
+        # The lock-mode decision is only consumed on a MISS, so it is
+        # computed inside the miss branch: warm hits (singletons after
+        # cycle #1) skip the two reads and the compare entirely.
         lines.extend([
-            f"    use_spell_lock_{step_index} = True",
-            "    if (",
-            "            caller_creations_lock_held",
-            f"            and creations_{step_index} is caller_creations",
-            "    ):",
-            f"        use_spell_lock_{step_index} = False",
             (
                 f"    instance_{step_index} = "
                 f"creations_{step_index}._creations.get(spell_id_{step_index})"
             ),
             f"    if instance_{step_index} is None:",
+            f"        use_spell_lock_{step_index} = not (",
+            "            caller_creations_lock_held",
+            f"            and creations_{step_index} is caller_creations",
+            "        )",
             f"        if use_spell_lock_{step_index}:",
             f"            with spell_{step_index}._lock:",
             f"                with creations_{step_index}._lock:",
@@ -503,21 +526,27 @@ def _append_creations_target_source(
         lines: list,
         step_index: int,
         target_kind: int,
+        needs_creations_alias: bool = True,
 ) -> None:
     """
     Append static creations-target routing source for one step.
+
+    Contract:
+        - `needs_creations_alias=False` (caller/spellspace lanes only)
+          suppresses the `creations_N` local for steps whose emitted body
+          never reads it; OWNER routing always emits because the alias IS
+          the routing result and the branch carries a real guard.
     """
     if target_kind in (
             SpellGeneralizedCodegenPlanTargetKind.CALLER,
             SpellGeneralizedCodegenPlanTargetKind.SPELLSPACE,
     ):
-        lines.extend([
-            "    if caller_creations is None:",
-            "        raise RuntimeError(",
-            "            \"No-overrides codegen CALLER/SPELLSPACE execution requires caller_creations.\"",
-            "        )",
-            f"    creations_{step_index} = caller_creations",
-        ])
+        # The None guard is hoisted to the top of the emitted body (it is
+        # call-constant); steps that never read their creations alias
+        # (many-without-disposal: pure constructor, no registration and no
+        # lock) skip the dead assignment entirely.
+        if needs_creations_alias:
+            lines.append(f"    creations_{step_index} = caller_creations")
         return
 
     if target_kind == SpellGeneralizedCodegenPlanTargetKind.OWNER:
