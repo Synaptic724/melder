@@ -119,10 +119,20 @@ class SpellIndex(Cleanable):
 
         Contract:
             - Returns the live version pointer, not a historical value.
-            - Reads are lock-guarded so callers never observe a torn update.
+            - Lock-free read: the pointer is one attribute holding one string
+              reference, so a reader observes either the previous or the new
+              id, never a torn value. `update(...)` still serializes writers
+              and lookup-map propagation under the instance lock; that
+              composite update was never atomic for readers of this property,
+              so dropping the read lock does not weaken the visible contract.
+
+        Threading:
+            - Safe on free-threaded builds; attribute reference loads are
+              atomic. This property is the hottest fingerprint read in the
+              compiler phases (thousands of reads per conjure), and the
+              per-read RLock acquire/release dominated its cost on nogil.
         """
-        with self._lock:
-            return self._current_id
+        return self._current_id
 
     def update(self, new_id: str) -> None:
         """

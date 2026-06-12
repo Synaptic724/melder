@@ -30,12 +30,24 @@ class CounterSwitch(Cleanable):
         - Positive deltas append; negative deltas pop.
         - Event is cleared only for state "1" and set for all other states.
 
+    Fast-state mirror:
+        - "fast_state" is a plain int slot mirroring the deque cardinality for
+          lock-free hot-path readers (one attribute load, no descriptor call,
+          no "len()" call).
+        - The deque remains the authoritative state; the mirror is written at
+          every mutation point ("__init__", "advance", "selector" leader
+          claim) immediately after the deque mutation.
+        - Readers tolerate the same transient staleness window as a raw
+          "len(self._tickets)" read; publication ordering guarantees are
+          unchanged because the mirror is only ever written after the deque
+          reflects the new state.
+
     Design intent:
         - Minimal API surface for hot paths.
         - Non-defensive by design.
     """
 
-    __slots__ = ("_lock", "_event", "_tickets")
+    __slots__ = ("_lock", "_event", "_tickets", "fast_state")
     def __init__(self, state: int = 2) -> None:
         """
         Public API
@@ -52,6 +64,8 @@ class CounterSwitch(Cleanable):
         self._tickets: deque[None] = deque()
         if state > 0:
             self._tickets.extend([None] * state)
+        # Hot-path read mirror; see class docstring for the staleness contract.
+        self.fast_state: int = len(self._tickets)
         if state == 1:
             self._event.clear()
         else:
@@ -67,18 +81,21 @@ class CounterSwitch(Cleanable):
             - Clears all tickets before invalidation.
             - Sets the event before nulling references so waiting followers are
               released.
-            - Marks the switch cleaned and drops lock/event/ticket storage.
+            - Marks the switch cleaned and drops lock/event/ticket storage plus
+              the fast-state mirror.
         """
         if self._cleaned:
             return
 
         self._tickets.clear()
+        self.fast_state = 0
         self._event.set()
         self._cleaned = True
 
         del self._event
         del self._tickets
         del self._lock
+        del self.fast_state
 
     def __len__(self) -> int:
         """
@@ -127,6 +144,9 @@ class CounterSwitch(Cleanable):
             for _ in range(-delta):
                 self._tickets.pop()
         count = len(self._tickets)
+        # Mirror write happens after the deque mutation so hot readers can
+        # only observe a state the deque has already reached.
+        self.fast_state = count
         if count == 1:
             self._event.clear()
         else:
@@ -163,6 +183,9 @@ class CounterSwitch(Cleanable):
                     return count
                 if count == 0:
                     self._tickets.append(None)
+                    # Leader claim is a deque mutation, so the fast-state
+                    # mirror must be updated here as well.
+                    self.fast_state = 1
                     self._event.clear()
                     return 1
 

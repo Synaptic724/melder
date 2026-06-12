@@ -185,7 +185,11 @@ class SpellSpaceMeld(Meld):
         # 1) Resolve the spell object from the Spellbook / SpellIndex.
         target_spell: Optional[Spell] = None
         if isinstance(spell, str):
-            target_spell = self._resolve_spell_by_id(spell)
+            # Hot path: inline the dominant spell-id-pool hit so warm id-string
+            # melds resolve with one dict read instead of one helper frame.
+            target_spell = self._spell_id_pool.get(spell)
+            if target_spell is None:
+                target_spell = self._resolve_spell_by_id(spell)
         else:
             input_resolution_cache = self._input_resolution_cache
             cache_key = (spell_name, spell, spellframe, binding_name)
@@ -220,8 +224,10 @@ class SpellSpaceMeld(Meld):
                     )
                 input_resolution_cache[cache_key] = target_spell.spell_id
         # 2) Caller overrides replace the stored mutation override payload.
+        # Hot path: read the owned slot directly instead of paying the
+        # `mutation_override` property descriptor per meld.
         if spell_override is None:
-            override_map = target_spell.mutation_override
+            override_map = target_spell._mutation_override
         else:
             override_map = self._normalize_spell_override(spell_override)
 
@@ -238,17 +244,33 @@ class SpellSpaceMeld(Meld):
         meld_hooks = self._meld_hooks
         spell_hooks_enabled = target_spell._hooks_enabled
         if not (meld_hooks or spell_hooks_enabled):
-            if target_spell._creation_context_switch.state >= 2:
+            if target_spell._creation_context_switch.fast_state >= 2:
                 creation_context = target_spell._creation_context
             else:
                 creation_context = target_spell._get_or_build_creation_context()
             if creation_context is None:
                 raise RuntimeError("Spell returned no live CreationContext.")
-            instance = creation_context.execute_no_hooks(
-                creations,
-                override_map,
-            )
-            self._spellbook._emit_cache_file_if_required()
+            # Hot path: in non-dynamic mode dispatch the phase-11 runtime door
+            # directly so the no-hooks lane skips the `execute_no_hooks`
+            # wrapper frame. The executor reference is read through the live
+            # context per call and is never cached on this door, so a
+            # recompiled/cleaned context can never leak a stale executor.
+            if creation_context._dynamic_environment:
+                instance = creation_context.execute_no_hooks(
+                    creations,
+                    override_map,
+                )
+            elif override_map is None:
+                instance = creation_context._no_overrides_executor(creations)[0]
+            else:
+                instance = creation_context._overrides_executor(
+                    creations,
+                    override_map,
+                )[0]
+            # Hot path: inline the staged-cache flag check; the emit helper is
+            # only entered when an emit is actually pending.
+            if self._spellbook._cache_emit_required:
+                self._spellbook._emit_cache_file_if_required()
 
             # 7) Return the resolved instance.
             return instance
@@ -257,7 +279,7 @@ class SpellSpaceMeld(Meld):
             self._execute_hooks(target_spell._pre_hooks, "pre_cast")
             self._fire_meld_hooks("on_meld_pre_resolve", target_spell)
 
-            if target_spell._creation_context_switch.state >= 2:
+            if target_spell._creation_context_switch.fast_state >= 2:
                 creation_context = target_spell._creation_context
             else:
                 creation_context = target_spell._get_or_build_creation_context()
@@ -276,7 +298,8 @@ class SpellSpaceMeld(Meld):
             # 2) Execute post-cast hooks (still no arguments for now).
             self._execute_hooks(target_spell._post_hooks, "post_cast")
             self._fire_meld_hooks("on_meld_post_resolve", target_spell)
-            self._spellbook._emit_cache_file_if_required()
+            if self._spellbook._cache_emit_required:
+                self._spellbook._emit_cache_file_if_required()
 
             # 3) Return the resolved instance.
             return instance

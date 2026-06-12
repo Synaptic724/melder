@@ -173,3 +173,36 @@ def test_safe_logger_cleanup_calls_channel_cleanup():
     logger._is_channel = True
     logger.cleanup()
     assert ("cleanup",) in channel.calls
+
+
+def test_safe_logger_is_attached_reflects_wrapped_sink():
+    """
+    Purpose:
+        Verify the hot-path attachment probe matches the wrapped sink state.
+    Contract:
+        - Null surface reports not attached.
+        - Stdlib-backed and channel-backed surfaces report attached.
+    """
+    assert SafeLogger(None).is_attached is False
+
+    std_logger = logging.getLogger("safe-logger-is-attached-std")
+    assert SafeLogger(std_logger).is_attached is True
+
+    channel_mock = mock.create_autospec(IChannelLogger, instance=True)
+    channel_mock.setLevel = mock.Mock()
+    assert SafeLogger(channel_mock).is_attached is True
+
+
+def test_safe_logger_is_attached_false_after_cleanup():
+    """
+    Purpose:
+        Verify cleanup downgrades the attachment probe to False.
+    Contract:
+        - After ``cleanup()`` releases the wrapped reference, callers gating
+          on ``is_attached`` skip message construction entirely.
+    """
+    std_logger = logging.getLogger("safe-logger-is-attached-cleanup")
+    safe_logger = SafeLogger(std_logger)
+    assert safe_logger.is_attached is True
+    safe_logger.cleanup()
+    assert safe_logger.is_attached is False

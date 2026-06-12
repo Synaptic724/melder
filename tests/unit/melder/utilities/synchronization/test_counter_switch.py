@@ -227,3 +227,65 @@ def test_counter_switch_post_cleanup_usage_breaks_fast() -> None:
     switch.cleanup()
     with pytest.raises(AttributeError):
         _ = switch.selector()
+
+
+def test_counter_switch_fast_state_mirrors_construction_states() -> None:
+    """
+    Purpose:
+        Verify the fast-state mirror matches deque state after construction.
+    Contract:
+        - ``fast_state`` equals authoritative ``state`` for idle, pending,
+          open, and above-open construction values.
+    """
+    for initial_state in (0, 1, 2, 3):
+        switch = CounterSwitch(initial_state)
+        assert switch.fast_state == initial_state
+        assert switch.fast_state == switch.state
+
+
+def test_counter_switch_fast_state_tracks_advance_mutations() -> None:
+    """
+    Purpose:
+        Verify signed advances keep the fast-state mirror exact.
+    Contract:
+        - Mirror matches authoritative state after each signed mutation.
+        - ``advance(0)`` leaves the mirror untouched.
+    """
+    switch = CounterSwitch(0)
+    assert switch.advance(3) == 3
+    assert switch.fast_state == 3
+    assert switch.advance(-2) == 1
+    assert switch.fast_state == 1
+    assert switch.advance(0) == 1
+    assert switch.fast_state == 1
+    assert switch.advance(-1) == 0
+    assert switch.fast_state == 0
+
+
+def test_counter_switch_fast_state_tracks_selector_leader_claim() -> None:
+    """
+    Purpose:
+        Verify the selector leader claim updates the fast-state mirror.
+    Contract:
+        - Idle leader claim moves the mirror ``0 -> 1`` so hot readers
+          cannot observe an open state before publication advances it.
+    """
+    switch = CounterSwitch(0)
+    assert switch.selector() == 1
+    assert switch.fast_state == 1
+    assert switch.fast_state == switch.state
+
+
+def test_counter_switch_cleanup_drops_fast_state_mirror() -> None:
+    """
+    Purpose:
+        Verify cleanup removes the fast-state mirror with other internals.
+    Contract:
+        - Post-cleanup reads of ``fast_state`` fail fast instead of serving
+          a stale open state.
+    """
+    switch = CounterSwitch()
+    switch.cleanup()
+    assert not hasattr(switch, "fast_state")
+    with pytest.raises(AttributeError):
+        _ = switch.fast_state

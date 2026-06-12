@@ -163,17 +163,33 @@ class SpellSpace(Cleanable):
             - Clears spellspace-local creations before returning this
               spellspace to the pool.
             - Keeps collaborator references intact for later reuse.
+
+        Threading / Concurrency:
+            - This lane runs without the spellspace `RLock` because managed
+              spellspaces are thread-confined by construction: the pool's
+              deque pop hands the object to exactly one thread, the object
+              lives only on that thread's `SpellSpaceThreadState` stack, and
+              `pop_expected(...)` validates LIFO ownership before this method
+              runs. The pool's deque append on release is the hand-off point
+              to the next acquiring thread.
+            - `Creations.reset_for_pool()` keeps its own internal lock; the
+              spellspace-local clear remains explicit and immediate, not
+              deferred.
+            - Concurrent external `cleanup()` / `permanent_cleanup()` against
+              an in-flight managed spellspace is a caller contract violation
+              (the object is not idle in the pool and not registry-tracked),
+              matching the trusted-private-caller posture documented on
+              `SpellSpacePool.release(...)`.
         """
         if self._cleaned:
             return
         if self._permanent_cleanup_requested or self._registry_tracked:
             self.cleanup()
             return
-        with self._lock:
-            if self._cleaned:
-                return
-            self._creations.reset_for_pool()
-            self._permanent_cleanup_requested = False
+        # Hot path: lock-free by the thread-confinement contract above. The
+        # explicit spellspace-local clear still happens before pool return so
+        # scope teardown stays deterministic and owner-driven.
+        self._creations.reset_for_pool()
         self._spellspace_pool.release(self)
         
     def _cleanup_for_pool_reuse(self) -> None:

@@ -472,13 +472,16 @@ class Conduit(Cleanable):
         Internal
 
         Soft-clean active and registered spellspaces without destroying the pool.
+
+        Contract:
+            - `_spellspace_stack` is always a `SpellSpaceThreadState`: it is
+              assigned exactly once in `__init__` and only deleted during
+              permanent teardown, so this path drains it directly without a
+              defensive type probe.
         """
-        stack_holder = self._spellspace_stack
-        if isinstance(stack_holder, SpellSpaceThreadState):
-            active_spellspaces = stack_holder.drain()
-        else:
-            active_spellspaces = stack_holder.get()
-            stack_holder.set([])
+        # Hot path: runs once per pooled lesser cleanup (one per scope cycle).
+        # The stack holder type is an owned lifecycle invariant; drain directly.
+        active_spellspaces = self._spellspace_stack.drain()
         for spellspace in active_spellspaces:
             try:
                 spellspace.cleanup()

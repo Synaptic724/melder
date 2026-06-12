@@ -1001,12 +1001,17 @@ class ConduitWard(Cleanable):
             if child_ward is not None:
                 child_ward._parent_conduit = self._conduit
                 child_ward._root_conduit = root_conduit
-        self._logger.info(
-            f"link_lesser: {lesser_conduit._id}",
-            method_name="_link_lesser_conduit",
-            owner_id=self._id, owner_display=self._display_name,
-            mask=True, groups=self._log_groups, system_groups=self._log_sysgroups,
-        )
+        # Hot path: lesser linking runs once per pooled scope cycle, so skip
+        # message and keyword-payload construction entirely when no concrete
+        # log sink is attached.
+        logger = self._logger
+        if logger.is_attached:
+            logger.info(
+                f"link_lesser: {lesser_conduit._id}",
+                method_name="_link_lesser_conduit",
+                owner_id=self._id, owner_display=self._display_name,
+                mask=True, groups=self._log_groups, system_groups=self._log_sysgroups,
+            )
 
     def _get_lesser_conduit(self, conduit_id: str) -> Optional[Conduit]:
         """

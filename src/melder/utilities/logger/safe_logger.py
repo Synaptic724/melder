@@ -83,6 +83,30 @@ class SafeLogger(Cleanable):
                 pass
         self._logger = None
 
+    @property
+    def is_attached(self) -> bool:
+        """
+        Return whether a concrete logger sink is currently attached.
+
+        Purpose:
+            Give hot-path callers one cheap pre-flight check so they can skip
+            building log messages and keyword payloads entirely when this
+            adapter is a null surface.
+
+        Contract:
+            - True when a concrete `IChannelLogger` or stdlib `logging.Logger`
+              is wrapped.
+            - False for the null-logger surface, including after `cleanup()`
+              has released the wrapped reference.
+            - Does not consider the active level threshold; callers that gate
+              on this still rely on `_emit(...)` level filtering for
+              attached-but-quiet sinks.
+
+        Returns:
+            bool: True when log calls can reach a concrete sink.
+        """
+        return self._logger is not None
+
     def set_level_by_name(self, level_name: str) -> None:
         """
         Set the active log level by symbolic name.

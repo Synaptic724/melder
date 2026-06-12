@@ -303,6 +303,10 @@ class SpellbookCreationSystem(Cleanable):
               posture from configuration.
             - Builds exact-match, mixed, and miss sets from live spell ids and
               cached spell ids.
+            - Live spell ids cover payload-eligible spells only:
+              existing-creation spells bypass phases 8-11 by design and never
+              carry cache payloads, so they must not block the full-hit
+              classification.
             - Creates the Spellbook-owned CachingSystem only when caching is
               enabled.
 
@@ -325,7 +329,11 @@ class SpellbookCreationSystem(Cleanable):
             )
         )
         caching_enabled = spellbook._system_caching_enabled_in_aether()
-        live_spell_ids = set(spellbook._spell_id_pool.keys())
+        live_spell_ids = {
+            spell_id
+            for spell_id, spell in spellbook._spell_id_pool.items()
+            if not spell.is_existing_creation
+        }
         caching_system: Optional[CachingSystem] = None
         cached_spell_ids: Set[str] = set()
         if caching_enabled:
@@ -871,6 +879,14 @@ class SpellbookCreationSystem(Cleanable):
                 spellbook=spellbook,
                 cache_state=cache_state,
             )
+        if cache_state is not None and cache_state.get("cache_path") in (
+                "mixed",
+                "full_miss",
+        ):
+            SpellbookCreationSystem._stage_spell_payloads_at_conjure_end(
+                spellbook=spellbook,
+                cache_state=cache_state,
+            )
         SpellbookCreationSystem._emit_conduit_cache_file_at_conjure_end(
             spellbook=spellbook,
         )
@@ -919,6 +935,50 @@ class SpellbookCreationSystem(Cleanable):
             if spell is None:
                 continue
             spell.resolution_required = True
+
+    @staticmethod
+    def _stage_spell_payloads_at_conjure_end(
+            *,
+            spellbook: Spellbook,
+            cache_state: Dict[str, Any],
+    ) -> None:
+        """
+        Stage cache payloads for spells the conduit cache is missing.
+
+        Purpose:
+            Make conjure the staging boundary for every constructed spell so a
+            cache full hit does not depend on each spell being melded directly
+            at least once. Dependency-only spells never receive their own
+            `CreationContextFactory` publish, so meld-time staging alone leaves
+            them permanently missing from the bundle and locks the conduit
+            cache into the mixed path, recompiling phases 8-11 on every
+            conjure.
+
+        Contract:
+            - Runs only on non-full-hit conjures, after phases 8-11 have built
+              the compiler artifact for every constructed spell; staging is a
+              metadata read for manifest-first families.
+            - Delegates to `Spellbook._emit_spell_cache`, which dedupes against
+              already-staged payloads and flags the conjure-end file emit
+              boundary on success.
+            - Payload eligibility is enforced upstream: `missing_spell_ids`
+              derives from the live set built by `_build_conjure_cache_state`,
+              which already excludes existing-creation spells.
+            - Best-effort per spell: a staging miss leaves that spell on the
+              compile path for the next conjure without failing this one.
+
+        Args:
+            spellbook:
+                Owning Spellbook whose missing spell payloads should stage.
+            cache_state:
+                Conjure cache-state summary built by
+                `_build_conjure_cache_state`.
+
+        Returns:
+            None.
+        """
+        for spell_id in cache_state["missing_spell_ids"]:
+            spellbook._emit_spell_cache(spellbook._spell_id_pool[spell_id])
 
     @staticmethod
     def _emit_conduit_cache_file_at_conjure_end(
@@ -2753,7 +2813,6 @@ class SpellbookCreationSystem(Cleanable):
             )
         return units
 
-    @staticmethod
     @staticmethod
     def phase_system_validation_factory(
             spellbook: Spellbook,

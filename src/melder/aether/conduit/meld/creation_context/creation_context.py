@@ -26,6 +26,13 @@ class CreationContext(Cleanable):
           `(instance, created)`.
         - `execute(...)` returns `(instance, created)`.
         - `execute_no_hooks(...)` returns only the instance.
+        - Door-facing internal contract: the meld front doors
+          (`ConduitMeld`, `SpellSpaceMeld`) read `_dynamic_environment`,
+          `_no_overrides_executor`, and `_overrides_executor` directly on
+          their non-dynamic no-hooks fast lane. Those reads are per-call
+          through the live spell-published context and are never cached on
+          the doors, so context replacement/cleanup semantics are unchanged.
+          Renaming or repurposing these slots requires updating both doors.
     """
 
     __melder_internal__: ClassVar[object] = _mrg.sentinel
