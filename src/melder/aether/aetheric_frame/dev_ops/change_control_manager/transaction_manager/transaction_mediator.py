@@ -93,7 +93,6 @@ class TransactionMediator(Cleanable):
         "_embargo_manager",
         "_orchestrator",
         "_devops_information_registry",
-        "_queue_competing_root_transactions",
         "_max_transaction_wait_time_in_seconds",
         "_admit_request",
         "_strategy_builder",
@@ -109,7 +108,6 @@ class TransactionMediator(Cleanable):
             embargo_manager: "ChangeControlEmbargoManager",
             orchestrator: "ChangeControlOrchestrator",
             devops_information_registry: Optional[DevopsInformationRegistry],
-            queue_competing_root_transactions: bool = False,
             max_transaction_wait_time_in_seconds: float = 30.0,
             admit_request_fn: Optional[Callable[["ChangeControlTransactionRequest"], ChangeControlAdmissionResult]] = None,
     ) -> None:
@@ -125,10 +123,6 @@ class TransactionMediator(Cleanable):
                 Embargo helper used by orchestrator commit/abort paths.
             orchestrator:
                 Admission/commit/abort orchestration helper.
-            queue_competing_root_transactions:
-                Deprecated no-op retained for signature compatibility. Root
-                arbitration is scope-driven; this flag no longer changes
-                behavior.
             max_transaction_wait_time_in_seconds:
                 Maximum seconds a scope-blocked root start may wait for its
                 claims before admission times out.
@@ -150,8 +144,6 @@ class TransactionMediator(Cleanable):
             raise ValueError("embargo_manager must not be None.")
         if orchestrator is None:
             raise ValueError("orchestrator must not be None.")
-        if not isinstance(queue_competing_root_transactions, bool):
-            raise TypeError("queue_competing_root_transactions must be a bool.")
         if (
             not isinstance(max_transaction_wait_time_in_seconds, (int, float))
             or isinstance(max_transaction_wait_time_in_seconds, bool)
@@ -172,9 +164,6 @@ class TransactionMediator(Cleanable):
         self._orchestrator: ChangeControlOrchestrator = orchestrator
         self._devops_information_registry: Optional[DevopsInformationRegistry] = (
             devops_information_registry
-        )
-        self._queue_competing_root_transactions: bool = (
-            queue_competing_root_transactions
         )
         self._max_transaction_wait_time_in_seconds: float = float(
             max_transaction_wait_time_in_seconds
@@ -217,7 +206,6 @@ class TransactionMediator(Cleanable):
             del self._conflict_manager
             del self._embargo_manager
             del self._orchestrator
-            del self._queue_competing_root_transactions
             del self._max_transaction_wait_time_in_seconds
             del self._admit_request
             del self._strategy_builder
@@ -228,20 +216,16 @@ class TransactionMediator(Cleanable):
     def configure(
             self,
             *,
-            queue_competing_root_transactions: bool,
             max_transaction_wait_time_in_seconds: float,
     ) -> None:
         """
         Update mediator root-session policy.
 
         Args:
-            queue_competing_root_transactions:
-                Whether competing root starts queue for their turn.
             max_transaction_wait_time_in_seconds:
-                Maximum seconds a queued root start may wait.
+                Maximum seconds a scope-blocked root start may wait for its
+                claims before admission times out.
         """
-        if not isinstance(queue_competing_root_transactions, bool):
-            raise TypeError("queue_competing_root_transactions must be a bool.")
         if (
             not isinstance(max_transaction_wait_time_in_seconds, (int, float))
             or isinstance(max_transaction_wait_time_in_seconds, bool)
@@ -254,9 +238,6 @@ class TransactionMediator(Cleanable):
                 "max_transaction_wait_time_in_seconds must be greater than 0."
             )
         with self._lock:
-            self._queue_competing_root_transactions = (
-                queue_competing_root_transactions
-            )
             self._max_transaction_wait_time_in_seconds = float(
                 max_transaction_wait_time_in_seconds
             )

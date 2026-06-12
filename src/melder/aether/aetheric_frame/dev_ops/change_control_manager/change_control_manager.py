@@ -168,13 +168,9 @@ class ChangeControlManager(Cleanable):
                 frame_configuration = frame.frame_configuration
         except Exception:
             frame_configuration = None
-        queue_competing_root_transactions = False
         max_transaction_wait_time_in_seconds = 30.0
         devops_information_registry: Optional[DevopsInformationRegistry] = None
         if isinstance(frame_configuration, AethericFrameConfiguration):
-            queue_competing_root_transactions = (
-                frame_configuration.queue_competing_root_transactions
-            )
             max_transaction_wait_time_in_seconds = (
                 frame_configuration.max_transaction_wait_time_in_seconds
             )
@@ -187,7 +183,6 @@ class ChangeControlManager(Cleanable):
             embargo_manager=self._embargo_manager,
             orchestrator=self._orchestrator,
             devops_information_registry=devops_information_registry,
-            queue_competing_root_transactions=queue_competing_root_transactions,
             max_transaction_wait_time_in_seconds=(
                 max_transaction_wait_time_in_seconds
             ),

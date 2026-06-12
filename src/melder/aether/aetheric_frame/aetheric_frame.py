@@ -571,9 +571,6 @@ class AethericFrame(Cleanable):
                     existing_frame_configuration.with_disable_contract_mutation(
                         frame_configuration.disable_contract_mutation
                     )
-                    existing_frame_configuration.with_queue_competing_root_transactions(
-                        frame_configuration.queue_competing_root_transactions
-                    )
                     existing_frame_configuration.with_max_transaction_wait_time_in_seconds(
                         frame_configuration.max_transaction_wait_time_in_seconds
                     )

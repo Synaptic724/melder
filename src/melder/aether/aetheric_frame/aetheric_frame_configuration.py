@@ -66,7 +66,6 @@ class AethericFrameConfiguration(Cleanable):
         "_disable_conduit_cluster",
         "_disable_transfer_of_ownership",
         "_disable_contract_mutation",
-        "_queue_competing_root_transactions",
         "_max_transaction_wait_time_in_seconds",
     ]
 
@@ -87,7 +86,6 @@ class AethericFrameConfiguration(Cleanable):
             disable_conduit_cluster: bool = False,
             disable_transfer_of_ownership: bool = False,
             disable_contract_mutation: bool = False,
-            queue_competing_root_transactions: bool = False,
             max_transaction_wait_time_in_seconds: float = 30.0,
     ) -> None:
         """
@@ -124,11 +122,9 @@ class AethericFrameConfiguration(Cleanable):
             disable_contract_mutation:
                 Whether direct contract mutation entrypoints are disabled for
                 this frame.
-            queue_competing_root_transactions:
-                Whether competing root transactions wait in a pending-start
-                queue instead of immediately failing.
             max_transaction_wait_time_in_seconds:
-                Maximum seconds a competing root transaction may wait in queue.
+                Maximum seconds a root transaction may wait for conflicting
+                scope claims to release before admission times out.
 
         Returns:
             None.
@@ -165,10 +161,6 @@ class AethericFrameConfiguration(Cleanable):
                 disable_transfer_of_ownership,
             ),
             ("disable_contract_mutation", disable_contract_mutation),
-            (
-                "queue_competing_root_transactions",
-                queue_competing_root_transactions,
-            ),
             ("system_caching_enabled", system_caching_enabled),
         ):
             if not isinstance(value, bool):
@@ -214,9 +206,6 @@ class AethericFrameConfiguration(Cleanable):
             disable_transfer_of_ownership
         )
         self._disable_contract_mutation: bool = disable_contract_mutation
-        self._queue_competing_root_transactions: bool = (
-            queue_competing_root_transactions
-        )
         self._max_transaction_wait_time_in_seconds: float = float(
             max_transaction_wait_time_in_seconds
         )
@@ -293,7 +282,6 @@ class AethericFrameConfiguration(Cleanable):
             del self._disable_conduit_cluster
             del self._disable_transfer_of_ownership
             del self._disable_contract_mutation
-            del self._queue_competing_root_transactions
             del self._max_transaction_wait_time_in_seconds
         del self._lock
 
@@ -545,28 +533,12 @@ class AethericFrameConfiguration(Cleanable):
             self._disable_contract_mutation = enabled
         return self
 
-    def with_queue_competing_root_transactions(
-            self,
-            enabled: bool = True,
-    ) -> "AethericFrameConfiguration":
-        """
-        Set whether competing root transactions queue for their turn and return `self`.
-        """
-        self.check_cleaned()
-        if not isinstance(enabled, bool):
-            raise TypeError("queue_competing_root_transactions must be a bool.")
-        with self._lock:
-            if self._frozen:
-                raise RuntimeError("Cannot modify frame configuration after it is frozen.")
-            self._queue_competing_root_transactions = enabled
-        return self
-
     def with_max_transaction_wait_time_in_seconds(
             self,
             timeout: float,
     ) -> "AethericFrameConfiguration":
         """
-        Set the maximum queued-root wait time and return `self`.
+        Set the maximum scope-acquisition wait time and return `self`.
         """
         self.check_cleaned()
         if not isinstance(timeout, (int, float)) or isinstance(timeout, bool):
@@ -609,7 +581,6 @@ class AethericFrameConfiguration(Cleanable):
             self._disable_conduit_cluster = False
             self._disable_transfer_of_ownership = False
             self._disable_contract_mutation = False
-            self._queue_competing_root_transactions = False
             self._max_transaction_wait_time_in_seconds = 30.0
         return self
 
@@ -828,18 +799,9 @@ class AethericFrameConfiguration(Cleanable):
             return self._disable_contract_mutation
 
     @property
-    def queue_competing_root_transactions(self) -> bool:
-        """
-        Return whether competing root transactions queue for their turn.
-        """
-        self.check_cleaned()
-        with self._lock:
-            return self._queue_competing_root_transactions
-
-    @property
     def max_transaction_wait_time_in_seconds(self) -> float:
         """
-        Return the maximum queued-root wait time in seconds.
+        Return the maximum scope-acquisition wait time in seconds.
         """
         self.check_cleaned()
         with self._lock:
@@ -893,8 +855,6 @@ class AethericFrameConfiguration(Cleanable):
                 == other._disable_transfer_of_ownership
                 and self._disable_contract_mutation
                 == other._disable_contract_mutation
-                and self._queue_competing_root_transactions
-                == other._queue_competing_root_transactions
                 and self._max_transaction_wait_time_in_seconds
                 == other._max_transaction_wait_time_in_seconds
             )
@@ -935,9 +895,6 @@ class AethericFrameConfiguration(Cleanable):
                 ),
                 "disable_contract_mutation": (
                     self._disable_contract_mutation
-                ),
-                "queue_competing_root_transactions": (
-                    self._queue_competing_root_transactions
                 ),
                 "max_transaction_wait_time_in_seconds": (
                     self._max_transaction_wait_time_in_seconds
