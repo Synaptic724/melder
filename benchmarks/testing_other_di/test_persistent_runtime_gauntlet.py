@@ -35,12 +35,28 @@ Useful env vars:
     PERSISTENT_GAUNTLET_LIBS=dependency-injector,dishka,melder
     PERSISTENT_GAUNTLET_SCENARIOS=fastapi_steady,bursty_app
     PERSISTENT_GAUNTLET_SAMPLE_EVERY=1000
+    PERSISTENT_GAUNTLET_BUCKET_SECONDS=0
     PERSISTENT_APP_WORK_NS=0
     PERSISTENT_BURST_ACTIVE_MS=2000
     PERSISTENT_BURST_IDLE_MS=1000
     PERSISTENT_BURST_REQUEST_WEIGHT=60
     PERSISTENT_BURST_WORKER_A_WEIGHT=25
     PERSISTENT_BURST_WORKER_B_WEIGHT=15
+
+Degradation mode:
+    Setting PERSISTENT_GAUNTLET_BUCKET_SECONDS > 0 turns on time-bucketed
+    reporting: per-bucket cycles/s, sampled p50/p95/p99/max, GC collection
+    counts, and GC pause totals (gc.callbacks based), plus a first-vs-last
+    bucket drift summary. This is the long-horizon instrument: GC-dependent
+    containers drift as heap pressure accumulates while deterministic
+    cleanup stays flat. The 300s summary alone averages that story away.
+
+    Recommended 20-minute degradation run:
+        PERSISTENT_GAUNTLET_SECONDS=1200 \
+        PERSISTENT_GAUNTLET_BUCKET_SECONDS=60 \
+        pytest benchmarks/testing_other_di/test_persistent_runtime_gauntlet.py -s
+
+    Default output is unchanged when the bucket env is unset/0.
 """
 
 import gc
@@ -134,6 +150,12 @@ class PersistentConfig:
     burst_request_weight: int
     burst_worker_a_weight: int
     burst_worker_b_weight: int
+    bucket_s: float = 0.0
+
+    @property
+    def bucket_ns(self) -> int:
+        """Bucket width in ns; 0 disables degradation bucketing."""
+        return int(self.bucket_s * _ONE_BILLION) if self.bucket_s > 0 else 0
 
     @staticmethod
     def from_env(scenario: str) -> "PersistentConfig":
@@ -149,6 +171,7 @@ class PersistentConfig:
             burst_request_weight=max(0, _env_int("PERSISTENT_BURST_REQUEST_WEIGHT", 60)),
             burst_worker_a_weight=max(0, _env_int("PERSISTENT_BURST_WORKER_A_WEIGHT", 25)),
             burst_worker_b_weight=max(0, _env_int("PERSISTENT_BURST_WORKER_B_WEIGHT", 15)),
+            bucket_s=max(0.0, _env_float("PERSISTENT_GAUNTLET_BUCKET_SECONDS", 0.0)),
         )
         if cfg.duration_s <= 0:
             raise AssertionError("PERSISTENT_GAUNTLET_SECONDS must be > 0")
@@ -215,6 +238,121 @@ class SampledTimer:
 
 
 @dataclass
+class BucketStats:
+    """
+    One degradation bucket: cycles, active time, and sampled latencies.
+    """
+
+    cycles: int = 0
+    active_ns: int = 0
+    samples: list[int] = field(default_factory=list)
+    max_ns: int = 0
+
+    def add(self, cycle_ns: int, *, take_sample: bool) -> None:
+        self.cycles += 1
+        self.active_ns += cycle_ns
+        if cycle_ns > self.max_ns:
+            self.max_ns = cycle_ns
+        if take_sample:
+            self.samples.append(cycle_ns)
+
+    def merge(self, other: "BucketStats") -> None:
+        self.cycles += other.cycles
+        self.active_ns += other.active_ns
+        self.max_ns = max(self.max_ns, other.max_ns)
+        self.samples.extend(other.samples)
+
+
+@dataclass
+class GcBucketStats:
+    """
+    GC activity attributed to one degradation bucket.
+    """
+
+    collections_by_gen: dict[int, int] = field(default_factory=dict)
+    collected_objects: int = 0
+    pause_total_ns: int = 0
+    pause_max_ns: int = 0
+
+    def add(self, *, generation: int, collected: int, pause_ns: int) -> None:
+        self.collections_by_gen[generation] = (
+            self.collections_by_gen.get(generation, 0) + 1
+        )
+        self.collected_objects += collected
+        self.pause_total_ns += pause_ns
+        if pause_ns > self.pause_max_ns:
+            self.pause_max_ns = pause_ns
+
+    @property
+    def collections(self) -> int:
+        return sum(self.collections_by_gen.values())
+
+
+class GcBucketMonitor:
+    """
+    gc.callbacks hook that aggregates collection pauses into time buckets.
+
+    Contract:
+        - Aggregates in-callback (counts/sums only) so a 20-minute run does
+          not accumulate an unbounded event list and callback overhead stays
+          trivial next to the collection pass it wraps.
+        - Pauses are attributed to the bucket of their START timestamp;
+          events outside [measure_start_ns, end_ns) are dropped (warmup,
+          teardown).
+        - Collections do not nest, but on the free-threaded build the
+          callback fires on whichever thread triggered the collection, so
+          start timestamps are tracked per-thread and totals merge under a
+          lock on the stop phase.
+    """
+
+    def __init__(self, *, measure_start_ns: int, end_ns: int, bucket_ns: int) -> None:
+        self._measure_start_ns = measure_start_ns
+        self._end_ns = end_ns
+        self._bucket_ns = bucket_ns
+        self._lock = threading.Lock()
+        self._start_by_thread: dict[int, int] = {}
+        self.buckets: dict[int, GcBucketStats] = {}
+        self.total = GcBucketStats()
+
+    def _callback(self, phase: str, info: dict) -> None:
+        thread_id = threading.get_ident()
+        if phase == "start":
+            self._start_by_thread[thread_id] = time.perf_counter_ns()
+            return
+        start_ns = self._start_by_thread.pop(thread_id, None)
+        if start_ns is None:
+            return
+        pause_ns = time.perf_counter_ns() - start_ns
+        if start_ns < self._measure_start_ns or start_ns >= self._end_ns:
+            return
+        generation = int(info.get("generation", -1))
+        collected = int(info.get("collected", 0))
+        bucket_ix = (
+            (start_ns - self._measure_start_ns) // self._bucket_ns
+            if self._bucket_ns > 0
+            else 0
+        )
+        with self._lock:
+            self.total.add(
+                generation=generation, collected=collected, pause_ns=pause_ns,
+            )
+            bucket = self.buckets.get(bucket_ix)
+            if bucket is None:
+                bucket = GcBucketStats()
+                self.buckets[bucket_ix] = bucket
+            bucket.add(generation=generation, collected=collected, pause_ns=pause_ns)
+
+    def install(self) -> None:
+        gc.callbacks.append(self._callback)
+
+    def uninstall(self) -> None:
+        try:
+            gc.callbacks.remove(self._callback)
+        except ValueError:
+            pass
+
+
+@dataclass
 class LaneStats:
     name: str
     cycles: int = 0
@@ -265,12 +403,26 @@ class WorkerStats:
             "worker_b": LaneStats("worker_b"),
         }
     )
+    buckets: dict[int, BucketStats] = field(default_factory=dict)
+
+    def add_to_bucket(self, bucket_ix: int, cycle_ns: int, *, take_sample: bool) -> None:
+        bucket = self.buckets.get(bucket_ix)
+        if bucket is None:
+            bucket = BucketStats()
+            self.buckets[bucket_ix] = bucket
+        bucket.add(cycle_ns, take_sample=take_sample)
 
     def merge(self, other: "WorkerStats") -> None:
         self.active_ns += other.active_ns
         self.idle_ns += other.idle_ns
         for lane_name, lane_stats in other.lanes.items():
             self.lanes[lane_name].merge(lane_stats)
+        for bucket_ix, bucket in other.buckets.items():
+            mine = self.buckets.get(bucket_ix)
+            if mine is None:
+                self.buckets[bucket_ix] = bucket
+            else:
+                mine.merge(bucket)
 
 
 @dataclass(frozen=True)
@@ -283,6 +435,8 @@ class PersistentResult:
     measured_ns: int
     cleanup_ns: int
     worker_stats: WorkerStats
+    gc_buckets: dict[int, GcBucketStats] | None = None
+    gc_total: GcBucketStats | None = None
 
 
 def _burn_cpu_ns(target_ns: int) -> None:
@@ -328,6 +482,8 @@ def _run_one_cycle(
     stats: WorkerStats,
     record: bool,
     take_sample: bool,
+    bucket_ns: int = 0,
+    measure_start_ns: int = 0,
 ) -> None:
     call = _lane_call(ops, lane_name)
     t0 = time.perf_counter_ns()
@@ -337,6 +493,10 @@ def _run_one_cycle(
     if record:
         stats.active_ns += cycle_ns
         stats.lanes[lane_name].add_cycle(variant, cycle_ns, metrics, take_sample=take_sample)
+        if bucket_ns > 0:
+            bucket_ix = (t0 - measure_start_ns) // bucket_ns
+            if bucket_ix >= 0:
+                stats.add_to_bucket(int(bucket_ix), cycle_ns, take_sample=take_sample)
 
 
 def _is_burst_active(now_ns: int, measure_start_ns: int, cfg: PersistentConfig) -> bool:
@@ -401,6 +561,8 @@ def _worker_loop(
                 stats=stats,
                 record=record,
                 take_sample=take_sample,
+                bucket_ns=cfg.bucket_ns,
+                measure_start_ns=measure_start_ns,
             )
             local_counter += 1
     except BaseException as exc:
@@ -428,6 +590,15 @@ def run_persistent_benchmark_with_cleanup(lib: str, cfg: PersistentConfig) -> Pe
         warmup_deadline_ns = now_ns + int(cfg.warmup_s * _ONE_BILLION)
         measure_start_ns = warmup_deadline_ns
         end_ns = measure_start_ns + int(cfg.duration_s * _ONE_BILLION)
+
+        gc_monitor: GcBucketMonitor | None = None
+        if cfg.bucket_ns > 0:
+            gc_monitor = GcBucketMonitor(
+                measure_start_ns=measure_start_ns,
+                end_ns=end_ns,
+                bucket_ns=cfg.bucket_ns,
+            )
+            gc_monitor.install()
 
         threads: list[threading.Thread] = []
         for worker_ix in range(cfg.threads):
@@ -463,6 +634,9 @@ def run_persistent_benchmark_with_cleanup(lib: str, cfg: PersistentConfig) -> Pe
             thread.join()
         actual_end_ns = time.perf_counter_ns()
 
+        if gc_monitor is not None:
+            gc_monitor.uninstall()
+
         if errors:
             raise errors[0]
 
@@ -484,13 +658,19 @@ def run_persistent_benchmark_with_cleanup(lib: str, cfg: PersistentConfig) -> Pe
             measured_ns=max(0, actual_end_ns - measure_start_ns),
             cleanup_ns=cleanup_ns,
             worker_stats=merged,
+            gc_buckets=gc_monitor.buckets if gc_monitor is not None else None,
+            gc_total=gc_monitor.total if gc_monitor is not None else None,
         )
     except Exception:
         # Best-effort cleanup if benchmark fails.
         try:
-            ops.cleanup()
+            if "gc_monitor" in locals() and gc_monitor is not None:
+                gc_monitor.uninstall()
         finally:
-            gc.collect()
+            try:
+                ops.cleanup()
+            finally:
+                gc.collect()
         raise
 
 
@@ -543,6 +723,108 @@ def _print_result(result: PersistentResult) -> None:
         print(f"[{result.lib}] lane={lane_name} request_cleanup | {lane.request_cleanup.sampled_summary()}")
 
 
+def _gc_gen_summary(bucket: GcBucketStats) -> str:
+    """
+    Render per-generation collection counts compactly, e.g. (g0=8,g1=3,g2=1).
+    """
+    if not bucket.collections_by_gen:
+        return "(none)"
+    parts = ", ".join(
+        f"g{gen}={count}"
+        for gen, count in sorted(bucket.collections_by_gen.items())
+    )
+    return f"({parts})"
+
+
+def _print_degradation(result: PersistentResult) -> None:
+    """
+    Print per-bucket throughput/latency/GC lines plus a drift summary.
+
+    Contract:
+        - The final bucket is tagged `(partial)` and excluded from drift math
+          when the measured window does not fill it.
+        - Drift compares the FIRST complete bucket against the LAST complete
+          bucket: cycles/s, sampled p99, and GC pause per bucket. Flat lines
+          mean the runtime does not degrade with heap age; drifting lines are
+          the GC-pressure signature this mode exists to expose.
+    """
+    cfg = result.cfg
+    if cfg.bucket_ns <= 0 or not result.worker_stats.buckets:
+        return
+
+    bucket_s = cfg.bucket_s
+    measured_s = result.measured_ns / _ONE_BILLION
+    complete_bucket_count = int(measured_s // bucket_s)
+    gc_buckets = result.gc_buckets or {}
+    empty_gc = GcBucketStats()
+
+    print(
+        f"[{result.lib}] degradation buckets | bucket={bucket_s:.0f}s, "
+        f"complete={complete_bucket_count}, scenario={cfg.scenario}"
+    )
+
+    ordered = sorted(result.worker_stats.buckets.items())
+    for bucket_ix, bucket in ordered:
+        is_partial = bucket_ix >= complete_bucket_count
+        span_s = bucket_s if not is_partial else max(
+            0.000001, measured_s - bucket_ix * bucket_s,
+        )
+        samples = sorted(bucket.samples)
+        p50 = statistics.median(samples) if samples else 0
+        p95 = _pctl(samples, 0.95)
+        p99 = _pctl(samples, 0.99)
+        gc_bucket = gc_buckets.get(bucket_ix, empty_gc)
+        partial_tag = " (partial)" if is_partial else ""
+        print(
+            f"[{result.lib}] bucket {bucket_ix:03d}{partial_tag} | "
+            f"cycles={bucket.cycles:,}, cycles/s={bucket.cycles / span_s:,.0f}, "
+            f"p50={_ms(p50):.3f}ms, p95={_ms(p95):.3f}ms, p99={_ms(p99):.3f}ms, "
+            f"max={_ms(bucket.max_ns):.3f}ms, samples={len(samples):,} | "
+            f"gc: collections={gc_bucket.collections} {_gc_gen_summary(gc_bucket)}, "
+            f"collected={gc_bucket.collected_objects:,}, "
+            f"pause_total={_ms(gc_bucket.pause_total_ns):.3f}ms, "
+            f"pause_max={_ms(gc_bucket.pause_max_ns):.3f}ms"
+        )
+
+    complete = [
+        (bucket_ix, bucket)
+        for bucket_ix, bucket in ordered
+        if bucket_ix < complete_bucket_count and bucket.cycles > 0
+    ]
+    if len(complete) >= 2:
+        first_ix, first = complete[0]
+        last_ix, last = complete[-1]
+        first_thr = first.cycles / bucket_s
+        last_thr = last.cycles / bucket_s
+        first_p99 = _pctl(sorted(first.samples), 0.99)
+        last_p99 = _pctl(sorted(last.samples), 0.99)
+        first_gc = gc_buckets.get(first_ix, empty_gc)
+        last_gc = gc_buckets.get(last_ix, empty_gc)
+        thr_pct = ((last_thr / first_thr) - 1.0) * 100.0 if first_thr > 0 else 0.0
+        p99_pct = ((last_p99 / first_p99) - 1.0) * 100.0 if first_p99 > 0 else 0.0
+        print(
+            f"[{result.lib}] degradation drift (bucket {first_ix:03d} -> {last_ix:03d}) | "
+            f"cycles/s: {first_thr:,.0f} -> {last_thr:,.0f} ({thr_pct:+.1f}%), "
+            f"p99: {_ms(first_p99):.3f}ms -> {_ms(last_p99):.3f}ms ({p99_pct:+.1f}%), "
+            f"gc_pause/bucket: {_ms(first_gc.pause_total_ns):.3f}ms -> "
+            f"{_ms(last_gc.pause_total_ns):.3f}ms"
+        )
+    if result.gc_total is not None:
+        total = result.gc_total
+        pause_pct = (
+            (total.pause_total_ns / result.measured_ns) * 100.0
+            if result.measured_ns > 0
+            else 0.0
+        )
+        print(
+            f"[{result.lib}] gc totals | collections={total.collections} "
+            f"{_gc_gen_summary(total)}, collected={total.collected_objects:,}, "
+            f"pause_total={_ms(total.pause_total_ns):.3f}ms "
+            f"({pause_pct:.3f}% of measured wall), "
+            f"pause_max={_ms(total.pause_max_ns):.3f}ms"
+        )
+
+
 _LIBS = _env_list("PERSISTENT_GAUNTLET_LIBS", ("dependency-injector", "dishka", "melder"))
 _SCENARIOS = _env_list("PERSISTENT_GAUNTLET_SCENARIOS", ("fastapi_steady", "bursty_app"))
 
@@ -554,3 +836,4 @@ def test_persistent_runtime_gauntlet(lib: str, scenario: str) -> None:
     cfg = PersistentConfig.from_env(scenario)
     result = run_persistent_benchmark_with_cleanup(lib, cfg)
     _print_result(result)
+    _print_degradation(result)
