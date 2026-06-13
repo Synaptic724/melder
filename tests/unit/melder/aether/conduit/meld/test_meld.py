@@ -320,6 +320,9 @@ class _SpellStub:
         # `_mutation_override` directly on the hot path, while the public
         # `mutation_override` surface stays for property-style readers.
         self._mutation_override = self.mutation_override
+        # Mirrors the live Spell fast-door contract: the meld lanes capture
+        # the door epoch before execution (epoch-consolidated guard trim).
+        self._door_epoch = 0
         self.has_mutation_override = bool(self.mutation_override)
         self.requires_spellspace_request = (
             existence is Existence.unique_per_spell_space

@@ -184,6 +184,9 @@ class _SpellStub:
         self.mutation_override = None
         # Mirror the real Spell storage slot read directly by the meld doors.
         self._mutation_override = None
+        # Mirrors the live Spell fast-door contract: the meld lanes capture
+        # the door epoch before execution (epoch-consolidated guard trim).
+        self._door_epoch = 0
         if requires_spellspace_request is None:
             requires_spellspace_request = (
                 existence is Existence.unique_per_spell_space

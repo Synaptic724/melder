@@ -209,6 +209,10 @@ def test_initialization_creates_default_frame(mock_frame_cls):
     assert isinstance(a._crystallizer, Crystallizer)
     assert a._crystallizer.is_configured is False
     assert a._crystallizer.is_activated is False
+    # MutationResearch is lazily constructed on first access: the slot is
+    # None after init, and the accessor builds the root on demand.
+    assert a._mutation_research is None
+    assert a.mutation_research is not None
     assert a._mutation_research is not None
 
 def test_cleanup_clears_state(aether_with_mocks):
