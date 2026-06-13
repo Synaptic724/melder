@@ -21,23 +21,23 @@ Usage:
         .venv_new\\Scripts\\python.exe benchmarks\\testing_other_di\\profile_bind_conjure_cycle.py
 
     cProfile attribution (re-execs under PYTHON_GIL=1; relative attribution
-    is the deliverable, the profiler inflates absolute numbers):
+    is deliverable, the profiler inflates absolute numbers):
         .venv_new\\Scripts\\python.exe benchmarks\\testing_other_di\\profile_bind_conjure_cycle.py --profile
 
 Env knobs:
     BENCH_CYCLE_REPEATS timed repeats per posture (default 9)
     BENCH_CYCLE_WORKERS phase_scheduler_workers_per_spellbook (default 1)
     BENCH_CYCLE_KEEP_CACHE "1" keeps the bench cache dir after the run
-    BENCH_CYCLE_SYNTH_CLASSES   N > 0 swaps the 29-class gauntlet graph for a
+    BENCH_CYCLE_SYNTH_CLASSES N > 0 swaps the 29-class gauntlet graph for a
                                 generated N-class layered DAG (see below)
 
 Synthetic graph mode:
     `BENCH_CYCLE_SYNTH_CLASSES=200` generates 200 classes in three tiers:
-    leaf singletons (no deps), mid classes (2 leaf deps), top classes (one
+    leaf singletons (no deps), mid-classes (2 leaf deps), top classes (one
     mid + one leaf dep). Dependencies are expressed as real constructor
     annotations referencing the dependency CLASS OBJECT, so phase-3
     resolution exercises the identity bucket exactly like user code. Depth
-    is capped at 3 so the first-meld sweep stays O(n) and the measurement
+    is capped at 3 so the first-meld sweep stays O(n), and the measurement
     isolates compile-pipeline scaling (the O(n^2)->O(n) phase-3/phase-4
     cuts) instead of transient-construction fanout.
 
@@ -125,7 +125,7 @@ def _build_synthetic_support(count: int) -> Any:
         - Dependencies are real annotated `__init__` parameters whose
           annotation is the dependency class object (phase-3 identity
           bucket), generated via exec so `inspect.signature` and the v4
-          fingerprint see ordinary constructors.
+          fingerprint sees ordinary constructors.
         - Classes are generated ONCE at module import; identical class
           objects across cycles keep warm repeats classifiable as cache
           full-hits.
