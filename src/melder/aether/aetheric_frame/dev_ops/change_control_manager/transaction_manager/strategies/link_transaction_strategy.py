@@ -9,6 +9,9 @@ from melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_man
 from melder.aether.aetheric_frame.dev_ops.devops_identity import (
     DevopsIdentity,
 )
+from melder.aether.aetheric_frame.dev_ops.change_control_manager.embargo_manager.embargo_manager import (
+    ClaimMode,
+)
 
 if TYPE_CHECKING:
     from melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.transaction_manager import (
@@ -38,6 +41,13 @@ class LinkTransactionStrategy(TransactionStrategy):
         - Uses sets for scope and affected-identity accumulation, then
           normalizes once at the return boundary.
         - Preserves caller-supplied explicit binding and contract keys.
+        - Emits claim modes: participant conduits and their wards stay
+          EXCLUSIVE (each side is frozen from other structural work for the
+          link's duration, since a link mutates both wards); owning spellbooks
+          are claimed INTENT (`ClaimMode.INTENT`) so a whole-spellbook claim
+          (such as a transfer's EXCLUSIVE spellbook claim) is excluded while a
+          link is in flight, without serializing unrelated piece-work on those
+          spellbooks.
     """
 
     @classmethod
@@ -116,7 +126,9 @@ class LinkTransactionStrategy(TransactionStrategy):
         normalized_metadata["transaction_identity"] = identity.describe()
         normalized_metadata["link_mode"] = "conduit_link"
         normalized_metadata["participant_conduit_ids"] = tuple(sorted(conduit_ids))
-        normalized_metadata["affected_spellbook_ids"] = tuple(sorted(affected_spellbook_ids))
+        normalized_metadata["affected_spellbook_ids"] = tuple(
+            sorted(affected_spellbook_ids)
+        )
         normalized_metadata["affected_identity_keys"] = tuple(
             sorted(affected_identity_keys)
         )
@@ -125,11 +137,24 @@ class LinkTransactionStrategy(TransactionStrategy):
         if not isinstance(spellbook_id, str) or not spellbook_id:
             spellbook_id = None
 
+        # Owning spellbooks are claimed INTENT, not EXCLUSIVE: a link only adds
+        # one contract bucket to each spellbook, so it should block a
+        # whole-spellbook claim (transfer) without serializing unrelated
+        # piece-work. Conduits and wards are left to default EXCLUSIVE.
+        spellbook_scope_claims: Tuple[Tuple[str, str], ...] = tuple(
+            (
+                transaction_manager.make_scope_key_spellbook(affected_spellbook_id),
+                ClaimMode.INTENT.value,
+            )
+            for affected_spellbook_id in sorted(affected_spellbook_ids)
+        )
+
         return {
             "initiator_conduit_id": identity.owner_id,
             "spellbook_id": spellbook_id,
             "conduit_ids": tuple(sorted(conduit_ids)),
             "scope_keys": tuple(sorted(scope_keys)),
+            "scope_claims": spellbook_scope_claims,
             "scope_hashes": explicit_scope_hashes,
             "binding_keys": explicit_binding_keys,
             "contract_keys": explicit_contract_keys,

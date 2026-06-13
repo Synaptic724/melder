@@ -27,6 +27,9 @@ from melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_man
 from melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_request.transaction_request import (
     ChangeTransactionType,
 )
+from melder.aether.aetheric_frame.dev_ops.change_control_manager.embargo_manager.embargo_manager import (
+    ClaimMode,
+)
 from melder.aether.aetheric_frame.dev_ops.devops_identity import DevopsIdentity
 from melder.aether.aetheric_frame.dev_ops.devops_information_registry import (
     DevopsInformationRegistry,
@@ -436,6 +439,78 @@ def test_link_transaction_strategy_builds_spellbook_conduit_and_ward_scopes() ->
     assert "scope:spellbook:spellbook-1" in plan["scope_keys"]
     assert "scope:spellbook:spellbook-2" in plan["scope_keys"]
     assert plan["metadata"]["link_mode"] == "conduit_link"
+
+
+def test_link_transaction_strategy_claims_spellbooks_intent_and_conduits_exclusive() -> None:
+    """
+    Purpose:
+        Verify link planning claims owning spellbooks as INTENT (IX) while
+        leaving participant conduits and wards to default EXCLUSIVE.
+    Contract:
+        - `scope_claims` contains exactly the resolved owning-spellbook scopes.
+        - Each claimed spellbook scope carries the INTENT mode value.
+        - Conduit and ward scopes are absent from `scope_claims`, so admission
+          treats them as EXCLUSIVE.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If link planning emits the wrong claim modes.
+    """
+    transaction_manager = ChangeControlTransactionManager()
+    registry = DevopsInformationRegistry("frame-1")
+    source_identity = DevopsIdentity(
+        owner_kind="conduit",
+        owner_id="conduit-1",
+        aetheric_frame_name="frame-1",
+        metadata={"spellbook_id": "spellbook-1"},
+        available_transactions=("link",),
+    )
+    peer_identity = DevopsIdentity(
+        owner_kind="conduit",
+        owner_id="conduit-2",
+        aetheric_frame_name="frame-1",
+        metadata={"spellbook_id": "spellbook-2"},
+        available_transactions=("link",),
+    )
+    spellbook_a = DevopsIdentity(
+        owner_kind="spellbook",
+        owner_id="spellbook-1",
+        aetheric_frame_name="frame-1",
+        metadata={"conduit_id": "conduit-1"},
+        available_transactions=("bind",),
+    )
+    spellbook_b = DevopsIdentity(
+        owner_kind="spellbook",
+        owner_id="spellbook-2",
+        aetheric_frame_name="frame-1",
+        metadata={"conduit_id": "conduit-2"},
+        available_transactions=("bind",),
+    )
+    for identity in (source_identity, peer_identity, spellbook_a, spellbook_b):
+        registry.register_identity(identity)
+    registry.register_spellbook_conduit_ownership(
+        spellbook_id="spellbook-1",
+        conduit_id="conduit-1",
+    )
+    registry.register_spellbook_conduit_ownership(
+        spellbook_id="spellbook-2",
+        conduit_id="conduit-2",
+    )
+
+    plan = LinkTransactionStrategy.build_start_plan(
+        transaction_manager=transaction_manager,
+        devops_information_registry=registry,
+        identity=source_identity,
+        metadata={"conduit_ids": ("conduit-2",)},
+    )
+
+    scope_claims = dict(plan["scope_claims"])
+    assert set(scope_claims) == {
+        "scope:spellbook:spellbook-1",
+        "scope:spellbook:spellbook-2",
+    }
+    assert scope_claims["scope:spellbook:spellbook-1"] == ClaimMode.INTENT.value
+    assert scope_claims["scope:spellbook:spellbook-2"] == ClaimMode.INTENT.value
 
 
 def test_cluster_link_transaction_strategy_requires_cluster_id_and_two_members() -> None:
