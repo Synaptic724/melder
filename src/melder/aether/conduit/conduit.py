@@ -1025,6 +1025,7 @@ class Conduit(Cleanable):
                 "bind",
                 "scan",
                 "link",
+                "unlink",
                 "cluster_link",
                 "mutation",
                 "transfer_ownership",
