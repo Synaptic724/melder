@@ -21,6 +21,9 @@ from melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_man
 from melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.transfer_ownership_transaction_strategy import (
     TransferOwnershipTransactionStrategy,
 )
+from melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.unlink_transaction_strategy import (
+    UnlinkTransactionStrategy,
+)
 from melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.transaction_manager import (
     ChangeControlTransactionManager,
 )
@@ -143,6 +146,7 @@ def test_transaction_strategy_builder_resolves_enum_and_string_transaction_names
     assert builder.resolve("link") is LinkTransactionStrategy
     assert builder.resolve("cluster_link") is ClusterLinkTransactionStrategy
     assert builder.resolve("transfer_ownership") is TransferOwnershipTransactionStrategy
+    assert builder.resolve("unlink") is UnlinkTransactionStrategy
 
 
 def test_transaction_strategy_builder_register_strategy_replaces_existing_mapping() -> None:
@@ -308,6 +312,13 @@ def test_bind_transaction_strategy_builds_post_conjure_plan_with_cluster_scope()
     assert "scope:cluster:cluster-1" in plan["scope_keys"]
     assert plan["metadata"]["bind_mode"] == "post_conjure"
     assert plan["metadata"]["affected_cluster_ids"] == ("cluster-1",)
+    # Claim modes: spellbook + clusters are INTENT (parallel member binds),
+    # conduit/ward stay EXCLUSIVE (absent from scope_claims).
+    scope_claims = dict(plan["scope_claims"])
+    assert scope_claims["scope:spellbook:spellbook-1"] == ClaimMode.INTENT.value
+    assert scope_claims["scope:cluster:cluster-1"] == ClaimMode.INTENT.value
+    assert "scope:conduit:conduit-1" not in scope_claims
+    assert "scope:conduit_ward:conduit-1" not in scope_claims
 
 
 def test_bind_transaction_strategy_on_start_and_on_end_call_spellbook_local_hooks() -> None:
@@ -513,6 +524,83 @@ def test_link_transaction_strategy_claims_spellbooks_intent_and_conduits_exclusi
     assert scope_claims["scope:spellbook:spellbook-2"] == ClaimMode.INTENT.value
 
 
+def test_unlink_transaction_strategy_claims_spellbooks_intent_and_conduits_exclusive() -> None:
+    """
+    Purpose:
+        Verify unlink planning claims owning spellbooks as INTENT (IX) while
+        leaving participant conduits and wards to default EXCLUSIVE, mirroring
+        the link strategy because a sever mutates the same surfaces.
+    Contract:
+        - `scope_claims` contains exactly the resolved owning-spellbook scopes.
+        - Each claimed spellbook scope carries the INTENT mode value.
+        - Conduit and ward scopes are absent from `scope_claims`, so admission
+          treats them as EXCLUSIVE.
+        - `unlink_mode` metadata marks the conduit-unlink shape.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If unlink planning emits the wrong claim modes.
+    """
+    transaction_manager = ChangeControlTransactionManager()
+    registry = DevopsInformationRegistry("frame-1")
+    source_identity = DevopsIdentity(
+        owner_kind="conduit",
+        owner_id="conduit-1",
+        aetheric_frame_name="frame-1",
+        metadata={"spellbook_id": "spellbook-1"},
+        available_transactions=("unlink",),
+    )
+    peer_identity = DevopsIdentity(
+        owner_kind="conduit",
+        owner_id="conduit-2",
+        aetheric_frame_name="frame-1",
+        metadata={"spellbook_id": "spellbook-2"},
+        available_transactions=("unlink",),
+    )
+    spellbook_a = DevopsIdentity(
+        owner_kind="spellbook",
+        owner_id="spellbook-1",
+        aetheric_frame_name="frame-1",
+        metadata={"conduit_id": "conduit-1"},
+        available_transactions=("bind",),
+    )
+    spellbook_b = DevopsIdentity(
+        owner_kind="spellbook",
+        owner_id="spellbook-2",
+        aetheric_frame_name="frame-1",
+        metadata={"conduit_id": "conduit-2"},
+        available_transactions=("bind",),
+    )
+    for identity in (source_identity, peer_identity, spellbook_a, spellbook_b):
+        registry.register_identity(identity)
+    registry.register_spellbook_conduit_ownership(
+        spellbook_id="spellbook-1",
+        conduit_id="conduit-1",
+    )
+    registry.register_spellbook_conduit_ownership(
+        spellbook_id="spellbook-2",
+        conduit_id="conduit-2",
+    )
+
+    plan = UnlinkTransactionStrategy.build_start_plan(
+        transaction_manager=transaction_manager,
+        devops_information_registry=registry,
+        identity=source_identity,
+        metadata={"conduit_ids": ("conduit-2",)},
+    )
+
+    scope_claims = dict(plan["scope_claims"])
+    assert set(scope_claims) == {
+        "scope:spellbook:spellbook-1",
+        "scope:spellbook:spellbook-2",
+    }
+    assert scope_claims["scope:spellbook:spellbook-1"] == ClaimMode.INTENT.value
+    assert scope_claims["scope:spellbook:spellbook-2"] == ClaimMode.INTENT.value
+    assert "scope:conduit:conduit-1" not in scope_claims
+    assert "scope:conduit_ward:conduit-1" not in scope_claims
+    assert plan["metadata"]["unlink_mode"] == "conduit_unlink"
+
+
 def test_cluster_link_transaction_strategy_requires_cluster_id_and_two_members() -> None:
     """
     Purpose:
@@ -625,6 +713,14 @@ def test_cluster_link_transaction_strategy_builds_cluster_and_spellbook_scopes()
     assert "scope:spellbook:spellbook-1" in plan["scope_keys"]
     assert "scope:spellbook:spellbook-2" in plan["scope_keys"]
     assert plan["metadata"]["cluster_mode"] == "cluster_link"
+    # Claim modes: member spellbooks are INTENT; cluster + conduits + wards
+    # stay EXCLUSIVE (absent from scope_claims).
+    scope_claims = dict(plan["scope_claims"])
+    assert scope_claims["scope:spellbook:spellbook-1"] == ClaimMode.INTENT.value
+    assert scope_claims["scope:spellbook:spellbook-2"] == ClaimMode.INTENT.value
+    assert "scope:cluster:cluster-1" not in scope_claims
+    assert "scope:conduit:conduit-1" not in scope_claims
+    assert "scope:conduit_ward:conduit-1" not in scope_claims
 
 
 def test_transfer_ownership_transaction_strategy_requires_conduit_identity() -> None:

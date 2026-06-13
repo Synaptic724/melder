@@ -9,6 +9,9 @@ from melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_man
 from melder.aether.aetheric_frame.dev_ops.devops_identity import (
     DevopsIdentity,
 )
+from melder.aether.aetheric_frame.dev_ops.change_control_manager.embargo_manager.embargo_manager import (
+    ClaimMode,
+)
 
 if TYPE_CHECKING:
     from melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.transaction_manager import (
@@ -140,6 +143,12 @@ class BindTransactionStrategy(TransactionStrategy):
             "spellbook_id": identity.owner_id,
             "conduit_ids": tuple(),
             "scope_keys": tuple(sorted(scope_keys.union(explicit_scope_keys))),
+            "scope_claims": (
+                (
+                    transaction_manager.make_scope_key_spellbook(identity.owner_id),
+                    ClaimMode.INTENT.value,
+                ),
+            ),
             "scope_hashes": explicit_scope_hashes,
             "binding_keys": explicit_binding_keys,
             "contract_keys": tuple(),
@@ -237,6 +246,18 @@ class BindTransactionStrategy(TransactionStrategy):
             "spellbook_id": identity.owner_id,
             "conduit_ids": (conduit_id,),
             "scope_keys": tuple(sorted(scope_keys.union(explicit_scope_keys))),
+            "scope_claims": (
+                (
+                    transaction_manager.make_scope_key_spellbook(identity.owner_id),
+                    ClaimMode.INTENT.value,
+                ),
+            ) + tuple(
+                (
+                    transaction_manager.make_scope_key_cluster(cluster_id),
+                    ClaimMode.INTENT.value,
+                )
+                for cluster_id in sorted(cluster_ids)
+            ),
             "scope_hashes": explicit_scope_hashes,
             "binding_keys": explicit_binding_keys,
             "contract_keys": tuple(),

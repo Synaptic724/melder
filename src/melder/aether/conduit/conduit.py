@@ -2284,6 +2284,7 @@ class Conduit(Cleanable):
             "transfer_ownership",
             "mutation",
             "cluster_link",
+            "unlink",
         }
         if request_type_value in dynamic_only and not self.__dynamic_environment__:
             self._logger.error(
@@ -2336,6 +2337,26 @@ class Conduit(Cleanable):
                 identity=self._transaction_identity,
                 transaction_type="link",
                 metadata=link_metadata,
+            )
+            return
+        if request_type_value == "unlink":
+            if conduit_ids:
+                for conduit_id in conduit_ids:
+                    if conduit_id not in conduit_values:
+                        conduit_values.append(conduit_id)
+            unlink_metadata = dict(metadata) if metadata is not None else {}
+            unlink_metadata.update({
+                "origin_surface": "conduit.sever_link",
+                "conduit_ids": tuple(conduit_values),
+                "scope_keys": tuple(scope_keys) if scope_keys is not None else tuple(),
+                "scope_hashes": tuple(scope_hashes) if scope_hashes is not None else tuple(),
+                "binding_keys": tuple(binding_keys) if binding_keys is not None else tuple(),
+                "contract_keys": tuple(contract_keys) if contract_keys is not None else tuple(),
+            })
+            mediator.start_transaction(
+                identity=self._transaction_identity,
+                transaction_type="unlink",
+                metadata=unlink_metadata,
             )
             return
         if request_type_value == "bind":
@@ -3402,8 +3423,9 @@ class Conduit(Cleanable):
             self._logger.error("sever_link in non-dynamic env", "sever_link")
             raise RuntimeError("Dynamic environment is not enabled. Cannot manage link services.")
 
-        with self._lock:
-            unlinked = self._conduit_ward._sever_link(target_conduit)
+        with self.transaction("unlink", conduits=[self, target_conduit]):
+            with self._lock:
+                unlinked = self._conduit_ward._sever_link(target_conduit)
 
         if unlinked:
             # Fire post-unlink hook with both ends of the relationship.

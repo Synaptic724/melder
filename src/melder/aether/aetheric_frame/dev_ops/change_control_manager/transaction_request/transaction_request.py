@@ -37,6 +37,7 @@ class ChangeTransactionType(StrEnum):
     TRANSFER_OWNERSHIP = "transfer_ownership"
     MUTATION = "mutation"
     CLUSTER_LINK = "cluster_link"
+    UNLINK = "unlink"
 
 
 @dataclass(frozen=True)

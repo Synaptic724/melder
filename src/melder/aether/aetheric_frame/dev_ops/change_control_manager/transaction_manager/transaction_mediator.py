@@ -593,6 +593,7 @@ class TransactionMediator(Cleanable):
                 "link",
                 "cluster_link",
                 "transfer_ownership",
+                "unlink",
         ):
             return self._start_strategy_transaction(
                 identity=identity,

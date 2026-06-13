@@ -46,6 +46,9 @@ from melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_man
 from melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.transfer_ownership_transaction_strategy import (
     TransferOwnershipTransactionStrategy,
 )
+from melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.unlink_transaction_strategy import (
+    UnlinkTransactionStrategy,
+)
 from melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.transaction_strategy import (
     TransactionStrategy,
 )
@@ -319,6 +322,8 @@ class TransactionStrategyBuilder:
               `cluster_link` transaction name.
             - Ownership-transfer requests are registered under the
               `transfer_ownership` transaction name.
+            - Conduit-owned unlink (sever-link) requests are registered under
+              the `unlink` transaction name.
             - Additional strategy classes should be registered here as they
               become real runtime surfaces.
         """
@@ -331,6 +336,10 @@ class TransactionStrategyBuilder:
         self.register_strategy(
             ChangeTransactionType.TRANSFER_OWNERSHIP,
             TransferOwnershipTransactionStrategy,
+        )
+        self.register_strategy(
+            ChangeTransactionType.UNLINK,
+            UnlinkTransactionStrategy,
         )
 
     @staticmethod

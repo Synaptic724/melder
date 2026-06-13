@@ -6,45 +6,50 @@ from melder.aether.aetheric_frame.dev_ops.devops_information_registry import (
 from melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.transaction_strategy import (
     TransactionStrategy,
 )
+from melder.aether.aetheric_frame.dev_ops.devops_identity import (
+    DevopsIdentity,
+)
 from melder.aether.aetheric_frame.dev_ops.change_control_manager.embargo_manager.embargo_manager import (
     ClaimMode,
 )
+
 if TYPE_CHECKING:
     from melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.transaction_manager import (
         ChangeControlTransactionManager,
     )
-    from melder.aether.aetheric_frame.dev_ops.devops_identity import DevopsIdentity
 
 
-class ClusterLinkTransactionStrategy(TransactionStrategy):
+class UnlinkTransactionStrategy(TransactionStrategy):
     """
-    Cluster-owned share/unshare transaction resolver.
+    Unlink (sever-link) transaction resolver.
 
     Purpose:
-        Resolve one `CLUSTER_LINK` transaction into the normalized
-        change-control plan used by the mediator for cluster-driven share and
-        unshare operations.
+        Resolve one conduit-owned `UNLINK` request into the normalized
+        change-control plan used by the mediator. An unlink is the inverse of a
+        link: it tears down the contract between two participating conduits.
 
     Runtime shape:
-        - one initiating conduit
-        - at least one peer conduit
-        - one owning cluster identity
-        - the wards and spellbooks attached to the participating conduits
+        - the initiating conduit is always affected
+        - at least one peer conduit must also be affected
+        - each participating conduit implies:
+          - the conduit itself
+          - its ward
+          - its owning spellbook, when resolvable from registry metadata
 
     Contract:
-        - Uses metadata supplied by the cluster-owned runtime operation to
-          validate participants and cluster identity.
-        - Uses sets for scope and identity accumulation, then normalizes once
-          at the return boundary.
-        - Grants cluster-link plus contract-mutation capability because the
-          actual runtime work still mutates cross-conduit contract surfaces.
-        - Emits claim modes: the cluster, participant conduits, and their
-          wards stay EXCLUSIVE (a whole-cluster share/unshare owns the
-          cluster and rewrites each ward contract surface), while member
-          spellbooks are claimed INTENT (`ClaimMode.INTENT`) so the
-          operation blocks a whole-spellbook claim (transfer) without
-          serializing unrelated piece-work (links, binds) on those
-          spellbooks.
+        - Conduit only supplies public input facts through metadata; this
+          strategy owns participant validation and scope planning.
+        - Uses sets for scope and affected-identity accumulation, then
+          normalizes once at the return boundary.
+        - Preserves caller-supplied explicit binding and contract keys.
+        - Emits claim modes that mirror the link strategy, because a sever
+          mutates the same surfaces a link does: participant conduits and their
+          wards stay EXCLUSIVE (each side's ward contract index is rewritten as
+          the contract is removed), while owning spellbooks are claimed INTENT
+          (`ClaimMode.INTENT`) because a sever removes one contract bucket per
+          spellbook (a piece, not a whole-spellbook rewrite). The INTENT
+          spellbook claim still blocks a whole-spellbook EXCLUSIVE claim (such
+          as a transfer) without serializing unrelated piece-work.
     """
 
     @classmethod
@@ -57,32 +62,20 @@ class ClusterLinkTransactionStrategy(TransactionStrategy):
             metadata: Dict[str, object],
     ) -> Dict[str, object]:
         """
-        Build the change-control request inputs for one cluster-owned share/unshare operation.
+        Build the change-control request inputs for one unlink transaction.
         """
-        cluster_id = cls._resolve_cluster_id(identity=identity, metadata=metadata)
-        conduit_ids = cls._resolve_participant_conduit_ids(metadata=metadata)
+        conduit_ids = cls._resolve_participant_conduit_ids(
+            identity=identity,
+            metadata=metadata,
+        )
         explicit_scope_keys = tuple(metadata.get("scope_keys", ()))
         explicit_scope_hashes = tuple(metadata.get("scope_hashes", ()))
         explicit_binding_keys = tuple(metadata.get("binding_keys", ()))
         explicit_contract_keys = tuple(metadata.get("contract_keys", ()))
 
         scope_keys: Set[str] = set(explicit_scope_keys)
-        scope_keys.add(transaction_manager.make_scope_key_cluster(cluster_id))
+        affected_identity_keys: Set[Tuple[str, str]] = set()
         affected_spellbook_ids: Set[str] = set()
-        affected_identity_keys: Set[Tuple[str, str]] = {
-            ("conduit_cluster", cluster_id),
-        }
-
-        cluster_identity = devops_information_registry.get_identity(
-            owner_kind="conduit_cluster",
-            owner_id=cluster_id,
-        )
-        if cluster_identity is not None:
-            cls._add_transaction_owner_scopes(
-                scope_keys=scope_keys,
-                transaction_manager=transaction_manager,
-                identity=cluster_identity,
-            )
 
         for conduit_id in conduit_ids:
             scope_keys.add(transaction_manager.make_scope_key_conduit(conduit_id))
@@ -92,7 +85,6 @@ class ClusterLinkTransactionStrategy(TransactionStrategy):
                     owner_id=conduit_id,
                 )
             )
-            affected_identity_keys.add(("conduit_ward", conduit_id))
             conduit_identity = devops_information_registry.get_identity(
                 owner_kind="conduit",
                 owner_id=conduit_id,
@@ -106,6 +98,8 @@ class ClusterLinkTransactionStrategy(TransactionStrategy):
                     transaction_manager=transaction_manager,
                     identity=conduit_identity,
                 )
+            affected_identity_keys.add(("conduit_ward", conduit_id))
+
             spellbook_id = devops_information_registry.get_spellbook_for_conduit(
                 conduit_id
             )
@@ -132,9 +126,11 @@ class ClusterLinkTransactionStrategy(TransactionStrategy):
 
         normalized_metadata = dict(metadata)
         normalized_metadata["transaction_identity"] = identity.describe()
-        normalized_metadata["cluster_mode"] = "cluster_link"
-        normalized_metadata["cluster_id"] = cluster_id
+        normalized_metadata["unlink_mode"] = "conduit_unlink"
         normalized_metadata["participant_conduit_ids"] = tuple(sorted(conduit_ids))
+        normalized_metadata["affected_spellbook_ids"] = tuple(
+            sorted(affected_spellbook_ids)
+        )
         normalized_metadata["affected_identity_keys"] = tuple(
             sorted(affected_identity_keys)
         )
@@ -143,12 +139,10 @@ class ClusterLinkTransactionStrategy(TransactionStrategy):
         if not isinstance(spellbook_id, str) or not spellbook_id:
             spellbook_id = None
 
-        # Member spellbooks are claimed INTENT, not EXCLUSIVE: a cluster
-        # share/unshare adds or removes contract buckets on member wards,
-        # not a whole-spellbook rewrite, so it blocks a whole-spellbook
-        # claim (transfer) without serializing unrelated piece-work. The
-        # cluster scope stays EXCLUSIVE, which is what stops member binds
-        # (their INTENT cluster claim collides with this EXCLUSIVE one).
+        # Owning spellbooks are claimed INTENT, not EXCLUSIVE: a sever removes
+        # one contract bucket from each spellbook, so it should block a
+        # whole-spellbook claim (transfer) without serializing unrelated
+        # piece-work. Conduits and wards are left to default EXCLUSIVE.
         spellbook_scope_claims: Tuple[Tuple[str, str], ...] = tuple(
             (
                 transaction_manager.make_scope_key_spellbook(affected_spellbook_id),
@@ -166,36 +160,21 @@ class ClusterLinkTransactionStrategy(TransactionStrategy):
             "scope_hashes": explicit_scope_hashes,
             "binding_keys": explicit_binding_keys,
             "contract_keys": explicit_contract_keys,
-            "granted_capabilities": ("cluster_link", "contract_mutation"),
-            "required_capabilities": ("cluster_link", "contract_mutation"),
+            "granted_capabilities": ("unlink", "contract_mutation"),
+            "required_capabilities": ("unlink", "contract_mutation"),
             "metadata": normalized_metadata,
         }
 
     @staticmethod
-    def _resolve_cluster_id(
+    def _resolve_participant_conduit_ids(
             *,
             identity: DevopsIdentity,
             metadata: Dict[str, object],
-    ) -> str:
-        """
-        Resolve the cluster identity backing this transaction.
-        """
-        cluster_id = metadata.get("cluster_id")
-        if isinstance(cluster_id, str) and cluster_id.strip():
-            return cluster_id
-        raise RuntimeError(
-            "Cluster-link transaction requires cluster_id metadata."
-        )
-
-    @staticmethod
-    def _resolve_participant_conduit_ids(
-            *,
-            metadata: Dict[str, object],
     ) -> Set[str]:
         """
-        Resolve and validate the participating conduit ids for one cluster-link request.
+        Resolve and validate the participating conduit ids for one unlink request.
         """
-        conduit_ids: Set[str] = set()
+        conduit_ids: Set[str] = {identity.owner_id}
         raw_ids = metadata.get("conduit_ids", ())
         for conduit_id in raw_ids:
             if not isinstance(conduit_id, str):
@@ -206,7 +185,7 @@ class ClusterLinkTransactionStrategy(TransactionStrategy):
             conduit_ids.add(normalized_id)
         if len(conduit_ids) < 2:
             raise RuntimeError(
-                "[CONDUIT_CLUSTER] Cluster link transactions must include at least two conduit ids."
+                "[CONDUIT] Unlink transactions must include the local conduit and at least one peer conduit."
             )
         return conduit_ids
 
@@ -237,7 +216,7 @@ class ClusterLinkTransactionStrategy(TransactionStrategy):
             metadata: Dict[str, object],
     ) -> None:
         """
-        Cluster-link transactions do not need extra local start-side effects right now.
+        Unlink transactions do not need extra local start-side effects right now.
         """
         return None
 
@@ -249,6 +228,6 @@ class ClusterLinkTransactionStrategy(TransactionStrategy):
             metadata: Dict[str, object],
     ) -> None:
         """
-        Cluster-link transactions do not need extra local end-side effects right now.
+        Unlink transactions do not need extra local end-side effects right now.
         """
         return None
