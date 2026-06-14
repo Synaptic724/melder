@@ -934,7 +934,7 @@ def _build_with_overrides_lines(
                 "with root_creations._lock:",
                 "    creation = root_creations.get_creation(_spell_id)",
                 "    if creation is None:",
-                "        instance = _execute_with_overrides(caller_creations, overrides, False)",
+                "        instance = _execute_with_overrides(caller_creations, overrides, False, root_creations)",
                 _prefix_two_indent(
                     _build_return_statement(
                         value_expression="instance",
@@ -967,7 +967,7 @@ def _build_with_overrides_lines(
             "with root_creations._lock:",
             "    creation = root_creations.get_creation(_spell_id)",
             "    if creation is None:",
-            "        instance = _execute_with_overrides(caller_creations, overrides, False)",
+            "        instance = _execute_with_overrides(caller_creations, overrides, False, root_creations)",
             _prefix_two_indent(
                 _build_return_statement(
                     value_expression="instance",
@@ -1215,6 +1215,35 @@ _TEMPLATE_SHARED_INSTANCE_NO_OVERRIDES_ONLY = (
         return_created=False,
     )
 )
+# unique_per_conduit_lineage: one instance per lineage, stored in the resolving
+# door's lineage-root creations (`root_creations`), not the binding owner's
+# `_owner_creations`. Lineage is never fast-transient (only `many` is).
+_TEMPLATE_LINEAGE_OVERRIDES_ONLY = (
+    _compile_creation_context_overrides_only_template(
+        resolve_route_key="lineage",
+        return_created=True,
+    )
+)
+_TEMPLATE_LINEAGE_INSTANCE_OVERRIDES_ONLY = (
+    _compile_creation_context_overrides_only_template(
+        resolve_route_key="lineage",
+        return_created=False,
+    )
+)
+_TEMPLATE_LINEAGE_NO_OVERRIDES_ONLY = (
+    _compile_creation_context_no_overrides_only_template(
+        resolve_route_key="lineage",
+        fast_transient_no_overrides_enabled=False,
+        return_created=True,
+    )
+)
+_TEMPLATE_LINEAGE_INSTANCE_NO_OVERRIDES_ONLY = (
+    _compile_creation_context_no_overrides_only_template(
+        resolve_route_key="lineage",
+        fast_transient_no_overrides_enabled=False,
+        return_created=False,
+    )
+)
 
 
 _OVERRIDES_ONLY_INSTANCE_TEMPLATE_BY_ROUTE: dict[
@@ -1226,6 +1255,7 @@ _OVERRIDES_ONLY_INSTANCE_TEMPLATE_BY_ROUTE: dict[
     "unique_per_conduit": _TEMPLATE_UNIQUE_PER_CONDUIT_INSTANCE_OVERRIDES_ONLY,
     "spellspace": _TEMPLATE_SPELLSPACE_INSTANCE_OVERRIDES_ONLY,
     "shared": _TEMPLATE_SHARED_INSTANCE_OVERRIDES_ONLY,
+    "lineage": _TEMPLATE_LINEAGE_INSTANCE_OVERRIDES_ONLY,
 }
 
 _OVERRIDES_ONLY_HOOKS_TEMPLATE_BY_ROUTE: dict[
@@ -1237,6 +1267,7 @@ _OVERRIDES_ONLY_HOOKS_TEMPLATE_BY_ROUTE: dict[
     "unique_per_conduit": _TEMPLATE_UNIQUE_PER_CONDUIT_OVERRIDES_ONLY,
     "spellspace": _TEMPLATE_SPELLSPACE_OVERRIDES_ONLY,
     "shared": _TEMPLATE_SHARED_OVERRIDES_ONLY,
+    "lineage": _TEMPLATE_LINEAGE_OVERRIDES_ONLY,
 }
 
 _NO_OVERRIDES_ONLY_INSTANCE_TEMPLATE_BY_ROUTE_AND_FAST: dict[
@@ -1253,6 +1284,8 @@ _NO_OVERRIDES_ONLY_INSTANCE_TEMPLATE_BY_ROUTE_AND_FAST: dict[
     ("spellspace", True): _TEMPLATE_SPELLSPACE_INSTANCE_NO_OVERRIDES_ONLY,
     ("shared", False): _TEMPLATE_SHARED_INSTANCE_NO_OVERRIDES_ONLY,
     ("shared", True): _TEMPLATE_SHARED_INSTANCE_NO_OVERRIDES_ONLY,
+    ("lineage", False): _TEMPLATE_LINEAGE_INSTANCE_NO_OVERRIDES_ONLY,
+    ("lineage", True): _TEMPLATE_LINEAGE_INSTANCE_NO_OVERRIDES_ONLY,
 }
 
 _NO_OVERRIDES_ONLY_HOOKS_TEMPLATE_BY_ROUTE_AND_FAST: dict[
@@ -1269,4 +1302,6 @@ _NO_OVERRIDES_ONLY_HOOKS_TEMPLATE_BY_ROUTE_AND_FAST: dict[
     ("spellspace", True): _TEMPLATE_SPELLSPACE_NO_OVERRIDES_ONLY,
     ("shared", False): _TEMPLATE_SHARED_NO_OVERRIDES_ONLY,
     ("shared", True): _TEMPLATE_SHARED_NO_OVERRIDES_ONLY,
+    ("lineage", False): _TEMPLATE_LINEAGE_NO_OVERRIDES_ONLY,
+    ("lineage", True): _TEMPLATE_LINEAGE_NO_OVERRIDES_ONLY,
 }

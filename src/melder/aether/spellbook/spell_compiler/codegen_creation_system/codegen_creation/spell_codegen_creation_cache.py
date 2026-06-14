@@ -260,6 +260,7 @@ def load_creation_context(
                 caller_creations: Any,
                 overrides: Optional[dict],
                 caller_creations_lock_held: bool,
+                root_creations: Any = None,
         ) -> Any:
             override_runtime = _override_runtime_cell[0]
             if override_runtime is None:
@@ -269,10 +270,19 @@ def load_creation_context(
                     base_no_overrides_executor=inner_no_overrides,
                 )
                 _override_runtime_cell[0] = override_runtime
+            # Lineage doors pass their lineage-root creations as a 4th arg; every
+            # other route calls with three, so keep the non-lineage arity exact.
+            if root_creations is None:
+                return override_runtime(
+                    caller_creations,
+                    overrides,
+                    caller_creations_lock_held,
+                )
             return override_runtime(
                 caller_creations,
                 overrides,
                 caller_creations_lock_held,
+                root_creations,
             )
 
         outer_overrides = compile_creation_context_hooks_overrides_only_executor(
@@ -423,8 +433,9 @@ def _build_missing_overrides_executor(spell: Any) -> Any:
             caller_creations: Any,
             overrides: Optional[dict],
             caller_creations_lock_held: bool,
+            root_creations: Any = None,
     ) -> Any:
-        _ = (caller_creations, overrides, caller_creations_lock_held)
+        _ = (caller_creations, overrides, caller_creations_lock_held, root_creations)
         raise RuntimeError(
             "Cached spell has no override lane "
             f"(spell_id={spell.spell_id})."

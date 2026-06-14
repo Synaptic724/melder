@@ -371,8 +371,15 @@ def build_overrides_execute_runtime(
             caller_creations: Any,
             overrides: Optional[dict],
             caller_creations_lock_held: bool,
+            root_creations: Any = None,
     ) -> Any:
-        owner_creations = root_spell._owner_creations
+        # Lineage doors pass their lineage-root creations so the lineage OWNER step
+        # stores there instead of the binding owner's `_owner_creations`.
+        owner_creations = (
+            root_creations
+            if root_creations is not None
+            else root_spell._owner_creations
+        )
 
         if overrides is None:
             return baseline_executor(

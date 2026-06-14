@@ -1759,6 +1759,7 @@ def _append_overrides_shape_owner_creations_source(
         *,
         lines: list[str],
         step_index: int,
+        is_lineage: bool = False,
 ) -> None:
     """
     Append emitted source lines for OWNER-target creations resolution.
@@ -1767,7 +1768,13 @@ def _append_overrides_shape_owner_creations_source(
         - Uses spell-owned creations when available.
         - Falls back to `owner_creations` when spell-owned creations are missing.
         - Raises when neither owner creations source is available.
+        - For unique_per_conduit_lineage steps, the OWNER store is the resolving
+          door's lineage-root creations, threaded in as `owner_creations`
+          (== root_creations), never the binding owner's `_owner_creations`.
     """
+    if is_lineage:
+        lines.append(f"    creations_{step_index} = owner_creations")
+        return
     lines.extend([
         f"    owner_creations_{step_index} = spell_{step_index}._owner_creations",
         f"    if owner_creations_{step_index} is not None:",
@@ -1899,6 +1906,7 @@ def _append_overrides_step_shape_source(
         _append_overrides_shape_owner_creations_source(
             lines=lines,
             step_index=step_index,
+            is_lineage=existence is Existence.unique_per_conduit_lineage,
         )
     else:
         lines.extend([

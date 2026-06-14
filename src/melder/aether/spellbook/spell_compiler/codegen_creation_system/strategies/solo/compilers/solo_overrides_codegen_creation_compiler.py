@@ -338,52 +338,22 @@ def _build_source(
 """
 
     if solo_emit_key == "unique_per_conduit_lineage":
-        if has_prebound_owner_creations:
-            if has_disposal_methods:
-                return """def _solo_overrides_codegen_creation_executor(
-        caller_creations,
-        overrides,
-        caller_creations_lock_held=False,
-):
-    instance = _invoke_with_overrides(
-        call_target=call_target,
-        overrides=overrides,
-    )
-    prebound_owner_creations.add_creation(
-        spell_id,
-        instance,
-        has_disposal_methods=True,
-        disposal_methods=disposal_methods,
-    )
-    return instance
-"""
-            return """def _solo_overrides_codegen_creation_executor(
-        caller_creations,
-        overrides,
-        caller_creations_lock_held=False,
-):
-    instance = _invoke_with_overrides(
-        call_target=call_target,
-        overrides=overrides,
-    )
-    prebound_owner_creations.add_creation(
-        spell_id,
-        instance,
-    )
-    return instance
-"""
+        # Lineage stores the (overridden) instance in the resolving door's
+        # lineage-root creations (`root_creations`), passed by the hooks override
+        # door as the 4th positional argument, never the binding owner's
+        # `_owner_creations`. has_prebound_owner_creations is irrelevant here.
         if has_disposal_methods:
             return """def _solo_overrides_codegen_creation_executor(
         caller_creations,
         overrides,
         caller_creations_lock_held=False,
+        root_creations=None,
 ):
     instance = _invoke_with_overrides(
         call_target=call_target,
         overrides=overrides,
     )
-    dynamic_owner_creations = spell._owner_creations
-    dynamic_owner_creations.add_creation(
+    root_creations.add_creation(
         spell_id,
         instance,
         has_disposal_methods=True,
@@ -395,13 +365,13 @@ def _build_source(
         caller_creations,
         overrides,
         caller_creations_lock_held=False,
+        root_creations=None,
 ):
     instance = _invoke_with_overrides(
         call_target=call_target,
         overrides=overrides,
     )
-    dynamic_owner_creations = spell._owner_creations
-    dynamic_owner_creations.add_creation(
+    root_creations.add_creation(
         spell_id,
         instance,
     )

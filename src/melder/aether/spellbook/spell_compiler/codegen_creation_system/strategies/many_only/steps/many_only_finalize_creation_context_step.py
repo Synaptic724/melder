@@ -159,6 +159,7 @@ class ManyOnlyFinalizeCreationContextStep(CodegenCreationFamilyStep):
                 "unique_per_conduit",
                 "many",
                 "shared",
+                "lineage",
         ):
             return route_family
         raise RuntimeError(

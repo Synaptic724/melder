@@ -160,6 +160,7 @@ class GeneralizedFinalizeCreationContextStep(CodegenCreationFamilyStep):
                 "unique_per_conduit",
                 "many",
                 "shared",
+                "lineage",
         ):
             return route_family
         raise RuntimeError(
@@ -293,8 +294,16 @@ class GeneralizedFinalizeCreationContextStep(CodegenCreationFamilyStep):
                 caller_creations: Any,
                 overrides: Optional[dict[str, Any]],
                 caller_creations_lock_held: bool,
+                root_creations: Any = None,
         ) -> Any:
-            owner_creations = root_spell._owner_creations
+            # For unique_per_conduit_lineage the resolving door passes its
+            # lineage-root creations; the lineage OWNER step stores there instead
+            # of the binding owner's `_owner_creations`. None for every other route.
+            owner_creations = (
+                root_creations
+                if root_creations is not None
+                else root_spell._owner_creations
+            )
             override_payload = overrides
             root_positional_override: Optional[Sequence[Any]] = None
             override_map: Dict[Any, Any] = {}

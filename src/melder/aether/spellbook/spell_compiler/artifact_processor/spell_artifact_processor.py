@@ -139,6 +139,8 @@ class SpellArtifactProcessor(Cleanable):
                 route_family = "unique_per_conduit"
             elif existence is Existence.many:
                 route_family = "many"
+            elif existence is Existence.unique_per_conduit_lineage:
+                route_family = "lineage"
             else:
                 route_family = "shared"
 
