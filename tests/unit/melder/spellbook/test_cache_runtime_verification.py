@@ -110,7 +110,10 @@ def _make_spellbook_stub(
         (False, "many", "many"),
         (False, "unique", "shared"),
         (False, "unique_per_conduit_cluster", "shared"),
-        (False, "unique_per_conduit_lineage", "shared"),
+        # unique_per_conduit_lineage now routes to its own "lineage" lane (the door
+        # reads the resolver's lineage-root store); cluster stays "shared" until its
+        # own migration. See lineage resolver-root epic.
+        (False, "unique_per_conduit_lineage", "lineage"),
     ],
 )
 def test_resolve_route_key_for_spell_maps_supported_spell_routes(
