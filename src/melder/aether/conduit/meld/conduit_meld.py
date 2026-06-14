@@ -33,12 +33,14 @@ class ConduitMeld(Meld):
     __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = [
         "_creations",
+        "_root_creations",
     ]
 
     def __init__(
             self,
             *,
             creations: "ConduitCreations",
+            root_creations: Optional["ConduitCreations"] = None,
             spellbook: "Spellbook",
             conduit_id: Optional[str] = None,
             resolution_conduit_id: Optional[str] = None,
@@ -52,6 +54,13 @@ class ConduitMeld(Meld):
             creations:
                 Conduit-owned live creation registry used for caller-local
                 `unique_per_conduit` and `many` storage.
+            root_creations:
+                The lineage-root conduit's creation registry (the lineage
+                store). For a root conduit this is its own `creations`; for a
+                lesser conduit it is the root conduit's `creations`. Additive;
+                bound here and currently unused, to be consumed by
+                `unique_per_conduit_lineage` routing so a lineage instance
+                resolves into the lineage root rather than the binding owner.
             spellbook:
                 Spellbook providing the shared lookup and spell metadata maps.
             conduit_id:
@@ -72,6 +81,12 @@ class ConduitMeld(Meld):
             meld_hooks=meld_hooks,
         )
         self._creations = creations
+        # Lineage-root store (additive). For a root conduit this equals its own
+        # `creations`; for a lesser it is the root conduit's `creations`. Bound
+        # here so `unique_per_conduit_lineage` routing can resolve into the
+        # lineage root rather than the binding owner. Currently unused until the
+        # solo lineage branch is flipped to consume it.
+        self._root_creations = root_creations
 
     def cleanup(self) -> None:
         """
@@ -92,6 +107,7 @@ class ConduitMeld(Meld):
                 return
             super().cleanup()
             del self._creations
+            del self._root_creations
 
     def meld(
             self,

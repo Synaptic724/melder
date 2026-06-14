@@ -347,7 +347,8 @@ def test_conduit_begin_transaction_sets_conduit_scope_key() -> None:
         Validate Conduit transactions advertise conduit scope keys for conflicts.
     Contract:
         - Conduit begin_transaction emits a scope key that conflicts with other requests.
-        - Overlapping scope keys are rejected by change-control admission.
+        - Overlapping scope keys block admission; the conflicting request
+          waits and times out with the blocking scope keys named in the error.
     Returns:
         None.
     Raises:
@@ -363,14 +364,23 @@ def test_conduit_begin_transaction_sets_conduit_scope_key() -> None:
     conduit_peer = spellbook_b.conjure(dynamic=True, name="conduit-peer")
     change_control = spellbook_a._aether._get_change_control_manager(frame_name)
     scope_key = change_control.transaction_manager().make_scope_key_conduit(conduit_a.id)
+    # Pending/wait model: a scope collision blocks admission and times out
+    # with evidence rather than denying immediately. Shrink the wait so the
+    # bounded timeout is fast and deterministic.
+    change_control.transaction_mediator().configure(
+        max_transaction_wait_time_in_seconds=0.1
+    )
     try:
         conduit_a.begin_transaction("link", conduits=[conduit_a, conduit_peer])
-        with pytest.raises(RuntimeError, match="Change-control admission denied"):
+        with pytest.raises(
+            RuntimeError, match="Timed out waiting for blocked scopes"
+        ) as exc_info:
             conduit_peer.begin_transaction(
                 "link",
                 conduits=[conduit_peer, conduit_a],
                 scope_keys=[scope_key],
             )
+        assert scope_key in str(exc_info.value)
     finally:
         conduit_a.end_transaction("link")
         conduit_peer.cleanup()
