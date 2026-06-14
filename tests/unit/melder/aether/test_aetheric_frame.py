@@ -412,6 +412,64 @@ def test_find_and_return_spell_index_none_registry(frame):
     frame._spell_registry = None
     assert frame.find_and_return_spell_index("v1") is None
 
+
+# ---- Frame-owned, lock-serialized registry mutation (race-fix encapsulation) ----
+
+def test_register_conduit_spells_adds_and_refreshes(frame):
+    """register_conduit_spells writes the set and refreshes the version cache."""
+    si = MagicMock(spec=SpellIndex)
+    si.get_all_versions.return_value = {"v1"}
+    frame.register_conduit_spells("c1", {si})
+    assert frame._spell_registry["c1"] == {si}
+    assert frame._version_registry["c1"] == {"v1"}
+
+
+def test_register_conduit_spells_duplicate_raises(frame):
+    """register_conduit_spells rejects a conduit that is already registered."""
+    frame._spell_registry = {"c1": set()}
+    with pytest.raises(ValueError, match="already contains"):
+        frame.register_conduit_spells("c1", {MagicMock(spec=SpellIndex)})
+
+
+def test_unregister_conduit_spells_discards_and_refreshes(frame):
+    """unregister_conduit_spells removes the given indexes; no-op when absent."""
+    si = MagicMock(spec=SpellIndex)
+    si.get_all_versions.return_value = {"v1"}
+    frame._spell_registry = {"c1": {si}}
+    frame.unregister_conduit_spells("c1", {si})
+    assert frame._spell_registry["c1"] == set()
+    # Absent conduit is a no-op (no raise).
+    frame.unregister_conduit_spells("missing", {si})
+
+
+def test_register_spell_index_creates_set_and_refreshes(frame):
+    """register_spell_index lazily creates the conduit set and adds the index."""
+    si = MagicMock(spec=SpellIndex)
+    si.get_all_versions.return_value = {"v1"}
+    frame.register_spell_index("c1", si)
+    assert si in frame._spell_registry["c1"]
+    assert frame._version_registry["c1"] == {"v1"}
+
+
+def test_unregister_spell_index_discards_and_refreshes(frame):
+    """unregister_spell_index removes one index; no-op when conduit absent."""
+    si = MagicMock(spec=SpellIndex)
+    si.get_all_versions.return_value = {"v1"}
+    frame._spell_registry = {"c1": {si}}
+    frame.unregister_spell_index("c1", si)
+    assert frame._spell_registry["c1"] == set()
+    frame.unregister_spell_index("missing", si)  # no raise
+
+
+def test_find_conduit_id_for_version(frame):
+    """find_conduit_id_for_version returns the owning conduit id, else None."""
+    si = MagicMock(spec=SpellIndex)
+    si.has_version.side_effect = lambda v: v == "target_v"
+    frame._spell_registry = {"c1": {si}}
+    assert frame.find_conduit_id_for_version("target_v") == "c1"
+    assert frame.find_conduit_id_for_version("nope") is None
+    assert frame.find_conduit_id_for_version("") is None
+
 def test_refresh_version_registry_merges_duplicates(frame):
     """
     Test that if multiple conduits/indexes claim version, it's merged.

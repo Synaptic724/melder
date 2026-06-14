@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 import pytest
+from unittest.mock import patch
 
 from melder.aether.aether import Aether
 from melder.aether.conduit.conduit import Conduit
+from melder.aether.conduit.conduit_ward.conduit_ward import ConduitWard
 from melder.aether.spellbook.configuration.spellbook_configuration import SpellbookConfiguration
 from melder.aether.spellbook.existence.existence import Existence
 from melder.aether.spellbook.spellbook import Spellbook
@@ -363,3 +365,58 @@ def test_conduit_hooks_fire_for_lesser_conduit_creation() -> None:
         if lesser is not None:
             lesser.permanent_cleanup()
         owner.permanent_cleanup()
+
+
+def test_sever_link_reresolves_borrowing_side_contract_consumers() -> None:
+    """
+    Purpose:
+        Validate that severing a whole link re-resolves the borrowing side's
+        contract consumers (Step C of the unlink lane).
+    Contract:
+        - When a borrow exists, `Conduit.sever_link` (via `_remove_contract`)
+          invalidates the borrowing side's SpellContract consumers so the next
+          meld revalidates, mirroring per-spell `remove_spell_from_contract`.
+        - The link is gone afterward.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If a borrowed-link sever does not invalidate consumers
+            or leaves the link in place.
+    """
+    configuration = _make_dynamic_configuration()
+    owner_book = Spellbook(configuration=configuration)
+    borrower_book = Spellbook(configuration=configuration)
+    service_id = owner_book.bind(
+        spell=BasicService,
+        existence=Existence.unique,
+        permissions="create",
+    )
+    config_id = owner_book.bind(
+        spell=BasicConfig,
+        existence=Existence.unique,
+        permissions="create",
+    )
+    owner = owner_book.conjure(dynamic=True, name="owner")
+    borrower = borrower_book.conjure(dynamic=True, name="borrower")
+
+    assert owner.link(borrower) is True
+    with borrower.transaction("link", conduits=[borrower, owner]):
+        assert borrower.add_spells_to_contract(
+            spell_ids=[service_id, config_id],
+            conduit=owner,
+            permissions="create",
+        ) == {service_id: True, config_id: True}
+
+    # Step C: a whole-link sever must invalidate the borrowing side's contract
+    # consumers. Spy at the class level so the call is captured regardless of
+    # which ward holds the borrow detail map.
+    with patch.object(
+        ConduitWard,
+        "_invalidate_contract_consumers",
+        autospec=True,
+    ) as invalidate_spy:
+        assert owner.sever_link(borrower) is True
+
+    assert invalidate_spy.called
+    assert borrower not in owner.get_links()
+    assert owner not in borrower.get_links()
