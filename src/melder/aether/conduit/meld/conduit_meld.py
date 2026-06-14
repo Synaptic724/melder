@@ -33,14 +33,12 @@ class ConduitMeld(Meld):
     __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = [
         "_creations",
-        "_root_creations",
     ]
 
     def __init__(
             self,
             *,
             creations: "ConduitCreations",
-            root_creations: Optional["ConduitCreations"] = None,
             spellbook: "Spellbook",
             conduit_id: Optional[str] = None,
             resolution_conduit_id: Optional[str] = None,
@@ -54,13 +52,6 @@ class ConduitMeld(Meld):
             creations:
                 Conduit-owned live creation registry used for caller-local
                 `unique_per_conduit` and `many` storage.
-            root_creations:
-                The lineage-root conduit's creation registry (the lineage
-                store). For a root conduit this is its own `creations`; for a
-                lesser conduit it is the root conduit's `creations`. Additive;
-                bound here and currently unused, to be consumed by
-                `unique_per_conduit_lineage` routing so a lineage instance
-                resolves into the lineage root rather than the binding owner.
             spellbook:
                 Spellbook providing the shared lookup and spell metadata maps.
             conduit_id:
@@ -81,12 +72,6 @@ class ConduitMeld(Meld):
             meld_hooks=meld_hooks,
         )
         self._creations = creations
-        # Lineage-root store (additive). For a root conduit this equals its own
-        # `creations`; for a lesser it is the root conduit's `creations`. Bound
-        # here so `unique_per_conduit_lineage` routing can resolve into the
-        # lineage root rather than the binding owner. Currently unused until the
-        # solo lineage branch is flipped to consume it.
-        self._root_creations = root_creations
 
     def cleanup(self) -> None:
         """
@@ -107,7 +92,6 @@ class ConduitMeld(Meld):
                 return
             super().cleanup()
             del self._creations
-            del self._root_creations
 
     def meld(
             self,
@@ -261,7 +245,7 @@ class ConduitMeld(Meld):
                         # rebuilds.
                         fast_executor = None
                     if fast_executor is not None:
-                        instance = fast_executor(fast_creations, self._root_creations)[0]
+                        instance = fast_executor(fast_creations)[0]
                         if self._spellbook._cache_emit_required:
                             self._spellbook._emit_cache_file_if_required()
                         return instance
@@ -350,10 +334,9 @@ class ConduitMeld(Meld):
                 instance = creation_context.execute_no_hooks(
                     creations,
                     override_map,
-                    root_creations=self._root_creations,
                 )
             elif override_map is None:
-                instance = creation_context._no_overrides_executor(creations, self._root_creations)[0]
+                instance = creation_context._no_overrides_executor(creations)[0]
                 if fast_door_key is not None:
                     # Success-only fast-door memoization. This arm is exactly
                     # the fast-lane posture (non-dynamic, no hooks, no
@@ -375,7 +358,6 @@ class ConduitMeld(Meld):
                 instance = creation_context._overrides_executor(
                     creations,
                     override_map,
-                    self._root_creations,
                 )[0]
             # Hot path: inline the staged-cache flag check; the emit helper is
             # only entered when an emit is actually pending.
@@ -398,7 +380,6 @@ class ConduitMeld(Meld):
             instance, created = creation_context.execute(
                 creations,
                 override_map,
-                root_creations=self._root_creations,
             )
 
             if created:

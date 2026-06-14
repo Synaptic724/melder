@@ -125,6 +125,9 @@ class SpellSpace(Cleanable):
             id=self._id,
         )
         self._owner_conduit_creations: ConduitCreations = owner_conduit_creations
+        # A spellspace is not a lineage root: `unique_per_conduit_lineage`
+        # resolved from within it stores in the owner conduit's lineage root.
+        self._creations._root_creations = owner_conduit_creations._root_creations
         from melder.aether.conduit.meld.spellspace_meld import SpellSpaceMeld
         self._meld: SpellSpaceMeld = SpellSpaceMeld(
             spellspace=self,

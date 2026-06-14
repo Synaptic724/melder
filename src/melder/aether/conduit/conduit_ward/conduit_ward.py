@@ -902,6 +902,8 @@ class ConduitWard(Cleanable):
         """
         self._check_conduit_id_and_conduit(conduit=target_conduit)
         if (contract := self._find_contract(target_conduit)) is not None:
+            invalidate_self_consumers = False
+            invalidate_target_consumers = False
             with contract._lock:
                 id_a = contract._ward_a._id
                 id_b = contract._ward_b._id
@@ -946,10 +948,12 @@ class ConduitWard(Cleanable):
                     self._conduit._transaction_identity.unregister_provider_conduit(
                         target_conduit._id,
                     )
+                    invalidate_self_consumers = True
                 if target_borrows_from_self:
                     target_conduit._transaction_identity.unregister_provider_conduit(
                         self._id,
                     )
+                    invalidate_target_consumers = True
 
                 try:
                     contract.cleanup()
@@ -966,7 +970,23 @@ class ConduitWard(Cleanable):
                     owner_id=self._id, owner_display=self._display_name,
                     mask=True, groups=self._log_groups, system_groups=self._log_sysgroups,
                 )
-                return True
+            # Sever re-resolution (outside the contract lock, mirroring
+            # remove_spell_from_contract): the borrowing side's SpellContract
+            # consumers cached creations against the now-removed borrowed
+            # spells, so force them to re-resolve and mark contract dependents
+            # dirty on the next meld. Existing creations rebuild lazily; nothing
+            # is torn down here.
+            if invalidate_self_consumers:
+                try:
+                    self._invalidate_contract_consumers()
+                except Exception:
+                    pass
+            if invalidate_target_consumers:
+                try:
+                    target_conduit._conduit_ward._invalidate_contract_consumers()
+                except Exception:
+                    pass
+            return True
         return False
 
     def _link_lesser_conduit(self, lesser_conduit: Conduit) -> None:

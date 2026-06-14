@@ -674,8 +674,10 @@ def test_spellbook_integration_begin_transaction_conflict_rejects_overlapping_sc
     Purpose:
         Validate change-control admission rejects conflicting scope keys.
     Contract:
-        - A second transaction with overlapping scope keys is denied.
-        - The denied transaction does not replace the active request.
+        - A second transaction with an overlapping scope key blocks; under the
+          pending/wait model it waits and times out with the blocking scope key
+          named in the error.
+        - The blocked transaction does not replace the active request.
     Returns:
         None.
     Raises:
@@ -685,11 +687,20 @@ def test_spellbook_integration_begin_transaction_conflict_rejects_overlapping_sc
     apply_dynamic_defaults_for_spellbook_configuration(configuration)
     spellbook_a = Spellbook(aetheric_frame="shared-frame", configuration=configuration)
     spellbook_b = Spellbook(aetheric_frame="shared-frame", configuration=configuration)
+    # Pending/wait model: a scope collision blocks admission and times out with
+    # evidence rather than denying immediately. Shrink the wait so the bounded
+    # timeout is fast and deterministic.
+    spellbook_a._aether._get_change_control_manager(
+        "shared-frame"
+    ).transaction_mediator().configure(max_transaction_wait_time_in_seconds=0.1)
 
     spellbook_a.begin_transaction("bind", scope_keys=["shared-scope"])
     try:
-        with pytest.raises(RuntimeError, match="Change-control admission denied"):
+        with pytest.raises(
+            RuntimeError, match="Timed out waiting for blocked scopes"
+        ) as exc_info:
             spellbook_b.begin_transaction("bind", scope_keys=["shared-scope"])
+        assert "shared-scope" in str(exc_info.value)
     finally:
         spellbook_a.end_transaction("bind")
 

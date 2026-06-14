@@ -464,7 +464,7 @@ def _build_no_overrides_only_template_source(
         "        _spellspace_required_message,",
         ],
         execution_callable_name="_creation_context_execute_no_overrides_only",
-        execution_signature="caller_creations, root_creations=None",
+        execution_signature="caller_creations",
         execution_lines=no_overrides_lines,
     )
 
@@ -495,7 +495,7 @@ def _build_overrides_only_template_source(
         "        _spellspace_required_message,",
         ],
         execution_callable_name="_creation_context_execute_overrides_only",
-        execution_signature="caller_creations, overrides, root_creations=None",
+        execution_signature="caller_creations, overrides",
         execution_lines=with_overrides_lines,
     )
 
@@ -628,10 +628,12 @@ def _build_no_overrides_lines(
         ]
     if resolve_route_key == "lineage":
         # unique_per_conduit_lineage: one instance per lineage, stored in the
-        # RESOLVING door's lineage-root creations (passed at runtime as
-        # `root_creations`), not the binding owner's `_owner_creations`. Mirrors
-        # the unique_per_conduit shape but on the root store + its lock.
+        # RESOLVING door's lineage-root creations. The resolving conduit's
+        # `caller_creations` carries the pointer to its lineage-root store
+        # (`_root_creations`), so the root is read off it here -- not the binding
+        # owner's `_owner_creations`, and at zero cost to every other route.
         return [
+            "root_creations = caller_creations._root_creations",
             "creation = root_creations.get_creation(_spell_id)",
             "if creation is not None:",
             _prefix_one_indent(
@@ -924,6 +926,7 @@ def _build_with_overrides_lines(
         # instead of the binding owner's `_owner_creations`.
         if not overrides_maybe_none:
             return [
+                "root_creations = caller_creations._root_creations",
                 "creation = root_creations.get_creation(_spell_id)",
                 "if creation is not None:",
                 "    raise _MeldExecutionError(",
@@ -949,6 +952,7 @@ def _build_with_overrides_lines(
                 "    )",
             ]
         return [
+            "root_creations = caller_creations._root_creations",
             "creation = root_creations.get_creation(_spell_id)",
             "if creation is not None:",
             "    if overrides is not None:",

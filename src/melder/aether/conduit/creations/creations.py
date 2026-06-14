@@ -37,6 +37,7 @@ class Creations(Cleanable):
         "_lock",
         "_creations",
         "_disposable_creations",
+        "_root_creations",
     ]
 
     def __init__(
@@ -82,6 +83,13 @@ class Creations(Cleanable):
         self._lock = RLock()
         self._creations: Dict[str, Any] = {}
         self._disposable_creations: Dict[str, Any] = {}
+        # Lineage-root store pointer. Every Creations is its own lineage root by
+        # default; lesser conduits and spellspaces repoint this at the genuine
+        # root's creations at construction (and `upgrade_to_normal` repoints a
+        # promoted conduit back at itself). `unique_per_conduit_lineage` doors
+        # read `caller_creations._root_creations` so one instance lives per
+        # lineage root, resolver-relative, with zero cost to non-lineage routes.
+        self._root_creations: "Creations" = self
 
     def cleanup(self) -> None:
         """
@@ -125,6 +133,7 @@ class Creations(Cleanable):
         del self._owner_conduit_id
         del self._id
         del self._lock
+        del self._root_creations
 
         if errors:
             raise ExceptionGroup("Errors occurred during cleaning", errors)

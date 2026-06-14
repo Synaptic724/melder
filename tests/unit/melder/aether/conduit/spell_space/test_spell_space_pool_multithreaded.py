@@ -17,6 +17,8 @@ class _ConduitCreationsStub:
     def __init__(self, *, owner_conduit_id: str) -> None:
         self._owner_conduit_id = owner_conduit_id
         self._creations: dict[str, Any] = {}
+        # Mirror ConduitCreations: a conduit's creations is its own lineage root.
+        self._root_creations = self
 
     @property
     def owner_conduit_id(self) -> str:
