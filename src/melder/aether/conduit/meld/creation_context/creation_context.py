@@ -165,16 +165,21 @@ class CreationContext(Cleanable):
             self,
             caller_creations: "Creations",
             overrides: Optional[dict[str, Any]] = None,
+            root_creations: Optional["Creations"] = None,
     ) -> tuple[Any, bool]:
         """
         Execute one meld resolution through the hooks-aware runtime doors.
+
+        `root_creations` is the resolving door's lineage-root store, forwarded
+        to the outer door for `unique_per_conduit_lineage` routing. Defaults to
+        None and is ignored by non-lineage routes.
         """
         if not self._dynamic_environment:
             if overrides is None:
                 no_overrides_executor = self._no_overrides_executor
-                return no_overrides_executor(caller_creations)
+                return no_overrides_executor(caller_creations, root_creations)
             overrides_executor = self._overrides_executor
-            return overrides_executor(caller_creations, overrides)
+            return overrides_executor(caller_creations, overrides, root_creations)
 
         creation_gate = self._creation_gate
         index_id = self._creation_gate_index_id
@@ -196,9 +201,9 @@ class CreationContext(Cleanable):
             creation_gate.register_ticket()
             if overrides is None:
                 no_overrides_executor = self._no_overrides_executor
-                return no_overrides_executor(caller_creations)
+                return no_overrides_executor(caller_creations, root_creations)
             overrides_executor = self._overrides_executor
-            return overrides_executor(caller_creations, overrides)
+            return overrides_executor(caller_creations, overrides, root_creations)
         finally:
             creation_gate.unregister_ticket()
 
@@ -206,16 +211,21 @@ class CreationContext(Cleanable):
             self,
             caller_creations: "Creations",
             overrides: Optional[dict[str, Any]] = None,
+            root_creations: Optional["Creations"] = None,
     ) -> Any:
         """
         Execute one meld resolution through the direct no-hooks runtime doors.
+
+        `root_creations` is the resolving door's lineage-root store, forwarded
+        to the outer door for `unique_per_conduit_lineage` routing. Defaults to
+        None and is ignored by non-lineage routes.
         """
         if not self._dynamic_environment:
             if overrides is None:
                 no_overrides_executor = self._no_overrides_executor
-                return no_overrides_executor(caller_creations)[0]
+                return no_overrides_executor(caller_creations, root_creations)[0]
             overrides_executor = self._overrides_executor
-            return overrides_executor(caller_creations, overrides)[0]
+            return overrides_executor(caller_creations, overrides, root_creations)[0]
 
         creation_gate = self._creation_gate
         index_id = self._creation_gate_index_id
@@ -237,8 +247,8 @@ class CreationContext(Cleanable):
             creation_gate.register_ticket()
             if overrides is None:
                 no_overrides_executor = self._no_overrides_executor
-                return no_overrides_executor(caller_creations)[0]
+                return no_overrides_executor(caller_creations, root_creations)[0]
             overrides_executor = self._overrides_executor
-            return overrides_executor(caller_creations, overrides)[0]
+            return overrides_executor(caller_creations, overrides, root_creations)[0]
         finally:
             creation_gate.unregister_ticket()

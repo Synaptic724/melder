@@ -261,7 +261,7 @@ class ConduitMeld(Meld):
                         # rebuilds.
                         fast_executor = None
                     if fast_executor is not None:
-                        instance = fast_executor(fast_creations)[0]
+                        instance = fast_executor(fast_creations, self._root_creations)[0]
                         if self._spellbook._cache_emit_required:
                             self._spellbook._emit_cache_file_if_required()
                         return instance
@@ -350,9 +350,10 @@ class ConduitMeld(Meld):
                 instance = creation_context.execute_no_hooks(
                     creations,
                     override_map,
+                    root_creations=self._root_creations,
                 )
             elif override_map is None:
-                instance = creation_context._no_overrides_executor(creations)[0]
+                instance = creation_context._no_overrides_executor(creations, self._root_creations)[0]
                 if fast_door_key is not None:
                     # Success-only fast-door memoization. This arm is exactly
                     # the fast-lane posture (non-dynamic, no hooks, no
@@ -374,6 +375,7 @@ class ConduitMeld(Meld):
                 instance = creation_context._overrides_executor(
                     creations,
                     override_map,
+                    self._root_creations,
                 )[0]
             # Hot path: inline the staged-cache flag check; the emit helper is
             # only entered when an emit is actually pending.
@@ -396,6 +398,7 @@ class ConduitMeld(Meld):
             instance, created = creation_context.execute(
                 creations,
                 override_map,
+                root_creations=self._root_creations,
             )
 
             if created:

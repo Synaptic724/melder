@@ -63,12 +63,12 @@ def test_build_requires_both_runtime_executors_for_constructed_spell() -> None:
     spell_missing_no_overrides = _make_spell(
         creation_artifact=_make_creation_artifact(
             no_overrides_executor=None,
-            overrides_executor=lambda creations, overrides: ("value", True),
+            overrides_executor=lambda creations, overrides, root_creations=None: ("value", True),
         ),
     )
     spell_missing_overrides = _make_spell(
         creation_artifact=_make_creation_artifact(
-            no_overrides_executor=lambda creations: ("value", True),
+            no_overrides_executor=lambda creations, root_creations=None: ("value", True),
             overrides_executor=None,
         ),
     )
@@ -112,13 +112,14 @@ def test_build_constructed_spell_uses_phase11_runtime_doors() -> None:
     no_overrides_calls = []
     overrides_calls = []
 
-    def _no_overrides_executor(caller_creations: Any) -> tuple[str, bool]:
+    def _no_overrides_executor(caller_creations: Any, root_creations: Any = None) -> tuple[str, bool]:
         no_overrides_calls.append((caller_creations,))
         return "plain", True
 
     def _overrides_executor(
             caller_creations: Any,
             overrides: dict[str, Any],
+            root_creations: Any = None,
     ) -> tuple[str, bool]:
         overrides_calls.append((caller_creations, overrides))
         return "override", True

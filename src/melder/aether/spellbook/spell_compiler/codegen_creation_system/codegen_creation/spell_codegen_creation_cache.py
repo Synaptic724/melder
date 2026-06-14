@@ -520,10 +520,11 @@ def _resolve_route_key_for_spell(spell: Any) -> str:
         return "unique_per_conduit"
     if existence is Existence.many:
         return "many"
+    if existence is Existence.unique_per_conduit_lineage:
+        return "lineage"
     if existence in (
             Existence.unique,
             Existence.unique_per_conduit_cluster,
-            Existence.unique_per_conduit_lineage,
     ):
         return "shared"
     raise RuntimeError(

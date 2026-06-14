@@ -85,12 +85,16 @@ class _CreationContextStub:
         # real two-tuple executor contract.
         self._dynamic_environment = False
 
-        def _stub_no_overrides_executor(caller_creations: Any) -> tuple[Any, bool]:
+        def _stub_no_overrides_executor(
+                caller_creations: Any,
+                root_creations: Any = None,
+        ) -> tuple[Any, bool]:
             return (self.execute_no_hooks(caller_creations, None), True)
 
         def _stub_overrides_executor(
                 caller_creations: Any,
                 overrides: dict[str, Any] | None,
+                root_creations: Any = None,
         ) -> tuple[Any, bool]:
             return (self.execute_no_hooks(caller_creations, overrides), True)
 
@@ -101,6 +105,7 @@ class _CreationContextStub:
             self,
             caller_creations: Any,
             overrides: dict[str, Any] | None = None,
+            root_creations: Any = None,
     ) -> Any:
         """
         Simulate the public no-hooks door.
@@ -119,6 +124,7 @@ class _CreationContextStub:
             self,
             caller_creations: Any,
             overrides: dict[str, Any] | None = None,
+            root_creations: Any = None,
     ) -> tuple[Any, bool]:
         """
         Simulate the public hook-aware door.

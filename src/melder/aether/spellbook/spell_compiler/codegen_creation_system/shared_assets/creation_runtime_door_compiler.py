@@ -464,7 +464,7 @@ def _build_no_overrides_only_template_source(
         "        _spellspace_required_message,",
         ],
         execution_callable_name="_creation_context_execute_no_overrides_only",
-        execution_signature="caller_creations",
+        execution_signature="caller_creations, root_creations=None",
         execution_lines=no_overrides_lines,
     )
 
@@ -495,7 +495,7 @@ def _build_overrides_only_template_source(
         "        _spellspace_required_message,",
         ],
         execution_callable_name="_creation_context_execute_overrides_only",
-        execution_signature="caller_creations, overrides",
+        execution_signature="caller_creations, overrides, root_creations=None",
         execution_lines=with_overrides_lines,
     )
 
@@ -615,6 +615,40 @@ def _build_no_overrides_lines(
             _build_no_overrides_create_lines(
                 caller_creations_lock_held=False,
                 return_created=return_created,
+            ),
+            2,
+        ) + [
+            _prefix_one_indent(
+                _build_return_statement(
+                    value_expression="creation",
+                    created=False,
+                    return_created=return_created,
+                ),
+            ),
+        ]
+    if resolve_route_key == "lineage":
+        # unique_per_conduit_lineage: one instance per lineage, stored in the
+        # RESOLVING door's lineage-root creations (passed at runtime as
+        # `root_creations`), not the binding owner's `_owner_creations`. Mirrors
+        # the unique_per_conduit shape but on the root store + its lock.
+        return [
+            "creation = root_creations.get_creation(_spell_id)",
+            "if creation is not None:",
+            _prefix_one_indent(
+                _build_return_statement(
+                    value_expression="creation",
+                    created=False,
+                    return_created=return_created,
+                ),
+            ),
+            "with root_creations._lock:",
+            "    creation = root_creations.get_creation(_spell_id)",
+            "    if creation is None:",
+        ] + _indent_lines(
+            _build_no_overrides_create_lines(
+                caller_creations_lock_held=False,
+                return_created=return_created,
+                owner_creations_expr="root_creations",
             ),
             2,
         ) + [
@@ -884,6 +918,77 @@ def _build_with_overrides_lines(
                 ),
             ),
         ]
+    if resolve_route_key == "lineage":
+        # Lineage override lane: same shape as the shared override lane but on the
+        # resolving door's lineage-root store (`root_creations`) + its lock,
+        # instead of the binding owner's `_owner_creations`.
+        if not overrides_maybe_none:
+            return [
+                "creation = root_creations.get_creation(_spell_id)",
+                "if creation is not None:",
+                "    raise _MeldExecutionError(",
+                "        spell_id=_spell.spell_index.current,",
+                "        spell_name=_spell.spell_name,",
+                "        message=_existing_override_message,",
+                "    )",
+                "with root_creations._lock:",
+                "    creation = root_creations.get_creation(_spell_id)",
+                "    if creation is None:",
+                "        instance = _execute_with_overrides(caller_creations, overrides, False)",
+                _prefix_two_indent(
+                    _build_return_statement(
+                        value_expression="instance",
+                        created=True,
+                        return_created=return_created,
+                    ),
+                ),
+                "    raise _MeldExecutionError(",
+                "        spell_id=_spell.spell_index.current,",
+                "        spell_name=_spell.spell_name,",
+                "        message=_existing_override_message,",
+                "    )",
+            ]
+        return [
+            "creation = root_creations.get_creation(_spell_id)",
+            "if creation is not None:",
+            "    if overrides is not None:",
+            "        raise _MeldExecutionError(",
+            "            spell_id=_spell.spell_index.current,",
+            "            spell_name=_spell.spell_name,",
+            "            message=_existing_override_message,",
+            "        )",
+            _prefix_one_indent(
+                _build_return_statement(
+                    value_expression="creation",
+                    created=False,
+                    return_created=return_created,
+                ),
+            ),
+            "with root_creations._lock:",
+            "    creation = root_creations.get_creation(_spell_id)",
+            "    if creation is None:",
+            "        instance = _execute_with_overrides(caller_creations, overrides, False)",
+            _prefix_two_indent(
+                _build_return_statement(
+                    value_expression="instance",
+                    created=True,
+                    return_created=return_created,
+                ),
+            ),
+            "    if overrides is not None:",
+            "        raise _MeldExecutionError(",
+            "            spell_id=_spell.spell_index.current,",
+            "            spell_name=_spell.spell_name,",
+            "            message=_existing_override_message,",
+            "        )",
+            _prefix_one_indent(
+                _build_return_statement(
+                    value_expression="creation",
+                    created=False,
+                    return_created=return_created,
+                ),
+            ),
+        ]
     raise RuntimeError(
         f"Unsupported CreationContext with-overrides route key: {resolve_route_key}"
     )
@@ -893,6 +998,7 @@ def _build_no_overrides_create_lines(
         *,
         caller_creations_lock_held: bool,
         return_created: bool,
+        owner_creations_expr: str = "_spell._owner_creations",
 ) -> Sequence[str]:
     """
     Build the emitted call block for the no-overrides creation executor.
@@ -904,7 +1010,7 @@ def _build_no_overrides_create_lines(
     return [
         "instance = _no_overrides_executor(",
         "    caller_creations,",
-        "    _spell._owner_creations,",
+        f"    {owner_creations_expr},",
         f"    {caller_creations_lock_held},",
         ")",
         _build_return_statement(

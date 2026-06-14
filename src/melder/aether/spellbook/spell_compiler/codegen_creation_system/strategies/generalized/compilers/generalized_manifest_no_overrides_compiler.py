@@ -357,6 +357,7 @@ def _append_step_resolution_source(
         needs_creations_alias=not (
             existence is Existence.many and not has_disposal_methods
         ),
+        is_lineage=existence is Existence.unique_per_conduit_lineage,
     )
 
     if existence is Existence.many:
@@ -527,6 +528,7 @@ def _append_creations_target_source(
         step_index: int,
         target_kind: int,
         needs_creations_alias: bool = True,
+        is_lineage: bool = False,
 ) -> None:
     """
     Append static creations-target routing source for one step.
@@ -550,6 +552,13 @@ def _append_creations_target_source(
         return
 
     if target_kind == SpellGeneralizedCodegenPlanTargetKind.OWNER:
+        if is_lineage:
+            # unique_per_conduit_lineage resolves into the resolving door's
+            # lineage-root store, supplied at runtime as `owner_creations`
+            # (root_creations) by the "lineage" route -- use it directly rather
+            # than the binding owner's _owner_creations.
+            lines.append(f"    creations_{step_index} = owner_creations")
+            return
         lines.extend([
             f"    owner_creations_{step_index} = spell_{step_index}._owner_creations",
             f"    if owner_creations_{step_index} is not None:",
