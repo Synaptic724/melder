@@ -20,6 +20,7 @@ from melder.aether.conduit.conduit_ward.permissions.permissions import Permissio
 from melder.aether.conduit.conduit_ward.policies.policies import Policies
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.aether.spellbook.bind.spell_index import SpellIndex
+from melder.aether.spellbook.existence.existence import Existence
 from melder.utilities.helpers.ulid_factory import new_ulid
 from melder.utilities.synchronization.safeguard import SafeGuard
 from melder.aether.conduit.conduit_ward.contract.detail_reason import DetailReason
@@ -349,8 +350,17 @@ class TransferOfOwnership(Cleanable):
             with SafeGuard(self.source_conduit._lock, self.target_conduit._lock):
                 self._flip_registry_and_spellbooks(spell_obj)
 
-            # Creations
-            if self.move_creations:
+            # Creations. unique_per_conduit_lineage instances are resolver-relative:
+            # one per lineage root, stored in the RESOLVING conduit's creations
+            # (`caller_creations._root_creations`), never the binding owner's. They
+            # are not the owner's to move, so ownership transfer flips only the
+            # canonical binding and leaves every per-root instance where it was
+            # resolved (the source keeps its instance; the target builds its own on
+            # first resolve). The move/teardown helpers assume owner-bound storage,
+            # so they are skipped for lineage regardless of `move_creations`.
+            if spell_obj.existence is Existence.unique_per_conduit_lineage:
+                pass
+            elif self.move_creations:
                 self._move_creations(spell_obj)
             else:
                 self._teardown_creations(spell_obj)

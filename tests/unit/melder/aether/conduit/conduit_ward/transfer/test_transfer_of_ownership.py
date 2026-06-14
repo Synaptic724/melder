@@ -15,6 +15,7 @@ from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_state import
 from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_state_change_reason import SpellStateChangeReason
 from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_validity import SpellValidity
 from melder.aether.spellbook.bind.spell_index import SpellIndex
+from melder.aether.spellbook.existence.existence import Existence
 from melder.aether.spellbook.spell_compiler.spell_compiler_artifact import (
     SpellCompilerArtifact,
 )
@@ -1565,6 +1566,39 @@ def test_execute_teardown_creations_removes_from_source() -> None:
     transfer.execute()
     assert env.source_creations.get_creations(DEFAULT_SPELL_ID) == []
     assert env.target_creations.get_creations(DEFAULT_SPELL_ID) == []
+
+
+def test_execute_lineage_skips_creations_and_keeps_source_instance() -> None:
+    """
+    unique_per_conduit_lineage transfer is STAY.
+
+    Lineage instances are resolver-relative (one per lineage root, stored in the
+    resolving conduit's creations), not owner-bound. So ownership transfer flips
+    only the canonical binding and leaves every per-root instance where it was
+    resolved: the source keeps its instance and the target receives none -- even
+    when move_creations (continuity) is requested.
+
+    Contract:
+    - Source-side creations are left intact (neither moved nor torn down).
+    - Target receives no creations.
+    - Canonical ownership still flips to the target.
+    """
+    env = build_environment(source_creations={DEFAULT_SPELL_ID: ["obj-1"]})
+    env.spell.existence = Existence.unique_per_conduit_lineage
+    transfer = TransferOfOwnership(
+        source_conduit=env.source,
+        target_conduit=env.target,
+        spell=env.spell,
+        move_creations=True,  # even with continuity requested, lineage skips the move
+        include_dependencies=False,
+        force_unshare=True,
+        invalidate_after_transfer=False,
+    )
+    transfer.preflight()
+    transfer.execute()
+    assert env.source_creations.get_creations(DEFAULT_SPELL_ID) == ["obj-1"]
+    assert env.target_creations.get_creations(DEFAULT_SPELL_ID) == []
+    assert env.spell._owner_conduit_id == TARGET_ID
 
 
 def test_execute_force_unshare_removes_contract_entries() -> None:
