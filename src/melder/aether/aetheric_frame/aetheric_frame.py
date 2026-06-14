@@ -712,5 +712,119 @@ class AethericFrame(Cleanable):
                         return spell_index
         return None
 
+    # ------------------------------------------------------------------
+    # Spell-Registry Mutation (frame-owned, lock-serialized)
+    # ------------------------------------------------------------------
+    # These own every `_spell_registry` write + the dependent version-registry
+    # refresh under `self._lock`, so external callers (aether.py) never poke the
+    # dict directly. Serializing mutation with iteration is required even on the
+    # free-threaded build: per-dict C locks keep individual ops atomic, but
+    # iterating the dict while another thread inserts still raises
+    # "dictionary changed size during iteration". `self._lock` is an `RLock`, so
+    # the nested `refresh_version_registry()` re-enters safely.
+
+    def register_conduit_spells(
+            self,
+            conduit_id: str,
+            spell_set: Set[SpellIndex],
+    ) -> None:
+        """
+        Register a conduit's full SpellIndex set and refresh the version cache,
+        atomically under the frame lock.
+
+        Raises:
+            ValueError: If `conduit_id` is already registered.
+        """
+        self.check_cleaned()
+        with self._lock:
+            if self._spell_registry is None:
+                return
+            if conduit_id in self._spell_registry:
+                raise ValueError(
+                    f"Spell registry already contains Conduit ID {conduit_id}."
+                )
+            self._spell_registry[conduit_id] = spell_set
+            self.refresh_version_registry()
+
+    def unregister_conduit_spells(
+            self,
+            conduit_id: str,
+            spell_set: Set[SpellIndex],
+    ) -> None:
+        """
+        Remove a set of SpellIndexes from one conduit and refresh the version
+        cache, atomically under the frame lock. No-op when the conduit is absent.
+        """
+        self.check_cleaned()
+        with self._lock:
+            if self._spell_registry is None:
+                return
+            existing = self._spell_registry.get(conduit_id)
+            if existing is None:
+                return
+            for spell_index in list(spell_set):
+                existing.discard(spell_index)
+            self.refresh_version_registry()
+
+    def register_spell_index(
+            self,
+            conduit_id: str,
+            spell_index: SpellIndex,
+    ) -> None:
+        """
+        Add a single SpellIndex under a conduit and refresh the version cache,
+        atomically under the frame lock.
+        """
+        self.check_cleaned()
+        with self._lock:
+            if self._spell_registry is None:
+                return
+            spell_set = self._spell_registry.get(conduit_id)
+            if spell_set is None:
+                spell_set = set()
+                self._spell_registry[conduit_id] = spell_set
+            spell_set.add(spell_index)
+            self.refresh_version_registry()
+
+    def unregister_spell_index(
+            self,
+            conduit_id: str,
+            spell_index: SpellIndex,
+    ) -> None:
+        """
+        Remove a single SpellIndex from a conduit and refresh the version cache,
+        atomically under the frame lock. No-op when the conduit is absent.
+        """
+        self.check_cleaned()
+        with self._lock:
+            if self._spell_registry is None:
+                return
+            spell_set = self._spell_registry.get(conduit_id)
+            if spell_set is None:
+                return
+            spell_set.discard(spell_index)
+            self.refresh_version_registry()
+
+    def find_conduit_id_for_version(self, version_id: str) -> str | None:
+        """
+        Return the conduit id whose SpellIndex set advertises `version_id`,
+        scanning the frame-owned `_spell_registry` under the frame lock.
+
+        Returns:
+            str | None: Owning conduit id, or `None` when no lineage in this
+            frame advertises that version.
+        """
+        self.check_cleaned()
+        if not version_id:
+            return None
+        with self._lock:
+            if self._spell_registry is None:
+                return None
+            for conduit_id, spell_set in self._spell_registry.items():
+                for spell_index in spell_set:
+                    if spell_index.has_version(version_id):
+                        return conduit_id
+        return None
+
 
 

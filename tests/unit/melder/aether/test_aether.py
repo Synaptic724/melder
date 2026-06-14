@@ -984,13 +984,14 @@ def test_add_spells_to_aether(aether_with_mocks):
     
     a._add_spells_to_aether("c1", spell_set)
     
-    assert frame_mock._spell_registry["c1"] == spell_set
-    frame_mock.refresh_version_registry.assert_called_once()
+    frame_mock.register_conduit_spells.assert_called_once_with("c1", spell_set)
 
 def test_add_spells_duplicate_conduit_raises(aether_with_mocks):
-    """_add_spells_to_aether raises ValueError if conduit already registered."""
+    """_add_spells_to_aether propagates the frame's duplicate-conduit ValueError."""
     a = aether_with_mocks
-    a._default_frame._spell_registry = {"c1": set()}
+    a._default_frame.register_conduit_spells.side_effect = ValueError(
+        "Spell registry already contains Conduit ID c1."
+    )
     with pytest.raises(ValueError, match="already contains"):
         a._add_spells_to_aether("c1", {MagicMock(spec=SpellIndex)})
 
@@ -1009,9 +1010,7 @@ def test_remove_spells_from_aether(aether_with_mocks):
     
     a._remove_spells_from_aether("c1", spell_set)
     
-    # Set should be empty now
-    assert len(a._default_frame._spell_registry["c1"]) == 0
-    a._default_frame.refresh_version_registry.assert_called_once()
+    a._default_frame.unregister_conduit_spells.assert_called_once_with("c1", spell_set)
 
 def test_remove_spells_missing_conduit_ignored(aether_with_mocks):
     """_remove_spells_from_aether does nothing if conduit not found."""
@@ -1030,8 +1029,9 @@ def test_remove_spells_from_aether_swallows_remove_errors_and_refreshes(aether_w
 
     a._remove_spells_from_aether("c1", {spell_index})
 
-    registry_entry.remove.assert_called_once_with(spell_index)
-    a._default_frame.refresh_version_registry.assert_called_once()
+    a._default_frame.unregister_conduit_spells.assert_called_once_with(
+        "c1", {spell_index}
+    )
 
 def test_register_single_spell_index(aether_with_mocks):
     """_register_single_spell_index adds spell and refreshes registry."""
@@ -1042,9 +1042,7 @@ def test_register_single_spell_index(aether_with_mocks):
     si = MagicMock(spec=SpellIndex)
     a._register_single_spell_index("c1", si)
     
-    assert "c1" in frame_mock._spell_registry
-    assert si in frame_mock._spell_registry["c1"]
-    frame_mock.refresh_version_registry.assert_called_once()
+    frame_mock.register_spell_index.assert_called_once_with("c1", si)
 
 def test_remove_single_spell_index(aether_with_mocks):
     """_remove_single_spell_index removes spell and refreshes registry."""
@@ -1055,8 +1053,7 @@ def test_remove_single_spell_index(aether_with_mocks):
     
     a._remove_single_spell_index("c1", si)
     
-    assert len(frame_mock._spell_registry["c1"]) == 0
-    frame_mock.refresh_version_registry.assert_called_once()
+    frame_mock.unregister_spell_index.assert_called_once_with("c1", si)
 
 def test_remove_single_spell_index_missing(aether_with_mocks):
     """Removing missing spell is safe."""
@@ -1085,15 +1082,16 @@ def test_get_conduit_by_spell_id(aether_with_mocks):
     si.has_version.return_value = True
     si.id = "idx"
     
-    a._default_frame._spell_registry = {"c1": {si}}
-    
+    # Frame owns the locked registry scan and returns the owning conduit id.
+    a._default_frame.find_conduit_id_for_version.return_value = "c1"
+
     # Mock conduit retrieval
     conduit = MagicMock()
     a._default_frame._conduits = {"c1": conduit}
-    
+
     result = a._get_conduit_by_spell_id("ver1")
     assert result is conduit
-    si.has_version.assert_called_with("ver1")
+    a._default_frame.find_conduit_id_for_version.assert_called_with("ver1")
 
 def test_get_conduit_by_spell_id_not_found_raises(aether_with_mocks):
     """_get_conduit_by_spell_id raises ValueError if no match."""

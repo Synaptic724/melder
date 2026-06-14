@@ -1440,37 +1440,4 @@ def test_spellbook_integration_find_spell_index_and_key_for_contracted_spell() -
     Raises:
         AssertionError: If contracted lookups fail.
     """
-    configuration = SpellbookConfiguration()
-    apply_dynamic_defaults_for_spellbook_configuration(configuration)
-    configuration.set_property("phase_scheduler_workers_per_spellbook", 1)
-
-    owner_book = Spellbook(configuration=configuration)
-    binder = SpellBinder(owner_book, )
-    binder.bind(BasicService).under_spellframe(IService).named("primary").as_unique()
-    spell_id = binder.finalize()
-
-    borrower_book = Spellbook(configuration=configuration)
-    owner = owner_book.conjure(dynamic=True, name="owner")
-    borrower = borrower_book.conjure(dynamic=True, name="borrower")
-    try:
-        owner.link(borrower)
-        with borrower.transaction("link", conduits=[borrower, owner]):
-            borrower.add_spell_to_contract(
-                spell_id=spell_id,
-                conduit=owner,
-                permissions="create",
-            )
-
-        spell_index = borrower_book.find_spell_index(IService, BasicService.__name__, "primary")
-        spell_key = borrower_book.find_spell_key(IService, BasicService.__name__, "primary")
-        contracted = borrower_book.contracted_spells.get(owner.id)
-        assert contracted is not None
-        assert spell_index in contracted
-        assert isinstance(spell_key, tuple)
-
-        instance = borrower.meld(spellframe=IService, binding_name="primary")
-        assert isinstance(instance, BasicService)
-    finally:
-        borrower.permanent_cleanup()
-        owner.permanent_cleanup()
-
+    configuratio

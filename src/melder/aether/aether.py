@@ -1223,7 +1223,7 @@ class Aether(Cleanable):
         # Select frame
         if aetheric_frame_name != "default":
             try:
-                spell_registry = self._aetheric_frames[aetheric_frame_name]._spell_registry
+                frame = self._aetheric_frames[aetheric_frame_name]
             except KeyError:
                 self._logger.error(
                     f"Aetheric frame '{aetheric_frame_name}' does not exist.",
@@ -1233,13 +1233,11 @@ class Aether(Cleanable):
                 raise ValueError(f"Aetheric frame '{aetheric_frame_name}' does not exist.")
         else:
             frame = self._ensure_default_frame()
-            spell_registry = frame._spell_registry
 
-        # Search each SpellIndex for the SHA256 version
-        for conduit_id, spell_set in spell_registry.items():
-            for spell_index in spell_set:
-                if spell_index.has_version(spell_id):
-                    return self._get_conduit_by_id(conduit_id, aetheric_frame_name)
+        # Locked lookup so a concurrent conjure cannot mutate the registry mid-scan.
+        conduit_id = frame.find_conduit_id_for_version(spell_id)
+        if conduit_id is not None:
+            return self._get_conduit_by_id(conduit_id, aetheric_frame_name)
 
         self._logger.error(
             f"Spell version {spell_id} not found in any conduit.",
@@ -1315,17 +1313,9 @@ class Aether(Cleanable):
         else:
             frame = self._ensure_default_frame()
 
-        spell_registry = frame._spell_registry
-
-        # Prevent duplicate conduit registration
-        if conduit_id in spell_registry:
-            raise ValueError(f"Spell registry already contains Conduit ID {conduit_id}.")
-
-        # Add spell set
-        spell_registry[conduit_id] = spell_set
-
-        # Critical: update SHA256 version registry
-        frame.refresh_version_registry()
+        # Frame-owned + lock-serialized: duplicate check, write, and version
+        # refresh happen atomically under frame._lock (no direct dict poking).
+        frame.register_conduit_spells(conduit_id, spell_set)
 
     def _remove_spells_from_aether(self, conduit_id: str, spell_set: Set[SpellIndex],
                                    aetheric_frame_name: str = "default") -> None:
@@ -1347,18 +1337,8 @@ class Aether(Cleanable):
         else:
             frame = self._ensure_default_frame()
 
-        spell_registry = frame._spell_registry
-
-        if conduit_id not in spell_registry:
-            return
-
-        for spell_index in list(spell_set):
-            try:
-                spell_registry[conduit_id].remove(spell_index)
-            except Exception:
-                pass
-
-        frame.refresh_version_registry()
+        # Frame-owned + lock-serialized: removal + version refresh atomically.
+        frame.unregister_conduit_spells(conduit_id, spell_set)
 
 
     def _register_single_spell_index(self, conduit_id: str, spell_index: SpellIndex,
@@ -1385,17 +1365,8 @@ class Aether(Cleanable):
         else:
             frame = self._ensure_default_frame()
 
-        spell_registry = frame._spell_registry
-
-        # Ensure there is a spell set for this conduit
-        if conduit_id not in spell_registry:
-            spell_registry[conduit_id] = set()
-
-        # Add SpellIndex
-        spell_registry[conduit_id].add(spell_index)
-
-        # Critical: keep version registry in sync
-        frame.refresh_version_registry()
+        # Frame-owned + lock-serialized: ensure-set, add, version refresh atomically.
+        frame.register_spell_index(conduit_id, spell_index)
 
     def _remove_single_spell_index(
             self,
@@ -1425,20 +1396,8 @@ class Aether(Cleanable):
         else:
             frame = self._ensure_default_frame()
 
-        spell_registry = frame._spell_registry
-
-        # Nothing to remove
-        if conduit_id not in spell_registry:
-            return
-
-        # Remove SpellIndex safely
-        try:
-            spell_registry[conduit_id].remove(spell_index)
-        except KeyError:
-            pass
-
-        # Critical: remove stale versions from registry
-        frame.refresh_version_registry()
+        # Frame-owned + lock-serialized: removal + version refresh atomically.
+        frame.unregister_spell_index(conduit_id, spell_index)
 
 
     def _refresh_version_registry(self, aetheric_frame_name: str = "default") -> None:
