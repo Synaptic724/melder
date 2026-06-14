@@ -306,21 +306,21 @@ def test_property_accessors_fail_after_cleanup(frame):
 
 def test_has_version_true(frame):
     """
-    Verify `has_version` returns True for existing versions.
+    Verify `has_version` returns True for a cached version.
 
     Contract:
-    - Scans `_spell_registry`, asking each SpellIndex's version history.
+    - Reads the per-conduit version cache maintained on registration.
     """
     si = MagicMock(spec=SpellIndex)
-    si.has_version.side_effect = lambda v: v in {"v1", "v2"}
-    frame._spell_registry = {"c1": {si}}
+    si.get_all_versions.return_value = {"v1", "v2"}
+    frame.register_conduit_spells("c1", {si})
     assert frame.has_version("v1") is True
 
 def test_has_version_false(frame):
     """Test has_version returns False if missing."""
     si = MagicMock(spec=SpellIndex)
-    si.has_version.side_effect = lambda v: v in {"v1", "v2"}
-    frame._spell_registry = {"c1": {si}}
+    si.get_all_versions.return_value = {"v1", "v2"}
+    frame.register_conduit_spells("c1", {si})
     assert frame.has_version("v3") is False
 
 def test_has_version_empty_arg(frame):
@@ -329,12 +329,13 @@ def test_has_version_empty_arg(frame):
     assert frame.has_version(None) is False
 
 def test_get_all_versions(frame):
-    """Test get_all_versions unions every lineage's version history."""
+    """Test get_all_versions unions every conduit's cached versions."""
     si1 = MagicMock(spec=SpellIndex)
     si1.get_all_versions.return_value = {"v1", "v2"}
     si2 = MagicMock(spec=SpellIndex)
     si2.get_all_versions.return_value = {"v2", "v3"}
-    frame._spell_registry = {"c1": {si1}, "c2": {si2}}
+    frame.register_conduit_spells("c1", {si1})
+    frame.register_conduit_spells("c2", {si2})
     result = frame.get_all_versions()
     assert result == {"v1", "v2", "v3"}
 
@@ -374,10 +375,12 @@ def test_find_and_return_spell_index_empty_arg(frame):
 # ---- Frame-owned, lock-free registry mutation (race fix) ----
 
 def test_register_conduit_spells_adds(frame):
-    """register_conduit_spells writes the conduit's spell set."""
+    """register_conduit_spells writes the spell set and reindexes its versions."""
     si = MagicMock(spec=SpellIndex)
+    si.get_all_versions.return_value = {"v1"}
     frame.register_conduit_spells("c1", {si})
     assert frame._spell_registry["c1"] == {si}
+    assert frame._version_registry["c1"] == {"v1"}
 
 
 def test_register_conduit_spells_duplicate_raises(frame):
@@ -415,10 +418,10 @@ def test_unregister_spell_index_discards(frame):
 
 def test_get_all_versions_unions_across_conduits(frame):
     """
-    get_all_versions unions each lineage's version history across conduits.
+    get_all_versions unions each conduit's cached versions.
 
     Contract:
-    - Versions are derived live from `_spell_registry` (no cache).
+    - register_conduit_spells reindexes each conduit's version cache.
     - Duplicate versions across conduits collapse in the global union.
     """
     si1 = MagicMock(spec=SpellIndex)

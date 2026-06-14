@@ -1074,28 +1074,23 @@ def test_get_all_spell_versions(aether_with_mocks):
     assert a._get_all_spell_versions() == expected
 
 def test_get_conduit_by_spell_id(aether_with_mocks):
-    """_get_conduit_by_spell_id searches registries."""
+    """_get_conduit_by_spell_id resolves via frame.find_conduit_id_for_version."""
     a = aether_with_mocks
-    
-    # Setup spell registry: conduit c1 owns a lineage advertising "ver1".
-    si = MagicMock()
-    si.has_version.return_value = True
-    si.id = "idx"
 
-    a._default_frame._spell_registry = {"c1": {si}}
+    # Frame owns the locked registry scan and returns the owning conduit id.
+    a._default_frame.find_conduit_id_for_version.return_value = "c1"
 
-    # Mock conduit retrieval
     conduit = MagicMock()
     a._default_frame._conduits = {"c1": conduit}
 
     result = a._get_conduit_by_spell_id("ver1")
     assert result is conduit
-    si.has_version.assert_called_with("ver1")
+    a._default_frame.find_conduit_id_for_version.assert_called_with("ver1")
 
 def test_get_conduit_by_spell_id_not_found_raises(aether_with_mocks):
     """_get_conduit_by_spell_id raises ValueError if no match."""
     a = aether_with_mocks
-    a._default_frame._spell_registry = {}
+    a._default_frame.find_conduit_id_for_version.return_value = None
     with pytest.raises(ValueError, match="not found"):
         a._get_conduit_by_spell_id("missing")
 

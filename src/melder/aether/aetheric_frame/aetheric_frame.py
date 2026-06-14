@@ -601,37 +601,36 @@ class AethericFrame(Cleanable):
     # ------------------------------------------------------------------
     # Version Registry Maintenance
     # ------------------------------------------------------------------
-    def refresh_version_registry(self) -> None:
+    def _reindex_conduit_versions(self, conduit_id: str) -> None:
         """
-        Rebuild the version registry from the current `SpellIndex` registry.
+        Recompute one conduit's cached version-id set from its own lineages.
+
+        This is the per-conduit replacement for the old full-registry rebuild.
+        It reads only the named conduit's lineage set (the value already keyed by
+        `conduit_id`), and never iterates the shared `_spell_registry` dict, so it
+        cannot race a concurrent insert of a different conduit into that dict. The
+        version cache stays accurate for the hot `has_version` /
+        `get_all_versions` reads.
 
         Contract:
-          - Recomputes the per-conduit cached version-id sets from scratch.
-          - Intended after binding, mutation, or promotion changes that may
-            alter the set of version ids advertised by one or more spell
-            lineages.
+          - Caller holds `self._lock`.
+          - Writes a single `_version_registry[conduit_id]` entry, or drops it
+            when the conduit has no remaining lineages.
+
+        Args:
+            conduit_id: Conduit whose cached version set should be recomputed.
 
         Returns:
             None.
         """
-        self.check_cleaned()
-        with self._lock:
-            if self._spell_registry is None:
-                return
-
-            # Start fresh
-            self._version_registry = {}
-
-            for conduit_id, spell_set in self._spell_registry.items():
-                version_set: Set[str] = set()
-
-                for spell_index in spell_set:
-                    # SpellIndex.get_all_versions() returns set[str]
-                    versions = spell_index.get_all_versions()
-                    for version_id in versions:
-                        version_set.add(version_id)
-
-                self._version_registry[conduit_id] = version_set
+        spell_set = self._spell_registry.get(conduit_id)
+        if not spell_set:
+            self._version_registry.pop(conduit_id, None)
+            return
+        version_set: Set[str] = set()
+        for spell_index in spell_set:
+            version_set.update(spell_index.get_all_versions())
+        self._version_registry[conduit_id] = version_set
 
     def has_version(self, version_id: str) -> bool:
         """
@@ -715,13 +714,15 @@ class AethericFrame(Cleanable):
     # ------------------------------------------------------------------
     # Spell-Registry Mutation (frame-owned, lock-serialized)
     # ------------------------------------------------------------------
-    # These own every `_spell_registry` write + the dependent version-registry
-    # refresh under `self._lock`, so external callers (aether.py) never poke the
-    # dict directly. Serializing mutation with iteration is required even on the
-    # free-threaded build: per-dict C locks keep individual ops atomic, but
-    # iterating the dict while another thread inserts still raises
-    # "dictionary changed size during iteration". `self._lock` is an `RLock`, so
-    # the nested `refresh_version_registry()` re-enters safely.
+    # These own every `_spell_registry` write under `self._lock`, so external
+    # callers (aether.py) never poke the dict directly. After each write they
+    # reindex ONLY the affected conduit's cached version set -- they never rebuild
+    # the whole registry, so nothing here iterates the shared `_spell_registry`
+    # dict while another thread inserts a different conduit into it. That whole-
+    # registry iteration is what previously raised "dictionary changed size during
+    # iteration". The lock still serializes these writes against the cache readers
+    # (`has_version` / `get_all_versions`). `self._lock` is an `RLock`, so the
+    # nested `_reindex_conduit_versions(...)` re-enters safely.
 
     def register_conduit_spells(
             self,
@@ -744,7 +745,7 @@ class AethericFrame(Cleanable):
                     f"Spell registry already contains Conduit ID {conduit_id}."
                 )
             self._spell_registry[conduit_id] = spell_set
-            self.refresh_version_registry()
+            self._reindex_conduit_versions(conduit_id)
 
     def unregister_conduit_spells(
             self,
@@ -764,7 +765,7 @@ class AethericFrame(Cleanable):
                 return
             for spell_index in list(spell_set):
                 existing.discard(spell_index)
-            self.refresh_version_registry()
+            self._reindex_conduit_versions(conduit_id)
 
     def register_spell_index(
             self,
@@ -784,7 +785,9 @@ class AethericFrame(Cleanable):
                 spell_set = set()
                 self._spell_registry[conduit_id] = spell_set
             spell_set.add(spell_index)
-            self.refresh_version_registry()
+            self._version_registry.setdefault(conduit_id, set()).update(
+                spell_index.get_all_versions()
+            )
 
     def unregister_spell_index(
             self,
@@ -803,7 +806,7 @@ class AethericFrame(Cleanable):
             if spell_set is None:
                 return
             spell_set.discard(spell_index)
-            self.refresh_version_registry()
+            self._reindex_conduit_versions(conduit_id)
 
     def find_conduit_id_for_version(self, version_id: str) -> str | None:
         """

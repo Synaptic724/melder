@@ -1252,11 +1252,8 @@ class Aether(Cleanable):
     def _check_for_spell(self, spell_id: str, aetheric_frame_name: str = "default") -> SpellIndex | None:
         """
         Checks if a SHA256 spell_id exists in ANY SpellIndex within a frame,
-        using the frame's _version_registry cache.
-
-        NOTE:
-            Call `_refresh_version_registry(...)` after mutation/research
-            changes so this remains accurate.
+        using the frame's _version_registry cache (maintained per-conduit as
+        conduits register and unregister their lineages).
 
         Args:
             spell_id (str): The SHA256 spell ID to check.
@@ -1399,38 +1396,13 @@ class Aether(Cleanable):
         # Frame-owned + lock-serialized: removal + version refresh atomically.
         frame.unregister_spell_index(conduit_id, spell_index)
 
-
-    def _refresh_version_registry(self, aetheric_frame_name: str = "default") -> None:
-        """
-        Rebuilds the version registry for the given frame from its SpellIndexes.
-
-        Call this manually after research/mutation updates so that SHA256-based
-        lookups stay accurate and O(1) over the cached sets.
-        """
-        self.check_cleaned()
-        if aetheric_frame_name != "default":
-            try:
-                frame = self._aetheric_frames[aetheric_frame_name]
-            except KeyError:
-                self._logger.error(
-                    f"Aetheric frame '{aetheric_frame_name}' does not exist.",
-                    "_refresh_version_registry",
-                    exc_info=True
-                )
-                raise ValueError(f"Aetheric frame '{aetheric_frame_name}' does not exist.")
-        else:
-            frame = self._ensure_default_frame()
-
-        frame.refresh_version_registry()
-
     def _get_all_spell_versions(self, aetheric_frame_name: str = "default") -> set[str]:
         """
         Return a flat set of all spell version ids known for one frame.
 
         Contract:
-            - Reads from the frame-owned cached version registry.
-            - Assumes callers refresh that registry first when they need
-              mutation or research updates reflected immediately.
+            - Reads from the frame-owned cached version registry, maintained
+              per-conduit on registration.
 
         Args:
             aetheric_frame_name (str):

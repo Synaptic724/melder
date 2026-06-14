@@ -207,7 +207,7 @@ def test_aetheric_frame_version_registry_tracks_bound_spells() -> None:
     )
     conduit = spellbook.conjure(name="root")
     try:
-        # Versions are derived live from the spell registry; no cache to refresh.
+        # Version cache is maintained per-conduit during conjure; no manual refresh.
         assert frame.has_version(service_id) is True
         assert frame.has_version(config_id) is True
         all_versions = frame.get_all_versions()
