@@ -78,7 +78,6 @@ def test_init_success(mock_dependencies):
     # Verify registries are empty dicts
     assert f._conduits == {}
     assert f._spell_registry == {}
-    assert f._version_registry == {}
     assert f._conduit_cloud._conduit_clusters == {}
     
     # Verify sub-components were created
@@ -154,14 +153,12 @@ def test_cleanup_clears_registries(frame):
     # Populate some dummy data
     frame._conduits["c1"] = MagicMock()
     frame._spell_registry["c1"] = set()
-    frame._version_registry["c1"] = set()
     frame._conduit_cloud._conduit_clusters["cl1"] = MagicMock()
     
     frame.cleanup()
     
     assert not hasattr(frame, '_conduits')
     assert not hasattr(frame, '_spell_registry')
-    assert not hasattr(frame, '_version_registry')
     assert frame._cleaned is True
 
 def test_cleanup_calls_subcomponent_cleanup(frame):
@@ -304,7 +301,7 @@ def test_property_accessors_fail_after_cleanup(frame):
         _ = frame.frame_configuration
 
 # ----------------------------------------------------------------------
-# 5. Version Registry Tests
+# 5. Version Query Tests (derived live from _spell_registry)
 # ----------------------------------------------------------------------
 
 def test_has_version_true(frame):
@@ -312,14 +309,18 @@ def test_has_version_true(frame):
     Verify `has_version` returns True for existing versions.
 
     Contract:
-    - Checks membership in any of the version sets in `_version_registry`.
+    - Scans `_spell_registry`, asking each SpellIndex's version history.
     """
-    frame._version_registry = {"c1": {"v1", "v2"}}
+    si = MagicMock(spec=SpellIndex)
+    si.has_version.side_effect = lambda v: v in {"v1", "v2"}
+    frame._spell_registry = {"c1": {si}}
     assert frame.has_version("v1") is True
 
 def test_has_version_false(frame):
     """Test has_version returns False if missing."""
-    frame._version_registry = {"c1": {"v1", "v2"}}
+    si = MagicMock(spec=SpellIndex)
+    si.has_version.side_effect = lambda v: v in {"v1", "v2"}
+    frame._spell_registry = {"c1": {si}}
     assert frame.has_version("v3") is False
 
 def test_has_version_empty_arg(frame):
@@ -328,17 +329,18 @@ def test_has_version_empty_arg(frame):
     assert frame.has_version(None) is False
 
 def test_get_all_versions(frame):
-    """Test get_all_versions flattens all sets."""
-    frame._version_registry = {
-        "c1": {"v1", "v2"},
-        "c2": {"v2", "v3"}
-    }
+    """Test get_all_versions unions every lineage's version history."""
+    si1 = MagicMock(spec=SpellIndex)
+    si1.get_all_versions.return_value = {"v1", "v2"}
+    si2 = MagicMock(spec=SpellIndex)
+    si2.get_all_versions.return_value = {"v2", "v3"}
+    frame._spell_registry = {"c1": {si1}, "c2": {si2}}
     result = frame.get_all_versions()
     assert result == {"v1", "v2", "v3"}
 
 def test_get_all_versions_empty(frame):
     """Test get_all_versions returns empty set."""
-    frame._version_registry = {}
+    frame._spell_registry = {}
     assert frame.get_all_versions() == set()
 
 def test_find_and_return_spell_index_found(frame):
@@ -369,15 +371,13 @@ def test_find_and_return_spell_index_empty_arg(frame):
     assert frame.find_and_return_spell_index(None) is None
 
 
-# ---- Frame-owned, incremental, lock-free registry mutation (race fix) ----
+# ---- Frame-owned, lock-free registry mutation (race fix) ----
 
-def test_register_conduit_spells_adds_and_refreshes(frame):
-    """register_conduit_spells writes the set and refreshes the version cache."""
+def test_register_conduit_spells_adds(frame):
+    """register_conduit_spells writes the conduit's spell set."""
     si = MagicMock(spec=SpellIndex)
-    si.get_all_versions.return_value = {"v1"}
     frame.register_conduit_spells("c1", {si})
     assert frame._spell_registry["c1"] == {si}
-    assert frame._version_registry["c1"] == {"v1"}
 
 
 def test_register_conduit_spells_duplicate_raises(frame):
@@ -387,10 +387,9 @@ def test_register_conduit_spells_duplicate_raises(frame):
         frame.register_conduit_spells("c1", {MagicMock(spec=SpellIndex)})
 
 
-def test_unregister_conduit_spells_discards_and_refreshes(frame):
+def test_unregister_conduit_spells_discards(frame):
     """unregister_conduit_spells removes the given indexes; no-op when absent."""
     si = MagicMock(spec=SpellIndex)
-    si.get_all_versions.return_value = {"v1"}
     frame._spell_registry = {"c1": {si}}
     frame.unregister_conduit_spells("c1", {si})
     assert frame._spell_registry["c1"] == set()
@@ -398,31 +397,28 @@ def test_unregister_conduit_spells_discards_and_refreshes(frame):
     frame.unregister_conduit_spells("missing", {si})
 
 
-def test_register_spell_index_creates_set_and_refreshes(frame):
+def test_register_spell_index_creates_set(frame):
     """register_spell_index lazily creates the conduit set and adds the index."""
     si = MagicMock(spec=SpellIndex)
-    si.get_all_versions.return_value = {"v1"}
     frame.register_spell_index("c1", si)
     assert si in frame._spell_registry["c1"]
-    assert frame._version_registry["c1"] == {"v1"}
 
 
-def test_unregister_spell_index_discards_and_refreshes(frame):
+def test_unregister_spell_index_discards(frame):
     """unregister_spell_index removes one index; no-op when conduit absent."""
     si = MagicMock(spec=SpellIndex)
-    si.get_all_versions.return_value = {"v1"}
     frame._spell_registry = {"c1": {si}}
     frame.unregister_spell_index("c1", si)
     assert frame._spell_registry["c1"] == set()
     frame.unregister_spell_index("missing", si)  # no raise
 
 
-def test_register_conduit_spells_indexes_versions_for_get_all(frame):
+def test_get_all_versions_unions_across_conduits(frame):
     """
-    Live incremental upkeep across two conduits, unioned by get_all_versions.
+    get_all_versions unions each lineage's version history across conduits.
 
     Contract:
-    - Each conduit's version set is maintained live by register_conduit_spells.
+    - Versions are derived live from `_spell_registry` (no cache).
     - Duplicate versions across conduits collapse in the global union.
     """
     si1 = MagicMock(spec=SpellIndex)
@@ -434,8 +430,6 @@ def test_register_conduit_spells_indexes_versions_for_get_all(frame):
     frame.register_conduit_spells("c1", {si1})
     frame.register_conduit_spells("c2", {si2})
 
-    assert frame._version_registry["c1"] == {"v1"}
-    assert frame._version_registry["c2"] == {"v1", "v2"}
     assert frame.get_all_versions() == {"v1", "v2"}
 
 def test_find_and_return_spell_index_first_match(frame):
@@ -468,7 +462,6 @@ def test_cleanup_handles_none_registries_gracefully(frame):
     """
     frame._conduits = None
     frame._spell_registry = None
-    frame._version_registry = None
     frame._conduit_cloud = None
     
     # Should not raise
