@@ -3402,6 +3402,68 @@ class Conduit(Cleanable):
 
         return linked
 
+    def notch_spell(self, *, spell_index: Any, member: Any) -> Any:
+        """
+        Public API
+
+        Conduit facade for a SpellIndex notch: make `member` the active
+        (resolvable) spell in its index. Delegates to the owning Spellbook,
+        which admits the `notch` change-control transaction.
+
+        Args:
+            spell_index: The SpellIndex whose active member is switched.
+            member: The already-identified spell to make active.
+
+        Returns:
+            Any: The owning Spellbook notch result.
+
+        Raises:
+            RuntimeError: If the Conduit is cleaned or has no owning Spellbook.
+        """
+        self.check_cleaned()
+        if self._spellbook is None:
+            raise RuntimeError("[CONDUIT] No owning Spellbook for notch_spell.")
+        return self._spellbook.notch_spell(spell_index=spell_index, member=member)
+
+    def add_spell_into_spellindex(self, *, spell: Any, target_index: Any, source_index: Any = None) -> Any:
+        """
+        Public API
+
+        Conduit facade for moving a spell into a SpellIndex; delegates to the
+        owning Spellbook, which admits the `add_to_index` change-control
+        transaction.
+
+        Raises:
+            RuntimeError: If the Conduit is cleaned or has no owning Spellbook.
+        """
+        self.check_cleaned()
+        if self._spellbook is None:
+            raise RuntimeError("[CONDUIT] No owning Spellbook for add_spell_into_spellindex.")
+        return self._spellbook.add_spell_into_spellindex(
+            spell=spell,
+            target_index=target_index,
+            source_index=source_index,
+        )
+
+    def remove_spell_from_spellindex(self, *, spell: Any, source_index: Any) -> Any:
+        """
+        Public API
+
+        Conduit facade for moving a spell out of a SpellIndex into a fresh one;
+        delegates to the owning Spellbook, which admits the `remove_from_index`
+        change-control transaction.
+
+        Raises:
+            RuntimeError: If the Conduit is cleaned or has no owning Spellbook.
+        """
+        self.check_cleaned()
+        if self._spellbook is None:
+            raise RuntimeError("[CONDUIT] No owning Spellbook for remove_spell_from_spellindex.")
+        return self._spellbook.remove_spell_from_spellindex(
+            spell=spell,
+            source_index=source_index,
+        )
+
     def sever_link(self, target_conduit: "Conduit") -> bool:
         """
         Public API
