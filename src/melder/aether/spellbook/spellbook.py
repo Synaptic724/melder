@@ -2536,6 +2536,205 @@ and logging.
             "transaction_type must be a string-like value."
         )
 
+    def notch_spell(self, *, spell_index: Any, member: Any) -> Any:
+        """
+        Public API
+
+        Notch a SpellIndex so `member` becomes its active (resolvable) spell,
+        admitted as a `notch` change-control transaction through the mediator.
+
+        Contract:
+            - Admits a `notch` transaction (claims the owning spellbook INTENT
+              and the member binding key EXCLUSIVE), performs the member-store
+              switch inside the held window, then commits.
+            - The actual switch (active-member move + SHA id-map rekey + door
+              epoch bump) is the SpellIndex-model seam `_apply_notch`.
+
+        Args:
+            spell_index: The SpellIndex whose active member is switched.
+            member: The already-identified spell to make active.
+
+        Returns:
+            Any: The `_apply_notch` result.
+
+        Raises:
+            RuntimeError: If the Spellbook is cleaned.
+        """
+        self.check_cleaned()
+        mediator = self._get_required_transaction_mediator()
+        binding_key: Optional[Tuple[str, str]] = None
+        member_key = getattr(member, "_key", None)
+        if isinstance(member_key, tuple) and len(member_key) == 2:
+            binding_key = member_key
+        metadata: Dict[str, Any] = {
+            "origin_surface": "spellbook.notch_spell",
+            "spellbook_id": self._id,
+            "owner_conduit_id": self._conduit._id if self._conduit is not None else None,
+            "spell_index_id": getattr(spell_index, "_id", None),
+            "member_id": getattr(member, "spell_id", None),
+            "binding_key": binding_key,
+        }
+        mediator.start_transaction(
+            identity=self._transaction_identity,
+            transaction_type="notch",
+            metadata=metadata,
+        )
+        try:
+            result = self._apply_notch(spell_index=spell_index, member=member)
+        except Exception:
+            mediator.end_transaction(expected_type="notch", success=False)
+            raise
+        mediator.end_transaction(expected_type="notch", success=True)
+        return result
+
+    def _apply_notch(self, *, spell_index: Any, member: Any) -> Any:
+        """
+        Internal SEAM (SpellIndex multi-member model lane).
+
+        Switch `spell_index` active member to `member` inside the held notch
+        transaction window: move the notch pointer to `member`, rekey the SHA
+        id maps (de-register the outgoing active id, register the incoming),
+        and bump `Spell._door_epoch` so the fast meld doors re-resolve.
+
+        Placeholder until the SpellIndex multi-member model lands; the member-
+        store mutation is owned by the SpellIndex lane. The surrounding
+        admission/commit (claims, fact baselines, dirty marking) is provided by
+        `notch_spell` + `NotchTransactionStrategy`.
+
+        Raises:
+            NotImplementedError: Until the member-store switch is implemented.
+        """
+        raise NotImplementedError(
+            "[SPELLBOOK] _apply_notch is the SpellIndex multi-member seam: "
+            "implement the active-member switch + SHA rekey + door-epoch bump."
+        )
+
+    def add_spell_into_spellindex(self, *, spell: Any, target_index: Any, source_index: Any = None) -> Any:
+        """
+        Public API
+
+        Move `spell` into `target_index` as an `add_to_index` change-control
+        transaction (a move-in: the spell leaves its current index and joins the
+        target; an emptied source index is GC'd inside the same transaction).
+
+        Seals the source AND target spellbooks + conduits + the spell binding
+        key EXCLUSIVE for the duration. The member-store move + source GC is the
+        `_apply_add_to_index` seam (SpellIndex multi-member model lane).
+        """
+        self.check_cleaned()
+        mediator = self._get_required_transaction_mediator()
+        binding_key = self._spell_index_binding_key(spell)
+        owner_conduit_id = self._conduit._id if self._conduit is not None else None
+        target_book = getattr(target_index, "_owner_spellbook", None)
+        metadata: Dict[str, Any] = {
+            "origin_surface": "spellbook.add_spell_into_spellindex",
+            "source_spellbook_id": self._id,
+            "target_spellbook_id": getattr(target_book, "_id", None),
+            "source_conduit_id": owner_conduit_id,
+            "target_conduit_id": getattr(target_index, "_owner_conduit_id", None),
+            "binding_key": binding_key,
+            "member_id": getattr(spell, "spell_id", None),
+            "source_index_id": getattr(source_index, "_id", None),
+            "target_index_id": getattr(target_index, "_id", None),
+        }
+        mediator.start_transaction(
+            identity=self._transaction_identity,
+            transaction_type="add_to_index",
+            metadata=metadata,
+        )
+        try:
+            result = self._apply_add_to_index(
+                spell=spell,
+                source_index=source_index,
+                target_index=target_index,
+            )
+        except Exception:
+            mediator.end_transaction(expected_type="add_to_index", success=False)
+            raise
+        mediator.end_transaction(expected_type="add_to_index", success=True)
+        return result
+
+    def remove_spell_from_spellindex(self, *, spell: Any, source_index: Any) -> Any:
+        """
+        Public API
+
+        Move `spell` out of `source_index` into a fresh single-member index as a
+        `remove_from_index` change-control transaction (the split; the fresh
+        index is minted inside the transaction so no empty index ever rests).
+
+        Seals the owning spellbook + conduit + the spell binding key EXCLUSIVE.
+        The member-store move + fresh-index mint is the `_apply_remove_from_index`
+        seam (SpellIndex multi-member model lane).
+        """
+        self.check_cleaned()
+        mediator = self._get_required_transaction_mediator()
+        binding_key = self._spell_index_binding_key(spell)
+        owner_conduit_id = self._conduit._id if self._conduit is not None else None
+        metadata: Dict[str, Any] = {
+            "origin_surface": "spellbook.remove_spell_from_spellindex",
+            "spellbook_id": self._id,
+            "owner_conduit_id": owner_conduit_id,
+            "binding_key": binding_key,
+            "member_id": getattr(spell, "spell_id", None),
+            "source_index_id": getattr(source_index, "_id", None),
+        }
+        mediator.start_transaction(
+            identity=self._transaction_identity,
+            transaction_type="remove_from_index",
+            metadata=metadata,
+        )
+        try:
+            result = self._apply_remove_from_index(spell=spell, source_index=source_index)
+        except Exception:
+            mediator.end_transaction(expected_type="remove_from_index", success=False)
+            raise
+        mediator.end_transaction(expected_type="remove_from_index", success=True)
+        return result
+
+    @staticmethod
+    def _spell_index_binding_key(spell: Any) -> Optional[Tuple[str, str]]:
+        """
+        Resolve a spell (frame_key, binding_key) lookup pair, if present.
+        """
+        key = getattr(spell, "_key", None)
+        if isinstance(key, tuple) and len(key) == 2:
+            return key
+        return None
+
+    def _apply_add_to_index(self, *, spell: Any, source_index: Any, target_index: Any) -> Any:
+        """
+        Internal SEAM (SpellIndex multi-member model lane).
+
+        Inside the held add_to_index window: detach `spell` from its source
+        index, attach it to `target_index`, GC the source index if it empties,
+        and rekey the SHA id maps + bump `Spell._door_epoch` as active membership
+        changes. Placeholder until the SpellIndex multi-member model lands.
+
+        Raises:
+            NotImplementedError: Until the member-store move is implemented.
+        """
+        raise NotImplementedError(
+            "[SPELLBOOK] _apply_add_to_index is the SpellIndex multi-member seam: "
+            "implement the move-in + emptied-source GC."
+        )
+
+    def _apply_remove_from_index(self, *, spell: Any, source_index: Any) -> Any:
+        """
+        Internal SEAM (SpellIndex multi-member model lane).
+
+        Inside the held remove_from_index window: detach `spell` from
+        `source_index`, mint a fresh single-member index for it, and rekey the
+        SHA id maps + bump `Spell._door_epoch`. Placeholder until the SpellIndex
+        multi-member model lands.
+
+        Raises:
+            NotImplementedError: Until the member-store move is implemented.
+        """
+        raise NotImplementedError(
+            "[SPELLBOOK] _apply_remove_from_index is the SpellIndex multi-member seam: "
+            "implement the move-out + fresh-index mint."
+        )
+
     def begin_transaction(
             self,
             transaction_type: str,

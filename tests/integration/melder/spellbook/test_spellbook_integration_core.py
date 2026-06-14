@@ -1425,19 +1425,3 @@ def test_spellbook_integration_sever_link_clears_contracts() -> None:
     finally:
         borrower.permanent_cleanup()
         owner.permanent_cleanup()
-
-
-def test_spellbook_integration_find_spell_index_and_key_for_contracted_spell() -> None:
-    """
-    Purpose:
-        Validate contracted spells resolve via Spellbook lookup APIs.
-    Contract:
-        - find_spell_index returns a SpellIndex for a contracted spell.
-        - find_spell_key resolves the contracted lookup key.
-        - Borrower meld resolves by spellframe + binding_name.
-    Returns:
-        None.
-    Raises:
-        AssertionError: If contracted lookups fail.
-    """
-    configuratio

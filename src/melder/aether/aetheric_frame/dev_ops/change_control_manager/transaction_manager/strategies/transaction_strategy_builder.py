@@ -49,6 +49,15 @@ from melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_man
 from melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.unlink_transaction_strategy import (
     UnlinkTransactionStrategy,
 )
+from melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.notch_transaction_strategy import (
+    NotchTransactionStrategy,
+)
+from melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.add_to_index_transaction_strategy import (
+    AddToIndexTransactionStrategy,
+)
+from melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.remove_from_index_transaction_strategy import (
+    RemoveFromIndexTransactionStrategy,
+)
 from melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.transaction_strategy import (
     TransactionStrategy,
 )
@@ -340,6 +349,18 @@ class TransactionStrategyBuilder:
         self.register_strategy(
             ChangeTransactionType.UNLINK,
             UnlinkTransactionStrategy,
+        )
+        self.register_strategy(
+            ChangeTransactionType.NOTCH,
+            NotchTransactionStrategy,
+        )
+        self.register_strategy(
+            ChangeTransactionType.ADD_TO_INDEX,
+            AddToIndexTransactionStrategy,
+        )
+        self.register_strategy(
+            ChangeTransactionType.REMOVE_FROM_INDEX,
+            RemoveFromIndexTransactionStrategy,
         )
 
     @staticmethod

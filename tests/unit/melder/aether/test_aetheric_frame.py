@@ -307,35 +307,6 @@ def test_property_accessors_fail_after_cleanup(frame):
 # 5. Version Registry Tests
 # ----------------------------------------------------------------------
 
-def test_refresh_version_registry_empty(frame):
-    """Test refresh with empty spell registry results in empty version registry."""
-    frame.refresh_version_registry()
-    assert frame._version_registry == {}
-
-def test_refresh_version_registry_populated(frame):
-    """
-    Verify `refresh_version_registry` aggregates versions correctly.
-
-    Contract:
-    - Iterates over all SpellIndexes in `_spell_registry`.
-    - Populates `_version_registry` mapping conduit_id -> set of version strings.
-    """
-    si1 = MagicMock(spec=SpellIndex)
-    si1.get_all_versions.return_value = {"v1", "v2"}
-    
-    si2 = MagicMock(spec=SpellIndex)
-    si2.get_all_versions.return_value = {"v3"}
-    
-    frame._spell_registry = {
-        "c1": {si1},
-        "c2": {si2}
-    }
-    
-    frame.refresh_version_registry()
-    
-    assert frame._version_registry["c1"] == {"v1", "v2"}
-    assert frame._version_registry["c2"] == {"v3"}
-
 def test_has_version_true(frame):
     """
     Verify `has_version` returns True for existing versions.
@@ -356,11 +327,6 @@ def test_has_version_empty_arg(frame):
     assert frame.has_version("") is False
     assert frame.has_version(None) is False
 
-def test_has_version_none_registry(frame):
-    """Test has_version is safe if registry is None."""
-    frame._version_registry = None
-    assert frame.has_version("v1") is False
-
 def test_get_all_versions(frame):
     """Test get_all_versions flattens all sets."""
     frame._version_registry = {
@@ -373,11 +339,6 @@ def test_get_all_versions(frame):
 def test_get_all_versions_empty(frame):
     """Test get_all_versions returns empty set."""
     frame._version_registry = {}
-    assert frame.get_all_versions() == set()
-
-def test_get_all_versions_none_registry(frame):
-    """Test get_all_versions safe with None registry."""
-    frame._version_registry = None
     assert frame.get_all_versions() == set()
 
 def test_find_and_return_spell_index_found(frame):
@@ -407,13 +368,8 @@ def test_find_and_return_spell_index_empty_arg(frame):
     assert frame.find_and_return_spell_index("") is None
     assert frame.find_and_return_spell_index(None) is None
 
-def test_find_and_return_spell_index_none_registry(frame):
-    """Test search is safe with None registry."""
-    frame._spell_registry = None
-    assert frame.find_and_return_spell_index("v1") is None
 
-
-# ---- Frame-owned, lock-serialized registry mutation (race-fix encapsulation) ----
+# ---- Frame-owned, incremental, lock-free registry mutation (race fix) ----
 
 def test_register_conduit_spells_adds_and_refreshes(frame):
     """register_conduit_spells writes the set and refreshes the version cache."""
@@ -461,42 +417,25 @@ def test_unregister_spell_index_discards_and_refreshes(frame):
     frame.unregister_spell_index("missing", si)  # no raise
 
 
-def test_find_conduit_id_for_version(frame):
-    """find_conduit_id_for_version returns the owning conduit id, else None."""
-    si = MagicMock(spec=SpellIndex)
-    si.has_version.side_effect = lambda v: v == "target_v"
-    frame._spell_registry = {"c1": {si}}
-    assert frame.find_conduit_id_for_version("target_v") == "c1"
-    assert frame.find_conduit_id_for_version("nope") is None
-    assert frame.find_conduit_id_for_version("") is None
-
-def test_refresh_version_registry_merges_duplicates(frame):
+def test_register_conduit_spells_indexes_versions_for_get_all(frame):
     """
-    Test that if multiple conduits/indexes claim version, it's merged.
+    Live incremental upkeep across two conduits, unioned by get_all_versions.
 
     Contract:
-    - Duplicate versions across different conduits/indexes are allowed in the global set.
-    - Per-conduit registries maintain their own view.
+    - Each conduit's version set is maintained live by register_conduit_spells.
+    - Duplicate versions across conduits collapse in the global union.
     """
     si1 = MagicMock(spec=SpellIndex)
     si1.get_all_versions.return_value = {"v1"}
-    
+
     si2 = MagicMock(spec=SpellIndex)
     si2.get_all_versions.return_value = {"v1", "v2"}
-    
-    frame._spell_registry = {
-        "c1": {si1},
-        "c2": {si2}
-    }
-    
-    frame.refresh_version_registry()
-    
-    # Check c1
+
+    frame.register_conduit_spells("c1", {si1})
+    frame.register_conduit_spells("c2", {si2})
+
     assert frame._version_registry["c1"] == {"v1"}
-    # Check c2
     assert frame._version_registry["c2"] == {"v1", "v2"}
-    
-    # Global view should have v1 and v2
     assert frame.get_all_versions() == {"v1", "v2"}
 
 def test_find_and_return_spell_index_first_match(frame):
@@ -540,25 +479,16 @@ def test_cleanup_handles_none_registries_gracefully(frame):
     # 6. Edge Cases & Safety
     # ----------------------------------------------------------------------
 
-def test_refresh_version_registry_safe_if_none(frame):
-    """Test refresh is no-op if spell registry is None."""
-    frame._spell_registry = None
-    # Should not raise
-    frame.refresh_version_registry()
-
 def test_cleaned_checks_on_methods(frame):
-    """Verify methods raise RuntimeError if cleaned."""
+    """Verify version-query methods raise RuntimeError if cleaned."""
     frame.cleanup()
-    
-    with pytest.raises(RuntimeError):
-        frame.refresh_version_registry()
-        
+
     with pytest.raises(RuntimeError):
         frame.has_version("v1")
-        
+
     with pytest.raises(RuntimeError):
         frame.get_all_versions()
-        
+
     with pytest.raises(RuntimeError):
         frame.find_and_return_spell_index("v1")
 

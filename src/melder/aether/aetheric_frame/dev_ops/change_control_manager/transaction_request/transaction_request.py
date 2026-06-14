@@ -38,6 +38,9 @@ class ChangeTransactionType(StrEnum):
     MUTATION = "mutation"
     CLUSTER_LINK = "cluster_link"
     UNLINK = "unlink"
+    NOTCH = "notch"
+    ADD_TO_INDEX = "add_to_index"
+    REMOVE_FROM_INDEX = "remove_from_index"
 
 
 @dataclass(frozen=True)

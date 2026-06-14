@@ -24,6 +24,15 @@ from melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_man
 from melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.unlink_transaction_strategy import (
     UnlinkTransactionStrategy,
 )
+from melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.notch_transaction_strategy import (
+    NotchTransactionStrategy,
+)
+from melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.add_to_index_transaction_strategy import (
+    AddToIndexTransactionStrategy,
+)
+from melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.remove_from_index_transaction_strategy import (
+    RemoveFromIndexTransactionStrategy,
+)
 from melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.transaction_manager import (
     ChangeControlTransactionManager,
 )
@@ -147,6 +156,9 @@ def test_transaction_strategy_builder_resolves_enum_and_string_transaction_names
     assert builder.resolve("cluster_link") is ClusterLinkTransactionStrategy
     assert builder.resolve("transfer_ownership") is TransferOwnershipTransactionStrategy
     assert builder.resolve("unlink") is UnlinkTransactionStrategy
+    assert builder.resolve("notch") is NotchTransactionStrategy
+    assert builder.resolve("add_to_index") is AddToIndexTransactionStrategy
+    assert builder.resolve("remove_from_index") is RemoveFromIndexTransactionStrategy
 
 
 def test_transaction_strategy_builder_register_strategy_replaces_existing_mapping() -> None:
@@ -882,3 +894,136 @@ def test_transfer_ownership_transaction_strategy_builds_participant_scope_from_p
     assert plan["metadata"]["source_conduit_id"] == "conduit-1"
     assert plan["metadata"]["target_conduit_id"] == "conduit-2"
     assert plan["metadata"]["preflight_dependencies"] == ("dep-1",)
+
+
+def test_notch_transaction_strategy_seals_spellbook_conduit_binding_exclusive() -> None:
+    """
+    Purpose:
+        Verify a notch seals the owning spellbook, its conduit, and the targeted
+        binding key all EXCLUSIVE (blocks bind/transfer/link/cluster on them).
+    Contract:
+        - spellbook, conduit, and binding scopes are all EXCLUSIVE.
+        - metadata marks the notch mode.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If notch planning does not seal exclusively.
+    """
+    transaction_manager = ChangeControlTransactionManager()
+    registry = DevopsInformationRegistry("frame-1")
+    identity = DevopsIdentity(
+        owner_kind="spellbook",
+        owner_id="spellbook-1",
+        aetheric_frame_name="frame-1",
+        metadata={},
+        available_transactions=("notch",),
+    )
+    registry.register_identity(identity)
+
+    plan = NotchTransactionStrategy.build_start_plan(
+        transaction_manager=transaction_manager,
+        devops_information_registry=registry,
+        identity=identity,
+        metadata={
+            "owner_conduit_id": "conduit-1",
+            "binding_key": ("frame-1", "lookup-key-A"),
+        },
+    )
+
+    scope_claims = dict(plan["scope_claims"])
+    binding_scope = transaction_manager.make_scope_key_binding("frame-1", "lookup-key-A")
+    assert scope_claims["scope:spellbook:spellbook-1"] == ClaimMode.EXCLUSIVE.value
+    assert scope_claims["scope:conduit:conduit-1"] == ClaimMode.EXCLUSIVE.value
+    assert scope_claims[binding_scope] == ClaimMode.EXCLUSIVE.value
+    assert plan["metadata"]["index_mode"] == "notch"
+
+
+def test_add_to_index_transaction_strategy_seals_both_sides_exclusive() -> None:
+    """
+    Purpose:
+        Verify add-to-index seals BOTH source and target spellbooks/conduits
+        plus the moved binding key, all EXCLUSIVE.
+    Contract:
+        - Both spellbook scopes, both conduit scopes, and the binding scope are
+          EXCLUSIVE.
+        - metadata marks the add_to_index mode.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If add planning does not seal both sides exclusively.
+    """
+    transaction_manager = ChangeControlTransactionManager()
+    registry = DevopsInformationRegistry("frame-1")
+    identity = DevopsIdentity(
+        owner_kind="spellbook",
+        owner_id="spellbook-1",
+        aetheric_frame_name="frame-1",
+        metadata={},
+        available_transactions=("add_to_index",),
+    )
+    registry.register_identity(identity)
+
+    plan = AddToIndexTransactionStrategy.build_start_plan(
+        transaction_manager=transaction_manager,
+        devops_information_registry=registry,
+        identity=identity,
+        metadata={
+            "source_spellbook_id": "spellbook-1",
+            "target_spellbook_id": "spellbook-2",
+            "source_conduit_id": "conduit-1",
+            "target_conduit_id": "conduit-2",
+            "binding_key": ("frame-1", "lookup-key-A"),
+        },
+    )
+
+    scope_claims = dict(plan["scope_claims"])
+    binding_scope = transaction_manager.make_scope_key_binding("frame-1", "lookup-key-A")
+    assert scope_claims["scope:spellbook:spellbook-1"] == ClaimMode.EXCLUSIVE.value
+    assert scope_claims["scope:spellbook:spellbook-2"] == ClaimMode.EXCLUSIVE.value
+    assert scope_claims["scope:conduit:conduit-1"] == ClaimMode.EXCLUSIVE.value
+    assert scope_claims["scope:conduit:conduit-2"] == ClaimMode.EXCLUSIVE.value
+    assert scope_claims[binding_scope] == ClaimMode.EXCLUSIVE.value
+    assert plan["metadata"]["index_mode"] == "add_to_index"
+
+
+def test_remove_from_index_transaction_strategy_seals_spellbook_conduit_binding_exclusive() -> None:
+    """
+    Purpose:
+        Verify remove-from-index seals the owning spellbook, conduit, and the
+        moved binding key all EXCLUSIVE.
+    Contract:
+        - spellbook, conduit, and binding scopes are all EXCLUSIVE.
+        - metadata marks the remove_from_index mode.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If remove planning does not seal exclusively.
+    """
+    transaction_manager = ChangeControlTransactionManager()
+    registry = DevopsInformationRegistry("frame-1")
+    identity = DevopsIdentity(
+        owner_kind="spellbook",
+        owner_id="spellbook-1",
+        aetheric_frame_name="frame-1",
+        metadata={},
+        available_transactions=("remove_from_index",),
+    )
+    registry.register_identity(identity)
+
+    plan = RemoveFromIndexTransactionStrategy.build_start_plan(
+        transaction_manager=transaction_manager,
+        devops_information_registry=registry,
+        identity=identity,
+        metadata={
+            "spellbook_id": "spellbook-1",
+            "owner_conduit_id": "conduit-1",
+            "binding_key": ("frame-1", "lookup-key-A"),
+        },
+    )
+
+    scope_claims = dict(plan["scope_claims"])
+    binding_scope = transaction_manager.make_scope_key_binding("frame-1", "lookup-key-A")
+    assert scope_claims["scope:spellbook:spellbook-1"] == ClaimMode.EXCLUSIVE.value
+    assert scope_claims["scope:conduit:conduit-1"] == ClaimMode.EXCLUSIVE.value
+    assert scope_claims[binding_scope] == ClaimMode.EXCLUSIVE.value
+    assert plan["metadata"]["index_mode"] == "remove_from_index"

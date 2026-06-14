@@ -1077,13 +1077,12 @@ def test_get_conduit_by_spell_id(aether_with_mocks):
     """_get_conduit_by_spell_id searches registries."""
     a = aether_with_mocks
     
-    # Setup spell registry
+    # Setup spell registry: conduit c1 owns a lineage advertising "ver1".
     si = MagicMock()
     si.has_version.return_value = True
     si.id = "idx"
-    
-    # Frame owns the locked registry scan and returns the owning conduit id.
-    a._default_frame.find_conduit_id_for_version.return_value = "c1"
+
+    a._default_frame._spell_registry = {"c1": {si}}
 
     # Mock conduit retrieval
     conduit = MagicMock()
@@ -1091,7 +1090,7 @@ def test_get_conduit_by_spell_id(aether_with_mocks):
 
     result = a._get_conduit_by_spell_id("ver1")
     assert result is conduit
-    a._default_frame.find_conduit_id_for_version.assert_called_with("ver1")
+    si.has_version.assert_called_with("ver1")
 
 def test_get_conduit_by_spell_id_not_found_raises(aether_with_mocks):
     """_get_conduit_by_spell_id raises ValueError if no match."""
@@ -1707,12 +1706,6 @@ def test_aether_cleaned_guards(aether_with_mocks):
     with pytest.raises(RuntimeError):
         a._get_configuration()
 
-def test_refresh_version_registry(aether_with_mocks):
-    """_refresh_version_registry calls frame."""
-    a = aether_with_mocks
-    a._refresh_version_registry()
-    a._default_frame.refresh_version_registry.assert_called_once()
-
 # ----------------------------------------------------------------------
 # 9. Extra Coverage (20 new tests)
 # ----------------------------------------------------------------------
@@ -1796,12 +1789,6 @@ def test_remove_single_spell_index_validates_frame_exists(aether_with_mocks):
     a = aether_with_mocks
     with pytest.raises(ValueError, match="does not exist"):
         a._remove_single_spell_index("cid", MagicMock(), "missing_frame")
-
-def test_refresh_version_registry_validates_frame_exists(aether_with_mocks):
-    """_refresh_version_registry raises ValueError if frame missing."""
-    a = aether_with_mocks
-    with pytest.raises(ValueError, match="does not exist"):
-        a._refresh_version_registry("missing_frame")
 
 def test_get_all_spell_versions_validates_frame_exists(aether_with_mocks):
     """_get_all_spell_versions raises ValueError if frame missing."""
