@@ -1,6 +1,6 @@
 import threading
 from types import TracebackType
-from typing import TYPE_CHECKING, Optional, Dict, Tuple, ClassVar
+from typing import TYPE_CHECKING, Optional, Dict, Tuple, List, ClassVar
 
 
 # Melder Imports
@@ -37,6 +37,7 @@ class SpellIndex(Cleanable):
         "_versions",    # Set of all versions seen.
         "_owner_spellbook",
         "_active_spell",
+        "_members",     # Ordered member spells (active + dormant) under this index.
         "_owner_conduit_id",
         "_contracted_spellbooks",
     )
@@ -73,6 +74,11 @@ class SpellIndex(Cleanable):
         self._versions: set = {initial_id}  # Optional: Track all versions seen.
         self._owner_spellbook: Optional[Spellbook] = None
         self._active_spell: Optional[Spell] = None
+        # Ordered set of member spells under this index. Exactly one is the
+        # active (notched) member exposed through `current`; the rest are
+        # dormant - held here but absent from the Spellbook resolution maps
+        # until a notch makes one active.
+        self._members: List[Spell] = []
         self._owner_conduit_id: Optional[str] = None #Owner root conduit
         self._contracted_spellbooks: Dict[Tuple[Spellbook, str], Spell] = {}
 
@@ -97,11 +103,13 @@ class SpellIndex(Cleanable):
             # Nullify the pointer and release the lock object.
             self._cleaned = True
             self._versions.clear()
+            self._members.clear()
             self._contracted_spellbooks.clear()
 
             del self._versions
             del self._owner_spellbook
             del self._active_spell
+            del self._members
             del self._owner_conduit_id
             del self._contracted_spellbooks
             del self._current_id
@@ -205,11 +213,140 @@ class SpellIndex(Cleanable):
                 raise RuntimeError("Active spell already attached for this SpellIndex.")
             self._owner_spellbook = spellbook
             self._active_spell = spell
+            if spell not in self._members:
+                self._members.append(spell)
             spell_id = self._current_id
 
         # Call Spellbook update outside the lock to avoid lock inversion.
         spellbook._register_owned_spell_id(spell_id, spell)
 
+
+    # ------------------------------------------------------------
+    # Multi-member store (SpellIndex as a genuine index of members)
+    # ------------------------------------------------------------
+    def _attach_member(self, spell: Spell) -> None:
+        """
+        Add `spell` to this index's member set without changing the active member.
+
+        Contract:
+            - Idempotent: re-adding the same spell instance is a no-op.
+            - New members join DORMANT; only the active member is live in the
+              Spellbook resolution maps.
+            - Pure member-list mutation; Spellbook-side id-map registration and
+              door-epoch handling are owned by the calling transaction seam.
+
+        Args:
+            spell (Spell): The already-identified spell to add as a member.
+
+        Threading:
+            - Guarded by the instance lock.
+        """
+        self.check_cleaned()
+        with self._lock:
+            if spell not in self._members:
+                self._members.append(spell)
+
+    def _detach_member(self, spell: Spell) -> bool:
+        """
+        Remove `spell` from this index's member set.
+
+        Contract:
+            - Removing a spell that is not a member is a no-op.
+            - `_active_spell` / `_current_id` are left unchanged here; the
+              calling seam must re-notch to a remaining member or GC an emptied
+              index before committing.
+            - Pure member-list mutation; Spellbook-side id-map de-registration
+              and door-epoch handling are owned by the calling transaction seam.
+
+        Args:
+            spell (Spell): The member spell to remove.
+
+        Returns:
+            bool: True when this index holds no members after removal.
+
+        Threading:
+            - Guarded by the instance lock.
+        """
+        self.check_cleaned()
+        with self._lock:
+            try:
+                self._members.remove(spell)
+            except ValueError:
+                pass
+            return len(self._members) == 0
+
+    def _set_active_member(self, spell: Spell) -> Optional[Spell]:
+        """
+        Make `spell` the active (notched) member and return the previous active.
+
+        Contract:
+            - `spell` must already be a member (attach it first) or this raises.
+            - Updates `_active_spell` and the `_current_id` version pointer so
+              `current` reflects the newly active member, and records the
+              version in the history set.
+            - Pure index-state mutation; Spellbook-side id-map rekey + door-epoch
+              bump are owned by the calling transaction seam.
+
+        Args:
+            spell (Spell): The member to make active.
+
+        Returns:
+            Optional[Spell]: The previously active member, or None.
+
+        Raises:
+            RuntimeError: If `spell` is not a member of this index.
+
+        Threading:
+            - Guarded by the instance lock; `current` stays a lock-free read for
+              hot meld paths because `_current_id` is a single-reference store.
+        """
+        self.check_cleaned()
+        with self._lock:
+            if spell not in self._members:
+                raise RuntimeError(
+                    "Cannot notch a spell that is not a member of this SpellIndex."
+                )
+            previous = self._active_spell
+            self._active_spell = spell
+            self._current_id = spell.spell_id
+            self._versions.add(spell.spell_id)
+            return previous
+
+    def _has_member(self, spell: Spell) -> bool:
+        """
+        Return whether `spell` is currently a member of this index.
+
+        Threading:
+            - Guarded by the instance lock.
+        """
+        self.check_cleaned()
+        with self._lock:
+            return spell in self._members
+
+    def _member_count(self) -> int:
+        """
+        Return the number of members currently held by this index.
+
+        Threading:
+            - Guarded by the instance lock.
+        """
+        self.check_cleaned()
+        with self._lock:
+            return len(self._members)
+
+    def _member_snapshot(self) -> List[Spell]:
+        """
+        Return a detached, ordered copy of this index's current members.
+
+        Contract:
+            - The returned list is a copy; mutating it does not affect the index.
+
+        Threading:
+            - Guarded by the instance lock.
+        """
+        self.check_cleaned()
+        with self._lock:
+            return list(self._members)
 
     def _set_owner_conduit_id(self, conduit_id: str) -> None:
         """
