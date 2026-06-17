@@ -447,11 +447,10 @@ class ConduitCloud(Cleanable):
         # Exclusive membership: a conduit may belong to at most one cluster. This
         # keeps `unique_per_conduit_cluster` resolution unambiguous -- one cluster
         # per conduit is the single-store property the team-store design relies on.
-        existing = self.get_clusters_for_conduit(conduit.id)
-        if existing:
+        if self.get_clusters_for_conduit(conduit.id):
             raise ValueError(
-                f"Conduit {conduit.id} is already a member of cluster(s) "
-                f"{existing}; cluster membership is exclusive (one per conduit)."
+                f"Conduit {conduit.id} is already in a cluster; cluster "
+                f"membership is exclusive (one per conduit)."
             )
         cluster.add_member(conduit.id)
         cluster.handle_join(conduit)

@@ -73,7 +73,6 @@ class ClusterCreations(Cleanable):
             return
         self._cleaned = True
         self._active = False
-        self._store = None
         del self._store
         del self._active
 
