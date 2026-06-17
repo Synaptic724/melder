@@ -60,18 +60,18 @@ class _SpellIndexStub:
     """Hashable SpellIndex stand-in for Phase 3 map/set behavior."""
 
     __slots__ = [
-        "current",
+        "selected_spell_id",
         "id",
     ]
 
     def __init__(self, spell_id: str) -> None:
         """Store the current and lineage ids."""
-        self.current = spell_id
+        self.selected_spell_id = spell_id
         self.id = "lineage-{0}".format(spell_id)
 
     def __hash__(self) -> int:
         """Keep the stub usable as a dictionary key like real SpellIndex."""
-        return hash((self.current, self.id))
+        return hash((self.selected_spell_id, self.id))
 
 
 def _make_spell_stub(
@@ -304,7 +304,7 @@ def test_build_local_topology_requires_bound_spell_id(
         spell_name="RootSpell",
     )
     if drop_spell_id:
-        root_spell.spell_index.current = None
+        root_spell.spell_index.selected_spell_id = None
     graph = SpellSymbolicGraph(
         spell_version_id="root",
         dependencies=[],
@@ -413,7 +413,7 @@ def test_build_local_frame_dag_requires_bound_spell_index() -> None:
         spellframe=None,
         spell_name="RootSpell",
     )
-    root_spell.spell_index.current = None
+    root_spell.spell_index.selected_spell_id = None
 
     with pytest.raises(RuntimeError, match="bound spell current id"):
         phase._build_local_frame_dag(

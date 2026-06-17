@@ -320,7 +320,7 @@ class SpellValidationSystem(Cleanable):
                 pass
 
         result = SpellValidationResult(
-            spell_id=spell.spell_index.current,
+            spell_id=spell.spell_index.selected_spell_id,
             spell_name=spell.spell_name,
             issues=issues,
         )

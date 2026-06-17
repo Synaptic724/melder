@@ -3384,7 +3384,7 @@ def test_command_system_can_get_spell_by_id(
     spell = object()
 
     class _SpellIndex:
-        def has_version(self, version_id: str) -> bool:
+        def has_spell(self, version_id: str) -> bool:
             return version_id == "sha-1"
 
     owner_conduit = SimpleNamespace(

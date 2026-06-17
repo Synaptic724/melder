@@ -41,7 +41,7 @@ def test_mutation_research_component_drives_real_session_lines_and_promotion() -
     index = SpellIndex("spell-root")
     try:
         session = manager.create_session(index, name="session", metadata={"owner": "test"})
-        spell_line = session.start_spell_research(index.current)
+        spell_line = session.start_spell_research(index.selected_spell_id)
         creation_line = session.start_creation_research("creation-1")
 
         assert spell_line.name == "session:spell:spell-root"
@@ -74,7 +74,7 @@ def test_mutation_research_component_drives_real_session_lines_and_promotion() -
             drop_legacy_creations=True,
         )
 
-        assert index.current == "spell-root"
+        assert index.selected_spell_id == "spell-root"
         assert session.root_version == "spell-v2"
         assert session.metadata["promotions"] == [
             {

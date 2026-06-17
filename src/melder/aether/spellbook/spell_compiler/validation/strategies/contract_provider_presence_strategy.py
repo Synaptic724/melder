@@ -106,7 +106,7 @@ class ContractProviderPresenceStrategy(SpellValidationStrategy):
                             spell_name=provider_spell.spell_name,
                             binding_name=provider_spell.binding_name,
                         )
-                        provider_spell_id = index.current
+                        provider_spell_id = index.selected_spell_id
                         if provider_spell_id is None:
                             provider_spell_id = provider_spell.spell_id
                         provider_map.setdefault(key, []).append(provider_spell_id)
@@ -114,7 +114,7 @@ class ContractProviderPresenceStrategy(SpellValidationStrategy):
                 pass_cache["contract_provider_map"] = provider_map
 
         automatic_mode = system_state is SystemState.automatic
-        current_spell_id = spell.spell_index.current
+        current_spell_id = spell.spell_index.selected_spell_id
         if current_spell_id is None:
             current_spell_id = spell.spell_id
 

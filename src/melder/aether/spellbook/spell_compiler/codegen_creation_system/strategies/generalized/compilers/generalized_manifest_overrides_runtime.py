@@ -194,7 +194,7 @@ def build_overrides_execute_runtime(
     )
 
     current_root_spell_id = (
-        root_spell.spell_index.current or root_spell.spell_id
+        root_spell.spell_index.selected_spell_id or root_spell.spell_id
     )
 
     # Raw-key-shape cache: the user-facing override KEY SET fully determines
@@ -491,7 +491,7 @@ def _build_identity_bindings(
             for runtime_row in runtime_rows
         ),
         "step_is_root": tuple(
-            runtime_row.spell.spell_index.current == root_spell_id
+            runtime_row.spell.spell_index.selected_spell_id == root_spell_id
             for runtime_row in runtime_rows
         ),
         "step_is_existing_unique_creation": tuple(
@@ -587,7 +587,7 @@ def _split_override_payload(
         normalized_root_args = tuple(raw_args)
     else:
         raise MeldExecutionError(
-            spell_id=spell.spell_index.current or spell.spell_id,
+            spell_id=spell.spell_index.selected_spell_id or spell.spell_id,
             spell_name=spell.spell_name,
             message="__args__ override must be a list or tuple.",
         )

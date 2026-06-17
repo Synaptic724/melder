@@ -1057,7 +1057,7 @@ class SharedCompilerExecutions:
             expects_overrides = step.expects_overrides
         return {
             "instance_key": tuple(step.instance_key),
-            "spell_id": step.spell.spell_index.current,
+            "spell_id": step.spell.spell_index.selected_spell_id,
             "existence": step.existence.name,
             "creations_target_kind": step.creations_target_kind,
             "shared_instance": step.shared_instance,
@@ -1123,7 +1123,7 @@ class SharedCompilerExecutions:
             )
         return (
             tuple(step.instance_key),
-            step.spell.spell_index.current,
+            step.spell.spell_index.selected_spell_id,
             step.existence.name,
             step.creations_target_kind,
             dependency_resolution_order,
@@ -1177,7 +1177,7 @@ class SharedCompilerExecutions:
         if spell.existence is Existence.many and not spell.has_disposal_methods:
             must_register = False
         return (
-            spell.spell_index.current,
+            spell.spell_index.selected_spell_id,
             spell.existence.name,
             bool(spell.is_existing_creation),
             bool(is_callable_spell),
@@ -1300,7 +1300,7 @@ class SharedCompilerExecutions:
             steps_rows
         )
         step_spell_ids = tuple(
-            step.spell.spell_index.current
+            step.spell.spell_index.selected_spell_id
             for step in steps
         )
         transient_schema = SharedCompilerExecutions.build_fast_transient_schema(

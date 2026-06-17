@@ -1926,7 +1926,7 @@ class ConduitWard(Cleanable):
             return False
         with book._lock:
             for idx in book._spells.keys():
-                versions = idx._versions
+                versions = idx._spells_in_index
                 if versions and spell_id in versions:
                     return True
         return False
@@ -2737,7 +2737,7 @@ class ConduitWard(Cleanable):
         This now behaves in a lineage-aware way:
 
             * spell_id may be ANY version SHA belonging to the lineage.
-            * We search each Detail's SpellIndex using Detail.has_version(spell_id).
+            * We search each Detail's SpellIndex using Detail.has_spell(spell_id).
             * If matched, we resolve via Spellbook._find_contracted_spell(spell_index)
               and return the **current** spell object (not the historical version).
 
@@ -2761,7 +2761,7 @@ class ConduitWard(Cleanable):
                     continue
 
                 for detail in detail_map.values():
-                    if not detail.has_version(spell_id):
+                    if not detail.has_spell(spell_id):
                         continue
 
                     spell_index = detail.spell_index

@@ -76,13 +76,13 @@ def _build_blueprint():
     contract_root_index = _register_index(states, "contract-root-targeting")
     contract_repo_index = _register_index(states, "contract-repo-targeting")
 
-    root_id = root_index.current
-    repo_id = repo_index.current
-    logger_id = logger_index.current
-    service_root_id = service_root_index.current
-    service_repo_id = service_repo_index.current
-    contract_root_id = contract_root_index.current
-    contract_repo_id = contract_repo_index.current
+    root_id = root_index.selected_spell_id
+    repo_id = repo_index.selected_spell_id
+    logger_id = logger_index.selected_spell_id
+    service_root_id = service_root_index.selected_spell_id
+    service_repo_id = service_repo_index.selected_spell_id
+    contract_root_id = contract_root_index.selected_spell_id
+    contract_repo_id = contract_repo_index.selected_spell_id
 
     states.update_dependencies(
         root_index,

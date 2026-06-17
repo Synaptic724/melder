@@ -31,7 +31,7 @@ class _SpellIndexStub:
         Returns:
             None.
         """
-        self.current = current
+        self.selected_spell_id = current
 
 
 class _SpellStub:
@@ -55,7 +55,7 @@ class _SpellStub:
         Contract:
             dependencies is always set; None represents "no dependencies".
         Args:
-            spell_id: Spell identifier for spell_index.current.
+            spell_id: Spell identifier for spell_index.selected_spell_id.
             spell_name: Spell name used in diagnostics.
             dependencies: Optional list of dependency ids.
         Returns:

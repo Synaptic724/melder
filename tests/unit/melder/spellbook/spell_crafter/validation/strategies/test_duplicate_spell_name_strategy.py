@@ -44,7 +44,7 @@ class _SpellIndexStub:
         self._raise_on_current = raise_on_current
 
     @property
-    def current(self) -> Optional[str]:
+    def selected_spell_id(self) -> Optional[str]:
         """
         Purpose:
             Return the current spell id or raise when configured.
@@ -83,7 +83,7 @@ class _SpellStub:
         Contract:
             Creates a spell_index stub and sets name metadata when requested.
         Args:
-            spell_id: Spell identifier for spell_index.current.
+            spell_id: Spell identifier for spell_index.selected_spell_id.
             spell_name: Optional spell name value.
             spellframe: Optional spellframe metadata.
             binding_name: Optional binding name metadata.
@@ -125,7 +125,7 @@ class _SpellbookStub:
         if spell_id_pool is not None:
             self._spell_id_pool = spell_id_pool
             return
-        self._spell_id_pool = {spell.spell_index.current: spell for spell in spells}
+        self._spell_id_pool = {spell.spell_index.selected_spell_id: spell for spell in spells}
 
 
 class _CancelStub:
@@ -393,9 +393,9 @@ def test_validate_duplicates_emit_issue_with_collisions() -> None:
 def test_validate_handles_index_current_errors() -> None:
     """
     Purpose:
-        Ensure index.current errors do not block collision reporting.
+        Ensure index.selected_spell_id errors do not block collision reporting.
     Contract:
-        Collision entries use spell_id pool keys even if index.current fails.
+        Collision entries use spell_id pool keys even if index.selected_spell_id fails.
     Returns:
         None.
     Raises:

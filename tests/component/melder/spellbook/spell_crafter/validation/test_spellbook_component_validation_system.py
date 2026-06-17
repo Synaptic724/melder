@@ -53,7 +53,7 @@ def _get_spell_by_version_id(spellbook: Spellbook, spell_id: str) -> object | No
     Purpose:
         Resolve a local Spell instance by its versioned spell id.
     Contract:
-        - Returns the first local spell whose SpellIndex.current matches `spell_id`.
+        - Returns the first local spell whose SpellIndex.selected_spell_id matches `spell_id`.
         - Returns None if no matching spell is found.
     Args:
         spellbook: Spellbook holding locally bound spells.
@@ -62,7 +62,7 @@ def _get_spell_by_version_id(spellbook: Spellbook, spell_id: str) -> object | No
         Spell | None: The resolved spell or None if missing.
     """
     for spell_index, spell in spellbook.spells.items():
-        if spell_index.current == spell_id:
+        if spell_index.selected_spell_id == spell_id:
             return spell
     return None
 

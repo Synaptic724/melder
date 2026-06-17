@@ -79,7 +79,7 @@ def test_spellbook_public_api_id_and_spells_mapping_read_only() -> None:
     assert spellbook.id != ""
 
     spells = spellbook.spells
-    assert any(spell_index.has_version(spell_id) for spell_index in spells.keys())
+    assert any(spell_index.has_spell(spell_id) for spell_index in spells.keys())
 
     spell_index = next(iter(spells.keys()))
     with pytest.raises(TypeError):
@@ -124,7 +124,7 @@ def test_spellbook_public_api_contracted_spells_mapping_read_only() -> None:
         contracted = borrower_book.contracted_spells
         assert owner.id in contracted
         spell_map = contracted[owner.id]
-        assert any(spell_index.has_version(spell_id) for spell_index in spell_map.keys())
+        assert any(spell_index.has_spell(spell_id) for spell_index in spell_map.keys())
 
         with pytest.raises(TypeError):
             contracted[owner.id] = {}

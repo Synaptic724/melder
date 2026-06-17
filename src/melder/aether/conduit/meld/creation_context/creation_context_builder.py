@@ -113,7 +113,7 @@ class CreationContextBuilder:
             _ = caller_creations_lock_held
             if overrides is not None:
                 raise MeldExecutionError(
-                    spell_id=spell.spell_index.current,
+                    spell_id=spell.spell_index.selected_spell_id,
                     spell_name=spell.spell_name,
                     message=(
                         "Overrides were supplied for a spell instance that already exists. "

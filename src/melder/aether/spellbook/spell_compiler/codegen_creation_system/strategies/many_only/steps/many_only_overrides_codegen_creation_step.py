@@ -103,7 +103,7 @@ class ManyOnlyOverridesCodegenCreationStep(CodegenCreationFamilyStep):
             steps_rows
         )
         step_spell_ids = tuple(
-            step.spell.spell_index.current
+            step.spell.spell_index.selected_spell_id
             for step in overrides_plan.steps
         )
         plan_signature = (
@@ -171,7 +171,7 @@ class ManyOnlyOverridesCodegenCreationStep(CodegenCreationFamilyStep):
         """
         spell_lookup: dict[str, object] = {}
         for step in overrides_plan.steps:
-            spell_id = step.spell.spell_index.current
+            spell_id = step.spell.spell_index.selected_spell_id
             if spell_id in spell_lookup:
                 continue
             spell_lookup[spell_id] = step.spell

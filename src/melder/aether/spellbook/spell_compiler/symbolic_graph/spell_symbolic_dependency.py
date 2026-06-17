@@ -26,7 +26,7 @@ class SpellSymbolicDependency(Cleanable):
     --------
     "spell_id" here is the **versioned identity** of the owning spell:
 
-        "spell.spell_index.current"
+        "spell.spell_index.selected_spell_id"
 
     Fields
     ------
@@ -111,7 +111,7 @@ class SpellSymbolicDependency(Cleanable):
         self._lock: threading.RLock = threading.RLock()
 
         # Stored as _spell_id for backwards compatibility; semantically, this is
-        # the *version id* (SpellIndex.current).
+        # the *version id* (SpellIndex.selected_spell_id).
         self._spell_id: str = spell_version_id
         self._param_name: str = param_name
         self._position: int = position
@@ -160,7 +160,7 @@ class SpellSymbolicDependency(Cleanable):
     @property
     def spell_id(self) -> str:
         """
-        Versioned identity of the owning spell (SpellIndex.current).
+        Versioned identity of the owning spell (SpellIndex.selected_spell_id).
         """
         self.check_cleaned()
         return self._spell_id

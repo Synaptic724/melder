@@ -168,7 +168,7 @@ def _get_spell_by_version_id(spellbook: Spellbook, spell_id: str) -> object | No
             Resolved spell instance when found, otherwise None.
     """
     for spell_index, spell in spellbook.spells.items():
-        if spell_index.current == spell_id:
+        if spell_index.selected_spell_id == spell_id:
             return spell
     return None
 

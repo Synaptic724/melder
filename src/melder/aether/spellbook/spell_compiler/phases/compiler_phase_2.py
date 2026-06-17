@@ -100,7 +100,7 @@ class CompilerPhase2:
             )
 
         # Versioned identity from SpellIndex.
-        version_id = spell.spell_index.current
+        version_id = spell.spell_index.selected_spell_id
         if version_id is None:
             raise RuntimeError("SpellCrafter requires a bound spell current id.")
 

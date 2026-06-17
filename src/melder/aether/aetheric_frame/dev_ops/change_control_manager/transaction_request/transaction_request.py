@@ -41,6 +41,8 @@ class ChangeTransactionType(StrEnum):
     NOTCH = "notch"
     ADD_TO_INDEX = "add_to_index"
     REMOVE_FROM_INDEX = "remove_from_index"
+    ELECT_CONDUIT_CLUSTER_LEADER = "elect_conduit_cluster_leader"
+    UNELECT_CONDUIT_CLUSTER_LEADER = "unelect_conduit_cluster_leader"
 
 
 @dataclass(frozen=True)

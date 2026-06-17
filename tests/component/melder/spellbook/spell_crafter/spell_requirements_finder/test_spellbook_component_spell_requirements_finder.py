@@ -55,7 +55,7 @@ def _get_spell_by_version_id(spellbook: Spellbook, spell_id: str):
     Purpose:
         Retrieve a local Spell by its version id.
     Contract:
-        - Returns the first spell whose SpellIndex.current matches spell_id.
+        - Returns the first spell whose SpellIndex.selected_spell_id matches spell_id.
     Args:
         spellbook: Spellbook to search.
         spell_id: Version id to match.
@@ -63,7 +63,7 @@ def _get_spell_by_version_id(spellbook: Spellbook, spell_id: str):
         Spell or None: Matching spell instance or None if not found.
     """
     for spell in spellbook._spells.values():
-        if spell.spell_index.current == spell_id:
+        if spell.spell_index.selected_spell_id == spell_id:
             return spell
     return None
 
@@ -71,7 +71,7 @@ def _get_spell_by_version_id(spellbook: Spellbook, spell_id: str):
 def test_component_requirements_finder_uses_current_spell_index() -> None:
     """
     Purpose:
-        Validate requirements spell_id follows SpellIndex.current updates.
+        Validate requirements spell_id follows SpellIndex.selected_spell_id updates.
     Contract:
         - SpellRequirements uses the current version id, not the original id.
     Returns:

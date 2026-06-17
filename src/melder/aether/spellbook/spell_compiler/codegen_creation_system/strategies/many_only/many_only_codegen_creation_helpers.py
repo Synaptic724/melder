@@ -134,7 +134,7 @@ class ManyOnlyCodegenCreationHelpers:
             )
         return (
             tuple(step.instance_key),
-            step.spell.spell_index.current,
+            step.spell.spell_index.selected_spell_id,
             dependency_resolution_order,
             bool(step.uses_positional_override),
             ManyOnlyCodegenCreationHelpers.freeze_value(
@@ -173,7 +173,7 @@ class ManyOnlyCodegenCreationHelpers:
             )
         return {
             "instance_key": tuple(step.instance_key),
-            "spell_id": step.spell.spell_index.current,
+            "spell_id": step.spell.spell_index.selected_spell_id,
             "shared_instance": step.shared_instance,
             "dependency_resolution_order": dependency_resolution_order,
             "uses_positional_override": step.uses_positional_override,

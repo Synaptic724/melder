@@ -138,7 +138,7 @@ class BindingResolutionCycleStrategy(SpellValidationStrategy):
                         f"cycle: {' -> '.join(cycle_keys)}."
                     ),
                     details={
-                        "spell_id": spell.spell_index.current,
+                        "spell_id": spell.spell_index.selected_spell_id,
                         "root_binding_key": self._format_key(root_key),
                         "cycle_keys": cycle_keys,
                         "cycle_spells": cycle_spells,

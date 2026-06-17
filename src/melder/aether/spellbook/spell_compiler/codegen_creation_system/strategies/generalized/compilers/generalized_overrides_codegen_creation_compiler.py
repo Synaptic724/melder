@@ -500,7 +500,7 @@ def _build_overrides_codegen_creation_executor_namespace(
             for plan_step in steps
         ),
         "step_is_root": tuple(
-            plan_step.spell.spell_index.current == root_spell_id
+            plan_step.spell.spell_index.selected_spell_id == root_spell_id
             for plan_step in steps
         ),
         "step_has_targeted_overrides": tuple(
@@ -1647,7 +1647,7 @@ def _append_overrides_invoke_source(
                 f"{body_indent}        call_kwargs_{step_index}.pop(\"__args__\", None)",
                 f"{body_indent}else:",
                 f"{body_indent}    raise MeldExecutionError(",
-                f"{body_indent}        spell_id=plan_step_{step_index}.spell.spell_index.current,",
+                f"{body_indent}        spell_id=plan_step_{step_index}.spell.spell_index.selected_spell_id,",
                 f"{body_indent}        spell_name=plan_step_{step_index}.spell.spell_name,",
                 f"{body_indent}        message=\"__args__ override must be a list or tuple.\",",
                 f"{body_indent}    )",
@@ -1658,7 +1658,7 @@ def _append_overrides_invoke_source(
                 ),
                 f"{body_indent}except Exception as exc:",
                 f"{body_indent}    raise MeldExecutionError(",
-                f"{body_indent}        spell_id=plan_step_{step_index}.spell.spell_index.current,",
+                f"{body_indent}        spell_id=plan_step_{step_index}.spell.spell_index.selected_spell_id,",
                 f"{body_indent}        spell_name=plan_step_{step_index}.spell.spell_name,",
                 (
                     f"{body_indent}        message=(\"Error invoking spell '\" + "
@@ -1677,7 +1677,7 @@ def _append_overrides_invoke_source(
                 ),
                 f"{body_indent}except Exception as exc:",
                 f"{body_indent}    raise MeldExecutionError(",
-                f"{body_indent}        spell_id=plan_step_{step_index}.spell.spell_index.current,",
+                f"{body_indent}        spell_id=plan_step_{step_index}.spell.spell_index.selected_spell_id,",
                 f"{body_indent}        spell_name=plan_step_{step_index}.spell.spell_name,",
                 (
                     f"{body_indent}        message=(\"Error invoking spell '\" + "
@@ -1695,7 +1695,7 @@ def _append_overrides_invoke_source(
             ),
             f"{body_indent}except Exception as exc:",
             f"{body_indent}    raise MeldExecutionError(",
-            f"{body_indent}        spell_id=plan_step_{step_index}.spell.spell_index.current,",
+            f"{body_indent}        spell_id=plan_step_{step_index}.spell.spell_index.selected_spell_id,",
             f"{body_indent}        spell_name=plan_step_{step_index}.spell.spell_name,",
             (
                 f"{body_indent}        message=(\"Error invoking spell '\" + "
@@ -2664,7 +2664,7 @@ def _build_step_override_targets(
 
     step_targets = []
     for plan_step in steps:
-        spell_id = plan_step.spell.spell_index.current
+        spell_id = plan_step.spell.spell_index.selected_spell_id
         spell_targets = override_targets_by_spell_id.get(spell_id, ())
         if not spell_targets:
             step_targets.append(())
@@ -2707,7 +2707,7 @@ def _raise_override_on_existing_instance(
         - Root-level override payloads block root-instance reuse.
         - Socket-targeted overrides block reuse for the targeted spell.
     """
-    spell_id = spell.spell_index.current
+    spell_id = spell.spell_index.selected_spell_id
     if spell_id == root_spell_id and any_overrides_present:
         raise MeldExecutionError(
             spell_id=spell_id,
@@ -2882,7 +2882,7 @@ def _build_kwargs_with_overrides(
         return contract_kwargs
 
     spell = plan_step.spell
-    spell_id = spell.spell_index.current
+    spell_id = spell.spell_index.selected_spell_id
     kwargs: Dict[str, Any] = {}
 
     for param_name, dependency_keys in dependency_resolution_order:
@@ -3029,7 +3029,7 @@ def _invoke_spell_with_kwargs(
             call_kwargs.pop("__args__", None)
     else:
         raise MeldExecutionError(
-            spell_id=spell.spell_index.current,
+            spell_id=spell.spell_index.selected_spell_id,
             spell_name=spell.spell_name,
             message="__args__ override must be a list or tuple.",
         )
@@ -3038,7 +3038,7 @@ def _invoke_spell_with_kwargs(
         return spell.spell(*args, **call_kwargs)
     except Exception as exc:
         raise MeldExecutionError(
-            spell_id=spell.spell_index.current,
+            spell_id=spell.spell_index.selected_spell_id,
             spell_name=spell.spell_name,
             message=f"Error invoking spell '{spell.spell_name}'.",
             inner=exc,

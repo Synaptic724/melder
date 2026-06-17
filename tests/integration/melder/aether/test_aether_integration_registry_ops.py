@@ -261,7 +261,7 @@ def test_aether_remove_single_spell_index_updates_registry() -> None:
         assert aether._check_for_spell(config_id, frame_name) is not None
 
         config_index = next(
-            idx for idx in spellbook._spells.keys() if idx.current == config_id
+            idx for idx in spellbook._spells.keys() if idx.selected_spell_id == config_id
         )
         aether._remove_single_spell_index(conduit.id, config_index, frame_name)
 

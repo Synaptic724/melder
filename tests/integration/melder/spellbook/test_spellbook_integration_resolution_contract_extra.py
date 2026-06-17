@@ -761,7 +761,7 @@ def test_spellindex_update_propagates_owned_id_map_for_meld() -> None:
     conduit = spellbook.conjure(name="root")
     try:
         spell_index = next(iter(spellbook.spells.keys()))
-        old_id = spell_index.current
+        old_id = spell_index.selected_spell_id
         new_id = f"{old_id}-v2"
 
         spell_index.update(new_id)
@@ -831,7 +831,7 @@ def test_spellindex_update_propagates_contracted_id_map_for_meld() -> None:
             )
 
         spell_index = next(iter(owner_book.spells.keys()))
-        old_id = spell_index.current
+        old_id = spell_index.selected_spell_id
         new_id = f"{old_id}-v2"
 
         spell_index.update(new_id)

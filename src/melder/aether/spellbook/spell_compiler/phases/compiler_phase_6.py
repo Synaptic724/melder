@@ -190,9 +190,9 @@ class CompilerPhase6:
             List[SystemDiagnostic]:
                 Visibility-gap diagnostics, empty when the scope is fully visible.
         """
-        spell.spell_index.current
+        spell.spell_index.selected_spell_id
         ordered_root_ids = sorted(root_ids)
-        root_id = ordered_root_ids[0] if ordered_root_ids else spell.spell_index.current
+        root_id = ordered_root_ids[0] if ordered_root_ids else spell.spell_index.selected_spell_id
         diagnostics: List[SystemDiagnostic] = []
         seen: Set[Tuple[str, str, str]] = set()
         for spell_id in scoped_spell_ids:

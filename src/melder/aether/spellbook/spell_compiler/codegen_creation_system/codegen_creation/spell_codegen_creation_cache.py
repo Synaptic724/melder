@@ -141,7 +141,7 @@ def _build_no_overrides_subpackage(*, no_overrides_plan: Any) -> Dict[str, Any]:
         include_override_metadata=False,
     )
     step_spell_ids = tuple(
-        step.spell.spell_index.current
+        step.spell.spell_index.selected_spell_id
         for step in steps
     )
     transient_schema = SharedCompilerExecutions.build_fast_transient_schema(
@@ -185,7 +185,7 @@ def _build_overrides_subpackage(
         include_override_metadata=True,
     )
     step_spell_ids = tuple(
-        step.spell.spell_index.current
+        step.spell.spell_index.selected_spell_id
         for step in overrides_plan.steps
     )
     plan_signature = GeneralizedFinalizeCreationContextStep._build_override_plan_signature(

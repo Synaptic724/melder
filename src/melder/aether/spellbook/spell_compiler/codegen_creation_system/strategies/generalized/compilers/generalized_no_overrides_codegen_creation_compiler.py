@@ -597,7 +597,7 @@ def _raise_meld_construction_error(spell: Any, exc: BaseException) -> None:
     identically. Lives off the hot path: only the failure branch calls it.
     """
     raise MeldExecutionError(
-        spell_id=spell.spell_index.current,
+        spell_id=spell.spell_index.selected_spell_id,
         spell_name=spell.spell_name,
         message=f"Error invoking spell '{spell.spell_name}'.",
         inner=exc,
@@ -1182,7 +1182,7 @@ def _construct_spell_instance(
             call_kwargs.pop("__args__", None)
     else:
         raise MeldExecutionError(
-            spell_id=spell.spell_index.current,
+            spell_id=spell.spell_index.selected_spell_id,
             spell_name=spell.spell_name,
             message="__args__ override must be a list or tuple.",
         )
@@ -1191,7 +1191,7 @@ def _construct_spell_instance(
         return spell.spell(*args, **call_kwargs)
     except Exception as exc:
         raise MeldExecutionError(
-            spell_id=spell.spell_index.current,
+            spell_id=spell.spell_index.selected_spell_id,
             spell_name=spell.spell_name,
             message=f"Error invoking spell '{spell.spell_name}'.",
             inner=exc,
@@ -1237,7 +1237,7 @@ def _build_kwargs_no_overrides(
         return contract_kwargs
 
     spell = plan_step.spell
-    spell_id = spell.spell_index.current
+    spell_id = spell.spell_index.selected_spell_id
     kwargs: Dict[str, Any] = {}
     for param_name, dependency_keys in dependency_resolution_order:
         dependency_count = len(dependency_keys)
@@ -1611,7 +1611,7 @@ def _build_no_overrides_codegen_executor_source(
         "    except Exception as exc:",
         "        step_spell = steps[__step_index].spell",
         "        raise MeldExecutionError(",
-        "            spell_id=step_spell.spell_index.current,",
+        "            spell_id=step_spell.spell_index.selected_spell_id,",
         "            spell_name=step_spell.spell_name,",
         "            message=f\"Error invoking spell '{step_spell.spell_name}'.\",",
         "            inner=exc,",

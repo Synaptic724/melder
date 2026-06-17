@@ -116,12 +116,12 @@ class _SpellIndexProbe:
 
     def __init__(self, current: str) -> None:
         """Store current and lineage ids."""
-        self.current = current
+        self.selected_spell_id = current
         self.id = "lineage:{0}".format(current)
 
     def __hash__(self) -> int:
         """Keep the probe usable as a dictionary key."""
-        return hash((self.current, self.id))
+        return hash((self.selected_spell_id, self.id))
 
 
 def _make_runtime_spell(

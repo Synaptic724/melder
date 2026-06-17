@@ -131,10 +131,7 @@ class ConduitCloud(Cleanable):
             if self._cleaned:
                 return
             for cluster in list(self._conduit_clusters.values()):
-                try:
-                    cluster.cleanup()
-                except Exception:
-                    pass
+                cluster.cleanup()
             self._conduit_clusters.clear()
             self._cleaned = True
 

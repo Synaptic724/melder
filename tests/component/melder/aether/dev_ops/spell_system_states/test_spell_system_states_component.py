@@ -241,7 +241,7 @@ def test_component_spell_system_states_dependency_change_sets_reason() -> None:
     states = frame.spell_system_states
     root_index = _register_index(states, "root-dep-reason")
     dep_index = _register_index(states, "dep-dep-reason")
-    states.update_dependencies(root_index, [dep_index.current])
+    states.update_dependencies(root_index, [dep_index.selected_spell_id])
     try:
         state = states.get_by_index_id(root_index.id)
         assert state is not None
@@ -302,7 +302,7 @@ def test_component_spell_system_states_impact_closure_preserves_root_state() -> 
     states = frame.spell_system_states
     root_index = _register_index(states, "root-impact-closure")
     dep_index = _register_index(states, "dep-impact-closure")
-    states.update_dependencies(dep_index, [root_index.current])
+    states.update_dependencies(dep_index, [root_index.selected_spell_id])
     states.consume_dirty_indexes()
     states.mark_structural_change(root_index)
 
@@ -373,12 +373,12 @@ def test_component_spell_system_states_update_dependencies_tracks_reverse_edges(
     dep_index = _register_index(states, "dep-reverse-edges")
     states.consume_dirty_indexes()
     try:
-        states.update_dependencies(root_index, [dep_index.current])
+        states.update_dependencies(root_index, [dep_index.selected_spell_id])
         root_state = states.get_by_index_id(root_index.id)
         dep_state = states.get_by_index_id(dep_index.id)
         assert root_state is not None
         assert dep_state is not None
-        assert dep_index.current in root_state.direct_dependencies
+        assert dep_index.selected_spell_id in root_state.direct_dependencies
         assert root_index.id in dep_state.direct_dependents
         assert root_state.change_reason is SpellStateChangeReason.dependencies_changed
         assert SpellState.dependencies_changed in root_state.flags
@@ -452,7 +452,7 @@ def test_component_spell_system_states_clear_dirty_resets_state_flags() -> None:
     states = frame.spell_system_states
     root_index = _register_index(states, "root-clear-dirty")
     dep_index = _register_index(states, "dep-clear-dirty")
-    states.update_dependencies(root_index, [dep_index.current])
+    states.update_dependencies(root_index, [dep_index.selected_spell_id])
     try:
         state = states.get_by_index_id(root_index.id)
         assert state is not None
@@ -538,8 +538,8 @@ def test_component_spell_system_states_impact_closure_handles_cycle() -> None:
     states = frame.spell_system_states
     index_a = _register_index(states, "spell-cycle-a")
     index_b = _register_index(states, "spell-cycle-b")
-    states.update_dependencies(index_a, [index_b.current])
-    states.update_dependencies(index_b, [index_a.current])
+    states.update_dependencies(index_a, [index_b.selected_spell_id])
+    states.update_dependencies(index_b, [index_a.selected_spell_id])
     states.consume_dirty_indexes()
     states.mark_structural_change(index_a)
     impacted = states.compute_impact_closure([index_a.id])

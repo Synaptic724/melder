@@ -710,9 +710,9 @@ class Meld(Cleanable, ABC):
             spellbook = spell._spellbook
             ccm = self._get_cached_change_control_manager(spellbook)
             if ccm is not None:
-                spell_id = spell.spell_index.current
+                spell_id = spell.spell_index.selected_spell_id
                 if spell_id is None:
-                    raise RuntimeError("SpellIndex.current is required for meld gating.")
+                    raise RuntimeError("SpellIndex.selected_spell_id is required for meld gating.")
                 try:
                     if ccm.is_root_dirty(conduit_id, spell_id):
                         raise MeldExecutionError(
@@ -844,9 +844,9 @@ class Meld(Cleanable, ABC):
         if not contracts:
             return
 
-        spell_id = spell.spell_index.current
+        spell_id = spell.spell_index.selected_spell_id
         if spell_id is None:
-            raise RuntimeError("SpellIndex.current is required for SpellContract validation.")
+            raise RuntimeError("SpellIndex.selected_spell_id is required for SpellContract validation.")
         for param_name, contract in contracts:
             if contract is None:
                 continue
@@ -951,9 +951,9 @@ class Meld(Cleanable, ABC):
         if resolution_state is None:
             return
 
-        spell_id = spell.spell_index.current
+        spell_id = spell.spell_index.selected_spell_id
         if spell_id is None:
-            raise RuntimeError("SpellIndex.current is required for resolution revalidation.")
+            raise RuntimeError("SpellIndex.selected_spell_id is required for resolution revalidation.")
         use_root = self._get_spell_compiler_system().is_current_spell_phase5_root(
             spell
         )
@@ -988,7 +988,7 @@ class Meld(Cleanable, ABC):
         if resolution_state is None:
             return SpellValidity.unknown
 
-        spell_id = spell.spell_index.current
+        spell_id = spell.spell_index.selected_spell_id
         if spell_id is None:
             return SpellValidity.unknown
         if self._get_spell_compiler_system().is_current_spell_phase5_root(spell):

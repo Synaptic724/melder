@@ -20,7 +20,7 @@ class SpellSystemAdjacencySnapshot(Cleanable):
 
     Notes
     -----
-    * All spell_ids are **version IDs** (spell.spell_index.current).
+    * All spell_ids are **version IDs** (spell.spell_index.selected_spell_id).
     * This view holds live references to SpellSystemStates data and does not
       copy or own the underlying collections.
     """

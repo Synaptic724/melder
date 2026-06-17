@@ -249,9 +249,9 @@ class SpellSystemStates(Cleanable):
 
         Behaviour:
         - If this is the first time we see `spell_index.id`, create a new
-          SpellSystemState with `spell_index.current` as the current_spell_id.
+          SpellSystemState with `spell_index.selected_spell_id` as the current_spell_id.
         - If it already exists, update its current_spell_id to match
-          `spell_index.current`.
+          `spell_index.selected_spell_id`.
         - Update the spell-id index so `get_by_spell_id(...)` can resolve
           by current version id.
         - Record the owning Spellbook id for targeted, spellbook-scoped
@@ -262,9 +262,9 @@ class SpellSystemStates(Cleanable):
         This is intended to be called from Spellbook.bind(...) or equivalent.
         """
         index_id = spell_index.id
-        current_id = spell_index.current
+        current_id = spell_index.selected_spell_id
         if current_id is None:
-            raise RuntimeError("spell_index.current is unavailable during registration.")
+            raise RuntimeError("spell_index.selected_spell_id is unavailable during registration.")
 
         with self._lock:
             if self._states_by_index_id is None or self._states_by_spell_id is None or self._dirty_indexes is None:
@@ -322,7 +322,7 @@ class SpellSystemStates(Cleanable):
         Lookup a SpellSystemState by current spell version id.
 
         This is a convenience when the caller only knows the version id
-        (for example, `SpellIndex.current`) and wants to find the associated
+        (for example, `SpellIndex.selected_spell_id`) and wants to find the associated
         spell-index state without resolving the index id separately.
 
         Returns:
@@ -461,10 +461,10 @@ class SpellSystemStates(Cleanable):
             state = self._states_by_index_id.get(index_id)
             if state is None:
                 # Defensive: create on first use if not present
-                current_id = spell_index.current
+                current_id = spell_index.selected_spell_id
                 if current_id is None:
                     raise RuntimeError(
-                        "spell_index.current is unavailable during dependency update."
+                        "spell_index.selected_spell_id is unavailable during dependency update."
                     )
                 state = SpellSystemState(index_id, current_id)
                 if self._risk_manager is not None:
@@ -519,10 +519,10 @@ class SpellSystemStates(Cleanable):
 
             state = self._states_by_index_id.get(index_id)
             if state is None:
-                current_id = spell_index.current
+                current_id = spell_index.selected_spell_id
                 if current_id is None:
                     raise RuntimeError(
-                        "spell_index.current is unavailable during structural change."
+                        "spell_index.selected_spell_id is unavailable during structural change."
                     )
                 state = SpellSystemState(index_id, current_id)
                 if self._risk_manager is not None:
@@ -744,7 +744,7 @@ class SpellSystemStates(Cleanable):
             removed_state = states_by_index_id.pop(index_id, None)
             if removed_state is None:
                 # Still clear the spell-id index if it points to this spell index.
-                current_spell_id = spell_index.current
+                current_spell_id = spell_index.selected_spell_id
                 if current_spell_id and states_by_spell_id.get(current_spell_id) is not None:
                     states_by_spell_id.pop(current_spell_id, None)
                 dirty_indexes.discard(index_id)
@@ -1204,7 +1204,7 @@ class SpellSystemStates(Cleanable):
         list[Frame] revalidation within the owning Spellbook scope.
 
         Contract:
-            - Stores the live topology object under `spell_index.current`.
+            - Stores the live topology object under `spell_index.selected_spell_id`.
             - Replaces any previous topology registered for the same promoted
               spell id.
             - Rebuilds the spellbook-scoped collection and contract reverse
@@ -1213,10 +1213,10 @@ class SpellSystemStates(Cleanable):
               yet been associated with a spellbook.
         """
         with self._lock:
-            spell_id = spell_index.current
+            spell_id = spell_index.selected_spell_id
             if spell_id is None:
                 raise RuntimeError(
-                    "spell_index.current is unavailable during topology registration."
+                    "spell_index.selected_spell_id is unavailable during topology registration."
                 )
             self._local_topologies[spell_id] = topology
             if self._index_owner_spellbook_id is None:
@@ -1257,13 +1257,13 @@ class SpellSystemStates(Cleanable):
 
         Contract:
             - Returns the live topology object currently stored for
-              `spell_index.current`.
+              `spell_index.selected_spell_id`.
             - Returns None if Phase 3 has not published a topology for that
               promoted spell id.
             - Does not clone the topology object.
         """
         with self._lock:
-            spell_id = spell_index.current
+            spell_id = spell_index.selected_spell_id
             if spell_id is None:
                 return None
             return self._local_topologies.get(spell_id)

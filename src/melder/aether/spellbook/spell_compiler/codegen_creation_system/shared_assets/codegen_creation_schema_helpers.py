@@ -306,7 +306,7 @@ class CodegenCreationSchemaHelpers:
             expects_overrides = step.expects_overrides
         return {
             "instance_key": tuple(step.instance_key),
-            "spell_id": step.spell.spell_index.current,
+            "spell_id": step.spell.spell_index.selected_spell_id,
             "existence": step.existence.name,
             "creations_target_kind": step.creations_target_kind,
             "shared_instance": step.shared_instance,
@@ -360,7 +360,7 @@ class CodegenCreationSchemaHelpers:
             )
         return (
             tuple(step.instance_key),
-            step.spell.spell_index.current,
+            step.spell.spell_index.selected_spell_id,
             step.existence.name,
             step.creations_target_kind,
             dependency_resolution_order,

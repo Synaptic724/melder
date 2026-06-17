@@ -68,7 +68,7 @@ class PlanBindingResolver(Cleanable):
             if lane_plan is None:
                 continue
             for step in lane_plan.steps:
-                spell_id = step.spell.spell_index.current
+                spell_id = step.spell.spell_index.selected_spell_id
                 if spell_id not in spells_by_id:
                     spells_by_id[spell_id] = step.spell
         self._spells_by_id = spells_by_id

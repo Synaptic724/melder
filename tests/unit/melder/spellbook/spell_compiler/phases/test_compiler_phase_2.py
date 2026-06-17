@@ -69,7 +69,7 @@ def test_run_raises_without_phase1_requirements() -> None:
 def test_run_raises_without_current_spell_id() -> None:
     """Phase 2 should require a bound current spell id."""
     spell = make_spell("spell-1")
-    spell.spell_index.current = None
+    spell.spell_index.selected_spell_id = None
     artifact = spell._compiler_artifact
     artifact._requirements = SimpleNamespace(parameters=[])
 

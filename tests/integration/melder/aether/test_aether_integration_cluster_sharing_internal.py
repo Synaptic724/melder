@@ -103,7 +103,7 @@ def test_aether_share_new_spell_to_clusters_registers_shared_spell() -> None:
                 permissions="create",
             )
         shareable_spell = next(
-            spell for idx, spell in spellbook._spells.items() if idx.current == shareable_id
+            spell for idx, spell in spellbook._spells.items() if idx.selected_spell_id == shareable_id
         )
         cluster = cloud._get_cluster("cluster-a")
         assert shareable_spell.spell_index not in cluster.get_shared_spells().get(conduit.id, set())
@@ -155,7 +155,7 @@ def test_aether_share_new_spell_to_clusters_ignores_non_shareable() -> None:
                 permissions="create",
             )
         non_shareable_spell = next(
-            spell for idx, spell in spellbook._spells.items() if idx.current == non_shareable_id
+            spell for idx, spell in spellbook._spells.items() if idx.selected_spell_id == non_shareable_id
         )
         cloud.refresh_cluster_shares_for_conduit(conduit)
 
@@ -208,10 +208,10 @@ def test_aether_refresh_cluster_shares_for_conduit_picks_up_new_shareables() -> 
                 permissions="create",
             )
         config_index = next(
-            idx for idx in spellbook._spells.keys() if idx.current == config_id
+            idx for idx in spellbook._spells.keys() if idx.selected_spell_id == config_id
         )
         logger_index = next(
-            idx for idx in spellbook._spells.keys() if idx.current == logger_id
+            idx for idx in spellbook._spells.keys() if idx.selected_spell_id == logger_id
         )
         cluster = cloud._get_cluster("cluster-a")
         assert cluster.get_shared_spells().get(conduit.id, set()) == set()

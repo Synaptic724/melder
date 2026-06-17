@@ -368,7 +368,7 @@ class _SpellIndexStub:
         self._current = current
 
     @property
-    def current(self) -> str:
+    def selected_spell_id(self) -> str:
         """
         Purpose:
             Expose the version id for this stub.
@@ -557,7 +557,7 @@ class _SpellSystemStatesStub:
         Returns:
             None.
         """
-        self.registered_lineages.append((spell_index, spell_index._active_spell))
+        self.registered_lineages.append((spell_index, spell_index._selected_spell))
 
     def update_dependencies(self, spell_index: object, dependency_spell_ids: list[str]) -> None:
         """
@@ -735,8 +735,8 @@ def test_component_spell_crafter_spellmap_default_raises_on_multiple_candidates(
         spellframe=IService,
         binding_name="primary",
     )
-    spellbook._spell_id_pool[candidate_a.spell_index.current] = candidate_a
-    spellbook._spell_id_pool[candidate_b.spell_index.current] = candidate_b
+    spellbook._spell_id_pool[candidate_a.spell_index.selected_spell_id] = candidate_a
+    spellbook._spell_id_pool[candidate_b.spell_index.selected_spell_id] = candidate_b
 
     try:
         spell = _get_spell_by_version_id(spellbook, consumer_id)
@@ -955,8 +955,8 @@ def test_component_spell_crafter_spellmap_default_raises_on_duplicate_explicit_m
         spellframe=BasicService,
         binding_name="primary-b",
     )
-    spellbook._spell_id_pool[candidate_a.spell_index.current] = candidate_a
-    spellbook._spell_id_pool[candidate_b.spell_index.current] = candidate_b
+    spellbook._spell_id_pool[candidate_a.spell_index.selected_spell_id] = candidate_a
+    spellbook._spell_id_pool[candidate_b.spell_index.selected_spell_id] = candidate_b
 
     try:
         spell = _get_spell_by_version_id(spellbook, consumer_id)

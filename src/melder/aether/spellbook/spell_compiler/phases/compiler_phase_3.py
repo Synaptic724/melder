@@ -84,10 +84,10 @@ class CompilerPhase3:
             str: Current spell version id.
 
         Raises:
-            RuntimeError: If the spell has no bound `spell_index.current`.
+            RuntimeError: If the spell has no bound `spell_index.selected_spell_id`.
 
         """
-        current_spell_id = spell.spell_index.current
+        current_spell_id = spell.spell_index.selected_spell_id
         if current_spell_id is None:
             raise RuntimeError("SpellCrafter requires a bound spell current id.")
         return current_spell_id
@@ -852,7 +852,7 @@ class CompilerPhase3:
             targets_for_socket = socket_targets.setdefault(key, [])
 
             for spell_index, spell_obj in resolved.items():
-                dep_spell_id = spell_index.current
+                dep_spell_id = spell_index.selected_spell_id
                 dependency_spell_ids.append(dep_spell_id)
                 targets_for_socket.append(dep_spell_id)
 

@@ -59,7 +59,7 @@ def _get_spell_by_version_id(spellbook: Spellbook, spell_id: str):
     Purpose:
         Retrieve a local Spell by its version id.
     Contract:
-        - Returns the first spell whose SpellIndex.current matches spell_id.
+        - Returns the first spell whose SpellIndex.selected_spell_id matches spell_id.
     Args:
         spellbook: Spellbook to search.
         spell_id: Version id to match.
@@ -67,7 +67,7 @@ def _get_spell_by_version_id(spellbook: Spellbook, spell_id: str):
         Spell or None: Matching spell instance or None if not found.
     """
     for spell in spellbook._spells.values():
-        if spell.spell_index.current == spell_id:
+        if spell.spell_index.selected_spell_id == spell_id:
             return spell
     return None
 
@@ -131,13 +131,13 @@ def test_component_spell_examiner_resolution_profile_matches_spell_metadata() ->
         profile = general_profile.resolution_profile
 
         assert profile is not None
-        assert profile.spell_id == spell.spell_index.current
+        assert profile.spell_id == spell.spell_index.selected_spell_id
         assert profile.existence == spell.existence
         assert profile.spellframe == spell.spellframe
         assert profile.binding_name == spell.binding_name
 
         requirements = profile.requirements
-        assert requirements.spell_id == spell.spell_index.current
+        assert requirements.spell_id == spell.spell_index.selected_spell_id
 
         di_names = {param.name for param in requirements.iter_di_parameters()}
         required_holes = {param.name for param in requirements.iter_required_holes()}
@@ -238,7 +238,7 @@ def test_component_spell_examiner_detailed_profile_links_resolution_and_binding(
         detailed_profile = examiner.create_profile(spell, "detailed")
 
         assert detailed_profile.binding_profile.original_object is Consumer
-        assert detailed_profile.resolution_profile.spell_id == spell.spell_index.current
+        assert detailed_profile.resolution_profile.spell_id == spell.spell_index.selected_spell_id
 
         requirement_names = {
             param.name

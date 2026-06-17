@@ -89,7 +89,7 @@ def build_creation_context_cache_asset(
         for step in steps
     )
     step_spell_ids = tuple(
-        step.spell.spell_index.current
+        step.spell.spell_index.selected_spell_id
         for step in steps
     )
     transient_schema = SharedCompilerExecutions.build_fast_transient_schema(
@@ -436,7 +436,7 @@ def _build_spell_lookup_from_steps(
     """
     spell_lookup: Dict[str, Any] = {}
     for step in steps:
-        spell_id = step.spell.spell_index.current
+        spell_id = step.spell.spell_index.selected_spell_id
         if spell_id in spell_lookup:
             continue
         spell_lookup[spell_id] = step.spell

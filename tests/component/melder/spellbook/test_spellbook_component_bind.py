@@ -86,8 +86,8 @@ def test_component_bind_creates_class_spell_with_metadata() -> None:
         assert spell.spell_name == "BasicService"
         assert spell.existence is Existence.unique
         assert spell.permissions is Permissions.create
-        assert spell.spell_index.current == spell.spell_id
-        assert spell.spell_index.has_version(spell.spell_id) is True
+        assert spell.spell_index.selected_spell_id == spell.spell_id
+        assert spell.spell_index.has_spell(spell.spell_id) is True
         assert isinstance(spell.profile, SpellGeneralProfile)
         assert isinstance(spell.profile.binding_profile, ClassBindingProfile)
         assert spell._spellbook is spellbook
@@ -255,7 +255,7 @@ def test_component_bind_can_attach_detailed_profile_for_class_spell() -> None:
         assert spell.profile.class_profile is not None
         assert spell.profile.callable_profile is not None
         assert spell.profile.resolution_profile is not None
-        assert spell.profile.resolution_profile.spell_id == spell.spell_index.current
+        assert spell.profile.resolution_profile.spell_id == spell.spell_index.selected_spell_id
     finally:
         binder.cleanup()
         spellbook.cleanup()
@@ -292,7 +292,7 @@ def test_component_bind_can_attach_detailed_profile_for_callable_spell() -> None
         assert spell.profile.class_profile is None
         assert spell.profile.callable_profile is not None
         assert spell.profile.resolution_profile is not None
-        assert spell.profile.resolution_profile.spell_id == spell.spell_index.current
+        assert spell.profile.resolution_profile.spell_id == spell.spell_index.selected_spell_id
     finally:
         binder.cleanup()
         spellbook.cleanup()

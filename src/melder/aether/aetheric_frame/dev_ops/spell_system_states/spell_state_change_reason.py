@@ -35,7 +35,7 @@ class SpellStateChangeReason(Enum):
     contract_violation = auto()     # contract check failed
 
     # Mutations (version graph)
-    mutation_promoted = auto()      # new version promoted to SpellIndex.current
+    mutation_promoted = auto()      # new version promoted to SpellIndex.selected_spell_id
     mutation_rolled_back = auto()   # reverted to a previous version
 
     # Mutations (MutationContract / overlay)

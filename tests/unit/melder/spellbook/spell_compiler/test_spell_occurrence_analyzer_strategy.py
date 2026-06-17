@@ -26,16 +26,16 @@ from melder.aether.spellbook.spell_compiler.spell_compiler_artifact import (
 class _SpellIndexProbe:
     """Hashable spell-index double for contracted lookup tests."""
 
-    __slots__ = ["current", "id"]
+    __slots__ = ["selected_spell_id", "id"]
 
     def __init__(self, spell_id: str) -> None:
         """Store current and lineage ids."""
-        self.current = spell_id
+        self.selected_spell_id = spell_id
         self.id = "lineage-{0}".format(spell_id)
 
     def __hash__(self) -> int:
         """Keep the probe usable as a dictionary key."""
-        return hash((self.current, self.id))
+        return hash((self.selected_spell_id, self.id))
 
 
 def _make_spellbook_and_spell() -> tuple[Any, Any]:

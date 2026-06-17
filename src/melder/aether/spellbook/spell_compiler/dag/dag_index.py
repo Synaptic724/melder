@@ -248,7 +248,7 @@ class SocketRef:
 
     Attributes:
         node_id:
-            The spell version ID owning this socket (e.g. spell.spell_index.current``).
+            The spell version ID owning this socket (e.g. spell.spell_index.selected_spell_id``).
 
         param_name:
             The parameter name on the constructor (e.g. ``"logger"``).

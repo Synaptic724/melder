@@ -18,7 +18,7 @@ class SpellSystemNode(Cleanable):
     Instead, it gives Phase 5+ a small, version-centric node type to hang
     structural metadata on:
 
-        * spell_id – version id (SpellIndex.current).
+        * spell_id – version id (SpellIndex.selected_spell_id).
         * lineage_id – lineage ULID (SpellIndex.id).
         * dependencies – direct dependency spell_ids (version ids).
         * existence – lifecycle / policy hint (optional).

@@ -87,7 +87,7 @@ class CircularDependencyStrategy(SpellValidationStrategy):
             if pass_cache is not None:
                 pass_cache["circular_dependency_adjacency"] = adjacency
 
-        root_id = context.spell.spell_index.current
+        root_id = context.spell.spell_index.selected_spell_id
         if root_id is None:
             root_id = context.spell.spell_id
 

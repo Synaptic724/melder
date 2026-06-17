@@ -415,7 +415,7 @@ class SpellOccurrenceGraphAnalyzerStrategy(SpellAnalyzerStrategy):
                     if contracted_map is not None:
                         provider_spell = contracted_map.get(spell_index)
                         if provider_spell is not None:
-                            provider_spell_id = provider_spell.spell_index.current
+                            provider_spell_id = provider_spell.spell_index.selected_spell_id
                     contracted_rows_list.append(
                         (
                             conduit_id,
@@ -508,7 +508,7 @@ class SpellOccurrenceGraphAnalyzerStrategy(SpellAnalyzerStrategy):
             disposal_enabled_spell_count = 0
 
             for spell_id, candidate_spell in sorted(spell_lookup.items()):
-                current_spell_id = candidate_spell.spell_index.current
+                current_spell_id = candidate_spell.spell_index.selected_spell_id
                 existence = candidate_spell.existence
                 has_disposal_methods = bool(candidate_spell.has_disposal_methods)
                 spell_rows_list.append(
@@ -954,7 +954,7 @@ class SpellOccurrenceGraphAnalyzerStrategy(SpellAnalyzerStrategy):
         """
         Resolve a SpellContract to a concrete provider spell id.
         """
-        consumer_spell_id = consumer_spell.spell_index.current
+        consumer_spell_id = consumer_spell.spell_index.selected_spell_id
         if consumer_spell_id is None:
             consumer_spell_id = consumer_spell.spell_id
 
@@ -974,7 +974,7 @@ class SpellOccurrenceGraphAnalyzerStrategy(SpellAnalyzerStrategy):
                 ),
             )
         if len(contracted_candidates) == 1:
-            return contracted_candidates[0].spell_index.current
+            return contracted_candidates[0].spell_index.selected_spell_id
 
         if allow_missing:
             return None
@@ -1013,7 +1013,7 @@ class SpellOccurrenceGraphAnalyzerStrategy(SpellAnalyzerStrategy):
             contracted_candidates.append(spell_obj)
 
         contracted_candidates.sort(
-            key=lambda spell: spell.spell_index.current or spell.spell_id
+            key=lambda spell: spell.spell_index.selected_spell_id or spell.spell_id
         )
         return contracted_candidates
 

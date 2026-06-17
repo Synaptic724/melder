@@ -524,7 +524,7 @@ def test_overrides_step_records_override_runtime_state(
         overrides_step_module.SharedCompilerExecutions,
         "build_phase11_step_ir_row",
         lambda step, include_override_metadata: {
-            "step": step.spell.spell_index.current,
+            "step": step.spell.spell_index.selected_spell_id,
             "include_override_metadata": include_override_metadata,
         },
     )

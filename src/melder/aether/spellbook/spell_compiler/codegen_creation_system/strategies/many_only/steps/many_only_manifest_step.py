@@ -54,7 +54,7 @@ class ManyOnlyManifestStep(CodegenCreationFamilyStep):
                 state.root_spell = record.spell
         if state.root_spell is None:
             for step in state.spell_codegen_plan.no_overrides_plan.steps:
-                if step.spell.spell_index.current == root_spell_id:
+                if step.spell.spell_index.selected_spell_id == root_spell_id:
                     state.root_spell = step.spell
                     break
         if state.root_spell is None:

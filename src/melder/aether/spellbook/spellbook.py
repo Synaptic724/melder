@@ -644,7 +644,7 @@ and logging.
             self._spell_versions.clear()
 
             for spell_index in self._spells.keys():
-                versions = spell_index._versions
+                versions = spell_index._spells_in_index
                 if not versions:
                     continue
                 for version_id in versions:
@@ -672,7 +672,7 @@ and logging.
             for conduit_id, spell_map in self._contracted_spells.items():
                 version_set = set[str]()
                 for spell_index in spell_map.keys():
-                    versions = spell_index._versions
+                    versions = spell_index._spells_in_index
                     if not versions:
                         continue
                     for version_id in versions:
@@ -1458,7 +1458,7 @@ and logging.
         self.check_cleaned()
         for spell_index, spell in self._spells.items():
             # SpellIndex is responsible for telling us whether it owns this version
-            if spell_index.has_version(spell_id):
+            if spell_index.has_spell(spell_id):
                 return spell
 
         return None
@@ -1822,7 +1822,7 @@ and logging.
                             candidate_spell.spell is spell
                             or candidate_spell.user_created_object is spell
                     ):
-                        candidate_spell_id = candidate_spell.spell_index.current
+                        candidate_spell_id = candidate_spell.spell_index.selected_spell_id
                         found = Spellbook._aether._check_for_spell(
                             candidate_spell_id,
                             aetheric_frame,
@@ -1847,7 +1847,7 @@ and logging.
                                 or candidate_spell.user_created_object is spell
                         ):
                             candidate_spell_id = (
-                                candidate_spell.spell_index.current
+                                candidate_spell.spell_index.selected_spell_id
                             )
                             found = Spellbook._aether._check_for_spell(
                                 candidate_spell_id,
@@ -2079,7 +2079,7 @@ and logging.
                 return
 
             for spell_index in self._spells.keys():
-                versions = spell_index._versions
+                versions = spell_index._spells_in_index
                 if not versions:
                     continue
                 for spell_version_id in versions:
@@ -2117,7 +2117,7 @@ and logging.
 
         # Search for a SpellIndex whose version list contains this SHA
         for spell_index, spell in spell_map.items():
-            if spell_index.has_version(spell_id):
+            if spell_index.has_spell(spell_id):
                 return spell
 
         return None
@@ -2252,7 +2252,7 @@ and logging.
             lookup_map[spell_key] = spell_index
 
             # Track all known versions for this SpellIndex in the per-conduit version set
-            versions = spell_index._versions
+            versions = spell_index._spells_in_index
             if versions:
                 for version_id in versions:
                     versions_set.add(version_id)
@@ -2303,7 +2303,7 @@ and logging.
             spell_index = None
             spell = None
             for idx, s in spell_map.items():
-                versions = idx._versions
+                versions = idx._spells_in_index
                 if versions and spell_id in versions:
                     spell_index = idx
                     spell = s
@@ -2327,7 +2327,7 @@ and logging.
             lookup_map.pop(key, None)
 
             # Remove *all* versions for this SpellIndex from the version cache
-            versions = spell_index._versions
+            versions = spell_index._spells_in_index
             if versions:
                 for version_id in versions:
                     versions_set.discard(version_id)
@@ -3324,7 +3324,7 @@ and logging.
 
             # keep local version cache warm
             if self._spell_versions is not None:
-                versions = spell_index._versions
+                versions = spell_index._spells_in_index
                 if versions:
                     for vid in versions:
                         self._spell_versions.add(vid)

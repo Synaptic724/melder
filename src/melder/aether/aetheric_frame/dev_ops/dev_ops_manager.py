@@ -12,6 +12,9 @@ from melder.aether.aetheric_frame.dev_ops.incident_manager.incident_manager impo
 from melder.aether.aetheric_frame.dev_ops.risk_manager.risk_manager import RiskManager
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.synchronization.creation_gate_controller import CreationGateController
+from melder.aether.aetheric_frame.dev_ops.conduit_lineage_gate_ops import (
+    ConduitLineageGateOps,
+)
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 if TYPE_CHECKING:
     from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states import SpellSystemStates
@@ -55,6 +58,7 @@ class DevOpsManager(Cleanable):
         "_change_control_manager",
         "_risk_manager",
         "_creation_gate_controller",
+        "_conduit_lineage_gate_ops",
         "_devops_information_registry",
     ]
 
@@ -113,6 +117,9 @@ class DevOpsManager(Cleanable):
             devops_information_registry,
         )
         self._creation_gate_controller: CreationGateController = CreationGateController()
+        self._conduit_lineage_gate_ops: ConduitLineageGateOps = ConduitLineageGateOps(
+            self._creation_gate_controller,
+        )
         spell_system_states.set_risk_manager(self._risk_manager)
 
     def cleanup(self) -> None:
@@ -143,12 +150,14 @@ class DevOpsManager(Cleanable):
             self._incident_manager.cleanup()
             self._change_control_manager.cleanup()
             self._risk_manager.cleanup()
+            self._conduit_lineage_gate_ops.cleanup()
             self._creation_gate_controller.cleanup()
             self._spell_system_states.cleanup()
 
             del self._incident_manager
             del self._change_control_manager
             del self._risk_manager
+            del self._conduit_lineage_gate_ops
             del self._creation_gate_controller
             del self._devops_information_registry
             del self._spell_system_states
@@ -219,6 +228,22 @@ class DevOpsManager(Cleanable):
         
         with self._lock:
             return self._creation_gate_controller
+
+    @property
+    def conduit_lineage_gate_ops(self) -> ConduitLineageGateOps:
+        """
+        Read-only exposure of the conduit-lineage gate facade.
+
+        This is the narrow lineage-scoped surface (drain / reopen / close /
+        quiescence-count) coordinated transaction strategies use to quiesce
+        member lineages without depending on the full CreationGateController.
+
+        Returns:
+            ConduitLineageGateOps: The lineage gate facade owned by this DevOps
+            root, over the per-frame CreationGateController.
+        """
+        with self._lock:
+            return self._conduit_lineage_gate_ops
 
     @property
     def devops_information_registry(self) -> DevopsInformationRegistry:

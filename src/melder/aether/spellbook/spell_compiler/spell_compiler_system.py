@@ -650,7 +650,7 @@ class SpellCompilerSystem(Cleanable):
                 True when the spell is the root blueprint for its current Phase
                 5 artifact state.
         """
-        spell_id = spell.spell_index.current
+        spell_id = spell.spell_index.selected_spell_id
         if spell_id is None:
             return False
         blueprint = spell._compiler_artifact._root_blueprint_phase5

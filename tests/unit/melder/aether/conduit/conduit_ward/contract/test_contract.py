@@ -58,7 +58,7 @@ def mock_spell_index():
         MagicMock: SpellIndex mock instance.
     """
     mock = MagicMock(spec=SpellIndex)
-    mock._versions = {"sha123": "version_data"}
+    mock._spells_in_index = {"sha123": "version_data"}
     return mock
 
 @pytest.fixture

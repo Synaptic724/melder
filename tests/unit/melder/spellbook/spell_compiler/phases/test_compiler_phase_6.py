@@ -22,18 +22,18 @@ class _SpellIndexStub:
     """Hashable SpellIndex stand-in for phase tests."""
 
     __slots__ = [
-        "current",
+        "selected_spell_id",
         "id",
     ]
 
     def __init__(self, spell_id: str) -> None:
         """Store current and lineage ids."""
-        self.current = spell_id
+        self.selected_spell_id = spell_id
         self.id = "lineage-{0}".format(spell_id)
 
     def __hash__(self) -> int:
         """Keep the stub usable in dictionaries like real SpellIndex."""
-        return hash((self.current, self.id))
+        return hash((self.selected_spell_id, self.id))
 
 
 class _ValidatorStub:

@@ -35,7 +35,7 @@ class _SpellIndexStub:
         Returns:
             None.
         """
-        self.current = current
+        self.selected_spell_id = current
 
 
 class _RequirementStub:
@@ -164,9 +164,9 @@ class _SpellStub:
         Purpose:
             Initialize the spell stub and attach a crafter when needed.
         Contract:
-            Sets spell_index.current and binding attributes.
+            Sets spell_index.selected_spell_id and binding attributes.
         Args:
-            spell_id: Spell id for spell_index.current.
+            spell_id: Spell id for spell_index.selected_spell_id.
             spellframe: Frame/interface identifier.
             spell_name: Spell name string.
             binding_name: Optional binding name.
@@ -219,14 +219,14 @@ class _SpellbookStub:
         }
         self._contracted_spells: Dict[str, Dict[_SpellIndexStub, _SpellStub]] = {}
         self._spell_id_pool: Dict[str, _SpellStub] = {
-            spell.spell_index.current: spell for spell in spells
+            spell.spell_index.selected_spell_id: spell for spell in spells
         }
         if contracted:
             self._contracted_spells["contracted"] = {
                 spell.spell_index: spell for spell in contracted
             }
             for spell in contracted:
-                self._spell_id_pool[spell.spell_index.current] = spell
+                self._spell_id_pool[spell.spell_index.selected_spell_id] = spell
 
 
 def _spellmap_requirement(*, name: str, spellframe: object) -> _RequirementStub:

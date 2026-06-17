@@ -803,7 +803,7 @@ class CommandSystem(Cleanable):
                     "Owner conduit for spell '{0}' has no spellbook.".format(spell_id)
                 )
             for spell_index, spell in spellbook._spells.items():
-                if spell_index.has_version(spell_id):
+                if spell_index.has_spell(spell_id):
                     return spell
             raise ValueError(
                 "Spell id '{0}' was not found in the owner spellbook.".format(spell_id)

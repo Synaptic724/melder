@@ -133,8 +133,8 @@ def mock_frame_cls():
         mock_instance._spell_registry = {}
         mock_instance._conduit_cloud = _FrameConduitCloudStub(mock_instance)
         # Ensure methods return sensible defaults
-        mock_instance.has_version.return_value = False
-        mock_instance.get_all_versions.return_value = set()
+        mock_instance.has_spell.return_value = False
+        mock_instance.spells_in_index.return_value = set()
         mock_instance._cleaned = False # Ensure frame is not considered cleaned by default
         
         mock_cls.return_value = mock_instance
@@ -956,21 +956,21 @@ def test_bind_aetheric_frame_configuration_conflict_keeps_original_and_logs_warn
     a._logger.warning.assert_called_once()
 
 def test_check_for_spell_delegates(aether_with_mocks):
-    """_check_for_spell delegates to frame.has_version."""
+    """_check_for_spell delegates to frame.has_spell."""
     a = aether_with_mocks
     frame_mock = a._default_frame
-    frame_mock.has_version.return_value = True
-    frame_mock.find_and_return_spell_index.return_value = "found_index"
+    frame_mock.has_spell.return_value = True
+    frame_mock.find_index_for_spell.return_value = "found_index"
     
     result = a._check_for_spell("hash123")
     
-    frame_mock.has_version.assert_called_with("hash123")
+    frame_mock.has_spell.assert_called_with("hash123")
     assert result == "found_index"
 
 def test_check_for_spell_returns_none_if_missing(aether_with_mocks):
-    """_check_for_spell returns None if has_version is False."""
+    """_check_for_spell returns None if has_spell is False."""
     a = aether_with_mocks
-    a._default_frame.has_version.return_value = False
+    a._default_frame.has_spell.return_value = False
     
     assert a._check_for_spell("missing") is None
 
@@ -1069,28 +1069,28 @@ def test_get_all_spell_versions(aether_with_mocks):
     """_get_all_spell_versions returns set from frame."""
     a = aether_with_mocks
     expected = {"hash1", "hash2"}
-    a._default_frame.get_all_versions.return_value = expected
+    a._default_frame.spells_in_index.return_value = expected
     
     assert a._get_all_spell_versions() == expected
 
 def test_get_conduit_by_spell_id(aether_with_mocks):
-    """_get_conduit_by_spell_id resolves via frame.find_conduit_id_for_version."""
+    """_get_conduit_by_spell_id resolves via frame.find_conduit_id_for_spell."""
     a = aether_with_mocks
 
     # Frame owns the locked registry scan and returns the owning conduit id.
-    a._default_frame.find_conduit_id_for_version.return_value = "c1"
+    a._default_frame.find_conduit_id_for_spell.return_value = "c1"
 
     conduit = MagicMock()
     a._default_frame._conduits = {"c1": conduit}
 
     result = a._get_conduit_by_spell_id("ver1")
     assert result is conduit
-    a._default_frame.find_conduit_id_for_version.assert_called_with("ver1")
+    a._default_frame.find_conduit_id_for_spell.assert_called_with("ver1")
 
 def test_get_conduit_by_spell_id_not_found_raises(aether_with_mocks):
     """_get_conduit_by_spell_id raises ValueError if no match."""
     a = aether_with_mocks
-    a._default_frame.find_conduit_id_for_version.return_value = None
+    a._default_frame.find_conduit_id_for_spell.return_value = None
     with pytest.raises(ValueError, match="not found"):
         a._get_conduit_by_spell_id("missing")
 

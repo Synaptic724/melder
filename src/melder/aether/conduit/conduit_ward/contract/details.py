@@ -25,7 +25,7 @@ class Detail(Cleanable):
 
     Attributes:
         spell_index (SpellIndex): Lineage identity for the contracted spell.
-        spell_id (str): Version ID captured at contract creation time.
+        spell_id (str): Spell id (SHA) captured at contract creation time.
         permissions (Permissions): Granted permission (read/create/block).
         contract_type (ContractTypes): Whether this entry was initiated
             or received from the owning ward's perspective.
@@ -58,7 +58,7 @@ class Detail(Cleanable):
 
         Args:
             spell_index: Lineage identifier for the contracted spell.
-            spell_id: Version ID (SHA) captured at contract creation time.
+            spell_id: Spell id (SHA) captured at contract creation time.
             permissions: Permission granted to this lineage.
             contract_type: Direction of the grant from the owning ward's view.
             reason: Why this detail exists.
@@ -69,7 +69,7 @@ class Detail(Cleanable):
             TypeError: If any argument is not the expected type.
 
         Contract:
-            `spell_id` records the version visible at creation time, while
+            `spell_id` records the spell id visible at creation time, while
             `spell_index` remains the durable lineage anchor used for later
             current-head resolution.
         """
@@ -141,21 +141,21 @@ class Detail(Cleanable):
     # Helper
     # ------------------------------------------------------------------
 
-    def has_version(self, version_id: str) -> bool:
+    def has_spell(self, spell_id: str) -> bool:
         """
         Check whether this lineage contains a specific version SHA.
 
         Args:
-            version_id: SHA fingerprint to check within the lineage history.
+            spell_id: SHA fingerprint to check within the index member history.
 
         Returns:
             bool: True if the lineage advertises the version, else False.
         """
         self.check_cleaned()
-        versions = self.spell_index._versions
+        versions = self.spell_index._spells_in_index
         if not versions:
             return False
-        return version_id in versions
+        return spell_id in versions
 
     def add_source(self, root_spell_id: str) -> None:
         """

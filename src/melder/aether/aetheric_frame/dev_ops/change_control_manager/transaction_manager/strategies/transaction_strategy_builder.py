@@ -58,6 +58,12 @@ from melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_man
 from melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.remove_from_index_transaction_strategy import (
     RemoveFromIndexTransactionStrategy,
 )
+from melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.elect_conduit_cluster_leader_transaction_strategy import (
+    ElectConduitClusterLeaderTransactionStrategy,
+)
+from melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.unelect_conduit_cluster_leader_transaction_strategy import (
+    UnelectConduitClusterLeaderTransactionStrategy,
+)
 from melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.transaction_strategy import (
     TransactionStrategy,
 )
@@ -361,6 +367,14 @@ class TransactionStrategyBuilder:
         self.register_strategy(
             ChangeTransactionType.REMOVE_FROM_INDEX,
             RemoveFromIndexTransactionStrategy,
+        )
+        self.register_strategy(
+            ChangeTransactionType.ELECT_CONDUIT_CLUSTER_LEADER,
+            ElectConduitClusterLeaderTransactionStrategy,
+        )
+        self.register_strategy(
+            ChangeTransactionType.UNELECT_CONDUIT_CLUSTER_LEADER,
+            UnelectConduitClusterLeaderTransactionStrategy,
         )
 
     @staticmethod

@@ -46,7 +46,7 @@ def states_manager(mock_frame, registry):
 def mock_spell_index():
     index = MagicMock(spec=SpellIndex)
     index.id = "idx-1"
-    index.current = "spell-1"
+    index.selected_spell_id = "spell-1"
     return index
 
 @pytest.fixture
@@ -73,7 +73,7 @@ def _attach_index_owner(index: SpellIndex, spell: Spell) -> SpellIndex:
     Mirror the live Spellbook bind path by stamping owner references onto the index.
     """
     index._owner_spellbook = spell._spellbook
-    index._active_spell = spell
+    index._selected_spell = spell
     return index
 
 
@@ -159,7 +159,7 @@ def test_register_index_updates_existing(states_manager, mock_spell_index, mock_
     states_manager.register_index(mock_spell_index)
     
     # Update index current
-    mock_spell_index.current = "spell-2"
+    mock_spell_index.selected_spell_id = "spell-2"
     
     state = states_manager.register_index(mock_spell_index)
     assert state.current_spell_id == "spell-2"
@@ -501,11 +501,11 @@ def test_register_local_topology_builds_collection_and_contract_indexes(
     states_manager.register_index(index)
     states_manager.consume_dirty_indexes()
 
-    topology = _build_topology(index.current)
+    topology = _build_topology(index.selected_spell_id)
     states_manager.register_local_topology(index, topology)
 
     assert states_manager.get_local_topology(index) is topology
-    assert states_manager.get_local_topology_by_id(index.current) is topology
+    assert states_manager.get_local_topology_by_id(index.selected_spell_id) is topology
 
     impacted = states_manager.mark_collection_dependents_dirty(
         spellbook_id="book-1",
@@ -548,12 +548,12 @@ def test_register_local_topology_replaces_stale_collection_and_contract_keys(
     states_manager.consume_dirty_indexes()
 
     topology_a = _build_topology(
-        index.current,
+        index.selected_spell_id,
         collection_frame_key="frame-a",
         contract_key=("iface", "primary"),
     )
     topology_b = _build_topology(
-        index.current,
+        index.selected_spell_id,
         collection_frame_key="frame-b",
         contract_key=("iface", "secondary"),
     )
@@ -604,12 +604,12 @@ def test_mark_contract_dependents_dirty_marks_all_keys_when_unspecified(
     states_manager.consume_dirty_indexes()
 
     first_topology = _build_topology(
-        first_index.current,
+        first_index.selected_spell_id,
         collection_frame_key="frame-a",
         contract_key=("iface", "alpha"),
     )
     second_topology = _build_topology(
-        second_index.current,
+        second_index.selected_spell_id,
         collection_frame_key="frame-b",
         contract_key=("iface", "beta"),
     )
@@ -639,7 +639,7 @@ def test_cleanup_cascades_to_resolution_states_topologies_and_indexes(
     index = SpellIndex("spell-cleanup")
     _attach_index_owner(index, spell)
     states_manager.register_index(index)
-    topology = _build_topology(index.current)
+    topology = _build_topology(index.selected_spell_id)
     states_manager.register_local_topology(index, topology)
 
     states_manager.set_conduit_spell_validity(
@@ -681,7 +681,7 @@ def test_register_index_owner_change_rebuilds_topology_indexes_under_new_book(
 
     _attach_index_owner(index, first_spell)
     states_manager.register_index(index)
-    topology = _build_topology(index.current)
+    topology = _build_topology(index.selected_spell_id)
     states_manager.register_local_topology(index, topology)
     states_manager.consume_dirty_indexes()
 
@@ -727,14 +727,14 @@ def test_update_dependencies_creates_missing_lineage_state_on_first_use(
     states_manager.register_index(dependency_index)
     states_manager.consume_dirty_indexes()
 
-    states_manager.update_dependencies(root_index, [dependency_index.current])
+    states_manager.update_dependencies(root_index, [dependency_index.selected_spell_id])
 
     root_state = states_manager.get_by_index_id(root_index.id)
     dependency_state = states_manager.get_by_index_id(dependency_index.id)
     assert root_state is not None
     assert dependency_state is not None
-    assert root_state.current_spell_id == root_index.current
-    assert dependency_index.current in root_state.direct_dependencies
+    assert root_state.current_spell_id == root_index.selected_spell_id
+    assert dependency_index.selected_spell_id in root_state.direct_dependencies
     assert root_index.id in dependency_state.direct_dependents
     assert root_index.id in states_manager.consume_dirty_indexes()
 
@@ -755,7 +755,7 @@ def test_mark_structural_change_creates_missing_lineage_state_on_first_use(
 
     state = states_manager.get_by_index_id(index.id)
     assert state is not None
-    assert state.current_spell_id == index.current
+    assert state.current_spell_id == index.selected_spell_id
     assert state.validity is SpellValidity.gated
     assert state.change_reason is SpellStateChangeReason.structure_changed
     assert SpellState.structure_changed in state.flags
@@ -809,8 +809,8 @@ def test_unregister_index_removes_topology_indexes_and_reverse_edges(
     _attach_index_owner(root_index, spell)
     states_manager.register_index(dependency_index)
     states_manager.register_index(root_index)
-    states_manager.register_local_topology(root_index, _build_topology(root_index.current))
-    states_manager.update_dependencies(root_index, [dependency_index.current])
+    states_manager.register_local_topology(root_index, _build_topology(root_index.selected_spell_id))
+    states_manager.update_dependencies(root_index, [dependency_index.selected_spell_id])
     states_manager.consume_dirty_indexes()
 
     removed_state = states_manager.unregister_index(root_index)
@@ -819,8 +819,8 @@ def test_unregister_index_removes_topology_indexes_and_reverse_edges(
     assert removed_state is not None
     assert removed_state.cleaned is True
     assert states_manager.get_by_index_id(root_index.id) is None
-    assert states_manager.get_by_spell_id(root_index.current) is None
-    assert states_manager.get_local_topology_by_id(root_index.current) is None
+    assert states_manager.get_by_spell_id(root_index.selected_spell_id) is None
+    assert states_manager.get_local_topology_by_id(root_index.selected_spell_id) is None
     assert dependency_state is not None
     assert root_index.id not in dependency_state.direct_dependents
     assert states_manager.mark_collection_dependents_dirty(
@@ -851,10 +851,10 @@ def test_register_local_topology_ignores_irrelevant_socket_shapes(
     states_manager.consume_dirty_indexes()
 
     topology = SpellLocalTopology(
-        spell_id=index.current,
+        spell_id=index.selected_spell_id,
         sockets=(
             SpellSocketDescriptor(
-                spell_id=index.current,
+                spell_id=index.selected_spell_id,
                 param_name="plain_dep",
                 position=0,
                 socket_kind=SocketKind.NORMAL,
@@ -864,7 +864,7 @@ def test_register_local_topology_ignores_irrelevant_socket_shapes(
                 dependency_key=("ignored-frame", "__default__"),
             ),
             SpellSocketDescriptor(
-                spell_id=index.current,
+                spell_id=index.selected_spell_id,
                 param_name="collection_without_key",
                 position=1,
                 socket_kind=SocketKind.NORMAL,
@@ -874,7 +874,7 @@ def test_register_local_topology_ignores_irrelevant_socket_shapes(
                 dependency_key=None,
             ),
             SpellSocketDescriptor(
-                spell_id=index.current,
+                spell_id=index.selected_spell_id,
                 param_name="valid_collection",
                 position=2,
                 socket_kind=SocketKind.NORMAL,
@@ -884,7 +884,7 @@ def test_register_local_topology_ignores_irrelevant_socket_shapes(
                 dependency_key=("frame-valid", "__default__"),
             ),
             SpellSocketDescriptor(
-                spell_id=index.current,
+                spell_id=index.selected_spell_id,
                 param_name="valid_contract",
                 position=3,
                 socket_kind=SocketKind.SPELL_CONTRACT,
@@ -1041,10 +1041,10 @@ def test_unregister_index_missing_state_clears_stale_spell_id_mapping(
     - A stale current spell-id entry is still removed.
     """
     index = SpellIndex("spell-stale")
-    states_manager._states_by_spell_id[index.current] = MagicMock()
+    states_manager._states_by_spell_id[index.selected_spell_id] = MagicMock()
 
     removed_state = states_manager.unregister_index(index)
 
     assert removed_state is None
-    assert states_manager.get_by_spell_id(index.current) is None
+    assert states_manager.get_by_spell_id(index.selected_spell_id) is None
 

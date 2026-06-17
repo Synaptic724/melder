@@ -56,7 +56,7 @@ class SelfDependencyStrategy(SpellValidationStrategy):
         if not deps:
             return
 
-        root_id = spell.spell_index.current
+        root_id = spell.spell_index.selected_spell_id
         if root_id is None:
             return
         if root_id in deps:

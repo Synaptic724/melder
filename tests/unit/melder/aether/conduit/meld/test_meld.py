@@ -59,7 +59,7 @@ class _SpellIndexStub:
             current: The current version id for the spell.
             lineage_id: Optional lineage id for the spell; defaults to a derived value.
         """
-        self.current = current
+        self.selected_spell_id = current
         self.id = lineage_id or f"lineage-{current}"
 
 
@@ -765,7 +765,7 @@ def _make_meld(
         run_structural_phases=lambda spellbook, spell, cancel_event=None: spell.run_structural_phases(),
         is_current_spell_phase5_root=lambda spell: bool(
             getattr(spell._compiler_artifact, "_root_blueprint_phase5", None)
-            and spell._compiler_artifact._root_blueprint_phase5.root_spell_id == spell.spell_index.current
+            and spell._compiler_artifact._root_blueprint_phase5.root_spell_id == spell.spell_index.selected_spell_id
         ),
         cleanup=lambda: None,
     )
@@ -1667,7 +1667,7 @@ def test_ensure_lineage_resolvable_contract_forces_revalidation() -> None:
 
     def _run_resolution(conduit_id: str, target_spell: _SpellStub) -> None:
         assert target_spell is spell
-        resolution_state.set_spell_validity(spell.spell_index.current, SpellValidity.valid)
+        resolution_state.set_spell_validity(spell.spell_index.selected_spell_id, SpellValidity.valid)
 
     spellbook._run_resolution_phases_for_target_spell = MagicMock(side_effect=_run_resolution)
 
@@ -1692,7 +1692,7 @@ def test_force_resolution_revalidation_uses_root_validity_for_root_blueprints() 
         spell_system_states=spell_system_states,
     )
     spell._compiler_artifact._root_blueprint_phase5 = SimpleNamespace(
-        root_spell_id=spell.spell_index.current
+        root_spell_id=spell.spell_index.selected_spell_id
     )
     meld = _make_meld()
     meld._resolution_conduit_id = "conduit-1"
@@ -1701,7 +1701,7 @@ def test_force_resolution_revalidation_uses_root_validity_for_root_blueprints() 
 
     assert resolution_state.root_set_calls == [
         (
-            spell.spell_index.current,
+            spell.spell_index.selected_spell_id,
             SpellValidity.gated,
             SpellStateChangeReason.contract_unvalidated,
         )
@@ -1725,7 +1725,7 @@ def test_get_resolution_validity_uses_root_validity_for_root_blueprints() -> Non
     )
     spell = _SpellStub(spell_id="spell-root")
     spell._compiler_artifact._root_blueprint_phase5 = SimpleNamespace(
-        root_spell_id=spell.spell_index.current
+        root_spell_id=spell.spell_index.selected_spell_id
     )
     meld = _make_meld()
 
@@ -2045,7 +2045,7 @@ def test_ensure_resolution_resolvable_blocks_invalid_disabled_cleaned(
         spell_id="spell-1",
         spell_system_states=spell_system_states,
     )
-    resolution_state.set_spell_validity(spell.spell_index.current, validity)
+    resolution_state.set_spell_validity(spell.spell_index.selected_spell_id, validity)
     meld = _make_meld()
     meld._creations = None
     meld._resolution_conduit_id = "conduit-1"

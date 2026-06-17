@@ -186,7 +186,7 @@ class GeneralizedFinalizeCreationContextStep(CodegenCreationFamilyStep):
                 if record is not None:
                     return record.spell
             for step in no_overrides_plan.steps:
-                if step.spell.spell_index.current == root_spell_id:
+                if step.spell.spell_index.selected_spell_id == root_spell_id:
                     return step.spell
         raise RuntimeError(
             "generalized creation-context finalize step could not resolve the root spell object."
@@ -288,7 +288,7 @@ class GeneralizedFinalizeCreationContextStep(CodegenCreationFamilyStep):
         if baseline_executor is not None:
             override_specialization_cache[empty_shape_key] = baseline_executor
 
-        root_spell_id = root_spell.spell_index.current or root_spell.spell_id
+        root_spell_id = root_spell.spell_index.selected_spell_id or root_spell.spell_id
 
         def execute_with_overrides(
                 caller_creations: Any,
@@ -475,7 +475,7 @@ class GeneralizedFinalizeCreationContextStep(CodegenCreationFamilyStep):
             tuple(plan_rows)
         )
         step_spell_ids = tuple(
-            step.spell.spell_index.current
+            step.spell.spell_index.selected_spell_id
             for step in overrides_plan.steps
         )
         return (
@@ -498,7 +498,7 @@ class GeneralizedFinalizeCreationContextStep(CodegenCreationFamilyStep):
         """
         spell_lookup: Dict[str, Any] = {}
         for step in steps:
-            spell_id = step.spell.spell_index.current
+            spell_id = step.spell.spell_index.selected_spell_id
             if spell_id in spell_lookup:
                 continue
             spell_lookup[spell_id] = step.spell
@@ -522,7 +522,7 @@ class GeneralizedFinalizeCreationContextStep(CodegenCreationFamilyStep):
             normalized_root_args = tuple(raw_args)
         else:
             raise MeldExecutionError(
-                spell_id=spell.spell_index.current or spell.spell_id,
+                spell_id=spell.spell_index.selected_spell_id or spell.spell_id,
                 spell_name=spell.spell_name,
                 message="__args__ override must be a list or tuple.",
             )

@@ -99,7 +99,7 @@ class CompilerPhase5:
             RuntimeError:
                 If the spell has no current version id.
         """
-        current_spell_id = spell.spell_index.current
+        current_spell_id = spell.spell_index.selected_spell_id
         if current_spell_id is None:
             raise RuntimeError("SpellCrafter requires a bound spell current id.")
         return current_spell_id

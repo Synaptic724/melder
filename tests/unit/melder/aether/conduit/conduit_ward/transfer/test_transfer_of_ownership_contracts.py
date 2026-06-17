@@ -675,8 +675,8 @@ class FakeAether:
         for conduit_id, indices in frame._spell_registry.items():
             for spell_index in indices:
                 if (
-                        spell_index.current == spell_id or
-                        spell_index.has_version(spell_id)
+                        spell_index.selected_spell_id == spell_id or
+                        spell_index.has_spell(spell_id)
                 ):
                     return frame._conduits[conduit_id]
         raise ValueError(spell_id)
@@ -1172,11 +1172,11 @@ def build_environment(
     spell_obj._spellbook = source_book
     spell_obj._spell_system_states = states_system
     spell_index._owner_spellbook = source_book
-    spell_index._active_spell = spell_obj
+    spell_index._selected_spell = spell_obj
     spell_index._owner_conduit_id = SOURCE_ID
     source_book._spells[spell_index] = spell_obj
     source_book._lookup_spells[spell_obj._key] = spell_index
-    source_book._spells_by_id[spell_index.current] = spell_obj
+    source_book._spells_by_id[spell_index.selected_spell_id] = spell_obj
 
     frame._spell_registry[SOURCE_ID] = {spell_index}
     frame._spell_registry[TARGET_ID] = set()
@@ -1194,11 +1194,11 @@ def build_environment(
         dep_spell._spellbook = source_book
         dep_spell._spell_system_states = states_system
         dep_index._owner_spellbook = source_book
-        dep_index._active_spell = dep_spell
+        dep_index._selected_spell = dep_spell
         dep_index._owner_conduit_id = SOURCE_ID
         source_book._spells[dep_index] = dep_spell
         source_book._lookup_spells[dep_spell._key] = dep_index
-        source_book._spells_by_id[dep_index.current] = dep_spell
+        source_book._spells_by_id[dep_index.selected_spell_id] = dep_spell
         dependency_spells[dep_id] = dep_spell
         if register_dependency_indices:
             frame._spell_registry[SOURCE_ID].add(dep_index)
@@ -1212,11 +1212,11 @@ def build_environment(
             target_dep_spell._spellbook = target_book
             target_dep_spell._spell_system_states = states_system
             target_dep_index._owner_spellbook = target_book
-            target_dep_index._active_spell = target_dep_spell
+            target_dep_index._selected_spell = target_dep_spell
             target_dep_index._owner_conduit_id = TARGET_ID
             target_book._spells[target_dep_index] = target_dep_spell
             target_book._lookup_spells[target_dep_spell._key] = target_dep_index
-            target_book._spells_by_id[target_dep_index.current] = target_dep_spell
+            target_book._spells_by_id[target_dep_index.selected_spell_id] = target_dep_spell
 
     if include_cluster:
         cluster = FakeCluster()
@@ -1490,7 +1490,7 @@ def test_execute_marks_dependencies_dirty_when_requested() -> None:
     )
     transfer.preflight()
     transfer.execute()
-    marked = {call["spell_index"].current for call in env.states_system.mark_calls}
+    marked = {call["spell_index"].selected_spell_id for call in env.states_system.mark_calls}
     assert marked == {"dep-1", "dep-2"}
 
 

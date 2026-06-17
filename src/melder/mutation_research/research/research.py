@@ -38,7 +38,7 @@ class Research(Cleanable):
         self._id: str = IDBuilder.create_id()
         self._target_index: SpellIndex = target_index
         # snapshot of version at research start
-        self._root_version: Optional[str] = target_index.current
+        self._root_version: Optional[str] = target_index.selected_spell_id
         self._name: str = name
         self._level: Optional[int] = level
         self._metadata: Dict[str, Any] = metadata or {}
@@ -350,13 +350,13 @@ class Research(Cleanable):
         This method:
           - Records the promotion event in metadata.
           - Updates this research session's `root_version`.
-          - Optionally attempts to update the `SpellIndex.current` version via its public API.
+          - Optionally attempts to update the `SpellIndex.selected_spell_id` version via its public API.
 
         The specified behaviors (runtime propagation, creation disposal) are hooks left for the surrounding systems to implement.
 
         Args:
             new_spell_id (str): The concrete version id (SHA256) to promote.
-            update_index (bool, optional): If True, attempts to update the `SpellIndex.current` property. Defaults to True.
+            update_index (bool, optional): If True, attempts to update the `SpellIndex.selected_spell_id` property. Defaults to True.
             propagate_to_runtime (bool, optional): Flag indicating intent to push the new version to live instances. Defaults to True.
             drop_legacy_creations (bool, optional): Flag indicating intent to dispose of older live instances. Defaults to False.
 
@@ -384,9 +384,9 @@ class Research(Cleanable):
                     except Exception:
                         updated = False
 
-                if not updated and hasattr(index, "current"):
+                if not updated and hasattr(index, "selected_spell_id"):
                     try:
-                        setattr(index, "current", new_spell_id)
+                        setattr(index, "selected_spell_id", new_spell_id)
                         updated = True
                     except Exception:
                         updated = False

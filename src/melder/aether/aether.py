@@ -1235,7 +1235,7 @@ class Aether(Cleanable):
             frame = self._ensure_default_frame()
 
         # Locked lookup so a concurrent conjure cannot mutate the registry mid-scan.
-        conduit_id = frame.find_conduit_id_for_version(spell_id)
+        conduit_id = frame.find_conduit_id_for_spell(spell_id)
         if conduit_id is not None:
             return self._get_conduit_by_id(conduit_id, aetheric_frame_name)
 
@@ -1252,7 +1252,7 @@ class Aether(Cleanable):
     def _check_for_spell(self, spell_id: str, aetheric_frame_name: str = "default") -> SpellIndex | None:
         """
         Checks if a SHA256 spell_id exists in ANY SpellIndex within a frame,
-        using the frame's _version_registry cache (maintained per-conduit as
+        using the frame's _selected_spell_registry cache (maintained per-conduit as
         conduits register and unregister their lineages).
 
         Args:
@@ -1277,10 +1277,10 @@ class Aether(Cleanable):
         else:
             frame = self._ensure_default_frame()
 
-        # Fast O(1-ish) lookup via cached version_registry
-        found = frame.has_version(spell_id)
+        # Fast O(1-ish) lookup via cached selected_spell_registry
+        found = frame.has_spell(spell_id)
         if found is True:
-            return frame.find_and_return_spell_index(spell_id)
+            return frame.find_index_for_spell(spell_id)
         else:
             return None
 
@@ -1426,7 +1426,7 @@ class Aether(Cleanable):
         else:
             frame = self._ensure_default_frame()
 
-        versions = frame.get_all_versions()
+        versions = frame.spells_in_index()
         return versions
 
     # endregion Spell Management

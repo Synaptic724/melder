@@ -31,7 +31,7 @@ def test_research_cleanup_cleans_lines_and_nulls_target() -> None:
         metadata={"source": "test"},
     )
     try:
-        spell_line = session.start_spell_research(index.current, name="spell-line")
+        spell_line = session.start_spell_research(index.selected_spell_id, name="spell-line")
         spell_node = spell_line.begin_mutation(message="seed")
         spell_line.commit_mutation(spell_node)
 
@@ -91,7 +91,7 @@ def test_research_properties_and_metadata_detach() -> None:
         assert isinstance(session.id, str)
         assert session.id != ""
         assert session.target_index is index
-        assert session.root_version == index.current
+        assert session.root_version == index.selected_spell_id
         assert session.name == "session"
         assert session.level == 7
         assert session.metadata == {"source": "test"}
@@ -132,9 +132,9 @@ def test_start_spell_research_reuses_matching_lines_and_supports_lookup(monkeypa
     index = SpellIndex("spell-root")
     session = Research(target_index=index, name="session")
     try:
-        line_a = session.start_spell_research(index.current, name="alpha")
-        line_b = session.start_spell_research(index.current, name="alpha")
-        line_c = session.start_spell_research(index.current)
+        line_a = session.start_spell_research(index.selected_spell_id, name="alpha")
+        line_b = session.start_spell_research(index.selected_spell_id, name="alpha")
+        line_c = session.start_spell_research(index.selected_spell_id)
         other = session.start_spell_research("spell-v2", name="beta")
 
         assert line_b is line_a
@@ -243,7 +243,7 @@ def test_promote_spell_version_updates_index_root_version_and_metadata() -> None
     Purpose:
         Validate successful spell-version promotion semantics.
     Contract:
-        - promote_spell_version updates SpellIndex.current when enabled.
+        - promote_spell_version updates SpellIndex.selected_spell_id when enabled.
         - root_version follows the promoted version.
         - promotion metadata records the operation outcome.
     Returns:
@@ -261,7 +261,7 @@ def test_promote_spell_version_updates_index_root_version_and_metadata() -> None
             drop_legacy_creations=True,
         )
 
-        assert index.current == "spell-v2"
+        assert index.selected_spell_id == "spell-v2"
         assert session.root_version == "spell-v2"
         promotions = session.metadata["promotions"]
         assert promotions == [
@@ -301,18 +301,18 @@ def test_promote_spell_version_uses_current_setter_fallback() -> None:
             self._current = "spell-root"
 
         @property
-        def current(self) -> str:
+        def selected_spell_id(self) -> str:
             return self._current
 
-        @current.setter
-        def current(self, value: str) -> None:
+        @selected_spell_id.setter
+        def selected_spell_id(self, value: str) -> None:
             self._current = value
 
     session = Research(target_index=_Index(), name="session", metadata={})
     try:
         session.promote_spell_version("spell-v2")
 
-        assert session.target_index.current == "spell-v2"
+        assert session.target_index.selected_spell_id == "spell-v2"
         assert session.metadata["promotions"] == [
             {
                 "new_spell_id": "spell-v2",
@@ -349,7 +349,7 @@ def test_promote_spell_version_without_index_update_still_records_bookkeeping() 
             drop_legacy_creations=True,
         )
 
-        assert index.current == "spell-root"
+        assert index.selected_spell_id == "spell-root"
         assert session.root_version == "spell-v2"
         assert session.metadata["promotions"] == [
             {
@@ -382,7 +382,7 @@ def test_promote_spell_version_records_failed_index_update(monkeypatch) -> None:
         _current = "spell-root"
 
         @property
-        def current(self) -> str:
+        def selected_spell_id(self) -> str:
             return self._current
 
         def update(self, new_id: str) -> None:

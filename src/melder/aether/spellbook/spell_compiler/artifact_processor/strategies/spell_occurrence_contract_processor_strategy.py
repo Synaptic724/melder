@@ -197,7 +197,7 @@ class SpellOccurrenceContractProcessorStrategy(SpellArtifactProcessorStrategy):
             )
             normalized_payload = self._normalize_contract_override_payload(
                 payload=contract.spell_override,
-                consumer_spell_id=spell.spell_index.current or spell.spell_id,
+                consumer_spell_id=spell.spell_index.selected_spell_id or spell.spell_id,
                 consumer_spell_name=spell.spell_name,
                 param_name=param_name,
             )
@@ -273,7 +273,7 @@ class SpellOccurrenceContractProcessorStrategy(SpellArtifactProcessorStrategy):
         """
         Resolve a SpellContract to a concrete provider spell id.
         """
-        consumer_spell_id = consumer_spell.spell_index.current
+        consumer_spell_id = consumer_spell.spell_index.selected_spell_id
         if consumer_spell_id is None:
             consumer_spell_id = consumer_spell.spell_id
 
@@ -293,7 +293,7 @@ class SpellOccurrenceContractProcessorStrategy(SpellArtifactProcessorStrategy):
                 ),
             )
         if len(contracted_candidates) == 1:
-            return contracted_candidates[0].spell_index.current
+            return contracted_candidates[0].spell_index.selected_spell_id
 
         if allow_missing:
             return None
@@ -331,7 +331,7 @@ class SpellOccurrenceContractProcessorStrategy(SpellArtifactProcessorStrategy):
             contracted_candidates.append(spell_obj)
 
         contracted_candidates.sort(
-            key=lambda spell: spell.spell_index.current or spell.spell_id
+            key=lambda spell: spell.spell_index.selected_spell_id or spell.spell_id
         )
         return contracted_candidates
 

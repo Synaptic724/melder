@@ -239,7 +239,7 @@ def test_conduit_unique_per_conduit_cluster_shares_across_cluster() -> None:
     assert owner_spell is not None
     assert owner_spell.spell_id == spell_id
     assert isinstance(owner_spell, Spell)
-    assert any(spell_index.has_version(spell_id) for spell_index in owner_book.spells.keys())
+    assert any(spell_index.has_spell(spell_id) for spell_index in owner_book.spells.keys())
 
     borrower_spell = borrower.get_spell_by_id(spell_id)
     assert borrower_spell is not None
@@ -262,7 +262,7 @@ def test_conduit_unique_per_conduit_cluster_shares_across_cluster() -> None:
 
     contracted_spells = borrower_book.contracted_spells.get(owner._id)
     assert contracted_spells is not None
-    assert any(spell_index.has_version(spell_id) for spell_index in contracted_spells.keys()), (
+    assert any(spell_index.has_spell(spell_id) for spell_index in contracted_spells.keys()), (
         f"Expected spell_id in contracted keys. "
         f"inspected_wrapper_id={inspected_wrapper_id}, "
         f"inspected_target_id={inspected_target_id}, "
@@ -328,7 +328,7 @@ def test_conduit_contract_by_spell_id_dynamic_link() -> None:
 
         contracted_spells = borrower_book.contracted_spells.get(owner._id)
         assert contracted_spells is not None
-        assert any(spell_index.has_version(spell_id) for spell_index in contracted_spells.keys())
+        assert any(spell_index.has_spell(spell_id) for spell_index in contracted_spells.keys())
         assert any(spell.spell_id == spell_id for spell in contracted_spells.values())
 
         instance = borrower.meld(spell=spell_id)
@@ -387,7 +387,7 @@ def test_conduit_contract_by_spell_object_dynamic_link() -> None:
 
         contracted_spells = borrower_book.contracted_spells.get(owner._id)
         assert contracted_spells is not None
-        assert any(spell_index.has_version(spell_id) for spell_index in contracted_spells.keys()), (
+        assert any(spell_index.has_spell(spell_id) for spell_index in contracted_spells.keys()), (
             f"Expected spell_id in contracted keys. inspected_wrapper_id={inspected_wrapper_id}, "
             f"inspected_target_id={inspected_target_id}, spell_in_contracts={spell_in_contracts}"
         )

@@ -2704,7 +2704,7 @@ class Conduit(Cleanable):
 
             # Walk local SpellIndex keys and check which lineage owns this version
             for spell_index, spell in self._spellbook._spells.items():
-                if spell_index.has_version(spell_id):
+                if spell_index.has_spell(spell_id):
                     target_spell = spell
                     break
 
@@ -2898,7 +2898,7 @@ class Conduit(Cleanable):
             except AttributeError:
                 try:
                     spell_index_id = spell.id
-                    spell_id = spell.current
+                    spell_id = spell.selected_spell_id
                 except AttributeError as exc:
                     raise TypeError(
                         "spell must be a Spell-compatible object, SpellIndex-compatible "

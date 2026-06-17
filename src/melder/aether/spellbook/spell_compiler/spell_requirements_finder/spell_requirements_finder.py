@@ -64,7 +64,7 @@ class SpellRequirementsFinder(Cleanable):
     Identity model
     --------------
     The emitted :class:`SpellRequirements` is keyed by
-    "spell.spell_index.current". That versioned spell identifier is the
+    "spell.spell_index.selected_spell_id". That versioned spell identifier is the
     canonical Phase 1 identity used by later planning artifacts, so this finder
     intentionally anchors its output to the current spell version rather than
     any legacy unversioned spell id.
@@ -178,7 +178,7 @@ class SpellRequirementsFinder(Cleanable):
             * Preserves signature order in the emitted parameter list.
             * Copies spell identity, spell type, existence mode, spellframe, and
               binding name into the result.
-            * Uses "spell.spell_index.current" as the result's canonical
+            * Uses "spell.spell_index.selected_spell_id" as the result's canonical
               "spell_id".
 
         Special case:
@@ -222,10 +222,10 @@ class SpellRequirementsFinder(Cleanable):
             )
 
         # IMPORTANT:
-        # Use the **SpellIndex.current** as the canonical identifier for all
+        # Use the **SpellIndex.selected_spell_id** as the canonical identifier for all
         # phase artifacts. This decouples phase logic from any legacy `spell_id`
         # storage and allows versioning of the spell's structure.
-        version_id = spell.spell_index.current
+        version_id = spell.spell_index.selected_spell_id
         if version_id is None:
             raise RuntimeError(
                 "SpellRequirementsFinder requires a live SpellIndex current id."

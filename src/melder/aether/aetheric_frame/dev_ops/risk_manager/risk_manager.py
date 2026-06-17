@@ -265,7 +265,7 @@ class RiskManager(Cleanable):
                 conduits = self._lineage_conduits.setdefault(lineage_id, set())
                 conduits.add(conduit_id)
             try:
-                spell_id = spell.spell_index.current
+                spell_id = spell.spell_index.selected_spell_id
             except Exception:
                 spell_id = None
             if spell_id:
@@ -465,7 +465,7 @@ class RiskManager(Cleanable):
         if spell._cleaned:
             return SpellValidity.unknown
 
-        spell_id = spell.spell_index.current
+        spell_id = spell.spell_index.selected_spell_id
         if spell_id is None:
             return SpellValidity.unknown
 

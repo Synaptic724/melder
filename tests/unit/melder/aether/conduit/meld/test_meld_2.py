@@ -33,7 +33,7 @@ class _SpellIndexStub:
         Args:
             current: Spell version id used by error messages.
         """
-        self.current = current
+        self.selected_spell_id = current
         self.id = f"lineage-{current}"
 
 

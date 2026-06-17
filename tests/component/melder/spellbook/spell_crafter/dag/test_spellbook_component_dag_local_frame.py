@@ -56,7 +56,7 @@ def _get_spell_by_version_id(spellbook: Spellbook, spell_id: str):
     Purpose:
         Retrieve a local Spell by its version id.
     Contract:
-        - Returns the first spell whose SpellIndex.current matches spell_id.
+        - Returns the first spell whose SpellIndex.selected_spell_id matches spell_id.
     Args:
         spellbook: Spellbook to search.
         spell_id: Version id to match.
@@ -64,7 +64,7 @@ def _get_spell_by_version_id(spellbook: Spellbook, spell_id: str):
         Spell or None: Matching spell instance or None if not found.
     """
     for spell in spellbook._spells.values():
-        if spell.spell_index.current == spell_id:
+        if spell.spell_index.selected_spell_id == spell_id:
             return spell
     return None
 
@@ -143,7 +143,7 @@ def test_component_local_frame_dag_records_param_metadata_for_dependencies() -> 
         dag = spell.dependency_graph
         assert isinstance(dag, DirectedAcyclicWorkGraph)
 
-        root_id = spell.spell_index.current
+        root_id = spell.spell_index.selected_spell_id
         root_node = dag.get_node(root_id)
         assert root_node is not None
 
@@ -225,7 +225,7 @@ def test_component_local_frame_dag_supports_collection_dependencies() -> None:
 
         dag = spell.dependency_graph
         assert isinstance(dag, DirectedAcyclicWorkGraph)
-        root_id = spell.spell_index.current
+        root_id = spell.spell_index.selected_spell_id
         root_node = dag.get_node(root_id)
         assert root_node is not None
 

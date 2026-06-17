@@ -325,7 +325,7 @@ class Contract(Cleanable):
         for spell_id in spell_ids:
             spell_index = None
             for candidate_index in local_spells.keys():
-                if candidate_index.has_version(spell_id):
+                if candidate_index.has_spell(spell_id):
                     spell_index = candidate_index
                     break
             if spell_index is None:

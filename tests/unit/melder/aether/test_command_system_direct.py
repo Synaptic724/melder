@@ -259,7 +259,7 @@ def test_command_system_spell_lookup_guardrails_and_fallbacks(
         def __init__(self, version_id: str) -> None:
             self._version_id = version_id
 
-        def has_version(self, version_id: str) -> bool:
+        def has_spell(self, version_id: str) -> bool:
             return self._version_id == version_id
 
     command_system, viewer, _ = _make_command_system()

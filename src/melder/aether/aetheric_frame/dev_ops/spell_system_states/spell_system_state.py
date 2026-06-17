@@ -21,7 +21,7 @@ class SpellSystemState(Cleanable):
     - `spell_index_id`:
         Lineage identifier (ULID from SpellIndex.id).
     - `current_spell_id`:
-        Currently promoted version id for this lineage (e.g., SpellIndex.current; typically a SHA).
+        Currently promoted version id for this lineage (e.g., SpellIndex.selected_spell_id; typically a SHA).
 
     Topology
     --------
@@ -176,7 +176,7 @@ class SpellSystemState(Cleanable):
     @property
     def current_spell_id(self) -> str:
         """
-        Currently promoted version id for this lineage (e.g., SpellIndex.current).
+        Currently promoted version id for this lineage (e.g., SpellIndex.selected_spell_id).
 
         Threading:
             Acquires the internal lock to avoid torn reads while promotion

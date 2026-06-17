@@ -20,11 +20,11 @@ def test_component_spell_index_tracks_versions_and_hash_stability() -> None:
     index.update("v3")
 
     assert hash(index) == initial_hash
-    assert index.current == "v3"
-    assert index.has_version("v1") is True
-    assert index.has_version("v2") is True
-    assert index.has_version("v3") is True
-    assert index.get_all_versions() == {"v1", "v2", "v3"}
+    assert index.selected_spell_id == "v3"
+    assert index.has_spell("v1") is True
+    assert index.has_spell("v2") is True
+    assert index.has_spell("v3") is True
+    assert index.spells_in_index() == {"v1", "v2", "v3"}
 
 
 def test_component_spell_index_cleanup_blocks_access() -> None:
@@ -41,6 +41,6 @@ def test_component_spell_index_cleanup_blocks_access() -> None:
     index.cleanup()
 
     assert index.cleaned is True
-    assert not hasattr(index, "_current_id")
+    assert not hasattr(index, "_selected_spell_id")
     with pytest.raises(AttributeError):
-        _ = index.current
+        _ = index.selected_spell_id

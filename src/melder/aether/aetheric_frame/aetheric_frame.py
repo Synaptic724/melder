@@ -60,7 +60,7 @@ class AethericFrame(Cleanable):
         "_conduits",
         "_conduit_ids_by_name",
         "_spell_registry",
-        "_version_registry",
+        "_selected_spell_registry",
         "_conduit_cloud",
         "_devops_information_registry",
         "_spell_system_states",
@@ -116,7 +116,7 @@ class AethericFrame(Cleanable):
 
         # SHA256 version registry per conduit:
         #   conduit_id -> Set[str]
-        self._version_registry: Dict[str, Set[str]] = {}
+        self._selected_spell_registry: Dict[str, Set[str]] = {}
 
         # Frame-local topology and transaction registry used by DevOps-facing
         # reporting and future transaction resolution.
@@ -232,8 +232,8 @@ class AethericFrame(Cleanable):
             self._spell_registry.clear()
 
         # Version registry
-        if self._version_registry is not None:
-            self._version_registry.clear()
+        if self._selected_spell_registry is not None:
+            self._selected_spell_registry.clear()
 
         # Dynamic conduit cloud
         if self._conduit_cloud is not None:
@@ -253,7 +253,7 @@ class AethericFrame(Cleanable):
         del self._conduits
         del self._conduit_ids_by_name
         del self._spell_registry
-        del self._version_registry
+        del self._selected_spell_registry
         del self._conduit_cloud
         del self._devops_information_registry
         del self._spell_system_states
@@ -609,12 +609,12 @@ class AethericFrame(Cleanable):
         It reads only the named conduit's lineage set (the value already keyed by
         `conduit_id`), and never iterates the shared `_spell_registry` dict, so it
         cannot race a concurrent insert of a different conduit into that dict. The
-        version cache stays accurate for the hot `has_version` /
-        `get_all_versions` reads.
+        version cache stays accurate for the hot `has_spell` /
+        `spells_in_index` reads.
 
         Contract:
           - Caller holds `self._lock`.
-          - Writes a single `_version_registry[conduit_id]` entry, or drops it
+          - Writes a single `_selected_spell_registry[conduit_id]` entry, or drops it
             when the conduit has no remaining lineages.
 
         Args:
@@ -625,45 +625,45 @@ class AethericFrame(Cleanable):
         """
         spell_set = self._spell_registry.get(conduit_id)
         if not spell_set:
-            self._version_registry.pop(conduit_id, None)
+            self._selected_spell_registry.pop(conduit_id, None)
             return
         version_set: Set[str] = set()
         for spell_index in spell_set:
-            version_set.update(spell_index.get_all_versions())
-        self._version_registry[conduit_id] = version_set
+            version_set.update(spell_index.spells_in_index())
+        self._selected_spell_registry[conduit_id] = version_set
 
-    def has_version(self, version_id: str) -> bool:
+    def has_spell(self, spell_id: str) -> bool:
         """
-        Check whether the given SHA256 `version_id` exists in this frame.
+        Check whether the given SHA256 `spell_id` exists in this frame.
 
         Contract:
-          - Uses the cached `_version_registry`.
+          - Uses the cached `_selected_spell_registry`.
           - Returns False for empty ids or when the cache is unavailable.
 
         Returns:
             bool:
                 True when any conduit in this frame owns a `SpellIndex` whose
-                version set contains `version_id`.
+                member-id set contains `spell_id`.
         """
         self.check_cleaned()
-        if not version_id:
+        if not spell_id:
             return False
 
         with self._lock:
-            if self._version_registry is None:
+            if self._selected_spell_registry is None:
                 return False
 
-            for version_set in self._version_registry.values():
-                if version_id in version_set:
+            for version_set in self._selected_spell_registry.values():
+                if spell_id in version_set:
                     return True
         return False
 
-    def get_all_versions(self) -> set[str]:
+    def spells_in_index(self) -> set[str]:
         """
         Return a flat set of all cached SHA256 version ids in this frame.
 
         Contract:
-          - Uses the cached `_version_registry`.
+          - Uses the cached `_selected_spell_registry`.
           - Returns an empty set when the cache is unavailable.
 
         Returns:
@@ -673,15 +673,15 @@ class AethericFrame(Cleanable):
         self.check_cleaned()
         result: set[str] = set()
         with self._lock:
-            if self._version_registry is None:
+            if self._selected_spell_registry is None:
                 return result
 
-            for version_set in self._version_registry.values():
-                for version_id in version_set:
-                    result.add(version_id)
+            for version_set in self._selected_spell_registry.values():
+                for spell_id in version_set:
+                    result.add(spell_id)
         return result
 
-    def find_and_return_spell_index(self, version_id: str) -> SpellIndex | None:
+    def find_index_for_spell(self, spell_id: str) -> SpellIndex | None:
         """
         Find and return the `SpellIndex` that contains the given version id.
 
@@ -690,15 +690,15 @@ class AethericFrame(Cleanable):
           - Returns `None` for empty ids or when no matching lineage is found.
 
         Args:
-            version_id: SHA256 version id to search for.
+            spell_id: SHA256 version id to search for.
 
         Returns:
             SpellIndex | None:
-                The lineage that owns `version_id`, or `None` when no lineage
+                The index that owns `spell_id`, or `None` when no index
                 in this frame advertises that version.
         """
         self.check_cleaned()
-        if not version_id:
+        if not spell_id:
             return None
 
         with self._lock:
@@ -707,7 +707,7 @@ class AethericFrame(Cleanable):
 
             for spell_set in self._spell_registry.values():
                 for spell_index in spell_set:
-                    if version_id in spell_index.get_all_versions():
+                    if spell_id in spell_index.spells_in_index():
                         return spell_index
         return None
 
@@ -721,7 +721,7 @@ class AethericFrame(Cleanable):
     # dict while another thread inserts a different conduit into it. That whole-
     # registry iteration is what previously raised "dictionary changed size during
     # iteration". The lock still serializes these writes against the cache readers
-    # (`has_version` / `get_all_versions`). `self._lock` is an `RLock`, so the
+    # (`has_spell` / `spells_in_index`). `self._lock` is an `RLock`, so the
     # nested `_reindex_conduit_versions(...)` re-enters safely.
 
     def register_conduit_spells(
@@ -785,8 +785,8 @@ class AethericFrame(Cleanable):
                 spell_set = set()
                 self._spell_registry[conduit_id] = spell_set
             spell_set.add(spell_index)
-            self._version_registry.setdefault(conduit_id, set()).update(
-                spell_index.get_all_versions()
+            self._selected_spell_registry.setdefault(conduit_id, set()).update(
+                spell_index.spells_in_index()
             )
 
     def unregister_spell_index(
@@ -808,9 +808,9 @@ class AethericFrame(Cleanable):
             spell_set.discard(spell_index)
             self._reindex_conduit_versions(conduit_id)
 
-    def find_conduit_id_for_version(self, version_id: str) -> str | None:
+    def find_conduit_id_for_spell(self, spell_id: str) -> str | None:
         """
-        Return the conduit id whose SpellIndex set advertises `version_id`,
+        Return the conduit id whose SpellIndex set advertises `spell_id`,
         scanning the frame-owned `_spell_registry` under the frame lock.
 
         Returns:
@@ -818,14 +818,14 @@ class AethericFrame(Cleanable):
             frame advertises that version.
         """
         self.check_cleaned()
-        if not version_id:
+        if not spell_id:
             return None
         with self._lock:
             if self._spell_registry is None:
                 return None
             for conduit_id, spell_set in self._spell_registry.items():
                 for spell_index in spell_set:
-                    if spell_index.has_version(version_id):
+                    if spell_index.has_spell(spell_id):
                         return conduit_id
         return None
 

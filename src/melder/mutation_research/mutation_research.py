@@ -543,9 +543,9 @@ class MutationResearch(Cleanable):
         if session is None:
             session = self.create_session(target_index, name=research_name)
 
-        current_id = getattr(target_index, "current", None)
+        current_id = getattr(target_index, "selected_spell_id", None)
         if not current_id:
-            raise RuntimeError("SpellIndex.current is not set; cannot begin spell mutation.")
+            raise RuntimeError("SpellIndex.selected_spell_id is not set; cannot begin spell mutation.")
 
         spell_research = None
         for candidate in session.list_spell_researches():

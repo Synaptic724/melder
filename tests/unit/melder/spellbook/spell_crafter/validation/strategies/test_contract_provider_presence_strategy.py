@@ -94,7 +94,7 @@ class _SpellIndexStub:
         Returns:
             None.
         """
-        self.current = current
+        self.selected_spell_id = current
 
 
 class _SpellStub:
@@ -102,7 +102,7 @@ class _SpellStub:
     Purpose:
         Provide a minimal spell stub for contract validation.
     Contract:
-        Exposes spell_name and spell_index.current.
+        Exposes spell_name and spell_index.selected_spell_id.
     """
 
     def __init__(
@@ -116,9 +116,9 @@ class _SpellStub:
         Purpose:
             Initialize the spell stub with identifiers.
         Contract:
-            Stores spell_name and spell_index.current.
+            Stores spell_name and spell_index.selected_spell_id.
         Args:
-            spell_id: Spell id assigned to spell_index.current.
+            spell_id: Spell id assigned to spell_index.selected_spell_id.
             spell_name: Spell name for diagnostics.
         Returns:
             None.

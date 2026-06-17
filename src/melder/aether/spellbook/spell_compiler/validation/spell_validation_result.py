@@ -16,7 +16,7 @@ class SpellValidationResult(Cleanable):
     Attributes
     ----------
     spell_id:
-        Versioned identity of the spell (typically ``SpellIndex.current``).
+        Versioned identity of the spell (typically ``SpellIndex.selected_spell_id``).
     spell_name:
         Human-readable spell name (usually the underlying callable's __name__).
     issues:

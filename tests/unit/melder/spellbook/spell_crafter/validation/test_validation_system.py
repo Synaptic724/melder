@@ -54,7 +54,7 @@ class _SpellStub:
         Contract:
             Creates spell_index with the provided spell_id.
         Args:
-            spell_id: Spell id assigned to spell_index.current.
+            spell_id: Spell id assigned to spell_index.selected_spell_id.
             spell_name: Spell name string.
             spellbook: Spellbook object or None.
             include_spellbook: Whether to set the _spellbook attribute.
@@ -91,7 +91,7 @@ class _SharedViewSpellStub:
         Contract:
             Stores attributes verbatim and normalizes dependencies to a list.
         Args:
-            spell_id: Spell id assigned to spell_index.current.
+            spell_id: Spell id assigned to spell_index.selected_spell_id.
             spell_name: Spell name string.
             spellframe: Frame identifier for the spell.
             binding_name: Binding name identifier.
@@ -553,7 +553,7 @@ def _make_spell(
     Contract:
         Returns a _SpellStub with the provided attributes.
     Args:
-        spell_id: Spell id assigned to spell_index.current.
+        spell_id: Spell id assigned to spell_index.selected_spell_id.
         spell_name: Spell name string.
         spellbook: Spellbook object or None.
         include_spellbook: Whether to set the _spellbook attribute.

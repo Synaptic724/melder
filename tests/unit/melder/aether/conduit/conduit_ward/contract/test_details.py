@@ -20,7 +20,7 @@ def mock_spell_index():
         MagicMock: SpellIndex mock instance.
     """
     mock = MagicMock(spec=SpellIndex)
-    mock._versions = {"sha123": "version_data"}
+    mock._spells_in_index = {"sha123": "version_data"}
     return mock
 
 @pytest.fixture
@@ -350,45 +350,45 @@ def test_detail_cleanup_noops_when_marked_cleaned_inside_lock(sample_detail):
     assert sample_detail._id == original_id
 
 # ----------------------------------------------------------------------
-# has_version Tests
+# has_spell Tests
 # ----------------------------------------------------------------------
 
-def test_has_version_exists(sample_detail):
+def test_has_spell_exists(sample_detail):
     """
     Purpose:
-        Verify has_version returns True when a version exists.
+        Verify has_spell returns True when a version exists.
     Contract:
-        has_version returns True for a version present in the SpellIndex.
+        has_spell returns True for a version present in the SpellIndex.
     Args:
         sample_detail: Detail fixture under test.
     Returns:
         None.
     Raises:
-        AssertionError: If has_version does not return True for a known version.
+        AssertionError: If has_spell does not return True for a known version.
     """
-    assert sample_detail.has_version("sha123")
+    assert sample_detail.has_spell("sha123")
 
-def test_has_version_does_not_exist(sample_detail):
+def test_has_spell_does_not_exist(sample_detail):
     """
     Purpose:
-        Verify has_version returns False for missing versions.
+        Verify has_spell returns False for missing versions.
     Contract:
-        has_version returns False when the version id is absent.
+        has_spell returns False when the version id is absent.
     Args:
         sample_detail: Detail fixture under test.
     Returns:
         None.
     Raises:
-        AssertionError: If has_version returns True for a missing version.
+        AssertionError: If has_spell returns True for a missing version.
     """
-    assert not sample_detail.has_version("non_existent_sha")
+    assert not sample_detail.has_spell("non_existent_sha")
 
-def test_has_version_empty_spell_index(mock_spell_index, mock_permissions, mock_contract_type, mock_detail_reason):
+def test_has_spell_empty_spell_index(mock_spell_index, mock_permissions, mock_contract_type, mock_detail_reason):
     """
     Purpose:
-        Ensure has_version handles an empty SpellIndex.
+        Ensure has_spell handles an empty SpellIndex.
     Contract:
-        has_version returns False when SpellIndex._versions is empty.
+        has_spell returns False when SpellIndex._spells_in_index is empty.
     Args:
         mock_spell_index: SpellIndex mock fixture.
         mock_permissions: Permissions fixture.
@@ -397,9 +397,9 @@ def test_has_version_empty_spell_index(mock_spell_index, mock_permissions, mock_
     Returns:
         None.
     Raises:
-        AssertionError: If has_version returns True for empty versions.
+        AssertionError: If has_spell returns True for empty versions.
     """
-    mock_spell_index._versions = {}
+    mock_spell_index._spells_in_index = {}
     detail = Detail(
         spell_index=mock_spell_index,
         spell_id="initial_sha",
@@ -407,24 +407,24 @@ def test_has_version_empty_spell_index(mock_spell_index, mock_permissions, mock_
         contract_type=mock_contract_type,
         reason=mock_detail_reason
     )
-    assert not detail.has_version("any_sha")
+    assert not detail.has_spell("any_sha")
 
-def test_has_version_after_cleanup(sample_detail):
+def test_has_spell_after_cleanup(sample_detail):
     """
     Purpose:
-        Ensure has_version rejects use after cleanup.
+        Ensure has_spell rejects use after cleanup.
     Contract:
-        has_version raises RuntimeError once the Detail is cleaned.
+        has_spell raises RuntimeError once the Detail is cleaned.
     Args:
         sample_detail: Detail fixture under test.
     Returns:
         None.
     Raises:
-        AssertionError: If has_version does not raise after cleanup.
+        AssertionError: If has_spell does not raise after cleanup.
     """
     sample_detail.cleanup()
     with pytest.raises(RuntimeError, match="cleaned"):
-        sample_detail.has_version("sha123")
+        sample_detail.has_spell("sha123")
 
 # ----------------------------------------------------------------------
 # add_source Tests

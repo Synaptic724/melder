@@ -597,6 +597,8 @@ class TransactionMediator(Cleanable):
                 "notch",
                 "add_to_index",
                 "remove_from_index",
+                "elect_conduit_cluster_leader",
+                "unelect_conduit_cluster_leader",
         ):
             return self._start_strategy_transaction(
                 identity=identity,

@@ -233,13 +233,13 @@ def test_spellbook_integration_conjure_registers_spell_versions_and_cleanup_clea
         registry = frame_obj._spell_registry
         assert conduit_id in registry
         assert registry[conduit_id] == spell_indices
-        assert frame_obj.has_version(spell_id) is True
+        assert frame_obj.has_spell(spell_id) is True
     finally:
         conduit.permanent_cleanup()
 
     assert frame in Spellbook._aether._aetheric_frames
     frame_obj = Spellbook._aether._aetheric_frames[frame]
-    assert frame_obj.has_version(spell_id) is False
+    assert frame_obj.has_spell(spell_id) is False
 
     Spellbook._aether._ensure_frame(frame).cleanup()
 
@@ -1213,7 +1213,7 @@ def test_spellbook_integration_contracted_spells_visible() -> None:
         contracted = borrower_book.contracted_spells.get(owner.id)
         assert contracted is not None
         assert any(
-            spell_index.has_version(spell_id) for spell_index in contracted.keys()
+            spell_index.has_spell(spell_id) for spell_index in contracted.keys()
         )
 
         instance = borrower.meld(spell=spell_id)

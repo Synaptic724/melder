@@ -25,7 +25,7 @@ class _SpellIndexStub:
         """
         Initialize one spell index stub.
         """
-        self.current = current
+        self.selected_spell_id = current
         self.id = "lineage-{0}".format(current)
 
 

@@ -77,7 +77,7 @@ def _get_local_spell_by_version_id(
     Purpose:
         Resolve one locally owned spell by its current version id.
     Contract:
-        - Returns the first local spell whose SpellIndex.current matches the
+        - Returns the first local spell whose SpellIndex.selected_spell_id matches the
           supplied version id.
         - Returns None when no local spell matches.
     Args:
@@ -87,7 +87,7 @@ def _get_local_spell_by_version_id(
         Optional[object]: Matching local spell object, or None when absent.
     """
     for spell_index, spell in spellbook.spells.items():
-        if spell_index.current == spell_id:
+        if spell_index.selected_spell_id == spell_id:
             return spell
     return None
 

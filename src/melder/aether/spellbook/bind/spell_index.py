@@ -15,28 +15,28 @@ if TYPE_CHECKING:
 
 class SpellIndex(Cleanable):
     """
-    A stable SpellIndex identity that points to a mutable version ID.
+    A stable SpellIndex identity that points to a mutable selected-spell id.
 
     Design:
     This class solves the "mutable dictionary key" problem. It provides a
     stable, hashable SpellIndex identity via an immutable ULID, while simultaneously
-    tracking a mutable "current version" pointer (e.g., a SHA256 commit ID).
+    tracking a mutable selected-spell pointer (the SHA256 id of the notched member).
 
     - Hashing and equality are based *only* on the immutable ULID.
-    - The version pointer can be safely updated (mutated) in a thread-safe
+    - The selected-spell pointer can be safely updated (mutated) in a thread-safe
       manner without breaking its location in a dictionary.
     - The index can be attached to owning and contracted Spellbooks so
-      version changes can update spell_id lookup maps.
+      selected-spell changes can update spell_id lookup maps.
     """
     __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = (
         "_id",          # The immutable ULID. Used for hashing and equality.
-        "_current_id",  # The mutable pointer to the active version (e.g., a SHA256).
-        "_lock",        # RLock for thread-safe reads/writes to _current_id.
+        "_selected_spell_id",  # The selected member's spell id (a SHA256).
+        "_lock",        # RLock for thread-safe reads/writes to _selected_spell_id.
         "_cleaned",     # Flag for Cleanable interface.
-        "_versions",    # Set of all versions seen.
+        "_spells_in_index",    # Set of all member spell ids seen.
         "_owner_spellbook",
-        "_active_spell",
+        "_selected_spell",
         "_members",     # Ordered member spells (active + dormant) under this index.
         "_owner_conduit_id",
         "_contracted_spellbooks",
@@ -44,20 +44,20 @@ class SpellIndex(Cleanable):
 
     def __init__(self, initial_id: str):
         """
-        Initialize the SpellIndex with its permanent identity and initial version.
+        Initialize the SpellIndex with its permanent identity and initial selected spell.
 
         Purpose:
-            Provide a stable, hashable SpellIndex identity with a mutable version pointer
+            Provide a stable, hashable SpellIndex identity with a mutable selected-spell pointer
             and optional Spellbook attachments for update propagation.
 
         Contract:
             - The ULID identity never changes.
-            - The current version pointer is mutable and guarded by the lock.
+            - The selected-spell pointer is mutable and guarded by the lock.
             - Attachments are optional and may be added later.
 
         Args:
             initial_id (str):
-                The SHA256 commit ID or version string this key initially points to.
+                The SHA256 spell id this index initially selects.
 
         Threading:
             - Initializes the internal RLock used for all mutations.
@@ -69,13 +69,13 @@ class SpellIndex(Cleanable):
         # The permanent, hashable identity for this key.
         self._id: str = new_ulid()
         self._lock: threading.RLock = threading.RLock()
-        # The dynamic pointer to the version, which can be updated.
-        self._current_id: str = initial_id
-        self._versions: set = {initial_id}  # Optional: Track all versions seen.
+        # The dynamic pointer to the selected spell, which can be updated.
+        self._selected_spell_id: str = initial_id
+        self._spells_in_index: set = {initial_id}  # Track all member spell ids seen.
         self._owner_spellbook: Optional[Spellbook] = None
-        self._active_spell: Optional[Spell] = None
+        self._selected_spell: Optional[Spell] = None
         # Ordered set of member spells under this index. Exactly one is the
-        # active (notched) member exposed through `current`; the rest are
+        # active (notched) member exposed through `selected_spell_id`; the rest are
         # dormant - held here but absent from the Spellbook resolution maps
         # until a notch makes one active.
         self._members: List[Spell] = []
@@ -91,7 +91,7 @@ class SpellIndex(Cleanable):
 
         Contract:
             - Idempotent and lock-guarded.
-            - Clears version history and all spellbook / spell attachments
+            - Clears member-id history and all spellbook / spell attachments
               before dropping the lock reference.
             - Leaves future callers to fail through `check_cleaned()`.
         """
@@ -102,31 +102,31 @@ class SpellIndex(Cleanable):
                 return
             # Nullify the pointer and release the lock object.
             self._cleaned = True
-            self._versions.clear()
+            self._spells_in_index.clear()
             self._members.clear()
             self._contracted_spellbooks.clear()
 
-            del self._versions
+            del self._spells_in_index
             del self._owner_spellbook
-            del self._active_spell
+            del self._selected_spell
             del self._members
             del self._owner_conduit_id
             del self._contracted_spellbooks
-            del self._current_id
+            del self._selected_spell_id
 
     # ------------------------------------------------------------
     # Core API
     # ------------------------------------------------------------
     @property
-    def current(self) -> str:
+    def selected_spell_id(self) -> str:
         """
-        Return the currently active version id for this SpellIndex.
+        Return the selected member's spell id for this SpellIndex.
 
         Returns:
-            str: The current version id.
+            str: The selected member's spell id.
 
         Contract:
-            - Returns the live version pointer, not a historical value.
+            - Returns the live selected-spell pointer, not a historical value.
             - Lock-free read: the pointer is one attribute holding one string
               reference, so a reader observes either the previous or the new
               id, never a torn value. `update(...)` still serializes writers
@@ -140,34 +140,34 @@ class SpellIndex(Cleanable):
               compiler phases (thousands of reads per conjure), and the
               per-read RLock acquire/release dominated its cost on nogil.
         """
-        return self._current_id
+        return self._selected_spell_id
 
     def update(self, new_id: str) -> None:
         """
-        Atomically updates the pointer to a new version ID.
+        Atomically updates the pointer to a new selected-spell id.
 
         This operation is thread-safe and does not affect the
         object's hash or its location in a dictionary.
 
         When the index is attached to Spellbooks, this method also
-        propagates the version change to spell_id lookup maps for
+        propagates the selected-spell change to spell_id lookup maps for
         owned and contracted spellbooks.
 
         Args:
-            new_id (str): The new SHA256 or version ID.
+            new_id (str): The new SHA256 spell id.
 
         Raises:
             RuntimeError: If an attached Spellbook or spell is missing.
         """
         self.check_cleaned()
         with self._lock:
-            old_id = self._current_id
+            old_id = self._selected_spell_id
             if old_id == new_id:
                 return
-            self._current_id = new_id
-            self._versions.add(new_id)
+            self._selected_spell_id = new_id
+            self._spells_in_index.add(new_id)
             owner_spellbook = self._owner_spellbook
-            active_spell = self._active_spell
+            active_spell = self._selected_spell
             # Capture attachments to avoid calling into Spellbook while holding this lock.
             contracted_items = list(self._contracted_spellbooks.items())
 
@@ -209,13 +209,13 @@ class SpellIndex(Cleanable):
         with self._lock:
             if self._owner_spellbook is not None and self._owner_spellbook is not spellbook:
                 raise RuntimeError("Owner spellbook already attached for this SpellIndex.")
-            if self._active_spell is not None and self._active_spell is not spell:
+            if self._selected_spell is not None and self._selected_spell is not spell:
                 raise RuntimeError("Active spell already attached for this SpellIndex.")
             self._owner_spellbook = spellbook
-            self._active_spell = spell
+            self._selected_spell = spell
             if spell not in self._members:
                 self._members.append(spell)
-            spell_id = self._current_id
+            spell_id = self._selected_spell_id
 
         # Call Spellbook update outside the lock to avoid lock inversion.
         spellbook._register_owned_spell_id(spell_id, spell)
@@ -252,7 +252,7 @@ class SpellIndex(Cleanable):
 
         Contract:
             - Removing a spell that is not a member is a no-op.
-            - `_active_spell` / `_current_id` are left unchanged here; the
+            - `_selected_spell` / `_selected_spell_id` are left unchanged here; the
               calling seam must re-notch to a remaining member or GC an emptied
               index before committing.
             - Pure member-list mutation; Spellbook-side id-map de-registration
@@ -275,15 +275,15 @@ class SpellIndex(Cleanable):
                 pass
             return len(self._members) == 0
 
-    def _set_active_member(self, spell: Spell) -> Optional[Spell]:
+    def _select_member(self, spell: Spell) -> Optional[Spell]:
         """
         Make `spell` the active (notched) member and return the previous active.
 
         Contract:
             - `spell` must already be a member (attach it first) or this raises.
-            - Updates `_active_spell` and the `_current_id` version pointer so
+            - Updates `_selected_spell` and the `_selected_spell_id` pointer so
               `current` reflects the newly active member, and records the
-              version in the history set.
+              spell id in the history set.
             - Pure index-state mutation; Spellbook-side id-map rekey + door-epoch
               bump are owned by the calling transaction seam.
 
@@ -298,7 +298,7 @@ class SpellIndex(Cleanable):
 
         Threading:
             - Guarded by the instance lock; `current` stays a lock-free read for
-              hot meld paths because `_current_id` is a single-reference store.
+              hot meld paths because `_selected_spell_id` is a single-reference store.
         """
         self.check_cleaned()
         with self._lock:
@@ -306,10 +306,10 @@ class SpellIndex(Cleanable):
                 raise RuntimeError(
                     "Cannot notch a spell that is not a member of this SpellIndex."
                 )
-            previous = self._active_spell
-            self._active_spell = spell
-            self._current_id = spell.spell_id
-            self._versions.add(spell.spell_id)
+            previous = self._selected_spell
+            self._selected_spell = spell
+            self._selected_spell_id = spell.spell_id
+            self._spells_in_index.add(spell.spell_id)
             return previous
 
     def _has_member(self, spell: Spell) -> bool:
@@ -397,7 +397,7 @@ class SpellIndex(Cleanable):
             if existing is not None and existing is not spell:
                 raise RuntimeError("Contract attachment already exists for this SpellIndex.")
             self._contracted_spellbooks[key] = spell
-            spell_id = self._current_id
+            spell_id = self._selected_spell_id
 
         # Call Spellbook update outside the lock to avoid lock inversion.
         spellbook._register_contracted_spell_id(conduit_id, spell_id, spell)
@@ -424,46 +424,46 @@ class SpellIndex(Cleanable):
         key = (spellbook, conduit_id)
         with self._lock:
             spell = self._contracted_spellbooks.pop(key, None)
-            spell_id = self._current_id
+            spell_id = self._selected_spell_id
 
         # Call Spellbook update outside the lock to avoid lock inversion.
         if spell is None:
             raise RuntimeError("Contract attachment is missing for this SpellIndex.")
         spellbook._unregister_contracted_spell_id(conduit_id, spell_id, spell)
 
-    def get_all_versions(self) -> set:
+    def spells_in_index(self) -> set:
         """
-        Return a snapshot of every version id this SpellIndex has pointed to.
+        Return a snapshot of every member spell id seen by this SpellIndex.
 
         Returns:
-            set: A set of all version IDs seen.
+            set: A set of all member spell ids seen.
 
         Contract:
             - Returns a detached set copy.
-            - Includes the initial version id and every later id accepted by
+            - Includes the initial spell id and every later id accepted by
               `update(...)`.
         """
         self.check_cleaned()
         with self._lock:
-            return set(self._versions)
+            return set(self._spells_in_index)
 
 
-    def has_version(self, version_id: str) -> bool:
+    def has_spell(self, spell_id: str) -> bool:
         """
-        Return whether this SpellIndex has ever pointed at `version_id`.
+        Return whether `spell_id` is a known member id of this SpellIndex.
 
         Args:
-            version_id (str): The version ID to check.
+            spell_id (str): The spell id to check.
         Returns:
-            bool: True if the version ID has been seen, False otherwise.
+            bool: True if the spell id has been seen, False otherwise.
 
         Contract:
-            - Checks against the full historical version set, not only the
+            - Checks against the full historical member-id set, not only the
               current pointer.
         """
         self.check_cleaned()
         with self._lock:
-            return version_id in self._versions
+            return spell_id in self._spells_in_index
 
     @property
     def id(self) -> str:
@@ -473,7 +473,7 @@ class SpellIndex(Cleanable):
         Contract:
             - This value never changes for the lifetime of the index.
             - Hashing and equality are derived from this id, not from the
-              mutable current version pointer.
+              mutable selected-spell pointer.
         """
         return self._id
 
@@ -484,7 +484,7 @@ class SpellIndex(Cleanable):
         """
         Hash this index by immutable SpellIndex identity only.
 
-        This ensures the hash is stable, even if _current_id changes,
+        This ensures the hash is stable, even if _selected_spell_id changes,
         making it safe for use as a dictionary key.
         """
         return hash(self._id)
@@ -494,7 +494,7 @@ class SpellIndex(Cleanable):
         Compare two `SpellIndex` objects by immutable SpellIndex identity only.
 
         This guarantees that key equality is stable and not affected
-        by version changes.
+        by selected-spell changes.
         """
         return isinstance(other, SpellIndex) and self._id == other._id
 
@@ -503,13 +503,13 @@ class SpellIndex(Cleanable):
     # ------------------------------------------------------------
     def __repr__(self) -> str:
         """
-        Return a developer-facing snapshot of identity and current version.
+        Return a developer-facing snapshot of identity and selected spell.
         """
         self.check_cleaned()
 
         # We lock here to ensure a consistent snapshot for repr
         with self._lock:
-            return f"<SpellIndex id={self._id} current={self._current_id}>"
+            return f"<SpellIndex id={self._id} current={self._selected_spell_id}>"
 
 
     def __enter__(self) -> "SpellIndex":

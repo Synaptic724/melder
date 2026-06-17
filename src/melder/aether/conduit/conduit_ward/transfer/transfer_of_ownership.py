@@ -497,7 +497,7 @@ class TransferOfOwnership(Cleanable):
             cluster = conduit_cloud.get_cluster(cname)
             for owner_id, indices in cluster.get_shared_spells().items():
                 for idx in indices:
-                    if idx.has_version(spell_id) or idx.current == spell_id:
+                    if idx.has_spell(spell_id) or idx.selected_spell_id == spell_id:
                         borrowers.append(
                             {
                                 "type": "cluster",
@@ -840,7 +840,7 @@ class TransferOfOwnership(Cleanable):
                 lineage.
         """
         self.check_cleaned()
-        spell_id = spell_obj.spell_index.current
+        spell_id = spell_obj.spell_index.selected_spell_id
         with SafeGuard(tgt_book._lock, src_book._lock):
             tgt_book._spells.pop(spell_obj.spell_index, None)
             tgt_book._lookup_spells.pop(spell_obj._key, None)
@@ -869,7 +869,7 @@ class TransferOfOwnership(Cleanable):
         try:
             with SafeGuard(spell_obj.spell_index._lock):
                 spell_obj.spell_index._owner_spellbook = src_book
-                spell_obj.spell_index._active_spell = spell_obj
+                spell_obj.spell_index._selected_spell = spell_obj
                 spell_obj.spell_index._owner_conduit_id = self.source_conduit._id
         except Exception:
             pass
@@ -1332,7 +1332,7 @@ class TransferOfOwnership(Cleanable):
         try:
             src_book = self._source_spellbook
             tgt_book = self._target_spellbook
-            spell_id = spell_obj.spell_index.current
+            spell_id = spell_obj.spell_index.selected_spell_id
             src_states = src_book._spell_system_states
             tgt_states = tgt_book._spell_system_states
             if src_states is None or tgt_states is None:
@@ -1380,13 +1380,13 @@ class TransferOfOwnership(Cleanable):
             try:
                 with SafeGuard(spell_obj.spell_index._lock):
                     owner_book = spell_obj.spell_index._owner_spellbook
-                    active_spell = spell_obj.spell_index._active_spell
+                    active_spell = spell_obj.spell_index._selected_spell
                     if owner_book is not None and owner_book is not src_book:
                         raise RuntimeError("SpellIndex owner mismatch during transfer.")
                     if active_spell is not None and active_spell is not spell_obj:
                         raise RuntimeError("SpellIndex active spell mismatch during transfer.")
                     spell_obj.spell_index._owner_spellbook = tgt_book
-                    spell_obj.spell_index._active_spell = spell_obj
+                    spell_obj.spell_index._selected_spell = spell_obj
                     spell_obj.spell_index._owner_conduit_id = self.target_conduit._id
             except Exception as e:
                 raise RuntimeError(f"Failed to update SpellIndex owner: {e}")

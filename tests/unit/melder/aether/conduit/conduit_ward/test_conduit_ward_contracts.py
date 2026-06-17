@@ -260,7 +260,7 @@ class FakeSpellbook:
             spell.binding_name,
         )
         lookup_map[lookup_key] = spell.spell_index
-        versions = spell.spell_index._versions
+        versions = spell.spell_index._spells_in_index
         if versions:
             for version_id in versions:
                 versions_set.add(version_id)
@@ -273,7 +273,7 @@ class FakeSpellbook:
                     return spell_map[spell_index]
             else:
                 for idx, spell in spell_map.items():
-                    versions = idx._versions
+                    versions = idx._spells_in_index
                     if versions and spell_index in versions:
                         return spell
         raise RuntimeError("Contracted spell not found.")
@@ -284,7 +284,7 @@ class FakeSpellbook:
         if spell_map is None:
             return None
         for spell_index, spell in spell_map.items():
-            versions = spell_index._versions
+            versions = spell_index._spells_in_index
             if versions and spell_id in versions:
                 return spell
         return None
@@ -300,7 +300,7 @@ class FakeSpellbook:
         spell_index = None
         spell = None
         for idx, candidate in spell_map.items():
-            versions = idx._versions
+            versions = idx._spells_in_index
             if versions and spell_id in versions:
                 spell_index = idx
                 spell = candidate
@@ -314,7 +314,7 @@ class FakeSpellbook:
             spell.binding_name,
         )
         lookup_map.pop(lookup_key, None)
-        versions = spell_index._versions
+        versions = spell_index._spells_in_index
         if versions:
             for version_id in versions:
                 versions_set.discard(version_id)

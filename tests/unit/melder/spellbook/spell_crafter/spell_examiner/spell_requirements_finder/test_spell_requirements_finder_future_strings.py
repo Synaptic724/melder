@@ -55,7 +55,7 @@ def _make_spell(
     Purpose:
         Build a Spell instance for requirements testing.
     Contract:
-        - Returns a Spell with a deterministic SpellIndex.current value.
+        - Returns a Spell with a deterministic SpellIndex.selected_spell_id value.
     Args:
         call_target: Callable or class used as the spell target.
         spell_type: SpellType for the target.

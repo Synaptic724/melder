@@ -154,16 +154,16 @@ class _SpellbookStub:
         self.unregister_calls.append(("contracted", conduit_id, spell_id, spell))
 
 
-def test_current_and_update_and_get_all_versions():
+def test_current_and_update_and_spells_in_index():
     idx = SpellIndex("v1")
-    assert idx.current == "v1"
+    assert idx.selected_spell_id == "v1"
     idx.update("v2")
     idx.update("v3")
-    assert idx.current == "v3"
-    assert idx.get_all_versions() == {"v1", "v2", "v3"}
-    assert idx.has_version("v1")
-    assert idx.has_version("v3")
-    assert not idx.has_version("missing")
+    assert idx.selected_spell_id == "v3"
+    assert idx.spells_in_index() == {"v1", "v2", "v3"}
+    assert idx.has_spell("v1")
+    assert idx.has_spell("v3")
+    assert not idx.has_spell("missing")
 
 
 def test_hash_and_equality_stable():
@@ -204,19 +204,19 @@ def test_context_manager_acquires_and_releases():
     idx._lock.release()
 
 
-def test_get_all_versions_is_copy():
+def test_spells_in_index_is_copy():
     idx = SpellIndex("v1")
-    versions = idx.get_all_versions()
+    versions = idx.spells_in_index()
     versions.add("new")
-    assert "new" not in idx.get_all_versions()
+    assert "new" not in idx.spells_in_index()
 
 
-def test_has_version_updates_after_update():
+def test_has_spell_updates_after_update():
     idx = SpellIndex("v1")
-    assert idx.has_version("v1")
+    assert idx.has_spell("v1")
     idx.update("v2")
-    assert idx.has_version("v2")
-    assert idx.get_all_versions() == {"v1", "v2"}
+    assert idx.has_spell("v2")
+    assert idx.spells_in_index() == {"v1", "v2"}
 
 
 @pytest.mark.xfail(
@@ -243,7 +243,7 @@ def test_update_syncs_spell_id_to_current_for_owned_and_contracted_spells() -> N
 
     idx.update("v2")
 
-    assert idx.current == "v2"
+    assert idx.selected_spell_id == "v2"
     assert owner_spell.spell_id == "v2"
     assert contracted_spell.spell_id == "v2"
 
@@ -259,7 +259,7 @@ def test_nested_context_manager():
     idx = SpellIndex("v1")
     with idx:
         with idx:
-            assert idx.current == "v1"
+            assert idx.selected_spell_id == "v1"
 
 
 def test_cleanup_idempotent_and_nulls():
@@ -272,15 +272,15 @@ def test_cleanup_idempotent_and_nulls():
 def test_operations_after_cleanup_raise():
     idx = SpellIndex("v1")
     idx.cleanup()
-    assert not hasattr(idx, "_current_id")
+    assert not hasattr(idx, "_selected_spell_id")
     with pytest.raises(AttributeError):
-        _ = idx.current
+        _ = idx.selected_spell_id
     with pytest.raises(RuntimeError):
         idx.update("v2")
     with pytest.raises(RuntimeError):
-        idx.get_all_versions()
+        idx.spells_in_index()
     with pytest.raises(RuntimeError):
-        idx.has_version("v1")
+        idx.has_spell("v1")
     with pytest.raises(RuntimeError):
         with idx:
             pass
@@ -295,9 +295,9 @@ def test_hash_equality_with_other_types():
 def test_cleanup_then_hash_raises():
     idx = SpellIndex("v1")
     idx.cleanup()
-    assert not hasattr(idx, "_current_id")
+    assert not hasattr(idx, "_selected_spell_id")
     with pytest.raises(AttributeError):
-        _ = idx.current
+        _ = idx.selected_spell_id
     with pytest.raises(RuntimeError):
         idx.update("v2")
 
@@ -317,7 +317,7 @@ def test_attach_owner_registers_spell_id_and_sets_owner() -> None:
     idx._attach_owner(spellbook, spell)
 
     assert idx._owner_spellbook is spellbook
-    assert idx._active_spell is spell
+    assert idx._selected_spell is spell
     assert spellbook.owned_by_id["v1"] is spell
 
 
@@ -499,7 +499,7 @@ def test_cleanup_clears_attachment_references() -> None:
     idx.cleanup()
 
     assert not hasattr(idx, "_owner_spellbook")
-    assert not hasattr(idx, "_active_spell")
+    assert not hasattr(idx, "_selected_spell")
     assert not hasattr(idx, "_owner_conduit_id")
     assert not hasattr(idx, "_contracted_spellbooks")
 
@@ -512,7 +512,7 @@ def test_update_same_id_is_noop() -> None:
     idx._attach_owner(owner_book, owner_spell)
     idx.update("v1")
 
-    assert idx.current == "v1"
+    assert idx.selected_spell_id == "v1"
     assert owner_book.update_calls == []
 
 

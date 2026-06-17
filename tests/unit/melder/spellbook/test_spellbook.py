@@ -70,7 +70,7 @@ class DummySpell:
         """
         self.spell_id = spell_id
         self.spell_name = spell_name or spell_id
-        self._versions = versions or {spell_id}
+        self._spells_in_index = versions or {spell_id}
         self.user_created_object = existing_object
         self.cleaned = False
         self.cleanup_calls = 0
@@ -311,7 +311,7 @@ class DummySpellIndex:
     Purpose:
         Provide a minimal SpellIndex stub with version tracking.
     Contract:
-        Exposes has_version and cleanup for Spellbook internals.
+        Exposes has_spell and cleanup for Spellbook internals.
     """
     def __init__(self, versions=None, sid="sid", current="sid"):
         """
@@ -326,9 +326,9 @@ class DummySpellIndex:
         Returns:
             None.
         """
-        self._versions = set(versions) if versions is not None else {current}
+        self._spells_in_index = set(versions) if versions is not None else {current}
         self.id = sid
-        self.current = current
+        self.selected_spell_id = current
         self.cleaned = False
 
     def cleanup(self):
@@ -342,18 +342,18 @@ class DummySpellIndex:
         """
         self.cleaned = True
 
-    def has_version(self, version_id):
+    def has_spell(self, version_id):
         """
         Purpose:
             Report whether the index includes the given version id.
         Contract:
-            Returns True when version_id is present in _versions.
+            Returns True when version_id is present in _spells_in_index.
         Args:
             version_id: Version id to check.
         Returns:
             bool: True when version_id is registered.
         """
-        return version_id in self._versions
+        return version_id in self._spells_in_index
 
     def _set_owner_conduit_id(self, conduit_id):
         """
@@ -1404,7 +1404,7 @@ def test_refresh_local_spell_versions_populates_versions():
     sb = Spellbook()
     spell1 = DummySpell(spell_id="a", versions={"a", "b"})
     spell2 = DummySpell(spell_id="c", versions={"c"})
-    sb._spells = {DummySpellIndex(versions=spell1._versions): spell1, DummySpellIndex(versions=spell2._versions): spell2}
+    sb._spells = {DummySpellIndex(versions=spell1._spells_in_index): spell1, DummySpellIndex(versions=spell2._spells_in_index): spell2}
     sb._logger = DummySafeLogger()
     sb._refresh_local_spell_versions()
     assert sb._spell_versions == {"a", "b", "c"}
@@ -2217,8 +2217,8 @@ def test_refresh_contracted_spell_versions_populates_per_conduit():
     sb = Spellbook()
     spell1 = DummySpell(spell_id="a", versions={"a", "b"})
     spell2 = DummySpell(spell_id="c", versions={"c"})
-    sb._contracted_spells = {"x": {DummySpellIndex(versions=spell1._versions): spell1},
-                             "y": {DummySpellIndex(versions=spell2._versions): spell2}}
+    sb._contracted_spells = {"x": {DummySpellIndex(versions=spell1._spells_in_index): spell1},
+                             "y": {DummySpellIndex(versions=spell2._spells_in_index): spell2}}
     sb._logger = DummySafeLogger()
     sb._refresh_contracted_spell_versions()
     assert sb._contracted_versions["x"] == {"a", "b"}
@@ -3097,7 +3097,7 @@ def test_refresh_local_spell_versions_handles_various(versions):
     """
     sb = Spellbook()
     idx = DummySpellIndex(versions=versions or set())
-    idx._versions = versions or set()
+    idx._spells_in_index = versions or set()
     sb._spells = {idx: DummySpell()}
     sb._spell_versions = set()
     sb._logger = DummySafeLogger()

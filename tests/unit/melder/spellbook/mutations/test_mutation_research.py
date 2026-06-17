@@ -70,7 +70,7 @@ def test_mutation_research_cleanup_cleans_sessions_and_releases_associations() -
     index = SpellIndex("spell-root")
     try:
         session = manager.create_session(index, name="session")
-        spell_line = session.start_spell_research(index.current, name="spell-line")
+        spell_line = session.start_spell_research(index.selected_spell_id, name="spell-line")
         spell_line.attach_spell(_WeakRefTarget())
         spell_node = spell_line.begin_mutation(message="seed")
         spell_line.commit_mutation(spell_node)
@@ -265,17 +265,17 @@ def test_begin_spell_mutation_creates_or_reuses_spell_research_line(monkeypatch)
     index = SpellIndex("spell-root")
     try:
         session = manager.create_session(index, name="session")
-        existing = _FakeSpellResearch(index.current)
+        existing = _FakeSpellResearch(index.selected_spell_id)
         session._spell_lines.append(existing)
 
         reused = manager.begin_spell_mutation(index, message="reuse", tags=["a"])
-        assert reused == {"spell_id": index.current, "message": "reuse", "tags": ["a"]}
+        assert reused == {"spell_id": index.selected_spell_id, "message": "reuse", "tags": ["a"]}
         assert session.start_calls == []
 
         session._spell_lines.clear()
         created = manager.begin_spell_mutation(index, research_name="new-line", message="create", tags=["b"])
-        assert session.start_calls == [(index.current, "new-line")]
-        assert created == {"spell_id": index.current, "message": "create", "tags": ["b"]}
+        assert session.start_calls == [(index.selected_spell_id, "new-line")]
+        assert created == {"spell_id": index.selected_spell_id, "message": "create", "tags": ["b"]}
     finally:
         manager.cleanup()
         index.cleanup()

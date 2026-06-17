@@ -128,7 +128,7 @@ class _SpellIndexStub:
         self._current: str = current_id
 
     @property
-    def current(self) -> str:
+    def selected_spell_id(self) -> str:
         """
         Return the current spell id.
 
@@ -422,7 +422,7 @@ def test_register_spell_handles_missing_resolution_state_current_lookup() -> Non
             self._reads = 0
 
         @property
-        def current(self):
+        def selected_spell_id(self):
             self._reads += 1
             if self._reads == 1:
                 raise RuntimeError("broken current")

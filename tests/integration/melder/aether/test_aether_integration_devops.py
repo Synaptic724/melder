@@ -206,10 +206,10 @@ def test_aether_spell_system_states_dependency_and_impact_closure() -> None:
         permissions="create",
     )
     config_index = next(
-        idx for idx in book._spells.keys() if idx.current == config_id
+        idx for idx in book._spells.keys() if idx.selected_spell_id == config_id
     )
     service_index = next(
-        idx for idx in book._spells.keys() if idx.current == service_id
+        idx for idx in book._spells.keys() if idx.selected_spell_id == service_id
     )
     aether = Aether()
     states = aether._get_spell_system_states(frame_name)
@@ -256,10 +256,10 @@ def test_aether_spell_system_states_update_dependencies_removes_reverse_edges() 
         permissions="create",
     )
     config_index = next(
-        idx for idx in book._spells.keys() if idx.current == config_id
+        idx for idx in book._spells.keys() if idx.selected_spell_id == config_id
     )
     service_index = next(
-        idx for idx in book._spells.keys() if idx.current == service_id
+        idx for idx in book._spells.keys() if idx.selected_spell_id == service_id
     )
     aether = Aether()
     states = aether._get_spell_system_states(frame_name)
@@ -300,7 +300,7 @@ def test_aether_spell_system_states_local_topology_round_trip() -> None:
         permissions="create",
     )
     spell_index = next(
-        idx for idx in book._spells.keys() if idx.current == spell_id
+        idx for idx in book._spells.keys() if idx.selected_spell_id == spell_id
     )
     aether = Aether()
     states = aether._get_spell_system_states(frame_name)
@@ -391,10 +391,10 @@ def test_aether_devops_revalidate_pipeline_from_states() -> None:
         permissions="create",
     )
     config_index = next(
-        idx for idx in book._spells.keys() if idx.current == config_id
+        idx for idx in book._spells.keys() if idx.selected_spell_id == config_id
     )
     service_index = next(
-        idx for idx in book._spells.keys() if idx.current == service_id
+        idx for idx in book._spells.keys() if idx.selected_spell_id == service_id
     )
     aether = Aether()
     states = aether._get_spell_system_states(frame_name)

@@ -2359,11 +2359,11 @@ def test_invalidate_contract_consumers_filters_by_contract_key(ward):
     index_b = SpellIndex("spell-b")
     index_none = SpellIndex("spell-c")
     index_a._owner_spellbook = spellbook
-    index_a._active_spell = spell_a
+    index_a._selected_spell = spell_a
     index_b._owner_spellbook = spellbook
-    index_b._active_spell = spell_b
+    index_b._selected_spell = spell_b
     index_none._owner_spellbook = spellbook
-    index_none._active_spell = spell_none
+    index_none._selected_spell = spell_none
     states.register_index(index_a)
     states.register_index(index_b)
     states.register_index(index_none)
@@ -2371,10 +2371,10 @@ def test_invalidate_contract_consumers_filters_by_contract_key(ward):
     keys_a = ward._get_spell_contract_keys(spell_a)
     keys_b = ward._get_spell_contract_keys(spell_b)
     topology_a = SpellLocalTopology(
-        index_a.current,
+        index_a.selected_spell_id,
         [
             SpellSocketDescriptor(
-                spell_id=index_a.current,
+                spell_id=index_a.selected_spell_id,
                 param_name="dep",
                 position=0,
                 socket_kind=SocketKind.SPELL_CONTRACT,
@@ -2388,10 +2388,10 @@ def test_invalidate_contract_consumers_filters_by_contract_key(ward):
         ],
     )
     topology_b = SpellLocalTopology(
-        index_b.current,
+        index_b.selected_spell_id,
         [
             SpellSocketDescriptor(
-                spell_id=index_b.current,
+                spell_id=index_b.selected_spell_id,
                 param_name="dep",
                 position=0,
                 socket_kind=SocketKind.SPELL_CONTRACT,
@@ -2471,19 +2471,19 @@ def test_invalidate_contract_consumers_invalidates_all_and_swallows_errors(ward)
     index_a = SpellIndex("spell-a")
     index_b = SpellIndex("spell-b")
     index_a._owner_spellbook = spellbook
-    index_a._active_spell = spell_a
+    index_a._selected_spell = spell_a
     index_b._owner_spellbook = spellbook
-    index_b._active_spell = spell_b
+    index_b._selected_spell = spell_b
     states.register_index(index_a)
     states.register_index(index_b)
 
     keys_a = ward._get_spell_contract_keys(spell_a)
     keys_b = ward._get_spell_contract_keys(spell_b)
     topology_a = SpellLocalTopology(
-        index_a.current,
+        index_a.selected_spell_id,
         [
             SpellSocketDescriptor(
-                spell_id=index_a.current,
+                spell_id=index_a.selected_spell_id,
                 param_name="dep",
                 position=0,
                 socket_kind=SocketKind.SPELL_CONTRACT,
@@ -2497,10 +2497,10 @@ def test_invalidate_contract_consumers_invalidates_all_and_swallows_errors(ward)
         ],
     )
     topology_b = SpellLocalTopology(
-        index_b.current,
+        index_b.selected_spell_id,
         [
             SpellSocketDescriptor(
-                spell_id=index_b.current,
+                spell_id=index_b.selected_spell_id,
                 param_name="dep",
                 position=0,
                 socket_kind=SocketKind.SPELL_CONTRACT,

@@ -22,7 +22,7 @@ class SpellSymbolicGraph(Cleanable):
     --------
     "spell_id" is again the spell's **version ID**:
 
-        "spell.spell_index.current"
+        "spell.spell_index.selected_spell_id"
 
     The graph is always scoped per spell version; if a spell mutates and a new
     version is created, a new graph should be built.
@@ -110,7 +110,7 @@ class SpellSymbolicGraph(Cleanable):
     @property
     def spell_id(self) -> str:
         """
-        Versioned identity of the owning spell (SpellIndex.current).
+        Versioned identity of the owning spell (SpellIndex.selected_spell_id).
         """
         self.check_cleaned()
         return self._spell_id

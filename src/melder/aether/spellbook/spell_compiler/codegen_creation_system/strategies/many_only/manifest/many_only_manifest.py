@@ -107,7 +107,7 @@ def build_many_only_manifest(
             "root_spell_id": no_overrides_plan.root_spell_id,
             "root_instance_key": root_instance_key,
             "step_spell_ids": tuple(
-                step.spell.spell_index.current
+                step.spell.spell_index.selected_spell_id
                 for step in steps
             ),
             "steps_rows": steps_rows,
@@ -122,7 +122,7 @@ def build_many_only_manifest(
             "lane_id": overrides_plan.lane_id,
             "root_spell_id": overrides_plan.root_spell_id,
             "step_spell_ids": tuple(
-                step.spell.spell_index.current
+                step.spell.spell_index.selected_spell_id
                 for step in override_steps
             ),
             "plan_rows": plan_rows,
@@ -165,7 +165,7 @@ def _build_many_only_no_overrides_row(step: Any) -> Dict[str, Any]:
         )
     return {
         "instance_key": tuple(step.instance_key),
-        "spell_id": step.spell.spell_index.current,
+        "spell_id": step.spell.spell_index.selected_spell_id,
         "creations_target_kind": (
             SpellGeneralizedCodegenPlanTargetKind.CALLER
         ),

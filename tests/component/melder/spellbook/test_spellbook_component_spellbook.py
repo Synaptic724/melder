@@ -67,7 +67,7 @@ def _get_spell_by_version_id(spellbook: Spellbook, spell_id: str) -> object | No
     Purpose:
         Resolve a local Spell instance by its versioned spell id.
     Contract:
-        - Returns the first local spell whose SpellIndex.current matches `spell_id`.
+        - Returns the first local spell whose SpellIndex.selected_spell_id matches `spell_id`.
         - Returns None if no matching spell is found.
     Args:
         spellbook: Spellbook holding locally bound spells.
@@ -76,7 +76,7 @@ def _get_spell_by_version_id(spellbook: Spellbook, spell_id: str) -> object | No
         Spell | None: The resolved spell or None if missing.
     """
     for spell_index, spell in spellbook.spells.items():
-        if spell_index.current == spell_id:
+        if spell_index.selected_spell_id == spell_id:
             return spell
     return None
 
@@ -116,7 +116,7 @@ class _SpellSystemStatesStub:
         Returns:
             None.
         """
-        self.registered_lineages.append((spell_index, spell_index._active_spell))
+        self.registered_lineages.append((spell_index, spell_index._selected_spell))
 
     def unregister_index(self, spell_index: object) -> None:
         """
@@ -252,7 +252,7 @@ def test_component_spellbook_bind_registers_lineage_and_states() -> None:
         assert registered_spell is bound_spell
         assert registered_spell.spell is BasicService
         assert bound_spell._spell_system_states is states
-        assert bound_spell.spell_index.current == spell_id
+        assert bound_spell.spell_index.selected_spell_id == spell_id
     finally:
         spellbook.cleanup()
 

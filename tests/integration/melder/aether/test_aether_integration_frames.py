@@ -174,14 +174,14 @@ def test_aether_conduit_cloud_isolated_by_frame() -> None:
         conduit_a.permanent_cleanup()
 
 
-def test_aetheric_frame_version_registry_tracks_bound_spells() -> None:
+def test_aetheric_frame_selected_spell_registry_tracks_bound_spells() -> None:
     """
     Purpose:
         Validate AethericFrame version registry tracks bound spell versions.
     Contract:
-        - has_version returns True for bound spell ids.
-        - get_all_versions includes bound spell ids.
-        - find_and_return_spell_index resolves the SpellIndex lineage.
+        - has_spell returns True for bound spell ids.
+        - spells_in_index includes bound spell ids.
+        - find_index_for_spell resolves the SpellIndex lineage.
     Returns:
         None.
     Raises:
@@ -208,14 +208,14 @@ def test_aetheric_frame_version_registry_tracks_bound_spells() -> None:
     conduit = spellbook.conjure(name="root")
     try:
         # Version cache is maintained per-conduit during conjure; no manual refresh.
-        assert frame.has_version(service_id) is True
-        assert frame.has_version(config_id) is True
-        all_versions = frame.get_all_versions()
+        assert frame.has_spell(service_id) is True
+        assert frame.has_spell(config_id) is True
+        all_versions = frame.spells_in_index()
         assert service_id in all_versions
         assert config_id in all_versions
-        spell_index = frame.find_and_return_spell_index(service_id)
+        spell_index = frame.find_index_for_spell(service_id)
         assert spell_index is not None
-        assert spell_index.current == service_id
+        assert spell_index.selected_spell_id == service_id
     finally:
         conduit.permanent_cleanup()
 

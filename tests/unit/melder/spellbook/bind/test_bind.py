@@ -558,7 +558,7 @@ def test_existing_object_flag_not_set_for_callable(monkeypatch):
     b = Bind(StubSpellbook())
     spell = b.bind(Permissions.read, Existence.unique, aetheric_frame="f", spell=lambda x: x)
     assert spell.kwargs["existing_object"] is None
-    assert spell.kwargs["spell_index"].current == spell.kwargs["spell_id"]
+    assert spell.kwargs["spell_index"].selected_spell_id == spell.kwargs["spell_id"]
 
 
 def test_spell_id_stable_for_same_class(monkeypatch):
@@ -761,7 +761,7 @@ def test_spell_index_current_matches_spell_id(monkeypatch):
     monkeypatch.setattr("melder.aether.spellbook.bind.bind.SpellExaminer", lambda: StubExaminer(class_profile()))
     b = Bind(StubSpellbook())
     spell = b.bind(Permissions.read, Existence.unique, aetheric_frame="f", spell=RealClassImplementingProto)
-    assert spell.kwargs["spell_index"].current == spell.kwargs["spell_id"]
+    assert spell.kwargs["spell_index"].selected_spell_id == spell.kwargs["spell_id"]
 
 
 # Decorator with multiple objects --------------------------------------
@@ -920,7 +920,7 @@ def test_hash_stability_across_reuse(monkeypatch):
     b = Bind(StubSpellbook())
     s1 = b.bind(Permissions.read, Existence.unique, aetheric_frame="f", spell=RealClassImplementingProto)
     s2 = b.bind(Permissions.read, Existence.unique, aetheric_frame="f", spell=RealClassImplementingProto)
-    assert s1.kwargs["spell_index"].current == s2.kwargs["spell_index"].current
+    assert s1.kwargs["spell_index"].selected_spell_id == s2.kwargs["spell_index"].selected_spell_id
 
 # Binder/Spellbook wiring stubs ---------------------------------------
 
@@ -937,7 +937,7 @@ def test_bind_outputs_spell_index_current_as_first_id(monkeypatch):
     monkeypatch.setattr("melder.aether.spellbook.bind.bind.SpellExaminer", lambda: StubExaminer(profile))
     b = Bind(StubSpellbook())
     spell = b.bind(Permissions.read, Existence.unique, aetheric_frame="f", spell=RealClassImplementingProto)
-    assert spell.kwargs["spell_index"].current in spell.kwargs["spell_index"].get_all_versions()
+    assert spell.kwargs["spell_index"].selected_spell_id in spell.kwargs["spell_index"].spells_in_index()
 
 
 def test_bind_twice_same_class_same_fingerprint(monkeypatch):
@@ -1446,7 +1446,7 @@ def test_spell_index_versions_initial_size(monkeypatch):
     monkeypatch.setattr("melder.aether.spellbook.bind.bind.SpellExaminer", lambda: StubExaminer(prof))
     b = Bind(StubSpellbook())
     spell = b.bind(Permissions.read, Existence.unique, aetheric_frame="f", spell=RealClassImplementingProto)
-    assert spell.kwargs["spell_index"].get_all_versions() == {spell.kwargs["spell_index"].current}
+    assert spell.kwargs["spell_index"].spells_in_index() == {spell.kwargs["spell_index"].selected_spell_id}
 
 
 def test_bind_after_cleanup_lock_is_none(monkeypatch):
