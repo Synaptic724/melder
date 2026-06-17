@@ -3,6 +3,7 @@ from typing import TYPE_CHECKING, Dict, Set, Optional, List, ClassVar
 
 from melder.aether.spellbook.existence.existence import Existence
 from melder.aether.conduit.conduit_state.conduit_state import ConduitState
+from melder.aether.conduit.creations.cluster_creations import ClusterCreations
 from melder.aether.aetheric_frame.dev_ops.devops_identity import DevopsIdentity
 from melder.aether.aetheric_frame.dev_ops.devops_information_registry import (
     DevopsInformationRegistry,
@@ -52,6 +53,8 @@ class ConduitCluster(Cleanable):
         "_id",
         "_devops_identity",
         "_devops_information_registry",
+        "cluster_creations",
+        "master_conduit_id",
     ]
 
     def __init__(
@@ -100,6 +103,13 @@ class ConduitCluster(Cleanable):
             self._devops_information_registry,
             object_ref=self,
         )
+        # Cluster team-store facade. The cluster owns it; it fronts the elected
+        # leader conduit's `Creations` and starts disabled (no leader). A
+        # `unique_per_conduit_cluster` spell resolves its instance through this
+        # facade. The leader bind/unbind happens through the elect/unelect
+        # cluster-leader transactions (not here).
+        self.cluster_creations: ClusterCreations = ClusterCreations()
+        self.master_conduit_id: Optional[str] = None
 
     def cleanup(self) -> None:
         """
@@ -130,6 +140,9 @@ class ConduitCluster(Cleanable):
             for conduit_id in member_ids:
                 self._devops_identity.unregister_cluster_member(conduit_id)
             self._devops_identity.cleanup()
+            self.cluster_creations.cleanup()
+            del self.cluster_creations
+            del self.master_conduit_id
             del self.auto_link_dependencies
             del self._devops_information_registry
             del self._devops_identity
