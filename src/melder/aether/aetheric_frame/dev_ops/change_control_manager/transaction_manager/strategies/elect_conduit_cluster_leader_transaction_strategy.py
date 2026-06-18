@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Dict, List, Optional, Set, Tuple
+from typing import TYPE_CHECKING, Dict, List, Set, Tuple
 
 from melder.aether.aetheric_frame.dev_ops.devops_information_registry import (
     DevopsInformationRegistry,
@@ -17,33 +17,29 @@ if TYPE_CHECKING:
     from melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.transaction_manager import (
         ChangeControlTransactionManager,
     )
-    from melder.aether.aetheric_frame.dev_ops.change_control_manager.orchestrator.staged_mutation import (
-        ChangeControlStagedMutation,
-    )
 
 
 class ElectConduitClusterLeaderTransactionStrategy(TransactionStrategy):
     """
-    Elect-cluster-leader transaction resolver (bind the cluster team-store facade).
+    Elect-cluster-leader transaction resolver (concurrency envelope only).
 
     Purpose:
-        Resolve one `ELECT_CONDUIT_CLUSTER_LEADER` request: bind the cluster's
-        `cluster_creations` facade to the elected leader conduit's `Creations`.
-        Election is an inert -> active transition; while inert the cluster door
-        hard-errors, so no in-flight cluster create exists against a store and a
-        light/atomic transaction is sufficient (no lineage drain).
+        Mediate one `ELECT_CONDUIT_CLUSTER_LEADER` request. Election is an
+        inert -> active transition; while inert the cluster door hard-errors, so
+        no meld is mid-create against the team-store and a light/atomic envelope
+        is sufficient (no lineage drain). The actual leadership effect (binding
+        the cluster team-store to the elected leader's `Creations`) is run by the
+        domain call site (ConduitCluster) inside the held transaction window --
+        exactly as Spellbook runs `_apply_notch` between start and end. This
+        strategy does NOT touch creations; its only job is to seal the footprint.
 
-    Call-site metadata contract (the cluster call site supplies these when it
-    opens the transaction):
+    Call-site metadata contract:
         - "member_conduit_ids": tuple[str] -- cluster member conduit ids (seal footprint).
-        - "cluster_creations": the ClusterCreations facade (committed-effect target).
-        - "leader_creations": the elected leader's Creations (bind target).
 
     Contract:
-        - Seals the cluster member conduits EXCLUSIVE for the bind, isolated to
-          them; no drain (inert invariant).
-        - Committed effect (apply_commit_delta, scopes held): cluster_creations
-          .bind(leader_creations); then the base fact-baseline stamp runs.
+        - Seals the cluster member conduits EXCLUSIVE for the duration, isolated
+          to them; no drain (inert invariant).
+        - Commit runs only the base fact-baseline stamp (no domain effect here).
     """
 
     @classmethod
@@ -89,28 +85,6 @@ class ElectConduitClusterLeaderTransactionStrategy(TransactionStrategy):
             "metadata": normalized_metadata,
         }
 
-    @classmethod
-    def apply_commit_delta(
-            cls,
-            *,
-            devops_information_registry: Optional[DevopsInformationRegistry],
-            identity: DevopsIdentity,
-            staged: "ChangeControlStagedMutation",
-    ) -> None:
-        """
-        Committed effect: bind the cluster facade to the leader's Creations.
-        """
-        staged_metadata = getattr(staged, "metadata", None) or {}
-        cluster_creations = staged_metadata.get("cluster_creations")
-        leader_creations = staged_metadata.get("leader_creations")
-        if cluster_creations is not None and leader_creations is not None:
-            cluster_creations.bind(leader_creations)
-        super().apply_commit_delta(
-            devops_information_registry=devops_information_registry,
-            identity=identity,
-            staged=staged,
-        )
-
     @staticmethod
     def _member_conduit_ids(metadata: Dict[str, object]) -> Set[str]:
         """
@@ -120,17 +94,6 @@ class ElectConduitClusterLeaderTransactionStrategy(TransactionStrategy):
         for conduit_id in metadata.get("member_conduit_ids", ()):
             if isinstance(conduit_id, str) and conduit_id:
                 out.add(conduit_id)
-        return out
-
-    @staticmethod
-    def _member_root_ids(metadata: Dict[str, object]) -> List[str]:
-        """
-        Collect the cluster member root-conduit ids (lineage drain footprint).
-        """
-        out: List[str] = []
-        for root_id in metadata.get("member_root_conduit_ids", ()):
-            if isinstance(root_id, str) and root_id:
-                out.append(root_id)
         return out
 
     @staticmethod

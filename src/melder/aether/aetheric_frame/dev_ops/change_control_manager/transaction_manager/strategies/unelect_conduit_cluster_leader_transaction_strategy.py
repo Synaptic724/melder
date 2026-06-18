@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Dict, List, Optional, Set, Tuple
+from typing import TYPE_CHECKING, Dict, List, Set, Tuple
 
 from melder.aether.aetheric_frame.dev_ops.devops_information_registry import (
     DevopsInformationRegistry,
@@ -17,35 +17,35 @@ if TYPE_CHECKING:
     from melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.transaction_manager import (
         ChangeControlTransactionManager,
     )
-    from melder.aether.aetheric_frame.dev_ops.change_control_manager.orchestrator.staged_mutation import (
-        ChangeControlStagedMutation,
-    )
 
 
 class UnelectConduitClusterLeaderTransactionStrategy(TransactionStrategy):
     """
-    Unelect-cluster-leader transaction resolver (unbind the team-store facade safely).
+    Unelect-cluster-leader transaction resolver (freeze envelope; no domain effect).
 
     Purpose:
-        Resolve one `UNELECT_CONDUIT_CLUSTER_LEADER` request: unbind the cluster's
-        `cluster_creations` facade (cluster goes inert). This REQUIRES coordination
-        -- every member root lineage must be drained so no meld is mid-create
-        against the leader store when the facade unbinds (a meld holds its gate
-        ticket across the whole executor).
+        Mediate one `UNELECT_CONDUIT_CLUSTER_LEADER` request. Unelection takes the
+        active cluster back to inert. Because the cluster is active, a meld may be
+        mid-create against the leader store right now (a meld holds its gate ticket
+        across the whole executor), so the team-store must NOT be re-targeted while
+        a reader is in flight. This strategy provides the freeze: it drains every
+        member root lineage to zero before the domain effect runs and reopens them
+        after. The actual unbind of the team-store is run by the domain call site
+        (ConduitCluster) inside the held window, between start and end -- exactly as
+        Spellbook runs `_apply_notch`. This strategy does NOT touch creations.
 
     Call-site metadata contract:
         - "member_conduit_ids": tuple[str] -- member conduit ids (seal footprint).
         - "member_root_conduit_ids": tuple[str] -- member root ids (drain footprint).
         - "conduit_lineage_gate_ops": ConduitLineageGateOps (drain/reopen facade).
-        - "cluster_creations": the ClusterCreations facade (unbind target).
 
-    Lifecycle (the coordination):
+    Lifecycle (the freeze):
         - build_start_plan: seal the member conduits EXCLUSIVE.
-        - on_start (scopes held): drain every member root lineage via the gate
-          facade. A drain timeout raises here -> the transaction aborts.
-        - apply_commit_delta (commit only): cluster_creations.unbind().
+        - on_start (scopes held, before the domain unbind): drain every member root
+          lineage via the gate facade. A drain timeout raises here -> abort.
+        - commit: base fact-baseline stamp only (no domain effect here).
         - on_end (every exit path -- commit, abort, or error): reopen every member
-          root lineage. So a failed drain leaves the leader still bound and the
+          root lineage. A failed drain leaves the leader still bound and the
           lineages reopened (fail-closed), never permanently gated.
     """
 
@@ -100,7 +100,8 @@ class UnelectConduitClusterLeaderTransactionStrategy(TransactionStrategy):
             metadata: Dict[str, object],
     ) -> None:
         """
-        Drain every member root lineage (scopes held) so no meld is mid-create.
+        Drain every member root lineage (scopes held) so no meld is mid-create
+        when the domain call site unbinds the team-store.
         """
         del devops_information_registry, identity
         gate_ops = metadata.get("conduit_lineage_gate_ops")
@@ -109,27 +110,6 @@ class UnelectConduitClusterLeaderTransactionStrategy(TransactionStrategy):
         for root_id in metadata.get("member_root_conduit_ids", ()):
             if isinstance(root_id, str) and root_id:
                 gate_ops.close_and_wait_conduit_lineage(root_id)
-
-    @classmethod
-    def apply_commit_delta(
-            cls,
-            *,
-            devops_information_registry: Optional[DevopsInformationRegistry],
-            identity: DevopsIdentity,
-            staged: "ChangeControlStagedMutation",
-    ) -> None:
-        """
-        Committed effect (drain already done): unbind the cluster facade.
-        """
-        staged_metadata = getattr(staged, "metadata", None) or {}
-        cluster_creations = staged_metadata.get("cluster_creations")
-        if cluster_creations is not None:
-            cluster_creations.unbind()
-        super().apply_commit_delta(
-            devops_information_registry=devops_information_registry,
-            identity=identity,
-            staged=staged,
-        )
 
     @staticmethod
     def on_end(
@@ -158,15 +138,4 @@ class UnelectConduitClusterLeaderTransactionStrategy(TransactionStrategy):
         for conduit_id in metadata.get("member_conduit_ids", ()):
             if isinstance(conduit_id, str) and conduit_id:
                 out.add(conduit_id)
-        return out
-
-    @staticmethod
-    def _member_root_ids(metadata: Dict[str, object]) -> List[str]:
-        """
-        Collect the cluster member root-conduit ids (lineage drain footprint).
-        """
-        out: List[str] = []
-        for root_id in metadata.get("member_root_conduit_ids", ()):
-            if isinstance(root_id, str) and root_id:
-                out.append(root_id)
         return out

@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Dict, Optional, Set, Tuple
+from typing import TYPE_CHECKING, Dict, Set, Tuple
 
 from melder.aether.aetheric_frame.dev_ops.devops_information_registry import (
     DevopsInformationRegistry,
@@ -327,23 +327,16 @@ class BindTransactionStrategy(TransactionStrategy):
             metadata: Dict[str, object],
     ) -> None:
         """
-        Prepare Spellbook-local bind state after bind admission succeeds.
+        No start-side coordination.
 
         Contract:
-            - Resolves the live Spellbook object through the registry instead
-              of trusting caller-owned metadata to carry that object.
-            - Raises when the owning Spellbook cannot be resolved because bind
-              local-state setup cannot proceed safely without it.
+            - Spellbook-local bind state is prepared by the Spellbook itself
+              (Spellbook.begin_transaction), not by this DevOps strategy. The
+              mediator owns only the change-control envelope (admission/scopes),
+              so this strategy never reaches into the Spellbook runtime.
         """
-        spellbook = devops_information_registry.get_object(
-            owner_kind=identity.owner_kind,
-            owner_id=identity.owner_id,
-        )
-        if spellbook is None:
-            raise RuntimeError(
-                "Bind transaction strategy could not resolve the owning Spellbook object."
-            )
-        spellbook._prepare_bind_transaction_state()
+        del devops_information_registry, identity, metadata
+        return None
 
     @staticmethod
     def on_end(
@@ -353,16 +346,11 @@ class BindTransactionStrategy(TransactionStrategy):
             metadata: Dict[str, object],
     ) -> None:
         """
-        Clear Spellbook-local bind state after bind finalization.
+        No end-side coordination.
 
         Contract:
-            - Best effort when the owning Spellbook can no longer be resolved.
-            - No-ops when the registry no longer has the spellbook object.
+            - Spellbook-local bind state is cleared by the Spellbook itself
+              (Spellbook.end_transaction), not by this DevOps strategy.
         """
-        spellbook = devops_information_registry.get_object(
-            owner_kind=identity.owner_kind,
-            owner_id=identity.owner_id,
-        )
-        if spellbook is None:
-            return
-        spellbook._clear_bind_transaction_state()
+        del devops_information_registry, identity, metadata
+        return None

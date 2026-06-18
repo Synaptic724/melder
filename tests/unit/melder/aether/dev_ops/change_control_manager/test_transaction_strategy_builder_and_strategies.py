@@ -1062,39 +1062,6 @@ class _RecordingGateOps:
         self.enabled.append(root_id)
 
 
-class _RecordingClusterCreations:
-    """
-    Records bind/unbind effect calls for cluster-leader commit tests.
-    """
-
-    def __init__(self) -> None:
-        """Start unbound with no recorded leader store."""
-        self.bound = None
-        self.unbound = False
-
-    def bind(self, leader_creations: object) -> None:
-        """Record the leader store the facade was bound to."""
-        self.bound = leader_creations
-
-    def unbind(self) -> None:
-        """Record that the facade was unbound."""
-        self.unbound = True
-
-
-class _FakeStaged:
-    """
-    Minimal staged-mutation double exposing the commit-delta read surface.
-    """
-
-    def __init__(self, metadata: Dict[str, object]) -> None:
-        """Carry only the metadata the cluster-leader commit effect reads."""
-        self.metadata = metadata
-        self.request_type = "cluster_leader_election"
-        self.request_id = "req-1"
-        self.spellbook_id = None
-        self.conduit_ids = ()
-
-
 def _make_cluster_leader_identity(transaction_name: str) -> DevopsIdentity:
     """
     Build an attached conduit identity that supports one cluster-leader transaction.
@@ -1268,59 +1235,3 @@ def test_elect_cluster_leader_on_start_does_not_drain() -> None:
     )
 
     assert gate_ops.closed == []
-
-
-def test_elect_cluster_leader_commit_binds_cluster_creations() -> None:
-    """
-    Purpose:
-        Verify the elect commit effect binds the cluster facade to the elected
-        leader's Creations.
-    Contract:
-        - apply_commit_delta calls cluster_creations.bind(leader_creations).
-    Returns:
-        None.
-    Raises:
-        AssertionError: If the commit effect does not bind the leader store.
-    """
-    cluster_creations = _RecordingClusterCreations()
-    leader_creations = object()
-    identity = _make_cluster_leader_identity("elect_conduit_cluster_leader")
-    staged = _FakeStaged(
-        {
-            "cluster_creations": cluster_creations,
-            "leader_creations": leader_creations,
-        }
-    )
-
-    ElectConduitClusterLeaderTransactionStrategy.apply_commit_delta(
-        devops_information_registry=None,
-        identity=identity,
-        staged=staged,
-    )
-
-    assert cluster_creations.bound is leader_creations
-
-
-def test_unelect_cluster_leader_commit_unbinds_cluster_creations() -> None:
-    """
-    Purpose:
-        Verify the unelect commit effect unbinds the cluster facade (after the
-        on_start drain has already quiesced the member lineages).
-    Contract:
-        - apply_commit_delta calls cluster_creations.unbind().
-    Returns:
-        None.
-    Raises:
-        AssertionError: If the commit effect does not unbind the facade.
-    """
-    cluster_creations = _RecordingClusterCreations()
-    identity = _make_cluster_leader_identity("unelect_conduit_cluster_leader")
-    staged = _FakeStaged({"cluster_creations": cluster_creations})
-
-    UnelectConduitClusterLeaderTransactionStrategy.apply_commit_delta(
-        devops_information_registry=None,
-        identity=identity,
-        staged=staged,
-    )
-
-    assert cluster_creations.unbound is True
