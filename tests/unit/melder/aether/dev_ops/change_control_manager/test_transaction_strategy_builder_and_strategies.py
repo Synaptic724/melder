@@ -33,6 +33,12 @@ from melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_man
 from melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.remove_from_index_transaction_strategy import (
     RemoveFromIndexTransactionStrategy,
 )
+from melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.elect_conduit_cluster_leader_transaction_strategy import (
+    ElectConduitClusterLeaderTransactionStrategy,
+)
+from melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.unelect_conduit_cluster_leader_transaction_strategy import (
+    UnelectConduitClusterLeaderTransactionStrategy,
+)
 from melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.transaction_manager import (
     ChangeControlTransactionManager,
 )
@@ -159,6 +165,14 @@ def test_transaction_strategy_builder_resolves_enum_and_string_transaction_names
     assert builder.resolve("notch") is NotchTransactionStrategy
     assert builder.resolve("add_to_index") is AddToIndexTransactionStrategy
     assert builder.resolve("remove_from_index") is RemoveFromIndexTransactionStrategy
+    assert (
+        builder.resolve("elect_conduit_cluster_leader")
+        is ElectConduitClusterLeaderTransactionStrategy
+    )
+    assert (
+        builder.resolve("unelect_conduit_cluster_leader")
+        is UnelectConduitClusterLeaderTransactionStrategy
+    )
 
 
 def test_transaction_strategy_builder_register_strategy_replaces_existing_mapping() -> None:
@@ -1027,3 +1041,286 @@ def test_remove_from_index_transaction_strategy_seals_spellbook_conduit_binding_
     assert scope_claims["scope:conduit:conduit-1"] == ClaimMode.EXCLUSIVE.value
     assert scope_claims[binding_scope] == ClaimMode.EXCLUSIVE.value
     assert plan["metadata"]["index_mode"] == "remove_from_index"
+
+
+class _RecordingGateOps:
+    """
+    Records lineage drain/reopen calls for cluster-leader coordination tests.
+    """
+
+    def __init__(self) -> None:
+        """Start with empty drain and reopen logs."""
+        self.closed: list = []
+        self.enabled: list = []
+
+    def close_and_wait_conduit_lineage(self, root_id: str) -> None:
+        """Record a drain request for one root lineage."""
+        self.closed.append(root_id)
+
+    def enable_conduit_lineage(self, root_id: str) -> None:
+        """Record a reopen request for one root lineage."""
+        self.enabled.append(root_id)
+
+
+class _RecordingClusterCreations:
+    """
+    Records bind/unbind effect calls for cluster-leader commit tests.
+    """
+
+    def __init__(self) -> None:
+        """Start unbound with no recorded leader store."""
+        self.bound = None
+        self.unbound = False
+
+    def bind(self, leader_creations: object) -> None:
+        """Record the leader store the facade was bound to."""
+        self.bound = leader_creations
+
+    def unbind(self) -> None:
+        """Record that the facade was unbound."""
+        self.unbound = True
+
+
+class _FakeStaged:
+    """
+    Minimal staged-mutation double exposing the commit-delta read surface.
+    """
+
+    def __init__(self, metadata: Dict[str, object]) -> None:
+        """Carry only the metadata the cluster-leader commit effect reads."""
+        self.metadata = metadata
+        self.request_type = "cluster_leader_election"
+        self.request_id = "req-1"
+        self.spellbook_id = None
+        self.conduit_ids = ()
+
+
+def _make_cluster_leader_identity(transaction_name: str) -> DevopsIdentity:
+    """
+    Build an attached conduit identity that supports one cluster-leader transaction.
+    """
+    return DevopsIdentity(
+        owner_kind="conduit",
+        owner_id="conduit-1",
+        aetheric_frame_name="frame-1",
+        metadata={},
+        available_transactions=(transaction_name,),
+    )
+
+
+def test_transaction_strategy_builder_resolves_cluster_leader_election_names() -> None:
+    """
+    Purpose:
+        Verify the builder resolves the elect/unelect cluster-leader strategies
+        from both enum and string inputs.
+    Contract:
+        - elect/unelect register and resolve to their strategy classes.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If cluster-leader-election resolution diverges.
+    """
+    transaction_manager, registry, _identity = _make_registry_and_identity()
+    builder = TransactionStrategyBuilder(transaction_manager, registry)
+
+    assert (
+        builder.resolve(ChangeTransactionType.ELECT_CONDUIT_CLUSTER_LEADER)
+        is ElectConduitClusterLeaderTransactionStrategy
+    )
+    assert (
+        builder.resolve("elect_conduit_cluster_leader")
+        is ElectConduitClusterLeaderTransactionStrategy
+    )
+    assert (
+        builder.resolve(ChangeTransactionType.UNELECT_CONDUIT_CLUSTER_LEADER)
+        is UnelectConduitClusterLeaderTransactionStrategy
+    )
+    assert (
+        builder.resolve("unelect_conduit_cluster_leader")
+        is UnelectConduitClusterLeaderTransactionStrategy
+    )
+
+
+def test_elect_cluster_leader_strategy_seals_member_conduits_exclusive() -> None:
+    """
+    Purpose:
+        Verify electing a leader seals every cluster member conduit EXCLUSIVE,
+        isolated to those conduits (no spellbook/binding scope), and marks the mode.
+    Contract:
+        - Each member conduit scope is EXCLUSIVE.
+        - conduit_ids carries the sorted footprint; metadata marks the elect mode.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If elect planning does not seal the members exclusively.
+    """
+    transaction_manager = ChangeControlTransactionManager()
+    registry = DevopsInformationRegistry("frame-1")
+    identity = _make_cluster_leader_identity("elect_conduit_cluster_leader")
+    registry.register_identity(identity)
+
+    plan = ElectConduitClusterLeaderTransactionStrategy.build_start_plan(
+        transaction_manager=transaction_manager,
+        devops_information_registry=registry,
+        identity=identity,
+        metadata={"member_conduit_ids": ("conduit-1", "conduit-2")},
+    )
+
+    scope_claims = dict(plan["scope_claims"])
+    assert scope_claims["scope:conduit:conduit-1"] == ClaimMode.EXCLUSIVE.value
+    assert scope_claims["scope:conduit:conduit-2"] == ClaimMode.EXCLUSIVE.value
+    assert plan["conduit_ids"] == ("conduit-1", "conduit-2")
+    assert plan["metadata"]["cluster_leader_mode"] == "elect"
+
+
+def test_unelect_cluster_leader_strategy_seals_member_conduits_exclusive() -> None:
+    """
+    Purpose:
+        Verify unelecting a leader seals every cluster member conduit EXCLUSIVE
+        and marks the unelect mode.
+    Contract:
+        - Each member conduit scope is EXCLUSIVE.
+        - metadata marks the unelect mode.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If unelect planning does not seal the members exclusively.
+    """
+    transaction_manager = ChangeControlTransactionManager()
+    registry = DevopsInformationRegistry("frame-1")
+    identity = _make_cluster_leader_identity("unelect_conduit_cluster_leader")
+    registry.register_identity(identity)
+
+    plan = UnelectConduitClusterLeaderTransactionStrategy.build_start_plan(
+        transaction_manager=transaction_manager,
+        devops_information_registry=registry,
+        identity=identity,
+        metadata={"member_conduit_ids": ("conduit-1", "conduit-2")},
+    )
+
+    scope_claims = dict(plan["scope_claims"])
+    assert scope_claims["scope:conduit:conduit-1"] == ClaimMode.EXCLUSIVE.value
+    assert scope_claims["scope:conduit:conduit-2"] == ClaimMode.EXCLUSIVE.value
+    assert plan["metadata"]["cluster_leader_mode"] == "unelect"
+
+
+def test_unelect_cluster_leader_drains_then_reopens_member_root_lineages() -> None:
+    """
+    Purpose:
+        Verify unelect drains every member root lineage on_start and reopens every
+        member root lineage on_end (the use-after-dispose guard, fail-closed).
+    Contract:
+        - on_start drains each member root once.
+        - on_end reopens each member root once.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If drain/reopen footprints do not match the member roots.
+    """
+    gate_ops = _RecordingGateOps()
+    registry = DevopsInformationRegistry("frame-1")
+    identity = _make_cluster_leader_identity("unelect_conduit_cluster_leader")
+    registry.register_identity(identity)
+    metadata = {
+        "member_root_conduit_ids": ("root-1", "root-2"),
+        "conduit_lineage_gate_ops": gate_ops,
+    }
+
+    UnelectConduitClusterLeaderTransactionStrategy.on_start(
+        devops_information_registry=registry,
+        identity=identity,
+        metadata=metadata,
+    )
+    UnelectConduitClusterLeaderTransactionStrategy.on_end(
+        devops_information_registry=registry,
+        identity=identity,
+        metadata=metadata,
+    )
+
+    assert gate_ops.closed == ["root-1", "root-2"]
+    assert gate_ops.enabled == ["root-1", "root-2"]
+
+
+def test_elect_cluster_leader_on_start_does_not_drain() -> None:
+    """
+    Purpose:
+        Verify electing a leader performs no lineage drain (inert -> active needs
+        no coordination); a gate facade in metadata is left untouched on_start.
+    Contract:
+        - on_start drains nothing even when a gate facade is supplied.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If elect on_start drains any lineage.
+    """
+    gate_ops = _RecordingGateOps()
+    registry = DevopsInformationRegistry("frame-1")
+    identity = _make_cluster_leader_identity("elect_conduit_cluster_leader")
+    registry.register_identity(identity)
+
+    ElectConduitClusterLeaderTransactionStrategy.on_start(
+        devops_information_registry=registry,
+        identity=identity,
+        metadata={
+            "member_root_conduit_ids": ("root-1",),
+            "conduit_lineage_gate_ops": gate_ops,
+        },
+    )
+
+    assert gate_ops.closed == []
+
+
+def test_elect_cluster_leader_commit_binds_cluster_creations() -> None:
+    """
+    Purpose:
+        Verify the elect commit effect binds the cluster facade to the elected
+        leader's Creations.
+    Contract:
+        - apply_commit_delta calls cluster_creations.bind(leader_creations).
+    Returns:
+        None.
+    Raises:
+        AssertionError: If the commit effect does not bind the leader store.
+    """
+    cluster_creations = _RecordingClusterCreations()
+    leader_creations = object()
+    identity = _make_cluster_leader_identity("elect_conduit_cluster_leader")
+    staged = _FakeStaged(
+        {
+            "cluster_creations": cluster_creations,
+            "leader_creations": leader_creations,
+        }
+    )
+
+    ElectConduitClusterLeaderTransactionStrategy.apply_commit_delta(
+        devops_information_registry=None,
+        identity=identity,
+        staged=staged,
+    )
+
+    assert cluster_creations.bound is leader_creations
+
+
+def test_unelect_cluster_leader_commit_unbinds_cluster_creations() -> None:
+    """
+    Purpose:
+        Verify the unelect commit effect unbinds the cluster facade (after the
+        on_start drain has already quiesced the member lineages).
+    Contract:
+        - apply_commit_delta calls cluster_creations.unbind().
+    Returns:
+        None.
+    Raises:
+        AssertionError: If the commit effect does not unbind the facade.
+    """
+    cluster_creations = _RecordingClusterCreations()
+    identity = _make_cluster_leader_identity("unelect_conduit_cluster_leader")
+    staged = _FakeStaged({"cluster_creations": cluster_creations})
+
+    UnelectConduitClusterLeaderTransactionStrategy.apply_commit_delta(
+        devops_information_registry=None,
+        identity=identity,
+        staged=staged,
+    )
+
+    assert cluster_creations.unbound is True
