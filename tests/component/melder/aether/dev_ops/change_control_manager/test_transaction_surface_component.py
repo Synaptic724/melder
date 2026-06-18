@@ -99,17 +99,20 @@ def _register_conduit_identity(
     return identity, conduit
 
 
-def test_component_transaction_surface_pre_conjure_bind_start_and_end_calls_spellbook_local_hooks() -> None:
+def test_component_transaction_surface_bind_does_not_reach_into_spellbook_hooks() -> None:
     """
     Purpose:
-        Validate the live mediator routes bind start/end through the spellbook object.
+        Validate the live mediator surface does NOT reach into the Spellbook for
+        bind start/end. Spellbook-local bind state is owned by the Spellbook
+        itself (begin_transaction / end_transaction); the mediator owns only the
+        change-control envelope, so the strategy hooks must never touch the object.
     Contract:
         - Pre-conjure bind uses spellbook-owned identity.
-        - Strategy on_start and on_end call the spellbook local bind hooks.
+        - The mediator/strategy path never calls the spellbook local bind hooks.
     Returns:
         None.
     Raises:
-        AssertionError: If bind start/end skips spellbook-local hooks.
+        AssertionError: If the mediator surface reaches into spellbook-local hooks.
     """
     frame = _make_frame("component-tx-surface-pre-conjure")
     try:
@@ -127,14 +130,14 @@ def test_component_transaction_surface_pre_conjure_bind_start_and_end_calls_spel
         )
 
         assert session.request.request_type.value == "bind"
-        spellbook._prepare_bind_transaction_state.assert_called_once_with()
 
         mediator.end_transaction_for_identity(
             identity=identity,
             transaction_type="bind",
         )
 
-        spellbook._clear_bind_transaction_state.assert_called_once_with()
+        spellbook._prepare_bind_transaction_state.assert_not_called()
+        spellbook._clear_bind_transaction_state.assert_not_called()
     finally:
         frame.cleanup()
 
@@ -193,7 +196,6 @@ def test_component_transaction_surface_post_conjure_bind_plan_includes_cluster_s
             identity=spellbook_identity,
             transaction_type="bind",
         )
-        spellbook._clear_bind_transaction_state.assert_called_once_with()
         assert conduit_identity.owner_id == "conduit-1"
     finally:
         frame.cleanup()
@@ -467,7 +469,6 @@ def test_component_transaction_surface_bind_update_transaction_extends_binding_k
             identity=identity,
             transaction_type="bind",
         )
-        spellbook._clear_bind_transaction_state.assert_called_once_with()
     finally:
         frame.cleanup()
 
@@ -570,7 +571,6 @@ def test_component_transaction_surface_mark_abort_only_clears_registry_mirror_on
             owner_kind="spellbook",
             owner_id="spellbook-1",
         ) == ()
-        spellbook._clear_bind_transaction_state.assert_called_once_with()
     finally:
         frame.cleanup()
 

@@ -347,17 +347,20 @@ def test_bind_transaction_strategy_builds_post_conjure_plan_with_cluster_scope()
     assert "scope:conduit_ward:conduit-1" not in scope_claims
 
 
-def test_bind_transaction_strategy_on_start_and_on_end_call_spellbook_local_hooks() -> None:
+def test_bind_transaction_strategy_hooks_do_not_touch_spellbook() -> None:
     """
     Purpose:
-        Verify bind strategy start and end hooks resolve the live Spellbook object.
+        Verify the bind strategy's lifecycle hooks are DevOps-only no-ops. The
+        Spellbook-local bind state is prepared/cleared by the Spellbook itself
+        (begin_transaction / end_transaction), NOT by this DevOps strategy, so
+        the strategy must never reach into the live Spellbook object.
     Contract:
-        - on_start calls _prepare_bind_transaction_state.
-        - on_end calls _clear_bind_transaction_state.
+        - on_start does not resolve or mutate the Spellbook object.
+        - on_end does not resolve or mutate the Spellbook object.
     Returns:
         None.
     Raises:
-        AssertionError: If spellbook-local bind hooks are not invoked.
+        AssertionError: If a strategy hook reaches into the Spellbook runtime.
     """
     _transaction_manager, registry, identity = _make_registry_and_identity(
         owner_kind="spellbook",
@@ -379,8 +382,8 @@ def test_bind_transaction_strategy_on_start_and_on_end_call_spellbook_local_hook
         metadata={},
     )
 
-    spellbook._prepare_bind_transaction_state.assert_called_once_with()
-    spellbook._clear_bind_transaction_state.assert_called_once_with()
+    spellbook._prepare_bind_transaction_state.assert_not_called()
+    spellbook._clear_bind_transaction_state.assert_not_called()
 
 
 def test_link_transaction_strategy_requires_local_and_peer_participants() -> None:

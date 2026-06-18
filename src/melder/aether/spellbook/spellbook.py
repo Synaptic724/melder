@@ -2536,43 +2536,39 @@ and logging.
             "transaction_type must be a string-like value."
         )
 
-    def notch_spell(self, *, spell_index: Any, member: Any) -> Any:
+    def notch_spell(self, *, spell_index: SpellIndex, member: Spell) -> Spell:
         """
         Public API
 
-        Notch a SpellIndex so `member` becomes its active (resolvable) spell,
+        Notch a SpellIndex so `member` becomes its selected (resolvable) spell,
         admitted as a `notch` change-control transaction through the mediator.
 
         Contract:
             - Admits a `notch` transaction (claims the owning spellbook INTENT
               and the member binding key EXCLUSIVE), performs the member-store
               switch inside the held window, then commits.
-            - The actual switch (active-member move + SHA id-map rekey + door
+            - The actual switch (selected-member move + SHA id-map rekey + door
               epoch bump) is the SpellIndex-model seam `_apply_notch`.
 
         Args:
-            spell_index: The SpellIndex whose active member is switched.
-            member: The already-identified spell to make active.
+            spell_index: The SpellIndex whose selected member is switched.
+            member: The already-bound member spell to make selected.
 
         Returns:
-            Any: The `_apply_notch` result.
+            Spell: The now-selected `member`.
 
         Raises:
             RuntimeError: If the Spellbook is cleaned.
         """
         self.check_cleaned()
         mediator = self._get_required_transaction_mediator()
-        binding_key: Optional[Tuple[str, str]] = None
-        member_key = getattr(member, "_key", None)
-        if isinstance(member_key, tuple) and len(member_key) == 2:
-            binding_key = member_key
         metadata: Dict[str, Any] = {
             "origin_surface": "spellbook.notch_spell",
             "spellbook_id": self._id,
             "owner_conduit_id": self._conduit._id if self._conduit is not None else None,
-            "spell_index_id": getattr(spell_index, "_id", None),
-            "member_id": getattr(member, "spell_id", None),
-            "binding_key": binding_key,
+            "spell_index_id": spell_index._id,
+            "member_id": member.spell_id,
+            "binding_key": member._key,
         }
         mediator.start_transaction(
             identity=self._transaction_identity,
@@ -2587,7 +2583,7 @@ and logging.
         mediator.end_transaction(expected_type="notch", success=True)
         return result
 
-    def _apply_notch(self, *, spell_index: Any, member: Any) -> Any:
+    def _apply_notch(self, *, spell_index: SpellIndex, member: Spell) -> Spell:
         """
         Internal SEAM - switch a SpellIndex's selected (notched) member.
 
@@ -2607,7 +2603,7 @@ and logging.
                owned version cache with the new selected id.
             4. Contracted spellbooks follow the notch: rekey each contracted id-map
                old -> new ("links follow the notch", by design).
-            5. `register_index(...)` syncs the structural current-spell-id and marks
+            5. `register_index(...)` syncs the structural selected-spell-id and marks
                the index structurally dirty.
             6. When conjured: swap the RiskManager registration, gate the new
                selected spell's per-conduit validity + mark the conduit dirty so the
@@ -2617,18 +2613,18 @@ and logging.
 
         Args:
             spell_index: The SpellIndex whose selected member is switched.
-            member: The already-bound member Spell to make selected.
+            member: The already-bound member spell to make selected.
 
         Returns:
-            Any: The now-selected `member`.
+            Spell: The now-selected `member`.
 
         Raises:
             RuntimeError: If the Spellbook is cleaned, or `member` is not a member
                 of `spell_index`.
 
         Note:
-            The slot lookup key (`_lookup_spells`) is intentionally NOT changed -
-            the index is a stable resolution slot. Object-level mutations are not
+            The slot lookup location (`_lookup_spells`) is intentionally NOT changed
+            - the index is a stable resolution slot. Object-level mutations are not
             rolled back if a later step raises (the mediator abort restores devops
             fact baselines only); validation runs first so the common failure path
             fails before any mutation.
@@ -2638,7 +2634,7 @@ and logging.
             raise RuntimeError(
                 "[SPELLBOOK] _apply_notch: member is not part of the target SpellIndex."
             )
-        previous = spell_index._selected_spell
+        previous: Optional[Spell] = spell_index._selected_spell
         if previous is member:
             return member
 
@@ -2663,7 +2659,7 @@ and logging.
                 contracted_conduit_id, old_id, new_id, member
             )
 
-        # 5) structural state: sync current-spell-id + mark the index dirty
+        # 5) structural state: sync selected-spell-id + mark the index dirty
         self._spell_system_states.register_index(spell_index)
 
         # 6) conduit-scoped revalidation + risk + nexus (only once conjured)
@@ -2698,7 +2694,7 @@ and logging.
 
         return member
 
-    def add_spell_into_spellindex(self, *, spell: Any, target_index: Any, source_index: Any = None, source_new_selected: Any = None, activate: bool = False) -> Any:
+    def add_spell_into_spellindex(self, *, spell: Spell, target_index: SpellIndex, source_index: Optional[SpellIndex] = None, source_new_selected: Optional[Spell] = None, activate: bool = False) -> Spell:
         """
         Public API
 
@@ -2709,22 +2705,32 @@ and logging.
         Seals the source AND target spellbooks + conduits + the spell binding
         key EXCLUSIVE for the duration. The member-store move + source GC is the
         `_apply_add_to_index` seam (SpellIndex multi-member model lane).
+
+        Args:
+            spell: The member spell to move.
+            target_index: The index to move `spell` into.
+            source_index: The index `spell` currently belongs to (defaults to
+                `spell.spell_index` in the seam when None).
+            source_new_selected: The member to re-notch the source to when `spell`
+                is the source's selected member and other members remain.
+            activate: When True, select `spell` in `target_index` after the move.
+
+        Returns:
+            Spell: The moved `spell`.
         """
         self.check_cleaned()
         mediator = self._get_required_transaction_mediator()
-        binding_key = self._spell_index_binding_key(spell)
-        owner_conduit_id = self._conduit._id if self._conduit is not None else None
-        target_book = getattr(target_index, "_owner_spellbook", None)
+        target_book: Optional["Spellbook"] = target_index._owner_spellbook
         metadata: Dict[str, Any] = {
             "origin_surface": "spellbook.add_spell_into_spellindex",
             "source_spellbook_id": self._id,
-            "target_spellbook_id": getattr(target_book, "_id", None),
-            "source_conduit_id": owner_conduit_id,
-            "target_conduit_id": getattr(target_index, "_owner_conduit_id", None),
-            "binding_key": binding_key,
-            "member_id": getattr(spell, "spell_id", None),
-            "source_index_id": getattr(source_index, "_id", None),
-            "target_index_id": getattr(target_index, "_id", None),
+            "target_spellbook_id": target_book._id if target_book is not None else None,
+            "source_conduit_id": self._conduit._id if self._conduit is not None else None,
+            "target_conduit_id": target_index._owner_conduit_id,
+            "binding_key": spell._key,
+            "member_id": spell.spell_id,
+            "source_index_id": source_index._id if source_index is not None else None,
+            "target_index_id": target_index._id,
         }
         mediator.start_transaction(
             identity=self._transaction_identity,
@@ -2745,7 +2751,7 @@ and logging.
         mediator.end_transaction(expected_type="add_to_index", success=True)
         return result
 
-    def remove_spell_from_spellindex(self, *, spell: Any, source_index: Any, source_new_selected: Any = None) -> Any:
+    def remove_spell_from_spellindex(self, *, spell: Spell, source_index: SpellIndex, source_new_selected: Optional[Spell] = None) -> SpellIndex:
         """
         Public API
 
@@ -2756,18 +2762,25 @@ and logging.
         Seals the owning spellbook + conduit + the spell binding key EXCLUSIVE.
         The member-store move + fresh-index mint is the `_apply_remove_from_index`
         seam (SpellIndex multi-member model lane).
+
+        Args:
+            spell: The member spell to separate out.
+            source_index: The index `spell` currently belongs to.
+            source_new_selected: The member to re-notch the source to when `spell`
+                is the source's selected member and other members remain.
+
+        Returns:
+            SpellIndex: The freshly minted single-member index now owning `spell`.
         """
         self.check_cleaned()
         mediator = self._get_required_transaction_mediator()
-        binding_key = self._spell_index_binding_key(spell)
-        owner_conduit_id = self._conduit._id if self._conduit is not None else None
         metadata: Dict[str, Any] = {
             "origin_surface": "spellbook.remove_spell_from_spellindex",
             "spellbook_id": self._id,
-            "owner_conduit_id": owner_conduit_id,
-            "binding_key": binding_key,
-            "member_id": getattr(spell, "spell_id", None),
-            "source_index_id": getattr(source_index, "_id", None),
+            "owner_conduit_id": self._conduit._id if self._conduit is not None else None,
+            "binding_key": spell._key,
+            "member_id": spell.spell_id,
+            "source_index_id": source_index._id,
         }
         mediator.start_transaction(
             identity=self._transaction_identity,
@@ -2775,24 +2788,18 @@ and logging.
             metadata=metadata,
         )
         try:
-            result = self._apply_remove_from_index(spell=spell, source_index=source_index, source_new_selected=source_new_selected)
+            result = self._apply_remove_from_index(
+                spell=spell,
+                source_index=source_index,
+                source_new_selected=source_new_selected,
+            )
         except Exception:
             mediator.end_transaction(expected_type="remove_from_index", success=False)
             raise
         mediator.end_transaction(expected_type="remove_from_index", success=True)
         return result
 
-    @staticmethod
-    def _spell_index_binding_key(spell: Any) -> Optional[Tuple[str, str]]:
-        """
-        Resolve a spell (frame_key, binding_key) lookup pair, if present.
-        """
-        key = getattr(spell, "_key", None)
-        if isinstance(key, tuple) and len(key) == 2:
-            return key
-        return None
-
-    def _index_has_other_member_with_key(self, spell_index: Any, lookup_key: Any, excluding: Any) -> bool:
+    def _index_has_other_member_with_key(self, spell_index: SpellIndex, lookup_key: Tuple[str, str], excluding: Spell) -> bool:
         """
         Return True if any member of `spell_index` other than `excluding` owns
         `lookup_key`.
@@ -2806,7 +2813,7 @@ and logging.
                 return True
         return False
 
-    def _gc_emptied_index(self, spell_index: Any, owner_conduit_id: Optional[str]) -> None:
+    def _gc_emptied_index(self, spell_index: SpellIndex, owner_conduit_id: Optional[str]) -> None:
         """
         Tear an emptied SpellIndex off the resolution surface inside a held move
         transaction.
@@ -2819,58 +2826,54 @@ and logging.
         self._spells.pop(spell_index, None)
         for lookup_key in [k for k, v in self._lookup_spells.items() if v is spell_index]:
             self._lookup_spells.pop(lookup_key, None)
-        if self._conjured and owner_conduit_id:
+        if self._conjured and owner_conduit_id is not None:
             self._aether._remove_spells_from_aether(
                 owner_conduit_id, {spell_index}, self._aetheric_frame
             )
         spell_index.cleanup()
 
-    def _detach_member_for_move(self, spell: Any, source_index: Any, source_new_selected: Any) -> None:
+    def _detach_member_for_move(self, spell: Spell, source_index: SpellIndex, source_new_selected: Optional[Spell]) -> None:
         """
         Remove `spell` from `source_index` and leave the source coherent.
 
-        - Forbids splitting a shared lookup location (raises, restoring membership,
-          if a remaining member shares `spell._key`).
-        - If `spell` was the source's selected member: re-notch the source to the
-          caller-named `source_new_selected` (required when members remain), or GC
-          the source when it empties.
-        - Vacates `spell`'s lookup location from the source so it can follow `spell`.
+        Validation runs BEFORE any mutation (no rollback path):
+            - A shared lookup location cannot be split: raise if a remaining member
+              shares `spell._key`.
+            - Moving the source's selected member while others remain requires a
+              `source_new_selected` to re-notch the source to.
 
-        Pure source-side handling; the caller re-homes `spell` afterward.
+        Then the mutation: detach; if `spell` was selected, re-notch the source to
+        `source_new_selected` or GC the source when it empties; the moved member's
+        (now unshared) lookup location is dropped from the source so it can follow
+        `spell`. Pure source-side handling; the caller re-homes `spell` afterward.
         """
         was_selected = source_index._selected_spell is spell
-        owner_conduit_id = spell._owner_conduit_id
-        emptied = source_index._detach_member(spell)
-
-        if not emptied and self._index_has_other_member_with_key(
-                source_index, spell._key, spell):
-            source_index._attach_member(spell)
+        will_empty = source_index._member_count() == 1
+        if not will_empty and self._index_has_other_member_with_key(source_index, spell._key, spell):
             raise RuntimeError(
                 "[SPELLBOOK] move: cannot move a member whose lookup key is shared "
                 "with a sibling that remains in the source index (a lookup key owns "
                 "exactly one index). Move the sharing members together or destroy one."
             )
+        if was_selected and not will_empty and source_new_selected is None:
+            raise RuntimeError(
+                "[SPELLBOOK] move: the source index's selected member is being moved "
+                "while other members remain; a 'source_new_selected' member is required "
+                "to re-notch the source."
+            )
 
+        source_index._detach_member(spell)
+        if was_selected and will_empty:
+            self._unregister_owned_spell_id(spell.spell_id, spell)
+            if self._conjured and spell._owner_conduit_id is not None:
+                self._unregister_spell_with_risk_manager(spell._owner_conduit_id, spell)
+            self._gc_emptied_index(source_index, spell._owner_conduit_id)
+            return
         if was_selected:
-            if emptied:
-                self._unregister_owned_spell_id(spell.spell_id, spell)
-                if self._conjured and owner_conduit_id:
-                    self._unregister_spell_with_risk_manager(owner_conduit_id, spell)
-                self._gc_emptied_index(source_index, owner_conduit_id)
-                return
-            if source_new_selected is None:
-                source_index._attach_member(spell)
-                raise RuntimeError(
-                    "[SPELLBOOK] move: the source index's selected member is being "
-                    "moved while other members remain; a 'source_new_selected' member "
-                    "is required to re-notch the source."
-                )
             self._apply_notch(spell_index=source_index, member=source_new_selected)
+        self._lookup_spells.pop(spell._key, None)
 
-        if self._lookup_spells.get(spell._key) is source_index:
-            self._lookup_spells.pop(spell._key, None)
-
-    def _rehome_moved_spell(self, spell: Any, new_index: Any) -> None:
+    def _rehome_moved_spell(self, spell: Spell, new_index: SpellIndex) -> None:
         """
         Re-home `spell` onto `new_index` and invalidate its compiled context so it
         recompiles in the new index. Resolution-surface only; conduit Creations are
@@ -2883,8 +2886,7 @@ and logging.
         spell.requires_spellspace_request = False
         spell.bump_door_epoch()
 
-    def _apply_add_to_index(self, *, spell: Any, source_index: Any, target_index: Any,
-                            source_new_selected: Any = None, activate: bool = False) -> Any:
+    def _apply_add_to_index(self, *, spell: Spell, source_index: Optional[SpellIndex], target_index: SpellIndex, source_new_selected: Optional[Spell] = None, activate: bool = False) -> Spell:
         """
         Internal SEAM - move `spell` out of `source_index` into `target_index`.
 
@@ -2894,7 +2896,7 @@ and logging.
         optionally select it there. Resolution-surface only; Creations untouched.
 
         Args:
-            spell: The member Spell to move.
+            spell: The member spell to move.
             source_index: The index `spell` currently belongs to (defaults to
                 `spell.spell_index` when None).
             target_index: The index to move `spell` into.
@@ -2903,7 +2905,7 @@ and logging.
             activate: When True, select `spell` in `target_index` after the move.
 
         Returns:
-            Any: The moved `spell`.
+            Spell: The moved `spell`.
 
         Raises:
             RuntimeError: If `spell` is not a member of `source_index`, if its
@@ -2927,8 +2929,7 @@ and logging.
             self._apply_notch(spell_index=target_index, member=spell)
         return spell
 
-    def _apply_remove_from_index(self, *, spell: Any, source_index: Any,
-                                 source_new_selected: Any = None) -> Any:
+    def _apply_remove_from_index(self, *, spell: Spell, source_index: SpellIndex, source_new_selected: Optional[Spell] = None) -> SpellIndex:
         """
         Internal SEAM - separate `spell` out of `source_index` into a fresh
         single-member index (the "separate"/split primitive).
@@ -2940,24 +2941,24 @@ and logging.
         selected. Resolution-surface only; conduit Creations untouched.
 
         Args:
-            spell: The member Spell to separate out.
+            spell: The member spell to separate out.
             source_index: The index `spell` currently belongs to.
             source_new_selected: Required when `spell` is the source's selected
                 member and the source retains other members.
 
         Returns:
-            Any: The freshly minted single-member SpellIndex now owning `spell`.
+            SpellIndex: The freshly minted single-member index now owning `spell`.
 
         Raises:
             RuntimeError: As for `_apply_add_to_index`'s detach contract.
         """
+        from melder.aether.spellbook.bind.spell_index import SpellIndex
+
         self.check_cleaned()
         if not source_index._has_member(spell):
             raise RuntimeError(
                 "[SPELLBOOK] _apply_remove_from_index: spell is not a member of source_index."
             )
-        from melder.aether.spellbook.bind.spell_index import SpellIndex
-
         self._detach_member_for_move(spell, source_index, source_new_selected)
 
         fresh_index = SpellIndex(spell.spell_id)
@@ -2981,17 +2982,21 @@ and logging.
             from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_state_change_reason import (
                 SpellStateChangeReason,
             )
+
             conduit_id = self._conduit._id
             self._aether._register_single_spell_index(
                 conduit_id, fresh_index, self._aetheric_frame
             )
             self._publish_spell_record_to_nexus(spell)
             self._spell_system_states.set_conduit_spell_validity(
-                conduit_id, spell.spell_id, SpellValidity.gated,
+                conduit_id,
+                spell.spell_id,
+                SpellValidity.gated,
                 change_reason=SpellStateChangeReason.register_or_rebind,
             )
             self._spell_system_states.mark_conduit_dirty(
-                conduit_id, change_reason=SpellStateChangeReason.register_or_rebind,
+                conduit_id,
+                change_reason=SpellStateChangeReason.register_or_rebind,
             )
         return fresh_index
 

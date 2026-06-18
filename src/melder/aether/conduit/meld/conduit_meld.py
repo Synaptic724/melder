@@ -33,6 +33,7 @@ class ConduitMeld(Meld):
     __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = [
         "_creations",
+        "_root_creations",
     ]
 
     def __init__(
@@ -72,6 +73,14 @@ class ConduitMeld(Meld):
             meld_hooks=meld_hooks,
         )
         self._creations = creations
+        # Lineage-root store for this conduit's lineage. A normal/root conduit is
+        # its own lineage root, so it defaults to its own creations; lesser
+        # conduits are repointed at the genuine root's creations by `Conduit`
+        # after construction, and `upgrade_to_normal` repoints a promoted conduit
+        # back at itself. The `unique_per_conduit_lineage` door is handed this
+        # store at runtime by the dispatch below; the store object itself carries
+        # no lineage pointer.
+        self._root_creations: "ConduitCreations" = creations
 
     def cleanup(self) -> None:
         """
@@ -92,6 +101,7 @@ class ConduitMeld(Meld):
                 return
             super().cleanup()
             del self._creations
+            del self._root_creations
 
     def meld(
             self,
@@ -245,7 +255,7 @@ class ConduitMeld(Meld):
                         # rebuilds.
                         fast_executor = None
                     if fast_executor is not None:
-                        instance = fast_executor(fast_creations)[0]
+                        instance = fast_executor(fast_creations, self._root_creations)[0]
                         if self._spellbook._cache_emit_required:
                             self._spellbook._emit_cache_file_if_required()
                         return instance
@@ -334,9 +344,10 @@ class ConduitMeld(Meld):
                 instance = creation_context.execute_no_hooks(
                     creations,
                     override_map,
+                    self._root_creations,
                 )
             elif override_map is None:
-                instance = creation_context._no_overrides_executor(creations)[0]
+                instance = creation_context._no_overrides_executor(creations, self._root_creations)[0]
                 if fast_door_key is not None:
                     # Success-only fast-door memoization. This arm is exactly
                     # the fast-lane posture (non-dynamic, no hooks, no
@@ -358,6 +369,7 @@ class ConduitMeld(Meld):
                 instance = creation_context._overrides_executor(
                     creations,
                     override_map,
+                    self._root_creations,
                 )[0]
             # Hot path: inline the staged-cache flag check; the emit helper is
             # only entered when an emit is actually pending.
@@ -380,6 +392,7 @@ class ConduitMeld(Meld):
             instance, created = creation_context.execute(
                 creations,
                 override_map,
+                self._root_creations,
             )
 
             if created:
