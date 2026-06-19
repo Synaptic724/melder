@@ -572,28 +572,6 @@ class Spell(Cleanable):
             # Invalidate fast-meld-door entries: the hook gate changed.
             self._door_epoch += 1
 
-    def bump_door_epoch(self) -> None:
-        """
-        Advance this spell's fast-meld-door epoch to force door re-resolution.
-
-        Purpose:
-            Invalidate any cached fast-meld doors keyed on this spell so the next
-            meld misses the door and re-resolves. Called by the SpellIndex notch /
-            move seams when this spell becomes (or stops being) an index's selected
-            member, since its resolvability through that index changed.
-
-        Contract:
-            - Monotonic single-step increment; never decreases.
-            - Idempotent in effect: each call guarantees a door-cache miss for any
-              door pinned to the prior epoch.
-
-        Threading:
-            - Increments under the spell lock; door readers compare the epoch and
-              re-resolve on mismatch.
-        """
-        with self._lock:
-            self._door_epoch += 1
-
     def _cleanup_creation_context(self) -> None:
         """
         Internal
