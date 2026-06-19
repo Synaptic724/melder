@@ -628,12 +628,12 @@ def _build_no_overrides_lines(
         ]
     if resolve_route_key == "lineage":
         # unique_per_conduit_lineage: one instance per lineage, stored in the
-        # RESOLVING door's lineage-root creations. The resolving conduit's
-        # `caller_creations` carries the pointer to its lineage-root store
-        # (`_root_creations`), so the root is read off it here -- not the binding
-        # owner's `_owner_creations`, and at zero cost to every other route.
+        # lineage-root creations. The meld front door selects the lineage-root
+        # store for this existence and hands it in as `caller_creations`, so the
+        # door uses it directly -- the store no longer carries a `_root_creations`
+        # pointer for the door to dereference.
         return [
-            "root_creations = caller_creations._root_creations",
+            "root_creations = caller_creations",
             "creation = root_creations.get_creation(_spell_id)",
             "if creation is not None:",
             _prefix_one_indent(
@@ -922,11 +922,11 @@ def _build_with_overrides_lines(
         ]
     if resolve_route_key == "lineage":
         # Lineage override lane: same shape as the shared override lane but on the
-        # resolving door's lineage-root store (`root_creations`) + its lock,
-        # instead of the binding owner's `_owner_creations`.
+        # meld-supplied lineage-root store (handed in as `caller_creations`) + its
+        # lock, instead of the binding owner's `_owner_creations`.
         if not overrides_maybe_none:
             return [
-                "root_creations = caller_creations._root_creations",
+                "root_creations = caller_creations",
                 "creation = root_creations.get_creation(_spell_id)",
                 "if creation is not None:",
                 "    raise _MeldExecutionError(",
@@ -952,7 +952,7 @@ def _build_with_overrides_lines(
                 "    )",
             ]
         return [
-            "root_creations = caller_creations._root_creations",
+            "root_creations = caller_creations",
             "creation = root_creations.get_creation(_spell_id)",
             "if creation is not None:",
             "    if overrides is not None:",

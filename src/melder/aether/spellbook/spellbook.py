@@ -2629,32 +2629,32 @@ and logging.
             fact baselines only); validation runs first so the common failure path
             fails before any mutation.
         """
-        self.check_cleaned()
         if not spell_index._has_member(member):
             raise RuntimeError(
                 "[SPELLBOOK] _apply_notch: member is not part of the target SpellIndex."
             )
         previous: Optional[Spell] = spell_index._selected_spell
+        if previous is None:
+            raise RuntimeError(
+                "[SPELLBOOK] _apply_notch: target SpellIndex has no selected member."
+            )
         if previous is member:
             return member
 
         old_id = spell_index.selected_spell_id
         new_id = member.spell_id
-        contracted_items = list(spell_index._contracted_spellbooks.items())
 
         # 2) swap the selected member (Spell object + selected-spell-id pointer)
         spell_index._select_member(member)
 
         # 3) owner id-map rekey: outgoing selected -> dormant, incoming -> live
-        if previous is not None:
-            self._unregister_owned_spell_id(old_id, previous)
+        self._unregister_owned_spell_id(old_id, previous)
         self._register_owned_spell_id(new_id, member)
-        if self._spell_versions is not None:
-            self._spell_versions.add(new_id)
+        self._spell_versions.add(new_id)
         self._spells[spell_index] = member
 
         # 4) contracted spellbooks follow the notch (links resolve to the new member)
-        for (contracted_book, contracted_conduit_id), _contracted_spell in contracted_items:
+        for (contracted_book, contracted_conduit_id), _contracted_spell in spell_index._contracted_spellbooks.items():
             contracted_book._update_contracted_spell_id(
                 contracted_conduit_id, old_id, new_id, member
             )
@@ -2672,8 +2672,7 @@ and logging.
             )
 
             conduit_id = self._conduit._id
-            if previous is not None:
-                self._unregister_spell_with_risk_manager(conduit_id, previous)
+            self._unregister_spell_with_risk_manager(conduit_id, previous)
             self._register_spell_with_risk_manager(conduit_id, member)
             self._spell_system_states.set_conduit_spell_validity(
                 conduit_id,
@@ -2688,8 +2687,7 @@ and logging.
             self._publish_spell_record_to_nexus(member)
 
         # 7) fast-meld-door invalidation on both the outgoing and incoming members
-        if previous is not None:
-            previous.bump_door_epoch()
+        previous.bump_door_epoch()
         member.bump_door_epoch()
 
         return member
@@ -2837,17 +2835,20 @@ and logging.
         Remove `spell` from `source_index` and leave the source coherent.
 
         Validation runs BEFORE any mutation (no rollback path):
-            - A shared lookup location cannot be split: raise if a remaining member
-              shares `spell._key`.
-            - Moving the source's selected member while others remain requires a
-              `source_new_selected` to re-notch the source to.
+            - A lookup location is owned by exactly one index, so a member that
+              shares its `_key` with a remaining sibling cannot be split out: raise.
 
-        Then the mutation: detach; if `spell` was selected, re-notch the source to
-        `source_new_selected` or GC the source when it empties; the moved member's
-        (now unshared) lookup location is dropped from the source so it can follow
-        `spell`. Pure source-side handling; the caller re-homes `spell` afterward.
+        Then the mutation, by the member's role:
+            - Dormant member: it is already absent from the Spellbook resolution
+              maps, so removing it from `_members` is the whole job.
+            - Selected member, source empties: vacate its id maps and GC the now
+              empty source index (the index owns its lookup slot, dropped by the GC).
+            - Selected member, source retains members: re-notch the source to
+              `source_new_selected` (required); the index keeps its stable lookup
+              slot, now resolving to the new selected member.
+
+        Pure source-side handling; the caller re-homes `spell` afterward.
         """
-        was_selected = source_index._selected_spell is spell
         will_empty = source_index._member_count() == 1
         if not will_empty and self._index_has_other_member_with_key(source_index, spell._key, spell):
             raise RuntimeError(
@@ -2855,23 +2856,23 @@ and logging.
                 "with a sibling that remains in the source index (a lookup key owns "
                 "exactly one index). Move the sharing members together or destroy one."
             )
-        if was_selected and not will_empty and source_new_selected is None:
-            raise RuntimeError(
-                "[SPELLBOOK] move: the source index's selected member is being moved "
-                "while other members remain; a 'source_new_selected' member is required "
-                "to re-notch the source."
-            )
-
+        was_selected = source_index._selected_spell is spell
         source_index._detach_member(spell)
-        if was_selected and will_empty:
+        if not was_selected:
+            return
+        if will_empty:
             self._unregister_owned_spell_id(spell.spell_id, spell)
             if self._conjured and spell._owner_conduit_id is not None:
                 self._unregister_spell_with_risk_manager(spell._owner_conduit_id, spell)
             self._gc_emptied_index(source_index, spell._owner_conduit_id)
             return
-        if was_selected:
-            self._apply_notch(spell_index=source_index, member=source_new_selected)
-        self._lookup_spells.pop(spell._key, None)
+        if source_new_selected is None:
+            raise RuntimeError(
+                "[SPELLBOOK] move: the source index's selected member is being moved "
+                "while other members remain; a 'source_new_selected' member is required "
+                "to re-notch the source."
+            )
+        self._apply_notch(spell_index=source_index, member=source_new_selected)
 
     def _rehome_moved_spell(self, spell: Spell, new_index: SpellIndex) -> None:
         """
@@ -2892,8 +2893,8 @@ and logging.
 
         Inside the held `add_to_index` window: detach `spell` from its source
         (re-notching or GC'ing the source as needed), attach it to `target_index`
-        as a DORMANT member, point its lookup location at the target, and
-        optionally select it there. Resolution-surface only; Creations untouched.
+        as a DORMANT member (absent from the resolution maps until a notch selects
+        it), and optionally select it there. Resolution-surface only; Creations untouched.
 
         Args:
             spell: The member spell to move.
@@ -2912,7 +2913,6 @@ and logging.
                 lookup key is shared with a remaining source sibling, or if a
                 required `source_new_selected` is missing.
         """
-        self.check_cleaned()
         if source_index is None:
             source_index = spell.spell_index
         if source_index is target_index:
@@ -2924,7 +2924,6 @@ and logging.
         self._detach_member_for_move(spell, source_index, source_new_selected)
         target_index._attach_member(spell)
         self._rehome_moved_spell(spell, target_index)
-        self._lookup_spells[spell._key] = target_index
         if activate:
             self._apply_notch(spell_index=target_index, member=spell)
         return spell
@@ -2954,7 +2953,6 @@ and logging.
         """
         from melder.aether.spellbook.bind.spell_index import SpellIndex
 
-        self.check_cleaned()
         if not source_index._has_member(spell):
             raise RuntimeError(
                 "[SPELLBOOK] _apply_remove_from_index: spell is not a member of source_index."
@@ -2968,8 +2966,7 @@ and logging.
         self._lookup_spells[spell._key] = fresh_index
         self._spells[fresh_index] = spell
         fresh_index._attach_owner(self, spell)
-        if self._spell_versions is not None:
-            self._spell_versions.add(spell.spell_id)
+        self._spell_versions.add(spell.spell_id)
         if self._conjured and self._conduit is not None:
             conduit_id = self._conduit._id
             fresh_index._set_owner_conduit_id(conduit_id)

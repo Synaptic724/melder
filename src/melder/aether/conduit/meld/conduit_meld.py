@@ -3,6 +3,7 @@ from typing import TYPE_CHECKING, Optional, Dict, Any, Callable, ClassVar
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.aether.conduit.meld.meld import Meld
 from melder.aether.spellbook.existence.existence import Existence
+from melder.aether.conduit.creations.cluster_creations import ClusterCreations
 
 if TYPE_CHECKING:
     from melder.aether.conduit.creations.conduit_creations import ConduitCreations
@@ -34,6 +35,7 @@ class ConduitMeld(Meld):
     __slots__ = [
         "_creations",
         "_root_creations",
+        "_cluster_creations",
     ]
 
     def __init__(
@@ -81,6 +83,15 @@ class ConduitMeld(Meld):
         # store at runtime by the dispatch below; the store object itself carries
         # no lineage pointer.
         self._root_creations: "ConduitCreations" = creations
+        # Cluster team-store facade owned by this meld. Built empty (inert):
+        # there is no elected leader yet. It stays empty if this conduit never
+        # joins a cluster, or joins but no leader is elected. When a leader is
+        # elected, `ConduitCluster` fills this facade with the leader's
+        # `Creations` (inside the elect transaction window). A
+        # `unique_per_conduit_cluster` meld resolves through
+        # `self._cluster_creations.resolved_store()`, which hard-errors while the
+        # facade is empty (no elected leader).
+        self._cluster_creations: ClusterCreations = ClusterCreations()
 
     def cleanup(self) -> None:
         """
@@ -102,6 +113,8 @@ class ConduitMeld(Meld):
             super().cleanup()
             del self._creations
             del self._root_creations
+            self._cluster_creations.cleanup()
+            del self._cluster_creations
 
     def meld(
             self,
@@ -255,7 +268,7 @@ class ConduitMeld(Meld):
                         # rebuilds.
                         fast_executor = None
                     if fast_executor is not None:
-                        instance = fast_executor(fast_creations, self._root_creations)[0]
+                        instance = fast_executor(fast_creations)[0]
                         if self._spellbook._cache_emit_required:
                             self._spellbook._emit_cache_file_if_required()
                         return instance
@@ -318,7 +331,20 @@ class ConduitMeld(Meld):
         if target_spell.resolution_required:
             self._ensure_runtime_resolution_ready(target_spell)
 
-        creations = self._creations
+        # Store selection lives here, on the meld. `unique_per_conduit_lineage`
+        # resolves into this conduit's lineage-root store (`_root_creations`);
+        # `unique_per_conduit_cluster` resolves into the elected leader's store,
+        # taken from this conduit's cluster facade via
+        # `_cluster_creations.resolved_store()` (which hard-errors when no leader
+        # is elected). Every other existence uses the conduit's own creations.
+        # The selected store is handed in as the single `caller_creations`
+        # argument; the door uses whatever store it is handed.
+        if target_spell.existence is Existence.unique_per_conduit_lineage:
+            creations = self._root_creations
+        elif target_spell.existence is Existence.unique_per_conduit_cluster:
+            creations = self._cluster_creations.resolved_store()
+        else:
+            creations = self._creations
         meld_hooks = self._meld_hooks
         spell_hooks_enabled = target_spell._hooks_enabled
         # Captured BEFORE execution: if any invalidation chokepoint bumps the
@@ -344,10 +370,9 @@ class ConduitMeld(Meld):
                 instance = creation_context.execute_no_hooks(
                     creations,
                     override_map,
-                    self._root_creations,
                 )
             elif override_map is None:
-                instance = creation_context._no_overrides_executor(creations, self._root_creations)[0]
+                instance = creation_context._no_overrides_executor(creations)[0]
                 if fast_door_key is not None:
                     # Success-only fast-door memoization. This arm is exactly
                     # the fast-lane posture (non-dynamic, no hooks, no
@@ -369,7 +394,6 @@ class ConduitMeld(Meld):
                 instance = creation_context._overrides_executor(
                     creations,
                     override_map,
-                    self._root_creations,
                 )[0]
             # Hot path: inline the staged-cache flag check; the emit helper is
             # only entered when an emit is actually pending.
@@ -392,7 +416,6 @@ class ConduitMeld(Meld):
             instance, created = creation_context.execute(
                 creations,
                 override_map,
-                self._root_creations,
             )
 
             if created:

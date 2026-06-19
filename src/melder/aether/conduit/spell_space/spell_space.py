@@ -8,12 +8,12 @@ from melder.__melder_registration_guard__ import (
 from melder.aether.conduit.creations.creations import Creations
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
+from melder.aether.conduit.meld.spellspace_meld import SpellSpaceMeld
 if TYPE_CHECKING:
     from melder.aether.conduit.creations.conduit_creations import (
         ConduitCreations,
     )
     from melder.aether.conduit.meld.conduit_meld import ConduitMeld
-    from melder.aether.conduit.meld.spellspace_meld import SpellSpaceMeld
     from melder.aether.conduit.spell_space.spell_space_pool import SpellSpacePool
     from melder.aether.conduit.spell_space.spell_space_thread_state import (
         SpellSpaceThreadState,
@@ -125,14 +125,23 @@ class SpellSpace(Cleanable):
             id=self._id,
         )
         self._owner_conduit_creations: ConduitCreations = owner_conduit_creations
-        # A spellspace is not a lineage root: `unique_per_conduit_lineage`
-        # resolved from within it stores in the owner conduit's lineage root.
-        self._creations._root_creations = owner_conduit_creations._root_creations
-        from melder.aether.conduit.meld.spellspace_meld import SpellSpaceMeld
+        # A spellspace is not a lineage root: a `unique_per_conduit_lineage`
+        # spell resolved from within it stores in the owner conduit's lineage
+        # root, so the spellspace meld is handed the owner conduit's lineage-root
+        # store (`conduit_meld._root_creations`) and uses it for those melds.
+        # Likewise a spellspace is not a cluster member: a
+        # `unique_per_conduit_cluster` spell resolved from within it stores in
+        # the owner conduit's elected-leader store, so the spellspace meld
+        # references the owner conduit's cluster facade
+        # (`conduit_meld._cluster_creations`) rather than owning its own. The
+        # facade is filled on election by ConduitCluster, so a spellspace built
+        # after election still resolves into the same leader store.
         self._meld: SpellSpaceMeld = SpellSpaceMeld(
             spellspace=self,
             spellspace_creations=self._creations,
             owner_conduit_creations=self._owner_conduit_creations,
+            root_creations=conduit_meld._root_creations,
+            cluster_creations=conduit_meld._cluster_creations,
             spellbook=conduit_meld._spellbook,
             conduit_id=conduit_meld._conduit_id,
             resolution_conduit_id=conduit_meld._resolution_conduit_id,

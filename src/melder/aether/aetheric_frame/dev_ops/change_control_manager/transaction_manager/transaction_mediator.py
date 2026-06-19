@@ -575,38 +575,22 @@ class TransactionMediator(Cleanable):
             self,
             *,
             identity: DevopsIdentity,
-            transaction_type: Any,
+            transaction_type: ChangeTransactionType,
             metadata: Optional[Dict[str, object]] = None,
     ) -> TransactionSession:
         """
-        Start one high-level transaction using mediator-owned resolution logic.
+        Start one high-level transaction for an explicit transaction type.
 
         Purpose:
-            Provide the thin generic API callers should use. Resolver-specific
-            request shaping and bind lifecycle registration stay in the
-            mediator rather than in the caller.
+            Callers already know exactly which transaction they are opening, so
+            they pass the ChangeTransactionType member directly. The mediator
+            does no normalization, coercion, or allow-list guarding: the enum is
+            the type, and the strategy registry decides what is actionable.
         """
-        
-        transaction_name = self._normalize_transaction_name(transaction_type)
-        if transaction_name in (
-                "bind",
-                "link",
-                "cluster_link",
-                "transfer_ownership",
-                "unlink",
-                "notch",
-                "add_to_index",
-                "remove_from_index",
-                "elect_conduit_cluster_leader",
-                "unelect_conduit_cluster_leader",
-        ):
-            return self._start_strategy_transaction(
-                identity=identity,
-                transaction_type=ChangeTransactionType(transaction_name),
-                metadata=dict(metadata) if metadata is not None else {},
-            )
-        raise NotImplementedError(
-            f"High-level mediator resolution is not implemented for '{transaction_name}'."
+        return self._start_strategy_transaction(
+            identity=identity,
+            transaction_type=transaction_type,
+            metadata=dict(metadata) if metadata is not None else {},
         )
 
     def end_transaction_for_identity(

@@ -304,10 +304,10 @@ class Conduit(Cleanable):
                 baseline_idle=20,
                 max_idle=20,
             )
-            # Lineage-root store: a normal conduit is its own lineage root, so
-            # its creations already point at themselves (Creations defaults
-            # `_root_creations = self`). `unique_per_conduit_lineage` doors read
-            # `caller_creations._root_creations`, so nothing more is needed here.
+            # Lineage-root store: a normal conduit is its own lineage root. Its
+            # meld defaults `_root_creations` to its own creations at
+            # construction, so nothing more is needed here; the meld hands that
+            # store in for `unique_per_conduit_lineage` melds.
         else:
             root_conduits = self._aetheric_frame._conduits
             root_conduit = root_conduits.get(self._root_conduit_id)
@@ -318,8 +318,9 @@ class Conduit(Cleanable):
             self._conduit_pool = root_conduit._conduit_pool
             # Lineage-root store: a lesser resolves `unique_per_conduit_lineage`
             # into the lineage root's creations (the single store shared across
-            # the whole lineage), so point its creations at the root's root.
-            self._creations._root_creations = root_conduit._creations._root_creations
+            # the whole lineage), so point its meld at the root conduit's root
+            # store.
+            self._meld._root_creations = root_conduit._meld._root_creations
         self._configure_conduit_state()
         self._conduit_ward: ConduitWard = ConduitWard(
             conduit=self,
@@ -1585,9 +1586,9 @@ class Conduit(Cleanable):
             lesser_conduit._root_conduit_id = self._root_conduit_id
             lesser_conduit._meld._resolution_conduit_id = self._root_conduit_id
             # Propagate the lineage-root store down with the root id: self is in
-            # this lineage, so its creations already point at the lineage root's
-            # creations; the lesser shares that same root store.
-            lesser_conduit._creations._root_creations = self._creations._root_creations
+            # this lineage, so its meld already points at the lineage root's
+            # store; the lesser's meld shares that same root store.
+            lesser_conduit._meld._root_creations = self._meld._root_creations
             lesser_conduit._set_creation_gate_controller_for_lineage()
 
     def upgrade_to_normal(
@@ -1689,10 +1690,10 @@ class Conduit(Cleanable):
                 if self._meld is not None:
                     self._meld._creations = self._creations
                     self._meld._resolution_conduit_id = self._root_conduit_id
-                # Upgraded conduit is now its own lineage root: its creations
-                # become their own root store. Lessers are re-pointed to this new
-                # root by the lineage controller rebind below.
-                self._creations._root_creations = self._creations
+                # Upgraded conduit is now its own lineage root: its meld's root
+                # store becomes its own creations. Lessers are re-pointed to this
+                # new root by the lineage controller rebind below.
+                self._meld._root_creations = self._creations
 
                 # Step 3: Reconfigure the conduit ward
                 self._conduit_ward._convert_to_normal_conduit()

@@ -7,6 +7,7 @@ from melder.aether.spellbook.existence.existence import Existence
 if TYPE_CHECKING:
     from melder.aether.conduit.creations.conduit_creations import ConduitCreations
     from melder.aether.conduit.creations.creations import Creations
+    from melder.aether.conduit.creations.cluster_creations import ClusterCreations
     from melder.aether.conduit.spell_space.spell_space import SpellSpace
     from melder.aether.spellbook.spell import Spell
     from melder.aether.spellbook.spellbook import Spellbook
@@ -36,6 +37,7 @@ class SpellSpaceMeld(Meld):
         "_spellspace_creations",
         "_owner_conduit_creations",
         "_root_creations",
+        "_cluster_creations",
         "_spellspace_id",
         "_owner_conduit_id",
     ]
@@ -47,6 +49,7 @@ class SpellSpaceMeld(Meld):
             spellspace_creations: "Creations",
             owner_conduit_creations: "ConduitCreations",
             root_creations: "ConduitCreations",
+            cluster_creations: "ClusterCreations",
             spellbook: "Spellbook",
             conduit_id: Optional[str] = None,
             resolution_conduit_id: Optional[str] = None,
@@ -69,6 +72,12 @@ class SpellSpaceMeld(Meld):
               spellspace land in the owner conduit's lineage root (a spellspace
               is not a lineage root itself); the door is handed this store at
               runtime.
+            - References the owner conduit's cluster facade (owned by the
+              conduit meld, not by this spellspace) so
+              `unique_per_conduit_cluster` melds resolved from inside the
+              spellspace resolve into the same elected-leader store the owner
+              conduit's cluster elected; a spellspace created after election
+              still sees the filled facade through this shared reference.
             - Caches the owning spellspace id and owner conduit id for later
               live-creation diagnostics.
             - Reuses the shared spellbook/lookup surfaces owned by `Meld`.
@@ -84,6 +93,7 @@ class SpellSpaceMeld(Meld):
         self._spellspace_creations = spellspace_creations
         self._owner_conduit_creations = owner_conduit_creations
         self._root_creations = root_creations
+        self._cluster_creations = cluster_creations
         self._spellspace_id = spellspace.id
         self._owner_conduit_id = spellspace.owner_conduit_id
 
@@ -110,6 +120,7 @@ class SpellSpaceMeld(Meld):
             del self._spellspace_creations
             del self._owner_conduit_creations
             del self._root_creations
+            del self._cluster_creations
             del self._spellspace_id
             del self._owner_conduit_id
 
@@ -265,7 +276,7 @@ class SpellSpaceMeld(Meld):
                         # rebuilds.
                         fast_executor = None
                     if fast_executor is not None:
-                        instance = fast_executor(fast_creations, self._root_creations)[0]
+                        instance = fast_executor(fast_creations)[0]
                         if self._spellbook._cache_emit_required:
                             self._spellbook._emit_cache_file_if_required()
                         return instance
@@ -324,6 +335,18 @@ class SpellSpaceMeld(Meld):
 
         if target_spell.existence is Existence.unique_per_spell_space:
             creations = self._spellspace_creations
+        elif target_spell.existence is Existence.unique_per_conduit_lineage:
+            # Lineage: resolve into the owner conduit's lineage-root store,
+            # handed in as the single `caller_creations` argument; the door
+            # uses it directly.
+            creations = self._root_creations
+        elif target_spell.existence is Existence.unique_per_conduit_cluster:
+            # Cluster: resolve into the elected leader's store via the owner
+            # conduit's cluster facade (referenced here, owned by the conduit
+            # meld). `resolved_store()` hands back the leader's `Creations` as
+            # the single `caller_creations` argument and hard-errors when no
+            # leader is elected.
+            creations = self._cluster_creations.resolved_store()
         else:
             creations = self._owner_conduit_creations
         meld_hooks = self._meld_hooks
@@ -351,10 +374,9 @@ class SpellSpaceMeld(Meld):
                 instance = creation_context.execute_no_hooks(
                     creations,
                     override_map,
-                    self._root_creations,
                 )
             elif override_map is None:
-                instance = creation_context._no_overrides_executor(creations, self._root_creations)[0]
+                instance = creation_context._no_overrides_executor(creations)[0]
                 if fast_door_key is not None:
                     # Success-only fast-door memoization. This arm is exactly
                     # the fast-lane posture (non-dynamic, no hooks, no
@@ -378,7 +400,6 @@ class SpellSpaceMeld(Meld):
                 instance = creation_context._overrides_executor(
                     creations,
                     override_map,
-                    self._root_creations,
                 )[0]
             # Hot path: inline the staged-cache flag check; the emit helper is
             # only entered when an emit is actually pending.
@@ -401,7 +422,6 @@ class SpellSpaceMeld(Meld):
             instance, created = creation_context.execute(
                 creations,
                 override_map,
-                self._root_creations,
             )
 
             if created:

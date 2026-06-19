@@ -125,6 +125,41 @@ class ClusterCreations(Cleanable):
         self.check_cleaned()
         return self._active
 
+    def resolved_store(self) -> "Creations":
+        """
+        Return the bound elected-leader `Creations`, or raise when inert.
+
+        Purpose:
+            Hand the meld front door the concrete leader store so the door can
+            run the same get-or-create-once block the lineage route uses,
+            locking the real store's `_lock`. The facade itself carries no lock;
+            safety while a leader is bound/unbound comes from the
+            `elect_/unelect_conduit_cluster_leader` transaction quiesce, not from
+            this facade.
+
+        Contract:
+            - Returns the bound leader `Creations` when an elected leader is
+              active.
+            - Raises `RuntimeError` when disabled (no elected cluster leader),
+              matching `get_creation` / `add_creation`, so a
+              `unique_per_conduit_cluster` meld with no leader hard-errors at the
+              meld door instead of resolving into nothing.
+
+        Returns:
+            Creations:
+                The elected leader's live creation store.
+
+        Raises:
+            RuntimeError:
+                When the facade is disabled (no elected cluster leader).
+        """
+        self.check_cleaned()
+        if not self._active:
+            raise RuntimeError(
+                "cluster_creations is disabled: no elected cluster leader."
+            )
+        return self._store
+
     def get_creation(self, spell_id: str) -> Optional[Any]:
         """
         Return the shared cluster instance for a spell id, or `None`.
