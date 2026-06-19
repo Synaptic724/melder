@@ -158,7 +158,7 @@ class ManyOnlyFinalizeCreationContextStep(CodegenCreationFamilyStep):
                 "spellspace",
                 "unique_per_conduit",
                 "many",
-                "shared",
+                "unique",
                 "lineage",
         ):
             return route_family

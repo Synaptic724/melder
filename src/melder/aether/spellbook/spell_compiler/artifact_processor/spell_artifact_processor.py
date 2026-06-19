@@ -141,8 +141,14 @@ class SpellArtifactProcessor(Cleanable):
                 route_family = "many"
             elif existence is Existence.unique_per_conduit_lineage:
                 route_family = "lineage"
+            elif existence is Existence.unique_per_conduit_cluster:
+                route_family = "cluster"
+            elif existence is Existence.unique:
+                route_family = "unique"
             else:
-                route_family = "shared"
+                raise RuntimeError(
+                    f"Unsupported existence for route family: {existence!r}."
+                )
 
         node_count = 0
         root_dependency_count = 0

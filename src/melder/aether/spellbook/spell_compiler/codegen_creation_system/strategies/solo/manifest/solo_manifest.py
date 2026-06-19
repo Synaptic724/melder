@@ -27,7 +27,9 @@ _VALID_ROUTE_KEYS = (
     "spellspace",
     "unique_per_conduit",
     "many",
-    "shared",
+    "unique",
+    "lineage",
+    "cluster",
 )
 
 

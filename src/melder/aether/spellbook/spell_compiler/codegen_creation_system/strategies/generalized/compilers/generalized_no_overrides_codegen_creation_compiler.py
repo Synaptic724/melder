@@ -712,6 +712,7 @@ def _append_step_creations_target_source(
         step_index: int,
         target_kind: int,
         is_lineage: bool = False,
+        is_cluster: bool = False,
 ) -> None:
     """
     Append emitted source lines for static creations-target routing.
@@ -719,9 +720,12 @@ def _append_step_creations_target_source(
     Contract:
         - Emits one fixed routing path from compile-time `target_kind`.
         - Avoids per-step runtime target-kind branch ladders.
-        - For unique_per_conduit_lineage steps, the OWNER store is the resolving
-          door's lineage-root creations, threaded in as `owner_creations`
-          (== root_creations), never the binding owner's `_owner_creations`.
+        - For unique_per_conduit_lineage steps the OWNER store is the resolving
+          door's lineage-root creations; for unique_per_conduit_cluster steps it
+          is the elected leader's creations. Both are threaded in by the door as
+          `owner_creations`, never the binding owner's `_owner_creations` -- which
+          is why each existence carries its own flag here even though they route
+          the same way today.
     """
     if target_kind in (
             SpellGeneralizedCodegenPlanTargetKind.CALLER,
@@ -737,7 +741,7 @@ def _append_step_creations_target_source(
         return
 
     if target_kind == SpellGeneralizedCodegenPlanTargetKind.OWNER:
-        if is_lineage:
+        if is_lineage or is_cluster:
             lines.append(f"    creations_{step_index} = owner_creations")
             return
         lines.extend([
@@ -799,7 +803,12 @@ def _append_step_resolution_source(
         lines=lines,
         step_index=step_index,
         target_kind=plan_step.creations_target_kind,
+        # Lineage and cluster are distinct existences that happen to share one
+        # mechanic: their OWNER-target store is threaded in by the door
+        # (caller_creations), never read from spell._owner_creations. Each keeps
+        # its own flag so the compiler stays honest about which existence it is.
         is_lineage=plan_step.existence is Existence.unique_per_conduit_lineage,
+        is_cluster=plan_step.existence is Existence.unique_per_conduit_cluster,
     )
 
     existence = plan_step.existence

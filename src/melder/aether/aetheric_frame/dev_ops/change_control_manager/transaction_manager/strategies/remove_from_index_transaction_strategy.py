@@ -26,13 +26,13 @@ class RemoveFromIndexTransactionStrategy(TransactionStrategy):
     Purpose:
         Resolve one spellbook-owned `REMOVE_FROM_INDEX` request. Because a spell
         is always in exactly one index, removing it is a move-out to a fresh
-        single-member index minted inside this same transaction (the split).
+        fresh index established inside this same transaction (the split).
 
     Contract:
         - Seals off the owning spellbook and conduit EXCLUSIVELY, plus the moved
           spell's binding key. Blocks bind/transfer/link/sever/cluster and other
           index ops on that spellbook+conduit, isolated to them.
-        - The member-store move + fresh-index mint run inside the held window via
+        - The owned-spell move into a fresh index runs inside the held window via
           the Spellbook-owned `_apply_remove_from_index` seam.
     """
 

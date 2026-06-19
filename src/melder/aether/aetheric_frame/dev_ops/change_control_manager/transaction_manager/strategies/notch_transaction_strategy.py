@@ -21,12 +21,12 @@ if TYPE_CHECKING:
 
 class NotchTransactionStrategy(TransactionStrategy):
     """
-    Notch transaction resolver (intra-index active-member switch).
+    Notch transaction resolver (intra-index active-spell repoint).
 
     Purpose:
         Resolve one spellbook-owned `NOTCH` request into the normalized
-        change-control plan. A notch changes which member of one SpellIndex is
-        the active (resolvable) spell.
+        change-control plan. A notch repoints one SpellIndex to a different
+        active (resolvable) spell.
 
     Contract:
         - Seals the op off entirely on the owning surfaces: the owning spellbook
@@ -34,7 +34,7 @@ class NotchTransactionStrategy(TransactionStrategy):
           This blocks bind/new-spell-creation, transfer_ownership, link, sever,
           cluster, and other index ops on that spellbook+conduit for the
           duration, while staying isolated to exactly those surfaces.
-        - The member-store switch itself runs inside the held window via the
+        - The active-spell repoint itself runs inside the held window via the
           Spellbook-owned `_apply_notch` seam (SpellIndex-model lane).
     """
 

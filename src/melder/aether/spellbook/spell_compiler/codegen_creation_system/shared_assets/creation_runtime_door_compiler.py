@@ -597,7 +597,7 @@ def _build_no_overrides_lines(
                 ),
             ),
         ]
-    if resolve_route_key == "shared":
+    if resolve_route_key == "unique":
         return [
             "creation = _spell._owner_creations.get_creation(_spell_id)",
             "if creation is not None:",
@@ -651,6 +651,42 @@ def _build_no_overrides_lines(
                 caller_creations_lock_held=False,
                 return_created=return_created,
                 owner_creations_expr="root_creations",
+            ),
+            2,
+        ) + [
+            _prefix_one_indent(
+                _build_return_statement(
+                    value_expression="creation",
+                    created=False,
+                    return_created=return_created,
+                ),
+            ),
+        ]
+    if resolve_route_key == "cluster":
+        # unique_per_conduit_cluster: one instance per cluster, stored in the
+        # elected leader's creations. The meld front door resolves the elected
+        # leader's store for this existence and hands it in as `caller_creations`,
+        # so the door uses it directly. Distinct existence from lineage with its
+        # own upstream store-selection, even though the body has the same shape.
+        return [
+            "leader_creations = caller_creations",
+            "creation = leader_creations.get_creation(_spell_id)",
+            "if creation is not None:",
+            _prefix_one_indent(
+                _build_return_statement(
+                    value_expression="creation",
+                    created=False,
+                    return_created=return_created,
+                ),
+            ),
+            "with leader_creations._lock:",
+            "    creation = leader_creations.get_creation(_spell_id)",
+            "    if creation is None:",
+        ] + _indent_lines(
+            _build_no_overrides_create_lines(
+                caller_creations_lock_held=False,
+                return_created=return_created,
+                owner_creations_expr="leader_creations",
             ),
             2,
         ) + [
@@ -852,7 +888,7 @@ def _build_with_overrides_lines(
                 ),
             ),
         ]
-    if resolve_route_key == "shared":
+    if resolve_route_key == "unique":
         if not overrides_maybe_none:
             return [
                 "creation = _spell._owner_creations.get_creation(_spell_id)",
@@ -993,6 +1029,79 @@ def _build_with_overrides_lines(
                 ),
             ),
         ]
+    if resolve_route_key == "cluster":
+        # Cluster override lane: same shape as the lineage override lane but on
+        # the meld-resolved elected-leader store (handed in as `caller_creations`)
+        # + its lock. Distinct existence, its own route.
+        if not overrides_maybe_none:
+            return [
+                "leader_creations = caller_creations",
+                "creation = leader_creations.get_creation(_spell_id)",
+                "if creation is not None:",
+                "    raise _MeldExecutionError(",
+                "        spell_id=_spell.spell_index.selected_spell_id,",
+                "        spell_name=_spell.spell_name,",
+                "        message=_existing_override_message,",
+                "    )",
+                "with leader_creations._lock:",
+                "    creation = leader_creations.get_creation(_spell_id)",
+                "    if creation is None:",
+                "        instance = _execute_with_overrides(caller_creations, overrides, False, leader_creations)",
+                _prefix_two_indent(
+                    _build_return_statement(
+                        value_expression="instance",
+                        created=True,
+                        return_created=return_created,
+                    ),
+                ),
+                "    raise _MeldExecutionError(",
+                "        spell_id=_spell.spell_index.selected_spell_id,",
+                "        spell_name=_spell.spell_name,",
+                "        message=_existing_override_message,",
+                "    )",
+            ]
+        return [
+            "leader_creations = caller_creations",
+            "creation = leader_creations.get_creation(_spell_id)",
+            "if creation is not None:",
+            "    if overrides is not None:",
+            "        raise _MeldExecutionError(",
+            "            spell_id=_spell.spell_index.selected_spell_id,",
+            "            spell_name=_spell.spell_name,",
+            "            message=_existing_override_message,",
+            "        )",
+            _prefix_one_indent(
+                _build_return_statement(
+                    value_expression="creation",
+                    created=False,
+                    return_created=return_created,
+                ),
+            ),
+            "with leader_creations._lock:",
+            "    creation = leader_creations.get_creation(_spell_id)",
+            "    if creation is None:",
+            "        instance = _execute_with_overrides(caller_creations, overrides, False, leader_creations)",
+            _prefix_two_indent(
+                _build_return_statement(
+                    value_expression="instance",
+                    created=True,
+                    return_created=return_created,
+                ),
+            ),
+            "    if overrides is not None:",
+            "        raise _MeldExecutionError(",
+            "            spell_id=_spell.spell_index.selected_spell_id,",
+            "            spell_name=_spell.spell_name,",
+            "            message=_existing_override_message,",
+            "        )",
+            _prefix_one_indent(
+                _build_return_statement(
+                    value_expression="creation",
+                    created=False,
+                    return_created=return_created,
+                ),
+            ),
+        ]
     raise RuntimeError(
         f"Unsupported CreationContext with-overrides route key: {resolve_route_key}"
     )
@@ -1099,9 +1208,9 @@ _TEMPLATE_SPELLSPACE_OVERRIDES_ONLY = (
         return_created=True,
     )
 )
-_TEMPLATE_SHARED_OVERRIDES_ONLY = (
+_TEMPLATE_UNIQUE_OVERRIDES_ONLY = (
     _compile_creation_context_overrides_only_template(
-        resolve_route_key="shared",
+        resolve_route_key="unique",
         return_created=True,
     )
 )
@@ -1129,9 +1238,9 @@ _TEMPLATE_SPELLSPACE_INSTANCE_OVERRIDES_ONLY = (
         return_created=False,
     )
 )
-_TEMPLATE_SHARED_INSTANCE_OVERRIDES_ONLY = (
+_TEMPLATE_UNIQUE_INSTANCE_OVERRIDES_ONLY = (
     _compile_creation_context_overrides_only_template(
-        resolve_route_key="shared",
+        resolve_route_key="unique",
         return_created=False,
     )
 )
@@ -1170,9 +1279,9 @@ _TEMPLATE_SPELLSPACE_NO_OVERRIDES_ONLY = (
         return_created=True,
     )
 )
-_TEMPLATE_SHARED_NO_OVERRIDES_ONLY = (
+_TEMPLATE_UNIQUE_NO_OVERRIDES_ONLY = (
     _compile_creation_context_no_overrides_only_template(
-        resolve_route_key="shared",
+        resolve_route_key="unique",
         fast_transient_no_overrides_enabled=False,
         return_created=True,
     )
@@ -1212,9 +1321,9 @@ _TEMPLATE_SPELLSPACE_INSTANCE_NO_OVERRIDES_ONLY = (
         return_created=False,
     )
 )
-_TEMPLATE_SHARED_INSTANCE_NO_OVERRIDES_ONLY = (
+_TEMPLATE_UNIQUE_INSTANCE_NO_OVERRIDES_ONLY = (
     _compile_creation_context_no_overrides_only_template(
-        resolve_route_key="shared",
+        resolve_route_key="unique",
         fast_transient_no_overrides_enabled=False,
         return_created=False,
     )
@@ -1248,6 +1357,36 @@ _TEMPLATE_LINEAGE_INSTANCE_NO_OVERRIDES_ONLY = (
         return_created=False,
     )
 )
+# unique_per_conduit_cluster: one instance per cluster, stored in the elected
+# leader's creations (resolved by the meld and handed in as `caller_creations`).
+# A distinct existence from lineage with its own route; never fast-transient
+# (only `many` is).
+_TEMPLATE_CLUSTER_OVERRIDES_ONLY = (
+    _compile_creation_context_overrides_only_template(
+        resolve_route_key="cluster",
+        return_created=True,
+    )
+)
+_TEMPLATE_CLUSTER_INSTANCE_OVERRIDES_ONLY = (
+    _compile_creation_context_overrides_only_template(
+        resolve_route_key="cluster",
+        return_created=False,
+    )
+)
+_TEMPLATE_CLUSTER_NO_OVERRIDES_ONLY = (
+    _compile_creation_context_no_overrides_only_template(
+        resolve_route_key="cluster",
+        fast_transient_no_overrides_enabled=False,
+        return_created=True,
+    )
+)
+_TEMPLATE_CLUSTER_INSTANCE_NO_OVERRIDES_ONLY = (
+    _compile_creation_context_no_overrides_only_template(
+        resolve_route_key="cluster",
+        fast_transient_no_overrides_enabled=False,
+        return_created=False,
+    )
+)
 
 
 _OVERRIDES_ONLY_INSTANCE_TEMPLATE_BY_ROUTE: dict[
@@ -1258,8 +1397,12 @@ _OVERRIDES_ONLY_INSTANCE_TEMPLATE_BY_ROUTE: dict[
     "many": _TEMPLATE_MANY_INSTANCE_OVERRIDES_ONLY,
     "unique_per_conduit": _TEMPLATE_UNIQUE_PER_CONDUIT_INSTANCE_OVERRIDES_ONLY,
     "spellspace": _TEMPLATE_SPELLSPACE_INSTANCE_OVERRIDES_ONLY,
-    "shared": _TEMPLATE_SHARED_INSTANCE_OVERRIDES_ONLY,
+    "unique": _TEMPLATE_UNIQUE_INSTANCE_OVERRIDES_ONLY,
     "lineage": _TEMPLATE_LINEAGE_INSTANCE_OVERRIDES_ONLY,
+    # Cluster has its own templates (distinct existence). They compile to the
+    # same shape as lineage because the meld resolves the elected-leader store
+    # and hands it in as caller_creations.
+    "cluster": _TEMPLATE_CLUSTER_INSTANCE_OVERRIDES_ONLY,
 }
 
 _OVERRIDES_ONLY_HOOKS_TEMPLATE_BY_ROUTE: dict[
@@ -1270,8 +1413,9 @@ _OVERRIDES_ONLY_HOOKS_TEMPLATE_BY_ROUTE: dict[
     "many": _TEMPLATE_MANY_OVERRIDES_ONLY,
     "unique_per_conduit": _TEMPLATE_UNIQUE_PER_CONDUIT_OVERRIDES_ONLY,
     "spellspace": _TEMPLATE_SPELLSPACE_OVERRIDES_ONLY,
-    "shared": _TEMPLATE_SHARED_OVERRIDES_ONLY,
+    "unique": _TEMPLATE_UNIQUE_OVERRIDES_ONLY,
     "lineage": _TEMPLATE_LINEAGE_OVERRIDES_ONLY,
+    "cluster": _TEMPLATE_CLUSTER_OVERRIDES_ONLY,
 }
 
 _NO_OVERRIDES_ONLY_INSTANCE_TEMPLATE_BY_ROUTE_AND_FAST: dict[
@@ -1286,10 +1430,13 @@ _NO_OVERRIDES_ONLY_INSTANCE_TEMPLATE_BY_ROUTE_AND_FAST: dict[
     ("unique_per_conduit", True): _TEMPLATE_UNIQUE_PER_CONDUIT_INSTANCE_NO_OVERRIDES_ONLY,
     ("spellspace", False): _TEMPLATE_SPELLSPACE_INSTANCE_NO_OVERRIDES_ONLY,
     ("spellspace", True): _TEMPLATE_SPELLSPACE_INSTANCE_NO_OVERRIDES_ONLY,
-    ("shared", False): _TEMPLATE_SHARED_INSTANCE_NO_OVERRIDES_ONLY,
-    ("shared", True): _TEMPLATE_SHARED_INSTANCE_NO_OVERRIDES_ONLY,
+    ("unique", False): _TEMPLATE_UNIQUE_INSTANCE_NO_OVERRIDES_ONLY,
+    ("unique", True): _TEMPLATE_UNIQUE_INSTANCE_NO_OVERRIDES_ONLY,
     ("lineage", False): _TEMPLATE_LINEAGE_INSTANCE_NO_OVERRIDES_ONLY,
     ("lineage", True): _TEMPLATE_LINEAGE_INSTANCE_NO_OVERRIDES_ONLY,
+    # Cluster has its own no-overrides templates (never fast-transient).
+    ("cluster", False): _TEMPLATE_CLUSTER_INSTANCE_NO_OVERRIDES_ONLY,
+    ("cluster", True): _TEMPLATE_CLUSTER_INSTANCE_NO_OVERRIDES_ONLY,
 }
 
 _NO_OVERRIDES_ONLY_HOOKS_TEMPLATE_BY_ROUTE_AND_FAST: dict[
@@ -1304,8 +1451,10 @@ _NO_OVERRIDES_ONLY_HOOKS_TEMPLATE_BY_ROUTE_AND_FAST: dict[
     ("unique_per_conduit", True): _TEMPLATE_UNIQUE_PER_CONDUIT_NO_OVERRIDES_ONLY,
     ("spellspace", False): _TEMPLATE_SPELLSPACE_NO_OVERRIDES_ONLY,
     ("spellspace", True): _TEMPLATE_SPELLSPACE_NO_OVERRIDES_ONLY,
-    ("shared", False): _TEMPLATE_SHARED_NO_OVERRIDES_ONLY,
-    ("shared", True): _TEMPLATE_SHARED_NO_OVERRIDES_ONLY,
+    ("unique", False): _TEMPLATE_UNIQUE_NO_OVERRIDES_ONLY,
+    ("unique", True): _TEMPLATE_UNIQUE_NO_OVERRIDES_ONLY,
     ("lineage", False): _TEMPLATE_LINEAGE_NO_OVERRIDES_ONLY,
     ("lineage", True): _TEMPLATE_LINEAGE_NO_OVERRIDES_ONLY,
+    ("cluster", False): _TEMPLATE_CLUSTER_NO_OVERRIDES_ONLY,
+    ("cluster", True): _TEMPLATE_CLUSTER_NO_OVERRIDES_ONLY,
 }

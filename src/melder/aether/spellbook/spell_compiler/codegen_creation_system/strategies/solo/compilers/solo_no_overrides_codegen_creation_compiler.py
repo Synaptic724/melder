@@ -27,13 +27,15 @@ def compile_solo_no_overrides_codegen_creation_executor(
           compiled `CodeType`.
     """
     has_disposal_methods = spell.has_disposal_methods
-    # unique_per_conduit_lineage resolves into the RESOLVING door's lineage-root
-    # store, supplied at runtime as the `owner_creations` param (root_creations)
-    # by the "lineage" route. It must NOT bind the binding-owner store, so the
-    # param path is forced for lineage by disabling the prebound binding here.
+    # unique_per_conduit_lineage and unique_per_conduit_cluster both resolve into
+    # the store the RESOLVING door supplies at runtime as the `owner_creations`
+    # param -- the lineage-root store for lineage, the elected-leader store for
+    # cluster. Neither may bind the binding-owner store, so the param path is
+    # forced for both by disabling the prebound binding here.
     has_prebound_owner_creations = (
         spell._owner_creations is not None
         and solo_emit_key != "unique_per_conduit_lineage"
+        and solo_emit_key != "unique_per_conduit_cluster"
     )
     source_name = (
         "<solo_no_overrides_codegen_creation:"

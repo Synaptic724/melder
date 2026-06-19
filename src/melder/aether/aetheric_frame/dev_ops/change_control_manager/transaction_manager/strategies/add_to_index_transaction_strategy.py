@@ -34,7 +34,7 @@ class AddToIndexTransactionStrategy(TransactionStrategy):
           spellbooks and both owning conduits (deduped when the same), plus the
           moved spell's binding key. Blocks bind/transfer/link/sever/cluster and
           other index ops on those surfaces, isolated to them.
-        - The member-store move + source GC run inside the held window via the
+        - The owned-spell move + source-index cleanup run inside the held window via the
           Spellbook-owned `_apply_add_to_index` seam (SpellIndex-model lane).
     """
 

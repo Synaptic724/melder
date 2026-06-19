@@ -88,8 +88,9 @@ def _resolve_route_key_from_model(spell_codegen_model: Any) -> str:
             "spellspace",
             "unique_per_conduit",
             "many",
-            "shared",
+            "unique",
             "lineage",
+            "cluster",
     ):
         return route_family
     raise RuntimeError(

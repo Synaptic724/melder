@@ -1760,6 +1760,7 @@ def _append_overrides_shape_owner_creations_source(
         lines: list[str],
         step_index: int,
         is_lineage: bool = False,
+        is_cluster: bool = False,
 ) -> None:
     """
     Append emitted source lines for OWNER-target creations resolution.
@@ -1768,11 +1769,14 @@ def _append_overrides_shape_owner_creations_source(
         - Uses spell-owned creations when available.
         - Falls back to `owner_creations` when spell-owned creations are missing.
         - Raises when neither owner creations source is available.
-        - For unique_per_conduit_lineage steps, the OWNER store is the resolving
-          door's lineage-root creations, threaded in as `owner_creations`
-          (== root_creations), never the binding owner's `_owner_creations`.
+        - For unique_per_conduit_lineage steps the OWNER store is the resolving
+          door's lineage-root creations; for unique_per_conduit_cluster steps it
+          is the elected leader's creations. Both are threaded in by the door as
+          `owner_creations`, never the binding owner's `_owner_creations` -- which
+          is why each existence carries its own flag here even though they route
+          the same way today.
     """
-    if is_lineage:
+    if is_lineage or is_cluster:
         lines.append(f"    creations_{step_index} = owner_creations")
         return
     lines.extend([
@@ -1906,7 +1910,11 @@ def _append_overrides_step_shape_source(
         _append_overrides_shape_owner_creations_source(
             lines=lines,
             step_index=step_index,
+            # Lineage and cluster are distinct existences sharing one mechanic:
+            # the OWNER store is the meld-supplied store handed in by the door,
+            # never spell._owner_creations. Each carries its own honest flag.
             is_lineage=existence is Existence.unique_per_conduit_lineage,
+            is_cluster=existence is Existence.unique_per_conduit_cluster,
         )
     else:
         lines.extend([

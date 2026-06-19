@@ -159,8 +159,9 @@ class GeneralizedFinalizeCreationContextStep(CodegenCreationFamilyStep):
                 "spellspace",
                 "unique_per_conduit",
                 "many",
-                "shared",
+                "unique",
                 "lineage",
+                "cluster",
         ):
             return route_family
         raise RuntimeError(

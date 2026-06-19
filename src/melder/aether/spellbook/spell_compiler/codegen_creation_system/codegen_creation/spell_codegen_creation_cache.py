@@ -533,11 +533,10 @@ def _resolve_route_key_for_spell(spell: Any) -> str:
         return "many"
     if existence is Existence.unique_per_conduit_lineage:
         return "lineage"
-    if existence in (
-            Existence.unique,
-            Existence.unique_per_conduit_cluster,
-    ):
-        return "shared"
+    if existence is Existence.unique_per_conduit_cluster:
+        return "cluster"
+    if existence is Existence.unique:
+        return "unique"
     raise RuntimeError(
         f"Spell route is not cacheable for existence {existence!r}."
     )
