@@ -20,7 +20,7 @@ class SpellIndex(Cleanable):
     Design:
     This class solves the "mutable dictionary key" problem. It provides a
     stable, hashable SpellIndex identity via an immutable ULID, while simultaneously
-    tracking a mutable selected-spell pointer (the SHA256 id of the notched member).
+    tracking a mutable selected-spell pointer (the SHA256 id of the selected spell).
 
     - Hashing and equality are based *only* on the immutable ULID.
     - The selected-spell pointer can be safely updated (mutated) in a thread-safe
@@ -31,10 +31,10 @@ class SpellIndex(Cleanable):
     __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = (
         "_id",          # The immutable ULID. Used for hashing and equality.
-        "_selected_spell_id",  # The selected member's spell id (a SHA256).
+        "_selected_spell_id",  # The selected spell's id (a SHA256).
         "_lock",        # RLock for thread-safe reads/writes to _selected_spell_id.
         "_cleaned",     # Flag for Cleanable interface.
-        "_spells_in_index",    # Set of all member spell ids seen.
+        "_spells_in_index",    # Set of all spell ids seen in this index.
         "_owner_spellbook",
         "_selected_spell",
         "_owner_conduit_id",
@@ -70,7 +70,7 @@ class SpellIndex(Cleanable):
         self._lock: threading.RLock = threading.RLock()
         # The dynamic pointer to the selected spell, which can be updated.
         self._selected_spell_id: str = initial_id
-        self._spells_in_index: set = {initial_id}  # Track all member spell ids seen.
+        self._spells_in_index: set = {initial_id}  # Track all spell ids seen in this index.
         self._owner_spellbook: Optional[Spellbook] = None
         self._selected_spell: Optional[Spell] = None
         self._owner_conduit_id: Optional[str] = None #Owner root conduit
@@ -85,7 +85,7 @@ class SpellIndex(Cleanable):
 
         Contract:
             - Idempotent and lock-guarded.
-            - Clears member-id history and all spellbook / spell attachments
+            - Clears the spell-id history and all spellbook / spell attachments
               before dropping the lock reference.
             - Leaves future callers to fail through `check_cleaned()`.
         """
@@ -112,10 +112,10 @@ class SpellIndex(Cleanable):
     @property
     def selected_spell_id(self) -> str:
         """
-        Return the selected member's spell id for this SpellIndex.
+        Return the selected spell's id for this SpellIndex.
 
         Returns:
-            str: The selected member's spell id.
+            str: The selected spell's id.
 
         Contract:
             - Returns the live selected-spell pointer, not a historical value.
@@ -296,10 +296,10 @@ class SpellIndex(Cleanable):
 
     def spells_in_index(self) -> set:
         """
-        Return a snapshot of every member spell id seen by this SpellIndex.
+        Return a snapshot of every spell id seen by this SpellIndex.
 
         Returns:
-            set: A set of all member spell ids seen.
+            set: A set of all spell ids seen in this index.
 
         Contract:
             - Returns a detached set copy.
@@ -313,7 +313,7 @@ class SpellIndex(Cleanable):
 
     def has_spell(self, spell_id: str) -> bool:
         """
-        Return whether `spell_id` is a known member id of this SpellIndex.
+        Return whether `spell_id` is a known spell id of this SpellIndex.
 
         Args:
             spell_id (str): The spell id to check.
@@ -321,7 +321,7 @@ class SpellIndex(Cleanable):
             bool: True if the spell id has been seen, False otherwise.
 
         Contract:
-            - Checks against the full historical member-id set, not only the
+            - Checks against the full historical spell-id set, not only the
               current pointer.
         """
         self.check_cleaned()

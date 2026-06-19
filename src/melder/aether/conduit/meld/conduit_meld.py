@@ -3,10 +3,10 @@ from typing import TYPE_CHECKING, Optional, Dict, Any, Callable, ClassVar
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.aether.conduit.meld.meld import Meld
 from melder.aether.spellbook.existence.existence import Existence
-from melder.aether.conduit.creations.cluster_creations import ClusterCreations
 
 if TYPE_CHECKING:
     from melder.aether.conduit.creations.conduit_creations import ConduitCreations
+    from melder.aether.conduit.creations.cluster_creations import ClusterCreations
     from melder.aether.spellbook.spellbook import Spellbook
     from melder.aether.spellbook.spell import Spell
 
@@ -83,15 +83,14 @@ class ConduitMeld(Meld):
         # store at runtime by the dispatch below; the store object itself carries
         # no lineage pointer.
         self._root_creations: "ConduitCreations" = creations
-        # Cluster team-store facade owned by this meld. Built empty (inert):
-        # there is no elected leader yet. It stays empty if this conduit never
-        # joins a cluster, or joins but no leader is elected. When a leader is
-        # elected, `ConduitCluster` fills this facade with the leader's
-        # `Creations` (inside the elect transaction window). A
-        # `unique_per_conduit_cluster` meld resolves through
-        # `self._cluster_creations.resolved_store()`, which hard-errors while the
-        # facade is empty (no elected leader).
-        self._cluster_creations: ClusterCreations = ClusterCreations()
+        # Cluster team-store facade reference for `unique_per_conduit_cluster`
+        # store-selection. The owning conduit creates and owns the facade (a
+        # normal conduit makes a fresh empty one; a lesser borrows its lineage
+        # root's) and assigns this reference right after construction, so it is
+        # None only during construction. Election binds the elected leader's
+        # `Creations` into the facade; until then `resolved_store()` hard-errors,
+        # so a `unique_per_conduit_cluster` meld throws while inert.
+        self._cluster_creations: Optional["ClusterCreations"] = None
 
     def cleanup(self) -> None:
         """
@@ -113,7 +112,10 @@ class ConduitMeld(Meld):
             super().cleanup()
             del self._creations
             del self._root_creations
-            self._cluster_creations.cleanup()
+            # Mirror `_root_creations`: the meld only drops its reference to the
+            # cluster facade. The lineage root conduit owns the facade and cleans
+            # it in `_cleanup_normal_conduit`; a lesser meld borrows it and must
+            # never clean it here.
             del self._cluster_creations
 
     def meld(

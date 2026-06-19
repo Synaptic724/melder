@@ -2479,12 +2479,12 @@ and logging.
             return True
         session = self._get_required_transaction_mediator().get_session_for_identity(
             identity=self._transaction_identity,
-            transaction_type="bind",
+            transaction_type=ChangeTransactionType.BIND,
         )
         if session is None and self._conduit is not None:
             session = self._get_required_transaction_mediator().get_session_for_identity(
                 identity=self._conduit._transaction_identity,
-                transaction_type="bind",
+                transaction_type=ChangeTransactionType.BIND,
             )
         if session is None:
             return False
@@ -2493,72 +2493,26 @@ and logging.
     #endregion Contract API
     #region Binding API
 
-    def _normalize_change_transaction_type(
-            self,
-            value: str,
-    ) -> str:
-        """
-        Internal
-
-        Normalize a transaction type input to its lowercase string form.
-
-        Purpose:
-            Keep the public Spellbook transaction boundary string-based while
-            still validating supported transaction names early.
-        Contract:
-            - Accepts plain strings and StrEnum-backed string values.
-            - Comparison is case-insensitive for string inputs.
-        Args:
-            value:
-                Transaction type as a string-like value.
-        Returns:
-            str:
-                Lowercase normalized transaction type.
-        Raises:
-            ValueError: If the value is empty or not a valid transaction type.
-            TypeError: If the value is not a string-like value.
-        """
-        if isinstance(value, str):
-            candidate = value.strip().lower()
-            if not candidate:
-                raise ValueError("transaction_type cannot be empty.")
-            if candidate not in (
-                    "bind",
-                    "link",
-                    "transfer_ownership",
-                    "mutation",
-                    "cluster_link",
-            ):
-                raise ValueError(
-                    "Invalid transaction_type "
-                    f"'{value}'. Expected one of: "
-                    "['bind', 'link', 'transfer_ownership', 'mutation', 'cluster_link']."
-                )
-            return candidate
-        raise TypeError(
-            "transaction_type must be a string-like value."
-        )
-
-    def notch_spell(self, *, spell_index: SpellIndex, member: Spell) -> Spell:
+    def notch_spell(self, *, spell_index: SpellIndex, spell: Spell) -> Spell:
         """
         Public API
 
-        Notch a SpellIndex so `member` becomes its selected (resolvable) spell,
+        Notch a SpellIndex so `spell` becomes its selected (resolvable) spell,
         admitted as a `notch` change-control transaction through the mediator.
 
         Contract:
             - Admits a `notch` transaction (claims the owning spellbook INTENT
-              and the member binding key EXCLUSIVE), performs the member-store
+              and the spell binding key EXCLUSIVE), performs the selected-spell
               switch inside the held window, then commits.
-            - The actual switch (selected-member move + SHA id-map rekey + door
-              epoch bump) is the SpellIndex-model seam `_apply_notch`.
+            - The actual switch (a SpellIndex repoint via `SpellIndex.update`) is
+              the SpellIndex-model seam `_apply_notch`.
 
         Args:
-            spell_index: The SpellIndex whose selected member is switched.
-            member: The already-bound member spell to make selected.
+            spell_index: The SpellIndex whose selected spell is switched.
+            spell: The already-bound spell to make selected.
 
         Returns:
-            Spell: The now-selected `member`.
+            Spell: The now-selected `spell`.
 
         Raises:
             RuntimeError: If the Spellbook is cleaned.
@@ -2570,8 +2524,8 @@ and logging.
             "spellbook_id": self._id,
             "owner_conduit_id": self._conduit._id if self._conduit is not None else None,
             "spell_index_id": spell_index._id,
-            "member_id": member.spell_id,
-            "binding_key": member._key,
+            "spell_id": spell.spell_id,
+            "binding_key": spell._key,
         }
         mediator.start_transaction(
             identity=self._transaction_identity,
@@ -2579,17 +2533,17 @@ and logging.
             metadata=metadata,
         )
         try:
-            result = self._apply_notch(spell_index=spell_index, member=member)
+            result = self._apply_notch(spell_index=spell_index, spell=spell)
         except Exception:
             mediator.end_transaction(expected_type="notch", success=False)
             raise
         mediator.end_transaction(expected_type="notch", success=True)
         return result
 
-    def _apply_notch(self, *, spell_index: SpellIndex, member: Spell) -> Spell:
+    def _apply_notch(self, *, spell_index: SpellIndex, spell: Spell) -> Spell:
         """
-        Internal SEAM - repoint a SpellIndex's single active spell to `member`'s
-        version id.
+        Internal SEAM - repoint a SpellIndex's single active spell to `spell`'s
+        id.
 
         Runs inside the held `notch` transaction window: the strategy seals the
         owning spellbook + binding scope EXCLUSIVE, so the rekey is atomic against
@@ -2607,21 +2561,21 @@ and logging.
 
         Args:
             spell_index: The SpellIndex to repoint.
-            member: The spell carrying the new version id to notch to.
+            spell: The spell to notch to.
 
         Returns:
-            Spell: `member`.
+            Spell: `spell`.
 
         Raises:
             RuntimeError: Propagated from `SpellIndex.update` if the index has no
                 attached active spell.
         """
-        spell_index.update(member.spell_id)
-        return member
+        spell_index.update(spell.spell_id)
+        return spell
 
     def begin_transaction(
             self,
-            transaction_type: str,
+            transaction_type: ChangeTransactionType,
             *,
             conduit_id: Optional[str] = None,
             conduit_ids: Optional[Iterable[str]] = None,
@@ -2676,9 +2630,9 @@ and logging.
             Admission uses the orchestrator lock; the local state uses the Spellbook lock.
         """
         self.check_cleaned()
-        request_type = self._normalize_change_transaction_type(transaction_type)
+        request_type = transaction_type
         mediator = self._get_required_transaction_mediator()
-        if request_type == "bind":
+        if request_type == ChangeTransactionType.BIND:
             if self._bind_family_disabled_for_current_posture():
                 self._logger.error(
                     "Bind-family transaction denied by current frame posture",
@@ -2750,7 +2704,7 @@ and logging.
 
     def end_transaction(
             self,
-            transaction_type: Optional[str] = None,
+            transaction_type: Optional[ChangeTransactionType] = None,
             *,
             success: bool = True,
     ) -> None:
@@ -2784,20 +2738,18 @@ and logging.
         mediator = self._get_required_transaction_mediator()
         bind_session = mediator.get_session_for_identity(
             identity=self._transaction_identity,
-            transaction_type="bind",
+            transaction_type=ChangeTransactionType.BIND,
         )
         if transaction_type is not None:
-            expected_type = self._normalize_change_transaction_type(
-                transaction_type,
-            )
-            if bind_session is not None and expected_type != "bind":
+            expected_type = transaction_type
+            if bind_session is not None and expected_type != ChangeTransactionType.BIND:
                 raise RuntimeError(
                     "[SPELLBOOK] Active change transaction does not match the requested type."
                 )
-            if expected_type == "bind" and bind_session is not None:
+            if expected_type == ChangeTransactionType.BIND and bind_session is not None:
                 mediator.end_transaction_for_identity(
                     identity=self._transaction_identity,
-                    transaction_type="bind",
+                    transaction_type=ChangeTransactionType.BIND,
                 )
                 # Spellbook owns its own local bind state (see begin_transaction);
                 # clear it once the mediator has finalized the bind envelope.
@@ -2811,7 +2763,7 @@ and logging.
             raise RuntimeError("[SPELLBOOK] Active transaction session could not be resolved.")
 
         if transaction_type is not None:
-            expected_type = self._normalize_change_transaction_type(transaction_type)
+            expected_type = transaction_type
             if request.request_type != expected_type:
                 raise RuntimeError(
                     "[SPELLBOOK] Active change transaction does not match the requested type."
@@ -2826,7 +2778,7 @@ and logging.
     @contextmanager
     def transaction(
             self,
-            transaction_type: str,
+            transaction_type: ChangeTransactionType,
             *,
             conduit_id: Optional[str] = None,
             conduit_ids: Optional[Iterable[str]] = None,
@@ -3014,7 +2966,7 @@ and logging.
                 pending_spells = list(self._pending_structural_spells)
         session = self._get_required_transaction_mediator().get_session_for_identity(
             identity=self._transaction_identity,
-            transaction_type="bind",
+            transaction_type=ChangeTransactionType.BIND,
         )
         if session is None:
             return
@@ -3030,7 +2982,7 @@ and logging.
             binding_keys.append(key)
         self._get_required_transaction_mediator().update_transaction_for_identity(
             identity=self._transaction_identity,
-            transaction_type="bind",
+            transaction_type=ChangeTransactionType.BIND,
             binding_keys=binding_keys,
         )
 
@@ -3070,7 +3022,7 @@ and logging.
                     lookup_keys = list(lookup_map.keys())
         session = self._get_required_transaction_mediator().get_session_for_identity(
             identity=self._transaction_identity,
-            transaction_type="link",
+            transaction_type=ChangeTransactionType.LINK,
         )
         if session is None:
             return
@@ -3081,7 +3033,7 @@ and logging.
 
         self._get_required_transaction_mediator().update_transaction_for_identity(
             identity=self._transaction_identity,
-            transaction_type="link",
+            transaction_type=ChangeTransactionType.LINK,
             contract_keys=filtered_keys,
         )
 

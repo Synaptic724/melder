@@ -29,6 +29,7 @@ from melder.aether.conduit.conduit_state.conduit_state import ConduitState
 from melder.aether.conduit.meld.conduit_meld import ConduitMeld
 from melder.aether.conduit.conduit_ward.conduit_ward import ConduitWard
 from melder.aether.conduit.creations.conduit_creations import ConduitCreations
+from melder.aether.conduit.creations.cluster_creations import ClusterCreations
 from melder.aether.conduit.conduit_pool import ConduitPool
 from melder.aether.conduit.spell_space.spell_space import SpellSpace
 from melder.aether.conduit.spell_space.spell_space_pool import SpellSpacePool
@@ -130,6 +131,7 @@ class Conduit(Cleanable):
        "_spellspace_pool",
        "_conduit_pool",
        "_creations",
+       "_cluster_creations",
        "_creation_gate_controller",
        "_creation_gate",
        "_conduit_hooks",
@@ -308,9 +310,14 @@ class Conduit(Cleanable):
                 max_idle=20,
             )
             # Lineage-root store: a normal conduit is its own lineage root, so
-            # its creations already point at themselves (Creations defaults
-            # `_root_creations = self`). `unique_per_conduit_lineage` doors read
-            # `caller_creations._root_creations`, so nothing more is needed here.
+            # its meld defaults `_root_creations` to its own creations at
+            # construction; the door is handed that store for
+            # `unique_per_conduit_lineage` melds.
+            # Cluster team-store facade: a normal conduit is its own cluster
+            # root, so it owns a fresh empty (inert) facade; it fills on
+            # election, and a `unique_per_conduit_cluster` meld hard-errors until
+            # then.
+            self._cluster_creations = ClusterCreations()
         else:
             root_conduits = self._aetheric_frame._conduits
             root_conduit = root_conduits.get(self._root_conduit_id)
@@ -321,8 +328,16 @@ class Conduit(Cleanable):
             self._conduit_pool = root_conduit._conduit_pool
             # Lineage-root store: a lesser resolves `unique_per_conduit_lineage`
             # into the lineage root's creations (the single store shared across
-            # the whole lineage), so point its creations at the root's root.
-            self._creations._root_creations = root_conduit._creations._root_creations
+            # the whole lineage), so point its meld at the root conduit's
+            # lineage-root store.
+            self._meld._root_creations = root_conduit._meld._root_creations
+            # Cluster team-store facade: the conduit owns this resource (like
+            # `_creations`); a lesser borrows its lineage root's facade so an
+            # election on this lineage is visible here too.
+            self._cluster_creations = root_conduit._cluster_creations
+        # Hand the meld a reference to this conduit's cluster facade for
+        # `unique_per_conduit_cluster` store-selection (the conduit owns it).
+        self._meld._cluster_creations = self._cluster_creations
         self._configure_conduit_state()
         self._conduit_ward: ConduitWard = ConduitWard(
             conduit=self,
@@ -598,6 +613,15 @@ class Conduit(Cleanable):
                 )
         if self._creation_gate is not None:
             self._creation_gate.cleanup()
+        # Cluster facade: a normal conduit is its own cluster root and owns the
+        # facade, so clean it here (lessers borrow it and never clean it).
+        try:
+            if self._cluster_creations is not None:
+                self._cluster_creations.cleanup()
+        except Exception:
+            self._logger.error(
+                "Error cleaning cluster facade", "_cleanup_normal_conduit", exc_info=True
+            )
         try:
             if self._meld is not None:
                 self._meld.cleanup()
@@ -1074,7 +1098,7 @@ class Conduit(Cleanable):
 
     def _transaction_blocked_for_current_posture(
             self,
-            transaction_name: Optional[str],
+            transaction_name: Optional[ChangeTransactionType],
     ) -> bool:
         """
         Internal
@@ -1090,27 +1114,27 @@ class Conduit(Cleanable):
             return False
         frame_configuration = self._spellbook._aetheric_frame_configuration
         if frame_configuration is None:
-            return transaction_name != "bind" and not self.__dynamic_environment__
-        if transaction_name == "bind":
+            return transaction_name != ChangeTransactionType.BIND and not self.__dynamic_environment__
+        if transaction_name == ChangeTransactionType.BIND:
             return self._bind_family_blocked_for_current_posture()
         if frame_configuration.disable_all_transactions_after_conjure:
             return True
-        if transaction_name == "link":
+        if transaction_name == ChangeTransactionType.LINK:
             return (
                 frame_configuration.disable_linking
                 or frame_configuration.system_state is not SystemState.dynamic
             )
-        if transaction_name == "transfer_ownership":
+        if transaction_name == ChangeTransactionType.TRANSFER_OWNERSHIP:
             return (
                 frame_configuration.disable_transfer_of_ownership
                 or frame_configuration.system_state is not SystemState.dynamic
             )
-        if transaction_name == "cluster_link":
+        if transaction_name == ChangeTransactionType.CLUSTER_LINK:
             return (
                 frame_configuration.disable_conduit_cluster
                 or frame_configuration.system_state is not SystemState.dynamic
             )
-        if transaction_name == "mutation":
+        if transaction_name == ChangeTransactionType.MUTATION:
             return (
                 frame_configuration.disable_mutations
                 or frame_configuration.system_state is not SystemState.dynamic
@@ -1588,9 +1612,14 @@ class Conduit(Cleanable):
             lesser_conduit._root_conduit_id = self._root_conduit_id
             lesser_conduit._meld._resolution_conduit_id = self._root_conduit_id
             # Propagate the lineage-root store down with the root id: self is in
-            # this lineage, so its creations already point at the lineage root's
-            # creations; the lesser shares that same root store.
-            lesser_conduit._creations._root_creations = self._creations._root_creations
+            # this lineage, so its meld already points at the lineage root's
+            # store; the lesser's meld shares that same root store.
+            lesser_conduit._meld._root_creations = self._meld._root_creations
+            # Propagate the one lineage cluster facade down (the conduit owns it,
+            # the meld only references it). Re-point the borrowed reference on
+            # both the lesser conduit and its meld; never cleaned here.
+            lesser_conduit._cluster_creations = self._cluster_creations
+            lesser_conduit._meld._cluster_creations = self._cluster_creations
             lesser_conduit._set_creation_gate_controller_for_lineage()
 
     def upgrade_to_normal(
@@ -1692,10 +1721,15 @@ class Conduit(Cleanable):
                 if self._meld is not None:
                     self._meld._creations = self._creations
                     self._meld._resolution_conduit_id = self._root_conduit_id
-                # Upgraded conduit is now its own lineage root: its creations
-                # become their own root store. Lessers are re-pointed to this new
-                # root by the lineage controller rebind below.
-                self._creations._root_creations = self._creations
+                # Upgraded conduit is now its own lineage root: its meld's root
+                # store becomes its own creations. Lessers are re-pointed to this
+                # new root by the lineage controller rebind below.
+                self._meld._root_creations = self._creations
+                # Upgraded conduit is now its own cluster root too: it owns a
+                # fresh empty facade (the old one was borrowed from the previous
+                # root and must not be cleaned here). Re-point the meld at it.
+                self._cluster_creations = ClusterCreations()
+                self._meld._cluster_creations = self._cluster_creations
 
                 # Step 3: Reconfigure the conduit ward
                 self._conduit_ward._convert_to_normal_conduit()
@@ -2232,7 +2266,7 @@ class Conduit(Cleanable):
 
     def begin_transaction(
             self,
-            transaction_type: str,
+            transaction_type: ChangeTransactionType,
             *,
             conduit_ids: Optional[Iterable[str]] = None,
             conduits: Optional[Iterable["Conduit"]] = None,
@@ -2295,9 +2329,7 @@ class Conduit(Cleanable):
         mediator = self._get_required_transaction_mediator()
         existing_request = mediator.get_active_request()
 
-        request_type_value: Optional[str] = None
-        if isinstance(transaction_type, str):
-            request_type_value = transaction_type.strip().lower()
+        request_type_value = transaction_type
 
         dynamic_only = {
             "link",
@@ -2339,7 +2371,7 @@ class Conduit(Cleanable):
                 if conduit._id not in conduit_values:
                     conduit_values.append(conduit._id)
 
-        if request_type_value == "link":
+        if request_type_value == ChangeTransactionType.LINK:
             if conduit_ids:
                 for conduit_id in conduit_ids:
                     if conduit_id not in conduit_values:
@@ -2359,7 +2391,7 @@ class Conduit(Cleanable):
                 metadata=link_metadata,
             )
             return
-        if request_type_value == "unlink":
+        if request_type_value == ChangeTransactionType.UNLINK:
             if conduit_ids:
                 for conduit_id in conduit_ids:
                     if conduit_id not in conduit_values:
@@ -2379,9 +2411,9 @@ class Conduit(Cleanable):
                 metadata=unlink_metadata,
             )
             return
-        if request_type_value == "bind":
+        if request_type_value == ChangeTransactionType.BIND:
             self._spellbook.begin_transaction(
-                "bind",
+                ChangeTransactionType.BIND,
                 conduit_id=self._id,
                 scope_keys=scope_keys,
                 scope_hashes=scope_hashes,
@@ -2389,7 +2421,7 @@ class Conduit(Cleanable):
                 metadata=metadata,
             )
             return
-        if request_type_value == "transfer_ownership":
+        if request_type_value == ChangeTransactionType.TRANSFER_OWNERSHIP:
             transfer_metadata = dict(metadata) if metadata is not None else {}
             transfer_metadata.setdefault(
                 "origin_surface",
@@ -2432,7 +2464,7 @@ class Conduit(Cleanable):
 
     def end_transaction(
             self,
-            transaction_type: Optional[str] = None,
+            transaction_type: Optional[ChangeTransactionType] = None,
             *,
             success: bool = True,
     ) -> None:
@@ -2465,11 +2497,8 @@ class Conduit(Cleanable):
         if self._conduit_state is not ConduitState.normal:
             self._logger.error("end_transaction called when conduit is not normal", "end_transaction")
             raise RuntimeError("Only normal conduits can end change transactions.")
-        request_type_value: Optional[str] = None
-        if isinstance(transaction_type, str):
-            request_type_value = transaction_type.strip().lower()
-        if request_type_value == "bind":
-            self._spellbook.end_transaction("bind", success=success)
+        if transaction_type == ChangeTransactionType.BIND:
+            self._spellbook.end_transaction(ChangeTransactionType.BIND, success=success)
             return
         self._get_required_transaction_mediator().end_transaction(
             expected_type=transaction_type,
@@ -2479,7 +2508,7 @@ class Conduit(Cleanable):
     @contextmanager
     def transaction(
             self,
-            transaction_type: str,
+            transaction_type: ChangeTransactionType,
             *,
             conduit_ids: Optional[Iterable[str]] = None,
             conduits: Optional[Iterable["Conduit"]] = None,
@@ -2630,7 +2659,7 @@ class Conduit(Cleanable):
             raise RuntimeError(
                 "[CONDUIT] Bind is disabled for the current frame posture."
             )
-        with self.transaction("bind"):
+        with self.transaction(ChangeTransactionType.BIND):
             with self._lock:
                 return self._spellbook._bind_under_active_transaction(
                     spell=spell,
@@ -2678,7 +2707,7 @@ class Conduit(Cleanable):
             raise RuntimeError(
                 "[CONDUIT] Scan is disabled for the current frame posture."
             )
-        with self.transaction("bind"):
+        with self.transaction(ChangeTransactionType.BIND):
             with self._lock:
                 return Scan(self._spellbook).scan_module(module)
 
@@ -2818,7 +2847,7 @@ class Conduit(Cleanable):
         if not self.__dynamic_environment__:
             raise RuntimeError("Ownership transfer requires dynamic mode.")
         with self.transaction(
-                "transfer_ownership",
+                ChangeTransactionType.TRANSFER_OWNERSHIP,
                 metadata=self._build_transfer_transaction_metadata(
                     spell=spell,
                     target_conduit=target_conduit,
@@ -3405,17 +3434,17 @@ class Conduit(Cleanable):
 
         return linked
 
-    def notch_spell(self, *, spell_index: Any, member: Any) -> Any:
+    def notch_spell(self, *, spell_index: Any, spell: Any) -> Any:
         """
         Public API
 
-        Conduit facade for a SpellIndex notch: make `member` the active
+        Conduit facade for a SpellIndex notch: make `spell` the active
         (resolvable) spell in its index. Delegates to the owning Spellbook,
         which admits the `notch` change-control transaction.
 
         Args:
-            spell_index: The SpellIndex whose active member is switched.
-            member: The already-identified spell to make active.
+            spell_index: The SpellIndex whose active spell is switched.
+            spell: The already-identified spell to make active.
 
         Returns:
             Any: The owning Spellbook notch result.
@@ -3426,46 +3455,7 @@ class Conduit(Cleanable):
         self.check_cleaned()
         if self._spellbook is None:
             raise RuntimeError("[CONDUIT] No owning Spellbook for notch_spell.")
-        return self._spellbook.notch_spell(spell_index=spell_index, member=member)
-
-    def add_spell_into_spellindex(self, *, spell: Any, target_index: Any, source_index: Any = None) -> Any:
-        """
-        Public API
-
-        Conduit facade for moving a spell into a SpellIndex; delegates to the
-        owning Spellbook, which admits the `add_to_index` change-control
-        transaction.
-
-        Raises:
-            RuntimeError: If the Conduit is cleaned or has no owning Spellbook.
-        """
-        self.check_cleaned()
-        if self._spellbook is None:
-            raise RuntimeError("[CONDUIT] No owning Spellbook for add_spell_into_spellindex.")
-        return self._spellbook.add_spell_into_spellindex(
-            spell=spell,
-            target_index=target_index,
-            source_index=source_index,
-        )
-
-    def remove_spell_from_spellindex(self, *, spell: Any, source_index: Any) -> Any:
-        """
-        Public API
-
-        Conduit facade for moving a spell out of a SpellIndex into a fresh one;
-        delegates to the owning Spellbook, which admits the `remove_from_index`
-        change-control transaction.
-
-        Raises:
-            RuntimeError: If the Conduit is cleaned or has no owning Spellbook.
-        """
-        self.check_cleaned()
-        if self._spellbook is None:
-            raise RuntimeError("[CONDUIT] No owning Spellbook for remove_spell_from_spellindex.")
-        return self._spellbook.remove_spell_from_spellindex(
-            spell=spell,
-            source_index=source_index,
-        )
+        return self._spellbook.notch_spell(spell_index=spell_index, spell=spell)
 
     def sever_link(self, target_conduit: "Conduit") -> bool:
         """
@@ -3505,7 +3495,7 @@ class Conduit(Cleanable):
             self._logger.error("sever_link in non-dynamic env", "sever_link")
             raise RuntimeError("Dynamic environment is not enabled. Cannot manage link services.")
 
-        with self.transaction("unlink", conduits=[self, target_conduit]):
+        with self.transaction(ChangeTransactionType.UNLINK, conduits=[self, target_conduit]):
             with self._lock:
                 unlinked = self._conduit_ward._sever_link(target_conduit)
 
@@ -4620,7 +4610,6 @@ class Conduit(Cleanable):
             # Hooks are advisory; failure to resolve a peer must not
             # break the primary contract APIs.
             return None
-
 
     def _fire_conduit_hooks(self, hook_name: str, *conduits: "Conduit") -> None:
         """
