@@ -22,16 +22,103 @@ if TYPE_CHECKING:
 
 class ConduitCluster(Cleanable):
     """
-    Cluster-local registry for conduit membership and shared-root policy.
+    A membership group of conduits with TWO INDEPENDENT LAYERS:
+    leaderless spell-sharing (the core, always on) and an OPTIONAL elected-leader
+    team store (only ever needed for `unique_per_conduit_cluster` spells).
 
-    Contract:
-        - Tracks cluster membership by conduit id.
-        - Tracks which root `SpellIndex` lineages each owner contributes to the
-          cluster for automatic sharing.
-        - Orchestrates automatic contracting and removal of shared roots between
-          owners and borrowers during join, leave, and refresh flows.
-        - Uses one internal lock to protect membership and shared-root state.
-        - Becomes unusable after `cleanup()` completes.
+    Read this before reasoning about cluster behaviour. The two layers are easy
+    to conflate, and most of the cluster works with NO leader at all.
+
+    ==================================================================
+    LAYER 1 - Spell sharing (the core; always on; needs NO leader)
+    ==================================================================
+    The cluster's primary job. Members automatically contract ("share") their
+    shareable root `SpellIndex` lineages to one another, so every member can
+    resolve every other member's shared roots. This layer is fully functional
+    with no elected leader; a cluster can exist and share spells forever without
+    one.
+
+        - Membership is `members: Set[str]` (conduit ids).
+        - `handle_join(conduit)`: add the conduit to `members`, refresh its
+          shareable roots, then share its roots TO every existing peer and each
+          peer's roots TO it (both directions).
+        - `handle_leave(conduit)`: remove the conduit from `members`, tear down
+          the shared roots in both directions, and drop its `shared_spells`
+          entry.
+        - Each individual share/unshare is its own per-pair `cluster_link`
+          change-control transaction (opened via `peer.transaction(...)` inside
+          `share_to_borrower` / `remove_shared_from_borrower`).
+        - `shared_spells` maps owner conduit id -> the shareable root
+          `SpellIndex`es that owner contributes.
+        - `auto_link_dependencies`: when True each shared root drags its
+          dependency closure into the contract; when False only the root shares.
+
+    CURRENT GAP (intended work, not yet built): the membership mutation
+    (`members.add` / `members.discard`) and the share fan-out are NOT wrapped as
+    a single atomic transaction today - membership is a bare lock op and each
+    share is a separate `cluster_link` transaction, so a concurrent join, leave,
+    or ownership transfer can interleave mid-entry/exit. Transactionalizing the
+    whole conduit entry/exit is planned.
+
+    ==================================================================
+    LAYER 2 - Elected-leader team store (OPTIONAL; only for
+              `unique_per_conduit_cluster` spells)
+    ==================================================================
+    A separate overlay. A `unique_per_conduit_cluster` spell must resolve into
+    ONE shared creation store across the whole cluster: the elected leader
+    conduit's `Creations`.
+
+        - The LIVE team-store facade is PER MEMBER ROOT CONDUIT. Each root
+          conduit owns a `_cluster_creations: ClusterCreations`, and the conduits
+          in its lineage share that one facade. The meld front door resolves a
+          `unique_per_conduit_cluster` instance through
+          `conduit._cluster_creations.resolved_store()`.
+        - `elect_leader(leader_conduit_id)` (transactional): opens an
+          `ELECT_CONDUIT_CLUSTER_LEADER` transaction, then `bind_elected_leader`
+          walks `members` and binds every member root's facade to the elected
+          leader's `_creations`, recording `master_conduit_id`. Election is
+          inert -> active, so no lineage drain is required.
+        - `unelect_leader()` (transactional): opens an
+          `UNELECT_CONDUIT_CLUSTER_LEADER` transaction whose strategy drains
+          every member root lineage to zero (so no meld is mid-create against the
+          leader store), `unbind_elected_leader` unbinds every member facade and
+          clears `master_conduit_id`, then the lineages reopen on every exit path
+          (fail-closed).
+        - `bind_elected_leader` REFUSES re-election: it raises if
+          `master_conduit_id` is already set. Unelect back to inert before
+          electing a different leader.
+        - While inert (no leader), `_cluster_creations.resolved_store()`
+          HARD-ERRORS, so a `unique_per_conduit_cluster` meld with no leader
+          fails at the meld door instead of resolving into nothing.
+        - Concurrency safety for bind/unbind comes from the elect/unelect
+          transaction quiesce (the strategy seals the member conduits, and for
+          unelect drains their lineages), NOT from a lock on the facade.
+
+    GOTCHA: the cluster also owns a `self.cluster_creations: ClusterCreations`
+    field, but it is CURRENTLY VESTIGIAL - it is constructed and cleaned up, yet
+    never bound, unbound, or resolved. The operative team-store facades are the
+    per-root-conduit `_cluster_creations` instances described above. Do not
+    confuse the cluster-owned facade with the per-conduit ones.
+
+    ==================================================================
+    Invariants
+    ==================================================================
+        - `master_conduit_id` is the single source of truth for "is a leader
+          elected": set by `bind_elected_leader`, cleared by
+          `unbind_elected_leader`, `None` when inert.
+        - One cluster per conduit (INTENDED): a conduit owns a single
+          `_cluster_creations` facade, so it can only ever front ONE cluster's
+          team store. Rejecting a join when the conduit is already clustered is
+          planned; it is not enforced yet.
+
+    Threading:
+        One internal `_lock` (RLock) guards membership and shared-root state.
+        Team-store bind/unbind safety comes from the elect/unelect transaction
+        quiesce, not from this lock.
+
+    Lifecycle:
+        Becomes unusable after `cleanup()` completes; cleanup cleans the owned
+        (currently vestigial) `cluster_creations` facade and drops references.
 
     Attributes:
         members:
@@ -42,6 +129,11 @@ class ConduitCluster(Cleanable):
         auto_link_dependencies:
             When True, a dependency closure is auto-contracted with each shared
             root. When False, only the root spell is linked.
+        master_conduit_id:
+            Elected leader conduit id, or None when no leader is elected (inert).
+        cluster_creations:
+            Cluster-owned team-store facade. Currently vestigial (see the GOTCHA
+            above); the live facades are the per-root-conduit `_cluster_creations`.
     """
     __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [

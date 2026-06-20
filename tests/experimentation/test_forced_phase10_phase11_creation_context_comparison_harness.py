@@ -38,6 +38,7 @@ def _ensure_src_on_path() -> None:
 _ensure_src_on_path()
 
 from melder.aether.spellbook.existence.existence import Existence
+from melder.aether.spellbook.configuration.system_state import SystemState
 from melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation.spell_codegen_creation import (
     SpellCodegenCreation,
 )
@@ -378,6 +379,7 @@ def _make_spell_for_existence(
         existence: Existence,
         bind_mode: str,
         extra_many_visible_spell: bool = False,
+        dynamic: bool = False,
 ) -> Tuple[Any, Any, Any]:
     """
     Build one fresh one-spell runtime environment for a solo existence scenario.
@@ -390,7 +392,9 @@ def _make_spell_for_existence(
     # leaving no `_spell_codegen_model` for the forced builds. Caching is
     # therefore disabled for the experiment's runtime.
     spellbook.configure_aether_frame(
-        system_state=None,
+        # Cluster scenarios resolve through an elected leader, whose setup
+        # operations require a dynamic frame; other scenarios leave it unchanged.
+        system_state=SystemState.dynamic if dynamic else None,
         disposal=None,
         disposal_method_names=None,
         system_caching_enabled=False,
@@ -416,7 +420,7 @@ def _make_spell_for_existence(
                     existence=Existence.many,
                     permissions="create",
                 )
-        conduit = spellbook.conjure(name="root")
+        conduit = spellbook.conjure(name="root", dynamic=dynamic)
         root_spell = get_spell_by_version_id(spellbook, root_spell_id)
         assert root_spell is not None
         return spellbook, conduit, root_spell
@@ -613,6 +617,7 @@ def _benchmark_forced_family_meld_no_overrides(
         existence=existence,
         bind_mode=bind_mode,
         extra_many_visible_spell=extra_many_visible_spell,
+        dynamic=route == "cluster",
     )
     try:
         _build_forced_creation_context(
@@ -625,6 +630,17 @@ def _benchmark_forced_family_meld_no_overrides(
             discovery_reason=discovery_reason,
         )
         root_spell_id = root_spell.spell_id
+
+        if route == "cluster":
+            # unique_per_conduit_cluster resolves through an elected leader's
+            # store; elect this conduit so its own creations are the team store
+            # and the real-front-door meld resolves instead of hard-erroring.
+            cloud = conduit._spellbook._aether.get_conduit_cloud(
+                conduit._aetheric_frame_name,
+            )
+            cloud.create_cluster("harness-cluster")
+            cloud.add_conduit_to_cluster(conduit, "harness-cluster")
+            cloud.get_cluster("harness-cluster").elect_leader(conduit.id)
 
         if route == "spellspace":
             with conduit.enter_spellspace() as space:
