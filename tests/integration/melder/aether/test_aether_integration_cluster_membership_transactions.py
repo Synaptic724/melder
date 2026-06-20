@@ -1,4 +1,4 @@
-from typing import List, Tuple
+from typing import List, Optional, Tuple
 
 import pytest
 
@@ -60,14 +60,25 @@ def _cluster_conduit(
     name: str,
     existence: Existence = Existence.unique_per_conduit_cluster,
     spell: type = BasicService,
+    binding_name: Optional[str] = None,
 ) -> Tuple[Spellbook, Conduit]:
     """
     Bind one spell at the given existence and conjure a root conduit.
 
+    The spell_id is fingerprinted from the structural profile + binding_name +
+    existence (NOT the spellbook), so multiple conduits in ONE frame must each bind
+    a distinct binding_name to avoid a spell_id collision. The binding_name defaults
+    to the (unique) conduit name.
+
     Returns the (spellbook, conduit) pair so the caller can clean both up.
     """
     book = _make_book(frame_name)
-    book.bind(spell=spell, existence=existence, permissions="create")
+    book.bind(
+        spell=spell,
+        existence=existence,
+        permissions="create",
+        binding_name=binding_name or name,
+    )
     conduit = book.conjure(name=name)
     return book, conduit
 
@@ -500,5 +511,35 @@ def test_join_then_membership_is_discoverable_both_directions() -> None:
 
         assert conduit.id in set(cloud._get_cluster("cluster-a").get_members())
         assert "cluster-a" in set(cloud.get_clusters_for_conduit(conduit.id))
+    finally:
+        _cleanup([book], [conduit])
+
+
+def test_conduit_cannot_join_a_second_cluster() -> None:
+    """
+    Purpose:
+        Verify the single-cluster exclusivity blocker: a conduit already in one cluster
+        cannot be added to another (cluster membership is one-per-conduit).
+    Contract:
+        - Adding an already-clustered conduit to a second cluster raises ValueError.
+        - The conduit remains a member of only its original cluster.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If a conduit is allowed into two clusters.
+    """
+    aether = Aether()
+    frame_name = "frame-exclusive"
+    book, conduit = _cluster_conduit(frame_name, name="root-a")
+    try:
+        cloud = aether._ensure_frame(frame_name)._conduit_cloud
+        cloud.create_cluster("cluster-a")
+        cloud.create_cluster("cluster-b")
+        cloud.add_conduit_to_cluster(conduit, "cluster-a")
+
+        with pytest.raises(ValueError, match="exclusive"):
+            cloud.add_conduit_to_cluster(conduit, "cluster-b")
+
+        assert set(cloud.get_clusters_for_conduit(conduit.id)) == {"cluster-a"}
     finally:
         _cleanup([book], [conduit])

@@ -444,7 +444,7 @@ class _GauntletConfig:
     @staticmethod
     def from_env() -> _GauntletConfig:
         cfg = _GauntletConfig(
-            iterations=_env_int("DI_GAUNTLET_ITERS", 25000),
+            iterations=_env_int("DI_GAUNTLET_ITERS", 5000),
             threads=_env_int("DI_GAUNTLET_THREADS", 3),
             request_scope_runs=_env_int("DI_GAUNTLET_REQUEST_SCOPES", _REQUEST_SCOPE_RUNS_DEFAULT),
             worker_a_jobs=_env_int("DI_GAUNTLET_WORKER_A_JOBS", _WORKER_A_JOBS_DEFAULT),
@@ -1681,9 +1681,10 @@ def _run_gauntlet_benchmark(lib: str, cfg: _GauntletConfig) -> _BenchmarkResult:
                     f"min={min(per_turn_count0)} | max={max(per_turn_count0)}"
                 )
 
+        per_turn_rows_data: tuple = ()
         if per_turn_csv:
             gc_iter_set_csv = set(per_turn_gc_iters)
-            result_payload["per_turn_rows"] = tuple(
+            per_turn_rows_data = tuple(
                 (
                     i,
                     iteration_samples[i],
@@ -1746,6 +1747,7 @@ def _run_gauntlet_benchmark(lib: str, cfg: _GauntletConfig) -> _BenchmarkResult:
             "request_scope_cleanup_summary": _summarize(combined_request_cleanup),
             "request_scope_total_summary": _summarize(combined_request_total),
             "lane_summaries": lane_summaries,
+            "per_turn_rows": per_turn_rows_data,
         }
     finally:
         # Restore GC posture before the next library runs in this same process.
@@ -1798,7 +1800,10 @@ def _maybe_write_per_turn_csv(results: list) -> None:
     }
     if not enabled:
         return
-    path = Path(__file__).resolve().with_name("real_world_gauntlet_per_turn.csv")
+    suffix = os.getenv("GAUNTLET_PER_TURN_CSV_SUFFIX", "").strip()
+    path = Path(__file__).resolve().with_name(
+        f"real_world_gauntlet_per_turn{suffix}.csv"
+    )
     header = [
         "DI Container",
         "Turn",
