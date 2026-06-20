@@ -819,11 +819,17 @@ def _append_step_resolution_source(
             inlinable_params=inlinable_params,
             indent="    ",
         )
-        lines.append(f"    with creations_{step_index}._lock:")
+        # `many` registers only to track disposal. A non-disposal `many` is
+        # never registered, so it must not pay for the creations lock. The
+        # disposal gate is emitted AHEAD of the lock (not wrapping it), so a
+        # non-disposal `many` step takes no lock per meld -- matching the solo
+        # and many_only families. `has_disposal_methods_{step_index}` is
+        # spell-static, so this single runtime branch keeps one shared emitted
+        # body across disposal shapes while still skipping the lock when unused.
         _append_step_register_source(
             lines=lines,
             step_index=step_index,
-            indent="        ",
+            indent="    ",
             existence=existence,
         )
         lines.append(f"    instance_results[step_instance_keys[{step_index}]] = instance_{step_index}")
@@ -980,7 +986,12 @@ def _append_step_register_source(
         - Preserves `_register_spell_instance_prebound(...)` routing semantics.
         - Emits direct creations method calls to avoid per-registration helper
           dispatch and existence branching at runtime.
-        - Assumes caller has already emitted any required lock context.
+        - Singleton / spellspace branches assume the caller has already emitted
+          the required creations lock around this registration.
+        - The `many` branch emits its OWN disposal-gated lock: it registers (and
+          therefore locks) only when the spell carries disposal methods, so a
+          non-disposal `many` step takes no lock per meld. The caller must NOT
+          pre-emit a lock for the `many` branch.
     """
     if existence in (
             Existence.unique,
@@ -1004,18 +1015,19 @@ def _append_step_register_source(
     if existence is Existence.many:
         lines.extend([
             f"{indent}if has_disposal_methods_{step_index}:",
-            f"{indent}    creations_{step_index}.add_many_creations(",
-            f"{indent}        spell_id_{step_index},",
-            f"{indent}        instance_{step_index},",
+            f"{indent}    with creations_{step_index}._lock:",
+            f"{indent}        creations_{step_index}.add_many_creations(",
+            f"{indent}            spell_id_{step_index},",
+            f"{indent}            instance_{step_index},",
             (
-                f"{indent}        has_disposal_methods="
+                f"{indent}            has_disposal_methods="
                 f"has_disposal_methods_{step_index},"
             ),
             (
-                f"{indent}        disposal_methods="
+                f"{indent}            disposal_methods="
                 f"disposal_methods_{step_index},"
             ),
-            f"{indent}    )",
+            f"{indent}        )",
         ])
         return
 
