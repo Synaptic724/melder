@@ -41,25 +41,6 @@ class _SpellStub:
         self.permissions = permissions
 
 
-class _SpellNoExistenceStub:
-    """Spell stub missing the `existence` attribute for filter coverage."""
-
-    def __init__(self, spell_id: str) -> None:
-        """Initialize the stub with only a spell id and index."""
-        self.spell_id = spell_id
-        self.spell_index = SpellIndex(spell_id)
-
-
-class _SpellNoPermissionsStub:
-    """Spell stub that omits permissions to exercise default permission fallback."""
-
-    def __init__(self, spell_id: str, existence: Existence) -> None:
-        """Initialize a spell stub without a permissions attribute."""
-        self.spell_id = spell_id
-        self.spell_index = SpellIndex(spell_id)
-        self.existence = existence
-
-
 class _SpellbookStub:
     """Spellbook stub exposing `_spells` and `_lock`."""
 
@@ -330,8 +311,7 @@ def test_refresh_shareable_roots_adds_cluster_scoped_spells(cluster: ConduitClus
     """Verify refresh_shareable_roots captures only cluster-scoped spells."""
     shareable = _SpellStub("spell-1", Existence.unique_per_conduit_cluster)
     not_shareable = _SpellStub("spell-2", Existence.unique)
-    no_existence = _SpellNoExistenceStub("spell-3")
-    owner = _ConduitStub("owner-1", _SpellbookStub([shareable, not_shareable, no_existence]))
+    owner = _ConduitStub("owner-1", _SpellbookStub([shareable, not_shareable]))
 
     cluster.refresh_shareable_roots(owner)
 
@@ -1054,26 +1034,6 @@ def test_add_and_share_spell_continues_after_exception_for_peer() -> None:
 
     assert borrower_bad.contract_calls
     assert borrower_ok.contract_calls
-
-
-def test_add_and_share_spell_uses_default_permissions_when_missing() -> None:
-    """Verify add_and_share_spell defaults permissions when missing on the spell."""
-    spell = _SpellNoPermissionsStub("spell-1", Existence.unique_per_conduit_cluster)
-    owner = _ConduitStub("owner-1", _SpellbookStub([spell]))
-    borrower = _ConduitStub("borrower-1", _SpellbookStub([]))
-    frame = _FrameStub([owner, borrower], frame_name="frame-1")
-    cluster = _make_cluster(
-        "cluster",
-        frame._conduits,
-        frame.frame_name,
-        auto_link_dependencies=True,
-    )
-    cluster.add_member(owner._id)
-    cluster.add_member(borrower._id)
-
-    cluster.add_and_share_spell(owner, spell)
-
-    assert borrower.contract_calls[0]["permissions"] == "create"
 
 
 def test_remove_and_strip_spell_skips_readd_when_add_contract_fails() -> None:

@@ -433,6 +433,12 @@ class ConduitCloud(Cleanable):
             raise ValueError(
                 "Cluster with name {0} does not exist.".format(cluster_name)
             )
+        # Dissolve the team store first if a leader is still elected: deleting an
+        # active cluster must not leave member facades bound to a leader store the
+        # cluster no longer coordinates. Members are still live here (delete is not
+        # frame teardown), so the drained unelect is safe.
+        if cluster.master_conduit_id is not None:
+            cluster.unelect_leader()
         cluster.cleanup()
 
     def add_conduit_to_cluster(self, conduit: Conduit, cluster_name: str) -> None:

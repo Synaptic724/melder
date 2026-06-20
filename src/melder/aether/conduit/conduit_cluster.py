@@ -894,13 +894,13 @@ class ConduitCluster(Cleanable):
                 cluster_root_id = self._cluster_root_id(owner_id, spell.spell_id)
                 try:
                     with peer.transaction(
-                        "cluster_link",
+                        ChangeTransactionType.CLUSTER_LINK,
                         conduits=[peer, owner],
                     ):
                         peer.add_spell_to_contract(
                             spell=spell,
                             conduit=owner,
-                            permissions=getattr(spell, "permissions", "create"),
+                            permissions=spell.permissions,
                             aetheric_frame=self._aetheric_frame_name,
                             reason=DetailReason.root,
                             root_spell_id=cluster_root_id,
@@ -939,7 +939,7 @@ class ConduitCluster(Cleanable):
             try:
                 cluster_root_id = self._cluster_root_id(owner_id, spell.spell_id)
                 with peer.transaction(
-                    "cluster_link",
+                    ChangeTransactionType.CLUSTER_LINK,
                     conduits=[peer, owner],
                 ):
                     peer.remove_root_from_contracts(
@@ -952,13 +952,13 @@ class ConduitCluster(Cleanable):
             else:
                 try:
                     with peer.transaction(
-                        "cluster_link",
+                        ChangeTransactionType.CLUSTER_LINK,
                         conduits=[peer, owner],
                     ):
                         peer.add_spell_to_contract(
                             spell=spell,
                             conduit=owner,
-                            permissions=getattr(spell, "permissions", "create"),
+                            permissions=spell.permissions,
                             aetheric_frame=self._aetheric_frame_name,
                             reason=DetailReason.manual,
                             root_spell_id=spell.spell_id,
@@ -1022,7 +1022,7 @@ class ConduitCluster(Cleanable):
                     borrower.add_spell_to_contract(
                         spell=spell,
                         conduit=owner,
-                        permissions=getattr(spell, "permissions", "create"),
+                        permissions=spell.permissions,
                         aetheric_frame=self._aetheric_frame_name,
                         reason=DetailReason.root,
                         root_spell_id=cluster_root_id,
@@ -1112,7 +1112,7 @@ class ConduitCluster(Cleanable):
         with book._lock:
             return [
                 spell for spell in book._spells.values()
-                if hasattr(spell, "existence") and spell.existence == Existence.unique_per_conduit_cluster
+                if spell.existence == Existence.unique_per_conduit_cluster
             ]
 
     def _resolve_spell_from_index(self, conduit: Conduit, spell_index: SpellIndex) -> Optional[Spell]:
