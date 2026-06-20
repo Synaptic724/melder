@@ -140,7 +140,7 @@ def _make_runtime_spell(
     return SimpleNamespace(
         spell_id=spell_id,
         spell_name=spell_name,
-        spell_index=SimpleNamespace(current=spell_id),
+        spell_index=SimpleNamespace(selected_spell_id=spell_id),
         spell=call_target,
         existence=existence,
         is_existing_creation=is_existing_creation,
@@ -315,7 +315,7 @@ def test_occurrence_contract_processor_strategy_ports_contract_payload_intent() 
     consumer_spell = SimpleNamespace(
         spell_id="consumer",
         spell_name="consumer",
-        spell_index=SimpleNamespace(current="consumer"),
+        spell_index=SimpleNamespace(selected_spell_id="consumer"),
         is_existing_creation=False,
         spell=object(),
         _compiler_artifact=SimpleNamespace(_requirements=requirements),
@@ -369,7 +369,7 @@ def test_occurrence_contract_processor_strategy_allows_missing_providers_only_in
     consumer_spell = SimpleNamespace(
         spell_id="consumer",
         spell_name="consumer",
-        spell_index=SimpleNamespace(current="consumer"),
+        spell_index=SimpleNamespace(selected_spell_id="consumer"),
         is_existing_creation=False,
         spell=object(),
         _compiler_artifact=SimpleNamespace(_requirements=requirements),

@@ -38,7 +38,7 @@ def make_spell(spell_id: str = "spell-1") -> Any:
     return SimpleNamespace(
         spell_id=spell_id,
         spell_index=SimpleNamespace(
-            current=spell_id,
+            selected_spell_id=spell_id,
             id="lineage-{0}".format(spell_id),
         ),
         _compiler_artifact=artifact,

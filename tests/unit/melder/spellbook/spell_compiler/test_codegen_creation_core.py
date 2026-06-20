@@ -484,7 +484,7 @@ def test_overrides_step_records_override_runtime_state(
                 "steps": (
                     SimpleNamespace(
                         spell=SimpleNamespace(
-                            spell_index=SimpleNamespace(current="root"),
+                            spell_index=SimpleNamespace(selected_spell_id="root"),
                         )
                     ),
                 ),
@@ -564,7 +564,7 @@ def test_general_creation_context_strategy_preserves_base_no_overrides_and_build
     root_spell = SimpleNamespace(
         spell_id="root",
         spell_name="root",
-        spell_index=SimpleNamespace(current="root"),
+        spell_index=SimpleNamespace(selected_spell_id="root"),
         _owner_creations=creations,
     )
     state = SimpleNamespace(
@@ -664,7 +664,7 @@ def test_solo_codegen_creation_strategy_builds_solo_owned_runtime_doors(
     root_spell = SimpleNamespace(
         spell_id="root",
         spell_name="root",
-        spell_index=SimpleNamespace(current="root"),
+        spell_index=SimpleNamespace(selected_spell_id="root"),
         spell=lambda: "instance",
         has_disposal_methods=False,
         disposal_method_names=(),

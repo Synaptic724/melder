@@ -247,7 +247,7 @@ def _make_spell(spell_id: str) -> SimpleNamespace:
     """Build a minimal callable spell stub for schema hydration tests."""
     return SimpleNamespace(
         spell_id=spell_id,
-        spell_index=SimpleNamespace(current=spell_id),
+        spell_index=SimpleNamespace(selected_spell_id=spell_id),
         spell_name=spell_id,
         existence=Existence.many,
         is_existing_creation=False,
@@ -813,7 +813,7 @@ def test_no_overrides_compiler_build_kwargs_single_and_multi_dependency_shapes()
     """The no-overrides kwargs helper should preserve single-value and list-aggregation dependency semantics."""
     plan_step = SimpleNamespace(
         spell=SimpleNamespace(
-            spell_index=SimpleNamespace(current="root"),
+            spell_index=SimpleNamespace(selected_spell_id="root"),
             spell_name="root",
         ),
         dependency_resolution_order=(
@@ -844,7 +844,7 @@ def test_no_overrides_compiler_construct_spell_instance_rejects_invalid_position
     """Invalid `__args__` payloads should fail fast in the no-overrides compiler."""
     plan_step = SimpleNamespace(
         spell=SimpleNamespace(
-            spell_index=SimpleNamespace(current="root"),
+            spell_index=SimpleNamespace(selected_spell_id="root"),
             spell_name="root",
             existence=Existence.many,
             is_existing_creation=False,
@@ -884,7 +884,7 @@ def test_no_overrides_compiler_construct_spell_instance_accepts_tuple_positional
 
     plan_step = SimpleNamespace(
         spell=SimpleNamespace(
-            spell_index=SimpleNamespace(current="root"),
+            spell_index=SimpleNamespace(selected_spell_id="root"),
             spell_name="root",
             existence=Existence.many,
             is_existing_creation=False,

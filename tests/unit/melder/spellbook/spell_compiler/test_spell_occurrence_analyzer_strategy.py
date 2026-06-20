@@ -46,7 +46,7 @@ def _make_spellbook_and_spell() -> tuple[Any, Any]:
     spell = SimpleNamespace(
         spell_id="spell-1",
         spell_name="spell-1",
-        spell_index=SimpleNamespace(current="spell-1", id="lineage-spell-1"),
+        spell_index=SimpleNamespace(selected_spell_id="spell-1", id="lineage-spell-1"),
         existence=Existence.unique,
         has_disposal_methods=False,
         is_existing_creation=False,

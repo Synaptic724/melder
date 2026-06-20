@@ -108,7 +108,7 @@ def _make_spell(
     spell = SimpleNamespace(
         spell_id=spell_id,
         spell_name=spell_id,
-        spell_index=SimpleNamespace(current=spell_id, id="lineage:{0}".format(spell_id)),
+        spell_index=SimpleNamespace(selected_spell_id=spell_id, id="lineage:{0}".format(spell_id)),
         spell=lambda *args, **kwargs: "value:{0}".format(spell_id),
         existence=Existence.many,
         is_existing_creation=is_existing_creation,

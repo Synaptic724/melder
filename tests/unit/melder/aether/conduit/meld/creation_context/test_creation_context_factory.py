@@ -102,7 +102,7 @@ class _SpellStub:
     ) -> None:
         self.spell_id = spell_id
         self.spell_name = spell_id
-        self.spell_index = SimpleNamespace(current=spell_id, id=f"index-{spell_id}")
+        self.spell_index = SimpleNamespace(selected_spell_id=spell_id, id=f"index-{spell_id}")
         self.existence = Existence.unique
         self.is_existing_creation = False
         self.user_created_object = None

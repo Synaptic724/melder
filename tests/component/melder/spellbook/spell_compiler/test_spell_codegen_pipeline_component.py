@@ -116,7 +116,7 @@ def test_component_processor_and_planner_build_real_codegen_outputs() -> None:
     spell = SimpleNamespace(
         spell_id="root",
         spell_name="root",
-        spell_index=SimpleNamespace(current="root"),
+        spell_index=SimpleNamespace(selected_spell_id="root"),
         spell=_root_target,
         requirements=SimpleNamespace(parameters=()),
         existence=Existence.unique_per_conduit,

@@ -40,7 +40,7 @@ def _make_spell(
     return SimpleNamespace(
         spell_id="spell-1",
         spell_name="spell-1",
-        spell_index=SimpleNamespace(current="spell-1", id="lineage-spell-1"),
+        spell_index=SimpleNamespace(selected_spell_id="spell-1", id="lineage-spell-1"),
         existence=existence,
         is_existing_creation=is_existing_creation,
         user_created_object=user_created_object,

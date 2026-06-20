@@ -11,6 +11,9 @@ from melder.aether.aetheric_frame.dev_ops.devops_information_registry import (
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
 from melder.aether.conduit.conduit_ward.contract.detail_reason import DetailReason
+from melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_request.transaction_request import (
+    ChangeTransactionType,
+)
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 if TYPE_CHECKING:
     from melder.aether.conduit.conduit import Conduit
@@ -97,7 +100,11 @@ class ConduitCluster(Cleanable):
                 "cluster_name": self._name,
                 "auto_link_dependencies": self.auto_link_dependencies,
             },
-            available_transactions=("cluster_link",),
+            available_transactions=(
+                "cluster_link",
+                "elect_conduit_cluster_leader",
+                "unelect_conduit_cluster_leader",
+            ),
         )
         self._devops_identity.attach_registry(
             self._devops_information_registry,
@@ -366,6 +373,10 @@ class ConduitCluster(Cleanable):
               own facade binds to its own store.
             - After this runs, a `unique_per_conduit_cluster` meld on any member
               lineage resolves into the leader store instead of hard-erroring.
+            - Refuses re-election: raises if a leader is already elected
+              (`master_conduit_id` is set), so an active cluster's leader store
+              is never silently overwritten. The cluster must be unelected back
+              to inert before a different leader can be elected.
             - Records the elected leader id in `master_conduit_id`.
             - Binds only: it does not begin, commit, or abort the election
               transaction. The caller runs it as the in-window effect.
@@ -384,8 +395,17 @@ class ConduitCluster(Cleanable):
 
         Returns:
             None.
+
+        Raises:
+            RuntimeError: If the cluster has been cleaned, or a leader is already
+                elected (re-election without an intervening unelect).
         """
         self.check_cleaned()
+        if self.master_conduit_id is not None:
+            raise RuntimeError(
+                "Cannot elect a cluster leader: a leader is already elected "
+                f"('{self.master_conduit_id}'). Unelect the current leader first."
+            )
         leader = self._resolve_conduit_by_id(leader_conduit_id)
         for member_id in self.members:
             member = self._resolve_conduit_by_id(member_id)
@@ -426,6 +446,146 @@ class ConduitCluster(Cleanable):
             member = self._resolve_conduit_by_id(member_id)
             member._cluster_creations.unbind()
         self.master_conduit_id = None
+
+    def elect_leader(self, leader_conduit_id: str) -> None:
+        """
+        Elect a cluster leader inside an `ELECT_CONDUIT_CLUSTER_LEADER` transaction.
+
+        Purpose:
+            Wrap the leader bind in the change-control transaction that isolates
+            it. The DevOps strategy owns the isolation (sealing the member
+            conduits); this method owns the in-window effect (`bind_elected_leader`).
+
+        Contract:
+            - Opens the elect transaction through the frame mediator using the
+              cluster's own dev-ops identity, supplying the member conduit ids as
+              the seal footprint. The strategy claims those conduits EXCLUSIVE for
+              the held window.
+            - Runs `bind_elected_leader` as the in-window effect, then commits.
+            - Election is an inert -> active transition, so no member lineage drain
+              is required (the cluster door hard-errors while inert, so no meld is
+              mid-create against the team store).
+            - On any failure the transaction is ended with `success=False`
+              (abort) and the original exception propagates; never swallowed.
+
+        Args:
+            leader_conduit_id (str):
+                Conduit id of the elected leader. Must resolve to a live, normal
+                cluster member root whose creation store becomes the shared store.
+
+        Returns:
+            None.
+
+        Raises:
+            RuntimeError: If the cluster has been cleaned, or the leader conduit
+                cannot be resolved.
+            Exception: Any error raised by `bind_elected_leader` is propagated
+                after the transaction is aborted.
+
+        Threading:
+            The mediator seals the member conduits before the bind runs, so
+            membership is stable and the effect executes under exclusive locks.
+        """
+        self.check_cleaned()
+        leader = self._resolve_conduit_by_id(leader_conduit_id)
+        if leader is None:
+            raise RuntimeError(
+                "Cannot elect a cluster leader: leader conduit could not be resolved."
+            )
+        mediator = leader._get_required_transaction_mediator()
+        mediator.start_transaction(
+            identity=self._devops_identity,
+            transaction_type=ChangeTransactionType.ELECT_CONDUIT_CLUSTER_LEADER,
+            metadata={
+                "origin_surface": "conduit_cluster.elect_leader",
+                "cluster_id": self._id,
+                "member_conduit_ids": tuple(sorted(self.members)),
+                "leader_conduit_id": leader_conduit_id,
+            },
+        )
+        succeeded = False
+        try:
+            self.bind_elected_leader(leader_conduit_id)
+            succeeded = True
+        finally:
+            mediator.end_transaction(
+                expected_type=ChangeTransactionType.ELECT_CONDUIT_CLUSTER_LEADER,
+                success=succeeded,
+            )
+
+    def unelect_leader(self) -> None:
+        """
+        Unelect the cluster leader inside an `UNELECT_CONDUIT_CLUSTER_LEADER`
+        transaction.
+
+        Purpose:
+            Wrap the leader unbind in the change-control transaction that makes it
+            safe. The DevOps strategy owns the isolation and the lineage freeze;
+            this method owns the in-window effect (`unbind_elected_leader`).
+
+        Contract:
+            - Opens the unelect transaction through the frame mediator using the
+              cluster's own dev-ops identity, supplying the member conduit ids as
+              the seal footprint and the member root ids as the drain footprint.
+            - The strategy claims the member conduits EXCLUSIVE and, in its
+              `on_start`, drains every member root lineage to zero through the
+              DevOps-owned `ConduitLineageGateOps`, so no meld is mid-create
+              against the leader store. Its `on_end` reopens every member root
+              lineage on every exit path (fail-closed).
+            - Runs `unbind_elected_leader` as the in-window effect, then commits.
+            - An empty cluster has no bound leader, so this is a no-op and opens no
+              transaction (there is also no member through which to reach the
+              mediator).
+            - On any failure the transaction is ended with `success=False`
+              (abort) and the original exception propagates; never swallowed.
+
+        Returns:
+            None.
+
+        Raises:
+            RuntimeError: If the cluster has been cleaned, or a member conduit
+                cannot be resolved.
+            Exception: Any error raised by the lineage drain or
+                `unbind_elected_leader` is propagated after the transaction is
+                aborted and the lineages are reopened.
+
+        Threading:
+            Every member root lineage is drained to zero before the in-window
+            unbind, so no meld is mid-create against the leader store when its
+            reference is released.
+        """
+        self.check_cleaned()
+        member_ids = tuple(sorted(self.members))
+        if not member_ids:
+            self.unbind_elected_leader()
+            return
+        any_member = self._resolve_conduit_by_id(member_ids[0])
+        if any_member is None:
+            raise RuntimeError(
+                "Cannot unelect a cluster leader: member conduit could not be resolved."
+            )
+        mediator = any_member._get_required_transaction_mediator()
+        gate_ops = any_member._aetheric_frame.dev_ops_manager.conduit_lineage_gate_ops
+        mediator.start_transaction(
+            identity=self._devops_identity,
+            transaction_type=ChangeTransactionType.UNELECT_CONDUIT_CLUSTER_LEADER,
+            metadata={
+                "origin_surface": "conduit_cluster.unelect_leader",
+                "cluster_id": self._id,
+                "member_conduit_ids": member_ids,
+                "member_root_conduit_ids": member_ids,
+                "conduit_lineage_gate_ops": gate_ops,
+            },
+        )
+        succeeded = False
+        try:
+            self.unbind_elected_leader()
+            succeeded = True
+        finally:
+            mediator.end_transaction(
+                expected_type=ChangeTransactionType.UNELECT_CONDUIT_CLUSTER_LEADER,
+                success=succeeded,
+            )
 
     def refresh_shareable_roots(self, owner: Conduit) -> None:
         """
