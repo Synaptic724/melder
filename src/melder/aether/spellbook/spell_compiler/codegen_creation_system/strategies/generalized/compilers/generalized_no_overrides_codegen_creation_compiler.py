@@ -793,7 +793,6 @@ def _append_step_resolution_source(
             f"    disposal_methods_{step_index} = "
             f"step_disposal_methods[{step_index}]"
         ),
-        f"    existence_{step_index} = step_existences[{step_index}]",
     ])
     if inlinable_params:
         lines.append(
@@ -835,25 +834,22 @@ def _append_step_resolution_source(
         lines.append(f"    instance_results[step_instance_keys[{step_index}]] = instance_{step_index}")
         return
 
+    # Singleton reuse read is emitted inline as `creations.get_creation(spell_id)`
+    # rather than the runtime-dispatching `_get_existing_creation(...)` helper:
+    # existence is compile-time-known per step, `spell_id_{step_index}` is the
+    # same key the helper reads by and register writes by, and every singleton
+    # existence reduces to exactly `creations.get_creation(spell_id)`. The helper
+    # is provably equivalent here; inlining drops a call frame + a `spell.spell_id`
+    # attribute read + an existence branch ladder from the warm reuse path.
     if existence in (
             Existence.unique_per_conduit,
             Existence.unique_per_spell_space,
     ):
         lines.extend([
-            (
-                f"    instance_{step_index} = _get_existing_creation("
-                f"spell=spell_{step_index}, "
-                f"creations=creations_{step_index}, "
-                f"existence=plan_step_{step_index}.existence)"
-            ),
+            f"    instance_{step_index} = creations_{step_index}.get_creation(spell_id_{step_index})",
             f"    if instance_{step_index} is None:",
             f"        with creations_{step_index}._lock:",
-            (
-                f"            instance_{step_index} = _get_existing_creation("
-                f"spell=spell_{step_index}, "
-                f"creations=creations_{step_index}, "
-                f"existence=existence_{step_index})"
-            ),
+            f"            instance_{step_index} = creations_{step_index}.get_creation(spell_id_{step_index})",
             f"            if instance_{step_index} is None:",
         ])
         _emit_construct_instance(
@@ -875,28 +871,20 @@ def _append_step_resolution_source(
 
     if plan_step.use_spell_lock_hint:
         lines.extend([
-            f"    use_spell_lock_{step_index} = True",
-            "    if (",
-            "            caller_creations_lock_held",
-            f"            and creations_{step_index} is caller_creations",
-            "    ):",
-            f"        use_spell_lock_{step_index} = False",
-            (
-                f"    instance_{step_index} = _get_existing_creation("
-                f"spell=spell_{step_index}, "
-                f"creations=creations_{step_index}, "
-                f"existence=existence_{step_index})"
-            ),
+            f"    instance_{step_index} = creations_{step_index}.get_creation(spell_id_{step_index})",
             f"    if instance_{step_index} is None:",
+            # use_spell_lock_{step_index} is consulted only on the construct path,
+            # so compute it here (cold) instead of on every warm meld.
+            f"        use_spell_lock_{step_index} = True",
+            "        if (",
+            "                caller_creations_lock_held",
+            f"                and creations_{step_index} is caller_creations",
+            "        ):",
+            f"            use_spell_lock_{step_index} = False",
             f"        if use_spell_lock_{step_index}:",
             f"            with spell_{step_index}._lock:",
             f"                with creations_{step_index}._lock:",
-            (
-                f"                    instance_{step_index} = _get_existing_creation("
-                f"spell=spell_{step_index}, "
-                f"creations=creations_{step_index}, "
-                f"existence=existence_{step_index})"
-            ),
+            f"                    instance_{step_index} = creations_{step_index}.get_creation(spell_id_{step_index})",
             f"                if instance_{step_index} is None:",
         ])
         _emit_construct_instance(
@@ -915,12 +903,7 @@ def _append_step_resolution_source(
         lines.extend([
             "        else:",
             f"            with creations_{step_index}._lock:",
-            (
-                f"                instance_{step_index} = _get_existing_creation("
-                f"spell=spell_{step_index}, "
-                f"creations=creations_{step_index}, "
-                f"existence=existence_{step_index})"
-            ),
+            f"                instance_{step_index} = creations_{step_index}.get_creation(spell_id_{step_index})",
             f"                if instance_{step_index} is None:",
         ])
         _emit_construct_instance(
@@ -939,20 +922,10 @@ def _append_step_resolution_source(
         return
 
     lines.extend([
-        (
-            f"    instance_{step_index} = _get_existing_creation("
-            f"spell=spell_{step_index}, "
-            f"creations=creations_{step_index}, "
-            f"existence=existence_{step_index})"
-        ),
+        f"    instance_{step_index} = creations_{step_index}.get_creation(spell_id_{step_index})",
         f"    if instance_{step_index} is None:",
         f"        with creations_{step_index}._lock:",
-        (
-            f"            instance_{step_index} = _get_existing_creation("
-            f"spell=spell_{step_index}, "
-            f"creations=creations_{step_index}, "
-            f"existence=existence_{step_index})"
-        ),
+        f"            instance_{step_index} = creations_{step_index}.get_creation(spell_id_{step_index})",
         f"            if instance_{step_index} is None:",
     ])
     _emit_construct_instance(
