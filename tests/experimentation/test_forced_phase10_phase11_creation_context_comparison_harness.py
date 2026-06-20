@@ -905,15 +905,21 @@ def _benchmark_solo_existence_matrix() -> Sequence[Dict[str, Any]]:
         },
         {
             "existence": Existence.unique_per_conduit_cluster,
-            "route": "shared",
+            "route": "cluster",
             "bind_mode": "construct",
-            "caller_mode": "fresh_owner",
+            # The cluster door reads the elected-leader store off the threaded
+            # caller_creations (like lineage), so hand it a real probe store
+            # rather than overriding spell._owner_creations.
+            "caller_mode": "fresh_caller",
         },
         {
             "existence": Existence.unique_per_conduit_lineage,
-            "route": "shared",
+            "route": "lineage",
             "bind_mode": "construct",
-            "caller_mode": "fresh_owner",
+            # The lineage door reads the lineage-root store off the threaded
+            # caller_creations, so hand it a real probe store rather than
+            # overriding spell._owner_creations.
+            "caller_mode": "fresh_caller",
         },
         {
             "existence": Existence.unique,

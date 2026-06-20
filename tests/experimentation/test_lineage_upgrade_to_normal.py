@@ -1,12 +1,12 @@
 """
 `upgrade_to_normal` + `unique_per_conduit_lineage`.
 
-When a lesser conduit is promoted to a normal (root) conduit, its creations must
-become their OWN lineage root (`_root_creations is self`), and any lessers under
-it must be re-pointed to the freshly promoted root. This locks down the corner
-the resolver-root redesign depends on at `conduit.py` upgrade_to_normal:
-    1695  self._creations._root_creations = self._creations   # claim root first
-    1701  self._set_creation_gate_controller_for_lineage()    # then re-point lessers
+When a lesser conduit is promoted to a normal (root) conduit, its meld must
+become its OWN lineage root (`_meld._root_creations is self._creations`), and any
+lessers under it must be re-pointed to the freshly promoted root. This locks down
+the corner the resolver-root redesign depends on at `conduit.py` upgrade_to_normal:
+    self._meld._root_creations = self._creations        # claim root first
+    self._set_creation_gate_controller_for_lineage()    # then re-point lessers
 
 Run (on the 3.14t target):
     .venv_new\\Scripts\\python.exe -m pytest tests/experimentation/test_lineage_upgrade_to_normal.py -q
@@ -81,7 +81,7 @@ def test_upgrade_to_normal_flips_lineage_root_pointer_to_self() -> None:
         lesser = root.create_lesser_conduit()
 
         # Pre-upgrade: the lesser points at the root's lineage store.
-        assert lesser._creations._root_creations is root._creations, (
+        assert lesser._meld._root_creations is root._creations, (
             "a lesser's lineage-root pointer must be the root's creations"
         )
         # ...and that pointer drives behavior: root + lesser share one instance.
@@ -93,10 +93,10 @@ def test_upgrade_to_normal_flips_lineage_root_pointer_to_self() -> None:
         lesser.upgrade_to_normal("promoted")
 
         # Post-upgrade: the promoted conduit is now its OWN lineage root.
-        assert lesser._creations._root_creations is lesser._creations, (
+        assert lesser._meld._root_creations is lesser._creations, (
             "a promoted conduit's creations must be their own lineage root"
         )
-        assert lesser._creations._root_creations is not root._creations, (
+        assert lesser._meld._root_creations is not root._creations, (
             "the promoted conduit must no longer point at its former root"
         )
     finally:

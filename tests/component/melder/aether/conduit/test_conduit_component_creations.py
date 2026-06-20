@@ -324,14 +324,25 @@ def test_component_conduit_meld_unique_per_conduit_cluster_registers_in_cluster_
     Raises:
         AssertionError: If cluster storage does not retain the instance.
     """
-    spellbook = _make_spellbook()
+    spellbook = _make_spellbook(dynamic=True)
     spell_id = spellbook.bind(
         spell=_ClusterService,
         existence=Existence.unique_per_conduit_cluster,
         permissions="create",
     )
-    conduit = spellbook.conjure(name="root")
+    conduit = spellbook.conjure(dynamic=True, name="root")
     try:
+        # unique_per_conduit_cluster requires dynamic mode and an elected leader.
+        # Electing this conduit binds its own creation store as the cluster team
+        # store, so the meld registers the instance into conduit._creations.
+        cloud = conduit._spellbook._aether.get_conduit_cloud(
+            conduit._aetheric_frame_name,
+        )
+        cloud.create_cluster("cluster-a")
+        cloud.add_conduit_to_cluster(conduit, "cluster-a")
+        cloud.refresh_cluster_shares_for_conduit(conduit)
+        cloud.get_cluster("cluster-a").elect_leader(conduit.id)
+
         creations = conduit._creations
         instance = conduit.meld(spell=spell_id)
         entry = creations._creations.get(spell_id)

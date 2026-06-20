@@ -708,13 +708,18 @@ def _load_overrides_executor_from_asset(
                 "Cached override experiment only supports the recorded override shape."
             )
         owner_creations = spell._owner_creations
-        return compiled_executor(
+        # The shape-source emitter returns the bare root instance, while the
+        # runtime doors now consume `(instance, created)` tuples and index `[0]`.
+        # Mirror the no-overrides adapter above to bridge that experiment-boundary
+        # drift without porting the retired emitter.
+        instance = compiled_executor(
             caller_creations,
             override_map,
             None,
             owner_creations=owner_creations,
             caller_creations_lock_held=caller_creations_lock_held,
         )
+        return (instance, True)
 
     return execute_with_overrides
 
