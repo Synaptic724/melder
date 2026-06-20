@@ -347,6 +347,86 @@ class ConduitCluster(Cleanable):
         with self._lock:
             self.shared_spells.pop(leaver_id, None)
 
+    # ------------------------------------------------------------------
+    # Cluster leader election (bind / unbind the shared team store)
+    # ------------------------------------------------------------------
+    def bind_elected_leader(self, leader_conduit_id: str) -> None:
+        """
+        Bind the elected leader's creation store into every member root's facade.
+
+        Purpose:
+            Activate the cluster team store: make the elected leader conduit's
+            creation store the single store every member resolves
+            `unique_per_conduit_cluster` instances into.
+
+        Contract:
+            - Resolves the elected leader, then walks the current member set and
+              binds the leader conduit's creation store into each member root's
+              `_cluster_creations` facade. The leader is itself a member, so its
+              own facade binds to its own store.
+            - After this runs, a `unique_per_conduit_cluster` meld on any member
+              lineage resolves into the leader store instead of hard-erroring.
+            - Records the elected leader id in `master_conduit_id`.
+            - Binds only: it does not begin, commit, or abort the election
+              transaction. The caller runs it as the in-window effect.
+
+        Args:
+            leader_conduit_id (str):
+                Conduit id of the elected leader. Must resolve to a live, normal
+                cluster member root whose creation store becomes the shared store.
+
+        Threading:
+            Runs inside the election transaction's held window, after the member
+            conduits are sealed, so membership is stable for the walk and no meld
+            is mid-create against an inert facade (election is inert -> active).
+            Members are live root conduits and the member set is a thread-safe
+            collection, so the walk needs no snapshot and no extra lock.
+
+        Returns:
+            None.
+        """
+        self.check_cleaned()
+        leader = self._resolve_conduit_by_id(leader_conduit_id)
+        for member_id in self.members:
+            member = self._resolve_conduit_by_id(member_id)
+            member._cluster_creations.bind(leader._creations)
+        self.master_conduit_id = leader_conduit_id
+
+    def unbind_elected_leader(self) -> None:
+        """
+        Unbind the leader's creation store from every member root's facade.
+
+        Purpose:
+            Deactivate the cluster team store and return the cluster to inert, so a
+            `unique_per_conduit_cluster` meld hard-errors again until a new leader
+            is elected.
+
+        Contract:
+            - Walks the current member set and unbinds each member root's
+              `_cluster_creations` facade, dropping its reference to the leader
+              store. The leader conduit still owns and cleans that store; the
+              facade only releases the reference, never cleans the store.
+            - Idempotent per facade: unbinding an inert facade is a no-op.
+            - Clears `master_conduit_id`.
+            - Unbinds only: it does not begin, commit, or abort the unelection
+              transaction. The caller runs it as the in-window effect.
+
+        Threading:
+            Runs inside the unelection transaction's held window, after every
+            member root lineage has been drained to zero, so no meld is mid-create
+            against the leader store when it is released. Members are live root
+            conduits and the member set is a thread-safe collection, so the walk
+            needs no snapshot and no extra lock.
+
+        Returns:
+            None.
+        """
+        self.check_cleaned()
+        for member_id in self.members:
+            member = self._resolve_conduit_by_id(member_id)
+            member._cluster_creations.unbind()
+        self.master_conduit_id = None
+
     def refresh_shareable_roots(self, owner: Conduit) -> None:
         """
         Ensure shared_spells has all shareable SpellIndexes for the owner.
