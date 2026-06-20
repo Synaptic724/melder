@@ -8,6 +8,7 @@ import pytest
 from melder.aether.aether import Aether
 from melder.aether.conduit.conduit import Conduit
 from melder.aether.conduit.conduit_cluster import ConduitCluster
+from melder.aether.conduit.creations.cluster_creations import ClusterCreations
 from melder.aether.conduit.conduit_state.conduit_state import ConduitState
 from melder.aether.aetheric_frame.dev_ops.devops_information_registry import (
     DevopsInformationRegistry,
@@ -51,6 +52,29 @@ def reset_aether_singleton_for_component_conduit_cluster() -> None:
     Conduit._aether = aether
 
 
+class _NoOpClusterMediator:
+    """No-op change-control mediator for component cluster membership tests.
+
+    handle_join / handle_leave open a CLUSTER_JOIN / CLUSTER_LEAVE transaction
+    through the joining/leaving conduit's mediator; these stub tests assert only
+    the spell-sharing effect, so the mediator accepts and ignores both calls.
+    """
+
+    def start_transaction(
+        self,
+        *,
+        identity: object,
+        transaction_type: object,
+        metadata: Optional[Dict[str, object]] = None,
+    ) -> None:
+        """Accept and ignore a transaction start."""
+        return None
+
+    def end_transaction(self, *, expected_type: object, success: bool) -> None:
+        """Accept and ignore a transaction end."""
+        return None
+
+
 class _ContractingConduitStub:
     """
     Purpose:
@@ -86,6 +110,11 @@ class _ContractingConduitStub:
         self._conduit_state = ConduitState.normal
         self.contract_calls: list[dict[str, object]] = []
         self.remove_root_calls: list[dict[str, object]] = []
+        self._cluster_creations = ClusterCreations()
+
+    def _get_required_transaction_mediator(self) -> _NoOpClusterMediator:
+        """Return a no-op transaction mediator for cluster membership flows."""
+        return _NoOpClusterMediator()
 
     def add_spell_to_contract(
         self,

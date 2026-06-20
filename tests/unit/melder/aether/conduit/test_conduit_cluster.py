@@ -78,6 +78,29 @@ class _SpellbookNoSpellsStub:
         self._spells = None
 
 
+class _NoOpClusterMediator:
+    """No-op change-control mediator for cluster membership stub tests.
+
+    handle_join / handle_leave open a CLUSTER_JOIN / CLUSTER_LEAVE transaction
+    through the joining/leaving conduit's mediator; these stub tests assert only
+    the spell-sharing effect, so the mediator accepts and ignores both calls.
+    """
+
+    def start_transaction(
+            self,
+            *,
+            identity: Any,
+            transaction_type: Any,
+            metadata: Optional[Dict[str, Any]] = None,
+    ) -> None:
+        """Accept and ignore a transaction start."""
+        return None
+
+    def end_transaction(self, *, expected_type: Any, success: bool) -> None:
+        """Accept and ignore a transaction end."""
+        return None
+
+
 class _ConduitStub:
     """Conduit stub that records share/contract calls for assertions."""
 
@@ -98,6 +121,11 @@ class _ConduitStub:
         self.contract_with_deps_calls: list[dict[str, Any]] = []
         self.contract_calls: list[dict[str, Any]] = []
         self.remove_root_calls: list[dict[str, Any]] = []
+        self._cluster_creations = ClusterCreations()
+
+    def _get_required_transaction_mediator(self) -> _NoOpClusterMediator:
+        """Return a no-op transaction mediator for cluster membership flows."""
+        return _NoOpClusterMediator()
 
     def _should_raise(self, method: str, spell_id: str) -> bool:
         """Return True if the given method should raise for spell_id."""

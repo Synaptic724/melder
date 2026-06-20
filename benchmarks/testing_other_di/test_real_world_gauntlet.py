@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import contextvars
+import csv
 import gc
 import os
 import random
@@ -558,6 +559,9 @@ class _BenchmarkResult:
     request_scope_cleanup_summary: _Summary
     request_scope_total_summary: _Summary
     lane_summaries: dict[str, _LaneSummary]
+    # Every-turn rows for CSV export: (turn, total_ns, bootstrap_ns,
+    # threaded_ns, gc_during, gen0_live). Empty unless GAUNTLET_PER_TURN_CSV.
+    per_turn_rows: tuple = ()
 
 
 def _build_runtime_dependency_injector() -> _RuntimeOps:
@@ -1485,7 +1489,11 @@ def _run_gauntlet_benchmark(lib: str, cfg: _GauntletConfig) -> _BenchmarkResult:
     # per-window aggregates.
     per_turn_gc = os.getenv("GAUNTLET_PER_TURN_GC", "").strip().lower() in {"1", "true", "yes", "on"}
     per_turn_slowest = _env_int("GAUNTLET_PER_TURN_SLOWEST", 15)
-    gc_probe = _GcPauseProbe() if (gc_probe_enabled or per_turn_gc) else None
+    # CSV export of every single turn (all libraries into one file). Implies
+    # per-turn capture so the gc_during/gen0_live columns are populated.
+    per_turn_csv = os.getenv("GAUNTLET_PER_TURN_CSV", "").strip().lower() in {"1", "true", "yes", "on"}
+    capture_per_turn = per_turn_gc or per_turn_csv
+    gc_probe = _GcPauseProbe() if (gc_probe_enabled or capture_per_turn) else None
     gc_was_enabled = gc.isenabled()
     gc_frozen_here = False
     gc_instrumented = gc_probe is not None or gc_mode != "normal"
@@ -1567,12 +1575,12 @@ def _run_gauntlet_benchmark(lib: str, cfg: _GauntletConfig) -> _BenchmarkResult:
         per_turn_gc_iters: list = []
 
         for iteration_ix in range(cfg.iterations):
-            coll_before = gc_probe.collections_total if per_turn_gc else 0
+            coll_before = gc_probe.collections_total if capture_per_turn else 0
             iteration = _run_gauntlet_once(ops, cfg, iteration_ix)
             iteration_samples.append(iteration.total_ns)
             bootstrap_samples.append(iteration.bootstrap_ns)
             threaded_samples.append(iteration.threaded_ns)
-            if per_turn_gc:
+            if capture_per_turn:
                 if gc_probe.collections_total > coll_before:
                     per_turn_gc_iters.append(iteration_ix)
                 per_turn_count0.append(gc.get_count()[0])
@@ -1650,10 +1658,11 @@ def _run_gauntlet_benchmark(lib: str, cfg: _GauntletConfig) -> _BenchmarkResult:
             slow_idx = sorted(
                 range(n), key=lambda i: iteration_samples[i], reverse=True
             )[:k]
+            slow_idx.sort()  # display in turn (time) order so bursts are visible
             print(
                 f"[{lib}] per-turn GC attribution | "
                 f"turns_with_collection={len(per_turn_gc_iters)}/{n} | "
-                f"slowest {k} turns (turn | total | threaded | gc_during | gen0_live):"
+                f"slowest {k} turns, time-ordered (turn | total | threaded | gc_during | gen0_live):"
             )
             for i in slow_idx:
                 c0 = per_turn_count0[i] if i < len(per_turn_count0) else -1
@@ -1671,6 +1680,20 @@ def _run_gauntlet_benchmark(lib: str, cfg: _GauntletConfig) -> _BenchmarkResult:
                     f"last10%_avg={statistics.fmean(per_turn_count0[-seg:]):.1f} | "
                     f"min={min(per_turn_count0)} | max={max(per_turn_count0)}"
                 )
+
+        if per_turn_csv:
+            gc_iter_set_csv = set(per_turn_gc_iters)
+            result_payload["per_turn_rows"] = tuple(
+                (
+                    i,
+                    iteration_samples[i],
+                    bootstrap_samples[i],
+                    threaded_samples[i],
+                    i in gc_iter_set_csv,
+                    per_turn_count0[i] if i < len(per_turn_count0) else -1,
+                )
+                for i in range(len(iteration_samples))
+            )
 
         iteration_summary = _summarize(iteration_samples)
         bootstrap_summary = _summarize(bootstrap_samples)
@@ -1758,6 +1781,53 @@ def _run_gauntlet_benchmark(lib: str, cfg: _GauntletConfig) -> _BenchmarkResult:
         request_scope_cleanup_summary=result_payload["request_scope_cleanup_summary"],
         request_scope_total_summary=result_payload["request_scope_total_summary"],
         lane_summaries=result_payload["lane_summaries"],
+        per_turn_rows=result_payload.get("per_turn_rows", ()),
+    )
+
+
+def _maybe_write_per_turn_csv(results: list) -> None:
+    """
+    Write one CSV with every single turn for all libraries, if enabled.
+
+    Off unless GAUNTLET_PER_TURN_CSV is truthy. Produces a single file next to
+    this test module, one row per iteration per library, tagged with a
+    "DI Container" column so all three libraries live in the same sheet.
+    """
+    enabled = os.getenv("GAUNTLET_PER_TURN_CSV", "").strip().lower() in {
+        "1", "true", "yes", "on"
+    }
+    if not enabled:
+        return
+    path = Path(__file__).resolve().with_name("real_world_gauntlet_per_turn.csv")
+    header = [
+        "DI Container",
+        "Turn",
+        "Total (ms)",
+        "Bootstrap (ms)",
+        "Threaded (ms)",
+        "GC During",
+        "Gen0 Live",
+    ]
+    written = 0
+    with open(path, "w", newline="", encoding="utf-8") as handle:
+        writer = csv.writer(handle)
+        writer.writerow(header)
+        for result in results:
+            for turn, total_ns, bootstrap_ns, threaded_ns, gc_during, gen0_live in (
+                result.per_turn_rows
+            ):
+                writer.writerow([
+                    result.lib,
+                    turn,
+                    f"{total_ns / 1_000_000:.4f}",
+                    f"{bootstrap_ns / 1_000_000:.4f}",
+                    f"{threaded_ns / 1_000_000:.4f}",
+                    "yes" if gc_during else "no",
+                    gen0_live,
+                ])
+                written += 1
+    print(
+        f"[per-turn csv] wrote {written} rows for {len(results)} libraries -> {path}"
     )
 
 

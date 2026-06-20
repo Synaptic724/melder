@@ -25,9 +25,12 @@ def main() -> int:
     Run the shared gauntlet once for each supported library.
     """
     cfg = gauntlet._GauntletConfig.from_env()
+    results = []
     for lib in ("dependency-injector", "dishka", "melder"):
         result = gauntlet._run_gauntlet_benchmark(lib, cfg)
         gauntlet._print_benchmark_result(result)
+        results.append(result)
+    gauntlet._maybe_write_per_turn_csv(results)
     return 0
 
 
