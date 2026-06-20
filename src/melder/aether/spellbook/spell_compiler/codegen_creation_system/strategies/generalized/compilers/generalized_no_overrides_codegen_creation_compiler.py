@@ -620,6 +620,9 @@ def _emit_construct_instance(
     ``_construct_spell_instance`` call unchanged.
     """
     if inlinable_params is None:
+        # `plan_step_{step_index}` is consumed only by this generic construct
+        # path, so it is bound here (cold) rather than in the per-step preamble.
+        lines.append(f"{indent}plan_step_{step_index} = steps[{step_index}]")
         lines.append(
             f"{indent}instance_{step_index} = _construct_spell_instance("
             f"plan_step=plan_step_{step_index}, "
@@ -781,18 +784,15 @@ def _append_step_resolution_source(
           falls back to `_construct_spell_instance` for every other shape.
     """
     inlinable_params = _inlinable_common_shape(plan_step)
+    # Only `spell_{step_index}` (OWNER routing + construct) and
+    # `spell_id_{step_index}` (the reuse read) are needed on the warm path. The
+    # construct-only locals are bound lazily on the cold path instead of in this
+    # per-step preamble: `plan_step_{step_index}` in `_emit_construct_instance`
+    # and `has_disposal_methods_{step_index}` / `disposal_methods_{step_index}` in
+    # `_append_step_register_source`, so warm reuse melds do not pay for them.
     lines.extend([
-        f"    plan_step_{step_index} = steps[{step_index}]",
         f"    spell_{step_index} = step_spells[{step_index}]",
         f"    spell_id_{step_index} = step_spell_ids[{step_index}]",
-        (
-            f"    has_disposal_methods_{step_index} = "
-            f"step_has_disposal_methods[{step_index}]"
-        ),
-        (
-            f"    disposal_methods_{step_index} = "
-            f"step_disposal_methods[{step_index}]"
-        ),
     ])
     if inlinable_params:
         lines.append(
@@ -965,7 +965,20 @@ def _append_step_register_source(
           therefore locks) only when the spell carries disposal methods, so a
           non-disposal `many` step takes no lock per meld. The caller must NOT
           pre-emit a lock for the `many` branch.
+        - Binds `has_disposal_methods_{step_index}` / `disposal_methods_{step_index}`
+          here (cold construct/register path) so warm reuse melds never pay for
+          those per-step lookups.
     """
+    lines.extend([
+        (
+            f"{indent}has_disposal_methods_{step_index} = "
+            f"step_has_disposal_methods[{step_index}]"
+        ),
+        (
+            f"{indent}disposal_methods_{step_index} = "
+            f"step_disposal_methods[{step_index}]"
+        ),
+    ])
     if existence in (
             Existence.unique,
             Existence.unique_per_conduit,
