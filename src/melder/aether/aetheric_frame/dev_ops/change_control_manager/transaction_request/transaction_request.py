@@ -43,6 +43,8 @@ class ChangeTransactionType(StrEnum):
     REMOVE_FROM_INDEX = "remove_from_index"
     ELECT_CONDUIT_CLUSTER_LEADER = "elect_conduit_cluster_leader"
     UNELECT_CONDUIT_CLUSTER_LEADER = "unelect_conduit_cluster_leader"
+    CLUSTER_JOIN = "cluster_join"
+    CLUSTER_LEAVE = "cluster_leave"
 
 
 @dataclass(frozen=True)

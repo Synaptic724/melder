@@ -443,7 +443,7 @@ class _GauntletConfig:
     @staticmethod
     def from_env() -> _GauntletConfig:
         cfg = _GauntletConfig(
-            iterations=_env_int("DI_GAUNTLET_ITERS", 5000),
+            iterations=_env_int("DI_GAUNTLET_ITERS", 50000),
             threads=_env_int("DI_GAUNTLET_THREADS", 3),
             request_scope_runs=_env_int("DI_GAUNTLET_REQUEST_SCOPES", _REQUEST_SCOPE_RUNS_DEFAULT),
             worker_a_jobs=_env_int("DI_GAUNTLET_WORKER_A_JOBS", _WORKER_A_JOBS_DEFAULT),
@@ -1337,7 +1337,120 @@ def _summarize_lane(
     )
 
 
+class _GcPauseProbe:
+    """
+    Opt-in gc.callbacks recorder for attributing tail-latency spikes to GC.
+
+    Purpose:
+        Diagnostic instrument for the churn gauntlet. It records garbage
+        collection pause durations during the measured loop so a per-cycle
+        max spike can be compared against the largest GC pause and attributed
+        to (or cleared of) collection activity.
+
+    Contract:
+        - Off unless explicitly installed; installing appends one gc.callbacks
+          hook and uninstalling removes it. Both are safe to call once.
+        - Aggregates in-callback (counts/sums/max only); it never retains an
+          unbounded event list, so a multi-million-cycle run stays bounded.
+        - Free-threaded safe: under a no-GIL build the callback fires on the
+          thread that triggered the collection, so start timestamps are kept
+          per-thread and the merged totals are guarded by a lock.
+        - Records pause timing and collected-object counts only; no object
+          identity or references are held.
+
+    Threading:
+        `_callback` may run concurrently on multiple threads; all shared
+        counters are mutated under `self._lock`. `_start_by_thread` is keyed by
+        thread id and each key is written and consumed only by its own thread.
+
+    Lifecycle:
+        Create -> install() before the measured loop -> uninstall() in a
+        finally. No resources require teardown beyond removing the callback.
+    """
+
+    def __init__(self) -> None:
+        """Initialize empty pause/collection accumulators and the merge lock."""
+        self._lock = threading.Lock()
+        self._start_by_thread: dict[int, int] = {}
+        self.collections_by_gen: dict[int, int] = {}
+        self.collected_objects: int = 0
+        self.pause_total_ns: int = 0
+        self.pause_max_ns: int = 0
+
+    def _callback(self, phase: str, info: dict) -> None:
+        """
+        gc.callbacks hook: time one collection and fold it into the totals.
+
+        Args:
+            phase: "start" or "stop" as supplied by the collector.
+            info: collector-supplied mapping; "generation" and "collected"
+                are read when present.
+
+        Contract:
+            On "start" the per-thread start timestamp is recorded; on "stop"
+            the elapsed pause is added to the totals and the per-generation
+            count. A "stop" with no matching "start" (probe installed
+            mid-collection) is ignored.
+        """
+        thread_id = threading.get_ident()
+        if phase == "start":
+            self._start_by_thread[thread_id] = time.perf_counter_ns()
+            return
+        start_ns = self._start_by_thread.pop(thread_id, None)
+        if start_ns is None:
+            return
+        pause_ns = time.perf_counter_ns() - start_ns
+        generation = int(info.get("generation", -1))
+        collected = int(info.get("collected", 0))
+        with self._lock:
+            self.collections_by_gen[generation] = (
+                self.collections_by_gen.get(generation, 0) + 1
+            )
+            self.collected_objects += collected
+            self.pause_total_ns += pause_ns
+            if pause_ns > self.pause_max_ns:
+                self.pause_max_ns = pause_ns
+
+    def install(self) -> None:
+        """Append the pause-recording hook to gc.callbacks."""
+        gc.callbacks.append(self._callback)
+
+    def uninstall(self) -> None:
+        """Remove the pause-recording hook; a no-op if already absent."""
+        if self._callback in gc.callbacks:
+            gc.callbacks.remove(self._callback)
+
+    @property
+    def collections(self) -> int:
+        """Total collections observed across all generations."""
+        return sum(self.collections_by_gen.values())
+
+    def summary(self) -> str:
+        """Render a one-line per-generation / pause_total / pause_max summary."""
+        if not self.collections_by_gen:
+            gens = "(none)"
+        else:
+            gens = "(" + ", ".join(
+                f"g{gen}={count}"
+                for gen, count in sorted(self.collections_by_gen.items())
+            ) + ")"
+        return (
+            f"collections={self.collections} {gens}, "
+            f"collected={self.collected_objects:,}, "
+            f"pause_total={_ms(self.pause_total_ns):.3f}ms, "
+            f"pause_max={_ms(self.pause_max_ns):.3f}ms"
+        )
+
+
 def _run_gauntlet_benchmark(lib: str, cfg: _GauntletConfig) -> _BenchmarkResult:
+    # Optional, off-by-default GC instrumentation. When enabled it is applied
+    # symmetrically to every library so the comparison stays fair; when off,
+    # the measured path below is byte-for-byte the original benchmark.
+    gc_probe_enabled = os.getenv("GAUNTLET_GC_PROBE", "").strip().lower() in {"1", "true", "yes", "on"}
+    gc_mode = os.getenv("GAUNTLET_GC_MODE", "normal").strip().lower()
+    gc_probe = _GcPauseProbe() if gc_probe_enabled else None
+    gc_was_enabled = gc.isenabled()
+    gc_frozen_here = False
     min_request_objects = cfg.request_scope_runs * _REQUEST_OBJECTS_PER_ROOT
     min_worker_a_objects = cfg.worker_a_jobs * _WORKER_A_OBJECTS_PER_ROOT if cfg.threads >= 2 else 0
     min_worker_b_objects = cfg.worker_b_jobs * _WORKER_B_OBJECTS_PER_ROOT if cfg.threads >= 3 else 0
@@ -1352,6 +1465,19 @@ def _run_gauntlet_benchmark(lib: str, cfg: _GauntletConfig) -> _BenchmarkResult:
     try:
         ops.spawn_singletons()
         setup_ns = time.perf_counter_ns() - setup_t0
+
+        # Apply the requested GC posture around the measured loop only, after
+        # setup so the stable singleton/runtime graph is in place before any
+        # freeze. State is restored per-library in the finally below so it
+        # cannot leak across the three libraries sharing this process.
+        if gc_probe is not None:
+            gc_probe.install()
+        if gc_mode == "disabled":
+            gc.disable()
+        elif gc_mode == "frozen":
+            gc.collect()
+            gc.freeze()
+            gc_frozen_here = True
 
         iteration_samples: list[int] = []
         bootstrap_samples: list[int] = []
@@ -1382,6 +1508,10 @@ def _run_gauntlet_benchmark(lib: str, cfg: _GauntletConfig) -> _BenchmarkResult:
             for lane_name, counts in iteration.lane_variant_counts.items():
                 for i, count in enumerate(counts):
                     lane_variant_counts[lane_name][i] += count
+
+        if gc_probe is not None or gc_mode != "normal":
+            probe_txt = gc_probe.summary() if gc_probe is not None else "probe=off"
+            print(f"[{lib}] gc probe (mode={gc_mode}) | {probe_txt}")
 
         iteration_summary = _summarize(iteration_samples)
         bootstrap_summary = _summarize(bootstrap_samples)
@@ -1436,6 +1566,13 @@ def _run_gauntlet_benchmark(lib: str, cfg: _GauntletConfig) -> _BenchmarkResult:
             "lane_summaries": lane_summaries,
         }
     finally:
+        # Restore GC posture before the next library runs in this same process.
+        if gc_mode == "disabled" and gc_was_enabled and not gc.isenabled():
+            gc.enable()
+        if gc_frozen_here:
+            gc.unfreeze()
+        if gc_probe is not None:
+            gc_probe.uninstall()
         cleanup_t0 = time.perf_counter_ns()
         ops.cleanup()
         cleanup_ns = time.perf_counter_ns() - cleanup_t0

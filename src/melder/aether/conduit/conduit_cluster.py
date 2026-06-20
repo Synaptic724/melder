@@ -3,7 +3,6 @@ from typing import TYPE_CHECKING, Dict, Set, Optional, List, ClassVar
 
 from melder.aether.spellbook.existence.existence import Existence
 from melder.aether.conduit.conduit_state.conduit_state import ConduitState
-from melder.aether.conduit.creations.cluster_creations import ClusterCreations
 from melder.aether.aetheric_frame.dev_ops.devops_identity import DevopsIdentity
 from melder.aether.aetheric_frame.dev_ops.devops_information_registry import (
     DevopsInformationRegistry,
@@ -94,12 +93,6 @@ class ConduitCluster(Cleanable):
           transaction quiesce (the strategy seals the member conduits, and for
           unelect drains their lineages), NOT from a lock on the facade.
 
-    GOTCHA: the cluster also owns a `self.cluster_creations: ClusterCreations`
-    field, but it is CURRENTLY VESTIGIAL - it is constructed and cleaned up, yet
-    never bound, unbound, or resolved. The operative team-store facades are the
-    per-root-conduit `_cluster_creations` instances described above. Do not
-    confuse the cluster-owned facade with the per-conduit ones.
-
     ==================================================================
     Invariants
     ==================================================================
@@ -117,8 +110,8 @@ class ConduitCluster(Cleanable):
         quiesce, not from this lock.
 
     Lifecycle:
-        Becomes unusable after `cleanup()` completes; cleanup cleans the owned
-        (currently vestigial) `cluster_creations` facade and drops references.
+        Becomes unusable after `cleanup()` completes; cleanup clears membership
+        and shared-root state and drops references.
 
     Attributes:
         members:
@@ -131,9 +124,6 @@ class ConduitCluster(Cleanable):
             root. When False, only the root spell is linked.
         master_conduit_id:
             Elected leader conduit id, or None when no leader is elected (inert).
-        cluster_creations:
-            Cluster-owned team-store facade. Currently vestigial (see the GOTCHA
-            above); the live facades are the per-root-conduit `_cluster_creations`.
     """
     __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
@@ -148,7 +138,6 @@ class ConduitCluster(Cleanable):
         "_id",
         "_devops_identity",
         "_devops_information_registry",
-        "cluster_creations",
         "master_conduit_id",
     ]
 
@@ -202,12 +191,6 @@ class ConduitCluster(Cleanable):
             self._devops_information_registry,
             object_ref=self,
         )
-        # Cluster team-store facade. The cluster owns it; it fronts the elected
-        # leader conduit's `Creations` and starts disabled (no leader). A
-        # `unique_per_conduit_cluster` spell resolves its instance through this
-        # facade. The leader bind/unbind happens through the elect/unelect
-        # cluster-leader transactions (not here).
-        self.cluster_creations: ClusterCreations = ClusterCreations()
         self.master_conduit_id: Optional[str] = None
 
     def cleanup(self) -> None:
@@ -239,8 +222,6 @@ class ConduitCluster(Cleanable):
             for conduit_id in member_ids:
                 self._devops_identity.unregister_cluster_member(conduit_id)
             self._devops_identity.cleanup()
-            self.cluster_creations.cleanup()
-            del self.cluster_creations
             del self.master_conduit_id
             del self.auto_link_dependencies
             del self._devops_information_registry
