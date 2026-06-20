@@ -1,4 +1,5 @@
 import threading
+from contextlib import nullcontext
 from typing import TYPE_CHECKING, Dict, Set, Optional, List, ClassVar
 
 from melder.aether.spellbook.existence.existence import Existence
@@ -183,6 +184,8 @@ class ConduitCluster(Cleanable):
             },
             available_transactions=(
                 "cluster_link",
+                "cluster_join",
+                "cluster_leave",
                 "elect_conduit_cluster_leader",
                 "unelect_conduit_cluster_leader",
             ),
@@ -359,25 +362,54 @@ class ConduitCluster(Cleanable):
         self.check_cleaned()
         self._assert_normal_conduit(conduit)
         with self._lock:
-            self.members.add(conduit._id)
-            member_ids = set(self.members)
+            involved_conduit_ids = set(self.members)
+        involved_conduit_ids.add(conduit._id)
 
-        # Refresh registry for all members (including new)
-        for member_id in member_ids:
-            member = self._resolve_conduit_by_id(member_id)
-            if member is None:
-                continue
-            self.refresh_shareable_roots(member)
+        mediator = conduit._get_required_transaction_mediator()
+        mediator.start_transaction(
+            identity=self._devops_identity,
+            transaction_type=ChangeTransactionType.CLUSTER_JOIN,
+            metadata={
+                "origin_surface": "conduit_cluster.handle_join",
+                "cluster_id": self._id,
+                "conduit_ids": tuple(sorted(involved_conduit_ids)),
+            },
+        )
+        succeeded = False
+        try:
+            with self._lock:
+                self.members.add(conduit._id)
+                member_ids = set(self.members)
 
-        # Share both directions between joiner and existing members
-        for peer_id in member_ids:
-            if peer_id == conduit._id:
-                continue
-            peer = self._resolve_conduit_by_id(peer_id)
-            if peer is None:
-                continue
-            self.share_to_borrower(conduit, peer)
-            self.share_to_borrower(peer, conduit)
+            # Refresh registry for all members (including the new one).
+            for member_id in member_ids:
+                member = self._resolve_conduit_by_id(member_id)
+                if member is None:
+                    continue
+                self.refresh_shareable_roots(member)
+
+            # Share both directions between the joiner and existing members. The
+            # shares run WITHOUT their own cluster_link transactions: the
+            # CLUSTER_JOIN seal already holds every involved conduit, so a nested
+            # cluster_link (a different owner) would self-conflict and time out.
+            for peer_id in member_ids:
+                if peer_id == conduit._id:
+                    continue
+                peer = self._resolve_conduit_by_id(peer_id)
+                if peer is None:
+                    continue
+                self.share_to_borrower(conduit, peer, open_transaction=False)
+                self.share_to_borrower(peer, conduit, open_transaction=False)
+
+            # Activate the joiner's team-store facade if the cluster already has
+            # an elected leader (join INTO a live cluster). No-op while inert.
+            self.bind_member(conduit)
+            succeeded = True
+        finally:
+            mediator.end_transaction(
+                expected_type=ChangeTransactionType.CLUSTER_JOIN,
+                success=succeeded,
+            )
 
     def handle_leave(self, conduit: Conduit) -> None:
         """
@@ -397,35 +429,78 @@ class ConduitCluster(Cleanable):
         """
         self.check_cleaned()
         self._assert_normal_conduit(conduit)
-        with self._lock:
-            self.members.discard(conduit._id)
-            member_ids = set(self.members)
-            leaver_id = conduit._id
 
-        peers: List[Conduit] = []
-        for conduit_id in member_ids:
-            peer = self._resolve_conduit_by_id(conduit_id)
-            if peer is not None:
-                peers.append(peer)
-
-        # Remove spells this conduit owned from peers
-        for peer in peers:
-            self.remove_shared_from_borrower(
-                conduit,
-                peer,
-                self._aetheric_frame_name,
-            )
-
-        # Remove spells peers owned from this conduit
-        for peer in peers:
-            self.remove_shared_from_borrower(
-                peer,
-                conduit,
-                self._aetheric_frame_name,
-            )
+        # If the conduit leaving IS the elected leader, dissolve the team store
+        # first through the drained UNELECT transaction (v1: owner-leave dissolves
+        # the cluster to inert -- no re-home). This runs BEFORE the membership
+        # transaction so the leader is still a member for the unbind walk and
+        # every member lineage is drained before the leader store is released.
+        if (
+            self.master_conduit_id is not None
+            and conduit._id == self.master_conduit_id
+        ):
+            self.unelect_leader()
 
         with self._lock:
-            self.shared_spells.pop(leaver_id, None)
+            involved_conduit_ids = set(self.members)
+        involved_conduit_ids.add(conduit._id)
+
+        mediator = conduit._get_required_transaction_mediator()
+        mediator.start_transaction(
+            identity=self._devops_identity,
+            transaction_type=ChangeTransactionType.CLUSTER_LEAVE,
+            metadata={
+                "origin_surface": "conduit_cluster.handle_leave",
+                "cluster_id": self._id,
+                "conduit_ids": tuple(sorted(involved_conduit_ids)),
+            },
+        )
+        succeeded = False
+        try:
+            with self._lock:
+                self.members.discard(conduit._id)
+                member_ids = set(self.members)
+                leaver_id = conduit._id
+
+            peers: List[Conduit] = []
+            for conduit_id in member_ids:
+                peer = self._resolve_conduit_by_id(conduit_id)
+                if peer is not None:
+                    peers.append(peer)
+
+            # Tear down shared roots in both directions. The unshares run WITHOUT
+            # their own cluster_link transactions: the CLUSTER_LEAVE seal already
+            # holds every involved conduit, so a nested cluster_link (a different
+            # owner) would self-conflict and time out.
+            for peer in peers:
+                self.remove_shared_from_borrower(
+                    conduit,
+                    peer,
+                    self._aetheric_frame_name,
+                    open_transaction=False,
+                )
+            for peer in peers:
+                self.remove_shared_from_borrower(
+                    peer,
+                    conduit,
+                    self._aetheric_frame_name,
+                    open_transaction=False,
+                )
+
+            with self._lock:
+                self.shared_spells.pop(leaver_id, None)
+
+            # Drop the leaver's own team-store facade (idempotent). For a
+            # non-leader leave this releases its handle to the leader store; for a
+            # leader-leave the cluster was already dissolved above and this drops
+            # the departed leader's own facade. No-op while inert.
+            self.unbind_member(conduit)
+            succeeded = True
+        finally:
+            mediator.end_transaction(
+                expected_type=ChangeTransactionType.CLUSTER_LEAVE,
+                success=succeeded,
+            )
 
     # ------------------------------------------------------------------
     # Cluster leader election (bind / unbind the shared team store)
@@ -519,6 +594,84 @@ class ConduitCluster(Cleanable):
             member = self._resolve_conduit_by_id(member_id)
             member._cluster_creations.unbind()
         self.master_conduit_id = None
+
+    def bind_member(self, conduit: "Conduit") -> None:
+        """
+        Bind one joining member's facade to the elected leader's store.
+
+        Purpose:
+            Activate the team store for a single conduit that joins a cluster
+            which ALREADY has an elected leader. `bind_elected_leader` covers the
+            members present at election; this covers a join INTO a live cluster
+            without re-walking the membership or re-electing.
+
+        Contract:
+            - No-op when the cluster is inert (`master_conduit_id is None`): the
+              joiner's facade stays disabled until a leader is elected, which
+              picks it up via `bind_elected_leader`.
+            - When a leader is elected, binds the joining conduit's
+              `_cluster_creations` to the elected leader's `_creations`. Does NOT
+              change `master_conduit_id` (the leader is unchanged).
+
+        Args:
+            conduit:
+                The joining member root conduit whose facade is activated.
+
+        Threading:
+            Runs inside the `CLUSTER_JOIN` transaction's held window, whose seal
+            holds the joiner and the leader, so the bind never races a meld.
+
+        Returns:
+            None.
+
+        Raises:
+            RuntimeError: If the cluster has been cleaned.
+        """
+        self.check_cleaned()
+        if self.master_conduit_id is None:
+            return
+        leader = self._resolve_conduit_by_id(self.master_conduit_id)
+        conduit._cluster_creations.bind(leader._creations)
+
+    def unbind_member(self, conduit: "Conduit") -> None:
+        """
+        Unbind one leaving member's facade from the elected leader's store.
+
+        Purpose:
+            Deactivate the team store for one conduit leaving the cluster, by
+            dropping its own facade pointer, without disturbing the leader or the
+            other members.
+
+        Contract:
+            - Always drops the leaving conduit's `_cluster_creations` reference
+              (idempotent: a no-op when its facade is already inert). Never cleans
+              the leader's store. Does NOT change `master_conduit_id`.
+            - Drops the leaver's OWN facade only. When the leaving conduit is the
+              elected leader, `handle_leave` first dissolves the cluster through
+              `unelect_leader` (drained: clears `master_conduit_id` and unbinds
+              the remaining members); this call then drops the departed leader's
+              own facade. The cloud removes the leaver from `members` before
+              `handle_leave`, so that drained walk cannot reach the leaver's
+              facade -- which is why this unbind is unconditional.
+
+        Args:
+            conduit:
+                The leaving member root conduit whose facade is disabled.
+
+        Threading:
+            Runs inside the `CLUSTER_LEAVE` transaction's held window, whose seal
+            holds the leaver. No lineage drain is required: `unbind` only drops
+            the facade pointer, the leader's store stays alive (owned by the
+            leader conduit), and any in-flight meld holds its own store reference.
+
+        Returns:
+            None.
+
+        Raises:
+            RuntimeError: If the cluster has been cleaned.
+        """
+        self.check_cleaned()
+        conduit._cluster_creations.unbind()
 
     def elect_leader(self, leader_conduit_id: str) -> None:
         """
@@ -814,7 +967,13 @@ class ConduitCluster(Cleanable):
                 except Exception:
                     continue
 
-    def share_to_borrower(self, owner: Conduit, borrower: Conduit) -> None:
+    def share_to_borrower(
+            self,
+            owner: Conduit,
+            borrower: Conduit,
+            *,
+            open_transaction: bool = True,
+    ) -> None:
         """
         Contract all shared roots from one owner into one borrower.
 
@@ -827,6 +986,13 @@ class ConduitCluster(Cleanable):
         Args:
             owner: Conduit that owns the roots.
             borrower: Conduit that should receive the contracts.
+            open_transaction:
+                When True (default) each per-pair share runs inside its own
+                `cluster_link` change-control transaction. When False the caller
+                already holds the change-control window -- a `CLUSTER_JOIN`
+                transaction sealing every involved conduit -- so each share runs
+                directly under the held locks instead of opening a nested
+                transaction that would self-conflict on those scopes.
 
         Returns:
             None
@@ -844,10 +1010,15 @@ class ConduitCluster(Cleanable):
                 continue
             try:
                 cluster_root_id = self._cluster_root_id(owner_id, spell.spell_id)
-                with borrower.transaction(
-                    "cluster_link",
-                    conduits=[borrower, owner],
-                ):
+                share_window = (
+                    borrower.transaction(
+                        ChangeTransactionType.CLUSTER_LINK,
+                        conduits=[borrower, owner],
+                    )
+                    if open_transaction
+                    else nullcontext()
+                )
+                with share_window:
                     borrower.add_spell_to_contract(
                         spell=spell,
                         conduit=owner,
@@ -860,7 +1031,14 @@ class ConduitCluster(Cleanable):
             except Exception:
                 continue
 
-    def remove_shared_from_borrower(self, owner: Conduit, borrower: Conduit, aetheric_frame: str = "default") -> None:
+    def remove_shared_from_borrower(
+            self,
+            owner: Conduit,
+            borrower: Conduit,
+            aetheric_frame: str = "default",
+            *,
+            open_transaction: bool = True,
+    ) -> None:
         """
         Remove all shared roots from one owner on the borrower side.
 
@@ -874,6 +1052,13 @@ class ConduitCluster(Cleanable):
             owner: Conduit that owns the roots.
             borrower: Conduit to remove the contracted roots from.
             aetheric_frame: Frame name for removal calls.
+            open_transaction:
+                When True (default) each per-pair unshare runs inside its own
+                `cluster_link` change-control transaction. When False the caller
+                already holds the change-control window -- a `CLUSTER_LEAVE`
+                transaction sealing every involved conduit -- so each unshare runs
+                directly under the held locks instead of opening a nested
+                transaction that would self-conflict on those scopes.
 
         Returns:
             None
@@ -890,10 +1075,15 @@ class ConduitCluster(Cleanable):
                 continue
             try:
                 cluster_root_id = self._cluster_root_id(owner_id, spell.spell_id)
-                with borrower.transaction(
-                    "cluster_link",
-                    conduits=[borrower, owner],
-                ):
+                unshare_window = (
+                    borrower.transaction(
+                        ChangeTransactionType.CLUSTER_LINK,
+                        conduits=[borrower, owner],
+                    )
+                    if open_transaction
+                    else nullcontext()
+                )
+                with unshare_window:
                     borrower.remove_root_from_contracts(
                         root_spell_id=cluster_root_id,
                         conduit=owner,

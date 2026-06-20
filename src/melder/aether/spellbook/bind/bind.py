@@ -140,6 +140,7 @@ class Bind(Cleanable):
             binding_name (Optional[str]): A specific key used to distinguish this spell among others in its frame.
             profile (str): Spell profile family to attach to the final Spell.
             existence (Existence): The lifecycle scope for this spell (default is `Existence.unique`).
+            configured_disposal_method_names (Optional[frozenset[str]]): Names of methods to be considered for disposal.
         Contract:
             - When `spell` is omitted, returns a decorator that will bind the
               later target with the supplied policy and lifecycle settings.
@@ -377,6 +378,11 @@ class Bind(Cleanable):
 
         Args:
             spell (Any): The spell object (class, function, or instance) to inspect.
+            spellframe (Optional[Any]): Logical interface or Protocol used as the DI contract / grouping key.
+            spell_name (Optional[str]): A specific key used to distinguish this spell among others in its frame.
+            binding_name (Optional[str]): A specific key used to distinguish this spell.
+            existence (Existence): The lifecycle scope for this spell.
+            disposal_method_names (Sequence[str]): Names of methods to be considered for disposal.
         Contract:
             - Builds the same `SpellGeneralProfile` / `SpellBindingProfile`
               chain used by the real binding path.

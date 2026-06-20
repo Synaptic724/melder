@@ -3863,7 +3863,10 @@ class Conduit(Cleanable):
             Ensure contract mutations are performed only under a validated
             link transaction that names all participating conduits.
         Contract:
-            - Requires an active change transaction of type LINK.
+            - Requires an active change transaction of a link-pattern type
+              (`link`, `cluster_link`, `cluster_join`, or `cluster_leave`), since
+              cluster membership entry/exit shares/unshares contracts under a
+              single transaction that seals every involved conduit.
             - The active request must include this conduit id and the peer
               conduit ids in its conduit_ids list.
             - Raises with a descriptive error if the requirement is not met.
@@ -3905,7 +3908,12 @@ class Conduit(Cleanable):
                 "Call begin_transaction('link') on the borrower and include both "
                 "borrower and peer conduits."
             )
-        if request.request_type not in ("link", "cluster_link"):
+        if request.request_type not in (
+                "link",
+                "cluster_link",
+                "cluster_join",
+                "cluster_leave",
+        ):
             self._logger.error(
                 "Contract mutation requires link transaction",
                 "_require_link_transaction_for_contract",

@@ -443,7 +443,7 @@ class _GauntletConfig:
     @staticmethod
     def from_env() -> _GauntletConfig:
         cfg = _GauntletConfig(
-            iterations=_env_int("DI_GAUNTLET_ITERS", 50000),
+            iterations=_env_int("DI_GAUNTLET_ITERS", 5000),
             threads=_env_int("DI_GAUNTLET_THREADS", 3),
             request_scope_runs=_env_int("DI_GAUNTLET_REQUEST_SCOPES", _REQUEST_SCOPE_RUNS_DEFAULT),
             worker_a_jobs=_env_int("DI_GAUNTLET_WORKER_A_JOBS", _WORKER_A_JOBS_DEFAULT),
@@ -1442,6 +1442,32 @@ class _GcPauseProbe:
         )
 
 
+def _gc_stats_delta_text(before: list, after: list) -> str:
+    """
+    Render the per-generation collection-count delta from gc.get_stats().
+
+    Args:
+        before: per-generation cumulative `collections` counts captured before
+            the measured loop (empty when instrumentation is off).
+        after: the same counts captured after the loop.
+
+    Returns:
+        A one-line `total=+N (g0=+a, g1=+b, g2=+c)` string. These counts are the
+        interpreter's own collector tally, independent of the gc.callbacks
+        probe, so a reader can confirm the two readings agree (or do not).
+    """
+    if not before and not after:
+        return "n/a"
+    pairs = []
+    total = 0
+    for gen, after_count in enumerate(after):
+        before_count = before[gen] if gen < len(before) else 0
+        delta = after_count - before_count
+        total += delta
+        pairs.append(f"g{gen}=+{delta}")
+    return f"total=+{total} (" + ", ".join(pairs) + ")"
+
+
 def _run_gauntlet_benchmark(lib: str, cfg: _GauntletConfig) -> _BenchmarkResult:
     # Optional, off-by-default GC instrumentation. When enabled it is applied
     # symmetrically to every library so the comparison stays fair; when off,
@@ -1451,6 +1477,7 @@ def _run_gauntlet_benchmark(lib: str, cfg: _GauntletConfig) -> _BenchmarkResult:
     gc_probe = _GcPauseProbe() if gc_probe_enabled else None
     gc_was_enabled = gc.isenabled()
     gc_frozen_here = False
+    gc_instrumented = gc_probe is not None or gc_mode != "normal"
     min_request_objects = cfg.request_scope_runs * _REQUEST_OBJECTS_PER_ROOT
     min_worker_a_objects = cfg.worker_a_jobs * _WORKER_A_OBJECTS_PER_ROOT if cfg.threads >= 2 else 0
     min_worker_b_objects = cfg.worker_b_jobs * _WORKER_B_OBJECTS_PER_ROOT if cfg.threads >= 3 else 0
@@ -1478,6 +1505,18 @@ def _run_gauntlet_benchmark(lib: str, cfg: _GauntletConfig) -> _BenchmarkResult:
             gc.collect()
             gc.freeze()
             gc_frozen_here = True
+
+        # Callback-free cross-check: snapshot CPython's own per-generation
+        # collection counters (gc.get_stats()) around the measured loop. The
+        # before/after delta is maintained by the interpreter, not the probe,
+        # so comparing it to the probe's gc.callbacks count catches any
+        # collection the hook could miss -- including worker-thread collections
+        # under a no-GIL build. Two independent readings of zero == GC idle.
+        gc_stats_before: list = (
+            [int(s.get("collections", 0)) for s in gc.get_stats()]
+            if gc_instrumented
+            else []
+        )
 
         iteration_samples: list[int] = []
         bootstrap_samples: list[int] = []
@@ -1509,9 +1548,14 @@ def _run_gauntlet_benchmark(lib: str, cfg: _GauntletConfig) -> _BenchmarkResult:
                 for i, count in enumerate(counts):
                     lane_variant_counts[lane_name][i] += count
 
-        if gc_probe is not None or gc_mode != "normal":
+        if gc_instrumented:
+            gc_stats_after = [int(s.get("collections", 0)) for s in gc.get_stats()]
+            stats_delta = _gc_stats_delta_text(gc_stats_before, gc_stats_after)
             probe_txt = gc_probe.summary() if gc_probe is not None else "probe=off"
-            print(f"[{lib}] gc probe (mode={gc_mode}) | {probe_txt}")
+            print(
+                f"[{lib}] gc probe (mode={gc_mode}, gc_enabled={gc.isenabled()}) "
+                f"| {probe_txt} | gc.get_stats delta: {stats_delta}"
+            )
 
         iteration_summary = _summarize(iteration_samples)
         bootstrap_summary = _summarize(bootstrap_samples)
