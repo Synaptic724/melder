@@ -49,6 +49,15 @@ class _FakeFrame:
     def bind_frame_configuration(self, frame_configuration) -> None:
         self.bound_frame_configuration = frame_configuration
 
+    def __enter__(self) -> "_FakeFrame":
+        # The real AethericFrame is used as a context manager (frame lock) by
+        # NexusFrameManager._publish_frame_overview; the fake mirrors that
+        # protocol as a no-op so the publish path can be exercised.
+        return self
+
+    def __exit__(self, exc_type, exc, tb) -> None:
+        return None
+
 
 class _FakeConduit:
     def __init__(
@@ -979,7 +988,12 @@ def test_nexus_frame_manager_frame_is_in_active_rift_use_ignores_access_errors(
     }
 
     def _raise(_rift_id):
-        raise RuntimeError("access failure")
+        # A rift that vanished between the registry snapshot and the
+        # accessibility check surfaces as ValueError, which
+        # _frame_is_in_active_rift_use deliberately skips (a vanished rift
+        # cannot hold the frame in active use). Non-ValueError errors must
+        # propagate, so they are intentionally not exercised here.
+        raise ValueError("access failure")
 
     monkeypatch.setattr(manager, "list_accessible_frame_names_for_rift", _raise)
 

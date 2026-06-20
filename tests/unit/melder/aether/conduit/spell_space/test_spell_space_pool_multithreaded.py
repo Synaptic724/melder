@@ -4,6 +4,7 @@ from typing import Any, Callable, List, Optional, Union
 
 import pytest
 
+from melder.aether.conduit.creations.cluster_creations import ClusterCreations
 from melder.aether.conduit.spell_space.spell_space import SpellSpace
 from melder.aether.conduit.spell_space.spell_space_pool import SpellSpacePool
 from melder.aether.conduit.spell_space.spell_space_thread_state import (
@@ -43,6 +44,8 @@ class _ConduitMeldStub:
         self._resolution_conduit_id = "conduit-test"
         self._dynamic_environment = False
         self._meld_hooks: dict[str, list[Any]] = {}
+        self._root_creations = _ConduitCreationsStub(owner_conduit_id="conduit-test")
+        self._cluster_creations = ClusterCreations()
 
     def meld(
             self,

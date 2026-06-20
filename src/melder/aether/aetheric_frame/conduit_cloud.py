@@ -131,7 +131,13 @@ class ConduitCloud(Cleanable):
             if self._cleaned:
                 return
             for cluster in list(self._conduit_clusters.values()):
-                cluster.cleanup()
+                # Best-effort: the clusters are cloud-owned and are dropped right
+                # after this loop, so one cluster's cleanup failure must not abort
+                # cleanup of the remaining clusters or the cloud teardown below.
+                try:
+                    cluster.cleanup()
+                except Exception:
+                    continue
             self._conduit_clusters.clear()
             self._cleaned = True
 

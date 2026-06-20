@@ -827,6 +827,8 @@ def _make_spellspace_meld(
         spellspace=spellspace,
         spellspace_creations=spellspace_creations,
         owner_conduit_creations=owner_conduit_creations,
+        root_creations=conduit_meld._root_creations,
+        cluster_creations=conduit_meld._cluster_creations,
         spellbook=effective_spellbook,
         conduit_id=conduit_id,
         resolution_conduit_id=conduit_id,

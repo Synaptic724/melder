@@ -207,8 +207,8 @@ def test_unregister_index_marks_dependents_gated(
     - Direct dependents are marked gated/dirty when a lineage is unregistered.
     - Impacted dependents receive the impacted_by_dependency flag.
     """
-    idx_a = MagicMock(spec=SpellIndex, id="idx-a", current="spell-a")
-    idx_b = MagicMock(spec=SpellIndex, id="idx-b", current="spell-b")
+    idx_a = MagicMock(spec=SpellIndex, id="idx-a", selected_spell_id="spell-a")
+    idx_b = MagicMock(spec=SpellIndex, id="idx-b", selected_spell_id="spell-b")
 
     states_manager.register_index(idx_a)
     states_manager.register_index(idx_b)
@@ -239,7 +239,7 @@ def test_update_dependencies(states_manager, mock_spell_index, mock_spell):
     states_manager.register_index(mock_spell_index)
     
     # Register a dependency (so we can check reverse edges)
-    dep_index = MagicMock(spec=SpellIndex, id="idx-dep", current="spell-dep")
+    dep_index = MagicMock(spec=SpellIndex, id="idx-dep", selected_spell_id="spell-dep")
     states_manager.register_index(dep_index)
     
     # Consume dirty to clear initial
@@ -261,13 +261,13 @@ def test_update_dependencies(states_manager, mock_spell_index, mock_spell):
 
 def test_update_dependencies_removes_old(states_manager, mock_spell_index, mock_spell):
     # Setup: Main -> Dep1
-    dep1 = MagicMock(spec=SpellIndex, id="d1", current="s-d1")
+    dep1 = MagicMock(spec=SpellIndex, id="d1", selected_spell_id="s-d1")
     states_manager.register_index(dep1)
     states_manager.register_index(mock_spell_index)
     states_manager.update_dependencies(mock_spell_index, ["s-d1"])
     
     # Setup: New: Main -> Dep2 (removes Dep1)
-    dep2 = MagicMock(spec=SpellIndex, id="d2", current="s-d2")
+    dep2 = MagicMock(spec=SpellIndex, id="d2", selected_spell_id="s-d2")
     states_manager.register_index(dep2)
     
     states_manager.update_dependencies(mock_spell_index, ["s-d2"])
@@ -296,9 +296,9 @@ def test_compute_impact_closure(states_manager, mock_spell):
     """
     # A -> B -> C
     # Define indexes
-    idx_a = MagicMock(spec=SpellIndex, id="A", current="s-A")
-    idx_b = MagicMock(spec=SpellIndex, id="B", current="s-B")
-    idx_c = MagicMock(spec=SpellIndex, id="C", current="s-C")
+    idx_a = MagicMock(spec=SpellIndex, id="A", selected_spell_id="s-A")
+    idx_b = MagicMock(spec=SpellIndex, id="B", selected_spell_id="s-B")
+    idx_c = MagicMock(spec=SpellIndex, id="C", selected_spell_id="s-C")
     
     # Register
     states_manager.register_index(idx_a)

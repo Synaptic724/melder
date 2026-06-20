@@ -6,6 +6,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
+from melder.aether.conduit.creations.cluster_creations import ClusterCreations
 from melder.aether.conduit.creations.conduit_creations import ConduitCreations
 from melder.aether.conduit.creations.creations import Creations
 from melder.aether.conduit.meld.conduit_meld import ConduitMeld
@@ -282,6 +283,8 @@ def _make_spellspace_meld(
         spellspace=spellspace,
         spellspace_creations=spellspace_creations,
         owner_conduit_creations=owner_creations,
+        root_creations=owner_creations,
+        cluster_creations=ClusterCreations(),
         spellbook=effective_spellbook,
         conduit_id=conduit_id,
         resolution_conduit_id=conduit_id,
