@@ -1128,11 +1128,15 @@ def test_change_control_transfer_transaction_registers_live_registry_session() -
 
     owner.begin_transaction(
         "transfer_ownership",
-        metadata={
-            "target_conduit_id": target.id,
-            "spell_id": spell_id,
-            "spell_index_id": spell.spell_index.id,
-        },
+        metadata=owner._build_transfer_transaction_metadata(
+            spell=spell_id,
+            target_conduit=target,
+            move_creations=False,
+            include_dependencies=False,
+            force_unshare=True,
+            invalidate_after_transfer=True,
+            mark_dependencies_dirty=False,
+        ),
     )
     try:
         sessions = registry.list_live_transactions_for_identity(
@@ -1238,11 +1242,15 @@ def test_change_control_transfer_transaction_abort_clears_registry_and_preserves
     with pytest.raises(RuntimeError, match="boom"):
         with owner.transaction(
                 "transfer_ownership",
-                metadata={
-                    "target_conduit_id": target.id,
-                    "spell_id": spell_id,
-                    "spell_index_id": spell.spell_index.id,
-                },
+                metadata=owner._build_transfer_transaction_metadata(
+                    spell=spell_id,
+                    target_conduit=target,
+                    move_creations=False,
+                    include_dependencies=False,
+                    force_unshare=True,
+                    invalidate_after_transfer=True,
+                    mark_dependencies_dirty=False,
+                ),
         ):
             raise RuntimeError("boom")
 

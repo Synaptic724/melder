@@ -378,11 +378,15 @@ def test_component_conduit_begin_transaction_transfer_registers_live_registry_se
     try:
         owner.begin_transaction(
             "transfer_ownership",
-            metadata={
-                "target_conduit_id": target.id,
-                "spell_id": spell_id,
-                "spell_index_id": spell.spell_index.id,
-            },
+            metadata=owner._build_transfer_transaction_metadata(
+                spell=spell_id,
+                target_conduit=target,
+                move_creations=False,
+                include_dependencies=False,
+                force_unshare=True,
+                invalidate_after_transfer=True,
+                mark_dependencies_dirty=False,
+            ),
         )
         started = True
         sessions = registry.list_live_transactions_for_identity(
@@ -431,11 +435,15 @@ def test_component_conduit_transfer_transaction_context_clears_live_registry_ses
     try:
         with owner.transaction(
                 "transfer_ownership",
-                metadata={
-                    "target_conduit_id": target.id,
-                    "spell_id": spell_id,
-                    "spell_index_id": spell.spell_index.id,
-                },
+                metadata=owner._build_transfer_transaction_metadata(
+                    spell=spell_id,
+                    target_conduit=target,
+                    move_creations=False,
+                    include_dependencies=False,
+                    force_unshare=True,
+                    invalidate_after_transfer=True,
+                    mark_dependencies_dirty=False,
+                ),
         ):
             sessions = registry.list_live_transactions_for_identity(
                 owner_kind="conduit",
@@ -531,11 +539,15 @@ def test_component_conduit_transfer_transaction_abort_clears_registry_and_preser
         with pytest.raises(RuntimeError, match="boom"):
                 with owner.transaction(
                         "transfer_ownership",
-                        metadata={
-                            "target_conduit_id": target.id,
-                            "spell_id": spell_id,
-                            "spell_index_id": spell.spell_index.id,
-                        },
+                        metadata=owner._build_transfer_transaction_metadata(
+                            spell=spell_id,
+                            target_conduit=target,
+                            move_creations=False,
+                            include_dependencies=False,
+                            force_unshare=True,
+                            invalidate_after_transfer=True,
+                            mark_dependencies_dirty=False,
+                        ),
                 ):
                     raise RuntimeError("boom")
 
