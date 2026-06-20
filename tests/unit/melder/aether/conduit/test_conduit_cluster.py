@@ -17,6 +17,7 @@ import pytest
 from unittest.mock import MagicMock
 
 from melder.aether.conduit.conduit_cluster import ConduitCluster
+from melder.aether.conduit.creations.cluster_creations import ClusterCreations
 from melder.aether.conduit.conduit_state.conduit_state import ConduitState
 from melder.aether.aetheric_frame.dev_ops.devops_information_registry import (
     DevopsInformationRegistry,
@@ -1164,4 +1165,153 @@ def test_remove_shared_from_borrower_uses_normal_borrower() -> None:
             "aetheric_frame": "default",
         }
     ]
+
+
+# ----------------------------------------------------------------------
+# Team-store facade: single-member bind / unbind (bind_member, unbind_member)
+# ----------------------------------------------------------------------
+class _FacadeConduit:
+    """Minimal root conduit exposing the team-store facade and its own store."""
+
+    def __init__(self, conduit_id: str) -> None:
+        """Initialize with an id, an opaque creation store, and an inert facade."""
+        self._id = conduit_id
+        # Opaque per-conduit creation store; its identity is all the facade needs.
+        self._creations = object()
+        self._cluster_creations = ClusterCreations()
+
+
+def _make_facade_cluster(*conduits: _FacadeConduit) -> ConduitCluster:
+    """Build a cluster whose registry resolves the given facade conduits by id."""
+    registry: Dict[str, Any] = {conduit._id: conduit for conduit in conduits}
+    return _make_cluster("facade-cluster", registry=registry)
+
+
+def test_bind_member_binds_joiner_facade_to_leader_store() -> None:
+    """bind_member activates a joiner's facade and points it at the leader store."""
+    leader = _FacadeConduit("leader")
+    joiner = _FacadeConduit("joiner")
+    cluster = _make_facade_cluster(leader, joiner)
+    cluster.master_conduit_id = leader._id
+
+    cluster.bind_member(joiner)
+
+    assert joiner._cluster_creations.is_active() is True
+    assert joiner._cluster_creations.resolved_store() is leader._creations
+
+
+def test_bind_member_is_noop_when_cluster_inert() -> None:
+    """bind_member leaves the joiner inert when no leader is elected."""
+    leader = _FacadeConduit("leader")
+    joiner = _FacadeConduit("joiner")
+    cluster = _make_facade_cluster(leader, joiner)
+
+    cluster.bind_member(joiner)
+
+    assert joiner._cluster_creations.is_active() is False
+
+
+def test_bind_member_leaves_master_unchanged() -> None:
+    """bind_member does not alter master_conduit_id (the leader is unchanged)."""
+    leader = _FacadeConduit("leader")
+    joiner = _FacadeConduit("joiner")
+    cluster = _make_facade_cluster(leader, joiner)
+    cluster.master_conduit_id = leader._id
+
+    cluster.bind_member(joiner)
+
+    assert cluster.master_conduit_id == leader._id
+
+
+def test_bind_member_binds_to_the_current_leader_store() -> None:
+    """bind_member resolves master_conduit_id, binding to the current leader."""
+    leader_a = _FacadeConduit("leader-a")
+    leader_b = _FacadeConduit("leader-b")
+    joiner = _FacadeConduit("joiner")
+    cluster = _make_facade_cluster(leader_a, leader_b, joiner)
+    cluster.master_conduit_id = leader_b._id
+
+    cluster.bind_member(joiner)
+
+    assert joiner._cluster_creations.resolved_store() is leader_b._creations
+    assert joiner._cluster_creations.resolved_store() is not leader_a._creations
+
+
+def test_bind_member_raises_after_cleanup() -> None:
+    """bind_member is guarded by check_cleaned after the cluster is cleaned."""
+    leader = _FacadeConduit("leader")
+    joiner = _FacadeConduit("joiner")
+    cluster = _make_facade_cluster(leader, joiner)
+    cluster.master_conduit_id = leader._id
+    cluster.cleanup()
+
+    with pytest.raises(RuntimeError):
+        cluster.bind_member(joiner)
+
+
+def test_unbind_member_deactivates_bound_leaver_facade() -> None:
+    """unbind_member disables a bound leaver's facade so resolve hard-errors."""
+    leader = _FacadeConduit("leader")
+    leaver = _FacadeConduit("leaver")
+    cluster = _make_facade_cluster(leader, leaver)
+    cluster.master_conduit_id = leader._id
+    leaver._cluster_creations.bind(leader._creations)
+
+    cluster.unbind_member(leaver)
+
+    assert leaver._cluster_creations.is_active() is False
+    with pytest.raises(RuntimeError):
+        leaver._cluster_creations.resolved_store()
+
+
+def test_unbind_member_does_not_touch_master_or_other_members() -> None:
+    """A non-leader unbind leaves master and the other members' facades intact."""
+    leader = _FacadeConduit("leader")
+    leaver = _FacadeConduit("leaver")
+    cluster = _make_facade_cluster(leader, leaver)
+    cluster.master_conduit_id = leader._id
+    leader._cluster_creations.bind(leader._creations)
+    leaver._cluster_creations.bind(leader._creations)
+
+    cluster.unbind_member(leaver)
+
+    assert cluster.master_conduit_id == leader._id
+    assert leader._cluster_creations.is_active() is True
+
+
+def test_unbind_member_is_unconditional_when_master_cleared() -> None:
+    """unbind_member drops a still-bound facade even after the cluster dissolved.
+
+    Mirrors the leader-leave path: `unelect_leader` already cleared
+    master_conduit_id and the cloud removed the leader from `members`, so the
+    departed leader's own facade must still be dropped unconditionally.
+    """
+    leaver = _FacadeConduit("leaver")
+    cluster = _make_facade_cluster(leaver)
+    leaver._cluster_creations.bind(leaver._creations)
+    cluster.master_conduit_id = None
+
+    cluster.unbind_member(leaver)
+
+    assert leaver._cluster_creations.is_active() is False
+
+
+def test_unbind_member_is_idempotent_on_inert_facade() -> None:
+    """unbind_member is a no-op (no raise) when the leaver's facade is inert."""
+    leaver = _FacadeConduit("leaver")
+    cluster = _make_facade_cluster(leaver)
+
+    cluster.unbind_member(leaver)
+
+    assert leaver._cluster_creations.is_active() is False
+
+
+def test_unbind_member_raises_after_cleanup() -> None:
+    """unbind_member is guarded by check_cleaned after the cluster is cleaned."""
+    leaver = _FacadeConduit("leaver")
+    cluster = _make_facade_cluster(leaver)
+    cluster.cleanup()
+
+    with pytest.raises(RuntimeError):
+        cluster.unbind_member(leaver)
 

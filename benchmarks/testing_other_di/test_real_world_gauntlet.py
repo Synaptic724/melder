@@ -443,7 +443,7 @@ class _GauntletConfig:
     @staticmethod
     def from_env() -> _GauntletConfig:
         cfg = _GauntletConfig(
-            iterations=_env_int("DI_GAUNTLET_ITERS", 5000),
+            iterations=_env_int("DI_GAUNTLET_ITERS", 25000),
             threads=_env_int("DI_GAUNTLET_THREADS", 3),
             request_scope_runs=_env_int("DI_GAUNTLET_REQUEST_SCOPES", _REQUEST_SCOPE_RUNS_DEFAULT),
             worker_a_jobs=_env_int("DI_GAUNTLET_WORKER_A_JOBS", _WORKER_A_JOBS_DEFAULT),
@@ -1376,6 +1376,10 @@ class _GcPauseProbe:
         self.collected_objects: int = 0
         self.pause_total_ns: int = 0
         self.pause_max_ns: int = 0
+        # Flat integer mirror of the total collection count. A single int read is
+        # atomic, so a per-iteration "did GC fire this turn" check can poll it
+        # without locking or risking a dict-changed-size race against callbacks.
+        self.collections_total: int = 0
 
     def _callback(self, phase: str, info: dict) -> None:
         """
@@ -1406,6 +1410,7 @@ class _GcPauseProbe:
             self.collections_by_gen[generation] = (
                 self.collections_by_gen.get(generation, 0) + 1
             )
+            self.collections_total += 1
             self.collected_objects += collected
             self.pause_total_ns += pause_ns
             if pause_ns > self.pause_max_ns:
@@ -1474,10 +1479,22 @@ def _run_gauntlet_benchmark(lib: str, cfg: _GauntletConfig) -> _BenchmarkResult:
     # the measured path below is byte-for-byte the original benchmark.
     gc_probe_enabled = os.getenv("GAUNTLET_GC_PROBE", "").strip().lower() in {"1", "true", "yes", "on"}
     gc_mode = os.getenv("GAUNTLET_GC_MODE", "normal").strip().lower()
-    gc_probe = _GcPauseProbe() if gc_probe_enabled else None
+    # Per-turn GC/heap attribution: capture each iteration's collection
+    # incidence and gen0 live count so the actual slow turns can be dissected,
+    # instead of inferring a single-iteration spike's cause from whole-run or
+    # per-window aggregates.
+    per_turn_gc = os.getenv("GAUNTLET_PER_TURN_GC", "").strip().lower() in {"1", "true", "yes", "on"}
+    per_turn_slowest = _env_int("GAUNTLET_PER_TURN_SLOWEST", 15)
+    gc_probe = _GcPauseProbe() if (gc_probe_enabled or per_turn_gc) else None
     gc_was_enabled = gc.isenabled()
     gc_frozen_here = False
     gc_instrumented = gc_probe is not None or gc_mode != "normal"
+    # Per-window time-series sampling. When > 0 the run is split into this many
+    # equal windows; at each window boundary GC collection counts and heap
+    # pressure are snapshotted DURING the loop, and per-window latency is
+    # aggregated after, so degradation across the run is visible instead of
+    # being flattened into order-independent whole-run percentiles.
+    trend_windows = _env_int("GAUNTLET_TREND_WINDOWS", 0)
     min_request_objects = cfg.request_scope_runs * _REQUEST_OBJECTS_PER_ROOT
     min_worker_a_objects = cfg.worker_a_jobs * _WORKER_A_OBJECTS_PER_ROOT if cfg.threads >= 2 else 0
     min_worker_b_objects = cfg.worker_b_jobs * _WORKER_B_OBJECTS_PER_ROOT if cfg.threads >= 3 else 0
@@ -1532,11 +1549,33 @@ def _run_gauntlet_benchmark(lib: str, cfg: _GauntletConfig) -> _BenchmarkResult:
             "worker_b": [0] * _VARIANT_COUNT,
         }
 
+        # Time-series state: sample at each window boundary inside the loop so
+        # the cause of any drift is captured as it happens, not inferred from
+        # endpoints. gc.get_stats()/gc.get_count() are cheap and run once per
+        # window (e.g. 10x over 25k iters), so they do not perturb the loop.
+        trend_on = trend_windows > 0 and cfg.iterations >= trend_windows
+        trend_window_size = (cfg.iterations // trend_windows) if trend_on else 0
+        trend_marks: list = []
+        trend_coll_base = (
+            sum(int(s.get("collections", 0)) for s in gc.get_stats()) if trend_on else 0
+        )
+        trend_loop_start_ns = time.perf_counter_ns()
+
+        # Per-turn capture: gen0 live count per iteration and the indices of any
+        # iterations during which a collection actually fired.
+        per_turn_count0: list = []
+        per_turn_gc_iters: list = []
+
         for iteration_ix in range(cfg.iterations):
+            coll_before = gc_probe.collections_total if per_turn_gc else 0
             iteration = _run_gauntlet_once(ops, cfg, iteration_ix)
             iteration_samples.append(iteration.total_ns)
             bootstrap_samples.append(iteration.bootstrap_ns)
             threaded_samples.append(iteration.threaded_ns)
+            if per_turn_gc:
+                if gc_probe.collections_total > coll_before:
+                    per_turn_gc_iters.append(iteration_ix)
+                per_turn_count0.append(gc.get_count()[0])
             for lane_name, values in iteration.lane_metrics.items():
                 lane_metric_samples[lane_name].outer_create_ns.extend(values.outer_create_ns)
                 lane_metric_samples[lane_name].outer_cleanup_ns.extend(values.outer_cleanup_ns)
@@ -1547,6 +1586,17 @@ def _run_gauntlet_benchmark(lib: str, cfg: _GauntletConfig) -> _BenchmarkResult:
             for lane_name, counts in iteration.lane_variant_counts.items():
                 for i, count in enumerate(counts):
                     lane_variant_counts[lane_name][i] += count
+            if (
+                trend_on
+                and (iteration_ix + 1) % trend_window_size == 0
+                and len(trend_marks) < trend_windows
+            ):
+                trend_marks.append((
+                    iteration_ix + 1,
+                    sum(int(s.get("collections", 0)) for s in gc.get_stats()),
+                    tuple(gc.get_count()),
+                    time.perf_counter_ns(),
+                ))
 
         if gc_instrumented:
             gc_stats_after = [int(s.get("collections", 0)) for s in gc.get_stats()]
@@ -1556,6 +1606,71 @@ def _run_gauntlet_benchmark(lib: str, cfg: _GauntletConfig) -> _BenchmarkResult:
                 f"[{lib}] gc probe (mode={gc_mode}, gc_enabled={gc.isenabled()}) "
                 f"| {probe_txt} | gc.get_stats delta: {stats_delta}"
             )
+
+        if trend_on and trend_marks:
+            # Force the final window to cover any remainder iterations.
+            trend_marks[-1] = (
+                len(iteration_samples),
+                trend_marks[-1][1],
+                trend_marks[-1][2],
+                trend_marks[-1][3],
+            )
+            print(
+                f"[{lib}] trend over run ({len(trend_marks)} windows, "
+                f"gc_enabled={gc.isenabled()}):"
+            )
+            prev_end = 0
+            prev_coll = trend_coll_base
+            prev_t = trend_loop_start_ns
+            for w_ix, (end_ix, coll_total, count_tuple, t_ns) in enumerate(
+                trend_marks, start=1
+            ):
+                window = iteration_samples[prev_end:end_ix]
+                thr_window = threaded_samples[prev_end:end_ix]
+                if not window:
+                    continue
+                w = _summarize(window)
+                tw = _summarize(thr_window)
+                print(
+                    f"  w{w_ix:02d} iters {prev_end + 1}-{end_ix} | "
+                    f"iter med={_ms(w.median_ns):.3f} p99={_ms(w.p99_ns):.3f} "
+                    f"max={_ms(w.max_ns):.3f}ms | "
+                    f"thr p99={_ms(tw.p99_ns):.3f} max={_ms(tw.max_ns):.3f}ms | "
+                    f"gc_coll=+{coll_total - prev_coll} | live={count_tuple} | "
+                    f"wall={_ms(t_ns - prev_t):.1f}ms"
+                )
+                prev_end = end_ix
+                prev_coll = coll_total
+                prev_t = t_ns
+
+        if per_turn_gc and iteration_samples:
+            n = len(iteration_samples)
+            k = min(per_turn_slowest, n)
+            gc_iter_set = set(per_turn_gc_iters)
+            slow_idx = sorted(
+                range(n), key=lambda i: iteration_samples[i], reverse=True
+            )[:k]
+            print(
+                f"[{lib}] per-turn GC attribution | "
+                f"turns_with_collection={len(per_turn_gc_iters)}/{n} | "
+                f"slowest {k} turns (turn | total | threaded | gc_during | gen0_live):"
+            )
+            for i in slow_idx:
+                c0 = per_turn_count0[i] if i < len(per_turn_count0) else -1
+                during = "YES" if i in gc_iter_set else "no"
+                print(
+                    f"    turn {i:6d} | total={_ms(iteration_samples[i]):8.3f}ms | "
+                    f"thr={_ms(threaded_samples[i]):8.3f}ms | "
+                    f"gc_during={during:>3} | gen0_live={c0}"
+                )
+            if per_turn_count0:
+                seg = max(1, n // 10)
+                print(
+                    f"[{lib}] per-turn heap pressure gen0_live | "
+                    f"first10%_avg={statistics.fmean(per_turn_count0[:seg]):.1f} | "
+                    f"last10%_avg={statistics.fmean(per_turn_count0[-seg:]):.1f} | "
+                    f"min={min(per_turn_count0)} | max={max(per_turn_count0)}"
+                )
 
         iteration_summary = _summarize(iteration_samples)
         bootstrap_summary = _summarize(bootstrap_samples)

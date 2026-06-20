@@ -18,6 +18,12 @@ from melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_req
 )
 from melder.aether.spellbook.existence.existence import Existence
 from melder.aether.spellbook.spellbook import Spellbook
+from melder.aether.spellbook.configuration.spellbook_configuration import (
+    SpellbookConfiguration,
+)
+from tests._frame_posture_test_support import (
+    apply_dynamic_defaults_for_spellbook_configuration,
+)
 from tests.mocks.spellbook.core_classes import BasicConfig
 from tests.mocks.spellbook.core_classes import BasicService
 
@@ -728,6 +734,155 @@ def test_component_cluster_remove_member_drops_shared_spell_bucket() -> None:
     cluster.remove_member(owner._id)
 
     assert owner._id not in cluster.get_shared_spells()
+
+
+# ----------------------------------------------------------------------
+# Team-store facade lifecycle through the real cloud join/leave/elect path.
+# These use live conjured conduits so the CLUSTER_JOIN / CLUSTER_LEAVE / drained
+# UNELECT transactions and the per-conduit `_cluster_creations` facade all run
+# for real; they assert facade STATE (meld semantics are covered by integration).
+# ----------------------------------------------------------------------
+def _make_dynamic_book() -> Spellbook:
+    """Build a single-worker dynamic-posture Spellbook (cluster ops require it)."""
+    configuration = SpellbookConfiguration()
+    apply_dynamic_defaults_for_spellbook_configuration(configuration)
+    configuration.set_property("phase_scheduler_workers_per_spellbook", 1)
+    return Spellbook(configuration=configuration)
+
+
+def _make_owner_with_cluster_spell() -> Tuple[Spellbook, Conduit, str]:
+    """Bind a cluster-scoped spell on a dynamic owner book and conjure the owner."""
+    owner_book = _make_dynamic_book()
+    spell_id = owner_book.bind(
+        spell=BasicService,
+        existence=Existence.unique_per_conduit_cluster,
+        permissions="create",
+    )
+    owner = owner_book.conjure(dynamic=True, name="owner")
+    return owner_book, owner, spell_id
+
+
+def test_component_join_into_live_cluster_binds_joiner_facade() -> None:
+    """A conduit joining an already-elected cluster gets its facade bound."""
+    _owner_book, owner, _spell_id = _make_owner_with_cluster_spell()
+    borrower = Spellbook().conjure(dynamic=True, name="borrower")
+    try:
+        owner.link(borrower)
+        cloud = owner._spellbook._aether.get_conduit_cloud(owner._aetheric_frame_name)
+        cloud.create_cluster("cluster-a")
+        cloud.add_conduit_to_cluster(owner, "cluster-a")
+        cloud.refresh_cluster_shares_for_conduit(owner)
+        cloud.get_cluster("cluster-a").elect_leader(owner.id)
+
+        # Borrower joins the LIVE cluster after election.
+        cloud.add_conduit_to_cluster(borrower, "cluster-a")
+
+        cluster = cloud.get_cluster("cluster-a")
+        assert borrower._cluster_creations.is_active() is True
+        assert borrower._cluster_creations.resolved_store() is owner._creations
+        assert cluster.master_conduit_id == owner.id
+    finally:
+        borrower.cleanup()
+        owner.cleanup()
+
+
+def test_component_join_into_inert_cluster_leaves_joiner_inert() -> None:
+    """Joining an unelected cluster leaves every member's facade disabled."""
+    _owner_book, owner, _spell_id = _make_owner_with_cluster_spell()
+    borrower = Spellbook().conjure(dynamic=True, name="borrower")
+    try:
+        owner.link(borrower)
+        cloud = owner._spellbook._aether.get_conduit_cloud(owner._aetheric_frame_name)
+        cloud.create_cluster("cluster-a")
+        cloud.add_conduit_to_cluster(owner, "cluster-a")
+        cloud.add_conduit_to_cluster(borrower, "cluster-a")
+        cloud.refresh_cluster_shares_for_conduit(owner)
+        # No leader elected.
+
+        cluster = cloud.get_cluster("cluster-a")
+        assert owner._cluster_creations.is_active() is False
+        assert borrower._cluster_creations.is_active() is False
+        assert cluster.master_conduit_id is None
+    finally:
+        borrower.cleanup()
+        owner.cleanup()
+
+
+def test_component_non_leader_leave_unbinds_only_the_leaver() -> None:
+    """A non-leader leaving drops only its facade; the leader stays bound."""
+    _owner_book, owner, _spell_id = _make_owner_with_cluster_spell()
+    borrower = Spellbook().conjure(dynamic=True, name="borrower")
+    try:
+        owner.link(borrower)
+        cloud = owner._spellbook._aether.get_conduit_cloud(owner._aetheric_frame_name)
+        cloud.create_cluster("cluster-a")
+        cloud.add_conduit_to_cluster(owner, "cluster-a")
+        cloud.add_conduit_to_cluster(borrower, "cluster-a")
+        cloud.refresh_cluster_shares_for_conduit(owner)
+        cloud.get_cluster("cluster-a").elect_leader(owner.id)
+        assert borrower._cluster_creations.is_active() is True
+
+        cloud.remove_conduit_from_cluster(borrower, "cluster-a")
+
+        cluster = cloud.get_cluster("cluster-a")
+        assert borrower._cluster_creations.is_active() is False
+        assert owner._cluster_creations.is_active() is True
+        assert cluster.master_conduit_id == owner.id
+    finally:
+        borrower.cleanup()
+        owner.cleanup()
+
+
+def test_component_leader_leave_dissolves_cluster() -> None:
+    """The elected leader leaving dissolves the team store: every facade inert."""
+    _owner_book, owner, _spell_id = _make_owner_with_cluster_spell()
+    borrower = Spellbook().conjure(dynamic=True, name="borrower")
+    try:
+        owner.link(borrower)
+        cloud = owner._spellbook._aether.get_conduit_cloud(owner._aetheric_frame_name)
+        cloud.create_cluster("cluster-a")
+        cloud.add_conduit_to_cluster(owner, "cluster-a")
+        cloud.add_conduit_to_cluster(borrower, "cluster-a")
+        cloud.refresh_cluster_shares_for_conduit(owner)
+        cloud.get_cluster("cluster-a").elect_leader(owner.id)
+        assert owner._cluster_creations.is_active() is True
+        assert borrower._cluster_creations.is_active() is True
+
+        cloud.remove_conduit_from_cluster(owner, "cluster-a")
+
+        cluster = cloud.get_cluster("cluster-a")
+        assert owner._cluster_creations.is_active() is False
+        assert borrower._cluster_creations.is_active() is False
+        assert cluster.master_conduit_id is None
+    finally:
+        borrower.cleanup()
+        owner.cleanup()
+
+
+def test_component_join_then_leave_round_trip_keeps_leader_bound() -> None:
+    """Bind on join then unbind on leave round-trips without disturbing the leader."""
+    _owner_book, owner, _spell_id = _make_owner_with_cluster_spell()
+    borrower = Spellbook().conjure(dynamic=True, name="borrower")
+    try:
+        owner.link(borrower)
+        cloud = owner._spellbook._aether.get_conduit_cloud(owner._aetheric_frame_name)
+        cloud.create_cluster("cluster-a")
+        cloud.add_conduit_to_cluster(owner, "cluster-a")
+        cloud.refresh_cluster_shares_for_conduit(owner)
+        cloud.get_cluster("cluster-a").elect_leader(owner.id)
+
+        cloud.add_conduit_to_cluster(borrower, "cluster-a")
+        assert borrower._cluster_creations.is_active() is True
+
+        cloud.remove_conduit_from_cluster(borrower, "cluster-a")
+        assert borrower._cluster_creations.is_active() is False
+
+        cluster = cloud.get_cluster("cluster-a")
+        assert owner._cluster_creations.is_active() is True
+        assert cluster.master_conduit_id == owner.id
+    finally:
+        borrower.cleanup()
+        owner.cleanup()
 
 
 
