@@ -51,26 +51,26 @@ class SpellSymbolicGraph(Cleanable):
     def __init__(
             self,
             *,
-            spell_version_id: str,
+            spell_id: str,
             dependencies: Optional[List['SpellSymbolicDependency']] = None,
     ) -> None:
         """
         Initialize a symbolic graph for one spell version.
 
         Contract:
-            - `spell_version_id` is required.
+            - `spell_id` is required.
             - Stores the dependency edge list by reference and treats it as
               graph-owned after construction.
             - Starts with an empty dependency list when none is supplied.
         """
         super().__init__()
 
-        if not spell_version_id:
-            raise ValueError("spell_version_id must be a non-empty string.")
+        if not spell_id:
+            raise ValueError("spell_id must be a non-empty string.")
 
         self._lock: threading.RLock = threading.RLock()
         # Same story: stored as _spell_id, semantics = version id.
-        self._spell_id: str = spell_version_id
+        self._spell_id: str = spell_id
         self._dependencies: List['SpellSymbolicDependency'] = dependencies or []
 
     # ------------------------------------------------------------------

@@ -109,7 +109,7 @@ def _make_spell_stub(
 
 def _make_dependency(
         *,
-        spell_version_id: str,
+        spell_id: str,
         param_name: str,
         position: int,
         di_shape: ParameterDIShape,
@@ -120,7 +120,7 @@ def _make_dependency(
 ) -> SpellSymbolicDependency:
     """Build one symbolic dependency instance for Phase 3 tests."""
     return SpellSymbolicDependency(
-        spell_version_id=spell_version_id,
+        spell_id=spell_id,
         param_name=param_name,
         position=position,
         di_shape=di_shape,
@@ -306,7 +306,7 @@ def test_build_local_topology_requires_bound_spell_id(
     if drop_spell_id:
         root_spell.spell_index.selected_spell_id = None
     graph = SpellSymbolicGraph(
-        spell_version_id="root",
+        spell_id="root",
         dependencies=[],
     )
 
@@ -324,21 +324,21 @@ def test_build_local_topology_builds_descriptors() -> None:
         spell_name="RootSpell",
     )
     dep_normal = _make_dependency(
-        spell_version_id="root",
+        spell_id="root",
         param_name="alpha",
         position=0,
         di_shape=ParameterDIShape.SINGLE_BY_ANNOTATION,
         is_optional=False,
     )
     dep_contract = _make_dependency(
-        spell_version_id="root",
+        spell_id="root",
         param_name="beta",
         position=1,
         di_shape=ParameterDIShape.SPELL_CONTRACT,
         is_optional=True,
     )
     graph = SpellSymbolicGraph(
-        spell_version_id="root",
+        spell_id="root",
         dependencies=[dep_normal, dep_contract],
     )
     socket_targets = {("alpha", 0): ["dep1", "dep2"]}
@@ -386,7 +386,7 @@ def test_build_local_frame_dag_requires_inputs(
         spell_name="RootSpell",
     )
     requirements: Any = object()
-    graph: Any = SpellSymbolicGraph(spell_version_id="root", dependencies=[])
+    graph: Any = SpellSymbolicGraph(spell_id="root", dependencies=[])
 
     if drop_requirements:
         requirements = None
@@ -421,7 +421,7 @@ def test_build_local_frame_dag_requires_bound_spell_index() -> None:
             spellbook=SimpleNamespace(_spell_id_pool={}),
             spell_system_states=_SpellSystemStatesStub(),
             requirements=object(),
-            graph=SpellSymbolicGraph(spell_version_id="root", dependencies=[]),
+            graph=SpellSymbolicGraph(spell_id="root", dependencies=[]),
             cancellation_event=_CancelStub(is_set=False),
         )
 
@@ -447,7 +447,7 @@ def test_resolve_single_by_annotation_returns_exact_match() -> None:
     )
     spellbook = SimpleNamespace(_spell_id_pool={"dep": candidate})
     dep = _make_dependency(
-        spell_version_id="root",
+        spell_id="root",
         param_name="service",
         position=0,
         di_shape=ParameterDIShape.SINGLE_BY_ANNOTATION,
@@ -493,7 +493,7 @@ def test_resolve_single_by_annotation_no_candidates(method_only: bool) -> None:
             }
         )
     dep = _make_dependency(
-        spell_version_id="root",
+        spell_id="root",
         param_name="service",
         position=0,
         di_shape=ParameterDIShape.SINGLE_BY_ANNOTATION,
@@ -531,7 +531,7 @@ def test_resolve_single_by_annotation_raises_on_multiple_matches() -> None:
     )
     spellbook = SimpleNamespace(_spell_id_pool={"a": first, "b": second})
     dep = _make_dependency(
-        spell_version_id="root",
+        spell_id="root",
         param_name="service",
         position=0,
         di_shape=ParameterDIShape.SINGLE_BY_ANNOTATION,
@@ -569,7 +569,7 @@ def test_resolve_collection_by_annotation_returns_all_matches() -> None:
         }
     )
     dep = _make_dependency(
-        spell_version_id="root",
+        spell_id="root",
         param_name="services",
         position=0,
         di_shape=ParameterDIShape.COLLECTION_BY_ANNOTATION,
@@ -592,7 +592,7 @@ def test_resolve_collection_by_annotation_empty_returns_empty() -> None:
         pass
 
     dep = _make_dependency(
-        spell_version_id="root",
+        spell_id="root",
         param_name="services",
         position=0,
         di_shape=ParameterDIShape.COLLECTION_BY_ANNOTATION,
@@ -618,7 +618,7 @@ def test_resolve_spellmap_default_none_returns_empty() -> None:
         spell_name="RootSpell",
     )
     dep = _make_dependency(
-        spell_version_id="root",
+        spell_id="root",
         param_name="service",
         position=0,
         di_shape=ParameterDIShape.SPELLMAP_DEFAULT,
@@ -649,7 +649,7 @@ def test_resolve_spellmap_default_explicit_spell_success() -> None:
         spell_name="CandidateSpell",
     )
     dep = _make_dependency(
-        spell_version_id="root",
+        spell_id="root",
         param_name="service",
         position=0,
         di_shape=ParameterDIShape.SPELLMAP_DEFAULT,
@@ -681,7 +681,7 @@ def test_resolve_spellmap_default_explicit_spell_mismatch_raises() -> None:
         spell_name="RootSpell",
     )
     dep = _make_dependency(
-        spell_version_id="root",
+        spell_id="root",
         param_name="service",
         position=0,
         di_shape=ParameterDIShape.SPELLMAP_DEFAULT,
@@ -718,7 +718,7 @@ def test_resolve_spellmap_default_frame_binding_success() -> None:
         binding_name="primary",
     )
     dep = _make_dependency(
-        spell_version_id="root",
+        spell_id="root",
         param_name="service",
         position=0,
         di_shape=ParameterDIShape.SPELLMAP_DEFAULT,
@@ -749,7 +749,7 @@ def test_resolve_spellmap_default_frame_binding_empty_raises() -> None:
         spell_name="RootSpell",
     )
     dep = _make_dependency(
-        spell_version_id="root",
+        spell_id="root",
         param_name="service",
         position=0,
         di_shape=ParameterDIShape.SPELLMAP_DEFAULT,
@@ -794,7 +794,7 @@ def test_resolve_spellmap_default_raises_on_ambiguous_match() -> None:
     )
     spellbook = SimpleNamespace(_spell_id_pool={"a": first, "b": second})
     dep = _make_dependency(
-        spell_version_id="root",
+        spell_id="root",
         param_name="service",
         position=0,
         di_shape=ParameterDIShape.SPELLMAP_DEFAULT,
@@ -821,10 +821,10 @@ def test_build_local_frame_dag_skips_unresolved_collection() -> None:
     )
     spell_system_states = _SpellSystemStatesStub()
     graph = SpellSymbolicGraph(
-        spell_version_id="root",
+        spell_id="root",
         dependencies=[
             _make_dependency(
-                spell_version_id="root",
+                spell_id="root",
                 param_name="dep",
                 position=0,
                 di_shape=ParameterDIShape.COLLECTION_BY_ANNOTATION,
@@ -867,10 +867,10 @@ def test_build_local_frame_dag_handles_spellmap_default_success() -> None:
     )
     spell_system_states = _SpellSystemStatesStub()
     graph = SpellSymbolicGraph(
-        spell_version_id="root",
+        spell_id="root",
         dependencies=[
             _make_dependency(
-                spell_version_id="root",
+                spell_id="root",
                 param_name="dep",
                 position=0,
                 di_shape=ParameterDIShape.SPELLMAP_DEFAULT,
@@ -910,10 +910,10 @@ def test_build_local_frame_dag_ignores_contract_shapes() -> None:
     )
     spell_system_states = _SpellSystemStatesStub()
     graph = SpellSymbolicGraph(
-        spell_version_id="root",
+        spell_id="root",
         dependencies=[
             _make_dependency(
-                spell_version_id="root",
+                spell_id="root",
                 param_name="contract",
                 position=0,
                 di_shape=ParameterDIShape.SPELL_CONTRACT,
@@ -973,7 +973,7 @@ def test_run_phase_local_frame_requires_spell_system_states() -> None:
     artifact = SpellCompilerArtifact("root")
     artifact._requirements = SimpleNamespace()
     artifact._symbolic_graph = SpellSymbolicGraph(
-        spell_version_id="root",
+        spell_id="root",
         dependencies=[],
     )
 
@@ -1012,10 +1012,10 @@ def test_run_builds_resolution_frame_and_updates_topology(
     artifact = SpellCompilerArtifact("root")
     artifact._requirements = SimpleNamespace()
     artifact._symbolic_graph = SpellSymbolicGraph(
-        spell_version_id="root",
+        spell_id="root",
         dependencies=[
             _make_dependency(
-                spell_version_id="root",
+                spell_id="root",
                 param_name="service",
                 position=0,
                 di_shape=ParameterDIShape.SINGLE_BY_ANNOTATION,
@@ -1061,7 +1061,7 @@ def test_socket_kind_for_dep_mapping(
     """Phase 3 socket-kind mapping should classify all supported DI shapes."""
     phase = CompilerPhase3()
     dep = _make_dependency(
-        spell_version_id="root",
+        spell_id="root",
         param_name="dep",
         position=0,
         di_shape=di_shape,
@@ -1082,7 +1082,7 @@ def test_run_honors_cancellation_before_local_dag_build() -> None:
     artifact = SpellCompilerArtifact("root")
     artifact._requirements = SimpleNamespace()
     artifact._symbolic_graph = SpellSymbolicGraph(
-        spell_version_id="root",
+        spell_id="root",
         dependencies=[],
     )
     cancel_event = _CancelStub(is_set=True)

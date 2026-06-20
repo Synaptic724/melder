@@ -160,7 +160,7 @@ class CompilerPhase2:
                 continue
 
             dep = SpellSymbolicDependency(
-                spell_version_id=version_id,
+                spell_id=version_id,
                 param_name=param.name,
                 position=param.position,
                 di_shape=di_shape,
@@ -173,7 +173,7 @@ class CompilerPhase2:
             deps.append(dep)
 
         artifact._symbolic_graph = SpellSymbolicGraph(
-            spell_version_id=version_id,
+            spell_id=version_id,
             dependencies=deps,
         )
         # NOTE: the eager `capture_phase2_5_codegen_ir` export that used to

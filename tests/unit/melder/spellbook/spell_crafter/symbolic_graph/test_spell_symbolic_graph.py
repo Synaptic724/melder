@@ -22,17 +22,17 @@ class _BoomDep(_Dep):
 
 
 def _graph(deps=None, spell_id="sid"):
-    return SpellSymbolicGraph(spell_version_id=spell_id, dependencies=deps)
+    return SpellSymbolicGraph(spell_id=spell_id, dependencies=deps)
 
 
 @pytest.mark.parametrize("bad_id", [None, "", 0])
 def test_init_rejects_invalid_spell_version_id(bad_id):
     with pytest.raises(ValueError):
-        SpellSymbolicGraph(spell_version_id=bad_id)
+        SpellSymbolicGraph(spell_id=bad_id)
 
 
 def test_dependencies_default_empty_and_copied():
-    g = SpellSymbolicGraph(spell_version_id="s1")
+    g = SpellSymbolicGraph(spell_id="s1")
     deps = g.dependencies
     assert deps == []
     deps.append("x")

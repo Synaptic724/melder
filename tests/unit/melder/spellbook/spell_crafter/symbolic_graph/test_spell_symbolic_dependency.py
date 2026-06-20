@@ -12,7 +12,7 @@ from melder.aether.spellbook.spell_compiler.symbolic_graph.spell_symbolic_depend
 
 def _dep(**overrides):
     defaults = dict(
-        spell_version_id="v1",
+        spell_id="v1",
         param_name="p",
         position=2,
         di_shape=ParameterDIShape.SINGLE_BY_ANNOTATION,
@@ -28,7 +28,7 @@ def _dep(**overrides):
 @pytest.mark.parametrize("bad_id", [None, "", 0])
 def test_init_rejects_invalid_spell_version_id(bad_id):
     with pytest.raises(ValueError):
-        _dep(spell_version_id=bad_id)
+        _dep(spell_id=bad_id)
 
 
 # Whitespace-only names are allowed by the implementation; only falsy names are rejected.
@@ -40,7 +40,7 @@ def test_init_rejects_invalid_param_name(bad_name):
 
 def test_fields_are_exposed_via_properties():
     dep = _dep(
-        spell_version_id="spell-123",
+        spell_id="spell-123",
         param_name="dep_param",
         position=1,
         di_shape=ParameterDIShape.SPELLMAP_DEFAULT,
@@ -111,7 +111,7 @@ def test_position_allows_negative_values_without_validation():
 
 def test_accepts_arbitrary_truthy_spell_id_and_preserves_reference():
     sentinel = object()
-    dep = _dep(spell_version_id=sentinel)
+    dep = _dep(spell_id=sentinel)
     assert dep.spell_id is sentinel
 
 

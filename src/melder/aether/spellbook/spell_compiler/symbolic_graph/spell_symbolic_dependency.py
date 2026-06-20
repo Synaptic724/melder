@@ -81,7 +81,7 @@ class SpellSymbolicDependency(Cleanable):
     def __init__(
             self,
             *,
-            spell_version_id: str,
+            spell_id: str,
             param_name: str,
             position: int,
             di_shape: ParameterDIShape,
@@ -95,7 +95,7 @@ class SpellSymbolicDependency(Cleanable):
         Initialize one symbolic dependency edge for a spell version.
 
         Contract:
-            - `spell_version_id` and `param_name` are required.
+            - `spell_id` and `param_name` are required.
             - Stores symbolic metadata only; no concrete dependency spell ids
               are resolved here.
             - Treats contract and SpellMap payloads as already-classified Phase
@@ -103,8 +103,8 @@ class SpellSymbolicDependency(Cleanable):
         """
         super().__init__()
 
-        if not spell_version_id:
-            raise ValueError("spell_version_id must be a non-empty string.")
+        if not spell_id:
+            raise ValueError("spell_id must be a non-empty string.")
         if not param_name:
             raise ValueError("param_name must be a non-empty string.")
 
@@ -112,7 +112,7 @@ class SpellSymbolicDependency(Cleanable):
 
         # Stored as _spell_id for backwards compatibility; semantically, this is
         # the *version id* (SpellIndex.selected_spell_id).
-        self._spell_id: str = spell_version_id
+        self._spell_id: str = spell_id
         self._param_name: str = param_name
         self._position: int = position
         self._di_shape: ParameterDIShape = di_shape
