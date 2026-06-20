@@ -288,6 +288,7 @@ def _compile_no_overrides_executor_from_steps(
 
     step_source = _build_step_plan_executor_source(
         steps=steps,
+        root_instance_key=root_instance_key,
     )
     step_namespace = _build_step_executor_namespace(
         steps=steps,
@@ -610,6 +611,7 @@ def _emit_construct_instance(
         step_index: int,
         inlinable_params: Optional[Tuple[Tuple[str, Any], ...]],
         indent: str,
+        instance_index_by_key: Optional[Dict[Tuple[str, Optional[int]], int]] = None,
 ) -> None:
     """
     Append the construction source for one step at ``indent``.
@@ -618,6 +620,14 @@ def _emit_construct_instance(
     direct ``spell.spell(**kwargs)`` call, so no per-meld recipe interpretation
     happens. For every other shape it emits the generic
     ``_construct_spell_instance`` call unchanged.
+
+    Dependency-reference mode:
+        - When ``instance_index_by_key`` is ``None`` (the dict path), inlined
+          dependency arguments read ``instance_results[...]`` exactly as before.
+        - When it is provided (the unrolled path), they read straight-line
+          ``instance_{dep_index}`` locals -- no dict and no ``step_dep_keys``
+          binding. The generic ``_construct_spell_instance`` shape is never
+          emitted on the unrolled path (it is gated to all-inlinable plans).
     """
     if inlinable_params is None:
         # `plan_step_{step_index}` is consumed only by this generic construct
@@ -631,20 +641,28 @@ def _emit_construct_instance(
         return
     lines.append(f"{indent}try:")
     if inlinable_params:
-        # step_dep_keys_{step_index} is consumed only by this inlined construct,
-        # so bind it here (cold) rather than in the per-step preamble.
-        lines.append(
-            f"{indent}    step_dep_keys_{step_index} = step_dep_keys[{step_index}]"
-        )
+        if instance_index_by_key is None:
+            # step_dep_keys_{step_index} is consumed only by this inlined
+            # construct on the dict path, so it is bound here (cold).
+            lines.append(
+                f"{indent}    step_dep_keys_{step_index} = step_dep_keys[{step_index}]"
+            )
         lines.append(
             f"{indent}    instance_{step_index} = spell_{step_index}.spell("
         )
-        for arg_index, (param_name, _dependency_key) in enumerate(
+        for arg_index, (param_name, dependency_key) in enumerate(
                 inlinable_params,
         ):
+            if instance_index_by_key is None:
+                dependency_reference = (
+                    f"instance_results[step_dep_keys_{step_index}[{arg_index}]]"
+                )
+            else:
+                dependency_reference = (
+                    f"instance_{instance_index_by_key[dependency_key]}"
+                )
             lines.append(
-                f"{indent}        {param_name}="
-                f"instance_results[step_dep_keys_{step_index}[{arg_index}]],"
+                f"{indent}        {param_name}={dependency_reference},"
             )
         lines.append(f"{indent}    )")
     else:
@@ -660,18 +678,34 @@ def _emit_construct_instance(
 def _build_step_plan_executor_source(
         *,
         steps: Tuple[Any, ...],
+        root_instance_key: Optional[Tuple[str, Optional[int]]] = None,
 ) -> str:
     """
     Build emitted source for general no-overrides step-plan execution.
 
-    Contract:
-        - Emits one direct step-resolution block per plan step.
-        - Inlines existence/lock/reuse/register routing in generated source.
-        - Inlines the constructor call for the common spell shape; other
-          shapes keep the generic `_construct_spell_instance` path.
-        - Preserves root-instance verification semantics.
+    Emission modes:
+        - DICT path (default): each step publishes into `instance_results`,
+          dependencies read it, and the root returns via
+          `instance_results[root_instance_key]`.
+        - UNROLLED path: chosen when `root_instance_key` is supplied, every step
+          is inlinable, and the root key maps to a step. Results stay in
+          `instance_{i}` locals; dependencies read those locals; the root is
+          returned directly. No `instance_results` dict, no per-step dict writes,
+          no `step_dep_keys` indexing, and no final membership check are emitted.
+          Unused signature defaults (step_instance_keys / step_dep_keys /
+          root_instance_key / helper callables) are harmless on this path.
     """
     step_count = len(steps)
+
+    instance_index_by_key: Optional[Dict[Tuple[str, Optional[int]], int]] = None
+    root_step_index: Optional[int] = None
+    if root_instance_key is not None and _all_steps_inlinable(steps):
+        candidate_index_by_key = _instance_index_by_key(steps)
+        candidate_root_index = candidate_index_by_key.get(root_instance_key)
+        if candidate_root_index is not None:
+            instance_index_by_key = candidate_index_by_key
+            root_step_index = candidate_root_index
+
     lines = [
         "def _no_overrides_codegen_creation_executor(",
         "        caller_creations=None,",
@@ -694,8 +728,9 @@ def _build_step_plan_executor_source(
         "        MeldExecutionError=MeldExecutionError,",
         "        SpellSpaceScopeError=SpellSpaceScopeError,",
         "    ):",
-        "    instance_results = {}",
     ]
+    if instance_index_by_key is None:
+        lines.append("    instance_results = {}")
     # `caller_creations` is a single executor-level argument consumed by every
     # CALLER/SPELLSPACE-routed step. Emit ONE hoisted None-check here instead of
     # repeating the identical guard inside each such step's routing block (the
@@ -720,16 +755,20 @@ def _build_step_plan_executor_source(
             lines=lines,
             step_index=index,
             plan_step=plan_step,
+            instance_index_by_key=instance_index_by_key,
         )
-    lines.extend([
-        "    if root_instance_key not in instance_results:",
-        "        raise MeldExecutionError(",
-        "            spell_id=root_instance_key[0],",
-        "            spell_name=root_instance_key[0],",
-        "            message=f\"No-overrides codegen root instance '{root_instance_key[0]}' is missing.\",",
-        "        )",
-        "    return instance_results[root_instance_key]",
-    ])
+    if instance_index_by_key is None:
+        lines.extend([
+            "    if root_instance_key not in instance_results:",
+            "        raise MeldExecutionError(",
+            "            spell_id=root_instance_key[0],",
+            "            spell_name=root_instance_key[0],",
+            "            message=f\"No-overrides codegen root instance '{root_instance_key[0]}' is missing.\",",
+            "        )",
+            "    return instance_results[root_instance_key]",
+        ])
+    else:
+        lines.append(f"    return instance_{root_step_index}")
     return "\n".join(lines)
 
 
@@ -788,11 +827,65 @@ def _append_step_creations_target_source(
     )
 
 
+def _all_steps_inlinable(steps: Tuple[Any, ...]) -> bool:
+    """
+    Return True when every plan step is an inlinable common-shape step.
+
+    The unrolled (straight-line locals) executor reads dependencies from
+    `instance_{dep_index}` locals, which requires every step's construction to be
+    the inlined `spell.spell(**deps)` shape. A generic `_construct_spell_instance`
+    step reads its dependencies from the `instance_results` dict internally, so a
+    plan containing one is not unroll-eligible and stays on the dict path.
+    """
+    return all(
+        _inlinable_common_shape(plan_step) is not None
+        for plan_step in steps
+    )
+
+
+def _instance_index_by_key(
+        steps: Tuple[Any, ...],
+) -> Dict[Tuple[str, Optional[int]], int]:
+    """
+    Map each step's instance key to its step index (its `instance_{i}` local).
+
+    The unrolled path uses this to turn a dependency's instance key into a direct
+    `instance_{dep_index}` local reference. Steps are in topological order, so a
+    dependency's index is always less than the dependent's and its local is in
+    scope by the time it is read.
+    """
+    return {
+        plan_step.instance_key: index
+        for index, plan_step in enumerate(steps)
+    }
+
+
+def _append_step_result_store(
+        *,
+        lines: list[str],
+        step_index: int,
+        instance_index_by_key: Optional[Dict[Tuple[str, Optional[int]], int]],
+) -> None:
+    """
+    Append the per-step result publish.
+
+    Dict path (`instance_index_by_key` is None): store the result into
+    `instance_results` keyed by the step's instance key, for cross-step
+    dependency lookups and the final root return. Unrolled path: the result
+    already lives in the `instance_{step_index}` local, so nothing is emitted.
+    """
+    if instance_index_by_key is None:
+        lines.append(
+            f"    instance_results[step_instance_keys[{step_index}]] = instance_{step_index}"
+        )
+
+
 def _append_step_resolution_source(
         *,
         lines: list[str],
         step_index: int,
         plan_step: Any,
+        instance_index_by_key: Optional[Dict[Tuple[str, Optional[int]], int]] = None,
 ) -> None:
     """
     Append emitted source lines for one no-overrides plan step.
@@ -835,6 +928,7 @@ def _append_step_resolution_source(
             step_index=step_index,
             inlinable_params=inlinable_params,
             indent="    ",
+            instance_index_by_key=instance_index_by_key,
         )
         # `many` registers ONLY to track disposal, and disposal-ness is
         # spell-static -- so the decision is made here at COMPILE time (matching
@@ -848,7 +942,11 @@ def _append_step_resolution_source(
                 indent="    ",
                 existence=existence,
             )
-        lines.append(f"    instance_results[step_instance_keys[{step_index}]] = instance_{step_index}")
+        _append_step_result_store(
+            lines=lines,
+            step_index=step_index,
+            instance_index_by_key=instance_index_by_key,
+        )
         return
 
     # Singleton reuse read is emitted inline as `creations.get_creation(spell_id)`
@@ -874,6 +972,7 @@ def _append_step_resolution_source(
             step_index=step_index,
             inlinable_params=inlinable_params,
             indent="                ",
+            instance_index_by_key=instance_index_by_key,
         )
         _append_step_register_source(
             lines=lines,
@@ -881,8 +980,10 @@ def _append_step_resolution_source(
             indent="                ",
             existence=existence,
         )
-        lines.append(
-            f"    instance_results[step_instance_keys[{step_index}]] = instance_{step_index}"
+        _append_step_result_store(
+            lines=lines,
+            step_index=step_index,
+            instance_index_by_key=instance_index_by_key,
         )
         return
 
@@ -909,6 +1010,7 @@ def _append_step_resolution_source(
             step_index=step_index,
             inlinable_params=inlinable_params,
             indent="                    ",
+            instance_index_by_key=instance_index_by_key,
         )
         lines.append(f"                    with creations_{step_index}._lock:")
         _append_step_register_source(
@@ -928,6 +1030,7 @@ def _append_step_resolution_source(
             step_index=step_index,
             inlinable_params=inlinable_params,
             indent="                    ",
+            instance_index_by_key=instance_index_by_key,
         )
         _append_step_register_source(
             lines=lines,
@@ -935,7 +1038,11 @@ def _append_step_resolution_source(
             indent="                    ",
             existence=existence,
         )
-        lines.append(f"    instance_results[step_instance_keys[{step_index}]] = instance_{step_index}")
+        _append_step_result_store(
+            lines=lines,
+            step_index=step_index,
+            instance_index_by_key=instance_index_by_key,
+        )
         return
 
     lines.extend([
@@ -950,6 +1057,7 @@ def _append_step_resolution_source(
         step_index=step_index,
         inlinable_params=inlinable_params,
         indent="                ",
+        instance_index_by_key=instance_index_by_key,
     )
     _append_step_register_source(
         lines=lines,
@@ -957,8 +1065,10 @@ def _append_step_resolution_source(
         indent="                ",
         existence=existence,
     )
-    lines.append(
-        f"    instance_results[step_instance_keys[{step_index}]] = instance_{step_index}"
+    _append_step_result_store(
+        lines=lines,
+        step_index=step_index,
+        instance_index_by_key=instance_index_by_key,
     )
 
 
