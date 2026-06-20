@@ -314,7 +314,7 @@ def build_overrides_codegen_creation_step_target_counts_from_rows(
             SimpleNamespace(
                 spell=SimpleNamespace(
                     spell_index=SimpleNamespace(
-                        current=row["spell_id"],
+                        selected_spell_id=row["spell_id"],
                     ),
                 ),
                 shared_instance=bool(row["shared_instance"]),
@@ -3051,6 +3051,3 @@ def _invoke_spell_with_kwargs(
             message=f"Error invoking spell '{spell.spell_name}'.",
             inner=exc,
         ) from exc
-
-
-

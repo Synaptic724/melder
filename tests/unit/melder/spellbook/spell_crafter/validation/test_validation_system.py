@@ -21,14 +21,14 @@ from melder.aether.spellbook.spell_compiler.validation.validation_system import 
 class _SpellIndexStub:
     """
     Purpose:
-        Provide a minimal SpellIndex stub with a current id.
+        Provide a minimal SpellIndex stub with a selected spell id.
     Contract:
-        Stores the current spell id and lineage id without validation.
+        Stores the selected spell id and lineage id without validation.
     Attributes:
-        current: Current spell id string.
+        selected_spell_id: Selected spell id string.
         id: Lineage id string.
     """
-    current: str
+    selected_spell_id: str
     id: str = "index-id"
 
 

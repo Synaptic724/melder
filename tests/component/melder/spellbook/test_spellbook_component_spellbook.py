@@ -706,7 +706,10 @@ def test_component_spellbook_begin_transaction_invalid_type_raises() -> None:
     Purpose:
         Validate invalid transaction types are rejected.
     Contract:
-        - begin_transaction raises ValueError for unknown types.
+        - begin_transaction no longer guards transaction types itself (the
+          Spellbook-side allow-list normalizer was removed). An unknown type
+          flows through to the mediator, which rejects it because the submitting
+          identity declares no support for it, raising RuntimeError.
     Returns:
         None.
     Raises:
@@ -714,7 +717,7 @@ def test_component_spellbook_begin_transaction_invalid_type_raises() -> None:
     """
     spellbook = _make_spellbook()
     try:
-        with pytest.raises(ValueError, match="Invalid transaction_type"):
+        with pytest.raises(RuntimeError, match="does not declare support"):
             spellbook.begin_transaction("unknown")
     finally:
         spellbook.cleanup()

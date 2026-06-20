@@ -637,6 +637,9 @@ def test_conduit_cluster_concurrent_meld_unique_per_conduit_cluster_shared_insta
         for borrower in borrowers:
             cloud.add_conduit_to_cluster(borrower, "cluster-hard")
         cloud.refresh_cluster_shares_for_conduit(owner)
+        # unique_per_conduit_cluster resolves through an elected leader's creation
+        # store; elect the owner so all members share the leader-owned instance.
+        cloud.get_cluster("cluster-hard").elect_leader(owner.id)
 
         barrier = Barrier(4)
         lock = Lock()
@@ -991,6 +994,9 @@ def test_conduit_cluster_concurrent_meld_two_clusters_isolated() -> None:
         cloud_b.add_conduit_to_cluster(cluster_b_peer, "cluster-b")
         cloud_a.refresh_cluster_shares_for_conduit(cluster_a_owner)
         cloud_b.refresh_cluster_shares_for_conduit(cluster_b_owner)
+        # Each cluster resolves through its own elected leader's creation store.
+        cloud_a.get_cluster("cluster-a").elect_leader(cluster_a_owner.id)
+        cloud_b.get_cluster("cluster-b").elect_leader(cluster_b_owner.id)
 
         tasks = [
             ("cluster-a-owner", cluster_a_owner, spell_id_a, _assert_basic_service),

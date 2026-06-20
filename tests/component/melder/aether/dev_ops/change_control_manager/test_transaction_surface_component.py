@@ -6,6 +6,9 @@ import pytest
 from melder.aether.aether import Aether
 from melder.aether.aetheric_frame.aetheric_frame import AethericFrame
 from melder.aether.aetheric_frame.dev_ops.devops_identity import DevopsIdentity
+from melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_request.transaction_request import (
+    ChangeTransactionType,
+)
 
 
 class _FakeCluster:
@@ -125,7 +128,7 @@ def test_component_transaction_surface_bind_does_not_reach_into_spellbook_hooks(
 
         session = mediator.start_transaction(
             identity=identity,
-            transaction_type="bind",
+            transaction_type=ChangeTransactionType.BIND,
             metadata={},
         )
 
@@ -133,7 +136,7 @@ def test_component_transaction_surface_bind_does_not_reach_into_spellbook_hooks(
 
         mediator.end_transaction_for_identity(
             identity=identity,
-            transaction_type="bind",
+            transaction_type=ChangeTransactionType.BIND,
         )
 
         spellbook._prepare_bind_transaction_state.assert_not_called()
@@ -185,7 +188,7 @@ def test_component_transaction_surface_post_conjure_bind_plan_includes_cluster_s
         mediator = frame.dev_ops_manager.change_control_manager.transaction_mediator()
         session = mediator.start_transaction(
             identity=spellbook_identity,
-            transaction_type="bind",
+            transaction_type=ChangeTransactionType.BIND,
             metadata={},
         )
 
@@ -194,7 +197,7 @@ def test_component_transaction_surface_post_conjure_bind_plan_includes_cluster_s
         assert "cluster-1" in session.request.metadata["affected_cluster_ids"]
         mediator.end_transaction_for_identity(
             identity=spellbook_identity,
-            transaction_type="bind",
+            transaction_type=ChangeTransactionType.BIND,
         )
         assert conduit_identity.owner_id == "conduit-1"
     finally:
@@ -240,7 +243,7 @@ def test_component_transaction_surface_link_start_tracks_spellbook_and_conduit_p
         mediator = frame.dev_ops_manager.change_control_manager.transaction_mediator()
         session = mediator.start_transaction(
             identity=conduit_identity,
-            transaction_type="link",
+            transaction_type=ChangeTransactionType.LINK,
             metadata={"conduit_ids": ("conduit-2",)},
         )
 
@@ -251,7 +254,7 @@ def test_component_transaction_surface_link_start_tracks_spellbook_and_conduit_p
         )
         mediator.end_transaction_for_identity(
             identity=conduit_identity,
-            transaction_type="link",
+            transaction_type=ChangeTransactionType.LINK,
         )
     finally:
         frame.cleanup()
@@ -307,7 +310,7 @@ def test_component_transaction_surface_cluster_link_start_tracks_cluster_metadat
         mediator = frame.dev_ops_manager.change_control_manager.transaction_mediator()
         session = mediator.start_transaction(
             identity=cluster_identity,
-            transaction_type="cluster_link",
+            transaction_type=ChangeTransactionType.CLUSTER_LINK,
             metadata={
                 "cluster_id": "cluster-1",
                 "conduit_ids": ("conduit-1", "conduit-2"),
@@ -318,7 +321,7 @@ def test_component_transaction_surface_cluster_link_start_tracks_cluster_metadat
         assert set(session.request.conduit_ids) == {"conduit-1", "conduit-2"}
         mediator.end_transaction_for_identity(
             identity=cluster_identity,
-            transaction_type="cluster_link",
+            transaction_type=ChangeTransactionType.CLUSTER_LINK,
         )
     finally:
         frame.cleanup()
@@ -363,13 +366,13 @@ def test_component_transaction_surface_update_transaction_for_identity_extends_s
         mediator = frame.dev_ops_manager.change_control_manager.transaction_mediator()
         session = mediator.start_transaction(
             identity=conduit_identity,
-            transaction_type="link",
+            transaction_type=ChangeTransactionType.LINK,
             metadata={"conduit_ids": ("conduit-2",)},
         )
 
         updated = mediator.update_transaction_for_identity(
             identity=conduit_identity,
-            transaction_type="link",
+            transaction_type=ChangeTransactionType.LINK,
             contract_keys=(("frame", "__default__", "conduit-2"),),
         )
 
@@ -377,7 +380,7 @@ def test_component_transaction_surface_update_transaction_for_identity_extends_s
         assert session.staged.contract_keys == (("frame", "__default__", "conduit-2"),)
         mediator.end_transaction_for_identity(
             identity=conduit_identity,
-            transaction_type="link",
+            transaction_type=ChangeTransactionType.LINK,
         )
     finally:
         frame.cleanup()
@@ -406,7 +409,7 @@ def test_component_transaction_surface_registry_tracks_live_transaction_session(
 
         session = mediator.start_transaction(
             identity=identity,
-            transaction_type="bind",
+            transaction_type=ChangeTransactionType.BIND,
             metadata={},
         )
 
@@ -421,7 +424,7 @@ def test_component_transaction_surface_registry_tracks_live_transaction_session(
 
         mediator.end_transaction_for_identity(
             identity=identity,
-            transaction_type="bind",
+            transaction_type=ChangeTransactionType.BIND,
         )
 
         assert frame.devops_information_registry.list_live_transactions_for_identity(
@@ -454,12 +457,12 @@ def test_component_transaction_surface_bind_update_transaction_extends_binding_k
 
         session = mediator.start_transaction(
             identity=identity,
-            transaction_type="bind",
+            transaction_type=ChangeTransactionType.BIND,
             metadata={},
         )
         updated = mediator.update_transaction_for_identity(
             identity=identity,
-            transaction_type="bind",
+            transaction_type=ChangeTransactionType.BIND,
             binding_keys=(("frame", "__default__"),),
         )
 
@@ -467,7 +470,7 @@ def test_component_transaction_surface_bind_update_transaction_extends_binding_k
         assert session.staged.binding_keys == (("frame", "__default__"),)
         mediator.end_transaction_for_identity(
             identity=identity,
-            transaction_type="bind",
+            transaction_type=ChangeTransactionType.BIND,
         )
     finally:
         frame.cleanup()
@@ -496,7 +499,7 @@ def test_component_transaction_surface_update_transaction_returns_false_without_
         assert (
             mediator.update_transaction_for_identity(
                 identity=identity,
-                transaction_type="bind",
+                transaction_type=ChangeTransactionType.BIND,
                 binding_keys=(("frame", "__default__"),),
             )
             is False
@@ -528,7 +531,7 @@ def test_component_transaction_surface_end_transaction_for_identity_requires_mat
         with pytest.raises(RuntimeError, match="No active transaction session exists"):
             mediator.end_transaction_for_identity(
                 identity=identity,
-                transaction_type="bind",
+                transaction_type=ChangeTransactionType.BIND,
             )
     finally:
         frame.cleanup()
@@ -557,13 +560,13 @@ def test_component_transaction_surface_mark_abort_only_clears_registry_mirror_on
 
         session = mediator.start_transaction(
             identity=identity,
-            transaction_type="bind",
+            transaction_type=ChangeTransactionType.BIND,
             metadata={},
         )
         mediator.mark_active_session_abort_only(reason="fail")
         mediator.end_transaction_for_identity(
             identity=identity,
-            transaction_type="bind",
+            transaction_type=ChangeTransactionType.BIND,
         )
 
         assert session.status == session.STATUS_ABORTED
@@ -597,14 +600,14 @@ def test_component_transaction_surface_get_active_request_returns_live_root_requ
 
         session = mediator.start_transaction(
             identity=identity,
-            transaction_type="bind",
+            transaction_type=ChangeTransactionType.BIND,
             metadata={},
         )
 
         assert mediator.get_active_request() is session.request
         mediator.end_transaction_for_identity(
             identity=identity,
-            transaction_type="bind",
+            transaction_type=ChangeTransactionType.BIND,
         )
     finally:
         frame.cleanup()
@@ -632,7 +635,7 @@ def test_component_transaction_surface_describe_reports_live_request_ids() -> No
 
         session = mediator.start_transaction(
             identity=identity,
-            transaction_type="bind",
+            transaction_type=ChangeTransactionType.BIND,
             metadata={},
         )
 
@@ -640,7 +643,7 @@ def test_component_transaction_surface_describe_reports_live_request_ids() -> No
         assert described["request_ids"] == (session.request.request_id,)
         mediator.end_transaction_for_identity(
             identity=identity,
-            transaction_type="bind",
+            transaction_type=ChangeTransactionType.BIND,
         )
     finally:
         frame.cleanup()
@@ -685,7 +688,7 @@ def test_component_transaction_surface_link_session_registers_live_transaction_m
 
         session = mediator.start_transaction(
             identity=conduit_identity,
-            transaction_type="link",
+            transaction_type=ChangeTransactionType.LINK,
             metadata={"conduit_ids": ("conduit-2",)},
         )
 
@@ -698,7 +701,7 @@ def test_component_transaction_surface_link_session_registers_live_transaction_m
         )
         mediator.end_transaction_for_identity(
             identity=conduit_identity,
-            transaction_type="link",
+            transaction_type=ChangeTransactionType.LINK,
         )
     finally:
         frame.cleanup()
@@ -754,7 +757,7 @@ def test_component_transaction_surface_cluster_link_session_registers_live_trans
 
         session = mediator.start_transaction(
             identity=cluster_identity,
-            transaction_type="cluster_link",
+            transaction_type=ChangeTransactionType.CLUSTER_LINK,
             metadata={
                 "cluster_id": "cluster-1",
                 "conduit_ids": ("conduit-1", "conduit-2"),
@@ -770,7 +773,7 @@ def test_component_transaction_surface_cluster_link_session_registers_live_trans
         ) == (session,)
         mediator.end_transaction_for_identity(
             identity=cluster_identity,
-            transaction_type="cluster_link",
+            transaction_type=ChangeTransactionType.CLUSTER_LINK,
         )
     finally:
         frame.cleanup()
@@ -798,14 +801,14 @@ def test_component_transaction_surface_bind_session_exposes_active_request() -> 
 
         session = mediator.start_transaction(
             identity=identity,
-            transaction_type="bind",
+            transaction_type=ChangeTransactionType.BIND,
             metadata={},
         )
 
         assert mediator.get_active_request() is session.request
         mediator.end_transaction_for_identity(
             identity=identity,
-            transaction_type="bind",
+            transaction_type=ChangeTransactionType.BIND,
         )
     finally:
         frame.cleanup()
@@ -850,14 +853,14 @@ def test_component_transaction_surface_link_session_exposes_active_request() -> 
 
         session = mediator.start_transaction(
             identity=conduit_identity,
-            transaction_type="link",
+            transaction_type=ChangeTransactionType.LINK,
             metadata={"conduit_ids": ("conduit-2",)},
         )
 
         assert mediator.get_active_request() is session.request
         mediator.end_transaction_for_identity(
             identity=conduit_identity,
-            transaction_type="link",
+            transaction_type=ChangeTransactionType.LINK,
         )
     finally:
         frame.cleanup()
@@ -885,12 +888,12 @@ def test_component_transaction_surface_bind_session_describe_updates_after_bindi
 
         session = mediator.start_transaction(
             identity=identity,
-            transaction_type="bind",
+            transaction_type=ChangeTransactionType.BIND,
             metadata={},
         )
         mediator.update_transaction_for_identity(
             identity=identity,
-            transaction_type="bind",
+            transaction_type=ChangeTransactionType.BIND,
             binding_keys=(("frame", "__default__"),),
         )
 
@@ -898,7 +901,7 @@ def test_component_transaction_surface_bind_session_describe_updates_after_bindi
         assert session.staged.binding_keys == (("frame", "__default__"),)
         mediator.end_transaction_for_identity(
             identity=identity,
-            transaction_type="bind",
+            transaction_type=ChangeTransactionType.BIND,
         )
     finally:
         frame.cleanup()
@@ -943,12 +946,12 @@ def test_component_transaction_surface_link_session_describe_updates_after_contr
 
         session = mediator.start_transaction(
             identity=conduit_identity,
-            transaction_type="link",
+            transaction_type=ChangeTransactionType.LINK,
             metadata={"conduit_ids": ("conduit-2",)},
         )
         mediator.update_transaction_for_identity(
             identity=conduit_identity,
-            transaction_type="link",
+            transaction_type=ChangeTransactionType.LINK,
             contract_keys=(("frame", "__default__", "conduit-2"),),
         )
 
@@ -956,7 +959,7 @@ def test_component_transaction_surface_link_session_describe_updates_after_contr
         assert session.staged.contract_keys == (("frame", "__default__", "conduit-2"),)
         mediator.end_transaction_for_identity(
             identity=conduit_identity,
-            transaction_type="link",
+            transaction_type=ChangeTransactionType.LINK,
         )
     finally:
         frame.cleanup()
@@ -1012,7 +1015,7 @@ def test_component_transaction_surface_cluster_link_describe_reports_active_requ
 
         session = mediator.start_transaction(
             identity=cluster_identity,
-            transaction_type="cluster_link",
+            transaction_type=ChangeTransactionType.CLUSTER_LINK,
             metadata={
                 "cluster_id": "cluster-1",
                 "conduit_ids": ("conduit-1", "conduit-2"),
@@ -1022,7 +1025,7 @@ def test_component_transaction_surface_cluster_link_describe_reports_active_requ
         assert mediator.describe()["request_ids"] == (session.request.request_id,)
         mediator.end_transaction_for_identity(
             identity=cluster_identity,
-            transaction_type="cluster_link",
+            transaction_type=ChangeTransactionType.CLUSTER_LINK,
         )
     finally:
         frame.cleanup()

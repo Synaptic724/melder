@@ -419,6 +419,11 @@ def test_spellbook_fluent_as_unique_per_conduit_cluster_shares_across_cluster() 
         cloud.add_conduit_to_cluster(owner, "cluster-a")
         cloud.add_conduit_to_cluster(borrower, "cluster-a")
         cloud.refresh_cluster_shares_for_conduit(owner)
+        # unique_per_conduit_cluster now resolves through an elected leader's
+        # creation store; with no elected leader the meld door hard-errors
+        # ("cluster_creations is disabled"). Elect the owner so both members
+        # resolve the same leader-owned instance.
+        cloud.get_cluster("cluster-a").elect_leader(owner.id)
 
         owner_instance = owner.meld(spell=spell_id)
         borrower_instance = borrower.meld(spell=spell_id)

@@ -256,6 +256,9 @@ def test_conduit_unique_per_conduit_cluster_shares_across_cluster() -> None:
     cloud.add_conduit_to_cluster(owner, "cluster-a")
     cloud.add_conduit_to_cluster(borrower, "cluster-a")
     cloud.refresh_cluster_shares_for_conduit(owner)
+    # unique_per_conduit_cluster resolves through an elected leader's creation
+    # store; elect the owner so both members share the leader-owned instance.
+    cloud.get_cluster("cluster-a").elect_leader(owner.id)
 
     spell_in_contracts = borrower.get_spell_in_contracts(spell_id)
     spells_by_conduit = borrower.get_spells_in_contract_by_conduit(owner._id)
