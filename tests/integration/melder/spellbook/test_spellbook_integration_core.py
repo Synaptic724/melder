@@ -1386,4 +1386,42 @@ def test_spellbook_integration_contract_removal_clears_access() -> None:
 def test_spellbook_integration_sever_link_clears_contracts() -> None:
     """
     Purpose:
-        Validate sever_link clears contracted spe
+        Validate sever_link clears contracted spell access.
+    Contract:
+        - sever_link returns True when a link is removed.
+        - Contracted spells are no longer visible after unlink.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If unlink does not clear contracts.
+    """
+    configuration = SpellbookConfiguration()
+    apply_dynamic_defaults_for_spellbook_configuration(configuration)
+    configuration.set_property("phase_scheduler_workers_per_spellbook", 1)
+
+    owner_book = Spellbook(configuration=configuration)
+    spell_id = owner_book.bind(
+        spell=BasicService,
+        existence=Existence.unique,
+        permissions="create",
+    )
+    borrower_book = Spellbook(configuration=configuration)
+
+    owner = owner_book.conjure(dynamic=True, name="owner")
+    borrower = borrower_book.conjure(dynamic=True, name="borrower")
+    try:
+        owner.link(borrower)
+        with borrower.transaction("link", conduits=[borrower, owner]):
+            borrower.add_spell_to_contract(
+                spell_id=spell_id,
+                conduit=owner,
+                permissions="create",
+            )
+        assert borrower.get_spell_in_contracts(spell_id) is not None
+
+        unlinked = owner.sever_link(borrower)
+        assert unlinked is True
+        assert borrower.get_spell_in_contracts(spell_id) is None
+    finally:
+        borrower.permanent_cleanup()
+        owner.permanent_cleanup()

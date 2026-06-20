@@ -1691,4 +1691,9 @@ def test_component_spellbook_remove_contracted_spell_raises_when_missing_version
     try:
         spell = _get_spell_by_version_id(spellbook, spell_id)
         assert spell is not None
-        
+        spellbook._add_contracted_spell(spell, conduit_id)
+
+        with pytest.raises(RuntimeError, match="not found"):
+            spellbook._remove_contracted_spell("missing-version", conduit_id)
+    finally:
+        spellbook.cleanup()
