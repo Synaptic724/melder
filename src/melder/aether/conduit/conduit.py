@@ -583,6 +583,9 @@ class Conduit(Cleanable):
         del self._creation_gate
         del self._creation_gate_controller
         del self._creations
+        # Cluster facade is borrowed from the root; drop the reference only --
+        # never clean it (the root owns and cleans the facade).
+        del self._cluster_creations
         del self._aetheric_frame
         if self._transaction_identity is not None:
             self._transaction_identity.cleanup()
@@ -681,6 +684,8 @@ class Conduit(Cleanable):
         del self._creation_gate_controller
         del self._aetheric_frame
         del self._creations
+        # Cluster facade was cleaned above (it is root-owned); drop the slot here.
+        del self._cluster_creations
         del self._spellbook
         del self._configuration
         if self._transaction_identity is not None:
