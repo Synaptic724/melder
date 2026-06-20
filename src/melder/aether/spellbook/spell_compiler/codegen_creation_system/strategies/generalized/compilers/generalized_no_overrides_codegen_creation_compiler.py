@@ -631,6 +631,11 @@ def _emit_construct_instance(
         return
     lines.append(f"{indent}try:")
     if inlinable_params:
+        # step_dep_keys_{step_index} is consumed only by this inlined construct,
+        # so bind it here (cold) rather than in the per-step preamble.
+        lines.append(
+            f"{indent}    step_dep_keys_{step_index} = step_dep_keys[{step_index}]"
+        )
         lines.append(
             f"{indent}    instance_{step_index} = spell_{step_index}.spell("
         )
@@ -691,6 +696,25 @@ def _build_step_plan_executor_source(
         "    ):",
         "    instance_results = {}",
     ]
+    # `caller_creations` is a single executor-level argument consumed by every
+    # CALLER/SPELLSPACE-routed step. Emit ONE hoisted None-check here instead of
+    # repeating the identical guard inside each such step's routing block (the
+    # per-step guard is dropped in `_append_step_creations_target_source`).
+    needs_caller_creations = any(
+        plan_step.creations_target_kind
+        in (
+            SpellGeneralizedCodegenPlanTargetKind.CALLER,
+            SpellGeneralizedCodegenPlanTargetKind.SPELLSPACE,
+        )
+        for plan_step in steps
+    )
+    if needs_caller_creations:
+        lines.extend([
+            "    if caller_creations is None:",
+            "        raise RuntimeError(",
+            "            \"No-overrides codegen CALLER/SPELLSPACE execution requires caller_creations.\"",
+            "        )",
+        ])
     for index, plan_step in enumerate(steps):
         _append_step_resolution_source(
             lines=lines,
@@ -734,13 +758,10 @@ def _append_step_creations_target_source(
             SpellGeneralizedCodegenPlanTargetKind.CALLER,
             SpellGeneralizedCodegenPlanTargetKind.SPELLSPACE,
     ):
-        lines.extend([
-            "    if caller_creations is None:",
-            "        raise RuntimeError(",
-            "            \"No-overrides codegen CALLER/SPELLSPACE execution requires caller_creations.\"",
-            "        )",
-            f"    creations_{step_index} = caller_creations",
-        ])
+        # The caller_creations None-check is hoisted once to the executor top
+        # (see `_build_step_plan_executor_source`), so per-step routing is a
+        # direct bind.
+        lines.append(f"    creations_{step_index} = caller_creations")
         return
 
     if target_kind == SpellGeneralizedCodegenPlanTargetKind.OWNER:
@@ -794,10 +815,6 @@ def _append_step_resolution_source(
         f"    spell_{step_index} = step_spells[{step_index}]",
         f"    spell_id_{step_index} = step_spell_ids[{step_index}]",
     ])
-    if inlinable_params:
-        lines.append(
-            f"    step_dep_keys_{step_index} = step_dep_keys[{step_index}]"
-        )
     _append_step_creations_target_source(
         lines=lines,
         step_index=step_index,
