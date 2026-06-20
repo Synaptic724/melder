@@ -1065,13 +1065,13 @@ def test_remove_single_spell_index_missing(aether_with_mocks):
     # Should not raise
     a._remove_single_spell_index("c1", si)
 
-def test_get_all_spell_versions(aether_with_mocks):
-    """_get_all_spell_versions returns set from frame."""
+def test_get_all_spell_ids(aether_with_mocks):
+    """_get_all_spell_ids returns set from frame."""
     a = aether_with_mocks
     expected = {"hash1", "hash2"}
     a._default_frame.spells_in_index.return_value = expected
     
-    assert a._get_all_spell_versions() == expected
+    assert a._get_all_spell_ids() == expected
 
 def test_get_conduit_by_spell_id(aether_with_mocks):
     """_get_conduit_by_spell_id resolves via frame.find_conduit_id_for_spell."""
@@ -1785,11 +1785,11 @@ def test_remove_single_spell_index_validates_frame_exists(aether_with_mocks):
     with pytest.raises(ValueError, match="does not exist"):
         a._remove_single_spell_index("cid", MagicMock(), "missing_frame")
 
-def test_get_all_spell_versions_validates_frame_exists(aether_with_mocks):
-    """_get_all_spell_versions raises ValueError if frame missing."""
+def test_get_all_spell_ids_validates_frame_exists(aether_with_mocks):
+    """_get_all_spell_ids raises ValueError if frame missing."""
     a = aether_with_mocks
     with pytest.raises(ValueError, match="does not exist"):
-        a._get_all_spell_versions("missing_frame")
+        a._get_all_spell_ids("missing_frame")
 
 def test_get_mutation_research_raises_after_cleanup(aether_with_mocks):
     """_get_mutation_research raises after cleanup."""

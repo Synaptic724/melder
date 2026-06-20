@@ -1917,7 +1917,7 @@ class ConduitWard(Cleanable):
             except Exception:
                 continue
 
-    def _has_local_spell_version(self, spell_id: str) -> bool:
+    def _has_local_spell_id(self, spell_id: str) -> bool:
         """
         Check if this conduit already has the given spell version locally.
         """
@@ -2105,7 +2105,7 @@ class ConduitWard(Cleanable):
             visited.add(dep_id)
 
             # Already local? nothing to contract.
-            if self._has_local_spell_version(dep_id):
+            if self._has_local_spell_id(dep_id):
                 return
 
             owner_conduit = self._conduit.get_conduit_by_spell_id(dep_id, aetheric_frame)
@@ -2259,7 +2259,7 @@ class ConduitWard(Cleanable):
                 return
             visited.add(dep_id)
 
-            if self._has_local_spell_version(dep_id):
+            if self._has_local_spell_id(dep_id):
                 return
 
             owner_conduit = self._conduit.get_conduit_by_spell_id(dep_id, aetheric_frame)
@@ -2630,7 +2630,7 @@ class ConduitWard(Cleanable):
         Gather every spell this conduit can currently consume via contracts.
 
         For each peer conduit, this returns a list of:
-            (current_spell_version_id, Spell)
+            (current_spell_id, Spell)
 
         Semantics:
             * Contracts are anchored on SpellIndex (via Detail.spell_index).

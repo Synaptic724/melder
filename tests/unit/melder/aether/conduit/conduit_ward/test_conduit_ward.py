@@ -1539,9 +1539,9 @@ def test_check_spell_eligible_rejects_read_permission_mismatch(ward):
 # 16. Local Spell Version Checks
 # ----------------------------------------------------------------------
 
-def test_has_local_spell_version_returns_true_when_present(ward):
+def test_has_local_spell_id_returns_true_when_present(ward):
     """
-    Verify _has_local_spell_version returns True for known versions.
+    Verify _has_local_spell_id returns True for known versions.
     """
     spell_id = "sha-1"
     spellbook = MagicMock()
@@ -1549,26 +1549,26 @@ def test_has_local_spell_version_returns_true_when_present(ward):
     spellbook._spells = {SpellIndex(spell_id): MagicMock()}
     ward._conduit._spellbook = spellbook
 
-    assert ward._has_local_spell_version(spell_id) is True
+    assert ward._has_local_spell_id(spell_id) is True
 
-def test_has_local_spell_version_returns_false_when_missing(ward):
+def test_has_local_spell_id_returns_false_when_missing(ward):
     """
-    Verify _has_local_spell_version returns False for unknown versions.
+    Verify _has_local_spell_id returns False for unknown versions.
     """
     spellbook = MagicMock()
     spellbook._lock = threading.RLock()
     spellbook._spells = {SpellIndex("sha-2"): MagicMock()}
     ward._conduit._spellbook = spellbook
 
-    assert ward._has_local_spell_version("sha-1") is False
+    assert ward._has_local_spell_id("sha-1") is False
 
-def test_has_local_spell_version_returns_false_without_spellbook(ward):
+def test_has_local_spell_id_returns_false_without_spellbook(ward):
     """
-    Verify _has_local_spell_version returns False when no spellbook is present.
+    Verify _has_local_spell_id returns False when no spellbook is present.
     """
     ward._conduit._spellbook = None
 
-    assert ward._has_local_spell_version("sha-1") is False
+    assert ward._has_local_spell_id("sha-1") is False
 
 # ----------------------------------------------------------------------
 # 17. Validation Helpers (Spell/Conduit-Only Inputs)

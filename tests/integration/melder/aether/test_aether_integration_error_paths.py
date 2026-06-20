@@ -136,10 +136,10 @@ def test_aether_conduit_cloud_register_unregister_missing_frame_raises() -> None
     assert not hasattr(aether, "_unregister_conduit_cloud")
 
 
-def test_aether_get_all_spell_versions_missing_frame_raises() -> None:
+def test_aether_get_all_spell_ids_missing_frame_raises() -> None:
     """
     Purpose:
-        Validate _get_all_spell_versions rejects missing frames.
+        Validate _get_all_spell_ids rejects missing frames.
     Contract:
         - ValueError is raised when the frame is missing.
     Returns:
@@ -149,7 +149,7 @@ def test_aether_get_all_spell_versions_missing_frame_raises() -> None:
     """
     aether = Aether()
     with pytest.raises(ValueError, match="does not exist"):
-        aether._get_all_spell_versions("missing-frame")
+        aether._get_all_spell_ids("missing-frame")
 
 
 def test_aether_add_spells_to_aether_rejects_invalid_type() -> None:

@@ -601,7 +601,7 @@ class AethericFrame(Cleanable):
     # ------------------------------------------------------------------
     # Version Registry Maintenance
     # ------------------------------------------------------------------
-    def _reindex_conduit_versions(self, conduit_id: str) -> None:
+    def _reindex_conduit_spell_ids(self, conduit_id: str) -> None:
         """
         Recompute one conduit's cached version-id set from its own lineages.
 
@@ -722,7 +722,7 @@ class AethericFrame(Cleanable):
     # registry iteration is what previously raised "dictionary changed size during
     # iteration". The lock still serializes these writes against the cache readers
     # (`has_spell` / `spells_in_index`). `self._lock` is an `RLock`, so the
-    # nested `_reindex_conduit_versions(...)` re-enters safely.
+    # nested `_reindex_conduit_spell_ids(...)` re-enters safely.
 
     def register_conduit_spells(
             self,
@@ -745,7 +745,7 @@ class AethericFrame(Cleanable):
                     f"Spell registry already contains Conduit ID {conduit_id}."
                 )
             self._spell_registry[conduit_id] = spell_set
-            self._reindex_conduit_versions(conduit_id)
+            self._reindex_conduit_spell_ids(conduit_id)
 
     def unregister_conduit_spells(
             self,
@@ -765,7 +765,7 @@ class AethericFrame(Cleanable):
                 return
             for spell_index in list(spell_set):
                 existing.discard(spell_index)
-            self._reindex_conduit_versions(conduit_id)
+            self._reindex_conduit_spell_ids(conduit_id)
 
     def register_spell_index(
             self,
@@ -806,7 +806,7 @@ class AethericFrame(Cleanable):
             if spell_set is None:
                 return
             spell_set.discard(spell_index)
-            self._reindex_conduit_versions(conduit_id)
+            self._reindex_conduit_spell_ids(conduit_id)
 
     def find_conduit_id_for_spell(self, spell_id: str) -> str | None:
         """

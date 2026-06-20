@@ -129,7 +129,7 @@ and logging.
         "_caching_system",
         "_contracted_spells",
         "_contracted_spells_by_id",
-        "_contracted_versions",
+        "_contracted_spell_ids",
         "_id",
         "_lock",
         "_logger",
@@ -144,7 +144,7 @@ and logging.
         "_configured_disposal_method_names",
         "_spell_id_pool",
         "_spell_system_states",
-        "_spell_versions",
+        "_spell_ids",
         "_spellbook_validation_required",
         "_spells",
         "_spells_by_id",
@@ -255,7 +255,7 @@ and logging.
 
         # Core spell storage (SpellIndex Maps)
         self._spells: Dict[SpellIndex, Spell] = {} # Active Spells not all spell indexed spells
-        self._spell_versions: Set[str] = set()
+        self._spell_ids: Set[str] = set()
         self._lookup_spells: Dict[tuple, SpellIndex]  = {}
         self._spells_by_id: Dict[str, Spell] = {}
         self._spell_id_pool: Dict[str, Spell] = {}
@@ -263,7 +263,7 @@ and logging.
         # Networked/remote spell support
         # This stores spells borrowed from other conduits (keyed by peer Conduit id)
         self._contracted_spells: Dict[str, Dict[SpellIndex, Spell]] = {}  # Active Contracted Spells not all spell indexed spells
-        self._contracted_versions: Dict[str, Set[str]] = {}
+        self._contracted_spell_ids: Dict[str, Set[str]] = {}
         self._lookup_contracted_spells: Dict[str, Dict[tuple, SpellIndex]]  = {}
         self._contracted_spells_by_id: Dict[str, Dict[str, Spell]] = {}
 
@@ -420,16 +420,16 @@ and logging.
         self._aetheric_frame_configuration = None
 
         try:
-            self._spell_versions.clear()
+            self._spell_ids.clear()
         except Exception as e:
-            self._logger.error(f"Error cleaning _spell_versions: {e}", "_cleanup_components", exc_info=True)
-        del self._spell_versions
+            self._logger.error(f"Error cleaning _spell_ids: {e}", "_cleanup_components", exc_info=True)
+        del self._spell_ids
 
         try:
-            self._contracted_versions.clear()
+            self._contracted_spell_ids.clear()
         except Exception as e:
-            self._logger.error(f"Error cleaning _contracted_versions: {e}", "_cleanup_components", exc_info=True)
-        del self._contracted_versions
+            self._logger.error(f"Error cleaning _contracted_spell_ids: {e}", "_cleanup_components", exc_info=True)
+        del self._contracted_spell_ids
 
     def _cleanup_spells(self) -> None:
         """
@@ -630,47 +630,47 @@ and logging.
 
     #endregion Context Manager
 
-    def _refresh_local_spell_versions(self) -> None:
+    def _refresh_local_spell_ids(self) -> None:
         """
         Internal
 
-        Rebuilds the local version cache (`_spell_versions`) from the current
+        Rebuilds the local version cache (`_spell_ids`) from the current
         set of SpellIndex keys in `_spells`.
 
         This is useful after bulk mutation or research operations that may
         have changed the version lists on SpellIndex instances.
         """
         with self._lock:
-            if self._spell_versions is None or self._spells is None:
+            if self._spell_ids is None or self._spells is None:
                 return
 
-            self._spell_versions.clear()
+            self._spell_ids.clear()
 
             for spell_index in self._spells.keys():
                 versions = spell_index._spells_in_index
                 if not versions:
                     continue
                 for version_id in versions:
-                    self._spell_versions.add(version_id)
+                    self._spell_ids.add(version_id)
 
-    def _refresh_contracted_spell_versions(self) -> None:
+    def _refresh_contracted_spell_ids(self) -> None:
         """
         Internal
 
-        Rebuilds the per-conduit contracted version caches (`_contracted_versions`)
+        Rebuilds the per-conduit contracted version caches (`_contracted_spell_ids`)
         from the current `_contracted_spells` structure.
 
         After this runs:
             - Each conduit_id in `_contracted_spells` will have a corresponding
-              ConcurrentSet[str] in `_contracted_versions` containing all
+              ConcurrentSet[str] in `_contracted_spell_ids` containing all
               version IDs (SHA256) for that conduitÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢s spells.
         """
         with self._lock:
-            if self._contracted_spells is None or self._contracted_versions is None:
+            if self._contracted_spells is None or self._contracted_spell_ids is None:
                 return
 
             # Blow away old caches and rebuild them from scratch
-            self._contracted_versions.clear()
+            self._contracted_spell_ids.clear()
 
             for conduit_id, spell_map in self._contracted_spells.items():
                 version_set = set[str]()
@@ -680,18 +680,18 @@ and logging.
                         continue
                     for version_id in versions:
                         version_set.add(version_id)
-                self._contracted_versions[conduit_id] = version_set
+                self._contracted_spell_ids[conduit_id] = version_set
 
 
-    def _refresh_all_spell_versions(self) -> None:
+    def _refresh_all_spell_ids(self) -> None:
         """
         Internal
 
         Convenience method to refresh both local and contracted
         spell version caches in one call.
         """
-        self._refresh_local_spell_versions()
-        self._refresh_contracted_spell_versions()
+        self._refresh_local_spell_ids()
+        self._refresh_contracted_spell_ids()
 
     def _get_required_conduit_surface(self) -> Conduit:
         """
@@ -1038,8 +1038,8 @@ and logging.
                 )
                 raise RuntimeError(f"spell_id collision for spell_id_pool new_id={new_id}")
             self._spell_id_pool[new_id] = spell
-            if self._spell_versions is not None:
-                self._spell_versions.add(new_id)
+            if self._spell_ids is not None:
+                self._spell_ids.add(new_id)
         self._replace_spell_record_in_nexus(old_id, spell)
 
     def _unregister_owned_spell_id(self, spell_id: str, spell: Spell) -> None:
@@ -1088,7 +1088,7 @@ and logging.
                     f"spell_id_pool mapped to a different spell (spell_id={spell_id})."
                 )
             self._spell_id_pool.pop(spell_id, None)
-            self._spell_versions.discard(spell_id)
+            self._spell_ids.discard(spell_id)
         if self._nexus_publish_enabled:
             self._nexus._remove_spell_record(
                 self._id,
@@ -1233,8 +1233,8 @@ and logging.
                 )
                 raise RuntimeError(f"Contracted spell_id collision for spell_id_pool new_id={new_id}")
             self._spell_id_pool[new_id] = spell
-            if self._contracted_versions is not None:
-                versions_set = self._contracted_versions.get(conduit_id)
+            if self._contracted_spell_ids is not None:
+                versions_set = self._contracted_spell_ids.get(conduit_id)
                 if versions_set is None:
                     self._logger.error(
                         f"Contracted version cache missing for conduit_id={conduit_id}",
@@ -1414,7 +1414,7 @@ and logging.
         with self._lock:
             local_spells = dict(self._spells) if self._spells is not None else {}
             lookup_spells = dict(self._lookup_spells) if self._lookup_spells is not None else {}
-            spell_versions = set(self._spell_versions) if self._spell_versions is not None else set()
+            spell_versions = set(self._spell_ids) if self._spell_ids is not None else set()
 
             contracted_spells: Dict[str, Dict[SpellIndex, Spell]] = {}
             if self._contracted_spells is not None:
@@ -1427,8 +1427,8 @@ and logging.
                     lookup_contracted_spells[conduit_id] = dict(lookup_map)
 
             contracted_versions: Dict[str, Set[str]] = {}
-            if self._contracted_versions is not None:
-                for conduit_id, versions in self._contracted_versions.items():
+            if self._contracted_spell_ids is not None:
+                for conduit_id, versions in self._contracted_spell_ids.items():
                     contracted_versions[conduit_id] = set(versions)
 
         return {
@@ -2068,7 +2068,7 @@ and logging.
         with self._lock:
             check_for_spell = Spellbook._aether._check_for_spell
             aetheric_frame = self._aetheric_frame
-            version_ids = self._spell_versions
+            version_ids = self._spell_ids
 
             if version_ids:
                 for spell_version_id in version_ids:
@@ -2134,7 +2134,7 @@ and logging.
         Initializes the internal storage maps for a new contract link with a peer conduit.
 
         This method ensures `_contracted_spells` (value map), `_lookup_contracted_spells`
-        (key map), `_contracted_versions` (version cache), and
+        (key map), `_contracted_spell_ids` (version cache), and
         `_contracted_spells_by_id` (id map) are initialized
         atomically to maintain a consistent state.
 
@@ -2148,7 +2148,7 @@ and logging.
 
         a_exists = conduit_id in self._contracted_spells
         b_exists = conduit_id in self._lookup_contracted_spells
-        c_exists = conduit_id in self._contracted_versions
+        c_exists = conduit_id in self._contracted_spell_ids
         d_exists = conduit_id in self._contracted_spells_by_id
 
         if not (a_exists == b_exists == c_exists == d_exists):
@@ -2157,7 +2157,7 @@ and logging.
                 f"Inconsistent link contract state for conduit ID {conduit_id}: "
                 f"_contracted_spells={a_exists}, "
                 f"_lookup_contracted_spells={b_exists}, "
-                f"_contracted_versions={c_exists}, "
+                f"_contracted_spell_ids={c_exists}, "
                 f"_contracted_spells_by_id={d_exists}"
             )
 
@@ -2165,7 +2165,7 @@ and logging.
             with self._lock:
                 self._contracted_spells[conduit_id] = {}
                 self._lookup_contracted_spells[conduit_id] = {}
-                self._contracted_versions[conduit_id] = set()
+                self._contracted_spell_ids[conduit_id] = set()
                 self._contracted_spells_by_id[conduit_id] = {}
 
 
@@ -2187,7 +2187,7 @@ and logging.
 
         a_exists = conduit_id in self._contracted_spells
         b_exists = conduit_id in self._lookup_contracted_spells
-        c_exists = conduit_id in self._contracted_versions
+        c_exists = conduit_id in self._contracted_spell_ids
         d_exists = conduit_id in self._contracted_spells_by_id
 
         if not (a_exists == b_exists == c_exists == d_exists):
@@ -2196,7 +2196,7 @@ and logging.
                 f"Inconsistent link contract state for conduit ID {conduit_id}: "
                 f"_contracted_spells={a_exists}, "
                 f"_lookup_contracted_spells={b_exists}, "
-                f"_contracted_versions={c_exists}, "
+                f"_contracted_spell_ids={c_exists}, "
                 f"_contracted_spells_by_id={d_exists}"
             )
 
@@ -2204,7 +2204,7 @@ and logging.
             with self._lock:
                 self._contracted_spells.pop(conduit_id, None)
                 self._lookup_contracted_spells.pop(conduit_id, None)
-                self._contracted_versions.pop(conduit_id, None)
+                self._contracted_spell_ids.pop(conduit_id, None)
                 self._contracted_spells_by_id.pop(conduit_id, None)
 
 
@@ -2245,7 +2245,7 @@ and logging.
 
             spell_map = self._contracted_spells[conduit_id]
             lookup_map = self._lookup_contracted_spells[conduit_id]
-            versions_set = self._contracted_versions[conduit_id]
+            versions_set = self._contracted_spell_ids[conduit_id]
 
             spell_index = spell.spell_index
             spell_index._attach_contracted(self, conduit_id, spell)
@@ -2292,7 +2292,7 @@ and logging.
         with self._lock:
             spell_map = self._contracted_spells.get(conduit_id)
             lookup_map = self._lookup_contracted_spells.get(conduit_id)
-            versions_set = self._contracted_versions.get(conduit_id)
+            versions_set = self._contracted_spell_ids.get(conduit_id)
 
             if spell_map is None or lookup_map is None or versions_set is None:
                 self._logger.error(
@@ -2363,7 +2363,7 @@ and logging.
             if (
                 conduit_id not in self._contracted_spells
                 or conduit_id not in self._lookup_contracted_spells
-                or conduit_id not in self._contracted_versions
+                or conduit_id not in self._contracted_spell_ids
                 or conduit_id not in self._contracted_spells_by_id
             ):
                 self._logger.error(
@@ -2380,7 +2380,7 @@ and logging.
 
             self._contracted_spells[conduit_id].clear()
             self._lookup_contracted_spells[conduit_id].clear()
-            self._contracted_versions[conduit_id].clear()
+            self._contracted_spell_ids[conduit_id].clear()
             self._contracted_spells_by_id[conduit_id].clear()
         self._try_update_staged_contract_keys(conduit_id)
         if removed_spells and self._conjured and self._conduit is not None:
@@ -3166,13 +3166,13 @@ and logging.
             spell_index._attach_owner(self, new_spell)
 
             # keep local version cache warm
-            if self._spell_versions is not None:
+            if self._spell_ids is not None:
                 versions = spell_index._spells_in_index
                 if versions:
                     for vid in versions:
-                        self._spell_versions.add(vid)
+                        self._spell_ids.add(vid)
                 else:
-                    self._spell_versions.add(new_spell.spell_id)
+                    self._spell_ids.add(new_spell.spell_id)
 
             # If a Conduit already exists, stamp ownership metadata and runtime
             # resolution defaults for the new spell. Existing-object spells are

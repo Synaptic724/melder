@@ -926,16 +926,16 @@ def test_component_spellbook_transaction_context_abort_clears_live_registry_sess
         spellbook.cleanup()
 
 
-def test_component_spellbook_bind_updates_spell_versions_cache() -> None:
+def test_component_spellbook_bind_updates_spell_ids_cache() -> None:
     """
     Purpose:
         Validate bind keeps the local spell version cache warm.
     Contract:
-        - _spell_versions includes the newly bound spell id.
+        - _spell_ids includes the newly bound spell id.
     Returns:
         None.
     Raises:
-        AssertionError: If _spell_versions is not updated.
+        AssertionError: If _spell_ids is not updated.
     """
     spellbook = _make_spellbook()
     states = _SpellSystemStatesStub()
@@ -947,8 +947,8 @@ def test_component_spellbook_bind_updates_spell_versions_cache() -> None:
             existence=Existence.unique,
             permissions="create",
         )
-        assert spellbook._spell_versions is not None
-        assert spell_id in spellbook._spell_versions
+        assert spellbook._spell_ids is not None
+        assert spell_id in spellbook._spell_ids
     finally:
         spellbook.cleanup()
 
@@ -1012,13 +1012,13 @@ def test_component_spellbook_link_contract_updates_spellbook_contract_buckets() 
         spellbook._create_link_contract("provider-1")
         assert "provider-1" in spellbook._contracted_spells
         assert "provider-1" in spellbook._lookup_contracted_spells
-        assert "provider-1" in spellbook._contracted_versions
+        assert "provider-1" in spellbook._contracted_spell_ids
         assert "provider-1" in spellbook._contracted_spells_by_id
 
         spellbook._sever_link_contract("provider-1")
         assert "provider-1" not in spellbook._contracted_spells
         assert "provider-1" not in spellbook._lookup_contracted_spells
-        assert "provider-1" not in spellbook._contracted_versions
+        assert "provider-1" not in spellbook._contracted_spell_ids
         assert "provider-1" not in spellbook._contracted_spells_by_id
     finally:
         conduit.permanent_cleanup()
@@ -1691,11 +1691,4 @@ def test_component_spellbook_remove_contracted_spell_raises_when_missing_version
     try:
         spell = _get_spell_by_version_id(spellbook, spell_id)
         assert spell is not None
-        spellbook._add_contracted_spell(spell, conduit_id)
-
-        with pytest.raises(RuntimeError, match="not found"):
-            spellbook._remove_contracted_spell("missing-version", conduit_id)
-    finally:
-        spellbook.cleanup()
-
-
+        

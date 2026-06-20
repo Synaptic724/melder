@@ -805,16 +805,17 @@ def _append_step_resolution_source(
           falls back to `_construct_spell_instance` for every other shape.
     """
     inlinable_params = _inlinable_common_shape(plan_step)
-    # Only `spell_{step_index}` (OWNER routing + construct) and
-    # `spell_id_{step_index}` (the reuse read) are needed on the warm path. The
-    # construct-only locals are bound lazily on the cold path instead of in this
-    # per-step preamble: `plan_step_{step_index}` in `_emit_construct_instance`
-    # and `has_disposal_methods_{step_index}` / `disposal_methods_{step_index}` in
+    # Only `spell_{step_index}` (OWNER routing + construct) is needed by every
+    # step's preamble. `spell_id_{step_index}` is needed on the warm path only by
+    # the singleton reuse read; a `many` step uses it solely inside its
+    # disposal-gated register, so for `many` it is bound there instead (cold).
+    # The remaining construct-only locals are likewise bound lazily on the cold
+    # path: `plan_step_{step_index}` in `_emit_construct_instance` and
+    # `has_disposal_methods_{step_index}` / `disposal_methods_{step_index}` in
     # `_append_step_register_source`, so warm reuse melds do not pay for them.
-    lines.extend([
-        f"    spell_{step_index} = step_spells[{step_index}]",
-        f"    spell_id_{step_index} = step_spell_ids[{step_index}]",
-    ])
+    lines.append(f"    spell_{step_index} = step_spells[{step_index}]")
+    if plan_step.existence is not Existence.many:
+        lines.append(f"    spell_id_{step_index} = step_spell_ids[{step_index}]")
     _append_step_creations_target_source(
         lines=lines,
         step_index=step_index,
@@ -835,19 +836,18 @@ def _append_step_resolution_source(
             inlinable_params=inlinable_params,
             indent="    ",
         )
-        # `many` registers only to track disposal. A non-disposal `many` is
-        # never registered, so it must not pay for the creations lock. The
-        # disposal gate is emitted AHEAD of the lock (not wrapping it), so a
-        # non-disposal `many` step takes no lock per meld -- matching the solo
-        # and many_only families. `has_disposal_methods_{step_index}` is
-        # spell-static, so this single runtime branch keeps one shared emitted
-        # body across disposal shapes while still skipping the lock when unused.
-        _append_step_register_source(
-            lines=lines,
-            step_index=step_index,
-            indent="    ",
-            existence=existence,
-        )
+        # `many` registers ONLY to track disposal, and disposal-ness is
+        # spell-static -- so the decision is made here at COMPILE time (matching
+        # the solo / many_only families). A non-disposal `many` step emits no
+        # register at all: no lock, no add, no per-meld disposal binds or branch.
+        # Only a disposal-bearing `many` emits the lock + registration.
+        if plan_step.spell.has_disposal_methods:
+            _append_step_register_source(
+                lines=lines,
+                step_index=step_index,
+                indent="    ",
+                existence=existence,
+            )
         lines.append(f"    instance_results[step_instance_keys[{step_index}]] = instance_{step_index}")
         return
 
@@ -978,10 +978,10 @@ def _append_step_register_source(
           dispatch and existence branching at runtime.
         - Singleton / spellspace branches assume the caller has already emitted
           the required creations lock around this registration.
-        - The `many` branch emits its OWN disposal-gated lock: it registers (and
-          therefore locks) only when the spell carries disposal methods, so a
-          non-disposal `many` step takes no lock per meld. The caller must NOT
-          pre-emit a lock for the `many` branch.
+        - The `many` branch is emitted ONLY for disposal-bearing `many` steps
+          (the caller gates on disposal at compile time), so it registers
+          unconditionally under the creations lock with no runtime disposal
+          check. The caller must NOT pre-emit a lock for the `many` branch.
         - Binds `has_disposal_methods_{step_index}` / `disposal_methods_{step_index}`
           here (cold construct/register path) so warm reuse melds never pay for
           those per-step lookups.
@@ -1016,21 +1016,24 @@ def _append_step_register_source(
         return
 
     if existence is Existence.many:
+        # The caller gates this branch on disposal at COMPILE time, so it is
+        # emitted only for disposal-bearing `many` steps -- registration is
+        # unconditional here, with no runtime `if has_disposal_methods_N`.
         lines.extend([
-            f"{indent}if has_disposal_methods_{step_index}:",
-            f"{indent}    with creations_{step_index}._lock:",
-            f"{indent}        creations_{step_index}.add_many_creations(",
-            f"{indent}            spell_id_{step_index},",
-            f"{indent}            instance_{step_index},",
+            f"{indent}spell_id_{step_index} = step_spell_ids[{step_index}]",
+            f"{indent}with creations_{step_index}._lock:",
+            f"{indent}    creations_{step_index}.add_many_creations(",
+            f"{indent}        spell_id_{step_index},",
+            f"{indent}        instance_{step_index},",
             (
-                f"{indent}            has_disposal_methods="
+                f"{indent}        has_disposal_methods="
                 f"has_disposal_methods_{step_index},"
             ),
             (
-                f"{indent}            disposal_methods="
+                f"{indent}        disposal_methods="
                 f"disposal_methods_{step_index},"
             ),
-            f"{indent}        )",
+            f"{indent}    )",
         ])
         return
 

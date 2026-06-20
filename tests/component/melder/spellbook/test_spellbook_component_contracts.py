@@ -131,7 +131,7 @@ def test_component_spellbook_add_and_remove_contracted_spell_updates_maps() -> N
         )
         spell_map = spellbook._contracted_spells[conduit_id]
         lookup_map = spellbook._lookup_contracted_spells[conduit_id]
-        versions_set = spellbook._contracted_versions[conduit_id]
+        versions_set = spellbook._contracted_spell_ids[conduit_id]
 
         assert spell_map[spell.spell_index] is spell
         assert lookup_map[key] is spell.spell_index
@@ -141,8 +141,8 @@ def test_component_spellbook_add_and_remove_contracted_spell_updates_maps() -> N
 
         assert spellbook._contracted_spells[conduit_id] == {}
         assert key not in spellbook._lookup_contracted_spells[conduit_id]
-        assert spell_id not in spellbook._contracted_versions[conduit_id]
-        assert len(spellbook._contracted_versions[conduit_id]) == 0
+        assert spell_id not in spellbook._contracted_spell_ids[conduit_id]
+        assert len(spellbook._contracted_spell_ids[conduit_id]) == 0
     finally:
         spellbook.cleanup()
 
@@ -241,7 +241,7 @@ def test_component_spellbook_clear_contracted_spells_for_conduit_clears_maps() -
 
         assert spellbook._contracted_spells[conduit_id] == {}
         assert spellbook._lookup_contracted_spells[conduit_id] == {}
-        assert spellbook._contracted_versions[conduit_id] == set()
+        assert spellbook._contracted_spell_ids[conduit_id] == set()
     finally:
         spellbook.cleanup()
 
@@ -285,7 +285,7 @@ def test_component_spellbook_remove_link_contract_removes_maps() -> None:
 
         assert conduit_id not in spellbook._contracted_spells
         assert conduit_id not in spellbook._lookup_contracted_spells
-        assert conduit_id not in spellbook._contracted_versions
+        assert conduit_id not in spellbook._contracted_spell_ids
     finally:
         spellbook.cleanup()
 
@@ -341,7 +341,7 @@ def test_component_spellbook_sever_link_contract_removes_maps() -> None:
 
         assert conduit_id not in spellbook._contracted_spells
         assert conduit_id not in spellbook._lookup_contracted_spells
-        assert conduit_id not in spellbook._contracted_versions
+        assert conduit_id not in spellbook._contracted_spell_ids
     finally:
         spellbook.cleanup()
 
@@ -375,7 +375,7 @@ def test_component_spellbook_add_contracted_spell_tracks_multiple_versions() -> 
 
         spellbook._add_contracted_spell(spell, conduit_id)
 
-        versions_set = spellbook._contracted_versions[conduit_id]
+        versions_set = spellbook._contracted_spell_ids[conduit_id]
         assert initial_id in versions_set
         assert next_id in versions_set
     finally:
@@ -412,7 +412,7 @@ def test_component_spellbook_remove_contracted_spell_removes_all_versions() -> N
         spellbook._add_contracted_spell(spell, conduit_id)
         spellbook._remove_contracted_spell(next_id, conduit_id)
 
-        versions_set = spellbook._contracted_versions[conduit_id]
+        versions_set = spellbook._contracted_spell_ids[conduit_id]
         assert initial_id not in versions_set
         assert next_id not in versions_set
         assert len(versions_set) == 0

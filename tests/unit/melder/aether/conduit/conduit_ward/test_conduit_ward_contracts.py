@@ -151,7 +151,7 @@ class FakeSpellbook:
         self._contracted_spells: dict[str, dict[SpellIndex, FakeSpell]] = {}
         self._lookup_spells: dict[tuple[str, str], SpellIndex] = {}
         self._lookup_contracted_spells: dict[str, dict[tuple[str, str], SpellIndex]] = {}
-        self._contracted_versions: dict[str, set[str]] = {}
+        self._contracted_spell_ids: dict[str, set[str]] = {}
         self._create_link_calls: list[str] = []
         self._add_contracted_calls: list[tuple[str, str]] = []
         self._remove_contracted_calls: list[tuple[str, str]] = []
@@ -237,13 +237,13 @@ class FakeSpellbook:
         self._create_link_calls.append(conduit_id)
         a_exists = conduit_id in self._contracted_spells
         b_exists = conduit_id in self._lookup_contracted_spells
-        c_exists = conduit_id in self._contracted_versions
+        c_exists = conduit_id in self._contracted_spell_ids
         if not (a_exists == b_exists == c_exists):
             raise RuntimeError("Inconsistent link contract state.")
         if not a_exists:
             self._contracted_spells[conduit_id] = {}
             self._lookup_contracted_spells[conduit_id] = {}
-            self._contracted_versions[conduit_id] = set()
+            self._contracted_spell_ids[conduit_id] = set()
 
     def _add_contracted_spell(self, spell: FakeSpell, conduit_id: str) -> None:
         """Record a contracted spell under a peer conduit id."""
@@ -252,7 +252,7 @@ class FakeSpellbook:
             self._create_link_contract(conduit_id)
         spell_map = self._contracted_spells[conduit_id]
         lookup_map = self._lookup_contracted_spells[conduit_id]
-        versions_set = self._contracted_versions[conduit_id]
+        versions_set = self._contracted_spell_ids[conduit_id]
         spell_map[spell.spell_index] = spell
         lookup_key = self._make_spell_key(
             spell.spellframe,
@@ -294,7 +294,7 @@ class FakeSpellbook:
         self._remove_contracted_calls.append((conduit_id, spell_id))
         spell_map = self._contracted_spells.get(conduit_id)
         lookup_map = self._lookup_contracted_spells.get(conduit_id)
-        versions_set = self._contracted_versions.get(conduit_id)
+        versions_set = self._contracted_spell_ids.get(conduit_id)
         if spell_map is None or lookup_map is None or versions_set is None:
             raise RuntimeError("No contracted spell maps found.")
         spell_index = None
@@ -325,12 +325,12 @@ class FakeSpellbook:
         if (
             conduit_id not in self._contracted_spells
             or conduit_id not in self._lookup_contracted_spells
-            or conduit_id not in self._contracted_versions
+            or conduit_id not in self._contracted_spell_ids
         ):
             raise RuntimeError("No contracted spell maps found.")
         self._contracted_spells[conduit_id].clear()
         self._lookup_contracted_spells[conduit_id].clear()
-        self._contracted_versions[conduit_id].clear()
+        self._contracted_spell_ids[conduit_id].clear()
 
     def _sever_link_contract(self, conduit_id: str) -> None:
         """Remove contracted spell buckets and all contained spells."""
@@ -338,7 +338,7 @@ class FakeSpellbook:
         self._clear_contracted_spells_for_conduit(conduit_id)
         self._contracted_spells.pop(conduit_id, None)
         self._lookup_contracted_spells.pop(conduit_id, None)
-        self._contracted_versions.pop(conduit_id, None)
+        self._contracted_spell_ids.pop(conduit_id, None)
 
 
 class FakeConduit:

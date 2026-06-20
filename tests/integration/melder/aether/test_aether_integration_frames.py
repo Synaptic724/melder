@@ -335,7 +335,7 @@ def test_aether_managers_are_scoped_by_frame() -> None:
     assert mutation_a is aether.mutation_research
 
 
-def test_aether_spell_versions_drop_after_conduit_cleanup() -> None:
+def test_aether_spell_ids_drop_after_conduit_cleanup() -> None:
     """
     Purpose:
         Validate Aether version registry reflects conduit cleanup.
@@ -365,17 +365,17 @@ def test_aether_spell_versions_drop_after_conduit_cleanup() -> None:
     )
     conduit = spellbook.conjure(name="root")
 
-    versions = aether._get_all_spell_versions(frame_name)
+    versions = aether._get_all_spell_ids(frame_name)
     assert service_id in versions
     assert config_id in versions
 
     conduit.permanent_cleanup()
 
     assert frame_name in aether._aetheric_frames
-    assert aether._get_all_spell_versions(frame_name) == set()
+    assert aether._get_all_spell_ids(frame_name) == set()
 
     aether._ensure_frame(frame_name).cleanup()
 
     assert frame_name not in aether._aetheric_frames
     with pytest.raises(ValueError, match="does not exist"):
-        aether._get_all_spell_versions(frame_name)
+        aether._get_all_spell_ids(frame_name)

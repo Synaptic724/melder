@@ -1359,13 +1359,13 @@ def test_link_contract_manages_only_spellbook_contract_buckets() -> None:
         spellbook._create_link_contract("peer-1")
         assert "peer-1" in spellbook._contracted_spells
         assert "peer-1" in spellbook._lookup_contracted_spells
-        assert "peer-1" in spellbook._contracted_versions
+        assert "peer-1" in spellbook._contracted_spell_ids
         assert "peer-1" in spellbook._contracted_spells_by_id
 
         spellbook._sever_link_contract("peer-1")
         assert "peer-1" not in spellbook._contracted_spells
         assert "peer-1" not in spellbook._lookup_contracted_spells
-        assert "peer-1" not in spellbook._contracted_versions
+        assert "peer-1" not in spellbook._contracted_spell_ids
         assert "peer-1" not in spellbook._contracted_spells_by_id
     finally:
         spellbook.cleanup()
@@ -1390,12 +1390,12 @@ def test_set_policy_state_toggles_flags():
     assert sb._whitelist_all_spells is True
 
 
-def test_refresh_local_spell_versions_populates_versions():
+def test_refresh_local_spell_ids_populates_versions():
     """
     Purpose:
         Verify local version cache collects all spell versions.
     Contract:
-        _refresh_local_spell_versions aggregates version ids across spells.
+        _refresh_local_spell_ids aggregates version ids across spells.
     Returns:
         None.
     Raises:
@@ -1406,8 +1406,8 @@ def test_refresh_local_spell_versions_populates_versions():
     spell2 = DummySpell(spell_id="c", versions={"c"})
     sb._spells = {DummySpellIndex(versions=spell1._spells_in_index): spell1, DummySpellIndex(versions=spell2._spells_in_index): spell2}
     sb._logger = DummySafeLogger()
-    sb._refresh_local_spell_versions()
-    assert sb._spell_versions == {"a", "b", "c"}
+    sb._refresh_local_spell_ids()
+    assert sb._spell_ids == {"a", "b", "c"}
 
 
 def test_snapshot_state_returns_detached_copies() -> None:
@@ -1416,10 +1416,10 @@ def test_snapshot_state_returns_detached_copies() -> None:
     spell = DummySpell(spell_id="sid-1")
     sb._spells = {idx: spell}
     sb._lookup_spells = {("frame", "binding"): idx}
-    sb._spell_versions = {"sid-1"}
+    sb._spell_ids = {"sid-1"}
     sb._contracted_spells = {"peer": {idx: spell}}
     sb._lookup_contracted_spells = {"peer": {("frame", "binding"): idx}}
-    sb._contracted_versions = {"peer": {"sid-1"}}
+    sb._contracted_spell_ids = {"peer": {"sid-1"}}
 
     snapshot = sb.snapshot_state()
 
@@ -1432,10 +1432,10 @@ def test_snapshot_state_returns_detached_copies() -> None:
 
     assert sb._spells == {idx: spell}
     assert sb._lookup_spells == {("frame", "binding"): idx}
-    assert sb._spell_versions == {"sid-1"}
+    assert sb._spell_ids == {"sid-1"}
     assert sb._contracted_spells["peer"] == {idx: spell}
     assert sb._lookup_contracted_spells["peer"] == {("frame", "binding"): idx}
-    assert sb._contracted_versions["peer"] == {"sid-1"}
+    assert sb._contracted_spell_ids["peer"] == {"sid-1"}
 
 
 def test_mark_collection_dependents_dirty_noop_and_error_paths() -> None:
@@ -1462,7 +1462,7 @@ def test_remove_link_contract_inconsistent_state_raises() -> None:
     sb._logger = DummySafeLogger()
     sb._contracted_spells = {"peer": {}}
     sb._lookup_contracted_spells = {}
-    sb._contracted_versions = {"peer": set()}
+    sb._contracted_spell_ids = {"peer": set()}
     sb._contracted_spells_by_id = {"peer": {}}
 
     with pytest.raises(RuntimeError, match="Inconsistent link contract state"):
@@ -1902,7 +1902,7 @@ def test_add_contracted_spell_updates_maps_and_notifies_when_conjured() -> None:
     sb._logger = DummySafeLogger()
     sb._contracted_spells = {}
     sb._lookup_contracted_spells = {}
-    sb._contracted_versions = {}
+    sb._contracted_spell_ids = {}
     sb._contracted_spells_by_id = {}
     sb._conjured = True
     sb._conduit = DummyConduit("borrower", "borrower")
@@ -1935,7 +1935,7 @@ def test_add_contracted_spell_updates_maps_and_notifies_when_conjured() -> None:
 
     assert sb._contracted_spells["peer"][idx] is spell
     assert sb._lookup_contracted_spells["peer"] == {("frame", "binding"): idx}
-    assert sb._contracted_versions["peer"] == {"sid-1", "sid-2"}
+    assert sb._contracted_spell_ids["peer"] == {"sid-1", "sid-2"}
     assert dirty_calls == [{"frame"}]
     assert staged_calls == ["peer"]
     assert risk_calls == [("borrower", spell)]
@@ -1946,7 +1946,7 @@ def test_remove_contracted_spell_updates_maps_and_notifies_when_conjured() -> No
     sb._logger = DummySafeLogger()
     sb._contracted_spells = {"peer": {}}
     sb._lookup_contracted_spells = {"peer": {}}
-    sb._contracted_versions = {"peer": set()}
+    sb._contracted_spell_ids = {"peer": set()}
     sb._contracted_spells_by_id = {}
     sb._conjured = True
     sb._conduit = DummyConduit("borrower", "borrower")
@@ -1973,13 +1973,13 @@ def test_remove_contracted_spell_updates_maps_and_notifies_when_conjured() -> No
     spell.spell_index = idx
     sb._contracted_spells["peer"][idx] = spell
     sb._lookup_contracted_spells["peer"][("frame", "binding")] = idx
-    sb._contracted_versions["peer"].update({"sid-1", "sid-2"})
+    sb._contracted_spell_ids["peer"].update({"sid-1", "sid-2"})
 
     sb._remove_contracted_spell("sid-1", "peer")
 
     assert sb._contracted_spells["peer"] == {}
     assert sb._lookup_contracted_spells["peer"] == {}
-    assert sb._contracted_versions["peer"] == set()
+    assert sb._contracted_spell_ids["peer"] == set()
     assert staged_calls == ["peer"]
     assert risk_calls == [("borrower", spell)]
 
@@ -1989,7 +1989,7 @@ def test_remove_contracted_spell_missing_maps_and_missing_version_raise() -> Non
     sb._logger = DummySafeLogger()
     sb._contracted_spells = {}
     sb._lookup_contracted_spells = {}
-    sb._contracted_versions = {}
+    sb._contracted_spell_ids = {}
 
     with pytest.raises(RuntimeError, match="No contracted spell maps found for conduit ID peer."):
         sb._remove_contracted_spell("sid-1", "peer")
@@ -2005,7 +2005,7 @@ def test_remove_contracted_spell_missing_maps_and_missing_version_raise() -> Non
     spell.spell_index = idx
     sb._contracted_spells = {"peer": {idx: spell}}
     sb._lookup_contracted_spells = {"peer": {("frame", "binding"): idx}}
-    sb._contracted_versions = {"peer": {"other"}}
+    sb._contracted_spell_ids = {"peer": {"other"}}
 
     with pytest.raises(RuntimeError, match="Spell version sid-1 not found for conduit ID peer."):
         sb._remove_contracted_spell("sid-1", "peer")
@@ -2032,8 +2032,8 @@ def test_cleanup_components_swallows_clear_and_cleanup_failures() -> None:
     sb._contracted_spells_by_id = _BadMap()
     sb._lookup_contracted_spells = _BadMap()
     sb._configuration = _BadConfig()
-    sb._spell_versions = _BadMap()
-    sb._contracted_versions = _BadMap()
+    sb._spell_ids = _BadMap()
+    sb._contracted_spell_ids = _BadMap()
     sb._cleanup_components()
 
     assert not hasattr(sb, "_spells")
@@ -2044,8 +2044,8 @@ def test_cleanup_components_swallows_clear_and_cleanup_failures() -> None:
     assert not hasattr(sb, "_contracted_spells_by_id")
     assert not hasattr(sb, "_lookup_contracted_spells")
     assert not hasattr(sb, "_configuration")
-    assert not hasattr(sb, "_spell_versions")
-    assert not hasattr(sb, "_contracted_versions")
+    assert not hasattr(sb, "_spell_ids")
+    assert not hasattr(sb, "_contracted_spell_ids")
     assert len(sb._logger.error_calls) >= 1
 
 
@@ -2203,12 +2203,12 @@ def test_unregister_contracted_spell_id_error_paths_raise() -> None:
         sb._unregister_contracted_spell_id("peer", "contracted-id", spell)
 
 
-def test_refresh_contracted_spell_versions_populates_per_conduit():
+def test_refresh_contracted_spell_ids_populates_per_conduit():
     """
     Purpose:
         Ensure contracted version cache is built per conduit.
     Contract:
-        _refresh_contracted_spell_versions records versions per conduit id.
+        _refresh_contracted_spell_ids records versions per conduit id.
     Returns:
         None.
     Raises:
@@ -2220,17 +2220,17 @@ def test_refresh_contracted_spell_versions_populates_per_conduit():
     sb._contracted_spells = {"x": {DummySpellIndex(versions=spell1._spells_in_index): spell1},
                              "y": {DummySpellIndex(versions=spell2._spells_in_index): spell2}}
     sb._logger = DummySafeLogger()
-    sb._refresh_contracted_spell_versions()
-    assert sb._contracted_versions["x"] == {"a", "b"}
-    assert sb._contracted_versions["y"] == {"c"}
+    sb._refresh_contracted_spell_ids()
+    assert sb._contracted_spell_ids["x"] == {"a", "b"}
+    assert sb._contracted_spell_ids["y"] == {"c"}
 
 
-def test_refresh_all_spell_versions_calls_both(monkeypatch):
+def test_refresh_all_spell_ids_calls_both(monkeypatch):
     """
     Purpose:
         Verify refresh-all delegates to local and contracted refreshers.
     Contract:
-        _refresh_all_spell_versions calls both refresh helpers.
+        _refresh_all_spell_ids calls both refresh helpers.
     Args:
         monkeypatch: Pytest fixture for patching instance methods.
     Returns:
@@ -2240,10 +2240,10 @@ def test_refresh_all_spell_versions_calls_both(monkeypatch):
     """
     sb = Spellbook()
     calls = []
-    monkeypatch.setattr(sb, "_refresh_local_spell_versions", lambda: calls.append("local"))
-    monkeypatch.setattr(sb, "_refresh_contracted_spell_versions", lambda: calls.append("contracted"))
+    monkeypatch.setattr(sb, "_refresh_local_spell_ids", lambda: calls.append("local"))
+    monkeypatch.setattr(sb, "_refresh_contracted_spell_ids", lambda: calls.append("contracted"))
     sb._logger = DummySafeLogger()
-    sb._refresh_all_spell_versions()
+    sb._refresh_all_spell_ids()
     assert calls == ["local", "contracted"]
 
 
@@ -3082,12 +3082,12 @@ def test_get_spell_permissions_variants(perm):
         {"v1", "v2", "v3"},
     ],
 )
-def test_refresh_local_spell_versions_handles_various(versions):
+def test_refresh_local_spell_ids_handles_various(versions):
     """
     Purpose:
         Verify local spell version refresh handles multiple inputs.
     Contract:
-        _refresh_local_spell_versions reflects the provided version set.
+        _refresh_local_spell_ids reflects the provided version set.
     Args:
         versions: Version set to apply to the index.
     Returns:
@@ -3099,13 +3099,13 @@ def test_refresh_local_spell_versions_handles_various(versions):
     idx = DummySpellIndex(versions=versions or set())
     idx._spells_in_index = versions or set()
     sb._spells = {idx: DummySpell()}
-    sb._spell_versions = set()
+    sb._spell_ids = set()
     sb._logger = DummySafeLogger()
-    sb._refresh_local_spell_versions()
+    sb._refresh_local_spell_ids()
     if versions:
-        assert sb._spell_versions == set(versions)
+        assert sb._spell_ids == set(versions)
     else:
-        assert sb._spell_versions == set()
+        assert sb._spell_ids == set()
 
 
 @pytest.mark.parametrize(
@@ -3214,12 +3214,12 @@ def test_define_conduit_handles_multiple_objects(existing_object):
     assert conduit._id in spell._owner
 
 
-def test_refresh_contracted_spell_versions_handles_empty_maps():
+def test_refresh_contracted_spell_ids_handles_empty_maps():
     """
     Purpose:
         Verify contracted version refresh handles empty contracted maps.
     Contract:
-        _refresh_contracted_spell_versions leaves contracted_versions empty.
+        _refresh_contracted_spell_ids leaves contracted_versions empty.
     Returns:
         None.
     Raises:
@@ -3227,10 +3227,10 @@ def test_refresh_contracted_spell_versions_handles_empty_maps():
     """
     sb = Spellbook()
     sb._contracted_spells = {}
-    sb._contracted_versions = {}
+    sb._contracted_spell_ids = {}
     sb._logger = DummySafeLogger()
-    sb._refresh_contracted_spell_versions()
-    assert sb._contracted_versions == {}
+    sb._refresh_contracted_spell_ids()
+    assert sb._contracted_spell_ids == {}
 
 
 def test_phase_factories_return_empty_when_no_spells():
@@ -3344,15 +3344,15 @@ def test_cleanup_components_clears_contracts_and_versions():
     sb._spells_by_id = {"owned": DummySpell(spell_id="owned")}
     sb._contracted_spells = {"c": {DummySpellIndex(): DummySpell()}}
     sb._lookup_contracted_spells = {"c": {"k": DummySpellIndex()}}
-    sb._spell_versions = {"v"}
-    sb._contracted_versions = {"c": {"v"}}
+    sb._spell_ids = {"v"}
+    sb._contracted_spell_ids = {"c": {"v"}}
     sb._contracted_spells_by_id = {"c": {"contracted": DummySpell(spell_id="contracted")}}
     sb._logger = DummySafeLogger()
     sb._cleanup_components()
     assert not hasattr(sb, "_spells")
     assert not hasattr(sb, "_spells_by_id")
     assert not hasattr(sb, "_contracted_spells")
-    assert not hasattr(sb, "_contracted_versions")
+    assert not hasattr(sb, "_contracted_spell_ids")
     assert not hasattr(sb, "_contracted_spells_by_id")
 
 
@@ -3450,12 +3450,12 @@ def test_contracted_spells_property_is_immutable():
         mutable["c"] = {}
 
 
-def test_refresh_local_spell_versions_noop_when_cache_none():
+def test_refresh_local_spell_ids_noop_when_cache_none():
     """
     Purpose:
         Ensure refresh does nothing when the version cache is None.
     Contract:
-        _refresh_local_spell_versions leaves _spell_versions as None.
+        _refresh_local_spell_ids leaves _spell_ids as None.
     Returns:
         None.
     Raises:
@@ -3463,18 +3463,18 @@ def test_refresh_local_spell_versions_noop_when_cache_none():
     """
     sb = Spellbook()
     sb._spells = {DummySpellIndex(): DummySpell()}
-    sb._spell_versions = None
+    sb._spell_ids = None
     sb._logger = DummySafeLogger()
-    sb._refresh_local_spell_versions()
-    assert sb._spell_versions is None
+    sb._refresh_local_spell_ids()
+    assert sb._spell_ids is None
 
 
-def test_refresh_contracted_spell_versions_noop_when_none():
+def test_refresh_contracted_spell_ids_noop_when_none():
     """
     Purpose:
         Verify contracted refresh is a no-op when contracted_spells is None.
     Contract:
-        _refresh_contracted_spell_versions preserves contracted_versions.
+        _refresh_contracted_spell_ids preserves contracted_versions.
     Returns:
         None.
     Raises:
@@ -3482,13 +3482,13 @@ def test_refresh_contracted_spell_versions_noop_when_none():
     """
     sb = Spellbook()
     sb._contracted_spells = None
-    sb._contracted_versions = {"x": {"v"}}
+    sb._contracted_spell_ids = {"x": {"v"}}
     sb._logger = DummySafeLogger()
-    sb._refresh_contracted_spell_versions()
-    assert sb._contracted_versions == {"x": {"v"}}
+    sb._refresh_contracted_spell_ids()
+    assert sb._contracted_spell_ids == {"x": {"v"}}
 
 
-def test_refresh_all_spell_versions_safe_when_contracted_none(monkeypatch):
+def test_refresh_all_spell_ids_safe_when_contracted_none(monkeypatch):
     """
     Purpose:
         Ensure refresh-all works when contracted state is None.
@@ -3503,12 +3503,12 @@ def test_refresh_all_spell_versions_safe_when_contracted_none(monkeypatch):
     """
     sb = Spellbook()
     sb._contracted_spells = None
-    sb._contracted_versions = None
+    sb._contracted_spell_ids = None
     calls = []
-    monkeypatch.setattr(sb, "_refresh_local_spell_versions", lambda: calls.append("local"))
-    monkeypatch.setattr(sb, "_refresh_contracted_spell_versions", lambda: calls.append("contracted"))
+    monkeypatch.setattr(sb, "_refresh_local_spell_ids", lambda: calls.append("local"))
+    monkeypatch.setattr(sb, "_refresh_contracted_spell_ids", lambda: calls.append("contracted"))
     sb._logger = DummySafeLogger()
-    sb._refresh_all_spell_versions()
+    sb._refresh_all_spell_ids()
     assert calls == ["local", "contracted"]
 
 
@@ -3669,8 +3669,8 @@ def test_cleanup_components_handles_none_configuration():
     sb._lookup_spells = {}
     sb._contracted_spells = {}
     sb._lookup_contracted_spells = {}
-    sb._contracted_versions = {}
-    sb._spell_versions = set()
+    sb._contracted_spell_ids = {}
+    sb._spell_ids = set()
     sb._logger = DummySafeLogger()
     sb._cleanup_components()
     assert not hasattr(sb, "_configuration")
@@ -3782,12 +3782,12 @@ def test_find_spell_count_reports_len():
         ({"a", "b"}, {"a", "b"}),
     ],
 )
-def test_refresh_contracted_spell_versions_populates_multiple(spell_versions, expected):
+def test_refresh_contracted_spell_ids_populates_multiple(spell_versions, expected):
     """
     Purpose:
         Ensure contracted version refresh handles multiple version sets.
     Contract:
-        _refresh_contracted_spell_versions records the expected set.
+        _refresh_contracted_spell_ids records the expected set.
     Args:
         spell_versions: Version ids attached to the contracted index.
         expected: Expected version set stored after refresh.
@@ -3798,10 +3798,10 @@ def test_refresh_contracted_spell_versions_populates_multiple(spell_versions, ex
     """
     sb = Spellbook()
     sb._contracted_spells = {"c": {DummySpellIndex(versions=spell_versions): DummySpell()}}
-    sb._contracted_versions = {}
+    sb._contracted_spell_ids = {}
     sb._logger = DummySafeLogger()
-    sb._refresh_contracted_spell_versions()
-    assert sb._contracted_versions["c"] == expected
+    sb._refresh_contracted_spell_ids()
+    assert sb._contracted_spell_ids["c"] == expected
 
 
 def test_phase_factories_metadata_contains_spell_id():
@@ -3908,12 +3908,12 @@ def test_find_spell_returns_none_for_missing():
     assert sb._find_spell(DummySpellIndex()) is None
 
 
-def test_refresh_local_spell_versions_noop_when_spells_none():
+def test_refresh_local_spell_ids_noop_when_spells_none():
     """
     Purpose:
         Verify local version refresh is a no-op when spells is None.
     Contract:
-        _refresh_local_spell_versions leaves _spell_versions unchanged.
+        _refresh_local_spell_ids leaves _spell_ids unchanged.
     Returns:
         None.
     Raises:
@@ -3921,10 +3921,10 @@ def test_refresh_local_spell_versions_noop_when_spells_none():
     """
     sb = Spellbook()
     sb._spells = None
-    sb._spell_versions = set()
+    sb._spell_ids = set()
     sb._logger = DummySafeLogger()
-    sb._refresh_local_spell_versions()
-    assert sb._spell_versions == set()
+    sb._refresh_local_spell_ids()
+    assert sb._spell_ids == set()
 
 
 def test_cleanup_spells_cleans_index_even_when_spell_raises():
@@ -4076,12 +4076,12 @@ def test_define_conduit_handles_missing_owner_method():
     assert spell.calls == 1
 
 
-def test_refresh_contracted_spell_versions_ignores_empty_versions():
+def test_refresh_contracted_spell_ids_ignores_empty_versions():
     """
     Purpose:
         Verify contracted version refresh handles empty version sets.
     Contract:
-        _refresh_contracted_spell_versions stores empty sets for empty versions.
+        _refresh_contracted_spell_ids stores empty sets for empty versions.
     Returns:
         None.
     Raises:
@@ -4089,10 +4089,10 @@ def test_refresh_contracted_spell_versions_ignores_empty_versions():
     """
     sb = Spellbook()
     sb._contracted_spells = {"c": {DummySpellIndex(versions=set()): DummySpell()}}
-    sb._contracted_versions = {}
+    sb._contracted_spell_ids = {}
     sb._logger = DummySafeLogger()
-    sb._refresh_contracted_spell_versions()
-    assert sb._contracted_versions["c"] == set()
+    sb._refresh_contracted_spell_ids()
+    assert sb._contracted_spell_ids["c"] == set()
 
 
 def test_phase_factories_return_distinct_labels_per_spell():
@@ -4280,13 +4280,13 @@ def test_create_link_contract_initializes_maps():
     sb = Spellbook()
     sb._contracted_spells = {}
     sb._lookup_contracted_spells = {}
-    sb._contracted_versions = {}
+    sb._contracted_spell_ids = {}
     sb._contracted_spells_by_id = {}
     sb._conduit = DummyConduit(cid="borrower", name="borrower")
     sb._create_link_contract("cid")
     assert "cid" in sb._contracted_spells
     assert "cid" in sb._lookup_contracted_spells
-    assert "cid" in sb._contracted_versions
+    assert "cid" in sb._contracted_spell_ids
     assert "cid" in sb._contracted_spells_by_id
 
 
@@ -4339,12 +4339,12 @@ def test_update_owned_spell_id_updates_map_and_versions():
     """
     sb = Spellbook()
     spell = DummySpell(spell_id="old-id")
-    sb._spell_versions = {"old-id"}
+    sb._spell_ids = {"old-id"}
     sb._register_owned_spell_id("old-id", spell)
     sb._update_owned_spell_id("old-id", "new-id", spell)
     assert "old-id" not in sb._spells_by_id
     assert sb._spells_by_id["new-id"] is spell
-    assert "new-id" in sb._spell_versions
+    assert "new-id" in sb._spell_ids
 
 
 def test_update_owned_spell_id_replaces_nexus_record_when_publish_enabled(monkeypatch):
@@ -4369,7 +4369,7 @@ def test_update_owned_spell_id_replaces_nexus_record_when_publish_enabled(monkey
     sb = Spellbook()
     sb._nexus_publish_enabled = True
     sb._aetheric_frame = "default"
-    sb._spell_versions = {"old-id"}
+    sb._spell_ids = {"old-id"}
     spell = DummySpell(spell_id="new-id")
     spell._owner_conduit_id = "owner-cid"
     sb._register_owned_spell_id("old-id", spell)
@@ -4555,11 +4555,11 @@ def test_update_contracted_spell_id_updates_map_and_versions():
     sb._create_link_contract("peer")
     spell = DummySpell(spell_id="old-id")
     sb._register_contracted_spell_id("peer", "old-id", spell)
-    sb._contracted_versions["peer"] = {"old-id"}
+    sb._contracted_spell_ids["peer"] = {"old-id"}
     sb._update_contracted_spell_id("peer", "old-id", "new-id", spell)
     assert "old-id" not in sb._contracted_spells_by_id["peer"]
     assert sb._contracted_spells_by_id["peer"]["new-id"] is spell
-    assert "new-id" in sb._contracted_versions["peer"]
+    assert "new-id" in sb._contracted_spell_ids["peer"]
 
 
 def test_unregister_contracted_spell_id_removes_mapping():
@@ -5148,12 +5148,12 @@ def test_conjure_twice_raises(monkeypatch):
     assert "conduit_id=" in message
 
 
-def test_refresh_local_spell_versions_thread_safe():
+def test_refresh_local_spell_ids_thread_safe():
     """
     Purpose:
         Verify local version refresh is safe under concurrent calls.
     Contract:
-        _refresh_local_spell_versions aggregates versions correctly across threads.
+        _refresh_local_spell_ids aggregates versions correctly across threads.
     Returns:
         None.
     Raises:
@@ -5162,7 +5162,7 @@ def test_refresh_local_spell_versions_thread_safe():
     sb = Spellbook()
     idx = DummySpellIndex(versions={"v1", "v2"})
     sb._spells = {idx: DummySpell()}
-    sb._spell_versions = set()
+    sb._spell_ids = set()
     sb._logger = DummySafeLogger()
 
     def worker():
@@ -5170,11 +5170,11 @@ def test_refresh_local_spell_versions_thread_safe():
         Purpose:
             Invoke version refresh in a thread.
         Contract:
-            Calls _refresh_local_spell_versions on the Spellbook.
+            Calls _refresh_local_spell_ids on the Spellbook.
         Returns:
             None.
         """
-        sb._refresh_local_spell_versions()
+        sb._refresh_local_spell_ids()
 
     threads = [threading.Thread(target=worker) for _ in range(4)]
     for t in threads:
@@ -5182,7 +5182,7 @@ def test_refresh_local_spell_versions_thread_safe():
     for t in threads:
         t.join()
 
-    assert sb._spell_versions == {"v1", "v2"}
+    assert sb._spell_ids == {"v1", "v2"}
 
 
 

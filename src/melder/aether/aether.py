@@ -1396,7 +1396,7 @@ class Aether(Cleanable):
         # Frame-owned + lock-serialized: removal + version refresh atomically.
         frame.unregister_spell_index(conduit_id, spell_index)
 
-    def _get_all_spell_versions(self, aetheric_frame_name: str = "default") -> set[str]:
+    def _get_all_spell_ids(self, aetheric_frame_name: str = "default") -> set[str]:
         """
         Return a flat set of all spell version ids known for one frame.
 
@@ -1419,7 +1419,7 @@ class Aether(Cleanable):
             except KeyError:
                 self._logger.error(
                     f"Aetheric frame '{aetheric_frame_name}' does not exist.",
-                    "_get_all_spell_versions",
+                    "_get_all_spell_ids",
                     exc_info=True
                 )
                 raise ValueError(f"Aetheric frame '{aetheric_frame_name}' does not exist.")

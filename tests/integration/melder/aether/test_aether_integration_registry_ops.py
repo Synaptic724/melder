@@ -288,10 +288,10 @@ def test_aether_check_for_spell_missing_frame_raises() -> None:
         aether._check_for_spell("spell-id", "missing-frame")
 
 
-def test_aether_get_all_spell_versions_empty_frame() -> None:
+def test_aether_get_all_spell_ids_empty_frame() -> None:
     """
     Purpose:
-        Validate _get_all_spell_versions returns empty set for new frames.
+        Validate _get_all_spell_ids returns empty set for new frames.
     Contract:
         - New frames have no spell versions.
     Returns:
@@ -301,7 +301,7 @@ def test_aether_get_all_spell_versions_empty_frame() -> None:
     """
     aether = Aether()
     aether._ensure_frame("empty-frame")
-    versions = aether._get_all_spell_versions("empty-frame")
+    versions = aether._get_all_spell_ids("empty-frame")
     assert versions == set()
 
 
