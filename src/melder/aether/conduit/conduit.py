@@ -12,6 +12,7 @@ from typing import (
     Dict,
     Generator,
     ClassVar,
+    Set,
 )
 # Melder Imports
 from melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_request.transaction_request import (
@@ -52,6 +53,9 @@ if TYPE_CHECKING:
     from melder.aether.spellbook.spell import Spell
     from melder.aether.spellbook.bind.spell_index import SpellIndex
     from melder.aether.spellbook.spellbook import Spellbook
+    from melder.aether.aetheric_frame.dev_ops.devops_information_registry import (
+        DevopsInformationRegistry,
+    )
     from melder.aether.aetheric_frame.dev_ops.spell_system_states.conduit_resolution_state import ConduitResolutionState
     from melder.mutation_research.mutation_research import MutationResearch
     from melder.utilities.logger.safe_logger import SafeLogger
@@ -2885,21 +2889,26 @@ class Conduit(Cleanable):
             mark_dependencies_dirty: bool,
     ) -> Dict[str, object]:
         """
-        Build normalized metadata for one ownership-transfer transaction.
+        Build transfer metadata + discover the affected footprint for one transfer.
 
         Purpose:
-            Keep the conduit public transfer surface thin by normalizing the
-            transfer request into metadata the strategy layer can validate and
-            plan around before the existing `TransferOfOwnership` execution
-            helper performs the runtime body.
+            The conduit owns the `TRANSFER_OWNERSHIP` transaction, so it also owns
+            the domain footprint discovery: here (before the window opens) it
+            resolves the live spell, runs the read-only `TransferOfOwnership`
+            preflight, and collects every affected participant. The DevOps strategy
+            then stays envelope-only and plans scopes purely from this metadata.
 
         Contract:
-            - Always records the target conduit id.
-            - Records whichever stable spell identifier forms are available:
-              current `spell_id` and/or stable `spell_index_id`.
-            - Preserves the exact transfer-option booleans supplied by the
-              caller.
-            - Raises when the caller supplies an unsupported spell handle.
+            - Resolves the live source spell and runs the read-only transfer
+              preflight to discover the affected footprint (source, target,
+              borrowers, and cluster members) on the domain side.
+            - Stamps the footprint into metadata: participant_conduit_ids,
+              affected_cluster_ids, affected_identity_keys, binding_keys, the
+              source/target spellbook ids, and the preflight borrower/dependency
+              summaries.
+            - Preserves the exact transfer-option booleans supplied by the caller.
+            - Raises when the caller supplies an unsupported spell handle or the
+              source spell cannot be resolved on this conduit.
 
         Args:
             spell:
@@ -2921,10 +2930,17 @@ class Conduit(Cleanable):
 
         Returns:
             Dict[str, object]:
-                Normalized transfer metadata for the strategy layer.
+                Transfer metadata, including the fully discovered affected
+                footprint, for the (envelope-only) strategy layer.
+
+        Threading:
+            Runs before the `TRANSFER_OWNERSHIP` window opens. The preflight is
+            read-only (`TransferOfOwnership._build_preflight_summary`) and does
+            not mutate change-control, registry, or runtime state.
         """
         spell_id: Optional[str] = None
         spell_index_id: Optional[str] = None
+        spell_obj: Optional[Spell] = None
 
         if isinstance(spell, str):
             spell_id = spell
@@ -2932,6 +2948,7 @@ class Conduit(Cleanable):
             try:
                 spell_id = spell.spell_id
                 spell_index_id = spell.spell_index.id
+                spell_obj = spell
             except AttributeError:
                 try:
                     spell_index_id = spell.id
@@ -2942,20 +2959,338 @@ class Conduit(Cleanable):
                         "object, or spell_id string."
                     ) from exc
 
+        if spell_obj is None:
+            spell_obj = self._resolve_transfer_spell(
+                spell_id=spell_id,
+                spell_index_id=spell_index_id,
+            )
+
+        footprint = self._discover_transfer_footprint(
+            spell_obj=spell_obj,
+            target_conduit=target_conduit,
+            move_creations=move_creations,
+            include_dependencies=include_dependencies,
+            force_unshare=force_unshare,
+            invalidate_after_transfer=invalidate_after_transfer,
+            mark_dependencies_dirty=mark_dependencies_dirty,
+        )
+
         metadata: Dict[str, object] = {
             "origin_surface": "conduit.transfer_spell_ownership",
+            "transfer_mode": "conduit_transfer_ownership",
+            "source_conduit_id": self._id,
             "target_conduit_id": target_conduit._id,
+            "spell_id": spell_obj.spell_id,
+            "spell_index_id": spell_obj.spell_index.id,
+            "binding_keys": (spell_obj.key,),
             "move_creations": move_creations,
             "include_dependencies": include_dependencies,
             "force_unshare": force_unshare,
             "invalidate_after_transfer": invalidate_after_transfer,
             "mark_dependencies_dirty": mark_dependencies_dirty,
+            **footprint,
         }
-        if spell_id:
-            metadata["spell_id"] = spell_id
-        if spell_index_id:
-            metadata["spell_index_id"] = spell_index_id
         return metadata
+
+    def _discover_transfer_footprint(
+            self,
+            *,
+            spell_obj: "Spell",
+            target_conduit: "Conduit",
+            move_creations: bool,
+            include_dependencies: bool,
+            force_unshare: bool,
+            invalidate_after_transfer: bool,
+            mark_dependencies_dirty: bool,
+    ) -> Dict[str, object]:
+        """
+        Discover the affected footprint of one ownership transfer (domain side).
+
+        Purpose:
+            Run the read-only `TransferOfOwnership` preflight and fold the source,
+            target, borrowers, and cluster members into the participant + identity
+            footprint that the (envelope-only) strategy plans scopes from. Kept out
+            of `_build_transfer_transaction_metadata` to keep each method cohesive.
+
+        Contract:
+            - The preflight is read-only: it mutates no change-control, registry, or
+              runtime state, and the helper is cleaned up on every exit path.
+
+        Args:
+            spell_obj: The resolved live spell being transferred.
+            target_conduit: The conduit that will become the new owner.
+            move_creations:
+                Whether creation state should move to the target.
+            include_dependencies:
+                Whether owned dependency lineages should also transfer.
+            force_unshare:
+                Whether borrower visibility should be stripped instead of repointed.
+            invalidate_after_transfer:
+                Whether the moved lineage should remain gated/dirty afterward.
+            mark_dependencies_dirty:
+                Whether dependencies should be dirtied when they are not moved.
+
+        Returns:
+            Dict[str, object]:
+                The discovered footprint: participant_conduit_ids,
+                affected_cluster_ids, affected_identity_keys, the source/target
+                spellbook ids, and the preflight borrower/dependency summaries.
+        """
+        # Local import: TransferOfOwnership lives under the ward (below this module
+        # in the import graph); a local import avoids a module-import cycle.
+        from melder.aether.conduit.conduit_ward.transfer.transfer_of_ownership import (
+            TransferOfOwnership,
+        )
+
+        registry = self._aetheric_frame.devops_information_registry
+
+        transfer_helper = TransferOfOwnership(
+            source_conduit=self,
+            target_conduit=target_conduit,
+            spell=spell_obj,
+            move_creations=move_creations,
+            include_dependencies=include_dependencies,
+            force_unshare=force_unshare,
+            invalidate_after_transfer=invalidate_after_transfer,
+            mark_dependencies_dirty=mark_dependencies_dirty,
+        )
+        try:
+            preflight_summary = transfer_helper._build_preflight_summary(spell_obj)
+        finally:
+            transfer_helper.cleanup()
+
+        source_spellbook_id = self._resolve_spellbook_id_for_conduit(
+            registry=registry,
+            conduit=self,
+        )
+        target_spellbook_id = self._resolve_spellbook_id_for_conduit(
+            registry=registry,
+            conduit=target_conduit,
+        )
+
+        conduit_ids: Set[str] = {self._id, target_conduit._id}
+        cluster_ids: Set[str] = set()
+        affected_identity_keys: Set[Tuple[str, str]] = {
+            ("conduit", self._id),
+            ("conduit", target_conduit._id),
+            ("conduit_ward", self._id),
+            ("conduit_ward", target_conduit._id),
+        }
+        if source_spellbook_id is not None:
+            affected_identity_keys.add(("spellbook", source_spellbook_id))
+        if target_spellbook_id is not None:
+            affected_identity_keys.add(("spellbook", target_spellbook_id))
+
+        self._collect_cluster_memberships(
+            registry=registry,
+            conduit_id=self._id,
+            conduit_ids=conduit_ids,
+            cluster_ids=cluster_ids,
+            affected_identity_keys=affected_identity_keys,
+        )
+        self._collect_cluster_memberships(
+            registry=registry,
+            conduit_id=target_conduit._id,
+            conduit_ids=conduit_ids,
+            cluster_ids=cluster_ids,
+            affected_identity_keys=affected_identity_keys,
+        )
+        self._collect_borrower_participants(
+            registry=registry,
+            borrowers=preflight_summary["borrowers"],
+            conduit_ids=conduit_ids,
+            cluster_ids=cluster_ids,
+            affected_identity_keys=affected_identity_keys,
+        )
+
+        return {
+            "source_spellbook_id": source_spellbook_id,
+            "target_spellbook_id": target_spellbook_id,
+            "participant_conduit_ids": tuple(sorted(conduit_ids)),
+            "affected_cluster_ids": tuple(sorted(cluster_ids)),
+            "affected_identity_keys": tuple(sorted(affected_identity_keys)),
+            "preflight_borrowers": tuple(
+                sorted(self._normalize_borrower_metadata(preflight_summary["borrowers"]))
+            ),
+            "preflight_dependencies": tuple(preflight_summary["dependencies"]),
+        }
+
+    def _resolve_transfer_spell(
+            self,
+            *,
+            spell_id: Optional[str],
+            spell_index_id: Optional[str],
+    ) -> "Spell":
+        """
+        Resolve the live spell being transferred from this (source) conduit.
+
+        Purpose:
+            Footprint discovery needs the live spell to run the read-only
+            transfer preflight and to read its binding key. The source conduit
+            owns the spell, so it is resolved directly here (domain side) rather
+            than reached for by the DevOps strategy.
+
+        Args:
+            spell_id: Current spell id, if available.
+            spell_index_id: Stable spell-index id, if available.
+
+        Returns:
+            Spell: The resolved live spell owned by this conduit.
+
+        Raises:
+            RuntimeError: If neither identifier resolves a local spell.
+        """
+        resolved: Optional[Spell] = None
+        if isinstance(spell_index_id, str) and spell_index_id.strip():
+            resolved = self.get_spell_by_index_id(spell_index_id)
+        if resolved is None and isinstance(spell_id, str) and spell_id.strip():
+            resolved = self.get_spell_by_id(spell_id, self._aetheric_frame_name)
+        if resolved is None:
+            raise RuntimeError(
+                "[CONDUIT] Transfer-ownership could not resolve the source spell on this conduit."
+            )
+        return resolved
+
+    def _resolve_spellbook_id_for_conduit(
+            self,
+            *,
+            registry: "DevopsInformationRegistry",
+            conduit: "Conduit",
+    ) -> Optional[str]:
+        """
+        Resolve the owning spellbook id for one conduit (registry-first).
+
+        Args:
+            registry: Frame-local topology registry for ownership lookups.
+            conduit: Conduit whose owning spellbook should be resolved.
+
+        Returns:
+            Optional[str]: The owning spellbook id when available.
+        """
+        spellbook_id = registry.get_spellbook_for_conduit(conduit._id)
+        if spellbook_id:
+            return spellbook_id
+        spellbook = conduit._spellbook
+        if spellbook is None:
+            return None
+        return spellbook._id
+
+    def _collect_cluster_memberships(
+            self,
+            *,
+            registry: "DevopsInformationRegistry",
+            conduit_id: str,
+            conduit_ids: Set[str],
+            cluster_ids: Set[str],
+            affected_identity_keys: Set[Tuple[str, str]],
+    ) -> None:
+        """
+        Fold one conduit's cluster memberships into the transfer footprint.
+
+        Purpose:
+            A transfer touches every cluster the source/target belong to (the
+            shared roots ripple across members), so the affected footprint must
+            include those clusters and their members.
+
+        Args:
+            registry: Frame-local topology registry.
+            conduit_id: Conduit whose memberships are folded in.
+            conduit_ids: Participant conduit-id set being accumulated.
+            cluster_ids: Cluster-id set being accumulated.
+            affected_identity_keys: Affected identity-key set being accumulated.
+        """
+        resolved_cluster_ids = registry.get_clusters_for_conduit(conduit_id)
+        for cluster_id in resolved_cluster_ids:
+            cluster_ids.add(cluster_id)
+            affected_identity_keys.add(("conduit_cluster", cluster_id))
+            cluster_object = registry.get_object(
+                owner_kind="conduit_cluster",
+                owner_id=cluster_id,
+            )
+            if cluster_object is None:
+                continue
+            conduit_ids.update(cluster_object.get_members())
+
+    def _collect_borrower_participants(
+            self,
+            *,
+            registry: "DevopsInformationRegistry",
+            borrowers: Iterable[Dict[str, object]],
+            conduit_ids: Set[str],
+            cluster_ids: Set[str],
+            affected_identity_keys: Set[Tuple[str, str]],
+    ) -> None:
+        """
+        Fold borrower participants discovered during preflight into the footprint.
+
+        Args:
+            registry: Frame-local topology registry for spellbook ownership.
+            borrowers: Borrower descriptors from the read-only transfer preflight.
+            conduit_ids: Participant conduit-id set being accumulated.
+            cluster_ids: Cluster-id set being accumulated.
+            affected_identity_keys: Affected identity-key set being accumulated.
+        """
+        for borrower in borrowers:
+            borrower_type = borrower.get("type")
+            if borrower_type == "contract":
+                borrower_conduit_id = borrower.get("borrower_conduit_id")
+                if not isinstance(borrower_conduit_id, str) or not borrower_conduit_id:
+                    continue
+                conduit_ids.add(borrower_conduit_id)
+                affected_identity_keys.add(("conduit", borrower_conduit_id))
+                affected_identity_keys.add(("conduit_ward", borrower_conduit_id))
+                borrower_spellbook_id = registry.get_spellbook_for_conduit(
+                    borrower_conduit_id
+                )
+                if borrower_spellbook_id:
+                    affected_identity_keys.add(("spellbook", borrower_spellbook_id))
+            elif borrower_type == "cluster":
+                cluster_id = borrower.get("cluster_id")
+                if isinstance(cluster_id, str) and cluster_id:
+                    cluster_ids.add(cluster_id)
+                    affected_identity_keys.add(("conduit_cluster", cluster_id))
+                member_conduit_ids = borrower.get("member_conduit_ids")
+                if not isinstance(member_conduit_ids, tuple):
+                    continue
+                for member_id in member_conduit_ids:
+                    if not isinstance(member_id, str) or not member_id:
+                        continue
+                    conduit_ids.add(member_id)
+                    affected_identity_keys.add(("conduit", member_id))
+                    affected_identity_keys.add(("conduit_ward", member_id))
+                    member_spellbook_id = registry.get_spellbook_for_conduit(member_id)
+                    if member_spellbook_id:
+                        affected_identity_keys.add(("spellbook", member_spellbook_id))
+
+    def _normalize_borrower_metadata(
+            self,
+            borrowers: Iterable[Dict[str, object]],
+    ) -> Set[str]:
+        """
+        Build a lightweight, stable borrower summary for request metadata.
+
+        Purpose:
+            Keep request metadata descriptive without embedding the full mutable
+            preflight payload.
+
+        Args:
+            borrowers: Borrower descriptors from the read-only transfer preflight.
+
+        Returns:
+            Set[str]: Stable string summaries of borrower participants.
+        """
+        normalized: Set[str] = set()
+        for borrower in borrowers:
+            borrower_type = borrower.get("type")
+            if borrower_type == "contract":
+                borrower_conduit_id = borrower.get("borrower_conduit_id")
+                if isinstance(borrower_conduit_id, str) and borrower_conduit_id:
+                    normalized.add(f"contract:{borrower_conduit_id}")
+            elif borrower_type == "cluster":
+                cluster_id = borrower.get("cluster_id")
+                if isinstance(cluster_id, str) and cluster_id:
+                    normalized.add(f"cluster:{cluster_id}")
+        return normalized
     #endregion Cluster API
     #region Meld
 

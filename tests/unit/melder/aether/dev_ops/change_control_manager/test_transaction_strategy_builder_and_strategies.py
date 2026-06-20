@@ -1,5 +1,5 @@
 from typing import Any, Dict, Iterable, Optional, Set, Tuple
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 import pytest
 
@@ -102,22 +102,6 @@ class _DummyStrategy(TransactionStrategy):
         """
         del devops_information_registry
         metadata["ended"] = identity.owner_id
-
-
-class _FakeCluster:
-    """
-    Minimal cluster object exposing member ids.
-    """
-
-    def __init__(self, members: Iterable[str]) -> None:
-        """Store detached cluster membership."""
-        self._members = set(members)
-
-    def get_members(self) -> Set[str]:
-        """
-        Return a detached membership snapshot.
-        """
-        return set(self._members)
 
 
 def _make_registry_and_identity(
@@ -778,17 +762,21 @@ def test_transfer_ownership_transaction_strategy_requires_conduit_identity() -> 
         )
 
 
-def test_transfer_ownership_transaction_strategy_builds_participant_scope_from_preflight() -> None:
+def test_transfer_ownership_strategy_builds_scopes_from_metadata_footprint() -> None:
     """
     Purpose:
-        Verify transfer planning incorporates borrowers and cluster memberships.
+        Verify transfer planning is envelope-only: it builds conduit/ward/spellbook/
+        cluster/binding scopes purely from the affected footprint the conduit call site
+        stamped into metadata, with no live-object reach.
     Contract:
-        - Source and target conduits are always included.
-        - Borrowers and cluster ids discovered during preflight are folded in.
+        - conduit_ids equals participant_conduit_ids from metadata.
+        - cluster scope comes from affected_cluster_ids.
+        - spellbook scopes come from affected_identity_keys.
+        - the plan spellbook_id is source_spellbook_id.
     Returns:
         None.
     Raises:
-        AssertionError: If preflight participants are omitted.
+        AssertionError: If the plan does not reflect the metadata footprint.
     """
     transaction_manager = ChangeControlTransactionManager()
     registry = DevopsInformationRegistry("frame-1")
@@ -800,117 +788,72 @@ def test_transfer_ownership_transaction_strategy_builds_participant_scope_from_p
         available_transactions=("transfer_ownership",),
     )
     registry.register_identity(source_identity)
-    registry.register_identity(
-        DevopsIdentity(
-            owner_kind="spellbook",
-            owner_id="spellbook-1",
-            aetheric_frame_name="frame-1",
-            metadata={"conduit_id": "conduit-1"},
-            available_transactions=("bind",),
-        )
-    )
-    registry.register_identity(
-        DevopsIdentity(
-            owner_kind="spellbook",
-            owner_id="spellbook-2",
-            aetheric_frame_name="frame-1",
-            metadata={"conduit_id": "conduit-2"},
-            available_transactions=("bind",),
-        )
-    )
-    registry.register_identity(
-        DevopsIdentity(
-            owner_kind="conduit_cluster",
-            owner_id="cluster-1",
-            aetheric_frame_name="frame-1",
-            metadata={"cluster_name": "alpha"},
-            available_transactions=("cluster_link",),
-        )
-    )
-    registry.register_cluster_membership(cluster_id="cluster-1", conduit_id="conduit-1")
-    registry.register_cluster_membership(cluster_id="cluster-1", conduit_id="borrower-2")
 
-    source_spellbook = MagicMock()
-    source_spellbook._id = "spellbook-1"
-    target_spellbook = MagicMock()
-    target_spellbook._id = "spellbook-2"
-    spell = MagicMock()
-    spell.spell_id = "spell-1"
-    spell.key = ("frame", "__default__")
-    spell.spell_index.id = "index-1"
-    source_conduit = MagicMock()
-    source_conduit._id = "conduit-1"
-    source_conduit._spellbook = source_spellbook
-    source_conduit.get_spell_by_id.return_value = spell
-    source_conduit.get_spell_by_index_id.return_value = spell
-    target_conduit = MagicMock()
-    target_conduit._id = "conduit-2"
-    target_conduit._spellbook = target_spellbook
-    cluster_object = _FakeCluster(("conduit-1", "borrower-2"))
-
-    registry.register_identity(
-        DevopsIdentity(
-            owner_kind="conduit",
-            owner_id="conduit-2",
-            aetheric_frame_name="frame-1",
-            metadata={"spellbook_id": "spellbook-2"},
-            available_transactions=("transfer_ownership",),
-        )
-    )
-    registry.register_identity(
-        DevopsIdentity(
-            owner_kind="conduit",
-            owner_id="borrower-2",
-            aetheric_frame_name="frame-1",
-            metadata={"spellbook_id": "spellbook-2"},
-            available_transactions=("link",),
-        )
-    )
-    registry.refresh_identity(source_identity, object_ref=source_conduit)
-    registry.refresh_identity(
-        registry.get_identity(owner_kind="conduit", owner_id="conduit-2"),
-        object_ref=target_conduit,
-    )
-    registry.refresh_identity(
-        registry.get_identity(owner_kind="conduit_cluster", owner_id="cluster-1"),
-        object_ref=cluster_object,
-    )
-
-    with patch(
-        "melder.aether.aetheric_frame.dev_ops.change_control_manager."
-        "transaction_manager.strategies.transfer_ownership_transaction_strategy."
-        "TransferOfOwnership._build_preflight_summary",
-        return_value={
-            "borrowers": (
-                {
-                    "type": "contract",
-                    "borrower_conduit_id": "borrower-1",
-                },
-                {
-                    "type": "cluster",
-                    "cluster_id": "cluster-1",
-                    "member_conduit_ids": ("conduit-1", "borrower-2"),
-                },
+    plan = TransferOwnershipTransactionStrategy.build_start_plan(
+        transaction_manager=transaction_manager,
+        devops_information_registry=registry,
+        identity=source_identity,
+        metadata={
+            "target_conduit_id": "conduit-2",
+            "source_conduit_id": "conduit-1",
+            "source_spellbook_id": "spellbook-1",
+            "spell_id": "spell-1",
+            "binding_keys": (("frame", "__default__"),),
+            "participant_conduit_ids": (
+                "borrower-1",
+                "borrower-2",
+                "conduit-1",
+                "conduit-2",
             ),
-            "dependencies": ("dep-1",),
+            "affected_cluster_ids": ("cluster-1",),
+            "affected_identity_keys": (
+                ("conduit", "conduit-1"),
+                ("conduit", "conduit-2"),
+                ("conduit_ward", "conduit-1"),
+                ("conduit_ward", "conduit-2"),
+                ("spellbook", "spellbook-1"),
+                ("spellbook", "spellbook-2"),
+                ("conduit_cluster", "cluster-1"),
+            ),
         },
-    ):
-        plan = TransferOwnershipTransactionStrategy.build_start_plan(
+    )
+
+    assert set(plan["conduit_ids"]) == {"conduit-1", "conduit-2", "borrower-1", "borrower-2"}
+    scope_keys = set(plan["scope_keys"])
+    assert "scope:conduit:conduit-1" in scope_keys
+    assert "scope:conduit_ward:conduit-2" in scope_keys
+    assert "scope:spellbook:spellbook-1" in scope_keys
+    assert "scope:spellbook:spellbook-2" in scope_keys
+    assert "scope:cluster:cluster-1" in scope_keys
+    assert transaction_manager.make_scope_key_binding("frame", "__default__") in scope_keys
+    assert plan["spellbook_id"] == "spellbook-1"
+
+
+def test_transfer_ownership_strategy_requires_participant_footprint_metadata() -> None:
+    """
+    Purpose:
+        Verify the strategy fails fast when the conduit-built footprint is absent (the
+        strategy no longer discovers it itself).
+    Contract:
+        - Missing participant_conduit_ids raises RuntimeError.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If a footprint-less transfer request is accepted.
+    """
+    transaction_manager, registry, source_identity = _make_registry_and_identity(
+        owner_kind="conduit",
+        owner_id="conduit-1",
+        available_transactions=("transfer_ownership",),
+    )
+
+    with pytest.raises(RuntimeError, match="participant_conduit_ids"):
+        TransferOwnershipTransactionStrategy.build_start_plan(
             transaction_manager=transaction_manager,
             devops_information_registry=registry,
             identity=source_identity,
-            metadata={
-                "target_conduit_id": "conduit-2",
-                "spell_id": "spell-1",
-                "move_creations": True,
-            },
+            metadata={"target_conduit_id": "conduit-2"},
         )
-
-    assert set(plan["conduit_ids"]) == {"conduit-1", "conduit-2", "borrower-1", "borrower-2"}
-    assert "scope:cluster:cluster-1" in plan["scope_keys"]
-    assert plan["metadata"]["source_conduit_id"] == "conduit-1"
-    assert plan["metadata"]["target_conduit_id"] == "conduit-2"
-    assert plan["metadata"]["preflight_dependencies"] == ("dep-1",)
 
 
 def test_notch_transaction_strategy_seals_spellbook_conduit_binding_exclusive() -> None:
