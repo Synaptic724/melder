@@ -647,11 +647,11 @@ and logging.
             self._spell_ids.clear()
 
             for spell_index in self._spells.keys():
-                versions = spell_index._spells_in_index
-                if not versions:
+                member_ids = spell_index._spells_in_index
+                if not member_ids:
                     continue
-                for version_id in versions:
-                    self._spell_ids.add(version_id)
+                for member_id in member_ids:
+                    self._spell_ids.add(member_id)
 
     def _refresh_contracted_spell_ids(self) -> None:
         """
@@ -673,14 +673,14 @@ and logging.
             self._contracted_spell_ids.clear()
 
             for conduit_id, spell_map in self._contracted_spells.items():
-                version_set = set[str]()
+                conduit_spell_ids = set[str]()
                 for spell_index in spell_map.keys():
-                    versions = spell_index._spells_in_index
-                    if not versions:
+                    member_ids = spell_index._spells_in_index
+                    if not member_ids:
                         continue
-                    for version_id in versions:
-                        version_set.add(version_id)
-                self._contracted_spell_ids[conduit_id] = version_set
+                    for member_id in member_ids:
+                        conduit_spell_ids.add(member_id)
+                self._contracted_spell_ids[conduit_id] = conduit_spell_ids
 
 
     def _refresh_all_spell_ids(self) -> None:
@@ -1234,15 +1234,15 @@ and logging.
                 raise RuntimeError(f"Contracted spell_id collision for spell_id_pool new_id={new_id}")
             self._spell_id_pool[new_id] = spell
             if self._contracted_spell_ids is not None:
-                versions_set = self._contracted_spell_ids.get(conduit_id)
-                if versions_set is None:
+                conduit_spell_ids = self._contracted_spell_ids.get(conduit_id)
+                if conduit_spell_ids is None:
                     self._logger.error(
                         f"Contracted version cache missing for conduit_id={conduit_id}",
                         "_update_contracted_spell_id",
                         exc_info=True,
                     )
                     raise RuntimeError(f"Contracted version cache missing for conduit_id={conduit_id}")
-                versions_set.add(new_id)
+                conduit_spell_ids.add(new_id)
 
     def _unregister_contracted_spell_id(self, conduit_id: str, spell_id: str, spell: Spell) -> None:
         """
@@ -1414,7 +1414,7 @@ and logging.
         with self._lock:
             local_spells = dict(self._spells) if self._spells is not None else {}
             lookup_spells = dict(self._lookup_spells) if self._lookup_spells is not None else {}
-            spell_versions = set(self._spell_ids) if self._spell_ids is not None else set()
+            spell_ids = set(self._spell_ids) if self._spell_ids is not None else set()
 
             contracted_spells: Dict[str, Dict[SpellIndex, Spell]] = {}
             if self._contracted_spells is not None:
@@ -1426,10 +1426,10 @@ and logging.
                 for conduit_id, lookup_map in self._lookup_contracted_spells.items():
                     lookup_contracted_spells[conduit_id] = dict(lookup_map)
 
-            contracted_versions: Dict[str, Set[str]] = {}
+            contracted_spell_ids: Dict[str, Set[str]] = {}
             if self._contracted_spell_ids is not None:
-                for conduit_id, versions in self._contracted_spell_ids.items():
-                    contracted_versions[conduit_id] = set(versions)
+                for conduit_id, conduit_spell_ids in self._contracted_spell_ids.items():
+                    contracted_spell_ids[conduit_id] = set(conduit_spell_ids)
 
         return {
             "snapshot_id": snapshot_id,
@@ -1438,10 +1438,10 @@ and logging.
             "aetheric_frame": self._aetheric_frame,
             "local_spells": local_spells,
             "lookup_spells": lookup_spells,
-            "spell_versions": spell_versions,
+            "spell_ids": spell_ids,
             "contracted_spells": contracted_spells,
             "lookup_contracted_spells": lookup_contracted_spells,
-            "contracted_versions": contracted_versions,
+            "contracted_spell_ids": contracted_spell_ids,
         }
 
     #endregion Properties
@@ -2068,31 +2068,31 @@ and logging.
         with self._lock:
             check_for_spell = Spellbook._aether._check_for_spell
             aetheric_frame = self._aetheric_frame
-            version_ids = self._spell_ids
+            spell_ids = self._spell_ids
 
-            if version_ids:
-                for spell_version_id in version_ids:
-                    if check_for_spell(spell_version_id, aetheric_frame):
+            if spell_ids:
+                for spell_id in spell_ids:
+                    if check_for_spell(spell_id, aetheric_frame):
                         self._logger.error(
-                            f"Spell with ID {spell_version_id} already exists in the registry.",
+                            f"Spell with ID {spell_id} already exists in the registry.",
                             "_check_all_spells",
                             exc_info=True,
                         )
-                        raise RuntimeError(f"Spell with ID {spell_version_id} already exists in the registry.")
+                        raise RuntimeError(f"Spell with ID {spell_id} already exists in the registry.")
                 return
 
             for spell_index in self._spells.keys():
-                versions = spell_index._spells_in_index
-                if not versions:
+                member_ids = spell_index._spells_in_index
+                if not member_ids:
                     continue
-                for spell_version_id in versions:
-                    if check_for_spell(spell_version_id, aetheric_frame):
+                for member_id in member_ids:
+                    if check_for_spell(member_id, aetheric_frame):
                         self._logger.error(
-                            f"Spell with ID {spell_version_id} already exists in the registry.",
+                            f"Spell with ID {member_id} already exists in the registry.",
                             "_check_all_spells",
                             exc_info=True,
                         )
-                        raise RuntimeError(f"Spell with ID {spell_version_id} already exists in the registry.")
+                        raise RuntimeError(f"Spell with ID {member_id} already exists in the registry.")
 
 
     #endregion General Methods
@@ -2245,7 +2245,7 @@ and logging.
 
             spell_map = self._contracted_spells[conduit_id]
             lookup_map = self._lookup_contracted_spells[conduit_id]
-            versions_set = self._contracted_spell_ids[conduit_id]
+            conduit_spell_ids = self._contracted_spell_ids[conduit_id]
 
             spell_index = spell.spell_index
             spell_index._attach_contracted(self, conduit_id, spell)
@@ -2255,10 +2255,10 @@ and logging.
             lookup_map[spell_key] = spell_index
 
             # Track all known versions for this SpellIndex in the per-conduit version set
-            versions = spell_index._spells_in_index
-            if versions:
-                for version_id in versions:
-                    versions_set.add(version_id)
+            member_ids = spell_index._spells_in_index
+            if member_ids:
+                for member_id in member_ids:
+                    conduit_spell_ids.add(member_id)
 
             frame_key = spell.key[0]
             should_mark = bool(self._conjured)
@@ -2292,9 +2292,9 @@ and logging.
         with self._lock:
             spell_map = self._contracted_spells.get(conduit_id)
             lookup_map = self._lookup_contracted_spells.get(conduit_id)
-            versions_set = self._contracted_spell_ids.get(conduit_id)
+            conduit_spell_ids = self._contracted_spell_ids.get(conduit_id)
 
-            if spell_map is None or lookup_map is None or versions_set is None:
+            if spell_map is None or lookup_map is None or conduit_spell_ids is None:
                 self._logger.error(
                     f"No contracted spell maps for conduit {conduit_id}",
                     "_remove_contracted_spell",
@@ -2306,8 +2306,8 @@ and logging.
             spell_index = None
             spell = None
             for idx, s in spell_map.items():
-                versions = idx._spells_in_index
-                if versions and spell_id in versions:
+                member_ids = idx._spells_in_index
+                if member_ids and spell_id in member_ids:
                     spell_index = idx
                     spell = s
                     break
@@ -2330,10 +2330,10 @@ and logging.
             lookup_map.pop(key, None)
 
             # Remove *all* versions for this SpellIndex from the version cache
-            versions = spell_index._spells_in_index
-            if versions:
-                for version_id in versions:
-                    versions_set.discard(version_id)
+            member_ids = spell_index._spells_in_index
+            if member_ids:
+                for member_id in member_ids:
+                    conduit_spell_ids.discard(member_id)
             removed_spell = spell
         self._try_update_staged_contract_keys(conduit_id)
         if removed_spell is not None and self._conjured and self._conduit is not None:
@@ -3167,10 +3167,10 @@ and logging.
 
             # keep local version cache warm
             if self._spell_ids is not None:
-                versions = spell_index._spells_in_index
-                if versions:
-                    for vid in versions:
-                        self._spell_ids.add(vid)
+                member_ids = spell_index._spells_in_index
+                if member_ids:
+                    for member_id in member_ids:
+                        self._spell_ids.add(member_id)
                 else:
                     self._spell_ids.add(new_spell.spell_id)
 
@@ -4400,10 +4400,3 @@ and logging.
 
     #endregion
 #endregion
-
-
-
-
-
-
-

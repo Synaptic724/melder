@@ -100,8 +100,8 @@ class CompilerPhase2:
             )
 
         # Versioned identity from SpellIndex.
-        version_id = spell.spell_index.selected_spell_id
-        if version_id is None:
+        spell_id = spell.spell_index.selected_spell_id
+        if spell_id is None:
             raise RuntimeError("SpellCrafter requires a bound spell current id.")
 
         deps: List[SpellSymbolicDependency] = []
@@ -160,7 +160,7 @@ class CompilerPhase2:
                 continue
 
             dep = SpellSymbolicDependency(
-                spell_id=version_id,
+                spell_id=spell_id,
                 param_name=param.name,
                 position=param.position,
                 di_shape=di_shape,
@@ -173,7 +173,7 @@ class CompilerPhase2:
             deps.append(dep)
 
         artifact._symbolic_graph = SpellSymbolicGraph(
-            spell_id=version_id,
+            spell_id=spell_id,
             dependencies=deps,
         )
         # NOTE: the eager `capture_phase2_5_codegen_ir` export that used to

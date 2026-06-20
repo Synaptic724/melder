@@ -627,10 +627,10 @@ class AethericFrame(Cleanable):
         if not spell_set:
             self._selected_spell_registry.pop(conduit_id, None)
             return
-        version_set: Set[str] = set()
+        spell_ids: Set[str] = set()
         for spell_index in spell_set:
-            version_set.update(spell_index.spells_in_index())
-        self._selected_spell_registry[conduit_id] = version_set
+            spell_ids.update(spell_index.spells_in_index())
+        self._selected_spell_registry[conduit_id] = spell_ids
 
     def has_spell(self, spell_id: str) -> bool:
         """
@@ -653,8 +653,8 @@ class AethericFrame(Cleanable):
             if self._selected_spell_registry is None:
                 return False
 
-            for version_set in self._selected_spell_registry.values():
-                if spell_id in version_set:
+            for spell_id_set in self._selected_spell_registry.values():
+                if spell_id in spell_id_set:
                     return True
         return False
 
@@ -676,8 +676,8 @@ class AethericFrame(Cleanable):
             if self._selected_spell_registry is None:
                 return result
 
-            for version_set in self._selected_spell_registry.values():
-                for spell_id in version_set:
+            for spell_id_set in self._selected_spell_registry.values():
+                for spell_id in spell_id_set:
                     result.add(spell_id)
         return result
 
@@ -828,6 +828,3 @@ class AethericFrame(Cleanable):
                     if spell_index.has_spell(spell_id):
                         return conduit_id
         return None
-
-
-

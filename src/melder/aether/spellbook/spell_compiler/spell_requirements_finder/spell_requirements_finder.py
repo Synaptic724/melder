@@ -225,14 +225,14 @@ class SpellRequirementsFinder(Cleanable):
         # Use the **SpellIndex.selected_spell_id** as the canonical identifier for all
         # phase artifacts. This decouples phase logic from any legacy `spell_id`
         # storage and allows versioning of the spell's structure.
-        version_id = spell.spell_index.selected_spell_id
-        if version_id is None:
+        spell_id = spell.spell_index.selected_spell_id
+        if spell_id is None:
             raise RuntimeError(
                 "SpellRequirementsFinder requires a live SpellIndex current id."
             )
 
         requirements = SpellRequirements(
-            spell_id=version_id,
+            spell_id=spell_id,
             spell_type=spell.spell_type,
             existence=spell.existence,
             spellframe=spell.spellframe,

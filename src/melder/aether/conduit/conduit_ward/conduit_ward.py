@@ -1926,8 +1926,8 @@ class ConduitWard(Cleanable):
             return False
         with book._lock:
             for idx in book._spells.keys():
-                versions = idx._spells_in_index
-                if versions and spell_id in versions:
+                member_ids = idx._spells_in_index
+                if member_ids and spell_id in member_ids:
                     return True
         return False
 
@@ -3097,4 +3097,3 @@ class ConduitWard(Cleanable):
 
 #endregion Spellbinding API
 #endregion ConduitWard
-

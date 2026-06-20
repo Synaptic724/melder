@@ -152,10 +152,10 @@ class Detail(Cleanable):
             bool: True if the lineage advertises the version, else False.
         """
         self.check_cleaned()
-        versions = self.spell_index._spells_in_index
-        if not versions:
+        member_ids = self.spell_index._spells_in_index
+        if not member_ids:
             return False
-        return spell_id in versions
+        return spell_id in member_ids
 
     def add_source(self, root_spell_id: str) -> None:
         """
