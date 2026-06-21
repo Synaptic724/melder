@@ -1532,4 +1532,50 @@ class Aether(Cleanable):
             IncidentManager: The IncidentManager instance.
         """
         self.check_cleaned()
-        return self._get_de
+        return self._get_devops_manager(aetheric_frame_name).incident_manager
+
+    def _get_change_control_manager(self, aetheric_frame_name: str = "default") -> ChangeControlManager:
+        """
+        Retrieves the ChangeControlManager from the DevOpsManager of a specific frame.
+
+        Returns:
+            ChangeControlManager: The ChangeControlManager instance.
+        """
+        self.check_cleaned()
+        return self._get_devops_manager(aetheric_frame_name).change_control_manager
+
+    def _revalidate_dirty_roots(
+            self,
+            conduit_id: str,
+            aetheric_frame_name: str = "default",
+            cancel_event: Any = None,
+    ) -> None:
+        """
+        Trigger revalidation of dirty roots for one conduit through DevOps.
+
+        Contract:
+            - Requires a non-empty conduit id.
+            - Resolves the frame-specific DevOps manager first.
+            - Delegates the actual revalidation to that manager.
+
+        Args:
+            conduit_id (str):
+                Target conduit id.
+            aetheric_frame_name (str):
+                Name of the target frame.
+            cancel_event:
+                Optional cancellation signal passed through to DevOps.
+
+        Returns:
+            None.
+        """
+        self.check_cleaned()
+        if not conduit_id:
+            raise ValueError("conduit_id cannot be empty.")
+        devops = self._get_devops_manager(aetheric_frame_name)
+        devops.revalidate_dirty_roots(conduit_id, cancel_event=cancel_event)
+
+    #endregion DevOps Management
+
+
+
