@@ -558,12 +558,27 @@ class ConduitMeld(Meld):
             Existence.unique_per_conduit_cluster,
             Existence.unique_per_conduit_lineage,
         }:
-            owner_creations = target_spell._owner_creations
-            if owner_creations is None:
+            # Only `unique` resolves into the binding owner's _owner_creations.
+            # cluster/lineage live in the meld-supplied store (elected leader /
+            # lineage-root), mirroring the front-door store selection above.
+            if existence is Existence.unique:
+                store = target_spell._owner_creations
+            elif existence is Existence.unique_per_conduit_lineage:
+                store = self._root_creations
+            else:  # unique_per_conduit_cluster
+                store = (
+                    self._cluster_creations.resolved_store()
+                    if (
+                        self._cluster_creations is not None
+                        and self._cluster_creations.is_active()
+                    )
+                    else None
+                )
+            if store is None:
                 raise ValueError(
                     "Spell '{0}' is not live.".format(spell_id)
                 )
-            creation = owner_creations.get_creation(spell_id)
+            creation = store.get_creation(spell_id)
             if creation is None:
                 raise ValueError(
                     "Spell '{0}' is not live.".format(spell_id)
@@ -745,28 +760,39 @@ class ConduitMeld(Meld):
             Existence.unique_per_conduit_cluster,
             Existence.unique_per_conduit_lineage,
         }:
-            owner_creations = spell._owner_creations
-            if owner_creations is None:
-                return {
-                    "is_live": False,
-                    "spell_id": spell_id,
-                    "spell_name": spell.spell_name,
-                    "existence": existence.name,
-                    "query_conduit_id": query_conduit_id,
-                    "storage_scope_kind": "owner_creations",
-                    "storage_owner_conduit_id": spell._owner_conduit_id,
-                    "active_spellspace_id": None,
-                    "creation_count": 0,
-                }
-            creation = owner_creations.get_creation(spell_id)
+            # Only `unique` lives in the binding owner's _owner_creations.
+            # cluster/lineage live in the meld-supplied store (elected leader /
+            # lineage-root); a cluster with no elected leader is simply not live.
+            if existence is Existence.unique:
+                store = spell._owner_creations
+                storage_scope_kind = "owner_creations"
+                storage_owner_conduit_id = spell._owner_conduit_id
+            elif existence is Existence.unique_per_conduit_lineage:
+                store = self._root_creations
+                storage_scope_kind = "lineage_root"
+                storage_owner_conduit_id = None
+            else:  # unique_per_conduit_cluster
+                store = (
+                    self._cluster_creations.resolved_store()
+                    if (
+                        self._cluster_creations is not None
+                        and self._cluster_creations.is_active()
+                    )
+                    else None
+                )
+                storage_scope_kind = "cluster_leader"
+                storage_owner_conduit_id = None
+            creation = (
+                store.get_creation(spell_id) if store is not None else None
+            )
             return {
                 "is_live": creation is not None,
                 "spell_id": spell_id,
                 "spell_name": spell.spell_name,
                 "existence": existence.name,
                 "query_conduit_id": query_conduit_id,
-                "storage_scope_kind": "owner_creations",
-                "storage_owner_conduit_id": spell._owner_conduit_id,
+                "storage_scope_kind": storage_scope_kind,
+                "storage_owner_conduit_id": storage_owner_conduit_id,
                 "active_spellspace_id": None,
                 "creation_count": 1 if creation is not None else 0,
             }

@@ -2219,6 +2219,16 @@ class SpellManyOnlyCodegenPlanBuilder(SpellGeneralizedCodegenPlanBuilder):
             return SpellGeneralizedCodegenPlanTargetKind.SPELLSPACE
         if existence is Existence.many:
             return SpellGeneralizedCodegenPlanTargetKind.CALLER
+        if existence in (
+                Existence.unique_per_conduit_cluster,
+                Existence.unique_per_conduit_lineage,
+        ):
+            # cluster/lineage no longer resolve into the binding owner's
+            # _owner_creations. The meld front door pre-selects the elected
+            # leader / lineage-root store and hands it in as caller_creations
+            # (conduit_meld store-selection block), exactly like
+            # unique_per_conduit -- so they are CALLER, not OWNER.
+            return SpellGeneralizedCodegenPlanTargetKind.CALLER
         return SpellGeneralizedCodegenPlanTargetKind.OWNER
 
     @staticmethod
@@ -2226,12 +2236,11 @@ class SpellManyOnlyCodegenPlanBuilder(SpellGeneralizedCodegenPlanBuilder):
         """
         Return the preferred runtime lock family for an existence policy.
         """
-        if existence in (
-                Existence.unique,
-                Existence.unique_per_conduit_cluster,
-                Existence.unique_per_conduit_lineage,
-        ):
+        if existence is Existence.unique:
             return "spell_lock"
+        # cluster/lineage lock on the meld-supplied store
+        # (caller_creations._lock) -- the same creations_lock discipline as
+        # unique_per_conduit and what the runtime door uses -- not spell_lock.
         return "creations_lock"
 
     @staticmethod
