@@ -77,14 +77,14 @@ class IdentityMixingStrategy(SpellSystemValidationStrategy):
         lineage_ids: Set[str] = {
             node.lineage_id for node in index.nodes.values() if node.lineage_id is not None
         }
-        version_ids: Set[str] = set(index.nodes.keys())
+        spell_ids: Set[str] = set(index.nodes.keys())
 
         for node in index.nodes.values():
             if cancel_event is not None and cancel_event.is_set:
                 cancel_event.throw_if_set()
 
             for dep_id in node.dependencies:
-                if dep_id in version_ids:
+                if dep_id in spell_ids:
                     continue
                 if dep_id not in lineage_ids:
                     continue

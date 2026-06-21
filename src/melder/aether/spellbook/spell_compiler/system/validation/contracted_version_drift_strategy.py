@@ -75,12 +75,12 @@ class ContractedVersionDriftStrategy(SpellSystemValidationStrategy):
             OperationCancelledError:
                 If cancel_event`` is set while iterating.
         """
-        lineage_to_versions: Dict[str, Set[str]] = {}
+        lineage_to_spell_ids: Dict[str, Set[str]] = {}
         for spell_id, spell in spell_lookup.items():
             if cancel_event is not None and cancel_event.is_set:
                 cancel_event.throw_if_set()
             lineage_id = spell.spell_index.id
-            lineage_to_versions.setdefault(lineage_id, set()).add(spell_id)
+            lineage_to_spell_ids.setdefault(lineage_id, set()).add(spell_id)
 
         for node in index.nodes.values():
             if cancel_event is not None and cancel_event.is_set:
@@ -88,10 +88,10 @@ class ContractedVersionDriftStrategy(SpellSystemValidationStrategy):
             lineage_id = node.lineage_id
             if lineage_id is None:
                 continue
-            visible_versions = lineage_to_versions.get(lineage_id)
-            if not visible_versions:
+            visible_spell_ids = lineage_to_spell_ids.get(lineage_id)
+            if not visible_spell_ids:
                 continue
-            if node.spell_id in visible_versions:
+            if node.spell_id in visible_spell_ids:
                 continue
             diagnostics.append(
                 SystemDiagnostic(
@@ -106,7 +106,7 @@ class ContractedVersionDriftStrategy(SpellSystemValidationStrategy):
                     details={
                         "spell_id": node.spell_id,
                         "lineage_id": lineage_id,
-                        "visible_versions": sorted(visible_versions),
+                        "visible_spell_ids": sorted(visible_spell_ids),
                     },
                 )
             )

@@ -88,29 +88,29 @@ class LineageVersionConflictStrategy(SpellSystemValidationStrategy):
             if cancel_event is not None and cancel_event.is_set:
                 cancel_event.throw_if_set()
 
-            lineage_to_versions: Dict[str, Set[str]] = {}
+            lineage_to_spell_ids: Dict[str, Set[str]] = {}
             for node_id in blueprint.dag.nodes.keys():
                 node = index.get_node(node_id)
                 if node is None or node.lineage_id is None:
                     continue
-                lineage_to_versions.setdefault(node.lineage_id, set()).add(node_id)
+                lineage_to_spell_ids.setdefault(node.lineage_id, set()).add(node_id)
 
-            for lineage_id, versions in lineage_to_versions.items():
-                if len(versions) <= 1:
+            for lineage_id, spell_ids in lineage_to_spell_ids.items():
+                if len(spell_ids) <= 1:
                     continue
                 diagnostics.append(
                     SystemDiagnostic(
                         code="lineage_version_conflict",
                         message=(
                             f"Root '{root_id}' includes multiple versions for lineage "
-                            f"'{lineage_id}': {sorted(versions)}."
+                            f"'{lineage_id}': {sorted(spell_ids)}."
                         ),
                         severity=SystemDiagnosticSeverity.ERROR,
-                        spell_id=next(iter(versions)),
+                        spell_id=next(iter(spell_ids)),
                         root_id=root_id,
                         details={
                             "lineage_id": lineage_id,
-                            "spell_ids": sorted(versions),
+                            "spell_ids": sorted(spell_ids),
                         },
                     )
                 )

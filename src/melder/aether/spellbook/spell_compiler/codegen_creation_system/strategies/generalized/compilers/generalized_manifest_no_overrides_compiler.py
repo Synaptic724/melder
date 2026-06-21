@@ -389,6 +389,13 @@ def _append_step_resolution_source(
     if existence in (
             Existence.unique_per_conduit,
             Existence.unique_per_spell_space,
+            # cluster/lineage are CALLER + creations_lock now (meld supplies the
+            # leader / lineage-root store as caller_creations), so they take the
+            # same reuse-read + creations-lock path as unique_per_conduit -- which
+            # correctly threads key_to_step_index for locals mode. (The fall-
+            # through 'plain' branch below does not, and is unreachable.)
+            Existence.unique_per_conduit_cluster,
+            Existence.unique_per_conduit_lineage,
     ):
         lines.extend([
             (
