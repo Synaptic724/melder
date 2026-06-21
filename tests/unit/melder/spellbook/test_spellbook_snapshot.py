@@ -53,7 +53,7 @@ def test_spellbook_snapshot_state_returns_detached_maps() -> None:
     assert snapshot["spellbook_id"] == spellbook.id
     assert isinstance(snapshot["snapshot_id"], str)
     assert isinstance(snapshot["captured_at_ms"], int)
-    assert spell_id in snapshot["spell_versions"]
+    assert spell_id in snapshot["spell_ids"]
     assert snapshot["contracted_spells"] == {}
     assert snapshot["lookup_contracted_spells"] == {}
-    assert snapshot["contracted_versions"] == {}
+    assert snapshot["contracted_spell_ids"] == {}

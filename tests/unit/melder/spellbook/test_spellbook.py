@@ -1425,10 +1425,10 @@ def test_snapshot_state_returns_detached_copies() -> None:
 
     snapshot["local_spells"].clear()
     snapshot["lookup_spells"].clear()
-    snapshot["spell_versions"].clear()
+    snapshot["spell_ids"].clear()
     snapshot["contracted_spells"]["peer"].clear()
     snapshot["lookup_contracted_spells"]["peer"].clear()
-    snapshot["contracted_versions"]["peer"].clear()
+    snapshot["contracted_spell_ids"]["peer"].clear()
 
     assert sb._spells == {idx: spell}
     assert sb._lookup_spells == {("frame", "binding"): idx}
