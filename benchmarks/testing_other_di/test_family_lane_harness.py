@@ -127,6 +127,54 @@ _DISP_CLASSES: Tuple[Type, ...] = (
 )
 
 
+# Mixed-disposal all-many graph: only MixMidA + MixRoot declare disposal, so the
+# step-plan emitter registers those two and emits pure constructors (no creations
+# routing, no lock) for the rest -- exercises the per-step disposal gate plus the
+# creations_N dead-alias trim.
+class MixLeafA:
+    def __init__(self) -> None:
+        self.marker = "MLA"
+
+
+class MixLeafB:
+    def __init__(self) -> None:
+        self.marker = "MLB"
+
+
+class MixMidA:
+    def __init__(self, left: MixLeafA, right: MixLeafB) -> None:
+        self.left = left
+        self.right = right
+
+    def cleanup(self) -> None:
+        pass
+
+
+class MixMidB:
+    def __init__(self, left: MixLeafA, right: MixLeafB) -> None:
+        self.left = left
+        self.right = right
+
+
+class MixRoot:
+    def __init__(self, left: MixMidA, right: MixMidB) -> None:
+        self.left = left
+        self.right = right
+
+    def cleanup(self) -> None:
+        pass
+
+
+_MIXED_CLASSES: Tuple[Type, ...] = (
+    MixLeafA,
+    MixLeafB,
+    MixMidA,
+    MixMidB,
+    MixRoot,
+)
+_MIXED_DISPOSAL_CLASSES = {MixMidA, MixRoot}
+
+
 def _reset_aether() -> None:
     """Rebind a fresh Aether singleton so each case is fully isolated."""
     Aether._reset_singleton_for_tests()
@@ -142,9 +190,10 @@ def _new_spellbook(tag: str) -> Spellbook:
     spellbook.get_configuration().set_property(
         "phase_scheduler_workers_per_spellbook", 1
     )
-    # Disable system caching so each case compiles fresh and nothing leaks
-    # across cases (a prior case's manifest being reused -> "unknown spell_id",
-    # or an A/B second run silently reusing the first run's cached executor).
+    # Disable system caching so each case compiles fresh and nothing leaks across
+    # cases. Disposal is set PER BIND (writes the fresh per-spellbook
+    # _configured_disposal_method_names), never via the idempotent frame config
+    # property, which persists across spellbooks and raises on re-set.
     spellbook.configure_aether_frame(
         system_state=None,
         disposal=None,
@@ -193,6 +242,24 @@ def _bind_many_stepplan(spellbook: Spellbook) -> str:
     return root_id
 
 
+def _bind_many_mixed_disposal(spellbook: Spellbook) -> str:
+    """ALL many, MIXED disposal -> step-plan. Every bind passes ["cleanup"] so the
+    spellbook's configured disposal set is {"cleanup"} (same as the all-disposal
+    lane); per-class disposal is then decided by whether the class actually
+    defines cleanup -- only MixMidA + MixRoot do, the rest are non-disposal."""
+    root_id = ""
+    for cls in _MIXED_CLASSES:
+        spell_id = spellbook.bind(
+            spell=cls,
+            existence=Existence.many,
+            permissions="create",
+            disposal_method_names=["cleanup"],
+        )
+        if cls is _MIXED_CLASSES[-1]:
+            root_id = spell_id
+    return root_id
+
+
 def _bind_generalized(spellbook: Spellbook) -> str:
     """Depth-5, all many EXCEPT one unique leaf (mixed) -> generalized."""
     classes = get_depth_5_classes()
@@ -212,6 +279,7 @@ _LANES: Tuple[Tuple[str, Callable[[Spellbook], str], str], ...] = (
     ("solo", _bind_solo, "<solo_no_overrides_codegen_creation:"),
     ("many_transient", _bind_many_transient, "transient_executor"),
     ("many_stepplan(disposal)", _bind_many_stepplan, "step_executor_disposal"),
+    ("many_mixed(disposal)", _bind_many_mixed_disposal, "step_executor_disposal"),
     ("generalized(mixed)", _bind_generalized, "generalized_no_overrides_step_factory"),
 )
 

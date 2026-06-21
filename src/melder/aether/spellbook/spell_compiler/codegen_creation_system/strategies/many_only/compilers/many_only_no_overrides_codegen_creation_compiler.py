@@ -188,11 +188,20 @@ def compile_no_overrides_codegen_creation_executor_from_plan(
     many_only_unrolled_schema = _build_many_only_unrolled_schema_from_plan(plan)
     if many_only_unrolled_schema is not None:
         transient_schema = many_only_unrolled_schema
+    # Consume the disposal truth stamped on the plan artifact at bind time
+    # (it composes into the spell fingerprint) instead of re-reading the live
+    # spell during codegen.
+    step_has_disposal_methods: Optional[Tuple[bool, ...]] = None
+    if hasattr(plan, "step_has_disposal_methods"):
+        step_has_disposal_methods = tuple(
+            bool(flag) for flag in plan.step_has_disposal_methods
+        )
     return _compile_no_overrides_executor_from_entry_inputs(
         steps=steps,
         root_instance_key=plan.root_instance_key,
         root_spell_id=plan.root_spell_id,
         transient_schema=transient_schema,
+        step_has_disposal_methods=step_has_disposal_methods,
         missing_root_instance_key_message=(
             "No-overrides codegen plan is missing a resolvable root instance key."
         ),
@@ -207,6 +216,7 @@ def _compile_no_overrides_executor_from_entry_inputs(
         root_spell_id: Optional[str],
         transient_schema: Optional[Dict[str, Any]],
         missing_root_instance_key_message: str,
+        step_has_disposal_methods: Optional[Tuple[bool, ...]] = None,
         return_compiled_code_object: bool = False,
 ) -> Union[Callable[..., Any], Tuple[Callable[..., Any], Any]]:
     """
@@ -253,6 +263,7 @@ def _compile_no_overrides_executor_from_entry_inputs(
         steps=steps,
         root_instance_key=resolved_root_instance_key,
         transient_schema=transient_schema,
+        step_has_disposal_methods=step_has_disposal_methods,
         return_compiled_code_object=return_compiled_code_object,
     )
 
@@ -262,6 +273,7 @@ def _compile_no_overrides_executor_from_steps(
         steps: Tuple[Any, ...],
         root_instance_key: Tuple[str, Optional[int]],
         transient_schema: Optional[Dict[str, Any]],
+        step_has_disposal_methods: Optional[Tuple[bool, ...]] = None,
         return_compiled_code_object: bool = False,
 ) -> Union[Callable[..., Any], Tuple[Callable[..., Any], Any]]:
     """
@@ -288,10 +300,16 @@ def _compile_no_overrides_executor_from_steps(
         Callable[..., Any]:
             Compiled no-overrides executor for the provided plan shape.
     """
-    has_any_disposal_methods = any(
-        plan_step.spell.has_disposal_methods
-        for plan_step in steps
-    )
+    # Disposal truth is stamped into the plan/manifest artifact at bind time
+    # (it composes into the spell fingerprint). Consume the stamped per-step
+    # array; only fall back to reading the live spell when an entrypoint did
+    # not carry the artifact array (e.g. the schema-rows path).
+    if step_has_disposal_methods is None:
+        step_has_disposal_methods = tuple(
+            bool(plan_step.spell.has_disposal_methods)
+            for plan_step in steps
+        )
+    has_any_disposal_methods = any(step_has_disposal_methods)
 
     if transient_schema is not None and not has_any_disposal_methods:
         normalized_transient_schema = _normalize_transient_schema(
@@ -317,6 +335,8 @@ def _compile_no_overrides_executor_from_steps(
 
     step_source = _build_step_plan_executor_source(
         steps=steps,
+        root_instance_key=root_instance_key,
+        step_has_disposal_methods=step_has_disposal_methods,
         has_any_disposal_methods=has_any_disposal_methods,
     )
     step_namespace = _build_step_executor_namespace(
@@ -677,6 +697,7 @@ def _emit_construct_instance(
         step_index: int,
         inlinable_params: Optional[Tuple[Tuple[str, Any], ...]],
         indent: str,
+        key_to_step_index: Optional[Dict[Any, int]] = None,
 ) -> None:
     """
     Append the construction source for one step at ``indent``.
@@ -685,6 +706,10 @@ def _emit_construct_instance(
     direct ``spell.spell(**kwargs)`` call, so no per-meld recipe interpretation
     happens. For every other shape it emits the generic
     ``_construct_spell_instance`` call unchanged.
+
+    In locals mode (``key_to_step_index`` supplied) dependency arguments compile
+    to direct per-step ``instance_N`` local loads instead of tuple-keyed
+    ``instance_results`` reads.
     """
     if inlinable_params is None:
         lines.append(
@@ -698,13 +723,22 @@ def _emit_construct_instance(
         lines.append(
             f"{indent}    instance_{step_index} = spell_{step_index}.spell("
         )
-        for arg_index, (param_name, _dependency_key) in enumerate(
+        for arg_index, (param_name, dependency_key) in enumerate(
                 inlinable_params,
         ):
-            lines.append(
-                f"{indent}        {param_name}="
-                f"instance_results[step_dep_keys_{step_index}[{arg_index}]],"
-            )
+            if key_to_step_index is not None:
+                dependency_step_index = key_to_step_index[
+                    (dependency_key[0], dependency_key[1])
+                ]
+                lines.append(
+                    f"{indent}        {param_name}="
+                    f"instance_{dependency_step_index},"
+                )
+            else:
+                lines.append(
+                    f"{indent}        {param_name}="
+                    f"instance_results[step_dep_keys_{step_index}[{arg_index}]],"
+                )
         lines.append(f"{indent}    )")
     else:
         lines.append(
@@ -719,6 +753,8 @@ def _emit_construct_instance(
 def _build_step_plan_executor_source(
         *,
         steps: Tuple[Any, ...],
+        root_instance_key: Tuple[str, Optional[int]],
+        step_has_disposal_methods: Tuple[bool, ...],
         has_any_disposal_methods: bool,
 ) -> str:
     """
@@ -730,8 +766,40 @@ def _build_step_plan_executor_source(
         - Inlines the constructor call for the common spell shape; other
           shapes keep the generic `_construct_spell_instance` path.
         - Preserves root-instance verification semantics.
+        - LOCALS MODE: when every step is inlinable and every dependency key
+          resolves to an emitted step, step results live in per-step local
+          variables and dependency reads compile to direct local loads - no
+          `instance_results` dict, no tuple-key hashing, and no runtime root
+          presence check (root assignment is statically guaranteed). The
+          disposal lock + registration stores are emitted unchanged; locals
+          mode only changes where each result is held.
+        - DICT MODE: any generic-constructor step falls back to the
+          `instance_results` dict so `_construct_spell_instance` keeps its
+          full recipe surface.
     """
-    step_count = len(steps)
+    key_to_step_index: Dict[Any, int] = {}
+    for index, plan_step in enumerate(steps):
+        key_to_step_index[tuple(plan_step.instance_key)] = index
+
+    normalized_root_key = (root_instance_key[0], root_instance_key[1])
+    locals_mode = normalized_root_key in key_to_step_index
+    if locals_mode:
+        for plan_step in steps:
+            inlinable_params = _inlinable_common_shape(plan_step)
+            if inlinable_params is None:
+                locals_mode = False
+                break
+            for _param_name, dependency_key in inlinable_params:
+                dependency_key_tuple = (
+                    dependency_key[0],
+                    dependency_key[1],
+                )
+                if dependency_key_tuple not in key_to_step_index:
+                    locals_mode = False
+                    break
+            if not locals_mode:
+                break
+
     lines = [
         "def _no_overrides_codegen_creation_executor(",
         "        caller_creations=None,",
@@ -747,29 +815,53 @@ def _build_step_plan_executor_source(
         "        _raise_meld_construction_error=_raise_meld_construction_error,",
         "        MeldExecutionError=MeldExecutionError,",
         "        SpellSpaceScopeError=SpellSpaceScopeError,",
-        "    ):",
-        "    instance_results = {}",
     ]
     if has_any_disposal_methods:
-        lines.insert(
-            8,
-            "        step_disposal_methods=step_disposal_methods,",
-        )
+        lines.append("        step_disposal_methods=step_disposal_methods,")
+        lines.append("        step_spell_ids=step_spell_ids,")
+    lines.append("    ):")
+    if not locals_mode:
+        lines.append("    instance_results = {}")
+    # Hoist the caller_creations guard: it is call-constant, so checking it
+    # once replaces the per-step re-checks the CALLER/SPELLSPACE routing
+    # used to emit (one redundant branch per such step).
+    if any(
+            plan_step.creations_target_kind
+            in (
+                ManyOnlyCodegenPlanTargetKind.CALLER,
+                ManyOnlyCodegenPlanTargetKind.SPELLSPACE,
+            )
+            and step_has_disposal_methods[index]
+            for index, plan_step in enumerate(steps)
+    ):
+        lines.extend([
+            "    if caller_creations is None:",
+            "        raise RuntimeError(",
+            "            \"No-overrides codegen CALLER/SPELLSPACE execution requires caller_creations.\"",
+            "        )",
+        ])
     for index, plan_step in enumerate(steps):
         _append_step_resolution_source(
             lines=lines,
             step_index=index,
             plan_step=plan_step,
+            has_disposal_methods=step_has_disposal_methods[index],
+            key_to_step_index=key_to_step_index if locals_mode else None,
         )
-    lines.extend([
-        "    if root_instance_key not in instance_results:",
-        "        raise MeldExecutionError(",
-        "            spell_id=root_instance_key[0],",
-        "            spell_name=root_instance_key[0],",
-        "            message=f\"No-overrides codegen root instance '{root_instance_key[0]}' is missing.\",",
-        "        )",
-        "    return instance_results[root_instance_key]",
-    ])
+    if locals_mode:
+        lines.append(
+            f"    return instance_{key_to_step_index[normalized_root_key]}"
+        )
+    else:
+        lines.extend([
+            "    if root_instance_key not in instance_results:",
+            "        raise MeldExecutionError(",
+            "            spell_id=root_instance_key[0],",
+            "            spell_name=root_instance_key[0],",
+            "            message=f\"No-overrides codegen root instance '{root_instance_key[0]}' is missing.\",",
+            "        )",
+            "    return instance_results[root_instance_key]",
+        ])
     return "\n".join(lines)
 
 
@@ -790,13 +882,9 @@ def _append_step_creations_target_source(
             ManyOnlyCodegenPlanTargetKind.CALLER,
             ManyOnlyCodegenPlanTargetKind.SPELLSPACE,
     ):
-        lines.extend([
-            "    if caller_creations is None:",
-            "        raise RuntimeError(",
-            "            \"No-overrides codegen CALLER/SPELLSPACE execution requires caller_creations.\"",
-            "        )",
-            f"    creations_{step_index} = caller_creations",
-        ])
+        # The caller_creations None-guard is hoisted to the top of the emitted
+        # body (it is call-constant), so this routing is just the alias.
+        lines.append(f"    creations_{step_index} = caller_creations")
         return
 
     if target_kind == ManyOnlyCodegenPlanTargetKind.OWNER:
@@ -825,6 +913,8 @@ def _append_step_resolution_source(
         lines: list[str],
         step_index: int,
         plan_step: Any,
+        has_disposal_methods: bool,
+        key_to_step_index: Optional[Dict[Any, int]] = None,
 ) -> None:
     """
     Append emitted source lines for one no-overrides plan step.
@@ -835,43 +925,56 @@ def _append_step_resolution_source(
         - Emits static creations-target routing from plan metadata.
         - Emits an inlined constructor call for the common spell shape and
           falls back to `_construct_spell_instance` for every other shape.
+        - In locals mode (`key_to_step_index` supplied) step results are plain
+          locals: no `instance_results` store is emitted, inlined dependency
+          reads compile to direct local loads, and the `plan_step_N` /
+          `step_dep_keys_N` aliases (read only by the dict path) are skipped.
     """
     inlinable_params = _inlinable_common_shape(plan_step)
-    lines.extend([
-        f"    plan_step_{step_index} = steps[{step_index}]",
-        f"    spell_{step_index} = step_spells[{step_index}]",
-    ])
-    if plan_step.spell.has_disposal_methods:
+    # plan_step_N is read only by the generic _construct_spell_instance path
+    # (inlinable_params is None); inlinable steps never touch it.
+    if inlinable_params is None:
+        lines.append(f"    plan_step_{step_index} = steps[{step_index}]")
+    lines.append(f"    spell_{step_index} = step_spells[{step_index}]")
+    if has_disposal_methods:
         lines.extend([
-            f"    spell_id_{step_index} = spell_{step_index}.spell_id",
+            f"    spell_id_{step_index} = step_spell_ids[{step_index}]",
             (
                 f"    disposal_methods_{step_index} = "
                 f"step_disposal_methods[{step_index}]"
             ),
         ])
-    if inlinable_params:
+    if inlinable_params and key_to_step_index is None:
         lines.append(
             f"    step_dep_keys_{step_index} = step_dep_keys[{step_index}]"
         )
-    _append_step_creations_target_source(
-        lines=lines,
-        step_index=step_index,
-        target_kind=plan_step.creations_target_kind,
-    )
+    # creations_N is read only by the disposal register block, so non-disposal
+    # steps (pure constructor: no lock, no register) skip the routing entirely.
+    if has_disposal_methods:
+        _append_step_creations_target_source(
+            lines=lines,
+            step_index=step_index,
+            target_kind=plan_step.creations_target_kind,
+        )
     _emit_construct_instance(
         lines=lines,
         step_index=step_index,
         inlinable_params=inlinable_params,
         indent="    ",
+        key_to_step_index=key_to_step_index,
     )
-    if plan_step.spell.has_disposal_methods:
+    if has_disposal_methods:
         lines.append(f"    with creations_{step_index}._lock:")
         _append_step_register_source(
             lines=lines,
             step_index=step_index,
             indent="        ",
         )
-    lines.append(f"    instance_results[step_instance_keys[{step_index}]] = instance_{step_index}")
+    if key_to_step_index is None:
+        lines.append(
+            f"    instance_results[step_instance_keys[{step_index}]] = "
+            f"instance_{step_index}"
+        )
 
 
 def _append_step_register_source(
@@ -881,20 +984,46 @@ def _append_step_register_source(
         indent: str,
 ) -> None:
     """
-    Append emitted registration lines specialized for one step existence mode.
+    Append inline registration stores for one many + disposal step.
 
     Contract:
-        - Emits the direct many-only registration semantics only.
-        - Emits only the disposal-aware many registration path.
+        - Emits direct `_creations` / `_disposable_creations` list stores
+          instead of an `add_many_creations` method call: the store method is
+          lock-free with caller-held locking and every branch inside it is
+          decided by fingerprint-stable facts (many existence, disposal
+          present), so the call is pure dispatch overhead on this path.
+        - The non-list slot guard is structurally unreachable here: existence
+          is fingerprint-stable, so a `many` spell id only ever owns a list
+          slot, co-written solely by this path under `creations._lock`.
         - Assumes caller has already emitted the required creations lock.
     """
     lines.extend([
-        f"{indent}creations_{step_index}.add_many_creations(",
-        f"{indent}    spell_id_{step_index},",
-        f"{indent}    instance_{step_index},",
-        f"{indent}    has_disposal_methods=True,",
-        f"{indent}    disposal_methods=disposal_methods_{step_index},",
-        f"{indent})",
+        (
+            f"{indent}many_live_{step_index} = "
+            f"creations_{step_index}._creations.get(spell_id_{step_index})"
+        ),
+        f"{indent}if many_live_{step_index} is None:",
+        f"{indent}    many_live_{step_index} = []",
+        (
+            f"{indent}    creations_{step_index}._creations"
+            f"[spell_id_{step_index}] = many_live_{step_index}"
+        ),
+        f"{indent}many_live_{step_index}.append(instance_{step_index})",
+        (
+            f"{indent}many_disposable_{step_index} = "
+            f"creations_{step_index}._disposable_creations"
+            f".get(spell_id_{step_index})"
+        ),
+        f"{indent}if many_disposable_{step_index} is None:",
+        f"{indent}    many_disposable_{step_index} = []",
+        (
+            f"{indent}    creations_{step_index}._disposable_creations"
+            f"[spell_id_{step_index}] = many_disposable_{step_index}"
+        ),
+        (
+            f"{indent}many_disposable_{step_index}.append("
+            f"(instance_{step_index}, list(disposal_methods_{step_index})))"
+        ),
     ])
 
 
@@ -939,6 +1068,17 @@ def _build_step_executor_namespace(
         "step_disposal_methods": (
             tuple(
                 plan_step.spell.disposal_method_names
+                for plan_step in steps
+            )
+            if has_any_disposal_methods
+            else ()
+        ),
+        # Precomputed spell-id array (only the disposal register reads it), so
+        # the emitted body subscripts a tuple instead of re-reading
+        # spell.spell_id off the live spell object every meld.
+        "step_spell_ids": (
+            tuple(
+                plan_step.spell.spell_id
                 for plan_step in steps
             )
             if has_any_disposal_methods
