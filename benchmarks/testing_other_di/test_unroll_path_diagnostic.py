@@ -85,6 +85,16 @@ def _capture_compiles(
         spellbook.get_configuration().set_property(
             "phase_scheduler_workers_per_spellbook", 1
         )
+        # Disable system caching so each case compiles fresh. Otherwise the
+        # process-wide manifest/executor cache leaks across cases (reusing one
+        # case's manifest for another's spells -> "unknown spell_id"), and an A/B
+        # second run just reuses the first run's cached executor.
+        spellbook.configure_aether_frame(
+            system_state=None,
+            disposal=None,
+            disposal_method_names=None,
+            system_caching_enabled=False,
+        )
         spell_ids: Dict[Type, str] = {}
         for cls in classes:
             spell_ids[cls] = spellbook.bind(
