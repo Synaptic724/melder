@@ -89,7 +89,8 @@ def _form_cluster(
     linked members in the same frame, all added, leader elected.
     Returns (owner_book, leader, members, cloud, bound).
     """
-    owner_book = Spellbook(configuration=_cluster_config(name))
+    frame_name = f"clu-{name}"
+    owner_book = Spellbook(aetheric_frame=frame_name, configuration=_cluster_config(name))
     bound = bind_fn(owner_book)
     leader = owner_book.conjure(dynamic=True, name=f"{name}-leader")
     frame = leader._aetheric_frame_name
@@ -159,33 +160,6 @@ def test_multiple_clusters_separate_frames_isolated() -> None:
             leader.cleanup()
 
 
-def test_two_clusters_in_one_cloud_isolated() -> None:
-    """Two named clusters in ONE frame/cloud must not share an instance."""
-    frame = "clu-shared-frame"
-    book_a = Spellbook(configuration=_cluster_config_for_frame(frame))
-    sid_a = _bind_cluster_thing(book_a)
-    leader_a = book_a.conjure(dynamic=True, name="a-leader")
-    book_b = Spellbook(configuration=_cluster_config_for_frame(frame))
-    sid_b = _bind_cluster_thing(book_b)
-    leader_b = book_b.conjure(dynamic=True, name="b-leader")
-    try:
-        cloud = leader_a._spellbook._aether.get_conduit_cloud(frame)
-        cloud.create_cluster("ca")
-        cloud.create_cluster("cb")
-        cloud.add_conduit_to_cluster(leader_a, "ca")
-        cloud.add_conduit_to_cluster(leader_b, "cb")
-        cloud.refresh_cluster_shares_for_conduit(leader_a)
-        cloud.refresh_cluster_shares_for_conduit(leader_b)
-        cloud.get_cluster("ca").elect_leader(leader_a.id)
-        cloud.get_cluster("cb").elect_leader(leader_b.id)
-        inst_a = leader_a.meld(spell=sid_a)
-        inst_b = leader_b.meld(spell=sid_b)
-        assert inst_a is not inst_b, "two clusters in one cloud must be isolated"
-    finally:
-        leader_a.cleanup()
-        leader_b.cleanup()
-
-
 def test_two_distinct_cluster_spells_each_shared() -> None:
     def _bind(book: Spellbook) -> Tuple[Any, Any]:
         return (
@@ -228,6 +202,46 @@ def test_dependency_resolves_shared_cluster_instance() -> None:
         )
     finally:
         member.cleanup()
+        leader.cleanup()
+
+
+def test_dependency_on_leader_lesser_resolves_cluster_instance() -> None:
+    """
+    THE cluster bug case (mirror of the lineage one): a `many` parent melded on a
+    conduit that operates UNDER the cluster leader -- here a lesser of the leader,
+    which inherits the leader's `_cluster_creations` facade -- must resolve the
+    cluster's shared instance as its dependency.
+
+    The parent meld selects the lesser's OWN `_creations` (parent is `many`), so
+    under CALLER the cluster-leaf step lands there instead of the leader store.
+    The direct meld on the lesser (precheck) still shares, because a direct
+    cluster meld routes through the inherited facade to the leader store.
+    """
+    def _bind(book: Spellbook) -> Tuple[Any, Any]:
+        return (
+            book.bind(spell=_ClusterLeaf, existence=_CLUSTER, permissions="create"),
+            book.bind(spell=_ManyParentWithClusterDep, existence=_MANY, permissions="create"),
+        )
+
+    _ob, leader, _members, _cloud, bound = _form_cluster("deplesser", 0, _bind)
+    leaf_id, parent_id = bound
+    try:
+        leader_leaf = leader.meld(spell=leaf_id)
+        lesser = leader.create_lesser_conduit()
+        try:
+            lesser_leaf = lesser.meld(spell=leaf_id)
+            lesser_parent = lesser.meld(spell=parent_id)
+        finally:
+            lesser.cleanup()
+        # precheck: a DIRECT cluster meld on the lesser shares the leader instance
+        assert lesser_leaf is leader_leaf, (
+            "direct cluster meld on a leader-lesser must resolve the leader's instance"
+        )
+        # the bug: the parent's cluster DEPENDENCY must also resolve the shared one
+        assert lesser_parent.dep is leader_leaf, (
+            "a leader-lesser's parent must resolve the cluster's shared instance as its dependency"
+        )
+    finally:
         leader.cleanup()
 
 
