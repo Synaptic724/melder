@@ -203,6 +203,7 @@ class Spell(Cleanable):
     """
     __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
+        "_active",
         "_activation_hooks",
         "_creation_context",
         "_creation_context_factory",
@@ -299,6 +300,7 @@ class Spell(Cleanable):
         """
         super().__init__()
         self._lock = RLock()
+        self._active = True  # active in its index; flipped by notch/disable
         self._id: str = new_ulid()  # Unique internal ID for tracking
 
         # Spell Data
