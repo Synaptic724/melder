@@ -26,29 +26,26 @@ def compile_solo_overrides_codegen_creation_executor(
           compiled `CodeType`.
     """
     has_disposal_methods = spell.has_disposal_methods
-    has_prebound_owner_creations = spell._owner_creations is not None
     source_name = (
         "<solo_overrides_codegen_creation:"
         f"{solo_emit_key}:"
-        f"{int(has_disposal_methods)}:"
-        f"{int(has_prebound_owner_creations)}>"
+        f"{int(has_disposal_methods)}>"
     )
     source = _build_source(
         solo_emit_key=solo_emit_key,
         has_disposal_methods=has_disposal_methods,
-        has_prebound_owner_creations=has_prebound_owner_creations,
     )
     local_namespace: dict[str, Any] = {}
     namespace = {
         "call_target": spell.spell,
         "spell": spell,
         "spell_id": spell.spell_id,
-        "prebound_owner_creations": spell._owner_creations,
-        "disposal_methods": _normalize_disposal_methods(
-            spell.disposal_method_names
-        ),
         "_invoke_with_overrides": _invoke_with_overrides,
     }
+    if has_disposal_methods:
+        namespace["disposal_methods"] = _normalize_disposal_methods(
+            spell.disposal_method_names
+        )
     try:
         code_object = get_or_compile_executor_code(
             source=source,
@@ -75,23 +72,36 @@ def _build_source(
         *,
         solo_emit_key: str,
         has_disposal_methods: bool,
-        has_prebound_owner_creations: bool,
 ) -> str:
     """
     Return the literal emitted source for one solo overrides lane.
+
+    Each lane takes the resolving `meld` plus the override payload and reads
+    its own creation store off the meld, mirroring the per-existence store
+    selection the meld front doors perform: `unique_per_conduit` ->
+    `meld._conduit_creations`, `unique_per_spell_space` ->
+    `meld._spellspace_creations`, `unique_per_conduit_lineage` ->
+    `meld._root_creations`, `unique_per_conduit_cluster` ->
+    `meld._cluster_creations.resolved_store()`. `unique` adds to the
+    spell-owned `spell._owner_creations` store, and `many` with disposal is
+    tracked in the innermost active scope.
     """
     if solo_emit_key == "many":
         if has_disposal_methods:
-            return """def _solo_overrides_codegen_creation_executor(
-        caller_creations,
-        overrides,
-        caller_creations_lock_held=False,
-):
+            # `many` with disposal is tracked for cleanup in the innermost active
+            # scope of the resolving meld: the spellspace scope store when melded
+            # through a SpellSpaceMeld, otherwise the owning conduit store.
+            # `_spellspace_creations` is None on a ConduitMeld and the live scope
+            # store on a SpellSpaceMeld, so one None check routes it.
+            return """def _solo_overrides_codegen_creation_executor(meld, overrides):
     instance = _invoke_with_overrides(
         call_target=call_target,
         overrides=overrides,
     )
-    caller_creations.add_many_creations(
+    many_creations = meld._spellspace_creations
+    if many_creations is None:
+        many_creations = meld._conduit_creations
+    many_creations.add_many_creations(
         spell_id,
         instance,
         has_disposal_methods=True,
@@ -99,11 +109,7 @@ def _build_source(
     )
     return instance
 """
-        return """def _solo_overrides_codegen_creation_executor(
-        caller_creations,
-        overrides,
-        caller_creations_lock_held=False,
-):
+        return """def _solo_overrides_codegen_creation_executor(meld, overrides):
     return _invoke_with_overrides(
         call_target=call_target,
         overrides=overrides,
@@ -112,16 +118,12 @@ def _build_source(
 
     if solo_emit_key == "unique_per_conduit":
         if has_disposal_methods:
-            return """def _solo_overrides_codegen_creation_executor(
-        caller_creations,
-        overrides,
-        caller_creations_lock_held=False,
-):
+            return """def _solo_overrides_codegen_creation_executor(meld, overrides):
     instance = _invoke_with_overrides(
         call_target=call_target,
         overrides=overrides,
     )
-    caller_creations.add_creation(
+    meld._conduit_creations.add_creation(
         spell_id,
         instance,
         has_disposal_methods=True,
@@ -129,16 +131,12 @@ def _build_source(
     )
     return instance
 """
-        return """def _solo_overrides_codegen_creation_executor(
-        caller_creations,
-        overrides,
-        caller_creations_lock_held=False,
-):
+        return """def _solo_overrides_codegen_creation_executor(meld, overrides):
     instance = _invoke_with_overrides(
         call_target=call_target,
         overrides=overrides,
     )
-    caller_creations.add_creation(
+    meld._conduit_creations.add_creation(
         spell_id,
         instance,
     )
@@ -147,16 +145,12 @@ def _build_source(
 
     if solo_emit_key == "unique_per_spell_space":
         if has_disposal_methods:
-            return """def _solo_overrides_codegen_creation_executor(
-        caller_creations,
-        overrides,
-        caller_creations_lock_held=False,
-):
+            return """def _solo_overrides_codegen_creation_executor(meld, overrides):
     instance = _invoke_with_overrides(
         call_target=call_target,
         overrides=overrides,
     )
-    caller_creations.add_creation(
+    meld._spellspace_creations.add_creation(
         spell_id,
         instance,
         has_disposal_methods=True,
@@ -164,16 +158,12 @@ def _build_source(
     )
     return instance
 """
-        return """def _solo_overrides_codegen_creation_executor(
-        caller_creations,
-        overrides,
-        caller_creations_lock_held=False,
-):
+        return """def _solo_overrides_codegen_creation_executor(meld, overrides):
     instance = _invoke_with_overrides(
         call_target=call_target,
         overrides=overrides,
     )
-    caller_creations.add_creation(
+    meld._spellspace_creations.add_creation(
         spell_id,
         instance,
     )
@@ -181,11 +171,7 @@ def _build_source(
 """
 
     if solo_emit_key == "existing_creation":
-        return """def _solo_overrides_codegen_creation_executor(
-        caller_creations,
-        overrides,
-        caller_creations_lock_held=False,
-):
+        return """def _solo_overrides_codegen_creation_executor(meld, overrides):
     instance = spell.user_created_object
     if instance is None:
         raise RuntimeError(
@@ -196,52 +182,13 @@ def _build_source(
 """
 
     if solo_emit_key == "unique":
-        if has_prebound_owner_creations:
-            if has_disposal_methods:
-                return """def _solo_overrides_codegen_creation_executor(
-        caller_creations,
-        overrides,
-        caller_creations_lock_held=False,
-):
-    instance = _invoke_with_overrides(
-        call_target=call_target,
-        overrides=overrides,
-    )
-    prebound_owner_creations.add_creation(
-        spell_id,
-        instance,
-        has_disposal_methods=True,
-        disposal_methods=disposal_methods,
-    )
-    return instance
-"""
-            return """def _solo_overrides_codegen_creation_executor(
-        caller_creations,
-        overrides,
-        caller_creations_lock_held=False,
-):
-    instance = _invoke_with_overrides(
-        call_target=call_target,
-        overrides=overrides,
-    )
-    prebound_owner_creations.add_creation(
-        spell_id,
-        instance,
-    )
-    return instance
-"""
         if has_disposal_methods:
-            return """def _solo_overrides_codegen_creation_executor(
-        caller_creations,
-        overrides,
-        caller_creations_lock_held=False,
-):
+            return """def _solo_overrides_codegen_creation_executor(meld, overrides):
     instance = _invoke_with_overrides(
         call_target=call_target,
         overrides=overrides,
     )
-    dynamic_owner_creations = spell._owner_creations
-    dynamic_owner_creations.add_creation(
+    spell._owner_creations.add_creation(
         spell_id,
         instance,
         has_disposal_methods=True,
@@ -249,17 +196,12 @@ def _build_source(
     )
     return instance
 """
-        return """def _solo_overrides_codegen_creation_executor(
-        caller_creations,
-        overrides,
-        caller_creations_lock_held=False,
-):
+        return """def _solo_overrides_codegen_creation_executor(meld, overrides):
     instance = _invoke_with_overrides(
         call_target=call_target,
         overrides=overrides,
     )
-    dynamic_owner_creations = spell._owner_creations
-    dynamic_owner_creations.add_creation(
+    spell._owner_creations.add_creation(
         spell_id,
         instance,
     )
@@ -268,22 +210,16 @@ def _build_source(
 
     if solo_emit_key == "unique_per_conduit_cluster":
         # Cluster stores the (overridden) instance in the elected leader's
-        # creations, resolved by the meld and passed by the cluster override door
-        # as the 4th positional argument (`leader_creations`), never the binding
-        # owner's `_owner_creations`. has_prebound_owner_creations is irrelevant
-        # here, exactly as for lineage.
+        # creations, resolved off the meld via the cluster facade
+        # (`meld._cluster_creations.resolved_store()`), never the binding owner's
+        # `_owner_creations`.
         if has_disposal_methods:
-            return """def _solo_overrides_codegen_creation_executor(
-        caller_creations,
-        overrides,
-        caller_creations_lock_held=False,
-        leader_creations=None,
-):
+            return """def _solo_overrides_codegen_creation_executor(meld, overrides):
     instance = _invoke_with_overrides(
         call_target=call_target,
         overrides=overrides,
     )
-    leader_creations.add_creation(
+    meld._cluster_creations.resolved_store().add_creation(
         spell_id,
         instance,
         has_disposal_methods=True,
@@ -291,17 +227,12 @@ def _build_source(
     )
     return instance
 """
-        return """def _solo_overrides_codegen_creation_executor(
-        caller_creations,
-        overrides,
-        caller_creations_lock_held=False,
-        leader_creations=None,
-):
+        return """def _solo_overrides_codegen_creation_executor(meld, overrides):
     instance = _invoke_with_overrides(
         call_target=call_target,
         overrides=overrides,
     )
-    leader_creations.add_creation(
+    meld._cluster_creations.resolved_store().add_creation(
         spell_id,
         instance,
     )
@@ -309,22 +240,16 @@ def _build_source(
 """
 
     if solo_emit_key == "unique_per_conduit_lineage":
-        # Lineage stores the (overridden) instance in the resolving door's
-        # lineage-root creations (`root_creations`), passed by the hooks override
-        # door as the 4th positional argument, never the binding owner's
-        # `_owner_creations`. has_prebound_owner_creations is irrelevant here.
+        # Lineage stores the (overridden) instance in the resolving meld's
+        # lineage-root creations (`meld._root_creations`), never the binding
+        # owner's `_owner_creations`.
         if has_disposal_methods:
-            return """def _solo_overrides_codegen_creation_executor(
-        caller_creations,
-        overrides,
-        caller_creations_lock_held=False,
-        root_creations=None,
-):
+            return """def _solo_overrides_codegen_creation_executor(meld, overrides):
     instance = _invoke_with_overrides(
         call_target=call_target,
         overrides=overrides,
     )
-    root_creations.add_creation(
+    meld._root_creations.add_creation(
         spell_id,
         instance,
         has_disposal_methods=True,
@@ -332,17 +257,12 @@ def _build_source(
     )
     return instance
 """
-        return """def _solo_overrides_codegen_creation_executor(
-        caller_creations,
-        overrides,
-        caller_creations_lock_held=False,
-        root_creations=None,
-):
+        return """def _solo_overrides_codegen_creation_executor(meld, overrides):
     instance = _invoke_with_overrides(
         call_target=call_target,
         overrides=overrides,
     )
-    root_creations.add_creation(
+    meld._root_creations.add_creation(
         spell_id,
         instance,
     )
