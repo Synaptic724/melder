@@ -139,7 +139,7 @@ class SpellSpace(Cleanable):
         self._meld: SpellSpaceMeld = SpellSpaceMeld(
             spellspace=self,
             spellspace_creations=self._creations,
-            owner_conduit_creations=self._owner_conduit_creations,
+            conduit_creations=self._owner_conduit_creations,
             root_creations=conduit_meld._root_creations,
             cluster_creations=conduit_meld._cluster_creations,
             spellbook=conduit_meld._spellbook,

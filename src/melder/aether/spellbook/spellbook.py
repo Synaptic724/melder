@@ -255,7 +255,6 @@ and logging.
 
         # Core spell storage (SpellIndex Maps)
         self._spells: Dict[SpellIndex, Spell] = {} # Active Spells not all spell indexed spells
-        self._inactive_spells: Dict[str, Spell] = {}  # inactive owned candidates, off resolution surface; key=spell_id
         self._spell_ids: Set[str] = set()
         self._lookup_spells: Dict[tuple, SpellIndex]  = {}
         self._spells_by_id: Dict[str, Spell] = {}
@@ -264,7 +263,6 @@ and logging.
         # Networked/remote spell support
         # This stores spells borrowed from other conduits (keyed by peer Conduit id)
         self._contracted_spells: Dict[str, Dict[SpellIndex, Spell]] = {}  # Active Contracted Spells not all spell indexed spells
-        self._inactive_contracted_spells: Dict[str, Dict[str, Spell]] = {}  # conduit_id -> {spell_id -> inactive borrowed Spell}
         self._contracted_spell_ids: Dict[str, Set[str]] = {}
         self._lookup_contracted_spells: Dict[str, Dict[tuple, SpellIndex]]  = {}
         self._contracted_spells_by_id: Dict[str, Dict[str, Spell]] = {}
@@ -350,7 +348,6 @@ and logging.
 
         try:
             self._spells.clear()
-            self._inactive_spells.clear()
         except Exception as e:
             self._logger.error(f"Error clearing _spells: {e}", "_cleanup_components", exc_info=True)
         del self._spells
@@ -376,7 +373,6 @@ and logging.
 
         try:
             self._contracted_spells.clear()
-            self._inactive_contracted_spells.clear()
         except Exception as e:
             self._logger.error(f"Error cleaning _contracted_spells: {e}", "_cleanup_components", exc_info=True)
         del self._contracted_spells

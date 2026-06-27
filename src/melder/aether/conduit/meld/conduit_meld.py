@@ -32,16 +32,15 @@ class ConduitMeld(Meld):
     """
 
     __melder_internal__: ClassVar[object] = _mrg.sentinel
-    __slots__ = [
-        "_creations",
-        "_root_creations",
-        "_cluster_creations",
-    ]
+    # The creation-store surface (`_conduit_creations` / `_root_creations` /
+    # `_cluster_creations` / `_spellspace_creations`) and its construction +
+    # cleanup live on the base `Meld`. This door adds no store slots of its own.
+    __slots__: list[str] = []
 
     def __init__(
             self,
             *,
-            creations: "ConduitCreations",
+            conduit_creations: "ConduitCreations",
             spellbook: "Spellbook",
             conduit_id: Optional[str] = None,
             resolution_conduit_id: Optional[str] = None,
@@ -51,8 +50,15 @@ class ConduitMeld(Meld):
         """
         Initialize one conduit-facing meld front door.
 
+        The creation-store surface lives on the base `Meld`; this door only
+        forwards its conduit-owned registry as `conduit_creations`. The base
+        defaults `_root_creations` to it (repointed for lessers by `Conduit`),
+        and leaves `_cluster_creations` (the cluster facade) and
+        `_spellspace_creations` (None on the conduit path) to be assigned / left
+        post-construction.
+
         Args:
-            creations:
+            conduit_creations:
                 Conduit-owned live creation registry used for caller-local
                 `unique_per_conduit` and `many` storage.
             spellbook:
@@ -73,50 +79,17 @@ class ConduitMeld(Meld):
             resolution_conduit_id=resolution_conduit_id,
             dynamic_environment=dynamic_environment,
             meld_hooks=meld_hooks,
+            conduit_creations=conduit_creations,
         )
-        self._creations = creations
-        # Lineage-root store for this conduit's lineage. A normal/root conduit is
-        # its own lineage root, so it defaults to its own creations; lesser
-        # conduits are repointed at the genuine root's creations by `Conduit`
-        # after construction, and `upgrade_to_normal` repoints a promoted conduit
-        # back at itself. The `unique_per_conduit_lineage` door is handed this
-        # store at runtime by the dispatch below; the store object itself carries
-        # no lineage pointer.
-        self._root_creations: "ConduitCreations" = creations
-        # Cluster team-store facade reference for `unique_per_conduit_cluster`
-        # store-selection. The owning conduit creates and owns the facade (a
-        # normal conduit makes a fresh empty one; a lesser borrows its lineage
-        # root's) and assigns this reference right after construction, so it is
-        # None only during construction. Election binds the elected leader's
-        # `Creations` into the facade; until then `resolved_store()` hard-errors,
-        # so a `unique_per_conduit_cluster` meld throws while inert.
-        self._cluster_creations: Optional["ClusterCreations"] = None
 
     def cleanup(self) -> None:
         """
-        Release conduit-facing state after shared Meld cleanup.
+        Release conduit-facing state.
 
-        Contract:
-            - Delegates shared cache/spellbook teardown to `Meld.cleanup()`.
-            - Drops only the conduit-owned creations reference that this
-              subclass adds.
-            - Does not cleanup the `ConduitCreations` instance itself because
-              that registry is owned by the conduit.
+        The creation-store references now live on the base `Meld`, which drops
+        them (and the rest of the shared core) under its own lock.
         """
-        if self._cleaned:
-            return
-
-        with self._lock:
-            if self._cleaned:
-                return
-            super().cleanup()
-            del self._creations
-            del self._root_creations
-            # Mirror `_root_creations`: the meld only drops its reference to the
-            # cluster facade. The lineage root conduit owns the facade and cleans
-            # it in `_cleanup_normal_conduit`; a lesser meld borrows it and must
-            # never clean it here.
-            del self._cluster_creations
+        super().cleanup()
 
     def meld(
             self,
@@ -270,7 +243,7 @@ class ConduitMeld(Meld):
                         # rebuilds.
                         fast_executor = None
                     if fast_executor is not None:
-                        instance = fast_executor(fast_creations)[0]
+                        instance = fast_executor(self)[0]
                         if self._spellbook._cache_emit_required:
                             self._spellbook._emit_cache_file_if_required()
                         return instance
@@ -346,7 +319,7 @@ class ConduitMeld(Meld):
         elif target_spell.existence is Existence.unique_per_conduit_cluster:
             creations = self._cluster_creations.resolved_store()
         else:
-            creations = self._creations
+            creations = self._conduit_creations
         meld_hooks = self._meld_hooks
         spell_hooks_enabled = target_spell._hooks_enabled
         # Captured BEFORE execution: if any invalidation chokepoint bumps the
@@ -370,11 +343,11 @@ class ConduitMeld(Meld):
             # from ever serving a stale executor.
             if creation_context._dynamic_environment:
                 instance = creation_context.execute_no_hooks(
-                    creations,
+                    self,
                     override_map,
                 )
             elif override_map is None:
-                instance = creation_context._no_overrides_executor(creations)[0]
+                instance = creation_context._no_overrides_executor(self)[0]
                 if fast_door_key is not None:
                     # Success-only fast-door memoization. This arm is exactly
                     # the fast-lane posture (non-dynamic, no hooks, no
@@ -394,7 +367,7 @@ class ConduitMeld(Meld):
                     )
             else:
                 instance = creation_context._overrides_executor(
-                    creations,
+                    self,
                     override_map,
                 )[0]
             # Hot path: inline the staged-cache flag check; the emit helper is
@@ -416,7 +389,7 @@ class ConduitMeld(Meld):
             if creation_context is None:
                 raise RuntimeError("Spell returned no live CreationContext.")
             instance, created = creation_context.execute(
-                creations,
+                self,
                 override_map,
             )
 
@@ -538,7 +511,7 @@ class ConduitMeld(Meld):
 
         existence = target_spell.existence
         spell_id = target_spell.spell_id
-        caller_creations = self._creations
+        caller_creations = self._conduit_creations
 
         if existence is Existence.many:
             raise RuntimeError(
@@ -720,7 +693,7 @@ class ConduitMeld(Meld):
 
         existence = spell.existence
         spell_id = spell.spell_id
-        caller_creations = self._creations
+        caller_creations = self._conduit_creations
 
         if existence is Existence.many:
             creation_bucket = caller_creations.get_creation(spell_id)

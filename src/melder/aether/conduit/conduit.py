@@ -291,7 +291,7 @@ class Conduit(Cleanable):
         self._local_conduit_hooks: dict[str, list[Any]] | None = None
 
         self._meld: ConduitMeld = ConduitMeld(
-            creations=self._creations,
+            conduit_creations=self._creations,
             spellbook=self._spellbook,
             conduit_id=self._id,
             resolution_conduit_id=self._root_conduit_id,
@@ -1728,7 +1728,7 @@ class Conduit(Cleanable):
 
                 # Step 2.1: Ensure Meld uses the same creations manager.
                 if self._meld is not None:
-                    self._meld._creations = self._creations
+                    self._meld._conduit_creations = self._creations
                     self._meld._resolution_conduit_id = self._root_conduit_id
                 # Upgraded conduit is now its own lineage root: its meld's root
                 # store becomes its own creations. Lessers are re-pointed to this

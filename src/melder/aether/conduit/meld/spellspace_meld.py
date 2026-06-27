@@ -32,12 +32,12 @@ class SpellSpaceMeld(Meld):
     """
 
     __melder_internal__: ClassVar[object] = _mrg.sentinel
+    # The shared stores (`_conduit_creations` / `_root_creations` /
+    # `_cluster_creations`) and the spellspace scope store
+    # (`_spellspace_creations`) live on the base `Meld`. This door adds only the
+    # spellspace object and the cached ids.
     __slots__ = [
         "_spellspace",
-        "_spellspace_creations",
-        "_owner_conduit_creations",
-        "_root_creations",
-        "_cluster_creations",
         "_spellspace_id",
         "_owner_conduit_id",
     ]
@@ -47,7 +47,7 @@ class SpellSpaceMeld(Meld):
             *,
             spellspace: "SpellSpace",
             spellspace_creations: "Creations",
-            owner_conduit_creations: "ConduitCreations",
+            conduit_creations: "ConduitCreations",
             root_creations: "ConduitCreations",
             cluster_creations: "ClusterCreations",
             spellbook: "Spellbook",
@@ -88,26 +88,22 @@ class SpellSpaceMeld(Meld):
             resolution_conduit_id=resolution_conduit_id,
             dynamic_environment=dynamic_environment,
             meld_hooks=meld_hooks,
+            conduit_creations=conduit_creations,
+            root_creations=root_creations,
+            cluster_creations=cluster_creations,
+            spellspace_creations=spellspace_creations,
         )
         self._spellspace = spellspace
-        self._spellspace_creations = spellspace_creations
-        self._owner_conduit_creations = owner_conduit_creations
-        self._root_creations = root_creations
-        self._cluster_creations = cluster_creations
         self._spellspace_id = spellspace.id
         self._owner_conduit_id = spellspace.owner_conduit_id
 
     def cleanup(self) -> None:
         """
-        Release spellspace-facing state after shared Meld cleanup.
+        Release spellspace-facing state.
 
-        Contract:
-            - Delegates shared cache/spellbook teardown to `Meld.cleanup()`.
-            - Drops only the spellspace-facing references introduced by this
-              subclass.
-            - Does not cleanup the spellspace-local or owner-conduit creations
-              registries because those are owned by the spellspace and conduit
-              respectively.
+        The shared stores and the spellspace scope store live on the base
+        `Meld`, which drops them under its own lock; this door only releases the
+        spellspace object and the cached ids it added.
         """
         if self._cleaned:
             return
@@ -117,10 +113,6 @@ class SpellSpaceMeld(Meld):
                 return
             super().cleanup()
             del self._spellspace
-            del self._spellspace_creations
-            del self._owner_conduit_creations
-            del self._root_creations
-            del self._cluster_creations
             del self._spellspace_id
             del self._owner_conduit_id
 
@@ -276,7 +268,7 @@ class SpellSpaceMeld(Meld):
                         # rebuilds.
                         fast_executor = None
                     if fast_executor is not None:
-                        instance = fast_executor(fast_creations)[0]
+                        instance = fast_executor(self)[0]
                         if self._spellbook._cache_emit_required:
                             self._spellbook._emit_cache_file_if_required()
                         return instance
@@ -348,7 +340,7 @@ class SpellSpaceMeld(Meld):
             # leader is elected.
             creations = self._cluster_creations.resolved_store()
         else:
-            creations = self._owner_conduit_creations
+            creations = self._conduit_creations
         meld_hooks = self._meld_hooks
         spell_hooks_enabled = target_spell._hooks_enabled
         # Captured BEFORE execution: if any invalidation chokepoint bumps the
@@ -372,11 +364,11 @@ class SpellSpaceMeld(Meld):
             # from ever serving a stale executor.
             if creation_context._dynamic_environment:
                 instance = creation_context.execute_no_hooks(
-                    creations,
+                    self,
                     override_map,
                 )
             elif override_map is None:
-                instance = creation_context._no_overrides_executor(creations)[0]
+                instance = creation_context._no_overrides_executor(self)[0]
                 if fast_door_key is not None:
                     # Success-only fast-door memoization. This arm is exactly
                     # the fast-lane posture (non-dynamic, no hooks, no
@@ -398,7 +390,7 @@ class SpellSpaceMeld(Meld):
                     )
             else:
                 instance = creation_context._overrides_executor(
-                    creations,
+                    self,
                     override_map,
                 )[0]
             # Hot path: inline the staged-cache flag check; the emit helper is
@@ -420,7 +412,7 @@ class SpellSpaceMeld(Meld):
             if creation_context is None:
                 raise RuntimeError("Spell returned no live CreationContext.")
             instance, created = creation_context.execute(
-                creations,
+                self,
                 override_map,
             )
 
@@ -542,7 +534,7 @@ class SpellSpaceMeld(Meld):
             )
 
         if existence is Existence.unique_per_conduit:
-            creation = self._owner_conduit_creations.get_creation(spell_id)
+            creation = self._conduit_creations.get_creation(spell_id)
             if creation is None:
                 raise ValueError(
                     "Spell '{0}' is not live.".format(spell_id)
@@ -701,7 +693,7 @@ class SpellSpaceMeld(Meld):
         existence = spell.existence
         spell_id = spell.spell_id
         if existence is Existence.many:
-            creation_bucket = self._owner_conduit_creations.get_creation(spell_id)
+            creation_bucket = self._conduit_creations.get_creation(spell_id)
             creation_count = (
                 len(creation_bucket)
                 if isinstance(creation_bucket, list)
@@ -720,7 +712,7 @@ class SpellSpaceMeld(Meld):
             }
 
         if existence is Existence.unique_per_conduit:
-            creation = self._owner_conduit_creations.get_creation(spell_id)
+            creation = self._conduit_creations.get_creation(spell_id)
             return {
                 "is_live": creation is not None,
                 "spell_id": spell_id,

@@ -109,6 +109,11 @@ class Meld(Cleanable, ABC):
         "_meld_hooks",
         "_spell_compiler_system",
         "_fast_meld_doors",
+        # Canonical creation-store surface (both concrete doors inherit these).
+        "_conduit_creations",
+        "_root_creations",
+        "_cluster_creations",
+        "_spellspace_creations",
     ]
     def __init__(
             self,
@@ -117,6 +122,10 @@ class Meld(Cleanable, ABC):
             resolution_conduit_id: Optional[str] = None,
             dynamic_environment: bool = False,
             meld_hooks: Optional[Dict[str, list[Callable[..., Any]]]] = None,
+            conduit_creations=None,
+            root_creations=None,
+            cluster_creations=None,
+            spellspace_creations=None,
     ) -> None:
         """
         Initialize the shared meld runtime core.
@@ -136,8 +145,10 @@ class Meld(Cleanable, ABC):
               `meld(...)` front doors.
             - Stores the meld-hooks mapping by reference when supplied so shared
               hook updates stay visible without additional synchronization.
-            - Does not own any caller-specific creations store; concrete
-              subclasses provide that scope-routing surface.
+            - Owns the canonical creation-store surface (`_conduit_creations`,
+              `_root_creations`, `_cluster_creations` facade,
+              `_spellspace_creations`); concrete subclasses pass their values in
+              and may repoint/assign them post-construction.
 
         Args:
             spellbook:
@@ -219,6 +230,21 @@ class Meld(Cleanable, ABC):
             Tuple[Spell, CreationContext, Creations, int],
         ] = {}
 
+        # Canonical creation-store surface. `_conduit_creations` is the owning
+        # conduit's store (`unique_per_conduit` / `many`); `_root_creations` is
+        # the lineage-root store (defaults to the conduit store for a root
+        # conduit, repointed for lessers); `_cluster_creations` holds the
+        # ClusterCreations facade (resolved at the front door via
+        # `resolved_store()`, assigned post-construction by the owning conduit);
+        # `_spellspace_creations` is the active spellspace scope store and is
+        # None on the conduit path.
+        self._conduit_creations = conduit_creations
+        self._root_creations = (
+            root_creations if root_creations is not None else conduit_creations
+        )
+        self._cluster_creations = cluster_creations
+        self._spellspace_creations = spellspace_creations
+
     def cleanup(self) -> None:
         """
         Permanently retire the shared meld runtime core.
@@ -229,8 +255,9 @@ class Meld(Cleanable, ABC):
             - Clears spellbook map references, front-door caches (including the
               fast meld door registry), change-control manager cache, and
               optional compiler-system helper.
-            - Does not cleanup caller-owned creations directly; those belong to
-              the concrete subclass or the owning conduit/spellspace surface.
+            - Drops the meld's references to the creation stores it holds; the
+              registries themselves are owned by the conduit / spellspace surface
+              and are not cleaned here.
             - After cleanup, this meld instance no longer exposes any live
               runtime lookup surface and must not be reused.
 
@@ -268,6 +295,12 @@ class Meld(Cleanable, ABC):
             if self._spell_compiler_system is not None:
                 self._spell_compiler_system.cleanup()
             del self._spell_compiler_system
+            # Drop the canonical creation-store references (the registries
+            # themselves are owned by the conduit / spellspace, not the meld).
+            del self._conduit_creations
+            del self._root_creations
+            del self._cluster_creations
+            del self._spellspace_creations
 
     @abstractmethod
     def meld(
