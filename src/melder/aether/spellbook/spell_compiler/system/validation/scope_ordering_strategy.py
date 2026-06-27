@@ -91,15 +91,44 @@ class ScopeOrderingStrategy(SpellSystemValidationStrategy):
 
             if node.existence is None:
                 continue
-            if node.existence is Existence.many:
-                continue
+            is_many_node = node.existence is Existence.many
             node_rank = scope_rank.get(node.existence)
-            if node_rank is None:
+            if not is_many_node and node_rank is None:
                 continue
 
             for dep_id in node.dependencies:
                 dep_node = index.get_node(dep_id)
                 if dep_node is None or dep_node.existence is None:
+                    continue
+                if is_many_node:
+                    # `many` owns no shared store, but a `many` HOLDER has no
+                    # bounded lifetime: the caller may retain it past the request
+                    # scope. Capturing a `unique_per_spell_space` instance is a
+                    # captive dependency -- the spellspace instance is cleared at
+                    # scope close while the retained `many` holder dangles. Every
+                    # other dependency of a `many` is the caller's responsibility
+                    # (spellspace MAY depend on many; the reverse may not).
+                    if dep_node.existence is Existence.unique_per_spell_space:
+                        diagnostics.append(
+                            SystemDiagnostic(
+                                code="scope_ordering_violation",
+                                message=(
+                                    f"Spell '{node.spell_id}' (many) depends on "
+                                    f"'{dep_id}' (unique_per_spell_space): a transient "
+                                    f"holder may outlive the spellspace scope "
+                                    f"(captive dependency)."
+                                ),
+                                severity=SystemDiagnosticSeverity.ERROR,
+                                spell_id=node.spell_id,
+                                root_id=None,
+                                details={
+                                    "spell_id": node.spell_id,
+                                    "spell_existence": node.existence.name,
+                                    "dependency_id": dep_id,
+                                    "dependency_existence": dep_node.existence.name,
+                                },
+                            )
+                        )
                     continue
                 if dep_node.existence is Existence.many:
                     continue
