@@ -37,7 +37,6 @@ if TYPE_CHECKING:
     from melder.aether.spellbook.bind.spell_index import SpellIndex
     from melder.aether.aetheric_frame.dev_ops.change_control_manager.change_control_manager import ChangeControlManager
     from melder.aether.aetheric_frame.dev_ops.spell_system_states.conduit_resolution_state import ConduitResolutionState
-    from melder.aether.conduit.creations.creations import Creations
     from melder.aether.conduit.meld.creation_context.creation_context import CreationContext
 
 class Meld(Cleanable, ABC):
@@ -227,7 +226,7 @@ class Meld(Cleanable, ABC):
         # registry-bounded by the success-only insertion rule.
         self._fast_meld_doors: Dict[
             str,
-            Tuple[Spell, CreationContext, Creations, int],
+            Tuple[Spell, CreationContext, int],
         ] = {}
 
         # Canonical creation-store surface. `_conduit_creations` is the owning

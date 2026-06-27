@@ -156,7 +156,7 @@ class ConduitMeld(Meld):
             - Warm id-string melds may take the guarded fast meld door: after
               one successful normal-lane meld in non-dynamic, no-hooks,
               no-override posture, later identical requests execute through a
-              memoized `(spell, context, creations, epoch)` entry validated
+              memoized `(spell, context, epoch)` entry validated
               per call by live guards (door-epoch compare covering the
               spell-level chokepoints, context identity, spellbook
               validation flag), with the executor read
@@ -201,7 +201,6 @@ class ConduitMeld(Meld):
                     (
                         door_spell,
                         captured_context,
-                        fast_creations,
                         captured_epoch,
                     ) = fast_entry
                     fast_executor = None
@@ -306,20 +305,6 @@ class ConduitMeld(Meld):
         if target_spell.resolution_required:
             self._ensure_runtime_resolution_ready(target_spell)
 
-        # Store selection lives here, on the meld. `unique_per_conduit_lineage`
-        # resolves into this conduit's lineage-root store (`_root_creations`);
-        # `unique_per_conduit_cluster` resolves into the elected leader's store,
-        # taken from this conduit's cluster facade via
-        # `_cluster_creations.resolved_store()` (which hard-errors when no leader
-        # is elected). Every other existence uses the conduit's own creations.
-        # The selected store is handed in as the single `caller_creations`
-        # argument; the door uses whatever store it is handed.
-        if target_spell.existence is Existence.unique_per_conduit_lineage:
-            creations = self._root_creations
-        elif target_spell.existence is Existence.unique_per_conduit_cluster:
-            creations = self._cluster_creations.resolved_store()
-        else:
-            creations = self._conduit_creations
         meld_hooks = self._meld_hooks
         spell_hooks_enabled = target_spell._hooks_enabled
         # Captured BEFORE execution: if any invalidation chokepoint bumps the
@@ -362,7 +347,6 @@ class ConduitMeld(Meld):
                     self._fast_meld_doors[fast_door_key] = (
                         target_spell,
                         creation_context,
-                        creations,
                         door_epoch_at_entry,
                     )
             else:

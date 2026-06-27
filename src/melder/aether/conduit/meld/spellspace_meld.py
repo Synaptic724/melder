@@ -187,7 +187,7 @@ class SpellSpaceMeld(Meld):
             - Warm id-string melds may take the guarded fast meld door: after
               one successful normal-lane meld in non-dynamic, no-hooks,
               no-override posture, later identical requests execute through a
-              memoized `(spell, context, creations)` entry validated per call
+              memoized `(spell, context, epoch)` entry validated per call
               by live guards (hook state, context-switch state, context
               identity, validation/resolution flags), with the executor read
               per hit through the live context slot so phase-11 hot-swapped
@@ -220,15 +220,12 @@ class SpellSpaceMeld(Meld):
                 # melds. Every guard below is a live read of state maintained by
                 # existing invalidation chokepoints, so a hit has zero staleness
                 # window; any failed guard falls through to the normal lane,
-                # which rebuilds the entry in place after it succeeds. The
-                # captured creations store already encodes the bind-time
-                # existence routing (spellspace-local vs owner-conduit).
+                # which rebuilds the entry in place after it succeeds.
                 fast_entry = self._fast_meld_doors.get(spell)
                 if fast_entry is not None:
                     (
                         door_spell,
                         captured_context,
-                        fast_creations,
                         captured_epoch,
                     ) = fast_entry
                     fast_executor = None
@@ -325,22 +322,6 @@ class SpellSpaceMeld(Meld):
         if target_spell.resolution_required:
             self._ensure_runtime_resolution_ready(target_spell)
 
-        if target_spell.existence is Existence.unique_per_spell_space:
-            creations = self._spellspace_creations
-        elif target_spell.existence is Existence.unique_per_conduit_lineage:
-            # Lineage: resolve into the owner conduit's lineage-root store,
-            # handed in as the single `caller_creations` argument; the door
-            # uses it directly.
-            creations = self._root_creations
-        elif target_spell.existence is Existence.unique_per_conduit_cluster:
-            # Cluster: resolve into the elected leader's store via the owner
-            # conduit's cluster facade (referenced here, owned by the conduit
-            # meld). `resolved_store()` hands back the leader's `Creations` as
-            # the single `caller_creations` argument and hard-errors when no
-            # leader is elected.
-            creations = self._cluster_creations.resolved_store()
-        else:
-            creations = self._conduit_creations
         meld_hooks = self._meld_hooks
         spell_hooks_enabled = target_spell._hooks_enabled
         # Captured BEFORE execution: if any invalidation chokepoint bumps the
@@ -374,8 +355,6 @@ class SpellSpaceMeld(Meld):
                     # the fast-lane posture (non-dynamic, no hooks, no
                     # override payload), and execution above just succeeded,
                     # so the entry is built from proven-live collaborators.
-                    # The captured `creations` already encodes this spell's
-                    # bind-time existence routing for this spellspace door.
                     # The executor is deliberately NOT stored: phase-11
                     # hydration hot-swaps the context executor slots in place
                     # on first execution, so the fast lane re-reads the slot
@@ -385,7 +364,6 @@ class SpellSpaceMeld(Meld):
                     self._fast_meld_doors[fast_door_key] = (
                         target_spell,
                         creation_context,
-                        creations,
                         door_epoch_at_entry,
                     )
             else:
