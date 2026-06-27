@@ -106,7 +106,6 @@ class ManyOnlyFinalizeCreationContextStep(CodegenCreationFamilyStep):
                 fast_transient_no_overrides_enabled=False,
                 spell=root_spell,
                 spell_id=root_spell.spell_id,
-                owner_creations=root_spell._owner_creations,
                 no_overrides_executor=base_no_overrides_executor,
                 spell_space_scope_error_type=SpellSpaceScopeError,
             )
@@ -116,7 +115,6 @@ class ManyOnlyFinalizeCreationContextStep(CodegenCreationFamilyStep):
                 resolve_route_key=route_key,
                 spell=root_spell,
                 spell_id=root_spell.spell_id,
-                owner_creations=root_spell._owner_creations,
                 no_overrides_executor=base_no_overrides_executor,
                 execute_with_overrides=overrides_runtime,
                 meld_execution_error_type=MeldExecutionError,
@@ -286,11 +284,9 @@ class ManyOnlyFinalizeCreationContextStep(CodegenCreationFamilyStep):
         root_spell_id = root_spell.spell_index.selected_spell_id or root_spell.spell_id
 
         def execute_with_overrides(
-                caller_creations: Any,
+                meld: Any,
                 overrides: Optional[dict[str, Any]],
-                caller_creations_lock_held: bool,
         ) -> Any:
-            owner_creations = root_spell._owner_creations
             override_payload = overrides
             root_positional_override: Optional[Sequence[Any]] = None
             override_map: Dict[Any, Any] = {}
@@ -299,11 +295,9 @@ class ManyOnlyFinalizeCreationContextStep(CodegenCreationFamilyStep):
             if override_payload is None:
                 if baseline_executor is not None:
                     return baseline_executor(
-                        caller_creations,
+                        meld,
                         override_map,
                         root_positional_override,
-                        owner_creations=owner_creations,
-                        caller_creations_lock_held=caller_creations_lock_held,
                     )
                 executor = self._get_or_compile_override_executor(
                     shape_key=empty_shape_key,
@@ -328,11 +322,9 @@ class ManyOnlyFinalizeCreationContextStep(CodegenCreationFamilyStep):
                     ),
                 )
                 return executor(
-                    caller_creations,
+                    meld,
                     override_map,
                     root_positional_override,
-                    owner_creations=owner_creations,
-                    caller_creations_lock_held=caller_creations_lock_held,
                 )
 
             if override_payload:
@@ -425,11 +417,9 @@ class ManyOnlyFinalizeCreationContextStep(CodegenCreationFamilyStep):
                 raise RuntimeError("Override executor resolution failed.")
 
             return executor(
-                caller_creations,
+                meld,
                 override_map,
                 root_positional_override,
-                owner_creations=owner_creations,
-                caller_creations_lock_held=caller_creations_lock_held,
             )
 
         return execute_with_overrides

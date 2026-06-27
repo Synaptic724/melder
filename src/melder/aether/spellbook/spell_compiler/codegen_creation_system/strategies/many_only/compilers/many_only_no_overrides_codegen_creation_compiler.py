@@ -802,9 +802,7 @@ def _build_step_plan_executor_source(
 
     lines = [
         "def _no_overrides_codegen_creation_executor(",
-        "        caller_creations=None,",
-        "        owner_creations=None,",
-        "        caller_creations_lock_held=False,",
+        "        meld,",
         "        steps=steps,",
         "        step_spells=step_spells,",
         "        step_instance_keys=step_instance_keys,",
@@ -822,23 +820,16 @@ def _build_step_plan_executor_source(
     lines.append("    ):")
     if not locals_mode:
         lines.append("    instance_results = {}")
-    # Hoist the caller_creations guard: it is call-constant, so checking it
-    # once replaces the per-step re-checks the CALLER/SPELLSPACE routing
-    # used to emit (one redundant branch per such step).
-    if any(
-            plan_step.creations_target_kind
-            in (
-                ManyOnlyCodegenPlanTargetKind.CALLER,
-                ManyOnlyCodegenPlanTargetKind.SPELLSPACE,
-            )
-            and step_has_disposal_methods[index]
-            for index, plan_step in enumerate(steps)
-    ):
+    # `many` registers disposal-tracked instances in the innermost active scope
+    # store: the spellspace scope store when melded through a SpellSpaceMeld,
+    # otherwise the owning conduit store. Every many_only step is `Existence.many`
+    # (phase-10 discovery guarantees it), so the store is identical for every
+    # step -- resolve it once here and reuse it.
+    if has_any_disposal_methods:
         lines.extend([
-            "    if caller_creations is None:",
-            "        raise RuntimeError(",
-            "            \"No-overrides codegen CALLER/SPELLSPACE execution requires caller_creations.\"",
-            "        )",
+            "    creations = meld._spellspace_creations",
+            "    if creations is None:",
+            "        creations = meld._conduit_creations",
         ])
     for index, plan_step in enumerate(steps):
         _append_step_resolution_source(
@@ -863,49 +854,6 @@ def _build_step_plan_executor_source(
             "    return instance_results[root_instance_key]",
         ])
     return "\n".join(lines)
-
-
-def _append_step_creations_target_source(
-        *,
-        lines: list[str],
-        step_index: int,
-        target_kind: int,
-) -> None:
-    """
-    Append emitted source lines for static creations-target routing.
-
-    Contract:
-        - Emits one fixed routing path from compile-time `target_kind`.
-        - Avoids per-step runtime target-kind branch ladders.
-    """
-    if target_kind in (
-            ManyOnlyCodegenPlanTargetKind.CALLER,
-            ManyOnlyCodegenPlanTargetKind.SPELLSPACE,
-    ):
-        # The caller_creations None-guard is hoisted to the top of the emitted
-        # body (it is call-constant), so this routing is just the alias.
-        lines.append(f"    creations_{step_index} = caller_creations")
-        return
-
-    if target_kind == ManyOnlyCodegenPlanTargetKind.OWNER:
-        lines.extend([
-            f"    owner_creations_{step_index} = spell_{step_index}._owner_creations",
-            f"    if owner_creations_{step_index} is not None:",
-            f"        creations_{step_index} = owner_creations_{step_index}",
-            "    elif owner_creations is None:",
-            "        raise RuntimeError(",
-            "            \"No-overrides codegen OWNER execution requires owner_creations.\"",
-            "        )",
-            "    else:",
-            f"        creations_{step_index} = owner_creations",
-        ])
-        return
-
-    lines.append(
-        f"    raise RuntimeError("
-        f"f\"Unsupported creations target kind '{target_kind}' "
-        f"for spell '{{spell_{step_index}.spell_id}}'.\")"
-    )
 
 
 def _append_step_resolution_source(
@@ -948,14 +896,6 @@ def _append_step_resolution_source(
         lines.append(
             f"    step_dep_keys_{step_index} = step_dep_keys[{step_index}]"
         )
-    # creations_N is read only by the disposal register block, so non-disposal
-    # steps (pure constructor: no lock, no register) skip the routing entirely.
-    if has_disposal_methods:
-        _append_step_creations_target_source(
-            lines=lines,
-            step_index=step_index,
-            target_kind=plan_step.creations_target_kind,
-        )
     _emit_construct_instance(
         lines=lines,
         step_index=step_index,
@@ -963,68 +903,21 @@ def _append_step_resolution_source(
         indent="    ",
         key_to_step_index=key_to_step_index,
     )
+    # `many` disposal: append the new instance to the once-resolved scope store.
+    # No lock and no get-or-create -- many is transient (a new instance per
+    # meld), so registration is a plain list append.
     if has_disposal_methods:
-        lines.append(f"    with creations_{step_index}._lock:")
-        _append_step_register_source(
-            lines=lines,
-            step_index=step_index,
-            indent="        ",
+        lines.append(
+            f"    creations.add_many_creations("
+            f"spell_id_{step_index}, instance_{step_index}, "
+            f"has_disposal_methods=True, "
+            f"disposal_methods=disposal_methods_{step_index})"
         )
     if key_to_step_index is None:
         lines.append(
             f"    instance_results[step_instance_keys[{step_index}]] = "
             f"instance_{step_index}"
         )
-
-
-def _append_step_register_source(
-        *,
-        lines: list[str],
-        step_index: int,
-        indent: str,
-) -> None:
-    """
-    Append inline registration stores for one many + disposal step.
-
-    Contract:
-        - Emits direct `_creations` / `_disposable_creations` list stores
-          instead of an `add_many_creations` method call: the store method is
-          lock-free with caller-held locking and every branch inside it is
-          decided by fingerprint-stable facts (many existence, disposal
-          present), so the call is pure dispatch overhead on this path.
-        - The non-list slot guard is structurally unreachable here: existence
-          is fingerprint-stable, so a `many` spell id only ever owns a list
-          slot, co-written solely by this path under `creations._lock`.
-        - Assumes caller has already emitted the required creations lock.
-    """
-    lines.extend([
-        (
-            f"{indent}many_live_{step_index} = "
-            f"creations_{step_index}._creations.get(spell_id_{step_index})"
-        ),
-        f"{indent}if many_live_{step_index} is None:",
-        f"{indent}    many_live_{step_index} = []",
-        (
-            f"{indent}    creations_{step_index}._creations"
-            f"[spell_id_{step_index}] = many_live_{step_index}"
-        ),
-        f"{indent}many_live_{step_index}.append(instance_{step_index})",
-        (
-            f"{indent}many_disposable_{step_index} = "
-            f"creations_{step_index}._disposable_creations"
-            f".get(spell_id_{step_index})"
-        ),
-        f"{indent}if many_disposable_{step_index} is None:",
-        f"{indent}    many_disposable_{step_index} = []",
-        (
-            f"{indent}    creations_{step_index}._disposable_creations"
-            f"[spell_id_{step_index}] = many_disposable_{step_index}"
-        ),
-        (
-            f"{indent}many_disposable_{step_index}.append("
-            f"(instance_{step_index}, list(disposal_methods_{step_index})))"
-        ),
-    ])
 
 
 def _build_step_executor_namespace(
@@ -1336,9 +1229,7 @@ def _build_no_overrides_codegen_executor_source(
 
     lines = [
         "def _no_overrides_codegen_creation_executor(",
-        "        caller_creations=None,",
-        "        owner_creations=None,",
-        "        caller_creations_lock_held=False,",
+        "        meld,",
         "        transient_root_index=transient_root_index,",
         "        transient_targets=transient_targets,",
         "        transient_dep1=transient_dep1,",

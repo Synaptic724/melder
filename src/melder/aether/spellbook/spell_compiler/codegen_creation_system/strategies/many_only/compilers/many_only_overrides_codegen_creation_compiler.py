@@ -560,12 +560,10 @@ def _build_overrides_codegen_creation_executor_source(
 
     lines = [
         "def _overrides_codegen_creation_executor(",
-        "        caller_creations,",
+        "        meld,",
         "        override_map,",
         "        root_positional_override,",
         "        *,",
-        "        owner_creations=None,",
-        "        caller_creations_lock_held=False,",
         "        steps=steps,",
         "        step_spells=step_spells,",
         "        step_spell_ids=step_spell_ids,",
@@ -769,12 +767,10 @@ def _build_overrides_codegen_creation_executor_shape_source(
 
     lines = [
         "def _overrides_codegen_creation_executor(",
-        "        caller_creations,",
+        "        meld,",
         "        override_map,",
         "        root_positional_override,",
         "        *,",
-        "        owner_creations=None,",
-        "        caller_creations_lock_held=False,",
         "        steps=steps,",
         "        step_spells=step_spells,",
         "        step_spell_ids=step_spell_ids,",
@@ -799,20 +795,6 @@ def _build_overrides_codegen_creation_executor_shape_source(
         "    ):",
         "    instance_results = {}",
     ]
-    if any(
-            metadata[1] in (
-                ManyOnlyCodegenPlanTargetKind.CALLER,
-                ManyOnlyCodegenPlanTargetKind.SPELLSPACE,
-            )
-            for metadata in step_source_metadata
-    ):
-        lines.extend([
-            "    if caller_creations is None:",
-            "        raise RuntimeError(",
-            "            \"Overrides codegen creation CALLER/SPELLSPACE execution requires caller_creations.\"",
-            "        )",
-        ])
-
     for step_index, metadata in enumerate(step_source_metadata):
         (
             spell_id,
@@ -1794,7 +1776,6 @@ def _append_overrides_step_shape_source(
         - Removes runtime target-kind and existence branch selection.
     """
     _ = creations_target_kind
-    _ = existence
     _ = use_spell_lock_hint
     _ = must_register
     _ = is_root_step
@@ -1831,7 +1812,30 @@ def _append_overrides_step_shape_source(
             lines.append(
                 f"    step_root_positional_override_{step_index} = None"
             )
-    lines.append(f"    creations_{step_index} = caller_creations")
+    if existence is Existence.many:
+        lines.extend([
+            f"    creations_{step_index} = meld._spellspace_creations",
+            f"    if creations_{step_index} is None:",
+            f"        creations_{step_index} = meld._conduit_creations",
+        ])
+    elif existence is Existence.unique_per_conduit:
+        lines.append(f"    creations_{step_index} = meld._conduit_creations")
+    elif existence is Existence.unique_per_spell_space:
+        lines.append(f"    creations_{step_index} = meld._spellspace_creations")
+    elif existence is Existence.unique_per_conduit_lineage:
+        lines.append(f"    creations_{step_index} = meld._root_creations")
+    elif existence is Existence.unique_per_conduit_cluster:
+        lines.append(
+            f"    creations_{step_index} = meld._cluster_creations.resolved_store()"
+        )
+    elif existence is Existence.unique:
+        lines.append(
+            f"    creations_{step_index} = spell_{step_index}._owner_creations"
+        )
+    else:
+        raise RuntimeError(
+            f"Unsupported existence '{existence}' in many_only overrides shape source."
+        )
 
     if use_no_override_fast_path:
         _append_overrides_construct_no_overrides_source(
@@ -1952,30 +1956,24 @@ def _append_overrides_step_source(
             f"step_disposal_methods[{step_index}]"
         ),
         f"    existence_{step_index} = step_existences[{step_index}]",
-        f"    target_kind_{step_index} = step_creations_target_kinds[{step_index}]",
-        (
-            f"    if target_kind_{step_index} in ("
-            f"ManyOnlyCodegenPlanTargetKind.CALLER, ManyOnlyCodegenPlanTargetKind.SPELLSPACE):"
-        ),
-        "        if caller_creations is None:",
-        "            raise RuntimeError(",
-        "                \"Overrides codegen creation CALLER/SPELLSPACE execution requires caller_creations.\"",
-        "            )",
-        f"        creations_{step_index} = caller_creations",
-        f"    elif target_kind_{step_index} == ManyOnlyCodegenPlanTargetKind.OWNER:",
-        f"        owner_creations_{step_index} = spell_{step_index}._owner_creations",
-        f"        if owner_creations_{step_index} is not None:",
-        f"            creations_{step_index} = owner_creations_{step_index}",
-        "        elif owner_creations is None:",
-        "            raise RuntimeError(",
-        "                \"Overrides codegen creation OWNER execution requires owner_creations.\"",
-        "            )",
-        "        else:",
-        f"            creations_{step_index} = owner_creations",
+        f"    if existence_{step_index} is Existence.many:",
+        f"        creations_{step_index} = meld._spellspace_creations",
+        f"        if creations_{step_index} is None:",
+        f"            creations_{step_index} = meld._conduit_creations",
+        f"    elif existence_{step_index} is Existence.unique_per_conduit:",
+        f"        creations_{step_index} = meld._conduit_creations",
+        f"    elif existence_{step_index} is Existence.unique_per_spell_space:",
+        f"        creations_{step_index} = meld._spellspace_creations",
+        f"    elif existence_{step_index} is Existence.unique_per_conduit_lineage:",
+        f"        creations_{step_index} = meld._root_creations",
+        f"    elif existence_{step_index} is Existence.unique_per_conduit_cluster:",
+        f"        creations_{step_index} = meld._cluster_creations.resolved_store()",
+        f"    elif existence_{step_index} is Existence.unique:",
+        f"        creations_{step_index} = spell_{step_index}._owner_creations",
         "    else:",
         (
             f"        raise RuntimeError("
-            f"f\"Unsupported creations target kind '{{target_kind_{step_index}}}' "
+            f"f\"Unsupported existence '{{existence_{step_index}}}' "
             f"for spell '{{spell_{step_index}.spell_id}}'.\")"
         ),
         f"    override_targets_{step_index} = step_override_targets[{step_index}]",
@@ -2063,12 +2061,6 @@ def _append_overrides_step_source(
         ),
         "    else:",
         f"        use_spell_lock_{step_index} = step_use_spell_lock_hints[{step_index}]",
-        "        if (",
-        f"                use_spell_lock_{step_index}",
-        "                and caller_creations_lock_held",
-        f"                and creations_{step_index} is caller_creations",
-        "        ):",
-        f"            use_spell_lock_{step_index} = False",
         f"        if use_spell_lock_{step_index}:",
         f"            with spell_{step_index}._lock:",
         f"                with creations_{step_index}._lock:",

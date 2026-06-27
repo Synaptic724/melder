@@ -137,18 +137,18 @@ def build_solo_lazy_creation_executors(
                 hydrated.overrides_executor
             )
 
-    def _cold_no_overrides_door(caller_creations: Any) -> Any:
+    def _cold_no_overrides_door(meld: Any) -> Any:
         hydrated = _hydrate_once()
         _swap_hot_doors(hydrated)
-        return hydrated.no_overrides_executor(caller_creations)
+        return hydrated.no_overrides_executor(meld)
 
     def _cold_overrides_door(
-            caller_creations: Any,
+            meld: Any,
             overrides: Optional[dict],
     ) -> Any:
         hydrated = _hydrate_once()
         _swap_hot_doors(hydrated)
-        return hydrated.overrides_executor(caller_creations, overrides)
+        return hydrated.overrides_executor(meld, overrides)
 
     return _cold_no_overrides_door, _cold_overrides_door
 
