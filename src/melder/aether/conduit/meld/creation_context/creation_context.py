@@ -163,22 +163,22 @@ class CreationContext(Cleanable):
 
     def execute(
             self,
-            caller_creations: "Creations",
+            meld: "Meld",
             overrides: Optional[dict[str, Any]] = None,
     ) -> tuple[Any, bool]:
         """
         Execute one meld resolution through the hooks-aware runtime doors.
 
         `unique_per_conduit_lineage` routing reads the lineage-root store off
-        `caller_creations._root_creations` inside the door, so no extra argument
+        `meld._root_creations` inside the door, so no extra argument
         is threaded here.
         """
         if not self._dynamic_environment:
             if overrides is None:
                 no_overrides_executor = self._no_overrides_executor
-                return no_overrides_executor(caller_creations)
+                return no_overrides_executor(meld)
             overrides_executor = self._overrides_executor
-            return overrides_executor(caller_creations, overrides)
+            return overrides_executor(meld, overrides)
 
         creation_gate = self._creation_gate
         index_id = self._creation_gate_index_id
@@ -200,30 +200,30 @@ class CreationContext(Cleanable):
             creation_gate.register_ticket()
             if overrides is None:
                 no_overrides_executor = self._no_overrides_executor
-                return no_overrides_executor(caller_creations)
+                return no_overrides_executor(meld)
             overrides_executor = self._overrides_executor
-            return overrides_executor(caller_creations, overrides)
+            return overrides_executor(meld, overrides)
         finally:
             creation_gate.unregister_ticket()
 
     def execute_no_hooks(
             self,
-            caller_creations: "Creations",
+            meld: "Meld",
             overrides: Optional[dict[str, Any]] = None,
     ) -> Any:
         """
         Execute one meld resolution through the direct no-hooks runtime doors.
 
         `unique_per_conduit_lineage` routing reads the lineage-root store off
-        `caller_creations._root_creations` inside the door, so no extra argument
+        `meld._root_creations` inside the door, so no extra argument
         is threaded here.
         """
         if not self._dynamic_environment:
             if overrides is None:
                 no_overrides_executor = self._no_overrides_executor
-                return no_overrides_executor(caller_creations)[0]
+                return no_overrides_executor(meld)[0]
             overrides_executor = self._overrides_executor
-            return overrides_executor(caller_creations, overrides)[0]
+            return overrides_executor(meld, overrides)[0]
 
         creation_gate = self._creation_gate
         index_id = self._creation_gate_index_id
@@ -245,8 +245,8 @@ class CreationContext(Cleanable):
             creation_gate.register_ticket()
             if overrides is None:
                 no_overrides_executor = self._no_overrides_executor
-                return no_overrides_executor(caller_creations)[0]
+                return no_overrides_executor(meld)[0]
             overrides_executor = self._overrides_executor
-            return overrides_executor(caller_creations, overrides)[0]
+            return overrides_executor(meld, overrides)[0]
         finally:
             creation_gate.unregister_ticket()

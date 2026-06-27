@@ -9,7 +9,6 @@ def compile_creation_context_instance_overrides_only_executor(
         resolve_route_key: str,
         spell: Any,
         spell_id: str,
-        owner_creations: Any,
         no_overrides_executor: Optional[Callable[..., Any]],
         execute_with_overrides: Callable[..., Any],
         meld_execution_error_type: Any,
@@ -23,7 +22,7 @@ def compile_creation_context_instance_overrides_only_executor(
         `overrides is None` before entering existence-specific override routing.
 
     Contract:
-        - Output callable signature: `(caller_creations, overrides) -> Any`.
+        - Output callable signature: `(meld, overrides) -> Any`.
         - Caller must pass a frontdoor-normalized override payload.
         - Emits the same existence-specific override semantics as the
           tuple-return hook lane.
@@ -34,7 +33,6 @@ def compile_creation_context_instance_overrides_only_executor(
     return template(
         _spell=spell,
         _spell_id=spell_id,
-        _owner_creations=owner_creations,
         _no_overrides_executor=no_overrides_executor,
         _execute_with_overrides=execute_with_overrides,
         _MeldExecutionError=meld_execution_error_type,
@@ -60,7 +58,6 @@ def compile_creation_context_instance_no_overrides_executor(
         fast_transient_no_overrides_enabled: bool,
         spell: Any,
         spell_id: str,
-        owner_creations: Any,
         no_overrides_executor: Optional[Callable[..., Any]],
         spell_space_scope_error_type: Any,
 ) -> Callable[..., Any]:
@@ -71,7 +68,7 @@ def compile_creation_context_instance_no_overrides_executor(
         Provide the no-hooks / no-overrides fast door with no override branch.
 
     Contract:
-        - Output callable signature: `(caller_creations) -> Any`.
+        - Output callable signature: `(meld) -> Any`.
         - Caller must ensure the override payload is absent for this lane.
     """
     use_fast_transient = bool(
@@ -85,7 +82,6 @@ def compile_creation_context_instance_no_overrides_executor(
     return template(
         _spell=spell,
         _spell_id=spell_id,
-        _owner_creations=owner_creations,
         _no_overrides_executor=no_overrides_executor,
         _SpellSpaceScopeError=spell_space_scope_error_type,
         _existing_creation_missing_message=(
@@ -104,7 +100,6 @@ def compile_creation_context_hooks_overrides_only_executor(
         resolve_route_key: str,
         spell: Any,
         spell_id: str,
-        owner_creations: Any,
         no_overrides_executor: Optional[Callable[..., Any]],
         execute_with_overrides: Callable[..., Any],
         meld_execution_error_type: Any,
@@ -119,7 +114,7 @@ def compile_creation_context_hooks_overrides_only_executor(
 
     Contract:
         - Output callable signature:
-          `(caller_creations, overrides) -> tuple[Any, bool]`.
+          `(meld, overrides) -> tuple[Any, bool]`.
         - Caller must pass a frontdoor-normalized override payload.
         - Returns `(instance, created)` for hook activation routing.
     """
@@ -129,7 +124,6 @@ def compile_creation_context_hooks_overrides_only_executor(
     return template(
         _spell=spell,
         _spell_id=spell_id,
-        _owner_creations=owner_creations,
         _no_overrides_executor=no_overrides_executor,
         _execute_with_overrides=execute_with_overrides,
         _MeldExecutionError=meld_execution_error_type,
@@ -155,7 +149,6 @@ def compile_creation_context_hooks_no_overrides_executor(
         fast_transient_no_overrides_enabled: bool,
         spell: Any,
         spell_id: str,
-        owner_creations: Any,
         no_overrides_executor: Optional[Callable[..., Any]],
         spell_space_scope_error_type: Any,
 ) -> Callable[..., Any]:
@@ -167,7 +160,7 @@ def compile_creation_context_hooks_no_overrides_executor(
         Meld chooses this door only when no override payload exists.
 
     Contract:
-        - Output callable signature: `(caller_creations) -> tuple[Any, bool]`.
+        - Output callable signature: `(meld) -> tuple[Any, bool]`.
         - Returns `(instance, created)` for hook activation routing.
     """
     use_fast_transient = bool(
@@ -181,7 +174,6 @@ def compile_creation_context_hooks_no_overrides_executor(
     return template(
         _spell=spell,
         _spell_id=spell_id,
-        _owner_creations=owner_creations,
         _no_overrides_executor=no_overrides_executor,
         _SpellSpaceScopeError=spell_space_scope_error_type,
         _existing_creation_missing_message=(
@@ -457,14 +449,13 @@ def _build_no_overrides_only_template_source(
         template_parameter_lines=[
         "        _spell,",
         "        _spell_id,",
-        "        _owner_creations,",
         "        _no_overrides_executor,",
         "        _SpellSpaceScopeError,",
         "        _existing_creation_missing_message,",
         "        _spellspace_required_message,",
         ],
         execution_callable_name="_creation_context_execute_no_overrides_only",
-        execution_signature="caller_creations",
+        execution_signature="meld",
         execution_lines=no_overrides_lines,
     )
 
@@ -485,7 +476,6 @@ def _build_overrides_only_template_source(
         template_parameter_lines=[
         "        _spell,",
         "        _spell_id,",
-        "        _owner_creations,",
         "        _no_overrides_executor,",
         "        _execute_with_overrides,",
         "        _MeldExecutionError,",
@@ -495,7 +485,7 @@ def _build_overrides_only_template_source(
         "        _spellspace_required_message,",
         ],
         execution_callable_name="_creation_context_execute_overrides_only",
-        execution_signature="caller_creations, overrides",
+        execution_signature="meld, overrides",
         execution_lines=with_overrides_lines,
     )
 
@@ -536,11 +526,11 @@ def _build_no_overrides_lines(
                 ),
             ]
         return _build_no_overrides_create_lines(
-            caller_creations_lock_held=False,
             return_created=return_created,
         )
     if resolve_route_key == "unique_per_conduit":
         return [
+            "caller_creations = meld._conduit_creations",
             "creation = caller_creations.get_creation(_spell_id)",
             "if creation is not None:",
             _prefix_one_indent(
@@ -555,7 +545,6 @@ def _build_no_overrides_lines(
             "    if creation is None:",
         ] + _indent_lines(
             _build_no_overrides_create_lines(
-                caller_creations_lock_held=True,
                 return_created=return_created,
             ),
             2,
@@ -570,6 +559,7 @@ def _build_no_overrides_lines(
         ]
     if resolve_route_key == "spellspace":
         return [
+            "caller_creations = meld._spellspace_creations",
             "creation = caller_creations.get_creation(_spell_id)",
             "if creation is not None:",
             _prefix_one_indent(
@@ -584,7 +574,6 @@ def _build_no_overrides_lines(
             "    if creation is None:",
         ] + _indent_lines(
             _build_no_overrides_create_lines(
-                caller_creations_lock_held=True,
                 return_created=return_created,
             ),
             2,
@@ -613,7 +602,6 @@ def _build_no_overrides_lines(
             "    if creation is None:",
         ] + _indent_lines(
             _build_no_overrides_create_lines(
-                caller_creations_lock_held=False,
                 return_created=return_created,
             ),
             2,
@@ -628,12 +616,9 @@ def _build_no_overrides_lines(
         ]
     if resolve_route_key == "lineage":
         # unique_per_conduit_lineage: one instance per lineage, stored in the
-        # lineage-root creations. The meld front door selects the lineage-root
-        # store for this existence and hands it in as `caller_creations`, so the
-        # door uses it directly -- the store no longer carries a `_root_creations`
-        # pointer for the door to dereference.
+        # lineage-root creations read straight off the resolving meld.
         return [
-            "root_creations = caller_creations",
+            "root_creations = meld._root_creations",
             "creation = root_creations.get_creation(_spell_id)",
             "if creation is not None:",
             _prefix_one_indent(
@@ -648,9 +633,7 @@ def _build_no_overrides_lines(
             "    if creation is None:",
         ] + _indent_lines(
             _build_no_overrides_create_lines(
-                caller_creations_lock_held=False,
                 return_created=return_created,
-                owner_creations_expr="root_creations",
             ),
             2,
         ) + [
@@ -664,12 +647,9 @@ def _build_no_overrides_lines(
         ]
     if resolve_route_key == "cluster":
         # unique_per_conduit_cluster: one instance per cluster, stored in the
-        # elected leader's creations. The meld front door resolves the elected
-        # leader's store for this existence and hands it in as `caller_creations`,
-        # so the door uses it directly. Distinct existence from lineage with its
-        # own upstream store-selection, even though the body has the same shape.
+        # elected leader's creations, resolved off the meld's cluster facade.
         return [
-            "leader_creations = caller_creations",
+            "leader_creations = meld._cluster_creations.resolved_store()",
             "creation = leader_creations.get_creation(_spell_id)",
             "if creation is not None:",
             _prefix_one_indent(
@@ -684,9 +664,7 @@ def _build_no_overrides_lines(
             "    if creation is None:",
         ] + _indent_lines(
             _build_no_overrides_create_lines(
-                caller_creations_lock_held=False,
                 return_created=return_created,
-                owner_creations_expr="leader_creations",
             ),
             2,
         ) + [
@@ -745,7 +723,7 @@ def _build_with_overrides_lines(
         ]
     if resolve_route_key == "many":
         return [
-            "instance = _execute_with_overrides(caller_creations, overrides, False)",
+            "instance = _execute_with_overrides(meld, overrides)",
             _build_return_statement(
                 value_expression="instance",
                 created=True,
@@ -755,6 +733,7 @@ def _build_with_overrides_lines(
     if resolve_route_key == "unique_per_conduit":
         if not overrides_maybe_none:
             return [
+                "caller_creations = meld._conduit_creations",
                 "creation = caller_creations.get_creation(_spell_id)",
                 "if creation is not None:",
                 "    raise _MeldExecutionError(",
@@ -765,7 +744,7 @@ def _build_with_overrides_lines(
                 "with caller_creations._lock:",
                 "    creation = caller_creations.get_creation(_spell_id)",
                 "    if creation is None:",
-                "        instance = _execute_with_overrides(caller_creations, overrides, True)",
+                "        instance = _execute_with_overrides(meld, overrides)",
                 _prefix_two_indent(
                     _build_return_statement(
                         value_expression="instance",
@@ -798,7 +777,7 @@ def _build_with_overrides_lines(
             "with caller_creations._lock:",
             "    creation = caller_creations.get_creation(_spell_id)",
             "    if creation is None:",
-            "        instance = _execute_with_overrides(caller_creations, overrides, True)",
+            "        instance = _execute_with_overrides(meld, overrides)",
             _prefix_two_indent(
                 _build_return_statement(
                     value_expression="instance",
@@ -823,6 +802,7 @@ def _build_with_overrides_lines(
     if resolve_route_key == "spellspace":
         if not overrides_maybe_none:
             return [
+                "caller_creations = meld._spellspace_creations",
                 "creation = caller_creations.get_creation(_spell_id)",
                 "if creation is not None:",
                 "    raise _MeldExecutionError(",
@@ -833,7 +813,7 @@ def _build_with_overrides_lines(
                 "with caller_creations._lock:",
                 "    creation = caller_creations.get_creation(_spell_id)",
                 "    if creation is None:",
-                "        instance = _execute_with_overrides(caller_creations, overrides, True)",
+                "        instance = _execute_with_overrides(meld, overrides)",
                 _prefix_two_indent(
                     _build_return_statement(
                         value_expression="instance",
@@ -866,7 +846,7 @@ def _build_with_overrides_lines(
             "with caller_creations._lock:",
             "    creation = caller_creations.get_creation(_spell_id)",
             "    if creation is None:",
-            "        instance = _execute_with_overrides(caller_creations, overrides, True)",
+            "        instance = _execute_with_overrides(meld, overrides)",
             _prefix_two_indent(
                 _build_return_statement(
                     value_expression="instance",
@@ -901,7 +881,7 @@ def _build_with_overrides_lines(
                 "with _spell._lock:",
                 "    creation = _spell._owner_creations.get_creation(_spell_id)",
                 "    if creation is None:",
-                "        instance = _execute_with_overrides(caller_creations, overrides, False)",
+                "        instance = _execute_with_overrides(meld, overrides)",
                 _prefix_two_indent(
                     _build_return_statement(
                         value_expression="instance",
@@ -934,7 +914,7 @@ def _build_with_overrides_lines(
             "with _spell._lock:",
             "    creation = _spell._owner_creations.get_creation(_spell_id)",
             "    if creation is None:",
-                "        instance = _execute_with_overrides(caller_creations, overrides, False)",
+                "        instance = _execute_with_overrides(meld, overrides)",
             _prefix_two_indent(
                 _build_return_statement(
                     value_expression="instance",
@@ -957,12 +937,11 @@ def _build_with_overrides_lines(
             ),
         ]
     if resolve_route_key == "lineage":
-        # Lineage override lane: same shape as the shared override lane but on the
-        # meld-supplied lineage-root store (handed in as `caller_creations`) + its
-        # lock, instead of the binding owner's `_owner_creations`.
+        # Lineage override lane: get-or-create on the lineage-root store read
+        # straight off the resolving meld (`meld._root_creations`).
         if not overrides_maybe_none:
             return [
-                "root_creations = caller_creations",
+                "root_creations = meld._root_creations",
                 "creation = root_creations.get_creation(_spell_id)",
                 "if creation is not None:",
                 "    raise _MeldExecutionError(",
@@ -973,7 +952,7 @@ def _build_with_overrides_lines(
                 "with root_creations._lock:",
                 "    creation = root_creations.get_creation(_spell_id)",
                 "    if creation is None:",
-                "        instance = _execute_with_overrides(caller_creations, overrides, False, root_creations)",
+                "        instance = _execute_with_overrides(meld, overrides)",
                 _prefix_two_indent(
                     _build_return_statement(
                         value_expression="instance",
@@ -988,7 +967,7 @@ def _build_with_overrides_lines(
                 "    )",
             ]
         return [
-            "root_creations = caller_creations",
+            "root_creations = meld._root_creations",
             "creation = root_creations.get_creation(_spell_id)",
             "if creation is not None:",
             "    if overrides is not None:",
@@ -1007,7 +986,7 @@ def _build_with_overrides_lines(
             "with root_creations._lock:",
             "    creation = root_creations.get_creation(_spell_id)",
             "    if creation is None:",
-            "        instance = _execute_with_overrides(caller_creations, overrides, False, root_creations)",
+            "        instance = _execute_with_overrides(meld, overrides)",
             _prefix_two_indent(
                 _build_return_statement(
                     value_expression="instance",
@@ -1030,12 +1009,12 @@ def _build_with_overrides_lines(
             ),
         ]
     if resolve_route_key == "cluster":
-        # Cluster override lane: same shape as the lineage override lane but on
-        # the meld-resolved elected-leader store (handed in as `caller_creations`)
-        # + its lock. Distinct existence, its own route.
+        # Cluster override lane: get-or-create on the elected-leader store
+        # resolved off the meld (`meld._cluster_creations.resolved_store()`).
+        # Distinct existence, its own route.
         if not overrides_maybe_none:
             return [
-                "leader_creations = caller_creations",
+                "leader_creations = meld._cluster_creations.resolved_store()",
                 "creation = leader_creations.get_creation(_spell_id)",
                 "if creation is not None:",
                 "    raise _MeldExecutionError(",
@@ -1046,7 +1025,7 @@ def _build_with_overrides_lines(
                 "with leader_creations._lock:",
                 "    creation = leader_creations.get_creation(_spell_id)",
                 "    if creation is None:",
-                "        instance = _execute_with_overrides(caller_creations, overrides, False, leader_creations)",
+                "        instance = _execute_with_overrides(meld, overrides)",
                 _prefix_two_indent(
                     _build_return_statement(
                         value_expression="instance",
@@ -1061,7 +1040,7 @@ def _build_with_overrides_lines(
                 "    )",
             ]
         return [
-            "leader_creations = caller_creations",
+            "leader_creations = meld._cluster_creations.resolved_store()",
             "creation = leader_creations.get_creation(_spell_id)",
             "if creation is not None:",
             "    if overrides is not None:",
@@ -1080,7 +1059,7 @@ def _build_with_overrides_lines(
             "with leader_creations._lock:",
             "    creation = leader_creations.get_creation(_spell_id)",
             "    if creation is None:",
-            "        instance = _execute_with_overrides(caller_creations, overrides, False, leader_creations)",
+            "        instance = _execute_with_overrides(meld, overrides)",
             _prefix_two_indent(
                 _build_return_statement(
                     value_expression="instance",
@@ -1109,9 +1088,7 @@ def _build_with_overrides_lines(
 
 def _build_no_overrides_create_lines(
         *,
-        caller_creations_lock_held: bool,
         return_created: bool,
-        owner_creations_expr: str = "_spell._owner_creations",
 ) -> Sequence[str]:
     """
     Build the emitted call block for the no-overrides creation executor.
@@ -1121,11 +1098,7 @@ def _build_no_overrides_create_lines(
     instance.
     """
     return [
-        "instance = _no_overrides_executor(",
-        "    caller_creations,",
-        f"    {owner_creations_expr},",
-        f"    {caller_creations_lock_held},",
-        ")",
+        "instance = _no_overrides_executor(meld)",
         _build_return_statement(
             value_expression="instance",
             created=True,
@@ -1328,9 +1301,9 @@ _TEMPLATE_UNIQUE_INSTANCE_NO_OVERRIDES_ONLY = (
         return_created=False,
     )
 )
-# unique_per_conduit_lineage: one instance per lineage, stored in the resolving
-# door's lineage-root creations (`root_creations`), not the binding owner's
-# `_owner_creations`. Lineage is never fast-transient (only `many` is).
+# unique_per_conduit_lineage: one instance per lineage, stored in the lineage-root
+# creations read off the resolving meld. Lineage is never fast-transient (only
+# `many` is).
 _TEMPLATE_LINEAGE_OVERRIDES_ONLY = (
     _compile_creation_context_overrides_only_template(
         resolve_route_key="lineage",
@@ -1358,9 +1331,9 @@ _TEMPLATE_LINEAGE_INSTANCE_NO_OVERRIDES_ONLY = (
     )
 )
 # unique_per_conduit_cluster: one instance per cluster, stored in the elected
-# leader's creations (resolved by the meld and handed in as `caller_creations`).
-# A distinct existence from lineage with its own route; never fast-transient
-# (only `many` is).
+# leader's creations resolved off the meld
+# (`meld._cluster_creations.resolved_store()`). A distinct existence from lineage
+# with its own route; never fast-transient (only `many` is).
 _TEMPLATE_CLUSTER_OVERRIDES_ONLY = (
     _compile_creation_context_overrides_only_template(
         resolve_route_key="cluster",
@@ -1400,8 +1373,7 @@ _OVERRIDES_ONLY_INSTANCE_TEMPLATE_BY_ROUTE: dict[
     "unique": _TEMPLATE_UNIQUE_INSTANCE_OVERRIDES_ONLY,
     "lineage": _TEMPLATE_LINEAGE_INSTANCE_OVERRIDES_ONLY,
     # Cluster has its own templates (distinct existence). They compile to the
-    # same shape as lineage because the meld resolves the elected-leader store
-    # and hands it in as caller_creations.
+    # same shape as lineage because both read their store off the meld.
     "cluster": _TEMPLATE_CLUSTER_INSTANCE_OVERRIDES_ONLY,
 }
 
