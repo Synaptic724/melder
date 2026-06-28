@@ -382,17 +382,21 @@ _REQUEST_SCOPED_TYPES: tuple[type, ...] = (
     RequestScopeMarker,
     WorkerAScopeMarker,
     WorkerBScopeMarker,
+    # Per-request roots are request types: request-scoped, not transient.
+    # Mirrors the melder gauntlet binding so the comparison stays
+    # apples-to-apples across every framework, and matches the rule that a
+    # transient (many) must not capture a request-scoped instance.
+    RequestRoot,
+    WorkerAJobRoot,
+    WorkerBJobRoot,
 )
 _REQUEST_SCOPE_TRANSIENT_TYPES: tuple[type, ...] = (
     RequestLeaf,
     RequestGroup,
-    RequestRoot,
     WorkerALeaf,
     WorkerAGroup,
-    WorkerAJobRoot,
     WorkerBLeaf,
     WorkerBGroup,
-    WorkerBJobRoot,
 )
 _ALL_CLASSES: tuple[type, ...] = (
     *_SINGLETON_TYPES,

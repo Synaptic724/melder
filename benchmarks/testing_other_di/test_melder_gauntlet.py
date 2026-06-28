@@ -87,6 +87,16 @@ def _build_runtime_melder() -> _support.RuntimeOps:
     singleton_types = set(_support.SINGLETON_TYPES)
     outer_scoped_types = set(_support.OUTER_SCOPED_TYPES)
     request_scoped_types = set(_support.REQUEST_SCOPED_TYPES)
+    # The per-request roots are request types: they live at the request
+    # (spellspace) scope, not transiently. Binding them unique_per_spell_space
+    # keeps the root -> scope-marker edge legal (spellspace -> spellspace)
+    # instead of an illegal many -> unique_per_spell_space captive dependency
+    # (a transient holder could outlive the spellspace and dangle the marker).
+    request_root_types = {
+        _support.RequestRoot,
+        _support.WorkerAJobRoot,
+        _support.WorkerBJobRoot,
+    }
 
     Aether._reset_singleton_for_tests()
     aether = Aether()
@@ -103,7 +113,7 @@ def _build_runtime_melder() -> _support.RuntimeOps:
             existence = Existence.unique
         elif cls in outer_scoped_types:
             existence = Existence.unique_per_conduit
-        elif cls in request_scoped_types:
+        elif cls in request_scoped_types or cls in request_root_types:
             existence = Existence.unique_per_spell_space
         else:
             existence = Existence.many
