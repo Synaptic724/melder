@@ -708,12 +708,15 @@ def _load_overrides_executor_from_asset(
                 "Cached override experiment only supports the recorded override shape."
             )
         # The migrated runtime doors take the resolving meld and read the
-        # creation store off it; the bare codegen executor signature is now
-        # `(meld, overrides)` and returns the bare root instance, which this
-        # adapter wraps into the door's `(instance, created)` contract.
+        # creation store off it; the bare codegen overrides executor signature
+        # is `(meld, overrides, root_positional_override)` and returns the bare
+        # root instance, which this adapter wraps into the door's
+        # `(instance, created)` contract. This shape carries no root positional
+        # override, so the third argument is None.
         instance = compiled_executor(
             caller_creations,
             override_map,
+            None,
         )
         return (instance, True)
 

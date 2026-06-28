@@ -775,6 +775,7 @@ def test_overrides_compiler_supports_schema_rows_execution_and_prebound_metadata
     assert executor(
         _meld_for(context.caller_creations),
         {},
+        None,
     ) == "value:root"
 
 
@@ -970,6 +971,10 @@ def test_no_overrides_compiler_existing_hit_skips_locks() -> None:
     spell = _make_spell("root")
     spell.existence = Existence.unique
     spell._lock = _ExplodingLock()
+    # `unique` is the one route whose store is the binding owner's
+    # `spell._owner_creations` (read off the spell, frame-wide), not a slot on
+    # the resolving meld. Point it at the probe holding the existing instance.
+    spell._owner_creations = creations
     row = _make_no_overrides_step_row("root")
     row["existence"] = "unique"
     row["creations_target_kind"] = 1
