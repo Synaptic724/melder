@@ -258,7 +258,6 @@ def hydrate_creation_executors(
         fast_transient_no_overrides_enabled=fast_transient_no_overrides,
         spell=root_spell,
         spell_id=root_spell.spell_id,
-        owner_creations=root_spell._owner_creations,
         no_overrides_executor=inner_no_overrides_executor,
         spell_space_scope_error_type=SpellSpaceScopeError,
     )
@@ -266,7 +265,6 @@ def hydrate_creation_executors(
         resolve_route_key=route_key,
         spell=root_spell,
         spell_id=root_spell.spell_id,
-        owner_creations=root_spell._owner_creations,
         no_overrides_executor=inner_no_overrides_executor,
         execute_with_overrides=execute_with_overrides,
         meld_execution_error_type=MeldExecutionError,

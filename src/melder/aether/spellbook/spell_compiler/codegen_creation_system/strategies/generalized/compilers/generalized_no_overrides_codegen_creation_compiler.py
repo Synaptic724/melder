@@ -708,9 +708,7 @@ def _build_step_plan_executor_source(
 
     lines = [
         "def _no_overrides_codegen_creation_executor(",
-        "        caller_creations=None,",
-        "        owner_creations=None,",
-        "        caller_creations_lock_held=False,",
+        "        meld,",
         "        steps=steps,",
         "        step_spells=step_spells,",
         "        step_spell_ids=step_spell_ids,",
@@ -731,25 +729,6 @@ def _build_step_plan_executor_source(
     ]
     if instance_index_by_key is None:
         lines.append("    instance_results = {}")
-    # `caller_creations` is a single executor-level argument consumed by every
-    # CALLER/SPELLSPACE-routed step. Emit ONE hoisted None-check here instead of
-    # repeating the identical guard inside each such step's routing block (the
-    # per-step guard is dropped in `_append_step_creations_target_source`).
-    needs_caller_creations = any(
-        plan_step.creations_target_kind
-        in (
-            SpellGeneralizedCodegenPlanTargetKind.CALLER,
-            SpellGeneralizedCodegenPlanTargetKind.SPELLSPACE,
-        )
-        for plan_step in steps
-    )
-    if needs_caller_creations:
-        lines.extend([
-            "    if caller_creations is None:",
-            "        raise RuntimeError(",
-            "            \"No-overrides codegen CALLER/SPELLSPACE execution requires caller_creations.\"",
-            "        )",
-        ])
     for index, plan_step in enumerate(steps):
         _append_step_resolution_source(
             lines=lines,
@@ -776,54 +755,52 @@ def _append_step_creations_target_source(
         *,
         lines: list[str],
         step_index: int,
-        target_kind: int,
-        is_lineage: bool = False,
-        is_cluster: bool = False,
+        existence: Existence,
 ) -> None:
     """
-    Append emitted source lines for static creations-target routing.
+    Append emitted source resolving this step's creations store off the meld.
 
     Contract:
-        - Emits one fixed routing path from compile-time `target_kind`.
-        - Avoids per-step runtime target-kind branch ladders.
-        - For unique_per_conduit_lineage steps the OWNER store is the resolving
-          door's lineage-root creations; for unique_per_conduit_cluster steps it
-          is the elected leader's creations. Both are threaded in by the door as
-          `owner_creations`, never the binding owner's `_owner_creations` -- which
-          is why each existence carries its own flag here even though they route
-          the same way today.
+        - Routes by the step's compile-time existence to the store the meld
+          front doors select: `many` -> innermost active scope (spellspace store
+          when melded through a SpellSpaceMeld, else the conduit store);
+          `unique_per_conduit` -> conduit store; `unique_per_spell_space` ->
+          spellspace store; `unique_per_conduit_lineage` -> lineage-root store;
+          `unique_per_conduit_cluster` -> elected-leader store; `unique` -> the
+          binding owner's `spell._owner_creations`.
+        - Each store is read straight off the resolving `meld`, never a
+          pre-selected `caller_creations`/`owner_creations` argument.
     """
-    if target_kind in (
-            SpellGeneralizedCodegenPlanTargetKind.CALLER,
-            SpellGeneralizedCodegenPlanTargetKind.SPELLSPACE,
-    ):
-        # The caller_creations None-check is hoisted once to the executor top
-        # (see `_build_step_plan_executor_source`), so per-step routing is a
-        # direct bind.
-        lines.append(f"    creations_{step_index} = caller_creations")
-        return
-
-    if target_kind == SpellGeneralizedCodegenPlanTargetKind.OWNER:
-        if is_lineage or is_cluster:
-            lines.append(f"    creations_{step_index} = owner_creations")
-            return
+    if existence is Existence.many:
         lines.extend([
-            f"    owner_creations_{step_index} = spell_{step_index}._owner_creations",
-            f"    if owner_creations_{step_index} is not None:",
-            f"        creations_{step_index} = owner_creations_{step_index}",
-            "    elif owner_creations is None:",
-            "        raise RuntimeError(",
-            "            \"No-overrides codegen OWNER execution requires owner_creations.\"",
-            "        )",
-            "    else:",
-            f"        creations_{step_index} = owner_creations",
+            f"    creations_{step_index} = meld._spellspace_creations",
+            f"    if creations_{step_index} is None:",
+            f"        creations_{step_index} = meld._conduit_creations",
         ])
         return
+    if existence is Existence.unique_per_conduit:
+        lines.append(f"    creations_{step_index} = meld._conduit_creations")
+        return
+    if existence is Existence.unique_per_spell_space:
+        lines.append(f"    creations_{step_index} = meld._spellspace_creations")
+        return
+    if existence is Existence.unique_per_conduit_lineage:
+        lines.append(f"    creations_{step_index} = meld._root_creations")
+        return
+    if existence is Existence.unique_per_conduit_cluster:
+        lines.append(
+            f"    creations_{step_index} = meld._cluster_creations.resolved_store()"
+        )
+        return
+    if existence is Existence.unique:
+        lines.append(
+            f"    creations_{step_index} = spell_{step_index}._owner_creations"
+        )
+        return
 
-    lines.append(
-        f"    raise RuntimeError("
-        f"f\"Unsupported creations target kind '{target_kind}' "
-        f"for spell '{{spell_{step_index}.spell_id}}'.\")"
+    raise RuntimeError(
+        f"Unsupported existence for generalized no-overrides creations routing: "
+        f"{existence!r}"
     )
 
 
@@ -912,13 +889,7 @@ def _append_step_resolution_source(
     _append_step_creations_target_source(
         lines=lines,
         step_index=step_index,
-        target_kind=plan_step.creations_target_kind,
-        # Lineage and cluster are distinct existences that happen to share one
-        # mechanic: their OWNER-target store is threaded in by the door
-        # (caller_creations), never read from spell._owner_creations. Each keeps
-        # its own flag so the compiler stays honest about which existence it is.
-        is_lineage=plan_step.existence is Existence.unique_per_conduit_lineage,
-        is_cluster=plan_step.existence is Existence.unique_per_conduit_cluster,
+        existence=plan_step.existence,
     )
 
     existence = plan_step.existence
@@ -994,11 +965,6 @@ def _append_step_resolution_source(
             # use_spell_lock_{step_index} is consulted only on the construct path,
             # so compute it here (cold) instead of on every warm meld.
             f"        use_spell_lock_{step_index} = True",
-            "        if (",
-            "                caller_creations_lock_held",
-            f"                and creations_{step_index} is caller_creations",
-            "        ):",
-            f"            use_spell_lock_{step_index} = False",
             f"        if use_spell_lock_{step_index}:",
             f"            with spell_{step_index}._lock:",
             f"                with creations_{step_index}._lock:",
@@ -1129,21 +1095,22 @@ def _append_step_register_source(
         # The caller gates this branch on disposal at COMPILE time, so it is
         # emitted only for disposal-bearing `many` steps -- registration is
         # unconditional here, with no runtime `if has_disposal_methods_N`.
+        # `many` is transient (a new instance per meld, never cached), so the
+        # append is lockless -- matching the solo / many_only families.
         lines.extend([
             f"{indent}spell_id_{step_index} = step_spell_ids[{step_index}]",
-            f"{indent}with creations_{step_index}._lock:",
-            f"{indent}    creations_{step_index}.add_many_creations(",
-            f"{indent}        spell_id_{step_index},",
-            f"{indent}        instance_{step_index},",
+            f"{indent}creations_{step_index}.add_many_creations(",
+            f"{indent}    spell_id_{step_index},",
+            f"{indent}    instance_{step_index},",
             (
-                f"{indent}        has_disposal_methods="
+                f"{indent}    has_disposal_methods="
                 f"has_disposal_methods_{step_index},"
             ),
             (
-                f"{indent}        disposal_methods="
+                f"{indent}    disposal_methods="
                 f"disposal_methods_{step_index},"
             ),
-            f"{indent}    )",
+            f"{indent})",
         ])
         return
 
@@ -1643,9 +1610,7 @@ def _build_no_overrides_codegen_executor_source(
 
     lines = [
         "def _no_overrides_codegen_creation_executor(",
-        "        caller_creations=None,",
-        "        owner_creations=None,",
-        "        caller_creations_lock_held=False,",
+        "        meld,",
         "        transient_root_index=transient_root_index,",
         "        transient_targets=transient_targets,",
         "        transient_dep1=transient_dep1,",
