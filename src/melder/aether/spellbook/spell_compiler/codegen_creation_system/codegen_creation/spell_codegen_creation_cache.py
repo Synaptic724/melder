@@ -243,7 +243,6 @@ def load_creation_context(
         fast_transient_no_overrides_enabled=fast_transient_no_overrides_enabled,
         spell=spell,
         spell_id=spell.spell_id,
-        owner_creations=spell._owner_creations,
         no_overrides_executor=inner_no_overrides,
         spell_space_scope_error_type=SpellSpaceScopeError,
     )
@@ -257,10 +256,8 @@ def load_creation_context(
         _override_runtime_cell: list = [None]
 
         def _lazy_execute_with_overrides(
-                caller_creations: Any,
+                meld: Any,
                 overrides: Optional[dict],
-                caller_creations_lock_held: bool,
-                root_creations: Any = None,
         ) -> Any:
             override_runtime = _override_runtime_cell[0]
             if override_runtime is None:
@@ -270,26 +267,14 @@ def load_creation_context(
                     base_no_overrides_executor=inner_no_overrides,
                 )
                 _override_runtime_cell[0] = override_runtime
-            # Lineage doors pass their lineage-root creations as a 4th arg; every
-            # other route calls with three, so keep the non-lineage arity exact.
-            if root_creations is None:
-                return override_runtime(
-                    caller_creations,
-                    overrides,
-                    caller_creations_lock_held,
-                )
-            return override_runtime(
-                caller_creations,
-                overrides,
-                caller_creations_lock_held,
-                root_creations,
-            )
+            # The migrated overrides runtime reads its own per-existence store off
+            # the resolving meld; the door calls it with (meld, overrides).
+            return override_runtime(meld, overrides)
 
         outer_overrides = compile_creation_context_hooks_overrides_only_executor(
             resolve_route_key=resolve_route_key,
             spell=spell,
             spell_id=spell.spell_id,
-            owner_creations=spell._owner_creations,
             no_overrides_executor=inner_no_overrides,
             execute_with_overrides=_lazy_execute_with_overrides,
             meld_execution_error_type=MeldExecutionError,
@@ -430,12 +415,10 @@ def _build_missing_overrides_executor(spell: Any) -> Any:
     Raises on use, mirroring "no override lane" rather than silently degrading.
     """
     def execute_with_overrides(
-            caller_creations: Any,
+            meld: Any,
             overrides: Optional[dict],
-            caller_creations_lock_held: bool,
-            root_creations: Any = None,
     ) -> Any:
-        _ = (caller_creations, overrides, caller_creations_lock_held, root_creations)
+        _ = (meld, overrides)
         raise RuntimeError(
             "Cached spell has no override lane "
             f"(spell_id={spell.spell_id})."
@@ -445,7 +428,6 @@ def _build_missing_overrides_executor(spell: Any) -> Any:
         resolve_route_key=_resolve_route_key_for_spell(spell),
         spell=spell,
         spell_id=spell.spell_id,
-        owner_creations=spell._owner_creations,
         no_overrides_executor=None,
         execute_with_overrides=execute_with_overrides,
         meld_execution_error_type=MeldExecutionError,

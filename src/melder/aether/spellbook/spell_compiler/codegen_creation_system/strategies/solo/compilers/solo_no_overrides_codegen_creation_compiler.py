@@ -90,7 +90,7 @@ def _build_source(
     """
     if solo_emit_key == "many":
         if fast_transient_no_overrides_enabled:
-            return """def _solo_no_overrides_codegen_creation_executor():
+            return """def _solo_no_overrides_codegen_creation_executor(meld):
     return call_target()
 """
         if has_disposal_methods:

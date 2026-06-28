@@ -207,10 +207,8 @@ def build_overrides_execute_runtime(
     raw_shape_cache: Dict[Tuple[str, ...], list] = {}
 
     def _execute_resolved(
-            caller_creations: Any,
+            meld: Any,
             overrides: Optional[dict],
-            caller_creations_lock_held: bool,
-            owner_creations: Any,
     ) -> Any:
         """
         Legacy full-resolution path: per-call targeting and shape dispatch.
@@ -278,11 +276,9 @@ def build_overrides_execute_runtime(
             last_state[2] = executor
 
         return executor(
-            caller_creations,
+            meld,
             override_map,
             root_positional_override,
-            owner_creations=owner_creations,
-            caller_creations_lock_held=caller_creations_lock_held,
         )
 
     def _prepare_raw_shape(
@@ -368,26 +364,14 @@ def build_overrides_execute_runtime(
         return prepared
 
     def execute_with_overrides(
-            caller_creations: Any,
+            meld: Any,
             overrides: Optional[dict],
-            caller_creations_lock_held: bool,
-            root_creations: Any = None,
     ) -> Any:
-        # Lineage doors pass their lineage-root creations so the lineage OWNER step
-        # stores there instead of the binding owner's `_owner_creations`.
-        owner_creations = (
-            root_creations
-            if root_creations is not None
-            else root_spell._owner_creations
-        )
-
         if overrides is None:
             return baseline_executor(
-                caller_creations,
+                meld,
                 {},
                 None,
-                owner_creations=owner_creations,
-                caller_creations_lock_held=caller_creations_lock_held,
             )
 
         if len(overrides) == 1:
@@ -401,10 +385,8 @@ def build_overrides_execute_runtime(
             # Overlapping targets: value-dependent conflict semantics, keep
             # the legacy per-call resolution path.
             return _execute_resolved(
-                caller_creations,
+                meld,
                 overrides,
-                caller_creations_lock_held,
-                owner_creations,
             )
 
         root_positional_override: Optional[Sequence[Any]] = None
@@ -441,11 +423,9 @@ def build_overrides_execute_runtime(
             executors_by_arity[root_positional_arity] = executor
 
         return executor(
-            caller_creations,
+            meld,
             override_map,
             root_positional_override,
-            owner_creations=owner_creations,
-            caller_creations_lock_held=caller_creations_lock_held,
         )
 
     return execute_with_overrides
