@@ -252,7 +252,7 @@ def _make_conduit_meld(
     effective_spellbook = spellbook or _SpellbookStub()
     creations = ConduitCreations(conduit_id=conduit_id)
     meld = ConduitMeld(
-        creations=creations,
+        conduit_creations=creations,
         spellbook=effective_spellbook,
         conduit_id=conduit_id,
         resolution_conduit_id=conduit_id,
@@ -282,7 +282,7 @@ def _make_spellspace_meld(
     meld = SpellSpaceMeld(
         spellspace=spellspace,
         spellspace_creations=spellspace_creations,
-        owner_conduit_creations=owner_creations,
+        conduit_creations=owner_creations,
         root_creations=owner_creations,
         cluster_creations=ClusterCreations(),
         spellbook=effective_spellbook,
@@ -297,7 +297,7 @@ def test_conduit_meld_init_stores_conduit_creations() -> None:
     Verify ConduitMeld keeps the conduit-owned creations reference.
     """
     meld, creations, _spellbook = _make_conduit_meld()
-    assert meld._creations is creations
+    assert meld._conduit_creations is creations
 
 
 def test_conduit_meld_cleanup_drops_conduit_creations() -> None:
@@ -324,7 +324,7 @@ def test_conduit_meld_meld_no_hooks_uses_conduit_creations_for_unique_per_condui
     _seed_spell(spellbook, spell)
     assert meld.meld(spell="spell-1") == "instance"
     assert context.calls == ["no_hooks_no_overrides"]
-    assert context.last_caller_creations is creations
+    assert context.last_caller_creations is meld
 
 
 def test_conduit_meld_meld_no_hooks_overrides_uses_conduit_creations() -> None:
@@ -342,7 +342,7 @@ def test_conduit_meld_meld_no_hooks_overrides_uses_conduit_creations() -> None:
     _seed_spell(spellbook, spell)
     assert meld.meld(spell="spell-1", spell_override=[1, 2]) == "instance"
     assert context.calls == ["no_hooks_overrides"]
-    assert context.last_caller_creations is creations
+    assert context.last_caller_creations is meld
     assert context.last_overrides == {"__args__": [1, 2]}
 
 
@@ -575,7 +575,7 @@ def test_spellspace_meld_init_stores_both_creations_surfaces() -> None:
     """
     meld, spellspace_creations, owner_creations, _spellbook = _make_spellspace_meld()
     assert meld._spellspace_creations is spellspace_creations
-    assert meld._owner_conduit_creations is owner_creations
+    assert meld._conduit_creations is owner_creations
     assert meld._spellspace_id == "space-1"
 
 
@@ -587,7 +587,7 @@ def test_spellspace_meld_cleanup_drops_subclass_references() -> None:
     meld.cleanup()
     assert not hasattr(meld, "_spellspace")
     assert not hasattr(meld, "_spellspace_creations")
-    assert not hasattr(meld, "_owner_conduit_creations")
+    assert not hasattr(meld, "_conduit_creations")
 
 
 def test_spellspace_meld_meld_uses_spellspace_creations_for_spellspace_scope() -> None:
@@ -605,7 +605,7 @@ def test_spellspace_meld_meld_uses_spellspace_creations_for_spellspace_scope() -
     _seed_spell(spellbook, spell)
 
     assert meld.meld(spell="spell-1") == "instance"
-    assert context.last_caller_creations is spellspace_creations
+    assert context.last_caller_creations is meld
 
 
 def test_spellspace_meld_meld_uses_owner_creations_for_unique_per_conduit() -> None:
@@ -623,7 +623,7 @@ def test_spellspace_meld_meld_uses_owner_creations_for_unique_per_conduit() -> N
     _seed_spell(spellbook, spell)
 
     assert meld.meld(spell="spell-1") == "instance"
-    assert context.last_caller_creations is owner_creations
+    assert context.last_caller_creations is meld
 
 
 def test_spellspace_meld_meld_uses_owner_creations_for_many_scope() -> None:
@@ -642,7 +642,7 @@ def test_spellspace_meld_meld_uses_owner_creations_for_many_scope() -> None:
     _seed_spell(spellbook, spell)
 
     assert meld.meld(spell="spell-1") == "instance"
-    assert context.last_caller_creations is owner_creations
+    assert context.last_caller_creations is meld
 
 
 def test_spellspace_meld_hooks_lane_uses_spellspace_creations_for_activation() -> None:
@@ -667,7 +667,7 @@ def test_spellspace_meld_hooks_lane_uses_spellspace_creations_for_activation() -
     _seed_spell(spellbook, spell)
 
     assert meld.meld(spell="spell-1") == "created"
-    assert context.last_caller_creations is spellspace_creations
+    assert context.last_caller_creations is meld
     assert events == ["activation:created"]
 
 

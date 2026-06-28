@@ -707,17 +707,13 @@ def _load_overrides_executor_from_asset(
             raise RuntimeError(
                 "Cached override experiment only supports the recorded override shape."
             )
-        owner_creations = spell._owner_creations
-        # The shape-source emitter returns the bare root instance, while the
-        # runtime doors now consume `(instance, created)` tuples and index `[0]`.
-        # Mirror the no-overrides adapter above to bridge that experiment-boundary
-        # drift without porting the retired emitter.
+        # The migrated runtime doors take the resolving meld and read the
+        # creation store off it; the bare codegen executor signature is now
+        # `(meld, overrides)` and returns the bare root instance, which this
+        # adapter wraps into the door's `(instance, created)` contract.
         instance = compiled_executor(
             caller_creations,
             override_map,
-            None,
-            owner_creations=owner_creations,
-            caller_creations_lock_held=caller_creations_lock_held,
         )
         return (instance, True)
 

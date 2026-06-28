@@ -135,7 +135,7 @@ def test_meld_creates_spell_compiler_system_on_first_demand() -> None:
     creations = _CreationStoreStub()
 
     meld = ConduitMeld(
-        creations=creations,
+        conduit_creations=creations,
         spellbook=spellbook,
         conduit_id=creations.owner_conduit_id,
         resolution_conduit_id=creations.owner_conduit_id,

@@ -64,7 +64,7 @@ class Meld(Cleanable, ABC):
       recompilation ownership work
     - own the per-door fast meld door registry (`_fast_meld_doors`): a plain
       success-only memoization dict, keyed by spell-id string, mapping to
-      `(spell, captured_context, creations_store, captured_epoch)` tuples
+      `(spell, captured_context, captured_epoch)` tuples
       used by the concrete doors' guarded warm fast lane. `captured_epoch`
       is the spell's `_door_epoch` read BEFORE the building meld executed;
       every spell-level invalidation chokepoint (hook attach, resolution

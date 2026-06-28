@@ -16,6 +16,7 @@ This is an experimentation surface, not production runtime code.
 import gc
 import sys
 import time
+from types import SimpleNamespace
 from typing import Any, Dict, Optional, Sequence, Tuple
 
 from tests.component.melder.spellbook.spell_compiler_runtime_test_support import (
@@ -153,6 +154,23 @@ class _NullLock:
         _ = exc
         _ = tb
         return None
+
+
+def _meld_for_probe(store: Any) -> SimpleNamespace:
+    """
+    Wrap a creation store as the meld the migrated doors read the route store off.
+
+    The executors take the resolving meld and read `_conduit_creations`,
+    `_spellspace_creations`, `_root_creations`, or
+    `_cluster_creations.resolved_store()` off it, so the harness passes this
+    wrapper rather than the bare store/probe.
+    """
+    return SimpleNamespace(
+        _conduit_creations=store,
+        _spellspace_creations=store,
+        _root_creations=store,
+        _cluster_creations=SimpleNamespace(resolved_store=lambda: store),
+    )
 
 
 def _replace_spell_codegen_plan(
@@ -507,6 +525,9 @@ def _benchmark_forced_family_no_overrides(
             restore_owner_creations=owner_override is None,
         )
 
+        caller_creations = _meld_for_probe(
+            owner_override if owner_override is not None else caller_creations
+        )
         return _measure_execute_no_hooks(
             action=lambda: creation_context.execute_no_hooks(caller_creations),
             reset=reset,
@@ -565,6 +586,9 @@ def _benchmark_forced_family_overrides(
             restore_owner_creations=owner_override is None,
         )
 
+        caller_creations = _meld_for_probe(
+            owner_override if owner_override is not None else caller_creations
+        )
         if bind_mode == "existing_creation":
             error_name = _measure_execute_raises(
                 action=lambda: creation_context.execute_no_hooks(
@@ -784,7 +808,9 @@ def _format_results_table(rows: Sequence[Dict[str, Any]]) -> str:
                             else f"warm={row['meld_warm_solo_over_generalized_ratio']:.6f}; "
                         )
                         + (
-                            f"ov={row['overrides_solo_over_generalized_ratio']:.6f}"
+                            "ov=-"
+                            if row["overrides_solo_over_generalized_ratio"] is None
+                            else f"ov={row['overrides_solo_over_generalized_ratio']:.6f}"
                         )
                     )
                 ),

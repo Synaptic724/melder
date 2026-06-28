@@ -282,6 +282,23 @@ def _make_recording_creations() -> SimpleNamespace:
     )
 
 
+def _meld_for(store: Any) -> SimpleNamespace:
+    """
+    Wrap a creation store as the meld door the codegen executors read stores off.
+
+    The migrated executors take the resolving meld and read the route store off
+    it (`_conduit_creations` / `_spellspace_creations` / `_root_creations` /
+    `_cluster_creations.resolved_store()`), so tests pass this wrapper rather
+    than the bare store.
+    """
+    return SimpleNamespace(
+        _conduit_creations=store,
+        _spellspace_creations=store,
+        _root_creations=store,
+        _cluster_creations=SimpleNamespace(resolved_store=lambda: store),
+    )
+
+
 def test_solo_no_overrides_compiler_emits_compiled_code_and_preserves_registration(
         monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -308,7 +325,7 @@ def test_solo_no_overrides_compiler_emits_compiled_code_and_preserves_registrati
             fast_transient_no_overrides_enabled=False,
         )
     )
-    result = executor(caller_creations)
+    result = executor(_meld_for(caller_creations))
 
     assert result == "value:solo-no"
     assert len(compile_calls) == 1
@@ -352,7 +369,7 @@ def test_solo_overrides_compiler_emits_compiled_code_and_preserves_override_beha
         )
     )
     result = executor(
-        caller_creations,
+        _meld_for(caller_creations),
         {
             "__args__": ("left",),
             "right": "value",
@@ -608,7 +625,7 @@ def test_no_overrides_compiler_supports_schema_rows_execution() -> None:
         get_spellspace_creation=lambda *args, **kwargs: None,
         owner_conduit_id="conduit-1",
     )
-    assert executor(caller_creations) == "value:root"
+    assert executor(_meld_for(caller_creations)) == "value:root"
 
 
 def test_no_overrides_compiler_uses_emitted_step_source_when_transient_source_unavailable(
@@ -756,10 +773,8 @@ def test_overrides_compiler_supports_schema_rows_execution_and_prebound_metadata
     assert "step_existences" in executor.__code__.co_varnames
     assert "step_instance_keys" in executor.__code__.co_varnames
     assert executor(
-        context.caller_creations,
+        _meld_for(context.caller_creations),
         {},
-        None,
-        caller_creations_lock_held=context.caller_creations_lock_held,
     ) == "value:root"
 
 
@@ -942,8 +957,8 @@ def test_no_overrides_compiler_spellspace_route_reuses_existing_spellspace_singl
         spell_lookup={"root": spell},
     )
 
-    assert executor(creations) == "root-instance"
-    assert executor(creations) == "root-instance"
+    assert executor(_meld_for(creations)) == "root-instance"
+    assert executor(_meld_for(creations)) == "root-instance"
     assert call_counter["value"] == 1
 
 
@@ -970,7 +985,7 @@ def test_no_overrides_compiler_existing_hit_skips_locks() -> None:
         spell_lookup={"root": spell},
     )
 
-    assert executor(creations, caller_creations_lock_held=False) == "existing-root"
+    assert executor(_meld_for(creations)) == "existing-root"
 
 
 class _OverrideSocketRef:

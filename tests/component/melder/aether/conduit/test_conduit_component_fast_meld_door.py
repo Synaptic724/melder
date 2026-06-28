@@ -153,60 +153,51 @@ class _OverridableService:
         self.value = value
 
 
-class _PoisonCreations:
+class _SpellIdPoolSpy(dict):
     """
     Purpose:
-        Creations stand-in that raises on any attribute access.
+        Drop-in spell-id-pool wrapper that records normal-lane entry.
     Contract:
-        - Any attribute read raises AssertionError, so an executor receiving
-          this store fails loudly the moment it touches storage.
-        - Used to prove fast-lane execution: only the fast lane passes the
-          entry's captured store to the executor; the normal lane uses its
-          own door-owned stores and never sees this object.
+        - The fast lane serves and returns BEFORE the door's normal-lane
+          spell-id-pool read: the warm path reads `_fast_meld_doors`, never
+          `_spell_id_pool`. Every bypass (override, validation, hooks, context
+          invalidation) and every cold meld falls through to the
+          `_spell_id_pool.get(...)` resolution read.
+        - Recording `get` therefore makes a fast-lane hit (pool untouched) and
+          a normal-lane pass (pool read) observable, with zero effect on
+          resolution: lookups still delegate to the captured pool snapshot.
+        - This replaced the removed per-entry store poison. The fast door no
+          longer captures a creations store to poison (the executor reads its
+          store off the meld), so the lane is proven by the
+          normal-lane-exclusive pool read instead.
     """
 
-    def __getattr__(self, name: str) -> object:
-        """
-        Purpose:
-            Fail loudly on any storage access from a fast-lane execution.
-        Contract:
-            - Always raises; never returns.
-        Args:
-            name: Attribute being accessed by the executor.
-        Raises:
-            AssertionError: Always, tagging the access as a poisoned hit.
-        """
-        raise AssertionError(
-            "fast lane executed a poisoned entry (attribute: {0})".format(name)
-        )
+    def __init__(self, source: dict) -> None:
+        super().__init__(source)
+        self.normal_lane_entered = False
+
+    def get(self, *args: object, **kwargs: object) -> object:
+        """Record the normal-lane read, then delegate to the real lookup."""
+        self.normal_lane_entered = True
+        return super().get(*args, **kwargs)
 
 
-def _poison_entry(meld: object, spell_id: str) -> None:
+def _install_lane_spy(meld: object) -> _SpellIdPoolSpy:
     """
     Purpose:
-        Replace one fast-door entry's creations store with a poison object.
+        Swap a meld's spell-id pool for a recording spy and return it.
     Contract:
-        - The fast lane passes the captured store to the executor, so a
-          poisoned store raises AssertionError on a fast-lane hit, making
-          lane hits and bypasses observable.
-        - Spell and context fields are preserved so the guard ladder evaluates
-          against the genuine captured collaborators. (The executor is not
-          part of the entry: it is read per hit through the live context.)
+        - Installs after the cold build so only subsequent melds are observed.
+        - A later fast-lane hit leaves `normal_lane_entered` False; any bypass
+          or full-lane pass sets it True.
     Args:
-        meld: Meld front door owning the fast-door registry.
-        spell_id: Spell id key whose entry should be poisoned.
+        meld: Meld front door whose `_spell_id_pool` slot is wrapped.
     Returns:
-        None.
+        _SpellIdPoolSpy: The installed spy, for lane assertions.
     """
-    door_spell, captured_context, _creations_store, captured_epoch = (
-        meld._fast_meld_doors[spell_id]
-    )
-    meld._fast_meld_doors[spell_id] = (
-        door_spell,
-        captured_context,
-        _PoisonCreations(),
-        captured_epoch,
-    )
+    spy = _SpellIdPoolSpy(meld._spell_id_pool)
+    meld._spell_id_pool = spy
+    return spy
 
 
 def test_component_fast_door_builds_entry_and_serves_warm_hits() -> None:
@@ -229,12 +220,12 @@ def test_component_fast_door_builds_entry_and_serves_warm_hits() -> None:
     try:
         first = conduit.meld(spell=spell_id)
         assert spell_id in conduit._meld._fast_meld_doors
+        spy = _install_lane_spy(conduit._meld)
         second = conduit.meld(spell=spell_id)
         assert second is first
-
-        _poison_entry(conduit._meld, spell_id)
-        with pytest.raises(AssertionError, match="poisoned"):
-            conduit.meld(spell=spell_id)
+        # The warm meld served from the fast lane: it returns before the
+        # normal-lane spell-id-pool read, so the spy never fired.
+        assert not spy.normal_lane_entered
     finally:
         conduit.permanent_cleanup()
 
@@ -299,9 +290,12 @@ def test_component_fast_door_skipped_for_override_payloads() -> None:
         assert plain.value == 0
         assert spell_id in conduit._meld._fast_meld_doors
 
-        _poison_entry(conduit._meld, spell_id)
+        spy = _install_lane_spy(conduit._meld)
         overridden = conduit.meld(spell=spell_id, spell_override={"value": 7})
         assert overridden.value == 7
+        # Override payloads always take the normal lane (the fast lane cannot
+        # apply overrides), proven by the spell-id-pool read.
+        assert spy.normal_lane_entered
     finally:
         conduit.permanent_cleanup()
 
@@ -324,16 +318,20 @@ def test_component_fast_door_guard_trips_on_validation_required() -> None:
     conduit = spellbook.conjure(name="root")
     try:
         first = conduit.meld(spell=spell_id)
-        _poison_entry(conduit._meld, spell_id)
+        spy = _install_lane_spy(conduit._meld)
 
         spellbook._set_spellbook_validation_required(True)
         bypassed = conduit.meld(spell=spell_id)
         assert bypassed is first
+        # validation_required forces the normal lane, proven by the pool read.
+        assert spy.normal_lane_entered
 
-        # The normal-lane pass replaced the poisoned entry; once validation
-        # relaxes, the rebuilt entry serves the fast lane again.
+        # Once validation relaxes, the fast lane serves again: the warm pass
+        # returns before the pool read.
         spellbook._set_spellbook_validation_required(False)
+        spy.normal_lane_entered = False
         assert conduit.meld(spell=spell_id) is first
+        assert not spy.normal_lane_entered
     finally:
         conduit.permanent_cleanup()
 
@@ -356,7 +354,7 @@ def test_component_fast_door_guard_trips_on_spell_hooks() -> None:
     conduit = spellbook.conjure(name="root")
     try:
         first = conduit.meld(spell=spell_id)
-        _poison_entry(conduit._meld, spell_id)
+        spy = _install_lane_spy(conduit._meld)
 
         hook_calls: list[str] = []
         spell = spellbook._spell_id_pool[spell_id]
@@ -364,12 +362,13 @@ def test_component_fast_door_guard_trips_on_spell_hooks() -> None:
 
         hooked = conduit.meld(spell=spell_id)
         assert hooked is first
+        # The pre-cast hook fires only on the normal hook lane (the fast lane
+        # fires no hooks); the pool read confirms the bypass.
         assert hook_calls == ["pre"]
+        assert spy.normal_lane_entered
 
-        # Detach hooks: the previously captured entry is genuinely valid
-        # again (nothing about the context changed), so the fast lane may
-        # serve it. Restore a real entry first by removing the poison via one
-        # normal-lane rebuild trigger.
+        # Detach hooks and drop the now-stale entry; the rebuilt entry serves
+        # the fast lane again on the next warm pass.
         spell._set_hooks(pre_hooks=[])
         del conduit._meld._fast_meld_doors[spell_id]
         rebuilt = conduit.meld(spell=spell_id)
@@ -399,7 +398,7 @@ def test_component_fast_door_guard_trips_on_meld_hooks_in_place_mutation() -> No
     conduit = spellbook.conjure(name="root")
     try:
         first = conduit.meld(spell=spell_id)
-        _poison_entry(conduit._meld, spell_id)
+        spy = _install_lane_spy(conduit._meld)
 
         hook_calls: list[object] = []
         meld = conduit._meld
@@ -412,7 +411,11 @@ def test_component_fast_door_guard_trips_on_meld_hooks_in_place_mutation() -> No
 
         hooked = conduit.meld(spell=spell_id)
         assert hooked is first
+        # The live `not self._meld_hooks` guard read sees the in-place mutation
+        # and routes to the normal lane: the meld hook fires and the pool read
+        # confirms the bypass.
         assert len(hook_calls) == 1
+        assert spy.normal_lane_entered
     finally:
         conduit.permanent_cleanup()
 
@@ -442,7 +445,7 @@ def test_component_fast_door_guard_trips_on_context_invalidation() -> None:
     conduit = spellbook.conjure(name="root")
     try:
         first = conduit.meld(spell=spell_id)
-        _poison_entry(conduit._meld, spell_id)
+        spy = _install_lane_spy(conduit._meld)
 
         spell = spellbook._spell_id_pool[spell_id]
         # Mirror the production chokepoint pairing: context teardown plus
@@ -453,9 +456,12 @@ def test_component_fast_door_guard_trips_on_context_invalidation() -> None:
 
         rebuilt = conduit.meld(spell=spell_id)
         assert rebuilt is first
+        # Context invalidation forces the normal lane (pool read), which
+        # rebuilds the entry against the fresh context.
+        assert spy.normal_lane_entered
 
         # Entry was replaced in place by the normal-lane pass: a warm hit now
-        # executes the rebuilt executor (poison is gone).
+        # serves the rebuilt executor against the new context.
         assert conduit.meld(spell=spell_id) is first
         entry = conduit._meld._fast_meld_doors[spell_id]
         assert entry[1] is spell._creation_context
@@ -486,11 +492,11 @@ def test_component_fast_door_epoch_invalidates_on_hook_attach() -> None:
         first = conduit.meld(spell=spell_id)
         entry = conduit._meld._fast_meld_doors[spell_id]
         spell = spellbook._spell_id_pool[spell_id]
-        assert entry[3] == spell._door_epoch
+        assert entry[2] == spell._door_epoch
 
         fired: list = []
         spell._set_hooks(post_hooks=[lambda: fired.append(True)])
-        assert spell._door_epoch != entry[3]
+        assert spell._door_epoch != entry[2]
 
         again = conduit.meld(spell=spell_id)
         assert again is first
@@ -630,9 +636,11 @@ def test_component_positional_meld_warm_call_executes_fast_lane() -> None:
     conduit = spellbook.conjure(name="root")
     try:
         conduit.meld(spell_id)
-        _poison_entry(conduit._meld, spell_id)
-        with pytest.raises(AssertionError, match="poisoned"):
-            conduit.meld(spell_id)
+        spy = _install_lane_spy(conduit._meld)
+        conduit.meld(spell_id)
+        # The warm positional meld served from the fast lane: it returned
+        # before the normal-lane spell-id-pool read.
+        assert not spy.normal_lane_entered
     finally:
         conduit.permanent_cleanup()
 
@@ -765,9 +773,13 @@ def test_component_spellspace_nested_scope_stack_isolation() -> None:
                     ), "scope_c store lost marker_c after scope_d exit"
                     fast_entry = scope_c._meld._fast_meld_doors.get(marker_id)
                     if fast_entry is not None:
+                        # The per-entry store slot was removed; the executor
+                        # reads its store off the scope's own SpellSpaceMeld,
+                        # so scope-correctness is proven by the meld's store.
                         assert (
-                            fast_entry[2] is scope_c._creations
-                        ), "scope_c fast entry captured a foreign store"
+                            scope_c._meld._spellspace_creations
+                            is scope_c._creations
+                        ), "scope_c meld bound a foreign spellspace store"
                     assert scope_c.meld(spell=marker_id) is marker_c
                 # LIFO unwind step 2: C's exit must not disturb B's storage.
                 assert (

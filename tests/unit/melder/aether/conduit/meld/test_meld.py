@@ -756,7 +756,7 @@ def _make_meld(
     effective_creations = creations or _make_creations()[0]
     conduit_id = getattr(effective_creations, "owner_conduit_id", "conduit-1")
     meld = ConduitMeld(
-        creations=effective_creations,
+        conduit_creations=effective_creations,
         spellbook=spellbook or _SpellbookStub(),
         conduit_id=conduit_id,
         resolution_conduit_id=conduit_id,
@@ -810,7 +810,7 @@ def _make_spellspace_meld(
     effective_spellbook = spellbook or _SpellbookStub()
     owner_conduit_creations = ConduitCreations(conduit_id=conduit_id)
     conduit_meld = ConduitMeld(
-        creations=owner_conduit_creations,
+        conduit_creations=owner_conduit_creations,
         spellbook=effective_spellbook,
         conduit_id=conduit_id,
         resolution_conduit_id=conduit_id,
@@ -826,7 +826,7 @@ def _make_spellspace_meld(
     spellspace_meld = SpellSpaceMeld(
         spellspace=spellspace,
         spellspace_creations=spellspace_creations,
-        owner_conduit_creations=owner_conduit_creations,
+        conduit_creations=owner_conduit_creations,
         root_creations=conduit_meld._root_creations,
         cluster_creations=conduit_meld._cluster_creations,
         spellbook=effective_spellbook,
@@ -878,7 +878,7 @@ def test_meld_no_hooks_uses_cached_context_no_overrides_door(monkeypatch: pytest
 
     assert meld.meld(spell="spell-1") == "instance"
     assert context.calls == ["no_hooks_no_overrides"]
-    assert context.last_caller_creations is creations
+    assert context.last_caller_creations is meld
     assert context.last_overrides is None
 
 
@@ -2049,7 +2049,7 @@ def test_ensure_resolution_resolvable_blocks_invalid_disabled_cleaned(
     )
     resolution_state.set_spell_validity(spell.spell_index.selected_spell_id, validity)
     meld = _make_meld()
-    meld._creations = None
+    meld._conduit_creations = None
     meld._resolution_conduit_id = "conduit-1"
 
     with pytest.raises(SpellbookValidationError):
@@ -2228,7 +2228,7 @@ def test_meld_runs_deferred_runtime_resolution_before_context_build(monkeypatch:
         """
         Record compiled execution invocation after deferred runtime gate.
         """
-        assert caller_creations is creations
+        assert caller_creations is meld
         assert overrides is None
         call_order.append("context")
         return "resolved"

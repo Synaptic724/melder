@@ -92,7 +92,7 @@ def test_spellspace_pool_create_object_binds_fixed_runtime_collaborators() -> No
 
     assert space.owner_conduit_id == owner_conduit_id
     assert space._owner_conduit_creations is creations
-    assert space._meld._owner_conduit_creations is creations
+    assert space._meld._conduit_creations is creations
     assert space._meld._spellbook is conduit_meld._spellbook
     assert space._meld._conduit_id == conduit_meld._conduit_id
     assert space._creations.owner_conduit_id == owner_conduit_id

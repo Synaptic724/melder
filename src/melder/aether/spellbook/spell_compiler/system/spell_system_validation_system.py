@@ -204,47 +204,18 @@ class SpellSystemValidationSystem(Cleanable):
             if diag.severity is SystemDiagnosticSeverity.WARNING
         ]
 
-        result = SpellSystemValidationState(
+        # Verdict-only: validation records per-conduit resolution validity
+        # (above) and returns the aggregated state. Escalating an ERROR verdict
+        # into a raise is the BUILD lane's job, not this shared surface --
+        # `validate_resolution()` (inspection) and the cache-hit replay must be
+        # able to read the verdict without it throwing. The from-scratch conjure
+        # path enforces it.
+        return SpellSystemValidationState(
             is_valid=not has_error,
             errors=errors,
             warnings=warnings,
             nodes=index.nodes,
         )
-
-        # Phase-6 escalation: a system-validation strategy that records an
-        # ERROR-severity diagnostic must RAISE at compile, exactly like the
-        # phase-4 structural lane (which throws via `is_broken`). Recording the
-        # verdict without raising is what let invalid conduits compile silently
-        # and only blow up later at meld with an empty message. Attach the
-        # phase-6 result to the offending spells first so the raised
-        # SpellbookValidationError renders their diagnostics instead of
-        # "(none recorded)", then throw.
-        if has_error:
-            from melder.utilities.custom_exceptions.spellbook_validation_error import (
-                SpellbookValidationError,
-            )
-
-            offender_ids = [
-                diagnostic.spell_id
-                for diagnostic in errors
-                if diagnostic.spell_id is not None
-            ]
-            # Graph-level errors (cycles, coverage) carry no spell_id; fall back
-            # to every spell in the scoped index so the failure stays attributable.
-            if not offender_ids:
-                offender_ids = list(index.nodes)
-
-            offending: list = []
-            for spell_id in dict.fromkeys(offender_ids):
-                offender = spell_lookup[spell_id]
-                artifact = offender._compiler_artifact
-                artifact._validation_result_phase6 = result
-                artifact._validated_phase6 = True
-                offending.append(offender)
-
-            raise SpellbookValidationError(offending)
-
-        return result
 
     def _record_conduit_resolution_state(
             self,

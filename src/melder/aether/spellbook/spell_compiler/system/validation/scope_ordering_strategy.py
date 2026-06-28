@@ -101,34 +101,15 @@ class ScopeOrderingStrategy(SpellSystemValidationStrategy):
                 if dep_node is None or dep_node.existence is None:
                     continue
                 if is_many_node:
-                    # `many` owns no shared store, but a `many` HOLDER has no
-                    # bounded lifetime: the caller may retain it past the request
-                    # scope. Capturing a `unique_per_spell_space` instance is a
-                    # captive dependency -- the spellspace instance is cleared at
-                    # scope close while the retained `many` holder dangles. Every
-                    # other dependency of a `many` is the caller's responsibility
-                    # (spellspace MAY depend on many; the reverse may not).
-                    if dep_node.existence is Existence.unique_per_spell_space:
-                        diagnostics.append(
-                            SystemDiagnostic(
-                                code="scope_ordering_violation",
-                                message=(
-                                    f"Spell '{node.spell_id}' (many) depends on "
-                                    f"'{dep_id}' (unique_per_spell_space): a transient "
-                                    f"holder may outlive the spellspace scope "
-                                    f"(captive dependency)."
-                                ),
-                                severity=SystemDiagnosticSeverity.ERROR,
-                                spell_id=node.spell_id,
-                                root_id=None,
-                                details={
-                                    "spell_id": node.spell_id,
-                                    "spell_existence": node.existence.name,
-                                    "dependency_id": dep_id,
-                                    "dependency_existence": dep_node.existence.name,
-                                },
-                            )
-                        )
+                    # A `many` holder may depend on ANY existence, including the
+                    # narrowest scopes. Inside an active scope its scope-bound
+                    # dependency resolves to that scope's own instance, and the
+                    # runtime never promotes a `many` into a shared store, so a
+                    # `many` is never the broad-holder side of a scope-ordering
+                    # violation. The reverse -- a broader-lived spell depending
+                    # on a narrower scope (unique/lineage/conduit/cluster on
+                    # unique_per_spell_space) -- is still caught by the rank
+                    # rule below.
                     continue
                 if dep_node.existence is Existence.many:
                     continue

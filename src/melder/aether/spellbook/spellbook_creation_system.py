@@ -198,6 +198,15 @@ class SpellbookCreationSystem(Cleanable):
             phase_scheduler_cls=phase_scheduler_cls,
             force_skip_plan_phases=True if cache_full_hit else None,
         )
+        # Build-lane gate: enforce the resolution verdict only on a real
+        # from-scratch compile. A full cache hit replays a bundle whose verdict
+        # was already enforced when it was first built, so it must not
+        # re-validate or re-raise here.
+        if not cache_full_hit:
+            SpellbookCreationSystem._enforce_conduit_resolution_valid(
+                spellbook=spellbook,
+                conduit_id=conduit_id,
+            )
         policy_enum = SpellbookCreationSystem._resolve_conjure_policy(
             spellbook=spellbook,
             policy=self._policy,
@@ -294,6 +303,69 @@ class SpellbookCreationSystem(Cleanable):
             force_skip_plan_phases=force_skip_plan_phases,
         )
         return conduit_id
+
+    @staticmethod
+    def _enforce_conduit_resolution_valid(
+            *,
+            spellbook: Spellbook,
+            conduit_id: str,
+    ) -> None:
+        """
+        Purpose:
+            Build-lane gate that fails conjure when a from-scratch conduit
+            compile produced an ERROR-severity resolution verdict (e.g. a
+            `scope_ordering_violation`), rather than recording it silently and
+            letting it surface later at meld.
+        Contract:
+            - Callers invoke this ONLY on the from-scratch path; a full cache
+              hit replays a bundle whose verdict was already enforced when it
+              was first built, so it must not re-validate or re-raise.
+            - No-op when the conduit has no recorded resolution state or no
+              ERROR diagnostics.
+            - Raises `SpellbookValidationError` naming the spells the ERROR
+              diagnostics attribute the failure to; graph-level errors that
+              carry no spell_id fall back to every scoped spell.
+        Args:
+            spellbook: Owning Spellbook instance.
+            conduit_id: Conduit id whose resolution verdict is enforced.
+        Returns:
+            None.
+        Raises:
+            SpellbookValidationError: When the conduit resolved with errors.
+        """
+        spell_system_states = spellbook._spell_system_states
+        if spell_system_states is None:
+            return
+        resolution_state = spell_system_states.get_conduit_resolution_state(
+            conduit_id
+        )
+        if resolution_state is None or not resolution_state.has_errors():
+            return
+
+        from melder.aether.spellbook.spell_compiler.system.system_diagnostic import (
+            SystemDiagnosticSeverity,
+        )
+        from melder.utilities.custom_exceptions.spellbook_validation_error import (
+            SpellbookValidationError,
+        )
+
+        spell_id_pool = spellbook._spell_id_pool
+        offender_ids = [
+            diagnostic.spell_id
+            for diagnostic in resolution_state.list_diagnostics()
+            if diagnostic.severity is SystemDiagnosticSeverity.ERROR
+            and diagnostic.spell_id is not None
+        ]
+        # Graph-level errors (cycles, coverage) carry no spell_id; fall back to
+        # every scoped spell so the failure stays attributable.
+        if not offender_ids:
+            offender_ids = list(spell_id_pool.keys())
+        offending = [
+            spell_id_pool[spell_id]
+            for spell_id in dict.fromkeys(offender_ids)
+            if spell_id in spell_id_pool
+        ]
+        raise SpellbookValidationError(offending)
 
     @staticmethod
     def _build_conjure_cache_state(

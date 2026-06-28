@@ -20,6 +20,9 @@ from melder.aether.spellbook.configuration.spellbook_configuration import (
 )
 from melder.aether.spellbook.existence.existence import Existence
 from melder.aether.spellbook.spellbook import Spellbook
+from melder.utilities.custom_exceptions.spellbook_validation_error import (
+    SpellbookValidationError,
+)
 from tests._frame_posture_test_support import (
     apply_dynamic_defaults_for_spellbook_configuration,
 )
@@ -77,13 +80,12 @@ def _fresh_runtime() -> Generator[None, None, None]:
     _reset_runtime_singletons()
 
 
-def _build_runtime() -> tuple[Spellbook, Conduit]:
+def _build_spellbook() -> Spellbook:
     """
-    Build one dynamic runtime for the experiment.
+    Build one dynamic spellbook with both binds, stopping before conjure.
 
     Returns:
-        tuple[Spellbook, Conduit]:
-            Owning spellbook and rooted conduit.
+        Spellbook: Owning spellbook with both spells bound, not yet conjured.
     """
 
     configuration = SpellbookConfiguration("unique-depends-on-spellspace-experiment")
@@ -104,42 +106,23 @@ def _build_runtime() -> tuple[Spellbook, Conduit]:
         existence=Existence.unique,
         permissions="create",
     )
-    conduit = spellbook.conjure(dynamic=True, name="root")
-    return spellbook, conduit
+    return spellbook
 
 
-def test_unique_root_depends_on_spellspace_without_active_scope() -> None:
+def test_unique_root_depends_on_spellspace_is_rejected_at_conjure() -> None:
     """
-    Measure current behavior with no active spellspace.
+    Measure current behavior for a broad-to-narrow scope dependency.
 
     Contract:
-        - `conjure()` succeeds.
-        - The first `meld(_UniqueRoot)` fails at the conduit-facing spellspace
-          request gate.
+        - A `unique` root depending on a `unique_per_spell_space` spell is a
+          scope-ordering violation (a broad lifetime depending on a narrower
+          spellspace scope).
+        - The violation is caught at compile time: `conjure()` raises
+          `SpellbookValidationError` naming `_UniqueRoot`, rather than
+          deferring the failure to the first `meld` at the conduit-facing
+          spellspace request gate.
     """
 
-    _spellbook, conduit = _build_runtime()
-    try:
-        with pytest.raises(RuntimeError, match="_UniqueRoot.*spellspace"):
-            conduit.meld(spell=_UniqueRoot)
-    finally:
-        conduit.cleanup()
-
-
-def test_unique_root_depends_on_spellspace_even_with_active_scope() -> None:
-    """
-    Measure current behavior with an active spellspace on the caller conduit.
-
-    Contract:
-        - Entering a spellspace does not make the conduit-facing root meldable.
-        - The first `conduit.meld(_UniqueRoot)` still fails at the same
-          conduit-facing spellspace request gate.
-    """
-
-    _spellbook, conduit = _build_runtime()
-    try:
-        with conduit.enter_spellspace():
-            with pytest.raises(RuntimeError, match="_UniqueRoot.*spellspace"):
-                conduit.meld(spell=_UniqueRoot)
-    finally:
-        conduit.cleanup()
+    spellbook = _build_spellbook()
+    with pytest.raises(SpellbookValidationError, match="_UniqueRoot"):
+        spellbook.conjure(dynamic=True, name="root")

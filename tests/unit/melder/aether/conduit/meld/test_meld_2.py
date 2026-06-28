@@ -205,7 +205,7 @@ def _make_meld(
     effective_creations = creations or _make_creations()
     conduit_id = getattr(effective_creations, "owner_conduit_id", "conduit-1")
     return ConduitMeld(
-        creations=effective_creations,
+        conduit_creations=effective_creations,
         spellbook=spellbook or _SpellbookStub(),
         conduit_id=conduit_id,
         resolution_conduit_id=conduit_id,

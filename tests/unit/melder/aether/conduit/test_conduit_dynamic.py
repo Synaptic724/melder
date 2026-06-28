@@ -334,7 +334,7 @@ def test_upgrade_to_normal_transitions_and_registers(
     assert conduit_dynamic_lesser._conduit_state == ConduitState.normal
     assert conduit_dynamic_lesser._name == "alpha"
     assert conduit_dynamic_lesser._creations is old_creations
-    assert conduit_dynamic_lesser._meld._creations is old_creations
+    assert conduit_dynamic_lesser._meld._conduit_creations is old_creations
     assert conduit_dynamic_lesser._meld._resolution_conduit_id == conduit_dynamic_lesser._id
     assert conduit_dynamic_lesser._conduit_pool is not old_root_pool
     assert conduit_dynamic_lesser._conduit_pool.root_conduit is conduit_dynamic_lesser
