@@ -253,19 +253,20 @@ and logging.
         # Logger setup
         self._initialize_logging(logger)
 
-        # Core spell storage (SpellIndex Maps)
-        self._spells: Dict[SpellIndex, Spell] = {} # Active Spells not all spell indexed spells
-        self._spell_ids: Set[str] = set()
-        self._lookup_spells: Dict[tuple, SpellIndex]  = {}
-        self._spells_by_id: Dict[str, Spell] = {}
-        self._spell_id_pool: Dict[str, Spell] = {}
+        # ACTIVE resolution surface — a spell is PULLED from all of these on inactivate
+        self._spells: Dict[SpellIndex, Spell] = {}          # ACTIVE: index -> active spell (cold meld resolves here)
+        self._lookup_spells: Dict[tuple, SpellIndex] = {}   # ACTIVE: spell._key (frame_key,bind_key) -> index (binding lookup)
+        self._spells_by_id: Dict[str, Spell] = {}           # ACTIVE: spell_id -> active spell (meld-by-id)
+        self._spell_id_pool: Dict[str, Spell] = {}          # ACTIVE: spell_id -> active spell (warm pool)
 
-        # Networked/remote spell support
-        # This stores spells borrowed from other conduits (keyed by peer Conduit id)
-        self._contracted_spells: Dict[str, Dict[SpellIndex, Spell]] = {}  # Active Contracted Spells not all spell indexed spells
-        self._contracted_spell_ids: Dict[str, Set[str]] = {}
-        self._lookup_contracted_spells: Dict[str, Dict[tuple, SpellIndex]]  = {}
-        self._contracted_spells_by_id: Dict[str, Dict[str, Spell]] = {}
+        # EXISTENCE — all owned ids (active ∪ inactive); KEPT on inactivate, dropped only on full unregister
+        self._spell_ids: Set[str] = set()                   # ALL owned ids (Nexus snapshot reads this; the frame will reference it)
+
+        # Contracted (borrowed, keyed by peer conduit id) — same split
+        self._contracted_spells: Dict[str, Dict[SpellIndex, Spell]] = {}        # ACTIVE: conduit -> {index -> active borrowed spell}
+        self._lookup_contracted_spells: Dict[str, Dict[tuple, SpellIndex]] = {} # ACTIVE: conduit -> {signature -> index}
+        self._contracted_spells_by_id: Dict[str, Dict[str, Spell]] = {}         # ACTIVE: conduit -> {spell_id -> active borrowed spell}
+        self._contracted_spell_ids: Dict[str, Set[str]] = {}                    # ALL borrowed ids per conduit (existence; contracted twin of _spell_ids)
 
         # Spell States System
         self._spell_system_states: SpellSystemStates = Spellbook._aether._get_spell_system_states(aetheric_frame)
@@ -4399,4 +4400,4 @@ and logging.
         )
 
     #endregion
-#endregion
+#endregion
