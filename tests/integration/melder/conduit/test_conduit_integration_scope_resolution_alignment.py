@@ -245,6 +245,35 @@ def test_upc_dependency_is_per_conduit() -> None:
         book.cleanup()
 
 
+def test_upc_shared_across_spellspaces_of_one_conduit() -> None:
+    """`unique_per_conduit` is the conduit's single instance -- shared across the
+    conduit's direct meld AND every spellspace entered on that conduit.
+
+    A spellspace is a scope WITHIN its owner conduit, so a `unique_per_conduit`
+    spell resolved from inside any spellspace must land in the owner conduit's
+    store (``meld._conduit_creations``), never a per-spellspace store -- that is
+    reserved for `unique_per_spell_space`.
+    """
+    book = _dynamic_book("upc-across-ss")
+    sid = book.bind(spell=_Leaf, existence=_UPC, permissions="create")
+    root = book.conjure(dynamic=True, name="root")
+    try:
+        direct = root.meld(spell=sid)
+        with root.enter_spellspace() as s1:
+            in_s1 = s1.meld(spell=sid)
+        with root.enter_spellspace() as s2:
+            in_s2 = s2.meld(spell=sid)
+        assert in_s1 is direct, (
+            "a unique_per_conduit melded inside a spellspace must be the conduit's instance"
+        )
+        assert in_s2 is in_s1, (
+            "unique_per_conduit is shared across every spellspace of the same conduit"
+        )
+    finally:
+        root.permanent_cleanup()
+        book.cleanup()
+
+
 # =====================================================================
 # unique_per_conduit_lineage -- one instance per lineage root.
 # =====================================================================
