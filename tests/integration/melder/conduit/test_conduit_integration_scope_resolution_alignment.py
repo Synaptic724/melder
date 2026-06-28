@@ -192,6 +192,30 @@ def test_unique_dependency_shared_across_lessers() -> None:
         book.cleanup()
 
 
+def test_unique_dependency_shared_across_many_holders_on_multiple_lessers() -> None:
+    """`many` holders on several different lessers each receive the SAME shared
+    `unique` frame-singleton dependency."""
+    book = _static_book("u-dep-many-multi")
+    leaf_id = book.bind(spell=_Leaf, existence=_UNIQUE, permissions="create")
+    parent_id = book.bind(spell=_Parent, existence=_MANY, permissions="create")
+    root = book.conjure(name="root", dynamic=False)
+    try:
+        root_leaf = root.meld(spell=leaf_id)
+        deps: List[Any] = []
+        for _ in range(3):
+            lesser = root.create_lesser_conduit()
+            try:
+                deps.append(lesser.meld(spell=parent_id).dep)
+            finally:
+                lesser.cleanup()
+        assert all(d is root_leaf for d in deps), (
+            "a unique dependency must be the one frame singleton on every lesser"
+        )
+    finally:
+        root.permanent_cleanup()
+        book.cleanup()
+
+
 # =====================================================================
 # unique_per_conduit -- one instance per conduit.
 # =====================================================================
@@ -268,6 +292,35 @@ def test_upc_shared_across_spellspaces_of_one_conduit() -> None:
         )
         assert in_s2 is in_s1, (
             "unique_per_conduit is shared across every spellspace of the same conduit"
+        )
+    finally:
+        root.permanent_cleanup()
+        book.cleanup()
+
+
+def test_upc_dependency_distinct_per_lesser_across_many_holders() -> None:
+    """`many` holders on different lessers each receive their OWN lesser's
+    `unique_per_conduit` dependency -- shared within one conduit, distinct across
+    lessers, never leaked."""
+    book = _static_book("upc-dep-many-multi")
+    book.bind(spell=_Leaf, existence=_UPC, permissions="create")
+    parent_id = book.bind(spell=_Parent, existence=_MANY, permissions="create")
+    root = book.conjure(name="root", dynamic=False)
+    try:
+        deps: List[Any] = []
+        for _ in range(3):
+            lesser = root.create_lesser_conduit()
+            try:
+                first = lesser.meld(spell=parent_id)
+                second = lesser.meld(spell=parent_id)
+                assert first.dep is second.dep, (
+                    "two many holders on one conduit share that conduit's upc dependency"
+                )
+                deps.append(first.dep)
+            finally:
+                lesser.cleanup()
+        assert len({id(d) for d in deps}) == len(deps), (
+            "unique_per_conduit dependency must be distinct per lesser conduit"
         )
     finally:
         root.permanent_cleanup()
