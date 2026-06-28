@@ -1,34 +1,41 @@
 """tests/integration/melder/conduit/test_conduit_integration_cluster_dependency.py
 
-Validation: Not run.
+`unique_per_conduit_cluster` exercised AS A DEPENDENCY through the real meld
+front door.
 
-`unique_per_conduit_cluster` exercised AS A DEPENDENCY through the real meld front
-door, across the realistic topology:
-    - multiple clusters,
-    - TWO independent ROOT conduits per cluster (each its own spellbook in the
-      shared frame; bind ids are content-addressed so the cluster shares them),
-    - the elected leader melds AND the other cluster root melds,
-    - the cluster spell is a dependency in more than one kind: a `many` parent and
-      a `unique_per_conduit` parent.
+Cluster formation model (see src/melder/aether/conduit/conduit_cluster.py and
+the ContractProviderPresenceStrategy):
+  - The cluster leaf (`unique_per_conduit_cluster`) is bound ONCE, on a PROVIDER
+    root. spell_ids are frame-unique for EVERY existence, so re-binding the same
+    leaf in a sibling book of the same frame is a correct collision -- the
+    cluster does not re-bind, it SHARES.
+  - On cluster join the cluster auto-shares the provider's shareable roots
+    (filtered to `unique_per_conduit_cluster` by `_get_shareable_spells`) into
+    every peer as CONTRACTS, and leader election points every member's
+    `_cluster_creations` at the leader's store -- so every member resolves the
+    one shared instance.
+  - A dependent parent (`many` / `unique_per_conduit`) reaches the leaf through
+    a late-bound `SpellContract` socket (dynamic mode), NOT plain type-hint DI.
+    `ContractProviderPresenceStrategy` satisfies a contract socket only from a
+    CONTRACTED (cross-conduit) provider -- never a local binding -- so the
+    parents live on CONSUMER roots that BORROW the leaf, not on the provider
+    root that owns it. Each consumer binds its OWN distinct parent (`many` /
+    `unique_per_conduit` parents are not cluster-shareable, and re-binding the
+    same class collides).
 
-The bug this targets: under CALLER routing, a dependency step resolves into the
-store the PARENT's meld selected. On the elected leader that store IS the cluster
-store (passes), but on the OTHER cluster root the parent meld selects that root's
-own `_creations`, so the cluster-leaf step lands there -> a fresh per-root
-instance instead of the cluster's shared one.
-
-Direct cluster sharing across the two roots is asserted first as a precheck, so a
+Direct cluster sharing across the roots is asserted first as a precheck, so a
 failure on the dependency assertion is unambiguous.
 """
 
 from __future__ import annotations
 
-from typing import Any, Callable, List, Tuple
+from typing import Any, List, Optional, Tuple
 
 import pytest
 
 from melder.aether.aether import Aether
 from melder.aether.conduit.conduit import Conduit
+from melder.aether.conduit.meld.contracts.spell_contract import SpellContract
 from melder.aether.spellbook.configuration.spellbook_configuration import (
     SpellbookConfiguration,
 )
@@ -67,13 +74,31 @@ class _ClusterLeaf:
         pass
 
 
-class _ManyParentWithClusterDep:
-    def __init__(self, dep: _ClusterLeaf) -> None:
+# Consumer parents reach the cluster leaf through a LATE-BOUND `SpellContract`
+# socket (dynamic mode), satisfied by the cluster-shared (contracted) leaf at
+# runtime -- never a local binding (ContractProviderPresenceStrategy only
+# considers contracted providers). Each consumer root needs its OWN parent
+# class: `many` / `unique_per_conduit` parents are not cluster-shareable, and
+# re-binding the same class into a sibling book of the same frame is a (correct)
+# spell_id collision. Across DISTINCT frames (separate clusters) the same class
+# is reused safely, since collisions are frame-scoped.
+class _ManyParentClusterDepA:
+    def __init__(self, dep=SpellContract(spell=_ClusterLeaf)) -> None:
         self.dep = dep
 
 
-class _UpcParentWithClusterDep:
-    def __init__(self, dep: _ClusterLeaf) -> None:
+class _ManyParentClusterDepB:
+    def __init__(self, dep=SpellContract(spell=_ClusterLeaf)) -> None:
+        self.dep = dep
+
+
+class _UpcParentClusterDepA:
+    def __init__(self, dep=SpellContract(spell=_ClusterLeaf)) -> None:
+        self.dep = dep
+
+
+class _UpcParentClusterDepB:
+    def __init__(self, dep=SpellContract(spell=_ClusterLeaf)) -> None:
         self.dep = dep
 
 
@@ -85,47 +110,68 @@ def _cluster_config_for_frame(frame: str) -> SpellbookConfiguration:
 
 
 def _form_cluster_multi_root(
-    name: str, root_count: int, bind_fn: Callable[[Spellbook], Any]
-) -> Tuple[str, List[Spellbook], List[Any], Any, Any]:
+    name: str,
+    *,
+    leaf_cls: Any,
+    parents: Optional[List[Tuple[Any, Existence]]] = None,
+    consumer_count: int = 1,
+) -> Tuple[str, List[Spellbook], List[Any], Any, Any, List[Any]]:
     """
-    Form a cluster with `root_count` independent ROOT conduits in one shared frame.
+    Form a cluster in one shared frame.
 
-    Each root has its OWN spellbook and binds via `bind_fn`; because bind ids are
-    content-addressed, every root's bindings share ids, so the cluster shares the
-    cluster spell across them. The first root is linked-to by the rest, all are
-    added to the cluster, and the first root is elected leader.
+    `roots[0]` is the PROVIDER root: it owns the cluster leaf, is elected leader,
+    and hosts NO parent. `roots[1:]` are CONSUMER roots: each borrows the leaf
+    via cluster join and, when `parents` is given, binds its OWN
+    `(class, existence)` parent whose dependency on the leaf is a late-bound
+    `SpellContract`. `parent_ids[i]` corresponds to `roots[i + 1]`.
 
-    Returns (frame, books, roots, cloud, bound_ids_from_root0).
+    Returns (frame, books, roots, cloud, leaf_id, parent_ids).
     """
+    if parents is not None:
+        consumer_count = len(parents)
     frame = f"cdep-{name}"
     books: List[Spellbook] = []
     roots: List[Any] = []
-    bound: Any = None
-    for i in range(root_count):
-        if i == 0:
-            book = Spellbook(
-                aetheric_frame=frame, configuration=_cluster_config_for_frame(frame)
+    parent_ids: List[Any] = []
+
+    # Provider / leader root owns the cluster leaf exactly once.
+    provider_book = Spellbook(
+        aetheric_frame=frame, configuration=_cluster_config_for_frame(frame)
+    )
+    leaf_id = provider_book.bind(
+        spell=leaf_cls, existence=_CLUSTER, permissions="create"
+    )
+    provider = provider_book.conjure(dynamic=True, name=f"{name}-provider")
+    books.append(provider_book)
+    roots.append(provider)
+
+    # Consumer roots borrow the leaf via the cluster and host the parents.
+    for i in range(consumer_count):
+        book = Spellbook(aetheric_frame=frame)  # adopt the frame-owned config
+        if parents is not None:
+            parent_cls, parent_existence = parents[i]
+            parent_ids.append(
+                book.bind(
+                    spell=parent_cls,
+                    existence=parent_existence,
+                    permissions="create",
+                )
             )
-        else:
-            book = Spellbook(aetheric_frame=frame)  # adopt the frame-owned config
-        ids = bind_fn(book)
-        if bound is None:
-            bound = ids
-        root = book.conjure(dynamic=True, name=f"{name}-root{i}")
+        consumer = book.conjure(dynamic=True, name=f"{name}-consumer{i}")
         books.append(book)
-        roots.append(root)
+        roots.append(consumer)
 
-    for other in roots[1:]:
-        roots[0].link(other)
+    for consumer in roots[1:]:
+        provider.link(consumer)
 
-    cloud = roots[0]._spellbook._aether.get_conduit_cloud(frame)
+    cloud = provider._spellbook._aether.get_conduit_cloud(frame)
     cloud.create_cluster(name)
     for root in roots:
         cloud.add_conduit_to_cluster(root, name)
     for root in roots:
         cloud.refresh_cluster_shares_for_conduit(root)
-    cloud.get_cluster(name).elect_leader(roots[0].id)
-    return frame, books, roots, cloud, bound
+    cloud.get_cluster(name).elect_leader(provider.id)
+    return frame, books, roots, cloud, leaf_id, parent_ids
 
 
 def _cleanup(roots: List[Any]) -> None:
@@ -134,10 +180,9 @@ def _cleanup(roots: List[Any]) -> None:
 
 
 def test_two_roots_share_cluster_instance_direct() -> None:
-    """Precheck: two independent cluster roots resolve one shared instance."""
-    _frame, _books, roots, _cloud, leaf_id = _form_cluster_multi_root(
-        "share2", 2,
-        lambda b: b.bind(spell=_ClusterThing, existence=_CLUSTER, permissions="create"),
+    """Precheck: provider + borrower resolve one shared cluster instance."""
+    _frame, _books, roots, _cloud, leaf_id, _parents = _form_cluster_multi_root(
+        "share2", leaf_cls=_ClusterThing,
     )
     try:
         instances = [root.meld(spell=leaf_id) for root in roots]
@@ -150,32 +195,29 @@ def test_two_roots_share_cluster_instance_direct() -> None:
 
 def test_cluster_dependency_many_parent_on_every_root() -> None:
     """
-    A `many` parent that depends on the cluster spell, melded on BOTH cluster
-    roots (the elected leader and the other root). Every root's dependency must
-    resolve the cluster's shared instance; the parents themselves are per-conduit.
+    A `many` parent that depends on the cluster spell, melded on every CONSUMER
+    root. Every consumer's dependency must resolve the cluster's shared
+    instance; the parents themselves are per-conduit.
     """
-    def _bind(book: Spellbook) -> Tuple[Any, Any]:
-        return (
-            book.bind(spell=_ClusterLeaf, existence=_CLUSTER, permissions="create"),
-            book.bind(spell=_ManyParentWithClusterDep, existence=_MANY, permissions="create"),
-        )
-
-    _frame, _books, roots, _cloud, (leaf_id, parent_id) = _form_cluster_multi_root(
-        "depmany", 2, _bind
+    _frame, _books, roots, _cloud, leaf_id, parent_ids = _form_cluster_multi_root(
+        "depmany",
+        leaf_cls=_ClusterLeaf,
+        parents=[(_ManyParentClusterDepA, _MANY), (_ManyParentClusterDepB, _MANY)],
     )
     try:
         shared = roots[0].meld(spell=leaf_id)
-        parents = []
+        # precheck: every cluster member resolves the one shared leaf instance
         for index, root in enumerate(roots):
-            # precheck: direct cluster meld on this root shares the instance
             assert root.meld(spell=leaf_id) is shared, (
                 f"root{index}: direct cluster meld must resolve the shared instance"
             )
-            parent = root.meld(spell=parent_id)
-            parents.append(parent)
-            # the bug: the parent's cluster dependency must also be the shared one
+        # the SpellContract parents live on the consumer roots (roots[1:])
+        parents = [
+            roots[i + 1].meld(spell=parent_ids[i]) for i in range(len(parent_ids))
+        ]
+        for index, parent in enumerate(parents):
             assert parent.dep is shared, (
-                f"root{index}: parent dependency must resolve the cluster's shared instance"
+                f"consumer{index}: parent dependency must resolve the cluster's shared instance"
             )
         assert parents[1] is not parents[0], "`many` parents must be per-conduit"
     finally:
@@ -184,14 +226,10 @@ def test_cluster_dependency_many_parent_on_every_root() -> None:
 
 def test_cluster_dependency_upc_parent_on_every_root() -> None:
     """Same as above but the dependent parent is unique_per_conduit, not many."""
-    def _bind(book: Spellbook) -> Tuple[Any, Any]:
-        return (
-            book.bind(spell=_ClusterLeaf, existence=_CLUSTER, permissions="create"),
-            book.bind(spell=_UpcParentWithClusterDep, existence=_UPC, permissions="create"),
-        )
-
-    _frame, _books, roots, _cloud, (leaf_id, parent_id) = _form_cluster_multi_root(
-        "depupc", 2, _bind
+    _frame, _books, roots, _cloud, leaf_id, parent_ids = _form_cluster_multi_root(
+        "depupc",
+        leaf_cls=_ClusterLeaf,
+        parents=[(_UpcParentClusterDepA, _UPC), (_UpcParentClusterDepB, _UPC)],
     )
     try:
         shared = roots[0].meld(spell=leaf_id)
@@ -199,9 +237,10 @@ def test_cluster_dependency_upc_parent_on_every_root() -> None:
             assert root.meld(spell=leaf_id) is shared, (
                 f"root{index}: direct cluster meld must resolve the shared instance"
             )
-            parent = root.meld(spell=parent_id)
+        for i in range(len(parent_ids)):
+            parent = roots[i + 1].meld(spell=parent_ids[i])
             assert parent.dep is shared, (
-                f"root{index}: unique_per_conduit parent dependency must resolve the shared instance"
+                f"consumer{i}: unique_per_conduit parent dependency must resolve the shared instance"
             )
     finally:
         _cleanup(roots)
@@ -209,22 +248,24 @@ def test_cluster_dependency_upc_parent_on_every_root() -> None:
 
 def test_multiple_clusters_two_roots_dependency_isolated() -> None:
     """
-    Multiple clusters, each with two roots. Within a cluster every root's
-    dependency resolves that cluster's shared instance; across clusters those
-    instances are DISTINCT.
+    Multiple clusters, each with a provider and two consumers. Within a cluster
+    every consumer's dependency resolves that cluster's shared instance; across
+    clusters those instances are DISTINCT.
     """
-    def _bind(book: Spellbook) -> Tuple[Any, Any]:
-        return (
-            book.bind(spell=_ClusterLeaf, existence=_CLUSTER, permissions="create"),
-            book.bind(spell=_ManyParentWithClusterDep, existence=_MANY, permissions="create"),
-        )
-
     per_cluster_shared: List[Any] = []
     handles: List[List[Any]] = []
     try:
         for name in ("mca", "mcb"):
-            _frame, _books, roots, _cloud, (leaf_id, parent_id) = _form_cluster_multi_root(
-                name, 2, _bind
+            # Distinct frames (`cdep-mca` / `cdep-mcb`) -> the same parent
+            # classes are reused safely, since spell_id collisions are
+            # frame-scoped.
+            _frame, _books, roots, _cloud, leaf_id, parent_ids = _form_cluster_multi_root(
+                name,
+                leaf_cls=_ClusterLeaf,
+                parents=[
+                    (_ManyParentClusterDepA, _MANY),
+                    (_ManyParentClusterDepB, _MANY),
+                ],
             )
             handles.append(roots)
             shared = roots[0].meld(spell=leaf_id)
@@ -232,8 +273,9 @@ def test_multiple_clusters_two_roots_dependency_isolated() -> None:
                 assert root.meld(spell=leaf_id) is shared, (
                     f"{name} root{index}: direct cluster meld must share"
                 )
-                assert root.meld(spell=parent_id).dep is shared, (
-                    f"{name} root{index}: parent dependency must resolve the cluster's shared instance"
+            for i in range(len(parent_ids)):
+                assert roots[i + 1].meld(spell=parent_ids[i]).dep is shared, (
+                    f"{name} consumer{i}: parent dependency must resolve the cluster's shared instance"
                 )
             per_cluster_shared.append(shared)
         assert per_cluster_shared[0] is not per_cluster_shared[1], (
