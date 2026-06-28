@@ -984,7 +984,7 @@ def test_add_spells_to_aether(aether_with_mocks):
     
     a._add_spells_to_aether("c1", spell_set)
     
-    frame_mock.register_conduit_spells.assert_called_once_with("c1", spell_set)
+    frame_mock.register_conduit_spells.assert_called_once_with("c1", spell_set, None)
 
 def test_add_spells_duplicate_conduit_raises(aether_with_mocks):
     """_add_spells_to_aether propagates the frame's duplicate-conduit ValueError."""

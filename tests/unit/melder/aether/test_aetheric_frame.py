@@ -313,14 +313,14 @@ def test_has_spell_true(frame):
     """
     si = MagicMock(spec=SpellIndex)
     si.spells_in_index.return_value = {"v1", "v2"}
-    frame.register_conduit_spells("c1", {si})
+    frame.register_conduit_spells("c1", {si}, {"v1", "v2"})
     assert frame.has_spell("v1") is True
 
 def test_has_spell_false(frame):
     """Test has_spell returns False if missing."""
     si = MagicMock(spec=SpellIndex)
     si.spells_in_index.return_value = {"v1", "v2"}
-    frame.register_conduit_spells("c1", {si})
+    frame.register_conduit_spells("c1", {si}, {"v1", "v2"})
     assert frame.has_spell("v3") is False
 
 def test_has_spell_empty_arg(frame):
@@ -334,8 +334,8 @@ def test_spells_in_index(frame):
     si1.spells_in_index.return_value = {"v1", "v2"}
     si2 = MagicMock(spec=SpellIndex)
     si2.spells_in_index.return_value = {"v2", "v3"}
-    frame.register_conduit_spells("c1", {si1})
-    frame.register_conduit_spells("c2", {si2})
+    frame.register_conduit_spells("c1", {si1}, {"v1", "v2"})
+    frame.register_conduit_spells("c2", {si2}, {"v2", "v3"})
     result = frame.spells_in_index()
     assert result == {"v1", "v2", "v3"}
 
@@ -378,7 +378,7 @@ def test_register_conduit_spells_adds(frame):
     """register_conduit_spells writes the spell set and reindexes its versions."""
     si = MagicMock(spec=SpellIndex)
     si.spells_in_index.return_value = {"v1"}
-    frame.register_conduit_spells("c1", {si})
+    frame.register_conduit_spells("c1", {si}, {"v1"})
     assert frame._spell_registry["c1"] == {si}
     assert frame._selected_spell_registry["c1"] == {"v1"}
 
@@ -387,7 +387,7 @@ def test_register_conduit_spells_duplicate_raises(frame):
     """register_conduit_spells rejects a conduit that is already registered."""
     frame._spell_registry = {"c1": set()}
     with pytest.raises(ValueError, match="already contains"):
-        frame.register_conduit_spells("c1", {MagicMock(spec=SpellIndex)})
+        frame.register_conduit_spells("c1", {MagicMock(spec=SpellIndex)}, set())
 
 
 def test_unregister_conduit_spells_discards(frame):
@@ -395,7 +395,7 @@ def test_unregister_conduit_spells_discards(frame):
     si = MagicMock(spec=SpellIndex)
     frame._spell_registry = {"c1": {si}}
     frame.unregister_conduit_spells("c1", {si})
-    assert frame._spell_registry["c1"] == set()
+    assert "c1" not in frame._spell_registry
     # Absent conduit is a no-op (no raise).
     frame.unregister_conduit_spells("missing", {si})
 
@@ -430,8 +430,8 @@ def test_spells_in_index_unions_across_conduits(frame):
     si2 = MagicMock(spec=SpellIndex)
     si2.spells_in_index.return_value = {"v1", "v2"}
 
-    frame.register_conduit_spells("c1", {si1})
-    frame.register_conduit_spells("c2", {si2})
+    frame.register_conduit_spells("c1", {si1}, {"v1"})
+    frame.register_conduit_spells("c2", {si2}, {"v1", "v2"})
 
     assert frame.spells_in_index() == {"v1", "v2"}
 

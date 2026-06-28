@@ -1402,9 +1402,9 @@ def test_refresh_local_spell_ids_populates_versions():
         AssertionError: If version aggregation is incorrect.
     """
     sb = Spellbook()
-    spell1 = DummySpell(spell_id="a", versions={"a", "b"})
-    spell2 = DummySpell(spell_id="c", versions={"c"})
-    sb._spells = {DummySpellIndex(versions=spell1._spells_in_index): spell1, DummySpellIndex(versions=spell2._spells_in_index): spell2}
+    sb._spells_by_id = {"a": DummySpell(spell_id="a"), "b": DummySpell(spell_id="b")}
+    sb._inactive_spells = {"c": DummySpell(spell_id="c")}
+    sb._spell_ids = set()
     sb._logger = DummySafeLogger()
     sb._refresh_local_spell_ids()
     assert sb._spell_ids == {"a", "b", "c"}
@@ -3096,9 +3096,8 @@ def test_refresh_local_spell_ids_handles_various(versions):
         AssertionError: If the refreshed versions are incorrect.
     """
     sb = Spellbook()
-    idx = DummySpellIndex(versions=versions or set())
-    idx._spells_in_index = versions or set()
-    sb._spells = {idx: DummySpell()}
+    sb._spells_by_id = {v: DummySpell(spell_id=v) for v in (versions or set())}
+    sb._inactive_spells = {}
     sb._spell_ids = set()
     sb._logger = DummySafeLogger()
     sb._refresh_local_spell_ids()
@@ -5160,8 +5159,8 @@ def test_refresh_local_spell_ids_thread_safe():
         AssertionError: If version aggregation is incorrect.
     """
     sb = Spellbook()
-    idx = DummySpellIndex(versions={"v1", "v2"})
-    sb._spells = {idx: DummySpell()}
+    sb._spells_by_id = {"v1": DummySpell(spell_id="v1"), "v2": DummySpell(spell_id="v2")}
+    sb._inactive_spells = {}
     sb._spell_ids = set()
     sb._logger = DummySafeLogger()
 

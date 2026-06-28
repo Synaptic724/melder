@@ -1285,7 +1285,7 @@ class Aether(Cleanable):
             return None
 
     def _add_spells_to_aether(self, conduit_id: str, spell_set: Set[SpellIndex],
-                              aetheric_frame_name: str = "default") -> None:
+                              aetheric_frame_name: str = "default", spell_ids: Set[str] | None = None) -> None:
         """
         Registers a set of SpellIndex objects for a conduit and refreshes version registry.
 
@@ -1312,7 +1312,7 @@ class Aether(Cleanable):
 
         # Frame-owned + lock-serialized: duplicate check, write, and version
         # refresh happen atomically under frame._lock (no direct dict poking).
-        frame.register_conduit_spells(conduit_id, spell_set)
+        frame.register_conduit_spells(conduit_id, spell_set, spell_ids)
 
     def _remove_spells_from_aether(self, conduit_id: str, spell_set: Set[SpellIndex],
                                    aetheric_frame_name: str = "default") -> None:

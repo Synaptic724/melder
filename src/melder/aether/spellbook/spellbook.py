@@ -261,12 +261,14 @@ and logging.
 
         # EXISTENCE — all owned ids (active ∪ inactive); KEPT on inactivate, dropped only on full unregister
         self._spell_ids: Set[str] = set()                   # ALL owned ids (Nexus snapshot reads this; the frame will reference it)
+        self._inactive_spells: Dict[str, Spell] = {}  # INACTIVE owned: spell_id -> parked spell (off resolution; repopulates the 7 active maps on notch-back)
 
         # Contracted (borrowed, keyed by peer conduit id) — same split
         self._contracted_spells: Dict[str, Dict[SpellIndex, Spell]] = {}        # ACTIVE: conduit -> {index -> active borrowed spell}
         self._lookup_contracted_spells: Dict[str, Dict[tuple, SpellIndex]] = {} # ACTIVE: conduit -> {signature -> index}
         self._contracted_spells_by_id: Dict[str, Dict[str, Spell]] = {}         # ACTIVE: conduit -> {spell_id -> active borrowed spell}
         self._contracted_spell_ids: Dict[str, Set[str]] = {}                    # ALL borrowed ids per conduit (existence; contracted twin of _spell_ids)
+        self._inactive_contracted_spells: Dict[str, Dict[str, Spell]] = {}  # INACTIVE borrowed: conduit_id -> {spell_id -> parked borrowed spell}
 
         # Spell States System
         self._spell_system_states: SpellSystemStates = Spellbook._aether._get_spell_system_states(aetheric_frame)
@@ -349,9 +351,11 @@ and logging.
 
         try:
             self._spells.clear()
+            self._inactive_spells.clear()
         except Exception as e:
             self._logger.error(f"Error clearing _spells: {e}", "_cleanup_components", exc_info=True)
         del self._spells
+        del self._inactive_spells
 
         try:
             self._spells_by_id.clear()
@@ -374,9 +378,11 @@ and logging.
 
         try:
             self._contracted_spells.clear()
+            self._inactive_contracted_spells.clear()
         except Exception as e:
             self._logger.error(f"Error cleaning _contracted_spells: {e}", "_cleanup_components", exc_info=True)
         del self._contracted_spells
+        del self._inactive_contracted_spells
 
         try:
             self._contracted_spells_by_id.clear()
@@ -635,24 +641,22 @@ and logging.
         """
         Internal
 
-        Rebuilds the local version cache (`_spell_ids`) from the current
-        set of SpellIndex keys in `_spells`.
+        Rebuilds the owned-id cache (`_spell_ids`) as the union of the active
+        id-pool keys (`_spells_by_id`) and the inactive parking-lot keys
+        (`_inactive_spells`) -- every owned spell id, active or inactive.
 
-        This is useful after bulk mutation or research operations that may
-        have changed the version lists on SpellIndex instances.
+        O(1)-amortized delta-sync against those live keyviews (no nested rebuild
+        over index members); the sole consumer is the Nexus snapshot.
         """
         with self._lock:
-            if self._spell_ids is None or self._spells is None:
+            if self._spell_ids is None or self._spells_by_id is None or self._inactive_spells is None:
                 return
 
-            self._spell_ids.clear()
-
-            for spell_index in self._spells.keys():
-                member_ids = spell_index._spells_in_index
-                if not member_ids:
-                    continue
-                for member_id in member_ids:
-                    self._spell_ids.add(member_id)
+            # O(1)-amortized: owned id set == active id-pool keys + inactive parking-lot keys.
+            # Delta-sync against those live keyviews instead of a nested rebuild over index members.
+            target = self._spells_by_id.keys() | self._inactive_spells.keys()
+            self._spell_ids |= target - self._spell_ids   # add what is missing
+            self._spell_ids -= self._spell_ids - target   # drop what is stale
 
     def _refresh_contracted_spell_ids(self) -> None:
         """
@@ -1885,6 +1889,7 @@ and logging.
             conduit_id,
             spell_set,
             self._aetheric_frame,
+            spell_ids=self._spell_ids,
         )
 
     def _unregister_conduit_spells_from_aether(self, conduit_id: str) -> None:

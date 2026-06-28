@@ -598,40 +598,6 @@ class AethericFrame(Cleanable):
             frame_configuration.cleanup()
             return existing_frame_configuration
 
-    # ------------------------------------------------------------------
-    # Version Registry Maintenance
-    # ------------------------------------------------------------------
-    def _reindex_conduit_spell_ids(self, conduit_id: str) -> None:
-        """
-        Recompute one conduit's cached version-id set from its own lineages.
-
-        This is the per-conduit replacement for the old full-registry rebuild.
-        It reads only the named conduit's lineage set (the value already keyed by
-        `conduit_id`), and never iterates the shared `_spell_registry` dict, so it
-        cannot race a concurrent insert of a different conduit into that dict. The
-        version cache stays accurate for the hot `has_spell` /
-        `spells_in_index` reads.
-
-        Contract:
-          - Caller holds `self._lock`.
-          - Writes a single `_selected_spell_registry[conduit_id]` entry, or drops it
-            when the conduit has no remaining lineages.
-
-        Args:
-            conduit_id: Conduit whose cached version set should be recomputed.
-
-        Returns:
-            None.
-        """
-        spell_set = self._spell_registry.get(conduit_id)
-        if not spell_set:
-            self._selected_spell_registry.pop(conduit_id, None)
-            return
-        spell_ids: Set[str] = set()
-        for spell_index in spell_set:
-            spell_ids.update(spell_index.spells_in_index())
-        self._selected_spell_registry[conduit_id] = spell_ids
-
     def has_spell(self, spell_id: str) -> bool:
         """
         Check whether the given SHA256 `spell_id` exists in this frame.
@@ -715,23 +681,22 @@ class AethericFrame(Cleanable):
     # Spell-Registry Mutation (frame-owned, lock-serialized)
     # ------------------------------------------------------------------
     # These own every `_spell_registry` write under `self._lock`, so external
-    # callers (aether.py) never poke the dict directly. After each write they
-    # reindex ONLY the affected conduit's cached version set -- they never rebuild
-    # the whole registry, so nothing here iterates the shared `_spell_registry`
-    # dict while another thread inserts a different conduit into it. That whole-
-    # registry iteration is what previously raised "dictionary changed size during
-    # iteration". The lock still serializes these writes against the cache readers
-    # (`has_spell` / `spells_in_index`). `self._lock` is an `RLock`, so the
-    # nested `_reindex_conduit_spell_ids(...)` re-enters safely.
+    # callers (aether.py) never poke the dict directly. The owned-id set is a
+    # LIVE REFERENCE handed in by the spellbook (`Spellbook._spell_ids`) and
+    # mutated in place there -- the frame stores the reference and never
+    # re-derives ids from index objects. The lock still serializes these writes
+    # against the cache readers (`has_spell` / `spells_in_index`).
 
     def register_conduit_spells(
             self,
             conduit_id: str,
             spell_set: Set[SpellIndex],
+            spell_ids: Set[str],
     ) -> None:
         """
-        Register a conduit's full SpellIndex set and refresh the version cache,
-        atomically under the frame lock.
+        Register a conduit's SpellIndex set plus a LIVE REFERENCE to the owning
+        spellbook's owned-id set (`Spellbook._spell_ids`), atomically under the
+        frame lock. The frame never re-derives ids from index objects.
 
         Raises:
             ValueError: If `conduit_id` is already registered.
@@ -745,7 +710,8 @@ class AethericFrame(Cleanable):
                     f"Spell registry already contains Conduit ID {conduit_id}."
                 )
             self._spell_registry[conduit_id] = spell_set
-            self._reindex_conduit_spell_ids(conduit_id)
+            # Live REFERENCE to the spellbook's owned-id set -- frame never re-derives.
+            self._selected_spell_registry[conduit_id] = spell_ids
 
     def unregister_conduit_spells(
             self,
@@ -765,7 +731,10 @@ class AethericFrame(Cleanable):
                 return
             for spell_index in list(spell_set):
                 existing.discard(spell_index)
-            self._reindex_conduit_spell_ids(conduit_id)
+            # _selected_spell_registry is a live reference (spellbook-maintained); drop empty conduits.
+            if not existing:
+                self._spell_registry.pop(conduit_id, None)
+                self._selected_spell_registry.pop(conduit_id, None)
 
     def register_spell_index(
             self,
@@ -785,9 +754,8 @@ class AethericFrame(Cleanable):
                 spell_set = set()
                 self._spell_registry[conduit_id] = spell_set
             spell_set.add(spell_index)
-            self._selected_spell_registry.setdefault(conduit_id, set()).update(
-                spell_index.spells_in_index()
-            )
+            # _selected_spell_registry is a live reference to the spellbook's _spell_ids,
+            # maintained incrementally by the spellbook -- nothing to update here.
 
     def unregister_spell_index(
             self,
@@ -806,7 +774,7 @@ class AethericFrame(Cleanable):
             if spell_set is None:
                 return
             spell_set.discard(spell_index)
-            self._reindex_conduit_spell_ids(conduit_id)
+            # _selected_spell_registry is a live reference; no re-derivation needed.
 
     def find_conduit_id_for_spell(self, spell_id: str) -> str | None:
         """
