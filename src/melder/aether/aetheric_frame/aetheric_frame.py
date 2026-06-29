@@ -691,7 +691,7 @@ class AethericFrame(Cleanable):
     # ------------------------------------------------------------------
     # Framewide Lookup Registry (active binding signatures)
     # ------------------------------------------------------------------
-    # Delegates to the frame-owned LookupContainer, which carries its own
+    # Facade over the frame-owned LookupContainer, which carries its own
     # lock -- these never take the frame RLock.
     def claim_lookup(self, key: Tuple[str, str], spell_id: str) -> None:
         """
@@ -709,7 +709,6 @@ class AethericFrame(Cleanable):
             RuntimeError: If the signature is already active for a different
                 spell_id in this frame.
         """
-        self.check_cleaned()
         self._lookup_container.claim(key, spell_id)
 
     def release_lookup(self, key: Tuple[str, str]) -> None:
@@ -722,8 +721,19 @@ class AethericFrame(Cleanable):
         Args:
             key: The binding signature `(frame_key, bind_key)` to release.
         """
-        self.check_cleaned()
         self._lookup_container.release(key)
+
+    def release_lookup_by_spell_id(self, spell_id: str) -> None:
+        """
+        Release a binding signature located by its active spell_id.
+
+        Contract:
+            - Idempotent; O(1) via the container's reverse index.
+
+        Args:
+            spell_id: The active spell_id whose signature should be released.
+        """
+        self._lookup_container.release_by_spell_id(spell_id)
 
     def update_lookup(self, key: Tuple[str, str], spell_id: str) -> None:
         """
@@ -733,7 +743,6 @@ class AethericFrame(Cleanable):
             key: The binding signature `(frame_key, bind_key)`.
             spell_id: The new active spell_id for that signature.
         """
-        self.check_cleaned()
         self._lookup_container.update(key, spell_id)
 
     def get_lookup(self, key: Tuple[str, str]) -> Optional[str]:
@@ -746,8 +755,20 @@ class AethericFrame(Cleanable):
         Returns:
             Optional[str]: The active spell_id, or None.
         """
-        self.check_cleaned()
         return self._lookup_container.get(key)
+
+    def get_lookup_sig_by_spell_id(self, spell_id: str) -> Optional[Tuple[str, str]]:
+        """
+        Return the signature an active spell_id holds, or None (O(1)).
+
+        Args:
+            spell_id: The active spell_id to resolve.
+
+        Returns:
+            Optional[Tuple[str, str]]: The `(frame_key, bind_key)` signature, or
+                None when the spell_id holds no active signature in this frame.
+        """
+        return self._lookup_container.get_sig_by_spell_id(spell_id)
 
     def has_lookup(self, key: Tuple[str, str]) -> bool:
         """
@@ -759,8 +780,19 @@ class AethericFrame(Cleanable):
         Returns:
             bool: True when an active spell holds the signature.
         """
-        self.check_cleaned()
         return self._lookup_container.contains(key)
+
+    def has_lookup_spell_id(self, spell_id: str) -> bool:
+        """
+        Report whether a spell_id currently holds an active signature.
+
+        Args:
+            spell_id: The spell_id to test.
+
+        Returns:
+            bool: True when `spell_id` holds an active signature.
+        """
+        return self._lookup_container.contains_spell_id(spell_id)
 
     # ------------------------------------------------------------------
     # Spell-Registry Mutation (frame-owned, lock-serialized)

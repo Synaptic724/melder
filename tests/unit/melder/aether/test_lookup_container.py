@@ -137,3 +137,88 @@ def test_concurrent_same_key_same_spell_id_is_safe():
 
     assert errors == []
     assert c.get(key) == "sid-1"
+
+def test_get_sig_by_spell_id_returns_signature():
+    """The reverse index returns the signature an active spell_id holds."""
+    c = LookupContainer()
+    key = ("frame", "bind")
+    c.claim(key, "sid-1")
+    assert c.get_sig_by_spell_id("sid-1") == key
+
+
+def test_get_sig_by_spell_id_missing_returns_none():
+    """get_sig_by_spell_id returns None for an unknown spell_id."""
+    c = LookupContainer()
+    assert c.get_sig_by_spell_id("sid-1") is None
+
+
+def test_contains_spell_id_reflects_claim_and_release():
+    """contains_spell_id is True after claim, False after release."""
+    c = LookupContainer()
+    key = ("frame", "bind")
+    assert c.contains_spell_id("sid-1") is False
+    c.claim(key, "sid-1")
+    assert c.contains_spell_id("sid-1") is True
+    c.release(key)
+    assert c.contains_spell_id("sid-1") is False
+
+
+def test_release_by_spell_id_removes_both_directions():
+    """release_by_spell_id clears the forward and reverse entries."""
+    c = LookupContainer()
+    key = ("frame", "bind")
+    c.claim(key, "sid-1")
+    c.release_by_spell_id("sid-1")
+    assert c.get(key) is None
+    assert c.contains(key) is False
+    assert c.get_sig_by_spell_id("sid-1") is None
+
+
+def test_release_by_spell_id_absent_is_noop():
+    """Releasing an unknown spell_id changes nothing."""
+    c = LookupContainer()
+    key = ("frame", "bind")
+    c.claim(key, "sid-1")
+    c.release_by_spell_id("sid-unknown")
+    assert c.get(key) == "sid-1"
+    assert c.get_sig_by_spell_id("sid-1") == key
+
+
+def test_release_by_sig_clears_reverse():
+    """Releasing by signature also drops the reverse entry."""
+    c = LookupContainer()
+    key = ("frame", "bind")
+    c.claim(key, "sid-1")
+    c.release(key)
+    assert c.get_sig_by_spell_id("sid-1") is None
+
+
+def test_update_repoints_reverse():
+    """update drops the old spell_id from reverse and records the new one."""
+    c = LookupContainer()
+    key = ("frame", "bind")
+    c.claim(key, "sid-1")
+    c.update(key, "sid-2")
+    assert c.get_sig_by_spell_id("sid-1") is None
+    assert c.get_sig_by_spell_id("sid-2") == key
+    assert c.get(key) == "sid-2"
+
+
+def test_release_by_spell_id_frees_signature_for_other_spell():
+    """After release_by_spell_id, the signature is free to re-claim."""
+    c = LookupContainer()
+    key = ("frame", "bind")
+    c.claim(key, "sid-1")
+    c.release_by_spell_id("sid-1")
+    c.claim(key, "sid-2")
+    assert c.get(key) == "sid-2"
+    assert c.get_sig_by_spell_id("sid-2") == key
+
+
+def test_distinct_spell_ids_reverse_independently():
+    """Distinct spell_ids resolve to their own signatures."""
+    c = LookupContainer()
+    c.claim(("f1", "b"), "sid-1")
+    c.claim(("f2", "b"), "sid-2")
+    assert c.get_sig_by_spell_id("sid-1") == ("f1", "b")
+    assert c.get_sig_by_spell_id("sid-2") == ("f2", "b")
