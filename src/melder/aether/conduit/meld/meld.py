@@ -689,7 +689,7 @@ class Meld(Cleanable, ABC):
         if spellbook is None:
             return None
 
-        frame_name = spellbook._aetheric_frame
+        frame_name = spellbook._aetheric_frame_name
         if frame_name is None:
             return None
         cache = self._change_control_manager_by_frame

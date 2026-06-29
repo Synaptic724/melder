@@ -116,6 +116,7 @@ and logging.
     __slots__ = Cleanable.__slots__ + [
         "__dict__",
         "__weakref__",
+        "_aetheric_frame_name",
         "_aetheric_frame",
         "_aetheric_frame_configuration",
         "_bind",
@@ -215,14 +216,14 @@ and logging.
         self._configured_disposal_method_names: Optional[frozenset[str]] = None
         self._conduit: Optional[Conduit] = None
         self._nexus_publish_enabled: bool = False
-        self._aetheric_frame: str = aetheric_frame
-        if not isinstance(self._aetheric_frame, str):
-            raise TypeError(f"aetheric_frame must be a string, got {type(self._aetheric_frame).__name__}")
-        Spellbook._aether._ensure_frame(self._aetheric_frame)
+        self._aetheric_frame_name: str = aetheric_frame
+        if not isinstance(self._aetheric_frame_name, str):
+            raise TypeError(f"aetheric_frame must be a string, got {type(self._aetheric_frame_name).__name__}")
+        self._aetheric_frame = Spellbook._aether._ensure_frame(self._aetheric_frame_name)
         self._transaction_identity: DevopsIdentity = DevopsIdentity(
             owner_kind="spellbook",
             owner_id=self._id,
-            aetheric_frame_name=self._aetheric_frame,
+            aetheric_frame_name=self._aetheric_frame_name,
             metadata={
                 "conjured": False,
                 "conduit_id": None,
@@ -235,7 +236,7 @@ and logging.
         )
         self._transaction_identity.attach_registry(
             Spellbook._aether._get_existing_frame(
-                self._aetheric_frame,
+                self._aetheric_frame_name,
             ).devops_information_registry,
             object_ref=self,
         )
@@ -371,6 +372,13 @@ and logging.
         del self._spell_id_pool
 
         # 2) Clean lookup/contracted maps and local maps
+        # Release this spellbook's framewide signature claims before dropping the
+        # local lookup (best-effort; the frame may already be tearing down).
+        try:
+            for lookup_key in self._lookup_spells:
+                self._aetheric_frame.release_lookup(lookup_key)
+        except Exception as e:
+            self._logger.error(f"Error releasing framewide lookups: {e}", "_cleanup_components", exc_info=True)
         try:
             self._lookup_spells.clear()
         except Exception as e:
@@ -554,7 +562,7 @@ and logging.
             self._aether._remove_spells_from_aether(
                 owner_conduit_id,
                 {target_spell_index},
-                self._aetheric_frame,
+                self._aetheric_frame_name,
             )
 
         self._unregister_owned_spell_id(target_spell_id, target_spell)
@@ -581,6 +589,7 @@ and logging.
 
         # Nullify high-level refs (no try/catch for simple None assignments)
         del self._bind
+        del self._aetheric_frame_name
         del self._aetheric_frame
         del self._id
         del self._conduit
@@ -784,7 +793,7 @@ and logging.
             if conduit_name is None:
                 conduit_name = self._conduit._name
             caching_system = CachingSystem(
-                frame_name=self._aetheric_frame,
+                frame_name=self._aetheric_frame_name,
                 conduit_name=conduit_name,
                 cache_root_path=self._aetheric_frame_configuration.resolve_system_cache_root_path(),
                 logger=self._logger,
@@ -1099,7 +1108,7 @@ and logging.
             self._nexus._remove_spell_record(
                 self._id,
                 spell_id,
-                self._aetheric_frame,
+                self._aetheric_frame_name,
             )
 
     def _register_contracted_spell_id(self, conduit_id: str, spell_id: str, spell: Spell) -> None:
@@ -1318,7 +1327,7 @@ and logging.
                     self,
                     groups=["spellbook", "lifecycle"],
                     system_groups=["spellbook", "aether"],
-                    props={"aether_frame": self._aetheric_frame},
+                    props={"aether_frame": self._aetheric_frame_name},
                     channels="system",
                 )
         except Exception as e:
@@ -1441,7 +1450,7 @@ and logging.
             "snapshot_id": snapshot_id,
             "captured_at_ms": captured_at_ms,
             "spellbook_id": self._id,
-            "aetheric_frame": self._aetheric_frame,
+            "aetheric_frame": self._aetheric_frame_name,
             "local_spells": local_spells,
             "lookup_spells": lookup_spells,
             "spell_ids": spell_ids,
@@ -1889,7 +1898,7 @@ and logging.
         self._aether._add_spells_to_aether(
             conduit_id,
             spell_set,
-            self._aetheric_frame,
+            self._aetheric_frame_name,
             spell_ids=self._spell_ids,
         )
 
@@ -1913,7 +1922,7 @@ and logging.
             self._aether._remove_spells_from_aether(
                 conduit_id,
                 spell_set,
-                self._aetheric_frame,
+                self._aetheric_frame_name,
             )
 
     def _get_conduit_by_spell_id(
@@ -1938,7 +1947,7 @@ and logging.
                 Owning conduit when found, otherwise "None".
         """
         if aetheric_frame_name == "default":
-            aetheric_frame_name = self._aetheric_frame
+            aetheric_frame_name = self._aetheric_frame_name
         return self._aether._get_conduit_by_spell_id(
             spell_id,
             aetheric_frame_name,
@@ -1966,7 +1975,7 @@ and logging.
                 "True" when Aether resolves the spell id, else "False".
         """
         if aetheric_frame_name == "default":
-            aetheric_frame_name = self._aetheric_frame
+            aetheric_frame_name = self._aetheric_frame_name
         return bool(self._aether._check_for_spell(spell_id, aetheric_frame_name))
 
     def _get_spell_by_id_via_aether(
@@ -2074,7 +2083,7 @@ and logging.
         """
         with self._lock:
             check_for_spell = Spellbook._aether._check_for_spell
-            aetheric_frame = self._aetheric_frame
+            aetheric_frame = self._aetheric_frame_name
             spell_ids = self._spell_ids
 
             if spell_ids:
@@ -2467,7 +2476,7 @@ and logging.
                 Transaction mediator instance owned by the frame control plane.
         """
         change_control = self._aether._get_change_control_manager(
-            self._aetheric_frame,
+            self._aetheric_frame_name,
         )
         return change_control.transaction_mediator()
 
@@ -2680,7 +2689,7 @@ and logging.
             initiator = f"spellbook:{self._id}"
 
         transaction_manager = self._aether._get_change_control_manager(
-            self._aetheric_frame,
+            self._aetheric_frame_name,
         ).transaction_manager()
 
         scope_values = list(scope_keys) if scope_keys else []
@@ -3138,11 +3147,11 @@ and logging.
                 binding_name=binding_name,
                 profile=profile,
                 existence=existence_enum,
-                aetheric_frame=self._aetheric_frame,
+                aetheric_frame=self._aetheric_frame_name,
                 configured_disposal_method_names=self._configured_disposal_method_names,
             )
 
-            if Spellbook._aether._check_for_spell(new_spell.spell_id, self._aetheric_frame):
+            if Spellbook._aether._check_for_spell(new_spell.spell_id, self._aetheric_frame_name):
                 self._logger.error(
                     f"Spell with ID {new_spell.spell_id} already exists in the registry.",
                     "bind",
@@ -3156,18 +3165,13 @@ and logging.
                     "bind-time fingerprint differs so it produces a unique spell_id."
                 )
 
-            self._assert_lookup_key_available(
-                lookup_key=new_spell._key,
-                spell_index=new_spell.spell_index,
-                context="bind",
-                check_local=True,
-                check_contracted=False,
-            )
-
             self._add_hooks_to_spell(new_spell, **kwargs)
 
             # Register into local spell maps
             spell_index = new_spell.spell_index
+            # Framewide one-active-signature-per-frame gate (replaces the old
+            # local-only lookup-key check): claim before committing local maps.
+            self._aetheric_frame.claim_lookup(new_spell._key, new_spell.spell_id)
             self._lookup_spells[new_spell._key] = spell_index
             self._spells[spell_index] = new_spell
             spell_index._attach_owner(self, new_spell)
@@ -3231,7 +3235,7 @@ and logging.
                 Spellbook._aether._register_single_spell_index(
                     self._get_required_conduit_surface()._id,
                     spell_index,
-                    self._aetheric_frame,
+                    self._aetheric_frame_name,
                 )
                 self._publish_spell_record_to_nexus(new_spell)
             return new_spell.spell_id
@@ -3465,7 +3469,7 @@ and logging.
             # No configuration registered in Aether yet
             if self._configuration is not None:
                 # User supplied a configuration object
-                if self._configuration._aether_frame != self._aetheric_frame:
+                if self._configuration._aether_frame != self._aetheric_frame_name:
                     self._logger.error(
                         "SpellbookConfiguration name does not match the aetheric frame",
                         "_initialize_configuration",
@@ -3477,7 +3481,7 @@ and logging.
                 return
 
             # No config in Aether and none provided: create a fresh one and load defaults.
-            self._configuration = SpellbookConfiguration(self._aetheric_frame)
+            self._configuration = SpellbookConfiguration(self._aetheric_frame_name)
             self._configuration.load_default_dictionary()
             self._configuration_locked = False
         except Exception as e:
@@ -3507,7 +3511,7 @@ and logging.
                 or not frame_configuration.shared_framewide_spellbook_configuration
             ):
                 return None
-            return Spellbook._aether._get_configuration(self._aetheric_frame)
+            return Spellbook._aether._get_configuration(self._aetheric_frame_name)
         except Exception as e:
             self._logger.error(
                 f"Error retrieving configuration from Aether: {e}",
@@ -3549,7 +3553,7 @@ and logging.
             ):
                 return False
             shared_configuration = Spellbook._aether._get_configuration(
-                self._aetheric_frame
+                self._aetheric_frame_name
             )
             return shared_configuration is target_configuration
         except Exception:
@@ -3568,7 +3572,7 @@ and logging.
         """
         try:
             frame_configuration = Spellbook._aether._get_aetheric_frame_configuration(
-                self._aetheric_frame
+                self._aetheric_frame_name
             )
             if frame_configuration is None:
                 raise RuntimeError("AethericFrameConfiguration is unavailable.")
@@ -3589,7 +3593,7 @@ and logging.
         Resolve the per-frame RiskManager, if available.
         """
         try:
-            devops = Spellbook._aether._get_devops_manager(self._aetheric_frame)
+            devops = Spellbook._aether._get_devops_manager(self._aetheric_frame_name)
         except Exception:
             return None
         return devops.risk_manager
@@ -3774,7 +3778,7 @@ and logging.
                 return
 
             existing_shared_configuration = Spellbook._aether._get_configuration(
-                self._aetheric_frame
+                self._aetheric_frame_name
             )
             if existing_shared_configuration is not None:
                 if existing_shared_configuration is not self._configuration:
@@ -3788,9 +3792,9 @@ and logging.
         else:
             return
         try:
-            Spellbook._aether._bind_configuration(self._configuration, self._aetheric_frame)
+            Spellbook._aether._bind_configuration(self._configuration, self._aetheric_frame_name)
             shared_configuration = Spellbook._aether._get_configuration(
-                self._aetheric_frame
+                self._aetheric_frame_name
             )
             if (
                     shared_configuration is not None
@@ -3841,7 +3845,7 @@ and logging.
             )
 
         try:
-            frame = Spellbook._aether._ensure_frame(self._aetheric_frame)
+            frame = Spellbook._aether._ensure_frame(self._aetheric_frame_name)
             frame.bind_frame_configuration(
                 self._aetheric_frame_configuration
             )
@@ -3942,7 +3946,7 @@ and logging.
         self._nexus._remove_spell_record(
             self._id,
             old_spell_id,
-            self._aetheric_frame,
+            self._aetheric_frame_name,
         )
         self._nexus._publish_spell_record(self, spell, spell._owner_conduit_id)
 
@@ -3964,7 +3968,7 @@ and logging.
             self._nexus._remove_spell_record(
                 self._id,
                 spell.spell_id,
-                self._aetheric_frame,
+                self._aetheric_frame_name,
             )
 
 
@@ -4049,7 +4053,7 @@ and logging.
         Returns:
             Spellbook: A new Spellbook instance ready for use by a normal conduit.
         """
-        return Spellbook(self._aetheric_frame, self._configuration)
+        return Spellbook(self._aetheric_frame_name, self._configuration)
 
 
     def conjure(

@@ -503,7 +503,7 @@ def test_scan_bind_integration_post_conjure_scan_updates_passive_nexus_records()
     spellbook_id = spellbook.id
     config = spellbook.get_configuration()
     set_frame_rift_enabled_for_spellbook_configuration(config, True)
-    frame_name = spellbook._aetheric_frame
+    frame_name = spellbook._aetheric_frame_name
 
     conduit = spellbook.conjure(name="scan_root_nexus")
     spell_ids = []

@@ -223,7 +223,7 @@ def _make_spellbook_stub(
         _spell_id_pool={},
         _spells_by_id={},
         _aether=aether if aether is not None else _AetherStub(_ChangeControlManagerStub()),
-        _aetheric_frame=frame_name,
+        _aetheric_frame_name=frame_name,
         _spell_system_states=spell_system_states,
     )
     return spellbook

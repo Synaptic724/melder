@@ -263,7 +263,7 @@ def test_component_spellbook_check_all_spells_raises_on_aether_collision(
             Returns:
                 bool: True for the bound spell id, False otherwise.
             """
-            return version_id == spell_id and frame == spellbook._aetheric_frame
+            return version_id == spell_id and frame == spellbook._aetheric_frame_name
 
         monkeypatch.setattr(
             type(spellbook._aether),

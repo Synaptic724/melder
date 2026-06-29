@@ -640,7 +640,7 @@ def test_spellbook_integration_bind_updates_staged_binding_keys() -> None:
     )
 
     conduit = spellbook.conjure(name="root")
-    change_control = spellbook._aether._get_change_control_manager(spellbook._aetheric_frame)
+    change_control = spellbook._aether._get_change_control_manager(spellbook._aetheric_frame_name)
     transaction_started = False
     try:
         spellbook.begin_transaction("bind")
@@ -1252,7 +1252,7 @@ def test_spellbook_integration_contract_updates_risk_manager_lineages() -> None:
     owner = owner_book.conjure(dynamic=True, name="owner")
     borrower = borrower_book.conjure(dynamic=True, name="borrower")
     risk_manager = owner_book._aether._get_devops_manager(
-        owner_book._aetheric_frame
+        owner_book._aetheric_frame_name
     ).risk_manager
     try:
         borrower_state = risk_manager._conduit_states[borrower.id]
@@ -1313,7 +1313,7 @@ def test_spellbook_integration_sever_link_clears_transaction_manager_mirror() ->
     owner = owner_book.conjure(dynamic=True, name="owner")
     borrower = borrower_book.conjure(dynamic=True, name="borrower")
     change_control = borrower_book._aether._get_change_control_manager(
-        borrower_book._aetheric_frame
+        borrower_book._aetheric_frame_name
     )
     try:
         owner.link(borrower)

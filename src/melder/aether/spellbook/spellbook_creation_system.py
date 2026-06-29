@@ -854,7 +854,7 @@ class SpellbookCreationSystem(Cleanable):
             name=resolved_name,
             conduit_state=ConduitState.normal,
             configuration=config,
-            aetheric_frame_name=spellbook._aetheric_frame,
+            aetheric_frame_name=spellbook._aetheric_frame_name,
             aetheric_frame=aetheric_frame,
             policy=policy,
             dynamic=dynamic,
@@ -885,7 +885,7 @@ class SpellbookCreationSystem(Cleanable):
                 Frame-owned gate controller for the target frame.
         """
         manager = spellbook._aether._get_devops_manager(
-            spellbook._aetheric_frame
+            spellbook._aetheric_frame_name
         )
         return manager.creation_gate_controller
 
@@ -908,7 +908,7 @@ class SpellbookCreationSystem(Cleanable):
         Returns:
             AethericFrame: The live frame object for the target frame.
         """
-        return spellbook._aether._get_existing_frame(spellbook._aetheric_frame)
+        return spellbook._aether._get_existing_frame(spellbook._aetheric_frame_name)
 
     @staticmethod
     def _activate_conjured_conduit(

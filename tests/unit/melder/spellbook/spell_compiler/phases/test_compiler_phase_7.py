@@ -98,7 +98,7 @@ def _make_spellbook_stub(*, manager: _ChangeControlManagerStub, frame_name: str 
         _spell_id_pool={},
         _spells_by_id={},
         _aether=_AetherStub(manager),
-        _aetheric_frame=frame_name,
+        _aetheric_frame_name=frame_name,
     )
 
 

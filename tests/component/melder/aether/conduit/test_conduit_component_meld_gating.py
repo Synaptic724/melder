@@ -129,7 +129,7 @@ def test_component_conduit_meld_blocks_dirty_root_change_control() -> None:
             compiler_system.cleanup()
 
         change_control_manager = spellbook._aether._get_change_control_manager(
-            spellbook._aetheric_frame
+            spellbook._aetheric_frame_name
         )
         assert change_control_manager is not None
         change_control_manager.notify_spell_changed(spell_id)
@@ -269,7 +269,7 @@ def test_component_conduit_uses_devops_creation_gate_controller() -> None:
     conduit = spellbook.conjure(name="root", dynamic=True)
     lesser = None
     try:
-        devops = spellbook._aether._get_devops_manager(spellbook._aetheric_frame)
+        devops = spellbook._aether._get_devops_manager(spellbook._aetheric_frame_name)
         controller = devops.creation_gate_controller
 
         assert controller is not None

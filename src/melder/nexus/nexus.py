@@ -987,8 +987,8 @@ class Nexus(Cleanable):
             short-circuited.
         """
         published = self._frame_descriptor_manager._publish_frame_record(spellbook)
-        if self._frame_descriptor_manager._has_frame_descriptor(spellbook._aetheric_frame):
-            self._ensure_frame_acl_container(spellbook._aetheric_frame)
+        if self._frame_descriptor_manager._has_frame_descriptor(spellbook._aetheric_frame_name):
+            self._ensure_frame_acl_container(spellbook._aetheric_frame_name)
         return published
 
     def _publish_conduit_record(self, conduit: Conduit) -> bool:
@@ -1067,8 +1067,8 @@ class Nexus(Cleanable):
             spell,
             owner_conduit_id,
         )
-        if self._frame_descriptor_manager._has_frame_descriptor(spellbook._aetheric_frame):
-            self._ensure_frame_acl_container(spellbook._aetheric_frame)
+        if self._frame_descriptor_manager._has_frame_descriptor(spellbook._aetheric_frame_name):
+            self._ensure_frame_acl_container(spellbook._aetheric_frame_name)
         return published
 
     def _remove_spell_record(

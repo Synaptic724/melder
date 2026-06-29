@@ -449,7 +449,7 @@ def test_component_spellbook_begin_transaction_bind_respects_disable_bind_before
     spellbook = _make_spellbook()
     spellbook._aetheric_frame_configuration.with_disable_bind(True)
     registry = Spellbook._aether._get_existing_frame(
-        spellbook._aetheric_frame
+        spellbook._aetheric_frame_name
     ).devops_information_registry
 
     try:
@@ -977,7 +977,7 @@ def test_component_spellbook_conjure_registers_and_cleanup_unregisters_risk_mana
 
         conduit = spellbook.conjure(name="root")
         risk_manager = spellbook._aether._get_devops_manager(
-            spellbook._aetheric_frame
+            spellbook._aetheric_frame_name
         ).risk_manager
         try:
             state = risk_manager._conduit_states.get(conduit.id)

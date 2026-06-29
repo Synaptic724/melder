@@ -1113,7 +1113,7 @@ def patch_initialize_configuration(monkeypatch):
         """
         if self._configuration is None:
             self._configuration = DummyConfig()
-        self._configuration._aether_frame = self._aetheric_frame
+        self._configuration._aether_frame = self._aetheric_frame_name
         self._configuration_locked = False
         self._logger = DummySafeLogger()
 
@@ -1154,7 +1154,7 @@ def test_init_with_default_frame_and_configuration():
     sb = Spellbook(configuration=cfg)
     assert isinstance(sb._lock, type(threading.RLock()))
     assert isinstance(sb._configuration, DummyConfig)
-    assert sb._aetheric_frame == "default"
+    assert sb._aetheric_frame_name == "default"
 
 
 def test_init_type_error_on_non_str_frame():
@@ -1471,7 +1471,7 @@ def test_remove_link_contract_inconsistent_state_raises() -> None:
 
 def test_try_update_staged_contract_keys_rebuilds_peer_scope(monkeypatch):
     sb = Spellbook()
-    sb._aetheric_frame = "default"
+    sb._aetheric_frame_name = "default"
     idx = DummySpellIndex()
     sb._lookup_contracted_spells = {"peer": {("new-frame", "new-binding"): idx}}
     updated = []
@@ -1560,7 +1560,7 @@ def test_spellbook_builds_transaction_identity_at_init() -> None:
     try:
         assert identity.owner_kind == "spellbook"
         assert identity.owner_id == sb._id
-        assert identity.aetheric_frame_name == sb._aetheric_frame
+        assert identity.aetheric_frame_name == sb._aetheric_frame_name
         assert identity.supports_transaction("bind") is True
         assert identity.supports_transaction("scan") is True
         assert identity.supports_transaction("link") is False
@@ -1741,7 +1741,7 @@ def test_bind_configuration_to_aether_and_frame_posture_reraise_failures(monkeyp
     sb = Spellbook()
     sb._logger = DummySafeLogger()
     sb._configuration = DummyConfig()
-    sb._aetheric_frame = "ops"
+    sb._aetheric_frame_name = "ops"
 
     aether_stub = types.SimpleNamespace(
         _get_configuration=lambda frame: None,
@@ -2078,7 +2078,7 @@ def test_refresh_nexus_publish_enabled_and_publish_helpers_cover_enabled_and_dis
 
     sb = Spellbook()
     sb._id = "spellbook-id"
-    sb._aetheric_frame = "ops"
+    sb._aetheric_frame_name = "ops"
     sb._nexus = types.SimpleNamespace(
         _publish_frame_record=lambda spellbook: publish_calls.append(("frame", spellbook._id)),
         _publish_conduit_record=lambda conduit: publish_calls.append(("conduit", conduit._id)),
@@ -4367,7 +4367,7 @@ def test_update_owned_spell_id_replaces_nexus_record_when_publish_enabled(monkey
 
     sb = Spellbook()
     sb._nexus_publish_enabled = True
-    sb._aetheric_frame = "default"
+    sb._aetheric_frame_name = "default"
     sb._spell_ids = {"old-id"}
     spell = DummySpell(spell_id="new-id")
     spell._owner_conduit_id = "owner-cid"
@@ -4418,7 +4418,7 @@ def test_unregister_owned_spell_id_removes_nexus_record_when_publish_enabled(mon
 
     sb = Spellbook()
     sb._nexus_publish_enabled = True
-    sb._aetheric_frame = "default"
+    sb._aetheric_frame_name = "default"
     spell = DummySpell(spell_id="owned-id")
     sb._register_owned_spell_id("owned-id", spell)
 

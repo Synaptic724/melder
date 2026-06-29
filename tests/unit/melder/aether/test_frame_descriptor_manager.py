@@ -74,7 +74,7 @@ def test_manager_publish_frame_record_creates_descriptor_and_overview() -> None:
     """
     aether = _bind_frame_posture("ops", rift_enabled=True)
     manager = FrameDescriptorManager(aether)
-    spellbook = types.SimpleNamespace(_aetheric_frame="ops", _id="spellbook-alpha")
+    spellbook = types.SimpleNamespace(_aetheric_frame_name="ops", _id="spellbook-alpha")
 
     assert manager._publish_frame_record(spellbook) is True
 
@@ -191,7 +191,7 @@ def test_manager_publish_conduit_record_short_circuits_for_none_or_unpublishable
     """
     unpublished_aether = _bind_frame_posture("ops", rift_enabled=False)
     manager = FrameDescriptorManager(unpublished_aether)
-    spellbook = types.SimpleNamespace(_aetheric_frame="ops", _id="spellbook-alpha")
+    spellbook = types.SimpleNamespace(_aetheric_frame_name="ops", _id="spellbook-alpha")
     conduit = types.SimpleNamespace(
         _id="conduit-1",
         _root_conduit_id="conduit-1",
@@ -218,7 +218,7 @@ def test_manager_publish_conduit_record_accepts_lesser_conduits() -> None:
     """
     published_aether = _bind_frame_posture("ops", rift_enabled=True)
     manager = FrameDescriptorManager(published_aether)
-    spellbook = types.SimpleNamespace(_aetheric_frame="ops", _id="spellbook-alpha")
+    spellbook = types.SimpleNamespace(_aetheric_frame_name="ops", _id="spellbook-alpha")
     root_conduit = types.SimpleNamespace(_id="root-1", _conduit_ward=None)
     lesser_conduit = types.SimpleNamespace(
         _id="conduit-1",
@@ -248,7 +248,7 @@ def test_manager_publish_conduit_record_accepts_pooled_lesser_conduits() -> None
     """
     published_aether = _bind_frame_posture("ops", rift_enabled=True)
     manager = FrameDescriptorManager(published_aether)
-    spellbook = types.SimpleNamespace(_aetheric_frame="ops", _id="spellbook-alpha")
+    spellbook = types.SimpleNamespace(_aetheric_frame_name="ops", _id="spellbook-alpha")
     pooled_lesser = types.SimpleNamespace(
         _id="conduit-1",
         _root_conduit_id="root-1",
@@ -283,7 +283,7 @@ def test_manager_publish_spell_record_requires_descriptor_payload_and_publishabl
     """
     published_aether = _bind_frame_posture("ops", rift_enabled=True)
     manager = FrameDescriptorManager(published_aether)
-    spellbook = types.SimpleNamespace(_aetheric_frame="ops", _id="spellbook-alpha")
+    spellbook = types.SimpleNamespace(_aetheric_frame_name="ops", _id="spellbook-alpha")
     invalid_spell = types.SimpleNamespace(
         profile=object(),
         spell_id="spell-1",
@@ -321,7 +321,7 @@ def test_manager_publish_spell_record_requires_descriptor_payload_and_publishabl
         permissions=None,
         existence=None,
     )
-    shadow_spellbook = types.SimpleNamespace(_aetheric_frame="shadow", _id="spellbook-shadow")
+    shadow_spellbook = types.SimpleNamespace(_aetheric_frame_name="shadow", _id="spellbook-shadow")
 
     assert unpublished_manager._publish_spell_record(
         shadow_spellbook,
@@ -344,7 +344,7 @@ def test_manager_cleanup_cleans_owned_descriptors_and_nuls_state() -> None:
     """
     aether = _bind_frame_posture("ops", rift_enabled=True)
     manager = FrameDescriptorManager(aether)
-    spellbook = types.SimpleNamespace(_aetheric_frame="ops", _id="spellbook-alpha")
+    spellbook = types.SimpleNamespace(_aetheric_frame_name="ops", _id="spellbook-alpha")
 
     assert manager._publish_frame_record(spellbook) is True
     descriptor = manager._get_required_frame_descriptor("ops")

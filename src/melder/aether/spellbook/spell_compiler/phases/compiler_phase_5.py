@@ -79,7 +79,7 @@ class CompilerPhase5:
                     If the spellbook does not currently expose a concrete frame
                     name.
         """
-        frame_name = spellbook._aetheric_frame
+        frame_name = spellbook._aetheric_frame_name
         if frame_name is None:
             raise RuntimeError("SpellCrafter requires a concrete owning frame name.")
         return frame_name

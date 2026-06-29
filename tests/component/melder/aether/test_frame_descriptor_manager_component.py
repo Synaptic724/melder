@@ -98,7 +98,7 @@ def test_component_manager_keeps_frame_conduit_and_spell_records_coherent() -> N
     Aether._reset_singleton_for_tests()
     aether = _bind_frame_posture("ops", rift_enabled=True)
     manager = FrameDescriptorManager(aether)
-    spellbook = types.SimpleNamespace(_aetheric_frame="ops", _id="spellbook-alpha")
+    spellbook = types.SimpleNamespace(_aetheric_frame_name="ops", _id="spellbook-alpha")
     conduit = types.SimpleNamespace(
         _id="conduit-1",
         _root_conduit_id="conduit-1",

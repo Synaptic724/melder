@@ -528,7 +528,7 @@ def test_component_spell_compiler_system_phase7_frame_wide_registers_revalidator
         run_structural_phases(compiler_system, spellbook, spell)
         run_foundational_phases(compiler_system, spellbook, spell, conduit_id)
 
-        manager = Spellbook._aether._get_change_control_manager(spellbook._aetheric_frame)
+        manager = Spellbook._aether._get_change_control_manager(spellbook._aetheric_frame_name)
         assert conduit_id in manager._revalidate_fn_by_conduit
     finally:
         compiler_system.cleanup()
@@ -549,7 +549,7 @@ def test_component_spell_compiler_system_phase7_local_registers_revalidator() ->
         compiler_system.run_phase_root_blueprints_local(spellbook, spell, conduit_id)
         compiler_system.run_phase_change_control_local(spellbook, spell, conduit_id)
 
-        manager = Spellbook._aether._get_change_control_manager(spellbook._aetheric_frame)
+        manager = Spellbook._aether._get_change_control_manager(spellbook._aetheric_frame_name)
         assert conduit_id in manager._revalidate_fn_by_conduit
     finally:
         compiler_system.cleanup()

@@ -438,7 +438,7 @@ class _SpellbookStub:
         self._contracted_spells = contracted_spells or {}
         self._lookup_spells = lookup_spells or {}
         self._lookup_contracted_spells = lookup_contracted_spells or {}
-        self._aetheric_frame = aetheric_frame
+        self._aetheric_frame_name = aetheric_frame
         self._aether = aether
         self._spells_by_id = {
             spell.spell_id: spell

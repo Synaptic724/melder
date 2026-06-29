@@ -354,7 +354,7 @@ def test_component_spellbook_get_configuration_from_aether_propagates_errors(
     try:
         _bind_frame_posture(
             spellbook._aether,
-            spellbook._aetheric_frame,
+            spellbook._aetheric_frame_name,
             shared_framewide_spellbook_configuration=True,
         )
         monkeypatch.setattr(

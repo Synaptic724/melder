@@ -164,7 +164,7 @@ def test_component_change_control_wires_component_of_for_local_root() -> None:
             compiler_system.cleanup()
 
         manager = Spellbook._aether._get_change_control_manager(
-            spellbook._aetheric_frame
+            spellbook._aetheric_frame_name
         )
         assert manager is not None
         info = manager.describe()
@@ -231,7 +231,7 @@ def test_component_change_control_revalidator_clears_dirty_roots() -> None:
         _run_spell_to_phase5(consumer_spell)
 
         manager = Spellbook._aether._get_change_control_manager(
-            spellbook._aetheric_frame
+            spellbook._aetheric_frame_name
         )
         assert manager is not None
         info = manager.describe()
@@ -317,7 +317,7 @@ def test_component_change_control_tracks_contracted_dependency_in_component_of()
         _run_spell_to_phase5(consumer_spell)
 
         manager = Spellbook._aether._get_change_control_manager(
-            borrower_book._aetheric_frame
+            borrower_book._aetheric_frame_name
         )
         assert manager is not None
         info = manager.describe()
@@ -429,7 +429,7 @@ def test_component_change_control_excludes_uncontracted_remote_spells() -> None:
         _run_spell_to_phase5(consumer_spell)
 
         manager = Spellbook._aether._get_change_control_manager(
-            borrower_book._aetheric_frame
+            borrower_book._aetheric_frame_name
         )
         assert manager is not None
         info = manager.describe()
@@ -532,7 +532,7 @@ def test_component_change_control_shared_dependency_maps_to_multiple_roots() -> 
         _run_spell_to_phase5(consumer_b)
 
         manager = Spellbook._aether._get_change_control_manager(
-            spellbook._aetheric_frame
+            spellbook._aetheric_frame_name
         )
         assert manager is not None
         info = manager.describe()

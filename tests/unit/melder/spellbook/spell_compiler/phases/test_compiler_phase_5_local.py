@@ -136,7 +136,7 @@ def _make_spellbook_stub(*, spell_system_states: _SpellSystemStatesStub) -> Any:
         _spells_by_id={},
         _spell_system_states=spell_system_states,
         _aether=None,
-        _aetheric_frame="frame",
+        _aetheric_frame_name="frame",
     )
 
 

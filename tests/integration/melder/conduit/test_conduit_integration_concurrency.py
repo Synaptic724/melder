@@ -96,7 +96,7 @@ def _enable_queued_root_transactions(spellbook: Spellbook) -> None:
     """
     frame_configuration = spellbook._aetheric_frame_configuration
     change_control_manager = Spellbook._aether._get_change_control_manager(
-        spellbook._aetheric_frame
+        spellbook._aetheric_frame_name
     )
     mediator = change_control_manager.transaction_mediator()
     mediator.configure(

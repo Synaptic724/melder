@@ -109,7 +109,7 @@ def test_publish_frame_record_does_not_require_nexus_enable() -> None:
     """
     _bind_frame_posture("ops", rift_enabled=True)
     nexus = Nexus()
-    spellbook = types.SimpleNamespace(_aetheric_frame="ops", _id="spellbook-alpha")
+    spellbook = types.SimpleNamespace(_aetheric_frame_name="ops", _id="spellbook-alpha")
 
     assert nexus.is_enabled is False
     assert nexus._publish_frame_record(spellbook) is True
@@ -155,7 +155,7 @@ def test_publish_frame_record_captures_frame_summary() -> None:
     frame._conduit_cloud._conduit_clusters["cluster-a"] = types.SimpleNamespace()
 
     nexus = Nexus()
-    spellbook = types.SimpleNamespace(_aetheric_frame="ops", _id="spellbook-alpha")
+    spellbook = types.SimpleNamespace(_aetheric_frame_name="ops", _id="spellbook-alpha")
 
     assert nexus._publish_frame_record(spellbook) is True
 
@@ -180,7 +180,7 @@ def test_publish_methods_short_circuit_when_frame_is_not_publishable() -> None:
     _bind_frame_posture("ops", rift_enabled=False)
     nexus = Nexus()
 
-    spellbook = types.SimpleNamespace(_aetheric_frame="ops", _id="spellbook-alpha")
+    spellbook = types.SimpleNamespace(_aetheric_frame_name="ops", _id="spellbook-alpha")
     spell = types.SimpleNamespace(
         profile=None,
         resolution_profile=None,
@@ -224,7 +224,7 @@ def test_publish_spell_record_updates_primary_store_and_indexes() -> None:
     """
     _bind_frame_posture("ops", rift_enabled=True)
     nexus = Nexus()
-    spellbook = types.SimpleNamespace(_aetheric_frame="ops", _id="spellbook-alpha")
+    spellbook = types.SimpleNamespace(_aetheric_frame_name="ops", _id="spellbook-alpha")
     spell = types.SimpleNamespace(
         profile=_PayloadProfile(),
         spell_id="spell-1",
@@ -254,7 +254,7 @@ def test_publish_conduit_record_includes_lesser_conduits_in_passive_ingest() -> 
     """
     _bind_frame_posture("ops", rift_enabled=True)
     nexus = Nexus()
-    spellbook = types.SimpleNamespace(_aetheric_frame="ops", _id="spellbook-alpha")
+    spellbook = types.SimpleNamespace(_aetheric_frame_name="ops", _id="spellbook-alpha")
     conduit = types.SimpleNamespace(
         _id="conduit-1",
         _root_conduit_id="root-1",
@@ -286,7 +286,7 @@ def test_remove_spell_and_conduit_records_clear_indexes() -> None:
     """
     _bind_frame_posture("ops", rift_enabled=True)
     nexus = Nexus()
-    spellbook = types.SimpleNamespace(_aetheric_frame="ops", _id="spellbook-alpha")
+    spellbook = types.SimpleNamespace(_aetheric_frame_name="ops", _id="spellbook-alpha")
     conduit = types.SimpleNamespace(
         _id="conduit-1",
         _root_conduit_id="conduit-1",
