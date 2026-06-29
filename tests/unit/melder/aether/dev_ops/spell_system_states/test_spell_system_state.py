@@ -21,8 +21,8 @@ def test_init_success(state):
     assert state.spell_index_id == "index-1"
     assert state.current_spell_id == "spell-sha-1"
     assert state.validity == SpellValidity.unknown
-    assert SpellState.new_lineage in state.flags
-    assert state.change_reason == SpellStateChangeReason.new_lineage
+    assert SpellState.new_index in state.flags
+    assert state.change_reason == SpellStateChangeReason.new_index
     assert state.direct_dependencies == set()
     assert state.direct_dependents == set()
 
@@ -172,8 +172,8 @@ def test_clear_dirty(state):
     
     # Flags cleared?
     assert SpellState.structure_changed not in state.flags
-    # new_lineage should also be cleared
-    assert SpellState.new_lineage not in state.flags
+    # new_index should also be cleared
+    assert SpellState.new_index not in state.flags
 
 def test_set_validity_generic(state):
     """
@@ -186,13 +186,13 @@ def test_set_validity_generic(state):
         SpellValidity.invalid,
         change_reason=SpellStateChangeReason.validation_failed,
         flags_to_add=[SpellState.has_open_incident],
-        flags_to_remove=[SpellState.new_lineage]
+        flags_to_remove=[SpellState.new_index]
     )
     
     assert state.validity == SpellValidity.invalid
     assert state.change_reason == SpellStateChangeReason.validation_failed
     assert SpellState.has_open_incident in state.flags
-    assert SpellState.new_lineage not in state.flags
+    assert SpellState.new_index not in state.flags
 
 
 def test_set_validity_handles_missing_flags_and_swallows_risk_callback_errors(state):

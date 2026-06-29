@@ -204,7 +204,7 @@ def test_component_spell_system_states_register_index_sets_change_reason() -> No
         Validate registering a lineage sets validity and change reason.
     Contract:
         - New lineages are gated with register_or_rebind as the change reason.
-        - Structure and new_lineage flags are present.
+        - Structure and new_index flags are present.
     Returns:
         None.
     Raises:
@@ -220,7 +220,7 @@ def test_component_spell_system_states_register_index_sets_change_reason() -> No
         assert state.change_reason is SpellStateChangeReason.register_or_rebind
         flags = state.flags
         assert SpellState.structure_changed in flags
-        assert SpellState.new_lineage in flags
+        assert SpellState.new_index in flags
     finally:
         frame.cleanup()
 
@@ -461,7 +461,7 @@ def test_component_spell_system_states_clear_dirty_resets_state_flags() -> None:
         assert state.dirty is False
         assert state.last_validated_at == 123.0
         flags = state.flags
-        assert SpellState.new_lineage not in flags
+        assert SpellState.new_index not in flags
         assert SpellState.structure_changed not in flags
         assert SpellState.dependencies_changed not in flags
     finally:
@@ -590,7 +590,7 @@ def test_component_spell_system_states_clear_dirty_preserves_non_topology_flags(
         assert SpellState.has_open_incident in flags
         assert SpellState.contract_violation in flags
         assert SpellState.mutation_failed in flags
-        assert SpellState.new_lineage not in flags
+        assert SpellState.new_index not in flags
         assert SpellState.structure_changed not in flags
         assert SpellState.dependencies_changed not in flags
         assert SpellState.impacted_by_dependency not in flags

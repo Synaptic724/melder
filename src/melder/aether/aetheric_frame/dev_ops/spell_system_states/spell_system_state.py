@@ -14,21 +14,21 @@ if TYPE_CHECKING:
 
 class SpellSystemState(Cleanable):
     """
-    System-level state for a single spell lineage: topology, validity, and flags.
+    System-level state for a single spell index: topology, validity, and flags.
 
     Identity
     --------
     - `spell_index_id`:
-        Lineage identifier (ULID from SpellIndex.id).
+        Index identifier (ULID from SpellIndex.id).
     - `current_spell_id`:
-        Currently promoted version id for this lineage (e.g., SpellIndex.selected_spell_id; typically a SHA).
+        Currently promoted version id for this index (e.g., SpellIndex.selected_spell_id; typically a SHA).
 
     Topology
     --------
     - `direct_dependencies`:
-        Set of dependency ids for this lineage. Caller decides whether ids are lineage or version ids.
+        Set of dependency ids for this index. Caller decides whether ids are index or version ids.
     - `direct_dependents`:
-        Reverse edges: lineages that depend on this lineage ("what breaks if this changes?").
+        Reverse edges: indexes that depend on this index ("what breaks if this changes?").
 
     Validity / State
     ----------------
@@ -37,10 +37,10 @@ class SpellSystemState(Cleanable):
         This only reflects *global* spell-definition correctness (Phases 1-4),
         not conduit-specific resolution state.
     - `flags`:
-        Fine-grained SpellState markers describing *why* the lineage is in its current condition
+        Fine-grained SpellState markers describing *why* the index is in its current condition
         (topology changes, contracts, mutation, ops).
     - `change_reason`:
-        Last SpellStateChangeReason that moved this lineage into its current validity/flags.
+        Last SpellStateChangeReason that moved this index into its current validity/flags.
     - `transitively_dirty`:
         True if impacted indirectly by upstream changes (dependency_changed closure).
     - `last_validated_at`:
@@ -63,18 +63,18 @@ class SpellSystemState(Cleanable):
 
     def __init__(self, spell_index_id: str, current_spell_id: str) -> None:
         """
-        Initialize one lineage-scoped structural state record.
+        Initialize one index-scoped structural state record.
 
         Args:
             spell_index_id:
-                Stable lineage identifier for the SpellIndex this state tracks.
+                Stable index identifier for the SpellIndex this state tracks.
             current_spell_id:
-                Currently promoted spell version id for the lineage.
+                Currently promoted spell version id for the index.
         Contract:
             - Starts with empty dependency and dependent sets.
-            - Starts with `SpellValidity.unknown` plus the `new_lineage` flag so
+            - Starts with `SpellValidity.unknown` plus the `new_index` flag so
               higher-level validation can distinguish first registration from a
-              previously validated lineage.
+              previously validated index.
             - Starts with no attached `RiskManager`; structural-risk propagation
               is enabled later by the owning registry.
         Raises:
@@ -99,9 +99,9 @@ class SpellSystemState(Cleanable):
         # Validity + flags
         self._validity: SpellValidity = SpellValidity.unknown
         self._flags: Set[SpellState] = set()
-        self._flags.add(SpellState.new_lineage)
+        self._flags.add(SpellState.new_index)
 
-        self._change_reason: SpellStateChangeReason | None = SpellStateChangeReason.new_lineage
+        self._change_reason: SpellStateChangeReason | None = SpellStateChangeReason.new_index
         self._transitively_dirty: bool = False
         self._last_validated_at: Optional[float] = None
         self._risk_manager: Optional[RiskManager] = None
@@ -160,14 +160,14 @@ class SpellSystemState(Cleanable):
     @property
     def spell_index_id(self) -> str:
         """
-        Lineage identifier (ULID from SpellIndex.id).
+        Index identifier (ULID from SpellIndex.id).
 
         Note:
             This assumes the state has not been cleaned; check_cleaned()
             will raise if cleanup() has been called.
         Threading:
             Acquires the internal lock to avoid torn reads while mutation
-            helpers are updating lineage state.
+            helpers are updating index state.
         """
         
         with self._lock:
@@ -176,7 +176,7 @@ class SpellSystemState(Cleanable):
     @property
     def current_spell_id(self) -> str:
         """
-        Currently promoted version id for this lineage (e.g., SpellIndex.selected_spell_id).
+        Currently promoted version id for this index (e.g., SpellIndex.selected_spell_id).
 
         Threading:
             Acquires the internal lock to avoid torn reads while promotion
@@ -189,7 +189,7 @@ class SpellSystemState(Cleanable):
     @property
     def direct_dependencies(self) -> Set[str]:
         """
-        Snapshot of direct dependencies for this lineage.
+        Snapshot of direct dependencies for this index.
 
         Returns:
             A plain set[str] copy so callers cannot mutate internal state.
@@ -203,7 +203,7 @@ class SpellSystemState(Cleanable):
     @property
     def direct_dependents(self) -> Set[str]:
         """
-        Snapshot of direct dependents for this lineage.
+        Snapshot of direct dependents for this index.
 
         Returns:
             A plain set[str] copy so callers cannot mutate internal state.
@@ -217,7 +217,7 @@ class SpellSystemState(Cleanable):
     @property
     def validity(self) -> SpellValidity:
         """
-        Structural validity gate for this lineage (unknown/valid/gated/invalid/disabled).
+        Structural validity gate for this index (unknown/valid/gated/invalid/disabled).
 
         Note:
             This is the *global* structural verdict for Phases 1-4 only. Per-conduit
@@ -232,7 +232,7 @@ class SpellSystemState(Cleanable):
     @property
     def flags(self) -> Set[SpellState]:
         """
-        Snapshot of SpellStateFlag markers for this lineage.
+        Snapshot of SpellStateFlag markers for this index.
 
         Returns:
             A plain set[SpellStateFlag] copy so callers cannot mutate internal state.
@@ -246,7 +246,7 @@ class SpellSystemState(Cleanable):
     @property
     def change_reason(self) -> Optional[SpellStateChangeReason]:
         """
-        Last event that changed this lineage's validity/flags.
+        Last event that changed this index's validity/flags.
 
         This is meant for DevOps / AI surfaces and TOON snapshots.
         Threading:
@@ -259,7 +259,7 @@ class SpellSystemState(Cleanable):
     @property
     def transitively_dirty(self) -> bool:
         """
-        True if this lineage is impacted indirectly by upstream changes
+        True if this index is impacted indirectly by upstream changes
         (dependency_changed closure).
         Threading:
             Acquires the internal lock to avoid torn reads across transitions.
@@ -282,7 +282,7 @@ class SpellSystemState(Cleanable):
     @property
     def dirty(self) -> bool:
         """
-        Convenience view: lineage is considered "dirty" if it is not valid.
+        Convenience view: index is considered "dirty" if it is not valid.
 
         This is derived from `validity` and is mainly for legacy / quick checks.
         Threading:
@@ -328,7 +328,7 @@ class SpellSystemState(Cleanable):
         callback = None
         if self._risk_manager is not None:
             callback = self._risk_manager.on_structural_validity_change
-        lineage_id = self._spell_index_id
+        index_id = self._spell_index_id
         with self._lock:
             if self._flags is None:
                 # Already cleaned; guard check should have prevented this.
@@ -355,11 +355,11 @@ class SpellSystemState(Cleanable):
 
         if (
                 callback is not None
-                and lineage_id is not None
+                and index_id is not None
                 and previous_validity is not validity
         ):
             try:
-                callback(lineage_id, validity)
+                callback(index_id, validity)
             except Exception:
                 pass
 
@@ -368,14 +368,14 @@ class SpellSystemState(Cleanable):
     # ------------------------------------------------------------------
     def update_current_spell_id(self, spell_id: str) -> None:
         """
-        Update the currently promoted version id for this lineage.
+        Update the currently promoted version id for this index.
 
         Caller is responsible for keeping the manager's spell-id index in sync.
 
         Args:
             spell_id: New current spell version id (non-empty).
         Contract:
-            - Updates lineage identity for the promoted spell version only.
+            - Updates index identity for the promoted spell version only.
             - Does not change validity, flags, dependency edges, or dirty state.
 
         Raises:
@@ -391,7 +391,7 @@ class SpellSystemState(Cleanable):
 
     def attach_dependencies(self, dependency_ids: Iterable[str]) -> None:
         """
-        Replace the direct-dependency set for this lineage.
+        Replace the direct-dependency set for this index.
 
         The manager is responsible for keeping reverse edges up to date.
 
@@ -415,13 +415,13 @@ class SpellSystemState(Cleanable):
 
     def add_dependent(self, index_id: str) -> None:
         """
-        Register that another lineage depends on this lineage.
+        Register that another index depends on this index.
 
         Args:
-            index_id: Lineage id to add as a dependent.
+            index_id: Index id to add as a dependent.
         Contract:
             - Adds one reverse-edge entry if the id is non-empty.
-            - Does not dirty or revalidate the lineage; this is topology
+            - Does not dirty or revalidate the index; this is topology
               bookkeeping only.
         """
         
@@ -433,10 +433,10 @@ class SpellSystemState(Cleanable):
 
     def remove_dependent(self, index_id: str) -> None:
         """
-        Remove a dependent lineage from this lineage's reverse edges.
+        Remove a dependent index from this index's reverse edges.
 
         Args:
-            index_id: Lineage id to remove from dependents.
+            index_id: Index id to remove from dependents.
         Contract:
             - Best-effort removes the reverse-edge entry if present.
             - Missing or empty ids are ignored so caller cleanup can stay
@@ -454,7 +454,7 @@ class SpellSystemState(Cleanable):
             change_reason: Optional[SpellStateChangeReason] = None,
     ) -> None:
         """
-        Mark this lineage as structurally changed.
+        Mark this index as structurally changed.
 
         Typical triggers:
         - New version promoted.
@@ -464,10 +464,10 @@ class SpellSystemState(Cleanable):
         Args:
             change_reason: Optional reason override; defaults to structure_changed.
         Contract:
-            - Gates the lineage structurally.
+            - Gates the index structurally.
             - Adds the `structure_changed` flag.
             - Forces `transitively_dirty` to False because this helper models a
-              direct change to the lineage itself, not downstream impact.
+              direct change to the index itself, not downstream impact.
         """
         
         if change_reason is None:
@@ -485,7 +485,7 @@ class SpellSystemState(Cleanable):
             change_reason: Optional[SpellStateChangeReason] = None,
     ) -> None:
         """
-        Mark this lineage as dirty due to direct dependency changes.
+        Mark this index as dirty due to direct dependency changes.
 
         This does *not* automatically mark it as transitively dirty; the manager
         decides how to propagate closure.
@@ -493,10 +493,10 @@ class SpellSystemState(Cleanable):
         Args:
             change_reason: Optional reason override; defaults to dependencies_changed.
         Contract:
-            - Gates the lineage.
+            - Gates the index.
             - Adds the `dependencies_changed` flag.
             - Leaves `transitively_dirty` unchanged unless a higher-level
-              closure pass decides this lineage is only indirectly impacted.
+              closure pass decides this index is only indirectly impacted.
         """
         
         if change_reason is None:
@@ -513,14 +513,14 @@ class SpellSystemState(Cleanable):
             change_reason: Optional[SpellStateChangeReason] = None,
     ) -> None:
         """
-        Mark this lineage as impacted indirectly by upstream changes.
+        Mark this index as impacted indirectly by upstream changes.
 
         This is typically called by the manager during impact-closure expansion.
 
         Args:
             change_reason: Optional reason override; defaults to dependency_changed.
         Contract:
-            - Gates the lineage.
+            - Gates the index.
             - Adds the `impacted_by_dependency` flag.
             - Sets `transitively_dirty` to True so callers can distinguish
               downstream fallout from direct structural changes.
@@ -538,11 +538,11 @@ class SpellSystemState(Cleanable):
 
     def clear_dirty(self, last_validated_at: Optional[float]) -> None:
         """
-        Mark this lineage as clean after successful validation.
+        Mark this index as clean after successful validation.
 
         Behaviour:
         - validity -> SpellValidity.valid
-        - topology-related flags (new_lineage / structure_changed /
+        - topology-related flags (new_index / structure_changed /
           dependencies_changed / impacted_by_dependency) are cleared.
         - transitively_dirty -> False
         - last_validated_at is set to the provided timestamp.
@@ -564,10 +564,10 @@ class SpellSystemState(Cleanable):
         callback = None
         if self._risk_manager is not None:
             callback = self._risk_manager.on_structural_validity_change
-        lineage_id = self._spell_index_id
+        index_id = self._spell_index_id
         with self._lock:
             if self._flags is not None:
-                self._flags.discard(SpellState.new_lineage)
+                self._flags.discard(SpellState.new_index)
                 self._flags.discard(SpellState.structure_changed)
                 self._flags.discard(SpellState.dependencies_changed)
                 self._flags.discard(SpellState.impacted_by_dependency)
@@ -580,11 +580,11 @@ class SpellSystemState(Cleanable):
 
         if (
                 callback is not None
-                and lineage_id is not None
+                and index_id is not None
                 and previous_validity is not SpellValidity.valid
         ):
             try:
-                callback(lineage_id, SpellValidity.valid)
+                callback(index_id, SpellValidity.valid)
             except Exception:
                 pass
 
@@ -593,7 +593,7 @@ class SpellSystemState(Cleanable):
         Attach or detach the `RiskManager` callback reference.
 
         This is a wiring helper used by the owning registry. It does not replay
-        historical lineage state; it only controls where future validity
+        historical index state; it only controls where future validity
         transitions are published.
         """
         self._risk_manager = risk_manager

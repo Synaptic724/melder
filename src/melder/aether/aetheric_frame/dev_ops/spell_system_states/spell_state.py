@@ -4,15 +4,15 @@ from melder.__melder_registration_guard__ import __melder_registration_guard__ a
 
 class SpellState(Enum):
     """
-    Fine-grained state flags for a spell lineage.
+    Fine-grained state flags for a spell index.
 
-    These are orthogonal markers explaining **why** a lineage is in a
+    These are orthogonal markers explaining **why** an index is in a
     particular validity state, and what kind of follow-up work is needed.
 
     Contract:
     - These flags do not replace `SpellValidity`; they explain the reason a
-      lineage is gated, invalid, quarantined, or otherwise notable.
-    - Multiple flags may be present on the same lineage at once because
+      index is gated, invalid, quarantined, or otherwise notable.
+    - Multiple flags may be present on the same index at once because
       topology, contract, mutation, and ops concerns can overlap.
     - Flag lifecycle is owned by the subsystem that set the flag. Validation
       clears only topology-driven dirt flags; contract, mutation, and ops flags
@@ -20,7 +20,7 @@ class SpellState(Enum):
     """
     __melder_internal__ = _mrg.sentinel
     # Topology / graph-level
-    new_lineage = auto()             # first time we see this lineage
+    new_index = auto()             # first time we see this index
     structure_changed = auto()       # profile / wiring changed
     dependencies_changed = auto()    # direct deps set changed
     impacted_by_dependency = auto()  # downstream of something that changed

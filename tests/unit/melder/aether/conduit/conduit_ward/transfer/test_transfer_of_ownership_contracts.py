@@ -129,7 +129,7 @@ class FakeSpellStatesSystem:
             return
         self._states[spell_index.id] = FakeState(
             validity=SpellValidity.unknown,
-            change_reason=SpellStateChangeReason.new_lineage,
+            change_reason=SpellStateChangeReason.new_index,
         )
 
     def unregister_index(self, spell_index: SpellIndex) -> Optional[FakeState]:

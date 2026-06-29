@@ -3,7 +3,7 @@ from melder.__melder_registration_guard__ import __melder_registration_guard__ a
 
 class SpellStateChangeReason(Enum):
     """
-    Last event that *changed* the state of a lineage.
+    Last event that *changed* the state of an index.
 
     This is a single, coarse-grained "why did this change" tag that is easy to
     surface in logs / TOON snapshots / incidents. Detailed context can live in
@@ -13,7 +13,7 @@ class SpellStateChangeReason(Enum):
     - This enum is the coarse companion to `SpellState`: one value captures the
       latest triggering event, while `SpellState` flags capture overlapping
       long-lived conditions.
-    - A lineage typically stores only one active change reason at a time, so
+    - An index typically stores only one active change reason at a time, so
       callers should treat it as a summary of the latest transition rather than
       a full audit history.
     - The subsystem that performs the transition owns choosing the most truthful
@@ -21,8 +21,8 @@ class SpellStateChangeReason(Enum):
     """
     __melder_internal__ = _mrg.sentinel
     # Registrations / bindings
-    new_lineage = auto()            # first time this lineage was registered
-    register_or_rebind = auto()     # new Spell bound to existing lineage
+    new_index = auto()            # first time this index was registered
+    register_or_rebind = auto()     # new Spell bound to existing index
 
     # Structure / dependency graph
     structure_changed = auto()      # constructor / DI shape / profile changed
@@ -42,15 +42,15 @@ class SpellStateChangeReason(Enum):
     mutation_contract_set = auto()      # MutationContract applied / overlay set
     mutation_contract_cleared = auto()  # overlay removed / back to normal
     mutation_failed = auto()            # last mutation run/validation failed
-    mutation_candidate = auto()         # lineage now backed by a candidate build
-    mutation_quarantined = auto()       # candidate or lineage quarantined
+    mutation_candidate = auto()         # index now backed by a candidate build
+    mutation_quarantined = auto()       # candidate or index quarantined
 
     # Validation
     validation_passed = auto()       # latest validation cycle succeeded
     validation_failed = auto()       # validation surfaced errors / gating
 
     # Ops / incidents / config
-    incident_opened = auto()        # critical incident opened for this lineage
+    incident_opened = auto()        # critical incident opened for this index
     incident_resolved = auto()      # last known incident resolved
     config_missing = auto()         # required config missing / invalid
     config_supplied = auto()        # config fixed / supplied

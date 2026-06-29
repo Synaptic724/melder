@@ -29,7 +29,7 @@ class SpellValidity(Enum):
             Explicitly turned off by policy. Hard "do not resolve" regardless of
             other flags.
         - cleaned:
-            Lineage state has been removed during Spellbook cleanup. Hard
+            Index state has been removed during Spellbook cleanup. Hard
             "do not resolve" until re-registered and validated.
 
     Contract:
