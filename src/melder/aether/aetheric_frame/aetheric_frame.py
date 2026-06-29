@@ -1,6 +1,6 @@
 import threading
 from types import TracebackType
-from typing import TYPE_CHECKING, Optional, Set, Dict, Type, ClassVar, Any
+from typing import TYPE_CHECKING, Optional, Set, Dict, Tuple, Type, ClassVar, Any
 
 from melder.utilities.helpers.ulid_factory import new_ulid
 
@@ -8,6 +8,7 @@ from melder.utilities.helpers.ulid_factory import new_ulid
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.aether.aetheric_frame.aetheric_frame_configuration import AethericFrameConfiguration
 from melder.aether.aetheric_frame.conduit_cloud import ConduitCloud
+from melder.aether.aetheric_frame.lookup_container import LookupContainer
 from melder.aether.aetheric_frame.dev_ops.devops_identity import DevopsIdentity
 from melder.aether.aetheric_frame.dev_ops.devops_information_registry import (
     DevopsInformationRegistry,
@@ -61,6 +62,7 @@ class AethericFrame(Cleanable):
         "_conduit_ids_by_name",
         "_spell_registry",
         "_selected_spell_registry",
+        "_lookup_container",
         "_conduit_cloud",
         "_devops_information_registry",
         "_spell_system_states",
@@ -117,6 +119,11 @@ class AethericFrame(Cleanable):
         # SHA256 version registry per conduit:
         #   conduit_id -> Set[str]
         self._selected_spell_registry: Dict[str, Set[str]] = {}
+
+        # Framewide ACTIVE binding-signature lookup. Owns its own lock, so
+        # claim/release never take the frame RLock.
+        #   (frame_key, bind_key) -> active spell_id
+        self._lookup_container: LookupContainer = LookupContainer()
 
         # Frame-local topology and transaction registry used by DevOps-facing
         # reporting and future transaction resolution.
@@ -250,12 +257,16 @@ class AethericFrame(Cleanable):
         if self._devops_information_registry is not None:
             self._devops_information_registry.cleanup()
 
+        if self._lookup_container is not None:
+            self._lookup_container.cleanup()
+
         del self._conduits
         del self._conduit_ids_by_name
         del self._spell_registry
         del self._selected_spell_registry
         del self._conduit_cloud
         del self._devops_information_registry
+        del self._lookup_container
         del self._spell_system_states
         del self._dev_ops_manager
 
@@ -676,6 +687,80 @@ class AethericFrame(Cleanable):
                     if spell_id in spell_index.spells_in_index():
                         return spell_index
         return None
+
+    # ------------------------------------------------------------------
+    # Framewide Lookup Registry (active binding signatures)
+    # ------------------------------------------------------------------
+    # Delegates to the frame-owned LookupContainer, which carries its own
+    # lock -- these never take the frame RLock.
+    def claim_lookup(self, key: Tuple[str, str], spell_id: str) -> None:
+        """
+        Claim a binding signature for `spell_id` frame-wide.
+
+        Contract:
+            - Delegates to the frame-owned LookupContainer. Raises when the
+              signature is already active for a different spell_id.
+
+        Args:
+            key: The binding signature `(frame_key, bind_key)`.
+            spell_id: The active spell_id taking that signature.
+
+        Raises:
+            RuntimeError: If the signature is already active for a different
+                spell_id in this frame.
+        """
+        self.check_cleaned()
+        self._lookup_container.claim(key, spell_id)
+
+    def release_lookup(self, key: Tuple[str, str]) -> None:
+        """
+        Release a binding signature from the framewide active lookup.
+
+        Contract:
+            - Idempotent; delegates to the frame-owned LookupContainer.
+
+        Args:
+            key: The binding signature `(frame_key, bind_key)` to release.
+        """
+        self.check_cleaned()
+        self._lookup_container.release(key)
+
+    def update_lookup(self, key: Tuple[str, str], spell_id: str) -> None:
+        """
+        Re-point an active binding signature to a new spell_id (notch).
+
+        Args:
+            key: The binding signature `(frame_key, bind_key)`.
+            spell_id: The new active spell_id for that signature.
+        """
+        self.check_cleaned()
+        self._lookup_container.update(key, spell_id)
+
+    def get_lookup(self, key: Tuple[str, str]) -> Optional[str]:
+        """
+        Return the active spell_id for a signature, or None when unclaimed.
+
+        Args:
+            key: The binding signature `(frame_key, bind_key)`.
+
+        Returns:
+            Optional[str]: The active spell_id, or None.
+        """
+        self.check_cleaned()
+        return self._lookup_container.get(key)
+
+    def has_lookup(self, key: Tuple[str, str]) -> bool:
+        """
+        Report whether a binding signature is active in this frame.
+
+        Args:
+            key: The binding signature `(frame_key, bind_key)`.
+
+        Returns:
+            bool: True when an active spell holds the signature.
+        """
+        self.check_cleaned()
+        return self._lookup_container.contains(key)
 
     # ------------------------------------------------------------------
     # Spell-Registry Mutation (frame-owned, lock-serialized)

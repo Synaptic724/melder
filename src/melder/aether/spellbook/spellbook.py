@@ -230,6 +230,7 @@ and logging.
             available_transactions=(
                 "bind",
                 "scan",
+                "conjure",
             ),
         )
         self._transaction_identity.attach_registry(
@@ -4123,6 +4124,53 @@ and logging.
             - post : (conduit,)
         """
         self.check_cleaned()
+        mediator = self._get_required_transaction_mediator()
+        mediator.start_transaction(
+            identity=self._transaction_identity,
+            transaction_type=ChangeTransactionType.CONJURE,
+            metadata={
+                "spellbook_id": self._id,
+                "origin_surface": "spellbook.conjure",
+            },
+        )
+        try:
+            return self._conjure_within_transaction_window(
+                policy=policy,
+                dynamic=dynamic,
+                name=name,
+                conduit_logger=conduit_logger,
+            )
+        finally:
+            mediator.end_transaction_for_identity(
+                identity=self._transaction_identity,
+                transaction_type=ChangeTransactionType.CONJURE,
+            )
+
+    def _conjure_within_transaction_window(
+            self,
+            *,
+            policy: Optional[str],
+            dynamic: bool,
+            name: Optional[str],
+            conduit_logger: Optional[Any],
+    ) -> Conduit:
+        """
+        Internal
+
+        Run the conjure creation pipeline inside the held CONJURE transaction
+        window.
+
+        Contract:
+            - Called only by `conjure()` after the CONJURE change-control
+              transaction has claimed the owning spellbook EXCLUSIVE.
+            - Preserves the single-conjure invariant and the original creation
+              flow unchanged.
+        Threading:
+            - The CONJURE embargo is acquired by `conjure()` BEFORE this method
+              takes the Spellbook lock, preserving embargo-then-lock ordering so
+              a concurrent bind (spellbook INTENT, then lock) cannot deadlock a
+              conjure (spellbook EXCLUSIVE, then lock).
+        """
         with self._lock:
             if self._conjured:
                 conduit_id = None

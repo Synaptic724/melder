@@ -33,6 +33,7 @@ class ChangeTransactionType(StrEnum):
     """
     __melder_internal__ = _mrg.sentinel
     BIND = "bind"
+    CONJURE = "conjure"
     LINK = "link"
     TRANSFER_OWNERSHIP = "transfer_ownership"
     MUTATION = "mutation"

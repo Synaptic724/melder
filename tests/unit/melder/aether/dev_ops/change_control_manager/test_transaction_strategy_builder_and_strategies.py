@@ -6,6 +6,9 @@ import pytest
 from melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.bind_transaction_strategy import (
     BindTransactionStrategy,
 )
+from melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.conjure_transaction_strategy import (
+    ConjureTransactionStrategy,
+)
 from melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.cluster_link_transaction_strategy import (
     ClusterLinkTransactionStrategy,
 )
@@ -142,6 +145,8 @@ def test_transaction_strategy_builder_resolves_enum_and_string_transaction_names
     builder = TransactionStrategyBuilder(transaction_manager, registry)
 
     assert builder.resolve(ChangeTransactionType.BIND) is BindTransactionStrategy
+    assert builder.resolve(ChangeTransactionType.CONJURE) is ConjureTransactionStrategy
+    assert builder.resolve("conjure") is ConjureTransactionStrategy
     assert builder.resolve("link") is LinkTransactionStrategy
     assert builder.resolve("cluster_link") is ClusterLinkTransactionStrategy
     assert builder.resolve("transfer_ownership") is TransferOwnershipTransactionStrategy

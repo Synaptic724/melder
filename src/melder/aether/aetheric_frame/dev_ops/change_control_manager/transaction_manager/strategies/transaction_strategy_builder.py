@@ -37,6 +37,9 @@ from typing import TYPE_CHECKING, Dict, Type, Union
 from melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.bind_transaction_strategy import (
     BindTransactionStrategy,
 )
+from melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.conjure_transaction_strategy import (
+    ConjureTransactionStrategy,
+)
 from melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.cluster_link_transaction_strategy import (
     ClusterLinkTransactionStrategy,
 )
@@ -349,6 +352,7 @@ class TransactionStrategyBuilder:
               become real runtime surfaces.
         """
         self.register_strategy(ChangeTransactionType.BIND, BindTransactionStrategy)
+        self.register_strategy(ChangeTransactionType.CONJURE, ConjureTransactionStrategy)
         self.register_strategy(ChangeTransactionType.LINK, LinkTransactionStrategy)
         self.register_strategy(
             ChangeTransactionType.CLUSTER_LINK,
