@@ -295,7 +295,7 @@ def test_component_spellbook_bind_rejects_duplicate_binding_key() -> None:
             binding_name="primary",
         )
 
-        with pytest.raises(RuntimeError, match="binding key collision"):
+        with pytest.raises(RuntimeError, match="already active in this frame"):
             spellbook.bind(
                 spell=ServiceB,
                 existence=Existence.unique,

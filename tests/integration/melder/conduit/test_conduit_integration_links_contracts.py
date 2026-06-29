@@ -564,7 +564,7 @@ def test_conduit_spell_contract_prefers_contracted_spell() -> None:
         existence=Existence.unique,
         permissions="create",
         spellframe=IService,
-        binding_name="primary",
+        binding_name="local",
     )
     consumer_id = borrower_book.bind(
         spell=ContractConsumer,
@@ -674,9 +674,9 @@ def test_conduit_spell_contract_applies_override_payload() -> None:
 def test_conduit_spell_contract_ambiguous_contracted_raises() -> None:
     """
     Purpose:
-        Validate duplicate contracted providers are rejected before resolution.
+        Validate a duplicate provider for a signature is rejected at bind time.
     Contract:
-        - add_spell_to_contract raises RuntimeError when the binding key collides.
+        - Binding a second provider for an active signature raises (framewide).
     Returns:
         None.
     Raises:
@@ -733,7 +733,7 @@ def test_conduit_spell_contract_ambiguous_contracted_raises() -> None:
 
     configuration = _make_dynamic_configuration()
     owner_a_book = Spellbook(configuration=configuration)
-    owner_a_id = owner_a_book.bind(
+    owner_a_book.bind(
         spell=BasicService,
         existence=Existence.unique,
         permissions="create",
@@ -741,40 +741,18 @@ def test_conduit_spell_contract_ambiguous_contracted_raises() -> None:
         binding_name="primary",
     )
     owner_b_book = Spellbook(configuration=configuration)
-    owner_b_id = owner_b_book.bind(
-        spell=AltService,
-        existence=Existence.unique,
-        permissions="create",
-        spellframe=IService,
-        binding_name="primary",
-    )
-    borrower_book = Spellbook(configuration=configuration)
-    consumer_id = borrower_book.bind(
-        spell=ContractConsumer,
-        existence=Existence.unique,
-        permissions="create",
-    )
-
-    owner_a = owner_a_book.conjure(dynamic=True, name="owner_a")
-    owner_b = owner_b_book.conjure(dynamic=True, name="owner_b")
-    borrower = borrower_book.conjure(dynamic=True, name="borrower")
     try:
-        owner_a.link(borrower)
-        owner_b.link(borrower)
-        with borrower.transaction("link", conduits=[borrower, owner_a]):
-            assert borrower.add_spell_to_contract(
-                spell_id=owner_a_id,
-                conduit=owner_a,
+        # Framewide one-active-signature-per-frame: the ambiguous second provider
+        # for (IService, primary) is rejected at bind on the shared frame, before
+        # any contract can be formed.
+        with pytest.raises(RuntimeError, match="already active in this frame"):
+            owner_b_book.bind(
+                spell=AltService,
+                existence=Existence.unique,
                 permissions="create",
+                spellframe=IService,
+                binding_name="primary",
             )
-        with borrower.transaction("link", conduits=[borrower, owner_b]):
-            with pytest.raises(RuntimeError, match="binding key collision"):
-                borrower.add_spell_to_contract(
-                    spell_id=owner_b_id,
-                    conduit=owner_b,
-                    permissions="create",
-                )
     finally:
-        borrower.cleanup()
-        owner_a.cleanup()
-        owner_b.cleanup()
+        owner_b_book.cleanup()
+        owner_a_book.cleanup()

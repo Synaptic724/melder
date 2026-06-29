@@ -152,7 +152,7 @@ def test_component_spellbook_add_contracted_spell_rejects_peer_collision() -> No
     Purpose:
         Validate contracted spells cannot collide across peer conduits.
     Contract:
-        - _add_contracted_spell raises RuntimeError when a peer already uses the key.
+        - Binding a second spell onto an active frame signature raises (framewide).
     Returns:
         None.
     Raises:
@@ -160,17 +160,9 @@ def test_component_spellbook_add_contracted_spell_rejects_peer_collision() -> No
     """
     owner_a_book = _make_spellbook()
     owner_b_book = _make_spellbook()
-    borrower_book = _make_spellbook()
 
-    owner_a_id = owner_a_book.bind(
+    owner_a_book.bind(
         spell=BasicService,
-        existence=Existence.unique,
-        permissions="create",
-        spellframe=IService,
-        binding_name="primary",
-    )
-    owner_b_id = owner_b_book.bind(
-        spell=BasicLogger,
         existence=Existence.unique,
         permissions="create",
         spellframe=IService,
@@ -178,16 +170,18 @@ def test_component_spellbook_add_contracted_spell_rejects_peer_collision() -> No
     )
 
     try:
-        owner_a_spell = _get_spell_by_version_id(owner_a_book, owner_a_id)
-        owner_b_spell = _get_spell_by_version_id(owner_b_book, owner_b_id)
-        assert owner_a_spell is not None
-        assert owner_b_spell is not None
-
-        borrower_book._add_contracted_spell(owner_a_spell, "peer-a")
-        with pytest.raises(RuntimeError, match="binding key collision"):
-            borrower_book._add_contracted_spell(owner_b_spell, "peer-b")
+        # Framewide one-active-signature-per-frame: the peer collision for
+        # (IService, primary) is rejected when the second spell binds on the
+        # shared frame, before any contract is attempted.
+        with pytest.raises(RuntimeError, match="already active in this frame"):
+            owner_b_book.bind(
+                spell=BasicLogger,
+                existence=Existence.unique,
+                permissions="create",
+                spellframe=IService,
+                binding_name="primary",
+            )
     finally:
-        borrower_book.cleanup()
         owner_b_book.cleanup()
         owner_a_book.cleanup()
 

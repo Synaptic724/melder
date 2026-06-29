@@ -237,11 +237,13 @@ def test_validation_system_duplicate_spell_name_across_contracted() -> None:
             spell=ContainerB.Service,
             existence=Existence.unique,
             permissions="create",
+            binding_name="owner",
         )
         borrower_id = borrower_book.bind(
             spell=ContainerA.Service,
             existence=Existence.unique,
             permissions="create",
+            binding_name="borrower",
         )
         owner = owner_book.conjure(dynamic=True, name="owner")
         borrower = borrower_book.conjure(dynamic=True, name="borrower")
@@ -652,11 +654,13 @@ def test_validation_system_duplicate_name_clears_after_unlink() -> None:
             spell=ContainerB.Service,
             existence=Existence.unique,
             permissions="create",
+            binding_name="owner",
         )
         borrower_id = borrower_book.bind(
             spell=ContainerA.Service,
             existence=Existence.unique,
             permissions="create",
+            binding_name="borrower",
         )
         owner = owner_book.conjure(dynamic=True, name="owner")
         borrower = borrower_book.conjure(dynamic=True, name="borrower")

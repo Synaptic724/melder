@@ -631,7 +631,7 @@ def test_spell_contract_contract_removed_raises_without_provider() -> None:
         existence=Existence.unique,
         permissions="create",
         spellframe=IService,
-        binding_name="primary",
+        binding_name="local",
     )
     consumer_id = borrower_book.bind(
         spell=ContractConsumerPrimary,
