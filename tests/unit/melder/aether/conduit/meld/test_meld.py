@@ -1,7 +1,7 @@
 """Contract tests for Meld resolution, gating, and activation flow."""
 from threading import RLock
 from types import SimpleNamespace
-from typing import Any, Callable, Iterable, Dict
+from typing import Any, Callable, Iterable, Dict, TYPE_CHECKING
 from unittest.mock import MagicMock
 
 import pytest
@@ -27,6 +27,8 @@ from melder.utilities.custom_exceptions.meld_execution_error import MeldExecutio
 from melder.utilities.custom_exceptions.spellbook_validation_error import (
     SpellbookValidationError,
 )
+if TYPE_CHECKING:
+    from melder.aether.spellbook.bind.spell_index import SpellIndex
 
 
 def _patch_meld_method(
@@ -456,7 +458,7 @@ class _SpellbookStub:
         # inline before entering the emit helper. False means the helper is
         # never called, matching the common no-cache-staged posture.
         self._cache_emit_required = False
-        self._spell_id_pool: Dict[str, 'SpellIndex'] = {}
+        self._spell_id_pool: Dict[str, SpellIndex] = {}
         self._logger = MagicMock()
 
     def _run_resolution_phases_for_target_spell(
