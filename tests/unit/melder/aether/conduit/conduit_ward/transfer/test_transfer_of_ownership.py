@@ -1223,9 +1223,7 @@ def build_environment(
     )
     spell_obj._spellbook = source_book
     spell_obj._spell_system_states = states_system
-    spell_index._owner_spellbook = source_book
-    spell_index._selected_spell = spell_obj
-    spell_index._owner_conduit_id = SOURCE_ID
+    spell_obj._owner_conduit_id = SOURCE_ID
 
     source_book._spells[spell_index] = spell_obj
     source_book._lookup_spells[spell_obj._key] = spell_index
@@ -1247,9 +1245,7 @@ def build_environment(
             )
             dep_spell._spellbook = source_book
             dep_spell._spell_system_states = states_system
-            dep_index._owner_spellbook = source_book
-            dep_index._selected_spell = dep_spell
-            dep_index._owner_conduit_id = SOURCE_ID
+            dep_spell._owner_conduit_id = SOURCE_ID
             source_book._spells[dep_index] = dep_spell
             source_book._lookup_spells[dep_spell._key] = dep_index
             source_book._spells_by_id[dep_index.selected_spell_id] = dep_spell
@@ -1265,9 +1261,7 @@ def build_environment(
             )
             dep_spell._spellbook = target_book
             dep_spell._spell_system_states = states_system
-            dep_index._owner_spellbook = target_book
-            dep_index._selected_spell = dep_spell
-            dep_index._owner_conduit_id = TARGET_ID
+            dep_spell._owner_conduit_id = TARGET_ID
             target_book._spells[dep_index] = dep_spell
             target_book._lookup_spells[dep_spell._key] = dep_index
             target_book._spells_by_id[dep_index.selected_spell_id] = dep_spell
@@ -3482,9 +3476,8 @@ def test_flip_registry_and_spellbooks_moves_spell_id_map() -> None:
     spell_id = env.spell_index.selected_spell_id
     assert spell_id not in env.source._spellbook._spells_by_id
     assert env.target._spellbook._spells_by_id[spell_id] is env.spell
-    assert env.spell.spell_index._owner_spellbook is env.target._spellbook
-    assert env.spell.spell_index._selected_spell is env.spell
-    assert env.spell.spell_index._owner_conduit_id == TARGET_ID
+    assert env.spell._spellbook is env.target._spellbook
+    assert env.spell._owner_conduit_id == TARGET_ID
 
 
 def test_flip_registry_and_spellbooks_republishes_spell_to_nexus() -> None:

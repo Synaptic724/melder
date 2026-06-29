@@ -577,7 +577,7 @@ class TransferOfOwnership(Cleanable):
                 return False
         return True
 
-    def _mark_lineage_dirty(self, spell_index: SpellIndex) -> None:
+    def _mark_lineage_dirty(self, spell: Any) -> None:
         """
         Record a structural-change gate for one lineage in `SpellSystemStates`.
 
@@ -590,16 +590,16 @@ class TransferOfOwnership(Cleanable):
             spell_index: Lineage whose spell-system state should be marked dirty.
         """
         self.check_cleaned()
-        spellbook = spell_index._owner_spellbook
+        spellbook = spell._spellbook
         if spellbook is None:
             raise RuntimeError(
-                "Cannot use a SpellIndex without an attached owner Spellbook."
+                "Cannot mark a spell dirty without an attached owner Spellbook."
             )
         spell_states = spellbook._spell_system_states
         if spell_states is None:
             raise RuntimeError("Owner Spellbook has no SpellSystemStates.")
         spell_states.mark_structural_change(
-            spell_index=spell_index,
+            spell_index=spell.spell_index,
             reason=SpellStateChangeReason.structure_changed,
         )
 
@@ -866,13 +866,8 @@ class TransferOfOwnership(Cleanable):
             spell_obj.requires_spellspace_request = False
             tgt_book._unregister_spell_with_risk_manager(self.target_conduit._id, spell_obj)
             src_book._register_spell_with_risk_manager(self.source_conduit._id, spell_obj)
-        try:
-            with SafeGuard(spell_obj.spell_index._lock):
-                spell_obj.spell_index._owner_spellbook = src_book
-                spell_obj.spell_index._selected_spell = spell_obj
-                spell_obj.spell_index._owner_conduit_id = self.source_conduit._id
-        except Exception:
-            pass
+        # Ownership lives on the spell (its _spellbook / _owner_conduit_id, set
+        # above); the SpellIndex no longer records an owner.
         try:
             spell_obj._owner_conduit_id = self.source_conduit._id
         except Exception:
@@ -1374,22 +1369,13 @@ class TransferOfOwnership(Cleanable):
                     spell_obj.requires_spellspace_request = False
                 tgt_states.register_index(
                     spell_index=spell_obj.spell_index,
+                    owner_spellbook_id=tgt_book._id,
                 )
                 src_book._unregister_spell_with_risk_manager(self.source_conduit._id, spell_obj)
                 tgt_book._register_spell_with_risk_manager(self.target_conduit._id, spell_obj)
-            try:
-                with SafeGuard(spell_obj.spell_index._lock):
-                    owner_book = spell_obj.spell_index._owner_spellbook
-                    active_spell = spell_obj.spell_index._selected_spell
-                    if owner_book is not None and owner_book is not src_book:
-                        raise RuntimeError("SpellIndex owner mismatch during transfer.")
-                    if active_spell is not None and active_spell is not spell_obj:
-                        raise RuntimeError("SpellIndex active spell mismatch during transfer.")
-                    spell_obj.spell_index._owner_spellbook = tgt_book
-                    spell_obj.spell_index._selected_spell = spell_obj
-                    spell_obj.spell_index._owner_conduit_id = self.target_conduit._id
-            except Exception as e:
-                raise RuntimeError(f"Failed to update SpellIndex owner: {e}")
+            # SpellIndex no longer records an owner; the spell's _spellbook
+            # (set above) and _owner_conduit_id (set here) are the record.
+            spell_obj._owner_conduit_id = self.target_conduit._id
             caching_enabled = tgt_book._resolve_system_caching_enabled()
             spell_obj._add_owned_conduit(
                 self.target_conduit._id,
@@ -1680,7 +1666,7 @@ class TransferOfOwnership(Cleanable):
                 # Mark dependency lineage dirty if requested
                 if self.invalidate_after_transfer:
                     if isinstance(dep_spell.spell_index, SpellIndex):
-                        self._mark_lineage_dirty(dep_spell.spell_index)
+                        self._mark_lineage_dirty(dep_spell)
             except Exception:
                 continue
 
@@ -1704,7 +1690,7 @@ class TransferOfOwnership(Cleanable):
                 if dep_spell is None:
                     continue
                 if isinstance(dep_spell.spell_index, SpellIndex):
-                    self._mark_lineage_dirty(dep_spell.spell_index)
+                    self._mark_lineage_dirty(dep_spell)
             except Exception:
                 continue
 

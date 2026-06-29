@@ -1186,7 +1186,6 @@ class SpellbookCreationSystem(Cleanable):
                         creation_gate_controller=conduit._creation_gate_controller,
                         caching_enabled=caching_enabled,
                     )
-                    spell.spell_index._set_owner_conduit_id(conduit._id)
                     spell.resolution_required = resolution_required
 
                     if spell.user_created_object is not None:
