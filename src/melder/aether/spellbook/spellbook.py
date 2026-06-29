@@ -1306,6 +1306,244 @@ and logging.
             spell_map.pop(spell_id, None)
             self._spell_id_pool.pop(spell_id, None)
 
+    def _deactivate_owned_spell(self, spell: Spell) -> None:
+        """
+        Internal
+
+        Park an active owned spell, pulling it off the active resolution surface.
+
+        Contract:
+            - The spell must be the active owned spell for its id (present in
+              `_spells_by_id`); otherwise raises.
+            - Pulls the spell from the four active owned maps (`_spells`,
+              `_lookup_spells`, `_spells_by_id`, `_spell_id_pool`) and parks it
+              in `_inactive_spells`.
+            - Leaves `_spell_ids` untouched: existence is kept across the
+              inactive window; only a full unregister drops the id.
+            - Does not touch the SpellIndex or the framewide lookup; the caller
+              (mediator-admitted notch/structural transaction) wires those.
+
+        Args:
+            spell (Spell): The active owned spell to park.
+
+        Returns:
+            None.
+
+        Raises:
+            RuntimeError: If the spell is not the active owned spell for its id.
+
+        Threading:
+            - Acquires the Spellbook lock; the admitting transaction serializes
+              the wider operation.
+        """
+        spell_id = spell.spell_id
+        spell_index = spell.spell_index
+        binding_key = spell._key
+        with self._lock:
+            existing = self._spells_by_id.get(spell_id)
+            if existing is None:
+                self._logger.error(
+                    f"Owned spell_id not active for deactivation (spell_id={spell_id}).",
+                    "_deactivate_owned_spell",
+                    exc_info=True,
+                )
+                raise RuntimeError(f"Owned spell_id not active for deactivation (spell_id={spell_id}).")
+            if existing is not spell:
+                self._logger.error(
+                    f"Owned spell_id mapped to a different spell (spell_id={spell_id}).",
+                    "_deactivate_owned_spell",
+                    exc_info=True,
+                )
+                raise RuntimeError(f"Owned spell_id mapped to a different spell (spell_id={spell_id}).")
+            self._spells.pop(spell_index, None)
+            self._lookup_spells.pop(binding_key, None)
+            self._spells_by_id.pop(spell_id, None)
+            self._spell_id_pool.pop(spell_id, None)
+            self._inactive_spells[spell_id] = spell
+
+    def _reactivate_owned_spell(self, spell: Spell) -> None:
+        """
+        Internal
+
+        Restore a parked owned spell to the active resolution surface.
+
+        Contract:
+            - The spell must be parked for its id (present in
+              `_inactive_spells`); otherwise raises.
+            - Removes the spell from `_inactive_spells` and repopulates the four
+              active owned maps (`_spells`, `_lookup_spells`, `_spells_by_id`,
+              `_spell_id_pool`).
+            - `_spell_ids` already carries the id (existence was kept on park).
+            - Does not touch the SpellIndex or the framewide lookup.
+
+        Args:
+            spell (Spell): The parked owned spell to reactivate.
+
+        Returns:
+            None.
+
+        Raises:
+            RuntimeError: If the spell is not the parked owned spell for its id.
+
+        Threading:
+            - Acquires the Spellbook lock; the admitting transaction serializes
+              the wider operation.
+        """
+        spell_id = spell.spell_id
+        spell_index = spell.spell_index
+        binding_key = spell._key
+        with self._lock:
+            parked = self._inactive_spells.get(spell_id)
+            if parked is None:
+                self._logger.error(
+                    f"Owned spell_id not parked for reactivation (spell_id={spell_id}).",
+                    "_reactivate_owned_spell",
+                    exc_info=True,
+                )
+                raise RuntimeError(f"Owned spell_id not parked for reactivation (spell_id={spell_id}).")
+            if parked is not spell:
+                self._logger.error(
+                    f"Parked owned spell_id mapped to a different spell (spell_id={spell_id}).",
+                    "_reactivate_owned_spell",
+                    exc_info=True,
+                )
+                raise RuntimeError(f"Parked owned spell_id mapped to a different spell (spell_id={spell_id}).")
+            self._inactive_spells.pop(spell_id, None)
+            self._spells[spell_index] = spell
+            self._lookup_spells[binding_key] = spell_index
+            self._spells_by_id[spell_id] = spell
+            self._spell_id_pool[spell_id] = spell
+
+    def _deactivate_contracted_spell(self, conduit_id: str, spell: Spell) -> None:
+        """
+        Internal
+
+        Park an active contracted (borrowed) spell for one peer conduit.
+
+        Contract:
+            - The spell must be the active contracted spell for its id under
+              `conduit_id` (present in `_contracted_spells_by_id[conduit_id]`);
+              otherwise raises.
+            - Pulls the spell from the three active contracted maps for the
+              conduit (`_contracted_spells`, `_lookup_contracted_spells`,
+              `_contracted_spells_by_id`) and from the shared `_spell_id_pool`,
+              and parks it in `_inactive_contracted_spells`.
+            - Leaves `_contracted_spell_ids[conduit_id]` untouched: borrowed
+              existence is kept across the inactive window.
+            - Does not touch the SpellIndex or the framewide lookup.
+
+        Args:
+            conduit_id (str): Peer conduit id that owns the contract.
+            spell (Spell): The active borrowed spell to park.
+
+        Returns:
+            None.
+
+        Raises:
+            RuntimeError: If the spell is not the active contracted spell for
+                its id under `conduit_id`.
+
+        Threading:
+            - Acquires the Spellbook lock; the admitting transaction serializes
+              the wider operation.
+        """
+        spell_id = spell.spell_id
+        spell_index = spell.spell_index
+        binding_key = spell._key
+        with self._lock:
+            active_by_id = self._contracted_spells_by_id.get(conduit_id)
+            existing = active_by_id.get(spell_id) if active_by_id is not None else None
+            if existing is None:
+                self._logger.error(
+                    f"Contracted spell_id not active for deactivation (conduit_id={conduit_id}, spell_id={spell_id}).",
+                    "_deactivate_contracted_spell",
+                    exc_info=True,
+                )
+                raise RuntimeError(
+                    f"Contracted spell_id not active for deactivation (conduit_id={conduit_id}, spell_id={spell_id})."
+                )
+            if existing is not spell:
+                self._logger.error(
+                    f"Contracted spell_id mapped to a different spell (conduit_id={conduit_id}, spell_id={spell_id}).",
+                    "_deactivate_contracted_spell",
+                    exc_info=True,
+                )
+                raise RuntimeError(
+                    f"Contracted spell_id mapped to a different spell (conduit_id={conduit_id}, spell_id={spell_id})."
+                )
+            self._contracted_spells[conduit_id].pop(spell_index, None)
+            self._lookup_contracted_spells[conduit_id].pop(binding_key, None)
+            active_by_id.pop(spell_id, None)
+            self._spell_id_pool.pop(spell_id, None)
+            parked = self._inactive_contracted_spells.get(conduit_id)
+            if parked is None:
+                parked = {}
+                self._inactive_contracted_spells[conduit_id] = parked
+            parked[spell_id] = spell
+
+    def _reactivate_contracted_spell(self, conduit_id: str, spell: Spell) -> None:
+        """
+        Internal
+
+        Restore a parked contracted (borrowed) spell for one peer conduit.
+
+        Contract:
+            - The spell must be parked for its id under `conduit_id` (present in
+              `_inactive_contracted_spells[conduit_id]`); otherwise raises.
+            - Removes the spell from `_inactive_contracted_spells` and
+              repopulates the three active contracted maps for the conduit plus
+              the shared `_spell_id_pool`.
+            - `_contracted_spell_ids[conduit_id]` already carries the id
+              (existence was kept on park).
+            - Assumes the conduit's contract maps are live (park never drops the
+              conduit sub-dicts); does not touch the SpellIndex or framewide
+              lookup.
+
+        Args:
+            conduit_id (str): Peer conduit id that owns the contract.
+            spell (Spell): The parked borrowed spell to reactivate.
+
+        Returns:
+            None.
+
+        Raises:
+            RuntimeError: If the spell is not the parked contracted spell for
+                its id under `conduit_id`.
+
+        Threading:
+            - Acquires the Spellbook lock; the admitting transaction serializes
+              the wider operation.
+        """
+        spell_id = spell.spell_id
+        spell_index = spell.spell_index
+        binding_key = spell._key
+        with self._lock:
+            parked_map = self._inactive_contracted_spells.get(conduit_id)
+            existing = parked_map.get(spell_id) if parked_map is not None else None
+            if existing is None:
+                self._logger.error(
+                    f"Contracted spell_id not parked for reactivation (conduit_id={conduit_id}, spell_id={spell_id}).",
+                    "_reactivate_contracted_spell",
+                    exc_info=True,
+                )
+                raise RuntimeError(
+                    f"Contracted spell_id not parked for reactivation (conduit_id={conduit_id}, spell_id={spell_id})."
+                )
+            if existing is not spell:
+                self._logger.error(
+                    f"Parked contracted spell_id mapped to a different spell (conduit_id={conduit_id}, spell_id={spell_id}).",
+                    "_reactivate_contracted_spell",
+                    exc_info=True,
+                )
+                raise RuntimeError(
+                    f"Parked contracted spell_id mapped to a different spell (conduit_id={conduit_id}, spell_id={spell_id})."
+                )
+            parked_map.pop(spell_id, None)
+            self._contracted_spells[conduit_id][spell_index] = spell
+            self._lookup_contracted_spells[conduit_id][binding_key] = spell_index
+            self._contracted_spells_by_id[conduit_id][spell_id] = spell
+            self._spell_id_pool[spell_id] = spell
+
     #region Logging
 
     def _initialize_logging(self, logger: Any | None) -> None:

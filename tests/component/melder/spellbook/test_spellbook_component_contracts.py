@@ -437,3 +437,306 @@ def test_component_spellbook_find_contracted_spell_count_tracks_links() -> None:
         assert spellbook._find_contracted_spell_count() == 1
     finally:
         spellbook.cleanup()
+
+def test_component_spellbook_deactivate_reactivate_owned_spell_round_trip() -> None:
+    """
+    Purpose:
+        Validate owned park/unpark moves a spell across the active owned maps
+        and the owned inactive zone while keeping existence.
+    Contract:
+        - Deactivate pulls the spell from the four active owned maps and parks it.
+        - _spell_ids keeps the id across the inactive window.
+        - Reactivate repopulates the four active owned maps and clears the park.
+    Returns:
+        None.
+    """
+    spellbook = _make_spellbook()
+    try:
+        spell_id = spellbook.bind(
+            spell=BasicService,
+            existence=Existence.unique,
+            permissions="create",
+            spellframe=IService,
+            binding_name="primary",
+        )
+        spell = _get_spell_by_version_id(spellbook, spell_id)
+        assert spell is not None
+        index = spell.spell_index
+        key = spell._key
+        sid = spell.spell_id
+
+        assert spellbook._spells_by_id[sid] is spell
+        assert spellbook._spells[index] is spell
+        assert spellbook._lookup_spells[key] is index
+        assert spellbook._spell_id_pool[sid] is spell
+        assert sid in spellbook._spell_ids
+
+        spellbook._deactivate_owned_spell(spell)
+
+        assert sid not in spellbook._spells_by_id
+        assert index not in spellbook._spells
+        assert key not in spellbook._lookup_spells
+        assert sid not in spellbook._spell_id_pool
+        assert spellbook._inactive_spells[sid] is spell
+        assert sid in spellbook._spell_ids
+
+        spellbook._reactivate_owned_spell(spell)
+
+        assert spellbook._spells_by_id[sid] is spell
+        assert spellbook._spells[index] is spell
+        assert spellbook._lookup_spells[key] is index
+        assert spellbook._spell_id_pool[sid] is spell
+        assert sid not in spellbook._inactive_spells
+        assert sid in spellbook._spell_ids
+    finally:
+        spellbook.cleanup()
+
+
+def test_component_spellbook_deactivate_owned_spell_rejects_non_active() -> None:
+    """
+    Purpose:
+        Validate deactivating a spell that is not the active owned spell raises.
+    Contract:
+        - _deactivate_owned_spell raises RuntimeError when the id is not active.
+    Returns:
+        None.
+    """
+    spellbook = _make_spellbook()
+    try:
+        spell_id = spellbook.bind(
+            spell=BasicService,
+            existence=Existence.unique,
+            permissions="create",
+            spellframe=IService,
+            binding_name="primary",
+        )
+        spell = _get_spell_by_version_id(spellbook, spell_id)
+        assert spell is not None
+        spellbook._deactivate_owned_spell(spell)
+        with pytest.raises(RuntimeError, match="not active for deactivation"):
+            spellbook._deactivate_owned_spell(spell)
+    finally:
+        spellbook.cleanup()
+
+
+def test_component_spellbook_deactivate_reactivate_contracted_spell_round_trip() -> None:
+    """
+    Purpose:
+        Validate contracted park/unpark moves a borrowed spell across the active
+        contracted maps and the contracted inactive zone while keeping existence.
+    Contract:
+        - Deactivate pulls from the three active contracted maps and the shared
+          _spell_id_pool, and parks under the conduit.
+        - _contracted_spell_ids[conduit] keeps the id across the inactive window.
+        - Reactivate repopulates the active contracted maps and the pool.
+    Returns:
+        None.
+    """
+    owner_book = _make_spellbook()
+    borrower_book = _make_spellbook()
+    conduit_id = "peer"
+    try:
+        owner_id = owner_book.bind(
+            spell=BasicService,
+            existence=Existence.unique,
+            permissions="create",
+            spellframe=IService,
+            binding_name="primary",
+        )
+        owner_spell = _get_spell_by_version_id(owner_book, owner_id)
+        assert owner_spell is not None
+        borrower_book._add_contracted_spell(owner_spell, conduit_id)
+
+        index = owner_spell.spell_index
+        key = owner_spell._key
+        sid = owner_spell.spell_id
+
+        assert borrower_book._contracted_spells[conduit_id][index] is owner_spell
+        assert borrower_book._lookup_contracted_spells[conduit_id][key] is index
+        assert borrower_book._contracted_spells_by_id[conduit_id][sid] is owner_spell
+        assert borrower_book._spell_id_pool[sid] is owner_spell
+        assert sid in borrower_book._contracted_spell_ids[conduit_id]
+
+        borrower_book._deactivate_contracted_spell(conduit_id, owner_spell)
+
+        assert index not in borrower_book._contracted_spells[conduit_id]
+        assert key not in borrower_book._lookup_contracted_spells[conduit_id]
+        assert sid not in borrower_book._contracted_spells_by_id[conduit_id]
+        assert sid not in borrower_book._spell_id_pool
+        assert borrower_book._inactive_contracted_spells[conduit_id][sid] is owner_spell
+        assert sid in borrower_book._contracted_spell_ids[conduit_id]
+
+        borrower_book._reactivate_contracted_spell(conduit_id, owner_spell)
+
+        assert borrower_book._contracted_spells[conduit_id][index] is owner_spell
+        assert borrower_book._lookup_contracted_spells[conduit_id][key] is index
+        assert borrower_book._contracted_spells_by_id[conduit_id][sid] is owner_spell
+        assert borrower_book._spell_id_pool[sid] is owner_spell
+        assert sid not in borrower_book._inactive_contracted_spells[conduit_id]
+        assert sid in borrower_book._contracted_spell_ids[conduit_id]
+    finally:
+        borrower_book.cleanup()
+        owner_book.cleanup()
+
+
+def test_component_spellbook_deactivate_contracted_spell_rejects_non_active() -> None:
+    """
+    Purpose:
+        Validate deactivating a contracted spell that is not active raises.
+    Contract:
+        - _deactivate_contracted_spell raises RuntimeError when the id is not
+          active under the conduit.
+    Returns:
+        None.
+    """
+    owner_book = _make_spellbook()
+    borrower_book = _make_spellbook()
+    try:
+        owner_id = owner_book.bind(
+            spell=BasicService,
+            existence=Existence.unique,
+            permissions="create",
+            spellframe=IService,
+            binding_name="primary",
+        )
+        owner_spell = _get_spell_by_version_id(owner_book, owner_id)
+        assert owner_spell is not None
+        with pytest.raises(RuntimeError, match="not active for deactivation"):
+            borrower_book._deactivate_contracted_spell("peer", owner_spell)
+    finally:
+        borrower_book.cleanup()
+        owner_book.cleanup()
+
+def test_component_spellbook_deactivate_owned_spell_isolates_target() -> None:
+    """
+    Purpose:
+        Validate parking one owned spell leaves other active owned spells intact.
+    Contract:
+        - Deactivating one spell does not disturb a sibling spell's active maps.
+    Returns:
+        None.
+    """
+    spellbook = _make_spellbook()
+    try:
+        keep_id = spellbook.bind(
+            spell=BasicService,
+            existence=Existence.unique,
+            permissions="create",
+            spellframe=IService,
+            binding_name="primary",
+        )
+        park_id = spellbook.bind(
+            spell=BasicLogger,
+            existence=Existence.unique,
+            permissions="create",
+            spellframe=IService,
+            binding_name="secondary",
+        )
+        keep = _get_spell_by_version_id(spellbook, keep_id)
+        park = _get_spell_by_version_id(spellbook, park_id)
+        assert keep is not None and park is not None
+
+        spellbook._deactivate_owned_spell(park)
+
+        assert park.spell_id in spellbook._inactive_spells
+        assert park.spell_id not in spellbook._spells_by_id
+
+        assert spellbook._spells_by_id[keep.spell_id] is keep
+        assert spellbook._spells[keep.spell_index] is keep
+        assert spellbook._lookup_spells[keep._key] is keep.spell_index
+        assert spellbook._spell_id_pool[keep.spell_id] is keep
+        assert keep.spell_id not in spellbook._inactive_spells
+    finally:
+        spellbook.cleanup()
+
+
+def test_component_spellbook_owned_park_unpark_repeatable() -> None:
+    """
+    Purpose:
+        Validate owned park/unpark can cycle repeatedly with no residue.
+    Contract:
+        - A second deactivate/reactivate cycle behaves identically to the first.
+    Returns:
+        None.
+    """
+    spellbook = _make_spellbook()
+    try:
+        spell_id = spellbook.bind(
+            spell=BasicService,
+            existence=Existence.unique,
+            permissions="create",
+            spellframe=IService,
+            binding_name="primary",
+        )
+        spell = _get_spell_by_version_id(spellbook, spell_id)
+        assert spell is not None
+        sid = spell.spell_id
+
+        spellbook._deactivate_owned_spell(spell)
+        assert sid in spellbook._inactive_spells and sid not in spellbook._spells_by_id
+        spellbook._reactivate_owned_spell(spell)
+        assert sid not in spellbook._inactive_spells and spellbook._spells_by_id[sid] is spell
+
+        spellbook._deactivate_owned_spell(spell)
+        assert sid in spellbook._inactive_spells and sid not in spellbook._spells_by_id
+        spellbook._reactivate_owned_spell(spell)
+        assert spellbook._spells_by_id[sid] is spell
+    finally:
+        spellbook.cleanup()
+
+
+def test_component_spellbook_reactivate_owned_spell_rejects_non_parked() -> None:
+    """
+    Purpose:
+        Validate reactivating an owned spell that is not parked raises.
+    Contract:
+        - _reactivate_owned_spell raises RuntimeError when the id is not parked.
+    Returns:
+        None.
+    """
+    spellbook = _make_spellbook()
+    try:
+        spell_id = spellbook.bind(
+            spell=BasicService,
+            existence=Existence.unique,
+            permissions="create",
+            spellframe=IService,
+            binding_name="primary",
+        )
+        spell = _get_spell_by_version_id(spellbook, spell_id)
+        assert spell is not None
+        with pytest.raises(RuntimeError, match="not parked for reactivation"):
+            spellbook._reactivate_owned_spell(spell)
+    finally:
+        spellbook.cleanup()
+
+
+def test_component_spellbook_reactivate_contracted_spell_rejects_non_parked() -> None:
+    """
+    Purpose:
+        Validate reactivating a contracted spell that is not parked raises.
+    Contract:
+        - _reactivate_contracted_spell raises RuntimeError when the id is not
+          parked under the conduit.
+    Returns:
+        None.
+    """
+    owner_book = _make_spellbook()
+    borrower_book = _make_spellbook()
+    conduit_id = "peer"
+    try:
+        owner_id = owner_book.bind(
+            spell=BasicService,
+            existence=Existence.unique,
+            permissions="create",
+            spellframe=IService,
+            binding_name="primary",
+        )
+        owner_spell = _get_spell_by_version_id(owner_book, owner_id)
+        assert owner_spell is not None
+        borrower_book._add_contracted_spell(owner_spell, conduit_id)
+        with pytest.raises(RuntimeError, match="not parked for reactivation"):
+            borrower_book._reactivate_contracted_spell(conduit_id, owner_spell)
+    finally:
+        borrower_book.cleanup()
+        owner_book.cleanup()
