@@ -191,6 +191,37 @@ class SpellIndex(Cleanable):
         with self._lock:
             return spell_id in self._spells_in_index
 
+    def is_empty(self) -> bool:
+        """
+        Return whether this index has no members.
+
+        O(1): tests the live member set directly without copying it.
+
+        Returns:
+            bool: True if the member set is empty.
+        """
+        self.check_cleaned()
+        with self._lock:
+            return not self._spells_in_index
+
+    def is_sole_member(self, spell_id: str) -> bool:
+        """
+        Return whether `spell_id` is this index's only member.
+
+        O(1): a length test plus a membership test on the live set; no copy and
+        no set construction (unlike `spells_in_index() == {spell_id}`).
+
+        Args:
+            spell_id (str): The spell id to test as the sole member.
+
+        Returns:
+            bool: True iff the member set is exactly {spell_id}.
+        """
+        self.check_cleaned()
+        with self._lock:
+            members = self._spells_in_index
+            return len(members) == 1 and spell_id in members
+
     @property
     def id(self) -> str:
         """

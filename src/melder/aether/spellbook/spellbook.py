@@ -2893,6 +2893,9 @@ and logging.
         Contract:
             - Only a spell owned by THIS Spellbook may be added (enforced in the
               seam via `spell._spellbook is self`).
+            - The `target_index` must be an index this Spellbook owns (enforced via
+              `target_index.selected_spell_id in self._spell_ids`); you cannot add
+              onto a foreign index.
             - The spell must be inactive; notch away from an active spell first.
             - The spell leaves its current index and joins `target_index` as an
               inactive member. If its old index empties, that index is destroyed.
@@ -2947,7 +2950,10 @@ and logging.
         pools, Nexus record, fast-door, Creations) travels with it untouched.
 
         Steps:
-            1. Enforce ownership: `spell._spellbook is self`.
+            1. Enforce ownership: `spell._spellbook is self`, and `target_index` is
+               owned here -- its selected spell id is in `self._spell_ids`
+               (`target_index.selected_spell_id in self._spell_ids`, O(1)). You can
+               only add onto an index you own.
             2. Enforce the spell is inactive (active members must be notched away
                first; moving an active member would orphan its active maps).
             3. Remove the spell id from its source index member set, add it to the
@@ -2962,7 +2968,8 @@ and logging.
             Spell: The moved `spell`.
 
         Raises:
-            RuntimeError: If `spell` is not owned by this Spellbook or is active.
+            RuntimeError: If `spell` is not owned by this Spellbook, is active, or
+                `target_index` is not an index this Spellbook owns.
         """
         self.check_cleaned()
         if spell._spellbook is not self:
@@ -2988,13 +2995,23 @@ and logging.
         source_index = spell.spell_index
         if source_index is target_index:
             return spell
+        if target_index.selected_spell_id not in self._spell_ids:
+            self._logger.error(
+                f"add_to_spell_index: target index {target_index.id} is not owned by this spellbook.",
+                "_apply_add_to_index",
+                exc_info=True,
+            )
+            raise RuntimeError(
+                f"add_to_spell_index: target index {target_index.id} is not owned by this "
+                f"spellbook; you can only add onto an index you own."
+            )
         binding_key = spell._key
         owner_conduit_id = spell._owner_conduit_id
         with self._lock:
             source_index.remove_member(spell_id)
             target_index.add_member(spell_id)
             spell.spell_index = target_index
-            source_emptied = not source_index.spells_in_index()
+            source_emptied = source_index.is_empty()
         if source_emptied:
             self._destroy_spell_index(
                 source_index,
@@ -3158,7 +3175,7 @@ and logging.
             raise RuntimeError(
                 f"remove_from_spell_index: spell {spell_id} is not a member of the given source index."
             )
-        if source_index.spells_in_index() == {spell_id}:
+        if source_index.is_sole_member(spell_id):
             self._logger.error(
                 f"remove_from_spell_index: spell {spell_id} is the only member of its index.",
                 "_apply_remove_from_index",
@@ -3224,11 +3241,9 @@ and logging.
                 f"cleanup_spell: spell {spell_id} is not owned by this spellbook."
             )
         index = spell.spell_index
-        binding_key = spell._key
-        owner_conduit_id = spell._owner_conduit_id
         with self._lock:
             is_active = spell_id in self._spells_by_id
-            is_sole = index.spells_in_index() == {spell_id}
+            is_sole = index.is_sole_member(spell_id)
             if is_active and not is_sole:
                 self._logger.error(
                     f"cleanup_spell: spell {spell_id} is the active member of a multi-member index.",
@@ -3253,11 +3268,13 @@ and logging.
         else:
             # Inactive member: drop just this member; the shared index and its other
             # members survive unless this empties it.
+            binding_key = spell._key
+            owner_conduit_id = spell._owner_conduit_id
             with self._lock:
                 self._inactive_spells.pop(spell_id, None)
                 self._spell_ids.discard(spell_id)
                 index.remove_member(spell_id)
-                index_emptied = not index.spells_in_index()
+                index_emptied = index.is_empty()
             if index_emptied:
                 self._destroy_spell_index(
                     index,
