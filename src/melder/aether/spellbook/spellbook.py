@@ -23,6 +23,7 @@ from melder.utilities.helpers.id_builder import IDBuilder
 from melder.aether.spellbook.configuration.spellbook_configuration import SpellbookConfiguration
 from melder.aether.spellbook.bind.bind import Bind
 from melder.aether.spellbook.bind.spell_index import SpellIndex
+from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_state_change_reason import SpellStateChangeReason
 from melder.aether.spellbook.existence.existence import Existence
 from melder.aether.conduit.conduit_ward.policies.policies import Policies
 from melder.utilities.helpers.general_helpers import EnumHelpers
@@ -2749,12 +2750,23 @@ and logging.
     #endregion Contract API
     #region Binding API
 
-    def notch_spell(self, *, spell_index: SpellIndex, spell: Spell) -> Spell:
+    def notch_spell(
+            self,
+            *,
+            spell_index: SpellIndex,
+            spell: Spell,
+            change_reason: SpellStateChangeReason = SpellStateChangeReason.selected_different_spell,
+    ) -> Spell:
         """
         Public API
 
         Notch a SpellIndex so `spell` becomes its selected (resolvable) spell,
         admitted as a `notch` change-control transaction through the mediator.
+
+        `change_reason` records WHY the active member was repointed; it defaults
+        to `selected_different_spell` (a general selection, not a mutation) and is
+        threaded into the spell-owned invalidation so the lineage -- and its
+        dependents -- are flagged with that reason.
 
         Contract:
             - Admits a `notch` transaction (claims the owning spellbook INTENT
@@ -2789,14 +2801,20 @@ and logging.
             metadata=metadata,
         )
         try:
-            result = self._apply_notch(spell_index=spell_index, spell=spell)
+            result = self._apply_notch(spell_index=spell_index, spell=spell, change_reason=change_reason)
         except Exception:
             mediator.end_transaction(expected_type="notch", success=False)
             raise
         mediator.end_transaction(expected_type="notch", success=True)
         return result
 
-    def _apply_notch(self, *, spell_index: SpellIndex, spell: Spell) -> Spell:
+    def _apply_notch(
+            self,
+            *,
+            spell_index: SpellIndex,
+            spell: Spell,
+            change_reason: SpellStateChangeReason = SpellStateChangeReason.selected_different_spell,
+    ) -> Spell:
         """
         Internal SEAM -- notch the SpellIndex's ACTIVE member to `spell`.
 
@@ -2859,10 +2877,10 @@ and logging.
             owner_spellbook_id=self._id,
         )
         # Flag the now-active spell for a next-meld rebuild and mark its lineage
-        # structurally changed (the spell-owned invalidation helper, which also
-        # clears the cached creation context); dependents revalidate through the
-        # gated lineage on their next meld.
-        spell.invalidate_spell()
+        # structurally changed with the notch reason (the spell-owned invalidation
+        # helper, which also clears the cached creation context); dependents
+        # revalidate through the gated lineage on their next meld.
+        spell.invalidate_spell(change_reason=change_reason)
         return spell
 
     def add_to_spell_index(self, *, spell: Spell, target_index: SpellIndex) -> Spell:
@@ -3223,8 +3241,9 @@ and logging.
                 )
         # 1) INVALIDATE FIRST: flag the spell + its lineage dirty (clear the creation
         #    context, force a next-meld rebuild) while the index and dependency edges
-        #    still exist, so dependents can be rechecked. Teardown comes after.
-        spell.invalidate_spell()
+        #    still exist, so dependents can be rechecked. Teardown comes after. The
+        #    reason records that this spell is being disposed via cleanup.
+        spell.invalidate_spell(change_reason=SpellStateChangeReason.cleaned_up_spell)
         # 2) THEN CLEAN UP.
         if is_active:
             # Authoritative disposal: unregisters the index (its compute_impact_closure

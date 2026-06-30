@@ -43,6 +43,7 @@ from melder.aether.aetheric_frame.dev_ops.devops_identity import (
 )
 from melder.aether.spellbook.bind.scan import Scan
 from melder.aether.spellbook.configuration.spellbook_configuration import SpellbookConfiguration
+from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_state_change_reason import SpellStateChangeReason
 if TYPE_CHECKING:
     from melder.nexus.nexus import Nexus
     from melder.aether.aetheric_frame.aetheric_frame import AethericFrame
@@ -3774,7 +3775,13 @@ class Conduit(Cleanable):
 
         return linked
 
-    def notch_spell(self, *, spell_index: Any, spell: Any) -> Any:
+    def notch_spell(
+            self,
+            *,
+            spell_index: Any,
+            spell: Any,
+            change_reason: SpellStateChangeReason = SpellStateChangeReason.selected_different_spell,
+    ) -> Any:
         """
         Public API
 
@@ -3785,6 +3792,8 @@ class Conduit(Cleanable):
         Args:
             spell_index: The SpellIndex whose active spell is switched.
             spell: The already-identified spell to make active.
+            change_reason: Why the active member was repointed; defaults to
+                `selected_different_spell` (general selection, not a mutation).
 
         Returns:
             Any: The owning Spellbook notch result.
@@ -3803,7 +3812,7 @@ class Conduit(Cleanable):
             )
         if self._spellbook is None:
             raise RuntimeError("[CONDUIT] No owning Spellbook for notch_spell.")
-        return self._spellbook.notch_spell(spell_index=spell_index, spell=spell)
+        return self._spellbook.notch_spell(spell_index=spell_index, spell=spell, change_reason=change_reason)
 
     def add_to_spell_index(self, *, spell: Any, target_index: Any) -> Any:
         """

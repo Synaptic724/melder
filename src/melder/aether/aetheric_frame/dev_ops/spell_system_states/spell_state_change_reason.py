@@ -38,6 +38,9 @@ class SpellStateChangeReason(Enum):
     mutation_promoted = auto()      # new version promoted to SpellIndex.selected_spell_id
     mutation_rolled_back = auto()   # reverted to a previous version
 
+    # Selection (general, not a mutation)
+    selected_different_spell = auto()  # notch repointed the index to a different existing member
+
     # Mutations (MutationContract / overlay)
     mutation_contract_set = auto()      # MutationContract applied / overlay set
     mutation_contract_cleared = auto()  # overlay removed / back to normal
@@ -56,6 +59,9 @@ class SpellStateChangeReason(Enum):
     config_supplied = auto()        # config fixed / supplied
     anchored_component = auto()     # marked non-mutable infra component
     transfer_in_progress = auto()   # ownership transfer gate
+
+    # Disposal
+    cleaned_up_spell = auto()       # owning spell disposed via cleanup_spell
 
     # Manual / catch-all
     explicit_mark = auto()          # explicitly marked dirty/attention-needed

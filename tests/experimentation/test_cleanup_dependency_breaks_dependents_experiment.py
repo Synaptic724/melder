@@ -52,9 +52,6 @@ from melder.aether.spellbook.configuration.spellbook_configuration import (
 )
 from melder.aether.spellbook.existence.existence import Existence
 from melder.aether.spellbook.spellbook import Spellbook
-from melder.aether.spellbook.spell_compiler.spell_compiler_system import (
-    SpellCompilerSystem,
-)
 
 
 class _Dep1:
@@ -172,29 +169,11 @@ def test_cleanup_dependency_breaks_dependents_experiment() -> None:
         other_root_spell = _get_spell(spellbook, other_root_id)
         dep1_spell = _get_spell(spellbook, dep1_id)
 
-        # Build component graph + dependency edges on both planes (phase 5).
-        compiler_system = SpellCompilerSystem()
-        try:
-            compiler_system.run_all_phases(spellbook, root_spell, conduit_id)
-            compiler_system.run_all_phases(spellbook, other_root_spell, conduit_id)
-        finally:
-            compiler_system.cleanup()
-
         ccm = spellbook._aether._get_change_control_manager(spellbook._aetheric_frame_name)
         assert ccm is not None, "change control manager unavailable"
 
-        # --- Phase A: confirm the dependency edges exist on both planes ---
-        dep1_state = dep1_spell.system_state
-        dep1_dependents_pre = set(dep1_state.direct_dependents) if dep1_state is not None else set()
-        print("EXPERIMENT_A_GRAPH")
-        print({
-            "dep1_id": dep1_id,
-            "root_id": root_id,
-            "other_root_id": other_root_id,
-            "dep1_sss_direct_dependents": dep1_dependents_pre,
-        })
-
         # --- Phase B: MELD BOTH dependents BEFORE cleanup (must succeed) ---
+        # meld runs the full compile pipeline itself; no pre-compile step needed.
         root_before = _try_meld(conduit, root_id)
         other_before = _try_meld(conduit, other_root_id)
         print("EXPERIMENT_B_MELD_BEFORE")
@@ -203,6 +182,17 @@ def test_cleanup_dependency_breaks_dependents_experiment() -> None:
             "other_root_validity": _validity(other_root_spell),
             "meld(root)_before": root_before,
             "meld(other_root)_before": other_before,
+        })
+
+        # --- Phase A: confirm the dependency edges the meld built ---
+        dep1_state = dep1_spell.system_state
+        dep1_dependents_pre = set(dep1_state.direct_dependents) if dep1_state is not None else set()
+        print("EXPERIMENT_A_GRAPH")
+        print({
+            "dep1_id": dep1_id,
+            "root_id": root_id,
+            "other_root_id": other_root_id,
+            "dep1_sss_direct_dependents": dep1_dependents_pre,
         })
 
         # --- Phase C: ACTION -- clean up the shared dependency Dep1 ---
