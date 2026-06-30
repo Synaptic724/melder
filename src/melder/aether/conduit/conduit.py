@@ -3797,6 +3797,72 @@ class Conduit(Cleanable):
             raise RuntimeError("[CONDUIT] No owning Spellbook for notch_spell.")
         return self._spellbook.notch_spell(spell_index=spell_index, spell=spell)
 
+    def add_to_spell_index(self, *, spell: Any, target_index: Any) -> Any:
+        """
+        Public API
+
+        Conduit facade for moving an owned spell onto another SpellIndex.
+        Delegates to the owning Spellbook, which admits the `add_to_index`
+        change-control transaction.
+
+        Args:
+            spell: The owned, inactive spell to move.
+            target_index: The index to move it onto.
+
+        Returns:
+            Any: The owning Spellbook's result.
+
+        Raises:
+            RuntimeError: If the Conduit is cleaned or has no owning Spellbook.
+        """
+        self.check_cleaned()
+        if self._spellbook is None:
+            raise RuntimeError("[CONDUIT] No owning Spellbook for add_to_spell_index.")
+        return self._spellbook.add_to_spell_index(spell=spell, target_index=target_index)
+
+    def remove_from_spell_index(self, *, spell: Any, source_index: Any) -> Any:
+        """
+        Public API
+
+        Conduit facade for separating an owned spell out of its index into a fresh
+        one. Delegates to the owning Spellbook, which admits the
+        `remove_from_index` change-control transaction.
+
+        Args:
+            spell: The owned, inactive spell to separate.
+            source_index: The index the spell currently belongs to.
+
+        Returns:
+            Any: The owning Spellbook's result.
+
+        Raises:
+            RuntimeError: If the Conduit is cleaned or has no owning Spellbook.
+        """
+        self.check_cleaned()
+        if self._spellbook is None:
+            raise RuntimeError("[CONDUIT] No owning Spellbook for remove_from_spell_index.")
+        return self._spellbook.remove_from_spell_index(spell=spell, source_index=source_index)
+
+    def cleanup_spell(self, *, spell: Any) -> None:
+        """
+        Public API
+
+        Conduit facade for fully disposing an owned spell. Delegates to the
+        owning Spellbook, which removes the spell from every resolution surface,
+        drops its Creations, destroys its index if it was the sole member, and
+        tears the spell object down.
+
+        Args:
+            spell: The owned spell to dispose.
+
+        Raises:
+            RuntimeError: If the Conduit is cleaned or has no owning Spellbook.
+        """
+        self.check_cleaned()
+        if self._spellbook is None:
+            raise RuntimeError("[CONDUIT] No owning Spellbook for cleanup_spell.")
+        self._spellbook.cleanup_spell(spell=spell)
+
     def sever_link(self, target_conduit: "Conduit") -> bool:
         """
         Public API

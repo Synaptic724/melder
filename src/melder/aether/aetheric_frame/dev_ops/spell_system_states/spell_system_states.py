@@ -2,7 +2,6 @@ import threading
 from typing import TYPE_CHECKING, Callable, Dict, Iterable, Iterator, List, Mapping, Optional, Sequence, Set, Tuple, \
     ClassVar
 
-
 # Melder imports
 from melder.aether.aetheric_frame.dev_ops.devops_information_registry import (
     DevopsInformationRegistry,
@@ -25,7 +24,6 @@ if TYPE_CHECKING:
     from melder.aether.spellbook.spell_compiler.topology.spell_local_topology import (
         SpellLocalTopology,
     )
-
 
 def _get_structural_risk_manager_callback(
         risk_manager: Optional[RiskManager],
@@ -243,7 +241,7 @@ class SpellSystemStates(Cleanable):
     # ------------------------------------------------------------------
     # Registration / lookup
     # ------------------------------------------------------------------
-    def register_index(self, spell_index: SpellIndex) -> SpellSystemState:
+    def register_index(self, spell_index: SpellIndex, owner_spellbook_id: Optional[str] = None) -> SpellSystemState:
         """
         Ensure a SpellSystemState exists for the given spell index and return it.
 
@@ -283,7 +281,6 @@ class SpellSystemStates(Cleanable):
             # Refresh the spell-id index as well
             self._states_by_spell_id[current_id] = state
 
-            owner_spellbook_id = self._resolve_spellbook_id_from_index(spell_index)
             if owner_spellbook_id is not None and self._index_owner_spellbook_id is not None:
                 existing_owner = self._index_owner_spellbook_id.get(index_id)
                 if existing_owner is not None and existing_owner != owner_spellbook_id:
@@ -339,26 +336,6 @@ class SpellSystemStates(Cleanable):
     # ------------------------------------------------------------------
     # Internal indexing helpers
     # ------------------------------------------------------------------
-    def _resolve_spellbook_id_from_index(self, spell_index: SpellIndex) -> Optional[str]:
-        """
-        Resolve the owning spellbook id for an attached spell index, if available.
-
-        This is the bridge between one spell index owner attachment and the
-        spellbook-scoped reverse indexes maintained later in this file. If a
-        spell index can no longer be tied back to an owning spellbook, those
-        scoped indexes cannot be updated safely.
-
-        Args:
-            spell_index: SpellIndex instance that may carry an owning Spellbook reference.
-        Returns:
-            Optional[str]: Spellbook id or None if unavailable.
-        """
-        if spell_index is None:
-            return None
-        spellbook = spell_index._owner_spellbook
-        if spellbook is None:
-            return None
-        return spellbook._id
 
     def _remove_index_from_collection_index(
             self,
@@ -792,7 +769,6 @@ class SpellSystemStates(Cleanable):
         removed_state.cleanup()
         return removed_state
 
-
     def set_risk_manager(self, risk_manager: Optional[RiskManager]) -> None:
         """
         Attach one `RiskManager` to the registry and all live child state
@@ -1188,7 +1164,6 @@ class SpellSystemStates(Cleanable):
                     impacted.add(index_id)
 
         return impacted
-
 
     def register_local_topology(
             self,

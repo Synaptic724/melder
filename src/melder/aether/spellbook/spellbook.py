@@ -22,6 +22,7 @@ from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
 from melder.aether.spellbook.configuration.spellbook_configuration import SpellbookConfiguration
 from melder.aether.spellbook.bind.bind import Bind
+from melder.aether.spellbook.bind.spell_index import SpellIndex
 from melder.aether.spellbook.existence.existence import Existence
 from melder.aether.conduit.conduit_ward.policies.policies import Policies
 from melder.utilities.helpers.general_helpers import EnumHelpers
@@ -38,7 +39,6 @@ if TYPE_CHECKING:
         SpellSystemStates,
     )
     from melder.aether.conduit.conduit import Conduit
-    from melder.aether.spellbook.bind.spell_index import SpellIndex
     from melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.transaction_mediator import (
         TransactionMediator,
     )
@@ -1360,6 +1360,7 @@ and logging.
             self._spells_by_id.pop(spell_id, None)
             self._spell_id_pool.pop(spell_id, None)
             self._inactive_spells[spell_id] = spell
+            spell._active = False
 
     def _reactivate_owned_spell(self, spell: Spell) -> None:
         """
@@ -1413,6 +1414,7 @@ and logging.
             self._lookup_spells[binding_key] = spell_index
             self._spells_by_id[spell_id] = spell
             self._spell_id_pool[spell_id] = spell
+            spell._active = True
 
     def _deactivate_contracted_spell(self, conduit_id: str, spell: Spell) -> None:
         """
@@ -2502,7 +2504,7 @@ and logging.
             conduit_spell_ids = self._contracted_spell_ids[conduit_id]
 
             spell_index = spell.spell_index
-            spell_index._attach_contracted(self, conduit_id, spell)
+            self._register_contracted_spell_id(conduit_id, spell_index.selected_spell_id, spell)
 
             # Main maps: SpellIndex? Spell and key? SpellIndex
             spell_map[spell_index] = spell
@@ -2574,7 +2576,7 @@ and logging.
                 )
                 raise RuntimeError(f"Spell version {spell_id} not found for conduit ID {conduit_id}.")
 
-            spell_index._detach_contracted(self, conduit_id)
+            self._unregister_contracted_spell_id(conduit_id, spell_index.selected_spell_id, spell)
 
             # Remove from main map
             spell_map.pop(spell_index, None)
@@ -2630,7 +2632,7 @@ and logging.
             spell_map = self._contracted_spells[conduit_id]
             removed_spells = list(spell_map.values())
             for spell in spell_map.values():
-                spell.spell_index._detach_contracted(self, conduit_id)
+                self._unregister_contracted_spell_id(conduit_id, spell.spell_index.selected_spell_id, spell)
 
             self._contracted_spells[conduit_id].clear()
             self._lookup_contracted_spells[conduit_id].clear()
@@ -2796,36 +2798,450 @@ and logging.
 
     def _apply_notch(self, *, spell_index: SpellIndex, spell: Spell) -> Spell:
         """
-        Internal SEAM - repoint a SpellIndex's single active spell to `spell`'s
-        id.
+        Internal SEAM -- notch the SpellIndex's ACTIVE member to `spell`.
 
-        Runs inside the held `notch` transaction window: the strategy seals the
-        owning spellbook + binding scope EXCLUSIVE, so the rekey is atomic against
-        overlapping structural writers, while meld stays lock-free and re-reads the
-        new `selected_spell_id`.
+        Runs inside the held `notch` transaction window (owning spellbook INTENT
+        + binding key EXCLUSIVE). A SpellIndex holds a SET of member spell ids;
+        `selected_spell_id` is the one currently active. Notch swaps which member
+        is active using the active/inactive park machinery.
 
-        A SpellIndex tracks exactly one active spell; "versions" are owned by
-        mutation_research, not the index. Notch therefore delegates to
-        `SpellIndex.update`, which rekeys the active spell's id old -> new across
-        the owner and contracted spell_id maps (`_update_owned_spell_id` /
-        `_update_contracted_spell_id` - these also warm the owned version cache and
-        replace the Nexus record). No spell is added to or removed from the
-        Spellbook here; the only legitimate entry paths for a spell remain bind and
-        link.
+        Steps (owner side):
+            1. Park the outgoing active spell off the four active owned maps via
+               `_deactivate_owned_spell` (existence kept in `_spell_ids`), then
+               tear down its creation context to bump the door epoch so the warm
+               fast-door cannot serve the stale spell.
+            2. Promote `spell` from `_inactive_spells` into the four active maps
+               via `_reactivate_owned_spell` (precondition: `spell` is parked --
+               staged by `bind_inactive` or a prior notch).
+            3. Repoint the index pointer + record the member (`SpellIndex.update`).
+            4. Repoint the framewide binding signature old -> new active id.
+            5. Re-register the index so it is structurally gated + dirty; meld-time
+               revalidation recompiles lazily on next resolve.
+
+        Contracted borrowers are NOT yet fanned out here (owner-side only); a notch
+        on a shared index does not yet update borrowers' contracted maps -- that is
+        the next slice (cross-conduit fan-out under the same seal).
 
         Args:
-            spell_index: The SpellIndex to repoint.
-            spell: The spell to notch to.
+            spell_index: The SpellIndex whose active member is switched.
+            spell: The already-staged (inactive) spell to make active.
 
         Returns:
-            Spell: `spell`.
+            Spell: `spell`, now the active member.
 
         Raises:
-            RuntimeError: Propagated from `SpellIndex.update` if the index has no
-                attached active spell.
+            RuntimeError: If `spell` is not parked in `_inactive_spells`, or the
+                outgoing spell is not the active owned spell for its id.
         """
-        spell_index.update(spell.spell_id)
+        self.check_cleaned()
+        new_id = spell.spell_id
+        with self._lock:
+            outgoing = self._spells.get(spell_index)
+            if outgoing is spell:
+                # Already the active member for this index; notch is idempotent.
+                return spell
+            if outgoing is not None:
+                # Park the outgoing active spell (off the four active maps; keeps
+                # _spell_ids existence), then kill its fast-door so meld(old_id)
+                # cannot serve the stale spell.
+                self._deactivate_owned_spell(outgoing)
+                outgoing._cleanup_creation_context()
+            # Promote the incoming spell from _inactive_spells into the active maps.
+            self._reactivate_owned_spell(spell)
+            # Index pointer: select the new id and record it as a member.
+            spell_index.update(new_id)
+            # Framewide binding signature: repoint old -> new active id.
+            self._aetheric_frame.update_lookup(spell._key, new_id)
+        # Structural gate: re-register marks the index gated + dirty so meld-time
+        # revalidation recompiles on next resolve (lazy).
+        self._spell_system_states.register_index(
+            spell_index=spell_index,
+            owner_spellbook_id=self._id,
+        )
+        # Flag the now-active spell for a next-meld rebuild and mark its lineage
+        # structurally changed (the spell-owned invalidation helper, which also
+        # clears the cached creation context); dependents revalidate through the
+        # gated lineage on their next meld.
+        spell.invalidate_spell()
         return spell
+
+    def add_to_spell_index(self, *, spell: Spell, target_index: SpellIndex) -> Spell:
+        """
+        Public API
+
+        Move an owned spell onto `target_index`, admitted as an `add_to_index`
+        change-control transaction through the mediator.
+
+        Contract:
+            - Only a spell owned by THIS Spellbook may be added (enforced in the
+              seam via `spell._spellbook is self`).
+            - The spell must be inactive; notch away from an active spell first.
+            - The spell leaves its current index and joins `target_index` as an
+              inactive member. If its old index empties, that index is destroyed.
+
+        Args:
+            spell: The owned, inactive spell to move.
+            target_index: The index to move it onto.
+
+        Returns:
+            Spell: The moved `spell`.
+
+        Raises:
+            RuntimeError: If the Spellbook is cleaned, the spell is not owned
+                here, or the spell is active.
+        """
+        self.check_cleaned()
+        mediator = self._get_required_transaction_mediator()
+        conduit_id = self._conduit._id if self._conduit is not None else None
+        metadata: Dict[str, Any] = {
+            "origin_surface": "spellbook.add_to_spell_index",
+            "spellbook_id": self._id,
+            "source_spellbook_id": self._id,
+            "target_spellbook_id": self._id,
+            "owner_conduit_id": conduit_id,
+            "source_conduit_id": conduit_id,
+            "target_conduit_id": conduit_id,
+            "spell_id": spell.spell_id,
+            "spell_index_id": target_index._id,
+            "binding_key": spell._key,
+        }
+        mediator.start_transaction(
+            identity=self._transaction_identity,
+            transaction_type=ChangeTransactionType.ADD_TO_INDEX,
+            metadata=metadata,
+        )
+        try:
+            result = self._apply_add_to_index(spell=spell, target_index=target_index)
+        except Exception:
+            mediator.end_transaction(expected_type="add_to_index", success=False)
+            raise
+        mediator.end_transaction(expected_type="add_to_index", success=True)
+        return result
+
+    def _apply_add_to_index(self, *, spell: Spell, target_index: SpellIndex) -> Spell:
+        """
+        Internal SEAM -- move an owned inactive spell onto `target_index`.
+
+        Runs inside the held `add_to_index` transaction window (the mediator
+        seals the source and target surfaces EXCLUSIVE, so this choreography is
+        race-safe). The move is membership-only: the spell stays owned and
+        inactive, so its id-keyed state (`_inactive_spells`, `_spell_ids`, id
+        pools, Nexus record, fast-door, Creations) travels with it untouched.
+
+        Steps:
+            1. Enforce ownership: `spell._spellbook is self`.
+            2. Enforce the spell is inactive (active members must be notched away
+               first; moving an active member would orphan its active maps).
+            3. Remove the spell id from its source index member set, add it to the
+               target index, and repoint `spell.spell_index`.
+            4. If the source index is now empty, destroy it.
+
+        Args:
+            spell: The owned, inactive spell to move.
+            target_index: The index to move it onto.
+
+        Returns:
+            Spell: The moved `spell`.
+
+        Raises:
+            RuntimeError: If `spell` is not owned by this Spellbook or is active.
+        """
+        self.check_cleaned()
+        if spell._spellbook is not self:
+            self._logger.error(
+                f"add_to_spell_index: spell {spell.spell_id} is not owned by this spellbook.",
+                "_apply_add_to_index",
+                exc_info=True,
+            )
+            raise RuntimeError(
+                f"add_to_spell_index: spell {spell.spell_id} is not owned by this spellbook."
+            )
+        spell_id = spell.spell_id
+        if spell_id not in self._inactive_spells:
+            self._logger.error(
+                f"add_to_spell_index: spell {spell_id} is active; notch away before moving it.",
+                "_apply_add_to_index",
+                exc_info=True,
+            )
+            raise RuntimeError(
+                f"add_to_spell_index: spell {spell_id} is active in its index; "
+                f"notch away from it before moving it."
+            )
+        source_index = spell.spell_index
+        if source_index is target_index:
+            return spell
+        binding_key = spell._key
+        owner_conduit_id = spell._owner_conduit_id
+        with self._lock:
+            source_index.remove_member(spell_id)
+            target_index.add_member(spell_id)
+            spell.spell_index = target_index
+            source_emptied = not source_index.spells_in_index()
+        if source_emptied:
+            self._destroy_spell_index(
+                source_index,
+                binding_key=binding_key,
+                owner_conduit_id=owner_conduit_id,
+            )
+        return spell
+
+    def _destroy_spell_index(
+            self,
+            spell_index: SpellIndex,
+            *,
+            binding_key: Tuple[str, str],
+            owner_conduit_id: Optional[str],
+    ) -> None:
+        """
+        Internal -- idempotently destroy an emptied, LOCAL SpellIndex.
+
+        Tears down every system that can hold a reference to the index. Each step
+        is a no-op when the index was never registered there (an inactive-only
+        index touches almost none of these), so the routine is safe regardless of
+        the index's history.
+
+        NOTE: contracted/borrower fan-out for a SHARED index is intentionally NOT
+        handled here -- this covers the local (un-shared) case only.
+
+        Steps:
+            1. Spellbook: drop the active-map entry + the binding-key lookup.
+            2. Frame: release the binding signature + unregister from the spell
+               registry.
+            3. SpellSystemStates: `unregister_index` (states, closure, risk).
+            4. The index object: `cleanup()`.
+
+        Args:
+            spell_index: The emptied index to destroy.
+            binding_key: The `(frame_key, bind_key)` signature the index held.
+            owner_conduit_id: The owning conduit id, or None when unconjured.
+        """
+        with self._lock:
+            self._spells.pop(spell_index, None)
+            self._lookup_spells.pop(binding_key, None)
+        self._aetheric_frame.release_lookup(binding_key)
+        if owner_conduit_id is not None:
+            Spellbook._aether._remove_single_spell_index(
+                owner_conduit_id,
+                spell_index,
+                self._aetheric_frame_name,
+            )
+        self._spell_system_states.unregister_index(spell_index)
+        spell_index.cleanup()
+
+    def remove_from_spell_index(self, *, spell: Spell, source_index: SpellIndex) -> Spell:
+        """
+        Public API
+
+        Separate an owned inactive spell out of `source_index` into its own fresh
+        index, admitted as a `remove_from_index` change-control transaction.
+
+        Contract:
+            - Only a spell owned by THIS Spellbook may be moved (seam-enforced).
+            - The spell must be inactive (notch away from an active spell first).
+            - If the spell is the sole member of `source_index` this raises;
+              use `cleanup_spell` to dispose it instead.
+            - Otherwise the spell leaves `source_index` (which keeps its remaining
+              members) and becomes the sole member of a fresh inactive index. No
+              index is destroyed.
+
+        Args:
+            spell: The owned, inactive spell to separate.
+            source_index: The index the spell currently belongs to.
+
+        Returns:
+            Spell: The separated `spell`.
+
+        Raises:
+            RuntimeError: If the Spellbook is cleaned, the spell is not owned
+                here, the spell is active, or it is not a member of `source_index`.
+        """
+        self.check_cleaned()
+        mediator = self._get_required_transaction_mediator()
+        conduit_id = self._conduit._id if self._conduit is not None else None
+        metadata: Dict[str, Any] = {
+            "origin_surface": "spellbook.remove_from_spell_index",
+            "spellbook_id": self._id,
+            "source_spellbook_id": self._id,
+            "owner_conduit_id": conduit_id,
+            "source_conduit_id": conduit_id,
+            "spell_id": spell.spell_id,
+            "spell_index_id": source_index._id,
+            "binding_key": spell._key,
+        }
+        mediator.start_transaction(
+            identity=self._transaction_identity,
+            transaction_type=ChangeTransactionType.REMOVE_FROM_INDEX,
+            metadata=metadata,
+        )
+        try:
+            result = self._apply_remove_from_index(spell=spell, source_index=source_index)
+        except Exception:
+            mediator.end_transaction(expected_type="remove_from_index", success=False)
+            raise
+        mediator.end_transaction(expected_type="remove_from_index", success=True)
+        return result
+
+    def _apply_remove_from_index(self, *, spell: Spell, source_index: SpellIndex) -> Spell:
+        """
+        Internal SEAM -- separate an owned inactive spell into its own fresh index.
+
+        Runs inside the held `remove_from_index` transaction window. Membership-
+        only: the spell stays owned and inactive, so its id-keyed state
+        (`_inactive_spells`, `_spell_ids`, id pools, Nexus, fast-door, Creations)
+        is untouched. No index is destroyed -- the source keeps its remaining
+        members; the separated spell gets a fresh inactive index.
+
+        Steps:
+            1. Enforce ownership (`spell._spellbook is self`) + inactive + that the
+               spell actually belongs to `source_index`.
+            2. If the spell is the sole member of `source_index`, raise (use
+               `cleanup_spell` to dispose it instead).
+            3. Otherwise mint a fresh `SpellIndex` seeded with this spell id, remove
+               the spell from `source_index`, and repoint `spell.spell_index`.
+
+        Args:
+            spell: The owned, inactive spell to separate.
+            source_index: The index the spell currently belongs to.
+
+        Returns:
+            Spell: The separated `spell`.
+
+        Raises:
+            RuntimeError: If `spell` is not owned here, is active, or is not a
+                member of `source_index`.
+        """
+        self.check_cleaned()
+        if spell._spellbook is not self:
+            self._logger.error(
+                f"remove_from_spell_index: spell {spell.spell_id} is not owned by this spellbook.",
+                "_apply_remove_from_index",
+                exc_info=True,
+            )
+            raise RuntimeError(
+                f"remove_from_spell_index: spell {spell.spell_id} is not owned by this spellbook."
+            )
+        spell_id = spell.spell_id
+        if spell_id not in self._inactive_spells:
+            self._logger.error(
+                f"remove_from_spell_index: spell {spell_id} is active; notch away before moving it.",
+                "_apply_remove_from_index",
+                exc_info=True,
+            )
+            raise RuntimeError(
+                f"remove_from_spell_index: spell {spell_id} is active in its index; "
+                f"notch away from it before moving it."
+            )
+        if spell.spell_index is not source_index:
+            self._logger.error(
+                f"remove_from_spell_index: spell {spell_id} is not a member of the given source index.",
+                "_apply_remove_from_index",
+                exc_info=True,
+            )
+            raise RuntimeError(
+                f"remove_from_spell_index: spell {spell_id} is not a member of the given source index."
+            )
+        if source_index.spells_in_index() == {spell_id}:
+            self._logger.error(
+                f"remove_from_spell_index: spell {spell_id} is the only member of its index.",
+                "_apply_remove_from_index",
+                exc_info=True,
+            )
+            raise RuntimeError(
+                f"remove_from_spell_index: spell {spell_id} is the only member of its index; "
+                f"use cleanup_spell to dispose it instead."
+            )
+        with self._lock:
+            new_index = SpellIndex(initial_id=spell_id)
+            source_index.remove_member(spell_id)
+            spell.spell_index = new_index
+        return spell
+
+    def cleanup_spell(self, *, spell: Spell) -> None:
+        """
+        Public API
+
+        Fully dispose an owned spell: take it off every resolution surface,
+        destroy its index if the spell was that index's only member, and tear
+        down the spell object. This is the disposal path
+        `remove_from_spell_index` points at for a sole-member index.
+
+        Contract:
+            - Only a spell owned by THIS Spellbook may be disposed.
+            - The ACTIVE member of a MULTI-member index cannot be disposed
+              directly (it would leave the index headless); notch away from it
+              first. The sole member of an index may always be disposed -- the
+              index is destroyed with it.
+            - The spell's id-keyed state is fully removed (active: `_spells` /
+              `_lookup_spells` / id pools / `_spell_ids` / Nexus / signature /
+              risk; inactive: `_inactive_spells` / `_spell_ids`). For an ACTIVE
+              spell the `_active` switch is flipped off and `spell.invalidate_spell()`
+              is called (clears the creation context + marks the lineage dirty for
+              dependent revalidation). Then the index is destroyed when empty and the
+              spell object cleaned up last. NOTE: disposal of the conduit
+              Creations STORE instances is still pending the right primitive
+              (extract is for moving, not disposing).
+            - NOTE: not yet sealed by a mediator transaction (no cleanup strategy
+              exists); the map mutations run under the Spellbook lock.
+
+        Args:
+            spell: The owned spell to dispose.
+
+        Raises:
+            RuntimeError: If the spell is not owned here, or it is the active
+                member of a multi-member index.
+        """
+        self.check_cleaned()
+        spell_id = spell.spell_id
+        if spell._spellbook is not self:
+            self._logger.error(
+                f"cleanup_spell: spell {spell_id} is not owned by this spellbook.",
+                "cleanup_spell",
+                exc_info=True,
+            )
+            raise RuntimeError(
+                f"cleanup_spell: spell {spell_id} is not owned by this spellbook."
+            )
+        index = spell.spell_index
+        binding_key = spell._key
+        owner_conduit_id = spell._owner_conduit_id
+        with self._lock:
+            is_active = spell_id in self._spells_by_id
+            is_sole = index.spells_in_index() == {spell_id}
+            if is_active and not is_sole:
+                self._logger.error(
+                    f"cleanup_spell: spell {spell_id} is the active member of a multi-member index.",
+                    "cleanup_spell",
+                    exc_info=True,
+                )
+                raise RuntimeError(
+                    f"cleanup_spell: spell {spell_id} is the active member of a multi-member "
+                    f"index; notch away from it before disposing it."
+                )
+            if is_active:
+                self._spells.pop(index, None)
+                self._lookup_spells.pop(binding_key, None)
+                self._unregister_owned_spell_id(spell_id, spell)
+            else:
+                self._inactive_spells.pop(spell_id, None)
+                self._spell_ids.discard(spell_id)
+            index.remove_member(spell_id)
+            index_emptied = not index.spells_in_index()
+        if is_active:
+            self._aetheric_frame.release_lookup(binding_key)
+            spell._active = False
+            # Spell-owned invalidation: clears the creation context and marks the
+            # lineage structurally changed so dependents revalidate. The index
+            # destroy below (unregister_index) also fans the dependent closure.
+            spell.invalidate_spell()
+            if owner_conduit_id is not None:
+                self._unregister_spell_with_risk_manager(owner_conduit_id, spell)
+        if index_emptied:
+            self._destroy_spell_index(
+                index,
+                binding_key=binding_key,
+                owner_conduit_id=owner_conduit_id,
+            )
+        spell.cleanup()
 
     def begin_transaction(
             self,
@@ -3332,6 +3748,7 @@ and logging.
             binding_name: Optional[str] = None,
             disposal_method_names: Optional[Sequence[str]] = None,
             profile: str = "general",
+            bind_inactive: bool = False,
             **kwargs: Any,
     ) -> str:
         """
@@ -3405,6 +3822,21 @@ and logging.
 
             self._add_hooks_to_spell(new_spell, **kwargs)
 
+            if bind_inactive:
+                # Inactive pathing: route the registration setters to the inactive
+                # surface instead of the active one. The SpellIndex records the
+                # spell as a member (no active select); the Spellbook parks it in
+                # _inactive_spells and keeps existence in _spell_ids. No id-pools,
+                # no _lookup_spells, no _spells[index], no binding-signature claim
+                # -- the spell is inert/unmeldable until notch_spell promotes it.
+                inactive_index = new_spell.spell_index
+                inactive_index.add_member(new_spell.spell_id)
+                self._inactive_spells[new_spell.spell_id] = new_spell
+                new_spell._active = False
+                if self._spell_ids is not None:
+                    self._spell_ids.add(new_spell.spell_id)
+                return new_spell.spell_id
+
             # Register into local spell maps
             spell_index = new_spell.spell_index
             # Framewide one-active-signature-per-frame gate (replaces the old
@@ -3412,7 +3844,7 @@ and logging.
             self._aetheric_frame.claim_lookup(new_spell._key, new_spell.spell_id)
             self._lookup_spells[new_spell._key] = spell_index
             self._spells[spell_index] = new_spell
-            spell_index._attach_owner(self, new_spell)
+            self._register_owned_spell_id(new_spell.spell_id, new_spell)
 
             # keep local version cache warm
             if self._spell_ids is not None:
@@ -3437,7 +3869,6 @@ and logging.
                     creation_gate_controller=conduit._creation_gate_controller,
                     caching_enabled=caching_enabled,
                 )
-                spell_index._set_owner_conduit_id(conduit._id)
                 # Compilation is always full/eager (AOT/JIT knob removed);
                 # post-conjure spells get compiled via the gated revalidation
                 # paths, not via a deferred-resolution flag.
@@ -3458,6 +3889,7 @@ and logging.
 
             self._spell_system_states.register_index(
                 spell_index=new_spell.spell_index,
+                owner_spellbook_id=self._id,
             )
             if self._conjured and self._conduit is not None:
                 self._register_spell_with_risk_manager(
@@ -3491,6 +3923,7 @@ and logging.
             binding_name: Optional[str] = None,
             disposal_method_names: Optional[Sequence[str]] = None,
             profile: str = "general",
+            bind_inactive: bool = False,
             **kwargs: Any,
     ) -> str:
         """
@@ -3527,6 +3960,12 @@ and logging.
                 the same frame.
             profile (str):
                 Spell profile family to attach after bind completion.
+            bind_inactive (bool):
+                When True, register the spell on the INACTIVE pathing (parked in
+                _inactive_spells, recorded as a SpellIndex member, existence kept
+                in _spell_ids) instead of activating it. The spell is inert and
+                unmeldable until notch_spell promotes it. Defaults to False
+                (normal active bind).
             **kwargs:
                 Optional lifecycle hooks:
                 - pre_hooks
@@ -3555,6 +3994,7 @@ and logging.
                 binding_name=binding_name,
                 disposal_method_names=disposal_method_names,
                 profile=profile,
+                bind_inactive=bind_inactive,
                 **kwargs,
             )
         with self.transaction(
@@ -3575,6 +4015,7 @@ and logging.
                 binding_name=binding_name,
                 disposal_method_names=disposal_method_names,
                 profile=profile,
+                bind_inactive=bind_inactive,
                 **kwargs,
             )
 
