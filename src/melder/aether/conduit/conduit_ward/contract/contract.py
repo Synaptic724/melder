@@ -5,7 +5,7 @@ from types import TracebackType
 
 
 # Melder imports
-from melder.aether.conduit.conduit_ward.contract.details import Detail
+from melder.aether.conduit.conduit_ward.contract.details import Detail, IndexDetail
 from melder.aether.conduit.conduit_ward.contract.detail_reason import DetailReason
 from melder.aether.conduit.conduit_ward.contract.contract_types.contract_types import ContractTypes
 from melder.aether.conduit.conduit_ward.permissions.permissions import Permissions
@@ -43,6 +43,8 @@ class Contract(Cleanable):
         "_ward_b",
         "_details_a",
         "_details_b",
+        "_index_details_a",
+        "_index_details_b",
     ]
 
     def __init__(self, ward_a: ConduitWard, ward_b: ConduitWard):
@@ -64,6 +66,11 @@ class Contract(Cleanable):
         self._details_a: Dict[str, Detail] = {} # Borrowed from conduit b
         self._details_b: Dict[str, Detail] = {} # Borrowed from conduit a
 
+        # Index-link details: per-ward maps of index_id -> IndexDetail (lineage
+        # subscriptions; the borrower follows the index, not a captured version).
+        self._index_details_a: Dict[str, IndexDetail] = {} # Borrowed from conduit b
+        self._index_details_b: Dict[str, IndexDetail] = {} # Borrowed from conduit a
+
     #region Cleanup
     def cleanup(self) -> None:
         """
@@ -83,6 +90,8 @@ class Contract(Cleanable):
             del self._ward_b
             del self._details_a
             del self._details_b
+            del self._index_details_a
+            del self._index_details_b
 
     def _clean_up(self) -> None:
         """
@@ -95,6 +104,14 @@ class Contract(Cleanable):
         for detail in self._details_b.values():
             detail.cleanup()
         self._details_b.clear()
+
+        for index_detail in self._index_details_a.values():
+            index_detail.cleanup()
+        self._index_details_a.clear()
+
+        for index_detail in self._index_details_b.values():
+            index_detail.cleanup()
+        self._index_details_b.clear()
     #endregion Cleanup
 
 
@@ -225,6 +242,90 @@ class Contract(Cleanable):
         detail_map = self._get_detail_map(ward)
         if spell_id in detail_map:
             del detail_map[spell_id]
+
+    def _get_index_detail_map(self, ward: ConduitWard) -> Dict[str, IndexDetail]:
+        """
+        Internal
+
+        Return the index-link detail map (index_id -> IndexDetail) for a ward.
+
+        Args:
+            ward: Ward whose index-detail map should be returned.
+
+        Returns:
+            Dict[str, IndexDetail]: Map of index_id -> IndexDetail for the ward.
+
+        Raises:
+            ValueError: If the ward is not part of this contract.
+        """
+        if ward is self._ward_a:
+            return self._index_details_a
+        if ward is self._ward_b:
+            return self._index_details_b
+        raise ValueError("Invalid ward for contract access.")
+
+    def _add_index(self, ward: ConduitWard, index_detail: IndexDetail) -> bool:
+        """
+        Internal
+
+        Add an index-link detail to the contract on behalf of the given ward,
+        keyed by the index id. Merges sources when the same index is already
+        linked with the same permissions.
+
+        Args:
+            ward: Ward that owns the index-detail map being updated.
+            index_detail: IndexDetail entry to insert.
+
+        Returns:
+            bool: True if a new IndexDetail was inserted, False if merged.
+
+        Raises:
+            RuntimeError: If the index is already linked with different permissions.
+        """
+        detail_map = self._get_index_detail_map(ward)
+        existing = detail_map.get(index_detail.index_id)
+        if existing is not None:
+            if existing.permissions != index_detail.permissions:
+                raise RuntimeError(
+                    f"IndexDetail already exists for index_id {index_detail.index_id} with "
+                    f"different permissions ({existing.permissions.name} != "
+                    f"{index_detail.permissions.name})."
+                )
+            if index_detail.sources:
+                for root_id in index_detail.sources:
+                    existing.add_source(root_id)
+            return False
+        detail_map[index_detail.index_id] = index_detail
+        return True
+
+    def _remove_index(self, ward: ConduitWard, index_id: str) -> None:
+        """
+        Internal
+
+        Remove an index-link detail from the given ward's view.
+
+        Args:
+            ward: Ward whose index-detail map should be updated.
+            index_id: Stable index id key to remove.
+        """
+        detail_map = self._get_index_detail_map(ward)
+        if index_id in detail_map:
+            del detail_map[index_id]
+
+    def _check_index_exists(self, ward: ConduitWard, index_id: str) -> bool:
+        """
+        Internal
+
+        Return whether the given ward has an index-link detail for `index_id`.
+
+        Args:
+            ward: Ward whose index-detail map should be checked.
+            index_id: Stable index id to look for.
+
+        Returns:
+            bool: True if the index is linked in the ward's map.
+        """
+        return index_id in self._get_index_detail_map(ward)
 
     def _remove_source(self, ward: ConduitWard, spell_id: str, root_spell_id: str | None) -> bool:
         """

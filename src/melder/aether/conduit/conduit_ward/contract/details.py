@@ -5,7 +5,7 @@ from threading import RLock
 # Melder imports
 from melder.aether.conduit.conduit_ward.permissions.permissions import Permissions
 from melder.aether.conduit.conduit_ward.contract.contract_types.contract_types import ContractTypes
-from typing import Set, ClassVar
+from typing import Set, ClassVar, Optional
 from melder.aether.conduit.conduit_ward.contract.detail_reason import DetailReason
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
@@ -229,7 +229,7 @@ class IndexDetail(Cleanable):
             permissions: Permissions,
             contract_type: ContractTypes,
             reason: DetailReason = DetailReason.other,
-            sources: Set[str] | None = None,
+            sources: Optional[Set[str]] = None,
     ) -> None:
         """
         Initialize an index-level contract detail.

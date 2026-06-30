@@ -4604,6 +4604,118 @@ class Conduit(Cleanable):
 
 
 
+    def add_index_contract(
+            self,
+            *,
+            index: Any,
+            conduit: Optional["Conduit"] = None,
+            conduit_id: Optional[str] = None,
+            permissions: str = "create",
+            aetheric_frame: str = "default",
+            reason: DetailReason = DetailReason.manual,
+    ) -> bool:
+        """
+        Public API
+
+        Link a whole SpellIndex (lineage) into a contract with a target conduit, so
+        the borrower follows the index's active member rather than a captured
+        version. Mirrors `add_spell_to_contract`, but is identified by the index.
+        Contract mutations reuse an active link transaction or self-admit one.
+
+        Args:
+            index: The owned SpellIndex (lineage) to share.
+            conduit / conduit_id: The target (owner) conduit.
+            permissions: Permission to grant (default "create").
+            aetheric_frame: Frame override used to locate the target conduit.
+            reason: Why this index contract exists.
+
+        Returns:
+            bool: True if the index link was created.
+
+        Raises:
+            RuntimeError: If contract qualification fails (cleaned/not normal/not
+                dynamic), or no active link transaction is present when required.
+        """
+        self._qualify_contracts()
+        mediator = self._get_required_transaction_mediator()
+        reuse_active_transaction = mediator.get_active_request() is not None
+        if reuse_active_transaction:
+            self._require_link_transaction_for_contract(
+                conduit=conduit,
+                conduit_id=conduit_id,
+                allow_all_links=False,
+            )
+        else:
+            peer_conduit = self._resolve_peer_conduit_for_contract_hooks(
+                conduit, conduit_id, aetheric_frame,
+            )
+            mediator.start_transaction(
+                identity=self._transaction_identity,
+                transaction_type=ChangeTransactionType.ADD_SPELL_OR_INDEX_TO_CONTRACT,
+                metadata={
+                    "origin_surface": "conduit.add_index_contract",
+                    "spellbook_id": self._spellbook._id if self._spellbook is not None else None,
+                    "owner_conduit_id": self._id,
+                    "peer_conduit_id": peer_conduit._id if peer_conduit is not None else conduit_id,
+                    "index_id": index.id,
+                },
+            )
+
+        try:
+            result = self._conduit_ward._add_index_to_contract(
+                index=index,
+                conduit=conduit,
+                conduit_id=conduit_id,
+                permissions=permissions,
+                aetheric_frame=aetheric_frame,
+                reason=reason,
+            )
+        except Exception:
+            if not reuse_active_transaction:
+                mediator.end_transaction(expected_type="add_spell_or_index_to_contract", success=False)
+            raise
+        if not reuse_active_transaction:
+            mediator.end_transaction(expected_type="add_spell_or_index_to_contract", success=True)
+
+        return result
+
+    def remove_index_contract(
+            self,
+            *,
+            index_id: str,
+            conduit: Optional["Conduit"] = None,
+            conduit_id: Optional[str] = None,
+            aetheric_frame: str = "default",
+    ) -> None:
+        """
+        Public API
+
+        Remove an index-link from a contract with a target conduit and untrack the
+        index on the borrower. Mirrors `remove_spell_from_contract`; requires an
+        active link transaction.
+
+        Args:
+            index_id: Stable id of the linked index to remove.
+            conduit / conduit_id: The target (owner) conduit.
+            aetheric_frame: Frame override used to locate the target conduit.
+
+        Raises:
+            RuntimeError: If contract qualification fails, or no active link
+                transaction is present.
+        """
+        self._qualify_contracts()
+        self._require_link_transaction_for_contract(
+            conduit=conduit,
+            conduit_id=conduit_id,
+            allow_all_links=False,
+        )
+        self._conduit_ward._remove_index_from_contract(
+            index_id=index_id,
+            conduit=conduit,
+            conduit_id=conduit_id,
+            aetheric_frame=aetheric_frame,
+        )
+
     def add_spells_to_contract(
             self,
             spell_ids: list[str],

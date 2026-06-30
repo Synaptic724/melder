@@ -22,7 +22,7 @@ from melder.utilities.helpers.general_helpers import EnumHelpers
 from melder.aether.spellbook.spell import Spell
 from melder.aether.spellbook.bind.spell_index import SpellIndex
 from melder.aether.conduit.conduit_state.conduit_state import ConduitState
-from melder.aether.conduit.conduit_ward.contract.contract import Detail, Contract
+from melder.aether.conduit.conduit_ward.contract.contract import Detail, IndexDetail, Contract
 from melder.aether.conduit.conduit_ward.contract.detail_reason import DetailReason
 from melder.aether.conduit.meld.contracts.spell_contract import SpellContract
 from melder.aether.aetheric_frame.dev_ops.devops_identity import DevopsIdentity
@@ -1799,6 +1799,233 @@ class ConduitWard(Cleanable):
                 )
                 raise
         return True
+
+    def _add_index_to_contract(
+            self,
+            *,
+            index: SpellIndex,
+            conduit: Optional[Conduit] = None,
+            conduit_id: Optional[str] = None,
+            permissions: str = "create",
+            aetheric_frame: str = "default",
+            reason: DetailReason = DetailReason.manual,
+    ) -> bool:
+        """
+        Internal
+
+        Link a whole SpellIndex (lineage) into the contract with `conduit` as an
+        index-link: the borrower follows the index, not a captured version. Mirrors
+        `_add_spell_to_contract`, but is identified by `index.id`, records an
+        `IndexDetail` whose head is `index.selected_spell_id`, and registers the
+        concrete index on the borrower spellbook via `_add_contracted_index`.
+
+        Args:
+            index: The owned lineage to share.
+            conduit / conduit_id: The owner conduit of the lineage (peer in the
+                contract; the borrower is this ward's conduit).
+            permissions: Permission to grant (default create).
+            aetheric_frame: Frame to resolve entities in.
+            reason: Why this index detail exists.
+
+        Returns:
+            bool: True on success.
+
+        Raises:
+            RuntimeError: If no contract exists with the conduit, the index is not an
+                active owned index of the conduit, or eligibility fails.
+        """
+        self.check_cleaned()
+        permissions_enum = EnumHelpers.convert_enum_and_check(permissions, Permissions)
+        conduit_id, conduit = self._check_conduit_id_and_conduit(conduit, conduit_id, aetheric_frame)
+
+        contract = self._find_contract_by_id(conduit_id)
+        if contract is None:
+            self._logger.error(
+                f"add_index_to_contract: no contract for {conduit_id}",
+                method_name="_add_index_to_contract",
+                owner_id=self._id,
+                owner_display=self._display_name,
+                mask=True,
+                groups=self._log_groups,
+                system_groups=self._log_sysgroups,
+            )
+            raise RuntimeError(
+                f"No contract found for conduit ID '{conduit_id}'. "
+                f"Please link to this conduit prior to index contract initiation."
+            )
+
+        # The index's current active member must be an owned, eligible spell of the
+        # owner conduit. Reuse the spell eligibility on the lineage's active head.
+        active_spell = conduit._spellbook.spells.get(index)
+        if active_spell is None:
+            self._logger.error(
+                f"add_index_to_contract: index {index.id} not an active owned index of {conduit_id}",
+                method_name="_add_index_to_contract",
+                owner_id=self._id,
+                owner_display=self._display_name,
+                mask=True,
+                groups=self._log_groups,
+                system_groups=self._log_sysgroups,
+            )
+            raise RuntimeError(
+                f"Index '{index.id}' is not an active owned index of conduit '{conduit_id}'."
+            )
+        self._check_spell_if_eligible(active_spell, conduit, permissions_enum)
+
+        added_new = False
+        with contract._lock:
+            index_detail = IndexDetail(
+                spell_index=index,
+                selected_spell_id=index.selected_spell_id,
+                permissions=permissions_enum,
+                contract_type=ContractTypes.received,
+                reason=reason,
+            )
+            added_new = contract._add_index(conduit._conduit_ward, index_detail)
+
+        if added_new:
+            try:
+                peer_conduit = contract._get_peer(conduit._conduit_ward)._conduit
+                peer_conduit._spellbook._add_contracted_index(index)
+            except Exception as e:
+                try:
+                    with contract._lock:
+                        contract._remove_index(conduit._conduit_ward, index.id)
+                except Exception as rollback_error:
+                    self._logger.error(
+                        f"add_index_to_contract: rollback failed after spellbook add error: {rollback_error}",
+                        method_name="_add_index_to_contract",
+                        exc_info=True,
+                        owner_id=self._id,
+                        owner_display=self._display_name,
+                        mask=True,
+                        groups=self._log_groups,
+                        system_groups=self._log_sysgroups,
+                    )
+                self._logger.error(
+                    f"add_index_to_contract: spellbook add failed: {e}",
+                    method_name="_add_index_to_contract",
+                    exc_info=True,
+                    owner_id=self._id,
+                    owner_display=self._display_name,
+                    mask=True,
+                    groups=self._log_groups,
+                    system_groups=self._log_sysgroups,
+                )
+                raise
+        return True
+
+    def _remove_index_from_contract(
+            self,
+            *,
+            index_id: str,
+            conduit: Optional[Conduit] = None,
+            conduit_id: Optional[str] = None,
+            aetheric_frame: str = "default",
+    ) -> None:
+        """
+        Internal
+
+        Remove an index-link from the contract with `conduit` and drop the borrower's
+        concrete index tracking. Idempotent -- a no-op when no contract exists.
+
+        Args:
+            index_id: Stable id of the linked index to remove.
+            conduit / conduit_id: The owner conduit (peer in the contract).
+            aetheric_frame: Frame to resolve entities in.
+        """
+        self.check_cleaned()
+        conduit_id, conduit = self._check_conduit_id_and_conduit(conduit, conduit_id, aetheric_frame)
+        contract = self._find_contract_by_id(conduit_id)
+        if contract is None:
+            return
+        with contract._lock:
+            contract._remove_index(conduit._conduit_ward, index_id)
+        try:
+            peer_conduit = contract._get_peer(conduit._conduit_ward)._conduit
+            peer_conduit._spellbook._remove_contracted_index(index_id)
+        except Exception as e:
+            self._logger.error(
+                f"remove_index_from_contract: borrower untrack failed: {e}",
+                method_name="_remove_index_from_contract",
+                exc_info=True,
+                owner_id=self._id,
+                owner_display=self._display_name,
+                mask=True,
+                groups=self._log_groups,
+                system_groups=self._log_sysgroups,
+            )
+
+    def _get_index_links(self, index_id: str) -> List[Conduit]:
+        """
+        Internal
+
+        Return the distinct peer conduits that hold an index-link for `index_id`
+        through any of this ward's contracts. The owner uses this to emit lineage
+        deltas to the receiving conduits when the index changes (notch/add/remove).
+
+        Args:
+            index_id: Stable id of the index whose linked peers are wanted.
+
+        Returns:
+            List[Conduit]: Distinct peer conduits linked to the index.
+        """
+        self.check_cleaned()
+        receivers: List[Conduit] = []
+        seen = set()
+        for contract in self._contracts.values():
+            if index_id in contract._index_details_a or index_id in contract._index_details_b:
+                peer = contract._get_peer(self)._conduit
+                if peer is not None and peer._id not in seen:
+                    receivers.append(peer)
+                    seen.add(peer._id)
+        return receivers
+
+    def _emit_index_notch(
+            self,
+            index: SpellIndex,
+            old_spell_id: Optional[str],
+            new_spell_id: str,
+    ) -> None:
+        """
+        Internal
+
+        Owner-side emission for a notch on an index-linked lineage. For every
+        index-link contract covering `index`, move the subscription head to
+        `new_spell_id` (`IndexDetail.update_selected`) and tell the receiving
+        spellbook to park the old version and activate the new one -- index-link
+        receivers follow the lineage. Version-anchored borrowers are handled
+        separately by the conduit's deactivate fan-out.
+
+        Per-receiver calls are idempotent (the borrower spellbook no-ops when it is
+        not holding the id), so a receiver that has not yet been given the new
+        version is simply skipped until it is contracted (the eager-contract slice).
+
+        Args:
+            index: The notched lineage.
+            old_spell_id: The outgoing active member id (parked on receivers).
+            new_spell_id: The new active member id (activated on receivers).
+        """
+        self.check_cleaned()
+        if self._conduit is None:
+            return
+        index_id = index.id
+        owner_conduit_id = self._conduit._id
+        for contract in self._contracts.values():
+            index_detail = (
+                contract._index_details_a.get(index_id)
+                or contract._index_details_b.get(index_id)
+            )
+            if index_detail is None:
+                continue
+            index_detail.update_selected(new_spell_id)
+            peer = contract._get_peer(self)._conduit
+            if peer is None or peer._spellbook is None:
+                continue
+            receiver_book = peer._spellbook
+            if old_spell_id is not None:
+                receiver_book._inactivate_contract_spell(owner_conduit_id, old_spell_id)
+            receiver_book._activate_contract_spell(owner_conduit_id, new_spell_id)
 
     def _get_spell_permissions(self, spell: Spell) -> Permissions:
         """
