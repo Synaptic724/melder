@@ -39,6 +39,8 @@ class ChangeTransactionType(StrEnum):
     MUTATION = "mutation"
     CLUSTER_LINK = "cluster_link"
     UNLINK = "unlink"
+    ADD_SPELL_TO_CONTRACT = "add_spell_to_contract"
+    REMOVE_SPELL_FROM_CONTRACT = "remove_spell_from_contract"
     NOTCH = "notch"
     ADD_TO_INDEX = "add_to_index"
     REMOVE_FROM_INDEX = "remove_from_index"

@@ -349,6 +349,7 @@ class TransferOfOwnership(Cleanable):
             # Minimal critical section: flip registry + spellbooks
             with SafeGuard(self.source_conduit._lock, self.target_conduit._lock):
                 self._flip_registry_and_spellbooks(spell_obj)
+                self._migrate_inactive_members(spell_obj)
 
             # Creations. unique_per_conduit_lineage instances are resolver-relative:
             # one per lineage root, stored in the RESOLVING conduit's creations
@@ -1412,22 +1413,26 @@ class TransferOfOwnership(Cleanable):
                 owner.
         """
         self.check_cleaned()
-        try:
-            creations = self.source_conduit._creations
-            tgt_creations = self.target_conduit._creations
-            extracted = creations.extract_spell_creations(spell_obj.spell_id)
-            if not extracted:
-                return
-            tgt_creations.restore_spell_creations(spell_obj.spell_id, extracted)
-            self._register_rollback(
-                partial(
-                    self._rollback_creations_move,
-                    spell_obj.spell_id,
-                    extracted,
+        creations = self.source_conduit._creations
+        tgt_creations = self.target_conduit._creations
+        # Migrate creations for every member of the lineage (active + inactive),
+        # best-effort and per-member: a member with no extractable creations is
+        # skipped. The whole index changes owners, so all members' creations follow.
+        for member_id in spell_obj.spell_index.spells_in_index():
+            try:
+                extracted = creations.extract_spell_creations(member_id)
+                if not extracted:
+                    continue
+                tgt_creations.restore_spell_creations(member_id, extracted)
+                self._register_rollback(
+                    partial(
+                        self._rollback_creations_move,
+                        member_id,
+                        extracted,
+                    )
                 )
-            )
-        except Exception:
-            pass
+            except Exception:
+                continue
 
     def _teardown_creations(self, spell_obj: Any) -> None:
         """
@@ -1456,6 +1461,81 @@ class TransferOfOwnership(Cleanable):
                     extracted,
                 )
             )
+        except Exception:
+            pass
+
+    def _migrate_inactive_members(self, spell_obj: Any) -> None:
+        """
+        Carry the lineage's INACTIVE members to the target spellbook.
+
+        Transfer of ownership moves an index (lineage). `_flip_registry_and_spellbooks`
+        moves only the active/selected member through the active maps; this helper
+        carries every other member that is parked in the source spellbook's
+        `_inactive_spells` so the whole index ends up owned by the target. Each parked
+        member is moved `src._inactive_spells -> tgt._inactive_spells` (plus the
+        `_spell_ids` existence set) and has its `_spellbook` / `_spell_system_states`
+        / `_owner_conduit_id` repointed to the target. The active map, `_spell_id_pool`,
+        and risk manager are intentionally untouched -- inactive members stay off
+        resolution. A single rollback handler reverses the whole batch on failure.
+
+        Args:
+            spell_obj: The active spell whose index is changing owners.
+        """
+        self.check_cleaned()
+        src_book = self._source_spellbook
+        tgt_book = self._target_spellbook
+        tgt_states = tgt_book._spell_system_states
+        spell_index = spell_obj.spell_index
+        selected_id = spell_index.selected_spell_id
+        target_conduit_id = self.target_conduit._id
+        moved: List[Any] = []
+        with SafeGuard(src_book._lock, tgt_book._lock):
+            for member_id in spell_index.spells_in_index():
+                if member_id == selected_id:
+                    continue
+                inactive_spell = src_book._inactive_spells.get(member_id)
+                if inactive_spell is None:
+                    continue
+                src_book._inactive_spells.pop(member_id, None)
+                src_book._spell_ids.discard(member_id)
+                tgt_book._inactive_spells[member_id] = inactive_spell
+                tgt_book._spell_ids.add(member_id)
+                inactive_spell._spellbook = tgt_book
+                inactive_spell._spell_system_states = tgt_states
+                inactive_spell._owner_conduit_id = target_conduit_id
+                moved.append((inactive_spell, member_id))
+        if moved:
+            self._register_rollback(
+                partial(self._rollback_inactive_members, moved, src_book, tgt_book)
+            )
+
+    def _rollback_inactive_members(
+            self,
+            moved: List[Any],
+            src_book: Any,
+            tgt_book: Any,
+    ) -> None:
+        """
+        Reverse a batch of inactive-member moves performed by
+        `_migrate_inactive_members` when a later transfer step fails.
+
+        Args:
+            moved: List of (inactive_spell, member_id) pairs that were moved.
+            src_book: The original (source) spellbook to move them back into.
+            tgt_book: The target spellbook to remove them from.
+        """
+        try:
+            src_states = src_book._spell_system_states
+            source_conduit_id = self.source_conduit._id
+            with SafeGuard(src_book._lock, tgt_book._lock):
+                for inactive_spell, member_id in moved:
+                    tgt_book._inactive_spells.pop(member_id, None)
+                    tgt_book._spell_ids.discard(member_id)
+                    src_book._inactive_spells[member_id] = inactive_spell
+                    src_book._spell_ids.add(member_id)
+                    inactive_spell._spellbook = src_book
+                    inactive_spell._spell_system_states = src_states
+                    inactive_spell._owner_conduit_id = source_conduit_id
         except Exception:
             pass
 

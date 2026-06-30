@@ -50,7 +50,6 @@ class AddToIndexTransactionStrategy(TransactionStrategy):
         """
         Build the change-control request inputs for one add-to-index transaction.
         """
-        del devops_information_registry
         spellbook_ids = cls._collect_ids(
             metadata, ("source_spellbook_id", "target_spellbook_id", "spellbook_id")
         )
@@ -59,6 +58,16 @@ class AddToIndexTransactionStrategy(TransactionStrategy):
         conduit_ids = cls._collect_ids(
             metadata, ("source_conduit_id", "target_conduit_id", "owner_conduit_id")
         )
+        # Extend the EXCLUSIVE seal to conduits linked to the source/target conduits
+        # -- their borrowers and providers -- so new links / binds / transfer on
+        # those peers are blocked for the op's duration too.
+        for acting_conduit_id in tuple(conduit_ids):
+            conduit_ids.update(
+                devops_information_registry.list_borrowers_for_provider(acting_conduit_id)
+            )
+            conduit_ids.update(
+                devops_information_registry.list_providers_for_borrower(acting_conduit_id)
+            )
         binding_key = cls._resolve_binding_key(metadata=metadata)
 
         scope_keys, scope_claims = cls._seal_scope_keys(

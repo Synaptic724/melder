@@ -1074,6 +1074,9 @@ class Conduit(Cleanable):
                 "cluster_link",
                 "mutation",
                 "transfer_ownership",
+                "notch",
+                "add_to_index",
+                "remove_from_index",
             )
         )
         self._transaction_identity.update_metadata(
@@ -3812,7 +3815,35 @@ class Conduit(Cleanable):
             )
         if self._spellbook is None:
             raise RuntimeError("[CONDUIT] No owning Spellbook for notch_spell.")
-        return self._spellbook.notch_spell(spell_index=spell_index, spell=spell, change_reason=change_reason)
+        mediator = self._get_required_transaction_mediator()
+        metadata: Dict[str, Any] = {
+            "origin_surface": "conduit.notch_spell",
+            "spellbook_id": self._spellbook._id,
+            "owner_conduit_id": self._id,
+            "spell_index_id": spell_index._id,
+            "spell_id": spell.spell_id,
+            "binding_key": spell._key,
+        }
+        # The index's current active member is the outgoing spell. The conduit
+        # admits the notch (it owns the change-control envelope); the owning
+        # spellbook performs the local switch inside the held window; then this
+        # conduit -- the only thing that knows about links -- walks its peers so
+        # each borrower's spellbook parks its now-stale borrowed copy.
+        outgoing_id = spell_index.selected_spell_id
+        mediator.start_transaction(
+            identity=self._transaction_identity,
+            transaction_type=ChangeTransactionType.NOTCH,
+            metadata=metadata,
+        )
+        try:
+            result = self._spellbook._notch_spell(spell_index=spell_index, spell=spell, change_reason=change_reason)
+        except Exception:
+            mediator.end_transaction(expected_type="notch", success=False)
+            raise
+        mediator.end_transaction(expected_type="notch", success=True)
+        if outgoing_id is not None and outgoing_id != spell.spell_id:
+            self._deactivate_borrowed_spell(outgoing_id)
+        return result
 
     def add_to_spell_index(self, *, spell: Any, target_index: Any) -> Any:
         """
@@ -3843,7 +3874,31 @@ class Conduit(Cleanable):
             )
         if self._spellbook is None:
             raise RuntimeError("[CONDUIT] No owning Spellbook for add_to_spell_index.")
-        return self._spellbook.add_to_spell_index(spell=spell, target_index=target_index)
+        mediator = self._get_required_transaction_mediator()
+        metadata: Dict[str, Any] = {
+            "origin_surface": "conduit.add_to_spell_index",
+            "spellbook_id": self._spellbook._id,
+            "source_spellbook_id": self._spellbook._id,
+            "target_spellbook_id": self._spellbook._id,
+            "owner_conduit_id": self._id,
+            "source_conduit_id": self._id,
+            "target_conduit_id": self._id,
+            "spell_id": spell.spell_id,
+            "spell_index_id": target_index._id,
+            "binding_key": spell._key,
+        }
+        mediator.start_transaction(
+            identity=self._transaction_identity,
+            transaction_type=ChangeTransactionType.ADD_TO_INDEX,
+            metadata=metadata,
+        )
+        try:
+            result = self._spellbook._add_to_spell_index(spell=spell, target_index=target_index)
+        except Exception:
+            mediator.end_transaction(expected_type="add_to_index", success=False)
+            raise
+        mediator.end_transaction(expected_type="add_to_index", success=True)
+        return result
 
     def remove_from_spell_index(self, *, spell: Any, source_index: Any) -> Any:
         """
@@ -3874,7 +3929,29 @@ class Conduit(Cleanable):
             )
         if self._spellbook is None:
             raise RuntimeError("[CONDUIT] No owning Spellbook for remove_from_spell_index.")
-        return self._spellbook.remove_from_spell_index(spell=spell, source_index=source_index)
+        mediator = self._get_required_transaction_mediator()
+        metadata: Dict[str, Any] = {
+            "origin_surface": "conduit.remove_from_spell_index",
+            "spellbook_id": self._spellbook._id,
+            "source_spellbook_id": self._spellbook._id,
+            "owner_conduit_id": self._id,
+            "source_conduit_id": self._id,
+            "spell_id": spell.spell_id,
+            "spell_index_id": source_index._id,
+            "binding_key": spell._key,
+        }
+        mediator.start_transaction(
+            identity=self._transaction_identity,
+            transaction_type=ChangeTransactionType.REMOVE_FROM_INDEX,
+            metadata=metadata,
+        )
+        try:
+            result = self._spellbook._remove_from_spell_index(spell=spell, source_index=source_index)
+        except Exception:
+            mediator.end_transaction(expected_type="remove_from_index", success=False)
+            raise
+        mediator.end_transaction(expected_type="remove_from_index", success=True)
+        return result
 
     def cleanup_spell(self, *, spell: Any) -> None:
         """
@@ -3895,6 +3972,37 @@ class Conduit(Cleanable):
         if self._spellbook is None:
             raise RuntimeError("[CONDUIT] No owning Spellbook for cleanup_spell.")
         self._spellbook.cleanup_spell(spell=spell)
+
+    def _deactivate_borrowed_spell(self, spell_id: str) -> None:
+        """
+        Internal
+
+        Owner-side borrower fan-out: walk this conduit's active links and park every
+        peer's contracted copy of `spell_id`. When this conduit notches an index, the
+        outgoing spell's borrowed copies must go inactive in each linked peer.
+
+        Link knowledge lives here, not in the spellbook: this conduit finds the peers
+        through its ward (`_get_links()`) and tells each peer's spellbook to manage its
+        own contracted maps via `_inactivate_contract_spell`. The per-peer call is
+        idempotent (the spellbook no-ops when it is not holding the spell), so a peer
+        that never borrowed `spell_id` is simply skipped.
+
+        Args:
+            spell_id (str): Version id of the spell whose borrowed copies to park.
+
+        Returns:
+            None.
+        """
+        self.check_cleaned()
+        ward = self._conduit_ward
+        if ward is None:
+            return
+        owner_id = self._id
+        for peer in ward._get_links():
+            peer_spellbook = peer._spellbook
+            if peer_spellbook is None:
+                continue
+            peer_spellbook._inactivate_contract_spell(owner_id, spell_id)
 
     def sever_link(self, target_conduit: "Conduit") -> bool:
         """

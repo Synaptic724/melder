@@ -50,7 +50,6 @@ class NotchTransactionStrategy(TransactionStrategy):
         """
         Build the change-control request inputs for one notch transaction.
         """
-        del devops_information_registry
         spellbook_id = metadata.get("spellbook_id")
         if not isinstance(spellbook_id, str) or not spellbook_id:
             spellbook_id = identity.owner_id
@@ -58,6 +57,17 @@ class NotchTransactionStrategy(TransactionStrategy):
         owner_conduit_id = metadata.get("owner_conduit_id")
         if isinstance(owner_conduit_id, str) and owner_conduit_id:
             conduit_ids.add(owner_conduit_id)
+        # Extend the EXCLUSIVE seal to conduits linked to the acting conduit --
+        # its borrowers and providers -- so new links / binds / transfer on those
+        # peers are blocked for the op's duration too (the notch changes what they
+        # resolve through their contracts).
+        for acting_conduit_id in tuple(conduit_ids):
+            conduit_ids.update(
+                devops_information_registry.list_borrowers_for_provider(acting_conduit_id)
+            )
+            conduit_ids.update(
+                devops_information_registry.list_providers_for_borrower(acting_conduit_id)
+            )
         binding_key = cls._resolve_binding_key(metadata=metadata)
 
         scope_keys, scope_claims = cls._seal_scope_keys(

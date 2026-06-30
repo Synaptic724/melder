@@ -1547,6 +1547,62 @@ and logging.
             self._contracted_spells_by_id[conduit_id][spell_id] = spell
             self._spell_id_pool[spell_id] = spell
 
+    def _inactivate_contract_spell(self, conduit_id: str, spell_id: str) -> None:
+        """
+        Internal
+
+        Park THIS spellbook's active borrowed copy of `spell_id` for one peer
+        conduit, if it is currently active. Idempotent: a no-op when the spell is
+        not an active contracted spell for `conduit_id` (already inactive, or never
+        borrowed). Resolves the local contracted copy by id and delegates the map
+        work to `_deactivate_contracted_spell`.
+
+        This method manages only this spellbook's own contracted maps; it has no
+        knowledge of links or conduits beyond the `conduit_id` key. The owning
+        Conduit walks the links and calls this on each borrower's spellbook.
+
+        Args:
+            conduit_id (str): Peer (owner) conduit id keying the contracted bucket.
+            spell_id (str): Version id of the borrowed spell to deactivate.
+
+        Returns:
+            None.
+        """
+        self.check_cleaned()
+        with self._lock:
+            active_by_id = self._contracted_spells_by_id.get(conduit_id)
+            spell = active_by_id.get(spell_id) if active_by_id is not None else None
+        if spell is None:
+            return
+        self._deactivate_contracted_spell(conduit_id, spell)
+
+    def _activate_contract_spell(self, conduit_id: str, spell_id: str) -> None:
+        """
+        Internal
+
+        Restore THIS spellbook's parked borrowed copy of `spell_id` for one peer
+        conduit, if it is currently parked. Idempotent: a no-op when the spell is
+        not parked for `conduit_id`. Resolves the local parked copy by id and
+        delegates the map work to `_reactivate_contracted_spell`.
+
+        This method manages only this spellbook's own contracted maps; it has no
+        knowledge of links or conduits beyond the `conduit_id` key.
+
+        Args:
+            conduit_id (str): Peer (owner) conduit id keying the contracted bucket.
+            spell_id (str): Version id of the borrowed spell to reactivate.
+
+        Returns:
+            None.
+        """
+        self.check_cleaned()
+        with self._lock:
+            parked = self._inactive_contracted_spells.get(conduit_id)
+            spell = parked.get(spell_id) if parked is not None else None
+        if spell is None:
+            return
+        self._reactivate_contracted_spell(conduit_id, spell)
+
     #region Logging
 
     def _initialize_logging(self, logger: Any | None) -> None:
@@ -2526,6 +2582,49 @@ and logging.
         if self._conjured and self._conduit is not None:
             self._register_spell_with_risk_manager(self._conduit._id, spell)
 
+    def _add_inactive_contracted_spell(self, spell: Spell, conduit_id: str) -> None:
+        """
+        Internal
+
+        Add an INACTIVE spell (borrowed from a peer) to the contracted-spell state,
+        parked exactly like a deactivated contracted spell. Only the inactive map
+        and the per-conduit existence set are populated -- NOT the active
+        `_contracted_spells` / `_lookup_contracted_spells` / `_contracted_spells_by_id`
+        maps and NOT the shared `_spell_id_pool`. The borrowed copy therefore stays
+        off resolution (unmeldable) until the owner notches the lineage and the
+        owning Conduit drives `_activate_contract_spell` on this spellbook.
+
+        This is the inactive counterpart of `_add_contracted_spell`. The linking
+        framework chooses between them based on the owner spell's active state, so a
+        parked owner spell produces a parked borrowed copy -- not a resolvable one
+        keyed under the wrong (selected) version id.
+
+        Args:
+            spell (Spell): The inactive spell object to park as a borrowed copy.
+            conduit_id (str): The id of the peer conduit the spell was contracted from.
+        """
+        self.check_cleaned()
+        with self._lock:
+            if conduit_id not in self._contracted_spells:
+                self._create_link_contract(conduit_id)
+            spell_id = spell.spell_id
+            spell_index = spell.spell_index
+            # Park the borrowed copy (mirror of _deactivate_contracted_spell's resting
+            # state): inactive map only, create the per-conduit bucket on demand since
+            # _create_link_contract does not make the inactive one.
+            parked = self._inactive_contracted_spells.get(conduit_id)
+            if parked is None:
+                parked = {}
+                self._inactive_contracted_spells[conduit_id] = parked
+            parked[spell_id] = spell
+            # Existence: track every member id of the lineage, matching the active
+            # path, so the borrower knows all versions exist.
+            conduit_spell_ids = self._contracted_spell_ids[conduit_id]
+            member_ids = spell_index._spells_in_index
+            if member_ids:
+                for member_id in member_ids:
+                    conduit_spell_ids.add(member_id)
+        self._try_update_staged_contract_keys(conduit_id)
 
     def _remove_contracted_spell(self, spell_id: str, conduit_id: str) -> None:
         """
@@ -2750,7 +2849,7 @@ and logging.
     #endregion Contract API
     #region Binding API
 
-    def notch_spell(
+    def _notch_spell(
             self,
             *,
             spell_index: SpellIndex,
@@ -2758,7 +2857,7 @@ and logging.
             change_reason: SpellStateChangeReason = SpellStateChangeReason.selected_different_spell,
     ) -> Spell:
         """
-        Public API
+        Internal -- called by the owning Conduit (Conduit.notch_spell is the public surface).
 
         Notch a SpellIndex so `spell` becomes its selected (resolvable) spell,
         admitted as a `notch` change-control transaction through the mediator.
@@ -2786,27 +2885,10 @@ and logging.
             RuntimeError: If the Spellbook is cleaned.
         """
         self.check_cleaned()
-        mediator = self._get_required_transaction_mediator()
-        metadata: Dict[str, Any] = {
-            "origin_surface": "spellbook.notch_spell",
-            "spellbook_id": self._id,
-            "owner_conduit_id": self._conduit._id if self._conduit is not None else None,
-            "spell_index_id": spell_index._id,
-            "spell_id": spell.spell_id,
-            "binding_key": spell._key,
-        }
-        mediator.start_transaction(
-            identity=self._transaction_identity,
-            transaction_type=ChangeTransactionType.NOTCH,
-            metadata=metadata,
-        )
-        try:
-            result = self._apply_notch(spell_index=spell_index, spell=spell, change_reason=change_reason)
-        except Exception:
-            mediator.end_transaction(expected_type="notch", success=False)
-            raise
-        mediator.end_transaction(expected_type="notch", success=True)
-        return result
+        # The owning Conduit admits the `notch` transaction (it owns the
+        # change-control envelope and the conduit-link surface); this seam performs
+        # the local selected-spell switch inside that held window.
+        return self._apply_notch(spell_index=spell_index, spell=spell, change_reason=change_reason)
 
     def _apply_notch(
             self,
@@ -2883,9 +2965,9 @@ and logging.
         spell.invalidate_spell(change_reason=change_reason)
         return spell
 
-    def add_to_spell_index(self, *, spell: Spell, target_index: SpellIndex) -> Spell:
+    def _add_to_spell_index(self, *, spell: Spell, target_index: SpellIndex) -> Spell:
         """
-        Public API
+        Internal -- called by the owning Conduit (Conduit.add_to_spell_index is the public surface).
 
         Move an owned spell onto `target_index`, admitted as an `add_to_index`
         change-control transaction through the mediator.
@@ -2912,32 +2994,9 @@ and logging.
                 here, or the spell is active.
         """
         self.check_cleaned()
-        mediator = self._get_required_transaction_mediator()
-        conduit_id = self._conduit._id if self._conduit is not None else None
-        metadata: Dict[str, Any] = {
-            "origin_surface": "spellbook.add_to_spell_index",
-            "spellbook_id": self._id,
-            "source_spellbook_id": self._id,
-            "target_spellbook_id": self._id,
-            "owner_conduit_id": conduit_id,
-            "source_conduit_id": conduit_id,
-            "target_conduit_id": conduit_id,
-            "spell_id": spell.spell_id,
-            "spell_index_id": target_index._id,
-            "binding_key": spell._key,
-        }
-        mediator.start_transaction(
-            identity=self._transaction_identity,
-            transaction_type=ChangeTransactionType.ADD_TO_INDEX,
-            metadata=metadata,
-        )
-        try:
-            result = self._apply_add_to_index(spell=spell, target_index=target_index)
-        except Exception:
-            mediator.end_transaction(expected_type="add_to_index", success=False)
-            raise
-        mediator.end_transaction(expected_type="add_to_index", success=True)
-        return result
+        # The owning Conduit admits the `add_to_index` transaction; this seam
+        # performs the move-onto-target inside that held window.
+        return self._apply_add_to_index(spell=spell, target_index=target_index)
 
     def _apply_add_to_index(self, *, spell: Spell, target_index: SpellIndex) -> Spell:
         """
@@ -3063,9 +3122,9 @@ and logging.
         self._spell_system_states.unregister_index(spell_index)
         spell_index.cleanup()
 
-    def remove_from_spell_index(self, *, spell: Spell, source_index: SpellIndex) -> Spell:
+    def _remove_from_spell_index(self, *, spell: Spell, source_index: SpellIndex) -> Spell:
         """
-        Public API
+        Internal -- called by the owning Conduit (Conduit.remove_from_spell_index is the public surface).
 
         Separate an owned inactive spell out of `source_index` into its own fresh
         index, admitted as a `remove_from_index` change-control transaction.
@@ -3091,30 +3150,9 @@ and logging.
                 here, the spell is active, or it is not a member of `source_index`.
         """
         self.check_cleaned()
-        mediator = self._get_required_transaction_mediator()
-        conduit_id = self._conduit._id if self._conduit is not None else None
-        metadata: Dict[str, Any] = {
-            "origin_surface": "spellbook.remove_from_spell_index",
-            "spellbook_id": self._id,
-            "source_spellbook_id": self._id,
-            "owner_conduit_id": conduit_id,
-            "source_conduit_id": conduit_id,
-            "spell_id": spell.spell_id,
-            "spell_index_id": source_index._id,
-            "binding_key": spell._key,
-        }
-        mediator.start_transaction(
-            identity=self._transaction_identity,
-            transaction_type=ChangeTransactionType.REMOVE_FROM_INDEX,
-            metadata=metadata,
-        )
-        try:
-            result = self._apply_remove_from_index(spell=spell, source_index=source_index)
-        except Exception:
-            mediator.end_transaction(expected_type="remove_from_index", success=False)
-            raise
-        mediator.end_transaction(expected_type="remove_from_index", success=True)
-        return result
+        # The owning Conduit admits the `remove_from_index` transaction; this seam
+        # performs the split-into-fresh-index inside that held window.
+        return self._apply_remove_from_index(spell=spell, source_index=source_index)
 
     def _apply_remove_from_index(self, *, spell: Spell, source_index: SpellIndex) -> Spell:
         """

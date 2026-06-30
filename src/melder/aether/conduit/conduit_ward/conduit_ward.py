@@ -1703,7 +1703,12 @@ class ConduitWard(Cleanable):
         if added_new_detail:
             try:
                 peer_conduit = contract._get_peer(conduit._conduit_ward)._conduit
-                peer_conduit._spellbook._add_contracted_spell(spell, conduit_id)
+                # An active owner spell becomes a live borrowed copy; an inactive one
+                # is parked on the borrower (off resolution) until the owner notches it.
+                if spell._active:
+                    peer_conduit._spellbook._add_contracted_spell(spell, conduit_id)
+                else:
+                    peer_conduit._spellbook._add_inactive_contracted_spell(spell, conduit_id)
             except Exception as e:
                 try:
                     with contract._lock:
