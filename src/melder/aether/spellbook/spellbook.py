@@ -132,6 +132,7 @@ and logging.
         "_contracted_spells",
         "_contracted_spells_by_id",
         "_contracted_spell_ids",
+        "_contracted_indexes",
         "_id",
         "_lock",
         "_logger",
@@ -272,6 +273,7 @@ and logging.
         self._contracted_spells_by_id: Dict[str, Dict[str, Spell]] = {}         # ACTIVE: conduit -> {spell_id -> active borrowed spell}
         self._contracted_spell_ids: Dict[str, Set[str]] = {}                    # ALL borrowed ids per conduit (existence; contracted twin of _spell_ids)
         self._inactive_contracted_spells: Dict[str, Dict[str, Spell]] = {}  # INACTIVE borrowed: conduit_id -> {spell_id -> parked borrowed spell}
+        self._contracted_indexes: Dict[str, SpellIndex] = {}  # CONTRACTED INDEXES: index_id -> the contracted SpellIndex (concrete target; ward owns the per-peer relationship)
 
         # Spell States System
         self._spell_system_states: SpellSystemStates = Spellbook._aether._get_spell_system_states(aetheric_frame)
@@ -447,6 +449,12 @@ and logging.
         except Exception as e:
             self._logger.error(f"Error cleaning _contracted_spell_ids: {e}", "_cleanup_components", exc_info=True)
         del self._contracted_spell_ids
+
+        try:
+            self._contracted_indexes.clear()
+        except Exception as e:
+            self._logger.error(f"Error cleaning _contracted_indexes: {e}", "_cleanup_components", exc_info=True)
+        del self._contracted_indexes
 
     def _cleanup_spells(self) -> None:
         """
@@ -2625,6 +2633,36 @@ and logging.
                 for member_id in member_ids:
                     conduit_spell_ids.add(member_id)
         self._try_update_staged_contract_keys(conduit_id)
+
+    def _add_contracted_index(self, index: SpellIndex) -> None:
+        """
+        Internal
+
+        Track a contracted SpellIndex by its stable id. This spellbook owns the
+        concrete index object the borrower follows (`index_id -> SpellIndex`); the
+        ConduitWard owns the per-peer contract relationship and the version deltas.
+        Idempotent -- re-adding the same index just refreshes the mapping.
+
+        Args:
+            index (SpellIndex): The contracted index to track.
+        """
+        self.check_cleaned()
+        with self._lock:
+            self._contracted_indexes[index.id] = index
+
+    def _remove_contracted_index(self, index_id: str) -> None:
+        """
+        Internal
+
+        Stop tracking a contracted SpellIndex by id. Idempotent -- a no-op when the
+        id is not tracked.
+
+        Args:
+            index_id (str): Stable id of the contracted index to drop.
+        """
+        self.check_cleaned()
+        with self._lock:
+            self._contracted_indexes.pop(index_id, None)
 
     def _remove_contracted_spell(self, spell_id: str, conduit_id: str) -> None:
         """

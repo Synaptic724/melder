@@ -1077,6 +1077,7 @@ class Conduit(Cleanable):
                 "notch",
                 "add_to_index",
                 "remove_from_index",
+                "add_spell_or_index_to_contract",
             )
         )
         self._transaction_identity.update_metadata(
@@ -4539,35 +4540,65 @@ class Conduit(Cleanable):
             RuntimeError: If no active link transaction is present for this contract mutation.
         """
         self._qualify_contracts()
-        self._require_link_transaction_for_contract(
-            conduit=conduit,
-            conduit_id=conduit_id,
-            allow_all_links=False,
-        )
+        mediator = self._get_required_transaction_mediator()
+        reuse_active_transaction = mediator.get_active_request() is not None
+        if reuse_active_transaction:
+            # Inside an existing link/cluster/transfer window: validate it seals the
+            # contract surface (both conduits), then run the add inside that window.
+            self._require_link_transaction_for_contract(
+                conduit=conduit,
+                conduit_id=conduit_id,
+                allow_all_links=False,
+            )
+        else:
+            # Standalone: self-admit a dedicated add_spell_to_contract transaction
+            # that seals the borrower + provider conduits (and their wards).
+            peer_conduit = self._resolve_peer_conduit_for_contract_hooks(
+                conduit, conduit_id, aetheric_frame,
+            )
+            mediator.start_transaction(
+                identity=self._transaction_identity,
+                transaction_type=ChangeTransactionType.ADD_SPELL_OR_INDEX_TO_CONTRACT,
+                metadata={
+                    "origin_surface": "conduit.add_spell_to_contract",
+                    "spellbook_id": self._spellbook._id if self._spellbook is not None else None,
+                    "owner_conduit_id": self._id,
+                    "peer_conduit_id": peer_conduit._id if peer_conduit is not None else conduit_id,
+                    "spell_id": spell.spell_id if spell is not None else spell_id,
+                    "binding_key": spell._key if spell is not None else None,
+                },
+            )
 
-        result = self._conduit_ward._add_spell_to_contract(
-            spell=spell,
-            spell_id=spell_id,
-            conduit=conduit,
-            conduit_id=conduit_id,
-            permissions=permissions,
-            aetheric_frame=aetheric_frame,
-            reason=reason,
-            root_spell_id=root_spell_id,
-            link_dependencies=link_dependencies,
-        )
+        try:
+            result = self._conduit_ward._add_spell_to_contract(
+                spell=spell,
+                spell_id=spell_id,
+                conduit=conduit,
+                conduit_id=conduit_id,
+                permissions=permissions,
+                aetheric_frame=aetheric_frame,
+                reason=reason,
+                root_spell_id=root_spell_id,
+                link_dependencies=link_dependencies,
+            )
 
-        if result and (
-            (self._local_conduit_hooks and self._local_conduit_hooks.get("on_contract_created"))
-            or (self._conduit_hooks and self._conduit_hooks.get("on_contract_created"))
-        ):
-            peer = self._resolve_peer_conduit_for_contract_hooks(conduit, conduit_id, aetheric_frame)
-            if peer is not None:
-                self._fire_conduit_hooks(
-                    "on_contract_created",
-                    self,
-                    peer,
-                )
+            if result and (
+                (self._local_conduit_hooks and self._local_conduit_hooks.get("on_contract_created"))
+                or (self._conduit_hooks and self._conduit_hooks.get("on_contract_created"))
+            ):
+                peer = self._resolve_peer_conduit_for_contract_hooks(conduit, conduit_id, aetheric_frame)
+                if peer is not None:
+                    self._fire_conduit_hooks(
+                        "on_contract_created",
+                        self,
+                        peer,
+                    )
+        except Exception:
+            if not reuse_active_transaction:
+                mediator.end_transaction(expected_type="add_spell_or_index_to_contract", success=False)
+            raise
+        if not reuse_active_transaction:
+            mediator.end_transaction(expected_type="add_spell_or_index_to_contract", success=True)
 
         return result
 
