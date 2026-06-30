@@ -3844,6 +3844,9 @@ class Conduit(Cleanable):
         mediator.end_transaction(expected_type="notch", success=True)
         if outgoing_id is not None and outgoing_id != spell.spell_id:
             self._deactivate_borrowed_spell(outgoing_id)
+            # Index-link receivers follow the lineage: move their subscription head
+            # to the new active member (park old, activate new) via the ward.
+            self._conduit_ward._emit_index_notch(spell_index, outgoing_id, spell.spell_id)
         return result
 
     def add_to_spell_index(self, *, spell: Any, target_index: Any) -> Any:
@@ -3972,7 +3975,16 @@ class Conduit(Cleanable):
         self.check_cleaned()
         if self._spellbook is None:
             raise RuntimeError("[CONDUIT] No owning Spellbook for cleanup_spell.")
+        # Capture the lineage id and whether disposal will destroy the index (the
+        # spell is the sole member) BEFORE the spell is torn down.
+        index = spell.spell_index
+        index_id = index.id
+        will_destroy = index.is_sole_member(spell.spell_id)
         self._spellbook.cleanup_spell(spell=spell)
+        # A destroyed index-linked lineage must be dropped on its receivers so they
+        # do not keep a subscription to a dead index.
+        if will_destroy:
+            self._conduit_ward._emit_index_destroy(index_id)
 
     def _deactivate_borrowed_spell(self, spell_id: str) -> None:
         """

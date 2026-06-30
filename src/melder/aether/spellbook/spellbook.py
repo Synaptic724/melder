@@ -1611,6 +1611,41 @@ and logging.
             return
         self._reactivate_contracted_spell(conduit_id, spell)
 
+    def _ensure_contracted_active(self, spell: Spell, conduit_id: str) -> None:
+        """
+        Internal
+
+        Ensure `spell` is the ACTIVE contracted (borrowed) spell for `conduit_id`,
+        contracting it eagerly if this spellbook does not hold it yet. This is the
+        eager "follow" used when an owner notches an index-linked lineage to a
+        version this borrower has not seen:
+            - already active for this conduit -> no-op.
+            - parked inactive for this conduit -> reactivate it.
+            - not held at all -> add it as a fresh active contracted copy.
+
+        Idempotent and link-agnostic (takes only a Spell + conduit_id).
+
+        Args:
+            spell (Spell): The owner's spell object (the new active member) to make
+                this spellbook's active borrowed copy.
+            conduit_id (str): Peer (owner) conduit id keying the contracted bucket.
+
+        Returns:
+            None.
+        """
+        self.check_cleaned()
+        spell_id = spell.spell_id
+        with self._lock:
+            active_by_id = self._contracted_spells_by_id.get(conduit_id)
+            if active_by_id is not None and spell_id in active_by_id:
+                return
+            parked = self._inactive_contracted_spells.get(conduit_id)
+            is_parked = parked is not None and spell_id in parked
+        if is_parked:
+            self._reactivate_contracted_spell(conduit_id, spell)
+        else:
+            self._add_contracted_spell(spell, conduit_id)
+
     #region Logging
 
     def _initialize_logging(self, logger: Any | None) -> None:

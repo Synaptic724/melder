@@ -2007,8 +2007,6 @@ class ConduitWard(Cleanable):
             new_spell_id: The new active member id (activated on receivers).
         """
         self.check_cleaned()
-        if self._conduit is None:
-            return
         index_id = index.id
         owner_conduit_id = self._conduit._id
         for contract in self._contracts.values():
@@ -2025,7 +2023,36 @@ class ConduitWard(Cleanable):
             receiver_book = peer._spellbook
             if old_spell_id is not None:
                 receiver_book._inactivate_contract_spell(owner_conduit_id, old_spell_id)
-            receiver_book._activate_contract_spell(owner_conduit_id, new_spell_id)
+            # Eager follow: ensure the receiver holds the new active member, minting
+            # the contracted copy if it has never seen this version.
+            new_spell = self._conduit._spellbook.spells.get(index)
+            if new_spell is not None:
+                receiver_book._ensure_contracted_active(new_spell, owner_conduit_id)
+
+    def _emit_index_destroy(self, index_id: str) -> None:
+        """
+        Internal
+
+        Owner-side emission when an index-linked lineage is destroyed: for every
+        index-link contract covering `index_id`, untrack the index on the receiving
+        spellbook (`_remove_contracted_index`) and drop (and clean) the contract's
+        IndexDetail, so no receiver keeps a subscription to a dead lineage.
+
+        Args:
+            index_id: Stable id of the destroyed index.
+        """
+        self.check_cleaned()
+        for contract in self._contracts.values():
+            detail_map = contract._get_index_detail_map(self)
+            index_detail = detail_map.get(index_id)
+            if index_detail is None:
+                continue
+            peer = contract._get_peer(self)._conduit
+            if peer is not None and peer._spellbook is not None:
+                peer._spellbook._remove_contracted_index(index_id)
+            with contract._lock:
+                contract._remove_index(self, index_id)
+            index_detail.cleanup()
 
     def _get_spell_permissions(self, spell: Spell) -> Permissions:
         """
