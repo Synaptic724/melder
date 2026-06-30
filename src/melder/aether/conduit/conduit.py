@@ -3793,6 +3793,14 @@ class Conduit(Cleanable):
             RuntimeError: If the Conduit is cleaned or has no owning Spellbook.
         """
         self.check_cleaned()
+        if not self.__dynamic_environment__:
+            self._logger.error(
+                "notch_spell called in non-dynamic env",
+                "notch_spell",
+            )
+            raise RuntimeError(
+                "Dynamic environment is not enabled. SpellIndex notch requires dynamic mode."
+            )
         if self._spellbook is None:
             raise RuntimeError("[CONDUIT] No owning Spellbook for notch_spell.")
         return self._spellbook.notch_spell(spell_index=spell_index, spell=spell)
@@ -3816,6 +3824,14 @@ class Conduit(Cleanable):
             RuntimeError: If the Conduit is cleaned or has no owning Spellbook.
         """
         self.check_cleaned()
+        if not self.__dynamic_environment__:
+            self._logger.error(
+                "add_to_spell_index called in non-dynamic env",
+                "add_to_spell_index",
+            )
+            raise RuntimeError(
+                "Dynamic environment is not enabled. add_to_spell_index requires dynamic mode."
+            )
         if self._spellbook is None:
             raise RuntimeError("[CONDUIT] No owning Spellbook for add_to_spell_index.")
         return self._spellbook.add_to_spell_index(spell=spell, target_index=target_index)
@@ -3839,6 +3855,14 @@ class Conduit(Cleanable):
             RuntimeError: If the Conduit is cleaned or has no owning Spellbook.
         """
         self.check_cleaned()
+        if not self.__dynamic_environment__:
+            self._logger.error(
+                "remove_from_spell_index called in non-dynamic env",
+                "remove_from_spell_index",
+            )
+            raise RuntimeError(
+                "Dynamic environment is not enabled. remove_from_spell_index requires dynamic mode."
+            )
         if self._spellbook is None:
             raise RuntimeError("[CONDUIT] No owning Spellbook for remove_from_spell_index.")
         return self._spellbook.remove_from_spell_index(spell=spell, source_index=source_index)

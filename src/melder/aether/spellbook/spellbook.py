@@ -3160,10 +3160,12 @@ and logging.
         """
         Public API
 
-        Fully dispose an owned spell: take it off every resolution surface,
-        destroy its index if the spell was that index's only member, and tear
-        down the spell object. This is the disposal path
-        `remove_from_spell_index` points at for a sole-member index.
+        Fully dispose an owned spell. Invalidate it FIRST so the spell and its
+        lineage are flagged dirty (and dependents are rechecked) while the index
+        and dependency edges still exist, then take it off every resolution
+        surface, destroying its index when the spell was that index's only member.
+        This is the disposal path `remove_from_spell_index` points at for a
+        sole-member index.
 
         Contract:
             - Only a spell owned by THIS Spellbook may be disposed.
@@ -3171,15 +3173,17 @@ and logging.
               directly (it would leave the index headless); notch away from it
               first. The sole member of an index may always be disposed -- the
               index is destroyed with it.
-            - The spell's id-keyed state is fully removed (active: `_spells` /
-              `_lookup_spells` / id pools / `_spell_ids` / Nexus / signature /
-              risk; inactive: `_inactive_spells` / `_spell_ids`). For an ACTIVE
-              spell the `_active` switch is flipped off and `spell.invalidate_spell()`
-              is called (clears the creation context + marks the lineage dirty for
-              dependent revalidation). Then the index is destroyed when empty and the
-              spell object cleaned up last. NOTE: disposal of the conduit
-              Creations STORE instances is still pending the right primitive
-              (extract is for moving, not disposing).
+            - Invalidation happens FIRST (`spell.invalidate_spell()`): the creation
+              context is cleared and the lineage is marked structurally changed so
+              dependents are rechecked, while the index and dependency edges still
+              exist. Teardown only runs afterwards.
+            - An ACTIVE spell is then disposed through `cleanup_and_remove_spell`,
+              the authoritative path that unregisters the index from
+              `SpellSystemStates` (fanning the dependent closure via
+              `compute_impact_closure`), removes every id/lookup map, and cleans the
+              spell and the index. An INACTIVE member is dropped from its index
+              directly; the shared index survives unless this empties it.
+            - Conduit Creations persist in this model and are left alone here.
             - NOTE: not yet sealed by a mediator transaction (no cleanup strategy
               exists); the map mutations run under the Spellbook lock.
 
@@ -3217,31 +3221,34 @@ and logging.
                     f"cleanup_spell: spell {spell_id} is the active member of a multi-member "
                     f"index; notch away from it before disposing it."
                 )
-            if is_active:
-                self._spells.pop(index, None)
-                self._lookup_spells.pop(binding_key, None)
-                self._unregister_owned_spell_id(spell_id, spell)
-            else:
+        # 1) INVALIDATE FIRST: flag the spell + its lineage dirty (clear the creation
+        #    context, force a next-meld rebuild) while the index and dependency edges
+        #    still exist, so dependents can be rechecked. Teardown comes after.
+        spell.invalidate_spell()
+        # 2) THEN CLEAN UP.
+        if is_active:
+            # Authoritative disposal: unregisters the index (its compute_impact_closure
+            # fans the dependent closure), removes every id/lookup map, and cleans the
+            # spell and the index. Self-guards re-entry via _spellbook_cleanup.
+            self.cleanup_and_remove_spell(spell)
+        else:
+            # Inactive member: drop just this member; the shared index and its other
+            # members survive unless this empties it.
+            with self._lock:
                 self._inactive_spells.pop(spell_id, None)
                 self._spell_ids.discard(spell_id)
-            index.remove_member(spell_id)
-            index_emptied = not index.spells_in_index()
-        if is_active:
-            self._aetheric_frame.release_lookup(binding_key)
-            spell._active = False
-            # Spell-owned invalidation: clears the creation context and marks the
-            # lineage structurally changed so dependents revalidate. The index
-            # destroy below (unregister_index) also fans the dependent closure.
-            spell.invalidate_spell()
-            if owner_conduit_id is not None:
-                self._unregister_spell_with_risk_manager(owner_conduit_id, spell)
-        if index_emptied:
-            self._destroy_spell_index(
-                index,
-                binding_key=binding_key,
-                owner_conduit_id=owner_conduit_id,
-            )
-        spell.cleanup()
+                index.remove_member(spell_id)
+                index_emptied = not index.spells_in_index()
+            if index_emptied:
+                self._destroy_spell_index(
+                    index,
+                    binding_key=binding_key,
+                    owner_conduit_id=owner_conduit_id,
+                )
+            # Local teardown only (already off the maps); set the guard so
+            # Spell.cleanup() does not re-enter cleanup_and_remove_spell.
+            spell._spellbook_cleanup = True
+            spell.cleanup()
 
     def begin_transaction(
             self,
@@ -3966,6 +3973,8 @@ and logging.
                 in _spell_ids) instead of activating it. The spell is inert and
                 unmeldable until notch_spell promotes it. Defaults to False
                 (normal active bind).
+            disposal_method_names (Optional[Sequence[str]]):
+                Optional disposal method names to associate with the spell.
             **kwargs:
                 Optional lifecycle hooks:
                 - pre_hooks
