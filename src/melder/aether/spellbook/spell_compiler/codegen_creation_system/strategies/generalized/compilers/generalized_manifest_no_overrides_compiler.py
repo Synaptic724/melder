@@ -863,3 +863,382 @@ def resolve_root_instance_key_from_rows(
         "generalized no-overrides lane could not resolve a root "
         "instance key."
     )
+
+
+# ---------------------------------------------------------------------------
+# Singleton warm-tail specialization (patch lane:
+# generalized_singleton_specialization_2026_07_01)
+# ---------------------------------------------------------------------------
+
+SPECIALIZED_EXECUTOR_NAME = (
+    "_specialized_no_overrides_codegen_creation_executor"
+)
+
+_SPECIALIZED_FACTORY_SOURCE_NAME = (
+    "<melder_generalized_no_overrides_specialized_factory>"
+)
+
+
+def select_specializable_step_indexes(
+        rows: Sequence[Dict[str, Any]],
+) -> Tuple[int, ...]:
+    """
+    Return the step indexes eligible for singleton warm-tail capture.
+
+    Purpose:
+        Identify the OWNER-store `unique` steps whose live instances may be
+        closed over by a specialized executor body after first construction.
+
+    Contract:
+        - Capture set is `Existence.unique` ONLY. The owner store is
+          frame-global and conduit-independent, so a spell-owned executor that
+          serves every conduit may capture it. Caller-varying stores
+          (`unique_per_conduit`, spellspace, lineage, cluster) and transient
+          `many` steps are never selected.
+        - Pure function of manifest row data; no live spells consulted.
+
+    Args:
+        rows:
+            Manifest step rows for the no-overrides lane.
+
+    Returns:
+        Tuple[int, ...]: Ascending step indexes eligible for capture. Empty
+        when the graph has no `unique` steps (callers must then skip
+        specialization entirely).
+    """
+    unique_name = Existence.unique.name
+    return tuple(
+        step_index
+        for step_index, row in enumerate(rows)
+        if row["existence"] == unique_name
+    )
+
+
+def emit_specialized_step_plan_source(
+        *,
+        rows: Sequence[Dict[str, Any]],
+        captured_step_indexes: Tuple[int, ...],
+        root_instance_key: Tuple[str, Any],
+) -> str:
+    """
+    Emit the specialized no-overrides executor source for one capture shape.
+
+    Purpose:
+        Replace each captured `unique` step's warm walk (spell tuple load +
+        `_owner_creations` attr read + shared `_creations` dict get + None
+        branch) with one frame-local int compare, while emitting every
+        non-captured step exactly as the generic emitter does.
+
+    Contract:
+        - Pure function of rows plus capture POSITIONS: the source embeds step
+          indexes and per-slot binding names only, never identity values, so
+          the executor factory cache shares one compiled factory across every
+          spell with the same shape and capture set.
+        - Guard prologue: per captured step,
+          `cap_spell_K._door_epoch != cap_epoch_K` tail-calls the generic
+          inner executor (deopt: slower, never wrong). The prologue is wrapped
+          in one try/except AttributeError so a cleaned captured spell also
+          deopts to the generic lane's canonical behavior instead of leaking a
+          slot error from this lane.
+        - Captured instances arrive as per-slot default parameters
+          (`cap_inst_K`) and are re-exposed to downstream step emission via
+          `instance_K` locals (locals mode) or `instance_results` stores (dict
+          mode), so the existing per-step emitters compile against them with
+          zero changes.
+        - Root-is-captured collapses the tail to `return cap_inst_K` with no
+          alias emission for the root slot.
+        - Store-clear soundness is NOT guarded here by design: owner stores
+          clear only on teardown paths already blocked by lineage/validity
+          gating before any executor runs (see patch lane architecture doc,
+          Guard Policy).
+
+    Args:
+        rows:
+            Manifest step rows for the no-overrides lane.
+        captured_step_indexes:
+            Ascending step indexes to capture; must be non-empty and must all
+            reference `unique` rows (validated).
+        root_instance_key:
+            Resolved root instance key for the lane.
+
+    Returns:
+        str: Identity-free specialized executor source (one `def` statement).
+
+    Raises:
+        RuntimeError:
+            When the capture set is empty or references a non-`unique` row.
+    """
+    if not captured_step_indexes:
+        raise RuntimeError(
+            "specialized emission requires a non-empty capture set; callers "
+            "must skip specialization when no `unique` steps exist."
+        )
+    captured_set = set(captured_step_indexes)
+    unique_name = Existence.unique.name
+    for step_index in captured_step_indexes:
+        if rows[step_index]["existence"] != unique_name:
+            raise RuntimeError(
+                "specialized emission capture set may only reference "
+                f"Existence.unique rows; step {step_index} is "
+                f"'{rows[step_index]['existence']}'."
+            )
+
+    # Mirror the generic emitter's locals-mode decision exactly so the
+    # non-captured steps compile identically in both bodies.
+    key_to_step_index: Dict[Any, int] = {}
+    for step_index, row in enumerate(rows):
+        key_to_step_index[tuple(row["instance_key"])] = step_index
+
+    locals_mode = True
+    normalized_root_key = (root_instance_key[0], root_instance_key[1])
+    if normalized_root_key not in key_to_step_index:
+        locals_mode = False
+    if locals_mode:
+        for row in rows:
+            inlinable_params = row_inlinable_common_shape(row)
+            if inlinable_params is None:
+                locals_mode = False
+                break
+            for _param_name, dependency_key in inlinable_params:
+                dependency_key_tuple = (
+                    dependency_key[0],
+                    dependency_key[1],
+                )
+                if dependency_key_tuple not in key_to_step_index:
+                    locals_mode = False
+                    break
+            if not locals_mode:
+                break
+
+    root_step_index = key_to_step_index.get(normalized_root_key)
+    root_is_captured = (
+        locals_mode
+        and root_step_index is not None
+        and root_step_index in captured_set
+    )
+
+    # In locals mode, alias `instance_K = cap_inst_K` only for captured steps
+    # some non-captured constructor actually reads; the captured root returns
+    # its slot directly with no alias.
+    read_captured: set = set()
+    if locals_mode:
+        for step_index, row in enumerate(rows):
+            if step_index in captured_set:
+                continue
+            for _param_name, dependency_key in (
+                    row_inlinable_common_shape(row) or ()
+            ):
+                dependency_step_index = key_to_step_index[
+                    (dependency_key[0], dependency_key[1])
+                ]
+                if dependency_step_index in captured_set:
+                    read_captured.add(dependency_step_index)
+        if (
+                root_step_index is not None
+                and root_step_index in captured_set
+        ):
+            # Direct-return path; no alias needed for the root slot itself.
+            read_captured.discard(root_step_index)
+
+    lines = [
+        f"def {SPECIALIZED_EXECUTOR_NAME}(",
+        "        meld,",
+        "        steps=steps,",
+        "        step_spells=step_spells,",
+        "        step_spell_ids=step_spell_ids,",
+        "        step_disposal_methods=step_disposal_methods,",
+        "        step_existences=step_existences,",
+        "        step_instance_keys=step_instance_keys,",
+        "        step_dep_keys=step_dep_keys,",
+        "        root_instance_key=root_instance_key,",
+    ]
+    for step_index in captured_step_indexes:
+        lines.extend([
+            f"        cap_spell_{step_index}=cap_spell_{step_index},",
+            f"        cap_epoch_{step_index}=cap_epoch_{step_index},",
+            f"        cap_inst_{step_index}=cap_inst_{step_index},",
+        ])
+    lines.extend([
+        "        _generic_inner=_generic_inner,",
+        "        SpellGeneralizedCodegenPlanTargetKind=SpellGeneralizedCodegenPlanTargetKind,",
+        "        _construct_spell_instance=_construct_spell_instance,",
+        "        _raise_meld_construction_error=_raise_meld_construction_error,",
+        "        _register_spell_instance_prebound=_register_spell_instance_prebound,",
+        "        MeldExecutionError=MeldExecutionError,",
+        "        SpellSpaceScopeError=SpellSpaceScopeError,",
+        "    ):",
+        "    try:",
+    ])
+    for step_index in captured_step_indexes:
+        lines.extend([
+            (
+                f"        if cap_spell_{step_index}._door_epoch "
+                f"!= cap_epoch_{step_index}:"
+            ),
+            "            return _generic_inner(meld)",
+        ])
+    lines.extend([
+        "    except AttributeError:",
+        "        return _generic_inner(meld)",
+    ])
+
+    if not locals_mode:
+        lines.append("    instance_results = {}")
+        for step_index in captured_step_indexes:
+            lines.append(
+                f"    instance_results[step_instance_keys[{step_index}]]"
+                f" = cap_inst_{step_index}"
+            )
+    else:
+        for step_index in sorted(read_captured):
+            lines.append(
+                f"    instance_{step_index} = cap_inst_{step_index}"
+            )
+
+    for step_index, row in enumerate(rows):
+        if step_index in captured_set:
+            continue
+        _append_step_resolution_source(
+            lines=lines,
+            step_index=step_index,
+            row=row,
+            key_to_step_index=key_to_step_index if locals_mode else None,
+        )
+
+    if root_is_captured:
+        lines.append(f"    return cap_inst_{root_step_index}")
+    elif locals_mode:
+        lines.append(
+            f"    return instance_{key_to_step_index[normalized_root_key]}"
+        )
+    else:
+        lines.extend([
+            "    if root_instance_key not in instance_results:",
+            "        raise MeldExecutionError(",
+            "            spell_id=root_instance_key[0],",
+            "            spell_name=root_instance_key[0],",
+            "            message=f\"No-overrides codegen root instance '{root_instance_key[0]}' is missing.\",",
+            "        )",
+            "    return instance_results[root_instance_key]",
+        ])
+    return "\n".join(lines)
+
+
+def build_specialized_no_overrides_executor(
+        *,
+        rows: Sequence[Dict[str, Any]],
+        root_instance_key: Optional[Tuple[str, Optional[int]]],
+        root_spell_id: Optional[str],
+        spell_lookup: Dict[str, Any],
+        generic_inner_executor: Callable[..., Any],
+) -> Optional[Callable[..., Any]]:
+    """
+    Build the specialized inner executor from live warm-state, or decline.
+
+    Purpose:
+        One-shot post-first-run specialization: capture the live `unique`
+        instances plus their spells' door epochs, emit the specialized body,
+        and hydrate it through the shared executor factory cache.
+
+    Contract:
+        - Returns None (decline) when the lane has no `unique` steps or when
+          any capture target is not yet live in its owner store; callers may
+          retry on a later meld or give up.
+        - Capture ordering is epoch-BEFORE-instance per step: if an
+          invalidation lands between the two reads, the recorded epoch pairs
+          with a pre-bump live epoch that keeps advancing on further events,
+          so a stale pairing fails the guard compare on first use and deopts.
+          The reverse order would admit a stale instance behind a fresh epoch.
+        - Emission/compile ride `get_or_build_executor_factory`, so one
+          compile + one exec per (shape, capture-set) per process; per-spell
+          cost is one factory call.
+        - The returned callable has the same `(meld)` signature and
+          bare-instance return contract as the generic inner executor; the
+          route-keyed door compiler wraps it into the tuple-returning runtime
+          door exactly as it wraps the generic inner.
+
+    Args:
+        rows:
+            Manifest step rows for the no-overrides lane.
+        root_instance_key:
+            Optional explicit root instance key from the manifest.
+        root_spell_id:
+            Root spell id used when the explicit key is absent.
+        spell_lookup:
+            Resolved spell-id -> live Spell map for every step row.
+        generic_inner_executor:
+            Already-hydrated generic inner executor; deopt target captured
+            into the specialized body's bindings.
+
+    Returns:
+        Optional[Callable[..., Any]]: Specialized inner executor, or None
+        when specialization declines.
+
+    Raises:
+        RuntimeError:
+            When rows are invalid or the root instance key is unresolvable
+            (mirrors the generic hydration contract).
+    """
+    captured_step_indexes = select_specializable_step_indexes(rows)
+    if not captured_step_indexes:
+        return None
+
+    captured_spells: Dict[int, Any] = {}
+    captured_epochs: Dict[int, int] = {}
+    captured_instances: Dict[int, Any] = {}
+    for step_index in captured_step_indexes:
+        row = rows[step_index]
+        spell = spell_lookup.get(row["spell_id"])
+        if spell is None:
+            return None
+        # Epoch BEFORE instance (see contract): a racing invalidation makes
+        # the pairing fail its first guard compare instead of pinning a
+        # stale instance behind a fresh epoch.
+        captured_epoch = spell._door_epoch
+        owner_creations = spell._owner_creations
+        if owner_creations is None:
+            return None
+        live_instance = owner_creations._creations.get(row["spell_id"])
+        if live_instance is None:
+            return None
+        captured_spells[step_index] = spell
+        captured_epochs[step_index] = captured_epoch
+        captured_instances[step_index] = live_instance
+
+    resolved_root_instance_key = resolve_root_instance_key_from_rows(
+        rows=rows,
+        explicit_root_instance_key=root_instance_key,
+        root_spell_id=root_spell_id,
+    )
+    inner_source = emit_specialized_step_plan_source(
+        rows=rows,
+        captured_step_indexes=captured_step_indexes,
+        root_instance_key=resolved_root_instance_key,
+    )
+
+    runtime_rows = build_runtime_rows(
+        rows=rows,
+        spell_lookup=spell_lookup,
+    )
+    bindings = _build_step_bindings(
+        rows=rows,
+        runtime_rows=runtime_rows,
+        root_instance_key=resolved_root_instance_key,
+    )
+    for step_index in captured_step_indexes:
+        bindings[f"cap_spell_{step_index}"] = captured_spells[step_index]
+        bindings[f"cap_epoch_{step_index}"] = captured_epochs[step_index]
+        bindings[f"cap_inst_{step_index}"] = captured_instances[step_index]
+    bindings["_generic_inner"] = generic_inner_executor
+
+    factory_source = build_executor_factory_source(
+        inner_source=inner_source,
+        binding_names=tuple(bindings.keys()),
+        executor_name=SPECIALIZED_EXECUTOR_NAME,
+    )
+    factory = get_or_build_executor_factory(
+        factory_source=factory_source,
+        source_name=_SPECIALIZED_FACTORY_SOURCE_NAME,
+        static_namespace=_STEP_STATIC_NAMESPACE,
+    )
+    return factory(bindings)
