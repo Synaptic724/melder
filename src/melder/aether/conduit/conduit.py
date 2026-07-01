@@ -3902,6 +3902,9 @@ class Conduit(Cleanable):
             mediator.end_transaction(expected_type="add_to_index", success=False)
             raise
         mediator.end_transaction(expected_type="add_to_index", success=True)
+        # Index-link receivers get the new member as a per-member spell contract of
+        # the index-link's permission.
+        self._conduit_ward._emit_index_member_added(target_index, spell.spell_id)
         return result
 
     def remove_from_spell_index(self, *, spell: Any, source_index: Any) -> Any:
@@ -3955,6 +3958,8 @@ class Conduit(Cleanable):
             mediator.end_transaction(expected_type="remove_from_index", success=False)
             raise
         mediator.end_transaction(expected_type="remove_from_index", success=True)
+        # Index-link receivers drop the removed member's per-member spell contract.
+        self._conduit_ward._emit_index_member_removed(source_index.id, spell.spell_id)
         return result
 
     def cleanup_spell(self, *, spell: Any) -> None:
@@ -4616,7 +4621,7 @@ class Conduit(Cleanable):
 
 
 
-    def add_index_contract(
+    def add_index_to_contract(
             self,
             *,
             index: Any,
@@ -4665,7 +4670,7 @@ class Conduit(Cleanable):
                 identity=self._transaction_identity,
                 transaction_type=ChangeTransactionType.ADD_SPELL_OR_INDEX_TO_CONTRACT,
                 metadata={
-                    "origin_surface": "conduit.add_index_contract",
+                    "origin_surface": "conduit.add_index_to_contract",
                     "spellbook_id": self._spellbook._id if self._spellbook is not None else None,
                     "owner_conduit_id": self._id,
                     "peer_conduit_id": peer_conduit._id if peer_conduit is not None else conduit_id,
@@ -4691,7 +4696,7 @@ class Conduit(Cleanable):
 
         return result
 
-    def remove_index_contract(
+    def remove_index_from_contract(
             self,
             *,
             index_id: str,

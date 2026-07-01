@@ -2699,6 +2699,27 @@ and logging.
         with self._lock:
             self._contracted_indexes.pop(index_id, None)
 
+    def _get_owned_spell(self, spell_id: str) -> Optional[Spell]:
+        """
+        Internal
+
+        Return this spellbook's owned spell for `spell_id` -- active (in the id pool)
+        or inactive (parked) -- or None if it owns no such spell. Used to resolve the
+        members of an owned index for per-member contracting.
+
+        Args:
+            spell_id (str): Version id of the owned spell to resolve.
+
+        Returns:
+            Optional[Spell]: The owned (active or inactive) spell, or None.
+        """
+        self.check_cleaned()
+        with self._lock:
+            spell = self._spells_by_id.get(spell_id)
+            if spell is not None:
+                return spell
+            return self._inactive_spells.get(spell_id)
+
     def _remove_contracted_spell(self, spell_id: str, conduit_id: str) -> None:
         """
         Internal

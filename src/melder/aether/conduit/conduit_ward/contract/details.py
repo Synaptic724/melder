@@ -220,6 +220,7 @@ class IndexDetail(Cleanable):
         "contract_type",
         "reason",
         "sources",
+        "_member_ids",
     ]
 
     def __init__(
@@ -276,6 +277,10 @@ class IndexDetail(Cleanable):
         self.contract_type: ContractTypes = contract_type
         self.reason: DetailReason = reason
         self.sources: Set[str] = sources if sources is not None else set()
+        # Version ids of the per-member spell Details this index-link minted into the
+        # contract. Authoritative for teardown: the index can be cleaned before the
+        # link is removed, so we cannot re-read members off `spell_index` at that point.
+        self._member_ids: Set[str] = set()
 
     @property
     def index_id(self) -> str:
@@ -299,6 +304,34 @@ class IndexDetail(Cleanable):
         with self._lock:
             self.selected_spell_id = spell_id
 
+    def add_member(self, member_id: str) -> None:
+        """
+        Record that this index-link minted a per-member spell Detail for `member_id`.
+
+        Tracked so the link can be torn down authoritatively: on unlink/destroy the
+        owner uncontracts exactly the member Details it created, even after the live
+        index has been cleaned and can no longer be enumerated.
+        """
+        self.check_cleaned()
+        with self._lock:
+            self._member_ids.add(member_id)
+
+    def remove_member(self, member_id: str) -> None:
+        """
+        Forget a per-member spell Detail this index-link previously minted.
+        """
+        self.check_cleaned()
+        with self._lock:
+            self._member_ids.discard(member_id)
+
+    def member_ids(self) -> Set[str]:
+        """
+        Snapshot of the member version ids this index-link currently has mapped.
+        """
+        self.check_cleaned()
+        with self._lock:
+            return set(self._member_ids)
+
     def cleanup(self) -> None:
         """
         Idempotently clear index-contract metadata and mark this detail cleaned.
@@ -317,6 +350,8 @@ class IndexDetail(Cleanable):
             if self.sources is not None:
                 self.sources.clear()
             del self.sources
+            self._member_ids.clear()
+            del self._member_ids
             del self._id
 
     def has_spell(self, spell_id: str) -> bool:
