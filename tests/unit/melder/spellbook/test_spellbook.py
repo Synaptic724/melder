@@ -2395,7 +2395,7 @@ def test_bind_after_conjure_preserves_ownership_and_registrations(monkeypatch):
     new_spell.key = new_spell._key
     sb._bind = types.SimpleNamespace(bind=lambda **kwargs: new_spell)
 
-    result = sb.bind(spell=object(), existence=Existence.unique, permissions="create")
+    result = sb._register_bound_spell(spell=object(), existence=Existence.unique, permissions="create")
 
     assert result == "jit-sid"
     assert new_spell.resolution_required is False
@@ -2455,7 +2455,7 @@ def test_bind_after_conjure_stamps_resolution_required_false(monkeypatch):
     new_spell.resolution_required = True
     sb._bind = types.SimpleNamespace(bind=lambda **kwargs: new_spell)
 
-    result = sb.bind(spell=object(), existence=Existence.unique, permissions="create")
+    result = sb._register_bound_spell(spell=object(), existence=Existence.unique, permissions="create")
 
     assert result == "aot-sid"
     assert new_spell.resolution_required is False

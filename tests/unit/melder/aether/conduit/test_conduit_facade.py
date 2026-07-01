@@ -95,7 +95,7 @@ def test_bind_forwards_to_spellbook_for_normal_conduit(
     """
     spell = object()
     extra = object()
-    spellbook_stub._bind_under_active_transaction.return_value = "spell-id"
+    spellbook_stub._register_bound_spell.return_value = "spell-id"
 
     result = conduit_dynamic_normal.bind(
         spell=spell,
@@ -106,7 +106,7 @@ def test_bind_forwards_to_spellbook_for_normal_conduit(
         extra=extra,
     )
 
-    spellbook_stub._bind_under_active_transaction.assert_called_once_with(
+    spellbook_stub._register_bound_spell.assert_called_once_with(
         spell=spell,
         existence=Existence.unique,
         spellframe="frame",

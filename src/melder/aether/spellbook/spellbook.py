@@ -3069,6 +3069,28 @@ and logging.
             spell_index=spell_index,
             owner_spellbook_id=self._id,
         )
+        # Nexus visibility: the active member changed, so remove the parked
+        # outgoing member's now-stale record and publish the newly-active one
+        # (a plain publish when there is no outgoing member). Not phase-6-gated:
+        # the active-member swap must be reflected regardless of any recompile.
+        if self._conjured and self._conduit is not None:
+            if outgoing is not None:
+                self._replace_spell_record_in_nexus(outgoing.spell_id, spell)
+            else:
+                self._publish_spell_record_to_nexus(spell)
+        # If the promoted member has NOT been system-validated (phase 6), stage it
+        # for the structural phases so the notch commit -- which reuses the bind
+        # transaction shape -- drains it and runs phases 1-7 on the spot. A member
+        # that is already phase-6 validated is compiled + registered; nothing to
+        # redo. The index is already registered from the original bind and risk is
+        # lineage-keyed (the shared lineage is already tracked), so those are not
+        # re-run here.
+        if spell.validation_result_phase6 is None:
+            if self._pending_binding_frame_keys is not None:
+                self._pending_binding_frame_keys.add(spell.key[0])
+            if self._pending_structural_spells is not None:
+                self._pending_structural_spells.append(spell)
+            self._try_update_staged_binding_keys()
         # Flag the now-active spell for a next-meld rebuild and mark its lineage
         # structurally changed with the notch reason (the spell-owned invalidation
         # helper, which also clears the cached creation context); dependents
@@ -3778,31 +3800,6 @@ and logging.
             if self._pending_structural_spells is not None:
                 self._pending_structural_spells.clear()
 
-    def _ensure_binding_transaction_active(self, *, action: str) -> None:
-        """
-        Internal
-
-        Raise if a binding transaction is not active for the given action.
-
-        Args:
-            action: Operation name for diagnostics (e.g., "bind" or "scan").
-        Returns:
-            None.
-        Raises:
-            RuntimeError: If no binding transaction is active.
-        """
-        if not self._binding_transaction_is_active():
-            self._logger.error(
-                f"{action} requires an active binding transaction",
-                action,
-            )
-            raise RuntimeError(
-                f"[SPELLBOOK] {action} requires an active binding transaction. "
-                "Call begin_transaction('bind') or "
-                "transaction('bind') "
-                "before binding or scanning."
-            )
-
     def _try_update_staged_binding_keys(self) -> None:
         """
         Internal
@@ -3932,207 +3929,6 @@ and logging.
             )
             raise
 
-    def _bind_under_active_transaction(
-            self,
-            *,
-            spell: Any,
-            existence: Union[str, Existence],
-            permissions: str | Permissions = "create",
-            spellframe: Any = None,
-            binding_name: Optional[str] = None,
-            disposal_method_names: Optional[Sequence[str]] = None,
-            profile: str = "general",
-            bind_inactive: bool = False,
-            **kwargs: Any,
-    ) -> str:
-        """
-        Internal
-
-        Execute the bind pipeline assuming a bind-family transaction is active.
-
-        Purpose:
-            Keep the actual spell registration logic in one place while the
-            public `bind()` method decides whether it needs to open the
-            bind-family transaction window first.
-
-        Contract:
-            - Requires an active binding transaction.
-            - Profiles the spell, computes its structural `spell_id`, and
-              inserts the resulting `Spell` into local lookup and version caches.
-            - Enforces local lookup-key uniqueness before registration.
-            - Applies lifecycle hooks only after validating that the supplied
-              hooks are callable.
-            - When the Spellbook already has a conjured conduit, stamps conduit
-              ownership/runtime metadata onto the new spell and publishes it
-              into the relevant runtime mirrors.
-
-        Returns:
-            str:
-                The unique SHA256 `spell_id` associated with the bound spell.
-        """
-        self._ensure_binding_transaction_active(action="bind")
-        try:
-            permissions_enum = EnumHelpers.convert_enum_and_check(permissions, Permissions)
-            existence_enum = EnumHelpers.convert_enum_and_check(existence, Existence)
-            if self._configured_disposal_method_names is None:
-                if disposal_method_names is not None:
-                    self._configured_disposal_method_names = frozenset(
-                        disposal_method_names
-                    )
-                elif (
-                        self._configuration is not None
-                        and self._configuration.has_property("disposal_method_names")
-                ):
-                    self._configured_disposal_method_names = frozenset(
-                        self._configuration.get_property("disposal_method_names")
-                    )
-                else:
-                    self._configured_disposal_method_names = frozenset()
-
-            new_spell = self._bind.bind(
-                permissions=permissions_enum,
-                spell=spell,
-                spellframe=spellframe,
-                binding_name=binding_name,
-                profile=profile,
-                existence=existence_enum,
-                aetheric_frame=self._aetheric_frame_name,
-                configured_disposal_method_names=self._configured_disposal_method_names,
-            )
-
-            if Spellbook._aether._check_for_spell(new_spell.spell_id, self._aetheric_frame_name):
-                self._logger.error(
-                    f"Spell with ID {new_spell.spell_id} already exists in the registry.",
-                    "bind",
-                    exc_info=True,
-                )
-                raise RuntimeError(
-                    "Spell ID collision detected. spell_id is computed from the spell's bind-time \n"
-                    "fingerprint (e.g., structural profile, lookup signature, existence, and resolved \n"
-                    "disposal metadata). The existing spell with this id is already registered in the \n"
-                    "Aether for this frame. If you intended to register a distinct spell, ensure its \n"
-                    "bind-time fingerprint differs so it produces a unique spell_id."
-                )
-
-            self._add_hooks_to_spell(new_spell, **kwargs)
-
-            if bind_inactive:
-                # Inactive pathing: route the registration setters to the inactive
-                # surface instead of the active one. The SpellIndex records the
-                # spell as a member (no active select); the Spellbook parks it in
-                # _inactive_spells and keeps existence in _spell_ids. No id-pools,
-                # no _lookup_spells, no _spells[index], no binding-signature claim
-                # -- the spell is inert/unmeldable until notch_spell promotes it.
-                if not self._is_dynamic_posture():
-                    raise RuntimeError(
-                        "bind_inactive requires a dynamic Spellbook posture. Build the "
-                        "frame configuration with system_state=dynamic before staging an "
-                        "inactive spell for later notch activation."
-                    )
-                inactive_index = new_spell.spell_index
-                inactive_index.add_member(new_spell.spell_id)
-                self._inactive_spells[new_spell.spell_id] = new_spell
-                new_spell._active = False
-                # Dynamic posture is a Spellbook/frame property, not a per-conduit
-                # one, and no conduit exists here (pre-conjure). Stamp it from the
-                # Spellbook so the parked spell is invalidation-eligible when a later
-                # notch promotes it -- without attaching a conduit or invalidating it.
-                new_spell._dynamic_environment = True
-                # If a conduit already exists (post-conjure bind_inactive), follow the
-                # same conduit wiring an active bind does so the parked spell owns a
-                # CreationContextFactory. Pre-conjure inactive spells have no conduit
-                # yet; they are wired at conjure like pre-conjure active spells.
-                if self._conjured and self._conduit is not None:
-                    conduit = self._get_required_conduit_surface()
-                    caching_enabled = self._resolve_system_caching_enabled()
-                    new_spell._add_owned_conduit(
-                        conduit._id,
-                        conduit._name,
-                        conduit._creations,
-                        dynamic_environment=conduit.__dynamic_environment__,
-                        creation_gate_controller=conduit._creation_gate_controller,
-                        caching_enabled=caching_enabled,
-                    )
-                if self._spell_ids is not None:
-                    self._spell_ids.add(new_spell.spell_id)
-                return new_spell.spell_id
-
-            # Register into local spell maps
-            spell_index = new_spell.spell_index
-            # Framewide one-active-signature-per-frame gate (replaces the old
-            # local-only lookup-key check): claim before committing local maps.
-            self._aetheric_frame.claim_lookup(new_spell._key, new_spell.spell_id)
-            self._lookup_spells[new_spell._key] = spell_index
-            self._spells[spell_index] = new_spell
-            self._register_owned_spell_id(new_spell.spell_id, new_spell)
-
-            # keep local version cache warm
-            if self._spell_ids is not None:
-                member_ids = spell_index._spells_in_index
-                if member_ids:
-                    for member_id in member_ids:
-                        self._spell_ids.add(member_id)
-                else:
-                    self._spell_ids.add(new_spell.spell_id)
-
-            # If a Conduit already exists, stamp ownership metadata and runtime
-            # resolution defaults for the new spell. Existing-object spells are
-            # also eagerly registered into Creations.
-            if self._conjured and self._conduit is not None:
-                conduit = self._get_required_conduit_surface()
-                caching_enabled = self._resolve_system_caching_enabled()
-                new_spell._add_owned_conduit(
-                    conduit._id,
-                    conduit._name,
-                    conduit._creations,
-                    dynamic_environment=conduit.__dynamic_environment__,
-                    creation_gate_controller=conduit._creation_gate_controller,
-                    caching_enabled=caching_enabled,
-                )
-                # Compilation is always full/eager (AOT/JIT knob removed);
-                # post-conjure spells get compiled via the gated revalidation
-                # paths, not via a deferred-resolution flag.
-                new_spell.resolution_required = False
-                if new_spell.user_created_object is not None:
-                    try:
-                        conduit._register_to_creations(
-                            new_spell,
-                            new_spell.user_created_object,
-                        )
-                    except Exception as reg_err:
-                        self._logger.error(
-                            f"Failed to register existing-object spell into Creations "
-                            f"(spell_id={new_spell.spell_id}): {reg_err}",
-                            "bind",
-                            exc_info=True,
-                        )
-
-            self._spell_system_states.register_index(
-                spell_index=new_spell.spell_index,
-                owner_spellbook_id=self._id,
-            )
-            if self._conjured and self._conduit is not None:
-                self._register_spell_with_risk_manager(
-                    self._get_required_conduit_surface()._id,
-                    new_spell,
-                )
-            if self._pending_binding_frame_keys is not None:
-                self._pending_binding_frame_keys.add(new_spell.key[0])
-            if self._pending_structural_spells is not None:
-                self._pending_structural_spells.append(new_spell)
-            self._try_update_staged_binding_keys()
-            if self._conjured and self._conduit is not None:
-                Spellbook._aether._register_single_spell_index(
-                    self._get_required_conduit_surface()._id,
-                    spell_index,
-                    self._aetheric_frame_name,
-                )
-                self._publish_spell_record_to_nexus(new_spell)
-            return new_spell.spell_id
-        except Exception as e:
-            self._logger.error(f"Error while binding spell: {e}", "bind", exc_info=True)
-            raise
-
     def _bind_inactive(
             self,
             *,
@@ -4199,96 +3995,111 @@ and logging.
                 If the spell_id collides, the Spellbook is not in a dynamic
                 posture, or `spell_index` is not owned here.
         """
-        self._ensure_binding_transaction_active(action="bind")
-        try:
-            permissions_enum = EnumHelpers.convert_enum_and_check(permissions, Permissions)
-            existence_enum = EnumHelpers.convert_enum_and_check(existence, Existence)
-            if self._configured_disposal_method_names is None:
-                if disposal_method_names is not None:
-                    self._configured_disposal_method_names = frozenset(
-                        disposal_method_names
+        # The staging transaction lives directly in this method. Conduit
+        # .bind_inactive delegates here without holding a window of its own,
+        # so `_bind_inactive` opens the bind window and runs the inactive
+        # registration inside it end to end. If a bind session is already
+        # active on this thread the mediator joins it instead of opening a
+        # second root.
+        with self.transaction(
+                "bind",
+                metadata=self._build_bind_transaction_metadata(
+                    origin_surface="spellbook.bind_inactive",
+                    conduit_id=None,
+                    scope_keys=None,
+                    scope_hashes=None,
+                    binding_keys=None,
+                ),
+        ):
+            try:
+                permissions_enum = EnumHelpers.convert_enum_and_check(permissions, Permissions)
+                existence_enum = EnumHelpers.convert_enum_and_check(existence, Existence)
+                if self._configured_disposal_method_names is None:
+                    if disposal_method_names is not None:
+                        self._configured_disposal_method_names = frozenset(
+                            disposal_method_names
+                        )
+                    elif (
+                            self._configuration is not None
+                            and self._configuration.has_property("disposal_method_names")
+                    ):
+                        self._configured_disposal_method_names = frozenset(
+                            self._configuration.get_property("disposal_method_names")
+                        )
+                    else:
+                        self._configured_disposal_method_names = frozenset()
+
+                new_spell = self._bind.bind(
+                    permissions=permissions_enum,
+                    spell=spell,
+                    spellframe=spellframe,
+                    binding_name=binding_name,
+                    profile=profile,
+                    existence=existence_enum,
+                    aetheric_frame=self._aetheric_frame_name,
+                    configured_disposal_method_names=self._configured_disposal_method_names,
+                )
+
+                if Spellbook._aether._check_for_spell(new_spell.spell_id, self._aetheric_frame_name):
+                    self._logger.error(
+                        f"Spell with ID {new_spell.spell_id} already exists in the registry.",
+                        "bind",
+                        exc_info=True,
                     )
-                elif (
-                        self._configuration is not None
-                        and self._configuration.has_property("disposal_method_names")
-                ):
-                    self._configured_disposal_method_names = frozenset(
-                        self._configuration.get_property("disposal_method_names")
+                    raise RuntimeError(
+                        "Spell ID collision detected. spell_id is computed from the spell's bind-time \n"
+                        "fingerprint (e.g., structural profile, lookup signature, existence, and resolved \n"
+                        "disposal metadata). The existing spell with this id is already registered in the \n"
+                        "Aether for this frame. If you intended to register a distinct spell, ensure its \n"
+                        "bind-time fingerprint differs so it produces a unique spell_id."
                     )
-                else:
-                    self._configured_disposal_method_names = frozenset()
 
-            new_spell = self._bind.bind(
-                permissions=permissions_enum,
-                spell=spell,
-                spellframe=spellframe,
-                binding_name=binding_name,
-                profile=profile,
-                existence=existence_enum,
-                aetheric_frame=self._aetheric_frame_name,
-                configured_disposal_method_names=self._configured_disposal_method_names,
-            )
-
-            if Spellbook._aether._check_for_spell(new_spell.spell_id, self._aetheric_frame_name):
-                self._logger.error(
-                    f"Spell with ID {new_spell.spell_id} already exists in the registry.",
-                    "bind",
-                    exc_info=True,
-                )
-                raise RuntimeError(
-                    "Spell ID collision detected. spell_id is computed from the spell's bind-time \n"
-                    "fingerprint (e.g., structural profile, lookup signature, existence, and resolved \n"
-                    "disposal metadata). The existing spell with this id is already registered in the \n"
-                    "Aether for this frame. If you intended to register a distinct spell, ensure its \n"
-                    "bind-time fingerprint differs so it produces a unique spell_id."
-                )
-
-            self._add_hooks_to_spell(new_spell, **kwargs)
-            # Inactive pathing: route the registration setters to the inactive
-            # surface instead of the active one. The SpellIndex records the
-            # spell as a member (no active select); the Spellbook parks it in
-            # _inactive_spells and keeps existence in _spell_ids. No id-pools,
-            # no _lookup_spells, no _spells[index], no binding-signature claim
-            # -- the spell is inert/unmeldable until notch_spell promotes it.
-            if not self._is_dynamic_posture():
-                raise RuntimeError(
-                    "bind_inactive requires a dynamic Spellbook posture. Build the "
-                    "frame configuration with system_state=dynamic before staging an "
-                    "inactive spell for later notch activation."
-                )
-            inactive_index = new_spell.spell_index
-            inactive_index.add_member(new_spell.spell_id)
-            self._inactive_spells[new_spell.spell_id] = new_spell
-            new_spell._active = False
-            # Dynamic posture is a Spellbook/frame property, not a per-conduit
-            # one, and no conduit exists here (pre-conjure). Stamp it from the
-            # Spellbook so the parked spell is invalidation-eligible when a later
-            # notch promotes it -- without attaching a conduit or invalidating it.
-            new_spell._dynamic_environment = True
-            # If a conduit already exists (post-conjure bind_inactive), follow the
-            # same conduit wiring an active bind does so the parked spell owns a
-            # CreationContextFactory. Pre-conjure inactive spells have no conduit
-            # yet; they are wired at conjure like pre-conjure active spells.
-            if self._conjured and self._conduit is not None:
-                conduit = self._get_required_conduit_surface()
-                caching_enabled = self._resolve_system_caching_enabled()
-                new_spell._add_owned_conduit(
-                    conduit._id,
-                    conduit._name,
-                    conduit._creations,
-                    dynamic_environment=conduit.__dynamic_environment__,
-                    creation_gate_controller=conduit._creation_gate_controller,
-                    caching_enabled=caching_enabled,
-                )
-            if self._spell_ids is not None:
-                self._spell_ids.add(new_spell.spell_id)
-            # Fold the parked spell from its own fresh index onto the caller's
-            # target index (membership-only move; destroys the emptied source).
-            self._apply_add_to_index(spell=new_spell, target_index=spell_index)
-            return new_spell.spell_id
-        except Exception as e:
-            self._logger.error(f"Error while binding spell: {e}", "bind", exc_info=True)
-            raise
+                self._add_hooks_to_spell(new_spell, **kwargs)
+                # Inactive pathing: route the registration setters to the inactive
+                # surface instead of the active one. The SpellIndex records the
+                # spell as a member (no active select); the Spellbook parks it in
+                # _inactive_spells and keeps existence in _spell_ids. No id-pools,
+                # no _lookup_spells, no _spells[index], no binding-signature claim
+                # -- the spell is inert/unmeldable until notch_spell promotes it.
+                if not self._is_dynamic_posture():
+                    raise RuntimeError(
+                        "bind_inactive requires a dynamic Spellbook posture. Build the "
+                        "frame configuration with system_state=dynamic before staging an "
+                        "inactive spell for later notch activation."
+                    )
+                inactive_index = new_spell.spell_index
+                inactive_index.add_member(new_spell.spell_id)
+                self._inactive_spells[new_spell.spell_id] = new_spell
+                new_spell._active = False
+                # Dynamic posture is a Spellbook/frame property, not a per-conduit
+                # one, and no conduit exists here (pre-conjure). Stamp it from the
+                # Spellbook so the parked spell is invalidation-eligible when a later
+                # notch promotes it -- without attaching a conduit or invalidating it.
+                new_spell._dynamic_environment = True
+                # If a conduit already exists (post-conjure bind_inactive), follow the
+                # same conduit wiring an active bind does so the parked spell owns a
+                # CreationContextFactory. Pre-conjure inactive spells have no conduit
+                # yet; they are wired at conjure like pre-conjure active spells.
+                if self._conjured and self._conduit is not None:
+                    conduit = self._get_required_conduit_surface()
+                    caching_enabled = self._resolve_system_caching_enabled()
+                    new_spell._add_owned_conduit(
+                        conduit._id,
+                        conduit._name,
+                        conduit._creations,
+                        dynamic_environment=conduit.__dynamic_environment__,
+                        creation_gate_controller=conduit._creation_gate_controller,
+                        caching_enabled=caching_enabled,
+                    )
+                if self._spell_ids is not None:
+                    self._spell_ids.add(new_spell.spell_id)
+                # Fold the parked spell from its own fresh index onto the caller's
+                # target index (membership-only move; destroys the emptied source).
+                self._apply_add_to_index(spell=new_spell, target_index=spell_index)
+                return new_spell.spell_id
+            except Exception as e:
+                self._logger.error(f"Error while binding spell: {e}", "bind", exc_info=True)
+                raise
 
 
     def bind(
@@ -4365,18 +4176,13 @@ and logging.
             raise RuntimeError(
                 "[SPELLBOOK] Bind is disabled after conjure for the current frame posture."
             )
-        if self._binding_transaction_is_active():
-            return self._bind_under_active_transaction(
-                spell=spell,
-                existence=existence,
-                permissions=permissions,
-                spellframe=spellframe,
-                binding_name=binding_name,
-                disposal_method_names=disposal_method_names,
-                profile=profile,
-                bind_inactive=bind_inactive,
-                **kwargs,
-            )
+        # The bind transaction lives directly in this method: open a bind
+        # window and run the registration inside it. If a bind session is
+        # already active on this thread (a nested bind, or a bind issued
+        # inside a conjure/scan window), the mediator joins the existing
+        # session instead of opening a second root -- so one unconditional
+        # `with` covers both the fresh and the reuse case. No separate
+        # "is a bind transaction active?" pre-check is required.
         with self.transaction(
                 "bind",
                 metadata=self._build_bind_transaction_metadata(
@@ -4387,17 +4193,125 @@ and logging.
                     binding_keys=None,
                 ),
         ):
-            return self._bind_under_active_transaction(
-                spell=spell,
-                existence=existence,
-                permissions=permissions,
-                spellframe=spellframe,
-                binding_name=binding_name,
-                disposal_method_names=disposal_method_names,
-                profile=profile,
-                bind_inactive=bind_inactive,
-                **kwargs,
-            )
+            try:
+                permissions_enum = EnumHelpers.convert_enum_and_check(permissions, Permissions)
+                existence_enum = EnumHelpers.convert_enum_and_check(existence, Existence)
+                if self._configured_disposal_method_names is None:
+                    if disposal_method_names is not None:
+                        self._configured_disposal_method_names = frozenset(
+                            disposal_method_names
+                        )
+                    elif (
+                            self._configuration is not None
+                            and self._configuration.has_property("disposal_method_names")
+                    ):
+                        self._configured_disposal_method_names = frozenset(
+                            self._configuration.get_property("disposal_method_names")
+                        )
+                    else:
+                        self._configured_disposal_method_names = frozenset()
+
+                new_spell = self._bind.bind(
+                    permissions=permissions_enum,
+                    spell=spell,
+                    spellframe=spellframe,
+                    binding_name=binding_name,
+                    profile=profile,
+                    existence=existence_enum,
+                    aetheric_frame=self._aetheric_frame_name,
+                    configured_disposal_method_names=self._configured_disposal_method_names,
+                )
+
+                if Spellbook._aether._check_for_spell(new_spell.spell_id, self._aetheric_frame_name):
+                    self._logger.error(
+                        f"Spell with ID {new_spell.spell_id} already exists in the registry.",
+                        "bind",
+                        exc_info=True,
+                    )
+                    raise RuntimeError(
+                        "Spell ID collision detected. spell_id is computed from the spell's bind-time \n"
+                        "fingerprint (e.g., structural profile, lookup signature, existence, and resolved \n"
+                        "disposal metadata). The existing spell with this id is already registered in the \n"
+                        "Aether for this frame. If you intended to register a distinct spell, ensure its \n"
+                        "bind-time fingerprint differs so it produces a unique spell_id."
+                    )
+
+                self._add_hooks_to_spell(new_spell, **kwargs)
+                # Register into local spell maps
+                spell_index = new_spell.spell_index
+                # Framewide one-active-signature-per-frame gate (replaces the old
+                # local-only lookup-key check): claim before committing local maps.
+                self._aetheric_frame.claim_lookup(new_spell._key, new_spell.spell_id)
+                self._lookup_spells[new_spell._key] = spell_index
+                self._spells[spell_index] = new_spell
+                self._register_owned_spell_id(new_spell.spell_id, new_spell)
+
+                # keep local version cache warm
+                if self._spell_ids is not None:
+                    member_ids = spell_index._spells_in_index
+                    if member_ids:
+                        for member_id in member_ids:
+                            self._spell_ids.add(member_id)
+                    else:
+                        self._spell_ids.add(new_spell.spell_id)
+
+                # If a Conduit already exists, stamp ownership metadata and runtime
+                # resolution defaults for the new spell. Existing-object spells are
+                # also eagerly registered into Creations.
+                if self._conjured and self._conduit is not None:
+                    conduit = self._get_required_conduit_surface()
+                    caching_enabled = self._resolve_system_caching_enabled()
+                    new_spell._add_owned_conduit(
+                        conduit._id,
+                        conduit._name,
+                        conduit._creations,
+                        dynamic_environment=conduit.__dynamic_environment__,
+                        creation_gate_controller=conduit._creation_gate_controller,
+                        caching_enabled=caching_enabled,
+                    )
+                    # Compilation is always full/eager (AOT/JIT knob removed);
+                    # post-conjure spells get compiled via the gated revalidation
+                    # paths, not via a deferred-resolution flag.
+                    new_spell.resolution_required = False
+                    if new_spell.user_created_object is not None:
+                        try:
+                            conduit._register_to_creations(
+                                new_spell,
+                                new_spell.user_created_object,
+                            )
+                        except Exception as reg_err:
+                            self._logger.error(
+                                f"Failed to register existing-object spell into Creations "
+                                f"(spell_id={new_spell.spell_id}): {reg_err}",
+                                "bind",
+                                exc_info=True,
+                            )
+
+                self._spell_system_states.register_index(
+                    spell_index=new_spell.spell_index,
+                    owner_spellbook_id=self._id,
+                )
+                if self._conjured and self._conduit is not None:
+                    self._register_spell_with_risk_manager(
+                        self._get_required_conduit_surface()._id,
+                        new_spell,
+                    )
+                if self._pending_binding_frame_keys is not None:
+                    self._pending_binding_frame_keys.add(new_spell.key[0])
+                if self._pending_structural_spells is not None:
+                    self._pending_structural_spells.append(new_spell)
+                self._try_update_staged_binding_keys()
+                if self._conjured and self._conduit is not None:
+                    Spellbook._aether._register_single_spell_index(
+                        self._get_required_conduit_surface()._id,
+                        spell_index,
+                        self._aetheric_frame_name,
+                    )
+                    self._publish_spell_record_to_nexus(new_spell)
+                return new_spell.spell_id
+            except Exception as e:
+                self._logger.error(f"Error while binding spell: {e}", "bind", exc_info=True)
+                raise
 
     def scan(self, module: ModuleType) -> list[str]:
         """
