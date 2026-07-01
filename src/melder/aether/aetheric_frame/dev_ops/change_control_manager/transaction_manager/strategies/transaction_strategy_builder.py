@@ -43,6 +43,9 @@ from melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_man
 from melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.add_spell_or_index_to_contract_transaction_strategy import (
     AddSpellOrIndexToContractTransactionStrategy,
 )
+from melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.remove_spell_or_index_from_contract_transaction_strategy import (
+    RemoveSpellOrIndexFromContractTransactionStrategy,
+)
 from melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.cluster_link_transaction_strategy import (
     ClusterLinkTransactionStrategy,
 )
@@ -372,6 +375,10 @@ class TransactionStrategyBuilder:
         self.register_strategy(
             ChangeTransactionType.ADD_SPELL_OR_INDEX_TO_CONTRACT,
             AddSpellOrIndexToContractTransactionStrategy,
+        )
+        self.register_strategy(
+            ChangeTransactionType.REMOVE_SPELL_OR_INDEX_FROM_CONTRACT,
+            RemoveSpellOrIndexFromContractTransactionStrategy,
         )
         self.register_strategy(
             ChangeTransactionType.NOTCH,
