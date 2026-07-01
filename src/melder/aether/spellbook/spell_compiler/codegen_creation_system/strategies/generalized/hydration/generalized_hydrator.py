@@ -547,8 +547,18 @@ def _install_specializing_door(
         Callable[..., Any]: The specializing wrapper door, or `plain_door`
         when the graph has no capturable steps.
     """
-    if not select_specializable_step_indexes(rows):
+    captured_step_indexes = select_specializable_step_indexes(rows)
+    if not captured_step_indexes:
         return plain_door
+    if route_key != "many" and len(captured_step_indexes) == 1:
+        captured_row = rows[captured_step_indexes[0]]
+        if captured_row["spell_id"] == root_spell_id:
+            # Root-only capture on a short-circuiting route is dead weight:
+            # every non-"many" route door returns warm root hits from live
+            # storage BEFORE calling the inner executor, so a specialized
+            # inner that only captures the root can never execute on the
+            # warm path. Decline instead of building a dead body.
+            return plain_door
 
     state_lock = threading.Lock()
     resolved_cell: list = [None]
