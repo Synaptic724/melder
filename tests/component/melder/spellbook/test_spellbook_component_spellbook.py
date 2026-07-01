@@ -1,3 +1,5 @@
+import contextlib
+
 import pytest
 
 from melder.aether.aether import Aether
@@ -327,11 +329,12 @@ def test_component_spellbook_bind_existing_object_registers_to_creations() -> No
     spellbook._conjured = True
     spellbook._bind_family_disabled_for_current_posture = lambda: False
     spellbook._binding_transaction_is_active = lambda: True
+    spellbook.transaction = lambda *args, **kwargs: contextlib.nullcontext()
     spellbook._run_post_conjure_structural_phases = lambda spells: None
     existing = BasicService(marker="existing")
 
     try:
-        spell_id = spellbook._register_bound_spell(
+        spell_id = spellbook.bind(
             spell=existing,
             existence=Existence.unique,
             permissions="create",
@@ -1299,10 +1302,11 @@ def test_component_spellbook_bind_after_conjure_sets_owner_metadata() -> None:
     spellbook._conjured = True
     spellbook._bind_family_disabled_for_current_posture = lambda: False
     spellbook._binding_transaction_is_active = lambda: True
+    spellbook.transaction = lambda *args, **kwargs: contextlib.nullcontext()
     spellbook._run_post_conjure_structural_phases = lambda spells: None
 
     try:
-        spell_id = spellbook._register_bound_spell(
+        spell_id = spellbook.bind(
             spell=BasicService,
             existence=Existence.unique,
             permissions="create",

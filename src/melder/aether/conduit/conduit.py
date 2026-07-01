@@ -2675,20 +2675,21 @@ class Conduit(Cleanable):
             raise RuntimeError(
                 "[CONDUIT] Bind is disabled for the current frame posture."
             )
-        # Embargo-then-lock: open the bind window (claims the bind embargo)
-        # BEFORE taking the conduit object lock, then run the shared
-        # registration seam, which does not open a transaction of its own.
-        with self.transaction(ChangeTransactionType.BIND):
-            with self._lock:
-                return self._spellbook._register_bound_spell(
-                    spell=spell,
-                    existence=existence,
-                    spellframe=spellframe,
-                    binding_name=binding_name,
-                    profile=profile,
-                    permissions=permissions,
-                    **kwargs,
-                )
+        # The bind transaction now lives entirely inside Spellbook.bind(), which
+        # opens the single bind window and runs the registration under it. The
+        # conduit delegates rather than opening its own window: the mediator
+        # forbids a second nested transaction root on the same thread, and
+        # bind() claims the bind embargo before taking any object lock, so the
+        # embargo-then-lock order is preserved.
+        return self._spellbook.bind(
+            spell=spell,
+            existence=existence,
+            spellframe=spellframe,
+            binding_name=binding_name,
+            profile=profile,
+            permissions=permissions,
+            **kwargs,
+        )
 
     def bind_inactive(
             self,

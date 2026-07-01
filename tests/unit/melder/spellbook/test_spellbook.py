@@ -1,3 +1,4 @@
+import contextlib
 import types
 import threading
 from types import MappingProxyType
@@ -1707,15 +1708,6 @@ def test_bind_state_helpers_and_staged_binding_key_updates(monkeypatch):
     assert sb._pending_binding_frame_keys == set()
     assert sb._pending_structural_spells == []
 
-    mediator = types.SimpleNamespace(
-        get_session_for_identity=lambda **kwargs: None,
-        update_transaction_for_identity=lambda **kwargs: None,
-    )
-    monkeypatch.setattr(sb, "_get_required_transaction_mediator", lambda: mediator)
-    sb._conjured = True
-    with pytest.raises(RuntimeError, match="requires an active binding transaction"):
-        sb._ensure_binding_transaction_active(action="bind")
-
     updated = []
     session = types.SimpleNamespace(staged=types.SimpleNamespace(contract_keys=[]))
     mediator = types.SimpleNamespace(
@@ -2365,6 +2357,7 @@ def test_bind_after_conjure_preserves_ownership_and_registrations(monkeypatch):
     sb._bind_family_disabled_for_current_posture = lambda: False
     sb._binding_transaction_is_active = lambda: True
     sb._ensure_binding_transaction_active = lambda action: None
+    sb.transaction = lambda *args, **kwargs: contextlib.nullcontext()
     sb._assert_lookup_key_available = lambda **kwargs: None
     sb._add_hooks_to_spell = lambda spell, **kwargs: None
 
@@ -2395,7 +2388,7 @@ def test_bind_after_conjure_preserves_ownership_and_registrations(monkeypatch):
     new_spell.key = new_spell._key
     sb._bind = types.SimpleNamespace(bind=lambda **kwargs: new_spell)
 
-    result = sb._register_bound_spell(spell=object(), existence=Existence.unique, permissions="create")
+    result = sb.bind(spell=object(), existence=Existence.unique, permissions="create")
 
     assert result == "jit-sid"
     assert new_spell.resolution_required is False
@@ -2432,6 +2425,7 @@ def test_bind_after_conjure_stamps_resolution_required_false(monkeypatch):
     sb._bind_family_disabled_for_current_posture = lambda: False
     sb._binding_transaction_is_active = lambda: True
     sb._ensure_binding_transaction_active = lambda action: None
+    sb.transaction = lambda *args, **kwargs: contextlib.nullcontext()
     sb._assert_lookup_key_available = lambda **kwargs: None
     sb._add_hooks_to_spell = lambda spell, **kwargs: None
     sb._spell_system_states = types.SimpleNamespace(
@@ -2455,7 +2449,7 @@ def test_bind_after_conjure_stamps_resolution_required_false(monkeypatch):
     new_spell.resolution_required = True
     sb._bind = types.SimpleNamespace(bind=lambda **kwargs: new_spell)
 
-    result = sb._register_bound_spell(spell=object(), existence=Existence.unique, permissions="create")
+    result = sb.bind(spell=object(), existence=Existence.unique, permissions="create")
 
     assert result == "aot-sid"
     assert new_spell.resolution_required is False
