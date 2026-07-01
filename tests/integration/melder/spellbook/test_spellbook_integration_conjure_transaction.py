@@ -66,8 +66,12 @@ def test_conjure_twice_on_the_same_spellbook_raises() -> None:
 
 def test_two_spellbooks_conjure_independently() -> None:
     """Different spellbooks conjure in parallel to distinct conduits."""
-    conduit_a = _bound_spellbook().conjure(dynamic=True, name="a")
-    conduit_b = _bound_spellbook().conjure(dynamic=True, name="b")
+    book_a = Spellbook(configuration=_dynamic_configuration())
+    book_a.bind(spell=BasicService, existence=Existence.unique, permissions="create")
+    book_b = Spellbook(configuration=_dynamic_configuration())
+    book_b.bind(spell=BasicConfig, existence=Existence.unique, permissions="create")
+    conduit_a = book_a.conjure(dynamic=True, name="a")
+    conduit_b = book_b.conjure(dynamic=True, name="b")
     try:
         assert isinstance(conduit_a, Conduit)
         assert isinstance(conduit_b, Conduit)

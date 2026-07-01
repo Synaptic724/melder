@@ -2899,6 +2899,23 @@ and logging.
             return True
         return frame_configuration.system_state is not SystemState.dynamic
 
+    def _is_dynamic_posture(self) -> bool:
+        """
+        Internal
+
+        Return whether this Spellbook's frame runs in dynamic mode.
+
+        Dynamic posture is a Spellbook/frame property (owned by the
+        AethericFrameConfiguration), not a per-conduit one, so it is available
+        before conjure. Pre-conjure dynamic-only paths such as `bind_inactive`
+        read it here rather than depending on a conduit that may not exist yet.
+        """
+        frame_configuration = self._aetheric_frame_configuration
+        return (
+            frame_configuration is not None
+            and frame_configuration.system_state is SystemState.dynamic
+        )
+
     def _get_required_transaction_mediator(self) -> "TransactionMediator":
         """
         Internal
@@ -3386,16 +3403,18 @@ and logging.
                     f"cleanup_spell: spell {spell_id} is the active member of a multi-member "
                     f"index; notch away from it before disposing it."
                 )
-        # 1) INVALIDATE FIRST: flag the spell + its lineage dirty (clear the creation
-        #    context, force a next-meld rebuild) while the index and dependency edges
-        #    still exist, so dependents can be rechecked. Teardown comes after. The
-        #    reason records that this spell is being disposed via cleanup.
-        spell.invalidate_spell(change_reason=SpellStateChangeReason.cleaned_up_spell)
-        # 2) THEN CLEAN UP.
+        # CLEAN UP. Only an ACTIVE spell is invalidated first: flag it + its lineage
+        # dirty (clear the creation context, force a next-meld rebuild) while the index
+        # and dependency edges still exist, so dependents can be rechecked before
+        # teardown. An INACTIVE member is off the resolution surface -- nothing resolves
+        # through it and dependents run through the active member -- so it is dropped
+        # without invalidation (invalidating a parked spell is pointless, and pre-notch
+        # it is not even valid).
         if is_active:
             # Authoritative disposal: unregisters the index (its compute_impact_closure
             # fans the dependent closure), removes every id/lookup map, and cleans the
             # spell and the index. Self-guards re-entry via _spellbook_cleanup.
+            spell.invalidate_spell(change_reason=SpellStateChangeReason.cleaned_up_spell)
             self.cleanup_and_remove_spell(spell)
         else:
             # Inactive member: drop just this member; the shared index and its other
@@ -4004,10 +4023,21 @@ and logging.
                 # _inactive_spells and keeps existence in _spell_ids. No id-pools,
                 # no _lookup_spells, no _spells[index], no binding-signature claim
                 # -- the spell is inert/unmeldable until notch_spell promotes it.
+                if not self._is_dynamic_posture():
+                    raise RuntimeError(
+                        "bind_inactive requires a dynamic Spellbook posture. Build the "
+                        "frame configuration with system_state=dynamic before staging an "
+                        "inactive spell for later notch activation."
+                    )
                 inactive_index = new_spell.spell_index
                 inactive_index.add_member(new_spell.spell_id)
                 self._inactive_spells[new_spell.spell_id] = new_spell
                 new_spell._active = False
+                # Dynamic posture is a Spellbook/frame property, not a per-conduit
+                # one, and no conduit exists here (pre-conjure). Stamp it from the
+                # Spellbook so the parked spell is invalidation-eligible when a later
+                # notch promotes it -- without attaching a conduit or invalidating it.
+                new_spell._dynamic_environment = True
                 if self._spell_ids is not None:
                     self._spell_ids.add(new_spell.spell_id)
                 return new_spell.spell_id

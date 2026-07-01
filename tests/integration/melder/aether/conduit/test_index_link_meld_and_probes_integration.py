@@ -117,7 +117,7 @@ def test_borrower_loses_meld_after_index_unlink():
         borrower.validate_contracts_and_define()
         assert _resolves(borrower, id_a) is True
         with borrower.transaction("link", conduits=[borrower, owner]):
-            borrower.remove_index_from_contract(index=index, conduit=owner)
+            borrower.remove_index_from_contract(index_id=index.id, conduit=owner)
         assert _resolves(borrower, id_a) is False
 
 
@@ -259,7 +259,7 @@ def test_two_borrowers_unlink_one_leaves_other_linked():
             b.add_index_to_contract(index=index, conduit=owner, permissions="create")
     try:
         with b1.transaction("link", conduits=[b1, owner]):
-            b1.remove_index_from_contract(index=index, conduit=owner)
+            b1.remove_index_from_contract(index_id=index.id, conduit=owner)
         assert index.id not in b1_book._contracted_indexes
         assert index.id in b2_book._contracted_indexes
     finally:

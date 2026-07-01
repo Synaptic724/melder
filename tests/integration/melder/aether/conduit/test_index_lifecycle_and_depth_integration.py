@@ -169,13 +169,13 @@ def test_relink_same_index_is_idempotent():
         contract = borrower._conduit_ward._find_contract_by_id(owner._id)
         # Still exactly one index-detail for the index (merge, not duplicate).
         assert contract._check_index_exists(owner._conduit_ward, index.id) is True
-        assert index.id in ob._contracted_indexes
+        assert index.id in bb._contracted_indexes
 
 
 def test_unlink_then_relink_reestablishes_index():
     with _linked_pair("create") as (ob, bb, owner, borrower, id_a, index):
         with borrower.transaction("link", conduits=[borrower, owner]):
-            borrower.remove_index_from_contract(index=index, conduit=owner)
+            borrower.remove_index_from_contract(index_id=index.id, conduit=owner)
         with borrower.transaction("link", conduits=[borrower, owner]):
             borrower.add_index_to_contract(index=index, conduit=owner, permissions="create")
         contract = borrower._conduit_ward._find_contract_by_id(owner._id)
@@ -190,7 +190,7 @@ def test_two_indexes_linked_are_isolated():
         with borrower.transaction("link", conduits=[borrower, owner]):
             borrower.add_index_to_contract(index=index_c, conduit=owner, permissions="create")
         with borrower.transaction("link", conduits=[borrower, owner]):
-            borrower.remove_index_from_contract(index=index_c, conduit=owner)
+            borrower.remove_index_from_contract(index_id=index_c.id, conduit=owner)
         contract = borrower._conduit_ward._find_contract_by_id(owner._id)
         # Removing index_c leaves the first index intact.
         assert contract._check_index_exists(owner._conduit_ward, index_c.id) is False

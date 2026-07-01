@@ -165,7 +165,7 @@ def test_remove_index_contract_drops_borrower_index_and_member():
         with borrower.transaction("link", conduits=[borrower, owner]):
             borrower.add_index_to_contract(index=index, conduit=owner, permissions="create")
         with borrower.transaction("link", conduits=[borrower, owner]):
-            borrower.remove_index_from_contract(index=index, conduit=owner)
+            borrower.remove_index_from_contract(index_id=index.id, conduit=owner)
         contract = borrower._conduit_ward._find_contract_by_id(owner._id)
         assert contract._check_index_exists(owner._conduit_ward, index.id) is False
         assert index.id not in borrower_book._contracted_indexes

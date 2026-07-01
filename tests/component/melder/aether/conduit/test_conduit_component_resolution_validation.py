@@ -249,17 +249,17 @@ def test_component_conduit_validate_resolution_returns_valid_state() -> None:
         owner.permanent_cleanup()
 
 
-def test_component_conduit_add_spell_to_contract_requires_link_transaction() -> None:
+def test_component_conduit_add_spell_to_contract_self_admits_standalone() -> None:
     """
     Purpose:
-        Validate contract mutations require an active link transaction.
+        Validate a single contract add self-admits its own transaction when no
+        link window is open (it no longer hard-requires an active link tx).
     Contract:
-        - add_spell_to_contract raises without a link transaction.
-        - add_spell_to_contract succeeds inside a link transaction.
+        - add_spell_to_contract succeeds standalone and contracts the spell.
     Returns:
         None.
     Raises:
-        AssertionError: If contract gating behavior is incorrect.
+        AssertionError: If the standalone contract add does not admit.
     """
     configuration = _make_dynamic_configuration()
     owner_book = Spellbook(configuration=configuration)
@@ -275,23 +275,16 @@ def test_component_conduit_add_spell_to_contract_requires_link_transaction() -> 
     borrower = borrower_book.conjure(dynamic=True, name="borrower")
     try:
         assert owner.link(borrower) is True
-        with pytest.raises(RuntimeError, match="link transaction"):
-            borrower.add_spell_to_contract(
-                spell_id=spell_id,
-                conduit=owner,
-                permissions="create",
-            )
-
-        with borrower.transaction("link", conduits=[borrower, owner]):
-            assert borrower.add_spell_to_contract(
-                spell_id=spell_id,
-                conduit=owner,
-                permissions="create",
-            ) is True
-            contracted = borrower.get_spells_in_contract_by_conduit(owner._id)
-            assert contracted is not None
-            inbound = contracted.get("inbound", [])
-            assert any(entry[0] == spell_id for entry in inbound)
+        # The single add now self-admits its own transaction (no link window).
+        assert borrower.add_spell_to_contract(
+            spell_id=spell_id,
+            conduit=owner,
+            permissions="create",
+        ) is True
+        contracted = borrower.get_spells_in_contract_by_conduit(owner._id)
+        assert contracted is not None
+        inbound = contracted.get("inbound", [])
+        assert any(entry[0] == spell_id for entry in inbound)
     finally:
         borrower.permanent_cleanup()
         owner.permanent_cleanup()

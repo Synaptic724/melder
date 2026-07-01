@@ -171,7 +171,7 @@ def test_unlink_index_removes_index_and_member_details():
     with _linked_pair() as (owner_book, borrower_book, owner, borrower, service_id, index):
         _link_index(borrower, owner, index, "read")
         with borrower.transaction("link", conduits=[borrower, owner]):
-            borrower.remove_index_from_contract(index=index, conduit=owner)
+            borrower.remove_index_from_contract(index_id=index.id, conduit=owner)
         contract = borrower._conduit_ward._find_contract_by_id(owner._id)
         assert contract._check_index_exists(owner._conduit_ward, index.id) is False
         assert contract._check_if_exists(owner._conduit_ward, service_id) is False

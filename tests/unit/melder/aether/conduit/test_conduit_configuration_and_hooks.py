@@ -1098,6 +1098,16 @@ def test_add_spell_to_contract_skips_peer_resolution_without_contract_hook(
         "_require_link_transaction_for_contract",
         lambda self, *args, **kwargs: None,
     )
+    # Force the reuse path (an active link window is present) so the add runs
+    # inside it; the standalone self-admit path resolves the peer for its
+    # transaction metadata, which is covered by the self-admit tests.
+    mock_mediator = MagicMock()
+    mock_mediator.get_active_request.return_value = MagicMock()
+    monkeypatch.setattr(
+        Conduit,
+        "_get_required_transaction_mediator",
+        lambda self: mock_mediator,
+    )
     resolve_peer = MagicMock()
     monkeypatch.setattr(
         Conduit,
