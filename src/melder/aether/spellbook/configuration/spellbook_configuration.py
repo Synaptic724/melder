@@ -245,10 +245,29 @@ class SpellbookConfiguration(Cleanable):
 
         return True
 
+    # Opt-in properties: registered in `available_properties` so
+    # `set_property` accepts and type-checks them, but NEVER hard-required.
+    # Validation backfills the documented default when unset so defaults-free
+    # fluent configurations (a supported public path) remain valid without
+    # knowing about optional optimization flags.
+    _OPTIONAL_PROPERTY_DEFAULTS: ClassVar[Dict[str, Any]] = {
+        "generalized_singleton_specialization_enabled": False,
+    }
+
     def _validate_required_properties_exist(self) -> None:
         """
         Ensures that all properties listed in `available_properties` are present.
+
+        Contract:
+            - Opt-in properties listed in `_OPTIONAL_PROPERTY_DEFAULTS` are
+              backfilled with their documented defaults instead of raising, so
+              configurations assembled without `load_default_dictionary()`
+              never fail validation over optional optimization flags.
+            - Every other registered property remains hard-required.
         """
+        for key, default_value in self._OPTIONAL_PROPERTY_DEFAULTS.items():
+            if key not in self._properties:
+                self._properties[key] = default_value
         for key in self.available_properties.keys():
             if key not in self._properties:
                 raise ValueError(f"Missing required configuration property: '{key}'.")
