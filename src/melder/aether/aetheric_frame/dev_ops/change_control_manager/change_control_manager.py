@@ -720,21 +720,33 @@ class ChangeControlManager(Cleanable):
 
     def _default_structural_validator(self, staged: ChangeControlStagedMutation) -> None:
         """
-        Default structural-validation hook for bind transactions.
+        Default structural-validation hook for staged-binding-key transactions.
 
-        This is the built-in validator used when a staged bind should force
+        This is the built-in validator used when a staged mutation should force
         Phase 1-4 validation before commit completes. It is intentionally
         conservative:
 
-        - only bind transactions participate
+        - only the generalized structural-commit set participates: bind, plus
+          notch (whose staged binding key names the promoted member)
         - unconjured or unavailable spellbooks short-circuit to no-op
         - spells that already have Phase 4 results are skipped
+        - notch additionally skips members that already carry a phase-5 root
+          blueprint: phase-4 results are transient (nulled at conjure end), so
+          only the durable blueprint distinguishes an already-compiled member
+          (notch-back / no-op notch) from a never-compiled bind_inactive one;
+          compiled members recompile through meld's gated validation lane
+
+        Execution stays spellbook-owned: this hook only resolves the staged
+        keys and delegates to the owning Spellbook's own phase runner.
 
         Any structural-phase exception is allowed to propagate so the commit
-        path can fail loudly instead of accepting a broken staged bind.
+        path can fail loudly instead of accepting a broken staged mutation.
         """
         
-        if staged.request_type is not ChangeTransactionType.BIND:
+        if staged.request_type not in (
+            ChangeTransactionType.BIND,
+            ChangeTransactionType.NOTCH,
+        ):
             return
         if not staged.binding_keys:
             return
@@ -747,6 +759,15 @@ class ChangeControlManager(Cleanable):
         if not spells:
             return
         pending = [spell for spell in spells if spell.validation_result_phase4 is None]
+        if staged.request_type is ChangeTransactionType.NOTCH:
+            # See Contract: only never-compiled members run phases 1-4 at a
+            # notch commit; already-compiled members keep their live artifacts
+            # and are recompiled by meld through their gated verdicts.
+            pending = [
+                spell
+                for spell in pending
+                if spell._compiler_artifact._root_blueprint_phase5 is None
+            ]
         if not pending:
             return
         spellbook._run_post_conjure_structural_phases(pending)

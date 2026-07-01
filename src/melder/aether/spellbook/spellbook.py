@@ -24,6 +24,7 @@ from melder.aether.spellbook.configuration.spellbook_configuration import Spellb
 from melder.aether.spellbook.bind.bind import Bind
 from melder.aether.spellbook.bind.spell_index import SpellIndex
 from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_state_change_reason import SpellStateChangeReason
+from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_validity import SpellValidity
 from melder.aether.spellbook.existence.existence import Existence
 from melder.aether.conduit.conduit_ward.policies.policies import Policies
 from melder.utilities.helpers.general_helpers import EnumHelpers
@@ -3050,15 +3051,13 @@ and logging.
         notched_spell = self._apply_notch(
             spell_index=spell_index, spell=spell, change_reason=change_reason
         )
-        # Resolve/compile the newly-active spell here, in the spellbook, using the
-        # same structural resolution a post-conjure bind runs for its spell -- but
-        # only when the promoted member still needs compiling (a fully phase-6
-        # validated spell must not be recompiled). This runs inside the conduit's
-        # held notch window (spellbook + conduit sealed EXCLUSIVE for the
-        # duration), so the spellbook owns its own structural execution instead of
-        # depending on a mediator-side commit hook.
-        if notched_spell.validation_result_phase6 is None:
-            self._run_post_conjure_structural_phases([notched_spell])
+        # The promoted member's phases 1-4 now run at the NOTCH transaction
+        # commit through the generalized staged-binding-key structural validator
+        # (the same commit path bind uses), which delegates back to this
+        # spellbook's own phase runner. Phase-4/phase-6 results are transient
+        # (nulled at conjure end), so they must never be used as a compile
+        # signal here; the duplicate rerun previously keyed on them fired on
+        # every notch, including no-op notches.
         return notched_spell
 
     def _apply_notch(
@@ -3149,19 +3148,40 @@ and logging.
             else:
                 self._publish_spell_record_to_nexus(spell)
         # Mark the lineage structurally changed so dependents revalidate, and clear
-        # the promoted member's stale CreationContext. (invalidate_spell also sets
-        # resolution_required=True; we align it with an active bind below.)
+        # the promoted member's stale CreationContext. invalidate_spell also sets
+        # resolution_required=True as a side effect; bind-parity routing below sets
+        # it back to False so meld's validation-required lane (the one that runs
+        # the full 5-7/8-11 target pass) owns the recompile, exactly as it does for
+        # a freshly bound spell. resolution_required=True would instead route the
+        # deferred 8-11 lane, which cannot compile a member with no phase-5
+        # blueprint.
         spell.invalidate_spell(change_reason=change_reason)
-        # A notch runs under a NOTCH transaction, so the bind commit's structural
-        # validator never fires for the promoted member and its phases would never
-        # run. When it is not already fully validated, run the structural phases
-        # (1-4) on it directly -- the exact executor the bind commit reaches -- then
-        # leave it exactly as an active bind does: resolution_required=False, with
-        # meld's validation-required path finishing 5-11 on the next meld. An
-        # already-validated member (notch-back) is left on the lazy resolution path.
-        if spell.validation_result_phase4 is None or spell.validation_result_phase6 is None:
-            self._run_post_conjure_structural_phases([spell])
-            spell.resolution_required = False
+        spell.resolution_required = False
+        # Phases 1-4 for the promoted member now run at the NOTCH transaction
+        # commit: the strategy stages this binding key and the generalized
+        # structural commit validator delegates back to this spellbook's own
+        # phase runner, exactly like a bind commit. No hand-rolled structural
+        # run here -- the seam owns the swap, the commit owns the checks.
+        #
+        # Bind gets its meld revalidation for free because a freshly bound id has
+        # never been validated in this conduit (UNKNOWN verdict). A notched member
+        # can carry a stale conjure-era `valid` verdict for this conduit, so knock
+        # the promoted id's spell- and root-level verdicts back to gated -- the
+        # explicit flag that makes meld's validation lane recompile it.
+        if self._conjured and self._conduit is not None:
+            resolution_state = self._spell_system_states.get_or_create_conduit_resolution_state(
+                self._get_required_conduit_surface()._id,
+            )
+            resolution_state.set_spell_validity(
+                new_id,
+                SpellValidity.gated,
+                change_reason=change_reason,
+            )
+            resolution_state.set_root_validity(
+                new_id,
+                SpellValidity.gated,
+                change_reason=change_reason,
+            )
         return spell
 
     def _add_to_spell_index(self, *, spell: Spell, target_index: SpellIndex) -> Spell:
@@ -3710,9 +3730,17 @@ and logging.
                     identity=self._transaction_identity,
                     transaction_type=ChangeTransactionType.BIND,
                 )
-                # Spellbook owns its own local bind state (see begin_transaction);
-                # clear it once the mediator has finalized the bind envelope.
-                self._clear_bind_transaction_state()
+                # Spellbook owns its own local bind state (see begin_transaction).
+                # Nested bind windows (scan / bind_inactive joins) share the outer
+                # session, so clearing after EVERY end wiped the staged structural
+                # set down to the most recent bind and starved the commit-time
+                # validator. Clear only when the mediator reports the bind
+                # envelope fully finalized (the outermost end).
+                if mediator.get_session_for_identity(
+                    identity=self._transaction_identity,
+                    transaction_type=ChangeTransactionType.BIND,
+                ) is None:
+                    self._clear_bind_transaction_state()
                 return
         request = mediator.get_active_request()
         if request is None:

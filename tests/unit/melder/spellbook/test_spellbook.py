@@ -331,6 +331,9 @@ class DummySpellIndex:
         self.id = sid
         self.selected_spell_id = current
         self.cleaned = False
+        # Owned-contract mirror of SpellIndex._cleaned: production code reads the
+        # private flag directly (owned-code direct access), so the stub must too.
+        self._cleaned = False
 
     def cleanup(self):
         """
@@ -342,6 +345,7 @@ class DummySpellIndex:
             None.
         """
         self.cleaned = True
+        self._cleaned = True
 
     def has_spell(self, version_id):
         """
@@ -1534,6 +1538,7 @@ def test_begin_transaction_enforces_dynamic_mode_and_admission_failures(monkeypa
         ),
         transaction_mediator=lambda: types.SimpleNamespace(
             has_active_session=lambda: False,
+            get_session_for_identity=lambda **kwargs: None,
             start_transaction=lambda **kwargs: (_ for _ in ()).throw(
                 RuntimeError(
                     "[TRANSACTION_MEDIATOR] Change-control admission denied "

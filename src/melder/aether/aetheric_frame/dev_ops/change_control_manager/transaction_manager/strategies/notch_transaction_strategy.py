@@ -36,6 +36,12 @@ class NotchTransactionStrategy(TransactionStrategy):
           duration, while staying isolated to exactly those surfaces.
         - The active-spell repoint itself runs inside the held window via the
           Spellbook-owned `_apply_notch` seam (SpellIndex-model lane).
+        - The targeted binding key is also emitted into the staged mutation's
+          `binding_keys`, so the generalized commit-side machinery fires for a
+          notch exactly like it does for a bind: the structural commit
+          validator runs phases 1-4 for the promoted member (delegating to the
+          owning Spellbook's own phase runner) and the commit dirty-marker
+          dirties dependents in `SpellSystemStates`.
     """
 
     @classmethod
@@ -82,6 +88,16 @@ class NotchTransactionStrategy(TransactionStrategy):
         normalized_metadata["transaction_identity"] = identity.describe()
         normalized_metadata["index_mode"] = "notch"
 
+        # Stage the promoted member's binding key onto the request so the
+        # commit-side structural validator and dirty-marker (the same
+        # generalized staged-keys path bind uses) participate at notch commit.
+        staged_binding_keys: List[Tuple[str, str]] = [
+            (frame_key, bind_key)
+            for frame_key, bind_key in metadata.get("binding_keys", ())
+        ]
+        if binding_key is not None and binding_key not in staged_binding_keys:
+            staged_binding_keys.append(binding_key)
+
         initiator = metadata.get("initiator_conduit_id")
         if not isinstance(initiator, str) or not initiator:
             initiator = next(iter(conduit_ids), identity.owner_id)
@@ -93,7 +109,7 @@ class NotchTransactionStrategy(TransactionStrategy):
             "scope_keys": tuple(sorted(scope_keys)),
             "scope_claims": tuple(scope_claims),
             "scope_hashes": tuple(metadata.get("scope_hashes", ())),
-            "binding_keys": tuple(metadata.get("binding_keys", ())),
+            "binding_keys": tuple(staged_binding_keys),
             "contract_keys": tuple(metadata.get("contract_keys", ())),
             "granted_capabilities": ("notch", "spell_index_mutation"),
             "required_capabilities": ("notch", "spell_index_mutation"),

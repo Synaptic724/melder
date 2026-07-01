@@ -222,13 +222,16 @@ def emit_step_plan_source(
             if inlinable_params is None:
                 locals_mode = False
                 break
-            for _param_name, dependency_key in inlinable_params:
-                dependency_key_tuple = (
-                    dependency_key[0],
-                    dependency_key[1],
-                )
-                if dependency_key_tuple not in key_to_step_index:
-                    locals_mode = False
+            for _param_name, dependency_keys in inlinable_params:
+                for dependency_key in dependency_keys:
+                    dependency_key_tuple = (
+                        dependency_key[0],
+                        dependency_key[1],
+                    )
+                    if dependency_key_tuple not in key_to_step_index:
+                        locals_mode = False
+                        break
+                if not locals_mode:
                     break
             if not locals_mode:
                 break
@@ -588,22 +591,31 @@ def _emit_construct_instance(
         lines.append(
             f"{indent}    instance_{step_index} = spell_{step_index}.spell("
         )
-        for arg_index, (param_name, dependency_key) in enumerate(
-                inlinable_params,
-        ):
+        # Flat cursor over the row's flattened dependency-key tuple: single-dep
+        # params compile to one scalar reference; collection-DI params compile
+        # to an order-preserving list literal (parity with the generic
+        # `_build_kwargs_no_overrides`: >=2 deps -> list, 1 -> scalar).
+        flat_dep_cursor = 0
+        for param_name, dependency_keys in inlinable_params:
             if key_to_step_index is not None:
-                dependency_step_index = key_to_step_index[
-                    (dependency_key[0], dependency_key[1])
+                references = [
+                    f"instance_{key_to_step_index[(key[0], key[1])]}"
+                    for key in dependency_keys
                 ]
-                lines.append(
-                    f"{indent}        {param_name}="
-                    f"instance_{dependency_step_index},"
-                )
             else:
-                lines.append(
-                    f"{indent}        {param_name}="
-                    f"instance_results[step_dep_keys_{step_index}[{arg_index}]],"
-                )
+                references = [
+                    f"instance_results[step_dep_keys_{step_index}"
+                    f"[{flat_dep_cursor + offset}]]"
+                    for offset in range(len(dependency_keys))
+                ]
+            flat_dep_cursor += len(dependency_keys)
+            if len(dependency_keys) == 1:
+                value_expression = references[0]
+            else:
+                value_expression = "[" + ", ".join(references) + "]"
+            lines.append(
+                f"{indent}        {param_name}={value_expression},"
+            )
         lines.append(f"{indent}    )")
     else:
         lines.append(
@@ -703,9 +715,14 @@ def row_inlinable_common_shape(
     Return inlinable (param_name, dependency_key) pairs from one manifest row.
 
     Contract:
-        - Row-driven port of the legacy inlinable-shape rule: callable,
-          non-existing-creation spells with no contract payload, no positional
-          override, and exactly one dependency per parameter.
+        - Returns (param_name, dependency_key_tuple) pairs; every entry is a
+          TUPLE of keys (single-dep params carry a 1-tuple).
+        - Callable, non-existing-creation spells with no contract payload and
+          no positional override are inlinable; collection-DI params (two or
+          more dependencies) are now inlinable too - emission produces an
+          order-preserving list literal, matching the generic
+          `_build_kwargs_no_overrides` semantics exactly (>=2 deps -> list,
+          1 dep -> scalar, 0 deps -> parameter omitted).
         - Requires the family row flags `spell_is_callable` and
           `spell_is_existing_creation`. Family manifest rows always carry
           them (the manifest builder stamps both), so access is direct; a
@@ -723,12 +740,9 @@ def row_inlinable_common_shape(
         return None
     params = []
     for param_name, dependency_keys in row["dependency_resolution_order"]:
-        dependency_count = len(dependency_keys)
-        if dependency_count == 0:
+        if len(dependency_keys) == 0:
             continue
-        if dependency_count != 1:
-            return None
-        params.append((param_name, dependency_keys[0]))
+        params.append((param_name, tuple(dependency_keys)))
     return tuple(params)
 
 
@@ -770,9 +784,10 @@ def _build_step_bindings(
         "step_dep_keys": tuple(
             tuple(
                 dependency_key
-                for _param_name, dependency_key in (
+                for _param_name, dependency_keys in (
                     row_inlinable_common_shape(row) or ()
                 )
+                for dependency_key in dependency_keys
             )
             for row in rows
         ),
@@ -999,13 +1014,16 @@ def emit_specialized_step_plan_source(
             if inlinable_params is None:
                 locals_mode = False
                 break
-            for _param_name, dependency_key in inlinable_params:
-                dependency_key_tuple = (
-                    dependency_key[0],
-                    dependency_key[1],
-                )
-                if dependency_key_tuple not in key_to_step_index:
-                    locals_mode = False
+            for _param_name, dependency_keys in inlinable_params:
+                for dependency_key in dependency_keys:
+                    dependency_key_tuple = (
+                        dependency_key[0],
+                        dependency_key[1],
+                    )
+                    if dependency_key_tuple not in key_to_step_index:
+                        locals_mode = False
+                        break
+                if not locals_mode:
                     break
             if not locals_mode:
                 break
@@ -1025,14 +1043,15 @@ def emit_specialized_step_plan_source(
         for step_index, row in enumerate(rows):
             if step_index in captured_set:
                 continue
-            for _param_name, dependency_key in (
+            for _param_name, dependency_keys in (
                     row_inlinable_common_shape(row) or ()
             ):
-                dependency_step_index = key_to_step_index[
-                    (dependency_key[0], dependency_key[1])
-                ]
-                if dependency_step_index in captured_set:
-                    read_captured.add(dependency_step_index)
+                for dependency_key in dependency_keys:
+                    dependency_step_index = key_to_step_index[
+                        (dependency_key[0], dependency_key[1])
+                    ]
+                    if dependency_step_index in captured_set:
+                        read_captured.add(dependency_step_index)
         if (
                 root_step_index is not None
                 and root_step_index in captured_set

@@ -637,6 +637,8 @@ class SpellCompilerSystem(Cleanable):
 
         Contract:
             - Returns False when no current spell id exists.
+            - Returns False when the spell has no compiler artifact attached
+              (cache-rehydrated spells can run without one).
             - Returns False when no Phase 5 root blueprint is attached yet.
             - Returns True only when the attached Phase 5 root blueprint exists
               and its `root_spell_id` matches the spell's current id.
@@ -653,7 +655,12 @@ class SpellCompilerSystem(Cleanable):
         spell_id = spell.spell_index.selected_spell_id
         if spell_id is None:
             return False
-        blueprint = spell._compiler_artifact._root_blueprint_phase5
+        artifact = spell._compiler_artifact
+        if artifact is None:
+            # Cache-rehydrated spells can run with no compiler artifact attached;
+            # they are by definition not the live phase-5 root for this surface.
+            return False
+        blueprint = artifact._root_blueprint_phase5
         if blueprint is None:
             return False
         return blueprint.root_spell_id == spell_id

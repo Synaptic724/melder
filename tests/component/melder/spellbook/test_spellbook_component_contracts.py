@@ -379,13 +379,16 @@ def test_component_spellbook_add_contracted_spell_tracks_multiple_versions() -> 
 def test_component_spellbook_remove_contracted_spell_removes_all_versions() -> None:
     """
     Purpose:
-        Validate removing a contracted spell clears all its versions.
+        Validate removing a contracted index member clears every tracked member id.
     Contract:
-        - _remove_contracted_spell removes every version for the SpellIndex.
+        - The contracted copy is the ACTIVE member, so the by-id registration key
+          (selected_spell_id at add time) and the copy's own spell_id agree.
+        - _remove_contracted_spell drops the index subscription and every member
+          id tracked for the peer conduit.
     Returns:
         None.
     Raises:
-        AssertionError: If versions remain after removal.
+        AssertionError: If member ids remain after removal.
     """
     spellbook = _make_spellbook()
     conduit_id = "peer"
@@ -400,8 +403,12 @@ def test_component_spellbook_remove_contracted_spell_removes_all_versions() -> N
         spell = _get_spell_by_version_id(spellbook, spell_id)
         assert spell is not None
         initial_id = spell.spell_index.selected_spell_id
-        next_id = f"{initial_id}-v2"
-        spell.spell_index.update(next_id)
+        # Corrected index model: stage the extra id as an ADDITIONAL member of the
+        # index instead of repointing the selected head before the add. Repointing
+        # first (version-era semantics) breaks the add-time agreement between the
+        # by-id registration key and the contracted copy's own spell_id.
+        next_id = f"{initial_id}-member2"
+        spell.spell_index.add_member(next_id)
 
         spellbook._add_contracted_spell(spell, conduit_id)
         spellbook._remove_contracted_spell(next_id, conduit_id)

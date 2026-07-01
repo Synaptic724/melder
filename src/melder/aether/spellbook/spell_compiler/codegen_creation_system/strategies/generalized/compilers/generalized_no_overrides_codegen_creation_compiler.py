@@ -1655,11 +1655,16 @@ def _build_no_overrides_codegen_executor_source(
         "    ):",
     ])
 
+    # Per-slot constructor defaults: the default expressions index the
+    # factory-local `transient_targets` ONCE at def-execution time, so the
+    # per-call alias loads the previous body paid on every meld are gone.
+    # Inserted after the `transient_targets` signature line (index 3); the
+    # binding surface consumed by every caller is unchanged.
     for step_index in range(transient_step_count):
-        lines.append(f"    t{step_index} = transient_targets[{step_index}]")
-
-    lines.append("    __step_index = 0")
-    lines.append("    try:")
+        lines.insert(
+            4 + step_index,
+            f"        t{step_index}=transient_targets[{step_index}],",
+        )
 
     for step_index in range(transient_step_count):
         call_mode = transient_call_modes[step_index]
@@ -1706,20 +1711,26 @@ def _build_no_overrides_codegen_executor_source(
         if call_expression is None:
             return None
 
-        lines.append(f"        __step_index = {step_index}")
+        # Per-step zero-cost handler (3.11+ exception tables): constant
+        # step attribution replaces the live `__step_index` bookkeeping the
+        # previous body paid as one dead store per step per call.
+        lines.append("    try:")
         lines.append(f"        v{step_index} = {call_expression}")
+        lines.append("    except Exception as exc:")
+        lines.append(f"        step_spell = steps[{step_index}].spell")
+        lines.append("        raise MeldExecutionError(")
+        lines.append(
+            "            spell_id=step_spell.spell_index.selected_spell_id,"
+        )
+        lines.append("            spell_name=step_spell.spell_name,")
+        lines.append(
+            "            message=f\"Error invoking spell "
+            "'{step_spell.spell_name}'.\","
+        )
+        lines.append("            inner=exc,")
+        lines.append("        ) from exc")
 
-    lines.extend([
-        "    except Exception as exc:",
-        "        step_spell = steps[__step_index].spell",
-        "        raise MeldExecutionError(",
-        "            spell_id=step_spell.spell_index.selected_spell_id,",
-        "            spell_name=step_spell.spell_name,",
-        "            message=f\"Error invoking spell '{step_spell.spell_name}'.\",",
-        "            inner=exc,",
-        "        ) from exc",
-        f"    return v{transient_root_index}",
-    ])
+    lines.append(f"    return v{transient_root_index}")
     return "\n".join(lines)
 
 
