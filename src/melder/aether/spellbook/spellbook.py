@@ -2562,6 +2562,11 @@ and logging.
                 self._lookup_contracted_spells.pop(conduit_id, None)
                 self._contracted_spell_ids.pop(conduit_id, None)
                 self._contracted_spells_by_id.pop(conduit_id, None)
+                # The parked (inactive) borrowed map is created lazily on the add
+                # side (`_add_inactive_contracted_spell`), so it is not part of the
+                # four-map lockstep check above. Drop its bucket too so a dissolved
+                # contract leaves no orphaned inactive-copy map behind.
+                self._inactive_contracted_spells.pop(conduit_id, None)
 
 
     def _add_contracted_spell(self, spell: Spell, conduit_id: str) -> None:
@@ -2752,10 +2757,19 @@ and logging.
                 )
                 raise RuntimeError(f"No contracted spell maps found for conduit ID {conduit_id}.")
 
-            # Find the SpellIndex whose version list contains this version SHA
+            # Find the contracted SpellIndex holding this member id. A destroyed
+            # (cleaned) contracted index can no longer report its member set, so
+            # fall back to matching the contracted spell's own id -- the removed
+            # member's live copy -- so its stale entry is still dropped.
             spell_index = None
             spell = None
             for idx, s in spell_map.items():
+                if idx._cleaned:
+                    if s.spell_id == spell_id:
+                        spell_index = idx
+                        spell = s
+                        break
+                    continue
                 member_ids = idx._spells_in_index
                 if member_ids and spell_id in member_ids:
                     spell_index = idx
@@ -2763,28 +2777,54 @@ and logging.
                     break
 
             if spell_index is None or spell is None:
-                self._logger.error(
-                    f"Spell version {spell_id} not found for conduit {conduit_id}",
-                    "_remove_contracted_spell",
-                    exc_info=True,
-                )
-                raise RuntimeError(f"Spell version {spell_id} not found for conduit ID {conduit_id}.")
+                # Not in the ACTIVE contracted maps. A borrowed member can be
+                # parked (inactive) instead of active: `_add_inactive_contracted_spell`
+                # populates ONLY `_inactive_contracted_spells` plus the per-conduit
+                # existence set -- never the active maps, the lookup, or the risk
+                # manager. Removal must mirror that so it is symmetric with add for
+                # parked members. This is the common case, not an edge one:
+                # `remove_from_spell_index` only ever removes INACTIVE members
+                # (`_apply_remove_from_index` forces an active head to be notched
+                # away first), so the member handed to teardown is virtually always
+                # the parked borrowed copy.
+                parked = self._inactive_contracted_spells.get(conduit_id)
+                parked_spell = parked.get(spell_id) if parked is not None else None
+                if parked_spell is None:
+                    self._logger.error(
+                        f"Spell version {spell_id} not found for conduit {conduit_id}",
+                        "_remove_contracted_spell",
+                        exc_info=True,
+                    )
+                    raise RuntimeError(f"Spell version {spell_id} not found for conduit ID {conduit_id}.")
+                # Drop the parked copy and its existence entry. No active-map,
+                # lookup-map, or risk-manager teardown: a parked copy never
+                # populated any of those (leave `removed_spell` None so the
+                # risk-manager unregister below is skipped).
+                parked.pop(spell_id, None)
+                conduit_spell_ids.discard(spell_id)
+            else:
+                # Use the contracted spell's own id (the active member copy) rather than
+                # the index selected id, which is unavailable once the index is cleaned.
+                self._unregister_contracted_spell_id(conduit_id, spell.spell_id, spell)
 
-            self._unregister_contracted_spell_id(conduit_id, spell_index.selected_spell_id, spell)
+                # Remove from main map
+                spell_map.pop(spell_index, None)
 
-            # Remove from main map
-            spell_map.pop(spell_index, None)
+                # Remove from lookup map
+                key = self._make_spell_key(spell.spellframe, spell.spell_name, spell.binding_name)
+                lookup_map.pop(key, None)
 
-            # Remove from lookup map
-            key = self._make_spell_key(spell.spellframe, spell.spell_name, spell.binding_name)
-            lookup_map.pop(key, None)
-
-            # Remove *all* versions for this SpellIndex from the version cache
-            member_ids = spell_index._spells_in_index
-            if member_ids:
-                for member_id in member_ids:
-                    conduit_spell_ids.discard(member_id)
-            removed_spell = spell
+                # Drop the removed member from the version cache. While the index is
+                # live, drop every member id it carries; once destroyed, only the
+                # removed id remains to clear.
+                if not spell_index._cleaned:
+                    member_ids = spell_index._spells_in_index
+                    if member_ids:
+                        for member_id in member_ids:
+                            conduit_spell_ids.discard(member_id)
+                else:
+                    conduit_spell_ids.discard(spell_id)
+                removed_spell = spell
         self._try_update_staged_contract_keys(conduit_id)
         if removed_spell is not None and self._conjured and self._conduit is not None:
             self._unregister_spell_with_risk_manager(self._conduit._id, removed_spell)
@@ -2832,6 +2872,14 @@ and logging.
             self._lookup_contracted_spells[conduit_id].clear()
             self._contracted_spell_ids[conduit_id].clear()
             self._contracted_spells_by_id[conduit_id].clear()
+            # Parked (inactive) borrowed copies live in a separate map the active
+            # clears above never touch. Clear them too so a full contract teardown
+            # is symmetric with the add side (which parks inactive members via
+            # `_add_inactive_contracted_spell`). No risk-manager teardown: parked
+            # copies were never registered with it.
+            parked = self._inactive_contracted_spells.get(conduit_id)
+            if parked is not None:
+                parked.clear()
         self._try_update_staged_contract_keys(conduit_id)
         if removed_spells and self._conjured and self._conduit is not None:
             for spell in removed_spells:
@@ -2999,7 +3047,19 @@ and logging.
         # The owning Conduit admits the `notch` transaction (it owns the
         # change-control envelope and the conduit-link surface); this seam performs
         # the local selected-spell switch inside that held window.
-        return self._apply_notch(spell_index=spell_index, spell=spell, change_reason=change_reason)
+        notched_spell = self._apply_notch(
+            spell_index=spell_index, spell=spell, change_reason=change_reason
+        )
+        # Resolve/compile the newly-active spell here, in the spellbook, using the
+        # same structural resolution a post-conjure bind runs for its spell -- but
+        # only when the promoted member still needs compiling (a fully phase-6
+        # validated spell must not be recompiled). This runs inside the conduit's
+        # held notch window (spellbook + conduit sealed EXCLUSIVE for the
+        # duration), so the spellbook owns its own structural execution instead of
+        # depending on a mediator-side commit hook.
+        if notched_spell.validation_result_phase6 is None:
+            self._run_post_conjure_structural_phases([notched_spell])
+        return notched_spell
 
     def _apply_notch(
             self,
@@ -3069,6 +3129,16 @@ and logging.
             spell_index=spell_index,
             owner_spellbook_id=self._id,
         )
+        # Refresh the spellbook validation-required flag for the promoted member:
+        # register_spell recomputes its structural/resolution validity and, for a
+        # not-yet-validated member, flips `_spellbook_validation_required` True --
+        # which is exactly what makes meld run the gated revalidation (the compile)
+        # instead of trying to build a CreationContext for an uncompiled spell.
+        if self._conjured and self._conduit is not None:
+            self._register_spell_with_risk_manager(
+                self._get_required_conduit_surface()._id,
+                spell,
+            )
         # Nexus visibility: the active member changed, so remove the parked
         # outgoing member's now-stale record and publish the newly-active one
         # (a plain publish when there is no outgoing member). Not phase-6-gated:
@@ -3078,15 +3148,20 @@ and logging.
                 self._replace_spell_record_in_nexus(outgoing.spell_id, spell)
             else:
                 self._publish_spell_record_to_nexus(spell)
-        # Stage the promoted member for the structural phases (1-7) exactly like
-        # an active bind does; the shared helper no-ops when it is already phase-6
-        # validated, so it compiles on this same commit only when needed.
-        self._stage_spell_for_structural_phases(spell)
-        # Flag the now-active spell for a next-meld rebuild and mark its lineage
-        # structurally changed with the notch reason (the spell-owned invalidation
-        # helper, which also clears the cached creation context); dependents
-        # revalidate through the gated lineage on their next meld.
+        # Mark the lineage structurally changed so dependents revalidate, and clear
+        # the promoted member's stale CreationContext. (invalidate_spell also sets
+        # resolution_required=True; we align it with an active bind below.)
         spell.invalidate_spell(change_reason=change_reason)
+        # A notch runs under a NOTCH transaction, so the bind commit's structural
+        # validator never fires for the promoted member and its phases would never
+        # run. When it is not already fully validated, run the structural phases
+        # (1-4) on it directly -- the exact executor the bind commit reaches -- then
+        # leave it exactly as an active bind does: resolution_required=False, with
+        # meld's validation-required path finishing 5-11 on the next meld. An
+        # already-validated member (notch-back) is left on the lazy resolution path.
+        if spell.validation_result_phase4 is None or spell.validation_result_phase6 is None:
+            self._run_post_conjure_structural_phases([spell])
+            spell.resolution_required = False
         return spell
 
     def _add_to_spell_index(self, *, spell: Spell, target_index: SpellIndex) -> Spell:
@@ -3802,20 +3877,19 @@ and logging.
         """
         Internal
 
-        Stage `spell` onto the active bind-family transaction so its commit runs
-        the structural phases on it. Shared by the active bind path and the notch
-        promotion path.
+        Stage `spell` onto the active bind transaction so its commit runs the
+        structural phases (1-4) on it: record the frame key + the spell in the
+        pending bind-transaction collections and push the staged binding keys onto
+        the session, which the change-control commit consumes to run the phases.
 
-        No-op when the spell is already phase-6 validated: a fully-validated spell
-        must not be recompiled. A freshly-bound spell has no phase-6 result yet, so
-        bind always stages; notch stages only a promoted member that still needs
-        compiling.
+        Used by the active bind path. Notch does NOT stage -- it promotes an
+        existing member under a NOTCH transaction, whose commit never fires the
+        bind structural validator, so it runs the structural phases directly via
+        `_run_post_conjure_structural_phases`.
 
         Args:
             spell (Spell): The spell to stage.
         """
-        if spell.validation_result_phase6 is not None:
-            return
         if self._pending_binding_frame_keys is not None:
             self._pending_binding_frame_keys.add(spell.key[0])
         if self._pending_structural_spells is not None:

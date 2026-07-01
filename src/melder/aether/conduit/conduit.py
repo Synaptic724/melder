@@ -2762,7 +2762,7 @@ class Conduit(Cleanable):
             )
         if self._spellbook is None:
             raise RuntimeError("[CONDUIT] No owning Spellbook for bind_inactive.")
-        return self._spellbook._bind_inactive(
+        new_spell_id = self._spellbook._bind_inactive(
             spell=spell,
             spell_index=spell_index,
             existence=existence,
@@ -2772,6 +2772,11 @@ class Conduit(Cleanable):
             profile=profile,
             **kwargs,
         )
+        # The new inactive member joined `spell_index`; if that index is shared
+        # through an index-link, propagate the member to borrowers (parked copy +
+        # per-member Detail), exactly like `add_to_spell_index` does after a move.
+        self._conduit_ward._emit_index_member_added(spell_index, new_spell_id)
+        return new_spell_id
 
     def scan(self, module: ModuleType) -> list[str]:
         """
