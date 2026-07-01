@@ -4133,10 +4133,11 @@ and logging.
             self._logger.error(f"Error while binding spell: {e}", "bind", exc_info=True)
             raise
 
-    def _bind_inactive_spell(
+    def _bind_inactive(
             self,
             *,
             spell: Any,
+            spell_index: SpellIndex,
             existence: Union[str, Existence],
             permissions: str | Permissions = "create",
             spellframe: Any = None,
@@ -4148,27 +4149,55 @@ and logging.
         """
         Internal
 
-        Execute the bind pipeline assuming a bind-family transaction is active.
+        Bind a spell as an INACTIVE member of an existing owned `spell_index`.
 
         Purpose:
-            Keep the actual spell registration logic in one place while the
-            public `bind()` method decides whether it needs to open the
-            bind-family transaction window first.
+            Stage a spell off the resolution surface so a later `notch` can
+            promote it. The spell is created (the `Bind` component mints its own
+            fresh index), parked into `_inactive_spells` with existence kept in
+            `_spell_ids` and `_active = False`, then folded onto the caller
+            provided `spell_index` via `_apply_add_to_index` (which repoints the
+            spell's index to the target and destroys the throwaway fresh index).
+            The parked spell is inert and unmeldable until `notch_spell` promotes
+            it.
 
         Contract:
-            - Requires an active binding transaction.
-            - Profiles the spell, computes its structural `spell_id`, and
-              inserts the resulting `Spell` into local lookup and version caches.
-            - Enforces local lookup-key uniqueness before registration.
-            - Applies lifecycle hooks only after validating that the supplied
-              hooks are callable.
-            - When the Spellbook already has a conjured conduit, stamps conduit
-              ownership/runtime metadata onto the new spell and publishes it
-              into the relevant runtime mirrors.
+            - Requires an active binding transaction and a dynamic Spellbook
+              posture.
+            - `spell_index` must be an index this Spellbook already owns (its
+              selected member id is in `_spell_ids`), enforced by
+              `_apply_add_to_index`.
+            - Performs no active-map registration and claims no binding
+              signature; the spell stays inactive until notched.
+
+        Args:
+            spell (Any):
+                The class, function, lambda, or existing object to register.
+            spell_index (SpellIndex):
+                The already-owned index to attach the inactive spell to.
+            existence (Union[str, Existence]):
+                Lifecycle scope for the spell.
+            permissions (str | Permissions):
+                Permission level exposed to other conduits.
+            spellframe (Any):
+                Logical interface/frame grouping key.
+            binding_name (Optional[str]):
+                Secondary disambiguation key within the frame.
+            disposal_method_names (Optional[Sequence[str]]):
+                Optional disposal method names to associate with the spell.
+            profile (str):
+                Spell profile family to attach after bind completion.
+            **kwargs:
+                Optional lifecycle hooks (pre/activation/post).
 
         Returns:
             str:
-                The unique SHA256 `spell_id` associated with the bound spell.
+                The SHA256 `spell_id` of the parked inactive spell.
+
+        Raises:
+            RuntimeError:
+                If the spell_id collides, the Spellbook is not in a dynamic
+                posture, or `spell_index` is not owned here.
         """
         self._ensure_binding_transaction_active(action="bind")
         try:
@@ -4253,6 +4282,9 @@ and logging.
                 )
             if self._spell_ids is not None:
                 self._spell_ids.add(new_spell.spell_id)
+            # Fold the parked spell from its own fresh index onto the caller's
+            # target index (membership-only move; destroys the emptied source).
+            self._apply_add_to_index(spell=new_spell, target_index=spell_index)
             return new_spell.spell_id
         except Exception as e:
             self._logger.error(f"Error while binding spell: {e}", "bind", exc_info=True)
