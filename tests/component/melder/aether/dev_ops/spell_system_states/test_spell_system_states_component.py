@@ -612,8 +612,7 @@ def test_component_spell_system_states_register_local_topology_builds_collection
     frame = AethericFrame(Aether(), "component-states-collection-index")
     states = frame.spell_system_states
     index = SpellIndex("spell-collection-index")
-    index._owner_spellbook = type("SpellbookStub", (), {"_id": "spellbook-1"})()
-    states.register_index(index)
+    states.register_index(index, owner_spellbook_id="spellbook-1")
     topology = _build_collection_topology("spell-collection-index", "svc")
     states.register_local_topology(index, topology)
     states.consume_dirty_indexes()
@@ -644,8 +643,7 @@ def test_component_spell_system_states_register_local_topology_builds_contract_d
     frame = AethericFrame(Aether(), "component-states-contract-index")
     states = frame.spell_system_states
     index = SpellIndex("spell-contract-index")
-    index._owner_spellbook = type("SpellbookStub", (), {"_id": "spellbook-1"})()
-    states.register_index(index)
+    states.register_index(index, owner_spellbook_id="spellbook-1")
     topology = _build_contract_topology("spell-contract-index", "svc", "primary")
     states.register_local_topology(index, topology)
     states.consume_dirty_indexes()
@@ -678,11 +676,8 @@ def test_component_spell_system_states_mark_contract_dependents_dirty_without_ke
     states = frame.spell_system_states
     index_a = SpellIndex("spell-contract-all-a")
     index_b = SpellIndex("spell-contract-all-b")
-    spellbook_stub = type("SpellbookStub", (), {"_id": "spellbook-1"})()
-    index_a._owner_spellbook = spellbook_stub
-    index_b._owner_spellbook = spellbook_stub
-    states.register_index(index_a)
-    states.register_index(index_b)
+    states.register_index(index_a, owner_spellbook_id="spellbook-1")
+    states.register_index(index_b, owner_spellbook_id="spellbook-1")
     states.register_local_topology(
         index_a,
         _build_contract_topology("spell-contract-all-a", "svc", "primary"),

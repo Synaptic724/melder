@@ -546,7 +546,7 @@ class _SpellSystemStatesStub:
         self.registered_lineages: list[tuple[object, object]] = []
         self.unregistered_lineages: list[object] = []
 
-    def register_index(self, spell_index: object) -> None:
+    def register_index(self, spell_index: object, owner_spellbook_id: object = None) -> None:
         """
         Purpose:
             Record a lineage registration call from Spellbook.bind.
@@ -557,7 +557,7 @@ class _SpellSystemStatesStub:
         Returns:
             None.
         """
-        self.registered_lineages.append((spell_index, spell_index._selected_spell))
+        self.registered_lineages.append((spell_index, spell_index.selected_spell_id))
 
     def update_dependencies(self, spell_index: object, dependency_spell_ids: list[str]) -> None:
         """

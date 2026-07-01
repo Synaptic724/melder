@@ -117,7 +117,7 @@ class FakeSpellStatesSystem:
         """
         return self._states.get(index_id)
 
-    def register_index(self, spell_index: SpellIndex) -> None:
+    def register_index(self, spell_index: SpellIndex, owner_spellbook_id: Optional[str] = None) -> None:
         """
         Register a lineage state for the given spell index.
 
@@ -717,6 +717,7 @@ class FakeSpellbook:
         self._nexus_publish_calls: List[Any] = []
         self._configuration = self._ConfigurationStub()
         self._aether = aether
+        self._id = f"book-{id(self):x}"
 
     def _register_spell_with_risk_manager(self, conduit_id: str, spell_obj: Any) -> None:
         """

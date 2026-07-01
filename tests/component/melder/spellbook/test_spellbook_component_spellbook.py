@@ -105,7 +105,7 @@ class _SpellSystemStatesStub:
         self.dependencies_by_spell: dict[object, list[str]] = {}
         self.topology_by_spell: dict[object, object] = {}
 
-    def register_index(self, spell_index: object) -> None:
+    def register_index(self, spell_index: object, owner_spellbook_id: object = None) -> None:
         """
         Purpose:
             Record a lineage registration from Spellbook.bind.
@@ -116,7 +116,7 @@ class _SpellSystemStatesStub:
         Returns:
             None.
         """
-        self.registered_lineages.append((spell_index, spell_index._selected_spell))
+        self.registered_lineages.append((spell_index, spell_index.selected_spell_id))
 
     def unregister_index(self, spell_index: object) -> None:
         """
@@ -244,13 +244,13 @@ def test_component_spellbook_bind_registers_lineage_and_states() -> None:
         )
 
         assert len(states.registered_lineages) == 1
-        registered_index, registered_spell = states.registered_lineages[0]
+        registered_index, registered_spell_id = states.registered_lineages[0]
         assert registered_index in spellbook.spells
 
         bound_spell = _get_spell_by_version_id(spellbook, spell_id)
         assert bound_spell is not None
-        assert registered_spell is bound_spell
-        assert registered_spell.spell is BasicService
+        assert registered_spell_id == spell_id
+        assert bound_spell.spell is BasicService
         assert bound_spell._spell_system_states is states
         assert bound_spell.spell_index.selected_spell_id == spell_id
     finally:

@@ -98,6 +98,7 @@ class FakeSpell:
         self._id = f"spell-{spell_id}"
         self.spell_id = spell_id
         self.spell_index = SpellIndex(spell_id)
+        self._active = True
         self.permissions = permissions
         self._permissions = permissions
         self.spellframe = "frame"

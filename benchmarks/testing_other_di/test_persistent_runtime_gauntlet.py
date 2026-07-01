@@ -163,7 +163,7 @@ class PersistentConfig:
             scenario=scenario,
             duration_s=_env_float("PERSISTENT_GAUNTLET_SECONDS", 300.0),
             warmup_s=_env_float("PERSISTENT_GAUNTLET_WARMUP_SECONDS", 10.0),
-            threads=_env_int("PERSISTENT_GAUNTLET_THREADS", 5),
+            threads=_env_int("PERSISTENT_GAUNTLET_THREADS", 10),
             sample_every=max(1, _env_int("PERSISTENT_GAUNTLET_SAMPLE_EVERY", 1000)),
             app_work_ns=max(0, _env_int("PERSISTENT_APP_WORK_NS", 0)),
             burst_active_ms=max(1, _env_int("PERSISTENT_BURST_ACTIVE_MS", 2000)),

@@ -70,10 +70,10 @@ def _build_owned_spell(spellbook_id: str = "book-1") -> Spell:
 
 def _attach_index_owner(index: SpellIndex, spell: Spell) -> SpellIndex:
     """
-    Mirror the live Spellbook bind path by stamping owner references onto the index.
+    Retained no-op. SpellIndex no longer records an owner (no _owner_spellbook /
+    _selected_spell slots); the owning spellbook id now travels explicitly to
+    register_index(owner_spellbook_id=...), so there is nothing to stamp here.
     """
-    index._owner_spellbook = spell._spellbook
-    index._selected_spell = spell
     return index
 
 
@@ -497,8 +497,7 @@ def test_register_local_topology_builds_collection_and_contract_indexes(
     """
     spell = _build_owned_spell("book-1")
     index = SpellIndex("spell-topology-1")
-    _attach_index_owner(index, spell)
-    states_manager.register_index(index)
+    states_manager.register_index(index, owner_spellbook_id=spell._spellbook._id)
     states_manager.consume_dirty_indexes()
 
     topology = _build_topology(index.selected_spell_id)
@@ -543,8 +542,7 @@ def test_register_local_topology_replaces_stale_collection_and_contract_keys(
     """
     spell = _build_owned_spell("book-1")
     index = SpellIndex("spell-topology-replace")
-    _attach_index_owner(index, spell)
-    states_manager.register_index(index)
+    states_manager.register_index(index, owner_spellbook_id=spell._spellbook._id)
     states_manager.consume_dirty_indexes()
 
     topology_a = _build_topology(
@@ -597,10 +595,8 @@ def test_mark_contract_dependents_dirty_marks_all_keys_when_unspecified(
     first_index = SpellIndex("spell-contract-a")
     second_index = SpellIndex("spell-contract-b")
 
-    _attach_index_owner(first_index, spell)
-    _attach_index_owner(second_index, spell)
-    states_manager.register_index(first_index)
-    states_manager.register_index(second_index)
+    states_manager.register_index(first_index, owner_spellbook_id=spell._spellbook._id)
+    states_manager.register_index(second_index, owner_spellbook_id=spell._spellbook._id)
     states_manager.consume_dirty_indexes()
 
     first_topology = _build_topology(
@@ -637,8 +633,7 @@ def test_cleanup_cascades_to_resolution_states_topologies_and_indexes(
     """
     spell = _build_owned_spell("book-cleanup")
     index = SpellIndex("spell-cleanup")
-    _attach_index_owner(index, spell)
-    states_manager.register_index(index)
+    states_manager.register_index(index, owner_spellbook_id=spell._spellbook._id)
     topology = _build_topology(index.selected_spell_id)
     states_manager.register_local_topology(index, topology)
 
@@ -679,14 +674,12 @@ def test_register_index_owner_change_rebuilds_topology_indexes_under_new_book(
     second_spell = _build_owned_spell("book-b")
     index = SpellIndex("spell-owner-change")
 
-    _attach_index_owner(index, first_spell)
-    states_manager.register_index(index)
+    states_manager.register_index(index, owner_spellbook_id=first_spell._spellbook._id)
     topology = _build_topology(index.selected_spell_id)
     states_manager.register_local_topology(index, topology)
     states_manager.consume_dirty_indexes()
 
-    _attach_index_owner(index, second_spell)
-    states_manager.register_index(index)
+    states_manager.register_index(index, owner_spellbook_id=second_spell._spellbook._id)
 
     assert states_manager.mark_collection_dependents_dirty(
         spellbook_id="book-a",
@@ -723,8 +716,7 @@ def test_update_dependencies_creates_missing_lineage_state_on_first_use(
     root_index = SpellIndex("spell-late-root")
     dependency_index = SpellIndex("spell-late-dependency")
 
-    _attach_index_owner(dependency_index, _build_owned_spell("book-1"))
-    states_manager.register_index(dependency_index)
+    states_manager.register_index(dependency_index, owner_spellbook_id="book-1")
     states_manager.consume_dirty_indexes()
 
     states_manager.update_dependencies(root_index, [dependency_index.selected_spell_id])
@@ -805,10 +797,8 @@ def test_unregister_index_removes_topology_indexes_and_reverse_edges(
     root_index = SpellIndex("spell-remove-root")
     dependency_index = SpellIndex("spell-remove-dependency")
 
-    _attach_index_owner(dependency_index, _build_owned_spell("book-remove"))
-    _attach_index_owner(root_index, spell)
-    states_manager.register_index(dependency_index)
-    states_manager.register_index(root_index)
+    states_manager.register_index(dependency_index, owner_spellbook_id="book-remove")
+    states_manager.register_index(root_index, owner_spellbook_id=spell._spellbook._id)
     states_manager.register_local_topology(root_index, _build_topology(root_index.selected_spell_id))
     states_manager.update_dependencies(root_index, [dependency_index.selected_spell_id])
     states_manager.consume_dirty_indexes()
@@ -846,8 +836,7 @@ def test_register_local_topology_ignores_irrelevant_socket_shapes(
     """
     spell = _build_owned_spell("book-filter")
     index = SpellIndex("spell-filter")
-    _attach_index_owner(index, spell)
-    states_manager.register_index(index)
+    states_manager.register_index(index, owner_spellbook_id=spell._spellbook._id)
     states_manager.consume_dirty_indexes()
 
     topology = SpellLocalTopology(

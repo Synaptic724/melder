@@ -1947,7 +1947,7 @@ def test_remove_contracted_spell_updates_maps_and_notifies_when_conjured() -> No
     sb._contracted_spells = {"peer": {}}
     sb._lookup_contracted_spells = {"peer": {}}
     sb._contracted_spell_ids = {"peer": set()}
-    sb._contracted_spells_by_id = {}
+    sb._contracted_spells_by_id = {"peer": {}}
     sb._conjured = True
     sb._conduit = DummyConduit("borrower", "borrower")
     staged_calls = []
@@ -1974,6 +1974,7 @@ def test_remove_contracted_spell_updates_maps_and_notifies_when_conjured() -> No
     sb._contracted_spells["peer"][idx] = spell
     sb._lookup_contracted_spells["peer"][("frame", "binding")] = idx
     sb._contracted_spell_ids["peer"].update({"sid-1", "sid-2"})
+    sb._contracted_spells_by_id["peer"]["sid-1"] = spell
 
     sb._remove_contracted_spell("sid-1", "peer")
 
@@ -2371,7 +2372,7 @@ def test_bind_after_conjure_preserves_ownership_and_registrations(monkeypatch):
     risk_calls = []
     register_single_calls = []
     sb._spell_system_states = types.SimpleNamespace(
-        register_index=lambda spell_index: lineage_calls.append((spell_index, new_spell))
+        register_index=lambda spell_index, owner_spellbook_id=None: lineage_calls.append((spell_index, new_spell))
     )
     sb._register_spell_with_risk_manager = (
         lambda conduit_id, spell: risk_calls.append((conduit_id, spell))
@@ -2434,7 +2435,7 @@ def test_bind_after_conjure_stamps_resolution_required_false(monkeypatch):
     sb._assert_lookup_key_available = lambda **kwargs: None
     sb._add_hooks_to_spell = lambda spell, **kwargs: None
     sb._spell_system_states = types.SimpleNamespace(
-        register_index=lambda spell_index: None
+        register_index=lambda spell_index, owner_spellbook_id=None: None
     )
     sb._register_spell_with_risk_manager = lambda conduit_id, spell: None
 

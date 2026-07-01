@@ -119,7 +119,7 @@ class FakeSpellStatesSystem:
         """
         return self._states.get(index_id)
 
-    def register_index(self, spell_index: SpellIndex) -> None:
+    def register_index(self, spell_index: SpellIndex, owner_spellbook_id: Optional[str] = None) -> None:
         """
         Register a lineage state for the provided spell index.
 
@@ -752,6 +752,7 @@ class FakeSpellbook:
         self._nexus_publish_calls: List[Dict[str, Any]] = []
         self._configuration = self._ConfigurationStub()
         self._aether = aether
+        self._id = f"book-{id(self):x}"
 
     def _register_spell_with_risk_manager(self, conduit_id: str, spell_obj: Any) -> None:
         """
@@ -1511,7 +1512,6 @@ def test_execute_moves_registry_and_spellbook_and_clears_change_intent() -> None
     with env.target._spellbook._lock:
         assert env.spell_index in env.target._spellbook._spells
     assert env.spell._owner_conduit_id == TARGET_ID
-    assert env.spell.spell_index._owner_conduit_id == TARGET_ID
     assert env.change_control_manager.get_pending_change(env.spell_index.id) is None
     assert any(call["spell_index"] == env.spell_index for call in env.states_system.mark_calls)
 
@@ -1933,7 +1933,7 @@ def test_mark_lineage_dirty_records_structural_change() -> None:
         target_conduit=env.target,
         spell=env.spell,
     )
-    transfer._mark_lineage_dirty(env.spell_index)
+    transfer._mark_lineage_dirty(env.spell)
     assert env.states_system.mark_calls[-1]["reason"] == SpellStateChangeReason.structure_changed
 
 
@@ -3031,7 +3031,6 @@ def test_rollback_spellbook_move_restores_source_ownership() -> None:
         assert env.spell._key in env.source._spellbook._lookup_spells
         assert env.spell._key not in env.target._spellbook._lookup_spells
     assert env.spell._owner_conduit_id == SOURCE_ID
-    assert env.spell.spell_index._owner_conduit_id == SOURCE_ID
 
 
 def test_rollback_spellbook_move_restores_source_resolution_required_default() -> None:
@@ -3365,7 +3364,7 @@ def test_mark_lineage_dirty_swallows_exception() -> None:
         spell=env.spell,
     )
     with pytest.raises(RuntimeError, match="boom"):
-        transfer._mark_lineage_dirty(env.spell_index)
+        transfer._mark_lineage_dirty(env.spell)
     assert env.states_system.mark_calls == []
 
 
@@ -3713,48 +3712,11 @@ def test_flip_registry_and_spellbooks_raises_on_target_spell_id_pool_collision()
         transfer._flip_registry_and_spellbooks(env.spell)
 
 
-def test_flip_registry_and_spellbooks_raises_on_spellindex_owner_book_mismatch() -> None:
-    """
-    Verify flipping fails when the SpellIndex owner book is already corrupt.
-
-    Contract:
-    - A non-source owner spellbook raises a RuntimeError.
-    """
-    env = build_environment()
-    env.spell.spell_index._owner_spellbook = env.target._spellbook
-
-    transfer = TransferOfOwnership(
-        source_conduit=env.source,
-        target_conduit=env.target,
-        spell=env.spell,
-    )
-
-    with pytest.raises(RuntimeError, match="SpellIndex owner mismatch during transfer"):
-        transfer._flip_registry_and_spellbooks(env.spell)
-
-
-def test_flip_registry_and_spellbooks_raises_on_spellindex_owner_spell_mismatch() -> None:
-    """
-    Verify flipping fails when the SpellIndex owner spell is already corrupt.
-
-    Contract:
-    - A non-matching owner spell raises a RuntimeError.
-    """
-    env = build_environment()
-    env.spell.spell_index._selected_spell = build_spell(
-        spell_id="other-spell",
-        owner_id=SOURCE_ID,
-        spell_index=SpellIndex("other-spell"),
-    )
-
-    transfer = TransferOfOwnership(
-        source_conduit=env.source,
-        target_conduit=env.target,
-        spell=env.spell,
-    )
-
-    with pytest.raises(RuntimeError, match="SpellIndex active spell mismatch during transfer"):
-        transfer._flip_registry_and_spellbooks(env.spell)
+# NOTE: The two SpellIndex owner-mismatch guard tests were removed as drift.
+# SpellIndex no longer records an owner (no _owner_spellbook / _selected_spell
+# slots), so `_flip_registry_and_spellbooks` no longer performs an index-owner
+# consistency check -- ownership now lives on the spell (_spellbook /
+# _owner_conduit_id). The guard those tests asserted no longer exists by design.
 
 
 def test_unshare_everywhere_uses_spell_permissions_on_rollback() -> None:
