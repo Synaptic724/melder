@@ -1641,6 +1641,22 @@ class ConduitWard(Cleanable):
                 f"Please link to this conduit prior to spell contract initiation."
             )
 
+        # If this spell already belongs to an index-link on this contract, its
+        # per-member detail is auto-generated and its permission is dictated by the
+        # index-link. Defer to the index: a matching permission is a no-op; a request
+        # to change the permission individually is refused.
+        governing_index = self._find_governing_index_link(contract, spell_id)
+        if governing_index is not None:
+            if governing_index.permissions != permissions_enum:
+                raise RuntimeError(
+                    f"Spell '{spell_id}' is a member of index-link contract "
+                    f"'{governing_index.index_id}' granted "
+                    f"'{governing_index.permissions.name}'; its permission is governed "
+                    f"by the index and cannot be changed to '{permissions_enum.name}' "
+                    f"individually. Re-link the index at the desired permission instead."
+                )
+            return True
+
         # We still use the original spell_id for duplicate detection
         existing = contract._check_if_exists(conduit._conduit_ward, spell_id)
         existing_same_perms = contract._check_if_exists_and_permissions(conduit._conduit_ward, spell_id, permissions_enum)
@@ -1915,21 +1931,17 @@ class ConduitWard(Cleanable):
                 raise
         # Map every member of the lineage as a per-member spell contract of the
         # index-link's permission (active head -> active borrowed copy, the rest
-        # parked). Idempotent per member, so re-links only add newly-seen members.
-        # Track each newly-minted member id on the stored IndexDetail so the link can
-        # be torn down authoritatively later (see _remove_index_from_contract).
+        # parked). Idempotent per member, so re-links only add newly-seen members. The
+        # index is the source of truth for its membership; we do NOT track members on
+        # the IndexDetail -- teardown re-reads them off the index.
         owner_ward = conduit._conduit_ward
         owner_book = conduit._spellbook
-        stored_detail = contract._get_index_detail_map(owner_ward).get(index.id)
         for member_id in index.spells_in_index():
             member_spell = owner_book._get_owned_spell(member_id)
-            if member_spell is None:
-                continue
-            minted = self._contract_member_spell(
-                contract, owner_ward, member_spell, permissions_enum, reason,
-            )
-            if minted and stored_detail is not None:
-                stored_detail.add_member(member_id)
+            if member_spell is not None:
+                self._contract_member_spell(
+                    contract, owner_ward, member_spell, permissions_enum, reason,
+                )
         return True
 
     def _remove_index_from_contract(
@@ -1962,10 +1974,12 @@ class ConduitWard(Cleanable):
             index_detail = detail_map.get(index_id)
             contract._remove_index(owner_ward, index_id)
         if index_detail is not None:
-            # Tear down every per-member spell Detail this index-link minted (and the
-            # borrower's contracted copies) before disposing the IndexDetail itself,
-            # so unlinking an index leaves no orphaned member contracts behind.
-            for member_id in index_detail.member_ids():
+            # Tear down every per-member spell Detail for this index (and the borrower's
+            # contracted copies) before disposing the IndexDetail itself, so unlinking an
+            # index leaves no orphaned member contracts behind. The index is the source
+            # of truth for its members; it is still alive on an explicit unlink, so read
+            # them straight off it.
+            for member_id in index_detail.spell_index.spells_in_index():
                 self._uncontract_member_spell(contract, owner_ward, member_id)
             index_detail.cleanup()
         try:
@@ -2056,17 +2070,20 @@ class ConduitWard(Cleanable):
             if new_spell is not None:
                 receiver_book._ensure_contracted_active(new_spell, owner_conduit_id)
 
-    def _emit_index_destroy(self, index_id: str) -> None:
+    def _emit_index_destroy(self, index_id: str, member_ids: Iterable[str]) -> None:
         """
         Internal
 
         Owner-side emission when an index-linked lineage is destroyed: for every
         index-link contract covering `index_id`, untrack the index on the receiving
-        spellbook (`_remove_contracted_index`) and drop (and clean) the contract's
-        IndexDetail, so no receiver keeps a subscription to a dead lineage.
+        spellbook (`_remove_contracted_index`), tear down the per-member spell Details,
+        and drop (and clean) the contract's IndexDetail, so no receiver keeps a
+        subscription to a dead lineage.
 
         Args:
             index_id: Stable id of the destroyed index.
+            member_ids: The index's member version ids, captured by the caller BEFORE
+                teardown (the live index is already cleaned when this runs).
         """
         self.check_cleaned()
         for contract in self._contracts.values():
@@ -2079,10 +2096,10 @@ class ConduitWard(Cleanable):
                 peer._spellbook._remove_contracted_index(index_id)
             with contract._lock:
                 contract._remove_index(self, index_id)
-            # Tear down the per-member spell Details this index-link minted. The live
+            # Tear down the per-member spell Details for the destroyed index. The live
             # index is already cleaned by this point (cleanup_spell destroyed it before
-            # emitting), so the authoritative member set lives on the IndexDetail.
-            for member_id in index_detail.member_ids():
+            # emitting), so `member_ids` is captured by the caller before teardown.
+            for member_id in member_ids:
                 self._uncontract_member_spell(contract, self, member_id)
             index_detail.cleanup()
 
@@ -2113,24 +2130,22 @@ class ConduitWard(Cleanable):
             reason: Why this detail exists.
 
         Returns:
-            bool: True if this call newly minted the member Detail (so the caller
-                should track the id for teardown); False if it merged into a Detail
-                that already existed (e.g. an independent version-anchored contract).
+            None. Idempotent: `contract._add` merges when the member Detail already
+            exists, so re-links and re-adds are safe.
         """
         self.check_cleaned()
         detail = self._create_detail(member_spell, permission, ContractTypes.received, reason=reason)
         added = contract._add(owner_ward, detail)
         if not added:
-            return False
+            return
         borrower = contract._get_peer(owner_ward)._conduit
         if borrower is None or borrower._spellbook is None:
-            return True
+            return
         owner_conduit_id = owner_ward._conduit._id
         if member_spell._active:
             borrower._spellbook._add_contracted_spell(member_spell, owner_conduit_id)
         else:
             borrower._spellbook._add_inactive_contracted_spell(member_spell, owner_conduit_id)
-        return True
 
     def _uncontract_member_spell(
             self,
@@ -2181,10 +2196,9 @@ class ConduitWard(Cleanable):
             index_detail = contract._get_index_detail_map(self).get(index_id)
             if index_detail is None:
                 continue
-            if self._contract_member_spell(
+            self._contract_member_spell(
                 contract, self, member_spell, index_detail.permissions, DetailReason.manual,
-            ):
-                index_detail.add_member(member_id)
+            )
 
     def _emit_index_member_removed(self, index_id: str, member_id: str) -> None:
         """
@@ -2203,11 +2217,38 @@ class ConduitWard(Cleanable):
             index_detail = contract._get_index_detail_map(self).get(index_id)
             if index_detail is None:
                 continue
-            # Only uncontract members this index-link actually minted; a member that
-            # merged into a pre-existing direct spell contract is left to its owner.
-            if member_id in index_detail.member_ids():
-                self._uncontract_member_spell(contract, self, member_id)
-                index_detail.remove_member(member_id)
+            # The index dropped this member; eagerly remove its per-member contract
+            # (and the borrower's copy). Idempotent -- a no-op if it was never mapped.
+            self._uncontract_member_spell(contract, self, member_id)
+
+    def _find_governing_index_link(self, contract: Contract, spell_id: str) -> Optional[IndexDetail]:
+        """
+        Internal
+
+        Return the IndexDetail whose index has `spell_id` as a member on `contract`,
+        or None. This is the "is this spell governed by an index-link?" oracle for the
+        per-spell contract guards: index-linked members are auto-generated bookkeeping
+        whose presence and permission are dictated by the index, so a standalone
+        per-spell add/remove must defer to (or be refused by) the index-link. Membership
+        is read straight off the live index (`IndexDetail.has_spell`), so nothing is
+        tracked separately. Both ward sides are checked so the guard is independent of
+        which side of the contract carries the index-link.
+
+        Args:
+            contract: The contract to inspect.
+            spell_id: Version id of the spell being added or removed.
+
+        Returns:
+            Optional[IndexDetail]: The governing index-link detail, or None.
+        """
+        self.check_cleaned()
+        for index_detail in contract._index_details_a.values():
+            if index_detail.has_spell(spell_id):
+                return index_detail
+        for index_detail in contract._index_details_b.values():
+            if index_detail.has_spell(spell_id):
+                return index_detail
+        return None
 
     def _get_spell_permissions(self, spell: Spell) -> Permissions:
         """
@@ -2802,6 +2843,16 @@ class ConduitWard(Cleanable):
         conduit_id, conduit = self._check_conduit_id_and_conduit(conduit, conduit_id, aetheric_frame)
         contract = self._find_contract_by_id(conduit_id)
         if contract is not None:
+            # Index-linked members are contract-locked: a spell that belongs to an
+            # index-link on this contract is governed by the index and may only be
+            # released by unlinking the whole index (remove_index_from_contract).
+            governing_index = self._find_governing_index_link(contract, spell_id)
+            if governing_index is not None:
+                raise RuntimeError(
+                    f"Spell '{spell_id}' is a member of index-link contract "
+                    f"'{governing_index.index_id}' and cannot be removed on its own. "
+                    f"Use remove_index_from_contract to release the whole index."
+                )
             contract_key = None
             try:
                 spellbook = self._conduit._spellbook

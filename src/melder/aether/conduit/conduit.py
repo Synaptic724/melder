@@ -3891,6 +3891,13 @@ class Conduit(Cleanable):
             "spell_index_id": target_index._id,
             "binding_key": spell._key,
         }
+        # Capture the source lineage BEFORE the move: the seam repoints
+        # spell.spell_index to the target and destroys the source if it empties.
+        source_index = spell.spell_index
+        source_id = source_index.id
+        moved_spell_id = spell.spell_id
+        source_will_empty = source_index.is_sole_member(moved_spell_id)
+        source_members = source_index.spells_in_index() if source_will_empty else set()
         mediator.start_transaction(
             identity=self._transaction_identity,
             transaction_type=ChangeTransactionType.ADD_TO_INDEX,
@@ -3902,9 +3909,16 @@ class Conduit(Cleanable):
             mediator.end_transaction(expected_type="add_to_index", success=False)
             raise
         mediator.end_transaction(expected_type="add_to_index", success=True)
-        # Index-link receivers get the new member as a per-member spell contract of
-        # the index-link's permission.
-        self._conduit_ward._emit_index_member_added(target_index, spell.spell_id)
+        # Eager index-link maintenance on BOTH sides. Target gains the member -> issue
+        # its per-member contract on every target index-link. Source loses it -> drop
+        # its per-member contract, or destroy the source's whole index-link if the move
+        # emptied it.
+        self._conduit_ward._emit_index_member_added(target_index, moved_spell_id)
+        if source_id != target_index.id:
+            if source_will_empty:
+                self._conduit_ward._emit_index_destroy(source_id, source_members)
+            else:
+                self._conduit_ward._emit_index_member_removed(source_id, moved_spell_id)
         return result
 
     def remove_from_spell_index(self, *, spell: Any, source_index: Any) -> Any:
@@ -3985,11 +3999,14 @@ class Conduit(Cleanable):
         index = spell.spell_index
         index_id = index.id
         will_destroy = index.is_sole_member(spell.spell_id)
+        # Capture the members BEFORE teardown: cleanup_spell destroys the index when the
+        # spell is its sole member, so they cannot be read off the (cleaned) index after.
+        destroyed_member_ids = index.spells_in_index() if will_destroy else set()
         self._spellbook.cleanup_spell(spell=spell)
         # A destroyed index-linked lineage must be dropped on its receivers so they
         # do not keep a subscription to a dead index.
         if will_destroy:
-            self._conduit_ward._emit_index_destroy(index_id)
+            self._conduit_ward._emit_index_destroy(index_id, destroyed_member_ids)
 
     def _deactivate_borrowed_spell(self, spell_id: str) -> None:
         """
