@@ -30,8 +30,10 @@ from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.g
     SpellOverrideTargetingCodegenCreation,
 )
 from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_manifest_no_overrides_compiler import (
+    build_specialized_no_overrides_executor,
     hydrate_no_overrides_executor,
     resolve_root_instance_key_from_rows,
+    select_specializable_step_indexes,
 )
 from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_manifest_overrides_runtime import (
     build_overrides_execute_runtime,
@@ -247,12 +249,6 @@ def hydrate_creation_executors(
         no_overrides_payload["transient_schema"] is not None
     )
 
-    execute_with_overrides = _hydrate_overrides_runtime(
-        overrides_payload=manifest["overrides"],
-        resolver=resolver,
-        root_spell=root_spell,
-    )
-
     no_overrides_door = compile_creation_context_hooks_no_overrides_executor(
         resolve_route_key=route_key,
         fast_transient_no_overrides_enabled=fast_transient_no_overrides,
@@ -261,24 +257,35 @@ def hydrate_creation_executors(
         no_overrides_executor=inner_no_overrides_executor,
         spell_space_scope_error_type=SpellSpaceScopeError,
     )
-    overrides_door = compile_creation_context_hooks_overrides_only_executor(
-        resolve_route_key=route_key,
-        spell=root_spell,
-        spell_id=root_spell.spell_id,
-        no_overrides_executor=inner_no_overrides_executor,
-        execute_with_overrides=execute_with_overrides,
-        meld_execution_error_type=MeldExecutionError,
-        spell_space_scope_error_type=SpellSpaceScopeError,
+    overrides_door = _build_lazy_overrides_door(
+        manifest=manifest,
+        root_spell=root_spell,
+        route_key=route_key,
+        inner_no_overrides_executor=inner_no_overrides_executor,
     )
+
+    final_no_overrides_door = no_overrides_door
+    if _specialization_enabled_for_spell(root_spell):
+        final_no_overrides_door = _install_specializing_door(
+            plain_door=no_overrides_door,
+            rows=no_overrides_payload["steps_rows"],
+            root_instance_key=no_overrides_payload["root_instance_key"],
+            root_spell_id=no_overrides_payload["root_spell_id"],
+            spell_lookup=no_overrides_spell_lookup,
+            inner_no_overrides_executor=inner_no_overrides_executor,
+            route_key=route_key,
+            fast_transient_no_overrides=fast_transient_no_overrides,
+            root_spell=root_spell,
+        )
 
     return GeneralizedHydratedExecutors(
         route_key=route_key,
         fast_transient_no_overrides=fast_transient_no_overrides,
         inner_no_overrides_executor=inner_no_overrides_executor,
-        no_overrides_executor=no_overrides_door,
+        no_overrides_executor=final_no_overrides_door,
         overrides_executor=overrides_door,
         no_overrides_code_object=no_overrides_door.__code__,
-        overrides_code_object=overrides_door.__code__,
+        overrides_code_object=None,
     )
 
 
@@ -364,3 +371,239 @@ def _deserialize_targets_by_spec(
             for target_row in target_rows
         )
     return rebuilt
+
+
+def _build_lazy_overrides_door(
+        *,
+        manifest: Dict[str, Any],
+        root_spell: Any,
+        route_key: str,
+        inner_no_overrides_executor: Callable[..., Any],
+) -> Callable[..., Any]:
+    """
+    Build a cold overrides door that hydrates the overrides runtime lazily.
+
+    Purpose:
+        Defer the overrides-lane hydration cost (runtime rows, override
+        targeting deserialization, root-instance-key resolution, and the
+        override execute-runtime build) from FIRST MELD to FIRST OVERRIDE
+        MELD, so override-free workloads never pay for the lane at all.
+
+    Contract:
+        - Zero hydration work at build time: closure construction only.
+        - The first override call hydrates exactly once (leader under the
+          lock, followers wait), builds the real route-keyed overrides door
+          through the same door compiler the eager path used, then swaps it
+          into the spell's currently published `CreationContext`
+          `_overrides_executor` slot (self-replacing slot contract), so the
+          shim vanishes from later override melds.
+        - Hydration resolves through a fresh `SpellbookBindingResolver` at
+          first override call, mirroring `_hydrate_once`; phases 1-7 liveness
+          is guaranteed by meld's structural gates on every path that can
+          reach an executor.
+        - When no context is published (publish=False cache loads), the shim
+          keeps delegating correctly; only the swap optimization is skipped.
+        - Behavior delta vs the eager path is TIMING ONLY: overrides-lane
+          hydration errors surface at the first override meld instead of the
+          first meld. Result values, error types, and the no-overrides lane
+          are unchanged.
+
+    Args:
+        manifest:
+            Validated family manifest carrying the overrides lane payload.
+        root_spell:
+            Live root spell whose published context receives the hot swap.
+        route_key:
+            Family route key for the door compiler.
+        inner_no_overrides_executor:
+            Already-hydrated inner no-overrides executor the overrides door
+            falls back to for empty payloads.
+
+    Returns:
+        Callable[..., Any]: Cold overrides door with the same
+        `(caller_creations, overrides)` call shape as the real door.
+    """
+    hydration_lock = threading.Lock()
+    door_cell: list = [None]
+
+    def _hydrate_overrides_door() -> Callable[..., Any]:
+        real_door = door_cell[0]
+        if real_door is not None:
+            return real_door
+        with hydration_lock:
+            real_door = door_cell[0]
+            if real_door is not None:
+                return real_door
+            resolver = SpellbookBindingResolver(spell=root_spell)
+            execute_with_overrides = _hydrate_overrides_runtime(
+                overrides_payload=manifest["overrides"],
+                resolver=resolver,
+                root_spell=root_spell,
+            )
+            resolver.cleanup()
+            real_door = compile_creation_context_hooks_overrides_only_executor(
+                resolve_route_key=route_key,
+                spell=root_spell,
+                spell_id=root_spell.spell_id,
+                no_overrides_executor=inner_no_overrides_executor,
+                execute_with_overrides=execute_with_overrides,
+                meld_execution_error_type=MeldExecutionError,
+                spell_space_scope_error_type=SpellSpaceScopeError,
+            )
+            door_cell[0] = real_door
+            return real_door
+
+    def _cold_overrides_lane_door(
+            caller_creations: Any,
+            overrides: Optional[dict],
+    ) -> Any:
+        real_door = _hydrate_overrides_door()
+        # Self-healing swap mirroring the family cold doors: re-target the
+        # CURRENT published context so later override melds skip this shim.
+        published_context = root_spell._creation_context
+        if published_context is not None:
+            published_context._overrides_executor = real_door
+        return real_door(caller_creations, overrides)
+
+    return _cold_overrides_lane_door
+
+
+def _specialization_enabled_for_spell(root_spell: Any) -> bool:
+    """
+    Read the singleton-specialization config flag once at hydration time.
+
+    Contract:
+        - Reads `generalized_singleton_specialization_enabled` from the
+          spell-owning Spellbook's configuration exactly once per hydration;
+          the meld hot path never re-reads it (construction-time selection,
+          per the patch lane's zero-overhead-when-off rule).
+        - Any unavailable surface (no spellbook, no configuration, cleaned
+          configuration, unregistered property on a legacy config object)
+          resolves to False - specialization is strictly opt-in and a
+          missing flag must behave exactly like OFF. This is a documented
+          best-effort boundary read on a hydration-only path, not a hot-path
+          defensive guard.
+    """
+    spellbook = root_spell._spellbook
+    if spellbook is None:
+        return False
+    try:
+        configuration = spellbook.get_configuration()
+        if configuration is None:
+            return False
+        if not configuration.has_property(
+                "generalized_singleton_specialization_enabled"
+        ):
+            return False
+        return bool(
+            configuration.get_property(
+                "generalized_singleton_specialization_enabled"
+            )
+        )
+    except (RuntimeError, KeyError, AttributeError):
+        return False
+
+
+def _install_specializing_door(
+        *,
+        plain_door: Callable[..., Any],
+        rows: Any,
+        root_instance_key: Any,
+        root_spell_id: Any,
+        spell_lookup: Dict[str, Any],
+        inner_no_overrides_executor: Callable[..., Any],
+        route_key: str,
+        fast_transient_no_overrides: bool,
+        root_spell: Any,
+) -> Callable[..., Any]:
+    """
+    Wrap the hot no-overrides door in a one-shot warm-tail specializer.
+
+    Purpose:
+        After the first successful hot execution, build the specialized
+        no-overrides body (captured `unique` singletons behind per-dep door
+        epoch guards), wrap it with the same route-keyed door compiler, and
+        self-swap it into the published context slot - the third stage of the
+        family's cold -> hot -> specialized door progression.
+
+    Contract:
+        - Zero-capture graphs never install the wrapper: this function
+          returns `plain_door` unchanged when no `unique` step exists.
+        - The wrapper's steady state is one closure call + one cell read:
+          once a final door is resolved (specialized or declined-to-plain),
+          every wrapper call delegates directly, and the context-slot swap
+          removes the wrapper from later melds entirely.
+        - Specialization runs post-success on the leader thread under a
+          NON-BLOCKING lock acquire: concurrent melds never wait on the
+          specialization build; they return their already-computed result.
+        - Attempt failures and not-yet-live capture targets decline softly;
+          after three declined attempts the plain hot door is pinned so the
+          wrapper cost cannot persist on graphs that never warm up.
+        - Wrong speculation is impossible by construction here: the emitted
+          body's guards deopt to the generic inner (see emitter contract);
+          this wrapper only decides WHEN a specialized door exists.
+
+    Returns:
+        Callable[..., Any]: The specializing wrapper door, or `plain_door`
+        when the graph has no capturable steps.
+    """
+    if not select_specializable_step_indexes(rows):
+        return plain_door
+
+    state_lock = threading.Lock()
+    resolved_cell: list = [None]
+    attempts_cell: list = [0]
+
+    def _try_specialize_once() -> None:
+        # Leader-only: caller holds state_lock.
+        specialized_inner = None
+        try:
+            specialized_inner = build_specialized_no_overrides_executor(
+                rows=rows,
+                root_instance_key=root_instance_key,
+                root_spell_id=root_spell_id,
+                spell_lookup=spell_lookup,
+                generic_inner_executor=inner_no_overrides_executor,
+            )
+        except Exception:
+            # Documented best-effort: a failed specialization ATTEMPT must
+            # never poison the meld result path; the plain door remains
+            # authoritative and the decline counter advances below.
+            specialized_inner = None
+        attempts_cell[0] += 1
+        if specialized_inner is not None:
+            resolved_cell[0] = (
+                compile_creation_context_hooks_no_overrides_executor(
+                    resolve_route_key=route_key,
+                    fast_transient_no_overrides_enabled=(
+                        fast_transient_no_overrides
+                    ),
+                    spell=root_spell,
+                    spell_id=root_spell.spell_id,
+                    no_overrides_executor=specialized_inner,
+                    spell_space_scope_error_type=SpellSpaceScopeError,
+                )
+            )
+        elif attempts_cell[0] >= 3:
+            resolved_cell[0] = plain_door
+        final_door = resolved_cell[0]
+        if final_door is not None:
+            # Self-replacing slot contract: later melds skip this wrapper.
+            published_context = root_spell._creation_context
+            if published_context is not None:
+                published_context._no_overrides_executor = final_door
+
+    def _specializing_no_overrides_door(caller_creations: Any) -> Any:
+        resolved = resolved_cell[0]
+        if resolved is not None:
+            return resolved(caller_creations)
+        result = plain_door(caller_creations)
+        if resolved_cell[0] is None and state_lock.acquire(blocking=False):
+            try:
+                if resolved_cell[0] is None:
+                    _try_specialize_once()
+            finally:
+                state_lock.release()
+        return result
+
+    return _specializing_no_overrides_door

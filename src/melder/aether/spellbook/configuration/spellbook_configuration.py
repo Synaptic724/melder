@@ -102,6 +102,10 @@ class SpellbookConfiguration(Cleanable):
             "disposal_method_names": list,
             "phase_scheduler_workers_per_spellbook": int,
             "phase_scheduler_barrier_timeout_milliseconds": int,
+            # Patch lane generalized_singleton_specialization_2026_07_01:
+            # opt-in warm-tail singleton specialization for the generalized
+            # no-overrides lane. Read ONCE at hydration time, never per meld.
+            "generalized_singleton_specialization_enabled": bool,
         }
 
         # Properties that must remain immutable after conjure (idempotent laws of the system).
@@ -367,6 +371,7 @@ class SpellbookConfiguration(Cleanable):
             "disposal_method_names": [],
             "phase_scheduler_workers_per_spellbook": 5,
             "phase_scheduler_barrier_timeout_milliseconds": 60000,
+            "generalized_singleton_specialization_enabled": False,
         }
         for key, value in defaults.items():
             if key not in self._properties:
