@@ -4038,6 +4038,21 @@ and logging.
                 # Spellbook so the parked spell is invalidation-eligible when a later
                 # notch promotes it -- without attaching a conduit or invalidating it.
                 new_spell._dynamic_environment = True
+                # If a conduit already exists (post-conjure bind_inactive), follow the
+                # same conduit wiring an active bind does so the parked spell owns a
+                # CreationContextFactory. Pre-conjure inactive spells have no conduit
+                # yet; they are wired at conjure like pre-conjure active spells.
+                if self._conjured and self._conduit is not None:
+                    conduit = self._get_required_conduit_surface()
+                    caching_enabled = self._resolve_system_caching_enabled()
+                    new_spell._add_owned_conduit(
+                        conduit._id,
+                        conduit._name,
+                        conduit._creations,
+                        dynamic_environment=conduit.__dynamic_environment__,
+                        creation_gate_controller=conduit._creation_gate_controller,
+                        caching_enabled=caching_enabled,
+                    )
                 if self._spell_ids is not None:
                     self._spell_ids.add(new_spell.spell_id)
                 return new_spell.spell_id
