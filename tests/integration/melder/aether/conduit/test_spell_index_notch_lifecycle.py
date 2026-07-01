@@ -10,11 +10,10 @@ Answers the behavioral questions directly:
 
 MULTI-MEMBER SETUP (the part to validate first -- it encodes these assumptions):
   1. bind an ACTIVE spell A  -> mints index I_A (active member = A).
-  2. bind a spell B with bind_inactive=True -> parked in _inactive_spells, its OWN index I_B,
-     no frame-signature claim.
-  3. add_to_spell_index(spell=B, target_index=I_A) -> B leaves I_B (emptied -> destroyed) and
-     joins I_A as an inactive member. I_A = {A, B}.
-  4. notch_spell(spell_index=I_A, spell=B) -> B becomes active, A is parked.
+  2. conduit.bind_inactive(spell=B, spell_index=I_A) -> creates B, parks it in _inactive_spells,
+     and folds it onto I_A as an inactive member in one call (bind_inactive requires an existing
+     target index; it cannot stand alone). I_A = {A, B}; no frame-signature claim for B.
+  3. notch_spell(spell_index=I_A, spell=B) -> B becomes active, A is parked.
 The parked B object is fetched with `book._get_owned_spell(id_b)` because `find_spell_by_id`
 only scans the ACTIVE map.
 
@@ -72,19 +71,18 @@ def _make_spellbook() -> Spellbook:
 def _two_member_index() -> Iterator[tuple]:
     """
     Build a dynamic conduit whose index I_A has an ACTIVE member A and an inactive
-    member B (staged via bind_inactive + add_to_spell_index). Yields:
+    member B (staged via conduit.bind_inactive onto I_A). Yields:
     (book, conduit, id_a, id_b, index, spell_b).
     """
     book = _make_spellbook()
     id_a = book.bind(spell=_ServiceA, existence=Existence.unique, permissions="create", binding_name="a")
-    id_b = book.bind(
-        spell=_ServiceB, existence=Existence.unique, permissions="create",
-        binding_name="b", bind_inactive=True,
-    )
     conduit = book.conjure(dynamic=True, name="root")
     index = book.find_spell_by_id(id_a).spell_index
+    id_b = conduit.bind_inactive(
+        spell=_ServiceB, spell_index=index, existence=Existence.unique,
+        permissions="create", binding_name="b",
+    )
     spell_b = book._get_owned_spell(id_b)  # parked -> not in the active map
-    conduit.add_to_spell_index(spell=spell_b, target_index=index)
     try:
         yield (book, conduit, id_a, id_b, index, spell_b)
     finally:

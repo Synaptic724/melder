@@ -124,16 +124,15 @@ def test_remove_from_spell_index_rejects_active_spell():
 
 def test_remove_from_spell_index_rejects_sole_member():
     book = _make_spellbook()
-    # A spell staged inactive is the sole member of its own fresh index.
-    id_b = book.bind(
-        spell=_ServiceB, existence=Existence.unique, permissions="create",
-        binding_name="b", bind_inactive=True,
-    )
+    # In the index model an inactive spell is never the sole member (the active
+    # member is always present alongside it), so the only sole member is the
+    # ACTIVE one; removing it is rejected (it would empty the index).
+    id_a = book.bind(spell=_ServiceA, existence=Existence.unique, permissions="create", binding_name="a")
     conduit = book.conjure(dynamic=True, name="root")
     try:
-        spell_b = book._get_owned_spell(id_b)
+        spell_a = book.find_spell_by_id(id_a)
         with pytest.raises(RuntimeError):
-            conduit.remove_from_spell_index(spell=spell_b, source_index=spell_b.spell_index)
+            conduit.remove_from_spell_index(spell=spell_a, source_index=spell_a.spell_index)
     finally:
         conduit.cleanup()
 

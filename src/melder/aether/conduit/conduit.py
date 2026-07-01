@@ -5,6 +5,7 @@ from types import ModuleType, TracebackType
 from typing import (
     TYPE_CHECKING,
     Optional,
+    Union,
     Any,
     Tuple,
     Callable,
@@ -2685,6 +2686,88 @@ class Conduit(Cleanable):
                     permissions=permissions,
                     **kwargs,
                 )
+
+    def bind_inactive(
+            self,
+            *,
+            spell: Any,
+            spell_index: Any,
+            existence: Union[str, Existence],
+            permissions: str = "create",
+            spellframe: Any = None,
+            binding_name: Optional[str] = None,
+            profile: str = "general",
+            **kwargs: Any,
+    ) -> str:
+        """
+        Public API
+
+        Stage a spell as an INACTIVE member of an existing owned `spell_index`,
+        off the resolution surface, for later activation via `notch_spell`.
+
+        Purpose:
+            Create a spell and park it as an inactive candidate on an existing
+            index in one call, so a later notch can promote it. This is the
+            index-aware sibling of `bind` (which always activates its spell on a
+            freshly minted index).
+
+        Contract:
+            - Only available in a dynamic environment; raises otherwise.
+            - Only normal conduits may stage spells.
+            - Delegates to the owning Spellbook's `_bind_inactive` seam.
+            - Change-control transaction admission for this staging op is owned by
+              the conduit/mediator lane (wired separately); this facade performs
+              the dynamic gate and delegation only, holding no transaction window.
+
+        Args:
+            spell (Any):
+                The class, function, lambda, or existing object to register.
+            spell_index (Any):
+                The already-owned SpellIndex to attach the inactive spell to.
+            existence (Union[str, Existence]):
+                Lifecycle scope for the spell.
+            permissions (str):
+                Permission level exposed to other conduits (`read`, `create`, or
+                `block`).
+            spellframe (Any):
+                Logical interface/frame grouping key for the spell.
+            binding_name (Optional[str]):
+                Secondary disambiguation key within the frame.
+            profile (str):
+                Spell profile family to attach after bind completion.
+            **kwargs:
+                Optional lifecycle hooks (pre/activation/post).
+
+        Returns:
+            str:
+                The SHA256 `spell_id` of the parked inactive spell.
+
+        Raises:
+            RuntimeError:
+                If the conduit is cleaned, is not normal, the dynamic environment
+                is not enabled, or there is no owning Spellbook.
+        """
+        self.check_cleaned()
+        if self._conduit_state is not ConduitState.normal:
+            self._logger.error("bind_inactive called when conduit is not normal", "bind_inactive")
+            raise RuntimeError("Only normal conduits can bind spells.")
+        if not self.__dynamic_environment__:
+            self._logger.error("bind_inactive called in non-dynamic env", "bind_inactive")
+            raise RuntimeError(
+                "Dynamic environment is not enabled. bind_inactive requires dynamic mode."
+            )
+        if self._spellbook is None:
+            raise RuntimeError("[CONDUIT] No owning Spellbook for bind_inactive.")
+        return self._spellbook._bind_inactive(
+            spell=spell,
+            spell_index=spell_index,
+            existence=existence,
+            permissions=permissions,
+            spellframe=spellframe,
+            binding_name=binding_name,
+            profile=profile,
+            **kwargs,
+        )
 
     def scan(self, module: ModuleType) -> list[str]:
         """

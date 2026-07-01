@@ -85,16 +85,15 @@ def _two_member_linked() -> Iterator[tuple]:
     owner_book = _make_spellbook()
     borrower_book = _make_spellbook()
     id_a = owner_book.bind(spell=_ServiceA, existence=Existence.unique, permissions="create", binding_name="a")
-    id_b = owner_book.bind(
-        spell=_ServiceB, existence=Existence.unique, permissions="create",
-        binding_name="b", bind_inactive=True,
-    )
     owner = owner_book.conjure(dynamic=True, name="owner")
     borrower = borrower_book.conjure(dynamic=True, name="borrower")
     owner.link(borrower)
     index = owner_book.find_spell_by_id(id_a).spell_index
+    id_b = owner.bind_inactive(  # index = {A, B}, A active
+        spell=_ServiceB, spell_index=index, existence=Existence.unique,
+        permissions="create", binding_name="b",
+    )
     spell_b = owner_book._get_owned_spell(id_b)
-    owner.add_to_spell_index(spell=spell_b, target_index=index)  # index = {A, B}, A active
     _link_index(borrower, owner, index)
     try:
         yield (owner_book, borrower_book, owner, borrower, id_a, id_b, index, spell_b)
@@ -158,13 +157,13 @@ def test_notch_moves_index_detail_head_on_borrower_contract():
 
 def test_add_member_to_linked_index_propagates_parked_copy():
     with _single_member_linked() as (ob, bb, owner, borrower, id_a, index):
-        # Stage a new inactive member C in its own index, then move it onto the linked index.
-        id_c = ob.bind(
-            spell=_ServiceC, existence=Existence.unique, permissions="create",
-            binding_name="c", bind_inactive=True,
+        # Stage a new inactive member C directly onto the linked index
+        # (bind_inactive attaches C to an existing index; it cannot stand alone).
+        id_c = owner.bind_inactive(
+            spell=_ServiceC, spell_index=index, existence=Existence.unique,
+            permissions="create", binding_name="c",
         )
         spell_c = ob._get_owned_spell(id_c)
-        owner.add_to_spell_index(spell=spell_c, target_index=index)
         # The borrower now carries C as a per-member contract (parked copy) + a Detail.
         contract = borrower._conduit_ward._find_contract_by_id(owner._id)
         assert contract._check_if_exists(owner._conduit_ward, id_c) is True
@@ -204,18 +203,17 @@ def test_two_borrowers_both_follow_a_notch():
     b1_book = _make_spellbook()
     b2_book = _make_spellbook()
     id_a = owner_book.bind(spell=_ServiceA, existence=Existence.unique, permissions="create", binding_name="a")
-    id_b = owner_book.bind(
-        spell=_ServiceB, existence=Existence.unique, permissions="create",
-        binding_name="b", bind_inactive=True,
-    )
     owner = owner_book.conjure(dynamic=True, name="owner")
     b1 = b1_book.conjure(dynamic=True, name="b1")
     b2 = b2_book.conjure(dynamic=True, name="b2")
     owner.link(b1)
     owner.link(b2)
     index = owner_book.find_spell_by_id(id_a).spell_index
+    id_b = owner.bind_inactive(
+        spell=_ServiceB, spell_index=index, existence=Existence.unique,
+        permissions="create", binding_name="b",
+    )
     spell_b = owner_book._get_owned_spell(id_b)
-    owner.add_to_spell_index(spell=spell_b, target_index=index)
     _link_index(b1, owner, index)
     _link_index(b2, owner, index)
     try:

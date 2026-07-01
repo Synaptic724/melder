@@ -85,16 +85,15 @@ def _two_member_linked() -> Iterator[tuple]:
     owner_book = _make_spellbook()
     borrower_book = _make_spellbook()
     id_a = owner_book.bind(spell=_ServiceA, existence=Existence.unique, permissions="create", binding_name="a")
-    id_b = owner_book.bind(
-        spell=_ServiceB, existence=Existence.unique, permissions="create",
-        binding_name="b", bind_inactive=True,
-    )
     owner = owner_book.conjure(dynamic=True, name="owner")
     borrower = borrower_book.conjure(dynamic=True, name="borrower")
     owner.link(borrower)
     index = owner_book.find_spell_by_id(id_a).spell_index
+    id_b = owner.bind_inactive(
+        spell=_ServiceB, spell_index=index, existence=Existence.unique,
+        permissions="create", binding_name="b",
+    )
     spell_b = owner_book._get_owned_spell(id_b)
-    owner.add_to_spell_index(spell=spell_b, target_index=index)
     with borrower.transaction("link", conduits=[borrower, owner]):
         borrower.add_index_to_contract(index=index, conduit=owner, permissions="create")
     try:
@@ -192,13 +191,16 @@ def test_add_index_to_contract_rejects_index_not_owned_by_target():
 
 def test_bind_inactive_spell_is_not_meldable_until_notched():
     book = _make_spellbook()
-    id_b = book.bind(
-        spell=_ServiceB, existence=Existence.unique, permissions="create",
-        binding_name="b", bind_inactive=True,
-    )
+    id_a = book.bind(spell=_ServiceA, existence=Existence.unique, permissions="create", binding_name="a")
     conduit = book.conjure(dynamic=True, name="root")
+    index = book.find_spell_by_id(id_a).spell_index
+    id_b = conduit.bind_inactive(
+        spell=_ServiceB, spell_index=index, existence=Existence.unique,
+        permissions="create", binding_name="b",
+    )
     try:
-        # Parked off the resolution surface -> not meldable by id.
+        # Parked off the resolution surface (inactive member of A's index) ->
+        # not meldable by id until notched.
         assert _resolves(conduit, id_b) is False
     finally:
         conduit.cleanup()
@@ -225,16 +227,15 @@ def test_transfer_multi_member_target_melds_active():
     config.set_property("phase_scheduler_workers_per_spellbook", 1)
     owner_book = Spellbook(configuration=config)
     id_a = owner_book.bind(spell=_ServiceA, existence=Existence.unique, permissions="create", binding_name="a")
-    id_b = owner_book.bind(
-        spell=_ServiceB, existence=Existence.unique, permissions="create",
-        binding_name="b", bind_inactive=True,
-    )
     target_book = Spellbook(configuration=config)
     owner = owner_book.conjure(dynamic=True, name="owner")
     target = target_book.conjure(dynamic=True, name="target")
-    spell_b = owner_book._get_owned_spell(id_b)
     index = owner_book.find_spell_by_id(id_a).spell_index
-    owner.add_to_spell_index(spell=spell_b, target_index=index)
+    id_b = owner.bind_inactive(
+        spell=_ServiceB, spell_index=index, existence=Existence.unique,
+        permissions="create", binding_name="b",
+    )
+    spell_b = owner_book._get_owned_spell(id_b)
     try:
         owner.transfer_spell_ownership(spell=id_a, target_conduit=target)
         assert isinstance(target.meld(spell=id_a), _ServiceA)

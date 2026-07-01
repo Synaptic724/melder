@@ -71,16 +71,15 @@ def _multi_member_transfer_ready():
     config = _config()
     owner_book = Spellbook(configuration=config)
     id_a = owner_book.bind(spell=_ServiceA, existence=Existence.unique, permissions="create", binding_name="a")
-    id_b = owner_book.bind(
-        spell=_ServiceB, existence=Existence.unique, permissions="create",
-        binding_name="b", bind_inactive=True,
-    )
     target_book = Spellbook(configuration=config)
     owner = owner_book.conjure(dynamic=True, name="owner")
     target = target_book.conjure(dynamic=True, name="target")
-    spell_b = owner_book._get_owned_spell(id_b)
     index = owner_book.find_spell_by_id(id_a).spell_index
-    owner.add_to_spell_index(spell=spell_b, target_index=index)  # index = {A, B}
+    id_b = owner.bind_inactive(  # index = {A, B}
+        spell=_ServiceB, spell_index=index, existence=Existence.unique,
+        permissions="create", binding_name="b",
+    )
+    spell_b = owner_book._get_owned_spell(id_b)
     return owner_book, target_book, owner, target, id_a, id_b, index
 
 

@@ -68,14 +68,16 @@ def _two_member_conduit():
     """Single dynamic conduit whose index has A active + B inactive."""
     book = _make_spellbook()
     id_a = book.bind(spell=_ServiceA, existence=Existence.unique, permissions="create", binding_name="a")
-    id_b = book.bind(
-        spell=_ServiceB, existence=Existence.unique, permissions="create",
-        binding_name="b", bind_inactive=True,
-    )
     conduit = book.conjure(dynamic=True, name="root")
     index = book.find_spell_by_id(id_a).spell_index
+    # bind_inactive stages B off the resolution surface AND attaches it to A's
+    # index as an inactive member in one call (it requires an existing target
+    # index; it cannot stand alone).
+    id_b = conduit.bind_inactive(
+        spell=_ServiceB, spell_index=index, existence=Existence.unique,
+        permissions="create", binding_name="b",
+    )
     spell_b = book._get_owned_spell(id_b)
-    conduit.add_to_spell_index(spell=spell_b, target_index=index)
     return book, conduit, id_a, id_b, index, spell_b
 
 
