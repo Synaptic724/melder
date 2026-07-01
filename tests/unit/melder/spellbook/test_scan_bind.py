@@ -273,6 +273,42 @@ def test_conduit_scan_after_conjure() -> None:
     assert len(spellbook.spells) == 1
 
 
+def test_conduit_scan_after_conjure_validates_every_scanned_spell() -> None:
+    """
+    Purpose:
+        Confirm post-conjure conduit scan validates every scanned spell.
+    Contract:
+        Nested `Spellbook.bind(...)` calls inside one conduit-side scan must not
+        discard earlier staged spells from the outer bind transaction.
+    """
+    spellbook = _make_spellbook()
+    conduit = spellbook.conjure(name="root_many")
+    module = _make_module("scan_bind_mod_conduit_many")
+
+    @scan_bind(existence=Existence.unique, permissions="create")
+    class FirstConduitSpell:
+        pass
+
+    @scan_bind(existence=Existence.unique, permissions="create")
+    class SecondConduitSpell:
+        pass
+
+    FirstConduitSpell.__module__ = module.__name__
+    SecondConduitSpell.__module__ = module.__name__
+    module.FirstConduitSpell = FirstConduitSpell
+    module.SecondConduitSpell = SecondConduitSpell
+
+    with conduit.transaction("bind"):
+        spell_ids = conduit.scan(module)
+
+    assert len(spell_ids) == 2
+    assert len(spellbook.spells) == 2
+    for spell_id in spell_ids:
+        spell = conduit.get_spell_by_id(spell_id)
+        assert spell is not None
+        assert spell.validation_result_phase4 is not None
+
+
 def test_scan_requires_spellbook_and_module_and_valid_metadata() -> None:
     with pytest.raises(ValueError, match="Scan requires a valid Spellbook instance."):
         Scan(None)
@@ -295,3 +331,4 @@ def test_scan_requires_spellbook_and_module_and_valid_metadata() -> None:
 
     with pytest.raises(TypeError, match="invalid or corrupted"):
         scanner.scan_module(module)
+

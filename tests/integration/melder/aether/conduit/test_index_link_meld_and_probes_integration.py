@@ -278,14 +278,13 @@ def test_index_link_active_member_is_live_borrowed_copy():
 def test_notched_away_id_is_evicted_from_resolution():
     book = _make_spellbook()
     id_a = book.bind(spell=_ServiceA, existence=Existence.unique, permissions="create", binding_name="a")
-    id_b = book.bind(
-        spell=_ServiceB, existence=Existence.unique, permissions="create",
-        binding_name="b", bind_inactive=True,
-    )
     conduit = book.conjure(dynamic=True, name="root")
-    spell_b = book._get_owned_spell(id_b)
     index = book.find_spell_by_id(id_a).spell_index
-    conduit.add_to_spell_index(spell=spell_b, target_index=index)
+    id_b = conduit.bind_inactive(
+        spell=_ServiceB, spell_index=index, existence=Existence.unique,
+        permissions="create", binding_name="b",
+    )
+    spell_b = book._get_owned_spell(id_b)
     try:
         conduit.notch_spell(spell_index=index, spell=spell_b)
         # The outgoing id A is off the resolution surface; the new active B melds.

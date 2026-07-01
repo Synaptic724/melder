@@ -257,17 +257,17 @@ and logging.
         # Logger setup
         self._initialize_logging(logger)
 
-        # ACTIVE resolution surface — a spell is PULLED from all of these on inactivate
+        # ACTIVE resolution surface â€” a spell is PULLED from all of these on inactivate
         self._spells: Dict[SpellIndex, Spell] = {}          # ACTIVE: index -> active spell (cold meld resolves here)
         self._lookup_spells: Dict[tuple, SpellIndex] = {}   # ACTIVE: spell._key (frame_key,bind_key) -> index (binding lookup)
         self._spells_by_id: Dict[str, Spell] = {}           # ACTIVE: spell_id -> active spell (meld-by-id)
         self._spell_id_pool: Dict[str, Spell] = {}          # ACTIVE: spell_id -> active spell (warm pool)
 
-        # EXISTENCE — all owned ids (active ∪ inactive); KEPT on inactivate, dropped only on full unregister
+        # EXISTENCE â€” all owned ids (active âˆª inactive); KEPT on inactivate, dropped only on full unregister
         self._spell_ids: Set[str] = set()                   # ALL owned ids (Nexus snapshot reads this; the frame will reference it)
         self._inactive_spells: Dict[str, Spell] = {}  # INACTIVE owned: spell_id -> parked spell (off resolution; repopulates the 7 active maps on notch-back)
 
-        # Contracted (borrowed, keyed by peer conduit id) — same split
+        # Contracted (borrowed, keyed by peer conduit id) â€” same split
         self._contracted_spells: Dict[str, Dict[SpellIndex, Spell]] = {}        # ACTIVE: conduit -> {index -> active borrowed spell}
         self._lookup_contracted_spells: Dict[str, Dict[tuple, SpellIndex]] = {} # ACTIVE: conduit -> {signature -> index}
         self._contracted_spells_by_id: Dict[str, Dict[str, Spell]] = {}         # ACTIVE: conduit -> {spell_id -> active borrowed spell}
@@ -687,7 +687,7 @@ and logging.
         After this runs:
             - Each conduit_id in `_contracted_spells` will have a corresponding
               ConcurrentSet[str] in `_contracted_spell_ids` containing all
-              version IDs (SHA256) for that conduitÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢s spells.
+              version IDs (SHA256) for that conduitÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¾Ãƒâ€šÃ‚Â¢s spells.
         """
         with self._lock:
             if self._contracted_spells is None or self._contracted_spell_ids is None:
@@ -3078,19 +3078,10 @@ and logging.
                 self._replace_spell_record_in_nexus(outgoing.spell_id, spell)
             else:
                 self._publish_spell_record_to_nexus(spell)
-        # If the promoted member has NOT been system-validated (phase 6), stage it
-        # for the structural phases so the notch commit -- which reuses the bind
-        # transaction shape -- drains it and runs phases 1-7 on the spot. A member
-        # that is already phase-6 validated is compiled + registered; nothing to
-        # redo. The index is already registered from the original bind and risk is
-        # lineage-keyed (the shared lineage is already tracked), so those are not
-        # re-run here.
-        if spell.validation_result_phase6 is None:
-            if self._pending_binding_frame_keys is not None:
-                self._pending_binding_frame_keys.add(spell.key[0])
-            if self._pending_structural_spells is not None:
-                self._pending_structural_spells.append(spell)
-            self._try_update_staged_binding_keys()
+        # Stage the promoted member for the structural phases (1-7) exactly like
+        # an active bind does; the shared helper no-ops when it is already phase-6
+        # validated, so it compiles on this same commit only when needed.
+        self._stage_spell_for_structural_phases(spell)
         # Flag the now-active spell for a next-meld rebuild and mark its lineage
         # structurally changed with the notch reason (the spell-owned invalidation
         # helper, which also clears the cached creation context); dependents
@@ -3537,15 +3528,22 @@ and logging.
                     binding_keys=binding_keys,
                 )
             )
+            existing_bind_session = mediator.get_session_for_identity(
+                identity=self._transaction_identity,
+                transaction_type=ChangeTransactionType.BIND,
+            )
             mediator.start_transaction(
                 identity=self._transaction_identity,
                 transaction_type=ChangeTransactionType.BIND,
                 metadata=bind_metadata,
             )
-            # Spellbook owns its own local bind state. The mediator owns only the
-            # change-control envelope (admission/scopes), so prepare the local
-            # bind state HERE rather than inside a DevOps transaction strategy.
-            self._prepare_bind_transaction_state()
+            # Spellbook owns its own local bind state. Only the outermost bind
+            # window may reset the pending structural collections. Nested bind
+            # calls inside an already-active scan/bind session must preserve the
+            # spells staged earlier in that outer window so commit-time
+            # structural validation can see the full bound set.
+            if existing_bind_session is None:
+                self._prepare_bind_transaction_state()
             return
         existing_session = mediator.get_session_for_identity(
             identity=self._transaction_identity,
@@ -3799,6 +3797,30 @@ and logging.
                 self._pending_binding_frame_keys.clear()
             if self._pending_structural_spells is not None:
                 self._pending_structural_spells.clear()
+
+    def _stage_spell_for_structural_phases(self, spell: Spell) -> None:
+        """
+        Internal
+
+        Stage `spell` onto the active bind-family transaction so its commit runs
+        the structural phases on it. Shared by the active bind path and the notch
+        promotion path.
+
+        No-op when the spell is already phase-6 validated: a fully-validated spell
+        must not be recompiled. A freshly-bound spell has no phase-6 result yet, so
+        bind always stages; notch stages only a promoted member that still needs
+        compiling.
+
+        Args:
+            spell (Spell): The spell to stage.
+        """
+        if spell.validation_result_phase6 is not None:
+            return
+        if self._pending_binding_frame_keys is not None:
+            self._pending_binding_frame_keys.add(spell.key[0])
+        if self._pending_structural_spells is not None:
+            self._pending_structural_spells.append(spell)
+        self._try_update_staged_binding_keys()
 
     def _try_update_staged_binding_keys(self) -> None:
         """
@@ -4112,7 +4134,6 @@ and logging.
             binding_name: Optional[str] = None,
             disposal_method_names: Optional[Sequence[str]] = None,
             profile: str = "general",
-            bind_inactive: bool = False,
             **kwargs: Any,
     ) -> str:
         """
@@ -4149,12 +4170,6 @@ and logging.
                 the same frame.
             profile (str):
                 Spell profile family to attach after bind completion.
-            bind_inactive (bool):
-                When True, register the spell on the INACTIVE pathing (parked in
-                _inactive_spells, recorded as a SpellIndex member, existence kept
-                in _spell_ids) instead of activating it. The spell is inert and
-                unmeldable until notch_spell promotes it. Defaults to False
-                (normal active bind).
             disposal_method_names (Optional[Sequence[str]]):
                 Optional disposal method names to associate with the spell.
             **kwargs:
@@ -4296,11 +4311,7 @@ and logging.
                         self._get_required_conduit_surface()._id,
                         new_spell,
                     )
-                if self._pending_binding_frame_keys is not None:
-                    self._pending_binding_frame_keys.add(new_spell.key[0])
-                if self._pending_structural_spells is not None:
-                    self._pending_structural_spells.append(new_spell)
-                self._try_update_staged_binding_keys()
+                self._stage_spell_for_structural_phases(new_spell)
                 if self._conjured and self._conduit is not None:
                     Spellbook._aether._register_single_spell_index(
                         self._get_required_conduit_surface()._id,
