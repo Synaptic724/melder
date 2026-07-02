@@ -309,6 +309,7 @@ def hydrate_creation_executors(
     if _specialization_enabled_for_spell(root_spell):
         final_no_overrides_instance_door = _install_specializing_door(
             plain_instance_door=no_overrides_instance_door,
+            plain_hooks_door=no_overrides_door,
             rows=no_overrides_payload["steps_rows"],
             root_instance_key=no_overrides_payload["root_instance_key"],
             root_spell_id=no_overrides_payload["root_spell_id"],
@@ -549,6 +550,7 @@ def _specialization_enabled_for_spell(root_spell: Any) -> bool:
 def _install_specializing_door(
         *,
         plain_instance_door: Callable[..., Any],
+        plain_hooks_door: Callable[..., Any],
         rows: Any,
         root_instance_key: Any,
         root_spell_id: Any,
@@ -621,6 +623,36 @@ def _install_specializing_door(
     resolved_cell: list = [None]
     resolved_hooks_cell: list = [None]
     attempts_cell: list = [0]
+    deopt_miss_cell: list = [0]
+
+    def _deopt_notify(caller_creations: Any) -> Any:
+        """
+        Count one specialized-guard miss, re-pin plain doors at 3 strikes.
+
+        Contract:
+            - Deopt target bound into the specialized body (`_deopt_notify`):
+              same `(meld) -> instance` contract as the generic inner, which
+              it always delegates to (deopt is slower, never wrong).
+            - After 3 misses the captured world is treated as permanently
+              invalidated: BOTH published slots re-pin the plain doors and
+              the wrapper cells resolve to plain, so the specialized body
+              (and its per-call guard cost) leaves every lane instead of
+              paying guard-miss + fallback forever (~13% over plain,
+              measured by the efficacy probe's deopt lane).
+            - Racy counting under nogil is acceptable: the re-pin publishes
+              idempotent values, so late/duplicate strikes are benign.
+        """
+        deopt_miss_cell[0] += 1
+        if deopt_miss_cell[0] >= 3:
+            resolved_cell[0] = plain_instance_door
+            resolved_hooks_cell[0] = plain_hooks_door
+            published_context = root_spell._creation_context
+            if published_context is not None:
+                published_context._no_overrides_instance_executor = (
+                    plain_instance_door
+                )
+                published_context._no_overrides_executor = plain_hooks_door
+        return inner_no_overrides_executor(caller_creations)
 
     def _try_specialize_once() -> None:
         # Leader-only: caller holds state_lock.
@@ -632,6 +664,7 @@ def _install_specializing_door(
                 root_spell_id=root_spell_id,
                 spell_lookup=spell_lookup,
                 generic_inner_executor=inner_no_overrides_executor,
+                deopt_notify=_deopt_notify,
             )
         except Exception:
             # Documented best-effort: a failed specialization ATTEMPT must

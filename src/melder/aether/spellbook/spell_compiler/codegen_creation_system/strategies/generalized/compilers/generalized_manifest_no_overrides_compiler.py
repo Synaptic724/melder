@@ -1167,11 +1167,15 @@ def emit_specialized_step_plan_source(
           the executor factory cache shares one compiled factory across every
           spell with the same shape and capture set.
         - Guard prologue: per captured step,
-          `cap_spell_K._door_epoch != cap_epoch_K` tail-calls the generic
-          inner executor (deopt: slower, never wrong). The prologue is wrapped
-          in one try/except AttributeError so a cleaned captured spell also
-          deopts to the generic lane's canonical behavior instead of leaking a
-          slot error from this lane.
+          `cap_spell_K._door_epoch != cap_epoch_K` tail-calls the deopt
+          target `_deopt_notify` (deopt: slower, never wrong). The prologue
+          is wrapped in one try/except AttributeError so a cleaned captured
+          spell also deopts to the canonical generic behavior instead of
+          leaking a slot error from this lane. `_deopt_notify` is a factory
+          binding: the generic inner directly, or a counting wrapper that
+          re-pins the plain doors after repeated misses (see the hydrator's
+          3-strike deopt re-pin) - either way the source stays identity-free
+          and one factory serves every (shape, capture-set).
         - Captured instances arrive as per-slot default parameters
           (`cap_inst_K`) and are re-exposed to downstream step emission via
           `instance_K` locals (locals mode) or `instance_results` stores (dict
@@ -1296,11 +1300,11 @@ def emit_specialized_step_plan_source(
                 f"        if cap_spell_{step_index}._door_epoch "
                 f"!= cap_epoch_{step_index}:"
             ),
-            "            return _generic_inner(meld)",
+            "            return _deopt_notify(meld)",
         ])
     lines.extend([
         "    except AttributeError:",
-        "        return _generic_inner(meld)",
+        "        return _deopt_notify(meld)",
     ])
 
     if not locals_mode:
@@ -1352,6 +1356,7 @@ def build_specialized_no_overrides_executor(
         root_spell_id: Optional[str],
         spell_lookup: Dict[str, Any],
         generic_inner_executor: Callable[..., Any],
+        deopt_notify: Optional[Callable[..., Any]] = None,
 ) -> Optional[Callable[..., Any]]:
     """
     Build the specialized inner executor from live warm-state, or decline.
@@ -1388,8 +1393,16 @@ def build_specialized_no_overrides_executor(
         spell_lookup:
             Resolved spell-id -> live Spell map for every step row.
         generic_inner_executor:
-            Already-hydrated generic inner executor; deopt target captured
-            into the specialized body's bindings.
+            Already-hydrated generic inner executor; canonical deopt
+            behavior and the default deopt target.
+        deopt_notify:
+            Optional `(meld) -> instance` deopt target bound as
+            `_deopt_notify` in the emitted body. When provided it MUST
+            delegate to the generic inner (same signature/return contract);
+            it may additionally count misses and re-pin the plain doors
+            (3-strike re-pin). When None, `_deopt_notify` binds to
+            `generic_inner_executor` directly - identical behavior to the
+            pre-notify contract.
 
     Returns:
         Optional[Callable[..., Any]]: Specialized inner executor, or None
@@ -1451,6 +1464,12 @@ def build_specialized_no_overrides_executor(
         bindings[f"cap_epoch_{step_index}"] = captured_epochs[step_index]
         bindings[f"cap_inst_{step_index}"] = captured_instances[step_index]
     bindings["_generic_inner"] = generic_inner_executor
+    # Stable deopt-target binding: one identity-free source (and therefore
+    # one cached factory) per shape regardless of whether a re-pin wrapper
+    # is installed.
+    bindings["_deopt_notify"] = (
+        generic_inner_executor if deopt_notify is None else deopt_notify
+    )
 
     factory_source = build_executor_factory_source(
         inner_source=inner_source,

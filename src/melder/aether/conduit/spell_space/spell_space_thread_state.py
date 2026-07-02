@@ -191,11 +191,27 @@ class SpellSpaceThreadState(Cleanable):
             Provide a destructive read for cleanup paths that need the current
             thread's stack exactly once before resetting it to empty.
 
+        Contract:
+            - Empty fast path: when the stack is already empty (the common
+              pooled scope-cycle case - scopes exited properly before
+              cleanup), the LIVE empty list is returned without allocating a
+              replacement or writing the thread-local slot. Callers must
+              treat the returned list as read-only; both cleanup callers only
+              iterate it.
+            - Non-empty stacks are detached exactly as before: the caller
+              owns the returned list and the thread resets to a fresh empty
+              stack.
+
         Returns:
             List[Any]:
                 Previously active spellspace stack for the current thread.
         """
         stack = self._local.spellspace_stack
+        if not stack:
+            # Per-cycle hot path (`_cleanup_spellspaces_for_pool`): skip the
+            # list allocation + thread-local store when there is nothing to
+            # detach.
+            return stack
         self._local.spellspace_stack = []
         return stack
 

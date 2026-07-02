@@ -176,7 +176,9 @@ class TestSpecializationEmission:
         )
         assert "if cap_spell_0._door_epoch != cap_epoch_0:" in source
         assert "if cap_spell_1._door_epoch != cap_epoch_1:" in source
-        assert source.count("return _generic_inner(meld)") >= 2
+        # Deopt target is the stable `_deopt_notify` binding (bound to the
+        # generic inner or the hydrator's 3-strike re-pin wrapper).
+        assert source.count("return _deopt_notify(meld)") >= 2
         assert "instance_0 = cap_inst_0" in source
         assert "instance_1 = cap_inst_1" in source
         # Captured steps must emit ZERO store-walk work.
@@ -353,6 +355,9 @@ class TestFactorySourceShareability:
             "cap_epoch_0": 7,
             "cap_inst_0": "CAPTURED",
             "_generic_inner": generic_inner,
+            # Deopt target binding: this manual-factory test binds it to the
+            # generic inner directly, mirroring the no-notify default.
+            "_deopt_notify": generic_inner,
         }
         factory_source = build_executor_factory_source(
             inner_source=source,

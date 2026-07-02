@@ -127,8 +127,13 @@ def _install(
         generic_inner_calls.append(meld)
         return ("generic", meld)
 
+    def _plain_hooks_door(caller: Any) -> Any:
+        # Tuple-contract hooks twin; only re-published on deopt re-pin.
+        return (plain_door(caller), False)
+
     return _install_specializing_door(
         plain_instance_door=plain_door,
+        plain_hooks_door=_plain_hooks_door,
         rows=rows,
         root_instance_key=(rows[-1]["spell_id"], None),
         root_spell_id=rows[-1]["spell_id"],
