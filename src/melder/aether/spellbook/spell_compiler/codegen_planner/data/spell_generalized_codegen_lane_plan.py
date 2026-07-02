@@ -1067,6 +1067,393 @@ class SpellGeneralizedCodegenPlanBuilder:
         lane_plan.metadata["plan_family"] = "generalized"
         return lane_plan
 
+    def build_dual(
+            self,
+    ) -> Tuple[
+        SpellGeneralizedCodegenLanePlan,
+        SpellGeneralizedCodegenLanePlan,
+    ]:
+        """
+        Build BOTH generalized lane plans from one model walk.
+
+        Purpose:
+            The two-variant build previously ran the full model walk twice per
+            spell (once per lane) on every conjure AND every dynamic
+            revalidation, even though the only per-step variant delta is the
+            injection-spec extraction plus five override-metadata fields
+            (audited 2026-07-02: `_extract_param_keys_no_overrides` is a
+            strict projection of `_extract_param_keys` - identical
+            dependency_keys / dependency_keys_by_param construction over the
+            same `param_sources`). This method walks the model ONCE, extracts
+            once, and materializes both step lists.
+
+        Contract:
+            - Output plans are field-for-field identical to running
+              `build()` twice with each variant (differential-verified):
+              the NO_OVERRIDES plan owns fresh dependency list/dict copies
+              (matching the projection extraction), empty override/contract
+              metadata, and the fast-path arrays; the OVERRIDES plan owns the
+              full extraction results.
+            - Cross-plan aliasing matches the two-build baseline: model-owned
+              objects (spell, inject_spec, contract_payload) are shared;
+              per-plan mutable containers (dependency lists/dicts, disposal
+              lists, index maps) are independent per plan.
+            - `self._plan_variant` is ignored; both variants are produced.
+
+        Returns:
+            Tuple[SpellGeneralizedCodegenLanePlan, SpellGeneralizedCodegenLanePlan]:
+                (no_overrides_plan, overrides_plan), both stamped with
+                `plan_family="generalized"`.
+        """
+        graph_shape = self._state.graph_shape
+        order_shape = self._state.order_shape
+        instance_shape = self._state.instance_shape
+        injection_shape = self._state.injection_shape
+        spell_runtime_shape = self._state.spell_runtime_shape
+        if (
+                graph_shape is None
+                or order_shape is None
+                or instance_shape is None
+                or injection_shape is None
+                or spell_runtime_shape is None
+        ):
+            raise ValueError(
+                "Generalized lane build requires graph/order/instance/injection/runtime sections."
+            )
+
+        steps_no: List[SpellGeneralizedCodegenPlanStep] = []
+        steps_ov: List[SpellGeneralizedCodegenPlanStep] = []
+        spell_id_step_index: Dict[str, int] = {}
+        optimistic_object_refs_by_spell_id: Dict[str, Any] = {}
+        available_param_by_spell_id: Dict[str, int] = {}
+        instance_key_to_step_index: Dict[InstanceKey, int] = {}
+        path_registry = graph_shape.path_registry
+
+        for spell_id in order_shape.execution_order:
+            runtime_record = spell_runtime_shape.records_by_spell_id.get(spell_id)
+            if runtime_record is None:
+                raise ValueError(
+                    f"Generalized lane build is missing runtime record for '{spell_id}'."
+                )
+
+            if runtime_record.user_created_object is not None:
+                optimistic_object_refs_by_spell_id[spell_id] = (
+                    runtime_record.user_created_object
+                )
+
+            existence = runtime_record.existence
+            creations_target_kind = self._creation_target_for_existence(existence)
+            available_param_by_spell_id[spell_id] = creations_target_kind
+            shared_instance = spell_id in instance_shape.shared_spell_ids
+            lock_hint = self._lock_hint_for_existence(existence)
+            use_spell_lock_hint = lock_hint == "spell_lock"
+            requires_spellspace = existence is Existence.unique_per_spell_space
+            owner_conduit_required = existence is Existence.unique_per_spell_space
+            must_register = self._should_register(runtime_record)
+            # Per-plan disposal lists mirror the two-build baseline: one list
+            # per spell per plan, shared by that spell's steps within a plan.
+            disposal_method_names_no = list(runtime_record.disposal_method_names)
+            disposal_method_names_ov = list(runtime_record.disposal_method_names)
+
+            for instance_key in instance_shape.instance_keys_by_spell_id.get(spell_id, []):
+                occurrence = self._occurrence_for_instance_key(instance_key)
+                injection_spec = injection_shape.instance_specs_by_instance_key.get(
+                    instance_key
+                )
+                if injection_spec is None:
+                    raise ValueError(
+                        f"Generalized lane build is missing injection spec for {instance_key!r}."
+                    )
+                (
+                    dependency_keys,
+                    dependency_keys_by_param,
+                    override_keys,
+                    contract_keys,
+                ) = self._extract_param_keys(injection_spec)
+                expects_overrides = bool(override_keys)
+                override_match_prefix = occurrence[1]
+                override_match_prefix_len = (
+                    path_registry.depth(override_match_prefix)
+                    if override_match_prefix is not None
+                    else 0
+                )
+                # NO_OVERRIDES projection: fresh copies, exactly what
+                # `_extract_param_keys_no_overrides` would have built.
+                dependency_keys_no = list(dependency_keys)
+                dependency_keys_by_param_no = {
+                    param_name: list(param_keys)
+                    for param_name, param_keys in dependency_keys_by_param.items()
+                }
+
+                allow_list_aggregation = injection_spec.allow_list_aggregation
+                uses_positional_override = injection_spec.uses_positional_override
+                contract_payload = injection_spec.contract_payload
+                contract_positional_override = None
+                if (
+                        uses_positional_override
+                        and contract_payload is not None
+                        and "__args__" in contract_payload
+                ):
+                    contract_positional_override = contract_payload["__args__"]
+                has_contract_payload = bool(contract_payload)
+
+                common_kwargs = dict(
+                    instance_key=instance_key,
+                    occurrence=occurrence,
+                    spell=runtime_record.spell,
+                    existence=existence,
+                    creations_target_kind=creations_target_kind,
+                    shared_instance=shared_instance,
+                    inject_spec=injection_spec,
+                    allow_list_aggregation=allow_list_aggregation,
+                    uses_positional_override=uses_positional_override,
+                    contract_payload=contract_payload,
+                    contract_positional_override=contract_positional_override,
+                    has_contract_payload=has_contract_payload,
+                    lock_hint=lock_hint,
+                    use_spell_lock_hint=use_spell_lock_hint,
+                    requires_spellspace=requires_spellspace,
+                    owner_conduit_required=owner_conduit_required,
+                    must_register=must_register,
+                )
+                steps_no.append(SpellGeneralizedCodegenPlanStep(
+                    dependency_keys=dependency_keys_no,
+                    dependency_keys_by_param=dependency_keys_by_param_no,
+                    dependency_resolution_order=list(
+                        dependency_keys_by_param_no.items()
+                    ),
+                    override_keys=[],
+                    override_match_prefix=None,
+                    override_match_prefix_len=0,
+                    expects_overrides=False,
+                    contract_keys=[],
+                    disposal_method_names=disposal_method_names_no,
+                    **common_kwargs,
+                ))
+                steps_ov.append(SpellGeneralizedCodegenPlanStep(
+                    dependency_keys=dependency_keys,
+                    dependency_keys_by_param=dependency_keys_by_param,
+                    dependency_resolution_order=list(
+                        dependency_keys_by_param.items()
+                    ),
+                    override_keys=override_keys,
+                    override_match_prefix=override_match_prefix,
+                    override_match_prefix_len=override_match_prefix_len,
+                    expects_overrides=expects_overrides,
+                    contract_keys=contract_keys,
+                    disposal_method_names=disposal_method_names_ov,
+                    **common_kwargs,
+                ))
+                instance_key_to_step_index[instance_key] = len(steps_no) - 1
+                if spell_id not in spell_id_step_index:
+                    spell_id_step_index[spell_id] = len(steps_no) - 1
+
+        fast_plan_data = self._build_fast_plan_data(
+            steps=steps_no,
+            instance_key_to_step_index=instance_key_to_step_index,
+            root_instance_key=instance_shape.root_instance_key,
+        )
+        fast_has_contract_payloads = None
+        fast_has_existing_creations = None
+        fast_transient_plan = None
+        if fast_plan_data is not None:
+            fast_has_contract_payloads = any(fast_plan_data[7]) or any(
+                fast_plan_data[8]
+            )
+            fast_has_existing_creations = any(fast_plan_data[17])
+            fast_transient_plan = self._build_fast_transient_plan_from_data(
+                steps=steps_no,
+                fast_plan_data=fast_plan_data,
+            )
+
+        no_overrides_plan = self._assemble_lane_plan(
+            lane_id=SpellGeneralizedCodegenPlanVariant.NO_OVERRIDES,
+            graph_shape=graph_shape,
+            instance_shape=instance_shape,
+            steps=steps_no,
+            spell_id_step_index=spell_id_step_index,
+            optimistic_object_refs_by_spell_id=optimistic_object_refs_by_spell_id,
+            available_param_by_spell_id=available_param_by_spell_id,
+            fast_plan_data=fast_plan_data,
+            fast_transient_plan=fast_transient_plan,
+            fast_has_contract_payloads=fast_has_contract_payloads,
+            fast_has_existing_creations=fast_has_existing_creations,
+        )
+        overrides_plan = self._assemble_lane_plan(
+            lane_id=SpellGeneralizedCodegenPlanVariant.OVERRIDES,
+            graph_shape=graph_shape,
+            instance_shape=instance_shape,
+            steps=steps_ov,
+            spell_id_step_index=dict(spell_id_step_index),
+            optimistic_object_refs_by_spell_id=dict(
+                optimistic_object_refs_by_spell_id
+            ),
+            available_param_by_spell_id=dict(available_param_by_spell_id),
+            fast_plan_data=None,
+            fast_transient_plan=None,
+            fast_has_contract_payloads=None,
+            fast_has_existing_creations=None,
+        )
+        no_overrides_plan.metadata["plan_family"] = "generalized"
+        overrides_plan.metadata["plan_family"] = "generalized"
+        return no_overrides_plan, overrides_plan
+
+    def _build_fast_transient_plan_from_data(
+            self,
+            *,
+            steps: List[SpellGeneralizedCodegenPlanStep],
+            fast_plan_data: FastPlanData,
+    ) -> Optional[FastTransientPlan]:
+        """
+        Bridge one FastPlanData tuple into the transient-plan builder call.
+
+        Contract:
+            - Index mapping is copied verbatim from the single-variant build
+              path so both callers stay in lockstep with the FastPlanData
+              tuple layout.
+        """
+        return self._build_fast_transient_plan(
+            steps=steps,
+            fast_call_targets=fast_plan_data[15],
+            fast_existence=fast_plan_data[11],
+            fast_must_register=fast_plan_data[12],
+            fast_is_existing_creation=fast_plan_data[17],
+            fast_is_callable=fast_plan_data[18],
+            fast_call_modes=fast_plan_data[20],
+            fast_single_dep_indices=fast_plan_data[21],
+            fast_call2_dep_indices_a=fast_plan_data[22],
+            fast_call2_dep_indices_b=fast_plan_data[23],
+            fast_call3_dep_indices_a=fast_plan_data[24],
+            fast_call3_dep_indices_b=fast_plan_data[25],
+            fast_call3_dep_indices_c=fast_plan_data[26],
+            fast_call4_dep_indices_a=fast_plan_data[27],
+            fast_call4_dep_indices_b=fast_plan_data[28],
+            fast_call4_dep_indices_c=fast_plan_data[29],
+            fast_call4_dep_indices_d=fast_plan_data[30],
+            fast_call5_dep_indices_a=fast_plan_data[31],
+            fast_call5_dep_indices_b=fast_plan_data[32],
+            fast_call5_dep_indices_c=fast_plan_data[33],
+            fast_call5_dep_indices_d=fast_plan_data[34],
+            fast_call5_dep_indices_e=fast_plan_data[35],
+            fast_call6_dep_indices_a=fast_plan_data[36],
+            fast_call6_dep_indices_b=fast_plan_data[37],
+            fast_call6_dep_indices_c=fast_plan_data[38],
+            fast_call6_dep_indices_d=fast_plan_data[39],
+            fast_call6_dep_indices_e=fast_plan_data[40],
+            fast_call6_dep_indices_f=fast_plan_data[41],
+            fast_call7_dep_indices_a=fast_plan_data[42],
+            fast_call7_dep_indices_b=fast_plan_data[43],
+            fast_call7_dep_indices_c=fast_plan_data[44],
+            fast_call7_dep_indices_d=fast_plan_data[45],
+            fast_call7_dep_indices_e=fast_plan_data[46],
+            fast_call7_dep_indices_f=fast_plan_data[47],
+            fast_call7_dep_indices_g=fast_plan_data[48],
+            fast_call8_dep_indices_a=fast_plan_data[49],
+            fast_call8_dep_indices_b=fast_plan_data[50],
+            fast_call8_dep_indices_c=fast_plan_data[51],
+            fast_call8_dep_indices_d=fast_plan_data[52],
+            fast_call8_dep_indices_e=fast_plan_data[53],
+            fast_call8_dep_indices_f=fast_plan_data[54],
+            fast_call8_dep_indices_g=fast_plan_data[55],
+            fast_call8_dep_indices_h=fast_plan_data[56],
+            root_step_index=fast_plan_data[19],
+        )
+
+    def _assemble_lane_plan(
+            self,
+            *,
+            lane_id: str,
+            graph_shape: Any,
+            instance_shape: Any,
+            steps: List[SpellGeneralizedCodegenPlanStep],
+            spell_id_step_index: Dict[str, int],
+            optimistic_object_refs_by_spell_id: Dict[str, Any],
+            available_param_by_spell_id: Dict[str, int],
+            fast_plan_data: Optional[FastPlanData],
+            fast_transient_plan: Optional[FastTransientPlan],
+            fast_has_contract_payloads: Optional[bool],
+            fast_has_existing_creations: Optional[bool],
+    ) -> SpellGeneralizedCodegenLanePlan:
+        """
+        Materialize one lane plan from prepared steps plus optional fast data.
+
+        Contract:
+            - Field wiring is copied verbatim from the single-variant build
+              path (including the fast_plan_data positional unpack), so
+              `build()` and `build_dual()` produce identical plan objects for
+              identical inputs.
+        """
+        return SpellGeneralizedCodegenLanePlan(
+            lane_id=lane_id,
+            root_spell_id=graph_shape.root_spell_id,
+            root_instance_key=instance_shape.root_instance_key,
+            steps=steps,
+            spell_id_step_index=spell_id_step_index,
+            optimistic_object_refs_by_spell_id=optimistic_object_refs_by_spell_id,
+            available_param_by_spell_id=available_param_by_spell_id,
+            fast_dep_indices=fast_plan_data[0] if fast_plan_data else None,
+            fast_param_group_names=fast_plan_data[1] if fast_plan_data else None,
+            fast_param_group_dep_offsets=fast_plan_data[2] if fast_plan_data else None,
+            fast_param_group_dep_counts=fast_plan_data[3] if fast_plan_data else None,
+            fast_param_group_offsets=fast_plan_data[4] if fast_plan_data else None,
+            fast_param_group_counts=fast_plan_data[5] if fast_plan_data else None,
+            fast_use_positional=fast_plan_data[6] if fast_plan_data else None,
+            fast_contract_payload_items=fast_plan_data[7] if fast_plan_data else None,
+            fast_contract_positional_args=fast_plan_data[8] if fast_plan_data else None,
+            fast_instance_keys=fast_plan_data[9] if fast_plan_data else None,
+            fast_creations_target_kinds=fast_plan_data[10] if fast_plan_data else None,
+            fast_existence=fast_plan_data[11] if fast_plan_data else None,
+            fast_must_register=fast_plan_data[12] if fast_plan_data else None,
+            fast_set_result_flags=fast_plan_data[13] if fast_plan_data else None,
+            fast_spells=fast_plan_data[14] if fast_plan_data else None,
+            fast_call_targets=fast_plan_data[15] if fast_plan_data else None,
+            fast_existing_objects=fast_plan_data[16] if fast_plan_data else None,
+            fast_is_existing_creation=fast_plan_data[17] if fast_plan_data else None,
+            fast_is_callable=fast_plan_data[18] if fast_plan_data else None,
+            fast_root_step_index=fast_plan_data[19] if fast_plan_data else None,
+            fast_call_modes=fast_plan_data[20] if fast_plan_data else None,
+            fast_single_dep_indices=fast_plan_data[21] if fast_plan_data else None,
+            fast_call2_dep_indices_a=fast_plan_data[22] if fast_plan_data else None,
+            fast_call2_dep_indices_b=fast_plan_data[23] if fast_plan_data else None,
+            fast_call3_dep_indices_a=fast_plan_data[24] if fast_plan_data else None,
+            fast_call3_dep_indices_b=fast_plan_data[25] if fast_plan_data else None,
+            fast_call3_dep_indices_c=fast_plan_data[26] if fast_plan_data else None,
+            fast_call4_dep_indices_a=fast_plan_data[27] if fast_plan_data else None,
+            fast_call4_dep_indices_b=fast_plan_data[28] if fast_plan_data else None,
+            fast_call4_dep_indices_c=fast_plan_data[29] if fast_plan_data else None,
+            fast_call4_dep_indices_d=fast_plan_data[30] if fast_plan_data else None,
+            fast_call5_dep_indices_a=fast_plan_data[31] if fast_plan_data else None,
+            fast_call5_dep_indices_b=fast_plan_data[32] if fast_plan_data else None,
+            fast_call5_dep_indices_c=fast_plan_data[33] if fast_plan_data else None,
+            fast_call5_dep_indices_d=fast_plan_data[34] if fast_plan_data else None,
+            fast_call5_dep_indices_e=fast_plan_data[35] if fast_plan_data else None,
+            fast_call6_dep_indices_a=fast_plan_data[36] if fast_plan_data else None,
+            fast_call6_dep_indices_b=fast_plan_data[37] if fast_plan_data else None,
+            fast_call6_dep_indices_c=fast_plan_data[38] if fast_plan_data else None,
+            fast_call6_dep_indices_d=fast_plan_data[39] if fast_plan_data else None,
+            fast_call6_dep_indices_e=fast_plan_data[40] if fast_plan_data else None,
+            fast_call6_dep_indices_f=fast_plan_data[41] if fast_plan_data else None,
+            fast_call7_dep_indices_a=fast_plan_data[42] if fast_plan_data else None,
+            fast_call7_dep_indices_b=fast_plan_data[43] if fast_plan_data else None,
+            fast_call7_dep_indices_c=fast_plan_data[44] if fast_plan_data else None,
+            fast_call7_dep_indices_d=fast_plan_data[45] if fast_plan_data else None,
+            fast_call7_dep_indices_e=fast_plan_data[46] if fast_plan_data else None,
+            fast_call7_dep_indices_f=fast_plan_data[47] if fast_plan_data else None,
+            fast_call7_dep_indices_g=fast_plan_data[48] if fast_plan_data else None,
+            fast_call8_dep_indices_a=fast_plan_data[49] if fast_plan_data else None,
+            fast_call8_dep_indices_b=fast_plan_data[50] if fast_plan_data else None,
+            fast_call8_dep_indices_c=fast_plan_data[51] if fast_plan_data else None,
+            fast_call8_dep_indices_d=fast_plan_data[52] if fast_plan_data else None,
+            fast_call8_dep_indices_e=fast_plan_data[53] if fast_plan_data else None,
+            fast_call8_dep_indices_f=fast_plan_data[54] if fast_plan_data else None,
+            fast_call8_dep_indices_g=fast_plan_data[55] if fast_plan_data else None,
+            fast_call8_dep_indices_h=fast_plan_data[56] if fast_plan_data else None,
+            fast_transient_plan=fast_transient_plan,
+            fast_has_contract_payloads=fast_has_contract_payloads,
+            fast_has_existing_creations=fast_has_existing_creations,
+            metadata={},
+        )
+
     def _build_lane_plan_from_model(self) -> SpellGeneralizedCodegenLanePlan:
         """
         Build one lane plan from the currently selected model section set.

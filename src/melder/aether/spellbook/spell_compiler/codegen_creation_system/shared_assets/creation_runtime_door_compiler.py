@@ -33,6 +33,7 @@ def compile_creation_context_instance_overrides_only_executor(
     return template(
         _spell=spell,
         _spell_id=spell_id,
+        _owner_creations=spell._owner_creations,
         _no_overrides_executor=no_overrides_executor,
         _execute_with_overrides=execute_with_overrides,
         _MeldExecutionError=meld_execution_error_type,
@@ -82,6 +83,7 @@ def compile_creation_context_instance_no_overrides_executor(
     return template(
         _spell=spell,
         _spell_id=spell_id,
+        _owner_creations=spell._owner_creations,
         _no_overrides_executor=no_overrides_executor,
         _SpellSpaceScopeError=spell_space_scope_error_type,
         _existing_creation_missing_message=(
@@ -124,6 +126,7 @@ def compile_creation_context_hooks_overrides_only_executor(
     return template(
         _spell=spell,
         _spell_id=spell_id,
+        _owner_creations=spell._owner_creations,
         _no_overrides_executor=no_overrides_executor,
         _execute_with_overrides=execute_with_overrides,
         _MeldExecutionError=meld_execution_error_type,
@@ -174,6 +177,7 @@ def compile_creation_context_hooks_no_overrides_executor(
     return template(
         _spell=spell,
         _spell_id=spell_id,
+        _owner_creations=spell._owner_creations,
         _no_overrides_executor=no_overrides_executor,
         _SpellSpaceScopeError=spell_space_scope_error_type,
         _existing_creation_missing_message=(
@@ -287,7 +291,6 @@ def _compile_creation_context_overrides_only_template(
     with_overrides_lines = _build_with_overrides_lines(
         resolve_route_key=resolve_route_key,
         return_created=return_created,
-        overrides_maybe_none=False,
     )
     source = _build_overrides_only_template_source(
         with_overrides_lines=with_overrides_lines,
@@ -449,6 +452,7 @@ def _build_no_overrides_only_template_source(
         template_parameter_lines=[
         "        _spell,",
         "        _spell_id,",
+        "        _owner_creations,",
         "        _no_overrides_executor,",
         "        _SpellSpaceScopeError,",
         "        _existing_creation_missing_message,",
@@ -476,6 +480,7 @@ def _build_overrides_only_template_source(
         template_parameter_lines=[
         "        _spell,",
         "        _spell_id,",
+        "        _owner_creations,",
         "        _no_overrides_executor,",
         "        _execute_with_overrides,",
         "        _MeldExecutionError,",
@@ -588,7 +593,7 @@ def _build_no_overrides_lines(
         ]
     if resolve_route_key == "unique":
         return [
-            "creation = _spell._owner_creations._creations.get(_spell_id)",
+            "creation = _owner_creations._creations.get(_spell_id)",
             "if creation is not None:",
             _prefix_one_indent(
                 _build_return_statement(
@@ -598,7 +603,7 @@ def _build_no_overrides_lines(
                 ),
             ),
             "with _spell._lock:",
-            "    creation = _spell._owner_creations._creations.get(_spell_id)",
+            "    creation = _owner_creations._creations.get(_spell_id)",
             "    if creation is None:",
         ] + _indent_lines(
             _build_no_overrides_create_lines(
@@ -685,7 +690,6 @@ def _build_with_overrides_lines(
         *,
         resolve_route_key: str,
         return_created: bool,
-        overrides_maybe_none: bool = True,
 ) -> Sequence[str]:
     """
     Build the route-specific emitted body for override-aware execution.
@@ -695,31 +699,21 @@ def _build_with_overrides_lines(
     generated program decides whether a route can override an existing instance,
     whether it must create under a lock, and what error path should be emitted
     for invalid override usage.
+
+    Contract:
+        - Overrides-only doors are selected by the meld front doors ONLY when
+          a normalized override payload exists, so `overrides` is never None
+          here; the former `overrides_maybe_none` variants were unreachable
+          dead code (and two of them referenced `caller_creations` without
+          assigning it) and were removed 2026-07-02.
     """
     if resolve_route_key == "existing_creation":
-        if not overrides_maybe_none:
-            return [
-                "raise _MeldExecutionError(",
-                "    spell_id=_spell.spell_index.selected_spell_id,",
-                "    spell_name=_spell.spell_name,",
-                "    message=_existing_override_message,",
-                ")",
-            ]
         return [
-            "if overrides is not None:",
-            "    raise _MeldExecutionError(",
-            "        spell_id=_spell.spell_index.selected_spell_id,",
-            "        spell_name=_spell.spell_name,",
-            "        message=_existing_override_message,",
-            "    )",
-            "instance = _spell.user_created_object",
-            "if instance is None:",
-            "    raise RuntimeError(_existing_creation_missing_message)",
-            _build_return_statement(
-                value_expression="instance",
-                created=False,
-                return_created=return_created,
-            ),
+            "raise _MeldExecutionError(",
+            "    spell_id=_spell.spell_index.selected_spell_id,",
+            "    spell_name=_spell.spell_name,",
+            "    message=_existing_override_message,",
+            ")",
         ]
     if resolve_route_key == "many":
         return [
@@ -731,49 +725,15 @@ def _build_with_overrides_lines(
             ),
         ]
     if resolve_route_key == "unique_per_conduit":
-        if not overrides_maybe_none:
-            return [
-                "caller_creations = meld._conduit_creations",
-                "creation = caller_creations._creations.get(_spell_id)",
-                "if creation is not None:",
-                "    raise _MeldExecutionError(",
-                "        spell_id=_spell.spell_index.selected_spell_id,",
-                "        spell_name=_spell.spell_name,",
-                "        message=_existing_override_message,",
-                "    )",
-                "with caller_creations._lock:",
-                "    creation = caller_creations._creations.get(_spell_id)",
-                "    if creation is None:",
-                "        instance = _execute_with_overrides(meld, overrides)",
-                _prefix_two_indent(
-                    _build_return_statement(
-                        value_expression="instance",
-                        created=True,
-                        return_created=return_created,
-                    ),
-                ),
-                "    raise _MeldExecutionError(",
-                "        spell_id=_spell.spell_index.selected_spell_id,",
-                "        spell_name=_spell.spell_name,",
-                "        message=_existing_override_message,",
-                "    )",
-            ]
         return [
+            "caller_creations = meld._conduit_creations",
             "creation = caller_creations._creations.get(_spell_id)",
             "if creation is not None:",
-            "    if overrides is not None:",
-            "        raise _MeldExecutionError(",
-            "            spell_id=_spell.spell_index.selected_spell_id,",
-            "            spell_name=_spell.spell_name,",
-            "            message=_existing_override_message,",
-            "        )",
-            _prefix_one_indent(
-                _build_return_statement(
-                    value_expression="creation",
-                    created=False,
-                    return_created=return_created,
-                ),
-            ),
+            "    raise _MeldExecutionError(",
+            "        spell_id=_spell.spell_index.selected_spell_id,",
+            "        spell_name=_spell.spell_name,",
+            "        message=_existing_override_message,",
+            "    )",
             "with caller_creations._lock:",
             "    creation = caller_creations._creations.get(_spell_id)",
             "    if creation is None:",
@@ -785,64 +745,22 @@ def _build_with_overrides_lines(
                     return_created=return_created,
                 ),
             ),
-            "    if overrides is not None:",
-            "        raise _MeldExecutionError(",
-            "            spell_id=_spell.spell_index.selected_spell_id,",
-            "            spell_name=_spell.spell_name,",
-            "            message=_existing_override_message,",
-            "        )",
-            _prefix_one_indent(
-                _build_return_statement(
-                    value_expression="creation",
-                    created=False,
-                    return_created=return_created,
-                ),
-            ),
+            "    raise _MeldExecutionError(",
+            "        spell_id=_spell.spell_index.selected_spell_id,",
+            "        spell_name=_spell.spell_name,",
+            "        message=_existing_override_message,",
+            "    )",
         ]
     if resolve_route_key == "spellspace":
-        if not overrides_maybe_none:
-            return [
-                "caller_creations = meld._spellspace_creations",
-                "creation = caller_creations._creations.get(_spell_id)",
-                "if creation is not None:",
-                "    raise _MeldExecutionError(",
-                "        spell_id=_spell.spell_index.selected_spell_id,",
-                "        spell_name=_spell.spell_name,",
-                "        message=_existing_override_message,",
-                "    )",
-                "with caller_creations._lock:",
-                "    creation = caller_creations._creations.get(_spell_id)",
-                "    if creation is None:",
-                "        instance = _execute_with_overrides(meld, overrides)",
-                _prefix_two_indent(
-                    _build_return_statement(
-                        value_expression="instance",
-                        created=True,
-                        return_created=return_created,
-                    ),
-                ),
-                "    raise _MeldExecutionError(",
-                "        spell_id=_spell.spell_index.selected_spell_id,",
-                "        spell_name=_spell.spell_name,",
-                "        message=_existing_override_message,",
-                "    )",
-            ]
         return [
+            "caller_creations = meld._spellspace_creations",
             "creation = caller_creations._creations.get(_spell_id)",
             "if creation is not None:",
-            "    if overrides is not None:",
-            "        raise _MeldExecutionError(",
-            "            spell_id=_spell.spell_index.selected_spell_id,",
-            "            spell_name=_spell.spell_name,",
-            "            message=_existing_override_message,",
-            "        )",
-            _prefix_one_indent(
-                _build_return_statement(
-                    value_expression="creation",
-                    created=False,
-                    return_created=return_created,
-                ),
-            ),
+            "    raise _MeldExecutionError(",
+            "        spell_id=_spell.spell_index.selected_spell_id,",
+            "        spell_name=_spell.spell_name,",
+            "        message=_existing_override_message,",
+            "    )",
             "with caller_creations._lock:",
             "    creation = caller_creations._creations.get(_spell_id)",
             "    if creation is None:",
@@ -854,67 +772,25 @@ def _build_with_overrides_lines(
                     return_created=return_created,
                 ),
             ),
-            "    if overrides is not None:",
-            "        raise _MeldExecutionError(",
-            "            spell_id=_spell.spell_index.selected_spell_id,",
-            "            spell_name=_spell.spell_name,",
-            "            message=_existing_override_message,",
-            "        )",
-            _prefix_one_indent(
-                _build_return_statement(
-                    value_expression="creation",
-                    created=False,
-                    return_created=return_created,
-                ),
-            ),
+            "    raise _MeldExecutionError(",
+            "        spell_id=_spell.spell_index.selected_spell_id,",
+            "        spell_name=_spell.spell_name,",
+            "        message=_existing_override_message,",
+            "    )",
         ]
     if resolve_route_key == "unique":
-        if not overrides_maybe_none:
-            return [
-                "creation = _spell._owner_creations._creations.get(_spell_id)",
-                "if creation is not None:",
-                "    raise _MeldExecutionError(",
-                "        spell_id=_spell.spell_index.selected_spell_id,",
-                "        spell_name=_spell.spell_name,",
-                "        message=_existing_override_message,",
-                "    )",
-                "with _spell._lock:",
-                "    creation = _spell._owner_creations._creations.get(_spell_id)",
-                "    if creation is None:",
-                "        instance = _execute_with_overrides(meld, overrides)",
-                _prefix_two_indent(
-                    _build_return_statement(
-                        value_expression="instance",
-                        created=True,
-                        return_created=return_created,
-                    ),
-                ),
-                "    raise _MeldExecutionError(",
-                "        spell_id=_spell.spell_index.selected_spell_id,",
-                "        spell_name=_spell.spell_name,",
-                "        message=_existing_override_message,",
-                "    )",
-            ]
         return [
-            "creation = _spell._owner_creations._creations.get(_spell_id)",
+            "creation = _owner_creations._creations.get(_spell_id)",
             "if creation is not None:",
-            "    if overrides is not None:",
-                "        raise _MeldExecutionError(",
-            "            spell_id=_spell.spell_index.selected_spell_id,",
-            "            spell_name=_spell.spell_name,",
-            "            message=_existing_override_message,",
-            "        )",
-            _prefix_one_indent(
-                _build_return_statement(
-                    value_expression="creation",
-                    created=False,
-                    return_created=return_created,
-                ),
-            ),
+            "    raise _MeldExecutionError(",
+            "        spell_id=_spell.spell_index.selected_spell_id,",
+            "        spell_name=_spell.spell_name,",
+            "        message=_existing_override_message,",
+            "    )",
             "with _spell._lock:",
-            "    creation = _spell._owner_creations._creations.get(_spell_id)",
+            "    creation = _owner_creations._creations.get(_spell_id)",
             "    if creation is None:",
-                "        instance = _execute_with_overrides(meld, overrides)",
+            "        instance = _execute_with_overrides(meld, overrides)",
             _prefix_two_indent(
                 _build_return_statement(
                     value_expression="instance",
@@ -922,67 +798,24 @@ def _build_with_overrides_lines(
                     return_created=return_created,
                 ),
             ),
-            "    if overrides is not None:",
-            "        raise _MeldExecutionError(",
-            "            spell_id=_spell.spell_index.selected_spell_id,",
-            "            spell_name=_spell.spell_name,",
-            "            message=_existing_override_message,",
-            "        )",
-            _prefix_one_indent(
-                _build_return_statement(
-                    value_expression="creation",
-                    created=False,
-                    return_created=return_created,
-                ),
-            ),
+            "    raise _MeldExecutionError(",
+            "        spell_id=_spell.spell_index.selected_spell_id,",
+            "        spell_name=_spell.spell_name,",
+            "        message=_existing_override_message,",
+            "    )",
         ]
     if resolve_route_key == "lineage":
         # Lineage override lane: get-or-create on the lineage-root store read
         # straight off the resolving meld (`meld._root_creations`).
-        if not overrides_maybe_none:
-            return [
-                "root_creations = meld._root_creations",
-                "creation = root_creations._creations.get(_spell_id)",
-                "if creation is not None:",
-                "    raise _MeldExecutionError(",
-                "        spell_id=_spell.spell_index.selected_spell_id,",
-                "        spell_name=_spell.spell_name,",
-                "        message=_existing_override_message,",
-                "    )",
-                "with root_creations._lock:",
-                "    creation = root_creations._creations.get(_spell_id)",
-                "    if creation is None:",
-                "        instance = _execute_with_overrides(meld, overrides)",
-                _prefix_two_indent(
-                    _build_return_statement(
-                        value_expression="instance",
-                        created=True,
-                        return_created=return_created,
-                    ),
-                ),
-                "    raise _MeldExecutionError(",
-                "        spell_id=_spell.spell_index.selected_spell_id,",
-                "        spell_name=_spell.spell_name,",
-                "        message=_existing_override_message,",
-                "    )",
-            ]
         return [
             "root_creations = meld._root_creations",
             "creation = root_creations._creations.get(_spell_id)",
             "if creation is not None:",
-            "    if overrides is not None:",
-            "        raise _MeldExecutionError(",
-            "            spell_id=_spell.spell_index.selected_spell_id,",
-            "            spell_name=_spell.spell_name,",
-            "            message=_existing_override_message,",
-            "        )",
-            _prefix_one_indent(
-                _build_return_statement(
-                    value_expression="creation",
-                    created=False,
-                    return_created=return_created,
-                ),
-            ),
+            "    raise _MeldExecutionError(",
+            "        spell_id=_spell.spell_index.selected_spell_id,",
+            "        spell_name=_spell.spell_name,",
+            "        message=_existing_override_message,",
+            "    )",
             "with root_creations._lock:",
             "    creation = root_creations._creations.get(_spell_id)",
             "    if creation is None:",
@@ -994,68 +827,25 @@ def _build_with_overrides_lines(
                     return_created=return_created,
                 ),
             ),
-            "    if overrides is not None:",
-            "        raise _MeldExecutionError(",
-            "            spell_id=_spell.spell_index.selected_spell_id,",
-            "            spell_name=_spell.spell_name,",
-            "            message=_existing_override_message,",
-            "        )",
-            _prefix_one_indent(
-                _build_return_statement(
-                    value_expression="creation",
-                    created=False,
-                    return_created=return_created,
-                ),
-            ),
+            "    raise _MeldExecutionError(",
+            "        spell_id=_spell.spell_index.selected_spell_id,",
+            "        spell_name=_spell.spell_name,",
+            "        message=_existing_override_message,",
+            "    )",
         ]
     if resolve_route_key == "cluster":
         # Cluster override lane: get-or-create on the elected-leader store
         # resolved off the meld (`meld._cluster_creations.resolved_store()`).
         # Distinct existence, its own route.
-        if not overrides_maybe_none:
-            return [
-                "leader_creations = meld._cluster_creations.resolved_store()",
-                "creation = leader_creations._creations.get(_spell_id)",
-                "if creation is not None:",
-                "    raise _MeldExecutionError(",
-                "        spell_id=_spell.spell_index.selected_spell_id,",
-                "        spell_name=_spell.spell_name,",
-                "        message=_existing_override_message,",
-                "    )",
-                "with leader_creations._lock:",
-                "    creation = leader_creations._creations.get(_spell_id)",
-                "    if creation is None:",
-                "        instance = _execute_with_overrides(meld, overrides)",
-                _prefix_two_indent(
-                    _build_return_statement(
-                        value_expression="instance",
-                        created=True,
-                        return_created=return_created,
-                    ),
-                ),
-                "    raise _MeldExecutionError(",
-                "        spell_id=_spell.spell_index.selected_spell_id,",
-                "        spell_name=_spell.spell_name,",
-                "        message=_existing_override_message,",
-                "    )",
-            ]
         return [
             "leader_creations = meld._cluster_creations.resolved_store()",
             "creation = leader_creations._creations.get(_spell_id)",
             "if creation is not None:",
-            "    if overrides is not None:",
-            "        raise _MeldExecutionError(",
-            "            spell_id=_spell.spell_index.selected_spell_id,",
-            "            spell_name=_spell.spell_name,",
-            "            message=_existing_override_message,",
-            "        )",
-            _prefix_one_indent(
-                _build_return_statement(
-                    value_expression="creation",
-                    created=False,
-                    return_created=return_created,
-                ),
-            ),
+            "    raise _MeldExecutionError(",
+            "        spell_id=_spell.spell_index.selected_spell_id,",
+            "        spell_name=_spell.spell_name,",
+            "        message=_existing_override_message,",
+            "    )",
             "with leader_creations._lock:",
             "    creation = leader_creations._creations.get(_spell_id)",
             "    if creation is None:",
@@ -1067,19 +857,11 @@ def _build_with_overrides_lines(
                     return_created=return_created,
                 ),
             ),
-            "    if overrides is not None:",
-            "        raise _MeldExecutionError(",
-            "            spell_id=_spell.spell_index.selected_spell_id,",
-            "            spell_name=_spell.spell_name,",
-            "            message=_existing_override_message,",
-            "        )",
-            _prefix_one_indent(
-                _build_return_statement(
-                    value_expression="creation",
-                    created=False,
-                    return_created=return_created,
-                ),
-            ),
+            "    raise _MeldExecutionError(",
+            "        spell_id=_spell.spell_index.selected_spell_id,",
+            "        spell_name=_spell.spell_name,",
+            "        message=_existing_override_message,",
+            "    )",
         ]
     raise RuntimeError(
         f"Unsupported CreationContext with-overrides route key: {resolve_route_key}"

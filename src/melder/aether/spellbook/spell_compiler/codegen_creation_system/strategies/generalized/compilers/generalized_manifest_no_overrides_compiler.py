@@ -68,6 +68,8 @@ _STEP_BINDING_NAMES = (
     "step_dep_keys",
     "step_owner_creations",
     "step_targets",
+    "step_contract_values",
+    "step_positional_args",
     "root_instance_key",
 )
 
@@ -238,37 +240,17 @@ def emit_step_plan_source(
             if not locals_mode:
                 break
 
-    lines = [
-        f"def {EXECUTOR_NAME}(",
-        "        meld,",
-        "        steps=steps,",
-        "        step_spells=step_spells,",
-        "        step_spell_ids=step_spell_ids,",
-        "        step_disposal_methods=step_disposal_methods,",
-        "        step_existences=step_existences,",
-        "        step_instance_keys=step_instance_keys,",
-        "        step_dep_keys=step_dep_keys,",
-        "        root_instance_key=root_instance_key,",
-    ]
-    # Per-slot step-constant aliases ride the signature as default parameters:
-    # they are pure functions of the frozen factory bindings, so paying a
-    # per-call subscript statement for each of them was pure overhead. The
-    # defaults evaluate once at factory def time (see executor_factory_cache).
-    lines.extend(
-        _step_alias_signature_params(
-            rows=rows,
-            locals_mode=locals_mode,
-        )
+    # Step-constant aliases execute ONCE at factory-call time (per
+    # hydration) and reach the executor as CLOSURE CELLS: zero per-call
+    # setup, LOAD_DEREF at use sites, and - decisive under free-threading -
+    # no per-call incref/decref sweep over shared spells/stores the way
+    # signature defaults are filled. Probe-measured: the default-param form
+    # of this hoist was a wash (fill cost == removed bytecode).
+    lines = _step_alias_hoist_lines(
+        rows=rows,
+        locals_mode=locals_mode,
     )
-    lines.extend([
-        "        SpellGeneralizedCodegenPlanTargetKind=SpellGeneralizedCodegenPlanTargetKind,",
-        "        _construct_spell_instance=_construct_spell_instance,",
-        "        _raise_meld_construction_error=_raise_meld_construction_error,",
-        "        _register_spell_instance_prebound=_register_spell_instance_prebound,",
-        "        MeldExecutionError=MeldExecutionError,",
-        "        SpellSpaceScopeError=SpellSpaceScopeError,",
-        "    ):",
-    ])
+    lines.append(f"def {EXECUTOR_NAME}(meld):")
     if not locals_mode:
         lines.append("    instance_results = {}")
     for step_index, row in enumerate(rows):
@@ -344,6 +326,7 @@ def _append_step_resolution_source(
             inlinable_params=inlinable_params,
             indent="    ",
             key_to_step_index=key_to_step_index,
+            row=row,
         )
         if has_disposal_methods:
             # `many` is transient (a new instance per meld, never cached), so
@@ -391,6 +374,7 @@ def _append_step_resolution_source(
             inlinable_params=inlinable_params,
             indent="                ",
             key_to_step_index=key_to_step_index,
+            row=row,
         )
         _append_register_source(
             lines=lines,
@@ -431,6 +415,7 @@ def _append_step_resolution_source(
             inlinable_params=inlinable_params,
             indent="                    ",
             key_to_step_index=key_to_step_index,
+            row=row,
         )
         lines.append(f"                    with creations_{step_index}._lock:")
         _append_register_source(
@@ -455,6 +440,7 @@ def _append_step_resolution_source(
             inlinable_params=inlinable_params,
             indent="                    ",
             key_to_step_index=key_to_step_index,
+            row=row,
         )
         _append_register_source(
             lines=lines,
@@ -487,6 +473,7 @@ def _append_step_resolution_source(
         step_index=step_index,
         inlinable_params=inlinable_params,
         indent="                ",
+        row=row,
     )
     _append_register_source(
         lines=lines,
@@ -822,22 +809,25 @@ def _row_contract_call_extras(
     return (payload_names, positional)
 
 
-def _step_alias_signature_params(
+def _step_alias_hoist_lines(
         *,
         rows: Sequence[Dict[str, Any]],
         locals_mode: bool,
         skip_step_indexes: Any = frozenset(),
 ) -> list:
     """
-    Build per-slot signature default-parameter lines for step-constant aliases.
+    Build factory-level hoist statements for step-constant aliases.
 
     Purpose:
-        Move hydration-constant per-step aliases (spell_N, spell_id_N,
-        disposal_methods_N, plan_step_N, step_dep_keys_N, instance_key_N) out
-        of the emitted body and into the executor signature, where the factory
-        evaluates each subscripted default exactly once at def time and every
-        call receives them through frame-setup default copies instead of
-        per-call LOAD/SUBSCR/STORE statements.
+        Compute hydration-constant per-step aliases (spell_N, spell_id_N,
+        disposal_methods_N, plan_step_N, step_dep_keys_N, instance_key_N,
+        target_N, creations_N for `unique`, contract_values_N, positional_N)
+        exactly ONCE per hydration: the lines run in the factory body before
+        the executor `def`, so the executor closes over them as cells. Calls
+        pay LOAD_DEREF at use sites and nothing at frame setup - unlike the
+        earlier signature-default form, whose per-call default fill
+        (pointer copy + incref per param, on shared objects, under
+        free-threading) measured as a wash against the removed bytecode.
 
     Contract:
         - Single source of truth for alias existence: the conditions here
@@ -845,16 +835,18 @@ def _step_alias_signature_params(
           source` exactly (plan_step: generic-constructor steps only; spell:
           inlinable OR owner-target OR non-many; spell_id: non-many OR
           register block; disposal_methods: register block with disposal;
-          step_dep_keys: inlinable steps in dict mode only), so the signature
-          and the body cannot drift independently.
+          step_dep_keys: inlinable steps in dict mode only; target: inlinable
+          steps; creations: `unique` steps; contract_values/positional: rows
+          with inlinable contract extras), so hoist and body cannot drift
+          independently.
         - `instance_key_N` is emitted for EVERY step in dict mode (including
           skipped/captured steps): every dict-mode step stores its result (or
           captured seed) under its instance key.
         - `skip_step_indexes` suppresses the branch aliases for steps whose
           resolution source is not emitted (the specialized emitter's
           captured steps).
-        - Emitted parameter lines are identity-free (binding names + integer
-          indexes only), preserving factory-cache sharing by shape.
+        - Emitted lines are identity-free (binding names + integer indexes
+          only), preserving factory-cache sharing by shape.
 
     Args:
         rows:
@@ -865,14 +857,13 @@ def _step_alias_signature_params(
             Step indexes whose resolution source is not emitted.
 
     Returns:
-        list: Signature parameter lines (each ending with a comma).
+        list: Factory-level assignment lines (top-level indentation).
     """
     params: list = []
     for step_index, row in enumerate(rows):
         if not locals_mode:
             params.append(
-                f"        instance_key_{step_index}"
-                f"=step_instance_keys[{step_index}],"
+                f"instance_key_{step_index} = step_instance_keys[{step_index}]"
             )
         if step_index in skip_step_indexes:
             continue
@@ -884,16 +875,15 @@ def _step_alias_signature_params(
         )
         if inlinable_params is None:
             params.append(
-                f"        plan_step_{step_index}=steps[{step_index}],"
+                f"plan_step_{step_index} = steps[{step_index}]"
             )
         if inlinable_params is not None:
             params.append(
-                f"        target_{step_index}=step_targets[{step_index}],"
+                f"target_{step_index} = step_targets[{step_index}]"
             )
         if existence is Existence.unique:
             params.append(
-                f"        creations_{step_index}"
-                f"=step_owner_creations[{step_index}],"
+                f"creations_{step_index} = step_owner_creations[{step_index}]"
             )
         if (
                 inlinable_params is not None
@@ -902,23 +892,54 @@ def _step_alias_signature_params(
                 or existence is not Existence.many
         ):
             params.append(
-                f"        spell_{step_index}=step_spells[{step_index}],"
+                f"spell_{step_index} = step_spells[{step_index}]"
             )
         if existence is not Existence.many or needs_register_block:
             params.append(
-                f"        spell_id_{step_index}=step_spell_ids[{step_index}],"
+                f"spell_id_{step_index} = step_spell_ids[{step_index}]"
             )
         if needs_register_block and has_disposal_methods:
             params.append(
-                f"        disposal_methods_{step_index}"
-                f"=step_disposal_methods[{step_index}],"
+                f"disposal_methods_{step_index} = step_disposal_methods[{step_index}]"
             )
         if inlinable_params and not locals_mode:
             params.append(
-                f"        step_dep_keys_{step_index}"
-                f"=step_dep_keys[{step_index}],"
+                f"step_dep_keys_{step_index} = step_dep_keys[{step_index}]"
             )
+        if inlinable_params is not None:
+            extras = _row_contract_call_extras(row)
+            if extras is not None:
+                payload_names, positional = extras
+                if payload_names:
+                    params.append(
+                        f"contract_values_{step_index} = step_contract_values[{step_index}]"
+                    )
+                if positional is not None:
+                    params.append(
+                        f"positional_{step_index} = step_positional_args[{step_index}]"
+                    )
     return params
+
+
+def _row_contract_value_binding(row: Dict[str, Any]) -> Tuple[Any, ...]:
+    """
+    Build one row's frozen contract-payload value tuple for bindings.
+
+    Contract:
+        - Values are ordered exactly like the emission-order payload names
+          from `_row_contract_call_extras` (dict(items) semantics: first
+          position, last value; `__args__` excluded), so
+          `contract_values_N[j]` pairs with the j-th emitted payload keyword.
+        - Rows without an inlinable payload contribute an empty tuple.
+    """
+    extras = _row_contract_call_extras(row)
+    if extras is None:
+        return ()
+    payload_names, _positional = extras
+    if not payload_names:
+        return ()
+    payload_map: Dict[str, Any] = dict(row["contract_payload_items"])
+    return tuple(payload_map[name] for name in payload_names)
 
 
 # ---------------------------------------------------------------------------
@@ -978,6 +999,14 @@ def _build_step_bindings(
         "step_targets": tuple(
             runtime_row.spell.spell
             for runtime_row in runtime_rows
+        ),
+        "step_contract_values": tuple(
+            _row_contract_value_binding(row)
+            for row in rows
+        ),
+        "step_positional_args": tuple(
+            (_row_contract_call_extras(row) or ((), None))[1]
+            for row in rows
         ),
         "root_instance_key": root_instance_key,
     }
@@ -1247,43 +1276,18 @@ def emit_specialized_step_plan_source(
             # Direct-return path; no alias needed for the root slot itself.
             read_captured.discard(root_step_index)
 
-    lines = [
-        f"def {SPECIALIZED_EXECUTOR_NAME}(",
-        "        meld,",
-        "        steps=steps,",
-        "        step_spells=step_spells,",
-        "        step_spell_ids=step_spell_ids,",
-        "        step_disposal_methods=step_disposal_methods,",
-        "        step_existences=step_existences,",
-        "        step_instance_keys=step_instance_keys,",
-        "        step_dep_keys=step_dep_keys,",
-        "        root_instance_key=root_instance_key,",
-    ]
-    for step_index in captured_step_indexes:
-        lines.extend([
-            f"        cap_spell_{step_index}=cap_spell_{step_index},",
-            f"        cap_epoch_{step_index}=cap_epoch_{step_index},",
-            f"        cap_inst_{step_index}=cap_inst_{step_index},",
-        ])
-    # Non-captured steps read the same per-slot signature aliases as the
-    # generic body; captured steps contribute only their cap_* slots (plus an
-    # instance_key alias for dict-mode seeding, handled by the helper).
-    lines.extend(
-        _step_alias_signature_params(
-            rows=rows,
-            locals_mode=locals_mode,
-            skip_step_indexes=captured_set,
-        )
+    # Non-captured steps read the same factory-level hoisted aliases as the
+    # generic body; captured slots (cap_*), `_generic_inner`, and the fixed
+    # binding names are factory locals already, so the executor closes over
+    # them directly - the signature is bare `(meld)` (see the generic
+    # emitter's closure-cell rationale).
+    lines = _step_alias_hoist_lines(
+        rows=rows,
+        locals_mode=locals_mode,
+        skip_step_indexes=captured_set,
     )
     lines.extend([
-        "        _generic_inner=_generic_inner,",
-        "        SpellGeneralizedCodegenPlanTargetKind=SpellGeneralizedCodegenPlanTargetKind,",
-        "        _construct_spell_instance=_construct_spell_instance,",
-        "        _raise_meld_construction_error=_raise_meld_construction_error,",
-        "        _register_spell_instance_prebound=_register_spell_instance_prebound,",
-        "        MeldExecutionError=MeldExecutionError,",
-        "        SpellSpaceScopeError=SpellSpaceScopeError,",
-        "    ):",
+        f"def {SPECIALIZED_EXECUTOR_NAME}(meld):",
         "    try:",
     ])
     for step_index in captured_step_indexes:

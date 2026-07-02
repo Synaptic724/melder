@@ -52,16 +52,15 @@ class SpellGeneralizedCodegenPlanStrategy(SpellCodegenPlanStrategy):
               not needed by this model-native strategy body.
         """
         _ = artifact
-        no_overrides_builder = SpellGeneralizedCodegenPlanBuilder(
+        # Single-pass dual-variant build: one model walk produces BOTH lane
+        # plans (differential-verified equal to the former two-build path).
+        # This runs on every conjure AND every dynamic revalidation, so the
+        # duplicated walk it replaces was the dominant phase-10 cost.
+        dual_builder = SpellGeneralizedCodegenPlanBuilder(
             state=state,
             plan_variant=SpellGeneralizedCodegenPlanVariant.NO_OVERRIDES,
         )
-        overrides_builder = SpellGeneralizedCodegenPlanBuilder(
-            state=state,
-            plan_variant=SpellGeneralizedCodegenPlanVariant.OVERRIDES,
-        )
-        plan.no_overrides_plan = no_overrides_builder.build()
-        plan.overrides_plan = overrides_builder.build()
+        plan.no_overrides_plan, plan.overrides_plan = dual_builder.build_dual()
         plan.metadata["selected_strategy_id"] = self.strategy_id
         plan.metadata["discovery_reason"] = (
             "default_generalized_model_native_strategy"

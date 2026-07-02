@@ -29,6 +29,8 @@ from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.g
     emit_step_plan_source,
     row_inlinable_common_shape,
     select_specializable_step_indexes,
+    _row_contract_call_extras,
+    _row_contract_value_binding,
 )
 from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_no_overrides_codegen_creation_compiler import (
     _build_no_overrides_codegen_executor_source,
@@ -374,3 +376,105 @@ class TestFactorySourceShareability:
         cap_spell._door_epoch = 8
         assert executor(object()) == ("generic",)
         assert deopt_calls
+
+
+def _payload_row(
+        spell_id: str,
+        existence: str,
+        deps: Sequence[Tuple[str, Sequence[str]]] = (),
+        *,
+        payload: Sequence[Tuple[str, Any]] = (),
+        positional: Any = None,
+        uses_positional: bool = False,
+) -> Dict[str, Any]:
+    """
+    Build one synthetic manifest row carrying contract-call extras.
+    """
+    built = _row(spell_id, existence, deps)
+    built["has_contract_payload"] = bool(payload)
+    built["contract_payload_items"] = tuple(payload)
+    built["contract_positional_override"] = positional
+    built["uses_positional_override"] = uses_positional
+    return built
+
+
+class TestContractPayloadEmission:
+    """
+    Contract payloads and positional overrides compile to bound constants.
+    """
+
+    def test_payload_row_is_inlinable_and_payload_wins_collisions(self) -> None:
+        """Payload names shadow same-named dep params (generic overwrite)."""
+        built = _payload_row(
+            "root", "many",
+            deps=[("cfg", ["d1"]), ("dep", ["d1"])],
+            payload=[("cfg", {"a": 1}), ("extra", 7)],
+        )
+        assert row_inlinable_common_shape(built) == (
+            ("dep", (("d1", None),)),
+        )
+        assert _row_contract_call_extras(built) == (("cfg", "extra"), None)
+        assert _row_contract_value_binding(built) == ({"a": 1}, 7)
+
+    def test_positional_precedence_mirrors_generic_builder(self) -> None:
+        """Payload __args__ overwrites the override unless uses_positional."""
+        plain = _payload_row(
+            "r", "many", payload=[("__args__", (1, 2))], positional=(9,),
+        )
+        assert _row_contract_call_extras(plain) == ((), (1, 2))
+        pinned = _payload_row(
+            "r", "many", payload=[("__args__", (1, 2))], positional=(9,),
+            uses_positional=True,
+        )
+        assert _row_contract_call_extras(pinned) == ((), (9,))
+
+    def test_non_sequence_positional_stays_on_generic_path(self) -> None:
+        """Non tuple/list __args__ keeps per-call error timing: not inlinable."""
+        built = _payload_row("r", "many", payload=[("__args__", 5)])
+        assert _row_contract_call_extras(built) is None
+        assert row_inlinable_common_shape(built) is None
+
+    def test_payload_graph_reaches_locals_mode_with_bound_constants(self) -> None:
+        """Payload + positional rows emit locals-mode splat/keyword constants."""
+        rows = (
+            _row("d1", "many"),
+            _payload_row(
+                "root", "many", deps=[("dep", ["d1"])],
+                payload=[("cfg", "CFGVAL")], positional=("P0",),
+                uses_positional=True,
+            ),
+        )
+        source = emit_step_plan_source(
+            rows=rows, root_instance_key=("root", None),
+        )
+        assert "instance_results" not in source
+        assert "*positional_1," in source
+        assert "cfg=contract_values_1[0]," in source
+        assert "dep=instance_0," in source
+        assert "positional_1 = step_positional_args[1]" in source
+        assert "contract_values_1 = step_contract_values[1]" in source
+
+    def test_payload_only_zero_dep_row_emits_keyword_call(self) -> None:
+        """A zero-dep payload row calls with constants, not `target_0()`."""
+        rows = (_payload_row("solo_p", "many", payload=[("x", 42)]),)
+        source = emit_step_plan_source(
+            rows=rows, root_instance_key=("solo_p", None),
+        )
+        assert "x=contract_values_0[0]," in source
+        assert "target_0()" not in source
+
+    def test_specialized_emitter_inlines_non_captured_payload_rows(self) -> None:
+        """The specialized body compiles payload constants for live steps."""
+        rows = (
+            _row("u1", "unique"),
+            _payload_row(
+                "root", "many", deps=[("dep", ["u1"])],
+                payload=[("cfg", "CFGVAL")],
+            ),
+        )
+        source = emit_specialized_step_plan_source(
+            rows=rows, captured_step_indexes=(0,),
+            root_instance_key=("root", None),
+        )
+        assert "cfg=contract_values_1[0]," in source
+        assert "contract_values_1 = step_contract_values[1]" in source
