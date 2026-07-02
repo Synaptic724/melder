@@ -63,15 +63,20 @@ class GeneralizedLazyDoorStep(CodegenCreationFamilyStep):
         root_spell = resolver.resolve_spell(manifest["root_spell_id"])
         resolver.cleanup()
 
-        cold_no_overrides_door, cold_overrides_door = (
-            build_lazy_creation_executors(
-                manifest=manifest,
-                spell=root_spell,
-            )
+        (
+            cold_no_overrides_door,
+            cold_no_overrides_instance_door,
+            cold_overrides_door,
+        ) = build_lazy_creation_executors(
+            manifest=manifest,
+            spell=root_spell,
         )
 
         spell_codegen_creation = state.spell_codegen_creation
         spell_codegen_creation.no_overrides_executor = cold_no_overrides_door
+        spell_codegen_creation.no_overrides_instance_executor = (
+            cold_no_overrides_instance_door
+        )
         spell_codegen_creation.overrides_executor = cold_overrides_door
         spell_codegen_creation.no_overrides_code_object = None
         spell_codegen_creation.overrides_code_object = None

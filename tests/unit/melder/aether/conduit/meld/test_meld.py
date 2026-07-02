@@ -698,7 +698,17 @@ class _CreationContextStub:
         ) -> tuple[Any, bool]:
             return (self.execute_no_hooks(caller_creations, overrides), True)
 
+        def _stub_no_overrides_instance_executor(
+                caller_creations: Any,
+        ) -> Any:
+            # Instance-only twin (dual-door contract): bare instance, no
+            # (instance, created) tuple.
+            return self.execute_no_hooks(caller_creations, None)
+
         self._no_overrides_executor = _stub_no_overrides_executor
+        self._no_overrides_instance_executor = (
+            _stub_no_overrides_instance_executor
+        )
         self._overrides_executor = _stub_overrides_executor
 
     def execute_no_hooks(

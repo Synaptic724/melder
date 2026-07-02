@@ -22,6 +22,7 @@ from typing import Any, Callable, Dict, Optional, Tuple
 from melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.creation_runtime_door_compiler import (
     compile_creation_context_hooks_no_overrides_executor,
     compile_creation_context_hooks_overrides_only_executor,
+    compile_creation_context_instance_no_overrides_executor,
 )
 from melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_override_targeting_analysis import (
     SpellOverrideTargetRef,
@@ -62,8 +63,9 @@ class GeneralizedHydratedExecutors(Cleanable):
     Hydration result container for one spell.
 
     Contract:
-        - `no_overrides_executor` and `overrides_executor` are the final
-          route-keyed CreationContext doors.
+        - `no_overrides_executor`, `no_overrides_instance_executor`
+          (the instance-only no-hooks twin), and `overrides_executor` are the
+          final route-keyed CreationContext doors.
         - `inner_no_overrides_executor` is exposed for diagnostics only.
 
     Lifecycle / Cleanup:
@@ -79,6 +81,7 @@ class GeneralizedHydratedExecutors(Cleanable):
         "fast_transient_no_overrides",
         "inner_no_overrides_executor",
         "no_overrides_executor",
+        "no_overrides_instance_executor",
         "overrides_executor",
         "no_overrides_code_object",
         "overrides_code_object",
@@ -91,6 +94,7 @@ class GeneralizedHydratedExecutors(Cleanable):
             fast_transient_no_overrides: bool,
             inner_no_overrides_executor: Callable[..., Any],
             no_overrides_executor: Callable[..., Any],
+            no_overrides_instance_executor: Callable[..., Any],
             overrides_executor: Callable[..., Any],
             no_overrides_code_object: Any,
             overrides_code_object: Any,
@@ -103,6 +107,7 @@ class GeneralizedHydratedExecutors(Cleanable):
         self.fast_transient_no_overrides = fast_transient_no_overrides
         self.inner_no_overrides_executor = inner_no_overrides_executor
         self.no_overrides_executor = no_overrides_executor
+        self.no_overrides_instance_executor = no_overrides_instance_executor
         self.overrides_executor = overrides_executor
         self.no_overrides_code_object = no_overrides_code_object
         self.overrides_code_object = overrides_code_object
@@ -123,6 +128,7 @@ class GeneralizedHydratedExecutors(Cleanable):
         del self.fast_transient_no_overrides
         del self.inner_no_overrides_executor
         del self.no_overrides_executor
+        del self.no_overrides_instance_executor
         del self.overrides_executor
         del self.no_overrides_code_object
         del self.overrides_code_object
@@ -181,6 +187,9 @@ def build_lazy_creation_executors(
                 published_context._no_overrides_executor = (
                     hydrated.no_overrides_executor
                 )
+                published_context._no_overrides_instance_executor = (
+                    hydrated.no_overrides_instance_executor
+                )
                 published_context._overrides_executor = (
                     hydrated.overrides_executor
                 )
@@ -191,6 +200,9 @@ def build_lazy_creation_executors(
         if published_context is not None:
             published_context._no_overrides_executor = (
                 hydrated.no_overrides_executor
+            )
+            published_context._no_overrides_instance_executor = (
+                hydrated.no_overrides_instance_executor
             )
             published_context._overrides_executor = (
                 hydrated.overrides_executor
@@ -205,6 +217,13 @@ def build_lazy_creation_executors(
         _swap_hot_doors(hydrated)
         return hydrated.no_overrides_executor(caller_creations)
 
+    def _cold_no_overrides_instance_door(caller_creations: Any) -> Any:
+        # Instance-only twin of the cold no-overrides door: same self-healing
+        # hydrate+swap, bare-instance return contract.
+        hydrated = _hydrate_once()
+        _swap_hot_doors(hydrated)
+        return hydrated.no_overrides_instance_executor(caller_creations)
+
     def _cold_overrides_door(
             caller_creations: Any,
             overrides: Optional[dict],
@@ -213,7 +232,11 @@ def build_lazy_creation_executors(
         _swap_hot_doors(hydrated)
         return hydrated.overrides_executor(caller_creations, overrides)
 
-    return _cold_no_overrides_door, _cold_overrides_door
+    return (
+        _cold_no_overrides_door,
+        _cold_no_overrides_instance_door,
+        _cold_overrides_door,
+    )
 
 
 def hydrate_creation_executors(
@@ -257,6 +280,19 @@ def hydrate_creation_executors(
         no_overrides_executor=inner_no_overrides_executor,
         spell_space_scope_error_type=SpellSpaceScopeError,
     )
+    # Instance-only twin: same inner executor wrapped by the instance-variant
+    # route template ((meld) -> instance); consumed by the no-hooks meld
+    # lanes so warm melds never allocate the (instance, created) tuple.
+    no_overrides_instance_door = (
+        compile_creation_context_instance_no_overrides_executor(
+            resolve_route_key=route_key,
+            fast_transient_no_overrides_enabled=fast_transient_no_overrides,
+            spell=root_spell,
+            spell_id=root_spell.spell_id,
+            no_overrides_executor=inner_no_overrides_executor,
+            spell_space_scope_error_type=SpellSpaceScopeError,
+        )
+    )
     overrides_door = _build_lazy_overrides_door(
         manifest=manifest,
         root_spell=root_spell,
@@ -264,10 +300,15 @@ def hydrate_creation_executors(
         inner_no_overrides_executor=inner_no_overrides_executor,
     )
 
-    final_no_overrides_door = no_overrides_door
+    # The specializing wrapper rides the INSTANCE lane: the no-hooks meld
+    # lanes only execute `_no_overrides_instance_executor`, so a wrapper on
+    # the hooks slot would never run (regression caught by the component
+    # specialization suite after the dual-door cut). On success it publishes
+    # BOTH specialized doors; the hooks slot stays plain until then.
+    final_no_overrides_instance_door = no_overrides_instance_door
     if _specialization_enabled_for_spell(root_spell):
-        final_no_overrides_door = _install_specializing_door(
-            plain_door=no_overrides_door,
+        final_no_overrides_instance_door = _install_specializing_door(
+            plain_instance_door=no_overrides_instance_door,
             rows=no_overrides_payload["steps_rows"],
             root_instance_key=no_overrides_payload["root_instance_key"],
             root_spell_id=no_overrides_payload["root_spell_id"],
@@ -282,7 +323,8 @@ def hydrate_creation_executors(
         route_key=route_key,
         fast_transient_no_overrides=fast_transient_no_overrides,
         inner_no_overrides_executor=inner_no_overrides_executor,
-        no_overrides_executor=final_no_overrides_door,
+        no_overrides_executor=no_overrides_door,
+        no_overrides_instance_executor=final_no_overrides_instance_door,
         overrides_executor=overrides_door,
         no_overrides_code_object=no_overrides_door.__code__,
         overrides_code_object=None,
@@ -506,7 +548,7 @@ def _specialization_enabled_for_spell(root_spell: Any) -> bool:
 
 def _install_specializing_door(
         *,
-        plain_door: Callable[..., Any],
+        plain_instance_door: Callable[..., Any],
         rows: Any,
         root_instance_key: Any,
         root_spell_id: Any,
@@ -517,22 +559,34 @@ def _install_specializing_door(
         root_spell: Any,
 ) -> Callable[..., Any]:
     """
-    Wrap the hot no-overrides door in a one-shot warm-tail specializer.
+    Wrap the hot no-overrides INSTANCE door in a one-shot warm-tail
+    specializer.
 
     Purpose:
         After the first successful hot execution, build the specialized
         no-overrides body (captured `unique` singletons behind per-dep door
-        epoch guards), wrap it with the same route-keyed door compiler, and
-        self-swap it into the published context slot - the third stage of the
-        family's cold -> hot -> specialized door progression.
+        epoch guards), wrap it with BOTH route-keyed door compilers, and
+        self-swap the pair into the published context slots - the third stage
+        of the family's cold -> hot -> specialized door progression.
 
     Contract:
+        - The wrapper rides the INSTANCE lane because the no-hooks meld lanes
+          execute `_no_overrides_instance_executor`; a wrapper on the hooks
+          slot would never run. Signature/return contract is the instance
+          door's: `(meld) -> instance`.
         - Zero-capture graphs never install the wrapper: this function
-          returns `plain_door` unchanged when no `unique` step exists.
+          returns `plain_instance_door` unchanged when no `unique` step
+          exists.
         - The wrapper's steady state is one closure call + one cell read:
           once a final door is resolved (specialized or declined-to-plain),
           every wrapper call delegates directly, and the context-slot swap
           removes the wrapper from later melds entirely.
+        - On successful specialization BOTH published slots swap together:
+          `_no_overrides_instance_executor` gets the specialized instance
+          door and `_no_overrides_executor` gets the specialized hooks door
+          (CreationContext door contract). On decline only the instance slot
+          re-pins the plain instance door; the hooks slot already holds the
+          plain hooks door.
         - Specialization runs post-success on the leader thread under a
           NON-BLOCKING lock acquire: concurrent melds never wait on the
           specialization build; they return their already-computed result.
@@ -544,12 +598,12 @@ def _install_specializing_door(
           this wrapper only decides WHEN a specialized door exists.
 
     Returns:
-        Callable[..., Any]: The specializing wrapper door, or `plain_door`
-        when the graph has no capturable steps.
+        Callable[..., Any]: The specializing wrapper door, or
+        `plain_instance_door` when the graph has no capturable steps.
     """
     captured_step_indexes = select_specializable_step_indexes(rows)
     if not captured_step_indexes:
-        return plain_door
+        return plain_instance_door
     if route_key != "many" and len(captured_step_indexes) == 1:
         captured_row = rows[captured_step_indexes[0]]
         if captured_row["spell_id"] == root_spell_id:
@@ -558,7 +612,7 @@ def _install_specializing_door(
             # storage BEFORE calling the inner executor, so a specialized
             # inner that only captures the root can never execute on the
             # warm path. Decline instead of building a dead body.
-            return plain_door
+            return plain_instance_door
 
     state_lock = threading.Lock()
     resolved_cell: list = [None]
@@ -581,8 +635,21 @@ def _install_specializing_door(
             # authoritative and the decline counter advances below.
             specialized_inner = None
         attempts_cell[0] += 1
+        specialized_hooks_door = None
         if specialized_inner is not None:
             resolved_cell[0] = (
+                compile_creation_context_instance_no_overrides_executor(
+                    resolve_route_key=route_key,
+                    fast_transient_no_overrides_enabled=(
+                        fast_transient_no_overrides
+                    ),
+                    spell=root_spell,
+                    spell_id=root_spell.spell_id,
+                    no_overrides_executor=specialized_inner,
+                    spell_space_scope_error_type=SpellSpaceScopeError,
+                )
+            )
+            specialized_hooks_door = (
                 compile_creation_context_hooks_no_overrides_executor(
                     resolve_route_key=route_key,
                     fast_transient_no_overrides_enabled=(
@@ -595,19 +662,27 @@ def _install_specializing_door(
                 )
             )
         elif attempts_cell[0] >= 3:
-            resolved_cell[0] = plain_door
+            resolved_cell[0] = plain_instance_door
         final_door = resolved_cell[0]
         if final_door is not None:
-            # Self-replacing slot contract: later melds skip this wrapper.
+            # Self-replacing slot contract: later melds skip the wrapper.
+            # On success both no-overrides slots swap together
+            # (CreationContext door contract); on decline only the instance
+            # slot re-pins - the hooks slot already holds the plain hooks
+            # door.
             published_context = root_spell._creation_context
             if published_context is not None:
-                published_context._no_overrides_executor = final_door
+                published_context._no_overrides_instance_executor = final_door
+                if specialized_hooks_door is not None:
+                    published_context._no_overrides_executor = (
+                        specialized_hooks_door
+                    )
 
     def _specializing_no_overrides_door(caller_creations: Any) -> Any:
         resolved = resolved_cell[0]
         if resolved is not None:
             return resolved(caller_creations)
-        result = plain_door(caller_creations)
+        result = plain_instance_door(caller_creations)
         if resolved_cell[0] is None and state_lock.acquire(blocking=False):
             try:
                 if resolved_cell[0] is None:

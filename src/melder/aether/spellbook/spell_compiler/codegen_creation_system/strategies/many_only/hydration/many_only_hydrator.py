@@ -20,6 +20,7 @@ from typing import Any, Callable, Dict, Optional, Tuple
 from melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.creation_runtime_door_compiler import (
     compile_creation_context_hooks_no_overrides_executor,
     compile_creation_context_hooks_overrides_only_executor,
+    compile_creation_context_instance_no_overrides_executor,
 )
 from melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_override_targeting_analysis import (
     SpellOverrideTargetRef,
@@ -67,6 +68,7 @@ class ManyOnlyHydratedExecutors(Cleanable):
     __slots__ = Cleanable.__slots__ + [
         "route_key",
         "no_overrides_executor",
+        "no_overrides_instance_executor",
         "overrides_executor",
         "no_overrides_code_object",
         "overrides_code_object",
@@ -77,6 +79,7 @@ class ManyOnlyHydratedExecutors(Cleanable):
             *,
             route_key: str,
             no_overrides_executor: Callable[..., Any],
+            no_overrides_instance_executor: Callable[..., Any],
             overrides_executor: Callable[..., Any],
             no_overrides_code_object: Any,
             overrides_code_object: Any,
@@ -87,6 +90,7 @@ class ManyOnlyHydratedExecutors(Cleanable):
         super().__init__()
         self.route_key = route_key
         self.no_overrides_executor = no_overrides_executor
+        self.no_overrides_instance_executor = no_overrides_instance_executor
         self.overrides_executor = overrides_executor
         self.no_overrides_code_object = no_overrides_code_object
         self.overrides_code_object = overrides_code_object
@@ -100,6 +104,7 @@ class ManyOnlyHydratedExecutors(Cleanable):
         self._cleaned = True
         del self.route_key
         del self.no_overrides_executor
+        del self.no_overrides_instance_executor
         del self.overrides_executor
         del self.no_overrides_code_object
         del self.overrides_code_object
@@ -146,6 +151,9 @@ def build_many_only_lazy_creation_executors(
             published_context._no_overrides_executor = (
                 hydrated.no_overrides_executor
             )
+            published_context._no_overrides_instance_executor = (
+                hydrated.no_overrides_instance_executor
+            )
             published_context._overrides_executor = (
                 hydrated.overrides_executor
             )
@@ -155,6 +163,11 @@ def build_many_only_lazy_creation_executors(
         _swap_hot_doors(hydrated)
         return hydrated.no_overrides_executor(caller_creations)
 
+    def _cold_no_overrides_instance_door(caller_creations: Any) -> Any:
+        hydrated = _hydrate_once()
+        _swap_hot_doors(hydrated)
+        return hydrated.no_overrides_instance_executor(caller_creations)
+
     def _cold_overrides_door(
             caller_creations: Any,
             overrides: Optional[dict],
@@ -163,7 +176,11 @@ def build_many_only_lazy_creation_executors(
         _swap_hot_doors(hydrated)
         return hydrated.overrides_executor(caller_creations, overrides)
 
-    return _cold_no_overrides_door, _cold_overrides_door
+    return (
+        _cold_no_overrides_door,
+        _cold_no_overrides_instance_door,
+        _cold_overrides_door,
+    )
 
 
 def hydrate_many_only_creation_executors(
@@ -217,6 +234,17 @@ def hydrate_many_only_creation_executors(
         no_overrides_executor=inner_no_overrides_executor,
         spell_space_scope_error_type=SpellSpaceScopeError,
     )
+    # Instance-only twin for the no-hooks meld lanes ((meld) -> instance).
+    no_overrides_instance_door = (
+        compile_creation_context_instance_no_overrides_executor(
+            resolve_route_key=route_key,
+            fast_transient_no_overrides_enabled=False,
+            spell=spell,
+            spell_id=spell.spell_id,
+            no_overrides_executor=inner_no_overrides_executor,
+            spell_space_scope_error_type=SpellSpaceScopeError,
+        )
+    )
     overrides_door = compile_creation_context_hooks_overrides_only_executor(
         resolve_route_key=route_key,
         spell=spell,
@@ -230,6 +258,7 @@ def hydrate_many_only_creation_executors(
     return ManyOnlyHydratedExecutors(
         route_key=route_key,
         no_overrides_executor=no_overrides_door,
+        no_overrides_instance_executor=no_overrides_instance_door,
         overrides_executor=overrides_door,
         no_overrides_code_object=no_overrides_door.__code__,
         overrides_code_object=overrides_door.__code__,

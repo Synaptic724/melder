@@ -45,6 +45,7 @@ from melder.aether.spellbook.existence.existence import Existence
 from melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.creation_runtime_door_compiler import (
     compile_creation_context_hooks_no_overrides_executor,
     compile_creation_context_hooks_overrides_only_executor,
+    compile_creation_context_instance_no_overrides_executor,
 )
 from melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_override_targeting_analysis import (
     SpellOverrideTargetRef,
@@ -246,6 +247,19 @@ def load_creation_context(
         no_overrides_executor=inner_no_overrides,
         spell_space_scope_error_type=SpellSpaceScopeError,
     )
+    # Instance-only twin for the no-hooks meld lanes ((meld) -> instance).
+    outer_no_overrides_instance = (
+        compile_creation_context_instance_no_overrides_executor(
+            resolve_route_key=resolve_route_key,
+            fast_transient_no_overrides_enabled=(
+                fast_transient_no_overrides_enabled
+            ),
+            spell=spell,
+            spell_id=spell.spell_id,
+            no_overrides_executor=inner_no_overrides,
+            spell_space_scope_error_type=SpellSpaceScopeError,
+        )
+    )
 
     overrides_payload = package.get("overrides")
     if overrides_payload is None:
@@ -293,6 +307,7 @@ def load_creation_context(
         creation_gate=creation_gate,
         creation_gate_index_id=creation_gate_index_id,
         no_overrides_executor=outer_no_overrides,
+        no_overrides_instance_executor=outer_no_overrides_instance,
         overrides_executor=outer_overrides,
         publish=publish,
     )

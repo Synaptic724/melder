@@ -277,9 +277,11 @@ def load_creation_context_from_cache_asset(
         - Can publish the rebuilt context back onto the spell for conduit use.
     """
     _validate_cache_asset(cache_asset)
-    no_overrides_executor = _load_no_overrides_executor_from_asset(
-        spell=spell,
-        cache_asset=cache_asset,
+    no_overrides_executor, no_overrides_instance_executor = (
+        _load_no_overrides_executor_from_asset(
+            spell=spell,
+            cache_asset=cache_asset,
+        )
     )
     overrides_executor = _build_overrides_stub()
     if "overrides" in cache_asset:
@@ -299,6 +301,7 @@ def load_creation_context_from_cache_asset(
         creation_gate=creation_gate,
         creation_gate_index_id=creation_gate_index_id,
         no_overrides_executor=no_overrides_executor,
+        no_overrides_instance_executor=no_overrides_instance_executor,
         overrides_executor=overrides_executor,
         publish=publish,
     )
@@ -412,7 +415,19 @@ def _load_no_overrides_executor_from_asset(
         _ = caller_creations_lock_held
         return (raw_executor(caller_creations), True)
 
-    return execute_no_overrides
+    def execute_no_overrides_instance(caller_creations: Any) -> Any:
+        """
+        Instance-only twin for the `_no_overrides_instance_executor` slot.
+
+        Contract:
+            The dual-door CreationContext contract requires both no-overrides
+            slots populated; the no-hooks meld lanes execute this one. The
+            legacy emitted executor already returns the bare instance, so
+            this is a direct pass-through (no tuple built, no `[0]`).
+        """
+        return raw_executor(caller_creations)
+
+    return execute_no_overrides, execute_no_overrides_instance
 
 
 def _validate_cache_asset(cache_asset: Dict[str, Any]) -> None:

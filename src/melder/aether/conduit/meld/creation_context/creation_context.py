@@ -28,11 +28,20 @@ class CreationContext(Cleanable):
         - `execute_no_hooks(...)` returns only the instance.
         - Door-facing internal contract: the meld front doors
           (`ConduitMeld`, `SpellSpaceMeld`) read `_dynamic_environment`,
-          `_no_overrides_executor`, and `_overrides_executor` directly on
-          their non-dynamic no-hooks fast lane. Those reads are per-call
-          through the live spell-published context and are never cached on
-          the doors, so context replacement/cleanup semantics are unchanged.
-          Renaming or repurposing these slots requires updating both doors.
+          `_no_overrides_executor`, `_no_overrides_instance_executor`, and
+          `_overrides_executor` directly on their non-dynamic no-hooks fast
+          lane. Those reads are per-call through the live spell-published
+          context and are never cached on the doors, so context
+          replacement/cleanup semantics are unchanged. Renaming or
+          repurposing these slots requires updating both doors.
+        - `_no_overrides_instance_executor` is the INSTANCE-ONLY twin of
+          `_no_overrides_executor` (same inner executor wrapped by the
+          instance-variant route template, `(meld) -> instance`). The
+          no-hooks lanes call it to avoid allocating and discarding the
+          `(instance, created)` tuple on every warm meld; the hooks lane
+          keeps the tuple door. Both slots swap TOGETHER at every publish
+          site (cold -> hot -> specialized) and share the self-replacing
+          contract.
         - Executor slots are SELF-REPLACING: generalized hydration installs
           cold delegating doors first and hot-swaps the final hydrated
           executors into `_no_overrides_executor` / `_overrides_executor` in
@@ -49,6 +58,7 @@ class CreationContext(Cleanable):
         "_creation_gate",
         "_creation_gate_index_id",
         "_no_overrides_executor",
+        "_no_overrides_instance_executor",
         "_overrides_executor",
     ]
 
@@ -60,6 +70,7 @@ class CreationContext(Cleanable):
             creation_gate: Optional["CreationGate"] = None,
             creation_gate_index_id: Optional[str] = None,
             no_overrides_executor: Optional[Callable[..., Any]] = None,
+            no_overrides_instance_executor: Optional[Callable[..., Any]] = None,
             overrides_executor: Optional[Callable[..., Any]] = None,
     ) -> None:
         """
@@ -77,6 +88,9 @@ class CreationContext(Cleanable):
             no_overrides_executor:
                 Phase-11-provided final no-overrides executor returning
                 `(instance, created)`.
+            no_overrides_instance_executor:
+                Instance-only twin of `no_overrides_executor` returning the
+                bare instance; consumed by the no-hooks meld lanes.
             overrides_executor:
                 Phase-11-provided final overrides executor returning
                 `(instance, created)`.
@@ -97,6 +111,7 @@ class CreationContext(Cleanable):
         self._creation_gate = creation_gate
         self._creation_gate_index_id = creation_gate_index_id
         self._no_overrides_executor = no_overrides_executor
+        self._no_overrides_instance_executor = no_overrides_instance_executor
         self._overrides_executor = overrides_executor
 
     def cleanup(self) -> None:
@@ -113,6 +128,7 @@ class CreationContext(Cleanable):
         del self._creation_gate
         del self._creation_gate_index_id
         del self._no_overrides_executor
+        del self._no_overrides_instance_executor
         del self._overrides_executor
 
     @classmethod
@@ -125,6 +141,7 @@ class CreationContext(Cleanable):
             creation_gate_index_id: Optional[str] = None,
             no_overrides_executor: Optional[Callable[..., Any]],
             overrides_executor: Optional[Callable[..., Any]],
+            no_overrides_instance_executor: Optional[Callable[..., Any]] = None,
             publish: bool = False,
     ) -> "CreationContext":
         """
@@ -141,6 +158,7 @@ class CreationContext(Cleanable):
             creation_gate=creation_gate,
             creation_gate_index_id=creation_gate_index_id,
             no_overrides_executor=no_overrides_executor,
+            no_overrides_instance_executor=no_overrides_instance_executor,
             overrides_executor=overrides_executor,
         )
         if publish:
@@ -220,8 +238,9 @@ class CreationContext(Cleanable):
         """
         if not self._dynamic_environment:
             if overrides is None:
-                no_overrides_executor = self._no_overrides_executor
-                return no_overrides_executor(meld)[0]
+                # Instance-only door: no (instance, created) tuple to build
+                # and discard on the no-hooks lane.
+                return self._no_overrides_instance_executor(meld)
             overrides_executor = self._overrides_executor
             return overrides_executor(meld, overrides)[0]
 
@@ -244,8 +263,7 @@ class CreationContext(Cleanable):
         try:
             creation_gate.register_ticket()
             if overrides is None:
-                no_overrides_executor = self._no_overrides_executor
-                return no_overrides_executor(meld)[0]
+                return self._no_overrides_instance_executor(meld)
             overrides_executor = self._overrides_executor
             return overrides_executor(meld, overrides)[0]
         finally:

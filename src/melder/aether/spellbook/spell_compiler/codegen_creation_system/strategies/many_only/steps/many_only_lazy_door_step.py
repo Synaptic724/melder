@@ -55,14 +55,19 @@ class ManyOnlyLazyDoorStep(CodegenCreationFamilyStep):
         if root_spell is None:
             raise RuntimeError("many_only lazy-door step requires root_spell.")
 
-        cold_no_overrides_door, cold_overrides_door = (
-            build_many_only_lazy_creation_executors(
-                manifest=manifest,
-                spell=root_spell,
-            )
+        (
+            cold_no_overrides_door,
+            cold_no_overrides_instance_door,
+            cold_overrides_door,
+        ) = build_many_only_lazy_creation_executors(
+            manifest=manifest,
+            spell=root_spell,
         )
 
         spell_codegen_creation.no_overrides_executor = cold_no_overrides_door
+        spell_codegen_creation.no_overrides_instance_executor = (
+            cold_no_overrides_instance_door
+        )
         spell_codegen_creation.overrides_executor = cold_overrides_door
         spell_codegen_creation.no_overrides_code_object = None
         spell_codegen_creation.overrides_code_object = None

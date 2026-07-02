@@ -256,7 +256,7 @@ class SpellSpaceMeld(Meld):
                             # a captured reference would pin the cold-door
                             # wrapper forever.
                             fast_executor = (
-                                captured_context._no_overrides_executor
+                                captured_context._no_overrides_instance_executor
                             )
                     except AttributeError:
                         # Lifecycle-ambiguous read: a cleaned spell/switch/
@@ -265,7 +265,9 @@ class SpellSpaceMeld(Meld):
                         # rebuilds.
                         fast_executor = None
                     if fast_executor is not None:
-                        instance = fast_executor(self)[0]
+                        # Instance-only door: no (instance, created)
+                        # tuple on the warm fast lane.
+                        instance = fast_executor(self)
                         if self._spellbook._cache_emit_required:
                             self._spellbook._emit_cache_file_if_required()
                         return instance
@@ -349,7 +351,9 @@ class SpellSpaceMeld(Meld):
                     override_map,
                 )
             elif override_map is None:
-                instance = creation_context._no_overrides_executor(self)[0]
+                instance = creation_context._no_overrides_instance_executor(
+                    self,
+                )
                 if fast_door_key is not None:
                     # Success-only fast-door memoization. This arm is exactly
                     # the fast-lane posture (non-dynamic, no hooks, no

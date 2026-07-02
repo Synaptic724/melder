@@ -98,7 +98,10 @@ def _stub_root_spell() -> SimpleNamespace:
     """
     return SimpleNamespace(
         spell_id="root",
-        _creation_context=SimpleNamespace(_no_overrides_executor=None),
+        _creation_context=SimpleNamespace(
+            _no_overrides_executor=None,
+            _no_overrides_instance_executor=None,
+        ),
     )
 
 
@@ -112,6 +115,11 @@ def _install(
 ) -> Any:
     """
     Call `_install_specializing_door` with one canonical argument set.
+
+    Note:
+        `plain_door` here is the INSTANCE-lane door: the wrapper rides
+        `_no_overrides_instance_executor` (the no-hooks meld lanes only
+        execute that slot).
     """
     generic_inner_calls: List[Any] = []
 
@@ -120,7 +128,7 @@ def _install(
         return ("generic", meld)
 
     return _install_specializing_door(
-        plain_door=plain_door,
+        plain_instance_door=plain_door,
         rows=rows,
         root_instance_key=(rows[-1]["spell_id"], None),
         root_spell_id=rows[-1]["spell_id"],
@@ -225,13 +233,16 @@ class TestWrapperRetryAndPin:
 
         slot = root_spell._creation_context
         assert wrapper("c1") == ("plain", "c1")
-        assert slot._no_overrides_executor is None
+        assert slot._no_overrides_instance_executor is None
         assert wrapper("c2") == ("plain", "c2")
-        assert slot._no_overrides_executor is None
+        assert slot._no_overrides_instance_executor is None
         assert wrapper("c3") == ("plain", "c3")
-        # Third declined attempt pins the plain door and publishes it, so
-        # later melds skip the wrapper entirely.
-        assert slot._no_overrides_executor is plain_door
+        # Third declined attempt pins the plain instance door and publishes
+        # it to the INSTANCE slot, so later melds skip the wrapper entirely.
+        # The hooks slot is untouched on decline: it already holds the plain
+        # hooks door on a live runtime (None in this stub).
+        assert slot._no_overrides_instance_executor is plain_door
+        assert slot._no_overrides_executor is None
         assert wrapper("c4") == ("plain", "c4")
         assert plain_calls == ["c1", "c2", "c3", "c4"]
 

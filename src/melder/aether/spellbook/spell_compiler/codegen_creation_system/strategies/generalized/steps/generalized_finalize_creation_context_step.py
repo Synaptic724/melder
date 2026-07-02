@@ -3,6 +3,7 @@ from typing import Any, Callable, Dict, Optional, Sequence, Tuple
 from melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.creation_runtime_door_compiler import (
     compile_creation_context_hooks_no_overrides_executor,
     compile_creation_context_hooks_overrides_only_executor,
+    compile_creation_context_instance_no_overrides_executor,
 )
 from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_no_overrides_codegen_creation_compiler import (
     compile_no_overrides_codegen_creation_executor_from_plan,
@@ -127,7 +128,22 @@ class GeneralizedFinalizeCreationContextStep(CodegenCreationFamilyStep):
         )
 
         state.overrides_executor = overrides_runtime
+        no_overrides_instance_runtime = (
+            compile_creation_context_instance_no_overrides_executor(
+                resolve_route_key=route_key,
+                fast_transient_no_overrides_enabled=(
+                    no_overrides_plan.fast_transient_plan is not None
+                ),
+                spell=root_spell,
+                spell_id=root_spell.spell_id,
+                no_overrides_executor=base_no_overrides_executor,
+                spell_space_scope_error_type=SpellSpaceScopeError,
+            )
+        )
         spell_codegen_creation.no_overrides_executor = no_overrides_runtime
+        spell_codegen_creation.no_overrides_instance_executor = (
+            no_overrides_instance_runtime
+        )
         spell_codegen_creation.overrides_executor = overrides_creation_runtime
         spell_codegen_creation.no_overrides_code_object = no_overrides_runtime.__code__
         spell_codegen_creation.overrides_code_object = overrides_creation_runtime.__code__

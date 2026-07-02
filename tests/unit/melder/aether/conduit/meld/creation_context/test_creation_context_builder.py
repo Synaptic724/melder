@@ -12,15 +12,20 @@ from melder.aether.spellbook.existence.existence import Existence
 from melder.utilities.custom_exceptions.meld_execution_error import MeldExecutionError
 
 
+_DEFAULT_INSTANCE_EXECUTOR: Any = lambda caller_creations: "value"
+
+
 def _make_creation_artifact(
         *,
         no_overrides_executor: Optional[Any] = None,
+        no_overrides_instance_executor: Optional[Any] = _DEFAULT_INSTANCE_EXECUTOR,
         overrides_executor: Optional[Any] = None,
         metadata: Optional[dict[str, Any]] = None,
 ) -> Any:
     """Build a minimal `SpellCodegenCreation`-shaped stub for builder tests."""
     return SimpleNamespace(
         no_overrides_executor=no_overrides_executor,
+        no_overrides_instance_executor=no_overrides_instance_executor,
         overrides_executor=overrides_executor,
         metadata={} if metadata is None else metadata,
     )
@@ -73,8 +78,18 @@ def test_build_requires_both_runtime_executors_for_constructed_spell() -> None:
         ),
     )
 
+    spell_missing_instance = _make_spell(
+        creation_artifact=_make_creation_artifact(
+            no_overrides_executor=lambda creations, root_creations=None: ("value", True),
+            no_overrides_instance_executor=None,
+            overrides_executor=lambda creations, overrides, root_creations=None: ("value", True),
+        ),
+    )
+
     with pytest.raises(RuntimeError, match="no_overrides_executor"):
         CreationContextBuilder.build(spell_missing_no_overrides)
+    with pytest.raises(RuntimeError, match="no_overrides_instance_executor"):
+        CreationContextBuilder.build(spell_missing_instance)
     with pytest.raises(RuntimeError, match="overrides_executor"):
         CreationContextBuilder.build(spell_missing_overrides)
 

@@ -121,11 +121,13 @@ def load_creation_context_lazy(
     creation_gate, creation_gate_index_id = (
         creation_context_factory._resolve_runtime_gate_for_spell(spell)
     )
-    cold_no_overrides_door, cold_overrides_door = (
-        build_lazy_creation_executors(
-            manifest=manifest,
-            spell=spell,
-        )
+    (
+        cold_no_overrides_door,
+        cold_no_overrides_instance_door,
+        cold_overrides_door,
+    ) = build_lazy_creation_executors(
+        manifest=manifest,
+        spell=spell,
     )
     return CreationContext.load_cached(
         spell=spell,
@@ -133,6 +135,7 @@ def load_creation_context_lazy(
         creation_gate=creation_gate,
         creation_gate_index_id=creation_gate_index_id,
         no_overrides_executor=cold_no_overrides_door,
+        no_overrides_instance_executor=cold_no_overrides_instance_door,
         overrides_executor=cold_overrides_door,
         publish=publish,
     )
@@ -183,6 +186,7 @@ def load_creation_context(
         creation_gate=creation_gate,
         creation_gate_index_id=creation_gate_index_id,
         no_overrides_executor=hydrated.no_overrides_executor,
+        no_overrides_instance_executor=hydrated.no_overrides_instance_executor,
         overrides_executor=hydrated.overrides_executor,
         publish=publish,
     )

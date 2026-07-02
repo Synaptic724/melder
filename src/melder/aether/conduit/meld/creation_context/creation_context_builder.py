@@ -43,6 +43,10 @@ class CreationContextBuilder:
             no_overrides_executor = CreationContextBuilder._build_existing_creation_no_overrides_executor(
                 spell
             )
+            no_overrides_instance_executor = (
+                CreationContextBuilder
+                ._build_existing_creation_instance_executor(spell)
+            )
             overrides_executor = CreationContextBuilder._build_existing_creation_overrides_executor(
                 spell
             )
@@ -53,7 +57,15 @@ class CreationContextBuilder:
                     "Run analyzer -> processor -> planner -> codegen creation first."
                 )
             no_overrides_executor = spell_codegen_creation.no_overrides_executor
+            no_overrides_instance_executor = (
+                spell_codegen_creation.no_overrides_instance_executor
+            )
             overrides_executor = spell_codegen_creation.overrides_executor
+            if no_overrides_instance_executor is None:
+                raise RuntimeError(
+                    "SpellCodegenCreation did not populate "
+                    "no_overrides_instance_executor."
+                )
             if no_overrides_executor is None:
                 raise RuntimeError(
                     "SpellCodegenCreation did not populate no_overrides_executor."
@@ -69,8 +81,33 @@ class CreationContextBuilder:
             creation_gate=creation_gate,
             creation_gate_index_id=creation_gate_index_id,
             no_overrides_executor=no_overrides_executor,
+            no_overrides_instance_executor=no_overrides_instance_executor,
             overrides_executor=overrides_executor,
         )
+
+    @staticmethod
+    def _build_existing_creation_instance_executor(
+            spell: "Spell",
+    ) -> Callable[..., Any]:
+        """
+        Build the instance-only no-overrides executor for an existing-creation
+        spell.
+
+        Contract:
+            - `(meld) -> instance`; no `(instance, created)` tuple is built.
+            - Same missing-object error as the tuple variant.
+        """
+        def execute(caller_creations: Any) -> Any:
+            _ = caller_creations
+            instance = spell.user_created_object
+            if instance is None:
+                raise RuntimeError(
+                    "[MELD] EXISTING_CREATION spell has no `user_created_object` "
+                    f"(spell_id={spell.spell_id})."
+                )
+            return instance
+
+        return execute
 
     @staticmethod
     def _build_existing_creation_no_overrides_executor(

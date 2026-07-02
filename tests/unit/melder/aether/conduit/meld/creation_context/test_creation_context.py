@@ -104,6 +104,7 @@ def test_execute_no_hooks_discards_created_flag() -> None:
     context = CreationContext(
         spell=_make_spell(),
         no_overrides_executor=lambda caller_creations, root_creations=None: ("plain", True),
+        no_overrides_instance_executor=lambda caller_creations: "plain",
         overrides_executor=lambda caller_creations, overrides, root_creations=None: ("override", False),
     )
 
