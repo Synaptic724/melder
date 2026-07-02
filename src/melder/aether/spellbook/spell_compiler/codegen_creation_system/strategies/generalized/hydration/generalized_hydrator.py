@@ -577,10 +577,13 @@ def _install_specializing_door(
         - Zero-capture graphs never install the wrapper: this function
           returns `plain_instance_door` unchanged when no `unique` step
           exists.
-        - The wrapper's steady state is one closure call + one cell read:
-          once a final door is resolved (specialized or declined-to-plain),
-          every wrapper call delegates directly, and the context-slot swap
-          removes the wrapper from later melds entirely.
+        - The wrapper's steady state is self-erasing: once a final door is
+          resolved (specialized or declined-to-plain), every wrapper call
+          re-publishes the final door(s) into the CURRENT published context
+          before delegating, so any context still routing through the
+          wrapper - including contexts REBUILT after resolution, which
+          re-swap the container's wrapped instance door - sheds it after
+          one call.
         - On successful specialization BOTH published slots swap together:
           `_no_overrides_instance_executor` gets the specialized instance
           door and `_no_overrides_executor` gets the specialized hooks door
@@ -616,6 +619,7 @@ def _install_specializing_door(
 
     state_lock = threading.Lock()
     resolved_cell: list = [None]
+    resolved_hooks_cell: list = [None]
     attempts_cell: list = [0]
 
     def _try_specialize_once() -> None:
@@ -661,6 +665,10 @@ def _install_specializing_door(
                     spell_space_scope_error_type=SpellSpaceScopeError,
                 )
             )
+            # Kept beyond this attempt so the wrapper's resolved branch can
+            # re-publish the pair into REBUILT contexts (see the self-heal
+            # note in `_specializing_no_overrides_door`).
+            resolved_hooks_cell[0] = specialized_hooks_door
         elif attempts_cell[0] >= 3:
             resolved_cell[0] = plain_instance_door
         final_door = resolved_cell[0]
@@ -681,6 +689,22 @@ def _install_specializing_door(
     def _specializing_no_overrides_door(caller_creations: Any) -> Any:
         resolved = resolved_cell[0]
         if resolved is not None:
+            # Rebuilt-context self-heal: a context rebuilt AFTER resolution
+            # re-swaps the hydrated container doors, which re-installs this
+            # wrapper in its instance slot. Without the re-publish below that
+            # context would pay the wrapper indirection on every warm meld
+            # forever; with it, the first call through the wrapper swaps the
+            # final doors back in and later melds skip the wrapper again.
+            # On decline-pin resolves the hooks cell is None and the hooks
+            # slot is left untouched (it already holds the plain hooks door).
+            published_context = root_spell._creation_context
+            if published_context is not None:
+                published_context._no_overrides_instance_executor = resolved
+                resolved_hooks_door = resolved_hooks_cell[0]
+                if resolved_hooks_door is not None:
+                    published_context._no_overrides_executor = (
+                        resolved_hooks_door
+                    )
             return resolved(caller_creations)
         result = plain_instance_door(caller_creations)
         if resolved_cell[0] is None and state_lock.acquire(blocking=False):

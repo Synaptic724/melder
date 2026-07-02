@@ -246,6 +246,46 @@ class TestWrapperRetryAndPin:
         assert wrapper("c4") == ("plain", "c4")
         assert plain_calls == ["c1", "c2", "c3", "c4"]
 
+    def test_rebuilt_context_sheds_wrapper_after_resolution(self) -> None:
+        """A context rebuilt after the pin self-heals on one wrapper call."""
+        def plain_door(caller: Any) -> Any:
+            return ("plain", caller)
+
+        rows = (
+            _row("u1", "unique"),
+            _row("root", "many", [("dep", ["u1"])]),
+        )
+        root_spell = _stub_root_spell()
+        wrapper = _install(
+            rows=rows,
+            route_key="many",
+            plain_door=plain_door,
+            spell_lookup={"u1": _stub_spell(live={})},
+            root_spell=root_spell,
+        )
+        # Drive to the three-attempt pin (resolved = plain instance door).
+        for index in range(3):
+            assert wrapper(f"c{index}") == ("plain", f"c{index}")
+        assert (
+            root_spell._creation_context._no_overrides_instance_executor
+            is plain_door
+        )
+
+        # Model a REBUILT context: hydration re-swaps the container doors,
+        # which re-installs the wrapper in the fresh context's instance slot.
+        rebuilt_context = SimpleNamespace(
+            _no_overrides_executor=None,
+            _no_overrides_instance_executor=wrapper,
+        )
+        root_spell._creation_context = rebuilt_context
+
+        # One call through the wrapper must re-publish the resolved door
+        # into the rebuilt context (self-heal) and still return the result.
+        assert wrapper("c3") == ("plain", "c3")
+        assert rebuilt_context._no_overrides_instance_executor is plain_door
+        # Decline-pin resolves never touch the hooks slot.
+        assert rebuilt_context._no_overrides_executor is None
+
     def test_wrapper_never_blocks_the_meld_result_path(self) -> None:
         """Every wrapper call returns the plain door's result unmodified."""
         def plain_door(caller: Any) -> Any:
