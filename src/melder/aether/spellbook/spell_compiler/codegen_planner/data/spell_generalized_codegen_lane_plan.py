@@ -1088,16 +1088,21 @@ class SpellGeneralizedCodegenPlanBuilder:
             once, and materializes both step lists.
 
         Contract:
-            - Output plans are field-for-field identical to running
-              `build()` twice with each variant (differential-verified):
-              the NO_OVERRIDES plan owns fresh dependency list/dict copies
-              (matching the projection extraction), empty override/contract
-              metadata, and the fast-path arrays; the OVERRIDES plan owns the
-              full extraction results.
-            - Cross-plan aliasing matches the two-build baseline: model-owned
-              objects (spell, inject_spec, contract_payload) are shared;
-              per-plan mutable containers (dependency lists/dicts, disposal
-              lists, index maps) are independent per plan.
+            - BOTH plans share ONE full-metadata step list (each plan holds
+              its own list object over the same step objects; `cleanup()`
+              clears lists, never steps, so shared steps are teardown-safe).
+              Override-lane metadata (override_keys, match prefix/len,
+              expects_overrides, contract_keys) is stripped AT ROW BUILD by
+              `include_override_metadata=False`, so no-overrides manifest
+              rows are byte-identical to the historical two-build output
+              (differential-verified at row level).
+            - Step construction, extraction, and every shared derivation run
+              exactly once per instance key - this is the dominant cost of
+              the plan-pair build and the reason build_dual exists.
+            - Dependency values are identical across lanes by construction
+              (the projection extraction was a strict subset; audited
+              2026-07-02), so sharing the full extraction changes no
+              dependency semantics in either lane.
             - `self._plan_variant` is ignored; both variants are produced.
 
         Returns:
@@ -1121,8 +1126,7 @@ class SpellGeneralizedCodegenPlanBuilder:
                 "Generalized lane build requires graph/order/instance/injection/runtime sections."
             )
 
-        steps_no: List[SpellGeneralizedCodegenPlanStep] = []
-        steps_ov: List[SpellGeneralizedCodegenPlanStep] = []
+        steps: List[SpellGeneralizedCodegenPlanStep] = []
         spell_id_step_index: Dict[str, int] = {}
         optimistic_object_refs_by_spell_id: Dict[str, Any] = {}
         available_param_by_spell_id: Dict[str, int] = {}
@@ -1150,10 +1154,9 @@ class SpellGeneralizedCodegenPlanBuilder:
             requires_spellspace = existence is Existence.unique_per_spell_space
             owner_conduit_required = existence is Existence.unique_per_spell_space
             must_register = self._should_register(runtime_record)
-            # Per-plan disposal lists mirror the two-build baseline: one list
-            # per spell per plan, shared by that spell's steps within a plan.
-            disposal_method_names_no = list(runtime_record.disposal_method_names)
-            disposal_method_names_ov = list(runtime_record.disposal_method_names)
+            # One disposal list per spell, shared by that spell's steps in
+            # BOTH plans (read-only downstream; rows tuple-copy it).
+            disposal_method_names = list(runtime_record.disposal_method_names)
 
             for instance_key in instance_shape.instance_keys_by_spell_id.get(spell_id, []):
                 occurrence = self._occurrence_for_instance_key(instance_key)
@@ -1177,14 +1180,6 @@ class SpellGeneralizedCodegenPlanBuilder:
                     if override_match_prefix is not None
                     else 0
                 )
-                # NO_OVERRIDES projection: fresh copies, exactly what
-                # `_extract_param_keys_no_overrides` would have built.
-                dependency_keys_no = list(dependency_keys)
-                dependency_keys_by_param_no = {
-                    param_name: list(param_keys)
-                    for param_name, param_keys in dependency_keys_by_param.items()
-                }
-
                 allow_list_aggregation = injection_spec.allow_list_aggregation
                 uses_positional_override = injection_spec.uses_positional_override
                 contract_payload = injection_spec.contract_payload
@@ -1216,21 +1211,7 @@ class SpellGeneralizedCodegenPlanBuilder:
                     owner_conduit_required=owner_conduit_required,
                     must_register=must_register,
                 )
-                steps_no.append(SpellGeneralizedCodegenPlanStep(
-                    dependency_keys=dependency_keys_no,
-                    dependency_keys_by_param=dependency_keys_by_param_no,
-                    dependency_resolution_order=list(
-                        dependency_keys_by_param_no.items()
-                    ),
-                    override_keys=[],
-                    override_match_prefix=None,
-                    override_match_prefix_len=0,
-                    expects_overrides=False,
-                    contract_keys=[],
-                    disposal_method_names=disposal_method_names_no,
-                    **common_kwargs,
-                ))
-                steps_ov.append(SpellGeneralizedCodegenPlanStep(
+                steps.append(SpellGeneralizedCodegenPlanStep(
                     dependency_keys=dependency_keys,
                     dependency_keys_by_param=dependency_keys_by_param,
                     dependency_resolution_order=list(
@@ -1241,15 +1222,15 @@ class SpellGeneralizedCodegenPlanBuilder:
                     override_match_prefix_len=override_match_prefix_len,
                     expects_overrides=expects_overrides,
                     contract_keys=contract_keys,
-                    disposal_method_names=disposal_method_names_ov,
+                    disposal_method_names=disposal_method_names,
                     **common_kwargs,
                 ))
-                instance_key_to_step_index[instance_key] = len(steps_no) - 1
+                instance_key_to_step_index[instance_key] = len(steps) - 1
                 if spell_id not in spell_id_step_index:
-                    spell_id_step_index[spell_id] = len(steps_no) - 1
+                    spell_id_step_index[spell_id] = len(steps) - 1
 
         fast_plan_data = self._build_fast_plan_data(
-            steps=steps_no,
+            steps=steps,
             instance_key_to_step_index=instance_key_to_step_index,
             root_instance_key=instance_shape.root_instance_key,
         )
@@ -1262,7 +1243,7 @@ class SpellGeneralizedCodegenPlanBuilder:
             )
             fast_has_existing_creations = any(fast_plan_data[17])
             fast_transient_plan = self._build_fast_transient_plan_from_data(
-                steps=steps_no,
+                steps=steps,
                 fast_plan_data=fast_plan_data,
             )
 
@@ -1270,7 +1251,7 @@ class SpellGeneralizedCodegenPlanBuilder:
             lane_id=SpellGeneralizedCodegenPlanVariant.NO_OVERRIDES,
             graph_shape=graph_shape,
             instance_shape=instance_shape,
-            steps=steps_no,
+            steps=list(steps),
             spell_id_step_index=spell_id_step_index,
             optimistic_object_refs_by_spell_id=optimistic_object_refs_by_spell_id,
             available_param_by_spell_id=available_param_by_spell_id,
@@ -1283,7 +1264,7 @@ class SpellGeneralizedCodegenPlanBuilder:
             lane_id=SpellGeneralizedCodegenPlanVariant.OVERRIDES,
             graph_shape=graph_shape,
             instance_shape=instance_shape,
-            steps=steps_ov,
+            steps=steps,
             spell_id_step_index=dict(spell_id_step_index),
             optimistic_object_refs_by_spell_id=dict(
                 optimistic_object_refs_by_spell_id

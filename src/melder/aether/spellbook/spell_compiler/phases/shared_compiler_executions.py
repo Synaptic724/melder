@@ -1050,11 +1050,17 @@ class SharedCompilerExecutions:
         override_match_prefix_len = 0
         override_keys: Tuple[Any, ...] = ()
         expects_overrides = False
+        # contract_keys is override-lane metadata like the fields above: the
+        # no-overrides lane must emit () regardless of what the step carries,
+        # which lets both lane plans share full-metadata step objects while
+        # keeping no-overrides rows byte-identical (strip point = row build).
+        contract_keys: Tuple[Any, ...] = ()
         if include_override_metadata:
             override_match_prefix = step.override_match_prefix
             override_match_prefix_len = step.override_match_prefix_len
             override_keys = tuple(step.override_keys)
             expects_overrides = step.expects_overrides
+            contract_keys = tuple(step.contract_keys)
         return {
             "instance_key": tuple(step.instance_key),
             "spell_id": step.spell.spell_index.selected_spell_id,
@@ -1066,7 +1072,7 @@ class SharedCompilerExecutions:
             "override_match_prefix_len": override_match_prefix_len,
             "override_keys": override_keys,
             "expects_overrides": expects_overrides,
-            "contract_keys": tuple(step.contract_keys),
+            "contract_keys": contract_keys,
             "allow_list_aggregation": step.allow_list_aggregation,
             "uses_positional_override": step.uses_positional_override,
             "contract_positional_override": SharedCompilerExecutions.freeze_phase11_schema_value(

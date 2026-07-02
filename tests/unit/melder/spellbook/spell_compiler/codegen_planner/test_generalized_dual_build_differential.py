@@ -43,6 +43,9 @@ from melder.aether.spellbook.spell_compiler.codegen_planner.data.spell_generaliz
     SpellGeneralizedCodegenPlanBuilder,
     SpellGeneralizedCodegenPlanVariant,
 )
+from melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.codegen_creation_schema_helpers import (
+    CodegenCreationSchemaHelpers,
+)
 
 
 def param(name):
@@ -60,6 +63,7 @@ def make_spell(callable_kind="class", param_names=None):
         is_method_spell=False,
         is_lambda_spell=callable_kind == "lambda",
         is_existing_creation=False,
+        spell_index=SimpleNamespace(selected_spell_id="sid"),
         requirements=requirements,
         spell=object(),
         user_created_object=None,
@@ -114,6 +118,17 @@ STEP_ATTRS = (
     "use_spell_lock_hint", "requires_spellspace", "owner_conduit_required",
     "must_register", "disposal_method_names",
 )
+# Override-lane metadata now lives on SHARED steps and is stripped at ROW
+# build for the no-overrides lane (include_override_metadata=False), so the
+# no-overrides STEP comparison excludes these five fields and the ROW
+# comparison (the real downstream contract) covers them instead.
+OVERRIDE_STEP_ATTRS = (
+    "override_keys", "override_match_prefix", "override_match_prefix_len",
+    "expects_overrides", "contract_keys",
+)
+NEUTRAL_STEP_ATTRS = tuple(
+    attr for attr in STEP_ATTRS if attr not in OVERRIDE_STEP_ATTRS
+)
 PLAN_ATTRS = (
     "lane_id", "root_spell_id", "root_instance_key", "spell_id_step_index",
     "optimistic_object_refs_by_spell_id", "available_param_by_spell_id",
@@ -121,16 +136,28 @@ PLAN_ATTRS = (
 )
 
 def compare_plans(old, new, label):
+    no_overrides_lane = label.endswith("/no_overrides")
+    include_override_metadata = not no_overrides_lane
+    step_attrs = NEUTRAL_STEP_ATTRS if no_overrides_lane else STEP_ATTRS
     for attr in PLAN_ATTRS:
         ov, nv = getattr(old, attr), getattr(new, attr)
         assert ov == nv, (label, attr, ov, nv)
     assert len(old.steps) == len(new.steps), label
     for i, (os_, ns_) in enumerate(zip(old.steps, new.steps)):
-        for attr in STEP_ATTRS:
+        for attr in step_attrs:
             ov, nv = getattr(os_, attr), getattr(ns_, attr)
             assert ov == nv, (label, i, attr, ov, nv)
         assert os_.spell is ns_.spell, (label, i, "spell identity")
         assert os_.inject_spec is ns_.inject_spec, (label, i, "spec identity")
+        # The downstream contract: manifest rows must be byte-identical to
+        # the historical two-build output under each lane's strip flag.
+        old_row = CodegenCreationSchemaHelpers.build_phase11_step_ir_row(
+            os_, include_override_metadata=include_override_metadata,
+        )
+        new_row = CodegenCreationSchemaHelpers.build_phase11_step_ir_row(
+            ns_, include_override_metadata=include_override_metadata,
+        )
+        assert old_row == new_row, (label, i, "row divergence")
     for attr in dir(old):
         if attr.startswith("fast_") and attr != "fast_transient_plan":
             ov, nv = getattr(old, attr), getattr(new, attr)
@@ -156,6 +183,10 @@ def run_case(label, model):
     compare_plans(old_ov, new_ov, f"{label}/overrides")
     assert new_no.metadata["plan_family"] == "generalized"
     assert new_ov.metadata["plan_family"] == "generalized"
+    # Sharing contract: one step list, two plan-owned list objects.
+    assert new_no.steps is not new_ov.steps, label
+    for i in range(len(new_no.steps)):
+        assert new_no.steps[i] is new_ov.steps[i], (label, i, "not shared")
 
 
 def test_dual_build_matches_two_build_mixed_existences_with_override_and_contract_keys() -> None:
