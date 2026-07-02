@@ -66,6 +66,8 @@ _STEP_BINDING_NAMES = (
     "step_existences",
     "step_instance_keys",
     "step_dep_keys",
+    "step_owner_creations",
+    "step_targets",
     "root_instance_key",
 )
 
@@ -544,9 +546,9 @@ def _append_creations_target_source(
         )
         return
     if existence is Existence.unique:
-        lines.append(
-            f"    creations_{step_index} = spell_{step_index}._owner_creations"
-        )
+        # The owner store rides the signature as `creations_N` (see
+        # `_step_alias_signature_params`): the per-call shared attr read on
+        # the spell object was the last hydration-constant load in this walk.
         return
 
     raise RuntimeError(
@@ -562,6 +564,7 @@ def _emit_construct_instance(
         inlinable_params: Optional[Tuple[Tuple[str, Any], ...]],
         indent: str,
         key_to_step_index: Optional[Dict[Any, int]] = None,
+        row: Optional[Dict[str, Any]] = None,
 ) -> None:
     """
     Append construction source for one step at `indent`.
@@ -570,6 +573,13 @@ def _emit_construct_instance(
         - In locals mode (`key_to_step_index` supplied), dependency arguments
           compile to direct per-step local loads instead of tuple-keyed
           `instance_results` reads.
+        - Contract-payload keywords compile to `name=contract_values_N[j]`
+          constants and an effective positional payload compiles to a leading
+          `*positional_N` splat (values ride bindings; see
+          `_row_contract_call_extras`). Keyword ORDER is deps-then-payload;
+          the generic path keeps an overridden name at its original dict
+          position instead - visible only to constructors introspecting
+          `**kwargs` insertion order for payload-overridden names.
     """
     if inlinable_params is None:
         lines.append(
@@ -578,11 +588,22 @@ def _emit_construct_instance(
             f"instance_results=instance_results)"
         )
         return
+    payload_names: Tuple[str, ...] = ()
+    positional: Optional[Any] = None
+    if row is not None:
+        extras = _row_contract_call_extras(row)
+        if extras is not None:
+            payload_names, positional = extras
+    has_call_args = bool(
+        inlinable_params or payload_names or positional is not None
+    )
     lines.append(f"{indent}try:")
-    if inlinable_params:
+    if has_call_args:
         lines.append(
-            f"{indent}    instance_{step_index} = spell_{step_index}.spell("
+            f"{indent}    instance_{step_index} = target_{step_index}("
         )
+        if positional is not None:
+            lines.append(f"{indent}        *positional_{step_index},")
         # Flat cursor over the row's flattened dependency-key tuple: single-dep
         # params compile to one scalar reference; collection-DI params compile
         # to an order-preserving list literal (parity with the generic
@@ -608,10 +629,15 @@ def _emit_construct_instance(
             lines.append(
                 f"{indent}        {param_name}={value_expression},"
             )
+        for payload_index, payload_name in enumerate(payload_names):
+            lines.append(
+                f"{indent}        {payload_name}"
+                f"=contract_values_{step_index}[{payload_index}],"
+            )
         lines.append(f"{indent}    )")
     else:
         lines.append(
-            f"{indent}    instance_{step_index} = spell_{step_index}.spell()"
+            f"{indent}    instance_{step_index} = target_{step_index}()"
         )
     lines.extend([
         f"{indent}except Exception as exc:",
@@ -724,18 +750,76 @@ def row_inlinable_common_shape(
         return None
     if row["spell_is_existing_creation"]:
         return None
-    if row["has_contract_payload"]:
+    extras = _row_contract_call_extras(row)
+    if extras is None:
+        # Unrepresentable positional payload (non tuple/list): stay on the
+        # generic path so the per-call MeldExecutionError timing is identical.
         return None
-    if row["contract_positional_override"] is not None:
-        return None
-    if row["uses_positional_override"]:
-        return None
+    payload_names, _positional = extras
     params = []
     for param_name, dependency_keys in row["dependency_resolution_order"]:
         if len(dependency_keys) == 0:
             continue
+        if param_name in payload_names:
+            # Contract payload wins over the dependency value by name (the
+            # generic kwargs builder overwrites after dep assembly), so the
+            # dependency read is dead and emitting both keywords would be a
+            # syntax error. The payload value is emitted instead.
+            continue
         params.append((param_name, tuple(dependency_keys)))
     return tuple(params)
+
+
+def _row_contract_call_extras(
+        row: Dict[str, Any],
+) -> Optional[Tuple[Tuple[str, ...], Optional[Any]]]:
+    """
+    Resolve one row's contract-call extras for inlined emission.
+
+    Purpose:
+        Make contract payloads and positional overrides inlinable: both are
+        fingerprint-stable row constants, so paying the generic
+        `_construct_spell_instance` path (dict assembly + per-dep tuple-hash
+        reads + payload overwrite loop + `__args__` extraction + double
+        splat) per call - and dragging the WHOLE graph into dict mode - was
+        pure overhead.
+
+    Contract:
+        - Mirrors `_build_kwargs_no_overrides` + `_construct_spell_instance`
+          exactly: payload items dedupe like `dict(items)` (first position,
+          last value); the effective positional tuple is
+          `contract_positional_override` unless a payload `__args__` item
+          overwrites it (which the generic path skips only when
+          `uses_positional_override` is set).
+        - Returns None when the effective positional payload exists but is
+          not a tuple/list: the generic path raises MeldExecutionError for
+          that shape PER CALL, so such rows must stay on the generic path to
+          preserve error timing and type.
+        - Payload VALUES never appear in emitted source (identity-free
+          emission); they ride the `step_contract_values` /
+          `step_positional_args` bindings.
+
+    Args:
+        row: One manifest step row.
+
+    Returns:
+        Optional[Tuple[Tuple[str, ...], Optional[Any]]]: (payload parameter
+        names in emission order, effective positional payload or None), or
+        None when the row must stay on the generic constructor path.
+    """
+    payload_map: Dict[str, Any] = {}
+    if row["has_contract_payload"]:
+        for param_name, value in row["contract_payload_items"]:
+            payload_map[param_name] = value
+    positional = row["contract_positional_override"]
+    if "__args__" in payload_map and not row["uses_positional_override"]:
+        positional = payload_map["__args__"]
+    if positional is not None and not isinstance(positional, (tuple, list)):
+        return None
+    payload_names = tuple(
+        param_name for param_name in payload_map if param_name != "__args__"
+    )
+    return (payload_names, positional)
 
 
 def _step_alias_signature_params(
@@ -801,6 +885,15 @@ def _step_alias_signature_params(
         if inlinable_params is None:
             params.append(
                 f"        plan_step_{step_index}=steps[{step_index}],"
+            )
+        if inlinable_params is not None:
+            params.append(
+                f"        target_{step_index}=step_targets[{step_index}],"
+            )
+        if existence is Existence.unique:
+            params.append(
+                f"        creations_{step_index}"
+                f"=step_owner_creations[{step_index}],"
             )
         if (
                 inlinable_params is not None
@@ -872,6 +965,19 @@ def _build_step_bindings(
                 for dependency_key in dependency_keys
             )
             for row in rows
+        ),
+        # Frozen at hydration by the same invalidation envelope as the spell
+        # objects themselves: `_owner_creations` is reassigned only through
+        # the ownership-recording path and `Spell.spell` never changes on a
+        # live spell; both paths run `_cleanup_creation_context()` first,
+        # which cuts every route to this executor (audited 2026-07-02).
+        "step_owner_creations": tuple(
+            runtime_row.spell._owner_creations
+            for runtime_row in runtime_rows
+        ),
+        "step_targets": tuple(
+            runtime_row.spell.spell
+            for runtime_row in runtime_rows
         ),
         "root_instance_key": root_instance_key,
     }

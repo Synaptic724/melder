@@ -343,6 +343,8 @@ class TestFactorySourceShareability:
             "step_existences": (None, None),
             "step_instance_keys": (("u1", None), ("root", None)),
             "step_dep_keys": ((), (("u1", None),)),
+            "step_owner_creations": (None, None),
+            "step_targets": (None, root_spell.spell),
             "root_instance_key": ("root", None),
             "cap_spell_0": cap_spell,
             "cap_epoch_0": 7,
