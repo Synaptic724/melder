@@ -19,6 +19,27 @@ Method:
 These tests require the 3.14t runtime (full melder package import).
 """
 
+import sys
+
+
+def _ensure_project_root_on_path() -> None:
+    """
+    Purpose:
+        Make `tests.*` support imports resolve under plain CLI pytest runs.
+    Contract:
+        - Mirrors the efficacy probe's preamble: the suite-level conftest adds
+          only `src/` to sys.path, so repo-root CLI execution needs "." added
+          before the `tests._frame_posture_test_support` import resolves.
+        - No-op when the project root is already importable (PyCharm runs).
+    Returns:
+        None.
+    """
+    if "." not in sys.path:
+        sys.path.insert(0, ".")
+
+
+_ensure_project_root_on_path()
+
 import threading
 from typing import Any, Callable, Dict, List, Tuple
 

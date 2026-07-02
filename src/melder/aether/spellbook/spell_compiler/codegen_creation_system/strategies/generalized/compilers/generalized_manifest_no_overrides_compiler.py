@@ -247,6 +247,18 @@ def emit_step_plan_source(
         "        step_instance_keys=step_instance_keys,",
         "        step_dep_keys=step_dep_keys,",
         "        root_instance_key=root_instance_key,",
+    ]
+    # Per-slot step-constant aliases ride the signature as default parameters:
+    # they are pure functions of the frozen factory bindings, so paying a
+    # per-call subscript statement for each of them was pure overhead. The
+    # defaults evaluate once at factory def time (see executor_factory_cache).
+    lines.extend(
+        _step_alias_signature_params(
+            rows=rows,
+            locals_mode=locals_mode,
+        )
+    )
+    lines.extend([
         "        SpellGeneralizedCodegenPlanTargetKind=SpellGeneralizedCodegenPlanTargetKind,",
         "        _construct_spell_instance=_construct_spell_instance,",
         "        _raise_meld_construction_error=_raise_meld_construction_error,",
@@ -254,7 +266,7 @@ def emit_step_plan_source(
         "        MeldExecutionError=MeldExecutionError,",
         "        SpellSpaceScopeError=SpellSpaceScopeError,",
         "    ):",
-    ]
+    ])
     if not locals_mode:
         lines.append("    instance_results = {}")
     for step_index, row in enumerate(rows):
@@ -306,32 +318,12 @@ def _append_step_resolution_source(
         existence is Existence.many and not has_disposal_methods
     )
 
-    # Emit only the aliases this step's branches actually read. existence_N
-    # died with the inlined reuse reads; plan_step_N exists only for the
-    # generic constructor path; disposal aliases exist only when a register
-    # block is emitted; many-without-disposal needs no spell_id at all.
-    if inlinable_params is None:
-        lines.append(f"    plan_step_{step_index} = steps[{step_index}]")
-    if (
-            inlinable_params is not None
-            or row["creations_target_kind"]
-            == SpellGeneralizedCodegenPlanTargetKind.OWNER
-            or existence is not Existence.many
-    ):
-        lines.append(f"    spell_{step_index} = step_spells[{step_index}]")
-    if existence is not Existence.many or needs_register_block:
-        lines.append(
-            f"    spell_id_{step_index} = step_spell_ids[{step_index}]"
-        )
-    if needs_register_block and has_disposal_methods:
-        lines.append(
-            f"    disposal_methods_{step_index} = "
-            f"step_disposal_methods[{step_index}]"
-        )
-    if inlinable_params and key_to_step_index is None:
-        lines.append(
-            f"    step_dep_keys_{step_index} = step_dep_keys[{step_index}]"
-        )
+    # Step-constant aliases (spell_N / spell_id_N / disposal_methods_N /
+    # plan_step_N / step_dep_keys_N / instance_key_N) are no longer emitted
+    # here as per-call body statements: they ride the executor SIGNATURE as
+    # per-slot default parameters built by `_step_alias_signature_params`,
+    # which mirrors the exact per-branch read conditions (single source of
+    # truth). existence_N died earlier with the inlined reuse reads.
     _append_creations_target_source(
         lines=lines,
         step_index=step_index,
@@ -363,7 +355,7 @@ def _append_step_resolution_source(
             )
         if key_to_step_index is None:
             lines.append(
-                f"    instance_results[step_instance_keys[{step_index}]] = instance_{step_index}"
+                f"    instance_results[instance_key_{step_index}] = instance_{step_index}"
             )
         return
 
@@ -407,7 +399,7 @@ def _append_step_resolution_source(
         )
         if key_to_step_index is None:
             lines.append(
-                f"    instance_results[step_instance_keys[{step_index}]] = instance_{step_index}"
+                f"    instance_results[instance_key_{step_index}] = instance_{step_index}"
             )
         return
 
@@ -471,7 +463,7 @@ def _append_step_resolution_source(
         )
         if key_to_step_index is None:
             lines.append(
-                f"    instance_results[step_instance_keys[{step_index}]] = instance_{step_index}"
+                f"    instance_results[instance_key_{step_index}] = instance_{step_index}"
             )
         return
 
@@ -503,7 +495,7 @@ def _append_step_resolution_source(
     )
     if key_to_step_index is None:
         lines.append(
-            f"    instance_results[step_instance_keys[{step_index}]] = instance_{step_index}"
+            f"    instance_results[instance_key_{step_index}] = instance_{step_index}"
         )
 
 
@@ -744,6 +736,96 @@ def row_inlinable_common_shape(
             continue
         params.append((param_name, tuple(dependency_keys)))
     return tuple(params)
+
+
+def _step_alias_signature_params(
+        *,
+        rows: Sequence[Dict[str, Any]],
+        locals_mode: bool,
+        skip_step_indexes: Any = frozenset(),
+) -> list:
+    """
+    Build per-slot signature default-parameter lines for step-constant aliases.
+
+    Purpose:
+        Move hydration-constant per-step aliases (spell_N, spell_id_N,
+        disposal_methods_N, plan_step_N, step_dep_keys_N, instance_key_N) out
+        of the emitted body and into the executor signature, where the factory
+        evaluates each subscripted default exactly once at def time and every
+        call receives them through frame-setup default copies instead of
+        per-call LOAD/SUBSCR/STORE statements.
+
+    Contract:
+        - Single source of truth for alias existence: the conditions here
+          mirror the per-branch reads emitted by `_append_step_resolution_
+          source` exactly (plan_step: generic-constructor steps only; spell:
+          inlinable OR owner-target OR non-many; spell_id: non-many OR
+          register block; disposal_methods: register block with disposal;
+          step_dep_keys: inlinable steps in dict mode only), so the signature
+          and the body cannot drift independently.
+        - `instance_key_N` is emitted for EVERY step in dict mode (including
+          skipped/captured steps): every dict-mode step stores its result (or
+          captured seed) under its instance key.
+        - `skip_step_indexes` suppresses the branch aliases for steps whose
+          resolution source is not emitted (the specialized emitter's
+          captured steps).
+        - Emitted parameter lines are identity-free (binding names + integer
+          indexes only), preserving factory-cache sharing by shape.
+
+    Args:
+        rows:
+            Manifest step rows for the no-overrides lane.
+        locals_mode:
+            The emitter's locals-mode decision for this shape.
+        skip_step_indexes:
+            Step indexes whose resolution source is not emitted.
+
+    Returns:
+        list: Signature parameter lines (each ending with a comma).
+    """
+    params: list = []
+    for step_index, row in enumerate(rows):
+        if not locals_mode:
+            params.append(
+                f"        instance_key_{step_index}"
+                f"=step_instance_keys[{step_index}],"
+            )
+        if step_index in skip_step_indexes:
+            continue
+        existence = Existence[row["existence"]]
+        inlinable_params = row_inlinable_common_shape(row)
+        has_disposal_methods = bool(row["spell_has_disposal_methods"])
+        needs_register_block = not (
+            existence is Existence.many and not has_disposal_methods
+        )
+        if inlinable_params is None:
+            params.append(
+                f"        plan_step_{step_index}=steps[{step_index}],"
+            )
+        if (
+                inlinable_params is not None
+                or row["creations_target_kind"]
+                == SpellGeneralizedCodegenPlanTargetKind.OWNER
+                or existence is not Existence.many
+        ):
+            params.append(
+                f"        spell_{step_index}=step_spells[{step_index}],"
+            )
+        if existence is not Existence.many or needs_register_block:
+            params.append(
+                f"        spell_id_{step_index}=step_spell_ids[{step_index}],"
+            )
+        if needs_register_block and has_disposal_methods:
+            params.append(
+                f"        disposal_methods_{step_index}"
+                f"=step_disposal_methods[{step_index}],"
+            )
+        if inlinable_params and not locals_mode:
+            params.append(
+                f"        step_dep_keys_{step_index}"
+                f"=step_dep_keys[{step_index}],"
+            )
+    return params
 
 
 # ---------------------------------------------------------------------------
@@ -1077,6 +1159,16 @@ def emit_specialized_step_plan_source(
             f"        cap_epoch_{step_index}=cap_epoch_{step_index},",
             f"        cap_inst_{step_index}=cap_inst_{step_index},",
         ])
+    # Non-captured steps read the same per-slot signature aliases as the
+    # generic body; captured steps contribute only their cap_* slots (plus an
+    # instance_key alias for dict-mode seeding, handled by the helper).
+    lines.extend(
+        _step_alias_signature_params(
+            rows=rows,
+            locals_mode=locals_mode,
+            skip_step_indexes=captured_set,
+        )
+    )
     lines.extend([
         "        _generic_inner=_generic_inner,",
         "        SpellGeneralizedCodegenPlanTargetKind=SpellGeneralizedCodegenPlanTargetKind,",
@@ -1105,7 +1197,7 @@ def emit_specialized_step_plan_source(
         lines.append("    instance_results = {}")
         for step_index in captured_step_indexes:
             lines.append(
-                f"    instance_results[step_instance_keys[{step_index}]]"
+                f"    instance_results[instance_key_{step_index}]"
                 f" = cap_inst_{step_index}"
             )
     else:
