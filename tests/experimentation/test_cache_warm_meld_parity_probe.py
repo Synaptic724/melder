@@ -417,7 +417,11 @@ def _audit_bundle_shapes_on_disk(spellbook: Spellbook) -> Tuple[int, int]:
     payloads = decoded.get("spell_payloads", {})
     manifest_count = 0
     legacy_count = 0
-    for payload in payloads.values():
+    for payload_bytes in payloads.values():
+        # Version-3 bundles store nested-marshal bytes per spell (the
+        # GC-untracked resident-cache contract); decode one payload at a
+        # time for the shape check.
+        payload = marshal.loads(payload_bytes)
         if is_manifest_package(payload):
             manifest_count += 1
         else:

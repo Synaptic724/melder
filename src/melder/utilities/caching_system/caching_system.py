@@ -26,16 +26,23 @@ class CachingSystem(Cleanable):
         - One instance represents one cache file for one
           `(frame_name, conduit_name)` pair.
         - The in-memory cache dictionary is loaded once during construction.
-        - `spell_payloads` is the single source of truth for cached spell data.
-        - `upsert_spell_payload(...)` and `remove_spell_payload(...)` mutate
+        - The in-memory store keeps every spell payload as NESTED-MARSHAL
+          BYTES (`spell_id` -> `marshal.dumps(payload)`), never as decoded
+          containers. Rationale (measured, 2026-07-02 gauntlet 2x2): the
+          free-threaded GC scans the full tracked heap per collection, and a
+          decoded bundle retained for the process lifetime fattened every
+          pass (~13% warm wall regression). `bytes` values are GC-untracked,
+          so the resident cache costs collections nothing.
+        - `upsert_spell_payload(...)` serializes immediately;
+          `get_spell_payload(...)` returns a FRESH decode per call (caller
+          mutations are never persisted); `remove_spell_payload(...)` mutates
           only the in-memory dict.
         - `emit()` writes the current in-memory dict to disk.
-        - The persisted cache format is one `marshal`-serialized top-level dict:
-          `version`, `python`, `frame_name`, `conduit_name`, and
-          `spell_payloads`.
-        - `spell_payloads` maps `spell_id` -> `(no_overrides_code,
-          overrides_code)` tuples of compiled `CodeType` objects, which is why
-          the bundle is `marshal`-encoded rather than JSON.
+        - The persisted cache format is one `marshal`-serialized top-level
+          dict: `version`, `python`, `frame_name`, `conduit_name`, and
+          `spell_payloads` (spell_id -> nested payload bytes). Payloads may
+          contain `CodeType` objects, which is why the encoding is `marshal`
+          rather than JSON.
         - Integrity is regeneration-based: a corrupt or version-mismatched
           bundle is treated as a cold cache, not repaired.
 
@@ -50,10 +57,11 @@ class CachingSystem(Cleanable):
     """
 
     __melder_internal__: ClassVar[object] = _mrg.sentinel
-    # Version 2: spell payloads are manifest-first family packages
-    # (generalized_codegen_creation). Version-1 bundles carried legacy
-    # executor payload shapes and are treated as cold cache and regenerated.
-    CURRENT_VERSION: ClassVar[int] = 2
+    # Version 3: spell payloads are stored as nested-marshal BYTES per spell
+    # (GC-untracked resident cache; see class contract). Version 2 carried
+    # decoded manifest-package dicts; version 1 carried legacy executor
+    # shapes. Older bundles are treated as cold cache and regenerated.
+    CURRENT_VERSION: ClassVar[int] = 3
     BUNDLE_SUFFIX: ClassVar[str] = ".melc"
 
     __slots__ = Cleanable.__slots__ + [
@@ -147,13 +155,23 @@ class CachingSystem(Cleanable):
     @property
     def spell_payloads(self) -> Mapping[str, Any]:
         """
-        Return a read-only view of cached spell payloads.
+        Return a decoded snapshot of every cached spell payload.
+
+        Contract:
+            - O(n) decode per access: payloads are stored as nested-marshal
+              bytes, so this property materializes a FRESH decoded dict each
+              call. Intended for diagnostics/tests, not hot paths.
+            - Mutating the snapshot never affects the stored cache.
 
         Returns:
             Mapping[str, Any]:
-                Spell-id keyed cache payload view.
+                Spell-id keyed decoded payload snapshot.
         """
-        return MappingProxyType(self._cache_data["spell_payloads"])
+        return MappingProxyType({
+            spell_id: marshal.loads(payload_bytes)
+            for spell_id, payload_bytes
+            in self._cache_data["spell_payloads"].items()
+        })
 
     @property
     def cached_spell_ids(self) -> KeysView[str]:
@@ -213,31 +231,68 @@ class CachingSystem(Cleanable):
         """
         Return one cached spell payload by spell id.
 
+        Contract:
+            - Returns a FRESH decode of the stored payload bytes per call;
+              mutating the returned object never affects the stored cache.
+
         Args:
             spell_id:
                 Spell id to resolve.
 
         Returns:
             Optional[Any]:
-                Cached payload when present, otherwise `None`.
+                Freshly decoded payload when present, otherwise `None`.
         """
-        return self._cache_data["spell_payloads"].get(spell_id)
+        payload_bytes = self._cache_data["spell_payloads"].get(spell_id)
+        if payload_bytes is None:
+            return None
+        return marshal.loads(payload_bytes)
 
     def upsert_spell_payload(self, spell_id: str, spell_payload: Any) -> None:
         """
         Add or replace one spell payload in memory.
 
+        Contract:
+            - Serializes the payload to nested-marshal bytes IMMEDIATELY, so
+              the resident cache never holds decoded (GC-tracked) containers
+              and later caller mutations of `spell_payload` are not captured.
+
         Args:
             spell_id:
                 Spell id to add or replace.
             spell_payload:
-                Spell payload for this spell id.
+                Marshal-safe decoded payload for this spell id.
+
+        Returns:
+            None.
+        """
+        payload_bytes = marshal.dumps(spell_payload)
+        with self._lock:
+            self._cache_data["spell_payloads"][spell_id] = payload_bytes
+
+    def _store_serialized_payload(
+            self,
+            spell_id: str,
+            payload_bytes: bytes,
+    ) -> None:
+        """
+        Store one already-serialized payload without a decode round-trip.
+
+        Contract:
+            - Internal seam for payload transfer between cache utilities;
+              the bytes MUST originate from another `CachingSystem` store.
+
+        Args:
+            spell_id:
+                Spell id to add or replace.
+            payload_bytes:
+                Nested-marshal payload bytes from a sibling cache store.
 
         Returns:
             None.
         """
         with self._lock:
-            self._cache_data["spell_payloads"][spell_id] = spell_payload
+            self._cache_data["spell_payloads"][spell_id] = payload_bytes
 
     def remove_spell_payload(self, spell_id: str) -> bool:
         """
@@ -288,10 +343,14 @@ class CachingSystem(Cleanable):
         """
         if target_caching_system is self:
             return False
-        spell_payload = self.get_spell_payload(spell_id)
-        if spell_payload is None:
+        # Move the stored BYTES directly: no decode/re-encode round-trip and
+        # no decoded containers created during the transfer.
+        payload_bytes = self._cache_data["spell_payloads"].get(spell_id)
+        if payload_bytes is None:
             return False
-        target_caching_system.upsert_spell_payload(spell_id, spell_payload)
+        target_caching_system._store_serialized_payload(
+            spell_id, payload_bytes
+        )
         self.remove_spell_payload(spell_id)
         return True
 
@@ -381,6 +440,15 @@ class CachingSystem(Cleanable):
             raise ValueError(
                 "Cache conduit_name does not match the requested conduit."
             )
+        for spell_id, payload_bytes in spell_payloads.items():
+            if not isinstance(payload_bytes, bytes):
+                # Version-3 bundles store nested-marshal bytes per spell; a
+                # decoded container here means a foreign/corrupt bundle, so
+                # regenerate cold rather than adopting tracked payloads.
+                raise ValueError(
+                    f"Cache payload for '{spell_id}' is not nested-marshal "
+                    "bytes."
+                )
         return {
             "version": version,
             "python": python_tag,

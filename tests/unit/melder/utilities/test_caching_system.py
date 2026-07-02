@@ -256,8 +256,44 @@ def test_caching_system_emit_writes_expected_file_shape() -> None:
     assert loaded_payload["version"] == CachingSystem.CURRENT_VERSION
     assert loaded_payload["conduit_name"] == "root"
     assert loaded_payload["frame_name"] == "frame-a"
-    assert loaded_payload["spell_payloads"][spell_id] == spell_payload
+    # Version-3 bundle contract: payloads persist as nested-marshal bytes
+    # (GC-untracked resident cache); one more decode yields the payload.
+    persisted_bytes = loaded_payload["spell_payloads"][spell_id]
+    assert isinstance(persisted_bytes, bytes)
+    assert marshal.loads(persisted_bytes) == spell_payload
     assert loaded_payload["python"] == sys.implementation.cache_tag
+
+
+def test_caching_system_resident_store_holds_untracked_bytes() -> None:
+    """
+    Pin the GC-motivated resident-store contract (regression, 2026-07-02).
+
+    Contract:
+        - The in-memory store keeps nested-marshal BYTES per spell, never
+          decoded containers: the free-threaded GC scans the full tracked
+          heap per collection, and a decoded resident bundle measurably
+          fattened every pass (~13% warm wall regression on the gauntlet).
+        - Reads return fresh decodes: caller mutations are never persisted.
+
+    Returns:
+        None.
+    """
+    cache_root_path = _prepare_cache_root(
+        Path("tests/unit/melder/utilities/_caching_system_tmp_untracked")
+    )
+    spell_id = "f" * 64
+    spell_payload = _make_spell_payload("untracked")
+    caching_system = _make_cache_utility(cache_root_path=cache_root_path)
+    caching_system.upsert_spell_payload(spell_id, spell_payload)
+
+    stored_value = caching_system._cache_data["spell_payloads"][spell_id]
+    assert isinstance(stored_value, bytes)
+
+    first_read = caching_system.get_spell_payload(spell_id)
+    assert first_read == spell_payload
+    first_read["mutated"] = True
+    second_read = caching_system.get_spell_payload(spell_id)
+    assert "mutated" not in second_read
 
 
 @pytest.mark.parametrize(
