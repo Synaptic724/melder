@@ -1227,58 +1227,17 @@ def _build_no_overrides_codegen_executor_source(
     transient_dep8g = transient_schema["dep8g"]
     transient_dep8h = transient_schema["dep8h"]
 
-    lines = [
-        "def _no_overrides_codegen_creation_executor(",
-        "        meld,",
-        "        transient_root_index=transient_root_index,",
-        "        transient_targets=transient_targets,",
-        "        transient_dep1=transient_dep1,",
-        "        transient_dep2a=transient_dep2a,",
-        "        transient_dep2b=transient_dep2b,",
-        "        transient_dep3a=transient_dep3a,",
-        "        transient_dep3b=transient_dep3b,",
-        "        transient_dep3c=transient_dep3c,",
-        "        transient_dep4a=transient_dep4a,",
-        "        transient_dep4b=transient_dep4b,",
-        "        transient_dep4c=transient_dep4c,",
-        "        transient_dep4d=transient_dep4d,",
-        "        transient_dep5a=transient_dep5a,",
-        "        transient_dep5b=transient_dep5b,",
-        "        transient_dep5c=transient_dep5c,",
-        "        transient_dep5d=transient_dep5d,",
-        "        transient_dep5e=transient_dep5e,",
-        "        transient_dep6a=transient_dep6a,",
-        "        transient_dep6b=transient_dep6b,",
-        "        transient_dep6c=transient_dep6c,",
-        "        transient_dep6d=transient_dep6d,",
-        "        transient_dep6e=transient_dep6e,",
-        "        transient_dep6f=transient_dep6f,",
-        "        transient_dep7a=transient_dep7a,",
-        "        transient_dep7b=transient_dep7b,",
-        "        transient_dep7c=transient_dep7c,",
-        "        transient_dep7d=transient_dep7d,",
-        "        transient_dep7e=transient_dep7e,",
-        "        transient_dep7f=transient_dep7f,",
-        "        transient_dep7g=transient_dep7g,",
-        "        transient_dep8a=transient_dep8a,",
-        "        transient_dep8b=transient_dep8b,",
-        "        transient_dep8c=transient_dep8c,",
-        "        transient_dep8d=transient_dep8d,",
-        "        transient_dep8e=transient_dep8e,",
-        "        transient_dep8f=transient_dep8f,",
-        "        transient_dep8g=transient_dep8g,",
-        "        transient_dep8h=transient_dep8h,",
-    ]
-    lines.extend([
-        "        steps=steps,",
-        "    ):",
-    ])
-
+    # Closure-cell form, PARITY with the shared generalized transient
+    # builder: hoist `t{N}` once per hydration (enclosing scope), bare
+    # `(meld)` signature (the old ~40-default signature paid one pointer copy
+    # + incref per param per call and only t{N}/steps/MeldExecutionError are
+    # ever read by the body); dep arrays are emission-time inputs only.
+    lines = []
     for step_index in range(transient_step_count):
-        lines.append(f"    t{step_index} = transient_targets[{step_index}]")
-
-    lines.append("    __step_index = 0")
-    lines.append("    try:")
+        lines.append(
+            f"t{step_index} = transient_targets[{step_index}]"
+        )
+    lines.append("def _no_overrides_codegen_creation_executor(meld):")
 
     for step_index in range(transient_step_count):
         call_mode = transient_call_modes[step_index]
@@ -1325,20 +1284,27 @@ def _build_no_overrides_codegen_executor_source(
         if call_expression is None:
             return None
 
-        lines.append(f"        __step_index = {step_index}")
+        # Per-step zero-cost handler (3.11+ exception tables): constant
+        # step attribution replaces the live `__step_index` bookkeeping
+        # (one dead store per step per call) - parity with the shared
+        # generalized transient builder.
+        lines.append("    try:")
         lines.append(f"        v{step_index} = {call_expression}")
+        lines.append("    except Exception as exc:")
+        lines.append(f"        step_spell = steps[{step_index}].spell")
+        lines.append("        raise MeldExecutionError(")
+        lines.append(
+            "            spell_id=step_spell.spell_index.selected_spell_id,"
+        )
+        lines.append("            spell_name=step_spell.spell_name,")
+        lines.append(
+            "            message=f\"Error invoking spell "
+            "'{step_spell.spell_name}'.\","
+        )
+        lines.append("            inner=exc,")
+        lines.append("        ) from exc")
 
-    lines.extend([
-        "    except Exception as exc:",
-        "        step_spell = steps[__step_index].spell",
-        "        raise MeldExecutionError(",
-        "            spell_id=step_spell.spell_index.selected_spell_id,",
-        "            spell_name=step_spell.spell_name,",
-        "            message=f\"Error invoking spell '{step_spell.spell_name}'.\",",
-        "            inner=exc,",
-        "        ) from exc",
-        f"    return v{transient_root_index}",
-    ])
+    lines.append(f"    return v{transient_root_index}")
     return "\n".join(lines)
 
 

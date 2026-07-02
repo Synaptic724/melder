@@ -1608,63 +1608,20 @@ def _build_no_overrides_codegen_executor_source(
     transient_dep8g = transient_schema["dep8g"]
     transient_dep8h = transient_schema["dep8h"]
 
-    lines = [
-        "def _no_overrides_codegen_creation_executor(",
-        "        meld,",
-        "        transient_root_index=transient_root_index,",
-        "        transient_targets=transient_targets,",
-        "        transient_dep1=transient_dep1,",
-        "        transient_dep2a=transient_dep2a,",
-        "        transient_dep2b=transient_dep2b,",
-        "        transient_dep3a=transient_dep3a,",
-        "        transient_dep3b=transient_dep3b,",
-        "        transient_dep3c=transient_dep3c,",
-        "        transient_dep4a=transient_dep4a,",
-        "        transient_dep4b=transient_dep4b,",
-        "        transient_dep4c=transient_dep4c,",
-        "        transient_dep4d=transient_dep4d,",
-        "        transient_dep5a=transient_dep5a,",
-        "        transient_dep5b=transient_dep5b,",
-        "        transient_dep5c=transient_dep5c,",
-        "        transient_dep5d=transient_dep5d,",
-        "        transient_dep5e=transient_dep5e,",
-        "        transient_dep6a=transient_dep6a,",
-        "        transient_dep6b=transient_dep6b,",
-        "        transient_dep6c=transient_dep6c,",
-        "        transient_dep6d=transient_dep6d,",
-        "        transient_dep6e=transient_dep6e,",
-        "        transient_dep6f=transient_dep6f,",
-        "        transient_dep7a=transient_dep7a,",
-        "        transient_dep7b=transient_dep7b,",
-        "        transient_dep7c=transient_dep7c,",
-        "        transient_dep7d=transient_dep7d,",
-        "        transient_dep7e=transient_dep7e,",
-        "        transient_dep7f=transient_dep7f,",
-        "        transient_dep7g=transient_dep7g,",
-        "        transient_dep8a=transient_dep8a,",
-        "        transient_dep8b=transient_dep8b,",
-        "        transient_dep8c=transient_dep8c,",
-        "        transient_dep8d=transient_dep8d,",
-        "        transient_dep8e=transient_dep8e,",
-        "        transient_dep8f=transient_dep8f,",
-        "        transient_dep8g=transient_dep8g,",
-        "        transient_dep8h=transient_dep8h,",
-    ]
-    lines.extend([
-        "        steps=steps,",
-        "    ):",
-    ])
-
-    # Per-slot constructor defaults: the default expressions index the
-    # factory-local `transient_targets` ONCE at def-execution time, so the
-    # per-call alias loads the previous body paid on every meld are gone.
-    # Inserted after the `transient_targets` signature line (index 3); the
-    # binding surface consumed by every caller is unchanged.
+    # Closure-cell form (measured on the step-plan lane: signature defaults
+    # cost one pointer copy + incref PER PARAM PER CALL - the old ~40-default
+    # signature was pure frame-setup weight, and only `t{N}`, `steps`, and
+    # `MeldExecutionError` are ever read by the body). The t{N} hoist lines
+    # execute ONCE per hydration in the enclosing scope (factory locals or
+    # exec namespace); the executor closes over them and its signature is the
+    # bare door contract `(meld)`. The dep arrays are emission-time inputs
+    # only and never appear in the emitted source at all.
+    lines = []
     for step_index in range(transient_step_count):
-        lines.insert(
-            4 + step_index,
-            f"        t{step_index}=transient_targets[{step_index}],",
+        lines.append(
+            f"t{step_index} = transient_targets[{step_index}]"
         )
+    lines.append("def _no_overrides_codegen_creation_executor(meld):")
 
     for step_index in range(transient_step_count):
         call_mode = transient_call_modes[step_index]

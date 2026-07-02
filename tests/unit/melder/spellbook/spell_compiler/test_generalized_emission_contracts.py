@@ -261,9 +261,10 @@ class TestTransientBodyContract:
             transient_schema=self._schema(2, 1, (0, 1), dep1=(0, 0)),
         )
         assert source is not None
-        assert "t0=transient_targets[0]," in source
-        assert "t1=transient_targets[1]," in source
-        assert "t0 = transient_targets[0]" not in source
+        assert "t0 = transient_targets[0]" in source
+        assert "t1 = transient_targets[1]" in source
+        assert "t0=transient_targets[0]," not in source
+        assert "def _no_overrides_codegen_creation_executor(meld):" in source
 
     def test_no_live_step_bookkeeping(self) -> None:
         """The happy path carries no per-step index bookkeeping stores."""
