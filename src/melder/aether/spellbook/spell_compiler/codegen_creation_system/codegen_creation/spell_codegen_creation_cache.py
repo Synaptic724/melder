@@ -335,9 +335,14 @@ def _build_inner_no_overrides_executor(
             root_instance_key=root_instance_key,
         )
 
-    local_namespace: Dict[str, Any] = {}
-    exec(no_overrides_payload["code_object"], namespace, local_namespace)
-    inner_executor = local_namespace.get(_NO_OVERRIDES_EXECUTOR_NAME)
+    # SINGLE-namespace exec: cached transient code objects are hoist-form
+    # (t{N} assignments before a bare `def (meld)`), and a split
+    # globals/locals exec puts the hoists in locals while the def body's
+    # reads compile as globals -> NameError at meld time. The namespace is
+    # built fresh per rehydration, so writing into it is isolated. Legacy
+    # defaults-form step code objects are unaffected by this exec shape.
+    exec(no_overrides_payload["code_object"], namespace)
+    inner_executor = namespace.get(_NO_OVERRIDES_EXECUTOR_NAME)
     if not callable(inner_executor):
         raise RuntimeError(
             "Cached no_overrides payload did not define a callable "
