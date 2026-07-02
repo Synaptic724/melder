@@ -521,20 +521,24 @@ def _compile_emitted_no_overrides_executor(
         - When `return_compiled_code_object` is true, also returns the
           compiled `CodeType` used to build the executor.
     """
-    local_namespace: Dict[str, Any] = {}
     try:
         code_object = get_or_compile_executor_code(
             source=source,
             source_name=source_name,
         )
+        # SINGLE-namespace exec (globals == the built namespace): the
+        # transient source is hoist-form (`t{N} = ...` before the def), and
+        # under a split globals/locals exec those assignments land in locals
+        # while the def body's reads compile as globals -> NameError at call
+        # time. The namespace is built fresh per compilation, so hoist names
+        # and the executor symbol writing into it is isolated by design.
         exec(
             code_object,
             namespace,
-            local_namespace,
         )
     except Exception as exc:
         raise RuntimeError(compile_failure_message) from exc
-    executor = local_namespace.get("_no_overrides_codegen_creation_executor")
+    executor = namespace.get("_no_overrides_codegen_creation_executor")
     if callable(executor):
         compiled_executor: Callable[..., Any] = executor
         if return_compiled_code_object:

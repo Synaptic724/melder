@@ -593,10 +593,19 @@ def test_generalized_codegen_plan_strategy_ports_execution_plan_builder_intent(
             build_calls.append(("init", plan_variant, state))
             self._plan_variant = plan_variant
 
-        def build(self) -> str:
-            """Return one visible payload per plan variant."""
-            build_calls.append(("build", self._plan_variant))
-            return "lane:{0}".format(self._plan_variant)
+        def build_dual(self) -> Any:
+            """Return both lane payloads from one recorded dual build."""
+            build_calls.append(("build_dual", self._plan_variant))
+            return (
+                "lane:{0}".format(
+                    generalized_plan_strategy_module
+                    .SpellGeneralizedCodegenPlanVariant.NO_OVERRIDES
+                ),
+                "lane:{0}".format(
+                    generalized_plan_strategy_module
+                    .SpellGeneralizedCodegenPlanVariant.OVERRIDES
+                ),
+            )
 
     monkeypatch.setattr(
         generalized_plan_strategy_module,
@@ -606,11 +615,12 @@ def test_generalized_codegen_plan_strategy_ports_execution_plan_builder_intent(
 
     SpellGeneralizedCodegenPlanStrategy().apply(state, artifact, plan)
 
+    # The strategy now performs the SINGLE-PASS dual-variant build: one
+    # builder init plus one build_dual call replaces the former two-build
+    # protocol (patch lane generalized_singleton_specialization_2026_07_01).
     assert build_calls == [
         ("init", generalized_plan_strategy_module.SpellGeneralizedCodegenPlanVariant.NO_OVERRIDES, state),
-        ("init", generalized_plan_strategy_module.SpellGeneralizedCodegenPlanVariant.OVERRIDES, state),
-        ("build", generalized_plan_strategy_module.SpellGeneralizedCodegenPlanVariant.NO_OVERRIDES),
-        ("build", generalized_plan_strategy_module.SpellGeneralizedCodegenPlanVariant.OVERRIDES),
+        ("build_dual", generalized_plan_strategy_module.SpellGeneralizedCodegenPlanVariant.NO_OVERRIDES),
     ]
     assert plan.no_overrides_plan == "lane:no_overrides"
     assert plan.overrides_plan == "lane:overrides"
