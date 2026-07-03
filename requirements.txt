@@ -1,14 +1,14 @@
 ast_serialize==0.5.0
 colorama==0.4.6
-coverage==7.14.1
-dependency-injector==4.49.0
+coverage==7.15.0
+dependency-injector==4.49.1
 dishka==1.10.1
 execnet==2.1.2
 iniconfig==2.3.0
 injector==0.24.0
 lagom==2.7.7
 libcst==1.8.6
-librt==0.11.0
+librt==0.12.0
 mypy==2.1.0
 mypy_extensions==1.1.0
 packaging==26.2

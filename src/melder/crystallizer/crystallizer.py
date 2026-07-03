@@ -2,7 +2,6 @@ import threading
 from typing import TYPE_CHECKING, Optional
 
 if TYPE_CHECKING:
-    from melder.nexus.nexus import Nexus
     from melder.aether.aether import Aether
     from melder.aether.spellbook.spell import Spell
 

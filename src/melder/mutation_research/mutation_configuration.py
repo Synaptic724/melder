@@ -205,7 +205,7 @@ class MutationResearchConfiguration(Cleanable):
         with self._lock:
             self._frozen = True
 
-    def finalize(self) -> MutationResearchConfiguration:
+    def finalize(self) -> "MutationResearchConfiguration":
         """
         Validate and freeze the configuration, then return it.
 
@@ -215,7 +215,7 @@ class MutationResearchConfiguration(Cleanable):
         self.freeze()
         return self
 
-    def activate(self) -> MutationResearchConfiguration:
+    def activate(self) -> "MutationResearchConfiguration":
         """
         Validate, freeze, and mark the configuration as activated.
 
@@ -227,7 +227,7 @@ class MutationResearchConfiguration(Cleanable):
             self._activated = True
         return self
 
-    def with_defaults(self) -> MutationResearchConfiguration:
+    def with_defaults(self) -> "MutationResearchConfiguration":
         """
         Apply the default mutation-research posture.
 
@@ -248,7 +248,7 @@ class MutationResearchConfiguration(Cleanable):
     def with_unrestricted_module_mutations(
             self,
             enabled: bool,
-    ) -> MutationResearchConfiguration:
+    ) -> "MutationResearchConfiguration":
         """
         Set the unrestricted-module-mutations posture.
 
