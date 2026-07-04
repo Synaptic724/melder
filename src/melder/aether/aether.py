@@ -1573,4 +1573,10 @@ class Aether(Cleanable):
         Returns:
             None.
         """
-        self.check
+        self.check_cleaned()
+        if not conduit_id:
+            raise ValueError("conduit_id cannot be empty.")
+        devops = self._get_devops_manager(aetheric_frame_name)
+        devops.revalidate_dirty_roots(conduit_id, cancel_event=cancel_event)
+
+    #endregion DevOps Management
