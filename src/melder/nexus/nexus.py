@@ -5,6 +5,7 @@ from melder.__melder_registration_guard__ import __melder_registration_guard__ a
 
 if TYPE_CHECKING:
     from melder.aether.aether import Aether
+    from melder.crystallizer.crystallizer import Crystallizer
     from melder.aether.aetheric_frame.aetheric_frame_configuration import (
         AethericFrameConfiguration,
     )
@@ -106,6 +107,7 @@ class Nexus(Cleanable):
         "_frame_descriptor_manager",
         "_frame_manager",
         "_target_frame_ref_counts",
+        "_crystallizer",
     ]
 
     def __new__(cls, *args: object, **kwargs: object) -> "Nexus":
@@ -190,6 +192,7 @@ class Nexus(Cleanable):
             self._id: str = IDBuilder.create_id()
             self._logger = InitHelpers.resolve_safe_logger(None)
             self._aether: Aether = aether
+            self._crystallizer: Crystallizer = aether._crystallizer
             self._configuration: Optional[NexusConfiguration] = configuration
             self._configured: bool = configuration is not None
             self._enabled: bool = False
@@ -281,6 +284,7 @@ class Nexus(Cleanable):
             del self._frame_acl_manager
             del self._frame_descriptor_manager
             del self._frame_manager
+            del self._crystallizer
             del self._target_frame_ref_counts
             del self._id
 

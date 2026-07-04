@@ -47,6 +47,7 @@ if TYPE_CHECKING:
     from melder.utilities.synchronization.unit_of_work import UnitOfWork
     from melder.aether.aetheric_frame.aetheric_frame_configuration import AethericFrameConfiguration
     from melder.utilities.logger.safe_logger import SafeLogger
+    from melder.crystallizer.crystallizer import Crystallizer
 
 #region Spellbook
 
@@ -154,6 +155,7 @@ and logging.
         "_spells_by_id",
         "_transaction_identity",
         "_whitelist_all_spells",
+        "_crystallizer",
     ]
 
     def __init__(self, aetheric_frame: str = "default", configuration: Optional[SpellbookConfiguration] = None,
@@ -223,6 +225,7 @@ and logging.
         if not isinstance(self._aetheric_frame_name, str):
             raise TypeError(f"aetheric_frame must be a string, got {type(self._aetheric_frame_name).__name__}")
         self._aetheric_frame = Spellbook._aether._ensure_frame(self._aetheric_frame_name)
+        self._crystallizer: Crystallizer = self._aetheric_frame._crystallizer
         self._transaction_identity: DevopsIdentity = DevopsIdentity(
             owner_kind="spellbook",
             owner_id=self._id,
@@ -436,7 +439,7 @@ and logging.
         del self._caching_system
         del self._cache_emit_required
         del self._caching_enabled
-
+        del self._crystallizer
         self._aetheric_frame_configuration = None
 
         try:
@@ -614,6 +617,7 @@ and logging.
         del self._spellbook_validation_required
         del self._nexus_publish_enabled
         del self._nexus
+        self._crystallizer = None
 
         try:
             if hasattr(self._logger, "cleanup"):

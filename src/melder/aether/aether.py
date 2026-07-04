@@ -106,6 +106,7 @@ class Aether(Cleanable):
             try:
                 super().__init__()
                 self._id: str = new_ulid()
+                self._crystallizer: Crystallizer = Crystallizer(aether=self)
                 self._configuration: Optional[AetherConfiguration] = None
                 self._configured: bool = False
                 self._activated: bool = False
@@ -113,10 +114,13 @@ class Aether(Cleanable):
                 self._aetheric_frames: Dict[str, AethericFrame] = {}
                 self._default_frame: Optional[AethericFrame] = None
                 self._aether_utility_system: AetherUtilitySystem = AetherUtilitySystem()
+                # Crystallizer is constructed FIRST so it can be unfolded into
+                # every frame/spellbook/conduit and into MutationResearch as the
+                # passive emission sink (they hold a non-owning reference; Aether
+                # owns and cleans it).
                 default_frame = AethericFrame(self, "default")
                 self._aetheric_frames["default"] = default_frame
                 self._default_frame = default_frame
-                self._crystallizer: Crystallizer = Crystallizer(aether=self)
                 # MutationResearch is constructed lazily on first access
                 # (`_get_mutation_research`): its import chain and root build
                 # cost several milliseconds on the cold import path (Aether()
@@ -1569,13 +1573,4 @@ class Aether(Cleanable):
         Returns:
             None.
         """
-        self.check_cleaned()
-        if not conduit_id:
-            raise ValueError("conduit_id cannot be empty.")
-        devops = self._get_devops_manager(aetheric_frame_name)
-        devops.revalidate_dirty_roots(conduit_id, cancel_event=cancel_event)
-
-    #endregion DevOps Management
-
-
-
+        self.check

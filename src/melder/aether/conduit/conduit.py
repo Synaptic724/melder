@@ -63,6 +63,7 @@ if TYPE_CHECKING:
     from melder.utilities.logger.safe_logger import SafeLogger
     from melder.utilities.synchronization.creation_gate import CreationGate
     from melder.utilities.synchronization.creation_gate_controller import CreationGateController
+    from melder.crystallizer.crystallizer import Crystallizer
 
 
 # NOTE: the former `_SpellSpaceContextManager` wrapper was removed:
@@ -146,6 +147,7 @@ class Conduit(Cleanable):
        "_meld",
        "_conduit_ward",
         "_permanent_cleanup_requested",
+        "_crystallizer",
     ]
     _DEFAULT_ROOT_CONDUIT_NAME: ClassVar[str] = "default"
     __melder_internal__: ClassVar[object] = _mrg.sentinel
@@ -243,6 +245,7 @@ class Conduit(Cleanable):
         self._configuration: SpellbookConfiguration = configuration
         self._conduit_state: ConduitState = conduit_state  # can be normal, lesser
         self._spellbook: Spellbook = spellbook
+        self._crystallizer: Crystallizer = spellbook._crystallizer
         self._nexus: Nexus = spellbook._nexus
         if creation_gate_controller is None:
             raise ValueError("creation_gate_controller cannot be None.")
@@ -702,6 +705,7 @@ class Conduit(Cleanable):
         del self._conduit_pool
         del self._aetheric_frame_name
         del self._root_conduit_id
+        del self._crystallizer
         del self._nexus
 
     def _publish_conduit_record_to_nexus(self) -> None:

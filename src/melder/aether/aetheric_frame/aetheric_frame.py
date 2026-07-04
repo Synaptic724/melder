@@ -23,6 +23,7 @@ if TYPE_CHECKING:
     from melder.aether.spellbook.bind.spell_index import SpellIndex
     from melder.aether.spellbook.configuration.spellbook_configuration import SpellbookConfiguration
     from melder.aether.aether import Aether
+    from melder.crystallizer.crystallizer import Crystallizer
 
 
 class AethericFrame(Cleanable):
@@ -69,6 +70,7 @@ class AethericFrame(Cleanable):
         "_dev_ops_manager",
         "_configuration",
         "_frame_configuration",
+        "_crystallizer",
     ]
 
     def __init__(self, aether: "Aether", name: str) -> None:
@@ -101,6 +103,7 @@ class AethericFrame(Cleanable):
             raise ValueError("name cannot be empty")
 
         self._aether: "Aether" = aether
+        self._crystallizer: Crystallizer = aether._crystallizer
         self.name: str = name
         self._id: str = new_ulid()
         self._lock: threading.RLock = threading.RLock()
@@ -201,6 +204,7 @@ class AethericFrame(Cleanable):
             del self._id
             del self.name
             del self._aether
+            del self._crystallizer
         del self._lock
 
 

@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING, Any, Dict, List, Optional, ClassVar
 if TYPE_CHECKING:
     from melder.aether.conduit.conduit import Conduit
     from melder.aether.aether import Aether
+    from melder.crystallizer.crystallizer import Crystallizer
     from melder.aether.spellbook.bind.spell_index import SpellIndex
 
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
@@ -57,6 +58,7 @@ class MutationResearch(Cleanable):
         "_configured",
         "_activated",
         "_sessions_by_index",
+        "_crystallizer",
     ]
 
     def __new__(
@@ -105,6 +107,7 @@ class MutationResearch(Cleanable):
             super().__init__()
             self._id: str = IDBuilder.create_id()
             self._aether: Optional[Aether] = aether
+            self._crystallizer: Crystallizer = aether._crystallizer
             self._configuration: Optional[MutationResearchConfiguration] = None
             self._configured: bool = False
             self._activated: bool = False
@@ -143,7 +146,7 @@ class MutationResearch(Cleanable):
                 self._configuration.cleanup()
             self._configured = False
             self._activated = False
-
+            del self._crystallizer
             del self._sessions_by_index
             del self._configuration
             del self._aether
