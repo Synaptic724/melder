@@ -2,10 +2,27 @@
 
 from __future__ import annotations
 
+import types
+
 import pytest
 
 from melder.aether.spellbook.bind.spell_index import SpellIndex
 from melder.mutation_research.mutation_research import MutationResearch
+
+
+def _fake_aether() -> types.SimpleNamespace:
+    """
+    Build a minimal Aether stand-in for direct MutationResearch construction.
+
+    Contract:
+        - MutationResearch.__init__ pulls `aether._crystallizer` (a non-owning
+          reference) during construction, so the stand-in must expose that
+          attribute. No other Aether surface is exercised by these tests.
+
+    Returns:
+        types.SimpleNamespace: Object exposing a dummy `_crystallizer`.
+    """
+    return types.SimpleNamespace(_crystallizer=object())
 
 
 @pytest.fixture(autouse=True)
@@ -37,7 +54,7 @@ def test_mutation_research_component_drives_real_session_lines_and_promotion() -
     Raises:
         AssertionError: If the live orchestration is incorrect.
     """
-    manager = MutationResearch(object())
+    manager = MutationResearch(_fake_aether())
     index = SpellIndex("spell-root")
     try:
         session = manager.create_session(index, name="session", metadata={"owner": "test"})

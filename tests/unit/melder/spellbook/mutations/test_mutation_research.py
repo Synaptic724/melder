@@ -14,6 +14,21 @@ from melder.mutation_research.mutation_research import MutationResearch
 MODULE_PATH = "melder.mutation_research.mutation_research"
 
 
+def _fake_aether() -> types.SimpleNamespace:
+    """
+    Build a minimal Aether stand-in for direct MutationResearch construction.
+
+    Contract:
+        - MutationResearch.__init__ pulls `aether._crystallizer` (a non-owning
+          reference) during construction, so the stand-in must expose that
+          attribute. No other Aether surface is exercised by these tests.
+
+    Returns:
+        types.SimpleNamespace: Object exposing a dummy `_crystallizer`.
+    """
+    return types.SimpleNamespace(_crystallizer=object())
+
+
 @pytest.fixture(autouse=True)
 def reset_mutation_research_singleton() -> None:
     """
@@ -65,7 +80,7 @@ def test_mutation_research_cleanup_cleans_sessions_and_releases_associations() -
     Raises:
         AssertionError: If cleanup does not release or cascade properly.
     """
-    frame = object()
+    frame = _fake_aether()
     manager = MutationResearch(frame)
     index = SpellIndex("spell-root")
     try:
@@ -132,7 +147,7 @@ def test_create_session_reuses_existing_and_supports_lookup(monkeypatch) -> None
 
     monkeypatch.setattr(mutation_research_module, "Research", _FakeResearch)
 
-    manager = MutationResearch(object())
+    manager = MutationResearch(_fake_aether())
     index = SpellIndex("spell-root")
     try:
         session_a = manager.create_session(index, name="alpha", level=3, metadata={"x": 1})
@@ -163,7 +178,7 @@ def test_create_session_rejects_none_or_missing_index_id() -> None:
     Raises:
         AssertionError: If invalid inputs are accepted.
     """
-    manager = MutationResearch(object())
+    manager = MutationResearch(_fake_aether())
     try:
         with pytest.raises(ValueError, match="target_index cannot be None"):
             manager.create_session(None)  # type: ignore[arg-type]
@@ -198,7 +213,7 @@ def test_remove_session_for_index_cleans_session_and_missing_cases_are_noop(monk
 
     monkeypatch.setattr(mutation_research_module, "Research", _FakeResearch)
 
-    manager = MutationResearch(object())
+    manager = MutationResearch(_fake_aether())
     index = SpellIndex("spell-root")
     try:
         session = manager.create_session(index, name="session")
@@ -261,7 +276,7 @@ def test_begin_spell_mutation_creates_or_reuses_spell_research_line(monkeypatch)
 
     monkeypatch.setattr(mutation_research_module, "Research", _FakeResearch)
 
-    manager = MutationResearch(object())
+    manager = MutationResearch(_fake_aether())
     index = SpellIndex("spell-root")
     try:
         session = manager.create_session(index, name="session")
@@ -328,7 +343,7 @@ def test_begin_creation_mutation_creates_or_reuses_creation_research_line(monkey
 
     monkeypatch.setattr(mutation_research_module, "Research", _FakeResearch)
 
-    manager = MutationResearch(object())
+    manager = MutationResearch(_fake_aether())
     index = SpellIndex("spell-root")
     try:
         session = manager.create_session(index, name="session")
