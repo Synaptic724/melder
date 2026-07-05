@@ -391,6 +391,34 @@ class TransferOfOwnership(Cleanable):
             raise
         else:
             self._clear_change_intent(spell_obj.spell_index)
+            # Record re-anchor: ownership transfer moved the index and its
+            # members to the target spellbook, so every custody crystal's
+            # spellbook parent edge is stale. Re-emit the membership twin
+            # under the new owner plus fresh custody for every member
+            # (replace-on-emit displaces the stale source-book crystals).
+            target_spellbook = self.target_conduit._spellbook
+            crystallizer = target_spellbook._crystallizer
+            if crystallizer.activated:
+                crystallizer.emit(
+                    crystallizer.create_spell_index_crystal(
+                        spell_obj.spell_index, target_spellbook._id
+                    )
+                )
+                for member_id in set(spell_obj.spell_index._spells_in_index):
+                    member = target_spellbook._spells_by_id.get(member_id)
+                    member_is_active = member is not None
+                    if member is None:
+                        member = target_spellbook._inactive_spells.get(
+                            member_id
+                        )
+                    if member is None:
+                        continue
+                    crystallizer.emit_spell_crystal(
+                        crystallizer.create_spell_crystal(
+                            member, spellbook_id=target_spellbook._id
+                        ),
+                        active=member_is_active,
+                    )
         finally:
             self._rollback_actions.clear()
 

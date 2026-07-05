@@ -119,12 +119,10 @@ def test_bind_without_activation_records_nothing():
     Purpose:
         Verify the R-A covenant AND the catch-up walk's documented reach.
     Contract:
-        A bind with the crystallizer inactive records nothing; a LATER
-        activation still records nothing for this world because the walk
-        reaches spellbooks through frame-registered CONDUITS, and an
-        unconjured book has none (setup canon: activate the crystallizer
-        before building; the conjured-world case is covered by
-        test_midflight_activation_catches_up_the_live_world).
+        A bind with the crystallizer inactive records nothing - recording
+        was off, so nothing is minted then OR retroactively (no sweep
+        exists by owner decision; the setup canon is activate the
+        crystallizer BEFORE building the world you want recorded).
     Returns:
         None.
     Raises:
@@ -245,28 +243,3 @@ def test_conduit_teardown_sweeps_the_book_subtree():
     assert summary["spell_crystal_count"] == 0
     assert summary["frame_count"] == 1
 
-
-def test_midflight_activation_catches_up_the_live_world():
-    """
-    Purpose:
-        Verify the activate catch-up walk against a real live world.
-    Contract:
-        A world built while the crystallizer is inactive is swept into
-        the record at activation: every bound spell in dynamic-posture
-        spellbooks gains custody.
-    Returns:
-        None.
-    Raises:
-        AssertionError: If the walk misses live custody.
-    """
-    book = _dynamic_book()
-    spell_id = book.bind(
-        spell=BasicService,
-        existence=Existence.unique,
-        permissions="create",
-    )
-    book.conjure(dynamic=True, name="preexisting-root")
-    crystallizer = _activate_crystallizer()
-    crystal = crystallizer.get_spell_crystal(spell_id)
-    assert crystal.id == spell_id
-    assert crystal.spellbook_id == book._id

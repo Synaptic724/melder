@@ -578,6 +578,11 @@ and logging.
             # locations) so restore never rebuilds a shed spell.
             if self._crystallizer.activated:
                 self._crystallizer.emit_spell_removed(target_spell_id)
+                # The index is torn down at this verb's tail; its
+                # membership twin leaves the record with it.
+                self._crystallizer.emit_spell_index_removed(
+                    target_spell_index.id
+                )
 
             self._spells.pop(target_spell_index, None)
             existing_lookup = self._lookup_spells.get(target_lookup_key)
@@ -1396,6 +1401,13 @@ and logging.
         # this spell just moved to _inactive_spells.
         if self._crystallizer.activated:
             self._crystallizer.emit_spell_activity(spell_id, active=False)
+            # Selection snapshot: the park changed which member the index
+            # points at; re-emit the membership twin.
+            self._crystallizer.emit(
+                self._crystallizer.create_spell_index_crystal(
+                    spell.spell_index, self._id
+                )
+            )
 
     def _reactivate_owned_spell(self, spell: Spell) -> None:
         """
@@ -1454,6 +1466,12 @@ and logging.
         # synthetic root module if it was unpublished while parked).
         if self._crystallizer.activated:
             self._crystallizer.emit_spell_activity(spell_id, active=True)
+            # Selection snapshot: the promotion repointed the index.
+            self._crystallizer.emit(
+                self._crystallizer.create_spell_index_crystal(
+                    spell.spell_index, self._id
+                )
+            )
 
     def _deactivate_contracted_spell(self, conduit_id: str, spell: Spell) -> None:
         """
@@ -3325,6 +3343,21 @@ and logging.
                 binding_key=binding_key,
                 owner_conduit_id=owner_conduit_id,
             )
+        if self._crystallizer.activated:
+            # Membership moved between indexes: re-emit the target snapshot
+            # always, and the source when it survived (the emptied case is
+            # evicted by the destroy seam above).
+            self._crystallizer.emit(
+                self._crystallizer.create_spell_index_crystal(
+                    target_index, self._id
+                )
+            )
+            if not source_emptied:
+                self._crystallizer.emit(
+                    self._crystallizer.create_spell_index_crystal(
+                        source_index, self._id
+                    )
+                )
         return spell
 
     def _destroy_spell_index(
@@ -3368,6 +3401,10 @@ and logging.
                 self._aetheric_frame_name,
             )
         self._spell_system_states.unregister_index(spell_index)
+        # Membership twin leaves with the destroyed index (tolerant when
+        # the index never recorded).
+        if self._crystallizer.activated:
+            self._crystallizer.emit_spell_index_removed(spell_index.id)
         spell_index.cleanup()
 
     def _remove_from_spell_index(self, *, spell: Spell, source_index: SpellIndex) -> Spell:
@@ -3475,6 +3512,18 @@ and logging.
             new_index = SpellIndex(initial_id=spell_id)
             source_index.remove_member(spell_id)
             spell.spell_index = new_index
+        if self._crystallizer.activated:
+            # The member split onto a FRESH index: snapshot both sides.
+            self._crystallizer.emit(
+                self._crystallizer.create_spell_index_crystal(
+                    source_index, self._id
+                )
+            )
+            self._crystallizer.emit(
+                self._crystallizer.create_spell_index_crystal(
+                    new_index, self._id
+                )
+            )
         return spell
 
     def cleanup_spell(self, *, spell: Spell) -> None:
@@ -3572,6 +3621,14 @@ and logging.
                     index,
                     binding_key=binding_key,
                     owner_conduit_id=owner_conduit_id,
+                )
+            elif self._crystallizer.activated:
+                # The shared index survived minus one member: re-emit its
+                # membership snapshot.
+                self._crystallizer.emit(
+                    self._crystallizer.create_spell_index_crystal(
+                        index, self._id
+                    )
                 )
             # Local teardown only (already off the maps); set the guard so
             # Spell.cleanup() does not re-enter cleanup_and_remove_spell.
@@ -4269,6 +4326,13 @@ and logging.
                         ),
                         active=False,
                     )
+                    # The staged member joined an EXISTING index: re-emit
+                    # its membership snapshot.
+                    self._crystallizer.emit(
+                        self._crystallizer.create_spell_index_crystal(
+                            new_spell.spell_index, self._id
+                        )
+                    )
                 return new_spell.spell_id
             except Exception as e:
                 self._logger.error(f"Error while binding spell: {e}", "bind", exc_info=True)
@@ -4508,6 +4572,14 @@ and logging.
                             spellbook_id=self._id,
                         ),
                         active=True,
+                    )
+                    # Membership twin: every index state change re-emits
+                    # the full snapshot (replace-on-emit keeps one per
+                    # index); a fresh bind mints a fresh index.
+                    self._crystallizer.emit(
+                        self._crystallizer.create_spell_index_crystal(
+                            new_spell.spell_index, self._id
+                        )
                     )
                 if self._conjured and self._conduit is not None:
                     Spellbook._aether._register_single_spell_index(

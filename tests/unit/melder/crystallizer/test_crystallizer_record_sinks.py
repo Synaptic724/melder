@@ -3,8 +3,9 @@ Unit contract tests for the Crystallizer record sinks and the emit-driven
 automatic-checkpoint cadence: NO-OP-when-inactive gating, facade activation
 gating, retention installation, and the monotonic-clock ticker.
 
-These construct the real Crystallizer singleton (reset around each test) with
-no Aether world; the catch-up walk early-returns on aether=None by contract.
+These construct the real Crystallizer singleton against a fresh hosting
+Aether (reset around each test); no world is built, so the record starts
+empty by construction.
 """
 import pytest
 

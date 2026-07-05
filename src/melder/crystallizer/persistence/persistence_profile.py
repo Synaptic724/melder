@@ -7,6 +7,9 @@ from melder.crystallizer.persistence.crystals.aether_crystal import AetherCrysta
 from melder.crystallizer.persistence.crystals.aetheric_frame_crystal import AethericFrameCrystal
 from melder.crystallizer.persistence.crystals.conduit_crystal import ConduitCrystal
 from melder.crystallizer.persistence.crystals.mutation_research_crystal import MutationResearchCrystal
+from melder.crystallizer.persistence.crystals.spell_index_crystal import (
+    SpellIndexCrystal,
+)
 from melder.crystallizer.persistence.recorded_unit_state import RecordedUnitState
 from melder.crystallizer.persistence.crystals.nexus_crystal import NexusCrystal
 from melder.crystallizer.persistence.crystals.spell_crystal import SpellCrystal
@@ -68,6 +71,7 @@ class PersistenceProfile(Cleanable):
         "_frame_crystals_by_name",
         "_spellbook_crystals_by_id",
         "_conduit_crystals_by_id",
+        "_spell_index_crystals_by_index_id",
         "_spell_crystals_by_spell_id",
         "_inactive_spell_crystals_by_spell_id",
     ]
@@ -108,6 +112,7 @@ class PersistenceProfile(Cleanable):
         self._frame_crystals_by_name: Dict[str, AethericFrameCrystal] = {}
         self._spellbook_crystals_by_id: Dict[str, SpellbookCrystal] = {}
         self._conduit_crystals_by_id: Dict[str, ConduitCrystal] = {}
+        self._spell_index_crystals_by_index_id: Dict[str, SpellIndexCrystal] = {}
         self._spell_crystals_by_spell_id: Dict[str, SpellCrystal] = {}
         self._inactive_spell_crystals_by_spell_id: Dict[str, SpellCrystal] = {}
 
@@ -137,6 +142,7 @@ class PersistenceProfile(Cleanable):
         del self._frame_crystals_by_name
         del self._spellbook_crystals_by_id
         del self._conduit_crystals_by_id
+        del self._spell_index_crystals_by_index_id
         del self._spell_crystals_by_spell_id
         del self._inactive_spell_crystals_by_spell_id
         del self._lock
@@ -214,6 +220,13 @@ class PersistenceProfile(Cleanable):
                 self._replace_mapped(
                     self._conduit_crystals_by_id, twin.conduit_id, twin, "conduit"
                 )
+            elif isinstance(twin, SpellIndexCrystal):
+                self._replace_mapped(
+                    self._spell_index_crystals_by_index_id,
+                    twin.index_id,
+                    twin,
+                    "spell_index",
+                )
             elif isinstance(twin, SpellCrystal):
                 self._record_spell_crystal_locked(twin, active=True)
             else:
@@ -264,9 +277,9 @@ class PersistenceProfile(Cleanable):
             (`_deactivate_owned_spell` / `_reactivate_owned_spell`).
 
         Contract:
-            - Tolerates missing custody (a world recorded mid-flight before
-              the catch-up walk exists): the activity is journaled either
-              way so checkpoints capture the transition truthfully.
+            - Tolerates missing custody (activity for a spell the record
+              never held): the activity is journaled either way so
+              checkpoints capture the transition truthfully.
 
         Args:
             spell_id:
@@ -451,6 +464,32 @@ class PersistenceProfile(Cleanable):
             self._mutation_research_state = state
             self._journal("mutation_research_state", state.name)
 
+    def remove_spell_index_crystal(self, index_id: str) -> None:
+        """
+        Evict one destroyed index's membership twin from the record.
+
+        Contract:
+            - Tolerates an index that never recorded (journals either way);
+              journals ONE "spell_index_removed" entry.
+
+        Args:
+            index_id:
+                The destroyed index's record-local ULID key.
+
+        Returns:
+            None.
+
+        Raises:
+            RuntimeError:
+                If the profile has been cleaned.
+        """
+        self.check_cleaned()
+        with self._lock:
+            twin = self._spell_index_crystals_by_index_id.pop(index_id, None)
+            if twin is not None and not twin.cleaned:
+                twin.cleanup()
+            self._journal("spell_index_removed", index_id)
+
     def _remove_spellbook_subtree_locked(self, spellbook_id: str) -> None:
         """
         Internal
@@ -479,6 +518,17 @@ class PersistenceProfile(Cleanable):
         ]
         for conduit_id in conduit_ids:
             crystal = self._conduit_crystals_by_id.pop(conduit_id)
+            if not crystal.cleaned:
+                crystal.cleanup()
+        index_ids = [
+            index_id
+            for index_id, crystal in (
+                self._spell_index_crystals_by_index_id.items()
+            )
+            if crystal.spellbook_id == spellbook_id
+        ]
+        for index_id in index_ids:
+            crystal = self._spell_index_crystals_by_index_id.pop(index_id)
             if not crystal.cleaned:
                 crystal.cleanup()
         for location in (
@@ -602,6 +652,8 @@ class PersistenceProfile(Cleanable):
                 "frame_count": len(self._frame_crystals_by_name),
                 "spellbook_count": len(self._spellbook_crystals_by_id),
                 "conduit_count": len(self._conduit_crystals_by_id),
+                "spell_index_count":
+                    len(self._spell_index_crystals_by_index_id),
                 "spell_crystal_count": len(self._spell_crystals_by_spell_id),
                 "inactive_spell_crystal_count":
                     len(self._inactive_spell_crystals_by_spell_id),
@@ -765,6 +817,12 @@ class PersistenceProfile(Cleanable):
                         ),
                     }
                     continue
+                if kind == "spell_index_removed":
+                    payloads.setdefault(kind, {})[key] = {
+                        "index_id": key,
+                        "removed": True,
+                    }
+                    continue
                 if kind == "spellbook_removed":
                     # Subtree tombstone: replay applies the same
                     # spellbook_id parent-edge match this eviction used.
@@ -858,6 +916,8 @@ class PersistenceProfile(Cleanable):
             return self._spellbook_crystals_by_id.get(key)
         if kind == "conduit":
             return self._conduit_crystals_by_id.get(key)
+        if kind == "spell_index":
+            return self._spell_index_crystals_by_index_id.get(key)
         if kind == "spell_crystal":
             crystal = self._spell_crystals_by_spell_id.get(key)
             if crystal is None:
@@ -941,6 +1001,7 @@ class PersistenceProfile(Cleanable):
                 self._frame_crystals_by_name,
                 self._spellbook_crystals_by_id,
                 self._conduit_crystals_by_id,
+                self._spell_index_crystals_by_index_id,
                 self._spell_crystals_by_spell_id,
                 self._inactive_spell_crystals_by_spell_id,
         ):

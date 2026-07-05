@@ -289,6 +289,24 @@ class PersistenceSystem(Cleanable):
         self.check_cleaned()
         self.active_profile.remove_spellbook_subtree(spellbook_id)
 
+    def remove_spell_index_crystal(self, index_id: str) -> None:
+        """
+        Evict one destroyed index's twin from the ACTIVE profile.
+
+        Args:
+            index_id:
+                The destroyed index's record-local ULID key.
+
+        Returns:
+            None.
+
+        Raises:
+            RuntimeError:
+                If the subsystem has been cleaned.
+        """
+        self.check_cleaned()
+        self.active_profile.remove_spell_index_crystal(index_id)
+
     def remove_frame_crystal(self, frame_name: str) -> None:
         """
         Evict one dead frame's twin (+ leftover book subtrees) from the

@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING, Dict, List, Optional
 
 if TYPE_CHECKING:
     from melder.aether.aether import Aether
+    from melder.aether.spellbook.bind.spell_index import SpellIndex
     from melder.aether.spellbook.spell import Spell
 
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
@@ -13,6 +14,9 @@ from melder.crystallizer.configuration.crystallizer_configuration import (
 from melder.crystallizer.persistence.crystals.spell_crystal import SpellCrystal
 from melder.crystallizer.synthetic_module import SyntheticModule
 from melder.crystallizer.persistence.persistence_system import PersistenceSystem
+from melder.crystallizer.persistence.crystals.spell_index_crystal import (
+    SpellIndexCrystal,
+)
 from melder.crystallizer.persistence.recorded_unit_state import RecordedUnitState
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
@@ -312,59 +316,6 @@ class Crystallizer(Cleanable):
                 self._configuration.max_persistence_crystals
             )
             self._last_automatic_checkpoint_monotonic = time.monotonic()
-        self._catch_up_live_world()
-
-    def _catch_up_live_world(self) -> None:
-        """
-        Internal
-
-        Sweep the already-live world into the record after activation.
-
-        Purpose:
-            A crystallizer activated mid-flight (after frames/spellbooks/
-            binds exist) walks the live world and emits custody for every
-            bound spell in dynamic-posture spellbooks - active and parked -
-            so the record starts truthful instead of empty. Replace-on-emit
-            makes re-activation sweeps idempotent.
-
-        Contract:
-            - Dynamic-posture spellbooks only (the recorded lane).
-            - Custody only: configuration twins re-emit at their own
-              activation points, not here.
-
-        Returns:
-            None.
-        """
-        aether = self._aether
-        if aether is None:
-            return
-        visited_spellbook_ids: set = set()
-        for frame in list(aether._aetheric_frames.values()):
-            for conduit in list(frame._conduits.values()):
-                spellbook = conduit._spellbook
-                # Lesser conduits share the root's spellbook: dedupe so a
-                # shared book sweeps once (journal stays segment-clean).
-                if (
-                        spellbook.cleaned
-                        or spellbook._id in visited_spellbook_ids
-                        or not spellbook._is_dynamic_posture()
-                ):
-                    continue
-                visited_spellbook_ids.add(spellbook._id)
-                for bound_spell in list(spellbook._spells.values()):
-                    self.emit_spell_crystal(
-                        self.create_spell_crystal(
-                            bound_spell, spellbook_id=spellbook._id
-                        ),
-                        active=True,
-                    )
-                for parked_spell in list(spellbook._inactive_spells.values()):
-                    self.emit_spell_crystal(
-                        self.create_spell_crystal(
-                            parked_spell, spellbook_id=spellbook._id
-                        ),
-                        active=False,
-                    )
 
     def _maybe_create_automatic_checkpoint(self) -> None:
         """
@@ -537,6 +488,65 @@ class Crystallizer(Cleanable):
         self._persistence_system.remove_spellbook_subtree(spellbook_id)
         self._maybe_create_automatic_checkpoint()
 
+    def create_spell_index_crystal(
+            self,
+            spell_index: SpellIndex,
+            spellbook_id: str,
+    ) -> SpellIndexCrystal:
+        """
+        Build one membership twin from a live SpellIndex.
+
+        Purpose:
+            Snapshot the index's grouping truth (owner edge, selection,
+            full member set) for the record; callers emit the result so
+            replace-on-emit keeps exactly one snapshot per index.
+
+        Args:
+            spell_index:
+                The live index to snapshot.
+            spellbook_id:
+                The owning spellbook's identity.
+
+        Returns:
+            SpellIndexCrystal: Detached membership snapshot.
+
+        Raises:
+            RuntimeError:
+                If the crystallizer has been cleaned or is not activated.
+        """
+        self.check_cleaned()
+        self._require_activated()
+        return SpellIndexCrystal(
+            index_id=spell_index.id,
+            spellbook_id=spellbook_id,
+            selected_spell_id=spell_index.selected_spell_id,
+            member_spell_ids=list(spell_index._spells_in_index),
+        )
+
+    def emit_spell_index_removed(self, index_id: str) -> None:
+        """
+        Evict one destroyed index's membership twin from the record.
+
+        Contract:
+            - NO-OP while the crystallizer is not activated.
+
+        Args:
+            index_id:
+                The destroyed index's record-local ULID key.
+
+        Returns:
+            None.
+
+        Raises:
+            RuntimeError:
+                If the crystallizer has been cleaned.
+        """
+        self.check_cleaned()
+        if not self._activated:
+            return
+        self._persistence_system.remove_spell_index_crystal(index_id)
+        self._maybe_create_automatic_checkpoint()
+
     def emit_frame_removed(self, frame_name: str) -> None:
         """
         Evict one dead frame's twin (+ leftover book subtrees).
@@ -643,8 +653,8 @@ class Crystallizer(Cleanable):
 
         Contract:
             - NO-OP while the crystallizer is not activated.
-            - Tolerates missing custody (record-only worlds before the
-              catch-up walk exists).
+            - Tolerates missing custody (activity for a spell the record
+              never held is journaled without a crystal move).
 
         Args:
             spell_id:

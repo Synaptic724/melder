@@ -1,7 +1,6 @@
 """
-Integration tests for the two remaining record lanes: the conjure-first
-spellbook-twin emission lane (configuration frozen AT conjure, with origins)
-and catch-up-walk deduplication over shared spellbooks (lesser conduits).
+Integration test for the conjure-first record lane: the spellbook-twin
+emission lane where the configuration freezes AT conjure, with origins.
 
 Runs only on 3.14t (melder package root import chain).
 """
@@ -111,34 +110,3 @@ def test_conjure_first_lane_emits_the_spellbook_twin():
     assert crystallizer.get_spell_crystal(spell_id).spellbook_id == book._id
     assert crystallizer.describe_profile()["spell_crystal_count"] == 1
 
-
-def test_catch_up_walk_deduplicates_shared_spellbooks():
-    """
-    Purpose:
-        Verify the walk's shared-book dedupe against real lesser conduits.
-    Contract:
-        A world with a root conduit AND a lesser conduit (sharing one
-        spellbook) activated mid-flight records each bound spell EXACTLY
-        once: the post-activation checkpoint captures one custody payload
-        and exactly one journal entry (a double visit would journal two).
-    Returns:
-        None.
-    Raises:
-        AssertionError: If the shared book is swept more than once.
-    """
-    configuration = _dynamic_configuration()
-    configuration.finalize()
-    book = Spellbook(configuration=configuration)
-    spell_id = book.bind(
-        spell=BasicService,
-        existence=Existence.unique,
-        permissions="create",
-    )
-    root = book.conjure(dynamic=True, name="dedupe-root")
-    root.create_lesser_conduit()
-    crystallizer = _activate_crystallizer()
-    assert crystallizer.get_spell_crystal(spell_id).id == spell_id
-    checkpoint_id = crystallizer.create_checkpoint()
-    described = crystallizer.describe_checkpoint(checkpoint_id)
-    assert described["captured_counts"].get("spell_crystal", 0) == 1
-    assert described["journal_entry_count"] == 1

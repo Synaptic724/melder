@@ -103,6 +103,9 @@ from melder.aether.spellbook.spell_compiler.system.validation.topology_dependenc
 from melder.aether.spellbook.spell_compiler.system.validation.visibility_gap_strategy import (
     VisibilityGapStrategy,
 )
+from melder.aether.spellbook.spell_compiler.system.validation.empty_collection_strategy import (
+    EmptyCollectionStrategy,
+)
 
 
 
@@ -306,6 +309,7 @@ class CompilerPhase6:
             RootCoverageStrategy(),
             IndexDependencySanityStrategy(),
             VisibilityGapStrategy(),
+            EmptyCollectionStrategy(),
             TopologyDependencyMismatchStrategy(),
             IdentityMixingStrategy(),
             ContractedVersionDriftStrategy(),
