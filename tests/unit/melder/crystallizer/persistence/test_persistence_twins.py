@@ -130,6 +130,7 @@ def test_conduit_twin_describe_carries_parent_edge_and_config():
         conduit_name="root",
         policy_name="policy",
         dynamic=True,
+        link_targets=["conduit-2", "conduit-3"],
         configuration_payload={"conduit_state": "normal"},
     )
     described = twin.describe()
@@ -138,6 +139,10 @@ def test_conduit_twin_describe_carries_parent_edge_and_config():
     assert described["spellbook_id"] == "book-1"
     assert described["dynamic"] is True
     assert described["configuration_payload"] == {"conduit_state": "normal"}
+    # Outbound link topology is part of the snapshot and detached.
+    assert described["link_targets"] == ["conduit-2", "conduit-3"]
+    described["link_targets"].append("conduit-x")
+    assert twin.describe()["link_targets"] == ["conduit-2", "conduit-3"]
 
 
 def test_singleton_twins_describe_activation_truth():

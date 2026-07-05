@@ -361,26 +361,54 @@ class Conduit(Cleanable):
         # its twin directly from the object at initialization (config-less
         # units emit from the object; configuration-bearing units emit from
         # their configurations at activation). Lesser conduits never emit.
-        if (
+        self._emit_conduit_twin()
+
+    def _emit_conduit_twin(self) -> None:
+        """
+        Internal
+
+        Emit this ROOT conduit's twin snapshot into the record.
+
+        Purpose:
+            Config-less units emit directly from the object: at
+            initialization (conjure lock-in) and again whenever the
+            conduit's LINK topology changes (link / sever re-emission;
+            replace-on-emit keeps exactly one snapshot per conduit).
+            Lesser conduits never emit.
+
+        Contract:
+            - NO-OP unless normal-state + dynamic environment + the
+              crystallizer is activated (the recorded lane).
+            - `link_targets` records OUTBOUND (initiated) links only:
+              the ward's `_initiated_index` keys. Inbound edges are
+              derivable from the initiators' twins, and restore
+              re-establishes each link from its initiating side.
+
+        Returns:
+            None.
+        """
+        if not (
                 self._conduit_state is ConduitState.normal
                 and self.__dynamic_environment__
                 and self._crystallizer.activated
         ):
-            self._crystallizer.emit(
-                ConduitCrystal(
-                    conduit_id=self._id,
-                    spellbook_id=self._spellbook._id,
-                    conduit_name=self._name,
-                    policy_name=policy.name,
-                    dynamic=self.__dynamic_environment__,
-                    configuration_payload={
-                        "conduit_state": self._conduit_state.name,
-                        "root_conduit_id": self._root_conduit_id,
-                        "spellspace_pool_present": self._spellspace_pool is not None,
-                        "conduit_pool_present": self._conduit_pool is not None,
-                    },
-                )
+            return
+        self._crystallizer.emit(
+            ConduitCrystal(
+                conduit_id=self._id,
+                spellbook_id=self._spellbook._id,
+                conduit_name=self._name,
+                policy_name=self._conduit_ward._policy.name,
+                dynamic=self.__dynamic_environment__,
+                link_targets=list(self._conduit_ward._initiated_index.keys()),
+                configuration_payload={
+                    "conduit_state": self._conduit_state.name,
+                    "root_conduit_id": self._root_conduit_id,
+                    "spellspace_pool_present": self._spellspace_pool is not None,
+                    "conduit_pool_present": self._conduit_pool is not None,
+                },
             )
+        )
 
     def _ensure_transaction_identity_registered(self) -> None:
         """
@@ -3898,6 +3926,9 @@ class Conduit(Cleanable):
                 and target_conduit._conduit_state is ConduitState.normal
             ):
                 target_conduit._nexus._publish_conduit_record(target_conduit)
+            # Record: the initiator's outbound topology changed; re-emit
+            # its twin so link_targets carries the new edge.
+            self._emit_conduit_twin()
 
         return linked
 

@@ -269,3 +269,99 @@ def test_add_to_spell_index_moves_membership_between_snapshots():
     checkpoint_id = crystallizer.create_checkpoint()
     described = crystallizer.describe_checkpoint(checkpoint_id)
     assert described["captured_counts"]["spell_index_removed"] >= 1
+
+
+def _second_conduit(name="membership-peer"):
+    """
+    Build a second recorded book + root conduit on the SAME frame.
+
+    Returns:
+        tuple: (book, conduit).
+    """
+    configuration = SpellbookConfiguration()
+    apply_dynamic_defaults_for_spellbook_configuration(configuration)
+    configuration.set_property("phase_scheduler_workers_per_spellbook", 1)
+    configuration.finalize()
+    book = Spellbook(configuration=configuration)
+    conduit = book.conjure(dynamic=True, name=name)
+    return book, conduit
+
+
+def _conduit_snapshots(crystallizer):
+    """
+    Return the record's CURRENT conduit snapshots keyed by conduit id.
+
+    Returns:
+        dict: conduit_id -> conduit twin payload.
+    """
+    profile = crystallizer._persistence_system.active_profile
+    payloads, _entries, _rng = profile.capture_segment_since(0)
+    return payloads.get("conduit", {})
+
+
+def test_link_records_the_initiators_outbound_topology():
+    """
+    Purpose:
+        Verify link() re-emits the initiator's conduit twin.
+    Contract:
+        After owner.link(peer), the initiator's snapshot lists the peer's
+        conduit id in link_targets; the receiver's snapshot stays empty
+        (outbound-only recording - restore re-links from the initiator).
+    Returns:
+        None.
+    Raises:
+        AssertionError: If the link edge goes unrecorded or leaks
+        direction.
+    """
+    crystallizer, _book, conduit_a, _spell_id = _recorded_world()
+    _book_b, conduit_b = _second_conduit()
+    assert conduit_a.link(conduit_b) is True
+    snapshots = _conduit_snapshots(crystallizer)
+    assert snapshots[conduit_a._id]["link_targets"] == [conduit_b._id]
+    assert snapshots[conduit_b._id]["link_targets"] == []
+
+
+def test_sever_clears_the_recorded_topology_from_either_side():
+    """
+    Purpose:
+        Verify the sever choke point re-records both ends.
+    Contract:
+        Severing from the RECEIVER side still empties the initiator's
+        recorded link_targets (the _remove_contract seam resolves
+        direction internally).
+    Returns:
+        None.
+    Raises:
+        AssertionError: If a severed edge survives in the record.
+    """
+    crystallizer, _book, conduit_a, _spell_id = _recorded_world()
+    _book_b, conduit_b = _second_conduit()
+    conduit_a.link(conduit_b)
+    assert conduit_b.sever_link(conduit_a) is True
+    snapshots = _conduit_snapshots(crystallizer)
+    assert snapshots[conduit_a._id]["link_targets"] == []
+    assert snapshots[conduit_b._id]["link_targets"] == []
+
+
+def test_peer_teardown_clears_the_initiators_recorded_topology():
+    """
+    Purpose:
+        Verify the bulk-sever lane keeps initiator topology truthful.
+    Contract:
+        When the link TARGET dies (permanent_cleanup -> bulk sever ->
+        _remove_contract), the surviving initiator's snapshot drops the
+        dead edge, and the dead conduit's own twin is swept by its book
+        subtree eviction.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If a dead peer lingers in recorded topology.
+    """
+    crystallizer, _book, conduit_a, _spell_id = _recorded_world()
+    _book_b, conduit_b = _second_conduit(name="doomed-peer")
+    conduit_a.link(conduit_b)
+    dead_id = conduit_b._id
+    conduit_b.permanent_cleanup()
+    snapshots = _conduit_snapshots(crystallizer)
+    assert snapshots[conduit_a._id]["link_targets"] == []
+    assert dead_id not in snapshots

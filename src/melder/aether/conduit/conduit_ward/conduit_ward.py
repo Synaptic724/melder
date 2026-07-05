@@ -986,6 +986,13 @@ class ConduitWard(Cleanable):
                     target_conduit._conduit_ward._invalidate_contract_consumers()
                 except Exception:
                     pass
+            # Record: whichever side initiated, its outbound topology just
+            # shrank - re-emit BOTH ends' twins (each helper gates itself;
+            # a dying conduit's re-emit is swept moments later by its own
+            # book-subtree eviction). This single choke point covers
+            # sever_link AND the bulk teardown sever.
+            self._conduit._emit_conduit_twin()
+            target_conduit._emit_conduit_twin()
             return True
         return False
 
