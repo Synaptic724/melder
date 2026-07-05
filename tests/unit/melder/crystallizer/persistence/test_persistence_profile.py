@@ -499,7 +499,8 @@ def test_capture_segment_captures_current_twin_for_replaced_identity():
     profile.record(NexusCrystal(configured=True, enabled=False))
     profile.record(NexusCrystal(configured=True, enabled=True))
     payloads, _entries, _rng = profile.capture_segment_since(0)
-    assert payloads["nexus"]["nexus"]["enabled"] is True
+    # Singleton twins journal under the fixed key "root".
+    assert payloads["nexus"]["root"]["enabled"] is True
 
 
 def test_mark_checkpoint_rejects_backward_movement():

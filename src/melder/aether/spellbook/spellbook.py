@@ -4332,8 +4332,27 @@ and logging.
         Returns:
             str:
                 The unique SHA256 `spell_id` associated with the bound spell.
+
+        Raises:
+            ValueError:
+                If ``spell`` is ``None``.
+            TypeError:
+                If ``spell`` is a primitive value (int, float, bool, complex,
+                str, bytes, bytearray); a spell must be a class, function,
+                lambda, or an existing object instance.
         """
         self.check_cleaned()
+        if spell is None:
+            raise ValueError(
+                "[SPELLBOOK] bind requires a spell target, but got None. "
+                "Bind a class, function, lambda, or an existing object instance."
+            )
+        if isinstance(spell, (bool, int, float, complex, str, bytes, bytearray)):
+            raise TypeError(
+                "[SPELLBOOK] bind received a primitive "
+                f"{type(spell).__name__!r}, which is not a valid spell target. "
+                "Bind a class, function, lambda, or an existing object instance."
+            )
         if self._bind_family_disabled_for_current_posture():
             self._logger.error(
                 "bind denied by current frame posture",

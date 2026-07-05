@@ -675,6 +675,10 @@ class PersistenceProfile(Cleanable):
             self._emission_sequence = 0
             self._emission_log = []
             self._last_checkpoint_sequence = 0
+            # State switches are recorded content too: a cleared profile
+            # must not report a previous world's singleton lifecycle.
+            self._nexus_state = None
+            self._mutation_research_state = None
 
 
     @property
