@@ -7,6 +7,9 @@ import pytest
 from melder.aether.spellbook.spell_compiler.validation.strategies.annotation_shape_guard_strategy import (
     AnnotationShapeGuardStrategy,
 )
+from melder.aether.spellbook.spell_compiler.spell_requirements_finder.parameter_di_shape import (
+    ParameterDIShape,
+)
 
 
 class _Cancel:
@@ -37,9 +40,15 @@ class _Spell:
 
 
 class _Parameter:
-    def __init__(self, name: str, annotation) -> None:
+    def __init__(
+        self,
+        name: str,
+        annotation,
+        di_shape: ParameterDIShape = ParameterDIShape.SINGLE_BY_ANNOTATION,
+    ) -> None:
         self.name = name
         self.annotation = annotation
+        self.di_shape = di_shape
 
 
 class _Requirements:
