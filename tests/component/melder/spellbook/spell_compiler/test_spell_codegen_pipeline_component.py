@@ -107,6 +107,12 @@ def test_component_processor_and_planner_build_real_codegen_outputs() -> None:
         _lookup_contracted_spells={},
         _contracted_spells={},
         _aetheric_frame_configuration=SimpleNamespace(system_state=SystemState.dynamic),
+        # The injection processor reads collection-socket truth from the
+        # durable phase-3 topology registry; None is the documented
+        # missing-topology path (no collection params inferred).
+        _spell_system_states=SimpleNamespace(
+            get_local_topology_by_id=lambda spell_id: None,
+        ),
     )
 
     def _root_target() -> str:

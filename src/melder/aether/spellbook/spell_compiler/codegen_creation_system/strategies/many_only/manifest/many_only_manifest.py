@@ -176,6 +176,7 @@ def _build_many_only_no_overrides_row(step: Any) -> Dict[str, Any]:
             )
             for param_name, dependency_keys in step.dependency_resolution_order
         ),
+        "collection_param_names": tuple(sorted(step.collection_param_names)),
         "uses_positional_override": bool(step.uses_positional_override),
         "contract_positional_override": (
             ManyOnlyCodegenCreationHelpers.freeze_value(

@@ -279,8 +279,18 @@ def test_injection_processor_strategy_ports_injection_plan_intent() -> None:
         },
         contract_dependencies_complete=True,
     )
+    # The injection processor reads collection-socket truth from the durable
+    # phase-3 topology registry on the owning spellbook; a None topology is the
+    # documented missing-topology path (no collection params inferred).
+    injection_spell = SimpleNamespace(
+        _spellbook=SimpleNamespace(
+            _spell_system_states=SimpleNamespace(
+                get_local_topology_by_id=lambda spell_id: None,
+            ),
+        ),
+    )
 
-    strategy.process(object(), object(), model)
+    strategy.process(injection_spell, object(), model)
 
     assert model.root_dependency_count == 2
     assert model.root_positional_override_relevant is True

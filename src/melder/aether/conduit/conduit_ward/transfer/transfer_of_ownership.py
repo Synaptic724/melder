@@ -419,6 +419,28 @@ class TransferOfOwnership(Cleanable):
                         ),
                         active=member_is_active,
                     )
+                # Borrower repoint bypasses the public contract verbs
+                # (_repoint_borrowers drives ward._link /
+                # ward._add_spell_to_contract directly), so re-record every
+                # contract the TARGET now participates in - one snapshot
+                # covers both wards' views; severed old-side contracts were
+                # already evicted by the _remove_contract seam.
+                target_ward = self.target_conduit._conduit_ward
+                for record_contract in list(target_ward._contracts.values()):
+                    target_ward._emit_contract_record(record_contract)
+                # SOURCE-side survivors: peers that still borrow OTHER
+                # spells from the source keep their contract with the
+                # transferred spell's detail removed (again via ward
+                # internals) - re-record every surviving source contract so
+                # no stale detail lingers; fully-emptied contracts were
+                # already evicted at the _remove_contract seam.
+                source_ward = self.source_conduit._conduit_ward
+                for record_contract in list(source_ward._contracts.values()):
+                    source_ward._emit_contract_record(record_contract)
+                # Both ends' outbound topology may have changed (repointed
+                # links on the target; severed links on the source).
+                self.target_conduit._emit_conduit_twin()
+                self.source_conduit._emit_conduit_twin()
         finally:
             self._rollback_actions.clear()
 

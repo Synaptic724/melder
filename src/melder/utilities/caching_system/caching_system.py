@@ -57,6 +57,11 @@ class CachingSystem(Cleanable):
     """
 
     __melder_internal__: ClassVar[object] = _mrg.sentinel
+    # Version 5: the many_only-local row producers (override step rows,
+    # no-overrides manifest rows, no-overrides signature rows) also emit
+    # `collection_param_names`; version-4 bundles written before that fix
+    # hold many_only manifests whose rows lack the field and fail the
+    # stricter hydrate, so they must invalidate wholesale.
     # Version 4: step rows carry `collection_param_names` (phase-3 socket
     # truth propagated through phases 9-11) so emitters wrap one-member
     # collection sockets in a list; older payloads lack the field and their
@@ -65,7 +70,7 @@ class CachingSystem(Cleanable):
     # (GC-untracked resident cache; see class contract). Version 2 carried
     # decoded manifest-package dicts; version 1 carried legacy executor
     # shapes. Older bundles are treated as cold cache and regenerated.
-    CURRENT_VERSION: ClassVar[int] = 4
+    CURRENT_VERSION: ClassVar[int] = 5
     BUNDLE_SUFFIX: ClassVar[str] = ".melc"
 
     __slots__ = Cleanable.__slots__ + [
