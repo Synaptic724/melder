@@ -1381,6 +1381,11 @@ and logging.
             self._spell_id_pool.pop(spell_id, None)
             self._inactive_spells[spell_id] = spell
             spell._active = False
+        # Mirror the park into the record (and, knob-gated, the module
+        # world): the crystal moves to the inactive location exactly as
+        # this spell just moved to _inactive_spells.
+        if self._crystallizer.activated:
+            self._crystallizer.emit_spell_activity(spell_id, active=False)
 
     def _reactivate_owned_spell(self, spell: Spell) -> None:
         """
@@ -1435,6 +1440,10 @@ and logging.
             self._spells_by_id[spell_id] = spell
             self._spell_id_pool[spell_id] = spell
             spell._active = True
+        # Mirror the promotion into the record (re-publishing the spell's
+        # synthetic root module if it was unpublished while parked).
+        if self._crystallizer.activated:
+            self._crystallizer.emit_spell_activity(spell_id, active=True)
 
     def _deactivate_contracted_spell(self, conduit_id: str, spell: Spell) -> None:
         """
@@ -4230,6 +4239,22 @@ and logging.
                 # Fold the parked spell from its own fresh index onto the caller's
                 # target index (membership-only move; destroys the emptied source).
                 self._apply_add_to_index(spell=new_spell, target_index=spell_index)
+                # Staged binds are binds: they count toward the conjure
+                # configuration-discipline evidence, and they map custody
+                # the same way an active bind does (custody always; the
+                # parked member seeds nothing until a notch promotes it).
+                # Posture is already enforced above - this path is
+                # structurally dynamic-only.
+                if self._configuration is not None and not self._configuration._frozen:
+                    self._binds_before_configuration_count += 1
+                if self._crystallizer.activated:
+                    self._crystallizer.emit_spell_crystal(
+                        self._crystallizer.create_spell_crystal(
+                            new_spell,
+                            spellbook_id=self._id,
+                        ),
+                        active=False,
+                    )
                 return new_spell.spell_id
             except Exception as e:
                 self._logger.error(f"Error while binding spell: {e}", "bind", exc_info=True)
@@ -4432,6 +4457,25 @@ and logging.
                         new_spell,
                     )
                 self._stage_spell_for_structural_phases(new_spell)
+                # Bind maps the crystal, uniformly: every bind (pre- or
+                # post-conjure, active or staged) mints + emits custody
+                # when the crystallizer records and the FRAME posture is
+                # dynamic. The frame configuration is the posture truth
+                # (owner canon: frames are configured before building;
+                # Nexus-managed frames are born dynamic), and the conjure
+                # guard already enforces configuration-before-bind in the
+                # recorded lane - so bind-time knows everything it needs.
+                if (
+                        self._crystallizer.activated
+                        and self._is_dynamic_posture()
+                ):
+                    self._crystallizer.emit_spell_crystal(
+                        self._crystallizer.create_spell_crystal(
+                            new_spell,
+                            spellbook_id=self._id,
+                        ),
+                        active=True,
+                    )
                 if self._conjured and self._conduit is not None:
                     Spellbook._aether._register_single_spell_index(
                         self._get_required_conduit_surface()._id,

@@ -54,6 +54,7 @@ class CrystallizerConfiguration(Cleanable):
         self._properties: Dict[str, object] = {}
         self.available_properties: Dict[str, Union[Type, Tuple[Type, ...]]] = {
             "user_source_root_paths": tuple,
+            "remove_inactive_synthmodules": bool,
         }
 
     def cleanup(self) -> None:
@@ -189,6 +190,28 @@ class CrystallizerConfiguration(Cleanable):
         """
         self.check_cleaned()
         return self._properties[key]
+
+    @property
+    def remove_inactive_synthmodules(self) -> bool:
+        """
+        Return whether inactive spells' synthetic modules are unpublished.
+
+        Contract:
+            - Default FALSE (insert-only): parking a spell flips its
+              crystal to the inactive record location but leaves the
+              synthetic module resident in `sys.modules` (validated, low
+              hazard). TRUE additionally unpublishes the spell's synthetic
+              root module on park (depth-2 removal: reversible, registry
+              and custody retained; captured references survive as ghosts
+              per the hot-swap law; dependents' deferred imports break on
+              their next call until reverse-edge-aware unseed lands).
+
+        Returns:
+            bool: The configured knob, default False.
+        """
+        self.check_cleaned()
+        value = self._properties.get("remove_inactive_synthmodules", False)
+        return bool(value)
 
     def has_property(self, key: str) -> bool:
         """

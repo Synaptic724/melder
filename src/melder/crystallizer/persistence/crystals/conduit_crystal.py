@@ -22,6 +22,11 @@ class ConduitCrystal(Cleanable):
           reconstructable at runtime, and never emit (call-site gate).
         - `link_targets` records peer conduit ids as edges, not objects; the
           restore engine resolves them in its final link pass.
+        - Runtime identities (ULIDs) are RECORD-LOCAL: they express edges
+          and log correlation within the recorded session only. Restore
+          translates them to fresh identities (never reuses them), and
+          seal fingerprinting normalizes them out so identical worlds
+          compare identical across boots.
 
     Threading:
         Immutable-after-init; the owning PersistenceProfile serializes
@@ -39,6 +44,7 @@ class ConduitCrystal(Cleanable):
         "_policy_name",
         "_dynamic",
         "_link_targets",
+        "_configuration_payload",
     ]
 
     def __init__(
@@ -49,6 +55,7 @@ class ConduitCrystal(Cleanable):
             policy_name: str,
             dynamic: bool,
             link_targets: Optional[List[str]] = None,
+            configuration_payload: Optional[Dict[str, object]] = None,
     ) -> None:
         """
         Initialize one root-conduit twin from emitted conjure-time truth.
@@ -68,6 +75,10 @@ class ConduitCrystal(Cleanable):
             link_targets:
                 Peer conduit ids this conduit had initiated links to at
                 emission time; replayed in the final link pass.
+            configuration_payload:
+                Value-typed conduit configuration surface retained at
+                emission (state, lineage root, pool posture). None is
+                treated as an empty payload.
 
         Returns:
             None.
@@ -92,6 +103,9 @@ class ConduitCrystal(Cleanable):
         self._policy_name: str = policy_name
         self._dynamic: bool = dynamic
         self._link_targets: List[str] = list(link_targets) if link_targets else []
+        self._configuration_payload: Dict[str, object] = (
+            dict(configuration_payload) if configuration_payload else {}
+        )
 
     def cleanup(self) -> None:
         """
@@ -109,6 +123,7 @@ class ConduitCrystal(Cleanable):
         del self._policy_name
         del self._dynamic
         del self._link_targets
+        del self._configuration_payload
 
     @property
     def conduit_id(self) -> str:
@@ -182,6 +197,18 @@ class ConduitCrystal(Cleanable):
         self.check_cleaned()
         return list(self._link_targets)
 
+    @property
+    def configuration_payload(self) -> Dict[str, object]:
+        """
+        Return a detached copy of the retained conduit configuration.
+
+        Returns:
+            Dict[str, object]:
+                Detached mapping of configuration name -> value.
+        """
+        self.check_cleaned()
+        return dict(self._configuration_payload)
+
     def describe(self) -> Dict[str, object]:
         """
         Return a detached, serialization-ready snapshot of this twin.
@@ -199,4 +226,5 @@ class ConduitCrystal(Cleanable):
             "policy_name": self._policy_name,
             "dynamic": self._dynamic,
             "link_targets": list(self._link_targets),
+            "configuration_payload": dict(self._configuration_payload),
         }

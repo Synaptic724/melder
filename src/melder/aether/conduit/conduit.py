@@ -33,6 +33,7 @@ from melder.aether.conduit.conduit_ward.conduit_ward import ConduitWard
 from melder.aether.conduit.creations.conduit_creations import ConduitCreations
 from melder.aether.conduit.creations.cluster_creations import ClusterCreations
 from melder.aether.conduit.conduit_pool import ConduitPool
+from melder.crystallizer.persistence.crystals.conduit_crystal import ConduitCrystal
 from melder.aether.conduit.spell_space.spell_space import SpellSpace
 from melder.aether.conduit.spell_space.spell_space_pool import SpellSpacePool
 from melder.aether.conduit.spell_space.spell_space_thread_state import (
@@ -356,6 +357,30 @@ class Conduit(Cleanable):
             aetheric_frame=self._aetheric_frame,
         )
         self._refresh_devops_identity_state()
+        # Conduits carry no configuration object, so the ROOT conduit emits
+        # its twin directly from the object at initialization (config-less
+        # units emit from the object; configuration-bearing units emit from
+        # their configurations at activation). Lesser conduits never emit.
+        if (
+                self._conduit_state is ConduitState.normal
+                and self.__dynamic_environment__
+                and self._crystallizer.activated
+        ):
+            self._crystallizer.emit(
+                ConduitCrystal(
+                    conduit_id=self._id,
+                    spellbook_id=self._spellbook._id,
+                    conduit_name=self._name,
+                    policy_name=policy.name,
+                    dynamic=self.__dynamic_environment__,
+                    configuration_payload={
+                        "conduit_state": self._conduit_state.name,
+                        "root_conduit_id": self._root_conduit_id,
+                        "spellspace_pool_present": self._spellspace_pool is not None,
+                        "conduit_pool_present": self._conduit_pool is not None,
+                    },
+                )
+            )
 
     def _ensure_transaction_identity_registered(self) -> None:
         """

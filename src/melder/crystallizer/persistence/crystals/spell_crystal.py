@@ -34,6 +34,11 @@ class SpellCrystal(Cleanable):
         - retains flat module/path/classification targets plus direct
           dependency maps
         - does not mirror the mutable live `Spell` object
+        - Runtime identities (ULIDs) are RECORD-LOCAL: they express edges
+          and log correlation within the recorded session only. Restore
+          translates them to fresh identities (never reuses them), and
+          seal fingerprinting normalizes them out so identical worlds
+          compare identical across boots.
 
     Why this exists:
         The crystal is the durable loader-facing truth for one spell's module

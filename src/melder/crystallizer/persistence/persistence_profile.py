@@ -66,6 +66,7 @@ class PersistenceProfile(Cleanable):
         "_spellbook_crystals_by_id",
         "_conduit_crystals_by_id",
         "_spell_crystals_by_spell_id",
+        "_inactive_spell_crystals_by_spell_id",
     ]
 
     def __init__(self, profile_name: str) -> None:
@@ -101,6 +102,7 @@ class PersistenceProfile(Cleanable):
         self._spellbook_crystals_by_id: Dict[str, SpellbookCrystal] = {}
         self._conduit_crystals_by_id: Dict[str, ConduitCrystal] = {}
         self._spell_crystals_by_spell_id: Dict[str, SpellCrystal] = {}
+        self._inactive_spell_crystals_by_spell_id: Dict[str, SpellCrystal] = {}
 
     def cleanup(self) -> None:
         """
@@ -127,6 +129,7 @@ class PersistenceProfile(Cleanable):
         del self._spellbook_crystals_by_id
         del self._conduit_crystals_by_id
         del self._spell_crystals_by_spell_id
+        del self._inactive_spell_crystals_by_spell_id
         del self._lock
 
     @property
@@ -203,9 +206,7 @@ class PersistenceProfile(Cleanable):
                     self._conduit_crystals_by_id, twin.conduit_id, twin, "conduit"
                 )
             elif isinstance(twin, SpellCrystal):
-                self._replace_mapped(
-                    self._spell_crystals_by_spell_id, twin.id, twin, "spell_crystal"
-                )
+                self._record_spell_crystal_locked(twin, active=True)
             else:
                 raise TypeError(
                     "PersistenceProfile.record received an unsupported twin "
@@ -214,6 +215,147 @@ class PersistenceProfile(Cleanable):
                         type(twin).__name__
                     )
                 )
+
+    def record_spell_crystal(self, crystal: SpellCrystal, active: bool) -> None:
+        """
+        Record one custody crystal into the active or inactive location.
+
+        Purpose:
+            Mirror the spellbook's own active/parked split: active binds
+            record into the active location, staged (bind_inactive) binds
+            record into the inactive location.
+
+        Contract:
+            - Replace-on-emit across BOTH locations: any prior crystal for
+              the spell_id is cleaned wherever it lived.
+
+        Args:
+            crystal:
+                The custody crystal to record.
+            active:
+                Which location receives it.
+
+        Returns:
+            None.
+
+        Raises:
+            RuntimeError:
+                If the profile has been cleaned.
+        """
+        self.check_cleaned()
+        with self._lock:
+            self._record_spell_crystal_locked(crystal, active=active)
+
+    def record_spell_activity(self, spell_id: str, active: bool) -> None:
+        """
+        Move one spell's crystal between the active/inactive locations.
+
+        Purpose:
+            The record-side mirror of the runtime park/promote flip
+            (`_deactivate_owned_spell` / `_reactivate_owned_spell`).
+
+        Contract:
+            - Tolerates missing custody (a world recorded mid-flight before
+              the catch-up walk exists): the activity is journaled either
+              way so checkpoints capture the transition truthfully.
+
+        Args:
+            spell_id:
+                The spell whose activity flipped.
+            active:
+                True = promoted to active; False = parked inactive.
+
+        Returns:
+            None.
+
+        Raises:
+            RuntimeError:
+                If the profile has been cleaned.
+        """
+        self.check_cleaned()
+        with self._lock:
+            if active:
+                crystal = self._inactive_spell_crystals_by_spell_id.pop(spell_id, None)
+                if crystal is not None:
+                    self._spell_crystals_by_spell_id[spell_id] = crystal
+            else:
+                crystal = self._spell_crystals_by_spell_id.pop(spell_id, None)
+                if crystal is not None:
+                    self._inactive_spell_crystals_by_spell_id[spell_id] = crystal
+            self._journal("spell_activity", spell_id)
+
+    def _record_spell_crystal_locked(self, crystal: SpellCrystal, active: bool) -> None:
+        """
+        Record one crystal under the held lock (shared by record paths).
+
+        Contract:
+            - Caller holds `self._lock`.
+            - Displaces + cleans any prior crystal from both locations.
+
+        Args:
+            crystal:
+                The custody crystal to record.
+            active:
+                Which location receives it.
+
+        Returns:
+            None.
+        """
+        for location in (
+                self._spell_crystals_by_spell_id,
+                self._inactive_spell_crystals_by_spell_id,
+        ):
+            previous = location.pop(crystal.id, None)
+            if previous is not None and not previous.cleaned:
+                previous.cleanup()
+        target = (
+            self._spell_crystals_by_spell_id
+            if active
+            else self._inactive_spell_crystals_by_spell_id
+        )
+        target[crystal.id] = crystal
+        self._journal("spell_crystal", crystal.id)
+
+    def get_spell_crystal(self, spell_id: str) -> SpellCrystal:
+        """
+        Return the custody crystal recorded for one spell.
+
+        Purpose:
+            The runtime-facing custody lookup: loaders and MR fetch a
+            spell's crystal fresh on each use (the profile is the single
+            owner; replace-on-emit cleans displaced crystals, so holders
+            must not retain long-lived references).
+
+        Args:
+            spell_id:
+                The spell's SHA256 identity.
+
+        Returns:
+            SpellCrystal:
+                The currently recorded crystal for the spell.
+
+        Raises:
+            RuntimeError:
+                If the profile has been cleaned.
+            KeyError:
+                If no crystal is recorded under `spell_id`; the message
+                reports the recorded count so callers can self-correct.
+        """
+        self.check_cleaned()
+        with self._lock:
+            crystal = self._spell_crystals_by_spell_id.get(spell_id)
+            if crystal is None:
+                crystal = self._inactive_spell_crystals_by_spell_id.get(spell_id)
+            if crystal is None:
+                raise KeyError(
+                    "No spell crystal recorded for spell_id {0!r} in "
+                    "profile {1!r} ({2} crystals recorded).".format(
+                        spell_id,
+                        self._profile_name,
+                        len(self._spell_crystals_by_spell_id),
+                    )
+                )
+            return crystal
 
     def describe(self) -> Dict[str, object]:
         """
@@ -241,6 +383,8 @@ class PersistenceProfile(Cleanable):
                 "spellbook_count": len(self._spellbook_crystals_by_id),
                 "conduit_count": len(self._conduit_crystals_by_id),
                 "spell_crystal_count": len(self._spell_crystals_by_spell_id),
+                "inactive_spell_crystal_count":
+                    len(self._inactive_spell_crystals_by_spell_id),
             }
 
     def compose_frame_subtree(self, frame_name: str) -> Dict[str, object]:
@@ -380,6 +524,18 @@ class PersistenceProfile(Cleanable):
             ]
             payloads: Dict[str, Dict[str, Dict[str, object]]] = {}
             for _sequence, kind, key in segment_entries:
+                if kind == "spell_activity":
+                    # Activity transitions have no twin object; capture the
+                    # CURRENT truth: which location holds custody now.
+                    payloads.setdefault(kind, {})[key] = {
+                        "spell_id": key,
+                        "active": key in self._spell_crystals_by_spell_id,
+                        "custody_present": (
+                            key in self._spell_crystals_by_spell_id
+                            or key in self._inactive_spell_crystals_by_spell_id
+                        ),
+                    }
+                    continue
                 twin = self._resolve_twin(kind, key)
                 if twin is None or twin.cleaned:
                     continue
@@ -448,7 +604,10 @@ class PersistenceProfile(Cleanable):
         if kind == "conduit":
             return self._conduit_crystals_by_id.get(key)
         if kind == "spell_crystal":
-            return self._spell_crystals_by_spell_id.get(key)
+            crystal = self._spell_crystals_by_spell_id.get(key)
+            if crystal is None:
+                crystal = self._inactive_spell_crystals_by_spell_id.get(key)
+            return crystal
         return None
 
     def _replace_mapped(
@@ -528,6 +687,7 @@ class PersistenceProfile(Cleanable):
                 self._spellbook_crystals_by_id,
                 self._conduit_crystals_by_id,
                 self._spell_crystals_by_spell_id,
+                self._inactive_spell_crystals_by_spell_id,
         ):
             for twin in level_map.values():
                 if not twin.cleaned:

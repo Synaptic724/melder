@@ -24,6 +24,11 @@ class SpellbookCrystal(Cleanable):
           what needs code participation instead of silently dropping hooks.
         - `bind_order` records spell_ids in emission order; restore replays
           binds in this order BEFORE conjuring the conduit (L3 rule).
+        - Runtime identities (ULIDs) are RECORD-LOCAL: they express edges
+          and log correlation within the recorded session only. Restore
+          translates them to fresh identities (never reuses them), and
+          seal fingerprinting normalizes them out so identical worlds
+          compare identical across boots.
 
     Threading:
         Immutable-after-init; the owning PersistenceProfile serializes

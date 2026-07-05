@@ -10,6 +10,7 @@ from melder.crystallizer.configuration.crystallizer_configuration import (
     CrystallizerConfiguration,
 )
 from melder.crystallizer.persistence.crystals.spell_crystal import SpellCrystal
+from melder.crystallizer.synthetic_module import SyntheticModule
 from melder.crystallizer.persistence.persistence_system import PersistenceSystem
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
@@ -305,6 +306,121 @@ class Crystallizer(Cleanable):
             self._activated = False
 
 
+    def get_spell_crystal(self, spell_id: str) -> SpellCrystal:
+        """
+        Return the recorded custody crystal for one spell (active profile).
+
+        Purpose:
+            The runtime custody lookup: loaders (seed/unseed) and
+            MutationResearch fetch a spell's crystal through this facade -
+            the persistence model stays in the depths. Fetch fresh per
+            use; the record cleans displaced crystals on re-emission, so
+            long-lived references go stale by design.
+
+        Args:
+            spell_id:
+                The spell's SHA256 identity.
+
+        Returns:
+            SpellCrystal:
+                The currently recorded crystal for the spell.
+
+        Raises:
+            RuntimeError:
+                If crystallizer is cleaned or not yet active.
+            KeyError:
+                If the active profile records no crystal for `spell_id`.
+        """
+        self.check_cleaned()
+        self._require_activated()
+        return self._persistence_system.get_spell_crystal(spell_id)
+
+    def emit_spell_crystal(self, crystal: SpellCrystal, active: bool = True) -> None:
+        """
+        Record one custody crystal into the active profile's locations.
+
+        Purpose:
+            The bind-seam emission verb: active binds record active;
+            staged (bind_inactive) binds record inactive - mirroring the
+            spellbook's own active/parked split.
+
+        Contract:
+            - NO-OP while the crystallizer is not activated.
+
+        Args:
+            crystal:
+                The custody crystal to record.
+            active:
+                Which record location receives it (default active).
+
+        Returns:
+            None.
+
+        Raises:
+            RuntimeError:
+                If the crystallizer has been cleaned.
+        """
+        self.check_cleaned()
+        if not self._activated:
+            return
+        self._persistence_system.record_spell_crystal(crystal, active=active)
+
+    def emit_spell_activity(self, spell_id: str, active: bool) -> None:
+        """
+        Mirror one runtime park/promote flip into the record and, when
+        configured, into the live module world.
+
+        Purpose:
+            Called by the spellbook's park/promote seams. The record flip
+            is unconditional (crystal moves between active/inactive
+            locations). The module-world reaction is knob-gated:
+            - promote (active=True): the spell's synthetic root module is
+              re-published if it is registered (self-healing; a no-op when
+              it never left `sys.modules`).
+            - park (active=False): when `remove_inactive_synthmodules` is
+              True, the synthetic root module is UNPUBLISHED (depth-2:
+              reversible; registry + custody retained; captured references
+              survive as ghosts per the hot-swap law).
+            Physical-authority spells never touch the module world here.
+
+        Contract:
+            - NO-OP while the crystallizer is not activated.
+            - Tolerates missing custody (record-only worlds before the
+              catch-up walk exists).
+
+        Args:
+            spell_id:
+                The spell whose activity flipped.
+            active:
+                True = promoted to active; False = parked inactive.
+
+        Returns:
+            None.
+
+        Raises:
+            RuntimeError:
+                If the crystallizer has been cleaned.
+        """
+        self.check_cleaned()
+        if not self._activated:
+            return
+        self._persistence_system.record_spell_activity(spell_id, active=active)
+        try:
+            crystal = self._persistence_system.get_spell_crystal(spell_id)
+        except KeyError:
+            return
+        if crystal.root_module_kind != "synthetic_module":
+            return
+        module_name = crystal.root_module_name
+        with SyntheticModule._registry_lock:
+            module = SyntheticModule._registered_modules_by_name.get(module_name)
+        if module is None or module.cleaned:
+            return
+        if active:
+            module.publish_to_sys_modules()
+        elif self._configuration.remove_inactive_synthmodules:
+            module.unpublish_from_sys_modules()
+
     def emit(self, twin: Cleanable) -> None:
         """
         Record one emitted twin into the active persistence profile.
@@ -339,13 +455,20 @@ class Crystallizer(Cleanable):
             return
         self._persistence_system.record(twin)
 
-    def create_spell_crystal(self, spell: Spell) -> SpellCrystal:
+    def create_spell_crystal(
+            self,
+            spell: Spell,
+            spellbook_id: Optional[str] = None,
+    ) -> SpellCrystal:
         """
         Build one `SpellCrystal` using the installed crystallizer policy.
 
         Args:
             spell:
                 Live spell whose module world should be crystallized.
+            spellbook_id:
+                Optional owning-spellbook identity recorded on the crystal
+                as its parent edge inside a persistence profile.
 
         Returns:
             SpellCrystal: Loader-facing manifest for the given spell.
@@ -359,6 +482,7 @@ class Crystallizer(Cleanable):
         return SpellCrystal(
             spell,
             user_source_root_paths=self._configuration.user_source_root_paths,
+            spellbook_id=spellbook_id,
         )
 
 

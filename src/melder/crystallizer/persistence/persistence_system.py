@@ -5,6 +5,7 @@ from typing import Dict, List, Optional
 
 from melder.crystallizer.persistence.crystallizer_cache import CrystallizerCache
 from melder.crystallizer.persistence.persistence_crystal import PersistenceCrystal
+from melder.crystallizer.persistence.crystals.spell_crystal import SpellCrystal
 from melder.crystallizer.persistence.persistence_profile import PersistenceProfile
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
@@ -205,6 +206,67 @@ class PersistenceSystem(Cleanable):
         """
         self.check_cleaned()
         self.active_profile.record(twin)
+
+    def record_spell_crystal(self, crystal: SpellCrystal, active: bool) -> None:
+        """
+        Record one custody crystal into the ACTIVE profile's locations.
+
+        Args:
+            crystal:
+                The custody crystal to record.
+            active:
+                Active or inactive location.
+
+        Returns:
+            None.
+
+        Raises:
+            RuntimeError:
+                If the subsystem has been cleaned.
+        """
+        self.check_cleaned()
+        self.active_profile.record_spell_crystal(crystal, active=active)
+
+    def record_spell_activity(self, spell_id: str, active: bool) -> None:
+        """
+        Mirror one runtime park/promote flip into the ACTIVE profile.
+
+        Args:
+            spell_id:
+                The spell whose activity flipped.
+            active:
+                True = promoted; False = parked.
+
+        Returns:
+            None.
+
+        Raises:
+            RuntimeError:
+                If the subsystem has been cleaned.
+        """
+        self.check_cleaned()
+        self.active_profile.record_spell_activity(spell_id, active=active)
+
+    def get_spell_crystal(self, spell_id: str) -> SpellCrystal:
+        """
+        Return the ACTIVE profile's custody crystal for one spell.
+
+        Args:
+            spell_id:
+                The spell's SHA256 identity.
+
+        Returns:
+            SpellCrystal:
+                The currently recorded crystal.
+
+        Raises:
+            RuntimeError:
+                If the subsystem has been cleaned.
+            KeyError:
+                If the active profile records no crystal for `spell_id`.
+        """
+        self.check_cleaned()
+        return self.active_profile.get_spell_crystal(spell_id)
 
     def get_profile(self, profile_name: str) -> PersistenceProfile:
         """
