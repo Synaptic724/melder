@@ -456,10 +456,13 @@ def test_severing_the_last_detail_evicts_the_contract_record():
         permissions="create",
     )
     assert crystallizer.describe_profile()["contract_count"] == 1
-    conduit_b.remove_spell_from_contract(
-        spell_id=spell_id,
-        conduit=conduit_a,
-    )
+    # Contract REMOVAL requires an active link transaction naming both
+    # conduits (the add path self-admits; removal does not by design).
+    with conduit_b.transaction("link", conduits=[conduit_b, conduit_a]):
+        conduit_b.remove_spell_from_contract(
+            spell_id=spell_id,
+            conduit=conduit_a,
+        )
     assert crystallizer.describe_profile()["contract_count"] == 0
     profile = crystallizer._persistence_system.active_profile
     payloads, _entries, _rng = profile.capture_segment_since(0)

@@ -57,6 +57,11 @@ class CachingSystem(Cleanable):
     """
 
     __melder_internal__: ClassVar[object] = _mrg.sentinel
+    # Version 6: zero-provider required collection sockets now inject []
+    # (owner policy 2026-07-06): the analyzer publishes empty-collection
+    # dependency entries, solo declines collection-bearing models, and all
+    # emitters render/assign [] for zero-key collection params. Version-5
+    # bundles predate those occurrence rows and emitted bodies.
     # Version 5: the many_only-local row producers (override step rows,
     # no-overrides manifest rows, no-overrides signature rows) also emit
     # `collection_param_names`; version-4 bundles written before that fix

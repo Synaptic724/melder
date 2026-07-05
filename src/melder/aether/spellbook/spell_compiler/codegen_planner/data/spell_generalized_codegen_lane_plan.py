@@ -2700,6 +2700,12 @@ class SpellManyOnlyCodegenPlanBuilder(SpellGeneralizedCodegenPlanBuilder):
         for param_name, source in inject_spec.param_sources.items():
             if source.dependency_keys:
                 dependency_keys_by_param[param_name] = list(source.dependency_keys)
+            elif source.kind == "dependency" and source.is_collection:
+                # Zero-provider required collection socket: keep the param
+                # with an empty key list so downstream emitters inject []
+                # (owner policy: an empty collection spawns with an empty
+                # list instead of failing).
+                dependency_keys_by_param[param_name] = []
         return dependency_keys, dependency_keys_by_param, override_keys, contract_keys
 
     @staticmethod
@@ -2719,4 +2725,10 @@ class SpellManyOnlyCodegenPlanBuilder(SpellGeneralizedCodegenPlanBuilder):
         for param_name, source in inject_spec.param_sources.items():
             if source.dependency_keys:
                 dependency_keys_by_param[param_name] = list(source.dependency_keys)
+            elif source.kind == "dependency" and source.is_collection:
+                # Zero-provider required collection socket: keep the param
+                # with an empty key list so downstream emitters inject []
+                # (owner policy: an empty collection spawns with an empty
+                # list instead of failing).
+                dependency_keys_by_param[param_name] = []
         return dependency_keys, dependency_keys_by_param

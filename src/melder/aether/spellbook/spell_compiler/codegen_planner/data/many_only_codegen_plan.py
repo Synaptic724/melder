@@ -1204,6 +1204,12 @@ class ManyOnlyCodegenPlanBuilder:
         dependency_resolution_order: List[Tuple[str, List[InstanceKey]]] = []
         for param_name, source in inject_spec.param_sources.items():
             if not source.dependency_keys:
+                if source.kind == "dependency" and source.is_collection:
+                    # Zero-provider required collection socket: keep the param
+                    # with an empty key list so downstream emitters inject []
+                    # (owner policy: an empty collection spawns with an empty
+                    # list instead of failing).
+                    dependency_resolution_order.append((param_name, []))
                 continue
             dependency_resolution_order.append(
                 (

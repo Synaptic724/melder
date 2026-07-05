@@ -733,7 +733,8 @@ def row_inlinable_common_shape(
           inlinable too - emission produces an order-preserving list literal,
           matching the generic `_build_kwargs_no_overrides` semantics exactly
           (collection socket -> list even with exactly 1 member; >=2 deps ->
-          list; non-collection 1 dep -> scalar; 0 deps -> parameter omitted).
+          list; non-collection 1 dep -> scalar; 0 deps -> `[]` for collection
+          sockets, otherwise the parameter is omitted).
         - Requires the family row flags `spell_is_callable` and
           `spell_is_existing_creation`. Family manifest rows always carry
           them (the manifest builder stamps both), so access is direct; a
@@ -749,9 +750,18 @@ def row_inlinable_common_shape(
         # generic path so the per-call MeldExecutionError timing is identical.
         return None
     payload_names, _positional = extras
+    collection_param_names = frozenset(row["collection_param_names"])
     params = []
     for param_name, dependency_keys in row["dependency_resolution_order"]:
         if len(dependency_keys) == 0:
+            if (
+                    param_name in collection_param_names
+                    and param_name not in payload_names
+            ):
+                # Zero-provider required collection socket: keep the entry so
+                # emission renders an empty list literal (owner policy) - the
+                # list-literal arm joins zero references into `[]`.
+                params.append((param_name, ()))
             continue
         if param_name in payload_names:
             # Contract payload wins over the dependency value by name (the

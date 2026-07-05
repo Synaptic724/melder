@@ -28,13 +28,17 @@ from melder.aether.spellbook.spell_compiler.system.validation.strategy_base impo
 
 class EmptyCollectionStrategy(SpellSystemValidationStrategy):
     """
-    Guard that a required collection socket wired at least one provider.
+    Observability note for required collection sockets with zero providers.
 
     Purpose:
-        A required list[Frame] dependency that wired zero providers cannot be
-        satisfied. If it is allowed through, codegen drops the parameter and
-        meld crashes with a missing-argument TypeError. This strategy fails
-        fast at Phase 6 instead.
+        A required list[Frame] dependency that wired zero providers is
+        SATISFIABLE by policy: the analyzer publishes the socket with an
+        empty dependency list and phases 9-11 inject [] at construction
+        (owner decision 2026-07-06 - an empty collection spawns with an
+        empty list). This strategy therefore emits a WARNING diagnostic for
+        visibility only; it never fails conjure. Dynamic-mode books may also
+        legitimately conjure empty and receive members via post-conjure
+        contract additions.
 
     Data source (why topology, at Phase 6):
         By Phase 6 the per-spell requirements artifact has already been nulled
@@ -47,10 +51,12 @@ class EmptyCollectionStrategy(SpellSystemValidationStrategy):
 
     Contract:
         - Reads local topologies from SpellSystemStates for every scoped spell.
-        - Emits one collection_socket_no_providers ERROR per required
+        - Emits one collection_socket_no_providers WARNING per required
           (non-optional) collection socket whose target_spell_ids is empty.
+        - WARNING severity never trips the conjure resolution gate; the
+          consumer spawns with an empty list injected for that socket.
         - Optional collection sockets are skipped: an optional list[Frame] may
-          legitimately wire nothing.
+          legitimately wire nothing (the constructor default applies).
         - Reads only; never mutates Phase 5/6 inputs.
         - Honors cancellation between spells.
     """
@@ -73,14 +79,17 @@ class EmptyCollectionStrategy(SpellSystemValidationStrategy):
         Flag required collection sockets that wired zero providers.
 
         Purpose:
-            Convert an unsatisfiable required list[Frame] dependency into a
-            clean fail-fast conjure error decided at Phase 6.
+            Surface a zero-provider required list[Frame] dependency as a
+            WARNING diagnostic for observability. The socket is satisfiable:
+            codegen injects an empty list for it, so conjure proceeds.
 
         Contract:
             - Iterates every node in the system index and reads its local
               topology from SpellSystemStates.
-            - Emits a collection_socket_no_providers ERROR for each required
+            - Emits a collection_socket_no_providers WARNING for each required
               collection socket whose target_spell_ids tuple is empty.
+            - Never blocks conjure: WARNING severity does not trip the
+              resolution gate.
             - Skips optional collection sockets and spells without a topology.
             - Reads only; never mutates Phase 5/6 inputs.
             - Honors cancel_event between spells.
@@ -133,10 +142,11 @@ class EmptyCollectionStrategy(SpellSystemValidationStrategy):
                             f"Spell '{spell_id}' parameter '{socket.param_name}' "
                             "declares a required collection dependency (list[...]) "
                             "but no providers wired into it in the resolved graph. "
-                            "Bind at least one implementation under its frame, or "
-                            "make the parameter optional."
+                            "An empty list will be injected at construction; bind "
+                            "implementations under its frame (or add them via a "
+                            "post-conjure contract) to populate it."
                         ),
-                        severity=SystemDiagnosticSeverity.ERROR,
+                        severity=SystemDiagnosticSeverity.WARNING,
                         spell_id=spell_id,
                         root_id=spell_id,
                         details={

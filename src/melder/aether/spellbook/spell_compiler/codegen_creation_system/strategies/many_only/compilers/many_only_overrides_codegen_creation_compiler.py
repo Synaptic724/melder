@@ -1095,7 +1095,7 @@ def _append_overrides_kwargs_inline_source(
     for param_index, dependency_entry in enumerate(dependency_resolution_order):
         param_name, dependency_keys = dependency_entry
         dependency_count = len(dependency_keys)
-        if dependency_count == 0:
+        if dependency_count == 0 and param_name not in collection_param_names:
             continue
         param_name_literal = repr(param_name)
         if static_override_target_count == 1:
@@ -1125,6 +1125,14 @@ def _append_overrides_kwargs_inline_source(
                 f"{indent}if {param_name_literal} not in override_values_{step_index}:"
             )
             body_indent = f"{indent}    "
+
+        if dependency_count == 0:
+            # Zero-provider required collection socket: inject an empty list
+            # (owner policy) unless an override supplies the parameter.
+            lines.append(
+                f"{body_indent}kwargs_{step_index}[{param_name_literal}] = []"
+            )
+            continue
 
         if dependency_count == 1:
             dependency_key = dependency_keys[0]
@@ -1408,6 +1416,12 @@ def _append_no_overrides_kwargs_inline_source(
         param_name, dependency_keys = dependency_entry
         dependency_count = len(dependency_keys)
         if dependency_count == 0:
+            if param_name in collection_param_names:
+                # Zero-provider required collection socket: inject an empty
+                # list (owner policy) instead of omitting the parameter.
+                lines.append(
+                    f"{indent}kwargs_{step_index}[{param_name!r}] = []"
+                )
             continue
         param_name_literal = repr(param_name)
 
@@ -2558,6 +2572,10 @@ def _build_kwargs_with_overrides(
             continue
         dependency_count = len(dependency_keys)
         if dependency_count == 0:
+            if param_name in collection_param_names:
+                # Zero-provider required collection socket: inject an empty
+                # list (owner policy) instead of omitting the parameter.
+                kwargs[param_name] = []
             continue
         if dependency_count == 1:
             dependency_key = dependency_keys[0]

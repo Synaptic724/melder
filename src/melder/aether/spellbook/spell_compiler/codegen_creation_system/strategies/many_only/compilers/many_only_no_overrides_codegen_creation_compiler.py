@@ -1100,6 +1100,10 @@ def _build_kwargs_no_overrides(
     for param_name, dependency_keys in dependency_resolution_order:
         dependency_count = len(dependency_keys)
         if dependency_count == 0:
+            if param_name in collection_param_names:
+                # Zero-provider required collection socket: inject an empty
+                # list (owner policy) instead of omitting the parameter.
+                kwargs[param_name] = []
             continue
         if dependency_count == 1:
             dependency_key = dependency_keys[0]

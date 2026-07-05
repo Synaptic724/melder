@@ -824,6 +824,14 @@ class SpellOccurrenceGraphAnalyzerStrategy(SpellAnalyzerStrategy):
 
         for socket in topology.sockets:
             if not socket.target_spell_ids:
+                if socket.is_collection and not socket.is_optional:
+                    # Zero-provider REQUIRED collection socket: publish the
+                    # param with an empty dependency list so phases 9-11 see
+                    # the socket and inject [] at construction (owner policy:
+                    # an empty collection spawns with an empty list rather
+                    # than failing conjure). Optional empty collections stay
+                    # unpublished so the constructor default applies.
+                    dependencies.setdefault(socket.param_name, [])
                 continue
             for target_id in socket.target_spell_ids:
                 child_path_id = path_registry.extend_path(path_id, socket.param_name)

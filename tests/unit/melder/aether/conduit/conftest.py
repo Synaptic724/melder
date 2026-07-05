@@ -2,6 +2,7 @@ import threading
 from unittest.mock import MagicMock
 
 import pytest
+from types import SimpleNamespace
 
 from melder.aether.aether import Aether
 from melder.nexus.nexus import Nexus
@@ -130,6 +131,11 @@ def spellbook_stub() -> MagicMock:
     """
     spellbook = MagicMock()
     spellbook._id = "spellbook-1"
+    # Real conduits pull a non-owning crystallizer from their spellbook at
+    # init; a bare MagicMock attribute is TRUTHY and would let the record
+    # seams (conduit twin / contract snapshots) fire inside unit tests.
+    # "Present but not recording" keeps every seam gated off.
+    spellbook._crystallizer = SimpleNamespace(cleaned=False, activated=False)
     spellbook._lock = threading.RLock()
     spellbook._active_change_request = None
     transaction_mediator = MagicMock()

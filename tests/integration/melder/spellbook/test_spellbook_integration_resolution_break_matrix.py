@@ -578,14 +578,19 @@ def test_b6_two_existing_instances_same_frame_default_collide() -> None:
 # =========================================================================== #
 # C1 - collection DI
 # =========================================================================== #
-def test_c1_zero_implementations_fails_conjure() -> None:
-    """C1: a required collection with no providers fails fast at conjure via the phase-6 EmptyCollectionStrategy (no deferred meld-time crash)."""
+def test_c1_zero_implementations_injects_empty_list() -> None:
+    """C1: a required collection with no providers conjures fine and injects [] (owner policy 2026-07-06: empty collections spawn with an empty list; phase-6 emits a WARNING only)."""
     spellbook = _make_spellbook()
+    conduit = None
     try:
         spellbook.bind(spell=NeedsPlugins, existence=Existence.unique, permissions="create")
-        with pytest.raises(RESOLUTION_ERRORS):
-            spellbook.conjure(name="root")
+        conduit = spellbook.conjure(name="root")
+        instance = conduit.meld(spell=NeedsPlugins)
+        assert isinstance(instance.plugins, list)
+        assert instance.plugins == []
     finally:
+        if conduit is not None:
+            conduit.cleanup()
         spellbook.cleanup()
 
 
