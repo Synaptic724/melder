@@ -3555,6 +3555,10 @@ and logging.
             with self._lock:
                 self._inactive_spells.pop(spell_id, None)
                 self._spell_ids.discard(spell_id)
+                # True removal (parked lane): custody leaves the record
+                # entirely so restore never rebuilds a shed spell.
+                if self._crystallizer.activated:
+                    self._crystallizer.emit_spell_removed(spell_id)
                 index.remove_member(spell_id)
                 index_emptied = index.is_empty()
             if index_emptied:

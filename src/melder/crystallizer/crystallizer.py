@@ -1,4 +1,5 @@
 import threading
+import time
 from typing import TYPE_CHECKING, Dict, List, Optional
 
 if TYPE_CHECKING:
@@ -45,6 +46,8 @@ class Crystallizer(Cleanable):
         "_configured",
         "_activated",
         "_persistence_system",
+        "_checkpoint_interval_seconds",
+        "_last_automatic_checkpoint_monotonic",
     ]
 
     def __new__(
@@ -104,6 +107,10 @@ class Crystallizer(Cleanable):
             self._configured: bool = False
             self._activated: bool = False
             self._persistence_system: PersistenceSystem = PersistenceSystem()
+            # Automatic-checkpoint cadence; installed from the frozen
+            # configuration at activate() (0.0 = not yet activated).
+            self._checkpoint_interval_seconds: float = 0.0
+            self._last_automatic_checkpoint_monotonic: float = 0.0
 
             if configuration is not None:
                 self.configure(configuration)
@@ -136,6 +143,8 @@ class Crystallizer(Cleanable):
             self._activated = False
 
             del self._persistence_system
+            del self._checkpoint_interval_seconds
+            del self._last_automatic_checkpoint_monotonic
             del self._configuration
             del self._aether
             del self._id
@@ -293,6 +302,15 @@ class Crystallizer(Cleanable):
         self._configuration.validate()
         with self._lock:
             self._activated = True
+            # Install the checkpoint policy from the frozen configuration:
+            # cadence for the emit-driven ticker, retention for the ledger.
+            self._checkpoint_interval_seconds = (
+                float(self._configuration.checkpoint_interval_minutes) * 60.0
+            )
+            self._persistence_system.set_checkpoint_retention(
+                self._configuration.max_persistence_crystals
+            )
+            self._last_automatic_checkpoint_monotonic = time.monotonic()
         self._catch_up_live_world()
 
     def _catch_up_live_world(self) -> None:
@@ -338,6 +356,44 @@ class Crystallizer(Cleanable):
                         ),
                         active=False,
                     )
+
+    def _maybe_create_automatic_checkpoint(self) -> None:
+        """
+        Internal
+
+        Seal an automatic checkpoint when the configured cadence elapsed.
+
+        Purpose:
+            The emit-driven ticker: every sink verb calls this after
+            recording. When at least `checkpoint_interval_minutes` of wall
+            time passed since the previous automatic checkpoint, the active
+            profile's delta window is sealed into a new PersistenceCrystal.
+            Activity-driven by design - a quiet world journals nothing and
+            therefore mints nothing; no background thread exists.
+
+        Contract:
+            - NO-OP while not activated.
+            - The cadence stamp advances BEFORE sealing so a failing seal
+              cannot hot-loop on every subsequent emit.
+            - Ledger retention (FIFO dropout) is enforced by the
+              persistence system at every seal.
+
+        Returns:
+            None.
+        """
+        if not self._activated:
+            return
+        now = time.monotonic()
+        with self._lock:
+            if (
+                    now - self._last_automatic_checkpoint_monotonic
+                    < self._checkpoint_interval_seconds
+            ):
+                return
+            self._last_automatic_checkpoint_monotonic = now
+        self._persistence_system.create_checkpoint(
+            description="automatic cadence checkpoint",
+        )
 
     def deactivate(self) -> None:
         """
@@ -409,6 +465,7 @@ class Crystallizer(Cleanable):
         if not self._activated:
             return
         self._persistence_system.record_spell_crystal(crystal, active=active)
+        self._maybe_create_automatic_checkpoint()
 
     def emit_spell_removed(self, spell_id: str) -> None:
         """
@@ -438,6 +495,7 @@ class Crystallizer(Cleanable):
         if not self._activated:
             return
         self._persistence_system.remove_spell_crystal(spell_id)
+        self._maybe_create_automatic_checkpoint()
 
     def emit_spell_activity(self, spell_id: str, active: bool) -> None:
         """
@@ -479,6 +537,7 @@ class Crystallizer(Cleanable):
         if not self._activated:
             return
         self._persistence_system.record_spell_activity(spell_id, active=active)
+        self._maybe_create_automatic_checkpoint()
         try:
             crystal = self._persistence_system.get_spell_crystal(spell_id)
         except KeyError:
@@ -528,6 +587,7 @@ class Crystallizer(Cleanable):
         if not self._activated:
             return
         self._persistence_system.record(twin)
+        self._maybe_create_automatic_checkpoint()
 
     def create_spell_crystal(
             self,

@@ -200,13 +200,6 @@ class NeedsContract:
         self.cfg = cfg
 
 
-class EmptyTargetMap:
-    """SpellMap with neither spell nor spellframe -> SPELLMAP_MISSING_TARGET."""
-
-    def __init__(self, dep=SpellMap(spell=None, spellframe=None)) -> None:
-        self.dep = dep
-
-
 class UnnormalizedBindingMap:
     """SpellMap binding_name not normalized -> warning."""
 
@@ -634,16 +627,14 @@ def test_phase4_unsupported_dict_collection_shape_errors() -> None:
         spellbook.cleanup()
 
 
-def test_phase4_spellmap_missing_target_errors() -> None:
-    """A SpellMap default with neither spell nor spellframe is SPELLMAP_MISSING_TARGET."""
-    spellbook = _make_spellbook()
-    try:
-        spell_id = spellbook.bind(spell=EmptyTargetMap, existence=Existence.unique, permissions="create")
-        spell = _get_spell(spellbook, spell_id)
-        _phases_1_4(spell)
-        assert "SPELLMAP_MISSING_TARGET" in _codes4(spell)
-    finally:
-        spellbook.cleanup()
+def test_spellmap_construction_rejects_empty_target() -> None:
+    """
+    A SpellMap with neither spell nor spellframe is rejected at construction, so
+    the Phase-4 SPELLMAP_MISSING_TARGET code is a defensive guard that normal
+    (constructor-built) SpellMaps can never reach.
+    """
+    with pytest.raises(ValueError):
+        SpellMap(spell=None, spellframe=None)
 
 
 def test_phase4_spellmap_unnormalized_binding_name_warns() -> None:

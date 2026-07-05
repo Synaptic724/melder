@@ -55,6 +55,8 @@ class CrystallizerConfiguration(Cleanable):
         self.available_properties: Dict[str, Union[Type, Tuple[Type, ...]]] = {
             "user_source_root_paths": tuple,
             "remove_inactive_synthmodules": bool,
+            "checkpoint_interval_minutes": int,
+            "max_persistence_crystals": int,
         }
 
     def cleanup(self) -> None:
@@ -213,6 +215,81 @@ class CrystallizerConfiguration(Cleanable):
         value = self._properties.get("remove_inactive_synthmodules", False)
         return bool(value)
 
+    @property
+    def checkpoint_interval_minutes(self) -> int:
+        """
+        Return the automatic-checkpoint cadence in minutes.
+
+        Contract:
+            - Default 60 (one hour): while the crystallizer is activated,
+              the emit path seals a new PersistenceCrystal once at least
+              this many minutes have passed since the previous automatic
+              checkpoint. Cadence is activity-driven (checked at emit
+              time), so a quiet world mints nothing - there is no
+              background timer thread.
+            - Must be a positive int when set explicitly.
+
+        Returns:
+            int: The configured cadence, default 60.
+
+        Raises:
+            ValueError:
+                If the stored value is not a positive int.
+        """
+        self.check_cleaned()
+        value = self._properties.get("checkpoint_interval_minutes", 60)
+        self._require_positive_int("checkpoint_interval_minutes", value)
+        return int(value)
+
+    @property
+    def max_persistence_crystals(self) -> int:
+        """
+        Return the checkpoint-ledger retention cap.
+
+        Contract:
+            - Default 100: when a new PersistenceCrystal would grow the
+              ledger past this cap, the OLDEST crystal is dropped and
+              cleaned first (FIFO dropout; ULID order = age order), so the
+              ledger is a rolling window of the most recent checkpoints.
+            - Must be a positive int when set explicitly.
+
+        Returns:
+            int: The configured cap, default 100.
+
+        Raises:
+            ValueError:
+                If the stored value is not a positive int.
+        """
+        self.check_cleaned()
+        value = self._properties.get("max_persistence_crystals", 100)
+        self._require_positive_int("max_persistence_crystals", value)
+        return int(value)
+
+    @staticmethod
+    def _require_positive_int(key: str, value: object) -> None:
+        """
+        Reject non-int (including bool) or non-positive knob values.
+
+        Args:
+            key:
+                Property name being validated.
+            value:
+                Candidate stored value.
+
+        Returns:
+            None.
+
+        Raises:
+            ValueError:
+                If the value is a bool, not an int, or not positive.
+        """
+        if isinstance(value, bool) or not isinstance(value, int) or value <= 0:
+            raise ValueError(
+                "CrystallizerConfiguration property '{0}' must be a "
+                "positive int (got {1!r}). Example: "
+                "configuration.set_property('{0}', 60).".format(key, value)
+            )
+
     def has_property(self, key: str) -> bool:
         """
         Return whether one property is currently defined.
@@ -231,6 +308,13 @@ class CrystallizerConfiguration(Cleanable):
         """
         Validate that the crystallizer policy bag is complete and coherent.
 
+        Contract:
+            - `user_source_root_paths` is the only hard-required property.
+            - `remove_inactive_synthmodules` (False),
+              `checkpoint_interval_minutes` (60), and
+              `max_persistence_crystals` (100) carry defaults and are only
+              semantically checked when set explicitly.
+
         Returns:
             bool: True when the configuration is valid.
 
@@ -239,18 +323,21 @@ class CrystallizerConfiguration(Cleanable):
                 If a required property is missing or semantically invalid.
         """
         self.check_cleaned()
-        for key in self.available_properties.keys():
-            if key not in self._properties:
-                raise ValueError(
-                    "Missing required crystallizer configuration property: '{0}'.".format(
-                        key
-                    )
-                )
-
+        if "user_source_root_paths" not in self._properties:
+            raise ValueError(
+                "Missing required crystallizer configuration property: "
+                "'user_source_root_paths'. Set it explicitly or start from "
+                "CrystallizerConfiguration().with_defaults()."
+            )
         if len(self.user_source_root_paths) == 0:
             raise ValueError(
                 "user_source_root_paths must contain at least one configured root."
             )
+        # Defaulted knobs are optional; when set explicitly they must be
+        # semantically valid (the getters re-check on every read).
+        for knob in ("checkpoint_interval_minutes", "max_persistence_crystals"):
+            if knob in self._properties:
+                self._require_positive_int(knob, self._properties[knob])
         return True
 
     def freeze(self) -> None:
@@ -292,12 +379,75 @@ class CrystallizerConfiguration(Cleanable):
 
     def with_defaults(self) -> "CrystallizerConfiguration":
         """
-        Load the first default crystallizer policy set.
+        Load the complete default crystallizer policy set (easy mode).
+
+        Purpose:
+            One-call default posture, mirroring the AethericFrame
+            configuration builder style: chain it, then `activate()`.
+            `CrystallizerConfiguration().with_defaults().activate()` is a
+            fully valid configuration.
+
+        Contract:
+            - user_source_root_paths: the resolved current working directory.
+            - remove_inactive_synthmodules: False (insert-only).
+            - checkpoint_interval_minutes: 60 (one automatic checkpoint per
+              hour of recorded activity).
+            - max_persistence_crystals: 100 (rolling FIFO ledger window).
 
         Returns:
             CrystallizerConfiguration: This configuration instance.
         """
-        return self.with_user_source_root_paths((Path.cwd().resolve(),))
+        self.with_user_source_root_paths((Path.cwd().resolve(),))
+        self.set_property("remove_inactive_synthmodules", False)
+        self.set_property("checkpoint_interval_minutes", 60)
+        self.set_property("max_persistence_crystals", 100)
+        return self
+
+    def with_checkpoint_interval_minutes(
+            self,
+            minutes: int,
+    ) -> "CrystallizerConfiguration":
+        """
+        Set the automatic-checkpoint cadence in minutes.
+
+        Args:
+            minutes:
+                Positive minute count between automatic checkpoints
+                (1 = every minute, 60 = hourly).
+
+        Returns:
+            CrystallizerConfiguration: This configuration instance.
+
+        Raises:
+            ValueError:
+                If `minutes` is a bool, not an int, or not positive.
+        """
+        self._require_positive_int("checkpoint_interval_minutes", minutes)
+        self.set_property("checkpoint_interval_minutes", minutes)
+        return self
+
+    def with_max_persistence_crystals(
+            self,
+            max_crystals: int,
+    ) -> "CrystallizerConfiguration":
+        """
+        Set the checkpoint-ledger retention cap.
+
+        Args:
+            max_crystals:
+                Positive maximum ledger size; the oldest crystal drops out
+                when a new checkpoint would exceed it.
+
+        Returns:
+            CrystallizerConfiguration: This configuration instance.
+
+        Raises:
+            ValueError:
+                If `max_crystals` is a bool, not an int, or not positive.
+        """
+        self._require_positive_int("max_persistence_crystals", max_crystals)
+        self.set_property("max_persistence_crystals", max_crystals)
+        return self
 
     def with_user_source_root_paths(
             self,

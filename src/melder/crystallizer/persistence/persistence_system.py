@@ -56,6 +56,7 @@ class PersistenceSystem(Cleanable):
         "_active_profile_name",
         "_checkpoint_crystals_by_id",
         "_crystallizer_cache",
+        "_max_persistence_crystals",
     ]
 
     def __init__(self) -> None:
@@ -81,6 +82,9 @@ class PersistenceSystem(Cleanable):
         self._active_profile_name: str = PersistenceSystem.DEFAULT_PROFILE_NAME
         self._checkpoint_crystals_by_id: Dict[str, PersistenceCrystal] = {}
         self._crystallizer_cache: CrystallizerCache = CrystallizerCache()
+        # Retention cap for the checkpoint ledger; Crystallizer.activate()
+        # overrides this from CrystallizerConfiguration.max_persistence_crystals.
+        self._max_persistence_crystals: int = 100
 
     def cleanup(self) -> None:
         """
@@ -109,6 +113,7 @@ class PersistenceSystem(Cleanable):
         del self._active_profile_name
         del self._checkpoint_crystals_by_id
         del self._crystallizer_cache
+        del self._max_persistence_crystals
         del self._lock
 
     @property
@@ -437,6 +442,41 @@ class PersistenceSystem(Cleanable):
         with self._lock:
             return sorted(self._profiles_by_name.keys())
 
+    def set_checkpoint_retention(self, max_crystals: int) -> None:
+        """
+        Install the checkpoint-ledger retention cap.
+
+        Purpose:
+            Configuration hand-off point: Crystallizer.activate() pushes
+            the frozen `max_persistence_crystals` knob down here so the
+            ledger enforces it at every seal.
+
+        Args:
+            max_crystals:
+                Positive maximum ledger size.
+
+        Returns:
+            None.
+
+        Raises:
+            RuntimeError:
+                If the subsystem has been cleaned.
+            ValueError:
+                If `max_crystals` is a bool, not an int, or not positive.
+        """
+        self.check_cleaned()
+        if (
+                isinstance(max_crystals, bool)
+                or not isinstance(max_crystals, int)
+                or max_crystals <= 0
+        ):
+            raise ValueError(
+                "set_checkpoint_retention requires a positive int "
+                "(got {0!r}).".format(max_crystals)
+            )
+        with self._lock:
+            self._max_persistence_crystals = max_crystals
+
     def create_checkpoint(
             self,
             profile_name: Optional[str] = None,
@@ -496,6 +536,16 @@ class PersistenceSystem(Cleanable):
             )
             self._checkpoint_crystals_by_id[crystal.id] = crystal
             profile.mark_checkpoint(sequence_range[1])
+            # FIFO dropout: ULID keys sort by age, so min() is the oldest
+            # crystal; the ledger stays a rolling most-recent window.
+            while (
+                    len(self._checkpoint_crystals_by_id)
+                    > self._max_persistence_crystals
+            ):
+                oldest_id = min(self._checkpoint_crystals_by_id)
+                oldest = self._checkpoint_crystals_by_id.pop(oldest_id)
+                if not oldest.cleaned:
+                    oldest.cleanup()
             return crystal.id
 
     def describe_checkpoint(self, checkpoint_id: str) -> Dict[str, object]:
