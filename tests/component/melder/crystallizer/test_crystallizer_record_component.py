@@ -6,6 +6,9 @@ driven directly so the record semantics compose end to end.
 """
 import pytest
 
+from melder.aether.aether import Aether
+from melder.aether.aether_utility_system import AetherUtilitySystem
+from melder.nexus.nexus import Nexus
 from melder.crystallizer.configuration.crystallizer_configuration import (
     CrystallizerConfiguration,
 )
@@ -28,6 +31,11 @@ class _StubSpellCrystal:
     def __init__(self, spell_id, spellbook_id=None):
         self.id = spell_id
         self.spellbook_id = spellbook_id
+        # Real custody carries root_module_kind ("synthetic_module" /
+        # "site_package" / "user_source"); emit_spell_activity reads it to
+        # gate the module-world reaction. "user_source" = the non-synthetic
+        # skip lane, matching a file-backed test class.
+        self.root_module_kind = "user_source"
         self.cleaned = False
 
     def cleanup(self):
@@ -40,13 +48,25 @@ class _StubSpellCrystal:
 @pytest.fixture(autouse=True)
 def reset_crystallizer_singleton():
     """
-    Reset the Crystallizer singleton around each test.
+    Reset the world singletons and boot a hosting Aether around each test.
+
+    Contract:
+        - First-time Crystallizer initialization REQUIRES the hosting
+          Aether (crystallizer.py:101); Aether() constructs the hosted
+          crystallizer, so the later Crystallizer() call returns it.
 
     Returns:
         None.
     """
+    Aether._reset_singleton_for_tests()
+    AetherUtilitySystem._reset_singleton_for_tests()
+    Nexus._reset_singleton_for_tests()
     Crystallizer._reset_singleton_for_tests()
+    Aether()
     yield
+    Aether._reset_singleton_for_tests()
+    AetherUtilitySystem._reset_singleton_for_tests()
+    Nexus._reset_singleton_for_tests()
     Crystallizer._reset_singleton_for_tests()
 
 

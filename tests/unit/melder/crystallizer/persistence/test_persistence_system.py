@@ -187,20 +187,21 @@ def test_create_checkpoint_windows_are_incremental_per_profile():
     assert system.describe_checkpoint(empty)["checkpoint_number"] == 3
 
 
-def test_checkpoint_ids_sort_chronologically():
+def test_checkpoint_ids_list_in_creation_order():
     """
     Purpose:
-        Verify the ULID time-ordering contract on ledger ids.
+        Verify the ledger's creation-order contract.
     Contract:
-        list_checkpoint_ids returns creation order (lexicographic = age).
+        list_checkpoint_ids returns insertion (= creation) order, which is
+        exact even when crystals mint within one millisecond, where ULID
+        randomness is NOT lexicographically ordered.
     Returns:
         None.
     Raises:
-        AssertionError: If id ordering is not chronological.
+        AssertionError: If id ordering drifts from creation order.
     """
     system = PersistenceSystem()
     minted = [system.create_checkpoint() for _ in range(3)]
-    assert system.list_checkpoint_ids() == sorted(minted)
     assert system.list_checkpoint_ids() == minted
 
 

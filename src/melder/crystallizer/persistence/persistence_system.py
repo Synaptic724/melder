@@ -610,13 +610,15 @@ class PersistenceSystem(Cleanable):
             )
             self._checkpoint_crystals_by_id[crystal.id] = crystal
             profile.mark_checkpoint(sequence_range[1])
-            # FIFO dropout: ULID keys sort by age, so min() is the oldest
-            # crystal; the ledger stays a rolling most-recent window.
+            # FIFO dropout: dict insertion order IS creation order (exact
+            # even when several crystals mint within one millisecond, where
+            # ULID randomness is not lexicographically ordered); the ledger
+            # stays a rolling most-recent window.
             while (
                     len(self._checkpoint_crystals_by_id)
                     > self._max_persistence_crystals
             ):
-                oldest_id = min(self._checkpoint_crystals_by_id)
+                oldest_id = next(iter(self._checkpoint_crystals_by_id))
                 oldest = self._checkpoint_crystals_by_id.pop(oldest_id)
                 if not oldest.cleaned:
                     oldest.cleanup()
@@ -650,12 +652,14 @@ class PersistenceSystem(Cleanable):
         Return all ledger checkpoint ids in creation order.
 
         Contract:
-            - Checkpoint ids are ULIDs, so lexicographic order IS creation
-              order; the returned list is chronologically sorted.
+            - Insertion order IS creation order (exact even for crystals
+              minted within one millisecond, where ULID randomness is not
+              lexicographically ordered); ULIDs remain time-sortable across
+              millisecond boundaries.
 
         Returns:
             List[str]:
-                Sorted (= chronological), detached checkpoint-id list.
+                Creation-ordered, detached checkpoint-id list.
 
         Raises:
             RuntimeError:
@@ -663,7 +667,7 @@ class PersistenceSystem(Cleanable):
         """
         self.check_cleaned()
         with self._lock:
-            return sorted(self._checkpoint_crystals_by_id.keys())
+            return list(self._checkpoint_crystals_by_id.keys())
 
     def load_checkpoint(self, checkpoint_id: str) -> None:
         """

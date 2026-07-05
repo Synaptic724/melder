@@ -4,6 +4,9 @@ verbs, sink type guards) and the RecordedUnitState enum's public contract.
 """
 import pytest
 
+from melder.aether.aether import Aether
+from melder.aether.aether_utility_system import AetherUtilitySystem
+from melder.nexus.nexus import Nexus
 from melder.crystallizer.configuration.crystallizer_configuration import (
     CrystallizerConfiguration,
 )
@@ -14,13 +17,25 @@ from melder.crystallizer.persistence.recorded_unit_state import RecordedUnitStat
 @pytest.fixture(autouse=True)
 def reset_crystallizer_singleton():
     """
-    Reset the Crystallizer singleton around each test.
+    Reset the world singletons and boot a hosting Aether around each test.
+
+    Contract:
+        - First-time Crystallizer initialization REQUIRES the hosting
+          Aether (crystallizer.py:101); Aether() constructs the hosted
+          crystallizer, so the later Crystallizer() call returns it.
 
     Returns:
         None.
     """
+    Aether._reset_singleton_for_tests()
+    AetherUtilitySystem._reset_singleton_for_tests()
+    Nexus._reset_singleton_for_tests()
     Crystallizer._reset_singleton_for_tests()
+    Aether()
     yield
+    Aether._reset_singleton_for_tests()
+    AetherUtilitySystem._reset_singleton_for_tests()
+    Nexus._reset_singleton_for_tests()
     Crystallizer._reset_singleton_for_tests()
 
 

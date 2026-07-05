@@ -125,7 +125,9 @@ def test_spell_crystal_captures_bind_facts():
     crystal = crystallizer.get_spell_crystal(spell_id)
     assert crystal.spellbook_id == book._id
     assert crystal.spell_name == "BasicService"
-    assert crystal.spellframe_name == "BasicService"
+    # Frameless bind: no spellframe was declared, so the captured name is
+    # honestly None (a spellframe=... bind would capture its __name__).
+    assert crystal.spellframe_name is None
     assert crystal.existence_name == "unique"
     assert crystal.permissions_name == "create"
     assert crystal.rebindability == "hydratable"

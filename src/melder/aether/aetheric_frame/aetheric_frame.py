@@ -602,8 +602,13 @@ class AethericFrame(Cleanable):
                         frame_configuration.max_transaction_wait_time_in_seconds
                     )
                     frame_configuration.cleanup()
+                # Identity must ride EVERY freeze lane: the copy-into-existing
+                # branch is the one live conjures actually hit (frames mint a
+                # default posture at init), and the frame-twin emission inside
+                # freeze() is gated on origin_frame_name being present.
                 existing_frame_configuration.freeze(
-                    origin_spellbook_id=origin_spellbook_id
+                    origin_spellbook_id=origin_spellbook_id,
+                    origin_frame_name=self.name,
                 )
                 return existing_frame_configuration
 
