@@ -10,7 +10,7 @@ from melder.crystallizer.configuration.crystallizer_configuration import (
     CrystallizerConfiguration,
 )
 from melder.crystallizer.persistence.crystals.spell_crystal import SpellCrystal
-from melder.crystallizer.persistence.persistence_crystal import PersistenceCrystal
+from melder.crystallizer.persistence.persistence_system import PersistenceSystem
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
 
@@ -43,7 +43,7 @@ class Crystallizer(Cleanable):
         "_configuration",
         "_configured",
         "_activated",
-        "_persistence_crystal",
+        "_persistence_system",
     ]
 
     def __new__(
@@ -102,7 +102,7 @@ class Crystallizer(Cleanable):
             self._configuration: Optional[CrystallizerConfiguration] = None
             self._configured: bool = False
             self._activated: bool = False
-            self._persistence_crystal: PersistenceCrystal = PersistenceCrystal()
+            self._persistence_system: PersistenceSystem = PersistenceSystem()
 
             if configuration is not None:
                 self.configure(configuration)
@@ -127,14 +127,14 @@ class Crystallizer(Cleanable):
             if self._cleaned:
                 return
             self._cleaned = True
-            if self._persistence_crystal is not None and not self._persistence_crystal.cleaned:
-                self._persistence_crystal.cleanup()
+            if self._persistence_system is not None and not self._persistence_system.cleaned:
+                self._persistence_system.cleanup()
             if self._configuration is not None:
                 self._configuration.cleanup()
             self._configured = False
             self._activated = False
 
-            del self._persistence_crystal
+            del self._persistence_system
             del self._configuration
             del self._aether
             del self._id
@@ -342,7 +342,7 @@ class Crystallizer(Cleanable):
         """
         self.check_cleaned()
         self._require_activated()
-        return self._persistence_crystal.active_profile_name
+        return self._persistence_system.active_profile_name
 
     def create_profile(self, profile_name: str, activate: bool = True) -> None:
         """
@@ -371,7 +371,7 @@ class Crystallizer(Cleanable):
         """
         self.check_cleaned()
         self._require_activated()
-        self._persistence_crystal.create_profile(profile_name, activate=activate)
+        self._persistence_system.create_profile(profile_name, activate=activate)
 
     def set_active_profile(self, profile_name: str) -> None:
         """
@@ -392,7 +392,7 @@ class Crystallizer(Cleanable):
         """
         self.check_cleaned()
         self._require_activated()
-        self._persistence_crystal.set_active_profile(profile_name)
+        self._persistence_system.set_active_profile(profile_name)
 
     def describe_profile(self, profile_name: Optional[str] = None) -> Dict[str, object]:
         """
@@ -416,8 +416,8 @@ class Crystallizer(Cleanable):
         self.check_cleaned()
         self._require_activated()
         if profile_name is None:
-            return self._persistence_crystal.active_profile.describe()
-        return self._persistence_crystal.get_profile(profile_name).describe()
+            return self._persistence_system.active_profile.describe()
+        return self._persistence_system.get_profile(profile_name).describe()
 
     def list_profile_names(self) -> List[str]:
         """
@@ -433,7 +433,7 @@ class Crystallizer(Cleanable):
         """
         self.check_cleaned()
         self._require_activated()
-        return self._persistence_crystal.list_profile_names()
+        return self._persistence_system.list_profile_names()
 
     def clear_profile(self, profile_name: str) -> None:
         """
@@ -458,7 +458,7 @@ class Crystallizer(Cleanable):
         """
         self.check_cleaned()
         self._require_activated()
-        self._persistence_crystal.clear_profile(profile_name)
+        self._persistence_system.clear_profile(profile_name)
 
     def delete_profile(self, profile_name: str) -> None:
         """
@@ -481,7 +481,7 @@ class Crystallizer(Cleanable):
         """
         self.check_cleaned()
         self._require_activated()
-        self._persistence_crystal.delete_profile(profile_name)
+        self._persistence_system.delete_profile(profile_name)
 
     def create_checkpoint(
             self,
@@ -516,7 +516,7 @@ class Crystallizer(Cleanable):
         """
         self.check_cleaned()
         self._require_activated()
-        return self._persistence_crystal.create_checkpoint(
+        return self._persistence_system.create_checkpoint(
             profile_name=profile_name,
             description=description,
         )
@@ -541,7 +541,7 @@ class Crystallizer(Cleanable):
         """
         self.check_cleaned()
         self._require_activated()
-        return self._persistence_crystal.describe_checkpoint(checkpoint_id)
+        return self._persistence_system.describe_checkpoint(checkpoint_id)
 
     def list_checkpoint_ids(self) -> List[str]:
         """
@@ -557,7 +557,7 @@ class Crystallizer(Cleanable):
         """
         self.check_cleaned()
         self._require_activated()
-        return self._persistence_crystal.list_checkpoint_ids()
+        return self._persistence_system.list_checkpoint_ids()
 
     def load_checkpoint(self, checkpoint_id: str) -> None:
         """
@@ -580,7 +580,7 @@ class Crystallizer(Cleanable):
         """
         self.check_cleaned()
         self._require_activated()
-        self._persistence_crystal.load_checkpoint(checkpoint_id)
+        self._persistence_system.load_checkpoint(checkpoint_id)
 
     def _require_configured(self) -> None:
         """

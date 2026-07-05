@@ -714,6 +714,24 @@ class AethericFrameConfiguration(Cleanable):
             Path(__file__).resolve().parent.parent.parent / fragment
         ).resolve()
 
+    def resolve_conjure_cache_root_path(self) -> Path:
+        """
+        Resolve the conjure-cache subsystem root under the shared cache root.
+
+        Contract:
+            - The shared cache root (`resolve_system_cache_root_path`) hosts
+              one subdirectory per caching subsystem; compiler artifact
+              bundles (the conjure cache) live under `__conjure_cache__`.
+            - Sibling subsystems own their own fragments (for example the
+              crystallizer's `__crystallizer_cache__`); this method never
+              returns the shared root itself.
+
+        Returns:
+            Path: Absolute conjure-cache root
+            (`<melder package root>/__melder_cache__/__conjure_cache__`).
+        """
+        return self.resolve_system_cache_root_path() / "__conjure_cache__"
+
     @property
     def disable_all_transactions_after_conjure(self) -> bool:
         """

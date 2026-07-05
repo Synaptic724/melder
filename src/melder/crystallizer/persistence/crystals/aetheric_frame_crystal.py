@@ -161,3 +161,21 @@ class AethericFrameCrystal(Cleanable):
         """
         self.check_cleaned()
         return dict(self._dev_ops_payload)
+
+    def describe(self) -> Dict[str, object]:
+        """
+        Return a detached, serialization-ready snapshot of this twin.
+
+        Returns:
+            Dict[str, object]:
+                Plain-value payload (the cached-item form for this twin).
+        """
+        self.check_cleaned()
+        return {
+            "twin_kind": "frame",
+            "frame_name": self._frame_name,
+            "system_state_name": self._system_state_name,
+            "rift_enabled": self._rift_enabled,
+            "ai_native_enabled": self._ai_native_enabled,
+            "dev_ops_payload": dict(self._dev_ops_payload),
+        }

@@ -1,581 +1,307 @@
 
 
-import threading
 from datetime import datetime, timezone
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Tuple
 
-from melder.crystallizer.persistence.persistence_profile import PersistenceProfile
-from melder.utilities.helpers.id_builder import IDBuilder
 from melder.utilities.general_base.cleanable import Cleanable
 
 
 class PersistenceCrystal(Cleanable):
     """
-    The crystallizer-owned persistence root: profiles of recorded worlds.
+    One sealed checkpoint: the snapshot artifact of a profile's segment.
 
     Purpose:
-        Own every PersistenceProfile in the process, following the same model
-        Aether uses for AethericFrames: one guaranteed default child plus any
-        number of named children, with one ACTIVE selection that operations
-        route to. The "default" profile always exists and is the initial
-        active profile; users may create additional profiles and default the
-        system to them (creation activates the new profile unless told
-        otherwise), so emissions always land on the currently active world.
+        Capture everything that happened in one profile since its previous
+        checkpoint, as fully detached plain-value payloads. A PersistenceCrystal
+        maps to persistence the way a SpellCrystal maps to a spell: it is a
+        manifest-style artifact that can be turned into a cached item and
+        saved, and the in-memory instance can be wiped once cached because
+        `from_cached_item` rehydrates it completely.
 
     Contract:
-        - "default" always exists; it can be cleared but never deleted.
-        - Exactly one profile is ACTIVE at any moment; `record(...)` (the
-          single sink entry the Crystallizer emit path calls) targets it.
-        - Creating a profile activates it by default (`activate=False` opts
-          out); deleting the active profile falls the selection back to
-          "default".
-        - Saving/hydrating profiles through cached items is deferred
-          behavior (stubs below) landing with the bootstrap + persistence
-          epics.
+        - Plain data from birth: no live twin references, no locks, no
+          callables. Immune to later replace-on-emit cleanup by construction.
+        - Incremental at the world level (only identities journaled inside
+          the capture window appear); full objects at the twin level (each
+          payload is the complete final state of that unit in the window).
+        - Composing a world at checkpoint K = fold the profile's checkpoint
+          chain 1..K, later payloads winning per (kind, key).
+        - Immutable after construction.
 
     Threading:
-        One instance RLock serializes profile-registry mutation and active
-        selection. Profile content operations serialize on each profile's
-        own lock.
+        Immutable-after-init; safe to share across threads without locking.
 
     Lifecycle:
-        Owned by exactly one Crystallizer. `cleanup()` cleans every profile,
-        then deletes owned fields (lock last); idempotent.
+        Owned by exactly one PersistenceSystem ledger entry. `cleanup()`
+        (= wipe) deletes owned fields; idempotent; reload via
+        `from_cached_item` when the cached form was stored.
     """
 
-    DEFAULT_PROFILE_NAME: str = "default"
-
     __slots__ = Cleanable.__slots__ + [
-        "_lock",
-        "_profiles_by_name",
-        "_active_profile_name",
-        "_checkpoints_by_id",
+        "_id",
+        "_profile_name",
+        "_checkpoint_number",
+        "_created_at",
+        "_description",
+        "_journal_segment",
+        "_captured_payloads",
+        "_sequence_range",
     ]
 
-    def __init__(self) -> None:
+    def __init__(
+            self,
+            checkpoint_id: str,
+            profile_name: str,
+            checkpoint_number: int,
+            description: Optional[str],
+            journal_segment: List[Tuple[int, str, str]],
+            captured_payloads: Dict[str, Dict[str, Dict[str, object]]],
+            sequence_range: Tuple[int, int],
+            created_at: Optional[str] = None,
+    ) -> None:
         """
-        Initialize the persistence root with the guaranteed default profile.
+        Initialize one sealed checkpoint from a captured profile segment.
 
-        Contract:
-            - The default profile exists immediately after construction and
-              is the initial active profile; the crystallizer's emit path may
-              record without any setup step.
+        Args:
+            checkpoint_id:
+                ULID identity (time-ordered) minted by the persistence system.
+            profile_name:
+                Profile this checkpoint was cut from.
+            checkpoint_number:
+                Per-profile monotonic checkpoint counter (1-based).
+            description:
+                Optional caller note.
+            journal_segment:
+                The (sequence, kind, key) journal entries inside the capture
+                window, in emission order.
+            captured_payloads:
+                Detached twin payloads by kind -> key -> payload.
+            sequence_range:
+                (first_sequence, last_sequence) of the capture window.
+            created_at:
+                ISO-8601 creation stamp; None mints now (UTC). Supplied only
+                by `from_cached_item` rehydration.
 
         Returns:
             None.
+
+        Raises:
+            ValueError:
+                If `checkpoint_id` / `profile_name` is empty or
+                `checkpoint_number` < 1.
         """
         super().__init__()
-        self._lock: threading.RLock = threading.RLock()
-        self._profiles_by_name: Dict[str, PersistenceProfile] = {
-            PersistenceCrystal.DEFAULT_PROFILE_NAME: PersistenceProfile(
-                PersistenceCrystal.DEFAULT_PROFILE_NAME
-            ),
+        if not checkpoint_id:
+            raise ValueError("PersistenceCrystal requires a non-empty checkpoint_id.")
+        if not profile_name:
+            raise ValueError("PersistenceCrystal requires a non-empty profile_name.")
+        if checkpoint_number < 1:
+            raise ValueError(
+                "checkpoint_number is 1-based; got {0}.".format(checkpoint_number)
+            )
+        self._id: str = checkpoint_id
+        self._profile_name: str = profile_name
+        self._checkpoint_number: int = checkpoint_number
+        self._created_at: str = (
+            created_at
+            if created_at is not None
+            else datetime.now(timezone.utc).isoformat()
+        )
+        self._description: Optional[str] = description
+        self._journal_segment: List[Tuple[int, str, str]] = [
+            (int(sequence), str(kind), str(key))
+            for sequence, kind, key in journal_segment
+        ]
+        self._captured_payloads: Dict[str, Dict[str, Dict[str, object]]] = {
+            kind: {key: dict(payload) for key, payload in by_key.items()}
+            for kind, by_key in captured_payloads.items()
         }
-        self._active_profile_name: str = PersistenceCrystal.DEFAULT_PROFILE_NAME
-        self._checkpoints_by_id: Dict[str, Dict[str, object]] = {}
+        self._sequence_range: Tuple[int, int] = (
+            int(sequence_range[0]),
+            int(sequence_range[1]),
+        )
 
     def cleanup(self) -> None:
         """
-        Clean every profile, then release owned fields (lock last).
+        Wipe the in-memory snapshot and mark it cleaned.
 
         Contract:
-            - Idempotent; del posture; lock deleted last.
+            - Idempotent; del posture (no tombstones).
+            - Wiping is safe once the cached form exists elsewhere; reload
+              via `from_cached_item`.
         """
         if self._cleaned:
             return
-        with self._lock:
-            if self._cleaned:
-                return
-            self._cleaned = True
-            for profile in self._profiles_by_name.values():
-                if not profile.cleaned:
-                    profile.cleanup()
-            self._profiles_by_name.clear()
-            self._checkpoints_by_id.clear()
-        del self._profiles_by_name
-        del self._active_profile_name
-        del self._checkpoints_by_id
-        del self._lock
+        self._cleaned = True
+        del self._id
+        del self._profile_name
+        del self._checkpoint_number
+        del self._created_at
+        del self._description
+        del self._journal_segment
+        del self._captured_payloads
+        del self._sequence_range
 
     @property
-    def default_profile(self) -> PersistenceProfile:
+    def id(self) -> str:
         """
-        Return the guaranteed default profile.
-
-        Returns:
-            PersistenceProfile:
-                The "default" profile (never absent while live).
-
-        Raises:
-            RuntimeError:
-                If the persistence crystal has been cleaned.
-        """
-        self.check_cleaned()
-        with self._lock:
-            return self._profiles_by_name[PersistenceCrystal.DEFAULT_PROFILE_NAME]
-
-    @property
-    def active_profile(self) -> PersistenceProfile:
-        """
-        Return the currently active profile (the emission target).
-
-        Returns:
-            PersistenceProfile:
-                The profile all `record(...)` calls currently route to.
-
-        Raises:
-            RuntimeError:
-                If the persistence crystal has been cleaned.
-        """
-        self.check_cleaned()
-        with self._lock:
-            return self._profiles_by_name[self._active_profile_name]
-
-    @property
-    def active_profile_name(self) -> str:
-        """
-        Return the name of the currently active profile.
+        Return the checkpoint's ULID identity (lexicographic = chronological).
 
         Returns:
             str:
-                Active profile name ("default" unless switched).
-
-        Raises:
-            RuntimeError:
-                If the persistence crystal has been cleaned.
+                ULID checkpoint id.
         """
         self.check_cleaned()
-        with self._lock:
-            return self._active_profile_name
+        return self._id
 
-    def set_active_profile(self, profile_name: str) -> PersistenceProfile:
+    @property
+    def profile_name(self) -> str:
         """
-        Switch the active emission target to one existing profile.
-
-        Purpose:
-            The Aether-style selection switch: after this call, every
-            `record(...)` lands on the named profile until switched again.
-
-        Args:
-            profile_name:
-                Name of an existing profile to activate.
-
-        Returns:
-            PersistenceProfile:
-                The newly active profile.
-
-        Raises:
-            RuntimeError:
-                If the persistence crystal has been cleaned.
-            KeyError:
-                If no profile exists under `profile_name`.
-        """
-        self.check_cleaned()
-        with self._lock:
-            profile = self._require_profile(profile_name)
-            self._active_profile_name = profile_name
-            return profile
-
-    def record(self, twin: Cleanable) -> None:
-        """
-        Record one emitted twin into the ACTIVE profile.
-
-        Purpose:
-            The single sink entry for the Crystallizer emit path. Emissions
-            follow the active selection ("default" unless the user created or
-            switched to another profile).
-
-        Args:
-            twin:
-                One twin from the persistence crystal family (SpellCrystal is
-                the L3 spell node).
-
-        Returns:
-            None.
-
-        Raises:
-            RuntimeError:
-                If the persistence crystal has been cleaned.
-            TypeError:
-                If the twin type is unsupported (raised by the profile).
-        """
-        self.check_cleaned()
-        self.active_profile.record(twin)
-
-    def get_profile(self, profile_name: str) -> PersistenceProfile:
-        """
-        Return one profile by name.
-
-        Args:
-            profile_name:
-                Name of an existing profile.
-
-        Returns:
-            PersistenceProfile:
-                The named profile.
-
-        Raises:
-            RuntimeError:
-                If the persistence crystal has been cleaned.
-            KeyError:
-                If no profile exists under `profile_name`; the message names
-                the known profiles so callers can self-correct.
-        """
-        self.check_cleaned()
-        with self._lock:
-            return self._require_profile(profile_name)
-
-    def create_profile(
-            self,
-            profile_name: str,
-            activate: bool = True,
-    ) -> PersistenceProfile:
-        """
-        Create one new, empty named profile and (by default) activate it.
-
-        Purpose:
-            The user-facing "new world" verb: create a profile and default
-            the system to it, so subsequent emissions land there (owner
-            model: users can create profiles and we default to the new one).
-
-        Args:
-            profile_name:
-                New profile name; must not collide with an existing profile.
-            activate:
-                When True (default), the new profile becomes the active
-                emission target immediately.
-
-        Returns:
-            PersistenceProfile:
-                The newly created profile.
-
-        Raises:
-            RuntimeError:
-                If the persistence crystal has been cleaned.
-            ValueError:
-                If `profile_name` is empty or already exists.
-        """
-        self.check_cleaned()
-        if not profile_name:
-            raise ValueError("create_profile requires a non-empty profile_name.")
-        with self._lock:
-            if profile_name in self._profiles_by_name:
-                raise ValueError(
-                    "Persistence profile {0!r} already exists; profile names "
-                    "are unique. Use get_profile, set_active_profile, or "
-                    "clear_profile instead.".format(profile_name)
-                )
-            profile = PersistenceProfile(profile_name)
-            self._profiles_by_name[profile_name] = profile
-            if activate:
-                self._active_profile_name = profile_name
-            return profile
-
-    def clear_profile(self, profile_name: str) -> None:
-        """
-        Reset one profile's recorded content to empty.
-
-        Purpose:
-            The generalized `clear_bootstrap`: clearing "default" resets the
-            default bootstrap record; clearing a named profile empties that
-            saved world without deleting its slot or changing the active
-            selection.
-
-        Args:
-            profile_name:
-                Name of an existing profile to clear.
-
-        Returns:
-            None.
-
-        Raises:
-            RuntimeError:
-                If the persistence crystal has been cleaned.
-            KeyError:
-                If no profile exists under `profile_name`.
-        """
-        self.check_cleaned()
-        with self._lock:
-            self._require_profile(profile_name).clear()
-
-    def delete_profile(self, profile_name: str) -> None:
-        """
-        Delete one NAMED profile entirely.
-
-        Contract:
-            - "default" is never deletable (clear it instead); the guaranteed
-              slot survives for the crystal's whole life.
-            - Deleting the currently active profile falls the active
-              selection back to "default".
-
-        Args:
-            profile_name:
-                Name of the named profile to delete.
-
-        Returns:
-            None.
-
-        Raises:
-            RuntimeError:
-                If the persistence crystal has been cleaned.
-            ValueError:
-                If asked to delete the default profile.
-            KeyError:
-                If no profile exists under `profile_name`.
-        """
-        self.check_cleaned()
-        if profile_name == PersistenceCrystal.DEFAULT_PROFILE_NAME:
-            raise ValueError(
-                "The default profile is the guaranteed slot and cannot be "
-                "deleted; use clear_profile('default') to reset it."
-            )
-        with self._lock:
-            profile = self._profiles_by_name.pop(profile_name, None)
-            if profile is None:
-                raise KeyError(
-                    "No persistence profile named {0!r}. Known profiles: "
-                    "{1}.".format(
-                        profile_name, sorted(self._profiles_by_name.keys())
-                    )
-                )
-            if self._active_profile_name == profile_name:
-                self._active_profile_name = (
-                    PersistenceCrystal.DEFAULT_PROFILE_NAME
-                )
-            profile.cleanup()
-
-    def list_profile_names(self) -> List[str]:
-        """
-        Return the names of all live profiles.
-
-        Returns:
-            List[str]:
-                Sorted, detached profile-name list.
-
-        Raises:
-            RuntimeError:
-                If the persistence crystal has been cleaned.
-        """
-        self.check_cleaned()
-        with self._lock:
-            return sorted(self._profiles_by_name.keys())
-
-    def save_profile(self, profile_name: str) -> PersistenceProfile:
-        """
-        Seal the active profile into a named profile (saved world / kit).
-
-        Args:
-            profile_name:
-                Name for the saved world.
-
-        Returns:
-            PersistenceProfile:
-                The sealed named profile.
-
-        Raises:
-            NotImplementedError:
-                Placeholder: the seal-copy (twin duplication + content
-                addressing over stable identity) lands with the bootstrap
-                epic's snapshot story.
-        """
-        self.check_cleaned()
-        raise NotImplementedError(
-            "save_profile is a placeholder; the seal-copy of the active "
-            "profile (with content addressing) lands with the bootstrap epic."
-        )
-
-    def hydrate_profile(self, profile_name: str) -> None:
-        """
-        Hydrate one saved profile toward the live system (restore input).
-
-        Args:
-            profile_name:
-                Name of the saved world to hydrate.
-
-        Returns:
-            None.
-
-        Raises:
-            NotImplementedError:
-                Placeholder: hydration is the restore engine's entry seam
-                (bootstrap epic); the CRUD adapter round-trip is the
-                persistence epic's story.
-        """
-        self.check_cleaned()
-        raise NotImplementedError(
-            "hydrate_profile is a placeholder; the restore engine lands with "
-            "the bootstrap epic (adapter round-trip: persistence epic)."
-        )
-
-
-    def create_checkpoint(
-            self,
-            profile_name: Optional[str] = None,
-            description: Optional[str] = None,
-    ) -> str:
-        """
-        Register one checkpoint of a profile and return its ULID identity.
-
-        Purpose:
-            Mint the time-ordered checkpoint identity (ULID: ids sort by
-            creation time) and register the checkpoint's metadata record.
-
-        Contract:
-            - CURRENT DEPTH: metadata registration only. The record carries
-              `"twin_custody": "pending"` because the twin seal-copy (content
-              addressing over stable identity) lands with the bootstrap
-              epic's snapshot story - callers must not treat this checkpoint
-              as restorable yet.
-            - `profile_name=None` targets the ACTIVE profile.
-
-        Args:
-            profile_name:
-                Profile to checkpoint; None means the active profile.
-            description:
-                Optional caller note stored on the record.
+        Return the profile this checkpoint was cut from.
 
         Returns:
             str:
-                The new checkpoint's ULID id.
-
-        Raises:
-            RuntimeError:
-                If the persistence crystal has been cleaned.
-            KeyError:
-                If `profile_name` names no existing profile.
+                Source profile name.
         """
         self.check_cleaned()
-        with self._lock:
-            resolved_name = (
-                profile_name
-                if profile_name is not None
-                else self._active_profile_name
-            )
-            profile = self._require_profile(resolved_name)
-            checkpoint_id = IDBuilder.create_id()
-            self._checkpoints_by_id[checkpoint_id] = {
-                "checkpoint_id": checkpoint_id,
-                "profile_name": resolved_name,
-                "created_at": datetime.now(timezone.utc).isoformat(),
-                "description": description,
-                "profile_summary": profile.describe(),
-                "twin_custody": "pending",
-            }
-            return checkpoint_id
+        return self._profile_name
 
-    def describe_checkpoint(self, checkpoint_id: str) -> Dict[str, object]:
+    @property
+    def checkpoint_number(self) -> int:
         """
-        Return a detached copy of one checkpoint's metadata record.
+        Return the per-profile checkpoint counter (1-based).
 
-        Args:
-            checkpoint_id:
-                ULID identity returned by `create_checkpoint`.
+        Returns:
+            int:
+                Position of this checkpoint in its profile's chain.
+        """
+        self.check_cleaned()
+        return self._checkpoint_number
+
+    @property
+    def created_at(self) -> str:
+        """
+        Return the ISO-8601 UTC creation stamp.
+
+        Returns:
+            str:
+                Creation time.
+        """
+        self.check_cleaned()
+        return self._created_at
+
+    @property
+    def description(self) -> Optional[str]:
+        """
+        Return the caller note recorded at seal time.
+
+        Returns:
+            Optional[str]:
+                Description, or None.
+        """
+        self.check_cleaned()
+        return self._description
+
+    @property
+    def sequence_range(self) -> Tuple[int, int]:
+        """
+        Return the (first, last) journal-sequence window this seal captured.
+
+        Returns:
+            Tuple[int, int]:
+                Capture window bounds.
+        """
+        self.check_cleaned()
+        return self._sequence_range
+
+    def describe(self) -> Dict[str, object]:
+        """
+        Return the checkpoint's detached metadata summary (ledger view).
 
         Returns:
             Dict[str, object]:
-                Detached checkpoint record (id, profile, created_at,
-                description, profile summary, custody status).
-
-        Raises:
-            RuntimeError:
-                If the persistence crystal has been cleaned.
-            KeyError:
-                If no checkpoint exists under `checkpoint_id`; the message
-                names the known ids so callers can self-correct.
+                Metadata + per-kind capture counts; twin_custody is
+                "captured" (this seal holds real detached payloads).
         """
         self.check_cleaned()
-        with self._lock:
-            record = self._checkpoints_by_id.get(checkpoint_id)
-            if record is None:
-                raise KeyError(
-                    "No checkpoint with id {0!r}. Known checkpoint ids: "
-                    "{1}.".format(
-                        checkpoint_id, sorted(self._checkpoints_by_id.keys())
-                    )
-                )
-            return dict(record)
+        return {
+            "checkpoint_id": self._id,
+            "profile_name": self._profile_name,
+            "checkpoint_number": self._checkpoint_number,
+            "created_at": self._created_at,
+            "description": self._description,
+            "sequence_range": list(self._sequence_range),
+            "journal_entry_count": len(self._journal_segment),
+            "captured_counts": {
+                kind: len(by_key)
+                for kind, by_key in self._captured_payloads.items()
+            },
+            "twin_custody": "captured",
+        }
 
-    def list_checkpoint_ids(self) -> List[str]:
+    def to_cached_item(self) -> Dict[str, object]:
         """
-        Return all checkpoint ids in creation order.
+        Return the checkpoint's complete cached-item form.
 
-        Contract:
-            - Checkpoint ids are ULIDs, so lexicographic order IS creation
-              order; the returned list is chronologically sorted.
+        Purpose:
+            The serialization mapping (the SpellCrystal "bytecode" analogy):
+            everything needed to rehydrate this crystal via
+            `from_cached_item`, as one plain-value payload.
 
         Returns:
-            List[str]:
-                Sorted (= chronological), detached checkpoint-id list.
-
-        Raises:
-            RuntimeError:
-                If the persistence crystal has been cleaned.
+            Dict[str, object]:
+                Full detached payload (metadata + journal segment + captured
+                twin payloads).
         """
         self.check_cleaned()
-        with self._lock:
-            return sorted(self._checkpoints_by_id.keys())
+        return {
+            "checkpoint_id": self._id,
+            "profile_name": self._profile_name,
+            "checkpoint_number": self._checkpoint_number,
+            "created_at": self._created_at,
+            "description": self._description,
+            "sequence_range": list(self._sequence_range),
+            "journal_segment": [
+                [sequence, kind, key]
+                for sequence, kind, key in self._journal_segment
+            ],
+            "captured_payloads": {
+                kind: {key: dict(payload) for key, payload in by_key.items()}
+                for kind, by_key in self._captured_payloads.items()
+            },
+        }
 
-    def load_checkpoint(self, checkpoint_id: str) -> None:
+    @classmethod
+    def from_cached_item(cls, cached_item: Dict[str, object]) -> "PersistenceCrystal":
         """
-        Load one checkpoint back toward the live system (restore input).
+        Rehydrate one PersistenceCrystal from its cached-item form.
 
         Args:
-            checkpoint_id:
-                ULID identity of the checkpoint to load.
+            cached_item:
+                Payload previously produced by `to_cached_item`.
 
         Returns:
-            None.
+            PersistenceCrystal:
+                Live snapshot artifact equivalent to the sealed original.
 
         Raises:
-            RuntimeError:
-                If the persistence crystal has been cleaned.
             KeyError:
-                If no checkpoint exists under `checkpoint_id` (validated
-                BEFORE the depth limit so callers get the right error).
-            NotImplementedError:
-                Placeholder: checkpoint loading is the restore engine's
-                entry seam (bootstrap epic); the cache/save round-trip is
-                the persistence epic's story.
+                If required cached-item fields are missing.
+            ValueError:
+                If field values violate the construction contract.
         """
-        self.check_cleaned()
-        with self._lock:
-            if checkpoint_id not in self._checkpoints_by_id:
-                raise KeyError(
-                    "No checkpoint with id {0!r}. Known checkpoint ids: "
-                    "{1}.".format(
-                        checkpoint_id, sorted(self._checkpoints_by_id.keys())
-                    )
-                )
-        raise NotImplementedError(
-            "load_checkpoint is a placeholder; the restore engine lands with "
-            "the bootstrap epic (cache/save round-trip: persistence epic)."
+        journal = [
+            (int(entry[0]), str(entry[1]), str(entry[2]))
+            for entry in cached_item["journal_segment"]
+        ]
+        sequence_range = cached_item["sequence_range"]
+        return cls(
+            checkpoint_id=str(cached_item["checkpoint_id"]),
+            profile_name=str(cached_item["profile_name"]),
+            checkpoint_number=int(cached_item["checkpoint_number"]),
+            description=cached_item["description"],
+            journal_segment=journal,
+            captured_payloads=cached_item["captured_payloads"],
+            sequence_range=(int(sequence_range[0]), int(sequence_range[1])),
+            created_at=str(cached_item["created_at"]),
         )
-
-    def _require_profile(self, profile_name: str) -> PersistenceProfile:
-        """
-        Return one profile or raise the standard self-correcting KeyError.
-
-        Contract:
-            - Caller holds `self._lock`.
-
-        Args:
-            profile_name:
-                Profile name to resolve.
-
-        Returns:
-            PersistenceProfile:
-                The resolved profile.
-
-        Raises:
-            KeyError:
-                If no profile exists under `profile_name`.
-        """
-        profile = self._profiles_by_name.get(profile_name)
-        if profile is None:
-            raise KeyError(
-                "No persistence profile named {0!r}. Known profiles: "
-                "{1}.".format(
-                    profile_name, sorted(self._profiles_by_name.keys())
-                )
-            )
-        return profile

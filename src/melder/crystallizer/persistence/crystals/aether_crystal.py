@@ -85,3 +85,17 @@ class AetherCrystal(Cleanable):
         """
         self.check_cleaned()
         return dict(self._configuration_payload)
+
+    def describe(self) -> Dict[str, object]:
+        """
+        Return a detached, serialization-ready snapshot of this twin.
+
+        Returns:
+            Dict[str, object]:
+                Plain-value payload (the cached-item form for this twin).
+        """
+        self.check_cleaned()
+        return {
+            "twin_kind": "aether",
+            "configuration_payload": dict(self._configuration_payload),
+        }

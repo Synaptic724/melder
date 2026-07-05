@@ -169,3 +169,21 @@ class SpellbookCrystal(Cleanable):
         """
         self.check_cleaned()
         return list(self._bind_order)
+
+    def describe(self) -> Dict[str, object]:
+        """
+        Return a detached, serialization-ready snapshot of this twin.
+
+        Returns:
+            Dict[str, object]:
+                Plain-value payload (the cached-item form for this twin).
+        """
+        self.check_cleaned()
+        return {
+            "twin_kind": "spellbook",
+            "spellbook_id": self._spellbook_id,
+            "frame_name": self._frame_name,
+            "configuration_payload": dict(self._configuration_payload),
+            "hook_names": list(self._hook_names),
+            "bind_order": list(self._bind_order),
+        }

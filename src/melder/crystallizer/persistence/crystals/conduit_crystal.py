@@ -1,6 +1,6 @@
 
 
-from typing import List, Optional
+from typing import Dict, List, Optional
 
 from melder.utilities.general_base.cleanable import Cleanable
 
@@ -181,3 +181,22 @@ class ConduitCrystal(Cleanable):
         """
         self.check_cleaned()
         return list(self._link_targets)
+
+    def describe(self) -> Dict[str, object]:
+        """
+        Return a detached, serialization-ready snapshot of this twin.
+
+        Returns:
+            Dict[str, object]:
+                Plain-value payload (the cached-item form for this twin).
+        """
+        self.check_cleaned()
+        return {
+            "twin_kind": "conduit",
+            "conduit_id": self._conduit_id,
+            "spellbook_id": self._spellbook_id,
+            "conduit_name": self._conduit_name,
+            "policy_name": self._policy_name,
+            "dynamic": self._dynamic,
+            "link_targets": list(self._link_targets),
+        }

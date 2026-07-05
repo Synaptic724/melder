@@ -809,7 +809,7 @@ and logging.
             caching_system = CachingSystem(
                 frame_name=self._aetheric_frame_name,
                 conduit_name=conduit_name,
-                cache_root_path=self._aetheric_frame_configuration.resolve_system_cache_root_path(),
+                cache_root_path=self._aetheric_frame_configuration.resolve_conjure_cache_root_path(),
                 logger=self._logger,
             )
             self._caching_system = caching_system

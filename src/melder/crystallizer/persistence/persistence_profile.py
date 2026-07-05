@@ -58,6 +58,7 @@ class PersistenceProfile(Cleanable):
         "_lock",
         "_emission_sequence",
         "_emission_log",
+        "_last_checkpoint_sequence",
         "_aether_crystal",
         "_nexus_crystal",
         "_mutation_research_crystal",
@@ -92,6 +93,7 @@ class PersistenceProfile(Cleanable):
         self._lock: threading.RLock = threading.RLock()
         self._emission_sequence: int = 0
         self._emission_log: List[Tuple[int, str, str]] = []
+        self._last_checkpoint_sequence: int = 0
         self._aether_crystal: Optional[AetherCrystal] = None
         self._nexus_crystal: Optional[NexusCrystal] = None
         self._mutation_research_crystal: Optional[MutationResearchCrystal] = None
@@ -117,6 +119,7 @@ class PersistenceProfile(Cleanable):
         del self._profile_name
         del self._emission_sequence
         del self._emission_log
+        del self._last_checkpoint_sequence
         del self._aether_crystal
         del self._nexus_crystal
         del self._mutation_research_crystal
@@ -307,6 +310,146 @@ class PersistenceProfile(Cleanable):
             self._cleanup_all_twins()
             self._emission_sequence = 0
             self._emission_log = []
+            self._last_checkpoint_sequence = 0
+
+
+    @property
+    def last_checkpoint_sequence(self) -> int:
+        """
+        Return the emission sequence consumed by the most recent checkpoint.
+
+        Returns:
+            int:
+                Highest journal sequence already captured (0 = never
+                checkpointed since creation/clear).
+
+        Raises:
+            RuntimeError:
+                If the profile has been cleaned.
+        """
+        self.check_cleaned()
+        with self._lock:
+            return self._last_checkpoint_sequence
+
+    def capture_segment_since(
+            self,
+            sequence_mark: int,
+    ) -> Tuple[Dict[str, Dict[str, Dict[str, object]]], List[Tuple[int, str, str]], Tuple[int, int]]:
+        """
+        Capture the incremental segment journaled after one sequence mark.
+
+        Purpose:
+            The checkpoint mechanic: collect every identity journaled after
+            `sequence_mark` and detach the CURRENT twin state of each into
+            plain-value payloads. Full objects, never diffs - at the twin
+            level each entry is the complete final state; incrementality is
+            at the world level (only identities that changed appear).
+
+        Contract:
+            - Payloads are fully detached (twin.describe() output); the
+              returned data is immune to later replace-on-emit cleanup.
+            - Identities journaled but since replaced capture their CURRENT
+              twin (the final state within the segment window).
+            - Does NOT advance the checkpoint mark; callers seal first, then
+              `mark_checkpoint(...)` on success.
+
+        Args:
+            sequence_mark:
+                Capture everything journaled with sequence > this value.
+
+        Returns:
+            Tuple[
+                Dict[str, Dict[str, Dict[str, object]]],
+                List[Tuple[int, str, str]],
+                Tuple[int, int],
+            ]:
+                (payloads by kind -> key -> payload,
+                 journal entries in the segment,
+                 (first_sequence, last_sequence) of the capture window where
+                 first_sequence = sequence_mark + 1 and last_sequence = the
+                 profile's current emission sequence).
+
+        Raises:
+            RuntimeError:
+                If the profile has been cleaned.
+        """
+        self.check_cleaned()
+        with self._lock:
+            segment_entries: List[Tuple[int, str, str]] = [
+                entry for entry in self._emission_log if entry[0] > sequence_mark
+            ]
+            payloads: Dict[str, Dict[str, Dict[str, object]]] = {}
+            for _sequence, kind, key in segment_entries:
+                twin = self._resolve_twin(kind, key)
+                if twin is None or twin.cleaned:
+                    continue
+                payloads.setdefault(kind, {})[key] = twin.describe()
+            return (
+                payloads,
+                segment_entries,
+                (sequence_mark + 1, self._emission_sequence),
+            )
+
+    def mark_checkpoint(self, sequence: int) -> None:
+        """
+        Advance the checkpoint mark after a successful seal.
+
+        Args:
+            sequence:
+                Highest journal sequence the sealed checkpoint captured.
+
+        Returns:
+            None.
+
+        Raises:
+            RuntimeError:
+                If the profile has been cleaned.
+            ValueError:
+                If `sequence` would move the mark backward.
+        """
+        self.check_cleaned()
+        with self._lock:
+            if sequence < self._last_checkpoint_sequence:
+                raise ValueError(
+                    "mark_checkpoint cannot move backward: current mark is "
+                    "{0}, received {1}.".format(
+                        self._last_checkpoint_sequence, sequence
+                    )
+                )
+            self._last_checkpoint_sequence = sequence
+
+    def _resolve_twin(self, kind: str, key: str):
+        """
+        Resolve one journaled identity to its current twin, if still held.
+
+        Contract:
+            - Caller holds `self._lock`.
+
+        Args:
+            kind:
+                Journal kind label.
+            key:
+                Identity key within the kind.
+
+        Returns:
+            The current twin for the identity, or None when the identity no
+            longer resolves (for example after clear()).
+        """
+        if kind == "aether":
+            return self._aether_crystal
+        if kind == "nexus":
+            return self._nexus_crystal
+        if kind == "mutation_research":
+            return self._mutation_research_crystal
+        if kind == "frame":
+            return self._frame_crystals_by_name.get(key)
+        if kind == "spellbook":
+            return self._spellbook_crystals_by_id.get(key)
+        if kind == "conduit":
+            return self._conduit_crystals_by_id.get(key)
+        if kind == "spell_crystal":
+            return self._spell_crystals_by_spell_id.get(key)
+        return None
 
     def _replace_mapped(
             self,
