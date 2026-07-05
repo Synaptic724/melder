@@ -500,7 +500,13 @@ class AethericFrame(Cleanable):
         with self._lock:
             if self._frame_configuration is None:
                 raise RuntimeError("Frame configuration is unavailable.")
-            self._frame_configuration.freeze(origin_spellbook_id=origin_spellbook_id)
+            # The frame configuration owns its own twin emission at freeze
+            # (configuration activation is the emission factor); the frame
+            # supplies its identity so the twin can anchor by frame name.
+            self._frame_configuration.freeze(
+                origin_spellbook_id=origin_spellbook_id,
+                origin_frame_name=self.name,
+            )
             return self._frame_configuration
 
     def bind_frame_configuration(

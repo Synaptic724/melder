@@ -7,6 +7,8 @@ from typing import Any, Dict, Optional, ClassVar, Union
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.aether.spellbook.configuration.system_state import SystemState
 from melder.utilities.general_base.cleanable import Cleanable
+from melder.crystallizer.crystallizer import Crystallizer
+from melder.crystallizer.persistence.crystals.aetheric_frame_crystal import AethericFrameCrystal
 from melder.utilities.helpers.general_helpers import EnumHelpers
 from melder.utilities.helpers.id_builder import IDBuilder
 from melder.utilities.synchronization.safeguard import SafeGuard
@@ -304,7 +306,11 @@ class AethericFrameConfiguration(Cleanable):
                 )
             return True
 
-    def freeze(self, origin_spellbook_id: Optional[str] = None) -> None:
+    def freeze(
+            self,
+            origin_spellbook_id: Optional[str] = None,
+            origin_frame_name: Optional[str] = None,
+    ) -> None:
         """
         Freeze the frame posture so no further mutation is allowed.
 
@@ -320,6 +326,39 @@ class AethericFrameConfiguration(Cleanable):
             if origin_spellbook_id is not None:
                 self._origin_spellbook_id = origin_spellbook_id
             self._frozen = True
+        # Configuration activation is the emission factor: pull the
+        # crystallizer singleton directly (guarding the pre-boot case,
+        # where the singleton is not yet initialized and construction
+        # requires the hosting Aether), emit when recording, then drop
+        # the local handle.
+        if (
+                origin_frame_name is not None
+                and self._system_state is SystemState.dynamic
+                and Crystallizer._initialized
+        ):
+            crystallizer = Crystallizer()
+            if crystallizer.activated:
+                posture_payload: Dict[str, object] = {}
+                for posture_name, posture_value in self.describe_posture().items():
+                    if (
+                            isinstance(posture_value, (str, int, float, bool))
+                            or posture_value is None
+                    ):
+                        posture_payload[posture_name] = posture_value
+                    elif isinstance(posture_value, SystemState):
+                        posture_payload[posture_name] = posture_value.name
+                    else:
+                        posture_payload[posture_name] = str(posture_value)
+                crystallizer.emit(
+                    AethericFrameCrystal(
+                        frame_name=origin_frame_name,
+                        system_state_name=self._system_state.name,
+                        rift_enabled=self._rift_enabled,
+                        ai_native_enabled=self._ai_native_enabled,
+                        dev_ops_payload=posture_payload,
+                    )
+                )
+            del crystallizer
 
     def with_system_state(
             self,

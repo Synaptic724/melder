@@ -304,6 +304,41 @@ class Crystallizer(Cleanable):
         with self._lock:
             self._activated = False
 
+
+    def emit(self, twin: Cleanable) -> None:
+        """
+        Record one emitted twin into the active persistence profile.
+
+        Purpose:
+            The single sink entry of the EMIT model: structural units push
+            their twins here at configuration lock-in and at the pivotal
+            runtime points; the crystallizer passively records into the
+            ACTIVE profile. The sink never reaches into emitters.
+
+        Contract:
+            - NO-OP while the crystallizer is not activated: hosts may call
+              unconditionally without behavioral impact on non-recorded
+              worlds (call-sites still pre-gate to avoid building payloads).
+            - Twin-type validation is owned by the profile record path.
+
+        Args:
+            twin:
+                One twin from the persistence crystal family.
+
+        Returns:
+            None.
+
+        Raises:
+            RuntimeError:
+                If the crystallizer has been cleaned.
+            TypeError:
+                If the twin type is unsupported (raised by the profile).
+        """
+        self.check_cleaned()
+        if not self._activated:
+            return
+        self._persistence_system.record(twin)
+
     def create_spell_crystal(self, spell: Spell) -> SpellCrystal:
         """
         Build one `SpellCrystal` using the installed crystallizer policy.

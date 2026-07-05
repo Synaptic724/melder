@@ -1,5 +1,6 @@
 import importlib
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 
@@ -18,6 +19,12 @@ class _DummySpell:
     def __init__(self, spell_id: str, spell) -> None:
         self.spell_id = spell_id
         self.spell = spell
+        # Bind-signature fields consumed by SpellCrystal.__init__ (test doubles).
+        self.spell_name = spell_id
+        self.binding_name = None
+        self.spellframe = None
+        self.existence = SimpleNamespace(name="present")
+        self.permissions = SimpleNamespace(name="default")
 
 
 @pytest.fixture(autouse=True)

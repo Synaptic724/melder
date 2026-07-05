@@ -8,6 +8,8 @@ from melder.nexus.configuration.nexus_frame_mode import (
 from melder.nexus.configuration.rift_space_type import RiftSpaceType
 from melder.nexus.configuration.rift_validation_mode import RiftValidationMode
 from melder.utilities.general_base.cleanable import Cleanable
+from melder.crystallizer.crystallizer import Crystallizer
+from melder.crystallizer.persistence.crystals.nexus_crystal import NexusCrystal
 from melder.utilities.helpers.general_helpers import EnumHelpers
 from melder.utilities.helpers.id_builder import IDBuilder
 
@@ -405,6 +407,33 @@ class NexusConfiguration(Cleanable):
         if not self.validate():
             raise ValueError("NexusConfiguration validation failed.")
         self._frozen = True
+        # Configuration activation is the emission factor: pull the
+        # crystallizer singleton directly (guarding the pre-boot case,
+        # where the singleton is not yet initialized and construction
+        # requires the hosting Aether), emit when recording, then drop
+        # the local handle.
+        # Freeze is this configuration's true activation (Nexus.enable
+        # finalizes/freezes it as the enable step's confirmation).
+        if Crystallizer._initialized:
+            crystallizer = Crystallizer()
+            if crystallizer.activated:
+                configuration_payload: Dict[str, object] = {}
+                for property_name, property_value in self._properties.items():
+                    if (
+                            isinstance(property_value, (str, int, float, bool))
+                            or property_value is None
+                    ):
+                        configuration_payload[property_name] = property_value
+                    else:
+                        configuration_payload[property_name] = str(property_value)
+                crystallizer.emit(
+                    NexusCrystal(
+                        configured=True,
+                        enabled=True,
+                        configuration_payload=configuration_payload,
+                    )
+                )
+            del crystallizer
 
     def finalize(self) -> "NexusConfiguration":
         """

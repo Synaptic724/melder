@@ -4,6 +4,8 @@ from typing import Any, Callable, ClassVar, Dict, Optional
 
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.utilities.general_base.cleanable import Cleanable
+from melder.crystallizer.crystallizer import Crystallizer
+from melder.crystallizer.persistence.crystals.aether_crystal import AetherCrystal
 from melder.utilities.helpers.id_builder import IDBuilder
 
 
@@ -363,4 +365,28 @@ class AetherConfiguration(Cleanable):
         self.freeze()
         with self._lock:
             self._activated = True
+        # Configuration activation is the emission factor: pull the
+        # crystallizer singleton directly (guarding the pre-boot case,
+        # where the singleton is not yet initialized and construction
+        # requires the hosting Aether), emit when recording, then drop
+        # the local handle.
+        if Crystallizer._initialized:
+            crystallizer = Crystallizer()
+            if crystallizer.activated:
+                crystallizer.emit(
+                    AetherCrystal(
+                        configuration_payload={
+                            "channel_logger_activation_enabled": (
+                                self._properties["channel_logger_activation_enabled"]
+                            ),
+                            "channel_logger_resolver_present": (
+                                self._properties["channel_logger_resolver"] is not None
+                            ),
+                            "default_logger_present": (
+                                self._properties["default_logger"] is not None
+                            ),
+                        },
+                    )
+                )
+            del crystallizer
         return self

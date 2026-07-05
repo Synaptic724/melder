@@ -1,7 +1,7 @@
 import importlib
 import sys
 from pathlib import Path
-from types import ModuleType
+from types import ModuleType, SimpleNamespace
 from typing import Any, Dict, List, Mapping, Optional, Sequence, Tuple
 
 from melder.crystallizer.synthetic_module import SyntheticModule
@@ -22,6 +22,12 @@ class DummySpell:
     def __init__(self, spell_id: str, spell: Any) -> None:
         self.spell_id = spell_id
         self.spell = spell
+        # Bind-signature fields consumed by SpellCrystal.__init__ (test doubles).
+        self.spell_name = spell_id
+        self.binding_name = None
+        self.spellframe = None
+        self.existence = SimpleNamespace(name="present")
+        self.permissions = SimpleNamespace(name="default")
 
 
 def clear_modules(*module_names: str) -> None:

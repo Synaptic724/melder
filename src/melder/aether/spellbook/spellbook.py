@@ -127,6 +127,8 @@ and logging.
         "_conduit",
         "_configuration",
         "_configuration_locked",
+        "_binds_before_configuration_count",
+        "_conjure_dynamic_hint",
         "_conjured",
         "_cache_emit_required",
         "_caching_enabled",
@@ -250,6 +252,8 @@ and logging.
 
         # SpellbookConfiguration state
         self._configuration_locked: bool = False
+        self._binds_before_configuration_count: int = 0
+        self._conjure_dynamic_hint: Optional[bool] = None
         self._configuration: Optional[SpellbookConfiguration] = configuration
         self._aetheric_frame_configuration: Optional[AethericFrameConfiguration] = None
         # Temporary logger for configuration init; will be replaced in _initialize_logging.
@@ -614,6 +618,8 @@ and logging.
         del self._configured_disposal_method_names
         del self._spell_system_states
         del self._configuration_locked
+        del self._binds_before_configuration_count
+        del self._conjure_dynamic_hint
         del self._spellbook_validation_required
         del self._nexus_publish_enabled
         del self._nexus
@@ -4367,6 +4373,14 @@ and logging.
                 self._spells[spell_index] = new_spell
                 self._register_owned_spell_id(new_spell.spell_id, new_spell)
 
+                # Configuration-discipline evidence: count binds that ran
+                # while the SpellbookConfiguration was still mutable. The
+                # counter self-limits to pre-freeze binds (conjure freezes
+                # the configuration), and dynamic-mode conjure refuses a
+                # crystallizer-recorded world with a non-zero count.
+                if self._configuration is not None and not self._configuration._frozen:
+                    self._binds_before_configuration_count += 1
+
                 # keep local version cache warm
                 if self._spell_ids is not None:
                     member_ids = spell_index._spells_in_index
@@ -4788,6 +4802,7 @@ and logging.
         return self._configuration_locked
 
 
+
     def _validate_and_freeze_configuration(self) -> None:
         """
         Internal
@@ -4827,7 +4842,11 @@ and logging.
                 )
                 raise ValueError("SpellbookConfiguration validation failed.")
 
-            self._configuration.freeze()
+            self._configuration.freeze(
+                origin_spellbook_id=self._id,
+                origin_frame_name=self._aetheric_frame_name,
+                origin_dynamic=self._conjure_dynamic_hint,
+            )
             self._configuration_locked = True
 
         except Exception as e:
@@ -5265,7 +5284,38 @@ and logging.
               a concurrent bind (spellbook INTENT, then lock) cannot deadlock a
               conjure (spellbook EXCLUSIVE, then lock).
         """
+        self._conjure_dynamic_hint = dynamic
         with self._lock:
+            # Dynamic-mode configuration discipline (crystallizer worlds):
+            # a recorded world must not be born from binds that ran while
+            # the configuration was still mutable -- the profile record and
+            # default bootstrap would durably persist config-incoherent
+            # bind truth. Automatic mode and crystallizer-off worlds are
+            # exempt so non-recorded runtimes stay byte-identical.
+            if (
+                    dynamic
+                    and self._binds_before_configuration_count > 0
+                    and self._crystallizer.activated
+            ):
+                early_bind_count = self._binds_before_configuration_count
+                self._logger.error(
+                    "conjure refused: {0} bind(s) preceded configuration "
+                    "finalization in a dynamic crystallizer world".format(
+                        early_bind_count
+                    ),
+                    "conjure",
+                )
+                raise RuntimeError(
+                    "[SPELLBOOK] Dynamic-mode conjure with an active Crystallizer requires the \n"
+                    "SpellbookConfiguration to be finalized BEFORE the first bind. {0} spell(s) \n"
+                    "were bound while the configuration was still mutable, so the recorded world \n"
+                    "(profiles, checkpoints, the default bootstrap) would persist binds that ran \n"
+                    "against unsettled configuration. Fix: build and finalize the configuration \n"
+                    "first, pass it to the Spellbook before binding, then conjure. Automatic-mode \n"
+                    "worlds and worlds without an active Crystallizer are not affected.".format(
+                        early_bind_count
+                    )
+                )
             if self._conjured:
                 conduit_id = None
                 conduit_name = None

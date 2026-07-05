@@ -344,7 +344,7 @@ def test_component_spellbook_lazily_builds_caching_system_when_enabled() -> None
 
     assert isinstance(caching_system, CachingSystem)
     assert caching_system.bundle_path == (
-        cache_root_path / "default" / "root.melc"
+        cache_root_path / "__conjure_cache__" / "default" / "root.melc"
     )
 
 
@@ -369,7 +369,7 @@ def test_component_spellbook_uses_custom_conduit_name_in_cache_path() -> None:
     caching_system = spellbook._get_or_create_caching_system()
 
     assert caching_system.bundle_path == (
-        cache_root_path / "default" / "alpha.melc"
+        cache_root_path / "__conjure_cache__" / "default" / "alpha.melc"
     )
 
 
@@ -398,7 +398,7 @@ def test_component_spellbook_uses_frame_name_in_cache_path() -> None:
     caching_system = spellbook._get_or_create_caching_system()
 
     assert caching_system.bundle_path == (
-        cache_root_path / "ops" / "root.melc"
+        cache_root_path / "__conjure_cache__" / "ops" / "root.melc"
     )
 
 
@@ -493,9 +493,9 @@ def test_component_spellbook_bundle_path_uses_relative_config_fragment() -> None
     caching_system = spellbook._get_or_create_caching_system()
 
     assert configuration.system_cache_root_path == cache_root_fragment
-    # Bundle layout is <cache_root>/<frame>/<conduit>.melc, so the bundle's
+    # Bundle layout is <cache_root>/__conjure_cache__/<frame>/<conduit>.melc, so the bundle's
     # parent directory is the frame directory under the configured root.
-    assert caching_system.bundle_path.parent == cache_root_path / "default"
+    assert caching_system.bundle_path.parent == cache_root_path / "__conjure_cache__" / "default"
 
 
 def test_component_spell_emit_cache_writes_payload_into_spellbook_cache() -> None:

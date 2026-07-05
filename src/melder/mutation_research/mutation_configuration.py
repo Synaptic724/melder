@@ -3,6 +3,8 @@ from typing import Dict, Tuple, Type, Union
 
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.utilities.general_base.cleanable import Cleanable
+from melder.crystallizer.crystallizer import Crystallizer
+from melder.crystallizer.persistence.crystals.mutation_research_crystal import MutationResearchCrystal
 from melder.utilities.helpers.id_builder import IDBuilder
 
 
@@ -225,6 +227,30 @@ class MutationResearchConfiguration(Cleanable):
         self.freeze()
         with self._lock:
             self._activated = True
+        # Configuration activation is the emission factor: pull the
+        # crystallizer singleton directly (guarding the pre-boot case,
+        # where the singleton is not yet initialized and construction
+        # requires the hosting Aether), emit when recording, then drop
+        # the local handle.
+        if Crystallizer._initialized:
+            crystallizer = Crystallizer()
+            if crystallizer.activated:
+                configuration_payload: Dict[str, object] = {}
+                for property_name, property_value in self._properties.items():
+                    if (
+                            isinstance(property_value, (str, int, float, bool))
+                            or property_value is None
+                    ):
+                        configuration_payload[property_name] = property_value
+                    else:
+                        configuration_payload[property_name] = str(property_value)
+                crystallizer.emit(
+                    MutationResearchCrystal(
+                        activated=True,
+                        configuration_payload=configuration_payload,
+                    )
+                )
+            del crystallizer
         return self
 
     def with_defaults(self) -> "MutationResearchConfiguration":

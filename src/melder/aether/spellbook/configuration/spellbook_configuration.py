@@ -1,5 +1,5 @@
 import threading
-from typing import Any, Callable, ClassVar, Dict, Iterator, List, Tuple, Type
+from typing import Any, Callable, ClassVar, Dict, Iterator, List, Optional, Tuple, Type
 
 
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
@@ -7,6 +7,8 @@ from melder.utilities.helpers.ulid_factory import new_ulid
 
 # Melder imports
 from melder.utilities.general_base.cleanable import Cleanable
+from melder.crystallizer.crystallizer import Crystallizer
+from melder.crystallizer.persistence.crystals.spellbook_crystal import SpellbookCrystal
 
 
 class SpellbookConfiguration(Cleanable):
@@ -210,12 +212,38 @@ class SpellbookConfiguration(Cleanable):
                 raise RuntimeError("Cannot clear properties after configuration is frozen")
             self._properties.clear()
 
-    def freeze(self) -> None:
+    def freeze(
+            self,
+            origin_spellbook_id: Optional[str] = None,
+            origin_frame_name: Optional[str] = None,
+            origin_dynamic: Optional[bool] = None,
+    ) -> None:
         """
         Freezes the configuration property system.
 
         Once frozen, no properties, including non-idempotent ones, can be modified.
         Validation is performed automatically upon freezing.
+
+        Contract:
+            - Freezing is this configuration's true activation, so it is
+              the emission factor for the spellbook twin: when origin
+              identity is supplied, the world is dynamic, and the
+              crystallizer records, the twin spawns into the active
+              persistence profile.
+            - Standalone freezes (user finalize()/build() before any
+              Spellbook adoption) carry no origin identity and emit
+              nothing; the owning spellbook's conjure-time freeze supplies
+              identity.
+
+        Args:
+            origin_spellbook_id:
+                Owning spellbook identity, supplied by the spellbook's
+                conjure-time freeze path; None for standalone freezes.
+            origin_frame_name:
+                Owning frame name (the twin's parent edge).
+            origin_dynamic:
+                Conjure-time dynamic posture; the twin emits only when
+                True (the recorded lane).
 
         Raises:
             RuntimeError: If the configuration is cleaned.
@@ -228,6 +256,46 @@ class SpellbookConfiguration(Cleanable):
             raise ValueError("SpellbookConfiguration validation failed. Cannot freeze.")
         with self._lock:
             self._frozen = True
+        if (
+                origin_spellbook_id is not None
+                and origin_frame_name is not None
+                and origin_dynamic is True
+        ):
+        # Configuration activation is the emission factor: pull the
+        # crystallizer singleton directly (guarding the pre-boot case,
+        # where the singleton is not yet initialized and construction
+        # requires the hosting Aether), emit when recording, then drop
+        # the local handle.
+            if Crystallizer._initialized:
+                crystallizer = Crystallizer()
+                if crystallizer.activated:
+                    configuration_payload: Dict[str, object] = {}
+                    for property_name, property_value in self._properties.items():
+                        if (
+                                isinstance(property_value, (str, int, float, bool))
+                                or property_value is None
+                        ):
+                            configuration_payload[property_name] = property_value
+                        elif isinstance(property_value, (list, tuple, set, frozenset)):
+                            configuration_payload[property_name] = [
+                                str(item) for item in property_value
+                            ]
+                        else:
+                            configuration_payload[property_name] = str(property_value)
+                    hook_names: List[str] = []
+                    for hook_name in self._conduit_hooks.get(origin_spellbook_id, {}).keys():
+                        hook_names.append("conduit:{0}".format(hook_name))
+                    for hook_name in self._meld_hooks.get(origin_spellbook_id, {}).keys():
+                        hook_names.append("meld:{0}".format(hook_name))
+                    crystallizer.emit(
+                        SpellbookCrystal(
+                            spellbook_id=origin_spellbook_id,
+                            frame_name=origin_frame_name,
+                            configuration_payload=configuration_payload,
+                            hook_names=hook_names,
+                        )
+                    )
+                del crystallizer
 
     def validate(self) -> bool:
         """
