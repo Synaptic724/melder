@@ -7,6 +7,12 @@ from melder.crystallizer.persistence.crystals.aether_crystal import AetherCrysta
 from melder.crystallizer.persistence.crystals.aetheric_frame_crystal import AethericFrameCrystal
 from melder.crystallizer.persistence.crystals.conduit_crystal import ConduitCrystal
 from melder.crystallizer.persistence.crystals.mutation_research_crystal import MutationResearchCrystal
+from melder.crystallizer.persistence.crystals.cluster_crystal import (
+    ClusterCrystal,
+)
+from melder.crystallizer.persistence.crystals.contract_crystal import (
+    ContractCrystal,
+)
 from melder.crystallizer.persistence.crystals.spell_index_crystal import (
     SpellIndexCrystal,
 )
@@ -72,6 +78,8 @@ class PersistenceProfile(Cleanable):
         "_spellbook_crystals_by_id",
         "_conduit_crystals_by_id",
         "_spell_index_crystals_by_index_id",
+        "_contract_crystals_by_contract_id",
+        "_cluster_crystals_by_cluster_id",
         "_spell_crystals_by_spell_id",
         "_inactive_spell_crystals_by_spell_id",
     ]
@@ -113,6 +121,8 @@ class PersistenceProfile(Cleanable):
         self._spellbook_crystals_by_id: Dict[str, SpellbookCrystal] = {}
         self._conduit_crystals_by_id: Dict[str, ConduitCrystal] = {}
         self._spell_index_crystals_by_index_id: Dict[str, SpellIndexCrystal] = {}
+        self._contract_crystals_by_contract_id: Dict[str, ContractCrystal] = {}
+        self._cluster_crystals_by_cluster_id: Dict[str, ClusterCrystal] = {}
         self._spell_crystals_by_spell_id: Dict[str, SpellCrystal] = {}
         self._inactive_spell_crystals_by_spell_id: Dict[str, SpellCrystal] = {}
 
@@ -143,6 +153,8 @@ class PersistenceProfile(Cleanable):
         del self._spellbook_crystals_by_id
         del self._conduit_crystals_by_id
         del self._spell_index_crystals_by_index_id
+        del self._contract_crystals_by_contract_id
+        del self._cluster_crystals_by_cluster_id
         del self._spell_crystals_by_spell_id
         del self._inactive_spell_crystals_by_spell_id
         del self._lock
@@ -226,6 +238,20 @@ class PersistenceProfile(Cleanable):
                     twin.index_id,
                     twin,
                     "spell_index",
+                )
+            elif isinstance(twin, ContractCrystal):
+                self._replace_mapped(
+                    self._contract_crystals_by_contract_id,
+                    twin.contract_id,
+                    twin,
+                    "contract",
+                )
+            elif isinstance(twin, ClusterCrystal):
+                self._replace_mapped(
+                    self._cluster_crystals_by_cluster_id,
+                    twin.cluster_id,
+                    twin,
+                    "cluster",
                 )
             elif isinstance(twin, SpellCrystal):
                 self._record_spell_crystal_locked(twin, active=True)
@@ -418,6 +444,17 @@ class PersistenceProfile(Cleanable):
             ]
             for spellbook_id in remaining_book_ids:
                 self._remove_spellbook_subtree_locked(spellbook_id)
+            cluster_ids = [
+                cluster_id
+                for cluster_id, crystal in (
+                    self._cluster_crystals_by_cluster_id.items()
+                )
+                if crystal.frame_name == frame_name
+            ]
+            for cluster_id in cluster_ids:
+                crystal = self._cluster_crystals_by_cluster_id.pop(cluster_id)
+                if not crystal.cleaned:
+                    crystal.cleanup()
             self._journal("frame_removed", frame_name)
 
     def record_nexus_state(self, state: RecordedUnitState) -> None:
@@ -490,6 +527,58 @@ class PersistenceProfile(Cleanable):
                 twin.cleanup()
             self._journal("spell_index_removed", index_id)
 
+    def remove_contract_crystal(self, contract_id: str) -> None:
+        """
+        Evict one severed contract's relationship twin from the record.
+
+        Contract:
+            - Tolerates a contract that never recorded (journals either
+              way); journals ONE "contract_removed" entry.
+
+        Args:
+            contract_id:
+                The severed contract's record-local ULID key.
+
+        Returns:
+            None.
+
+        Raises:
+            RuntimeError:
+                If the profile has been cleaned.
+        """
+        self.check_cleaned()
+        with self._lock:
+            twin = self._contract_crystals_by_contract_id.pop(contract_id, None)
+            if twin is not None and not twin.cleaned:
+                twin.cleanup()
+            self._journal("contract_removed", contract_id)
+
+    def remove_cluster_crystal(self, cluster_id: str) -> None:
+        """
+        Evict one deleted cluster's twin from the record.
+
+        Contract:
+            - Tolerates a cluster that never recorded (journals either
+              way); journals ONE "cluster_removed" entry.
+
+        Args:
+            cluster_id:
+                The deleted cluster's record-local ULID key.
+
+        Returns:
+            None.
+
+        Raises:
+            RuntimeError:
+                If the profile has been cleaned.
+        """
+        self.check_cleaned()
+        with self._lock:
+            twin = self._cluster_crystals_by_cluster_id.pop(cluster_id, None)
+            if twin is not None and not twin.cleaned:
+                twin.cleanup()
+            self._journal("cluster_removed", cluster_id)
+
     def _remove_spellbook_subtree_locked(self, spellbook_id: str) -> None:
         """
         Internal
@@ -529,6 +618,22 @@ class PersistenceProfile(Cleanable):
         ]
         for index_id in index_ids:
             crystal = self._spell_index_crystals_by_index_id.pop(index_id)
+            if not crystal.cleaned:
+                crystal.cleanup()
+        # Defense net: contracts touching the swept conduits leave too
+        # (the live path evicts via the _remove_contract seam; this covers
+        # gated-off cascades so no relationship outlives its endpoints).
+        swept_conduit_ids = set(conduit_ids)
+        contract_ids = [
+            contract_id
+            for contract_id, crystal in (
+                self._contract_crystals_by_contract_id.items()
+            )
+            if crystal.conduit_a_id in swept_conduit_ids
+            or crystal.conduit_b_id in swept_conduit_ids
+        ]
+        for contract_id in contract_ids:
+            crystal = self._contract_crystals_by_contract_id.pop(contract_id)
             if not crystal.cleaned:
                 crystal.cleanup()
         for location in (
@@ -654,6 +759,10 @@ class PersistenceProfile(Cleanable):
                 "conduit_count": len(self._conduit_crystals_by_id),
                 "spell_index_count":
                     len(self._spell_index_crystals_by_index_id),
+                "contract_count":
+                    len(self._contract_crystals_by_contract_id),
+                "cluster_count":
+                    len(self._cluster_crystals_by_cluster_id),
                 "spell_crystal_count": len(self._spell_crystals_by_spell_id),
                 "inactive_spell_crystal_count":
                     len(self._inactive_spell_crystals_by_spell_id),
@@ -817,6 +926,18 @@ class PersistenceProfile(Cleanable):
                         ),
                     }
                     continue
+                if kind == "cluster_removed":
+                    payloads.setdefault(kind, {})[key] = {
+                        "cluster_id": key,
+                        "removed": True,
+                    }
+                    continue
+                if kind == "contract_removed":
+                    payloads.setdefault(kind, {})[key] = {
+                        "contract_id": key,
+                        "removed": True,
+                    }
+                    continue
                 if kind == "spell_index_removed":
                     payloads.setdefault(kind, {})[key] = {
                         "index_id": key,
@@ -918,6 +1039,10 @@ class PersistenceProfile(Cleanable):
             return self._conduit_crystals_by_id.get(key)
         if kind == "spell_index":
             return self._spell_index_crystals_by_index_id.get(key)
+        if kind == "contract":
+            return self._contract_crystals_by_contract_id.get(key)
+        if kind == "cluster":
+            return self._cluster_crystals_by_cluster_id.get(key)
         if kind == "spell_crystal":
             crystal = self._spell_crystals_by_spell_id.get(key)
             if crystal is None:
@@ -1002,6 +1127,8 @@ class PersistenceProfile(Cleanable):
                 self._spellbook_crystals_by_id,
                 self._conduit_crystals_by_id,
                 self._spell_index_crystals_by_index_id,
+                self._contract_crystals_by_contract_id,
+                self._cluster_crystals_by_cluster_id,
                 self._spell_crystals_by_spell_id,
                 self._inactive_spell_crystals_by_spell_id,
         ):

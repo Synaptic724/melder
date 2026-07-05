@@ -295,6 +295,31 @@ def test_removal_and_state_verbs_route_to_active_profile():
     assert summary["mutation_research_state"] == "enabled"
 
 
+def test_describe_summarizes_the_whole_record():
+    """
+    Purpose:
+        Verify the one-shot operational summary.
+    Contract:
+        describe() reports the active selection, all profiles with their
+        twin counts, the ledger size, and the cached count.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If the summary drifts from record truth.
+    """
+    system = PersistenceSystem()
+    system.create_profile("kit-a")
+    system.record(AetherCrystal())
+    system.create_checkpoint()
+    summary = system.describe()
+    assert summary["active_profile_name"] == "kit-a"
+    assert summary["profile_names"] == ["default", "kit-a"]
+    assert summary["profiles"]["kit-a"]["has_aether_crystal"] is True
+    assert summary["profiles"]["default"]["has_aether_crystal"] is False
+    assert summary["ledger_checkpoint_count"] == 1
+    assert isinstance(summary["cached_checkpoint_count"], int)
+
+
 def test_cleanup_is_idempotent_and_blocks_further_use():
     """
     Purpose:

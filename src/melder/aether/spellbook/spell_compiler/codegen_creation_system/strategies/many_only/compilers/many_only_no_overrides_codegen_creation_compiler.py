@@ -447,6 +447,7 @@ def _hydrate_steps_from_rows(
             "spell_id",
             "creations_target_kind",
             "dependency_resolution_order",
+            "collection_param_names",
             "uses_positional_override",
             "contract_positional_override",
             "has_contract_payload",
@@ -487,6 +488,7 @@ def _hydrate_steps_from_rows(
                 spell=spell,
                 creations_target_kind=row["creations_target_kind"],
                 dependency_resolution_order=dependency_resolution_order,
+                collection_param_names=frozenset(row["collection_param_names"]),
                 uses_positional_override=row["uses_positional_override"],
                 contract_positional_override=row["contract_positional_override"],
                 has_contract_payload=row["has_contract_payload"],
@@ -667,6 +669,11 @@ def _inlinable_common_shape(
     if plan_step.contract_positional_override is not None:
         return None
     if plan_step.uses_positional_override:
+        return None
+    if plan_step.collection_param_names:
+        # Collection sockets must inject a list even with one wired member;
+        # the inlined shape emits bare scalar kwargs, so any collection param
+        # routes the step to the generic `_construct_spell_instance` helper.
         return None
     params: list[Tuple[str, Any]] = []
     for param_name, dependency_keys in plan_step.dependency_resolution_order:
@@ -1055,7 +1062,10 @@ def _build_kwargs_no_overrides(
 
     Contract:
         - Uses dependency_resolution_order produced by Phase 9.
-        - Single dependency maps to one value; multiple map to a list.
+        - Collection sockets (`plan_step.collection_param_names`) always map
+          to a list, even with exactly one wired member.
+        - Non-collection single dependencies map to one value; multiple map
+          to a list.
         - Includes plan-time contract payload values.
     """
     dependency_resolution_order = plan_step.dependency_resolution_order
@@ -1086,6 +1096,7 @@ def _build_kwargs_no_overrides(
     spell = plan_step.spell
     spell_id = spell.spell_index.selected_spell_id
     kwargs: Dict[str, Any] = {}
+    collection_param_names = plan_step.collection_param_names
     for param_name, dependency_keys in dependency_resolution_order:
         dependency_count = len(dependency_keys)
         if dependency_count == 0:
@@ -1093,7 +1104,7 @@ def _build_kwargs_no_overrides(
         if dependency_count == 1:
             dependency_key = dependency_keys[0]
             try:
-                kwargs[param_name] = instance_results[dependency_key]
+                dependency_value = instance_results[dependency_key]
             except KeyError as exc:
                 raise MeldExecutionError(
                     spell_id=spell_id,
@@ -1105,6 +1116,12 @@ def _build_kwargs_no_overrides(
                         f"building args for '{spell_id}'."
                     ),
                 ) from exc
+            if param_name in collection_param_names:
+                # A list[Frame] socket with one wired member still injects a
+                # one-element list; collection-ness is socket truth, not arity.
+                kwargs[param_name] = [dependency_value]
+            else:
+                kwargs[param_name] = dependency_value
             continue
         if dependency_count == 2:
             first_dependency_key = dependency_keys[0]
@@ -1158,7 +1175,7 @@ def _build_kwargs_no_overrides(
                 ) from exc
         if not values:
             continue
-        if len(values) == 1:
+        if len(values) == 1 and param_name not in collection_param_names:
             kwargs[param_name] = values[0]
         else:
             kwargs[param_name] = values

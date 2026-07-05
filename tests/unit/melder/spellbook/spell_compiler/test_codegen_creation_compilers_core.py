@@ -398,6 +398,7 @@ def _make_no_overrides_step_row(spell_id: str) -> dict[str, object]:
         "existence": "many",
         "creations_target_kind": 1,
         "dependency_resolution_order": (),
+        "collection_param_names": (),
         "uses_positional_override": False,
         "contract_positional_override": None,
         "has_contract_payload": False,
@@ -416,6 +417,7 @@ def _make_overrides_step_row(spell_id: str) -> dict[str, object]:
         "creations_target_kind": 1,
         "shared_instance": True,
         "dependency_resolution_order": (),
+        "collection_param_names": (),
         "override_match_prefix": None,
         "override_match_prefix_len": 0,
         "uses_positional_override": False,
@@ -836,6 +838,7 @@ def test_no_overrides_compiler_build_kwargs_single_and_multi_dependency_shapes()
             ("single", (("dep", None),)),
             ("many", (("a", None), ("b", None))),
         ),
+        collection_param_names=frozenset(),
         contract_positional_override=None,
         has_contract_payload=False,
         uses_positional_override=False,
@@ -854,6 +857,37 @@ def test_no_overrides_compiler_build_kwargs_single_and_multi_dependency_shapes()
 
     assert kwargs["single"] == "value"
     assert kwargs["many"] == ["a", "b"]
+
+
+def test_no_overrides_compiler_build_kwargs_wraps_single_member_collection_socket() -> None:
+    """A collection socket with exactly one wired member injects a one-element list, not a bare scalar."""
+    plan_step = SimpleNamespace(
+        spell=SimpleNamespace(
+            spell_index=SimpleNamespace(selected_spell_id="root"),
+            spell_name="root",
+        ),
+        dependency_resolution_order=(
+            ("plugins", (("only", None),)),
+            ("single", (("dep", None),)),
+        ),
+        collection_param_names=frozenset({"plugins"}),
+        contract_positional_override=None,
+        has_contract_payload=False,
+        uses_positional_override=False,
+        contract_payload=None,
+    )
+    instance_results = {
+        ("only", None): "member",
+        ("dep", None): "value",
+    }
+
+    kwargs = no_overrides_compiler_module._build_kwargs_no_overrides(
+        plan_step=plan_step,
+        instance_results=instance_results,
+    )
+
+    assert kwargs["plugins"] == ["member"]
+    assert kwargs["single"] == "value"
 
 
 def test_no_overrides_compiler_construct_spell_instance_rejects_invalid_positional_payload() -> None:
@@ -1093,6 +1127,7 @@ def test_overrides_compiler_build_kwargs_single_and_multi_dependency_shapes() ->
             ("single", (("dep-a", None),)),
             ("multi", (("dep-b", None), ("dep-c", None))),
         ),
+        collection_param_names=frozenset(),
         contract_positional_override=None,
         has_contract_payload=False,
         contract_payload=None,
@@ -1120,6 +1155,7 @@ def test_overrides_compiler_build_kwargs_override_precedence_skips_dependency_lo
     plan_step = SimpleNamespace(
         spell=_make_spell("root"),
         dependency_resolution_order=(("value", (("dep-missing", None),)),),
+        collection_param_names=frozenset(),
         contract_positional_override=None,
         has_contract_payload=False,
         contract_payload=None,
@@ -1140,6 +1176,7 @@ def test_overrides_compiler_build_kwargs_override_precedence_beats_contract_payl
     plan_step = SimpleNamespace(
         spell=_make_spell("root"),
         dependency_resolution_order=(("value", (("dep-missing", None),)),),
+        collection_param_names=frozenset(),
         contract_positional_override=None,
         has_contract_payload=True,
         contract_payload={"value": "contract"},
@@ -1179,6 +1216,7 @@ def test_overrides_compiler_build_kwargs_two_dependency_fast_path_skips_iteratio
     plan_step = SimpleNamespace(
         spell=_make_spell("root"),
         dependency_resolution_order=(("multi", _TwoDependencyKeys()),),
+        collection_param_names=frozenset(),
         contract_positional_override=None,
         has_contract_payload=False,
         contract_payload=None,

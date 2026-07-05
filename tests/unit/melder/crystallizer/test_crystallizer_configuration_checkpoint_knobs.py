@@ -165,6 +165,27 @@ def test_set_property_guards_unknown_keys_and_types():
         configuration.set_property("max_persistence_crystals", "many")
 
 
+def test_auto_flush_defaults_off_and_builds_on():
+    """
+    Purpose:
+        Verify the crash-safe flush knob's default and builder.
+    Contract:
+        auto_flush_checkpoints defaults False; the builder chain sets it;
+        with_defaults() installs the explicit False.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If the knob's default or builder drifts.
+    """
+    configuration = CrystallizerConfiguration()
+    assert configuration.auto_flush_checkpoints is False
+    configuration.with_auto_flush_checkpoints(True)
+    assert configuration.auto_flush_checkpoints is True
+    defaulted = CrystallizerConfiguration().with_defaults()
+    assert defaulted.auto_flush_checkpoints is False
+    assert defaulted.validate() is True
+
+
 def test_frozen_configuration_rejects_mutation():
     """
     Purpose:

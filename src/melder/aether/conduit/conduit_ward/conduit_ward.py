@@ -989,8 +989,12 @@ class ConduitWard(Cleanable):
             # Record: whichever side initiated, its outbound topology just
             # shrank - re-emit BOTH ends' twins (each helper gates itself;
             # a dying conduit's re-emit is swept moments later by its own
-            # book-subtree eviction). This single choke point covers
-            # sever_link AND the bulk teardown sever.
+            # book-subtree eviction), and evict the severed contract's
+            # relationship twin. This single choke point covers sever_link
+            # AND the bulk teardown sever.
+            record_crystallizer = self._conduit._crystallizer
+            if record_crystallizer.activated:
+                record_crystallizer.emit_contract_removed(contract._id)
             self._conduit._emit_conduit_twin()
             target_conduit._emit_conduit_twin()
             return True
@@ -2029,6 +2033,29 @@ class ConduitWard(Cleanable):
                     seen.add(peer._id)
         return receivers
 
+    def _emit_contract_record(self, contract: Contract) -> None:
+        """
+        Internal
+
+        Emit one contract's relationship snapshot into the record.
+
+        Contract:
+            - NO-OP while the crystallizer is not activated.
+            - Full snapshot per emission (replace-on-emit keeps exactly
+              one ContractCrystal per live contract).
+
+        Args:
+            contract:
+                The live contract to snapshot.
+
+        Returns:
+            None.
+        """
+        crystallizer = self._conduit._crystallizer
+        if not crystallizer.activated:
+            return
+        crystallizer.emit(crystallizer.create_contract_crystal(contract))
+
     def _emit_index_notch(
             self,
             index: SpellIndex,
@@ -2057,6 +2084,7 @@ class ConduitWard(Cleanable):
         self.check_cleaned()
         index_id = index.id
         owner_conduit_id = self._conduit._id
+        record_affected_contracts = []
         for contract in self._contracts.values():
             index_detail = (
                 contract._index_details_a.get(index_id)
@@ -2065,6 +2093,7 @@ class ConduitWard(Cleanable):
             if index_detail is None:
                 continue
             index_detail.update_selected(new_spell_id)
+            record_affected_contracts.append(contract)
             peer = contract._get_peer(self)._conduit
             if peer is None or peer._spellbook is None:
                 continue
@@ -2076,6 +2105,9 @@ class ConduitWard(Cleanable):
             new_spell = self._conduit._spellbook.spells.get(index)
             if new_spell is not None:
                 receiver_book._ensure_contracted_active(new_spell, owner_conduit_id)
+        # Record: subscription heads moved on these contracts.
+        for record_contract in record_affected_contracts:
+            self._emit_contract_record(record_contract)
 
     def _emit_index_destroy(self, index_id: str, member_ids: Iterable[str]) -> None:
         """
@@ -2093,11 +2125,13 @@ class ConduitWard(Cleanable):
                 teardown (the live index is already cleaned when this runs).
         """
         self.check_cleaned()
+        record_affected_contracts = []
         for contract in self._contracts.values():
             detail_map = contract._get_index_detail_map(self)
             index_detail = detail_map.get(index_id)
             if index_detail is None:
                 continue
+            record_affected_contracts.append(contract)
             peer = contract._get_peer(self)._conduit
             if peer is not None and peer._spellbook is not None:
                 peer._spellbook._remove_contracted_index(index_id)
@@ -2109,6 +2143,9 @@ class ConduitWard(Cleanable):
             for member_id in member_ids:
                 self._uncontract_member_spell(contract, self, member_id)
             index_detail.cleanup()
+        # Record: the destroyed lineage's subscriptions left these contracts.
+        for record_contract in record_affected_contracts:
+            self._emit_contract_record(record_contract)
 
     def _contract_member_spell(
             self,

@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING, Dict, List, Optional
 
 if TYPE_CHECKING:
     from melder.aether.aether import Aether
+    from melder.aether.conduit.conduit_ward.contract.contract import Contract
     from melder.aether.spellbook.bind.spell_index import SpellIndex
     from melder.aether.spellbook.spell import Spell
 
@@ -14,6 +15,9 @@ from melder.crystallizer.configuration.crystallizer_configuration import (
 from melder.crystallizer.persistence.crystals.spell_crystal import SpellCrystal
 from melder.crystallizer.synthetic_module import SyntheticModule
 from melder.crystallizer.persistence.persistence_system import PersistenceSystem
+from melder.crystallizer.persistence.crystals.contract_crystal import (
+    ContractCrystal,
+)
 from melder.crystallizer.persistence.crystals.spell_index_crystal import (
     SpellIndexCrystal,
 )
@@ -53,6 +57,7 @@ class Crystallizer(Cleanable):
         "_persistence_system",
         "_checkpoint_interval_seconds",
         "_last_automatic_checkpoint_monotonic",
+        "_auto_flush_checkpoints",
     ]
 
     def __new__(
@@ -116,6 +121,7 @@ class Crystallizer(Cleanable):
             # configuration at activate() (0.0 = not yet activated).
             self._checkpoint_interval_seconds: float = 0.0
             self._last_automatic_checkpoint_monotonic: float = 0.0
+            self._auto_flush_checkpoints: bool = False
 
             if configuration is not None:
                 self.configure(configuration)
@@ -150,6 +156,7 @@ class Crystallizer(Cleanable):
             del self._persistence_system
             del self._checkpoint_interval_seconds
             del self._last_automatic_checkpoint_monotonic
+            del self._auto_flush_checkpoints
             del self._configuration
             del self._aether
             del self._id
@@ -315,6 +322,9 @@ class Crystallizer(Cleanable):
             self._persistence_system.set_checkpoint_retention(
                 self._configuration.max_persistence_crystals
             )
+            self._auto_flush_checkpoints = (
+                self._configuration.auto_flush_checkpoints
+            )
             self._last_automatic_checkpoint_monotonic = time.monotonic()
 
     def _maybe_create_automatic_checkpoint(self) -> None:
@@ -351,9 +361,13 @@ class Crystallizer(Cleanable):
             ):
                 return
             self._last_automatic_checkpoint_monotonic = now
-        self._persistence_system.create_checkpoint(
+        sealed_id = self._persistence_system.create_checkpoint(
             description="automatic cadence checkpoint",
         )
+        if self._auto_flush_checkpoints:
+            # Crash-safe lane: the cadence seal ships to the local cache
+            # immediately (one atomic JSON write per interval).
+            self._persistence_system.flush_checkpoint_to_cache(sealed_id)
 
     def deactivate(self) -> None:
         """
@@ -486,6 +500,130 @@ class Crystallizer(Cleanable):
         if not self._activated:
             return
         self._persistence_system.remove_spellbook_subtree(spellbook_id)
+        self._maybe_create_automatic_checkpoint()
+
+    def create_contract_crystal(self, contract: Contract) -> ContractCrystal:
+        """
+        Build one relationship twin from a live ward Contract.
+
+        Purpose:
+            Project the contract's full truth - both conduit endpoints and
+            both sides' spell Details and lineage subscriptions - into
+            detached plain data. Callers emit the result so replace-on-emit
+            keeps exactly one snapshot per contract.
+
+        Contract:
+            - Snapshots under the contract's own lock (consistent view of
+              both detail maps).
+            - Enum values project as `.name` strings; sources sets project
+              as sorted lists; index identities are record-local ULIDs.
+
+        Args:
+            contract:
+                The live Contract to snapshot.
+
+        Returns:
+            ContractCrystal: Detached relationship snapshot.
+
+        Raises:
+            RuntimeError:
+                If the crystallizer has been cleaned or is not activated.
+        """
+        self.check_cleaned()
+        self._require_activated()
+
+        def _detail_payload(detail) -> Dict[str, object]:
+            return {
+                "spell_id": detail.spell_id,
+                "index_id": detail.spell_index.id,
+                "permissions": detail.permissions.name,
+                "contract_type": detail.contract_type.name,
+                "reason": detail.reason.name,
+                "sources": sorted(detail.sources) if detail.sources else [],
+            }
+
+        def _subscription_payload(index_detail) -> Dict[str, object]:
+            return {
+                "index_id": index_detail.spell_index.id,
+                "selected_spell_id": index_detail.selected_spell_id,
+                "permissions": index_detail.permissions.name,
+                "contract_type": index_detail.contract_type.name,
+                "reason": index_detail.reason.name,
+                "sources": (
+                    sorted(index_detail.sources)
+                    if index_detail.sources else []
+                ),
+            }
+
+        with contract._lock:
+            return ContractCrystal(
+                contract_id=contract._id,
+                conduit_a_id=contract._ward_a._id,
+                conduit_b_id=contract._ward_b._id,
+                details_a=[
+                    _detail_payload(detail)
+                    for detail in contract._details_a.values()
+                ],
+                details_b=[
+                    _detail_payload(detail)
+                    for detail in contract._details_b.values()
+                ],
+                index_details_a=[
+                    _subscription_payload(entry)
+                    for entry in contract._index_details_a.values()
+                ],
+                index_details_b=[
+                    _subscription_payload(entry)
+                    for entry in contract._index_details_b.values()
+                ],
+            )
+
+    def emit_cluster_removed(self, cluster_id: str) -> None:
+        """
+        Evict one deleted cluster's twin from the record.
+
+        Contract:
+            - NO-OP while the crystallizer is not activated.
+
+        Args:
+            cluster_id:
+                The deleted cluster's record-local ULID key.
+
+        Returns:
+            None.
+
+        Raises:
+            RuntimeError:
+                If the crystallizer has been cleaned.
+        """
+        self.check_cleaned()
+        if not self._activated:
+            return
+        self._persistence_system.remove_cluster_crystal(cluster_id)
+        self._maybe_create_automatic_checkpoint()
+
+    def emit_contract_removed(self, contract_id: str) -> None:
+        """
+        Evict one severed contract's relationship twin from the record.
+
+        Contract:
+            - NO-OP while the crystallizer is not activated.
+
+        Args:
+            contract_id:
+                The severed contract's record-local ULID key.
+
+        Returns:
+            None.
+
+        Raises:
+            RuntimeError:
+                If the crystallizer has been cleaned.
+        """
+        self.check_cleaned()
+        if not self._activated:
+            return
+        self._persistence_system.remove_contract_crystal(contract_id)
         self._maybe_create_automatic_checkpoint()
 
     def create_spell_index_crystal(
@@ -987,6 +1125,112 @@ class Crystallizer(Cleanable):
         self.check_cleaned()
         self._require_activated()
         return self._persistence_system.list_checkpoint_ids()
+
+    def describe_record(self) -> Dict[str, object]:
+        """
+        Return the whole record's one-shot operational summary
+        (profiles + twin counts + ledger + cache, in one call).
+
+        Returns:
+            Dict[str, object]:
+                The persistence system's describe() payload.
+
+        Raises:
+            RuntimeError:
+                If the crystallizer has been cleaned or is not activated.
+        """
+        self.check_cleaned()
+        self._require_activated()
+        return self._persistence_system.describe()
+
+    def checkpoint_replay_data(self, checkpoint_id: str) -> Dict[str, object]:
+        """
+        Return one checkpoint's detached replay inputs (journal window +
+        captured payloads) - the restore engine's read surface.
+
+        Args:
+            checkpoint_id:
+                ULID identity returned by `create_checkpoint`.
+
+        Returns:
+            Dict[str, object]:
+                {"journal": [[sequence, kind, key], ...],
+                 "payloads": {kind: {key: payload}}}.
+
+        Raises:
+            RuntimeError:
+                If the crystallizer has been cleaned or is not activated.
+            KeyError:
+                If no checkpoint exists under `checkpoint_id`.
+        """
+        self.check_cleaned()
+        self._require_activated()
+        return self._persistence_system.checkpoint_replay_data(checkpoint_id)
+
+    def flush_checkpoint(self, checkpoint_id: Optional[str] = None) -> List[str]:
+        """
+        Flush sealed checkpoint(s) into the local crystallizer cache.
+
+        Args:
+            checkpoint_id:
+                One ledger ULID, or None to flush the whole ledger.
+
+        Returns:
+            List[str]:
+                The flushed checkpoint ids.
+
+        Raises:
+            RuntimeError:
+                If the crystallizer has been cleaned or is not activated.
+            KeyError:
+                If `checkpoint_id` names no ledger crystal.
+        """
+        self.check_cleaned()
+        self._require_activated()
+        return self._persistence_system.flush_checkpoint_to_cache(
+            checkpoint_id
+        )
+
+    def reload_cached_checkpoint(self, checkpoint_id: str) -> Dict[str, object]:
+        """
+        Reload one cached checkpoint back into the ledger (history
+        recovery; world restore remains `load_checkpoint`).
+
+        Args:
+            checkpoint_id:
+                ULID of a previously flushed checkpoint.
+
+        Returns:
+            Dict[str, object]:
+                The (re)loaded checkpoint's describe() summary.
+
+        Raises:
+            RuntimeError:
+                If the crystallizer has been cleaned or is not activated.
+            KeyError:
+                If no cached item exists for `checkpoint_id`.
+        """
+        self.check_cleaned()
+        self._require_activated()
+        return self._persistence_system.reload_checkpoint_from_cache(
+            checkpoint_id
+        )
+
+    def list_cached_checkpoint_ids(self) -> List[str]:
+        """
+        Return every checkpoint id present in the local cache.
+
+        Returns:
+            List[str]:
+                Sorted cached checkpoint ids.
+
+        Raises:
+            RuntimeError:
+                If the crystallizer has been cleaned or is not activated.
+        """
+        self.check_cleaned()
+        self._require_activated()
+        return self._persistence_system.list_cached_checkpoint_ids()
 
     def load_checkpoint(self, checkpoint_id: str) -> None:
         """

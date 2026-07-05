@@ -84,6 +84,37 @@ def test_describe_output_is_detached():
     assert fresh["captured_counts"]["spell_crystal"] == 1
 
 
+def test_replay_data_exposes_window_and_detaches():
+    """
+    Purpose:
+        Verify the restore engine's read surface.
+    Contract:
+        replay_data() returns the ordered journal window and per-kind
+        payload maps, fully detached (mutation never reaches the crystal),
+        and matches the cached-item's segment content.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If the replay surface drifts or shares state.
+    """
+    crystal = _crystal()
+    replay = crystal.replay_data()
+    assert replay["journal"] == [
+        [4, "spell_crystal", "sha-a"], [5, "spell_removed", "sha-b"],
+    ]
+    assert replay["payloads"]["spell_removed"]["sha-b"] == {
+        "spell_id": "sha-b", "removed": True,
+    }
+    replay["journal"].append([9, "x", "y"])
+    replay["payloads"]["spell_crystal"]["sha-a"]["spell_id"] = "mutated"
+    fresh = crystal.replay_data()
+    assert len(fresh["journal"]) == 2
+    assert fresh["payloads"]["spell_crystal"]["sha-a"]["spell_id"] == "sha-a"
+    cached = crystal.to_cached_item()
+    assert cached["journal_segment"] == fresh["journal"]
+    assert cached["captured_payloads"] == fresh["payloads"]
+
+
 def test_cached_item_round_trip_restores_the_artifact():
     """
     Purpose:

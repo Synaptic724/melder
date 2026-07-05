@@ -410,6 +410,40 @@ class Conduit(Cleanable):
             )
         )
 
+    def _emit_contract_record_for(self, peer_conduit: "Conduit") -> None:
+        """
+        Internal
+
+        Re-emit the relationship snapshot for this conduit's contract with
+        one peer, if such a contract exists.
+
+        Purpose:
+            Contract mutations commit through the ward but are admitted by
+            this conduit's public contract verbs; each verb's success tail
+            calls here so the record's ContractCrystal always reflects the
+            post-transaction truth. Tolerates an absent contract (the
+            mutation may have severed it - eviction is emitted by the
+            ward's _remove_contract seam in that case).
+
+        Args:
+            peer_conduit:
+                The other end of the contract relationship.
+
+        Returns:
+            None.
+        """
+        ward = self._conduit_ward
+        contract_id = (
+            ward._initiated_index.get(peer_conduit._id)
+            or ward._received_index.get(peer_conduit._id)
+        )
+        if contract_id is None:
+            return
+        contract = ward._contracts.get(contract_id)
+        if contract is None:
+            return
+        ward._emit_contract_record(contract)
+
     def _ensure_transaction_identity_registered(self) -> None:
         """
         Internal
@@ -3927,8 +3961,11 @@ class Conduit(Cleanable):
             ):
                 target_conduit._nexus._publish_conduit_record(target_conduit)
             # Record: the initiator's outbound topology changed; re-emit
-            # its twin so link_targets carries the new edge.
+            # its twin so link_targets carries the new edge, and record the
+            # freshly created (or re-found) contract relationship itself.
             self._emit_conduit_twin()
+            if self._crystallizer.activated:
+                self._emit_contract_record_for(target_conduit)
 
         return linked
 
@@ -4769,6 +4806,13 @@ class Conduit(Cleanable):
                 link_dependencies=link_dependencies,
             )
 
+            if self._crystallizer.activated:
+                record_peer = self._resolve_peer_conduit_for_contract_hooks(
+                    conduit, conduit_id, aetheric_frame
+                )
+                if record_peer is not None:
+                    self._emit_contract_record_for(record_peer)
+
             if result and (
                 (self._local_conduit_hooks and self._local_conduit_hooks.get("on_contract_created"))
                 or (self._conduit_hooks and self._conduit_hooks.get("on_contract_created"))
@@ -4871,6 +4915,13 @@ class Conduit(Cleanable):
                 aetheric_frame=aetheric_frame,
                 reason=reason,
             )
+
+            if self._crystallizer.activated:
+                record_peer = self._resolve_peer_conduit_for_contract_hooks(
+                    conduit, conduit_id, aetheric_frame
+                )
+                if record_peer is not None:
+                    self._emit_contract_record_for(record_peer)
         except Exception:
             if not reuse_active_transaction:
                 mediator.end_transaction(expected_type="add_spell_or_index_to_contract", success=False)
@@ -4951,6 +5002,13 @@ class Conduit(Cleanable):
                 conduit_id=conduit_id,
                 aetheric_frame=aetheric_frame,
             )
+
+            if self._crystallizer.activated:
+                record_peer = self._resolve_peer_conduit_for_contract_hooks(
+                    conduit, conduit_id, aetheric_frame
+                )
+                if record_peer is not None:
+                    self._emit_contract_record_for(record_peer)
         except Exception:
             if not reuse_active_transaction:
                 mediator.end_transaction(expected_type="remove_spell_or_index_from_contract", success=False)
@@ -5008,6 +5066,13 @@ class Conduit(Cleanable):
             reason=reason,
             link_dependencies=link_dependencies,
         )
+
+        if self._crystallizer.activated:
+            record_peer = self._resolve_peer_conduit_for_contract_hooks(
+                conduit, conduit_id, aetheric_frame
+            )
+            if record_peer is not None:
+                self._emit_contract_record_for(record_peer)
 
         normalized: dict[str, bool] = {}
         if isinstance(report, dict):
@@ -5085,6 +5150,13 @@ class Conduit(Cleanable):
             aetheric_frame=aetheric_frame,
         )
 
+        if self._crystallizer.activated:
+            record_peer = self._resolve_peer_conduit_for_contract_hooks(
+                conduit, conduit_id, aetheric_frame
+            )
+            if record_peer is not None:
+                self._emit_contract_record_for(record_peer)
+
         if result:
             peer = self._resolve_peer_conduit_for_contract_hooks(conduit, conduit_id, aetheric_frame)
             if peer is not None and (self._conduit_hooks or self._local_conduit_hooks):
@@ -5141,6 +5213,13 @@ class Conduit(Cleanable):
             aetheric_frame=aetheric_frame,
         )
 
+        if self._crystallizer.activated:
+            record_peer = self._resolve_peer_conduit_for_contract_hooks(
+                conduit, conduit_id, aetheric_frame
+            )
+            if record_peer is not None:
+                self._emit_contract_record_for(record_peer)
+
         normalized: dict[str, bool] = {}
         if isinstance(report, dict):
             success_values = report.get("success")
@@ -5182,12 +5261,19 @@ class Conduit(Cleanable):
             conduit_id=conduit_id,
             allow_all_links=True,
         )
-        return self._conduit_ward._remove_root_from_contracts(
+        removal_report = self._conduit_ward._remove_root_from_contracts(
             root_spell_id=root_spell_id,
             conduit=conduit,
             conduit_id=conduit_id,
             aetheric_frame=aetheric_frame,
         )
+        if self._crystallizer.activated:
+            record_peer = self._resolve_peer_conduit_for_contract_hooks(
+                conduit, conduit_id, aetheric_frame
+            )
+            if record_peer is not None:
+                self._emit_contract_record_for(record_peer)
+        return removal_report
 
     def add_spell_to_contract_with_dependencies(
             self,
@@ -5257,6 +5343,13 @@ class Conduit(Cleanable):
             conduit_id=conduit_id,
             aetheric_frame=aetheric_frame,
         )
+
+        if self._crystallizer.activated:
+            record_peer = self._resolve_peer_conduit_for_contract_hooks(
+                conduit, conduit_id, aetheric_frame
+            )
+            if record_peer is not None:
+                self._emit_contract_record_for(record_peer)
 
         if result:
             peer = self._resolve_peer_conduit_for_contract_hooks(conduit, conduit_id, aetheric_frame)

@@ -13,6 +13,13 @@ class SpellInjectionParamSource:
     Purpose:
         Describe where one injected parameter obtains its value in the fitted
         injection section of `SpellCodegenModel`.
+
+    Contract:
+        - `is_collection` carries the phase-3 socket truth
+          (`SpellSocketDescriptor.is_collection`) forward so later planner and
+          codegen layers can distinguish a one-member collection from single
+          DI. It must never be inferred from dependency count: a collection
+          socket with exactly one wired provider still injects a list.
     """
 
     __slots__ = [
@@ -20,6 +27,7 @@ class SpellInjectionParamSource:
         "dependency_keys",
         "override_key",
         "contract_key",
+        "is_collection",
     ]
 
     def __init__(
@@ -29,14 +37,25 @@ class SpellInjectionParamSource:
             dependency_keys: Optional[Tuple[InstanceKey, ...]] = None,
             override_key: Optional[str] = None,
             contract_key: Optional[str] = None,
+            is_collection: bool = False,
     ) -> None:
         """
         Build one injection parameter source descriptor.
+
+        Args:
+            kind: Source kind ("dependency" or "contract").
+            dependency_keys: Instance keys this parameter reads, in order.
+            override_key: Root-override key this parameter answers to.
+            contract_key: Contract payload key when contract-sourced.
+            is_collection: True when the underlying constructor socket is a
+                collection DI shape (list[Frame]); the injected value must be
+                a list even when exactly one dependency key is present.
         """
         self.kind: str = kind
         self.dependency_keys: Optional[Tuple[InstanceKey, ...]] = dependency_keys
         self.override_key: Optional[str] = override_key
         self.contract_key: Optional[str] = contract_key
+        self.is_collection: bool = is_collection
 
 
 class SpellInjectionInstanceSpec:
@@ -53,6 +72,7 @@ class SpellInjectionInstanceSpec:
         "allow_list_aggregation",
         "uses_positional_override",
         "contract_payload",
+        "collection_param_names",
     ]
 
     def __init__(
@@ -65,11 +85,22 @@ class SpellInjectionInstanceSpec:
     ) -> None:
         """
         Build one injection spec for one instance key.
+
+        Contract:
+            - `collection_param_names` is derived from the supplied
+              param_sources (`is_collection` flags), never from dependency
+              counts, so a one-member collection socket stays a collection all
+              the way into codegen.
         """
         self.param_sources: Dict[str, SpellInjectionParamSource] = param_sources
         self.allow_list_aggregation: bool = allow_list_aggregation
         self.uses_positional_override: bool = uses_positional_override
         self.contract_payload: Optional[Dict[str, Any]] = contract_payload
+        self.collection_param_names: frozenset[str] = frozenset(
+            param_name
+            for param_name, param_source in param_sources.items()
+            if param_source.is_collection
+        )
 
 
 class SpellInjectionAnalysis(Cleanable):

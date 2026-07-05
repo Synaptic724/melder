@@ -289,6 +289,42 @@ class PersistenceSystem(Cleanable):
         self.check_cleaned()
         self.active_profile.remove_spellbook_subtree(spellbook_id)
 
+    def remove_cluster_crystal(self, cluster_id: str) -> None:
+        """
+        Evict one deleted cluster's twin from the ACTIVE profile.
+
+        Args:
+            cluster_id:
+                The deleted cluster's record-local ULID key.
+
+        Returns:
+            None.
+
+        Raises:
+            RuntimeError:
+                If the subsystem has been cleaned.
+        """
+        self.check_cleaned()
+        self.active_profile.remove_cluster_crystal(cluster_id)
+
+    def remove_contract_crystal(self, contract_id: str) -> None:
+        """
+        Evict one severed contract's twin from the ACTIVE profile.
+
+        Args:
+            contract_id:
+                The severed contract's record-local ULID key.
+
+        Returns:
+            None.
+
+        Raises:
+            RuntimeError:
+                If the subsystem has been cleaned.
+        """
+        self.check_cleaned()
+        self.active_profile.remove_contract_crystal(contract_id)
+
     def remove_spell_index_crystal(self, index_id: str) -> None:
         """
         Evict one destroyed index's twin from the ACTIVE profile.
@@ -534,6 +570,100 @@ class PersistenceSystem(Cleanable):
         with self._lock:
             return sorted(self._profiles_by_name.keys())
 
+    def flush_checkpoint_to_cache(self, checkpoint_id: Optional[str] = None) -> List[str]:
+        """
+        Flush sealed checkpoint(s) into the local crystallizer cache.
+
+        Purpose:
+            The seal-then-ship lane: a ledger crystal's cached-item form
+            lands on disk so history survives the process (reload via
+            `reload_checkpoint_from_cache`; full world restore stays the
+            bootstrap epic's engine).
+
+        Args:
+            checkpoint_id:
+                One ledger ULID, or None to flush EVERY ledger crystal.
+
+        Returns:
+            List[str]:
+                The flushed checkpoint ids.
+
+        Raises:
+            RuntimeError:
+                If the subsystem has been cleaned.
+            KeyError:
+                If `checkpoint_id` names no ledger crystal.
+        """
+        self.check_cleaned()
+        with self._lock:
+            if checkpoint_id is not None:
+                targets = [self._require_checkpoint(checkpoint_id)]
+            else:
+                targets = list(self._checkpoint_crystals_by_id.values())
+            flushed: List[str] = []
+            for crystal in targets:
+                self._crystallizer_cache.store_cached_item(
+                    crystal.id, crystal.to_cached_item()
+                )
+                flushed.append(crystal.id)
+            return flushed
+
+    def reload_checkpoint_from_cache(self, checkpoint_id: str) -> Dict[str, object]:
+        """
+        Reload one cached checkpoint back into the ledger.
+
+        Purpose:
+            History recovery: rebuild the sealed artifact from its cached
+            item (e.g. after a fresh boot) so describe/list see it again.
+
+        Contract:
+            - Insert-if-absent: an id already in the ledger keeps its live
+              crystal (the cache never overwrites live history).
+            - Retention dropout does NOT run here - reloading old history
+              must not evict newer crystals; the cap applies to new seals.
+
+        Args:
+            checkpoint_id:
+                ULID of a previously flushed checkpoint.
+
+        Returns:
+            Dict[str, object]:
+                The (re)loaded crystal's describe() summary.
+
+        Raises:
+            RuntimeError:
+                If the subsystem has been cleaned.
+            KeyError:
+                If no cached item exists for `checkpoint_id`.
+        """
+        self.check_cleaned()
+        with self._lock:
+            existing = self._checkpoint_crystals_by_id.get(checkpoint_id)
+            if existing is not None:
+                return existing.describe()
+            cached_item = self._crystallizer_cache.load_cached_item(
+                checkpoint_id
+            )
+            crystal = PersistenceCrystal.from_cached_item(cached_item)
+            self._checkpoint_crystals_by_id[crystal.id] = crystal
+            return crystal.describe()
+
+    def list_cached_checkpoint_ids(self) -> List[str]:
+        """
+        Return every checkpoint id present in the local cache.
+
+        Returns:
+            List[str]:
+                Sorted cached checkpoint ids (empty when nothing flushed).
+
+        Raises:
+            RuntimeError:
+                If the subsystem has been cleaned.
+        """
+        self.check_cleaned()
+        with self._lock:
+            return self._crystallizer_cache.list_cached_item_ids()
+
     def set_checkpoint_retention(self, max_crystals: int) -> None:
         """
         Install the checkpoint-ledger retention cap.
@@ -664,6 +794,60 @@ class PersistenceSystem(Cleanable):
         self.check_cleaned()
         with self._lock:
             return self._require_checkpoint(checkpoint_id).describe()
+
+    def describe(self) -> Dict[str, object]:
+        """
+        Return the whole record's one-shot operational summary.
+
+        Returns:
+            Dict[str, object]:
+                Active profile name, all profile names, per-profile twin
+                counts (each profile's describe), ledger size, and the
+                cached checkpoint count on disk.
+
+        Raises:
+            RuntimeError:
+                If the subsystem has been cleaned.
+        """
+        self.check_cleaned()
+        with self._lock:
+            return {
+                "active_profile_name": self._active_profile_name,
+                "profile_names": sorted(self._profiles_by_name.keys()),
+                "profiles": {
+                    name: profile.describe()
+                    for name, profile in self._profiles_by_name.items()
+                },
+                "ledger_checkpoint_count": len(
+                    self._checkpoint_crystals_by_id
+                ),
+                "cached_checkpoint_count": len(
+                    self._crystallizer_cache.list_cached_item_ids()
+                ),
+            }
+
+    def checkpoint_replay_data(self, checkpoint_id: str) -> Dict[str, object]:
+        """
+        Return one ledger checkpoint's detached replay inputs.
+
+        Args:
+            checkpoint_id:
+                ULID identity returned by `create_checkpoint`.
+
+        Returns:
+            Dict[str, object]:
+                {"journal": ordered window entries, "payloads": captured
+                final states by kind and key} - fully detached.
+
+        Raises:
+            RuntimeError:
+                If the subsystem has been cleaned.
+            KeyError:
+                If no checkpoint exists under `checkpoint_id`.
+        """
+        self.check_cleaned()
+        with self._lock:
+            return self._require_checkpoint(checkpoint_id).replay_data()
 
     def list_checkpoint_ids(self) -> List[str]:
         """

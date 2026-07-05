@@ -589,7 +589,6 @@ def test_c1_zero_implementations_fails_conjure() -> None:
         spellbook.cleanup()
 
 
-@pytest.mark.xfail(reason="pending fix: generalized codegen must wrap a single collection member in a list", strict=False)
 def test_c1_single_implementation_injects_one() -> None:
     """C1: exactly one provider yields a one-element list."""
     spellbook = _make_spellbook()
@@ -638,7 +637,6 @@ def test_c1_mixed_existence_still_injects_all() -> None:
         spellbook.cleanup()
 
 
-@pytest.mark.xfail(reason="pending fix: generalized codegen must wrap a single collection member in a list", strict=False)
 def test_c1_collection_over_concrete_element_type() -> None:
     """C1 characterization: list[Engine] over a concrete element resolves the bound engine(s)."""
     spellbook = _make_spellbook()
@@ -648,6 +646,23 @@ def test_c1_collection_over_concrete_element_type() -> None:
         spellbook.bind(spell=NeedsEngineList, existence=Existence.unique, permissions="create")
         conduit = spellbook.conjure(name="root")
         assert len(conduit.meld(spell=NeedsEngineList).engines) == 1
+    finally:
+        if conduit is not None:
+            conduit.cleanup()
+        spellbook.cleanup()
+
+
+def test_c1_single_many_existence_member_injects_one_element_list() -> None:
+    """C1 regression: a lone many-existence provider still injects a one-element list (many_only lane)."""
+    spellbook = _make_spellbook()
+    conduit = None
+    try:
+        spellbook.bind(spell=PluginA, existence=Existence.many, permissions="create", spellframe=IPlugin)
+        spellbook.bind(spell=NeedsPlugins, existence=Existence.many, permissions="create")
+        conduit = spellbook.conjure(name="root")
+        instance = conduit.meld(spell=NeedsPlugins)
+        assert isinstance(instance.plugins, list)
+        assert len(instance.plugins) == 1
     finally:
         if conduit is not None:
             conduit.cleanup()

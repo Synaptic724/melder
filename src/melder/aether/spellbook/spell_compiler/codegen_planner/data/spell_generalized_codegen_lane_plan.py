@@ -100,6 +100,7 @@ class SpellGeneralizedCodegenPlanStep:
         "_dependency_keys",
         "_dependency_keys_by_param",
         "_dependency_resolution_order",
+        "_collection_param_names",
         "_override_keys",
         "_override_match_prefix",
         "_override_match_prefix_len",
@@ -131,6 +132,7 @@ class SpellGeneralizedCodegenPlanStep:
             dependency_keys: List[InstanceKey],
             dependency_keys_by_param: Dict[str, List[InstanceKey]],
             dependency_resolution_order: List[Tuple[str, List[InstanceKey]]],
+            collection_param_names: frozenset[str],
             override_keys: List[str],
             override_match_prefix: Optional[int],
             override_match_prefix_len: int,
@@ -176,6 +178,8 @@ class SpellGeneralizedCodegenPlanStep:
             raise ValueError("dependency_keys_by_param must not be None.")
         if dependency_resolution_order is None:
             raise ValueError("dependency_resolution_order must not be None.")
+        if collection_param_names is None:
+            raise ValueError("collection_param_names must not be None.")
         if override_keys is None:
             raise ValueError("override_keys must not be None.")
         if override_match_prefix_len is None:
@@ -213,6 +217,7 @@ class SpellGeneralizedCodegenPlanStep:
         self._dependency_keys = dependency_keys
         self._dependency_keys_by_param = dependency_keys_by_param
         self._dependency_resolution_order = dependency_resolution_order
+        self._collection_param_names = collection_param_names
         self._override_keys = override_keys
         self._override_match_prefix = override_match_prefix
         self._override_match_prefix_len = override_match_prefix_len
@@ -299,6 +304,19 @@ class SpellGeneralizedCodegenPlanStep:
         Return the pre-flattened dependency resolution order for this step.
         """
         return self._dependency_resolution_order
+
+    @property
+    def collection_param_names(self) -> frozenset[str]:
+        """
+        Return the constructor parameter names that are collection DI sockets.
+
+        Contract:
+            - Carries phase-3 socket truth (list[Frame] shapes) into codegen so
+              emitters wrap these parameters in a list REGARDLESS of how many
+              dependency keys resolved - one member still injects a one-element
+              list. Never derive collection-ness from dependency count.
+        """
+        return self._collection_param_names
 
     @property
     def override_keys(self) -> List[str]:
@@ -1217,6 +1235,7 @@ class SpellGeneralizedCodegenPlanBuilder:
                     dependency_resolution_order=list(
                         dependency_keys_by_param.items()
                     ),
+                    collection_param_names=injection_spec.collection_param_names,
                     override_keys=override_keys,
                     override_match_prefix=override_match_prefix,
                     override_match_prefix_len=override_match_prefix_len,
@@ -1549,6 +1568,7 @@ class SpellGeneralizedCodegenPlanBuilder:
                     dependency_keys=dependency_keys,
                     dependency_keys_by_param=dependency_keys_by_param,
                     dependency_resolution_order=dependency_resolution_order,
+                    collection_param_names=injection_spec.collection_param_names,
                     override_keys=override_keys,
                     override_match_prefix=override_match_prefix,
                     override_match_prefix_len=override_match_prefix_len,
@@ -2096,6 +2116,13 @@ class SpellManyOnlyCodegenPlanBuilder(SpellGeneralizedCodegenPlanBuilder):
                             break
             else:
                 param_order = list(dependency_keys_by_param.keys())
+                positional_ok = False
+
+            if step.collection_param_names:
+                # Specialized positional CALLn modes pass one bare scalar per
+                # dependency; collection sockets must inject a list even with
+                # one member, so any collection param routes this step through
+                # the CALLN fallback (kwargs path, which wraps by socket truth).
                 positional_ok = False
 
             fast_param_group_offsets[step_index] = len(fast_param_group_names)

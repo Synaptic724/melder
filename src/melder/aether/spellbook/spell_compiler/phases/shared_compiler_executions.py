@@ -929,6 +929,7 @@ class SharedCompilerExecutions:
                             dependency_keys,
                             override_key,
                             contract_key,
+                            bool(param_source.is_collection),
                         )
                     )
 
@@ -1068,6 +1069,7 @@ class SharedCompilerExecutions:
             "creations_target_kind": step.creations_target_kind,
             "shared_instance": step.shared_instance,
             "dependency_resolution_order": dependency_resolution_order,
+            "collection_param_names": tuple(sorted(step.collection_param_names)),
             "override_match_prefix": override_match_prefix,
             "override_match_prefix_len": override_match_prefix_len,
             "override_keys": override_keys,
@@ -1133,6 +1135,7 @@ class SharedCompilerExecutions:
             step.existence.name,
             step.creations_target_kind,
             dependency_resolution_order,
+            tuple(sorted(step.collection_param_names)),
             bool(step.uses_positional_override),
             SharedCompilerExecutions.freeze_phase11_schema_value(
                 step.contract_positional_override
@@ -1235,6 +1238,7 @@ class SharedCompilerExecutions:
                     dependency_keys,
                     override_key,
                     param_source.contract_key,
+                    bool(param_source.is_collection),
                 )
             )
 

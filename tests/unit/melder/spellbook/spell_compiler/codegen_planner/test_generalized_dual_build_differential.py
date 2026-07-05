@@ -74,12 +74,14 @@ def source(deps=(), override_key=None, contract_key=None):
         dependency_keys=list(deps), override_key=override_key,
         contract_key=contract_key)
 
-def spec(param_sources=None, allow_list=False, uses_pos=False, payload=None):
+def spec(param_sources=None, allow_list=False, uses_pos=False, payload=None,
+         collections=()):
     return SimpleNamespace(
         param_sources=dict(param_sources or {}),
         allow_list_aggregation=allow_list,
         uses_positional_override=uses_pos,
-        contract_payload=payload)
+        contract_payload=payload,
+        collection_param_names=frozenset(collections))
 
 def make_model(records, keys_by_spell, specs_by_key, order, root_key,
                shared=(), canonical=None):
@@ -111,7 +113,8 @@ def record(existence, disposal=(), user_obj=None, spell=None):
 STEP_ATTRS = (
     "instance_key", "occurrence", "existence", "creations_target_kind",
     "shared_instance", "dependency_keys", "dependency_keys_by_param",
-    "dependency_resolution_order", "override_keys", "override_match_prefix",
+    "dependency_resolution_order", "collection_param_names",
+    "override_keys", "override_match_prefix",
     "override_match_prefix_len", "expects_overrides", "contract_keys",
     "allow_list_aggregation", "uses_positional_override", "contract_payload",
     "contract_positional_override", "has_contract_payload", "lock_hint",

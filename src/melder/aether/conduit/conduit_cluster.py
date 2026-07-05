@@ -8,6 +8,10 @@ from melder.aether.aetheric_frame.dev_ops.devops_identity import DevopsIdentity
 from melder.aether.aetheric_frame.dev_ops.devops_information_registry import (
     DevopsInformationRegistry,
 )
+from melder.crystallizer.crystallizer import Crystallizer
+from melder.crystallizer.persistence.crystals.cluster_crystal import (
+    ClusterCrystal,
+)
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
 from melder.aether.conduit.conduit_ward.contract.detail_reason import DetailReason
@@ -195,6 +199,11 @@ class ConduitCluster(Cleanable):
             object_ref=self,
         )
         self.master_conduit_id: Optional[str] = None
+        # Record: an empty created cluster IS configured state (its name
+        # exists in the frame cloud); emit the birth snapshot so restore
+        # rebuilds empty clusters too (config-less-unit-at-init precedent).
+        with self._lock:
+            self._emit_cluster_record()
 
     def cleanup(self) -> None:
         """
@@ -212,6 +221,17 @@ class ConduitCluster(Cleanable):
             if self._cleaned:
                 return
             self._cleaned = True
+            # Record eviction: a live cluster deletion takes its twin with
+            # it (in Aether full teardown the crystallizer is already
+            # cleaned - frames die first - so this skips there).
+            if Crystallizer._initialized:
+                record_crystallizer = Crystallizer()
+                if (
+                        not record_crystallizer.cleaned
+                        and record_crystallizer.activated
+                ):
+                    record_crystallizer.emit_cluster_removed(self._id)
+                del record_crystallizer
             member_ids = list(self.members)
             if self.members is not None:
                 self.members.clear()
@@ -233,6 +253,52 @@ class ConduitCluster(Cleanable):
             del self._aetheric_frame_name
             del self._name
         del self._lock
+
+    def _emit_cluster_record(self) -> None:
+        """
+        Internal
+
+        Emit this cluster's membership/leadership snapshot into the record.
+
+        Purpose:
+            Clusters have no crystallizer-bearing parent object, so this
+            follows the configuration precedent: pull the singleton
+            (guarded for the pre-boot case), emit when recording, drop the
+            handle. Replace-on-emit keeps exactly one snapshot per cluster.
+
+        Contract:
+            - NO-OP before the Aether boots or while the crystallizer is
+              not activated.
+            - Callers hold `self._lock` (the snapshot reads members/shares/
+              leader consistently).
+
+        Returns:
+            None.
+        """
+        if not Crystallizer._initialized:
+            return
+        crystallizer = Crystallizer()
+        if crystallizer.activated:
+            crystallizer.emit(
+                ClusterCrystal(
+                    cluster_id=self._id,
+                    cluster_name=self._name,
+                    frame_name=self._aetheric_frame_name,
+                    member_conduit_ids=sorted(self.members),
+                    leader_conduit_id=self.master_conduit_id,
+                    shared_spells=[
+                        {
+                            "owner_conduit_id": owner_id,
+                            "index_id": shared_index.id,
+                        }
+                        for owner_id, shared_indexes in (
+                            self.shared_spells.items()
+                        )
+                        for shared_index in shared_indexes
+                    ],
+                )
+            )
+        del crystallizer
 
     @property
     def id(self) -> str:
@@ -259,6 +325,7 @@ class ConduitCluster(Cleanable):
         with self._lock:
             self.members.add(conduit_id)
             self._devops_identity.register_cluster_member(conduit_id)
+            self._emit_cluster_record()
 
     def remove_member(self, conduit_id: str) -> None:
         """
@@ -272,6 +339,7 @@ class ConduitCluster(Cleanable):
             self.members.discard(conduit_id)
             self.shared_spells.pop(conduit_id, None)
             self._devops_identity.unregister_cluster_member(conduit_id)
+            self._emit_cluster_record()
 
     def add_shared_spell(self, owner_id: str, spell_index: SpellIndex) -> None:
         """
@@ -285,6 +353,7 @@ class ConduitCluster(Cleanable):
         with self._lock:
             bucket = self.shared_spells.setdefault(owner_id, set())
             bucket.add(spell_index)
+            self._emit_cluster_record()
 
     def remove_shared_spell(self, owner_id: str, spell_index: SpellIndex) -> None:
         """
@@ -302,6 +371,7 @@ class ConduitCluster(Cleanable):
             bucket.discard(spell_index)
             if not bucket:
                 self.shared_spells.pop(owner_id, None)
+            self._emit_cluster_record()
 
     def get_shared_spells(self) -> Dict[str, Set[SpellIndex]]:
         """
@@ -559,6 +629,8 @@ class ConduitCluster(Cleanable):
             member = self._resolve_conduit_by_id(member_id)
             member._cluster_creations.bind(leader._creations)
         self.master_conduit_id = leader_conduit_id
+        with self._lock:
+            self._emit_cluster_record()
 
     def unbind_elected_leader(self) -> None:
         """
@@ -594,6 +666,8 @@ class ConduitCluster(Cleanable):
             member = self._resolve_conduit_by_id(member_id)
             member._cluster_creations.unbind()
         self.master_conduit_id = None
+        with self._lock:
+            self._emit_cluster_record()
 
     def bind_member(self, conduit: "Conduit") -> None:
         """

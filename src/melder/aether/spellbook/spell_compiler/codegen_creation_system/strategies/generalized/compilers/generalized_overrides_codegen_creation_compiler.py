@@ -655,6 +655,7 @@ def _build_shape_source_step_metadata(
         "creations_target_kind",
         "uses_positional_override",
         "dependency_resolution_order",
+        "collection_param_names",
         "contract_positional_override",
         "has_contract_payload",
         "contract_payload_items",
@@ -684,6 +685,7 @@ def _build_shape_source_step_metadata(
             )
             for param_name, dependency_keys in row["dependency_resolution_order"]
         )
+        collection_param_names = frozenset(row["collection_param_names"])
         has_contract_payload = bool(row["has_contract_payload"])
         contract_payload_items: Tuple[Tuple[str, Any], ...] = ()
         if has_contract_payload:
@@ -756,6 +758,7 @@ def _build_shape_source_step_metadata(
                 bool(row["uses_positional_override"]),
                 spell_id == root_spell_id and has_root_positional_override,
                 dependency_resolution_order,
+                collection_param_names,
                 row["contract_positional_override"],
                 has_contract_payload,
                 contract_payload_items,
@@ -825,6 +828,7 @@ def _build_overrides_codegen_creation_executor_shape_source(
             use_positional_override,
             has_static_root_positional_override,
             dependency_resolution_order,
+            collection_param_names,
             contract_positional_override,
             has_contract_payload,
             contract_payload_items,
@@ -846,6 +850,7 @@ def _build_overrides_codegen_creation_executor_shape_source(
             use_positional_override=use_positional_override,
             has_static_root_positional_override=has_static_root_positional_override,
             dependency_resolution_order=dependency_resolution_order,
+            collection_param_names=collection_param_names,
             contract_positional_override=contract_positional_override,
             has_contract_payload=has_contract_payload,
             contract_payload_items=contract_payload_items,
@@ -877,6 +882,7 @@ def _append_overrides_construct_inline_source(
         static_override_target_count: int,
         positional_args_possible: bool,
         dependency_resolution_order: Tuple[Tuple[str, Tuple[Tuple[str, Optional[int]], ...]], ...],
+        collection_param_names: frozenset[str],
         contract_positional_override: Optional[Sequence[Any]],
         has_contract_payload: bool,
         contract_payload_items: Tuple[Tuple[str, Any], ...],
@@ -968,6 +974,7 @@ def _append_overrides_construct_inline_source(
         static_override_target_count=static_override_target_count,
         positional_args_possible=positional_args_possible,
         dependency_resolution_order=dependency_resolution_order,
+        collection_param_names=collection_param_names,
         contract_positional_override=contract_positional_override,
         has_contract_payload=has_contract_payload,
         contract_payload_items=contract_payload_items,
@@ -991,6 +998,7 @@ def _append_overrides_kwargs_inline_source(
         static_override_target_count: int,
         positional_args_possible: bool,
         dependency_resolution_order: Tuple[Tuple[str, Tuple[Tuple[str, Optional[int]], ...]], ...],
+        collection_param_names: frozenset[str],
         contract_positional_override: Optional[Sequence[Any]],
         has_contract_payload: bool,
         contract_payload_items: Tuple[Tuple[str, Any], ...],
@@ -1004,6 +1012,8 @@ def _append_overrides_kwargs_inline_source(
           precedence semantics.
         - Emits static parameter/dependency lookups from shape metadata to
           remove runtime helper and per-step dependency-shape branching.
+        - Collection sockets (`collection_param_names`) emit list-wrapped
+          assignments even with exactly one dependency key.
         - Preserves missing-dependency error translation contract.
     """
     if (
@@ -1137,11 +1147,17 @@ def _append_overrides_kwargs_inline_source(
             dependency_key = dependency_keys[0]
             dependency_key_literal = repr(dependency_key)
             dependency_name_literal = repr(dependency_key[0])
+            if param_name in collection_param_names:
+                # A list[Frame] socket with one wired member still injects a
+                # one-element list; socket truth, not arity, decides shape.
+                value_expression = f"[instance_results[{dependency_key_literal}]]"
+            else:
+                value_expression = f"instance_results[{dependency_key_literal}]"
             lines.extend([
                 f"{body_indent}try:",
                 (
                     f"{body_indent}    kwargs_{step_index}[{param_name_literal}] = "
-                    f"instance_results[{dependency_key_literal}]"
+                    f"{value_expression}"
                 ),
                 f"{body_indent}except KeyError as exc:",
             ])
@@ -1325,6 +1341,7 @@ def _append_no_overrides_kwargs_inline_source(
         step_index: int,
         indent: str,
         dependency_resolution_order: Tuple[Tuple[str, Tuple[Tuple[str, Optional[int]], ...]], ...],
+        collection_param_names: frozenset[str],
         contract_positional_override: Optional[Sequence[Any]],
         has_contract_payload: bool,
         contract_payload_items: Tuple[Tuple[str, Any], ...],
@@ -1338,6 +1355,8 @@ def _append_no_overrides_kwargs_inline_source(
         - Mirrors `_build_kwargs_no_overrides(...)` dependency/contract behavior.
         - Avoids override-membership/update work in shape lanes where overrides
           are statically absent.
+        - Collection sockets (`collection_param_names`) emit list-wrapped
+          assignments even with exactly one dependency key.
         - Preserves missing-dependency error translation contract.
     """
     if (
@@ -1413,11 +1432,17 @@ def _append_no_overrides_kwargs_inline_source(
             dependency_key = dependency_keys[0]
             dependency_key_literal = repr(dependency_key)
             dependency_name_literal = repr(dependency_key[0])
+            if param_name in collection_param_names:
+                # A list[Frame] socket with one wired member still injects a
+                # one-element list; socket truth, not arity, decides shape.
+                value_expression = f"[instance_results[{dependency_key_literal}]]"
+            else:
+                value_expression = f"instance_results[{dependency_key_literal}]"
             lines.extend([
                 f"{indent}try:",
                 (
                     f"{indent}    kwargs_{step_index}[{param_name_literal}] = "
-                    f"instance_results[{dependency_key_literal}]"
+                    f"{value_expression}"
                 ),
                 f"{indent}except KeyError as exc:",
             ])
@@ -1516,6 +1541,7 @@ def _append_overrides_construct_no_overrides_source(
         indent: str,
         positional_args_possible: bool,
         dependency_resolution_order: Tuple[Tuple[str, Tuple[Tuple[str, Optional[int]], ...]], ...],
+        collection_param_names: frozenset[str],
         contract_positional_override: Optional[Sequence[Any]],
         has_contract_payload: bool,
         contract_payload_items: Tuple[Tuple[str, Any], ...],
@@ -1541,6 +1567,7 @@ def _append_overrides_construct_no_overrides_source(
         step_index=step_index,
         indent=indent,
         dependency_resolution_order=dependency_resolution_order,
+        collection_param_names=collection_param_names,
         contract_positional_override=contract_positional_override,
         has_contract_payload=has_contract_payload,
         contract_payload_items=contract_payload_items,
@@ -1789,6 +1816,7 @@ def _append_overrides_step_shape_source(
         use_positional_override: bool,
         has_static_root_positional_override: bool,
         dependency_resolution_order: Tuple[Tuple[str, Tuple[Tuple[str, Optional[int]], ...]], ...],
+        collection_param_names: frozenset[str],
         contract_positional_override: Optional[Sequence[Any]],
         has_contract_payload: bool,
         contract_payload_items: Tuple[Tuple[str, Any], ...],
@@ -1916,6 +1944,7 @@ def _append_overrides_step_shape_source(
                 indent="    ",
                 positional_args_possible=positional_args_possible,
                 dependency_resolution_order=dependency_resolution_order,
+                collection_param_names=collection_param_names,
                 contract_positional_override=contract_positional_override,
                 has_contract_payload=has_contract_payload,
                 contract_payload_items=contract_payload_items,
@@ -1931,6 +1960,7 @@ def _append_overrides_step_shape_source(
                 static_override_target_count=static_override_target_count,
                 positional_args_possible=positional_args_possible,
                 dependency_resolution_order=dependency_resolution_order,
+                collection_param_names=collection_param_names,
                 contract_positional_override=contract_positional_override,
                 has_contract_payload=has_contract_payload,
                 contract_payload_items=contract_payload_items,
@@ -1996,6 +2026,7 @@ def _append_overrides_step_shape_source(
                 indent="                ",
                 positional_args_possible=positional_args_possible,
                 dependency_resolution_order=dependency_resolution_order,
+                collection_param_names=collection_param_names,
                 contract_positional_override=contract_positional_override,
                 has_contract_payload=has_contract_payload,
                 contract_payload_items=contract_payload_items,
@@ -2011,6 +2042,7 @@ def _append_overrides_step_shape_source(
                 static_override_target_count=static_override_target_count,
                 positional_args_possible=positional_args_possible,
                 dependency_resolution_order=dependency_resolution_order,
+                collection_param_names=collection_param_names,
                 contract_positional_override=contract_positional_override,
                 has_contract_payload=has_contract_payload,
                 contract_payload_items=contract_payload_items,
@@ -2058,6 +2090,7 @@ def _append_overrides_step_shape_source(
                 indent="                ",
                 positional_args_possible=positional_args_possible,
                 dependency_resolution_order=dependency_resolution_order,
+                collection_param_names=collection_param_names,
                 contract_positional_override=contract_positional_override,
                 has_contract_payload=has_contract_payload,
                 contract_payload_items=contract_payload_items,
@@ -2073,6 +2106,7 @@ def _append_overrides_step_shape_source(
                 static_override_target_count=static_override_target_count,
                 positional_args_possible=positional_args_possible,
                 dependency_resolution_order=dependency_resolution_order,
+                collection_param_names=collection_param_names,
                 contract_positional_override=contract_positional_override,
                 has_contract_payload=has_contract_payload,
                 contract_payload_items=contract_payload_items,
@@ -2116,6 +2150,7 @@ def _append_overrides_step_shape_source(
                 indent="                ",
                 positional_args_possible=positional_args_possible,
                 dependency_resolution_order=dependency_resolution_order,
+                collection_param_names=collection_param_names,
                 contract_positional_override=contract_positional_override,
                 has_contract_payload=has_contract_payload,
                 contract_payload_items=contract_payload_items,
@@ -2131,6 +2166,7 @@ def _append_overrides_step_shape_source(
                 static_override_target_count=static_override_target_count,
                 positional_args_possible=positional_args_possible,
                 dependency_resolution_order=dependency_resolution_order,
+                collection_param_names=collection_param_names,
                 contract_positional_override=contract_positional_override,
                 has_contract_payload=has_contract_payload,
                 contract_payload_items=contract_payload_items,
@@ -2175,6 +2211,7 @@ def _append_overrides_step_shape_source(
                 indent="            ",
                 positional_args_possible=positional_args_possible,
                 dependency_resolution_order=dependency_resolution_order,
+                collection_param_names=collection_param_names,
                 contract_positional_override=contract_positional_override,
                 has_contract_payload=has_contract_payload,
                 contract_payload_items=contract_payload_items,
@@ -2190,6 +2227,7 @@ def _append_overrides_step_shape_source(
                 static_override_target_count=static_override_target_count,
                 positional_args_possible=positional_args_possible,
                 dependency_resolution_order=dependency_resolution_order,
+                collection_param_names=collection_param_names,
                 contract_positional_override=contract_positional_override,
                 has_contract_payload=has_contract_payload,
                 contract_payload_items=contract_payload_items,
@@ -2488,6 +2526,7 @@ def _hydrate_steps_from_rows(
             "creations_target_kind",
             "shared_instance",
             "dependency_resolution_order",
+            "collection_param_names",
             "override_match_prefix",
             "override_match_prefix_len",
             "uses_positional_override",
@@ -2527,6 +2566,7 @@ def _hydrate_steps_from_rows(
             )
             for param_name, dependency_keys in row["dependency_resolution_order"]
         )
+        collection_param_names = frozenset(row["collection_param_names"])
         has_contract_payload = bool(row["has_contract_payload"])
         contract_payload = None
         if has_contract_payload:
@@ -2543,6 +2583,7 @@ def _hydrate_steps_from_rows(
                 creations_target_kind=row["creations_target_kind"],
                 shared_instance=row["shared_instance"],
                 dependency_resolution_order=dependency_resolution_order,
+                collection_param_names=collection_param_names,
                 override_match_prefix=row["override_match_prefix"],
                 override_match_prefix_len=row["override_match_prefix_len"],
                 uses_positional_override=row["uses_positional_override"],
@@ -2858,6 +2899,7 @@ def _build_kwargs_with_overrides(
     spell = plan_step.spell
     spell_id = spell.spell_index.selected_spell_id
     kwargs: Dict[str, Any] = {}
+    collection_param_names = plan_step.collection_param_names
 
     for param_name, dependency_keys in dependency_resolution_order:
         if param_name in override_values:
@@ -2868,7 +2910,7 @@ def _build_kwargs_with_overrides(
         if dependency_count == 1:
             dependency_key = dependency_keys[0]
             try:
-                kwargs[param_name] = instance_results[dependency_key]
+                dependency_value = instance_results[dependency_key]
             except KeyError as exc:
                 raise MeldExecutionError(
                     spell_id=spell_id,
@@ -2880,6 +2922,12 @@ def _build_kwargs_with_overrides(
                         f"building args for '{spell_id}'."
                     ),
                 ) from exc
+            if param_name in collection_param_names:
+                # A list[Frame] socket with one wired member still injects a
+                # one-element list; collection-ness is socket truth, not arity.
+                kwargs[param_name] = [dependency_value]
+            else:
+                kwargs[param_name] = dependency_value
             continue
         if dependency_count == 2:
             first_dependency_key = dependency_keys[0]
@@ -2933,7 +2981,7 @@ def _build_kwargs_with_overrides(
                 ) from exc
         if not values:
             continue
-        if len(values) == 1:
+        if len(values) == 1 and param_name not in collection_param_names:
             kwargs[param_name] = values[0]
         else:
             kwargs[param_name] = values

@@ -577,10 +577,12 @@ def _emit_construct_instance(
         return
     payload_names: Tuple[str, ...] = ()
     positional: Optional[Any] = None
+    collection_param_names: frozenset[str] = frozenset()
     if row is not None:
         extras = _row_contract_call_extras(row)
         if extras is not None:
             payload_names, positional = extras
+        collection_param_names = frozenset(row["collection_param_names"])
     has_call_args = bool(
         inlinable_params or payload_names or positional is not None
     )
@@ -592,9 +594,10 @@ def _emit_construct_instance(
         if positional is not None:
             lines.append(f"{indent}        *positional_{step_index},")
         # Flat cursor over the row's flattened dependency-key tuple: single-dep
-        # params compile to one scalar reference; collection-DI params compile
-        # to an order-preserving list literal (parity with the generic
-        # `_build_kwargs_no_overrides`: >=2 deps -> list, 1 -> scalar).
+        # NON-collection params compile to one scalar reference; collection-DI
+        # params compile to an order-preserving list literal REGARDLESS of
+        # member count (parity with the generic `_build_kwargs_no_overrides`:
+        # collection socket -> list even with 1 member; >=2 deps -> list).
         flat_dep_cursor = 0
         for param_name, dependency_keys in inlinable_params:
             if key_to_step_index is not None:
@@ -609,7 +612,10 @@ def _emit_construct_instance(
                     for offset in range(len(dependency_keys))
                 ]
             flat_dep_cursor += len(dependency_keys)
-            if len(dependency_keys) == 1:
+            if (
+                    len(dependency_keys) == 1
+                    and param_name not in collection_param_names
+            ):
                 value_expression = references[0]
             else:
                 value_expression = "[" + ", ".join(references) + "]"
@@ -723,11 +729,11 @@ def row_inlinable_common_shape(
         - Returns (param_name, dependency_key_tuple) pairs; every entry is a
           TUPLE of keys (single-dep params carry a 1-tuple).
         - Callable, non-existing-creation spells with no contract payload and
-          no positional override are inlinable; collection-DI params (two or
-          more dependencies) are now inlinable too - emission produces an
-          order-preserving list literal, matching the generic
-          `_build_kwargs_no_overrides` semantics exactly (>=2 deps -> list,
-          1 dep -> scalar, 0 deps -> parameter omitted).
+          no positional override are inlinable; collection-DI params are
+          inlinable too - emission produces an order-preserving list literal,
+          matching the generic `_build_kwargs_no_overrides` semantics exactly
+          (collection socket -> list even with exactly 1 member; >=2 deps ->
+          list; non-collection 1 dep -> scalar; 0 deps -> parameter omitted).
         - Requires the family row flags `spell_is_callable` and
           `spell_is_existing_creation`. Family manifest rows always carry
           them (the manifest builder stamps both), so access is direct; a

@@ -356,6 +356,10 @@ class FakeConduit:
         """Create a conduit with a ward and a fake spellbook."""
         self._lock = threading.RLock()
         self._id = conduit_id
+        # Real conduits pull a non-owning crystallizer at init; the ward's
+        # contract-record seams read `.activated` through it. "Present but
+        # not recording" makes every record seam skip.
+        self._crystallizer = SimpleNamespace(cleaned=False, activated=False)
         self._name = name
         self.__debugger_mode__ = False
         self.__dynamic_environment__ = dynamic
@@ -397,6 +401,17 @@ class FakeConduit:
             policy,
             self._ward_frame,
         )
+
+    def _emit_conduit_twin(self) -> None:
+        """
+        No-op record emitter for the ward's link/sever seams.
+
+        Real conduits re-emit their twin when link topology changes; these
+        tests run without a recording crystallizer, so the seam call is
+        absorbed silently (matching the real helper, which gates itself
+        off in a never-activated world).
+        """
+        return None
 
     @property
     def cleaned(self) -> bool:

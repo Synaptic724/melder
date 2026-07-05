@@ -239,6 +239,37 @@ class PersistenceCrystal(Cleanable):
             "twin_custody": "captured",
         }
 
+    def replay_data(self) -> Dict[str, object]:
+        """
+        Return the checkpoint's detached replay inputs.
+
+        Purpose:
+            The restore engine's read surface: the ordered journal window
+            (what happened, in sequence) plus the captured payloads (each
+            identity's final state within the window). describe() carries
+            counts only; this carries the substance.
+
+        Returns:
+            Dict[str, object]:
+                {"journal": [[sequence, kind, key], ...] in window order,
+                 "payloads": {kind: {key: payload}}} - fully detached.
+
+        Raises:
+            RuntimeError:
+                If the crystal has been cleaned (wiped).
+        """
+        self.check_cleaned()
+        return {
+            "journal": [
+                [sequence, kind, key]
+                for sequence, kind, key in self._journal_segment
+            ],
+            "payloads": {
+                kind: {key: dict(payload) for key, payload in by_key.items()}
+                for kind, by_key in self._captured_payloads.items()
+            },
+        }
+
     def to_cached_item(self) -> Dict[str, object]:
         """
         Return the checkpoint's complete cached-item form.

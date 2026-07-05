@@ -70,6 +70,7 @@ class ManyOnlyCodegenPlanStep:
         "_spell",
         "_shared_instance",
         "_dependency_resolution_order",
+        "_collection_param_names",
         "_uses_positional_override",
         "_contract_positional_override",
         "_has_contract_payload",
@@ -86,6 +87,7 @@ class ManyOnlyCodegenPlanStep:
             spell: Any,
             shared_instance: bool,
             dependency_resolution_order: List[Tuple[str, List[InstanceKey]]],
+            collection_param_names: frozenset[str],
             uses_positional_override: bool,
             contract_positional_override: Optional[Any],
             has_contract_payload: bool,
@@ -96,11 +98,14 @@ class ManyOnlyCodegenPlanStep:
         """
         Initialize one many-only execution step.
         """
+        if collection_param_names is None:
+            raise ValueError("collection_param_names must not be None.")
         self._instance_key = instance_key
         self._occurrence = occurrence
         self._spell = spell
         self._shared_instance = shared_instance
         self._dependency_resolution_order = dependency_resolution_order
+        self._collection_param_names = collection_param_names
         self._uses_positional_override = uses_positional_override
         self._contract_positional_override = contract_positional_override
         self._has_contract_payload = has_contract_payload
@@ -142,6 +147,19 @@ class ManyOnlyCodegenPlanStep:
     def dependency_resolution_order(self) -> List[Tuple[str, List[InstanceKey]]]:
         """Return ordered parameter-to-dependency bindings."""
         return self._dependency_resolution_order
+
+    @property
+    def collection_param_names(self) -> frozenset[str]:
+        """
+        Return the constructor parameter names that are collection DI sockets.
+
+        Contract:
+            - Carries phase-3 socket truth (list[Frame] shapes) into codegen so
+              emitters wrap these parameters in a list REGARDLESS of how many
+              dependency keys resolved. Never derive collection-ness from
+              dependency count.
+        """
+        return self._collection_param_names
 
     @property
     def uses_positional_override(self) -> bool:
@@ -857,6 +875,7 @@ class ManyOnlyCodegenPlanBuilder:
                         spell_id in instance_shape.shared_spell_ids
                     ),
                     dependency_resolution_order=dependency_resolution_order,
+                    collection_param_names=inject_spec.collection_param_names,
                     uses_positional_override=inject_spec.uses_positional_override,
                     contract_positional_override=contract_positional_override,
                     has_contract_payload=has_contract_payload,
@@ -976,6 +995,13 @@ class ManyOnlyCodegenPlanBuilder:
                     for param_name, _dependency_keys
                     in step.dependency_resolution_order
                 ]
+                positional_ok = False
+
+            if step.collection_param_names:
+                # Specialized positional CALLn modes pass one bare scalar per
+                # dependency; collection sockets must inject a list even with
+                # one member, so any collection param routes this step through
+                # the CALLN fallback (kwargs path, which wraps by socket truth).
                 positional_ok = False
 
             ordered_dependency_groups: List[List[int]] = []

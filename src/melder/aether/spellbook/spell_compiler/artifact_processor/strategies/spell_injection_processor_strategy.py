@@ -56,7 +56,6 @@ class SpellInjectionProcessorStrategy(SpellArtifactProcessorStrategy):
               summary selectors owned by this strategy.
             - Does not read or build old `InjectionPlan` objects.
         """
-        _ = spell
         _ = artifact
         graph_shape = model.graph_shape
         if graph_shape is None:
@@ -78,6 +77,7 @@ class SpellInjectionProcessorStrategy(SpellArtifactProcessorStrategy):
             root_spell_id=graph_shape.root_spell_id,
             root_instance_key=instance_shape.root_instance_key,
             instance_specs_by_instance_key=self._build_instance_specs(
+                spell=spell,
                 occurrence_graph=graph_shape.occurrence_graph,
                 instance_shape=instance_shape,
                 contract_shape=contract_shape,
@@ -112,6 +112,7 @@ class SpellInjectionProcessorStrategy(SpellArtifactProcessorStrategy):
     def _build_instance_specs(
             self,
             *,
+            spell: Spell,
             occurrence_graph: Dict[OccurrenceKey, Dict[str, list[OccurrenceKey]]],
             instance_shape,
             contract_shape,
@@ -124,8 +125,36 @@ class SpellInjectionProcessorStrategy(SpellArtifactProcessorStrategy):
             - Non-shared spell ids resolve through path-bearing instance keys.
             - Contract payloads attach only to the matching provider
               occurrence.
+            - Collection truth is read from the durable phase-3 local topology
+              in SpellSystemStates (same surface phase 6 and phase 8 read) and
+              stamped per parameter source; it is NEVER inferred from
+              dependency count, so one-member collections stay collections.
         """
         instance_specs_by_instance_key: Dict[InstanceKey, SpellInjectionInstanceSpec] = {}
+        # Per-spell collection-socket sets, resolved lazily once per spell id.
+        # The topology registry is the phase-3 producer's durable output; a
+        # missing topology (e.g. existing-creation spells) yields no
+        # collection params rather than an error.
+        spell_system_states = spell._spellbook._spell_system_states
+        collection_params_by_spell_id: Dict[str, frozenset[str]] = {}
+
+        def _collection_params_for(target_spell_id: str) -> frozenset[str]:
+            cached_params = collection_params_by_spell_id.get(target_spell_id)
+            if cached_params is not None:
+                return cached_params
+            topology = spell_system_states.get_local_topology_by_id(
+                target_spell_id
+            )
+            if topology is None:
+                collection_params: frozenset[str] = frozenset()
+            else:
+                collection_params = frozenset(
+                    socket.param_name
+                    for socket in topology.iter_sockets()
+                    if socket.is_collection
+                )
+            collection_params_by_spell_id[target_spell_id] = collection_params
+            return collection_params
 
         for spell_id, instance_keys in instance_shape.instance_keys_by_spell_id.items():
             shared_spell = spell_id in instance_shape.shared_spell_ids
@@ -165,6 +194,7 @@ class SpellInjectionProcessorStrategy(SpellArtifactProcessorStrategy):
                 param_sources: Dict[str, SpellInjectionParamSource] = {}
                 allow_list_aggregation = False
                 uses_positional_override = False
+                collection_params = _collection_params_for(spell_id)
 
                 for param_name, dependency_occurrences in dependencies.items():
                     dependency_keys = []
@@ -174,12 +204,16 @@ class SpellInjectionProcessorStrategy(SpellArtifactProcessorStrategy):
                             dependency_keys.append((dependency_spell_id, None))
                         else:
                             dependency_keys.append((dependency_spell_id, dependency_path))
-                    if len(dependency_keys) > 1:
+                    # Collection truth comes from the phase-3 socket flag, not
+                    # from arity: a one-member list[Frame] must aggregate too.
+                    param_is_collection = param_name in collection_params
+                    if param_is_collection or len(dependency_keys) > 1:
                         allow_list_aggregation = True
                     param_sources[param_name] = SpellInjectionParamSource(
                         kind="dependency",
                         dependency_keys=tuple(dependency_keys),
                         override_key=param_name,
+                        is_collection=param_is_collection,
                     )
 
                 if normalized_contract_payload is not None:
@@ -202,6 +236,7 @@ class SpellInjectionProcessorStrategy(SpellArtifactProcessorStrategy):
                                 dependency_keys=existing_param_source.dependency_keys,
                                 override_key=existing_param_source.override_key or param_name,
                                 contract_key=param_name,
+                                is_collection=existing_param_source.is_collection,
                             )
 
                 instance_specs_by_instance_key[instance_key] = SpellInjectionInstanceSpec(

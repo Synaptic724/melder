@@ -28,6 +28,7 @@ _REQUIRED_ROW_FIELDS = (
     "existence",
     "creations_target_kind",
     "dependency_resolution_order",
+    "collection_param_names",
     "uses_positional_override",
     "contract_positional_override",
     "has_contract_payload",
@@ -63,6 +64,7 @@ class CodegenStepRuntimeRow(Cleanable):
         "existence",
         "creations_target_kind",
         "dependency_resolution_order",
+        "collection_param_names",
         "uses_positional_override",
         "contract_positional_override",
         "has_contract_payload",
@@ -82,6 +84,7 @@ class CodegenStepRuntimeRow(Cleanable):
             existence: Existence,
             creations_target_kind: int,
             dependency_resolution_order: Tuple[Tuple[str, Tuple[Any, ...]], ...],
+            collection_param_names: frozenset[str],
             uses_positional_override: bool,
             contract_positional_override: Any,
             has_contract_payload: bool,
@@ -101,6 +104,7 @@ class CodegenStepRuntimeRow(Cleanable):
         self.existence = existence
         self.creations_target_kind = creations_target_kind
         self.dependency_resolution_order = dependency_resolution_order
+        self.collection_param_names = collection_param_names
         self.uses_positional_override = uses_positional_override
         self.contract_positional_override = contract_positional_override
         self.has_contract_payload = has_contract_payload
@@ -128,6 +132,7 @@ class CodegenStepRuntimeRow(Cleanable):
         del self.existence
         del self.creations_target_kind
         del self.dependency_resolution_order
+        del self.collection_param_names
         del self.uses_positional_override
         del self.contract_positional_override
         del self.has_contract_payload
@@ -204,6 +209,7 @@ def build_runtime_rows(
                 existence=existence,
                 creations_target_kind=row["creations_target_kind"],
                 dependency_resolution_order=dependency_resolution_order,
+                collection_param_names=frozenset(row["collection_param_names"]),
                 uses_positional_override=bool(row["uses_positional_override"]),
                 contract_positional_override=row["contract_positional_override"],
                 has_contract_payload=bool(row["has_contract_payload"]),

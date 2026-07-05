@@ -365,3 +365,102 @@ def test_peer_teardown_clears_the_initiators_recorded_topology():
     snapshots = _conduit_snapshots(crystallizer)
     assert snapshots[conduit_a._id]["link_targets"] == []
     assert dead_id not in snapshots
+
+
+def _contract_snapshots(crystallizer):
+    """
+    Return the record's CURRENT contract snapshots keyed by contract id.
+
+    Returns:
+        dict: contract_id -> relationship twin payload.
+    """
+    profile = crystallizer._persistence_system.active_profile
+    payloads, _entries, _rng = profile.capture_segment_since(0)
+    return payloads.get("contract", {})
+
+
+def test_link_records_the_contract_relationship():
+    """
+    Purpose:
+        Verify link() records the freshly created contract.
+    Contract:
+        After owner.link(peer) the record holds exactly one contract
+        snapshot whose endpoints are the two conduit ids and whose detail
+        views are empty (nothing shared yet).
+    Returns:
+        None.
+    Raises:
+        AssertionError: If the relationship goes unrecorded.
+    """
+    crystallizer, _book, conduit_a, _spell_id = _recorded_world()
+    _book_b, conduit_b = _second_conduit(name="contract-peer")
+    conduit_a.link(conduit_b)
+    snapshots = _contract_snapshots(crystallizer)
+    assert len(snapshots) == 1
+    snapshot = list(snapshots.values())[0]
+    assert {snapshot["conduit_a_id"], snapshot["conduit_b_id"]} == {
+        conduit_a._id, conduit_b._id,
+    }
+    assert snapshot["details_a"] == [] and snapshot["details_b"] == []
+    assert crystallizer.describe_profile()["contract_count"] == 1
+
+
+def test_contract_detail_mutations_re_snapshot_the_relationship():
+    """
+    Purpose:
+        Verify the public contract verbs keep the snapshot current.
+    Contract:
+        Borrowing the owner's spell re-snapshots the contract with one
+        detail carrying the spell SHA and permission; the detail sits on
+        exactly one side.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If detail truth lags the runtime.
+    """
+    crystallizer, _book, conduit_a, spell_id = _recorded_world()
+    _book_b, conduit_b = _second_conduit(name="borrowing-peer")
+    conduit_a.link(conduit_b)
+    conduit_b.add_spell_to_contract(
+        spell_id=spell_id,
+        conduit=conduit_a,
+        permissions="create",
+    )
+    snapshots = _contract_snapshots(crystallizer)
+    snapshot = list(snapshots.values())[0]
+    all_details = snapshot["details_a"] + snapshot["details_b"]
+    assert len(all_details) == 1
+    assert all_details[0]["spell_id"] == spell_id
+    assert all_details[0]["permissions"] == "create"
+
+
+def test_severing_the_last_detail_evicts_the_contract_record():
+    """
+    Purpose:
+        Verify auto-severance reaches the record.
+    Contract:
+        Removing the last borrowed spell severs the contract (runtime
+        behavior), which must EVICT the relationship twin and journal the
+        contract_removed tombstone.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If a severed relationship survives in the record.
+    """
+    crystallizer, _book, conduit_a, spell_id = _recorded_world()
+    _book_b, conduit_b = _second_conduit(name="severed-peer")
+    conduit_a.link(conduit_b)
+    conduit_b.add_spell_to_contract(
+        spell_id=spell_id,
+        conduit=conduit_a,
+        permissions="create",
+    )
+    assert crystallizer.describe_profile()["contract_count"] == 1
+    conduit_b.remove_spell_from_contract(
+        spell_id=spell_id,
+        conduit=conduit_a,
+    )
+    assert crystallizer.describe_profile()["contract_count"] == 0
+    profile = crystallizer._persistence_system.active_profile
+    payloads, _entries, _rng = profile.capture_segment_since(0)
+    assert len(payloads.get("contract_removed", {})) == 1

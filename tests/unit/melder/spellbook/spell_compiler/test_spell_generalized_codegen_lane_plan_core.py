@@ -30,6 +30,7 @@ def _make_step() -> SpellGeneralizedCodegenPlanStep:
         dependency_keys=[],
         dependency_keys_by_param={},
         dependency_resolution_order=[],
+        collection_param_names=frozenset(),
         override_keys=[],
         override_match_prefix=None,
         override_match_prefix_len=0,
@@ -75,6 +76,7 @@ def test_generalized_codegen_plan_step_exposes_runtime_relevant_fields() -> None
         dependency_keys=[("dep", None)],
         dependency_keys_by_param={"svc": [("dep", None)]},
         dependency_resolution_order=[("svc", [("dep", None)])],
+        collection_param_names=frozenset(),
         override_keys=["svc"],
         override_match_prefix=0,
         override_match_prefix_len=1,
@@ -102,6 +104,7 @@ def test_generalized_codegen_plan_step_exposes_runtime_relevant_fields() -> None
     assert step.dependency_keys == [("dep", None)]
     assert step.dependency_keys_by_param == {"svc": [("dep", None)]}
     assert step.dependency_resolution_order == [("svc", [("dep", None)])]
+    assert step.collection_param_names == frozenset()
     assert step.override_keys == ["svc"]
     assert step.override_match_prefix == 0
     assert step.override_match_prefix_len == 1

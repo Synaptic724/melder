@@ -48,9 +48,14 @@ def _row(
         *,
         callable_spell: bool = True,
         disposal: bool = False,
+        collections: Sequence[str] = (),
 ) -> Dict[str, Any]:
     """
     Build one synthetic manifest step row with the full required field set.
+
+    Args:
+        collections: Parameter names whose sockets are collection DI shapes;
+            emitted as the row's `collection_param_names` field.
     """
     return {
         "spell_id": spell_id,
@@ -60,6 +65,7 @@ def _row(
             (name, tuple((dep, None) for dep in dep_ids))
             for name, dep_ids in deps
         ),
+        "collection_param_names": tuple(collections),
         "creations_target_kind": 0,
         "use_spell_lock_hint": existence == "unique",
         "has_contract_payload": False,

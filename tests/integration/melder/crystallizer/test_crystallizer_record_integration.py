@@ -243,3 +243,50 @@ def test_conduit_teardown_sweeps_the_book_subtree():
     assert summary["spell_crystal_count"] == 0
     assert summary["frame_count"] == 1
 
+
+def test_flush_and_reload_recover_a_recorded_worlds_history(tmp_path, monkeypatch):
+    """
+    Purpose:
+        Verify the durability loop against a REAL recorded world.
+    Contract:
+        A world's sealed checkpoint (config twins + custody + membership
+        in the window) flushes to the local cache and, after the ledger
+        loses it to a tightened retention window, reloads with identical
+        replay data - journal and payloads included.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If durable history diverges from the sealed truth.
+    """
+    from melder.crystallizer.persistence.crystallizer_cache import (
+        CrystallizerCache,
+    )
+    cache_root = tmp_path / "__crystallizer_cache__"
+    monkeypatch.setattr(
+        CrystallizerCache,
+        "resolve_cache_root_path",
+        staticmethod(lambda: cache_root),
+    )
+    crystallizer = _activate_crystallizer()
+    book = _dynamic_book()
+    book.bind(
+        spell=BasicService,
+        existence=Existence.unique,
+        permissions="create",
+    )
+    book.conjure(dynamic=True, name="durable-root")
+    checkpoint_id = crystallizer.create_checkpoint(description="world-seal")
+    sealed_replay = crystallizer.checkpoint_replay_data(checkpoint_id)
+    assert crystallizer.flush_checkpoint(checkpoint_id) == [checkpoint_id]
+    # Tighten retention and seal twice: the flushed crystal drops out of
+    # the in-memory ledger while its cached-item survives on disk.
+    crystallizer._persistence_system.set_checkpoint_retention(2)
+    crystallizer.create_checkpoint()
+    crystallizer.create_checkpoint()
+    with pytest.raises(KeyError):
+        crystallizer.describe_checkpoint(checkpoint_id)
+    reloaded = crystallizer.reload_cached_checkpoint(checkpoint_id)
+    assert reloaded["description"] == "world-seal"
+    assert (
+        crystallizer.checkpoint_replay_data(checkpoint_id) == sealed_replay
+    )

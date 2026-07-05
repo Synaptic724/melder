@@ -57,6 +57,7 @@ class CrystallizerConfiguration(Cleanable):
             "remove_inactive_synthmodules": bool,
             "checkpoint_interval_minutes": int,
             "max_persistence_crystals": int,
+            "auto_flush_checkpoints": bool,
         }
 
     def cleanup(self) -> None:
@@ -265,6 +266,42 @@ class CrystallizerConfiguration(Cleanable):
         self._require_positive_int("max_persistence_crystals", value)
         return int(value)
 
+    @property
+    def auto_flush_checkpoints(self) -> bool:
+        """
+        Return whether automatic checkpoints also flush to the local cache.
+
+        Contract:
+            - Default False: automatic cadence seals stay in-memory ledger
+              crystals; durability is a manual flush_checkpoint call.
+              TRUE makes every automatic seal ALSO ship its cached-item to
+              the local crystallizer cache (crash-safe history at the cost
+              of one atomic JSON write per cadence seal).
+
+        Returns:
+            bool: The configured knob, default False.
+        """
+        self.check_cleaned()
+        value = self._properties.get("auto_flush_checkpoints", False)
+        return bool(value)
+
+    def with_auto_flush_checkpoints(
+            self,
+            enabled: bool,
+    ) -> "CrystallizerConfiguration":
+        """
+        Set whether automatic checkpoints also flush to the local cache.
+
+        Args:
+            enabled:
+                True = every cadence seal ships its cached-item to disk.
+
+        Returns:
+            CrystallizerConfiguration: This configuration instance.
+        """
+        self.set_property("auto_flush_checkpoints", bool(enabled))
+        return self
+
     @staticmethod
     def _require_positive_int(key: str, value: object) -> None:
         """
@@ -311,8 +348,9 @@ class CrystallizerConfiguration(Cleanable):
         Contract:
             - `user_source_root_paths` is the only hard-required property.
             - `remove_inactive_synthmodules` (False),
-              `checkpoint_interval_minutes` (60), and
-              `max_persistence_crystals` (100) carry defaults and are only
+              `checkpoint_interval_minutes` (60),
+              `max_persistence_crystals` (100), and
+              `auto_flush_checkpoints` (False) carry defaults and are only
               semantically checked when set explicitly.
 
         Returns:
@@ -401,6 +439,7 @@ class CrystallizerConfiguration(Cleanable):
         self.set_property("remove_inactive_synthmodules", False)
         self.set_property("checkpoint_interval_minutes", 60)
         self.set_property("max_persistence_crystals", 100)
+        self.set_property("auto_flush_checkpoints", False)
         return self
 
     def with_checkpoint_interval_minutes(

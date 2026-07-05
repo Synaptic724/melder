@@ -65,18 +65,20 @@ def reset_crystallizer_singleton():
     Crystallizer._reset_singleton_for_tests()
 
 
-def _activated_crystallizer(interval_minutes=60, max_crystals=100):
+def _activated_crystallizer(interval_minutes=60, max_crystals=100,
+                            auto_flush=False):
     """
     Build one activated crystallizer with the given checkpoint knobs.
 
     Returns:
-        Crystallizer: The activated singleton (no Aether world attached).
+        Crystallizer: The activated singleton (hosted by the fixture Aether).
     """
     configuration = (
         CrystallizerConfiguration()
         .with_defaults()
         .with_checkpoint_interval_minutes(interval_minutes)
         .with_max_persistence_crystals(max_crystals)
+        .with_auto_flush_checkpoints(auto_flush)
     )
     configuration.activate()
     crystallizer = Crystallizer()
@@ -217,6 +219,40 @@ def test_cadence_seals_exactly_once_per_elapsed_interval(monkeypatch):
     assert description == "automatic cadence checkpoint"
     crystallizer.emit_spell_crystal(_StubSpellCrystal("sha-c"), active=True)
     assert len(crystallizer.list_checkpoint_ids()) == 1
+
+
+def test_auto_flush_ships_cadence_seals_to_the_cache(monkeypatch, tmp_path):
+    """
+    Purpose:
+        Verify the crash-safe lane: cadence seals hit the local cache.
+    Contract:
+        With auto_flush_checkpoints=True, the automatic seal's id appears
+        in the cache immediately; with the default False, the cache stays
+        empty after a cadence seal.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If the auto-flush knob leaks or under-ships.
+    """
+    from melder.crystallizer.persistence.crystallizer_cache import (
+        CrystallizerCache,
+    )
+    cache_root = tmp_path / "__crystallizer_cache__"
+    monkeypatch.setattr(
+        CrystallizerCache,
+        "resolve_cache_root_path",
+        staticmethod(lambda: cache_root),
+    )
+    clock = {"now": 1000.0}
+    monkeypatch.setattr(
+        crystallizer_module.time, "monotonic", lambda: clock["now"]
+    )
+    crystallizer = _activated_crystallizer(interval_minutes=1, auto_flush=True)
+    clock["now"] += 61.0
+    crystallizer.emit_spell_crystal(_StubSpellCrystal("sha-a"), active=True)
+    ledger = crystallizer.list_checkpoint_ids()
+    assert len(ledger) == 1
+    assert crystallizer.list_cached_checkpoint_ids() == ledger
 
 
 def test_cadence_stamp_starts_at_activation(monkeypatch):
