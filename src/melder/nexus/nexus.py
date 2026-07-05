@@ -31,6 +31,7 @@ if TYPE_CHECKING:
         FrameACLProfile,
     )
 
+from melder.crystallizer.persistence.recorded_unit_state import RecordedUnitState
 from melder.nexus.acl.frame_acl_compiler import FrameACLCompiler
 from melder.nexus.acl.frame_acl_compiled_access_surface import (
     CompiledFrameACLAccessSurface,
@@ -250,6 +251,11 @@ class Nexus(Cleanable):
                 return
             self._logger.info("Cleaning Nexus singleton state.", "cleanup")
             self._cleaned = True
+            # Record the teardown when the record outlives Nexus. In the
+            # Aether full-teardown lane the crystallizer is already cleaned
+            # (frames -> crystallizer -> MR -> Nexus), so this skips there.
+            if not self._crystallizer.cleaned and self._crystallizer.activated:
+                self._crystallizer.emit_nexus_state(RecordedUnitState.cleaned)
             for rift in self._rifts_by_id.values():
                 rift.cleanup()
             if self._configuration is not None:
@@ -578,6 +584,10 @@ class Nexus(Cleanable):
                 configured.finalize()
             self._enabled = True
             self._logger.info("Nexus enabled.", "enable")
+            # Record the lifecycle flip: the twin (emitted at configuration
+            # freeze) is retained; the state switch carries enable truth.
+            if self._crystallizer.activated:
+                self._crystallizer.emit_nexus_state(RecordedUnitState.enabled)
 
     def disable(self) -> None:
         """
@@ -595,6 +605,10 @@ class Nexus(Cleanable):
         with self._lock:
             self._enabled = False
             self._logger.info("Nexus disabled.", "disable")
+            # Disable keeps the installed configuration, so the twin stays;
+            # the record flips the state switch instead of evicting.
+            if self._crystallizer.activated:
+                self._crystallizer.emit_nexus_state(RecordedUnitState.disabled)
 
     def create_rift_configuration(
             self,

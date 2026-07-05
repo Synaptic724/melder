@@ -7,6 +7,7 @@ from melder.crystallizer.persistence.crystallizer_cache import CrystallizerCache
 from melder.crystallizer.persistence.persistence_crystal import PersistenceCrystal
 from melder.crystallizer.persistence.crystals.spell_crystal import SpellCrystal
 from melder.crystallizer.persistence.persistence_profile import PersistenceProfile
+from melder.crystallizer.persistence.recorded_unit_state import RecordedUnitState
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
 
@@ -269,6 +270,79 @@ class PersistenceSystem(Cleanable):
         """
         self.check_cleaned()
         self.active_profile.remove_spell_crystal(spell_id)
+
+    def remove_spellbook_subtree(self, spellbook_id: str) -> None:
+        """
+        Evict one spellbook's record subtree from the ACTIVE profile.
+
+        Args:
+            spellbook_id:
+                The dead spellbook's identity.
+
+        Returns:
+            None.
+
+        Raises:
+            RuntimeError:
+                If the subsystem has been cleaned.
+        """
+        self.check_cleaned()
+        self.active_profile.remove_spellbook_subtree(spellbook_id)
+
+    def remove_frame_crystal(self, frame_name: str) -> None:
+        """
+        Evict one dead frame's twin (+ leftover book subtrees) from the
+        ACTIVE profile.
+
+        Args:
+            frame_name:
+                The dead frame's canonical name.
+
+        Returns:
+            None.
+
+        Raises:
+            RuntimeError:
+                If the subsystem has been cleaned.
+        """
+        self.check_cleaned()
+        self.active_profile.remove_frame_crystal(frame_name)
+
+    def record_nexus_state(self, state: RecordedUnitState) -> None:
+        """
+        Flip the ACTIVE profile's recorded Nexus lifecycle switch.
+
+        Args:
+            state:
+                The new recorded state.
+
+        Returns:
+            None.
+
+        Raises:
+            RuntimeError:
+                If the subsystem has been cleaned.
+        """
+        self.check_cleaned()
+        self.active_profile.record_nexus_state(state)
+
+    def record_mutation_research_state(self, state: RecordedUnitState) -> None:
+        """
+        Flip the ACTIVE profile's recorded MutationResearch switch.
+
+        Args:
+            state:
+                The new recorded state.
+
+        Returns:
+            None.
+
+        Raises:
+            RuntimeError:
+                If the subsystem has been cleaned.
+        """
+        self.check_cleaned()
+        self.active_profile.record_mutation_research_state(state)
 
     def get_spell_crystal(self, spell_id: str) -> SpellCrystal:
         """

@@ -7,6 +7,9 @@ from typing import TYPE_CHECKING, Any, Tuple, get_args, get_origin
 from melder.aether.spellbook.spell_compiler.validation.spell_validation_issue import (
     SpellValidationIssue,
 )
+from melder.aether.spellbook.spell_compiler.spell_requirements_finder.parameter_di_shape import (
+    ParameterDIShape,
+)
 from melder.aether.spellbook.spell_compiler.validation.strategies.spell_validation_strategy import (
     SpellValidationStrategy,
 )
@@ -73,6 +76,14 @@ class AnnotationShapeGuardStrategy(SpellValidationStrategy):
         for param in requirements.parameters:
             if cancel_event is not None and cancel_event.is_set:
                 cancel_event.throw_if_set()
+
+            if param.di_shape in (
+                ParameterDIShape.SPELLMAP_DEFAULT,
+                ParameterDIShape.SPELL_CONTRACT,
+            ):
+                # An explicit SpellMap/SpellContract default overrides the
+                # annotation, so its raw shape must not be judged for DI.
+                continue
 
             annotation = param.annotation
             if annotation is None:

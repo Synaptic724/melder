@@ -7,6 +7,7 @@ from melder.crystallizer.persistence.crystals.aether_crystal import AetherCrysta
 from melder.crystallizer.persistence.crystals.aetheric_frame_crystal import AethericFrameCrystal
 from melder.crystallizer.persistence.crystals.conduit_crystal import ConduitCrystal
 from melder.crystallizer.persistence.crystals.mutation_research_crystal import MutationResearchCrystal
+from melder.crystallizer.persistence.recorded_unit_state import RecordedUnitState
 from melder.crystallizer.persistence.crystals.nexus_crystal import NexusCrystal
 from melder.crystallizer.persistence.crystals.spell_crystal import SpellCrystal
 from melder.crystallizer.persistence.crystals.spellbook_crystal import SpellbookCrystal
@@ -62,6 +63,8 @@ class PersistenceProfile(Cleanable):
         "_aether_crystal",
         "_nexus_crystal",
         "_mutation_research_crystal",
+        "_nexus_state",
+        "_mutation_research_state",
         "_frame_crystals_by_name",
         "_spellbook_crystals_by_id",
         "_conduit_crystals_by_id",
@@ -98,6 +101,10 @@ class PersistenceProfile(Cleanable):
         self._aether_crystal: Optional[AetherCrystal] = None
         self._nexus_crystal: Optional[NexusCrystal] = None
         self._mutation_research_crystal: Optional[MutationResearchCrystal] = None
+        # State switches for the two singletons tracked by state instead of
+        # eviction (None = never recorded; see RecordedUnitState contract).
+        self._nexus_state: Optional[RecordedUnitState] = None
+        self._mutation_research_state: Optional[RecordedUnitState] = None
         self._frame_crystals_by_name: Dict[str, AethericFrameCrystal] = {}
         self._spellbook_crystals_by_id: Dict[str, SpellbookCrystal] = {}
         self._conduit_crystals_by_id: Dict[str, ConduitCrystal] = {}
@@ -125,6 +132,8 @@ class PersistenceProfile(Cleanable):
         del self._aether_crystal
         del self._nexus_crystal
         del self._mutation_research_crystal
+        del self._nexus_state
+        del self._mutation_research_state
         del self._frame_crystals_by_name
         del self._spellbook_crystals_by_id
         del self._conduit_crystals_by_id
@@ -318,6 +327,175 @@ class PersistenceProfile(Cleanable):
                     crystal.cleanup()
             self._journal("spell_removed", spell_id)
 
+    def remove_spellbook_subtree(self, spellbook_id: str) -> None:
+        """
+        Evict one spellbook's ENTIRE record subtree.
+
+        Purpose:
+            The record-side mirror of whole-spellbook death in a live world
+            (root-conduit teardown reaches Spellbook.cleanup(); the frame
+            cascade arrives through the same lane). The book twin, every
+            conduit twin parented to it, and every spell custody crystal
+            assigned to it leave the record together so restore never
+            rebuilds a dead book's world.
+
+        Contract:
+            - Sweep is by parent-edge match: ConduitCrystal.spellbook_id and
+              SpellCrystal.spellbook_id equal to `spellbook_id`, across BOTH
+              custody locations.
+            - Tolerates a book that never recorded (journals either way).
+            - Journals ONE "spellbook_removed" entry; checkpoint replay
+              applies the same match as a subtree tombstone.
+
+        Args:
+            spellbook_id:
+                The dead spellbook's identity.
+
+        Returns:
+            None.
+
+        Raises:
+            RuntimeError:
+                If the profile has been cleaned.
+        """
+        self.check_cleaned()
+        with self._lock:
+            self._remove_spellbook_subtree_locked(spellbook_id)
+
+    def remove_frame_crystal(self, frame_name: str) -> None:
+        """
+        Evict one dead frame's twin plus any remaining book subtrees.
+
+        Purpose:
+            The record-side mirror of frame death in a live world
+            (AethericFrame.cleanup detaches the frame from the live Aether).
+            The frame's conduits/spellbooks normally evicted themselves
+            during the frame's own teardown cascade; the by-frame book
+            sweep here is the tolerant net for anything that slipped a
+            gated cascade.
+
+        Contract:
+            - Tolerates a frame that never recorded (journals either way).
+            - Remaining books sweep through the same subtree eviction as
+              direct book death, journaling per book, then ONE
+              "frame_removed" entry seals the frame itself.
+
+        Args:
+            frame_name:
+                The dead frame's canonical name.
+
+        Returns:
+            None.
+
+        Raises:
+            RuntimeError:
+                If the profile has been cleaned.
+        """
+        self.check_cleaned()
+        with self._lock:
+            twin = self._frame_crystals_by_name.pop(frame_name, None)
+            if twin is not None and not twin.cleaned:
+                twin.cleanup()
+            remaining_book_ids = [
+                spellbook_id
+                for spellbook_id, crystal in (
+                    self._spellbook_crystals_by_id.items()
+                )
+                if crystal.frame_name == frame_name
+            ]
+            for spellbook_id in remaining_book_ids:
+                self._remove_spellbook_subtree_locked(spellbook_id)
+            self._journal("frame_removed", frame_name)
+
+    def record_nexus_state(self, state: RecordedUnitState) -> None:
+        """
+        Flip the recorded Nexus lifecycle switch (twin retained).
+
+        Purpose:
+            Nexus disable/re-enable keeps its installed configuration, so
+            its twin stays; this switch is the truth restore reads.
+
+        Args:
+            state:
+                The new recorded state.
+
+        Returns:
+            None.
+
+        Raises:
+            RuntimeError:
+                If the profile has been cleaned.
+        """
+        self.check_cleaned()
+        with self._lock:
+            self._nexus_state = state
+            self._journal("nexus_state", state.name)
+
+    def record_mutation_research_state(self, state: RecordedUnitState) -> None:
+        """
+        Flip the recorded MutationResearch lifecycle switch (twin retained).
+
+        Args:
+            state:
+                The new recorded state.
+
+        Returns:
+            None.
+
+        Raises:
+            RuntimeError:
+                If the profile has been cleaned.
+        """
+        self.check_cleaned()
+        with self._lock:
+            self._mutation_research_state = state
+            self._journal("mutation_research_state", state.name)
+
+    def _remove_spellbook_subtree_locked(self, spellbook_id: str) -> None:
+        """
+        Internal
+
+        Evict one book subtree under the held lock (see the public verb).
+
+        Contract:
+            - Caller holds `self._lock`.
+            - Journals the "spellbook_removed" entry itself so frame-level
+              sweeps produce the same replay events as direct book death.
+
+        Args:
+            spellbook_id:
+                The dead spellbook's identity.
+
+        Returns:
+            None.
+        """
+        book = self._spellbook_crystals_by_id.pop(spellbook_id, None)
+        if book is not None and not book.cleaned:
+            book.cleanup()
+        conduit_ids = [
+            conduit_id
+            for conduit_id, crystal in self._conduit_crystals_by_id.items()
+            if crystal.spellbook_id == spellbook_id
+        ]
+        for conduit_id in conduit_ids:
+            crystal = self._conduit_crystals_by_id.pop(conduit_id)
+            if not crystal.cleaned:
+                crystal.cleanup()
+        for location in (
+                self._spell_crystals_by_spell_id,
+                self._inactive_spell_crystals_by_spell_id,
+        ):
+            spell_ids = [
+                spell_id
+                for spell_id, crystal in location.items()
+                if crystal.spellbook_id == spellbook_id
+            ]
+            for spell_id in spell_ids:
+                crystal = location.pop(spell_id)
+                if not crystal.cleaned:
+                    crystal.cleanup()
+        self._journal("spellbook_removed", spellbook_id)
+
     def _record_spell_crystal_locked(self, crystal: SpellCrystal, active: bool) -> None:
         """
         Record one crystal under the held lock (shared by record paths).
@@ -413,6 +591,14 @@ class PersistenceProfile(Cleanable):
                 "has_nexus_crystal": self._nexus_crystal is not None,
                 "has_mutation_research_crystal":
                     self._mutation_research_crystal is not None,
+                "nexus_state": (
+                    self._nexus_state.name
+                    if self._nexus_state is not None else None
+                ),
+                "mutation_research_state": (
+                    self._mutation_research_state.name
+                    if self._mutation_research_state is not None else None
+                ),
                 "frame_count": len(self._frame_crystals_by_name),
                 "spellbook_count": len(self._spellbook_crystals_by_id),
                 "conduit_count": len(self._conduit_crystals_by_id),
@@ -558,6 +744,31 @@ class PersistenceProfile(Cleanable):
             ]
             payloads: Dict[str, Dict[str, Dict[str, object]]] = {}
             for _sequence, kind, key in segment_entries:
+                if kind == "frame_removed":
+                    payloads.setdefault(kind, {})[key] = {
+                        "frame_name": key,
+                        "removed": True,
+                    }
+                    continue
+                if kind in ("nexus_state", "mutation_research_state"):
+                    # The journal key carries the flipped state; twin stays.
+                    payloads.setdefault(kind, {})[key] = {
+                        "state": key,
+                        "twin_present": (
+                            self._nexus_crystal is not None
+                            if kind == "nexus_state"
+                            else self._mutation_research_crystal is not None
+                        ),
+                    }
+                    continue
+                if kind == "spellbook_removed":
+                    # Subtree tombstone: replay applies the same
+                    # spellbook_id parent-edge match this eviction used.
+                    payloads.setdefault(kind, {})[key] = {
+                        "spellbook_id": key,
+                        "removed": True,
+                    }
+                    continue
                 if kind == "spell_removed":
                     payloads.setdefault(kind, {})[key] = {
                         "spell_id": key,

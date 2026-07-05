@@ -200,13 +200,6 @@ class NeedsContract:
         self.cfg = cfg
 
 
-class UnnormalizedBindingMap:
-    """SpellMap binding_name not normalized -> warning."""
-
-    def __init__(self, dep=SpellMap(Engine, binding_name="PRIMARY")) -> None:
-        self.dep = dep
-
-
 class NeedsPluginSet:
     """set[IPlugin] is an unsupported collection shape."""
 
@@ -440,7 +433,7 @@ def test_phase1_existing_instance_yields_no_parameters() -> None:
         )
         spell = _get_spell(spellbook, spell_id)
         ch.run_phase_requirements(spell)
-        assert spell.requirements.parameters == []
+        assert len(spell.requirements.parameters) == 0
     finally:
         spellbook.cleanup()
 
@@ -637,17 +630,13 @@ def test_spellmap_construction_rejects_empty_target() -> None:
         SpellMap(spell=None, spellframe=None)
 
 
-def test_phase4_spellmap_unnormalized_binding_name_warns() -> None:
-    """A non-normalized SpellMap binding_name is a warning, not an error."""
-    spellbook = _make_spellbook()
-    try:
-        spellbook.bind(spell=Engine, existence=Existence.unique, permissions="create")
-        spell_id = spellbook.bind(spell=UnnormalizedBindingMap, existence=Existence.unique, permissions="create")
-        spell = _get_spell(spellbook, spell_id)
-        _phases_1_4(spell)
-        assert "SPELLMAP_BINDING_NAME_NOT_NORMALIZED" in _codes4(spell)
-    finally:
-        spellbook.cleanup()
+def test_spellmap_normalizes_binding_name_at_construction() -> None:
+    """
+    SpellMap lowercases binding_name at construction, so the Phase-4
+    SPELLMAP_BINDING_NAME_NOT_NORMALIZED warning is a defensive guard a
+    constructor-built SpellMap can never trip.
+    """
+    assert SpellMap(Engine, binding_name="PRIMARY").binding_name == "primary"
 
 
 def test_phase4_dangling_dependency_marks_broken() -> None:

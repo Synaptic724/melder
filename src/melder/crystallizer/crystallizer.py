@@ -13,6 +13,7 @@ from melder.crystallizer.configuration.crystallizer_configuration import (
 from melder.crystallizer.persistence.crystals.spell_crystal import SpellCrystal
 from melder.crystallizer.synthetic_module import SyntheticModule
 from melder.crystallizer.persistence.persistence_system import PersistenceSystem
+from melder.crystallizer.persistence.recorded_unit_state import RecordedUnitState
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
 
@@ -337,11 +338,19 @@ class Crystallizer(Cleanable):
         aether = self._aether
         if aether is None:
             return
+        visited_spellbook_ids: set = set()
         for frame in list(aether._aetheric_frames.values()):
             for conduit in list(frame._conduits.values()):
                 spellbook = conduit._spellbook
-                if spellbook.cleaned or not spellbook._is_dynamic_posture():
+                # Lesser conduits share the root's spellbook: dedupe so a
+                # shared book sweeps once (journal stays segment-clean).
+                if (
+                        spellbook.cleaned
+                        or spellbook._id in visited_spellbook_ids
+                        or not spellbook._is_dynamic_posture()
+                ):
                     continue
+                visited_spellbook_ids.add(spellbook._id)
                 for bound_spell in list(spellbook._spells.values()):
                     self.emit_spell_crystal(
                         self.create_spell_crystal(
@@ -495,6 +504,123 @@ class Crystallizer(Cleanable):
         if not self._activated:
             return
         self._persistence_system.remove_spell_crystal(spell_id)
+        self._maybe_create_automatic_checkpoint()
+
+    def emit_spellbook_removed(self, spellbook_id: str) -> None:
+        """
+        Evict one dead spellbook's ENTIRE record subtree.
+
+        Purpose:
+            Called by Spellbook._cleanup_components at true book death
+            (root-conduit teardown and direct cleanup both land there).
+            The book twin, its conduit twin(s), and all its spell custody
+            leave the record so restore never rebuilds a dead book's world.
+            Lesser conduits share the root's book and never trigger this.
+
+        Contract:
+            - NO-OP while the crystallizer is not activated.
+
+        Args:
+            spellbook_id:
+                The dead spellbook's identity.
+
+        Returns:
+            None.
+
+        Raises:
+            RuntimeError:
+                If the crystallizer has been cleaned.
+        """
+        self.check_cleaned()
+        if not self._activated:
+            return
+        self._persistence_system.remove_spellbook_subtree(spellbook_id)
+        self._maybe_create_automatic_checkpoint()
+
+    def emit_frame_removed(self, frame_name: str) -> None:
+        """
+        Evict one dead frame's twin (+ leftover book subtrees).
+
+        Purpose:
+            Called by AethericFrame.cleanup after its teardown cascade: the
+            frame genuinely leaves the live world (Aether detaches it), so
+            its twin leaves the record. Books normally evicted themselves
+            during the cascade; the profile's by-frame net covers the rest.
+
+        Contract:
+            - NO-OP while the crystallizer is not activated.
+
+        Args:
+            frame_name:
+                The dead frame's canonical name.
+
+        Returns:
+            None.
+
+        Raises:
+            RuntimeError:
+                If the crystallizer has been cleaned.
+        """
+        self.check_cleaned()
+        if not self._activated:
+            return
+        self._persistence_system.remove_frame_crystal(frame_name)
+        self._maybe_create_automatic_checkpoint()
+
+    def emit_nexus_state(self, state: RecordedUnitState) -> None:
+        """
+        Record a Nexus lifecycle flip (enabled / disabled / cleaned).
+
+        Purpose:
+            Nexus disable keeps its installed configuration, so the twin is
+            RETAINED and this switch carries the truth (owner model:
+            state-switch, not eviction, for MR/Nexus; Aether/Crystallizer
+            are skipped - the record dies with them).
+
+        Contract:
+            - NO-OP while the crystallizer is not activated.
+
+        Args:
+            state:
+                The new recorded state.
+
+        Returns:
+            None.
+
+        Raises:
+            RuntimeError:
+                If the crystallizer has been cleaned.
+        """
+        self.check_cleaned()
+        if not self._activated:
+            return
+        self._persistence_system.record_nexus_state(state)
+        self._maybe_create_automatic_checkpoint()
+
+    def emit_mutation_research_state(self, state: RecordedUnitState) -> None:
+        """
+        Record a MutationResearch lifecycle flip (enabled/disabled/cleaned).
+
+        Contract:
+            - NO-OP while the crystallizer is not activated.
+            - Twin retained; the switch is the recorded truth (see
+              emit_nexus_state).
+
+        Args:
+            state:
+                The new recorded state.
+
+        Returns:
+            None.
+
+        Raises:
+            RuntimeError:
+                If the crystallizer has been cleaned.
+        """
+        self.check_cleaned()
+        if not self._activated:
+            return
+        self._persistence_system.record_mutation_research_state(state)
         self._maybe_create_automatic_checkpoint()
 
     def emit_spell_activity(self, spell_id: str, active: bool) -> None:

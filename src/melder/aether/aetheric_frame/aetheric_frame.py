@@ -193,6 +193,12 @@ class AethericFrame(Cleanable):
                 return
             self._cleaned = True
             self._cleanup_data_structures()
+            # True frame death: the frame detaches from the live Aether
+            # below, so its twin leaves the record. The conduit/spellbook
+            # subtree already evicted itself during the cascade above; the
+            # profile's by-frame net covers anything that slipped a gate.
+            if self._crystallizer.activated:
+                self._crystallizer.emit_frame_removed(self.name)
             if self._frame_configuration is not None:
                 self._frame_configuration.cleanup()
             if self._configuration is not None:

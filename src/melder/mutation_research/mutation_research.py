@@ -8,6 +8,7 @@ if TYPE_CHECKING:
     from melder.aether.spellbook.bind.spell_index import SpellIndex
 
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
+from melder.crystallizer.persistence.recorded_unit_state import RecordedUnitState
 from melder.mutation_research.mutation_configuration import (
     MutationResearchConfiguration,
 )
@@ -135,6 +136,13 @@ class MutationResearch(Cleanable):
             if self._cleaned:
                 return
             self._cleaned = True
+            # Record the teardown when the record outlives MR. In the Aether
+            # full-teardown lane the crystallizer is already cleaned
+            # (frames -> crystallizer -> MR), so this skips there.
+            if not self._crystallizer.cleaned and self._crystallizer.activated:
+                self._crystallizer.emit_mutation_research_state(
+                    RecordedUnitState.cleaned
+                )
             if self._sessions_by_index is not None:
                 for _, session in list(self._sessions_by_index.items()):
                     try:
@@ -317,6 +325,12 @@ class MutationResearch(Cleanable):
         self._configuration.validate()
         with self._lock:
             self._activated = True
+            # Record the lifecycle flip: the twin (emitted at configuration
+            # activation) is retained; the switch carries activation truth.
+            if self._crystallizer.activated:
+                self._crystallizer.emit_mutation_research_state(
+                    RecordedUnitState.enabled
+                )
 
     def deactivate(self) -> None:
         """
@@ -328,6 +342,12 @@ class MutationResearch(Cleanable):
         self.check_cleaned()
         with self._lock:
             self._activated = False
+            # Deactivate keeps the installed configuration, so the twin
+            # stays; the record flips the state switch instead of evicting.
+            if self._crystallizer.activated:
+                self._crystallizer.emit_mutation_research_state(
+                    RecordedUnitState.disabled
+                )
 
     def create_mutation_conduit(self, conduit: Conduit) -> MutationConduit:
         """

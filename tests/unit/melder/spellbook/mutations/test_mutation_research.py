@@ -21,12 +21,18 @@ def _fake_aether() -> types.SimpleNamespace:
     Contract:
         - MutationResearch.__init__ pulls `aether._crystallizer` (a non-owning
           reference) during construction, so the stand-in must expose that
-          attribute. No other Aether surface is exercised by these tests.
+          attribute.
+        - MutationResearch lifecycle seams (activate/deactivate/cleanup) read
+          `crystallizer.cleaned` and `crystallizer.activated` to gate record
+          emissions, so the dummy models "present but not recording"
+          (cleaned=False, activated=False) and every seam skips.
 
     Returns:
         types.SimpleNamespace: Object exposing a dummy `_crystallizer`.
     """
-    return types.SimpleNamespace(_crystallizer=object())
+    return types.SimpleNamespace(
+        _crystallizer=types.SimpleNamespace(cleaned=False, activated=False)
+    )
 
 
 @pytest.fixture(autouse=True)

@@ -522,12 +522,21 @@ class DummyConfig:
         """
         return self._validate_ok
 
-    def freeze(self):
+    def freeze(
+            self,
+            origin_spellbook_id=None,
+            origin_frame_name=None,
+            origin_dynamic=None,
+    ):
         """
         Purpose:
             Freeze the configuration stub.
         Contract:
-            Sets the frozen flag to True.
+            Sets the frozen flag to True. Mirrors the real
+            SpellbookConfiguration.freeze signature: the spellbook passes
+            emission-origin identity (spellbook id, frame name, conjure
+            dynamic hint) at its conjure-time freeze; the stub accepts and
+            ignores them.
         Returns:
             None.
         """

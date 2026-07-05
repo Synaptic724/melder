@@ -358,6 +358,12 @@ and logging.
                 )
         del self._phase_scheduler
         del self._phase_run_lock
+        # True book death: this spellbook's ENTIRE record subtree (book
+        # twin + conduit twin(s) + all spell custody) leaves the record so
+        # restore never rebuilds a dead book's world. Root-conduit teardown
+        # and direct cleanup both arrive here; lesser conduits never do.
+        if self._crystallizer.activated:
+            self._crystallizer.emit_spellbook_removed(self._id)
         self._remove_spells_from_nexus()
         # 1) Clean ONLY local spells (not contracted)
         self._cleanup_spells()
