@@ -568,6 +568,10 @@ and logging.
             owner_conduit_id = target_spell._owner_conduit_id
 
             self._spell_system_states.unregister_index(target_spell_index)
+            # True removal: custody leaves the record entirely (both
+            # locations) so restore never rebuilds a shed spell.
+            if self._crystallizer.activated:
+                self._crystallizer.emit_spell_removed(target_spell_id)
 
             self._spells.pop(target_spell_index, None)
             existing_lookup = self._lookup_spells.get(target_lookup_key)

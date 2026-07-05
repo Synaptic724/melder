@@ -247,6 +247,24 @@ class PersistenceSystem(Cleanable):
         self.check_cleaned()
         self.active_profile.record_spell_activity(spell_id, active=active)
 
+    def remove_spell_crystal(self, spell_id: str) -> None:
+        """
+        Evict one spell's custody from the ACTIVE profile.
+
+        Args:
+            spell_id:
+                The removed spell's SHA256 identity.
+
+        Returns:
+            None.
+
+        Raises:
+            RuntimeError:
+                If the subsystem has been cleaned.
+        """
+        self.check_cleaned()
+        self.active_profile.remove_spell_crystal(spell_id)
+
     def get_spell_crystal(self, spell_id: str) -> SpellCrystal:
         """
         Return the ACTIVE profile's custody crystal for one spell.

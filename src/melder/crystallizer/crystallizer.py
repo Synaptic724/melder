@@ -293,6 +293,51 @@ class Crystallizer(Cleanable):
         self._configuration.validate()
         with self._lock:
             self._activated = True
+        self._catch_up_live_world()
+
+    def _catch_up_live_world(self) -> None:
+        """
+        Internal
+
+        Sweep the already-live world into the record after activation.
+
+        Purpose:
+            A crystallizer activated mid-flight (after frames/spellbooks/
+            binds exist) walks the live world and emits custody for every
+            bound spell in dynamic-posture spellbooks - active and parked -
+            so the record starts truthful instead of empty. Replace-on-emit
+            makes re-activation sweeps idempotent.
+
+        Contract:
+            - Dynamic-posture spellbooks only (the recorded lane).
+            - Custody only: configuration twins re-emit at their own
+              activation points, not here.
+
+        Returns:
+            None.
+        """
+        aether = self._aether
+        if aether is None:
+            return
+        for frame in list(aether._aetheric_frames.values()):
+            for conduit in list(frame._conduits.values()):
+                spellbook = conduit._spellbook
+                if spellbook.cleaned or not spellbook._is_dynamic_posture():
+                    continue
+                for bound_spell in list(spellbook._spells.values()):
+                    self.emit_spell_crystal(
+                        self.create_spell_crystal(
+                            bound_spell, spellbook_id=spellbook._id
+                        ),
+                        active=True,
+                    )
+                for parked_spell in list(spellbook._inactive_spells.values()):
+                    self.emit_spell_crystal(
+                        self.create_spell_crystal(
+                            parked_spell, spellbook_id=spellbook._id
+                        ),
+                        active=False,
+                    )
 
     def deactivate(self) -> None:
         """
@@ -364,6 +409,35 @@ class Crystallizer(Cleanable):
         if not self._activated:
             return
         self._persistence_system.record_spell_crystal(crystal, active=active)
+
+    def emit_spell_removed(self, spell_id: str) -> None:
+        """
+        Evict one removed spell's custody from the record.
+
+        Purpose:
+            Called by the spellbook's true-removal seam
+            (cleanup_and_remove_spell). Custody leaves both record locations
+            so restore never rebuilds a shed spell. The module world is NOT
+            touched here: the spell's own cleanup path owns its teardown.
+
+        Contract:
+            - NO-OP while the crystallizer is not activated.
+
+        Args:
+            spell_id:
+                The removed spell's SHA256 identity.
+
+        Returns:
+            None.
+
+        Raises:
+            RuntimeError:
+                If the crystallizer has been cleaned.
+        """
+        self.check_cleaned()
+        if not self._activated:
+            return
+        self._persistence_system.remove_spell_crystal(spell_id)
 
     def emit_spell_activity(self, spell_id: str, active: bool) -> None:
         """

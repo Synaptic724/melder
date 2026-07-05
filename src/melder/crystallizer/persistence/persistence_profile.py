@@ -284,6 +284,40 @@ class PersistenceProfile(Cleanable):
                     self._inactive_spell_crystals_by_spell_id[spell_id] = crystal
             self._journal("spell_activity", spell_id)
 
+    def remove_spell_crystal(self, spell_id: str) -> None:
+        """
+        Evict one spell's custody from the record entirely.
+
+        Purpose:
+            The record-side mirror of true spell removal
+            (cleanup_and_remove_spell): custody LEAVES both locations so a
+            restore never over-builds a world that shed spells.
+
+        Contract:
+            - Tolerates missing custody; journals "spell_removed" either way.
+
+        Args:
+            spell_id:
+                The removed spell's SHA256 identity.
+
+        Returns:
+            None.
+
+        Raises:
+            RuntimeError:
+                If the profile has been cleaned.
+        """
+        self.check_cleaned()
+        with self._lock:
+            for location in (
+                    self._spell_crystals_by_spell_id,
+                    self._inactive_spell_crystals_by_spell_id,
+            ):
+                crystal = location.pop(spell_id, None)
+                if crystal is not None and not crystal.cleaned:
+                    crystal.cleanup()
+            self._journal("spell_removed", spell_id)
+
     def _record_spell_crystal_locked(self, crystal: SpellCrystal, active: bool) -> None:
         """
         Record one crystal under the held lock (shared by record paths).
@@ -524,6 +558,12 @@ class PersistenceProfile(Cleanable):
             ]
             payloads: Dict[str, Dict[str, Dict[str, object]]] = {}
             for _sequence, kind, key in segment_entries:
+                if kind == "spell_removed":
+                    payloads.setdefault(kind, {})[key] = {
+                        "spell_id": key,
+                        "removed": True,
+                    }
+                    continue
                 if kind == "spell_activity":
                     # Activity transitions have no twin object; capture the
                     # CURRENT truth: which location holds custody now.
