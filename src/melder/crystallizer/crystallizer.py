@@ -1,5 +1,5 @@
 import threading
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Dict, List, Optional
 
 if TYPE_CHECKING:
     from melder.aether.aether import Aether
@@ -9,7 +9,8 @@ from melder.__melder_registration_guard__ import __melder_registration_guard__ a
 from melder.crystallizer.configuration.crystallizer_configuration import (
     CrystallizerConfiguration,
 )
-from melder.crystallizer.spell_crystal import SpellCrystal
+from melder.crystallizer.persistence.crystals.spell_crystal import SpellCrystal
+from melder.crystallizer.persistence.persistence_crystal import PersistenceCrystal
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
 
@@ -42,6 +43,7 @@ class Crystallizer(Cleanable):
         "_configuration",
         "_configured",
         "_activated",
+        "_persistence_crystal",
     ]
 
     def __new__(
@@ -100,6 +102,7 @@ class Crystallizer(Cleanable):
             self._configuration: Optional[CrystallizerConfiguration] = None
             self._configured: bool = False
             self._activated: bool = False
+            self._persistence_crystal: PersistenceCrystal = PersistenceCrystal()
 
             if configuration is not None:
                 self.configure(configuration)
@@ -124,11 +127,14 @@ class Crystallizer(Cleanable):
             if self._cleaned:
                 return
             self._cleaned = True
+            if self._persistence_crystal is not None and not self._persistence_crystal.cleaned:
+                self._persistence_crystal.cleanup()
             if self._configuration is not None:
                 self._configuration.cleanup()
             self._configured = False
             self._activated = False
 
+            del self._persistence_crystal
             del self._configuration
             del self._aether
             del self._id
@@ -319,6 +325,262 @@ class Crystallizer(Cleanable):
             spell,
             user_source_root_paths=self._configuration.user_source_root_paths,
         )
+
+
+    @property
+    def active_profile_name(self) -> str:
+        """
+        Return the name of the persistence profile emissions currently target.
+
+        Returns:
+            str:
+                Active profile name ("default" unless switched).
+
+        Raises:
+            RuntimeError:
+                If crystallizer is cleaned or not yet active.
+        """
+        self.check_cleaned()
+        self._require_activated()
+        return self._persistence_crystal.active_profile_name
+
+    def create_profile(self, profile_name: str, activate: bool = True) -> None:
+        """
+        Create one new persistence profile and (by default) switch to it.
+
+        Purpose:
+            Facade over the buried persistence model: users and agents create
+            worlds by name only; PersistenceProfile objects never escape the
+            depths.
+
+        Args:
+            profile_name:
+                New profile name; must not collide with an existing profile.
+            activate:
+                When True (default), the new profile becomes the emission
+                target immediately (owner model: create and default to it).
+
+        Returns:
+            None.
+
+        Raises:
+            RuntimeError:
+                If crystallizer is cleaned or not yet active.
+            ValueError:
+                If `profile_name` is empty or already exists.
+        """
+        self.check_cleaned()
+        self._require_activated()
+        self._persistence_crystal.create_profile(profile_name, activate=activate)
+
+    def set_active_profile(self, profile_name: str) -> None:
+        """
+        Switch the emission target to one existing persistence profile.
+
+        Args:
+            profile_name:
+                Name of an existing profile to activate.
+
+        Returns:
+            None.
+
+        Raises:
+            RuntimeError:
+                If crystallizer is cleaned or not yet active.
+            KeyError:
+                If no profile exists under `profile_name`.
+        """
+        self.check_cleaned()
+        self._require_activated()
+        self._persistence_crystal.set_active_profile(profile_name)
+
+    def describe_profile(self, profile_name: Optional[str] = None) -> Dict[str, object]:
+        """
+        Return a detached structural summary of one persistence profile.
+
+        Args:
+            profile_name:
+                Profile to describe; None means the active profile.
+
+        Returns:
+            Dict[str, object]:
+                Profile summary (name, per-level twin counts, emission
+                sequence).
+
+        Raises:
+            RuntimeError:
+                If crystallizer is cleaned or not yet active.
+            KeyError:
+                If `profile_name` names no existing profile.
+        """
+        self.check_cleaned()
+        self._require_activated()
+        if profile_name is None:
+            return self._persistence_crystal.active_profile.describe()
+        return self._persistence_crystal.get_profile(profile_name).describe()
+
+    def list_profile_names(self) -> List[str]:
+        """
+        Return the names of all persistence profiles.
+
+        Returns:
+            List[str]:
+                Sorted, detached profile-name list.
+
+        Raises:
+            RuntimeError:
+                If crystallizer is cleaned or not yet active.
+        """
+        self.check_cleaned()
+        self._require_activated()
+        return self._persistence_crystal.list_profile_names()
+
+    def clear_profile(self, profile_name: str) -> None:
+        """
+        Reset one persistence profile's recorded content to empty.
+
+        Purpose:
+            The generalized clear_bootstrap: clearing "default" resets the
+            default bootstrap record.
+
+        Args:
+            profile_name:
+                Name of an existing profile to clear.
+
+        Returns:
+            None.
+
+        Raises:
+            RuntimeError:
+                If crystallizer is cleaned or not yet active.
+            KeyError:
+                If no profile exists under `profile_name`.
+        """
+        self.check_cleaned()
+        self._require_activated()
+        self._persistence_crystal.clear_profile(profile_name)
+
+    def delete_profile(self, profile_name: str) -> None:
+        """
+        Delete one NAMED persistence profile ("default" is never deletable).
+
+        Args:
+            profile_name:
+                Name of the named profile to delete.
+
+        Returns:
+            None.
+
+        Raises:
+            RuntimeError:
+                If crystallizer is cleaned or not yet active.
+            ValueError:
+                If asked to delete the default profile.
+            KeyError:
+                If no profile exists under `profile_name`.
+        """
+        self.check_cleaned()
+        self._require_activated()
+        self._persistence_crystal.delete_profile(profile_name)
+
+    def create_checkpoint(
+            self,
+            profile_name: Optional[str] = None,
+            description: Optional[str] = None,
+    ) -> str:
+        """
+        Snapshot one persistence profile and return the checkpoint's ULID id.
+
+        Contract:
+            - Checkpoint ids are ULIDs: they sort by creation time, so id
+              order IS checkpoint chronology.
+            - CURRENT DEPTH: metadata registration only (the record carries
+              `"twin_custody": "pending"`); the twin seal-copy + cache/save
+              land with the bootstrap and persistence epics.
+
+        Args:
+            profile_name:
+                Profile to checkpoint; None means the active profile.
+            description:
+                Optional caller note stored on the checkpoint record.
+
+        Returns:
+            str:
+                The new checkpoint's ULID id.
+
+        Raises:
+            RuntimeError:
+                If crystallizer is cleaned or not yet active.
+            KeyError:
+                If `profile_name` names no existing profile.
+        """
+        self.check_cleaned()
+        self._require_activated()
+        return self._persistence_crystal.create_checkpoint(
+            profile_name=profile_name,
+            description=description,
+        )
+
+    def describe_checkpoint(self, checkpoint_id: str) -> Dict[str, object]:
+        """
+        Return a detached copy of one checkpoint's metadata record.
+
+        Args:
+            checkpoint_id:
+                ULID identity returned by `create_checkpoint`.
+
+        Returns:
+            Dict[str, object]:
+                Detached checkpoint record.
+
+        Raises:
+            RuntimeError:
+                If crystallizer is cleaned or not yet active.
+            KeyError:
+                If no checkpoint exists under `checkpoint_id`.
+        """
+        self.check_cleaned()
+        self._require_activated()
+        return self._persistence_crystal.describe_checkpoint(checkpoint_id)
+
+    def list_checkpoint_ids(self) -> List[str]:
+        """
+        Return all checkpoint ids in creation order (ULID = time order).
+
+        Returns:
+            List[str]:
+                Chronologically sorted, detached checkpoint-id list.
+
+        Raises:
+            RuntimeError:
+                If crystallizer is cleaned or not yet active.
+        """
+        self.check_cleaned()
+        self._require_activated()
+        return self._persistence_crystal.list_checkpoint_ids()
+
+    def load_checkpoint(self, checkpoint_id: str) -> None:
+        """
+        Load one checkpoint back toward the live system (restore input).
+
+        Args:
+            checkpoint_id:
+                ULID identity of the checkpoint to load.
+
+        Returns:
+            None.
+
+        Raises:
+            RuntimeError:
+                If crystallizer is cleaned or not yet active.
+            KeyError:
+                If no checkpoint exists under `checkpoint_id`.
+            NotImplementedError:
+                Placeholder until the restore engine lands (bootstrap epic).
+        """
+        self.check_cleaned()
+        self._require_activated()
+        self._persistence_crystal.load_checkpoint(checkpoint_id)
 
     def _require_configured(self) -> None:
         """

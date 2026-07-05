@@ -63,6 +63,13 @@ class SpellCrystal(Cleanable):
         "_root_target_name",
         "_root_target_qualname",
         "_root_target_kind",
+        "_spellbook_id",
+        "_spell_name",
+        "_binding_name",
+        "_spellframe_name",
+        "_existence_name",
+        "_permissions_name",
+        "_rebindability",
         "_module_targets",
         "_path_targets",
         "_synthetic_module_targets",
@@ -87,6 +94,7 @@ class SpellCrystal(Cleanable):
             self,
             spell: Spell,
             user_source_root_paths: Optional[Sequence[Union[str, Path]]] = None,
+            spellbook_id: Optional[str] = None,
     ) -> None:
         """
         Initialize one spell-targeted module dependency manifest.
@@ -120,6 +128,11 @@ class SpellCrystal(Cleanable):
                 modules. These roots are the policy input for
                 `user_source` classification. When omitted, the first-slice
                 fallback is the current working directory.
+            spellbook_id:
+                Optional owning-spellbook identity supplied by the bind
+                seam. It is the crystal's parent edge inside a
+                PersistenceProfile; None when the crystal is built
+                outside a bind context.
 
         Returns:
             None.
@@ -174,6 +187,29 @@ class SpellCrystal(Cleanable):
         self._root_target_qualname: str = root_target_qualname
         self._root_target_kind: str = root_target_kind
         self._root_module_name: str = root_module_name
+
+        # Bind-signature capture: the replayable facts bind consumed for
+        # this spell version, retained so a profile can rebind from the
+        # crystal alone (or truthfully report replay_required).
+        self._spellbook_id: Optional[str] = spellbook_id
+        self._spell_name: Optional[str] = spell.spell_name
+        self._binding_name: Optional[str] = spell.binding_name
+        spellframe = spell.spellframe
+        self._spellframe_name: Optional[str] = (
+            getattr(spellframe, "__name__", str(spellframe))
+            if spellframe is not None
+            else None
+        )
+        self._existence_name: str = spell.existence.name
+        self._permissions_name: str = spell.permissions.name
+        # class/function targets re-import (or rematerialize) cleanly;
+        # method/lambda/callable-object/instance targets need live code
+        # participation at restore time.
+        self._rebindability: str = (
+            "hydratable"
+            if root_target_kind in ("class", "function")
+            else "replay_required"
+        )
 
         root_module_obj, root_module_path = self._resolve_root_module(
             root_target=root_target,
@@ -233,6 +269,13 @@ class SpellCrystal(Cleanable):
             del self._root_target_name
             del self._root_target_qualname
             del self._root_target_kind
+            del self._spellbook_id
+            del self._spell_name
+            del self._binding_name
+            del self._spellframe_name
+            del self._existence_name
+            del self._permissions_name
+            del self._rebindability
             del self._module_targets
             del self._path_targets
             del self._synthetic_module_targets
@@ -391,6 +434,99 @@ class SpellCrystal(Cleanable):
         self.check_cleaned()
         with self._lock:
             return self._root_target_kind
+
+    @property
+    def spellbook_id(self) -> Optional[str]:
+        """
+        Return the owning-spellbook identity supplied at construction.
+
+        Returns:
+            Optional[str]:
+                Parent spellbook id, or None outside a bind context.
+        """
+        self.check_cleaned()
+        with self._lock:
+            return self._spellbook_id
+
+    @property
+    def spell_name(self) -> Optional[str]:
+        """
+        Return the logical spell name recorded at bind.
+
+        Returns:
+            Optional[str]:
+                Recorded spell name, or None when unnamed.
+        """
+        self.check_cleaned()
+        with self._lock:
+            return self._spell_name
+
+    @property
+    def binding_name(self) -> Optional[str]:
+        """
+        Return the binding name recorded at bind.
+
+        Returns:
+            Optional[str]:
+                Recorded binding name, or None for the default binding.
+        """
+        self.check_cleaned()
+        with self._lock:
+            return self._binding_name
+
+    @property
+    def spellframe_name(self) -> Optional[str]:
+        """
+        Return the spellframe name recorded at bind.
+
+        Returns:
+            Optional[str]:
+                Frame-type name (class __name__ or string form), or
+                None when the spell was bound unframed.
+        """
+        self.check_cleaned()
+        with self._lock:
+            return self._spellframe_name
+
+    @property
+    def existence_name(self) -> str:
+        """
+        Return the Existence enum name recorded at bind.
+
+        Returns:
+            str:
+                Lifetime posture name consumed by bind replay.
+        """
+        self.check_cleaned()
+        with self._lock:
+            return self._existence_name
+
+    @property
+    def permissions_name(self) -> str:
+        """
+        Return the Permissions enum name recorded at bind.
+
+        Returns:
+            str:
+                Borrow posture name consumed by bind replay.
+        """
+        self.check_cleaned()
+        with self._lock:
+            return self._permissions_name
+
+    @property
+    def rebindability(self) -> str:
+        """
+        Return the restore-honesty class derived at construction.
+
+        Returns:
+            str:
+                "hydratable" (class/function targets) or
+                "replay_required" (method/lambda/object targets).
+        """
+        self.check_cleaned()
+        with self._lock:
+            return self._rebindability
 
     @property
     def module_targets(self) -> List[str]:
@@ -1397,6 +1533,13 @@ class SpellCrystal(Cleanable):
                 "root_target_name": self._root_target_name,
                 "root_target_qualname": self._root_target_qualname,
                 "root_target_kind": self._root_target_kind,
+                "spellbook_id": self._spellbook_id,
+                "spell_name": self._spell_name,
+                "binding_name": self._binding_name,
+                "spellframe_name": self._spellframe_name,
+                "existence_name": self._existence_name,
+                "permissions_name": self._permissions_name,
+                "rebindability": self._rebindability,
                 "module_targets": list(self._module_targets),
                 "path_targets": list(self._path_targets),
                 "synthetic_module_targets": list(self._synthetic_module_targets),

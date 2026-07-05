@@ -1,0 +1,163 @@
+
+
+from typing import Dict, Optional
+
+from melder.utilities.general_base.cleanable import Cleanable
+
+
+class AethericFrameCrystal(Cleanable):
+    """
+    Pure-data digital twin of one AethericFrame's configured surface.
+
+    Purpose:
+        Carry the persistable truth of one frame: its identity, its posture
+        (the feature-gating trio: system_state / rift_enabled / ai_native),
+        and its dev-ops configuration surface. Frames are the posture owners
+        in the runtime, so this twin is where the dynamic-lane gate reads its
+        recorded truth during restore.
+
+    Contract:
+        - Value payload only; immutable after construction (replace-on-emit).
+        - Only DYNAMIC-posture frames are emitted (dynamic-lane hard gate);
+          automatic frames never appear in a profile.
+        - Child twins (spellbooks) reference this frame by `frame_name`;
+          composition is flat-maps-plus-edges, never nested objects.
+
+    Threading:
+        Immutable-after-init; the owning PersistenceProfile serializes
+        replacement.
+
+    Lifecycle:
+        Owned by exactly one PersistenceProfile; `cleanup()` deletes owned
+        fields; idempotent.
+    """
+
+    __slots__ = Cleanable.__slots__ + [
+        "_frame_name",
+        "_system_state_name",
+        "_rift_enabled",
+        "_ai_native_enabled",
+        "_dev_ops_payload",
+    ]
+
+    def __init__(
+            self,
+            frame_name: str,
+            system_state_name: str,
+            rift_enabled: bool,
+            ai_native_enabled: bool,
+            dev_ops_payload: Optional[Dict[str, object]] = None,
+    ) -> None:
+        """
+        Initialize one frame twin from emitted frame posture + dev-ops config.
+
+        Args:
+            frame_name:
+                Canonical frame name (the parent edge used by child twins).
+            system_state_name:
+                Recorded SystemState name ("dynamic" expected; the emit gate
+                excludes automatic frames).
+            rift_enabled:
+                Recorded AR/Rift eligibility posture for the frame.
+            ai_native_enabled:
+                Recorded AI-native posture for the frame.
+            dev_ops_payload:
+                Value-typed mapping of the frame's dev-ops configured surface.
+                None is treated as an empty payload.
+
+        Returns:
+            None.
+
+        Raises:
+            ValueError:
+                If `frame_name` is empty.
+        """
+        super().__init__()
+        if not frame_name:
+            raise ValueError(
+                "AethericFrameCrystal requires a non-empty frame_name; "
+                "an unnamed frame cannot anchor child twins."
+            )
+        self._frame_name: str = frame_name
+        self._system_state_name: str = system_state_name
+        self._rift_enabled: bool = rift_enabled
+        self._ai_native_enabled: bool = ai_native_enabled
+        self._dev_ops_payload: Dict[str, object] = (
+            dict(dev_ops_payload) if dev_ops_payload else {}
+        )
+
+    def cleanup(self) -> None:
+        """
+        Release owned fields and mark the twin cleaned.
+
+        Contract:
+            - Idempotent; del posture (no tombstones).
+        """
+        if self._cleaned:
+            return
+        self._cleaned = True
+        del self._frame_name
+        del self._system_state_name
+        del self._rift_enabled
+        del self._ai_native_enabled
+        del self._dev_ops_payload
+
+    @property
+    def frame_name(self) -> str:
+        """
+        Return the canonical frame name this twin mirrors.
+
+        Returns:
+            str:
+                The frame name (parent edge key for child twins).
+        """
+        self.check_cleaned()
+        return self._frame_name
+
+    @property
+    def system_state_name(self) -> str:
+        """
+        Return the recorded SystemState name for the frame.
+
+        Returns:
+            str:
+                Recorded posture name at emission time.
+        """
+        self.check_cleaned()
+        return self._system_state_name
+
+    @property
+    def rift_enabled(self) -> bool:
+        """
+        Return the recorded rift_enabled posture.
+
+        Returns:
+            bool:
+                True when the frame allowed AR/Rift attachment at emission.
+        """
+        self.check_cleaned()
+        return self._rift_enabled
+
+    @property
+    def ai_native_enabled(self) -> bool:
+        """
+        Return the recorded ai_native posture.
+
+        Returns:
+            bool:
+                True when the frame was AI-native at emission.
+        """
+        self.check_cleaned()
+        return self._ai_native_enabled
+
+    @property
+    def dev_ops_payload(self) -> Dict[str, object]:
+        """
+        Return a detached copy of the frame's dev-ops configured surface.
+
+        Returns:
+            Dict[str, object]:
+                Detached mapping of dev-ops property name -> value.
+        """
+        self.check_cleaned()
+        return dict(self._dev_ops_payload)
