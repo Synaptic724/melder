@@ -1401,13 +1401,6 @@ and logging.
         # this spell just moved to _inactive_spells.
         if self._crystallizer.activated:
             self._crystallizer.emit_spell_activity(spell_id, active=False)
-            # Selection snapshot: the park changed which member the index
-            # points at; re-emit the membership twin.
-            self._crystallizer.emit(
-                self._crystallizer.create_spell_index_crystal(
-                    spell.spell_index, self._id
-                )
-            )
 
     def _reactivate_owned_spell(self, spell: Spell) -> None:
         """
@@ -1466,12 +1459,6 @@ and logging.
         # synthetic root module if it was unpublished while parked).
         if self._crystallizer.activated:
             self._crystallizer.emit_spell_activity(spell_id, active=True)
-            # Selection snapshot: the promotion repointed the index.
-            self._crystallizer.emit(
-                self._crystallizer.create_spell_index_crystal(
-                    spell.spell_index, self._id
-                )
-            )
 
     def _deactivate_contracted_spell(self, conduit_id: str, spell: Spell) -> None:
         """
@@ -3169,6 +3156,15 @@ and logging.
             spell_index.update(new_id)
             # Framewide binding signature: repoint old -> new active id.
             self._aetheric_frame.update_lookup(spell._key, new_id)
+            # Membership snapshot AFTER the repoint: the park/promote tails
+            # above fire while the index still points at the OLD member, so
+            # the one truthful selection snapshot for a notch lives here.
+            if self._crystallizer.activated:
+                self._crystallizer.emit(
+                    self._crystallizer.create_spell_index_crystal(
+                        spell_index, self._id
+                    )
+                )
         # Structural gate: re-register marks the index gated + dirty so meld-time
         # revalidation recompiles on next resolve (lazy).
         self._spell_system_states.register_index(

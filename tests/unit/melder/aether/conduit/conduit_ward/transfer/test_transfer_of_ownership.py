@@ -753,6 +753,11 @@ class FakeSpellbook:
         self._configuration = self._ConfigurationStub()
         self._aether = aether
         self._id = f"book-{id(self):x}"
+        # Real spellbooks pull a non-owning crystallizer reference at init;
+        # the transfer re-anchor seam reads `.activated` off it. "Present
+        # but not recording" (activated=False) makes the record seam skip,
+        # matching a world where the crystallizer was never activated.
+        self._crystallizer = SimpleNamespace(cleaned=False, activated=False)
 
     def _register_spell_with_risk_manager(self, conduit_id: str, spell_obj: Any) -> None:
         """
