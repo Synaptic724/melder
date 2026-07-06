@@ -164,9 +164,26 @@ def boom_factory() -> Engine:
 
 
 def _make_spellbook() -> Spellbook:
-    """Default single-worker spellbook."""
+    """
+    Default single-worker spellbook with system caching disabled.
+
+    This suite tests RESOLUTION behavior, not the conjure cache. Every test
+    conjures (frame=default, name="root") and several bind IDENTICAL
+    module-level class sources (NeedsPlugins, Config, ...) into DIFFERENT
+    pool compositions, so leaving caching on lets sibling tests replay each
+    other's cached manifests out of the shared frame/conduit bundle. With
+    caching off every conjure compiles from scratch, tests are
+    order-independent, and no cache artifacts are written (same posture the
+    cache suite's non-cache arms and test_aether use).
+    """
     spellbook = Spellbook()
     spellbook.get_configuration().set_property("phase_scheduler_workers_per_spellbook", 1)
+    spellbook.configure_aether_frame(
+        system_state=None,
+        disposal=None,
+        disposal_method_names=None,
+        system_caching_enabled=False,
+    )
     return spellbook
 
 
@@ -578,19 +595,14 @@ def test_b6_two_existing_instances_same_frame_default_collide() -> None:
 # =========================================================================== #
 # C1 - collection DI
 # =========================================================================== #
-def test_c1_zero_implementations_injects_empty_list() -> None:
-    """C1: a required collection with no providers conjures fine and injects [] (owner policy 2026-07-06: empty collections spawn with an empty list; phase-6 emits a WARNING only)."""
+def test_c1_zero_implementations_fails_conjure() -> None:
+    """C1: in an AUTOMATIC book a required collection with no providers fails fast at conjure via the phase-6 EmptyCollectionStrategy (composition is final, so the socket can never be satisfied; dynamic books instead warn and inject [] pending contracts)."""
     spellbook = _make_spellbook()
-    conduit = None
     try:
         spellbook.bind(spell=NeedsPlugins, existence=Existence.unique, permissions="create")
-        conduit = spellbook.conjure(name="root")
-        instance = conduit.meld(spell=NeedsPlugins)
-        assert isinstance(instance.plugins, list)
-        assert instance.plugins == []
+        with pytest.raises(RESOLUTION_ERRORS):
+            spellbook.conjure(name="root")
     finally:
-        if conduit is not None:
-            conduit.cleanup()
         spellbook.cleanup()
 
 

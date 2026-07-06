@@ -12,6 +12,9 @@ from melder.__melder_registration_guard__ import __melder_registration_guard__ a
 from melder.crystallizer.configuration.crystallizer_configuration import (
     CrystallizerConfiguration,
 )
+from melder.crystallizer.persistence.crystals.crystallizer_crystal import (
+    CrystallizerCrystal,
+)
 from melder.crystallizer.persistence.crystals.spell_crystal import SpellCrystal
 from melder.crystallizer.synthetic_module import SyntheticModule
 from melder.crystallizer.persistence.persistence_system import PersistenceSystem
@@ -326,6 +329,41 @@ class Crystallizer(Cleanable):
                 self._configuration.auto_flush_checkpoints
             )
             self._last_automatic_checkpoint_monotonic = time.monotonic()
+        # Self-emission: the recorder's own policy is recorded truth.
+        # Activation is the crystallizer's configured moment, so the twin
+        # emits here into the (now live) active profile - a cache-booted
+        # world can reload this exact policy via
+        # CrystallizerConfiguration.load_recorded_dictionary before
+        # activating its own crystallizer.
+        configuration_payload: Dict[str, object] = {}
+        for property_name in self._configuration.available_properties.keys():
+            property_value = self._configuration.get_property(property_name)
+            if (
+                    isinstance(property_value, (str, int, float, bool))
+                    or property_value is None
+            ):
+                configuration_payload[property_name] = property_value
+            elif isinstance(property_value, (list, tuple, set, frozenset)):
+                configuration_payload[property_name] = [
+                    str(item) for item in property_value
+                ]
+            else:
+                configuration_payload[property_name] = str(property_value)
+        self.emit(
+            CrystallizerCrystal(configuration_payload=configuration_payload)
+        )
+        # Root catch-up: the Aether structurally precedes the crystallizer
+        # (it hosts it), so its configuration twin could never record at
+        # its own activation in the normal boot order. Now that recording
+        # is live, capture the already-active root exactly once - a
+        # targeted root emission, not a world walk (bind still owns every
+        # structural emission).
+        if (
+                self._aether is not None
+                and self._aether.configured
+                and self._aether.configuration is not None
+        ):
+            self._aether.configuration.emit_configured_twin_when_recording()
 
     def _maybe_create_automatic_checkpoint(self) -> None:
         """
@@ -1232,28 +1270,65 @@ class Crystallizer(Cleanable):
         self._require_activated()
         return self._persistence_system.list_cached_checkpoint_ids()
 
-    def load_checkpoint(self, checkpoint_id: str) -> None:
+    def verify_checkpoint_chain(
+            self,
+            profile_name: Optional[str] = None,
+    ) -> Dict[str, object]:
         """
-        Load one checkpoint back toward the live system (restore input).
+        Report one profile's checkpoint-chain fold-safety (read-only).
+
+        Purpose:
+            Answer BEFORE a restore whether the retained chain is safe to
+            fold: "intact", "truncated_prefix" (head history dropped), or
+            "broken" (number/window damage with evidence rows).
+
+        Args:
+            profile_name:
+                Profile to audit; None means the active profile.
+
+        Returns:
+            Dict[str, object]:
+                The detached chain-integrity report.
+
+        Raises:
+            RuntimeError:
+                If crystallizer is cleaned or not yet active.
+            KeyError:
+                If `profile_name` names no existing profile.
+        """
+        self.check_cleaned()
+        self._require_activated()
+        return self._persistence_system.verify_checkpoint_chain(profile_name)
+
+    def load_checkpoint(self, checkpoint_id: str) -> Dict[str, object]:
+        """
+        Unfold one checkpoint's world into the live runtime (boot verb).
+
+        Purpose:
+            Public seat of the restore engine: folds the target's profile
+            chain and replays it through the public runtime verbs in canon
+            order (all-or-nothing; shortfalls reported, never silently
+            under-built).
 
         Args:
             checkpoint_id:
                 ULID identity of the checkpoint to load.
 
         Returns:
-            None.
+            Dict[str, object]:
+                The detached RestoreReport payload (status, built counts,
+                shortfall entries, identity translation map).
 
         Raises:
             RuntimeError:
-                If crystallizer is cleaned or not yet active.
+                If crystallizer is cleaned or not yet active, or a replay
+                stage failed (after teardown; original error chained).
             KeyError:
                 If no checkpoint exists under `checkpoint_id`.
-            NotImplementedError:
-                Placeholder until the restore engine lands (bootstrap epic).
         """
         self.check_cleaned()
         self._require_activated()
-        self._persistence_system.load_checkpoint(checkpoint_id)
+        return self._persistence_system.load_checkpoint(checkpoint_id)
 
     def _require_configured(self) -> None:
         """

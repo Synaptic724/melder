@@ -442,6 +442,83 @@ class CrystallizerConfiguration(Cleanable):
         self.set_property("auto_flush_checkpoints", False)
         return self
 
+    def load_recorded_dictionary(
+            self,
+            recorded_properties: Dict[str, Any],
+    ) -> Dict[str, List[str]]:
+        """
+        Reload lane: apply one RECORDED property payload as configuration
+        truth and seal.
+
+        Purpose:
+            The cache-boot counterpart to `with_defaults`. When a world
+            reboots from cached checkpoints, the crystallizer's own policy
+            (source roots, retention, cadence, flush posture) is part of
+            the recorded truth - it reloads from the CrystallizerCrystal
+            payload, never from present-day defaults, and the lane loads
+            and freezes in one motion.
+
+        Contract:
+            - Defaults land first as the backfill floor (`with_defaults`),
+              then every recorded key OVERWRITES its default (recorded
+              truth wins); registry keys the record did not carry are
+              returned under "backfilled" so nothing defaults silently.
+            - user_source_root_paths recorded as a list (the emission
+              scalar filter's collection form) re-tuples on the way in.
+            - A recorded value the property system refuses is skipped and
+              returned under "rejected" as "key: reason" (documented
+              best-effort collection for the caller's reporting).
+            - LOADS AND FREEZES in one motion: the returned state is
+              sealed. The freeze emits nothing; the crystallizer twin
+              emits at `Crystallizer.activate`, the configured moment.
+
+        Args:
+            recorded_properties:
+                Property name -> recorded value mapping (one sealed,
+                JSON-safe CrystallizerCrystal configuration_payload).
+
+        Returns:
+            Dict[str, List[str]]:
+                {"rejected": ["key: reason", ...],
+                 "backfilled": [key, ...]}.
+
+        Raises:
+            RuntimeError: If the configuration is cleaned or already
+                frozen.
+            ValueError: If the reloaded property set fails validation at
+                the internal freeze.
+        """
+        self.check_cleaned()
+        if self._frozen:
+            raise RuntimeError(
+                "CrystallizerConfiguration is already frozen; the reload "
+                "lane requires a fresh configuration object."
+            )
+        self.with_defaults()
+        rejected: List[str] = []
+        applied: List[str] = []
+        for key, value in dict(recorded_properties).items():
+            candidate = value
+            if key == "user_source_root_paths" and isinstance(value, list):
+                # Emission records collections as lists of strings; the
+                # registry types this key as a tuple.
+                candidate = tuple(value)
+            try:
+                self.set_property(key, candidate)
+                applied.append(key)
+            except Exception as error:
+                # Best-effort collection by contract: the refusal reason
+                # rides back to the caller for shortfall reporting.
+                rejected.append("{0}: {1}".format(key, error))
+        backfilled = sorted(
+            key for key in self.available_properties.keys()
+            if key not in applied
+        )
+        # Reload seals: load it in, freeze it - the reload lane never
+        # hands back a mutable configuration.
+        self.freeze()
+        return {"rejected": rejected, "backfilled": backfilled}
+
     def with_checkpoint_interval_minutes(
             self,
             minutes: int,

@@ -1,0 +1,593 @@
+"""
+Integration tests for the restore engine against the REAL runtime: seal a
+recorded world into checkpoints, simulate a fresh boot (singleton reset +
+cache reload), and unfold it through Crystallizer.load_checkpoint - plus
+the all-or-nothing rollback contract on injected failure.
+
+Runs only on 3.14t (melder package root import chain).
+"""
+import pytest
+
+from melder.aether.aether import Aether
+from melder.aether.aether_utility_system import AetherUtilitySystem
+from melder.aether.conduit.conduit import Conduit
+from melder.aether.spellbook.configuration.spellbook_configuration import (
+    SpellbookConfiguration,
+)
+from melder.aether.spellbook.existence.existence import Existence
+from melder.aether.spellbook.spellbook import Spellbook
+from melder.crystallizer.configuration.crystallizer_configuration import (
+    CrystallizerConfiguration,
+)
+from melder.crystallizer.crystallizer import Crystallizer
+from melder.crystallizer.persistence.restore_engine import RestoreEngine
+from melder.nexus.nexus import Nexus
+from tests._frame_posture_test_support import (
+    apply_dynamic_defaults_for_spellbook_configuration,
+)
+
+
+class RestoreAlpha:
+    """
+    Importable restore target (active bind lane).
+
+    Contract:
+        - Module-scoped so hydration can re-import it by qualname.
+    """
+
+    def __init__(self) -> None:
+        """
+        Initialize the marker service.
+        """
+        self.alive: bool = True
+
+
+class RestoreBeta:
+    """
+    Importable restore target (staged member lane).
+    """
+
+    def __init__(self) -> None:
+        """
+        Initialize the marker service.
+        """
+        self.alive: bool = True
+
+
+class RestoreGamma:
+    """
+    Importable restore target (peer conduit / contract lane).
+    """
+
+    def __init__(self) -> None:
+        """
+        Initialize the marker service.
+        """
+        self.alive: bool = True
+
+
+@pytest.fixture(autouse=True)
+def reset_world_singletons():
+    """
+    Purpose:
+        Isolate each test behind fresh Aether/Nexus/Crystallizer singletons.
+    Contract:
+        - Resets the world singletons and rebinds the Spellbook and Conduit
+          static Aether references before and after each test.
+    Returns:
+        None.
+    """
+    Aether._reset_singleton_for_tests()
+    AetherUtilitySystem._reset_singleton_for_tests()
+    Nexus._reset_singleton_for_tests()
+    Crystallizer._reset_singleton_for_tests()
+    aether = Aether()
+    Spellbook._aether = aether
+    Conduit._aether = aether
+    yield
+    Aether._reset_singleton_for_tests()
+    AetherUtilitySystem._reset_singleton_for_tests()
+    Nexus._reset_singleton_for_tests()
+    Crystallizer._reset_singleton_for_tests()
+    aether = Aether()
+    Spellbook._aether = aether
+    Conduit._aether = aether
+
+
+@pytest.fixture()
+def cache_root(tmp_path, monkeypatch):
+    """
+    Route the crystallizer cache into a per-test directory.
+
+    Returns:
+        Path: The isolated cache root.
+    """
+    from melder.crystallizer.persistence import crystallizer_cache
+
+    root = tmp_path / "__melder_cache__" / "__crystallizer_cache__"
+    monkeypatch.setattr(
+        crystallizer_cache.CrystallizerCache,
+        "resolve_cache_root_path",
+        staticmethod(lambda: root),
+    )
+    return root
+
+
+def _activate_crystallizer():
+    """
+    Activate the Aether-hosted crystallizer with default knobs.
+
+    Returns:
+        Crystallizer: The live, activated singleton.
+    """
+    configuration = CrystallizerConfiguration().with_defaults()
+    configuration.activate()
+    crystallizer = Crystallizer()
+    crystallizer.activate(configuration)
+    return crystallizer
+
+
+def _dynamic_book():
+    """
+    Build one dynamic-posture Spellbook (configuration finalized first,
+    per the recorded lane's configuration-discipline canon).
+
+    Returns:
+        Spellbook: The configured book on a dynamic frame posture.
+    """
+    configuration = SpellbookConfiguration()
+    apply_dynamic_defaults_for_spellbook_configuration(configuration)
+    configuration.set_property("phase_scheduler_workers_per_spellbook", 1)
+    configuration.finalize()
+    return Spellbook(configuration=configuration)
+
+
+def _fresh_boot():
+    """
+    Simulate a process restart: reset the world singletons mid-test and
+    return the fresh activated crystallizer.
+
+    Returns:
+        Crystallizer: The post-"boot" activated singleton.
+    """
+    Aether._reset_singleton_for_tests()
+    AetherUtilitySystem._reset_singleton_for_tests()
+    Nexus._reset_singleton_for_tests()
+    Crystallizer._reset_singleton_for_tests()
+    aether = Aether()
+    Spellbook._aether = aether
+    Conduit._aether = aether
+    return _activate_crystallizer()
+
+
+def test_round_trip_restores_binds_and_conduit_from_cached_checkpoint(
+        cache_root,
+):
+    """
+    Purpose:
+        Prove the full boot lane: record -> seal -> flush -> fresh boot ->
+        reload -> load_checkpoint -> the world re-melds and re-records.
+    Contract:
+        The report completes; the rebuilt book re-emits custody for the
+        SAME spell SHA (content-stable identity) under a fresh profile.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If the unfolded world diverges from the record.
+    """
+    crystallizer = _activate_crystallizer()
+    book = _dynamic_book()
+    spell_id = book.bind(
+        spell=RestoreAlpha,
+        existence=Existence.unique,
+        permissions="create",
+    )
+    book.conjure(dynamic=True, name="root")
+    checkpoint_id = crystallizer.create_checkpoint()
+    crystallizer.flush_checkpoint(checkpoint_id)
+
+    rebooted = _fresh_boot()
+    rebooted.reload_cached_checkpoint(checkpoint_id)
+    report = rebooted.load_checkpoint(checkpoint_id)
+
+    assert report["status"] == "complete"
+    assert report["built_counts"]["spellbook"] == 1
+    assert report["built_counts"]["conduit"] == 1
+    assert report["built_counts"]["spell_active"] == 1
+    # Re-emission: the rebuilt world re-recorded the same content-stable
+    # spell SHA into the fresh active profile.
+    assert rebooted.get_spell_crystal(spell_id).id == spell_id
+
+
+def test_round_trip_restores_staged_member_and_selection(cache_root):
+    """
+    Purpose:
+        Prove staged members re-park onto their rebuilt index anchor.
+    Contract:
+        The staged member binds inactive on the anchor; the recorded
+        selection (the active member) is preserved without a notch.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If staging or selection diverges.
+    """
+    crystallizer = _activate_crystallizer()
+    book = _dynamic_book()
+    active_id = book.bind(
+        spell=RestoreAlpha,
+        existence=Existence.unique,
+        permissions="create",
+    )
+    conduit = book.conjure(dynamic=True, name="root")
+    active_spell = book._spells_by_id[active_id]
+    conduit.bind_inactive(
+        spell=RestoreBeta,
+        spell_index=active_spell.spell_index,
+        existence=Existence.unique,
+        permissions="create",
+    )
+    checkpoint_id = crystallizer.create_checkpoint()
+    crystallizer.flush_checkpoint(checkpoint_id)
+
+    rebooted = _fresh_boot()
+    rebooted.reload_cached_checkpoint(checkpoint_id)
+    report = rebooted.load_checkpoint(checkpoint_id)
+
+    assert report["status"] == "complete"
+    assert report["built_counts"]["spell_active"] == 1
+    assert report["built_counts"]["spell_staged"] == 1
+    assert report["built_counts"].get("selection_notch") is None
+
+
+def test_round_trip_restores_links_between_conduits(cache_root):
+    """
+    Purpose:
+        Prove outbound link edges re-establish from the initiator side.
+    Contract:
+        Two rebuilt conduits re-link; the report counts one link and the
+        identity map carries both recorded conduit ids.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If the link lane diverges.
+    """
+    crystallizer = _activate_crystallizer()
+    book_a = _dynamic_book()
+    book_a.bind(
+        spell=RestoreAlpha,
+        existence=Existence.unique,
+        permissions="create",
+    )
+    conduit_a = book_a.conjure(dynamic=True, name="alpha")
+    book_b = _dynamic_book()
+    book_b.bind(
+        spell=RestoreGamma,
+        existence=Existence.unique,
+        permissions="create",
+    )
+    conduit_b = book_b.conjure(dynamic=True, name="beta")
+    assert conduit_a.link(conduit_b) is True
+    checkpoint_id = crystallizer.create_checkpoint()
+    crystallizer.flush_checkpoint(checkpoint_id)
+
+    rebooted = _fresh_boot()
+    rebooted.reload_cached_checkpoint(checkpoint_id)
+    report = rebooted.load_checkpoint(checkpoint_id)
+
+    assert report["status"] == "complete"
+    assert report["built_counts"]["link"] == 1
+    assert conduit_a._id in report["identity_map"]
+    assert conduit_b._id in report["identity_map"]
+
+
+def test_round_trip_regrants_initiated_contract_details(cache_root):
+    """
+    Purpose:
+        Prove contracts re-grant LAST from each side's initiated details.
+    Contract:
+        The re-granted detail count matches the recorded initiated
+        entries; index subscriptions are reported (first cut).
+    Returns:
+        None.
+    Raises:
+        AssertionError: If the contract lane diverges.
+    """
+    crystallizer = _activate_crystallizer()
+    book_a = _dynamic_book()
+    granted_id = book_a.bind(
+        spell=RestoreAlpha,
+        existence=Existence.unique,
+        permissions="create",
+    )
+    conduit_a = book_a.conjure(dynamic=True, name="alpha")
+    book_b = _dynamic_book()
+    book_b.bind(
+        spell=RestoreGamma,
+        existence=Existence.unique,
+        permissions="create",
+    )
+    conduit_b = book_b.conjure(dynamic=True, name="beta")
+    assert conduit_a.link(conduit_b) is True
+    # Borrower-called verb: conduit_b borrows granted_id FROM its owner
+    # conduit_a (the ward eligibility check demands the `conduit` argument
+    # own the spell).
+    with conduit_b.transaction("link", conduits=[conduit_a, conduit_b]):
+        conduit_b.add_spell_to_contract(
+            spell_id=granted_id,
+            conduit=conduit_a,
+            permissions="create",
+        )
+    checkpoint_id = crystallizer.create_checkpoint()
+    crystallizer.flush_checkpoint(checkpoint_id)
+
+    rebooted = _fresh_boot()
+    rebooted.reload_cached_checkpoint(checkpoint_id)
+    report = rebooted.load_checkpoint(checkpoint_id)
+
+    assert report["status"] == "complete"
+    assert report["built_counts"]["link"] == 1
+    assert report["built_counts"]["contract_detail"] >= 1
+
+
+def test_round_trip_restores_the_nexus_root(cache_root):
+    """
+    Purpose:
+        Prove the Nexus root restores: recorded configuration reloads
+        through the reload lane and the rebuilt root re-enables (and
+        re-records) on the fresh boot.
+    Contract:
+        The report counts one nexus build; the rebooted world's Nexus is
+        enabled with the recorded governance values.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If the nexus lane diverges.
+    """
+    from melder.nexus.configuration.nexus_configuration import (
+        NexusConfiguration,
+    )
+
+    crystallizer = _activate_crystallizer()
+    nexus_configuration = NexusConfiguration()
+    nexus_configuration.load_default_dictionary()
+    nexus_configuration.set_property("max_active_rift_count", 5)
+    Nexus().enable(nexus_configuration)
+    checkpoint_id = crystallizer.create_checkpoint()
+    crystallizer.flush_checkpoint(checkpoint_id)
+
+    rebooted = _fresh_boot()
+    rebooted.reload_cached_checkpoint(checkpoint_id)
+    report = rebooted.load_checkpoint(checkpoint_id)
+
+    assert report["status"] == "complete"
+    assert report["built_counts"]["nexus"] == 1
+    rebuilt = Nexus()
+    assert rebuilt.is_enabled is True
+    assert rebuilt.configuration.get_property("max_active_rift_count") == 5
+
+
+def test_removed_spell_stays_removed_after_restore(cache_root):
+    """
+    Purpose:
+        Prove tombstones hold across the boot boundary.
+    Contract:
+        A spell removed before the seal is NOT rebuilt; only the survivor
+        binds.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If the tombstone leaks a rebuild.
+    """
+    crystallizer = _activate_crystallizer()
+    book = _dynamic_book()
+    book.bind(
+        spell=RestoreAlpha,
+        existence=Existence.unique,
+        permissions="create",
+    )
+    doomed_id = book.bind(
+        spell=RestoreBeta,
+        existence=Existence.unique,
+        permissions="create",
+        binding_name="doomed",
+    )
+    book.conjure(dynamic=True, name="root")
+    book.cleanup_and_remove_spell(doomed_id)
+    checkpoint_id = crystallizer.create_checkpoint()
+    crystallizer.flush_checkpoint(checkpoint_id)
+
+    rebooted = _fresh_boot()
+    rebooted.reload_cached_checkpoint(checkpoint_id)
+    report = rebooted.load_checkpoint(checkpoint_id)
+
+    assert report["status"] == "complete"
+    assert report["built_counts"]["spell_active"] == 1
+    with pytest.raises(KeyError):
+        rebooted.get_spell_crystal(doomed_id)
+
+
+def test_failed_replay_tears_the_partial_world_down(cache_root):
+    """
+    Purpose:
+        Prove the all-or-nothing contract on injected stage failure.
+    Contract:
+        A hand-built chain whose conduit twin carries an impossible policy
+        fails the books_and_binds stage; the engine raises RuntimeError
+        naming the stage and the frame holds no leftover conduits.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If a partial world survives the failure.
+    """
+    _activate_crystallizer()
+    window = {
+        "journal": [
+            [1, "spellbook", "book-x"],
+            [2, "conduit", "cond-x"],
+        ],
+        "payloads": {
+            "spellbook": {
+                "book-x": {
+                    "spellbook_id": "book-x",
+                    "frame_name": "default",
+                    "configuration_payload": {
+                        "system_state": "dynamic",
+                        "ai_native_enabled": True,
+                        "rift_enabled": True,
+                        "phase_scheduler_workers_per_spellbook": 1,
+                    },
+                    "hook_names": [],
+                    "bind_order": [],
+                }
+            },
+            "conduit": {
+                "cond-x": {
+                    "conduit_id": "cond-x",
+                    "spellbook_id": "book-x",
+                    "conduit_name": "broken",
+                    "policy_name": "no_such_policy_anywhere",
+                    "dynamic": True,
+                    "link_targets": [],
+                }
+            },
+        },
+    }
+    engine = RestoreEngine(
+        profile_name="default",
+        checkpoint_ids=["01ROLLBACKTEST0000000000"],
+        chain=[window],
+    )
+    with pytest.raises(RuntimeError) as raised:
+        engine.restore()
+    assert "books_and_binds" in str(raised.value)
+    engine.cleanup()
+    frame = Aether()._aetheric_frames["default"]
+    assert frame._conduits == {}
+
+
+def test_pre_patch_custody_without_gap_fields_still_restores(cache_root):
+    """
+    Purpose:
+        Prove tolerance for cached checkpoints sealed BEFORE the capture-gap
+        fields landed.
+    Contract:
+        Custody payloads missing disposal_method_names / profile_family
+        bind with the defaults (empty disposal set, "general").
+    Returns:
+        None.
+    Raises:
+        AssertionError: If absence of the new keys breaks the bind lane.
+    """
+    _activate_crystallizer()
+    window = {
+        "journal": [
+            [1, "spellbook", "book-y"],
+            [2, "conduit", "cond-y"],
+            [3, "spell_crystal", "sha-y"],
+        ],
+        "payloads": {
+            "spellbook": {
+                "book-y": {
+                    "spellbook_id": "book-y",
+                    "frame_name": "default",
+                    "configuration_payload": {
+                        "system_state": "dynamic",
+                        "ai_native_enabled": True,
+                        "rift_enabled": True,
+                        "phase_scheduler_workers_per_spellbook": 1,
+                    },
+                    "hook_names": [],
+                    "bind_order": ["sha-y"],
+                }
+            },
+            "conduit": {
+                "cond-y": {
+                    "conduit_id": "cond-y",
+                    "spellbook_id": "book-y",
+                    "conduit_name": "root",
+                    "policy_name": "default",
+                    "dynamic": True,
+                    "link_targets": [],
+                }
+            },
+            "spell_crystal": {
+                "sha-y": {
+                    "id": "sha-y",
+                    "spellbook_id": "book-y",
+                    "spell_name": "RestoreAlpha",
+                    "binding_name": None,
+                    "spellframe_name": None,
+                    "existence_name": "unique",
+                    "permissions_name": "create",
+                    "rebindability": "hydratable",
+                    "root_module_kind": "user_source",
+                    "root_module_name": (
+                        "tests.integration.melder.crystallizer."
+                        "test_crystallizer_restore_integration"
+                    ),
+                    "root_target_qualname": "RestoreAlpha",
+                    "root_target_kind": "class",
+                }
+            },
+        },
+    }
+    engine = RestoreEngine(
+        profile_name="default",
+        checkpoint_ids=["01PREPATCHTEST0000000000"],
+        chain=[window],
+    )
+    report = engine.restore()
+    payload = report.describe()
+    assert payload["status"] == "complete"
+    assert payload["built_counts"]["spell_active"] == 1
+    report.cleanup()
+    engine.cleanup()
+
+
+def test_post_notch_selection_restores_without_an_extra_notch(cache_root):
+    """
+    Purpose:
+        Prove a world sealed AFTER a notch restores its final selection
+        directly.
+    Contract:
+        The fold captures the final truth: the promoted member holds
+        active custody and the recorded selection, so replay binds it
+        active, stages the parked original, and needs NO selection notch
+        (the recorded and rebuilt selections already agree).
+    Returns:
+        None.
+    Raises:
+        AssertionError: If the folded selection diverges from the rebuilt
+            world or a redundant notch fires.
+    """
+    crystallizer = _activate_crystallizer()
+    book = _dynamic_book()
+    active_id = book.bind(
+        spell=RestoreAlpha,
+        existence=Existence.unique,
+        permissions="create",
+    )
+    conduit = book.conjure(dynamic=True, name="root")
+    active_spell = book._spells_by_id[active_id]
+    staged_id = conduit.bind_inactive(
+        spell=RestoreBeta,
+        spell_index=active_spell.spell_index,
+        existence=Existence.unique,
+        permissions="create",
+    )
+    staged_spell = book._inactive_spells[staged_id]
+    conduit.notch_spell(
+        spell_index=active_spell.spell_index,
+        spell=staged_spell,
+    )
+    checkpoint_id = crystallizer.create_checkpoint()
+    crystallizer.flush_checkpoint(checkpoint_id)
+
+    rebooted = _fresh_boot()
+    rebooted.reload_cached_checkpoint(checkpoint_id)
+    report = rebooted.load_checkpoint(checkpoint_id)
+
+    assert report["status"] == "complete"
+    assert report["built_counts"]["spell_active"] == 1
+    assert report["built_counts"]["spell_staged"] == 1
+    assert report["built_counts"].get("selection_notch") is None

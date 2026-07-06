@@ -1,6 +1,6 @@
 import logging
 import threading
-from typing import Any, Callable, ClassVar, Dict, Optional
+from typing import Any, Callable, ClassVar, Dict, List, Optional, Tuple
 
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.utilities.general_base.cleanable import Cleanable
@@ -166,6 +166,73 @@ class AetherConfiguration(Cleanable):
         self.set_channel_logger_resolver(None)
         self.set_default_logger(None)
         return self
+
+    @classmethod
+    def from_recorded_payload(
+            cls,
+            recorded_payload: Dict[str, object],
+    ) -> Tuple["AetherConfiguration", Dict[str, List[str]]]:
+        """
+        Reload lane: rebuild one Aether configuration from its recorded
+        twin payload.
+
+        Purpose:
+            The restore counterpart to the fluent authoring lane. A sealed
+            AetherCrystal payload is the configuration truth; the reload
+            lane applies it and seals in one motion (load it in, freeze
+            it), reporting every deviation to the caller.
+
+        Contract:
+            - channel_logger_activation_enabled reloads from the record;
+              when absent it falls to the documented default (False) and
+              is reported under "missing".
+            - Callable-bearing entries can NEVER reload from a record:
+              when the payload marks channel_logger_resolver_present or
+              default_logger_present True, the key is reported under
+              "code_participation" and the live value stays None - the
+              booting code must re-supply its callables explicitly.
+            - LOADS AND FREEZES in one motion: the returned configuration
+              is sealed. The freeze carries no emission; emission rides
+              `activate()`, which the booting Aether performs.
+
+        Args:
+            recorded_payload:
+                AetherCrystal configuration_payload shaped mapping
+                (JSON-safe, the cached-item shape).
+
+        Returns:
+            Tuple[AetherConfiguration, Dict[str, List[str]]]:
+                (the rebuilt FROZEN configuration,
+                 {"missing": [keys defaulted-with-report],
+                  "code_participation": [keys needing live callables]}).
+
+        Raises:
+            ValueError: If the reloaded values fail validation at the
+                internal freeze.
+        """
+        configuration = cls()
+        missing: List[str] = []
+        code_participation: List[str] = []
+        if "channel_logger_activation_enabled" in recorded_payload:
+            configuration.set_channel_logger_activation_enabled(
+                bool(recorded_payload["channel_logger_activation_enabled"])
+            )
+        else:
+            missing.append("channel_logger_activation_enabled")
+        # Presence flags are honesty signals, not reloadable values: a
+        # record can say a resolver existed, but only live code can
+        # supply one.
+        if bool(recorded_payload.get("channel_logger_resolver_present")):
+            code_participation.append("channel_logger_resolver")
+        if bool(recorded_payload.get("default_logger_present")):
+            code_participation.append("default_logger")
+        # Reload seals: load it in, freeze it - the reload lane never
+        # hands back a mutable configuration.
+        configuration.freeze()
+        return configuration, {
+            "missing": missing,
+            "code_participation": code_participation,
+        }
 
     def with_channel_logger_activation_enabled(
             self,
@@ -365,11 +432,39 @@ class AetherConfiguration(Cleanable):
         self.freeze()
         with self._lock:
             self._activated = True
-        # Configuration activation is the emission factor: pull the
-        # crystallizer singleton directly (guarding the pre-boot case,
-        # where the singleton is not yet initialized and construction
-        # requires the hosting Aether), emit when recording, then drop
-        # the local handle.
+        self.emit_configured_twin_when_recording()
+        return self
+
+    def emit_configured_twin_when_recording(self) -> None:
+        """
+        Internal emission seam
+
+        Emit the Aether root twin for this configuration into the record.
+
+        Purpose:
+            Configuration activation is the emission factor, so
+            `activate()` emits here. BUT the Aether root structurally
+            precedes the crystallizer (it hosts it), so in the normal boot
+            order this fires before recording is possible and captures
+            nothing - `Crystallizer.activate` therefore calls this seam as
+            a targeted root catch-up once recording is live. Same seam
+            class as the nexus enable-time emission.
+
+        Contract:
+            - NO-OP before the crystallizer singleton boots or while it is
+              not activated.
+            - Callable-bearing entries record as PRESENCE flags only (a
+              record cannot carry live callables); the reload lane reports
+              them as code_participation.
+            - Replace-on-emit in the profile keeps exactly one root twin.
+
+        Returns:
+            None.
+        """
+        # Pull the crystallizer singleton directly (guarding the pre-boot
+        # case, where the singleton is not yet initialized and
+        # construction requires the hosting Aether), emit when recording,
+        # then drop the local handle.
         if Crystallizer._initialized:
             crystallizer = Crystallizer()
             if crystallizer.activated:
@@ -389,4 +484,3 @@ class AetherConfiguration(Cleanable):
                     )
                 )
             del crystallizer
-        return self

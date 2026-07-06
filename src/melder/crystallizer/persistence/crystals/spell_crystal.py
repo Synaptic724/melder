@@ -74,6 +74,8 @@ class SpellCrystal(Cleanable):
         "_spellframe_name",
         "_existence_name",
         "_permissions_name",
+        "_disposal_method_names",
+        "_profile_family",
         "_rebindability",
         "_module_targets",
         "_path_targets",
@@ -207,6 +209,21 @@ class SpellCrystal(Cleanable):
         )
         self._existence_name: str = spell.existence.name
         self._permissions_name: str = spell.permissions.name
+        # Capture-gap fields (restore_engine_2026_07_07 patch lane): the two
+        # bind inputs the record previously dropped. Disposal names preserve
+        # the spell's cleanup contract across a restore; the profile family
+        # preserves examination depth (bind's `profile` argument). The family
+        # is derived from the attached profile object's TYPE NAME so this
+        # module never imports examiner types (typing-only pressure stays
+        # zero and the crystal remains pure data).
+        self._disposal_method_names: List[str] = sorted(
+            spell.disposal_method_names
+        )
+        self._profile_family: str = (
+            "detailed"
+            if type(spell.profile).__name__ == "SpellDetailedProfile"
+            else "general"
+        )
         # class/function targets re-import (or rematerialize) cleanly;
         # method/lambda/callable-object/instance targets need live code
         # participation at restore time.
@@ -280,6 +297,8 @@ class SpellCrystal(Cleanable):
             del self._spellframe_name
             del self._existence_name
             del self._permissions_name
+            del self._disposal_method_names
+            del self._profile_family
             del self._rebindability
             del self._module_targets
             del self._path_targets
@@ -518,6 +537,41 @@ class SpellCrystal(Cleanable):
         self.check_cleaned()
         with self._lock:
             return self._permissions_name
+
+    @property
+    def disposal_method_names(self) -> List[str]:
+        """
+        Return the disposal method names recorded at bind.
+
+        Purpose:
+            Preserve the spell's cleanup contract across a restore: the
+            engine passes these straight back into bind's
+            `disposal_method_names` so restored creations dispose exactly
+            like the originals.
+
+        Returns:
+            List[str]:
+                Detached, sorted disposal method-name list (empty when the
+                spell declared none).
+        """
+        self.check_cleaned()
+        with self._lock:
+            return list(self._disposal_method_names)
+
+    @property
+    def profile_family(self) -> str:
+        """
+        Return the examination-profile family recorded at bind.
+
+        Returns:
+            str:
+                "detailed" when the spell carried a SpellDetailedProfile at
+                emission, else "general" (bind replay passes this to the
+                `profile` argument).
+        """
+        self.check_cleaned()
+        with self._lock:
+            return self._profile_family
 
     @property
     def rebindability(self) -> str:
@@ -1544,6 +1598,8 @@ class SpellCrystal(Cleanable):
                 "spellframe_name": self._spellframe_name,
                 "existence_name": self._existence_name,
                 "permissions_name": self._permissions_name,
+                "disposal_method_names": list(self._disposal_method_names),
+                "profile_family": self._profile_family,
                 "rebindability": self._rebindability,
                 "module_targets": list(self._module_targets),
                 "path_targets": list(self._path_targets),

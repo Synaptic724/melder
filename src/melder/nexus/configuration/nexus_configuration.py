@@ -1,5 +1,6 @@
 import threading
-from typing import Any, Dict, Optional, Sequence, Tuple, Type, Union
+from enum import Enum
+from typing import Any, Dict, List, Optional, Sequence, Tuple, Type, Union
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 from melder.nexus.configuration.nexus_frame_mode import (
@@ -275,6 +276,115 @@ class NexusConfiguration(Cleanable):
         for key, value in defaults.items():
             self.set_property(key, value)
 
+    def load_recorded_dictionary(
+            self,
+            recorded_properties: Dict[str, Any],
+    ) -> Dict[str, List[str]]:
+        """
+        Reload lane: apply one RECORDED property payload as configuration
+        truth and seal.
+
+        Purpose:
+            The restore/reload counterpart to `load_default_dictionary`.
+            A sealed world rebuilds from its recorded values - never from
+            present-day defaults - and the reload lane loads and freezes
+            in one motion.
+
+        Contract:
+            - Defaults land first as the backfill floor, then every
+              recorded key OVERWRITES its default (recorded truth wins);
+              keys the record did not carry are returned under
+              "backfilled" so nothing defaults silently.
+            - Recorded values re-typed by the emission scalar filter
+              convert back on the way in: registry-typed enums accept
+              their recorded member NAME; registry-typed tuples accept
+              recorded lists (re-tupled element-wise).
+            - A recorded value the property system still refuses is
+              skipped and returned under "rejected" as "key: reason";
+              nothing is silently coerced (the per-key exception capture
+              is documented best-effort collection for the caller's
+              shortfall reporting).
+            - SEALS WITHOUT EMISSION: enable has not happened yet, so the
+              twin emission belongs to `Nexus.enable`, which calls
+              `emit_configured_twin_when_recording` for pre-frozen
+              configurations.
+
+        Args:
+            recorded_properties:
+                Property name -> recorded value mapping (one sealed,
+                JSON-safe NexusCrystal configuration_payload).
+
+        Returns:
+            Dict[str, List[str]]:
+                {"rejected": ["key: reason", ...],
+                 "backfilled": [key, ...]}.
+
+        Raises:
+            RuntimeError: If the configuration is cleaned or already
+                frozen.
+            ValueError: If the reloaded property set fails validation at
+                the internal seal.
+        """
+        self.check_cleaned()
+        if self._frozen:
+            raise RuntimeError(
+                "NexusConfiguration is already frozen; the reload lane "
+                "requires a fresh configuration object."
+            )
+        self.load_default_dictionary()
+        rejected: List[str] = []
+        applied: List[str] = []
+        for key, value in dict(recorded_properties).items():
+            try:
+                self.set_property(key, self._coerce_recorded_value(key, value))
+                applied.append(key)
+            except Exception as error:
+                # Best-effort collection by contract: the refusal reason
+                # rides back to the caller for shortfall reporting.
+                rejected.append("{0}: {1}".format(key, error))
+        backfilled = sorted(
+            key for key in self.available_properties.keys()
+            if key not in applied
+        )
+        # Reload seals: load it in, freeze it. The seal bypasses freeze()
+        # deliberately - emission belongs to the enable step, and this
+        # configuration is not enabled yet.
+        if not self.validate():
+            raise ValueError("NexusConfiguration validation failed.")
+        self._frozen = True
+        return {"rejected": rejected, "backfilled": backfilled}
+
+    def _coerce_recorded_value(self, key: str, value: Any) -> Any:
+        """
+        Convert one recorded value back to its registered property type.
+
+        Contract:
+            - Enum-typed keys accept the recorded member NAME (string).
+            - Tuple-typed keys accept recorded lists (re-tupled with
+              elements passed through as recorded).
+            - Everything else passes through untouched; `set_property`
+              remains the type authority and refuses what it refuses.
+
+        Args:
+            key:
+                Property name (used to look up the registered type).
+            value:
+                The recorded value.
+
+        Returns:
+            Any: The conversion best matching the registered type.
+        """
+        expected = self.available_properties.get(key)
+        if (
+                isinstance(expected, type)
+                and issubclass(expected, Enum)
+                and isinstance(value, str)
+        ):
+            return EnumHelpers.convert_enum_and_check(value, expected)
+        if expected is tuple and isinstance(value, list):
+            return tuple(value)
+        return value
+
     def validate(self) -> bool:
         """
         Internal
@@ -407,13 +517,39 @@ class NexusConfiguration(Cleanable):
         if not self.validate():
             raise ValueError("NexusConfiguration validation failed.")
         self._frozen = True
+        self.emit_configured_twin_when_recording()
+
+    def emit_configured_twin_when_recording(self) -> None:
+        """
+        Internal emission seam
+
+        Emit the nexus twin for this configuration into the record.
+
+        Purpose:
+            Freeze is this configuration's true activation (Nexus.enable
+            finalizes/freezes it as the enable step's confirmation), so
+            the fresh freeze emits here. Reloaded configurations arrive at
+            `Nexus.enable` ALREADY frozen (the reload lane seals without
+            emission because enable has not happened yet), so enable calls
+            this seam directly - the same fix class as the spellbook
+            conjure re-freeze.
+
+        Contract:
+            - NO-OP before the crystallizer singleton boots or while it is
+              not activated.
+            - Payload carries plain values only: scalars pass through,
+              enums record their member NAME, collections record as lists
+              of strings, everything else stringifies whole.
+            - Replace-on-emit in the profile keeps exactly one nexus twin.
+
+        Returns:
+            None.
+        """
         # Configuration activation is the emission factor: pull the
         # crystallizer singleton directly (guarding the pre-boot case,
         # where the singleton is not yet initialized and construction
         # requires the hosting Aether), emit when recording, then drop
         # the local handle.
-        # Freeze is this configuration's true activation (Nexus.enable
-        # finalizes/freezes it as the enable step's confirmation).
         if Crystallizer._initialized:
             crystallizer = Crystallizer()
             if crystallizer.activated:
@@ -424,6 +560,20 @@ class NexusConfiguration(Cleanable):
                             or property_value is None
                     ):
                         configuration_payload[property_name] = property_value
+                    elif isinstance(property_value, Enum):
+                        # Record fidelity: member NAME round-trips through
+                        # the reload lane's enum conversion.
+                        configuration_payload[property_name] = (
+                            property_value.name
+                        )
+                    elif isinstance(
+                            property_value, (list, tuple, set, frozenset)
+                    ):
+                        # Record fidelity: collections round-trip as lists
+                        # of strings (the reload lane re-tuples them).
+                        configuration_payload[property_name] = [
+                            str(item) for item in property_value
+                        ]
                     else:
                         configuration_payload[property_name] = str(property_value)
                 crystallizer.emit(

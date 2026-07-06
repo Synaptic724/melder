@@ -28,6 +28,13 @@ class DummySpell:
         self.spellframe = None
         self.existence = SimpleNamespace(name="present")
         self.permissions = SimpleNamespace(name="default")
+        # Capture-gap fields (restore_engine_2026_07_07): SpellCrystal now
+        # also reads the disposal contract and the attached profile object
+        # (family derived from the profile's TYPE NAME - SimpleNamespace
+        # classifies as the "general" fallback, which is what a minimal
+        # double should report).
+        self.disposal_method_names = []
+        self.profile = SimpleNamespace()
 
 
 def clear_modules(*module_names: str) -> None:

@@ -251,11 +251,63 @@ class SpellbookConfiguration(Cleanable):
         """
         self.check_cleaned()
         if self._frozen:
+            # Origin-carrying re-freeze (the spellbook's conjure path): the
+            # dynamic-mode bind guard requires user configurations to be
+            # finalized BEFORE the first bind, so every legal recorded-lane
+            # configuration arrives here already frozen. The freeze
+            # transition itself is a no-op, but the twin emission must
+            # still fire or recorded worlds never carry their spellbooks
+            # (restore_engine_2026_07_07 round-trip finding).
+            self._emit_spellbook_twin_when_recording(
+                origin_spellbook_id, origin_frame_name, origin_dynamic
+            )
             return
         if not self.validate():
             raise ValueError("SpellbookConfiguration validation failed. Cannot freeze.")
         with self._lock:
             self._frozen = True
+        self._emit_spellbook_twin_when_recording(
+            origin_spellbook_id, origin_frame_name, origin_dynamic
+        )
+
+    def _emit_spellbook_twin_when_recording(
+            self,
+            origin_spellbook_id: Optional[str],
+            origin_frame_name: Optional[str],
+            origin_dynamic: Optional[bool],
+    ) -> None:
+        """
+        Emit the spellbook twin when a freeze carries origin identity.
+
+        Purpose:
+            Configuration activation is the emission factor for the
+            spellbook twin. Both freeze paths route here: the fresh freeze
+            (conjure froze an unfrozen configuration) AND the origin-
+            carrying re-freeze of a configuration the user legally
+            finalized standalone before binds.
+
+        Contract:
+            - NO-OP without full origin identity or when the conjure
+              posture is not dynamic (standalone finalize()/build() calls
+              emit nothing; automatic-mode worlds are never recorded).
+            - NO-OP before the crystallizer singleton boots or while it is
+              not activated.
+            - The payload carries plain values only: scalars pass through,
+              collections stringify per element, everything else
+              stringifies whole (lossy values surface as restore
+              shortfalls, never as record corruption).
+
+        Args:
+            origin_spellbook_id:
+                Owning spellbook identity; None for standalone freezes.
+            origin_frame_name:
+                Owning frame name (the twin's parent edge).
+            origin_dynamic:
+                Conjure-time dynamic posture; emission requires True.
+
+        Returns:
+            None.
+        """
         if (
                 origin_spellbook_id is not None
                 and origin_frame_name is not None
@@ -463,6 +515,74 @@ class SpellbookConfiguration(Cleanable):
         for key, value in defaults.items():
             if key not in self._properties:
                 self._properties[key] = value
+
+    def load_recorded_dictionary(
+            self,
+            recorded_properties: Dict[str, Any],
+    ) -> Dict[str, List[str]]:
+        """
+        Reload lane: apply one RECORDED property payload as configuration
+        truth.
+
+        Purpose:
+            The restore/reload counterpart to `load_default_dictionary`.
+            A sealed world must rebuild from its recorded values - never
+            from present-day defaults, which drift - so this verb applies
+            the recorded payload first and backfills ONLY required keys the
+            record does not carry, reporting every deviation to the caller.
+
+        Contract:
+            - Recorded values win: each recorded key routes through
+              `set_property` (full registration + type checking applies).
+            - A recorded value the property system refuses (unknown key,
+              or type drift such as callables the emission scalar filter
+              stringified) is skipped and returned under "rejected" as
+              "key: reason"; nothing is silently coerced. The per-key
+              exception capture is documented best-effort collection, not
+              error swallowing - every refusal is surfaced to the caller.
+            - Required keys absent from the record backfill through
+              `load_default_dictionary` (populate-missing-only semantics)
+              and each backfilled key is returned under "backfilled";
+              nothing backfills silently.
+            - LOADS AND FREEZES in one motion: a reloaded configuration is
+              sealed truth, so the verb validates and freezes internally
+              before returning - callers never finalize a reload. The
+              standalone freeze carries no origin identity (no twin
+              emission); the owning spellbook's conjure-time freeze
+              re-enters with identity and emits.
+
+        Args:
+            recorded_properties:
+                Property name -> recorded value mapping (one sealed,
+                JSON-safe configuration_payload - the cached-item shape).
+
+        Returns:
+            Dict[str, List[str]]:
+                {"rejected": ["key: reason", ...] for refused recorded
+                 values, "backfilled": [key, ...] for schema-default
+                 fills}.
+
+        Raises:
+            RuntimeError: If the configuration is cleaned.
+            ValueError: If the reloaded property set fails validation at
+                the internal freeze.
+        """
+        self.check_cleaned()
+        rejected: List[str] = []
+        for key, value in dict(recorded_properties).items():
+            try:
+                self.set_property(key, value)
+            except Exception as error:
+                # Best-effort collection by contract: the refusal reason
+                # rides back to the caller for shortfall reporting.
+                rejected.append("{0}: {1}".format(key, error))
+        present_before = set(self._properties.keys())
+        self.load_default_dictionary()
+        backfilled = sorted(set(self._properties.keys()) - present_before)
+        # Reload seals: load it in, freeze it - the reload lane never
+        # hands back a mutable configuration.
+        self.freeze()
+        return {"rejected": rejected, "backfilled": backfilled}
 
     # ------------------------------------------------------------------
     # System hook API (Meld / Conduit / Link / Contract) Ã¢â‚¬â€œ normal style

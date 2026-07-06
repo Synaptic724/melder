@@ -37,6 +37,9 @@ class _ProcessorStateProbe:
         """Store processor provenance for planner-shell build tests."""
         self._processor_strategy_ids = processor_strategy_ids
         self.existence_occurrence_shape = None
+        # Solo discovery reads the phase-9 injection shape to decline
+        # collection-bearing models; None mirrors the real model default.
+        self.injection_shape = None
 
     def snapshot_applied_strategy_ids(self) -> Tuple[str, ...]:
         """Return the stored processor strategy ids."""

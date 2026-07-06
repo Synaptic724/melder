@@ -25,6 +25,11 @@ class _DummySpell:
         self.spellframe = None
         self.existence = SimpleNamespace(name="present")
         self.permissions = SimpleNamespace(name="default")
+        # Capture-gap fields (restore_engine_2026_07_07): SpellCrystal also
+        # reads the disposal contract and the attached profile object
+        # (SimpleNamespace type-name classifies as the "general" fallback).
+        self.disposal_method_names = []
+        self.profile = SimpleNamespace()
 
 
 @pytest.fixture(autouse=True)

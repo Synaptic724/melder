@@ -86,6 +86,7 @@ def _row(spell_id: str, existence: str, deps=()):
             (name, tuple((dep, None) for dep in dep_ids))
             for name, dep_ids in deps
         ),
+        "collection_param_names": (),
         "uses_positional_override": False,
         "contract_positional_override": None,
         "has_contract_payload": False,

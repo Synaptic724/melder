@@ -17,6 +17,7 @@ if TYPE_CHECKING:
 
 
 # Melder imports
+from melder.aether.spellbook.configuration.system_state import SystemState
 from melder.aether.spellbook.spell_compiler.system.system_diagnostic import (
     SystemDiagnostic,
     SystemDiagnosticSeverity,
@@ -28,17 +29,19 @@ from melder.aether.spellbook.spell_compiler.system.validation.strategy_base impo
 
 class EmptyCollectionStrategy(SpellSystemValidationStrategy):
     """
-    Observability note for required collection sockets with zero providers.
+    Mode-scoped guard for required collection sockets with zero providers.
 
     Purpose:
-        A required list[Frame] dependency that wired zero providers is
-        SATISFIABLE by policy: the analyzer publishes the socket with an
-        empty dependency list and phases 9-11 inject [] at construction
-        (owner decision 2026-07-06 - an empty collection spawns with an
-        empty list). This strategy therefore emits a WARNING diagnostic for
-        visibility only; it never fails conjure. Dynamic-mode books may also
-        legitimately conjure empty and receive members via post-conjure
-        contract additions.
+        A required list[Frame] dependency that wired zero providers means two
+        different things depending on the owning book's runtime mode:
+        - AUTOMATIC books: the composition is final at conjure, so zero
+          providers is a permanent wiring mistake. The strategy emits an
+          ERROR and conjure fails fast (the original guard behavior).
+        - DYNAMIC books: members can still arrive through post-conjure
+          contract additions, so emptiness at conjure is not final. The
+          strategy emits a WARNING for observability and the consumer spawns
+          with [] injected for that socket (owner policy 2026-07-06),
+          keeping deferred contract provisioning viable.
 
     Data source (why topology, at Phase 6):
         By Phase 6 the per-spell requirements artifact has already been nulled
@@ -51,10 +54,14 @@ class EmptyCollectionStrategy(SpellSystemValidationStrategy):
 
     Contract:
         - Reads local topologies from SpellSystemStates for every scoped spell.
-        - Emits one collection_socket_no_providers WARNING per required
-          (non-optional) collection socket whose target_spell_ids is empty.
-        - WARNING severity never trips the conjure resolution gate; the
-          consumer spawns with an empty list injected for that socket.
+        - Emits one collection_socket_no_providers diagnostic per required
+          (non-optional) collection socket whose target_spell_ids is empty:
+          ERROR when the owning book's system_state is not dynamic (blocks
+          conjure via the resolution gate), WARNING when it is dynamic.
+        - Mode is read per spell from the owning Spellbook's frame
+          configuration (spell._spellbook._aetheric_frame_configuration),
+          the same surface the phase-9 contract-override path reads; spells
+          without a resolvable mode are treated as non-dynamic (fail-fast).
         - Optional collection sockets are skipped: an optional list[Frame] may
           legitimately wire nothing (the constructor default applies).
         - Reads only; never mutates Phase 5/6 inputs.
@@ -79,17 +86,19 @@ class EmptyCollectionStrategy(SpellSystemValidationStrategy):
         Flag required collection sockets that wired zero providers.
 
         Purpose:
-            Surface a zero-provider required list[Frame] dependency as a
-            WARNING diagnostic for observability. The socket is satisfiable:
-            codegen injects an empty list for it, so conjure proceeds.
+            Convert a zero-provider required list[Frame] dependency into a
+            fail-fast conjure ERROR for automatic books (composition is final,
+            so the wiring can never be satisfied) and into an observability
+            WARNING for dynamic books (post-conjure contracts can still supply
+            members; codegen injects [] so the consumer spawns).
 
         Contract:
             - Iterates every node in the system index and reads its local
               topology from SpellSystemStates.
-            - Emits a collection_socket_no_providers WARNING for each required
-              collection socket whose target_spell_ids tuple is empty.
-            - Never blocks conjure: WARNING severity does not trip the
-              resolution gate.
+            - Emits a collection_socket_no_providers diagnostic for each
+              required collection socket whose target_spell_ids tuple is
+              empty: ERROR when the owning book is not dynamic, WARNING when
+              it is.
             - Skips optional collection sockets and spells without a topology.
             - Reads only; never mutates Phase 5/6 inputs.
             - Honors cancel_event between spells.
@@ -127,6 +136,21 @@ class EmptyCollectionStrategy(SpellSystemValidationStrategy):
             if topology is None:
                 continue
 
+            # Mode decides severity: dynamic books may receive members via
+            # post-conjure contracts (WARNING + [] injection), automatic books
+            # cannot (ERROR, conjure fails fast). Missing lookup/config
+            # resolves to the fail-fast posture.
+            spell_is_dynamic = False
+            spell = spell_lookup.get(spell_id)
+            if spell is not None:
+                spellbook = spell._spellbook
+                if spellbook is not None:
+                    frame_configuration = spellbook._aetheric_frame_configuration
+                    if frame_configuration is not None:
+                        spell_is_dynamic = (
+                            frame_configuration.system_state is SystemState.dynamic
+                        )
+
             for socket in topology.iter_sockets():
                 if not socket.is_collection:
                     continue
@@ -135,6 +159,20 @@ class EmptyCollectionStrategy(SpellSystemValidationStrategy):
                 if socket.target_spell_ids:
                     continue
 
+                if spell_is_dynamic:
+                    severity = SystemDiagnosticSeverity.WARNING
+                    remediation = (
+                        "An empty list will be injected at construction; bind "
+                        "implementations under its frame or add them via a "
+                        "post-conjure contract to populate it."
+                    )
+                else:
+                    severity = SystemDiagnosticSeverity.ERROR
+                    remediation = (
+                        "Bind at least one implementation under its frame, "
+                        "make the parameter optional, or run the book in "
+                        "dynamic mode if members arrive via contracts."
+                    )
                 diagnostics.append(
                     SystemDiagnostic(
                         code="collection_socket_no_providers",
@@ -142,11 +180,9 @@ class EmptyCollectionStrategy(SpellSystemValidationStrategy):
                             f"Spell '{spell_id}' parameter '{socket.param_name}' "
                             "declares a required collection dependency (list[...]) "
                             "but no providers wired into it in the resolved graph. "
-                            "An empty list will be injected at construction; bind "
-                            "implementations under its frame (or add them via a "
-                            "post-conjure contract) to populate it."
+                            f"{remediation}"
                         ),
-                        severity=SystemDiagnosticSeverity.WARNING,
+                        severity=severity,
                         spell_id=spell_id,
                         root_id=spell_id,
                         details={

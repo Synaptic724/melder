@@ -582,6 +582,12 @@ class Nexus(Cleanable):
             configured = self.configuration
             if not configured.frozen:
                 configured.finalize()
+            else:
+                # Pre-frozen configuration (the RELOAD lane seals without
+                # emission because enable had not happened yet): enable is
+                # the activation moment, so the twin emission fires here -
+                # same fix class as the spellbook conjure re-freeze.
+                configured.emit_configured_twin_when_recording()
             self._enabled = True
             self._logger.info("Nexus enabled.", "enable")
             # Record the lifecycle flip: the twin (emitted at configuration

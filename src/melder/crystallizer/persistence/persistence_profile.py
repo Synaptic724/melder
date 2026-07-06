@@ -6,6 +6,9 @@ from typing import Dict, List, Optional, Tuple
 from melder.crystallizer.persistence.crystals.aether_crystal import AetherCrystal
 from melder.crystallizer.persistence.crystals.aetheric_frame_crystal import AethericFrameCrystal
 from melder.crystallizer.persistence.crystals.conduit_crystal import ConduitCrystal
+from melder.crystallizer.persistence.crystals.crystallizer_crystal import (
+    CrystallizerCrystal,
+)
 from melder.crystallizer.persistence.crystals.mutation_research_crystal import MutationResearchCrystal
 from melder.crystallizer.persistence.crystals.cluster_crystal import (
     ClusterCrystal,
@@ -70,6 +73,7 @@ class PersistenceProfile(Cleanable):
         "_emission_log",
         "_last_checkpoint_sequence",
         "_aether_crystal",
+        "_crystallizer_crystal",
         "_nexus_crystal",
         "_mutation_research_crystal",
         "_nexus_state",
@@ -111,6 +115,7 @@ class PersistenceProfile(Cleanable):
         self._emission_log: List[Tuple[int, str, str]] = []
         self._last_checkpoint_sequence: int = 0
         self._aether_crystal: Optional[AetherCrystal] = None
+        self._crystallizer_crystal: Optional[CrystallizerCrystal] = None
         self._nexus_crystal: Optional[NexusCrystal] = None
         self._mutation_research_crystal: Optional[MutationResearchCrystal] = None
         # State switches for the two singletons tracked by state instead of
@@ -145,6 +150,7 @@ class PersistenceProfile(Cleanable):
         del self._emission_log
         del self._last_checkpoint_sequence
         del self._aether_crystal
+        del self._crystallizer_crystal
         del self._nexus_crystal
         del self._mutation_research_crystal
         del self._nexus_state
@@ -208,6 +214,17 @@ class PersistenceProfile(Cleanable):
                     previous_aether.cleanup()
                 self._aether_crystal = twin
                 self._journal("aether", "root")
+            elif isinstance(twin, CrystallizerCrystal):
+                # The recorder's own policy twin (self-emitted at
+                # crystallizer activation); root-singleton semantics.
+                previous_crystallizer = self._crystallizer_crystal
+                if (
+                        previous_crystallizer is not None
+                        and not previous_crystallizer.cleaned
+                ):
+                    previous_crystallizer.cleanup()
+                self._crystallizer_crystal = twin
+                self._journal("crystallizer", "root")
             elif isinstance(twin, NexusCrystal):
                 previous_nexus = self._nexus_crystal
                 if previous_nexus is not None and not previous_nexus.cleaned:
@@ -970,6 +987,22 @@ class PersistenceProfile(Cleanable):
                         ),
                     }
                     continue
+                if kind == "spell_crystal":
+                    # Capture-gap fix (restore_engine_2026_07_07): custody
+                    # that never flips emits no spell_activity entry, so the
+                    # window must carry WHICH location holds it now or the
+                    # restore engine cannot tell staged members from actives.
+                    crystal = self._resolve_twin(kind, key)
+                    if crystal is None or crystal.cleaned:
+                        continue
+                    custody_payload = crystal.describe()
+                    custody_payload["custody_location"] = (
+                        "active"
+                        if key in self._spell_crystals_by_spell_id
+                        else "inactive"
+                    )
+                    payloads.setdefault(kind, {})[key] = custody_payload
+                    continue
                 twin = self._resolve_twin(kind, key)
                 if twin is None or twin.cleaned:
                     continue
@@ -1027,6 +1060,8 @@ class PersistenceProfile(Cleanable):
         """
         if kind == "aether":
             return self._aether_crystal
+        if kind == "crystallizer":
+            return self._crystallizer_crystal
         if kind == "nexus":
             return self._nexus_crystal
         if kind == "mutation_research":
@@ -1113,6 +1148,12 @@ class PersistenceProfile(Cleanable):
         if self._aether_crystal is not None and not self._aether_crystal.cleaned:
             self._aether_crystal.cleanup()
         self._aether_crystal = None
+        if (
+                self._crystallizer_crystal is not None
+                and not self._crystallizer_crystal.cleaned
+        ):
+            self._crystallizer_crystal.cleanup()
+        self._crystallizer_crystal = None
         if self._nexus_crystal is not None and not self._nexus_crystal.cleaned:
             self._nexus_crystal.cleanup()
         self._nexus_crystal = None

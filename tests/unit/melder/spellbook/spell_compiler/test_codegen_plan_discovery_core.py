@@ -39,6 +39,9 @@ class _ModelProbe:
         """Store one visible label for test assertions."""
         self.label = label
         self.existence_occurrence_shape = None
+        # Solo discovery reads the phase-9 injection shape to decline
+        # collection-bearing models; None mirrors the real model default.
+        self.injection_shape = None
 
 
 class _DiscoveryStrategyProbe(CodegenPlanDiscoveryStrategy):

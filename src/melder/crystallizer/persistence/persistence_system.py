@@ -871,38 +871,218 @@ class PersistenceSystem(Cleanable):
         with self._lock:
             return list(self._checkpoint_crystals_by_id.keys())
 
-    def load_checkpoint(self, checkpoint_id: str) -> None:
+    def load_checkpoint(self, checkpoint_id: str) -> Dict[str, object]:
         """
-        Load one checkpoint back toward the live system (boot verb).
+        Unfold one checkpoint's world into the live runtime (boot verb).
+
+        Purpose:
+            The restore engine's seat: resolve the target's profile chain
+            (every ledger crystal sealed from the same profile up to and
+            including the target, in creation order), fold it, and replay
+            it through the public runtime verbs in canon order.
 
         Contract:
             - Restart-lane by design: intended for unfolding a world at
               fresh boot, not for mutating a running system.
+            - All-or-nothing: a replay failure tears the partially built
+              world down and raises (the record itself is never mutated).
+            - The chain is assembled DETACHED under the subsystem lock; the
+              engine runs OUTSIDE it (replay re-enters the emit path, which
+              must be free to record the rebuilt world).
+            - Re-emission is intended: the rebuilt world re-records itself
+              into the ACTIVE profile under fresh identities.
 
         Args:
             checkpoint_id:
                 ULID identity of the checkpoint to load.
 
         Returns:
-            None.
+            Dict[str, object]:
+                The detached RestoreReport payload (status, built counts,
+                shortfall entries, identity translation map).
+
+        Raises:
+            RuntimeError:
+                If the subsystem has been cleaned, or a replay stage failed
+                (after teardown; original error chained).
+            KeyError:
+                If no checkpoint exists under `checkpoint_id`.
+        """
+        self.check_cleaned()
+        with self._lock:
+            target = self._require_checkpoint(checkpoint_id)
+            profile_name = target.profile_name
+            chain_crystals = [
+                crystal
+                for crystal in self._checkpoint_crystals_by_id.values()
+                if (
+                    not crystal.cleaned
+                    and crystal.profile_name == profile_name
+                    and crystal.checkpoint_number <= target.checkpoint_number
+                )
+            ]
+            chain_crystals.sort(key=lambda crystal: crystal.checkpoint_number)
+            checkpoint_ids = [crystal.id for crystal in chain_crystals]
+            chain = [crystal.replay_data() for crystal in chain_crystals]
+        # Lazy import: the engine drives runtime surfaces (3.14t-only import
+        # chain) and must not burden record-only usage of this module.
+        from melder.crystallizer.persistence.restore_engine import (
+            RestoreEngine,
+        )
+
+        engine = RestoreEngine(
+            profile_name=profile_name,
+            checkpoint_ids=checkpoint_ids,
+            chain=chain,
+        )
+        try:
+            report = engine.restore()
+            payload = report.describe()
+            report.cleanup()
+            return payload
+        finally:
+            if not engine.cleaned:
+                engine.cleanup()
+
+    def verify_checkpoint_chain(
+            self,
+            profile_name: Optional[str] = None,
+    ) -> Dict[str, object]:
+        """
+        Report one profile's checkpoint-chain fold-safety (read-only).
+
+        Purpose:
+            The chain-integrity verb: before anyone folds a chain (the
+            restore engine trusts its shape), answer whether the retained
+            ledger run is contiguous - in checkpoint numbers AND in journal
+            windows - and how much prefix history retention dropped.
+
+        Contract:
+            - Read-only: never mutates the ledger or any profile.
+            - Verdicts: "intact" (contiguous from checkpoint 1),
+              "truncated_prefix" (contiguous run, head dropped by retention;
+              a fold yields the post-prefix world), "broken" (number gap,
+              duplicate number, or non-contiguous windows; folding is
+              unsafe). An empty ledger run reports "empty".
+            - Empty seal windows (first == last + 1) are legal markers and
+              never break the verdict; they are listed for visibility.
+
+        Args:
+            profile_name:
+                Profile to audit; None means the active profile.
+
+        Returns:
+            Dict[str, object]:
+                {"profile_name", "ledger_count", "first_checkpoint_number",
+                 "last_checkpoint_number", "dropped_prefix_count",
+                 "breaks": [evidence rows], "empty_windows": [ids],
+                 "verdict"} - fully detached.
 
         Raises:
             RuntimeError:
                 If the subsystem has been cleaned.
             KeyError:
-                If no checkpoint exists under `checkpoint_id` (validated
-                BEFORE the depth limit so callers get the right error).
-            NotImplementedError:
-                Placeholder until the restore engine lands (bootstrap epic;
-                cache round-trip: persistence epic).
+                If `profile_name` names no existing profile.
         """
         self.check_cleaned()
         with self._lock:
-            self._require_checkpoint(checkpoint_id)
-        raise NotImplementedError(
-            "load_checkpoint is a placeholder; the restore engine lands with "
-            "the bootstrap epic (cache round-trip: persistence epic)."
-        )
+            resolved_name = (
+                profile_name
+                if profile_name is not None
+                else self._active_profile_name
+            )
+            self._require_profile(resolved_name)
+            run = [
+                crystal
+                for crystal in self._checkpoint_crystals_by_id.values()
+                if (
+                    not crystal.cleaned
+                    and crystal.profile_name == resolved_name
+                )
+            ]
+            run.sort(key=lambda crystal: crystal.checkpoint_number)
+            breaks: List[Dict[str, object]] = []
+            empty_windows: List[str] = []
+            if not run:
+                return {
+                    "profile_name": resolved_name,
+                    "ledger_count": 0,
+                    "first_checkpoint_number": None,
+                    "last_checkpoint_number": None,
+                    "dropped_prefix_count": 0,
+                    "breaks": [],
+                    "empty_windows": [],
+                    "verdict": "empty",
+                }
+            previous = None
+            for crystal in run:
+                first_sequence, last_sequence = crystal.sequence_range
+                if first_sequence == last_sequence + 1:
+                    empty_windows.append(crystal.id)
+                elif first_sequence > last_sequence + 1:
+                    breaks.append({
+                        "checkpoint_id": crystal.id,
+                        "kind": "inverted_window",
+                        "detail": "sequence_range {0} is not a legal "
+                                  "window".format(list(crystal.sequence_range)),
+                    })
+                if previous is not None:
+                    if crystal.checkpoint_number == previous.checkpoint_number:
+                        breaks.append({
+                            "checkpoint_id": crystal.id,
+                            "kind": "duplicate_checkpoint_number",
+                            "detail": "number {0} already held by {1}".format(
+                                crystal.checkpoint_number, previous.id
+                            ),
+                        })
+                    elif (
+                            crystal.checkpoint_number
+                            != previous.checkpoint_number + 1
+                    ):
+                        breaks.append({
+                            "checkpoint_id": crystal.id,
+                            "kind": "checkpoint_number_gap",
+                            "detail": "number jumps {0} -> {1}".format(
+                                previous.checkpoint_number,
+                                crystal.checkpoint_number,
+                            ),
+                        })
+                    expected_first = previous.sequence_range[1] + 1
+                    if crystal.sequence_range[0] != expected_first:
+                        breaks.append({
+                            "checkpoint_id": crystal.id,
+                            "kind": "window_discontinuity",
+                            "detail": "window starts at {0}; previous "
+                                      "window ended at {1}".format(
+                                          crystal.sequence_range[0],
+                                          previous.sequence_range[1],
+                                      ),
+                        })
+                previous = crystal
+            dropped_prefix = run[0].checkpoint_number - 1
+            # A fully dropped-out profile restarts numbering at 1 while the
+            # journal sequence keeps climbing: the first retained window's
+            # start position betrays the lost prefix even when the numbers
+            # look pristine.
+            prefix_history_lost = (
+                dropped_prefix > 0 or run[0].sequence_range[0] > 1
+            )
+            if breaks:
+                verdict = "broken"
+            elif prefix_history_lost:
+                verdict = "truncated_prefix"
+            else:
+                verdict = "intact"
+            return {
+                "profile_name": resolved_name,
+                "ledger_count": len(run),
+                "first_checkpoint_number": run[0].checkpoint_number,
+                "last_checkpoint_number": run[-1].checkpoint_number,
+                "dropped_prefix_count": dropped_prefix,
+                "breaks": breaks,
+                "empty_windows": empty_windows,
+                "verdict": verdict,
+            }
 
     def _next_checkpoint_number(self, profile_name: str) -> int:
         """
@@ -917,14 +1097,24 @@ class PersistenceSystem(Cleanable):
 
         Returns:
             int:
-                1 + count of ledger crystals sealed from that profile.
+                1 + the HIGHEST retained checkpoint number for that profile
+                (count-based minting duplicated numbers once retention
+                dropout engaged: dropping the head shrank the count while
+                the tail kept the dropped numbers; found by the
+                chain-integrity verb's duplicate check, 2026-07-07).
         """
-        existing = sum(
-            1
-            for crystal in self._checkpoint_crystals_by_id.values()
-            if not crystal.cleaned and crystal.profile_name == profile_name
+        highest = max(
+            (
+                crystal.checkpoint_number
+                for crystal in self._checkpoint_crystals_by_id.values()
+                if (
+                    not crystal.cleaned
+                    and crystal.profile_name == profile_name
+                )
+            ),
+            default=0,
         )
-        return existing + 1
+        return highest + 1
 
     def _require_profile(self, profile_name: str) -> PersistenceProfile:
         """

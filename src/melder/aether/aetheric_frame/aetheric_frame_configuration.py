@@ -1,6 +1,6 @@
 import threading
 from pathlib import Path
-from typing import Any, Dict, Optional, ClassVar, Union
+from typing import Any, Dict, List, Optional, ClassVar, Tuple, Union
 
 
 
@@ -622,6 +622,140 @@ class AethericFrameConfiguration(Cleanable):
             self._disable_contract_mutation = False
             self._max_transaction_wait_time_in_seconds = 30.0
         return self
+
+    @classmethod
+    def from_recorded_posture(
+            cls,
+            twin_payload: Dict[str, Any],
+    ) -> Tuple["AethericFrameConfiguration", List[str]]:
+        """
+        Reload lane: rebuild one frame posture from its recorded twin
+        payload.
+
+        Purpose:
+            The restore counterpart to the fluent authoring lane. A sealed
+            AethericFrameCrystal payload IS the posture truth; present-day
+            constructor defaults must never silently substitute for
+            recorded values, so every key the record does not carry is
+            returned to the caller for explicit reporting.
+
+        Contract:
+            - Reads the posture trio from the payload root
+              (system_state_name / ai_native_enabled / rift_enabled) and
+              the dev-ops surface from "dev_ops_payload" (the
+              describe_posture shape the freeze emission captures).
+            - system_state_name is HARD-REQUIRED: a posture without a
+              recorded state is not a posture, and the reload lane never
+              guesses a frame state.
+            - Every other absent key falls back to the constructor's
+              documented default AND is returned in the missing-key list
+              (schema-evolution tolerance, never silent).
+            - LOADS AND FREEZES in one motion: the rebuilt posture is
+              sealed truth and validates at the internal freeze. The
+              standalone freeze carries no origin identity (no twin
+              emission); binding it to a frame copies the values into the
+              frame-owned posture, whose own freeze carries identity and
+              emits.
+
+        Args:
+            twin_payload:
+                AethericFrameCrystal.describe() shaped payload (JSON-safe,
+                the cached-item shape).
+
+        Returns:
+            Tuple[AethericFrameConfiguration, List[str]]:
+                (the rebuilt FROZEN posture, sorted key names that fell
+                back to constructor defaults).
+
+        Raises:
+            ValueError:
+                If system_state_name is absent, or names no valid
+                SystemState member.
+        """
+        state_name = twin_payload.get("system_state_name")
+        if state_name is None:
+            raise ValueError(
+                "Recorded frame posture payload carries no "
+                "system_state_name; the reload lane refuses to guess a "
+                "frame state. Re-seal the world or repair the cached "
+                "checkpoint payload."
+            )
+        dev_ops = dict(twin_payload.get("dev_ops_payload", {}))
+        missing: List[str] = []
+        # Constructor-documented defaults, keyed by their payload source:
+        # the posture trio rides the payload root; the dev-ops surface
+        # rides the recorded describe_posture map.
+        root_defaults: Dict[str, Any] = {
+            "ai_native_enabled": False,
+            "rift_enabled": False,
+        }
+        dev_ops_defaults: Dict[str, Any] = {
+            "shared_framewide_spellbook_configuration": False,
+            "system_caching_enabled": True,
+            "system_cache_root_path": None,
+            "disable_all_transactions_after_conjure": False,
+            "disable_mutations": True,
+            "disable_linking": False,
+            "disable_bind": False,
+            "disable_conduit_cluster": False,
+            "disable_transfer_of_ownership": False,
+            "disable_contract_mutation": False,
+            "max_transaction_wait_time_in_seconds": 30.0,
+        }
+        resolved: Dict[str, Any] = {}
+        for key, default_value in root_defaults.items():
+            if key in twin_payload:
+                resolved[key] = twin_payload[key]
+            else:
+                missing.append(key)
+                resolved[key] = default_value
+        for key, default_value in dev_ops_defaults.items():
+            if key in dev_ops:
+                resolved[key] = dev_ops[key]
+            else:
+                missing.append(key)
+                resolved[key] = default_value
+        cache_root = resolved["system_cache_root_path"]
+        posture = cls(
+            origin_spellbook_id=None,
+            system_state=EnumHelpers.convert_enum_and_check(
+                str(state_name), SystemState
+            ),
+            ai_native_enabled=bool(resolved["ai_native_enabled"]),
+            rift_enabled=bool(resolved["rift_enabled"]),
+            shared_framewide_spellbook_configuration=bool(
+                resolved["shared_framewide_spellbook_configuration"]
+            ),
+            system_caching_enabled=bool(
+                resolved["system_caching_enabled"]
+            ),
+            system_cache_root_path=(
+                str(cache_root) if cache_root is not None else None
+            ),
+            disable_all_transactions_after_conjure=bool(
+                resolved["disable_all_transactions_after_conjure"]
+            ),
+            disable_mutations=bool(resolved["disable_mutations"]),
+            disable_linking=bool(resolved["disable_linking"]),
+            disable_bind=bool(resolved["disable_bind"]),
+            disable_conduit_cluster=bool(
+                resolved["disable_conduit_cluster"]
+            ),
+            disable_transfer_of_ownership=bool(
+                resolved["disable_transfer_of_ownership"]
+            ),
+            disable_contract_mutation=bool(
+                resolved["disable_contract_mutation"]
+            ),
+            max_transaction_wait_time_in_seconds=float(
+                resolved["max_transaction_wait_time_in_seconds"]
+            ),
+        )
+        # Reload seals: load it in, freeze it - the reload lane never
+        # hands back a mutable posture. No origin identity here, so no
+        # twin emission; the frame's bind-time freeze carries identity.
+        posture.freeze()
+        return posture, sorted(missing)
 
     def dynamic_defaults(self) -> "AethericFrameConfiguration":
         """

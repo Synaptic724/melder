@@ -52,6 +52,7 @@ def _row(
             (name, tuple((dep, None) for dep in dep_ids))
             for name, dep_ids in deps
         ),
+        "collection_param_names": (),
         "creations_target_kind": 0,
         "use_spell_lock_hint": existence == "unique",
         "has_contract_payload": False,

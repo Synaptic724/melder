@@ -4972,8 +4972,19 @@ and logging.
             )
             raise RuntimeError("No configuration instance available to validate/freeze.")
 
-        # If configuration is already frozen, just mark locked and return.
+        # If the configuration is already frozen (the recorded lane's law:
+        # finalize BEFORE the first bind), re-enter freeze WITH origin
+        # identity anyway - the freeze transition no-ops on a frozen
+        # configuration, but the spellbook-twin emission (conjure is the
+        # emission factor for recorded worlds) must still fire. Skipping
+        # this call left every legal recorded world without its book twin
+        # (restore_engine_2026_07_07 round-trip finding).
         if self._configuration._frozen:
+            self._configuration.freeze(
+                origin_spellbook_id=self._id,
+                origin_frame_name=self._aetheric_frame_name,
+                origin_dynamic=self._conjure_dynamic_hint,
+            )
             self._configuration_locked = True
             return
 

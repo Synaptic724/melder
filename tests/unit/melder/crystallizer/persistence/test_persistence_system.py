@@ -244,24 +244,28 @@ def test_set_checkpoint_retention_rejects_non_positive_and_bool():
             system.set_checkpoint_retention(bad)
 
 
-def test_load_checkpoint_validates_id_before_depth_limit():
+def test_load_checkpoint_validates_id_then_restores_empty_world():
     """
     Purpose:
-        Verify the boot-verb stub's error ordering.
+        Verify the boot verb's error ordering and its live contract.
     Contract:
-        Unknown ids raise KeyError FIRST; a known id reaches the
-        NotImplementedError placeholder (restore engine pending).
+        Unknown ids raise KeyError FIRST; a known id folds its chain
+        through the restore engine - an empty-window checkpoint restores
+        to a completed report with nothing built (the placeholder
+        NotImplementedError is gone: restore_engine_2026_07_07).
     Returns:
         None.
     Raises:
-        AssertionError: If error ordering drifts.
+        AssertionError: If error ordering or the report contract drifts.
     """
     system = PersistenceSystem()
     checkpoint_id = system.create_checkpoint()
     with pytest.raises(KeyError):
         system.load_checkpoint("ghost")
-    with pytest.raises(NotImplementedError):
-        system.load_checkpoint(checkpoint_id)
+    report = system.load_checkpoint(checkpoint_id)
+    assert report["status"] == "complete"
+    assert report["built_counts"] == {}
+    assert report["checkpoint_ids"] == [checkpoint_id]
 
 
 def test_removal_and_state_verbs_route_to_active_profile():
