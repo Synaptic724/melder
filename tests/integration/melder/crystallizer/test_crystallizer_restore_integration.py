@@ -590,7 +590,7 @@ def test_post_notch_selection_restores_without_an_extra_notch(cache_root):
     assert report["status"] == "complete"
     assert report["built_counts"]["spell_active"] == 1
     assert report["built_counts"]["spell_staged"] == 1
-    assert report["built_counts"].get("selection_notch") is No
+    assert report["built_counts"].get("selection_notch") is None
 
 def test_kit_round_trip_exports_imports_and_unfolds(cache_root):
     """
@@ -628,4 +628,7 @@ def test_kit_round_trip_exports_imports_and_unfolds(cache_root):
     assert report["status"] == "complete"
     assert report["built_counts"]["spellbook"] == 1
     assert report["built_counts"]["spell_active"] == 1
-    assert spell_id in report["identity_map"]
+    # Spell SHAs are content-STABLE and never enter the identity map
+    # (only conduit/index/book ULIDs translate); the proof of the rebuilt
+    # bind is the re-emission of the SAME SHA into the fresh profile.
+    assert rebooted.get_spell_crystal(spell_id).id == spell_id
