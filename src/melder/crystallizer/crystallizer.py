@@ -337,6 +337,11 @@ class Crystallizer(Cleanable):
         # activating its own crystallizer.
         configuration_payload: Dict[str, object] = {}
         for property_name in self._configuration.available_properties.keys():
+            # The twin records the CONFIGURED surface: fluent-built
+            # configurations legally leave optional keys unset, and the
+            # reload lane backfills-with-report on the way back in.
+            if not self._configuration.has_property(property_name):
+                continue
             property_value = self._configuration.get_property(property_name)
             if (
                     isinstance(property_value, (str, int, float, bool))
@@ -1299,6 +1304,63 @@ class Crystallizer(Cleanable):
         self.check_cleaned()
         self._require_activated()
         return self._persistence_system.verify_checkpoint_chain(profile_name)
+
+    def export_kit(
+            self,
+            profile_name: Optional[str] = None,
+    ) -> Dict[str, object]:
+        """
+        Export one profile's chain as a portable kit payload.
+
+        Purpose:
+            Facade over PersistenceSystem.build_kit_payload: the
+            fold-safety-gated, JSON-safe manifest + items form (archive
+            format and signing are deferred owner taste calls).
+
+        Args:
+            profile_name:
+                Profile to export; None means the active profile.
+
+        Returns:
+            Dict[str, object]:
+                The kit payload ({"manifest": ..., "items": [...]}).
+
+        Raises:
+            RuntimeError: If crystallizer is cleaned or not yet active.
+            KeyError: If `profile_name` names no existing profile.
+            ValueError: If the chain verdict is "broken" or "empty".
+        """
+        self.check_cleaned()
+        self._require_activated()
+        return self._persistence_system.build_kit_payload(profile_name)
+
+    def import_kit(
+            self,
+            kit_payload: Dict[str, object],
+    ) -> Dict[str, object]:
+        """
+        Import one kit payload's crystals into the ledger.
+
+        Purpose:
+            Facade over PersistenceSystem.import_kit_payload: insert-if-
+            absent reload semantics, idempotent, no retention dropout.
+            Unfold afterwards via load_checkpoint on the imported head.
+
+        Args:
+            kit_payload:
+                A kit payload produced by export_kit (JSON-safe).
+
+        Returns:
+            Dict[str, object]:
+                {"profile_name", "inserted", "skipped_existing"}.
+
+        Raises:
+            RuntimeError: If crystallizer is cleaned or not yet active.
+            KeyError: If the payload lacks manifest/items fields.
+        """
+        self.check_cleaned()
+        self._require_activated()
+        return self._persistence_system.import_kit_payload(kit_payload)
 
     def load_checkpoint(self, checkpoint_id: str) -> Dict[str, object]:
         """

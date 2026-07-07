@@ -326,10 +326,12 @@ def test_fold_single_unit_tombstones_delete_their_keys():
     engine.cleanup()
 
 
-def test_fold_state_switches_report_as_first_cut_shortfalls():
+def test_fold_state_switches_land_in_stores_not_shortfalls():
     """
-    Contract: nexus/MR state switches are reported, not replayed, in this
-    cut - one shortfall entry each.
+    Contract (whole-system restore cut): lifecycle state switches fold to
+    their STORES silently - nexus_state feeds the nexus replay stage
+    directly, and the MR stores feed the ordered mutation_research report
+    stage. The fold itself files no shortfalls for them.
     """
     engine = _engine([
         _window(
@@ -348,9 +350,9 @@ def test_fold_state_switches_report_as_first_cut_shortfalls():
         ),
     ])
     engine._fold_chain()
-    shortfalls = engine._report.describe()["shortfalls"]
-    kinds = sorted(entry["kind"] for entry in shortfalls)
-    assert kinds == ["mutation_research_state", "nexus_state"]
+    assert engine._nexus_state_name == "enabled"
+    assert engine._mutation_research_state_name == "enabled"
+    assert engine._report.describe()["shortfalls"] == []
     engine.cleanup()
 
 

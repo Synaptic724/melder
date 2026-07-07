@@ -7,6 +7,8 @@ CrystallizerConfiguration - plus the crystallizer's own policy twin.
 
 Runs only on 3.14t (melder package root import chain).
 """
+from pathlib import Path
+
 import pytest
 
 from melder.aether.aether_configuration import AetherConfiguration
@@ -234,9 +236,11 @@ def test_crystallizer_load_recorded_dictionary_reloads_policy_and_seals():
         "max_persistence_crystals": 25,
     })
     assert outcome["rejected"] == []
+    # The property system normalizes source roots to resolved Paths, so
+    # the recorded string round-trips as its platform-resolved form.
     assert configuration.get_property(
         "user_source_root_paths"
-    ) == ("/recorded/root",)
+    ) == (Path("/recorded/root").resolve(),)
     assert configuration.get_property("checkpoint_interval_minutes") == 15
     assert configuration.get_property("max_persistence_crystals") == 25
     assert sorted(outcome["backfilled"]) == [

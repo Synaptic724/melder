@@ -141,7 +141,9 @@ def test_recorded_world_composes_and_checkpoints_capture_it():
     assert summary["inactive_spell_crystal_count"] == 1
     checkpoint_id = crystallizer.create_checkpoint(description="world")
     described = crystallizer.describe_checkpoint(checkpoint_id)
-    assert described["journal_entry_count"] == 6
+    # 7 = the emitted world's 6 entries + the crystallizer's own policy
+    # twin (self-emitted at activation).
+    assert described["journal_entry_count"] == 7
     assert described["captured_counts"]["spell_crystal"] == 2
 
 

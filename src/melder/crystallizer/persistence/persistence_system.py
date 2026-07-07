@@ -664,6 +664,135 @@ class PersistenceSystem(Cleanable):
         with self._lock:
             return self._crystallizer_cache.list_cached_item_ids()
 
+    def build_kit_payload(
+            self,
+            profile_name: Optional[str] = None,
+    ) -> Dict[str, object]:
+        """
+        Export one profile's checkpoint chain as a portable kit payload.
+
+        Purpose:
+            KITS = PLUGINS: a profile's foldable history travels as one
+            JSON-safe payload - manifest (identity + fold-safety verdict)
+            plus every retained crystal's cached-item form. A fresh
+            process imports it (import_kit_payload) and unfolds it through
+            the normal load_checkpoint lane.
+
+        Contract:
+            - GATED on verify_checkpoint_chain: a "broken" chain REFUSES
+              loudly (exporting damage would propagate a wrong world);
+              "truncated_prefix" exports WITH the verdict carried in the
+              manifest so importers see the honest history bounds.
+            - Archive/file format, kit naming, and signing are owner taste
+              calls deferred by design: this verb is the taste-neutral
+              payload core.
+
+        Args:
+            profile_name:
+                Profile to export; None means the active profile.
+
+        Returns:
+            Dict[str, object]:
+                {"manifest": {kit_format_version, profile_name,
+                 checkpoint_ids, checkpoint_numbers, chain_report},
+                 "items": [cached-item payloads, oldest first]}.
+
+        Raises:
+            RuntimeError: If the subsystem has been cleaned.
+            KeyError: If `profile_name` names no existing profile.
+            ValueError: If the chain verdict is "broken" or "empty"
+                (nothing trustworthy to export).
+        """
+        self.check_cleaned()
+        chain_report = self.verify_checkpoint_chain(profile_name)
+        verdict = str(chain_report["verdict"])
+        resolved_name = str(chain_report["profile_name"])
+        if verdict in ("broken", "empty"):
+            raise ValueError(
+                "Cannot export a kit from profile '{0}': chain verdict is "
+                "'{1}'. Broken chains would propagate a wrong world; empty "
+                "chains carry nothing. Repair or reseal before exporting "
+                "(see the chain report's break entries).".format(
+                    resolved_name, verdict
+                )
+            )
+        with self._lock:
+            run = [
+                crystal
+                for crystal in self._checkpoint_crystals_by_id.values()
+                if (
+                    not crystal.cleaned
+                    and crystal.profile_name == resolved_name
+                )
+            ]
+            run.sort(key=lambda crystal: crystal.checkpoint_number)
+            items = [crystal.to_cached_item() for crystal in run]
+        return {
+            "manifest": {
+                "kit_format_version": 1,
+                "profile_name": resolved_name,
+                "checkpoint_ids": [
+                    str(item["checkpoint_id"]) for item in items
+                ],
+                "checkpoint_numbers": [
+                    int(item["checkpoint_number"]) for item in items
+                ],
+                "chain_report": chain_report,
+            },
+            "items": items,
+        }
+
+    def import_kit_payload(
+            self,
+            kit_payload: Dict[str, object],
+    ) -> Dict[str, object]:
+        """
+        Import one kit payload's crystals into the ledger.
+
+        Contract:
+            - Insert-if-absent per crystal (reload semantics; ids already
+              in the ledger keep their live crystals - a kit never
+              overwrites live history). Re-import is therefore idempotent.
+            - Retention dropout does NOT run here: importing history must
+              not evict newer crystals (cache-reload precedent).
+            - Unfolding stays a separate act: call load_checkpoint on the
+              imported head afterwards.
+
+        Args:
+            kit_payload:
+                A build_kit_payload-shaped mapping (JSON-safe).
+
+        Returns:
+            Dict[str, object]:
+                {"profile_name": str, "inserted": [ids],
+                 "skipped_existing": [ids]}.
+
+        Raises:
+            RuntimeError: If the subsystem has been cleaned.
+            KeyError: If the payload lacks manifest/items fields.
+            ValueError: If an item's fields violate the crystal
+                construction contract.
+        """
+        self.check_cleaned()
+        manifest = dict(kit_payload["manifest"])
+        items = list(kit_payload["items"])
+        inserted: List[str] = []
+        skipped_existing: List[str] = []
+        with self._lock:
+            for cached_item in items:
+                checkpoint_id = str(cached_item["checkpoint_id"])
+                if checkpoint_id in self._checkpoint_crystals_by_id:
+                    skipped_existing.append(checkpoint_id)
+                    continue
+                crystal = PersistenceCrystal.from_cached_item(cached_item)
+                self._checkpoint_crystals_by_id[crystal.id] = crystal
+                inserted.append(crystal.id)
+        return {
+            "profile_name": str(manifest.get("profile_name", "")),
+            "inserted": inserted,
+            "skipped_existing": skipped_existing,
+        }
+
     def set_checkpoint_retention(self, max_crystals: int) -> None:
         """
         Install the checkpoint-ledger retention cap.

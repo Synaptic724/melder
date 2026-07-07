@@ -156,6 +156,61 @@ class AetherUtilitySystem(Cleanable):
             raise TypeError("enabled must be a bool.")
         with self._lock:
             self._channel_logger_activation_enabled = enabled
+        self.emit_root_twin_when_recording()
+
+    def emit_root_twin_when_recording(self) -> None:
+        """
+        Internal emission seam
+
+        Re-emit the Aether root twin from the utility system's LIVE truth.
+
+        Purpose:
+            The utility system's mutation verbs are public and callable
+            AFTER activation, bypassing the AetherConfiguration - without
+            this seam the record would silently drift from the runtime
+            logger policy. Every mutating verb calls here so the root twin
+            always mirrors the live surface (replace-on-emit keeps exactly
+            one twin; the redundant re-emissions during
+            _apply_configuration_to_utility_system are harmless last-wins
+            replacements of identical content).
+
+        Contract:
+            - NO-OP before the crystallizer singleton boots or while it is
+              not activated.
+            - Callable-bearing entries record as PRESENCE flags only; the
+              reload lane reports them as code_participation.
+
+        Returns:
+            None.
+        """
+        # Lazy import: this module sits below the crystallizer in the
+        # aether family import order (same edge as aether_configuration's
+        # module-level import; kept lazy here to keep the utility system's
+        # import surface logging-only).
+        from melder.crystallizer.crystallizer import Crystallizer
+        from melder.crystallizer.persistence.crystals.aether_crystal import (
+            AetherCrystal,
+        )
+
+        if Crystallizer._initialized:
+            crystallizer = Crystallizer()
+            if crystallizer.activated:
+                with self._lock:
+                    payload: Dict[str, object] = {
+                        "channel_logger_activation_enabled": (
+                            self._channel_logger_activation_enabled
+                        ),
+                        "channel_logger_resolver_present": (
+                            self._channel_logger_resolver is not None
+                        ),
+                        "default_logger_present": (
+                            self._default_logger is not None
+                        ),
+                    }
+                crystallizer.emit(
+                    AetherCrystal(configuration_payload=payload)
+                )
+            del crystallizer
 
     def is_channel_logger_activation_enabled(self) -> bool:
         """
@@ -204,6 +259,7 @@ class AetherUtilitySystem(Cleanable):
             raise TypeError("resolver must be callable.")
         with self._lock:
             self._channel_logger_resolver = resolver
+        self.emit_root_twin_when_recording()
 
     def has_default_logger(self) -> bool:
         """
@@ -241,6 +297,7 @@ class AetherUtilitySystem(Cleanable):
             raise TypeError("logger must be a logging.Logger.")
         with self._lock:
             self._default_logger = logger
+        self.emit_root_twin_when_recording()
 
     def clear_default_logger(self) -> None:
         """
@@ -254,6 +311,7 @@ class AetherUtilitySystem(Cleanable):
         self.check_cleaned()
         with self._lock:
             self._default_logger = None
+        self.emit_root_twin_when_recording()
 
     def clear_channel_logger_resolver(self) -> None:
         """
@@ -270,6 +328,7 @@ class AetherUtilitySystem(Cleanable):
         self.check_cleaned()
         with self._lock:
             self._channel_logger_resolver = None
+        self.emit_root_twin_when_recording()
 
     def resolve_safe_logger(
             self,
