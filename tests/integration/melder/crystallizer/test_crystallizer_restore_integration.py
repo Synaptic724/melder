@@ -592,22 +592,21 @@ def test_post_notch_selection_restores_without_an_extra_notch(cache_root):
     assert report["built_counts"]["spell_staged"] == 1
     assert report["built_counts"].get("selection_notch") is None
 
-def test_kit_round_trip_exports_imports_and_unfolds(cache_root):
+def test_profile_cache_round_trip_reloads_and_unfolds(cache_root):
     """
     Purpose:
-        Prove the whole kit lane: record a world, export the kit, carry it
-        THROUGH json (the wire form), reboot fresh, import, unfold.
+        Prove the profile-cache transport (owner ruling: the cache IS the
+        transport): record a world, flush the profile's checkpoints,
+        reboot fresh, reload the whole profile from cache, unfold.
     Contract:
-        The imported chain verifies intact, load_checkpoint on the kit's
-        head restores the world, and the rebuilt book re-binds the same
-        content-stable spell SHA.
+        reload_profile_from_cache inserts every cached checkpoint;
+        load_checkpoint on the newest restores the world; the rebuilt
+        book re-emits the same content-stable spell SHA.
     Returns:
         None.
     Raises:
-        AssertionError: If any leg of the kit lane diverges.
+        AssertionError: If any leg of the profile-cache lane diverges.
     """
-    import json
-
     crystallizer = _activate_crystallizer()
     book = _dynamic_book()
     spell_id = book.bind(
@@ -617,13 +616,12 @@ def test_kit_round_trip_exports_imports_and_unfolds(cache_root):
     )
     book.conjure(dynamic=True, name="root")
     crystallizer.create_checkpoint()
-    kit = json.loads(json.dumps(crystallizer.export_kit()))
-    head_id = kit["manifest"]["checkpoint_ids"][-1]
+    flushed = crystallizer.flush_checkpoint()
 
     rebooted = _fresh_boot()
-    summary = rebooted.import_kit(kit)
-    assert len(summary["inserted"]) == len(kit["items"])
-    report = rebooted.load_checkpoint(head_id)
+    summary = rebooted.reload_profile_from_cache("default")
+    assert len(summary["inserted"]) == len(flushed)
+    report = rebooted.load_checkpoint(summary["inserted"][-1])
 
     assert report["status"] == "complete"
     assert report["built_counts"]["spellbook"] == 1
