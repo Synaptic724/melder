@@ -601,11 +601,22 @@ class PersistenceSystem(Cleanable):
             else:
                 targets = list(self._checkpoint_crystals_by_id.values())
             flushed: List[str] = []
+            touched_profiles: List[str] = []
             for crystal in targets:
                 self._crystallizer_cache.store_cached_item(
                     crystal.id, crystal.to_cached_item()
                 )
                 flushed.append(crystal.id)
+                if crystal.profile_name not in touched_profiles:
+                    touched_profiles.append(crystal.profile_name)
+            # Owner ruling: without a DB emitter the cache follows the
+            # checkpoint limit too - FIFO the oldest cached files out.
+            # Durability beyond the cap is the user's opt-in via a DB
+            # emitter (future lane); "its on them".
+            for profile_name in touched_profiles:
+                self._crystallizer_cache.enforce_cache_retention(
+                    profile_name, self._max_persistence_crystals
+                )
             return flushed
 
     def reload_checkpoint_from_cache(self, checkpoint_id: str) -> Dict[str, object]:
@@ -664,103 +675,31 @@ class PersistenceSystem(Cleanable):
         with self._lock:
             return self._crystallizer_cache.list_cached_item_ids()
 
-    def build_kit_payload(
+
+
+    def reload_profile_from_cache(
             self,
-            profile_name: Optional[str] = None,
+            profile_name: str,
     ) -> Dict[str, object]:
         """
-        Export one profile's checkpoint chain as a portable kit payload.
+        Reload EVERY cached checkpoint of one profile into the ledger.
 
         Purpose:
-            KITS = PLUGINS: a profile's foldable history travels as one
-            JSON-safe payload - manifest (identity + fold-safety verdict)
-            plus every retained crystal's cached-item form. A fresh
-            process imports it (import_kit_payload) and unfolds it through
-            the normal load_checkpoint lane.
+            "Import a world" the owner's way: a profile's cache folder IS
+            its portable form - copy the folder, call this verb on the
+            receiving process, then load_checkpoint unfolds the chain.
+            No manifests, no wrappers: the cached checkpoint items are
+            the whole truth.
 
         Contract:
-            - GATED on verify_checkpoint_chain: a "broken" chain REFUSES
-              loudly (exporting damage would propagate a wrong world);
-              "truncated_prefix" exports WITH the verdict carried in the
-              manifest so importers see the honest history bounds.
-            - Archive/file format, kit naming, and signing are owner taste
-              calls deferred by design: this verb is the taste-neutral
-              payload core.
+            - Insert-if-absent per crystal (ids already in the ledger
+              keep their live crystals); re-running is idempotent.
+            - Retention dropout does NOT run here (reloading history must
+              not evict newer crystals; cache-reload precedent).
 
         Args:
             profile_name:
-                Profile to export; None means the active profile.
-
-        Returns:
-            Dict[str, object]:
-                {"manifest": {kit_format_version, profile_name,
-                 checkpoint_ids, checkpoint_numbers, chain_report},
-                 "items": [cached-item payloads, oldest first]}.
-
-        Raises:
-            RuntimeError: If the subsystem has been cleaned.
-            KeyError: If `profile_name` names no existing profile.
-            ValueError: If the chain verdict is "broken" or "empty"
-                (nothing trustworthy to export).
-        """
-        self.check_cleaned()
-        chain_report = self.verify_checkpoint_chain(profile_name)
-        verdict = str(chain_report["verdict"])
-        resolved_name = str(chain_report["profile_name"])
-        if verdict in ("broken", "empty"):
-            raise ValueError(
-                "Cannot export a kit from profile '{0}': chain verdict is "
-                "'{1}'. Broken chains would propagate a wrong world; empty "
-                "chains carry nothing. Repair or reseal before exporting "
-                "(see the chain report's break entries).".format(
-                    resolved_name, verdict
-                )
-            )
-        with self._lock:
-            run = [
-                crystal
-                for crystal in self._checkpoint_crystals_by_id.values()
-                if (
-                    not crystal.cleaned
-                    and crystal.profile_name == resolved_name
-                )
-            ]
-            run.sort(key=lambda crystal: crystal.checkpoint_number)
-            items = [crystal.to_cached_item() for crystal in run]
-        return {
-            "manifest": {
-                "kit_format_version": 1,
-                "profile_name": resolved_name,
-                "checkpoint_ids": [
-                    str(item["checkpoint_id"]) for item in items
-                ],
-                "checkpoint_numbers": [
-                    int(item["checkpoint_number"]) for item in items
-                ],
-                "chain_report": chain_report,
-            },
-            "items": items,
-        }
-
-    def import_kit_payload(
-            self,
-            kit_payload: Dict[str, object],
-    ) -> Dict[str, object]:
-        """
-        Import one kit payload's crystals into the ledger.
-
-        Contract:
-            - Insert-if-absent per crystal (reload semantics; ids already
-              in the ledger keep their live crystals - a kit never
-              overwrites live history). Re-import is therefore idempotent.
-            - Retention dropout does NOT run here: importing history must
-              not evict newer crystals (cache-reload precedent).
-            - Unfolding stays a separate act: call load_checkpoint on the
-              imported head afterwards.
-
-        Args:
-            kit_payload:
-                A build_kit_payload-shaped mapping (JSON-safe).
+                Profile whose cached checkpoints should reload.
 
         Returns:
             Dict[str, object]:
@@ -769,26 +708,35 @@ class PersistenceSystem(Cleanable):
 
         Raises:
             RuntimeError: If the subsystem has been cleaned.
-            KeyError: If the payload lacks manifest/items fields.
-            ValueError: If an item's fields violate the crystal
-                construction contract.
+            KeyError: If the profile has no cached checkpoints.
         """
         self.check_cleaned()
-        manifest = dict(kit_payload["manifest"])
-        items = list(kit_payload["items"])
+        cached_ids = (
+            self._crystallizer_cache.list_cached_item_ids_for_profile(
+                profile_name
+            )
+        )
+        if not cached_ids:
+            raise KeyError(
+                "No cached checkpoints exist for profile {0!r}; flush "
+                "some first (flush_checkpoint_to_cache) or copy the "
+                "profile's cache folder into place.".format(profile_name)
+            )
         inserted: List[str] = []
         skipped_existing: List[str] = []
         with self._lock:
-            for cached_item in items:
-                checkpoint_id = str(cached_item["checkpoint_id"])
+            for checkpoint_id in cached_ids:
                 if checkpoint_id in self._checkpoint_crystals_by_id:
                     skipped_existing.append(checkpoint_id)
                     continue
+                cached_item = self._crystallizer_cache.load_cached_item(
+                    checkpoint_id
+                )
                 crystal = PersistenceCrystal.from_cached_item(cached_item)
                 self._checkpoint_crystals_by_id[crystal.id] = crystal
                 inserted.append(crystal.id)
         return {
-            "profile_name": str(manifest.get("profile_name", "")),
+            "profile_name": profile_name,
             "inserted": inserted,
             "skipped_existing": skipped_existing,
         }

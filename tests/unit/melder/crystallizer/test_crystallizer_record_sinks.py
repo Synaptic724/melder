@@ -114,11 +114,12 @@ def test_emit_verbs_are_noops_while_not_activated():
     assert summary["spell_crystal_count"] == 0
     assert summary["nexus_state"] is None
     checkpoint_id = crystallizer.create_checkpoint()
-    # Exactly ONE journal entry exists: the crystallizer's own policy twin
-    # (self-emitted at activation); none of the pre-activation emits landed.
+    # Exactly TWO journal entries exist: the policy twin's activation
+    # emission plus its per-seal re-emission (every snapshot is
+    # self-describing); none of the pre-activation emits landed.
     assert (
         crystallizer.describe_checkpoint(checkpoint_id)["journal_entry_count"]
-        == 1
+        == 2
     )
 
 
@@ -165,11 +166,11 @@ def test_activated_sinks_route_to_the_active_profile():
     with pytest.raises(KeyError):
         crystallizer.get_spell_crystal("sha-a")
     checkpoint_id = crystallizer.create_checkpoint()
-    # 5 = the 4 sink emits above + the crystallizer's own policy twin
-    # (self-emitted at activation).
+    # 6 = the 4 sink emits above + the policy twin's activation emission
+    # + its per-seal re-emission (every snapshot is self-describing).
     assert (
         crystallizer.describe_checkpoint(checkpoint_id)["journal_entry_count"]
-        == 5
+        == 6
     )
 
 

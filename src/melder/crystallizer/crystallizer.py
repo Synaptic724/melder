@@ -335,11 +335,51 @@ class Crystallizer(Cleanable):
         # world can reload this exact policy via
         # CrystallizerConfiguration.load_recorded_dictionary before
         # activating its own crystallizer.
+        self._emit_policy_twin()
+        # Root catch-up: the Aether structurally precedes the crystallizer
+        # (it hosts it), so its configuration twin could never record at
+        # its own activation in the normal boot order. Now that recording
+        # is live, capture the already-active root exactly once - a
+        # targeted root emission, not a world walk (bind still owns every
+        # structural emission).
+        if (
+                self._aether is not None
+                and self._aether.configured
+                and self._aether.configuration is not None
+        ):
+            self._aether.configuration.emit_configured_twin_when_recording()
+
+    def _emit_policy_twin(self) -> None:
+        """
+        Internal emission seam
+
+        Emit the crystallizer's own policy twin from the frozen
+        configuration.
+
+        Purpose:
+            The recorder's policy is recorded truth, and EVERY snapshot
+            must be self-describing (owner ruling): activation emits the
+            twin first, and every checkpoint seal re-emits it so each
+            sealed window carries the policy alongside all the other
+            captured items - a single cached crystal then tells a booting
+            process exactly which recording policy made it, no chain fold
+            required.
+
+        Contract:
+            - NO-OP while not activated (emit gates internally as well).
+            - The twin records the CONFIGURED surface: fluent-built
+              configurations legally leave optional keys unset, and the
+              reload lane backfills-with-report on the way back in.
+            - Replace-on-emit keeps exactly one live twin per profile;
+              per-seal re-emission costs one journal entry per window.
+
+        Returns:
+            None.
+        """
+        if not self._activated or self._configuration is None:
+            return
         configuration_payload: Dict[str, object] = {}
         for property_name in self._configuration.available_properties.keys():
-            # The twin records the CONFIGURED surface: fluent-built
-            # configurations legally leave optional keys unset, and the
-            # reload lane backfills-with-report on the way back in.
             if not self._configuration.has_property(property_name):
                 continue
             property_value = self._configuration.get_property(property_name)
@@ -354,21 +394,13 @@ class Crystallizer(Cleanable):
                 ]
             else:
                 configuration_payload[property_name] = str(property_value)
-        self.emit(
+        # Direct record (NOT self.emit): the seal paths call this seam,
+        # and emit's cadence ticker could interleave an automatic seal
+        # mid-checkpoint. The record verb is the same sink minus the
+        # ticker.
+        self._persistence_system.record(
             CrystallizerCrystal(configuration_payload=configuration_payload)
         )
-        # Root catch-up: the Aether structurally precedes the crystallizer
-        # (it hosts it), so its configuration twin could never record at
-        # its own activation in the normal boot order. Now that recording
-        # is live, capture the already-active root exactly once - a
-        # targeted root emission, not a world walk (bind still owns every
-        # structural emission).
-        if (
-                self._aether is not None
-                and self._aether.configured
-                and self._aether.configuration is not None
-        ):
-            self._aether.configuration.emit_configured_twin_when_recording()
 
     def _maybe_create_automatic_checkpoint(self) -> None:
         """
@@ -404,6 +436,9 @@ class Crystallizer(Cleanable):
             ):
                 return
             self._last_automatic_checkpoint_monotonic = now
+        # Every snapshot is self-describing: the policy twin re-emits into
+        # this seal's window (owner ruling).
+        self._emit_policy_twin()
         sealed_id = self._persistence_system.create_checkpoint(
             description="automatic cadence checkpoint",
         )
@@ -1126,6 +1161,10 @@ class Crystallizer(Cleanable):
         """
         self.check_cleaned()
         self._require_activated()
+        # Every snapshot is self-describing: the policy twin re-emits into
+        # this seal's window (owner ruling), so a single cached crystal
+        # carries the recording policy that made it.
+        self._emit_policy_twin()
         return self._persistence_system.create_checkpoint(
             profile_name=profile_name,
             description=description,
@@ -1305,50 +1344,22 @@ class Crystallizer(Cleanable):
         self._require_activated()
         return self._persistence_system.verify_checkpoint_chain(profile_name)
 
-    def export_kit(
+    def reload_profile_from_cache(
             self,
-            profile_name: Optional[str] = None,
+            profile_name: str,
     ) -> Dict[str, object]:
         """
-        Export one profile's chain as a portable kit payload.
+        Reload EVERY cached checkpoint of one profile into the ledger.
 
         Purpose:
-            Facade over PersistenceSystem.build_kit_payload: the
-            fold-safety-gated, JSON-safe manifest + items form (archive
-            format and signing are deferred owner taste calls).
+            Facade over PersistenceSystem.reload_profile_from_cache: a
+            profile's cache folder IS its portable form - copy the
+            folder, reload it here, then load_checkpoint unfolds the
+            chain.
 
         Args:
             profile_name:
-                Profile to export; None means the active profile.
-
-        Returns:
-            Dict[str, object]:
-                The kit payload ({"manifest": ..., "items": [...]}).
-
-        Raises:
-            RuntimeError: If crystallizer is cleaned or not yet active.
-            KeyError: If `profile_name` names no existing profile.
-            ValueError: If the chain verdict is "broken" or "empty".
-        """
-        self.check_cleaned()
-        self._require_activated()
-        return self._persistence_system.build_kit_payload(profile_name)
-
-    def import_kit(
-            self,
-            kit_payload: Dict[str, object],
-    ) -> Dict[str, object]:
-        """
-        Import one kit payload's crystals into the ledger.
-
-        Purpose:
-            Facade over PersistenceSystem.import_kit_payload: insert-if-
-            absent reload semantics, idempotent, no retention dropout.
-            Unfold afterwards via load_checkpoint on the imported head.
-
-        Args:
-            kit_payload:
-                A kit payload produced by export_kit (JSON-safe).
+                Profile whose cached checkpoints should reload.
 
         Returns:
             Dict[str, object]:
@@ -1356,11 +1367,13 @@ class Crystallizer(Cleanable):
 
         Raises:
             RuntimeError: If crystallizer is cleaned or not yet active.
-            KeyError: If the payload lacks manifest/items fields.
+            KeyError: If the profile has no cached checkpoints.
         """
         self.check_cleaned()
         self._require_activated()
-        return self._persistence_system.import_kit_payload(kit_payload)
+        return self._persistence_system.reload_profile_from_cache(
+            profile_name
+        )
 
     def load_checkpoint(self, checkpoint_id: str) -> Dict[str, object]:
         """
