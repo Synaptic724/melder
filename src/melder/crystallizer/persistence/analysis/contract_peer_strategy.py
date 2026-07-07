@@ -1,0 +1,74 @@
+
+from typing import ClassVar, Dict, List
+
+from melder.__melder_registration_guard__ import (
+    __melder_registration_guard__ as _mrg,
+)
+from melder.crystallizer.persistence.analysis.persistence_analysis_strategy import (
+    PersistenceAnalysisStrategy,
+)
+
+
+class ContractPeerStrategy(PersistenceAnalysisStrategy):
+    """
+    Detect contracts whose endpoints are not both in the bundle.
+
+    Purpose:
+        A contract needs both conduit endpoints rebuilt before its
+        details re-grant; a formation captured around ONE side carries
+        the contract as a recorded reference the restore will shortfall
+        (endpoint_not_rebuilt). Surface that before bootload.
+
+    Contract:
+        - Severity "warning": restore completes; the contract's details
+          shortfall until the peer exists.
+    """
+
+    __melder_internal__: ClassVar[object] = _mrg.sentinel
+
+    @property
+    def name(self) -> str:
+        """
+        Return the strategy's stable report name.
+
+        Returns:
+            str: "contract_peer".
+        """
+        return "contract_peer"
+
+    def analyze(
+            self,
+            payload_bundle: Dict[str, Dict[str, Dict[str, object]]],
+    ) -> List[Dict[str, object]]:
+        """
+        Flag every contract with a missing endpoint conduit.
+
+        Args:
+            payload_bundle:
+                {kind: {key: payload}} bundle under analysis.
+
+        Returns:
+            List[Dict[str, object]]: One warning row per absent side.
+        """
+        conduits = dict(payload_bundle.get("conduit", {}))
+        findings: List[Dict[str, object]] = []
+        for contract_id, payload in dict(
+                payload_bundle.get("contract", {})
+        ).items():
+            for side_field in ("conduit_a_id", "conduit_b_id"):
+                side_id = str(payload.get(side_field))
+                if side_id in conduits:
+                    continue
+                findings.append({
+                    "strategy": self.name,
+                    "severity": "warning",
+                    "kind": "contract",
+                    "key": contract_id,
+                    "detail": (
+                        "{0} {1!r} is not in this bundle; the restore "
+                        "will shortfall this contract's details".format(
+                            side_field, side_id
+                        )
+                    ),
+                })
+        return findings

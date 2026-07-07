@@ -677,6 +677,281 @@ class PersistenceSystem(Cleanable):
 
 
 
+    def save_formation(
+            self,
+            formation_name: str,
+            conduit_id: Optional[str] = None,
+            frame_name: Optional[str] = None,
+            profile_name: Optional[str] = None,
+            description: str = "",
+    ) -> str:
+        """
+        Capture and store one user-named formation (owner feature).
+
+        Purpose:
+            "If they like a conduit formation... just reload that
+            conduit": capture the LIVE slice (conduit scope includes its
+            spellbook; frame scope includes the frame subtree) from the
+            targeted profile and persist it as a named cache artifact.
+
+        Args:
+            formation_name:
+                The user's name for this formation (filesystem-safe).
+            conduit_id:
+                Conduit-scope anchor (exactly one scope required).
+            frame_name:
+                Frame-scope anchor.
+            profile_name:
+                Profile to capture from; None means the active profile.
+            description:
+                Optional user note stored on the formation record.
+
+        Returns:
+            str: Absolute path of the stored formation file.
+
+        Raises:
+            RuntimeError: If the subsystem has been cleaned.
+            ValueError: If the scope arguments are wrong or the name is
+                not filesystem-safe.
+            KeyError: If the profile or the anchor twin does not exist.
+        """
+        self.check_cleaned()
+        with self._lock:
+            resolved_name = (
+                profile_name
+                if profile_name is not None
+                else self._active_profile_name
+            )
+            if resolved_name not in self._profiles_by_name:
+                raise KeyError(
+                    "No profile named {0!r}.".format(resolved_name)
+                )
+            payloads = self._profiles_by_name[
+                resolved_name
+            ].capture_formation_slice(
+                conduit_id=conduit_id, frame_name=frame_name
+            )
+        formation_record: Dict[str, object] = {
+            "formation_name": formation_name,
+            "profile_name": resolved_name,
+            "scope": (
+                {"conduit_id": conduit_id}
+                if conduit_id is not None
+                else {"frame_name": frame_name}
+            ),
+            "created_at": IDBuilder.create_id(),
+            "description": description,
+            "payloads": payloads,
+        }
+        return self._crystallizer_cache.store_formation(
+            resolved_name, formation_name, formation_record
+        )
+
+    def load_formation_record(
+            self,
+            formation_name: str,
+            profile_name: Optional[str] = None,
+    ) -> Dict[str, object]:
+        """
+        Load one stored formation record (payloads + metadata).
+
+        Purpose:
+            Shared read lane for restore_formation and the persistence
+            analyzer facades.
+
+        Args:
+            formation_name:
+                The stored formation's name.
+            profile_name:
+                Profile whose formation store is read; None means the
+                active profile.
+
+        Returns:
+            Dict[str, object]: The stored formation record.
+
+        Raises:
+            RuntimeError: If the subsystem has been cleaned.
+            KeyError: If no formation exists under the name.
+        """
+        self.check_cleaned()
+        with self._lock:
+            resolved_name = (
+                profile_name
+                if profile_name is not None
+                else self._active_profile_name
+            )
+        return self._crystallizer_cache.load_formation(
+            resolved_name, formation_name
+        )
+
+    def restore_formation(
+            self,
+            formation_name: str,
+            profile_name: Optional[str] = None,
+    ) -> Dict[str, object]:
+        """
+        Rebuild one stored formation into the live runtime.
+
+        Purpose:
+            The scoped-restore lane: the formation's payload slice is
+            manufactured into ONE synthetic chain window (journal minted
+            in canonical kind order) and replayed by the EXISTING
+            RestoreEngine - identical all-or-nothing and shortfall
+            semantics as a whole-world restore, scoped to the formation.
+
+        Args:
+            formation_name:
+                The stored formation's name.
+            profile_name:
+                Profile whose formation store is read; None means the
+                active profile.
+
+        Returns:
+            Dict[str, object]:
+                The detached RestoreReport payload.
+
+        Raises:
+            RuntimeError: If the subsystem has been cleaned, or a replay
+                stage failed (after teardown; cause chained).
+            KeyError: If no formation exists under the name.
+        """
+        self.check_cleaned()
+        with self._lock:
+            resolved_name = (
+                profile_name
+                if profile_name is not None
+                else self._active_profile_name
+            )
+        formation_record = self._crystallizer_cache.load_formation(
+            resolved_name, formation_name
+        )
+        payloads = dict(formation_record["payloads"])
+        # Manufacture the single synthetic window: canonical kind order
+        # mirrors the engine's stage order so folds see parents first.
+        kind_order = (
+            "frame", "spellbook", "conduit", "spell_index",
+            "spell_crystal", "cluster", "contract",
+        )
+        journal: List[List[object]] = []
+        sequence = 0
+        for kind in kind_order:
+            for key in sorted(dict(payloads.get(kind, {})).keys()):
+                sequence += 1
+                journal.append([sequence, kind, key])
+        window = {"journal": journal, "payloads": payloads}
+        # Lazy import mirrors load_checkpoint (runtime import pressure).
+        from melder.crystallizer.persistence.restore_engine import (
+            RestoreEngine,
+        )
+
+        engine = RestoreEngine(
+            profile_name=resolved_name,
+            checkpoint_ids=["formation-{0}".format(formation_name)],
+            chain=[window],
+        )
+        try:
+            report = engine.restore()
+            payload = report.describe()
+            report.cleanup()
+            return payload
+        finally:
+            if not engine.cleaned:
+                engine.cleanup()
+
+    def list_formations(
+            self,
+            profile_name: Optional[str] = None,
+    ) -> List[str]:
+        """
+        Return the targeted profile's stored formation names.
+
+        Args:
+            profile_name:
+                Profile to list; None means the active profile.
+
+        Returns:
+            List[str]: Sorted formation names.
+
+        Raises:
+            RuntimeError: If the subsystem has been cleaned.
+        """
+        self.check_cleaned()
+        with self._lock:
+            resolved_name = (
+                profile_name
+                if profile_name is not None
+                else self._active_profile_name
+            )
+        return self._crystallizer_cache.list_formation_names(resolved_name)
+
+    def cached_item_form(self, checkpoint_id: str) -> Dict[str, object]:
+        """
+        Return one ledger crystal's cached-item form (upload feedstock).
+
+        Purpose:
+            The ExternalPersistenceManager (the crystallizer's sibling-
+            rank remote transport) uploads cached-item payloads; this
+            verb hands them out without exposing the ledger.
+
+        Args:
+            checkpoint_id:
+                One ledger ULID.
+
+        Returns:
+            Dict[str, object]:
+                The crystal's to_cached_item payload (detached).
+
+        Raises:
+            RuntimeError: If the subsystem has been cleaned.
+            KeyError: If `checkpoint_id` names no ledger crystal.
+        """
+        self.check_cleaned()
+        with self._lock:
+            return self._require_checkpoint(checkpoint_id).to_cached_item()
+
+    def insert_cached_items(
+            self,
+            cached_items: List[Dict[str, object]],
+    ) -> Dict[str, object]:
+        """
+        Insert cached-item payloads into the ledger (insert-if-absent).
+
+        Purpose:
+            The generic import sink: downloads from the external manager
+            (or any cached-item source) land here with the same reload
+            semantics as the cache lanes.
+
+        Contract:
+            - Insert-if-absent per item; re-running is idempotent.
+            - Retention dropout does NOT run here (importing history must
+              not evict newer crystals).
+
+        Args:
+            cached_items:
+                JSON-safe to_cached_item payloads, any order.
+
+        Returns:
+            Dict[str, object]:
+                {"inserted": [ids], "skipped_existing": [ids]}.
+
+        Raises:
+            RuntimeError: If the subsystem has been cleaned.
+            KeyError/ValueError: If an item violates the crystal codec.
+        """
+        self.check_cleaned()
+        inserted: List[str] = []
+        skipped_existing: List[str] = []
+        with self._lock:
+            for cached_item in cached_items:
+                checkpoint_id = str(cached_item["checkpoint_id"])
+                if checkpoint_id in self._checkpoint_crystals_by_id:
+                    skipped_existing.append(checkpoint_id)
+                    continue
+                crystal = PersistenceCrystal.from_cached_item(cached_item)
+                self._checkpoint_crystals_by_id[crystal.id] = crystal
+                inserted.append(crystal.id)
+        return {"inserted": inserted, "skipped_existing": skipped_existing}
+
     def reload_profile_from_cache(
             self,
             profile_name: str,

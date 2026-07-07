@@ -1013,6 +1013,150 @@ class PersistenceProfile(Cleanable):
                 (sequence_mark + 1, self._emission_sequence),
             )
 
+    def capture_formation_slice(
+            self,
+            conduit_id: Optional[str] = None,
+            frame_name: Optional[str] = None,
+    ) -> Dict[str, Dict[str, Dict[str, object]]]:
+        """
+        Capture one LIVE formation slice (owner feature: scoped snapshots).
+
+        Purpose:
+            Users keep the formations they like: a conduit formation
+            (the conduit + its spellbook + that book's custody and
+            indexes + contracts touching the conduit) or a frame
+            formation (the frame posture + every book subtree on it +
+            its clusters). The slice is CURRENT-STATE payloads only - no
+            journal window - and restores through a manufactured
+            single-window chain.
+
+        Contract:
+            - Exactly one scope argument must be supplied.
+            - Payloads are fully detached describe() forms; custody
+              payloads annotate custody_location from the live maps.
+            - Contract/link peers OUTSIDE the slice ride along as
+              recorded references (restore shortfalls them; the
+              persistence analyzer pre-flights them).
+
+        Args:
+            conduit_id:
+                Conduit-scope anchor (mutually exclusive with
+                frame_name).
+            frame_name:
+                Frame-scope anchor.
+
+        Returns:
+            Dict[str, Dict[str, Dict[str, object]]]:
+                {kind: {key: payload}} for the slice.
+
+        Raises:
+            RuntimeError: If the profile has been cleaned.
+            ValueError: If zero or both scope arguments are supplied.
+            KeyError: If the anchor names no recorded twin.
+        """
+        self.check_cleaned()
+        if (conduit_id is None) == (frame_name is None):
+            raise ValueError(
+                "capture_formation_slice requires exactly one scope: "
+                "conduit_id OR frame_name."
+            )
+        with self._lock:
+            payloads: Dict[str, Dict[str, Dict[str, object]]] = {}
+
+            def put(kind: str, key: str, payload: Dict[str, object]) -> None:
+                payloads.setdefault(kind, {})[key] = payload
+
+            def capture_book_subtree(spellbook_id: str) -> None:
+                book = self._spellbook_crystals_by_id.get(spellbook_id)
+                if book is not None and not book.cleaned:
+                    put("spellbook", spellbook_id, book.describe())
+                for index_id, index in (
+                        self._spell_index_crystals_by_index_id.items()
+                ):
+                    if index.cleaned:
+                        continue
+                    index_payload = index.describe()
+                    if index_payload.get("spellbook_id") == spellbook_id:
+                        put("spell_index", index_id, index_payload)
+                for location_name, store in (
+                        ("active", self._spell_crystals_by_spell_id),
+                        ("inactive", self._inactive_spell_crystals_by_spell_id),
+                ):
+                    for spell_id, custody in store.items():
+                        if custody.cleaned:
+                            continue
+                        custody_payload = custody.describe()
+                        if custody_payload.get("spellbook_id") != spellbook_id:
+                            continue
+                        custody_payload["custody_location"] = location_name
+                        put("spell_crystal", spell_id, custody_payload)
+
+            def capture_contracts_touching(conduit_ids: List[str]) -> None:
+                for contract_id, contract in (
+                        self._contract_crystals_by_contract_id.items()
+                ):
+                    if contract.cleaned:
+                        continue
+                    contract_payload = contract.describe()
+                    if (
+                            contract_payload.get("conduit_a_id") in conduit_ids
+                            or contract_payload.get("conduit_b_id")
+                            in conduit_ids
+                    ):
+                        put("contract", contract_id, contract_payload)
+
+            if conduit_id is not None:
+                conduit = self._conduit_crystals_by_id.get(conduit_id)
+                if conduit is None or conduit.cleaned:
+                    raise KeyError(
+                        "No recorded conduit twin for id {0!r}; the "
+                        "formation anchor must be a recorded conduit "
+                        "(check describe_profile()).".format(conduit_id)
+                    )
+                conduit_payload = conduit.describe()
+                put("conduit", conduit_id, conduit_payload)
+                capture_book_subtree(
+                    str(conduit_payload.get("spellbook_id"))
+                )
+                capture_contracts_touching([conduit_id])
+                return payloads
+
+            frame = self._frame_crystals_by_name.get(str(frame_name))
+            if frame is None or frame.cleaned:
+                raise KeyError(
+                    "No recorded frame twin named {0!r}; frame-scoped "
+                    "formations need the frame posture in the record "
+                    "(dynamic frames emit at their configuration "
+                    "freeze).".format(frame_name)
+                )
+            put("frame", str(frame_name), frame.describe())
+            frame_conduit_ids: List[str] = []
+            for spellbook_id, book in (
+                    self._spellbook_crystals_by_id.items()
+            ):
+                if book.cleaned:
+                    continue
+                if book.describe().get("frame_name") != frame_name:
+                    continue
+                capture_book_subtree(spellbook_id)
+                for cid, conduit in self._conduit_crystals_by_id.items():
+                    if conduit.cleaned:
+                        continue
+                    conduit_payload = conduit.describe()
+                    if conduit_payload.get("spellbook_id") == spellbook_id:
+                        put("conduit", cid, conduit_payload)
+                        frame_conduit_ids.append(cid)
+            for cluster_id, cluster in (
+                    self._cluster_crystals_by_cluster_id.items()
+            ):
+                if cluster.cleaned:
+                    continue
+                cluster_payload = cluster.describe()
+                if cluster_payload.get("frame_name") == frame_name:
+                    put("cluster", cluster_id, cluster_payload)
+            capture_contracts_touching(frame_conduit_ids)
+            return payloads
+
     def mark_checkpoint(self, sequence: int) -> None:
         """
         Advance the checkpoint mark after a successful seal.

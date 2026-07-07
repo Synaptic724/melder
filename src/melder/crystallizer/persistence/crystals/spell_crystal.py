@@ -80,6 +80,7 @@ class SpellCrystal(Cleanable):
         "_module_targets",
         "_path_targets",
         "_synthetic_module_targets",
+        "_synthetic_module_sources",
         "_user_source_targets",
         "_site_package_targets",
         "_unknown_targets",
@@ -162,6 +163,9 @@ class SpellCrystal(Cleanable):
         self._module_targets: List[str] = []
         self._path_targets: List[str] = []
         self._synthetic_module_targets: List[str] = []
+        # Loader chain M3: synthetic modules have no files, so their
+        # rebuildable truth (source + identity metadata) rides the crystal.
+        self._synthetic_module_sources: Dict[str, Dict[str, object]] = {}
         self._user_source_targets: List[str] = []
         self._site_package_targets: List[str] = []
         self._unknown_targets: List[str] = []
@@ -303,6 +307,7 @@ class SpellCrystal(Cleanable):
             del self._module_targets
             del self._path_targets
             del self._synthetic_module_targets
+            del self._synthetic_module_sources
             del self._user_source_targets
             del self._site_package_targets
             del self._unknown_targets
@@ -1558,6 +1563,9 @@ class SpellCrystal(Cleanable):
                         )
                     )
 
+            self._harvest_synthetic_source(
+                current_module_name, current_module_obj
+            )
             self._record_module_target(
                 module_name=current_module_name,
                 module_path=current_module_path,
@@ -1566,6 +1574,48 @@ class SpellCrystal(Cleanable):
                 ast_import_targets=ast_import_targets,
                 ast_from_import_targets=ast_from_import_targets,
             )
+
+    def _harvest_synthetic_source(
+            self,
+            module_name: str,
+            module_obj: Optional[Any],
+    ) -> None:
+        """
+        Capture one synthetic module's rebuildable truth (loader chain M3).
+
+        Purpose:
+            Synthetic modules have no files - their source IS the record.
+            Without this harvest a fresh process can never re-import a
+            synthetic-rooted spell; with it the restore engine rebuilds
+            the module world (construct -> register -> publish -> execute)
+            before hydrating the bind target.
+
+        Contract:
+            - NO-OP for non-synthetic modules.
+            - Captures everything SyntheticModule's constructor needs:
+              source_text, source_sha256, binding_signature,
+              spell_crystal_id, parent_name, is_package.
+            - Plain values only; detached copies.
+
+        Args:
+            module_name:
+                Canonical module name being walked.
+            module_obj:
+                Live module object when available.
+
+        Returns:
+            None.
+        """
+        if not isinstance(module_obj, SyntheticModule):
+            return
+        self._synthetic_module_sources[module_name] = {
+            "source_text": module_obj.source_text,
+            "source_sha256": module_obj.source_sha256,
+            "binding_signature": module_obj.binding_signature,
+            "spell_crystal_id": module_obj.spell_crystal_id,
+            "parent_name": module_obj.parent_name,
+            "is_package": module_obj.is_package,
+        }
 
     def describe(self) -> Dict[str, Any]:
         """
@@ -1604,6 +1654,10 @@ class SpellCrystal(Cleanable):
                 "module_targets": list(self._module_targets),
                 "path_targets": list(self._path_targets),
                 "synthetic_module_targets": list(self._synthetic_module_targets),
+                "synthetic_module_sources": {
+                    name: dict(payload)
+                    for name, payload in self._synthetic_module_sources.items()
+                },
                 "user_source_targets": list(self._user_source_targets),
                 "site_package_targets": list(self._site_package_targets),
                 "unknown_targets": list(self._unknown_targets),

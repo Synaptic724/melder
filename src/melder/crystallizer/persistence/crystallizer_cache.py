@@ -244,6 +244,140 @@ class CrystallizerCache(Cleanable):
                 | {entry.stem for entry in root.glob("*.json")}
             )
 
+    def store_formation(
+            self,
+            profile_name: str,
+            formation_name: str,
+            formation_payload: Dict[str, object],
+    ) -> str:
+        """
+        Store one user formation as its named JSON file.
+
+        Contract:
+            - Path: <cache root>/{profile}/__formations__/{name}.json
+              (atomic tmp+replace; re-storing a name overwrites - the
+              user owns their formation names).
+            - The name must be filesystem-safe: letters, digits,
+              underscore, hyphen.
+
+        Args:
+            profile_name:
+                Owning profile.
+            formation_name:
+                The user's name for this formation.
+            formation_payload:
+                JSON-safe formation record ({"formation_name",
+                "profile_name", "scope", "created_at", "description",
+                "payloads"}).
+
+        Returns:
+            str: Absolute path of the written formation file.
+
+        Raises:
+            RuntimeError: If the cache has been cleaned.
+            ValueError: If either name is empty or the formation name is
+                not filesystem-safe.
+        """
+        self.check_cleaned()
+        if not profile_name or not formation_name:
+            raise ValueError(
+                "store_formation requires non-empty profile and "
+                "formation names."
+            )
+        if not all(
+                ch.isalnum() or ch in "_-" for ch in formation_name
+        ):
+            raise ValueError(
+                "Formation name {0!r} is not filesystem-safe; use "
+                "letters, digits, underscore, or hyphen.".format(
+                    formation_name
+                )
+            )
+        with self._lock:
+            formation_directory = (
+                self.resolve_cache_root_path()
+                / profile_name
+                / "__formations__"
+            )
+            formation_directory.mkdir(parents=True, exist_ok=True)
+            final_path = formation_directory / "{0}.json".format(
+                formation_name
+            )
+            tmp_path = formation_directory / "{0}.json.tmp".format(
+                formation_name
+            )
+            tmp_path.write_text(
+                json.dumps(formation_payload, sort_keys=True),
+                encoding="utf-8",
+            )
+            os.replace(tmp_path, final_path)
+            return str(final_path)
+
+    def load_formation(
+            self,
+            profile_name: str,
+            formation_name: str,
+    ) -> Dict[str, object]:
+        """
+        Load one stored user formation by profile and name.
+
+        Args:
+            profile_name:
+                Owning profile.
+            formation_name:
+                The formation's user-defined name.
+
+        Returns:
+            Dict[str, object]: The stored formation record.
+
+        Raises:
+            RuntimeError: If the cache has been cleaned.
+            KeyError: If no formation exists under the pair.
+        """
+        self.check_cleaned()
+        with self._lock:
+            formation_path = (
+                self.resolve_cache_root_path()
+                / profile_name
+                / "__formations__"
+                / "{0}.json".format(formation_name)
+            )
+            if not formation_path.exists():
+                raise KeyError(
+                    "No formation named {0!r} for profile {1!r} ({2}). "
+                    "Check list_formation_names.".format(
+                        formation_name, profile_name, str(formation_path)
+                    )
+                )
+            return json.loads(formation_path.read_text(encoding="utf-8"))
+
+    def list_formation_names(self, profile_name: str) -> List[str]:
+        """
+        Return one profile's stored formation names.
+
+        Args:
+            profile_name:
+                Owning profile.
+
+        Returns:
+            List[str]: Sorted formation names (empty when none saved).
+
+        Raises:
+            RuntimeError: If the cache has been cleaned.
+        """
+        self.check_cleaned()
+        with self._lock:
+            formation_directory = (
+                self.resolve_cache_root_path()
+                / profile_name
+                / "__formations__"
+            )
+            if not formation_directory.is_dir():
+                return []
+            return sorted(
+                entry.stem for entry in formation_directory.glob("*.json")
+            )
+
     def list_cached_item_ids_for_profile(
             self,
             profile_name: str,

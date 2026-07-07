@@ -1,6 +1,7 @@
 
 
 import importlib
+import sys
 from typing import Any, Dict, List, Optional, Set, Tuple
 
 from melder.utilities.general_base.cleanable import Cleanable
@@ -1489,11 +1490,10 @@ class RestoreEngine(Cleanable):
             )
             return None
         if str(crystal.get("root_module_kind")) == "synthetic_module":
-            self._report.add_shortfall(
-                "spell_crystal", spell_id,
-                "synthetic_root_requires_loader_chain_m3",
-            )
-            return None
+            # Loader chain M3: rebuild the recorded synthetic module world
+            # first, then hydrate through the normal import lane below.
+            if not self._rebuild_synthetic_world(spell_id, crystal):
+                return None
         module_name = str(crystal.get("root_module_name"))
         qualname = str(crystal.get("root_target_qualname"))
         try:
@@ -1510,6 +1510,88 @@ class RestoreEngine(Cleanable):
             )
             return None
         return target
+
+    def _rebuild_synthetic_world(
+            self,
+            spell_id: str,
+            crystal: Dict[str, object],
+    ) -> bool:
+        """
+        Rebuild one custody crystal's recorded synthetic modules (M3).
+
+        Purpose:
+            Synthetic modules have no files - their recorded source IS the
+            truth. This lane reconstructs each recorded module through the
+            SyntheticModule lifecycle (construct -> register in the import
+            registry -> publish to sys.modules -> execute source) so the
+            normal importlib hydration lane can then resolve the bind
+            target exactly like a file-backed module.
+
+        Contract:
+            - Parents build before children (module-name dot depth order).
+            - Modules already present in sys.modules are SKIPPED
+              (idempotent across custody crystals sharing dependencies).
+            - Every module this run builds rides _built_stack for the
+              all-or-nothing teardown (SyntheticModule.cleanup unpublishes
+              and unregisters).
+            - Pre-M3 payloads (no synthetic_module_sources key) keep the
+              historic honest shortfall.
+
+        Args:
+            spell_id:
+                Custody identity (shortfall anchor).
+            crystal:
+                The folded custody payload.
+
+        Returns:
+            bool: True when the module world is ready for import.
+        """
+        from melder.crystallizer.synthetic_module import SyntheticModule
+
+        sources = dict(crystal.get("synthetic_module_sources", {}))
+        if not sources:
+            self._report.add_shortfall(
+                "spell_crystal", spell_id,
+                "synthetic_root_recorded_without_sources_pre_m3",
+            )
+            return False
+        for module_name in sorted(
+                sources.keys(), key=lambda name: (name.count("."), name)
+        ):
+            if module_name in sys.modules:
+                continue
+            payload = dict(sources[module_name])
+            try:
+                parent_name = payload.get("parent_name")
+                module = SyntheticModule(
+                    module_name=module_name,
+                    spell_crystal_id=str(
+                        payload.get("spell_crystal_id", spell_id)
+                    ),
+                    source_text=str(payload.get("source_text", "")),
+                    source_sha256=str(payload.get("source_sha256", "")),
+                    binding_signature=str(
+                        payload.get("binding_signature", "")
+                    ),
+                    parent_name=(
+                        str(parent_name) if parent_name else None
+                    ),
+                    is_package=bool(payload.get("is_package", False)),
+                )
+                module.register_in_import_registry()
+                module.publish_to_sys_modules()
+                module.execute_source()
+            except Exception as error:
+                self._report.add_shortfall(
+                    "spell_crystal", spell_id,
+                    "synthetic_module_rebuild_failed ({0}): {1}".format(
+                        module_name, error
+                    ),
+                )
+                return False
+            self._built_stack.append(("synthetic_module", module))
+            self._report.record_built("synthetic_module")
+        return True
 
     def _teardown_built(self) -> None:
         """

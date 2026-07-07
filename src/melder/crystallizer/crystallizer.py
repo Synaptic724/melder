@@ -15,6 +15,12 @@ from melder.crystallizer.configuration.crystallizer_configuration import (
 from melder.crystallizer.persistence.crystals.crystallizer_crystal import (
     CrystallizerCrystal,
 )
+from melder.crystallizer.persistence.external_persistence_manager import (
+    ExternalPersistenceManager,
+)
+from melder.crystallizer.persistence.external_persistence_manager_configuration import (
+    ExternalPersistenceManagerConfiguration,
+)
 from melder.crystallizer.persistence.crystals.spell_crystal import SpellCrystal
 from melder.crystallizer.synthetic_module import SyntheticModule
 from melder.crystallizer.persistence.persistence_system import PersistenceSystem
@@ -58,6 +64,7 @@ class Crystallizer(Cleanable):
         "_configured",
         "_activated",
         "_persistence_system",
+        "_external_persistence_manager",
         "_checkpoint_interval_seconds",
         "_last_automatic_checkpoint_monotonic",
         "_auto_flush_checkpoints",
@@ -120,6 +127,13 @@ class Crystallizer(Cleanable):
             self._configured: bool = False
             self._activated: bool = False
             self._persistence_system: PersistenceSystem = PersistenceSystem()
+            # Sibling-rank remote transport (owner hierarchy: crystallizer
+            # -> persistence_system | external_persistence_manager). None
+            # until the user attaches handler callables via
+            # configure_external_persistence_manager.
+            self._external_persistence_manager: Optional[
+                ExternalPersistenceManager
+            ] = None
             # Automatic-checkpoint cadence; installed from the frozen
             # configuration at activate() (0.0 = not yet activated).
             self._checkpoint_interval_seconds: float = 0.0
@@ -149,6 +163,11 @@ class Crystallizer(Cleanable):
             if self._cleaned:
                 return
             self._cleaned = True
+            if (
+                    self._external_persistence_manager is not None
+                    and not self._external_persistence_manager.cleaned
+            ):
+                self._external_persistence_manager.cleanup()
             if self._persistence_system is not None and not self._persistence_system.cleaned:
                 self._persistence_system.cleanup()
             if self._configuration is not None:
@@ -156,6 +175,7 @@ class Crystallizer(Cleanable):
             self._configured = False
             self._activated = False
 
+            del self._external_persistence_manager
             del self._persistence_system
             del self._checkpoint_interval_seconds
             del self._last_automatic_checkpoint_monotonic
@@ -444,8 +464,12 @@ class Crystallizer(Cleanable):
         )
         if self._auto_flush_checkpoints:
             # Crash-safe lane: the cadence seal ships to the local cache
-            # immediately (one atomic JSON write per interval).
-            self._persistence_system.flush_checkpoint_to_cache(sealed_id)
+            # immediately (one atomic JSON write per interval), then to
+            # the external manager when one is attached (the DB opt-in).
+            flushed = self._persistence_system.flush_checkpoint_to_cache(
+                sealed_id
+            )
+            self._upload_flushed_checkpoints(flushed)
 
     def deactivate(self) -> None:
         """
@@ -1269,9 +1293,14 @@ class Crystallizer(Cleanable):
         """
         self.check_cleaned()
         self._require_activated()
-        return self._persistence_system.flush_checkpoint_to_cache(
+        flushed = self._persistence_system.flush_checkpoint_to_cache(
             checkpoint_id
         )
+        # DB opt-in: freshly flushed items also ship through the external
+        # manager when one is attached (lenient by default - the local
+        # lane never dies on a remote).
+        self._upload_flushed_checkpoints(flushed)
+        return flushed
 
     def reload_cached_checkpoint(self, checkpoint_id: str) -> Dict[str, object]:
         """
@@ -1374,6 +1403,324 @@ class Crystallizer(Cleanable):
         return self._persistence_system.reload_profile_from_cache(
             profile_name
         )
+
+    def save_formation(
+            self,
+            formation_name: str,
+            conduit_id: Optional[str] = None,
+            frame_name: Optional[str] = None,
+            profile_name: Optional[str] = None,
+            description: str = "",
+    ) -> str:
+        """
+        Capture and store one user-named formation.
+
+        Purpose:
+            Facade over PersistenceSystem.save_formation: keep a conduit
+            formation you like (its spellbook rides along) or a whole
+            frame subtree, under your own name, durable in the cache.
+
+        Args:
+            formation_name:
+                The user's filesystem-safe name.
+            conduit_id:
+                Conduit-scope anchor (exactly one scope required).
+            frame_name:
+                Frame-scope anchor.
+            profile_name:
+                Profile to capture from; None means the active profile.
+            description:
+                Optional user note.
+
+        Returns:
+            str: Absolute path of the stored formation file.
+
+        Raises:
+            RuntimeError: If crystallizer is cleaned or not yet active.
+            ValueError/KeyError: Per the system verb's contract.
+        """
+        self.check_cleaned()
+        self._require_activated()
+        return self._persistence_system.save_formation(
+            formation_name,
+            conduit_id=conduit_id,
+            frame_name=frame_name,
+            profile_name=profile_name,
+            description=description,
+        )
+
+    def restore_formation(
+            self,
+            formation_name: str,
+            profile_name: Optional[str] = None,
+    ) -> Dict[str, object]:
+        """
+        Rebuild one stored formation directly (scoped restore).
+
+        Purpose:
+            Facade over PersistenceSystem.restore_formation: reload JUST
+            the formation - not the world - with the engine's normal
+            all-or-nothing and shortfall semantics.
+
+        Args:
+            formation_name:
+                The stored formation's name.
+            profile_name:
+                Profile whose formation store is read; None = active.
+
+        Returns:
+            Dict[str, object]: The detached restore report.
+
+        Raises:
+            RuntimeError: If crystallizer is cleaned or not yet active,
+                or the replay failed (torn down; cause chained).
+            KeyError: If the formation does not exist.
+        """
+        self.check_cleaned()
+        self._require_activated()
+        return self._persistence_system.restore_formation(
+            formation_name, profile_name=profile_name
+        )
+
+    def list_formations(
+            self,
+            profile_name: Optional[str] = None,
+    ) -> List[str]:
+        """
+        Return the targeted profile's stored formation names.
+
+        Args:
+            profile_name:
+                Profile to list; None means the active profile.
+
+        Returns:
+            List[str]: Sorted formation names.
+
+        Raises:
+            RuntimeError: If crystallizer is cleaned or not yet active.
+        """
+        self.check_cleaned()
+        self._require_activated()
+        return self._persistence_system.list_formations(profile_name)
+
+    def analyze_formation(
+            self,
+            formation_name: str,
+            profile_name: Optional[str] = None,
+    ) -> Dict[str, object]:
+        """
+        Pre-flight one stored formation's bootload viability.
+
+        Purpose:
+            Facade over the PersistenceAnalyzer: run the default strategy
+            passes (link integrity, contract peers, hydration,
+            configuration loss) over the formation's payloads BEFORE the
+            user trusts a restore.
+
+        Args:
+            formation_name:
+                The stored formation's name.
+            profile_name:
+                Profile whose formation store is read; None = active.
+
+        Returns:
+            Dict[str, object]:
+                {"findings", "counts", "verdict"} analyzer report.
+
+        Raises:
+            RuntimeError: If crystallizer is cleaned or not yet active.
+            KeyError: If the formation does not exist.
+        """
+        self.check_cleaned()
+        self._require_activated()
+        from melder.crystallizer.persistence.analysis.persistence_analyzer import (
+            PersistenceAnalyzer,
+        )
+
+        formation_record = (
+            self._persistence_system.load_formation_record(
+                formation_name, profile_name
+            )
+        )
+        analyzer = PersistenceAnalyzer()
+        try:
+            return analyzer.analyze(dict(formation_record["payloads"]))
+        finally:
+            analyzer.cleanup()
+
+    def analyze_checkpoint(
+            self,
+            checkpoint_id: str,
+    ) -> Dict[str, object]:
+        """
+        Pre-flight one sealed checkpoint's bootload viability.
+
+        Purpose:
+            The same analyzer passes over a checkpoint's captured
+            payloads - what would the restore of THIS window hit.
+
+        Args:
+            checkpoint_id:
+                One ledger checkpoint's ULID.
+
+        Returns:
+            Dict[str, object]:
+                {"findings", "counts", "verdict"} analyzer report.
+
+        Raises:
+            RuntimeError: If crystallizer is cleaned or not yet active.
+            KeyError: If no checkpoint exists under the id.
+        """
+        self.check_cleaned()
+        self._require_activated()
+        from melder.crystallizer.persistence.analysis.persistence_analyzer import (
+            PersistenceAnalyzer,
+        )
+
+        cached_item = self._persistence_system.cached_item_form(
+            checkpoint_id
+        )
+        analyzer = PersistenceAnalyzer()
+        try:
+            return analyzer.analyze(
+                dict(cached_item.get("captured_payloads", {}))
+            )
+        finally:
+            analyzer.cleanup()
+
+    def configure_external_persistence_manager(
+            self,
+            manager_configuration: ExternalPersistenceManagerConfiguration,
+    ) -> None:
+        """
+        Attach the user's external transport at the configuration step.
+
+        Purpose:
+            The DB opt-in seam (owner ruling): the user loads their own
+            upload/download callables into a SEPARATE configuration -
+            their SQL bootstrap, their secrets, their driver - and this
+            verb builds the crystallizer-owned ExternalPersistenceManager
+            from it. Same ownership rank as the persistence system.
+
+        Contract:
+            - Freezes the configuration if the caller has not (load it
+              in, freeze it - the reload-lane law).
+            - Re-configuring replaces the previous manager (the old one
+              cleans); attach BEFORE relying on upload-on-flush.
+
+        Args:
+            manager_configuration:
+                The handler-bearing configuration (ownership transfers
+                to the built manager).
+
+        Returns:
+            None.
+
+        Raises:
+            RuntimeError: If the crystallizer has been cleaned.
+            TypeError/ValueError: Propagated from the manager's
+                construction contract.
+        """
+        self.check_cleaned()
+        if not manager_configuration.frozen:
+            manager_configuration.freeze()
+        manager = ExternalPersistenceManager(manager_configuration)
+        with self._lock:
+            previous = self._external_persistence_manager
+            self._external_persistence_manager = manager
+        if previous is not None and not previous.cleaned:
+            previous.cleanup()
+
+    def describe_external_persistence_manager(self) -> Dict[str, object]:
+        """
+        Return the attached manager's record-safe presence description.
+
+        Returns:
+            Dict[str, object]:
+                Presence flags + knobs + failure diagnostics; an
+                {"attached": False} stub when no manager is configured.
+
+        Raises:
+            RuntimeError: If the crystallizer has been cleaned.
+        """
+        self.check_cleaned()
+        manager = self._external_persistence_manager
+        if manager is None:
+            return {"attached": False}
+        description = manager.describe()
+        description["attached"] = True
+        return description
+
+    def reload_profile_from_external(
+            self,
+            profile_name: str,
+    ) -> Dict[str, object]:
+        """
+        Download and insert EVERY remote checkpoint of one profile.
+
+        Purpose:
+            The remote import lane: the manager downloads the profile's
+            stored cached items (list + per-id download through the
+            user's callables) and the persistence system inserts them
+            insert-if-absent - then load_checkpoint unfolds as usual.
+
+        Args:
+            profile_name:
+                Profile whose remote history should reload.
+
+        Returns:
+            Dict[str, object]:
+                {"profile_name", "inserted", "skipped_existing"}.
+
+        Raises:
+            RuntimeError: If cleaned, not yet active, no manager is
+                attached, or download/list handlers are missing.
+            ValueError: If the remote lists an id it cannot return.
+        """
+        self.check_cleaned()
+        self._require_activated()
+        manager = self._external_persistence_manager
+        if manager is None:
+            raise RuntimeError(
+                "No ExternalPersistenceManager is attached; call "
+                "configure_external_persistence_manager(...) with your "
+                "handler configuration first."
+            )
+        cached_items = manager.download_profile(profile_name)
+        summary = self._persistence_system.insert_cached_items(cached_items)
+        summary["profile_name"] = profile_name
+        return summary
+
+    def _upload_flushed_checkpoints(self, checkpoint_ids: List[str]) -> None:
+        """
+        Internal
+
+        Push freshly flushed checkpoints through the external manager.
+
+        Contract:
+            - NO-OP when no manager is attached or uploads are disabled.
+            - Failure posture rides the manager's strictness knob
+              (lenient default never breaks the flush lane).
+
+        Args:
+            checkpoint_ids:
+                The just-flushed ledger ids.
+
+        Returns:
+            None.
+        """
+        manager = self._external_persistence_manager
+        if manager is None or not manager.upload_enabled:
+            return
+        for checkpoint_id in checkpoint_ids:
+            cached_item = self._persistence_system.cached_item_form(
+                checkpoint_id
+            )
+            manager.upload_checkpoint(
+                str(cached_item.get("profile_name", "default")),
+                checkpoint_id,
+                cached_item,
+            )
 
     def load_checkpoint(self, checkpoint_id: str) -> Dict[str, object]:
         """

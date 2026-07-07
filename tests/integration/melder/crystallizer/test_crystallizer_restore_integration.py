@@ -630,3 +630,223 @@ def test_profile_cache_round_trip_reloads_and_unfolds(cache_root):
     # (only conduit/index/book ULIDs translate); the proof of the rebuilt
     # bind is the re-emission of the SAME SHA into the fresh profile.
     assert rebooted.get_spell_crystal(spell_id).id == spell_id
+
+
+def test_pod_bootstrap_rebuilds_the_world_from_the_remote(
+        cache_root, tmp_path,
+):
+    """
+    Purpose:
+        Prove the kube pod-restart story end to end: a recorded world
+        uploads through user callables; a BRAND-NEW pod (fresh
+        singletons, EMPTY local cache) runs the fluent
+        CrystallizerBootstrap and comes back with the world rebuilt.
+    Contract:
+        Bootstrap activates, attaches the manager, finds no local cache,
+        pulls the profile from the remote, stores it locally, picks the
+        newest checkpoint, and load_checkpoint completes - the same
+        content-stable spell SHA re-emits in the rebuilt pod.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If any leg of the pod boot diverges.
+    """
+    import shutil
+
+    from melder.crystallizer.crystallizer_bootstrap import (
+        CrystallizerBootstrap,
+    )
+    from melder.crystallizer.persistence.external_persistence_manager_configuration import (
+        ExternalPersistenceManagerConfiguration,
+    )
+
+    remote_store = {}
+
+    def upload(profile_name, checkpoint_id, cached_item):
+        remote_store[checkpoint_id] = (profile_name, cached_item)
+
+    def download(checkpoint_id):
+        entry = remote_store.get(checkpoint_id)
+        return entry[1] if entry is not None else None
+
+    def list_ids(profile_name):
+        return [
+            checkpoint_id
+            for checkpoint_id, entry in remote_store.items()
+            if entry[0] == profile_name
+        ]
+
+    # ---- Pod 1: record, seal, flush (cache + remote upload). ----------
+    crystallizer = _activate_crystallizer()
+    crystallizer.configure_external_persistence_manager(
+        ExternalPersistenceManagerConfiguration()
+        .with_upload_handler(upload)
+        .with_download_handler(download)
+        .with_list_handler(list_ids)
+    )
+    book = _dynamic_book()
+    spell_id = book.bind(
+        spell=RestoreAlpha,
+        existence=Existence.unique,
+        permissions="create",
+    )
+    book.conjure(dynamic=True, name="root")
+    checkpoint_id = crystallizer.create_checkpoint()
+    crystallizer.flush_checkpoint(checkpoint_id)
+    assert checkpoint_id in remote_store
+
+    # ---- Pod death: fresh singletons AND an empty local cache. --------
+    Aether._reset_singleton_for_tests()
+    AetherUtilitySystem._reset_singleton_for_tests()
+    Nexus._reset_singleton_for_tests()
+    Crystallizer._reset_singleton_for_tests()
+    aether = Aether()
+    Spellbook._aether = aether
+    Conduit._aether = aether
+    shutil.rmtree(cache_root, ignore_errors=True)
+
+    # ---- Pod 2: one fluent chain boots the whole world back. ----------
+    report = (
+        CrystallizerBootstrap()
+        .with_external_persistence_manager(
+            ExternalPersistenceManagerConfiguration()
+            .with_upload_handler(upload)
+            .with_download_handler(download)
+            .with_list_handler(list_ids)
+        )
+        .with_profile("default")
+        .bootstrap()
+    )
+
+    assert report["activated"] is True
+    assert report["cache_reload"] is None
+    assert checkpoint_id in report["remote_reload"]["inserted"]
+    assert report["restored_checkpoint_id"] == checkpoint_id
+    assert report["restore_report"]["status"] == "complete"
+    assert report["restore_report"]["built_counts"]["spellbook"] == 1
+    # The rebuilt pod re-recorded the same content-stable spell SHA, and
+    # the remote pull re-flushed the item into the fresh local cache.
+    assert Crystallizer().get_spell_crystal(spell_id).id == spell_id
+    assert (cache_root / "default" / (checkpoint_id + ".json")).is_file()
+
+
+def test_saved_conduit_formation_restores_directly_after_reboot(
+        cache_root,
+):
+    """
+    Purpose:
+        Prove the owner's formation story: a user likes a conduit
+        formation, saves it under THEIR name, the process dies, and a
+        fresh boot restores JUST that formation (book + conduit +
+        custody) - not the world.
+    Contract:
+        save_formation captures the conduit scope (spellbook included);
+        the analyzer pre-flights it clean; restore_formation on the
+        fresh boot rebuilds it with the engine's normal report; the
+        same content-stable spell SHA re-records.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If any leg of the formation lane diverges.
+    """
+    crystallizer = _activate_crystallizer()
+    book = _dynamic_book()
+    spell_id = book.bind(
+        spell=RestoreAlpha,
+        existence=Existence.unique,
+        permissions="create",
+    )
+    conduit = book.conjure(dynamic=True, name="keeper")
+    crystallizer.save_formation(
+        "my-keeper-formation",
+        conduit_id=conduit._id,
+        description="the formation I like",
+    )
+    assert crystallizer.list_formations() == ["my-keeper-formation"]
+    preflight = crystallizer.analyze_formation("my-keeper-formation")
+    assert preflight["verdict"] == "clean"
+
+    rebooted = _fresh_boot()
+    assert rebooted.list_formations() == ["my-keeper-formation"]
+    report = rebooted.restore_formation("my-keeper-formation")
+
+    assert report["status"] == "complete"
+    assert report["built_counts"]["spellbook"] == 1
+    assert report["built_counts"]["conduit"] == 1
+    assert report["built_counts"]["spell_active"] == 1
+    assert rebooted.get_spell_crystal(spell_id).id == spell_id
+
+
+def test_synthetic_rooted_spell_restores_across_the_boot_boundary(
+        cache_root,
+):
+    """
+    Purpose:
+        Prove loader chain M3 end to end: a spell whose bind target lives
+        in a SYNTHETIC module (no file anywhere) records its module
+        source, survives a simulated process death INCLUDING the module's
+        eviction from sys.modules, and restores - module world rebuilt
+        from the record, target re-bound with the same content-stable
+        SHA.
+    Contract:
+        The custody crystal carries synthetic_module_sources; the fresh
+        boot rebuilds the module (built_counts synthetic_module >= 1),
+        the bind hydrates, and the restored world re-records the SHA.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If any leg of the synthetic restore diverges.
+    """
+    import sys
+
+    from melder.crystallizer.synthetic_module import SyntheticModule
+
+    module_name = "m3_live_world"
+    synthetic_module = SyntheticModule(
+        module_name=module_name,
+        spell_crystal_id="m3-live-crystal",
+        source_text=(
+            "class M3LiveService:\n"
+            "    def __init__(self) -> None:\n"
+            "        self.alive = True\n"
+        ),
+        source_sha256="m3-live-sha",
+        binding_signature="m3-live-binding",
+    )
+    try:
+        synthetic_module.register_in_import_registry()
+        synthetic_module.publish_to_sys_modules()
+        synthetic_module.execute_source()
+        target = synthetic_module.__dict__["M3LiveService"]
+
+        crystallizer = _activate_crystallizer()
+        book = _dynamic_book()
+        spell_id = book.bind(
+            spell=target,
+            existence=Existence.unique,
+            permissions="create",
+        )
+        book.conjure(dynamic=True, name="root")
+        checkpoint_id = crystallizer.create_checkpoint()
+        crystallizer.flush_checkpoint(checkpoint_id)
+
+        # Process death: fresh singletons AND the synthetic module gone
+        # from sys.modules (a real new process has neither).
+        rebooted = _fresh_boot()
+        if not synthetic_module.cleaned:
+            synthetic_module.cleanup()
+        sys.modules.pop(module_name, None)
+
+        rebooted.reload_cached_checkpoint(checkpoint_id)
+        report = rebooted.load_checkpoint(checkpoint_id)
+
+        assert report["status"] == "complete"
+        assert report["built_counts"]["synthetic_module"] >= 1
+        assert report["built_counts"]["spell_active"] == 1
+        assert module_name in sys.modules
+        # Same content-derived SHA re-recorded by the rebuilt world.
+        assert rebooted.get_spell_crystal(spell_id).id == spell_id
+    finally:
+        if not synthetic_module.cleaned:
+            synthetic_module.cleanup()
+        sys.modules.pop(module_name, None)

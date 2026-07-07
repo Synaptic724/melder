@@ -511,8 +511,10 @@ def test_hydrate_replay_required_files_shortfall_and_returns_none():
 
 def test_hydrate_synthetic_root_files_loader_chain_shortfall():
     """
-    Contract: synthetic-rooted custody is reported until the loader chain
-    (parent M3/M5) lands.
+    Contract (updated for landed M3): synthetic-rooted custody WITHOUT
+    recorded module sources (pre-M3 seals) reports the honest pre-M3
+    shortfall; payloads WITH sources rebuild instead (covered by the M3
+    rebuild test below).
     """
     engine = _engine([_window([], {})])
     result = engine._hydrate_target(
@@ -521,7 +523,9 @@ def test_hydrate_synthetic_root_files_loader_chain_shortfall():
     )
     assert result is None
     shortfalls = engine._report.describe()["shortfalls"]
-    assert shortfalls[0]["reason"] == "synthetic_root_requires_loader_chain_m3"
+    assert shortfalls[0]["reason"] == (
+        "synthetic_root_recorded_without_sources_pre_m3"
+    )
     engine.cleanup()
 
 
@@ -618,4 +622,103 @@ def test_mutation_research_reports_in_order_never_silently():
         "mutation_research_state_recorded_not_restored_first_cut"
         in reasons
     )
+    engine.cleanup()
+
+
+def test_spell_crystal_harvests_synthetic_module_sources():
+    """
+    Contract (loader chain M3, capture side): a synthetic-rooted bind
+    records every reachable synthetic module's rebuildable truth -
+    source text, sha, identity metadata - in the custody crystal.
+    """
+    import sys
+
+    from melder.crystallizer.persistence.crystals.spell_crystal import (
+        SpellCrystal,
+    )
+    from melder.crystallizer.synthetic_module import SyntheticModule
+    from tests.mocks.crystallizer.spell_crystal_harness import DummySpell
+
+    module_name = "m3_capture_world"
+    module = SyntheticModule(
+        module_name=module_name,
+        spell_crystal_id="m3-capture-crystal",
+        source_text="class M3Target:\n    pass\n",
+        source_sha256="m3-capture-sha",
+        binding_signature="m3-capture-binding",
+    )
+    try:
+        module.register_in_import_registry()
+        module.publish_to_sys_modules()
+        module.execute_source()
+        target = module.__dict__["M3Target"]
+        crystal = SpellCrystal(DummySpell("m3-capture-spell", target))
+        snapshot = crystal.describe()
+        assert snapshot["root_module_kind"] == "synthetic_module"
+        recorded = snapshot["synthetic_module_sources"][module_name]
+        assert "class M3Target" in recorded["source_text"]
+        assert recorded["source_sha256"] == "m3-capture-sha"
+        assert recorded["is_package"] is False
+        crystal.cleanup()
+    finally:
+        if not module.cleaned:
+            module.cleanup()
+        sys.modules.pop(module_name, None)
+
+
+def test_hydrate_rebuilds_synthetic_world_and_teardown_unpublishes():
+    """
+    Contract (loader chain M3, replay side): a synthetic-rooted custody
+    payload rebuilds its recorded module world (register -> publish ->
+    execute), hydrates the target through the normal import lane, rides
+    the all-or-nothing stack, and teardown unpublishes it again.
+    """
+    import sys
+
+    module_name = "m3_rebuilt_world"
+    payload = _custody_payload("sha-m3")
+    payload["root_module_kind"] = "synthetic_module"
+    payload["root_module_name"] = module_name
+    payload["root_target_qualname"] = "M3Rebuilt"
+    payload["synthetic_module_sources"] = {
+        module_name: {
+            "source_text": "class M3Rebuilt:\n    pass\n",
+            "source_sha256": "m3-rebuilt-sha",
+            "binding_signature": "m3-rebuilt-binding",
+            "spell_crystal_id": "sha-m3",
+            "parent_name": None,
+            "is_package": False,
+        },
+    }
+    engine = _engine([_window([], {})])
+    try:
+        target = engine._hydrate_target("sha-m3", payload)
+        assert target is not None
+        assert target.__name__ == "M3Rebuilt"
+        assert module_name in sys.modules
+        assert engine._report.describe()["built_counts"][
+            "synthetic_module"
+        ] == 1
+        engine._teardown_built()
+        assert module_name not in sys.modules
+    finally:
+        sys.modules.pop(module_name, None)
+        engine.cleanup()
+
+
+def test_pre_m3_synthetic_payload_keeps_the_honest_shortfall():
+    """
+    Contract: custody sealed BEFORE the M3 capture (no
+    synthetic_module_sources key) reports the pre-M3 shortfall instead
+    of guessing at a rebuild.
+    """
+    payload = _custody_payload("sha-old")
+    payload["root_module_kind"] = "synthetic_module"
+    engine = _engine([_window([], {})])
+    assert engine._hydrate_target("sha-old", payload) is None
+    reasons = [
+        entry["reason"]
+        for entry in engine._report.describe()["shortfalls"]
+    ]
+    assert any("pre_m3" in reason for reason in reasons)
     engine.cleanup()
