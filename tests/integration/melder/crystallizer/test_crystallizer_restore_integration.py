@@ -590,4 +590,42 @@ def test_post_notch_selection_restores_without_an_extra_notch(cache_root):
     assert report["status"] == "complete"
     assert report["built_counts"]["spell_active"] == 1
     assert report["built_counts"]["spell_staged"] == 1
-    assert report["built_counts"].get("selection_notch") is None
+    assert report["built_counts"].get("selection_notch") is No
+
+def test_kit_round_trip_exports_imports_and_unfolds(cache_root):
+    """
+    Purpose:
+        Prove the whole kit lane: record a world, export the kit, carry it
+        THROUGH json (the wire form), reboot fresh, import, unfold.
+    Contract:
+        The imported chain verifies intact, load_checkpoint on the kit's
+        head restores the world, and the rebuilt book re-binds the same
+        content-stable spell SHA.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If any leg of the kit lane diverges.
+    """
+    import json
+
+    crystallizer = _activate_crystallizer()
+    book = _dynamic_book()
+    spell_id = book.bind(
+        spell=RestoreAlpha,
+        existence=Existence.unique,
+        permissions="create",
+    )
+    book.conjure(dynamic=True, name="root")
+    crystallizer.create_checkpoint()
+    kit = json.loads(json.dumps(crystallizer.export_kit()))
+    head_id = kit["manifest"]["checkpoint_ids"][-1]
+
+    rebooted = _fresh_boot()
+    summary = rebooted.import_kit(kit)
+    assert len(summary["inserted"]) == len(kit["items"])
+    report = rebooted.load_checkpoint(head_id)
+
+    assert report["status"] == "complete"
+    assert report["built_counts"]["spellbook"] == 1
+    assert report["built_counts"]["spell_active"] == 1
+    assert spell_id in report["identity_map"]
