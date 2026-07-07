@@ -1,1 +1,0 @@
-{"conduit_name":"source","sha256":"71abcad5e7af3136a9eaa31fc72004a371e8bef3a43a1b044c7f88a73dba4e70","spell_payloads":{"iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii":{"no_overrides":{"source":"no-transfer-rollback"},"overrides":{"source":"over-transfer-rollback"},"resolve_route_key":"transfer-rollback"}},"version":1}
