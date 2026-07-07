@@ -173,9 +173,11 @@ def test_subtree_eviction_through_the_facade_updates_checkpoint_truth():
     assert summary["inactive_spell_crystal_count"] == 0
     assert summary["frame_count"] == 1
     checkpoint_id = crystallizer.create_checkpoint()
+    # 2 = the subtree tombstone + the policy twin's per-seal re-emission
+    # (every snapshot is self-describing).
     assert (
         crystallizer.describe_checkpoint(checkpoint_id)["journal_entry_count"]
-        == 1
+        == 2
     )
 
 
@@ -244,9 +246,11 @@ def test_state_switches_ride_checkpoints_with_twins_retained():
     assert summary["has_nexus_crystal"] is True
     assert summary["nexus_state"] == "disabled"
     checkpoint_id = crystallizer.create_checkpoint()
+    # 2 = the nexus state flip + the policy twin's per-seal re-emission
+    # (every snapshot is self-describing).
     assert (
         crystallizer.describe_checkpoint(checkpoint_id)["journal_entry_count"]
-        == 1
+        == 2
     )
 
 
