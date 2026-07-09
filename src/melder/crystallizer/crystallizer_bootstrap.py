@@ -60,6 +60,7 @@ class CrystallizerBootstrap(Cleanable):
         "_manager_configuration",
         "_profile_name",
         "_pull_remote",
+        "_preflight_gate",
         "_consumed",
     ]
 
@@ -82,6 +83,11 @@ class CrystallizerBootstrap(Cleanable):
         ] = None
         self._profile_name: str = "default"
         self._pull_remote: bool = True
+        # Opt-in strictness: when True, a "blockers" verdict in the
+        # restore report's load-time preflight refuses the boot AFTER
+        # the all-or-nothing restore already protected the world (the
+        # engine never gates; the boot lane may).
+        self._preflight_gate: bool = False
         self._consumed: bool = False
 
     def cleanup(self) -> None:
@@ -111,6 +117,7 @@ class CrystallizerBootstrap(Cleanable):
         del self._manager_configuration
         del self._profile_name
         del self._pull_remote
+        del self._preflight_gate
         del self._consumed
 
     def with_crystallizer_configuration(
@@ -211,6 +218,34 @@ class CrystallizerBootstrap(Cleanable):
         self._pull_remote = enabled
         return self
 
+    def with_preflight_gate(self, enabled: bool) -> "CrystallizerBootstrap":
+        """
+        Set whether load-time preflight blockers refuse the boot.
+
+        Purpose:
+            The restore engine runs the analysis strategies AS it loads
+            (owner ruling) and files them in the report; this knob makes
+            a "blockers" verdict fatal to the boot instead of advisory.
+
+        Args:
+            enabled:
+                True refuses the boot on preflight blockers (the restore
+                itself completed or rolled back before the gate fires).
+
+        Returns:
+            CrystallizerBootstrap: This builder (fluent).
+
+        Raises:
+            RuntimeError: If the builder has been cleaned or consumed.
+            TypeError: If `enabled` is not a bool.
+        """
+        self.check_cleaned()
+        self._require_unconsumed()
+        if not isinstance(enabled, bool):
+            raise TypeError("preflight_gate must be a bool.")
+        self._preflight_gate = enabled
+        return self
+
     def bootstrap(self) -> Dict[str, object]:
         """
         Run the pod-boot flow and return the bootstrap report.
@@ -295,6 +330,23 @@ class CrystallizerBootstrap(Cleanable):
                 )
             restore_report = crystallizer.load_checkpoint(newest)
             restored_checkpoint_id = newest
+            if self._preflight_gate:
+                preflight = dict(restore_report.get("preflight", {}))
+                if str(preflight.get("verdict")) == "blockers":
+                    raise RuntimeError(
+                        "Bootstrap refused by the preflight gate: the "
+                        "load-time analysis found {0} blocker(s) for "
+                        "profile {1!r} (see the restore report's "
+                        "preflight findings). The restore itself "
+                        "honored all-or-nothing; the gate refuses to "
+                        "hand over a world with known-unbuildable "
+                        "elements.".format(
+                            dict(preflight.get("counts", {})).get(
+                                "blocker", 0
+                            ),
+                            self._profile_name,
+                        )
+                    )
         return {
             "activated": True,
             "profile_name": self._profile_name,

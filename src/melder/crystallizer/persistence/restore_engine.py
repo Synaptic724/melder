@@ -42,6 +42,7 @@ class RestoreReport(Cleanable):
         "_identity_map",
         "_status",
         "_failed_stage",
+        "_preflight",
     ]
 
     def __init__(self, profile_name: str, checkpoint_ids: List[str]) -> None:
@@ -75,6 +76,9 @@ class RestoreReport(Cleanable):
         self._identity_map: Dict[str, str] = {}
         self._status: str = "pending"
         self._failed_stage: Optional[str] = None
+        # Load-time strategy analysis (owner ruling: strategies run AS
+        # we load); attached by the engine after the fold, before replay.
+        self._preflight: Dict[str, object] = {}
 
     def cleanup(self) -> None:
         """
@@ -93,6 +97,31 @@ class RestoreReport(Cleanable):
         del self._identity_map
         del self._status
         del self._failed_stage
+        del self._preflight
+
+    def set_preflight(self, preflight_report: Dict[str, object]) -> None:
+        """
+        Attach the load-time strategy analysis to this report.
+
+        Purpose:
+            Owner ruling: analysis strategies run AS the world loads.
+            The engine folds the chain, runs the PersistenceAnalyzer
+            over the folded bundle, and files the result here so every
+            restore report carries its own pre-flight.
+
+        Args:
+            preflight_report:
+                The analyzer's detached {"findings", "counts",
+                "verdict"} report.
+
+        Returns:
+            None.
+
+        Raises:
+            RuntimeError: If the report has been cleaned.
+        """
+        self.check_cleaned()
+        self._preflight = dict(preflight_report)
 
     def record_built(self, kind: str) -> None:
         """
@@ -231,6 +260,7 @@ class RestoreReport(Cleanable):
             "built_counts": dict(self._built_counts),
             "shortfalls": [dict(entry) for entry in self._shortfalls],
             "identity_map": dict(self._identity_map),
+            "preflight": dict(self._preflight),
         }
 
 
@@ -420,6 +450,12 @@ class RestoreEngine(Cleanable):
             )
         self._consumed = True
         self._fold_chain()
+        # Owner ruling: analysis strategies run AS we load - the folded
+        # bundle pre-flights before any replay, and the findings ride
+        # the restore report ("preflight"). The engine never gates on
+        # them (all-or-nothing + shortfall honesty already protect the
+        # world); the bootstrap's preflight gate is the opt-in refusal.
+        self._report.set_preflight(self._run_preflight())
         stage = "fold"
         try:
             # Canonical configuration order (owner ruling):
@@ -453,6 +489,52 @@ class RestoreEngine(Cleanable):
             ) from error
         self._report.mark_complete()
         return self._report
+
+    def _run_preflight(self) -> Dict[str, object]:
+        """
+        Run the analysis strategies over the FOLDED bundle (load-time).
+
+        Contract:
+            - The bundle is the folded recorded truth (chain-wide), so
+              completeness findings are meaningful - unlike a single
+              delta window.
+            - Read-only: strategies never touch the folded stores or the
+              live runtime.
+
+        Returns:
+            Dict[str, object]:
+                The analyzer's {"findings", "counts", "verdict"} report.
+        """
+        # Lazy import mirrors the engine's runtime-surface import law.
+        from melder.crystallizer.persistence.analysis.persistence_analyzer import (
+            PersistenceAnalyzer,
+        )
+
+        bundle: Dict[str, Dict[str, Dict[str, object]]] = {
+            "frame": dict(self._frames),
+            "spellbook": dict(self._books),
+            "conduit": dict(self._conduits),
+            "spell_index": dict(self._indexes),
+            "contract": dict(self._contracts),
+            "cluster": dict(self._clusters),
+            "spell_crystal": {
+                **dict(self._custody_active),
+                **dict(self._custody_inactive),
+            },
+        }
+        if self._aether_payload is not None:
+            bundle["aether"] = {"root": dict(self._aether_payload)}
+        if self._crystallizer_payload is not None:
+            bundle["crystallizer"] = {
+                "root": dict(self._crystallizer_payload)
+            }
+        if self._nexus_payload is not None:
+            bundle["nexus"] = {"root": dict(self._nexus_payload)}
+        analyzer = PersistenceAnalyzer()
+        try:
+            return analyzer.analyze(bundle)
+        finally:
+            analyzer.cleanup()
 
     def _fold_chain(self) -> None:
         """

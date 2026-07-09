@@ -722,3 +722,32 @@ def test_pre_m3_synthetic_payload_keeps_the_honest_shortfall():
     ]
     assert any("pre_m3" in reason for reason in reasons)
     engine.cleanup()
+
+
+def test_restore_runs_the_preflight_strategies_at_load_time():
+    """
+    Contract (owner ruling): the analysis strategies run AS the world
+    loads - the folded bundle pre-flights after the fold, and every
+    restore report carries the "preflight" section (here: a dangling
+    link target folds into a warnings verdict on an otherwise empty
+    replay).
+    """
+    engine = _engine([_window(
+        [[1, "conduit", "cond-1"]],
+        {"conduit": {"cond-1": {
+            "conduit_id": "cond-1",
+            "spellbook_id": "book-gone",
+            "conduit_name": "root",
+            "policy_name": "default",
+            "dynamic": True,
+            "link_targets": ["cond-never-recorded"],
+        }}},
+    )])
+    report = engine.restore()
+    described = report.describe()
+    preflight = described["preflight"]
+    assert preflight["verdict"] == "warnings"
+    strategies = {row["strategy"] for row in preflight["findings"]}
+    assert "link_integrity" in strategies
+    report.cleanup()
+    engine.cleanup()

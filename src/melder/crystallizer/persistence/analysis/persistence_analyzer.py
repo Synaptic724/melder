@@ -4,17 +4,26 @@ from typing import ClassVar, Dict, List, Optional, Sequence
 from melder.__melder_registration_guard__ import (
     __melder_registration_guard__ as _mrg,
 )
+from melder.crystallizer.persistence.analysis.cluster_membership_strategy import (
+    ClusterMembershipStrategy,
+)
 from melder.crystallizer.persistence.analysis.configuration_loss_strategy import (
     ConfigurationLossStrategy,
 )
 from melder.crystallizer.persistence.analysis.contract_peer_strategy import (
     ContractPeerStrategy,
 )
+from melder.crystallizer.persistence.analysis.frame_posture_strategy import (
+    FramePostureStrategy,
+)
 from melder.crystallizer.persistence.analysis.hydration_strategy import (
     HydrationStrategy,
 )
 from melder.crystallizer.persistence.analysis.link_integrity_strategy import (
     LinkIntegrityStrategy,
+)
+from melder.crystallizer.persistence.analysis.synthetic_source_integrity_strategy import (
+    SyntheticSourceIntegrityStrategy,
 )
 from melder.crystallizer.persistence.analysis.persistence_analysis_strategy import (
     PersistenceAnalysisStrategy,
@@ -34,8 +43,12 @@ class PersistenceAnalyzer(Cleanable):
 
     Contract:
         - Default strategy set: link integrity, contract peers,
-          hydration, configuration loss; callers may supply their own
-          sequence (each a PersistenceAnalysisStrategy).
+          hydration, configuration loss, cluster membership, frame
+          posture, synthetic source integrity; callers may supply their
+          own sequence (each a PersistenceAnalysisStrategy).
+        - This same default set runs AT LOAD TIME inside the
+          RestoreEngine (owner ruling): every restore report carries a
+          "preflight" section from the folded bundle.
         - analyze() is read-only over the bundle and touches no live
           runtime objects; it can run before ANY activation.
         - Verdict semantics: "blockers" when any blocker row exists,
@@ -70,7 +83,8 @@ class PersistenceAnalyzer(Cleanable):
             strategies:
                 Optional explicit strategy sequence; None installs the
                 default set (link integrity, contract peers, hydration,
-                configuration loss).
+                configuration loss, cluster membership, frame posture,
+                synthetic source integrity).
 
         Returns:
             None.
@@ -84,6 +98,9 @@ class PersistenceAnalyzer(Cleanable):
                 ContractPeerStrategy(),
                 HydrationStrategy(),
                 ConfigurationLossStrategy(),
+                ClusterMembershipStrategy(),
+                FramePostureStrategy(),
+                SyntheticSourceIntegrityStrategy(),
             ]
         )
 
