@@ -127,6 +127,9 @@ def test_capability_room_surface_is_read_only() -> None:
         "research_impact",
         "research_module_graph",
         "research_source_drift",
+        "research_module",
+        "research_part",
+        "research_part_diff",
     )
     mutations = (
         "research_create_lane",
@@ -253,6 +256,16 @@ def test_codegen_room_foresight_loop() -> None:
         graph = commands.research_module_graph("sha-room-a")
         assert graph["local_importers"]["pkg.helper"] == ["pkg.root"]
 
+        dossier = commands.research_module("sha-room-a", "pkg.root")
+        assert dossier["source_kind"] == "synthetic"
+        assert dossier["local_importers"] == []
+        assert dossier["fingerprint"] == "sealed-print"
+
+        part = commands.research_part("sha-room-a", "cast")
+        assert part["found"] is True
+        assert part["kind"] == "function"
+        assert part["module_name"] == "pkg.root"
+
         drift = commands.research_source_drift()
         assert drift["affected_modules"] == ["pkg.root"]
 
@@ -341,5 +354,18 @@ def test_codegen_room_synthesis_loop() -> None:
         assert root.staged_ancestry == ["sha-base"]
         commands.research_clear_staged_ancestry()
         assert root.staged_ancestry is None
+
+        # Part-grain comparison (owner ruling: class diffs + their radius):
+        # base cast() vs donor cast() through recorded material only.
+        part_verdict = commands.research_part_diff(
+            "sha-base", "sha-donor", "cast",
+        )
+        assert part_verdict["left_found"] is True
+        assert part_verdict["right_found"] is True
+        assert part_verdict["identical"] is False
+        assert any(
+            "return 99" in line for line in part_verdict["unified_diff"]
+        )
+        assert part_verdict["impact"]["affected_modules"] == ["pkg.root"]
     finally:
         root._crystallizer = real_crystallizer

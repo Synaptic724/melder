@@ -1,4 +1,5 @@
 import ast
+import difflib
 import hashlib
 import threading
 from pathlib import Path
@@ -1119,13 +1120,22 @@ class MutationResearch(Cleanable):
             )
         payload = crystallizer.get_spell_crystal(spell_id).describe()
         sources: Dict[str, object] = {}
-        synthetic = payload.get("synthetic_module_sources")
-        if isinstance(synthetic, dict):
-            for module_name, custody_payload in synthetic.items():
-                if isinstance(custody_payload, dict):
-                    text = custody_payload.get("source_text")
-                    if isinstance(text, str) and text:
-                        sources[str(module_name)] = text
+        # BOTH recorded carriers feed comparison material (owner ruling
+        # 2026-07-11: diffs speak the FULL module, physical or synthetic):
+        # synthetic text first, user-retained text fills the gaps. The
+        # live disk NEVER feeds a diff - both sides of a version
+        # comparison would read the same present-day file and lie about
+        # both versions; absent text stays honest fingerprint-only rows.
+        for carrier_key in ("synthetic_module_sources", "user_module_sources"):
+            carrier = payload.get(carrier_key)
+            if isinstance(carrier, dict):
+                for module_name, custody_payload in carrier.items():
+                    if str(module_name) in sources:
+                        continue
+                    if isinstance(custody_payload, dict):
+                        text = custody_payload.get("source_text")
+                        if isinstance(text, str) and text:
+                            sources[str(module_name)] = text
         fingerprints = payload.get("physical_module_fingerprints")
         return {
             "spell_id": spell_id,
@@ -1253,7 +1263,10 @@ class MutationResearch(Cleanable):
             Dict[str, object]:
                 `{"source", "origin", "drifted", "text_unavailable"}` row.
         """
-        for carrier_key in ("synthetic_module_sources", "user_module_sources"):
+        for carrier_key, carrier_kind in (
+                ("synthetic_module_sources", "synthetic"),
+                ("user_module_sources", "user"),
+        ):
             carrier = payload.get(carrier_key)
             if isinstance(carrier, dict):
                 entry = carrier.get(module_name)
@@ -1263,6 +1276,7 @@ class MutationResearch(Cleanable):
                         return {
                             "source": text,
                             "origin": "recorded",
+                            "kind": carrier_kind,
                             "drifted": None,
                             "text_unavailable": False,
                         }
@@ -1292,12 +1306,14 @@ class MutationResearch(Cleanable):
                     return {
                         "source": text,
                         "origin": "live_disk",
+                        "kind": "live_disk",
                         "drifted": drifted,
                         "text_unavailable": False,
                     }
         return {
             "source": None,
             "origin": None,
+            "kind": None,
             "drifted": None,
             "text_unavailable": True,
         }
@@ -1505,6 +1521,354 @@ class MutationResearch(Cleanable):
         """
         self.check_cleaned()
         return self._require_live_custody().analyze_impact()
+
+    def module_view(
+            self,
+            spell_id: str,
+            module_name: str,
+    ) -> Dict[str, object]:
+        """
+        Return everything the crystal knows about one module in one call.
+
+        Purpose:
+            The crystal-well dossier (units-and-scales philosophy 4.1):
+            full source text labeled by kind (synthetic / user /
+            live_disk), sealed fingerprint, recorded path, local
+            dependency edges both ways, export surface, and drift - the
+            single call behind "give me the module data from synthetic or
+            physical modules".
+
+        Args:
+            spell_id:
+                Binding-signature SHA256 whose world carries the module.
+            module_name:
+                Module to gather.
+
+        Returns:
+            Dict[str, object]:
+                Dossier payload; a module outside the world answers
+                `unknown_module: True` honestly.
+
+        Raises:
+            ValueError:
+                If either argument is empty.
+            RuntimeError:
+                If the crystallizer is cleaned or inactive.
+            KeyError:
+                If no custody crystal exists for the identity.
+        """
+        self.check_cleaned()
+        if not isinstance(spell_id, str) or not spell_id:
+            raise ValueError("spell_id must be a non-empty string.")
+        if not isinstance(module_name, str) or not module_name:
+            raise ValueError("module_name must be a non-empty string.")
+        payload = self._require_live_custody().get_spell_crystal(
+            spell_id
+        ).describe()
+        targets = [str(name) for name in list(payload.get("module_targets", []))]
+        if module_name not in targets:
+            return {
+                "spell_id": spell_id,
+                "module_name": module_name,
+                "unknown_module": True,
+            }
+        row = self._resolve_module_source(payload, module_name)
+        dependency_map = dict(payload.get("module_to_direct_dependencies", {}))
+        direct = [
+            str(name) for name in list(dependency_map.get(module_name, []))
+        ]
+        importers = sorted(
+            str(importer)
+            for importer, imported in dependency_map.items()
+            if module_name in [str(name) for name in list(imported)]
+        )
+        fingerprints = payload.get("physical_module_fingerprints")
+        paths = payload.get("module_to_path")
+        exports = payload.get("export_surfaces")
+        return {
+            "spell_id": spell_id,
+            "module_name": module_name,
+            "unknown_module": False,
+            "source": row["source"],
+            "source_kind": row["kind"],
+            "drifted": row["drifted"],
+            "text_unavailable": row["text_unavailable"],
+            "fingerprint": (
+                fingerprints.get(module_name)
+                if isinstance(fingerprints, dict) else None
+            ),
+            "path": (
+                paths.get(module_name) if isinstance(paths, dict) else None
+            ),
+            "direct_dependencies": direct,
+            "local_importers": importers,
+            "export_surface": (
+                list(exports.get(module_name, []))
+                if isinstance(exports, dict) else []
+            ),
+        }
+
+    def part_view(
+            self,
+            spell_id: str,
+            part_name: str,
+            *,
+            kind: Optional[str] = None,
+            module_name: Optional[str] = None,
+    ) -> Dict[str, object]:
+        """
+        Return one named top-level part's text from a version's world.
+
+        Purpose:
+            The part-grain read: locate a function or class by name across
+            the version's resolvable module texts (recorded-first,
+            live-disk fallback - present-tense rules, like source_view)
+            and return its text, span, and carrying module.
+
+        Args:
+            spell_id:
+                Binding-signature SHA256 whose world to search.
+            part_name:
+                Top-level function/class name to locate.
+            kind:
+                Optional filter: "function" or "class".
+            module_name:
+                Optional single module to search.
+
+        Returns:
+            Dict[str, object]:
+                Found: `{"found": True, "module_name", "source_kind",
+                "drifted", "kind", "start_line", "end_line", "text"}`.
+                Missed: `{"found": False, "searched_modules",
+                "parse_errors"}` - honest, never raising on a miss.
+
+        Raises:
+            ValueError:
+                If arguments are empty or kind is unknown.
+            RuntimeError:
+                If the crystallizer is cleaned or inactive.
+            KeyError:
+                If no custody crystal exists for the identity.
+        """
+        self.check_cleaned()
+        if not isinstance(spell_id, str) or not spell_id:
+            raise ValueError("spell_id must be a non-empty string.")
+        if not isinstance(part_name, str) or not part_name:
+            raise ValueError("part_name must be a non-empty string.")
+        if kind is not None and kind not in ("function", "class"):
+            raise ValueError(
+                f"Unknown part kind '{kind}'. Known kinds: "
+                f"['class', 'function']."
+            )
+        payload = self._require_live_custody().get_spell_crystal(
+            spell_id
+        ).describe()
+        targets = [str(name) for name in list(payload.get("module_targets", []))]
+        if module_name is not None:
+            search_order = [module_name] if module_name in targets else []
+        else:
+            root_module = str(payload.get("root_module_name"))
+            search_order = (
+                [root_module] if root_module in targets else []
+            ) + sorted(name for name in targets if name != root_module)
+        synthesizer = self._get_synthesizer()
+        searched: List[str] = []
+        parse_errors: Dict[str, str] = {}
+        for candidate in search_order:
+            row = self._resolve_module_source(payload, candidate)
+            text = row["source"]
+            if not isinstance(text, str) or not text:
+                continue
+            searched.append(candidate)
+            try:
+                part = synthesizer.extract_part(
+                    text, part_name, kind=kind,
+                )
+            except ValueError as error:
+                parse_errors[candidate] = str(error)
+                continue
+            if part is not None:
+                part["found"] = True
+                part["spell_id"] = spell_id
+                part["module_name"] = candidate
+                part["source_kind"] = row["kind"]
+                part["drifted"] = row["drifted"]
+                return part
+        return {
+            "found": False,
+            "spell_id": spell_id,
+            "part_name": part_name,
+            "kind": kind,
+            "searched_modules": searched,
+            "parse_errors": parse_errors,
+        }
+
+    def part_diff(
+            self,
+            left_spell_id: str,
+            right_spell_id: str,
+            part_name: str,
+            *,
+            kind: Optional[str] = None,
+            module_name: Optional[str] = None,
+            set_name: str = "default",
+    ) -> Dict[str, object]:
+        """
+        Unified text diff of one named part between two versions.
+
+        Purpose:
+            The class/function-grain comparison the owner asked for -
+            WITH its blast radius. Part texts extract from RECORDED
+            material only (comparison law: the live disk would compare a
+            file with itself and lie about both versions); the radius
+            section is the carrying module's current blast radius joined
+            with research residency (impact stays module-grain per the
+            grain laws - a part's honest radius IS its module's radius).
+
+        Args:
+            left_spell_id:
+                Left version identity.
+            right_spell_id:
+                Right version identity.
+            part_name:
+                Top-level function/class name to compare.
+            kind:
+                Optional filter: "function" or "class".
+            module_name:
+                Optional single module to search on both sides.
+            set_name:
+                Research set for the impact residency join.
+
+        Returns:
+            Dict[str, object]:
+                `{"left_spell_id", "right_spell_id", "part_name",
+                "left_found", "right_found", "left_module",
+                "right_module", "left_kind", "right_kind", "identical",
+                "unified_diff", "impact"}` - absent sides answer honestly
+                (found flags), never raising.
+
+        Raises:
+            ValueError:
+                If identities/name are empty or kind is unknown.
+            RuntimeError:
+                If the crystallizer is cleaned or inactive.
+            KeyError:
+                If either identity has no custody crystal.
+        """
+        self.check_cleaned()
+        if not isinstance(left_spell_id, str) or not left_spell_id:
+            raise ValueError("left_spell_id must be a non-empty string.")
+        if not isinstance(right_spell_id, str) or not right_spell_id:
+            raise ValueError("right_spell_id must be a non-empty string.")
+        if not isinstance(part_name, str) or not part_name:
+            raise ValueError("part_name must be a non-empty string.")
+        if kind is not None and kind not in ("function", "class"):
+            raise ValueError(
+                f"Unknown part kind '{kind}'. Known kinds: "
+                f"['class', 'function']."
+            )
+        left_part = self._locate_recorded_part(
+            left_spell_id, part_name, kind=kind, module_name=module_name,
+        )
+        right_part = self._locate_recorded_part(
+            right_spell_id, part_name, kind=kind, module_name=module_name,
+        )
+        result: Dict[str, object] = {
+            "left_spell_id": left_spell_id,
+            "right_spell_id": right_spell_id,
+            "part_name": part_name,
+            "left_found": left_part is not None,
+            "right_found": right_part is not None,
+            "left_module": left_part["module_name"] if left_part else None,
+            "right_module": right_part["module_name"] if right_part else None,
+            "left_kind": left_part["kind"] if left_part else None,
+            "right_kind": right_part["kind"] if right_part else None,
+            "identical": None,
+            "unified_diff": None,
+            "impact": None,
+        }
+        if left_part is not None and right_part is not None:
+            identical = left_part["text"] == right_part["text"]
+            result["identical"] = identical
+            if not identical:
+                result["unified_diff"] = list(difflib.unified_diff(
+                    str(left_part["text"]).splitlines(),
+                    str(right_part["text"]).splitlines(),
+                    fromfile=f"left/{part_name}",
+                    tofile=f"right/{part_name}",
+                    lineterm="",
+                ))
+        impact_module = (
+            result["right_module"]
+            if result["right_module"] is not None
+            else result["left_module"]
+        )
+        if impact_module is not None:
+            result["impact"] = self.impact_view(
+                module_name=str(impact_module),
+                set_name=set_name,
+            )
+        return result
+
+    def _locate_recorded_part(
+            self,
+            spell_id: str,
+            part_name: str,
+            *,
+            kind: Optional[str],
+            module_name: Optional[str],
+    ) -> Optional[Dict[str, object]]:
+        """
+        Locate one part in one version's RECORDED material only.
+
+        Args:
+            spell_id:
+                Version identity to search.
+            part_name:
+                Part name to locate.
+            kind:
+                Optional kind filter.
+            module_name:
+                Optional single module to search.
+
+        Returns:
+            Optional[Dict[str, object]]:
+                Part payload plus `module_name`, or None (misses and
+                unparseable recorded modules skip quietly - the diff
+                verdict reports found flags honestly).
+        """
+        material = self._resolve_diff_material(spell_id)
+        sources = material["sources"]
+        if module_name is not None:
+            names = [module_name] if module_name in sources else []
+        else:
+            names = sorted(sources.keys())
+        synthesizer = self._get_synthesizer()
+        for candidate in names:
+            text = sources[candidate]
+            try:
+                part = synthesizer.extract_part(
+                    str(text), part_name, kind=kind,
+                )
+            except ValueError:
+                continue
+            if part is not None:
+                part["module_name"] = candidate
+                return part
+        return None
+
+    def _get_synthesizer(self) -> StructuralSynthesizer:
+        """
+        Return the lazily-owned synthesizer (DiffEngine precedent).
+
+        Returns:
+            StructuralSynthesizer:
+                The root-owned instance.
+        """
+        with self._lock:
+            if self._synthesizer is None:
+                self._synthesizer = StructuralSynthesizer()
+            return self._synthesizer
 
     def preview_candidate(
             self,

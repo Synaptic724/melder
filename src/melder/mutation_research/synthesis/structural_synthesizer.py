@@ -171,6 +171,74 @@ class StructuralSynthesizer(Cleanable):
             "selections": selections,
         }
 
+    def extract_part(
+            self,
+            source: str,
+            name: str,
+            *,
+            kind: Optional[str] = None,
+    ) -> Optional[Dict[str, object]]:
+        """
+        Return one named top-level part's text and span from one source.
+
+        Purpose:
+            The QUERY companion to synthesize(): part-grain reads
+            (part_view / part_diff) locate a function or class by name
+            without composing anything. Misses answer None (the caller
+            decides its own honesty posture); only unparseable source and
+            bad arguments refuse.
+
+        Args:
+            source:
+                Parseable Python source text.
+            name:
+                Top-level part name to locate.
+            kind:
+                Optional filter: "function" or "class"; both when omitted.
+
+        Returns:
+            Optional[Dict[str, object]]:
+                `{"name", "kind", "start_line", "end_line", "text"}`
+                (span one-based inclusive, decorators included), or None
+                when the source carries no such part.
+
+        Raises:
+            ValueError:
+                If source/name are empty, kind is unknown, or the source
+                does not parse (a query against broken text is loud - the
+                caller asked about structure that cannot be read).
+        """
+        self.check_cleaned()
+        if not isinstance(source, str) or not source:
+            raise ValueError("source must be a non-empty string.")
+        if not isinstance(name, str) or not name:
+            raise ValueError("name must be a non-empty string.")
+        if kind is not None and kind not in ("function", "class"):
+            raise ValueError(
+                f"Unknown part kind '{kind}'. Known kinds: "
+                f"['class', 'function']."
+            )
+        with self._lock:
+            error = self._parse_error("source", source)
+            if error is not None:
+                raise ValueError(
+                    f"source does not parse (line {error['line']}): "
+                    f"{error['message']}"
+                )
+            index = self._top_level_index(source)
+            kinds = (kind,) if kind is not None else ("function", "class")
+            for candidate_kind in kinds:
+                span = index.get((name, candidate_kind))
+                if span is not None:
+                    return {
+                        "name": name,
+                        "kind": candidate_kind,
+                        "start_line": span[0],
+                        "end_line": span[1],
+                        "text": self._segment(source, span),
+                    }
+        return None
+
     def _parse_error(
             self,
             side: str,

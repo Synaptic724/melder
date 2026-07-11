@@ -89,6 +89,9 @@ class CodegenCommandSystem(CommandSystem):
         "research_impact",
         "research_module_graph",
         "research_source_drift",
+        "research_module",
+        "research_part",
+        "research_part_diff",
         "research_preview",
         # Research synthesis (codegen-workshop composition)
         "research_synthesize",
@@ -1133,6 +1136,101 @@ class CodegenCommandSystem(CommandSystem):
         ), self._lock:
             return (
                 self._require_live_mutation_research().source_drift_view()
+            )
+
+    def research_module(
+            self,
+            spell_id: str,
+            module_name: str,
+    ) -> object:
+        """
+        Return the full crystal dossier for one module of one version.
+
+        Args:
+            spell_id: Binding-signature SHA256 whose world carries it.
+            module_name: Module to gather.
+
+        Returns:
+            object: Source (labeled synthetic/user/live_disk), fingerprint,
+                path, deps, local importers, export surface, drift.
+        """
+        self.check_cleaned()
+        with self._entered_command_action(
+                action_name="research_module",
+                frame_name=None,
+        ), self._lock:
+            return self._require_live_mutation_research().module_view(
+                spell_id,
+                module_name,
+            )
+
+    def research_part(
+            self,
+            spell_id: str,
+            part_name: str,
+            *,
+            kind: Optional[str] = None,
+            module_name: Optional[str] = None,
+    ) -> object:
+        """
+        Return one named top-level function/class's text from a version.
+
+        Args:
+            spell_id: Binding-signature SHA256 whose world to search.
+            part_name: Top-level part name.
+            kind: Optional "function" or "class" filter.
+            module_name: Optional single module to search.
+
+        Returns:
+            object: Part text + span + carrying module, or an honest miss.
+        """
+        self.check_cleaned()
+        with self._entered_command_action(
+                action_name="research_part",
+                frame_name=None,
+        ), self._lock:
+            return self._require_live_mutation_research().part_view(
+                spell_id,
+                part_name,
+                kind=kind,
+                module_name=module_name,
+            )
+
+    def research_part_diff(
+            self,
+            left_spell_id: str,
+            right_spell_id: str,
+            part_name: str,
+            *,
+            kind: Optional[str] = None,
+            module_name: Optional[str] = None,
+    ) -> object:
+        """
+        Unified text diff of one named part between two versions + radius.
+
+        Args:
+            left_spell_id: Left version identity.
+            right_spell_id: Right version identity.
+            part_name: Top-level part name to compare.
+            kind: Optional "function" or "class" filter.
+            module_name: Optional single module to search on both sides.
+
+        Returns:
+            object: Per-side found flags/modules/kinds, unified diff of the
+                part text (recorded material only), and the carrying
+                module's residency-joined blast radius.
+        """
+        self.check_cleaned()
+        with self._entered_command_action(
+                action_name="research_part_diff",
+                frame_name=None,
+        ), self._lock:
+            return self._require_live_mutation_research().part_diff(
+                left_spell_id,
+                right_spell_id,
+                part_name,
+                kind=kind,
+                module_name=module_name,
             )
 
     def research_preview(

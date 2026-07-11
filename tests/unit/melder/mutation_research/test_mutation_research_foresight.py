@@ -511,6 +511,130 @@ def test_synthesize_candidate_honest_and_loud_arms() -> None:
     assert root.staged_ancestry is None
 
 
+def test_diff_material_drinks_user_retained_text() -> None:
+    """
+    Verify the comparison law fix: user-retained (physical) module text
+    enters diff material alongside synthetic text, so a user-module-backed
+    spell diffs as a REAL text diff instead of fingerprint-only rows.
+    """
+    aether = _mock_aether()
+    root = _activated_root(aether)
+    payloads = {
+        "sha-old": {
+            "synthetic_module_sources": {},
+            "user_module_sources": {
+                "pkg.physical": {"source_text": "VALUE = 1\n"},
+            },
+            "physical_module_fingerprints": {"pkg.physical": "print-old"},
+        },
+        "sha-new": {
+            "synthetic_module_sources": {},
+            "user_module_sources": {
+                "pkg.physical": {"source_text": "VALUE = 2\n"},
+            },
+            "physical_module_fingerprints": {"pkg.physical": "print-new"},
+        },
+    }
+
+    def _get(spell_id):
+        crystal = MagicMock()
+        crystal.describe.return_value = payloads[spell_id]
+        return crystal
+
+    aether._crystallizer.get_spell_crystal.side_effect = _get
+
+    verdict = root.diff_research("sha-old", "sha-new")
+
+    assert verdict["result"]["changed_modules"] == ["pkg.physical"]
+    row = verdict["result"]["module_diffs"]["pkg.physical"]
+    assert row["text_unavailable"] is False
+    assert any("VALUE = 2" in line for line in row["unified_diff"])
+
+
+def test_module_view_dossier_and_honest_miss() -> None:
+    """
+    Verify the crystal-well dossier: one call answers text (labeled by
+    kind), fingerprint, path, deps both ways, and export surface; a module
+    outside the world answers unknown_module honestly.
+    """
+    aether = _mock_aether()
+    root = _activated_root(aether)
+    _install_crystal(aether, _custody_payload())
+
+    dossier = root.module_view("sha-1", "pkg.root")
+
+    assert dossier["unknown_module"] is False
+    assert dossier["source"] == ROOT_SOURCE
+    assert dossier["source_kind"] == "synthetic"
+    assert dossier["direct_dependencies"] == ["pkg.helper"]
+    assert dossier["local_importers"] == []
+    assert dossier["export_surface"] == ["cast"]
+    assert dossier["fingerprint"] is not None
+
+    helper = root.module_view("sha-1", "pkg.helper")
+    assert helper["local_importers"] == ["pkg.root"]
+    assert helper["text_unavailable"] is True
+
+    missing = root.module_view("sha-1", "pkg.elsewhere")
+    assert missing["unknown_module"] is True
+
+
+def test_part_view_locates_and_misses_honestly() -> None:
+    """
+    Verify the part-grain read: a named function resolves with its span,
+    carrying module, and source kind; a kind-filtered miss answers
+    found=False with the searched modules listed - never raising.
+    """
+    aether = _mock_aether()
+    root = _activated_root(aether)
+    _install_crystal(aether, _custody_payload())
+
+    part = root.part_view("sha-1", "cast")
+    assert part["found"] is True
+    assert part["kind"] == "function"
+    assert part["module_name"] == "pkg.root"
+    assert part["source_kind"] == "synthetic"
+    assert "def cast():" in part["text"]
+
+    miss = root.part_view("sha-1", "cast", kind="class")
+    assert miss["found"] is False
+    assert "pkg.root" in miss["searched_modules"]
+
+    with pytest.raises(ValueError, match="Known kinds"):
+        root.part_view("sha-1", "cast", kind="method")
+
+
+def test_part_diff_reports_change_and_module_radius() -> None:
+    """
+    Verify the class/function-grain comparison: recorded part texts diff
+    between versions, the verdict carries per-side truth, and the radius
+    section is the carrying module's residency-joined impact. A part
+    absent on one side answers honestly.
+    """
+    aether = _two_world_aether()
+    root = _activated_root(aether)
+
+    verdict = root.part_diff("sha-base", "sha-donor", "cast")
+
+    assert verdict["left_found"] is True
+    assert verdict["right_found"] is True
+    assert verdict["left_module"] == "pkg.root"
+    assert verdict["identical"] is False
+    assert any(
+        "return 99" in line for line in verdict["unified_diff"]
+    )
+    assert verdict["impact"]["affected_modules"] == ["pkg.root"]
+
+    # 'fresh' exists only in the donor: honest one-sided verdict, radius
+    # still centered on the side that carries it.
+    one_sided = root.part_diff("sha-base", "sha-donor", "fresh")
+    assert one_sided["left_found"] is False
+    assert one_sided["right_found"] is True
+    assert one_sided["identical"] is None
+    assert one_sided["unified_diff"] is None
+    assert one_sided["impact"] is not None
+
+
 def test_lane_type_enforcement_propagates_from_configuration() -> None:
     """
     Verify the configured posture reaches every set: armed at activation,

@@ -138,6 +138,44 @@ def test_synthesize_parse_errors_answer_honestly() -> None:
     synthesizer.cleanup()
 
 
+def test_extract_part_locates_spans_with_decorators() -> None:
+    """
+    Verify the query verb: named parts resolve with kind, one-based span
+    (decorators included), and exact text; misses answer None.
+    """
+    synthesizer = StructuralSynthesizer()
+
+    fresh = synthesizer.extract_part(DONOR, "fresh")
+    assert fresh["kind"] == "function"
+    assert fresh["start_line"] == 4  # the @staticmethod line
+    assert fresh["text"].startswith("@staticmethod")
+
+    widget = synthesizer.extract_part(DONOR, "Widget", kind="class")
+    assert widget["kind"] == "class"
+    assert "size = 2" in widget["text"]
+
+    assert synthesizer.extract_part(DONOR, "missing") is None
+    assert synthesizer.extract_part(DONOR, "fresh", kind="class") is None
+    synthesizer.cleanup()
+
+
+def test_extract_part_refuses_bad_queries() -> None:
+    """
+    Verify loud arms: unknown kind, empty arguments, and unparseable
+    source all refuse (a query against unreadable structure is an error,
+    not a miss).
+    """
+    synthesizer = StructuralSynthesizer()
+
+    with pytest.raises(ValueError, match="Known kinds"):
+        synthesizer.extract_part(DONOR, "cast", kind="method")
+    with pytest.raises(ValueError, match="name"):
+        synthesizer.extract_part(DONOR, "")
+    with pytest.raises(ValueError, match="does not parse"):
+        synthesizer.extract_part("def broken(:\n", "cast")
+    synthesizer.cleanup()
+
+
 def test_synthesize_cleanup_guards_dispatch() -> None:
     """
     Verify the cleaned synthesizer refuses further work (Cleanable law).
