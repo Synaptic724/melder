@@ -437,3 +437,27 @@ def test_delete_cached_item_handles_legacy_flat_layout(cache_root):
     assert "01LEGACY" in deleted_path
     assert cache.list_cached_item_ids() == []
     cache.cleanup()
+
+
+def test_bootstrap_formation_reload_fluent_contract():
+    """
+    Contract:
+        with_formation_reload is fluent (returns self), rejects
+        non-bool input, and refuses after cleanup - the mesh-aware boot
+        knob behaves exactly like its with_pull_remote sibling. The
+        report-key behavior itself rides the pod-death integration
+        lane on the owner's tree run.
+    """
+    from melder.crystallizer.crystal_loader_system.bootstrap_loader import (
+        CrystallizerBootstrap,
+    )
+    builder = CrystallizerBootstrap()
+    assert builder.with_formation_reload(False) is builder
+    assert builder.with_formation_reload(True) is builder
+    with pytest.raises(TypeError, match="formation_reload"):
+        builder.with_formation_reload("yes")
+    builder.cleanup()
+    fresh = CrystallizerBootstrap()
+    fresh.cleanup()
+    with pytest.raises(RuntimeError):
+        fresh.with_formation_reload(True)

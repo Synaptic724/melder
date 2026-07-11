@@ -60,6 +60,7 @@ class CrystallizerBootstrap(Cleanable):
         "_manager_configuration",
         "_profile_name",
         "_pull_remote",
+        "_reload_formations",
         "_preflight_gate",
         "_consumed",
     ]
@@ -83,6 +84,10 @@ class CrystallizerBootstrap(Cleanable):
         ] = None
         self._profile_name: str = "default"
         self._pull_remote: bool = True
+        # Mesh-aware boot (asset CRUD completion, 2026-07-11): formation
+        # FILES pull back beside the checkpoint history; mirrors
+        # _pull_remote's default-on-when-a-manager-is-attached posture.
+        self._reload_formations: bool = True
         # Opt-in strictness: when True, a "blockers" verdict in the
         # restore report's load-time preflight refuses the boot AFTER
         # the all-or-nothing restore already protected the world (the
@@ -117,6 +122,7 @@ class CrystallizerBootstrap(Cleanable):
         del self._manager_configuration
         del self._profile_name
         del self._pull_remote
+        del self._reload_formations
         del self._preflight_gate
         del self._consumed
 
@@ -218,6 +224,44 @@ class CrystallizerBootstrap(Cleanable):
         self._pull_remote = enabled
         return self
 
+    def with_formation_reload(
+            self,
+            enabled: bool,
+    ) -> "CrystallizerBootstrap":
+        """
+        Set whether bootstrap pulls remote FORMATIONS, and return `self`.
+
+        Purpose:
+            Mesh-aware boot (asset CRUD completion, 2026-07-11): a pod
+            that rebuilds from the user's DB gets its named formation
+            slices back beside the checkpoint history, so the
+            restore-a-slice verbs work immediately after boot.
+
+        Contract:
+            - Runs only when a manager is attached (like the checkpoint
+              pull); requires the generic fetch/list lanes and tolerates
+              a mesh with no formations (empty reload summary).
+            - Default is True, mirroring with_pull_remote's posture.
+
+        Args:
+            enabled:
+                False skips the formation pull even when a manager is
+                attached.
+
+        Returns:
+            CrystallizerBootstrap: This builder (fluent).
+
+        Raises:
+            RuntimeError: If the builder has been cleaned or consumed.
+            TypeError: If `enabled` is not a bool.
+        """
+        self.check_cleaned()
+        self._require_unconsumed()
+        if not isinstance(enabled, bool):
+            raise TypeError("formation_reload must be a bool.")
+        self._reload_formations = enabled
+        return self
+
     def with_preflight_gate(self, enabled: bool) -> "CrystallizerBootstrap":
         """
         Accepted no-op knob: blocker refusal is standard admission now.
@@ -262,9 +306,12 @@ class CrystallizerBootstrap(Cleanable):
             4. Pull the profile's REMOTE history when enabled and a
                manager is attached; re-flush pulled ids so the local
                cache holds them.
-            5. Verify the chain: "broken" REFUSES loudly; anything else
+            5. Pull the profile's REMOTE formations (mesh-aware boot;
+               default-on with a manager, with_formation_reload(False)
+               skips) so slice restores work on the rebuilt pod.
+            6. Verify the chain: "broken" REFUSES loudly; anything else
                rides the report.
-            6. Load the MOST RECENT checkpoint (last ULID in the
+            7. Load the MOST RECENT checkpoint (last ULID in the
                profile's ledger); a history-less pod boots an empty
                world (restored_checkpoint_id None).
 
@@ -274,6 +321,7 @@ class CrystallizerBootstrap(Cleanable):
                  "profile_name": str,
                  "cache_reload": summary | None,
                  "remote_reload": summary | None,
+                 "formation_reload": summary | None,
                  "chain_report": report | None,
                  "restored_checkpoint_id": str | None,
                  "restore_report": report | None}.
@@ -313,6 +361,17 @@ class CrystallizerBootstrap(Cleanable):
             # them remotely; user handlers must be upsert-safe).
             for checkpoint_id in list(remote_reload["inserted"]):
                 crystallizer.flush_checkpoint(checkpoint_id)
+        formation_reload: Optional[Dict[str, object]] = None
+        if (
+                self._manager_configuration is not None
+                and self._reload_formations
+        ):
+            # Mesh-aware boot: named formation slices land as local
+            # FILES beside the pulled checkpoints, so slice restores
+            # work immediately on the rebuilt pod.
+            formation_reload = crystallizer.reload_formations_from_external(
+                self._profile_name
+            )
         chain_report: Optional[Dict[str, object]] = None
         restored_checkpoint_id: Optional[str] = None
         restore_report: Optional[Dict[str, object]] = None
@@ -343,6 +402,7 @@ class CrystallizerBootstrap(Cleanable):
             "profile_name": self._profile_name,
             "cache_reload": cache_reload,
             "remote_reload": remote_reload,
+            "formation_reload": formation_reload,
             "chain_report": chain_report,
             "restored_checkpoint_id": restored_checkpoint_id,
             "restore_report": restore_report,
