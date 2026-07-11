@@ -329,22 +329,27 @@ class CrystalAnalysisResult(Cleanable):
             provenance_payload: Mapping[str, object],
     ) -> None:
         """
-        Record which installed distribution provides one module.
+        Record one module's third-party identity payload.
 
         Purpose:
-            Distribution provenance (finishing slice 1, 2026-07-11):
-            always-on identity capture for site-package modules, so a
-            restored world can diff its dependency environment against
-            the sealed one (the third-party sibling of source drift).
+            Dependency-environment provenance (finishing slices 1+2,
+            2026-07-11): always-on identity capture so a restored world
+            can diff its environment against the sealed one (the
+            third-party sibling of source drift). Site-package modules
+            carry distribution identity; compiled-extension leaves
+            carry file identity.
 
         Args:
             module_name:
-                Canonical site-package module name.
+                Canonical module name (site_package or unknown-kind
+                binary leaf).
             provenance_payload:
-                Value-only payload (distribution_name,
-                distribution_version, all_distributions, top_level) as
-                resolved by SitePackageCustodyStrategy
-                .harvest_provenance.
+                Value-only payload: {distribution_name,
+                distribution_version, all_distributions, top_level}
+                from SitePackageCustodyStrategy.harvest_provenance, OR
+                {binary_path, binary_sha256, top_level} from
+                BinaryUnknownCustodyStrategy.harvest_binary_identity -
+                consumers distinguish by keys.
 
         Raises:
             RuntimeError: If the result was cleaned.
@@ -550,14 +555,15 @@ class CrystalAnalysisResult(Cleanable):
     @property
     def distribution_provenance(self) -> Dict[str, Dict[str, object]]:
         """
-        Return the site-package distribution provenance map.
+        Return the dependency-environment provenance map.
 
         Returns:
             Dict[str, Dict[str, object]]:
-                Detached map of module name to {distribution_name,
-                distribution_version, all_distributions, top_level};
-                empty when no site-package module resolved to an
-                installed distribution.
+                Detached map of module name to its identity payload -
+                distribution rows ({distribution_name, ...}) for
+                site-package modules, file-identity rows ({binary_path,
+                binary_sha256, ...}) for compiled leaves; empty when
+                nothing resolved.
         """
         self.check_cleaned()
         with self._lock:

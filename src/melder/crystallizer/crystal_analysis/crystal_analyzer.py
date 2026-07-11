@@ -542,6 +542,19 @@ class CrystalAnalyzer(Cleanable):
                         current_name,
                         provenance_payload,
                     )
+            # Finishing slice 2 (2026-07-11): compiled-extension leaves
+            # land their FILE identity (path + bytes sha) in the same
+            # provenance channel - consumers distinguish by keys.
+            elif custody.kind == "unknown":
+                binary_payload = custody.harvest_binary_identity(
+                    module_name=current_name,
+                    module_path=current_path,
+                )
+                if binary_payload is not None:
+                    result.record_distribution_provenance(
+                        current_name,
+                        binary_payload,
+                    )
             result.record_module_target(
                 module_name=current_name,
                 module_path=(
