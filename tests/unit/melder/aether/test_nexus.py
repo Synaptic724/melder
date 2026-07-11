@@ -2088,6 +2088,7 @@ def test_codegen_command_system_lists_selected_runtime_helpers_only() -> None:
         "research_source_drift",
         "research_module",
         "research_part",
+        "research_parts",
         "research_part_diff",
         "research_preview",
         "research_synthesize",

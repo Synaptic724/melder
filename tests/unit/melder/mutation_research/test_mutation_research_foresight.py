@@ -332,6 +332,9 @@ def test_preview_candidate_diffs_and_radiuses_against_current() -> None:
     assert "pkg.root" in source_diff["result"]["changed_modules"]
     structural = preview["diff"]["structural"]
     assert structural["strategy"] == "structural"
+    parts = preview["diff"]["parts"]
+    assert parts["strategy"] == "parts"
+    assert "pkg.root" in parts["result"]["changed_modules"]
     assert preview["impact"]["affected_modules"] == ["pkg.root"]
     assert "sha-1" in preview["impact"]["research"]
     aether._crystallizer.analyze_impact.assert_called_once_with(
@@ -602,6 +605,50 @@ def test_part_view_locates_and_misses_honestly() -> None:
 
     with pytest.raises(ValueError, match="Known kinds"):
         root.part_view("sha-1", "cast", kind="method")
+
+
+def test_parts_view_inventories_class_code_per_module() -> None:
+    """
+    Verify the class-code inventory (the agent's grain choice on one
+    version): every top-level part per module with its full text, per-
+    module honesty for text-less modules, and the honest unknown-module
+    arm.
+    """
+    aether = _mock_aether()
+    root = _activated_root(aether)
+    _install_crystal(aether, _custody_payload())
+
+    inventory = root.parts_view("sha-1")
+
+    root_entry = inventory["modules"]["pkg.root"]
+    assert root_entry["source_kind"] == "synthetic"
+    assert [row["name"] for row in root_entry["parts"]] == ["cast"]
+    assert "def cast():" in root_entry["parts"][0]["text"]
+    helper_entry = inventory["modules"]["pkg.helper"]
+    assert helper_entry["text_unavailable"] is True
+    assert helper_entry["parts"] == []
+
+    missing = root.parts_view("sha-1", module_name="pkg.elsewhere")
+    assert missing["unknown_module"] is True
+
+
+def test_diff_research_offers_parts_grain() -> None:
+    """
+    Verify the grain choice on whole-version diffs: strategy="parts"
+    answers per-class/function code (added parts WITH text, changed parts
+    as unified diffs) instead of whole-module transport.
+    """
+    aether = _two_world_aether()
+    root = _activated_root(aether)
+
+    verdict = root.diff_research("sha-base", "sha-donor", strategy="parts")
+
+    report = verdict["result"]["module_reports"]["pkg.root"]
+    assert {row["name"] for row in report["added_parts"]} == {"fresh"}
+    changed = {row["name"]: row for row in report["changed_parts"]}
+    assert any(
+        "return 99" in line for line in changed["cast"]["unified_diff"]
+    )
 
 
 def test_part_diff_reports_change_and_module_radius() -> None:

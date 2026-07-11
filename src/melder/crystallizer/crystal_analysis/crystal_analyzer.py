@@ -382,6 +382,15 @@ class CrystalAnalyzer(Cleanable):
                 payload.get("user_module_sources", {})
         ).items():
             result.record_user_module_source(module_name, source_payload)
+        # Finishing slice 1: re-fold distribution provenance (absent in
+        # pre-slice payloads - .get keeps the map empty; refold parity
+        # with the live walk is the MR re-analysis seam's law).
+        for module_name, provenance_payload in dict(
+                payload.get("distribution_provenance", {})
+        ).items():
+            result.record_distribution_provenance(
+                module_name, provenance_payload
+            )
         for module_name, fingerprint in dict(
                 payload.get("physical_module_fingerprints", {})
         ).items():
@@ -518,6 +527,20 @@ class CrystalAnalyzer(Cleanable):
                     result.record_user_module_source(
                         current_name,
                         user_payload,
+                    )
+            # Finishing slice 1 (2026-07-11): ALWAYS-ON distribution
+            # provenance for site-package modules - identity capture,
+            # never retention, no config knob (a sealed world must know
+            # which dependency versions it was built against).
+            if custody.kind == "site_package":
+                provenance_payload = custody.harvest_provenance(
+                    module_name=current_name,
+                    module_path=current_path,
+                )
+                if provenance_payload is not None:
+                    result.record_distribution_provenance(
+                        current_name,
+                        provenance_payload,
                     )
             result.record_module_target(
                 module_name=current_name,

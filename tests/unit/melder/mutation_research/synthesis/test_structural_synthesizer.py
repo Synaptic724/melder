@@ -159,6 +159,28 @@ def test_extract_part_locates_spans_with_decorators() -> None:
     synthesizer.cleanup()
 
 
+def test_list_parts_inventories_in_source_order() -> None:
+    """
+    Verify the inventory companion: every top-level part with code, in
+    source order, decorator spans included; unreadable source is loud.
+    """
+    synthesizer = StructuralSynthesizer()
+
+    rows = synthesizer.list_parts(DONOR)
+
+    assert [(row["name"], row["kind"]) for row in rows] == [
+        ("cast", "function"),
+        ("fresh", "function"),
+        ("Widget", "class"),
+        ("Gadget", "class"),
+    ]
+    assert rows[1]["text"].startswith("@staticmethod")
+
+    with pytest.raises(ValueError, match="does not parse"):
+        synthesizer.list_parts("def broken(:\n")
+    synthesizer.cleanup()
+
+
 def test_extract_part_refuses_bad_queries() -> None:
     """
     Verify loud arms: unknown kind, empty arguments, and unparseable

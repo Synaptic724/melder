@@ -1703,6 +1703,83 @@ class MutationResearch(Cleanable):
             "parse_errors": parse_errors,
         }
 
+    def parts_view(
+            self,
+            spell_id: str,
+            *,
+            module_name: Optional[str] = None,
+    ) -> Dict[str, object]:
+        """
+        Return every top-level part of a version's world, with code.
+
+        Purpose:
+            The class-code inventory (owner ruling 2026-07-11: the agent
+            chooses the grain - module text OR class code): all top-level
+            functions/classes per module, each with its full text and
+            span, without the agent knowing any names up front.
+
+        Args:
+            spell_id:
+                Binding-signature SHA256 whose world to inventory.
+            module_name:
+                Optional single module to inventory.
+
+        Returns:
+            Dict[str, object]:
+                `{"spell_id", "root_module", "modules": {name:
+                {"source_kind", "drifted", "parts": [rows] |
+                "parse_error" | "text_unavailable"}}, "unknown_module"?}`
+                - per-module honesty, never raising on misses.
+
+        Raises:
+            ValueError:
+                If spell_id is empty.
+            RuntimeError:
+                If the crystallizer is cleaned or inactive.
+            KeyError:
+                If no custody crystal exists for the identity.
+        """
+        self.check_cleaned()
+        if not isinstance(spell_id, str) or not spell_id:
+            raise ValueError("spell_id must be a non-empty string.")
+        payload = self._require_live_custody().get_spell_crystal(
+            spell_id
+        ).describe()
+        targets = [str(name) for name in list(payload.get("module_targets", []))]
+        if module_name is not None:
+            if str(module_name) not in targets:
+                return {
+                    "spell_id": spell_id,
+                    "root_module": str(payload.get("root_module_name")),
+                    "unknown_module": True,
+                    "modules": {},
+                }
+            targets = [str(module_name)]
+        synthesizer = self._get_synthesizer()
+        modules: Dict[str, Dict[str, object]] = {}
+        for name in targets:
+            row = self._resolve_module_source(payload, name)
+            module_entry: Dict[str, object] = {
+                "source_kind": row["kind"],
+                "drifted": row["drifted"],
+            }
+            text = row["source"]
+            if not isinstance(text, str) or not text:
+                module_entry["text_unavailable"] = True
+                module_entry["parts"] = []
+            else:
+                try:
+                    module_entry["parts"] = synthesizer.list_parts(text)
+                except ValueError as error:
+                    module_entry["parse_error"] = str(error)
+                    module_entry["parts"] = []
+            modules[name] = module_entry
+        return {
+            "spell_id": spell_id,
+            "root_module": str(payload.get("root_module_name")),
+            "modules": modules,
+        }
+
     def part_diff(
             self,
             left_spell_id: str,
@@ -1968,6 +2045,9 @@ class MutationResearch(Cleanable):
                 ),
                 "structural": engine.diff_materials(
                     left_material, right_material, strategy="structural",
+                ),
+                "parts": engine.diff_materials(
+                    left_material, right_material, strategy="parts",
                 ),
             }
         if target_module is not None:

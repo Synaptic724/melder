@@ -1010,6 +1010,11 @@ class SpellCrystal(Cleanable):
                 "user_module_sources": analysis_payload[
                     "user_module_sources"
                 ],
+                # Finishing slice 1 (2026-07-11): always-on site-package
+                # distribution provenance (additive; consumers use .get).
+                "distribution_provenance": analysis_payload.get(
+                    "distribution_provenance", {}
+                ),
                 "user_source_targets": analysis_payload["user_source_targets"],
                 "site_package_targets": analysis_payload["site_package_targets"],
                 "unknown_targets": analysis_payload["unknown_targets"],

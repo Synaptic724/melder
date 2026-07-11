@@ -58,6 +58,7 @@ class CrystalAnalysisResult(Cleanable):
         "_synthetic_module_targets",
         "_synthetic_module_sources",
         "_user_module_sources",
+        "_distribution_provenance",
         "_user_source_targets",
         "_site_package_targets",
         "_unknown_targets",
@@ -103,6 +104,9 @@ class CrystalAnalysisResult(Cleanable):
         # S2 physical custody (opt-in): retained user-module source
         # payloads; empty when retention is off or no user modules walked.
         self._user_module_sources: Dict[str, Dict[str, object]] = {}
+        # Always-on distribution provenance for site-package modules
+        # (finishing slice 1): module -> {distribution_name, ...}.
+        self._distribution_provenance: Dict[str, Dict[str, object]] = {}
         # Per-module lookup maps.
         self._module_to_path: Dict[str, str] = {}
         self._module_to_kind: Dict[str, str] = {}
@@ -145,6 +149,7 @@ class CrystalAnalysisResult(Cleanable):
             del self._synthetic_module_targets
             del self._synthetic_module_sources
             del self._user_module_sources
+            del self._distribution_provenance
             del self._user_source_targets
             del self._site_package_targets
             del self._unknown_targets
@@ -317,6 +322,41 @@ class CrystalAnalysisResult(Cleanable):
         self.check_cleaned()
         with self._lock:
             self._user_module_sources[module_name] = dict(source_payload)
+
+    def record_distribution_provenance(
+            self,
+            module_name: str,
+            provenance_payload: Mapping[str, object],
+    ) -> None:
+        """
+        Record which installed distribution provides one module.
+
+        Purpose:
+            Distribution provenance (finishing slice 1, 2026-07-11):
+            always-on identity capture for site-package modules, so a
+            restored world can diff its dependency environment against
+            the sealed one (the third-party sibling of source drift).
+
+        Args:
+            module_name:
+                Canonical site-package module name.
+            provenance_payload:
+                Value-only payload (distribution_name,
+                distribution_version, all_distributions, top_level) as
+                resolved by SitePackageCustodyStrategy
+                .harvest_provenance.
+
+        Raises:
+            RuntimeError: If the result was cleaned.
+
+        Returns:
+            None.
+        """
+        self.check_cleaned()
+        with self._lock:
+            self._distribution_provenance[module_name] = dict(
+                provenance_payload
+            )
 
     def record_physical_fingerprint(
             self,
@@ -505,6 +545,25 @@ class CrystalAnalysisResult(Cleanable):
             return {
                 name: dict(payload)
                 for name, payload in self._user_module_sources.items()
+            }
+
+    @property
+    def distribution_provenance(self) -> Dict[str, Dict[str, object]]:
+        """
+        Return the site-package distribution provenance map.
+
+        Returns:
+            Dict[str, Dict[str, object]]:
+                Detached map of module name to {distribution_name,
+                distribution_version, all_distributions, top_level};
+                empty when no site-package module resolved to an
+                installed distribution.
+        """
+        self.check_cleaned()
+        with self._lock:
+            return {
+                name: dict(payload)
+                for name, payload in self._distribution_provenance.items()
             }
 
     @property
@@ -711,6 +770,12 @@ class CrystalAnalysisResult(Cleanable):
                 "user_module_sources": {
                     name: dict(payload)
                     for name, payload in self._user_module_sources.items()
+                },
+                # Finishing slice 1 (2026-07-11): always-on site-package
+                # distribution provenance (additive; consumers use .get).
+                "distribution_provenance": {
+                    name: dict(payload)
+                    for name, payload in self._distribution_provenance.items()
                 },
                 "user_source_targets": list(self._user_source_targets),
                 "site_package_targets": list(self._site_package_targets),

@@ -238,9 +238,12 @@ class CrystallizerBootstrap(Cleanable):
             restore-a-slice verbs work immediately after boot.
 
         Contract:
-            - Runs only when a manager is attached (like the checkpoint
-              pull); requires the generic fetch/list lanes and tolerates
-              a mesh with no formations (empty reload summary).
+            - Runs only when a manager is attached AND its configuration
+              carries the generic fetch + list-units lanes; legacy-only
+              managers (upload/download/list trio) have no formation
+              transport, so the step SKIPS silently (report key None)
+              rather than tripping the generic lanes' loud-refusal.
+            - Tolerates a mesh with no formations (empty summary).
             - Default is True, mirroring with_pull_remote's posture.
 
         Args:
@@ -307,8 +310,10 @@ class CrystallizerBootstrap(Cleanable):
                manager is attached; re-flush pulled ids so the local
                cache holds them.
             5. Pull the profile's REMOTE formations (mesh-aware boot;
-               default-on with a manager, with_formation_reload(False)
-               skips) so slice restores work on the rebuilt pod.
+               default-on when the attached manager carries the generic
+               fetch+list lanes - legacy-only managers skip silently;
+               with_formation_reload(False) also skips) so slice
+               restores work on the rebuilt pod.
             6. Verify the chain: "broken" REFUSES loudly; anything else
                rides the report.
             7. Load the MOST RECENT checkpoint (last ULID in the
@@ -365,6 +370,14 @@ class CrystallizerBootstrap(Cleanable):
         if (
                 self._manager_configuration is not None
                 and self._reload_formations
+                # Capability gate (triage 2026-07-11): formations ride
+                # the GENERIC lanes only. Legacy-only managers (the
+                # upload/download/list trio, no quartet) are legal and
+                # carry checkpoints fine - they simply have no formation
+                # transport, so the step SKIPS instead of tripping the
+                # generic lanes' deliberate loud-refusal.
+                and self._manager_configuration.list_units_handler is not None
+                and self._manager_configuration.fetch_handler is not None
         ):
             # Mesh-aware boot: named formation slices land as local
             # FILES beside the pulled checkpoints, so slice restores

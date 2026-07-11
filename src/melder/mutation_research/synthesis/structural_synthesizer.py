@@ -239,6 +239,52 @@ class StructuralSynthesizer(Cleanable):
                     }
         return None
 
+    def list_parts(self, source: str) -> List[Dict[str, object]]:
+        """
+        Return every top-level part of one source, with code.
+
+        Purpose:
+            The inventory companion to extract_part(): "show me all the
+            class/function code of this text" without knowing names.
+
+        Args:
+            source:
+                Parseable Python source text.
+
+        Returns:
+            List[Dict[str, object]]:
+                `{"name", "kind", "start_line", "end_line", "text"}` rows
+                in source order (decorators included in spans).
+
+        Raises:
+            ValueError:
+                If source is empty or does not parse (loud - an inventory
+                of unreadable structure is an error, not an empty list).
+        """
+        self.check_cleaned()
+        if not isinstance(source, str) or not source:
+            raise ValueError("source must be a non-empty string.")
+        with self._lock:
+            error = self._parse_error("source", source)
+            if error is not None:
+                raise ValueError(
+                    f"source does not parse (line {error['line']}): "
+                    f"{error['message']}"
+                )
+            index = self._top_level_index(source)
+            rows = [
+                {
+                    "name": name,
+                    "kind": kind,
+                    "start_line": span[0],
+                    "end_line": span[1],
+                    "text": self._segment(source, span),
+                }
+                for (name, kind), span in index.items()
+            ]
+        rows.sort(key=lambda row: row["start_line"])
+        return rows
+
     def _parse_error(
             self,
             side: str,

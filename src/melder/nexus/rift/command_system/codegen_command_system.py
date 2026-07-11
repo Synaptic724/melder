@@ -91,6 +91,7 @@ class CodegenCommandSystem(CommandSystem):
         "research_source_drift",
         "research_module",
         "research_part",
+        "research_parts",
         "research_part_diff",
         "research_preview",
         # Research synthesis (codegen-workshop composition)
@@ -811,7 +812,9 @@ class CodegenCommandSystem(CommandSystem):
             left_spell_id: Left version identity.
             right_spell_id: Right version identity.
             strategy: Registered diff strategy ("structural" default here -
-                the room's reasoning layer; "source" for text transport).
+                the room's reasoning layer; "source" for whole-module text;
+                "parts" for per-class/function code diffs - the agent's
+                grain choice).
 
         Returns:
             object: Detached diff verdict.
@@ -1230,6 +1233,33 @@ class CodegenCommandSystem(CommandSystem):
                 right_spell_id,
                 part_name,
                 kind=kind,
+                module_name=module_name,
+            )
+
+    def research_parts(
+            self,
+            spell_id: str,
+            *,
+            module_name: Optional[str] = None,
+    ) -> object:
+        """
+        Return every top-level class/function of a version, with code.
+
+        Args:
+            spell_id: Binding-signature SHA256 whose world to inventory.
+            module_name: Optional single module to inventory.
+
+        Returns:
+            object: Per-module part rows (name/kind/span/text) with
+                per-module honesty (text_unavailable / parse_error).
+        """
+        self.check_cleaned()
+        with self._entered_command_action(
+                action_name="research_parts",
+                frame_name=None,
+        ), self._lock:
+            return self._require_live_mutation_research().parts_view(
+                spell_id,
                 module_name=module_name,
             )
 

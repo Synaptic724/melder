@@ -43,11 +43,12 @@ def _materials():
 
 def test_engine_registers_default_strategy_family() -> None:
     """
-    Verify the built-in family is present without registration calls.
+    Verify the built-in family is present without registration calls
+    (parts = the class-code grain, owner ruling 2026-07-11).
     """
     engine = DiffEngine(_resolver_for(_materials()))
 
-    assert engine.list_strategy_names() == ["source", "structural"]
+    assert engine.list_strategy_names() == ["parts", "source", "structural"]
     engine.cleanup()
 
 

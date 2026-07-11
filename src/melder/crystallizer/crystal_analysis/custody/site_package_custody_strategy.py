@@ -4,15 +4,17 @@ Custody strategy for site-package (installed distribution) modules.
 Site-package classification is path-driven: configured site roots first,
 then the historical `site-packages` / `dist-packages` path-text fallback.
 Source is still read for fact analysis (the walk descends through installed
-packages), but this class makes NO fingerprint custody claim in the first
-cut - distribution name/version provenance is the future env-layer decision
-(gap map section 1.3 / 3).
+packages), but this class makes NO fingerprint custody claim (S1 law).
+Distribution name/version provenance - formerly "the future env-layer
+decision" (gap map section 1.3 / 3) - landed 2026-07-11 as the
+harvest_provenance verb (finishing slice 1): identity capture via
+importlib.metadata, never retention.
 
 Lane: EPIC-2026-07-09-crystallizer-subsystem-decomposition, story S1.
 """
 
 from pathlib import Path
-from typing import Any, Optional, Tuple
+from typing import Any, Dict, Optional, Tuple
 
 from melder.crystallizer.crystal_analysis.custody.source_custody_strategy import (
     SourceCustodyStrategy,
@@ -159,3 +161,74 @@ class SitePackageCustodyStrategy(SourceCustodyStrategy):
             Optional[str]: None always.
         """
         return None
+
+    def harvest_provenance(
+            self,
+            *,
+            module_name: str,
+            module_path: Optional[Path],
+    ) -> Optional[Dict[str, object]]:
+        """
+        Resolve which installed distribution provides one module.
+
+        Purpose:
+            Distribution provenance (finishing slice 1, 2026-07-11):
+            a restored world can say WHICH dependency versions the
+            sealed world was built against. This retires the "future
+            env-layer decision" note in the module docstring - the
+            provenance lane is this verb.
+
+        Contract:
+            - Identity capture only, never retention: this is a
+              SEPARATE verb from harvest_payload, whose seam stays
+              retention-only by law.
+            - Resolution walks importlib.metadata
+              packages_distributions() from the module's TOP-LEVEL
+              name; the version comes from the first mapped
+              distribution. Multi-distribution top-levels (namespace
+              packages) report every mapped name honestly.
+            - Honest None when the top-level maps to no distribution
+              (vendored trees, path-hacked imports) or metadata raises.
+
+        Args:
+            module_name:
+                Canonical module name being walked.
+            module_path:
+                Physical module path (unused; resolution is
+                metadata-driven, the path already classified custody).
+
+        Returns:
+            Optional[Dict[str, object]]:
+                {"distribution_name": str, "distribution_version":
+                Optional[str], "all_distributions": List[str],
+                "top_level": str} or None when unresolvable.
+
+        Raises:
+            RuntimeError: If the strategy has been cleaned.
+        """
+        self.check_cleaned()
+        top_level = module_name.split(".", 1)[0]
+        try:
+            import importlib.metadata as importlib_metadata
+            mapped = importlib_metadata.packages_distributions().get(
+                top_level
+            )
+            if not mapped:
+                return None
+            distribution_name = str(mapped[0])
+            try:
+                distribution_version: Optional[str] = (
+                    importlib_metadata.version(distribution_name)
+                )
+            except importlib_metadata.PackageNotFoundError:
+                distribution_version = None
+            return {
+                "distribution_name": distribution_name,
+                "distribution_version": distribution_version,
+                "all_distributions": [str(name) for name in mapped],
+                "top_level": top_level,
+            }
+        except Exception:
+            # Best-effort by contract: provenance must never break a
+            # bind-time walk - unresolvable metadata is an honest None.
+            return None

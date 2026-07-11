@@ -129,6 +129,7 @@ def test_capability_room_surface_is_read_only() -> None:
         "research_source_drift",
         "research_module",
         "research_part",
+        "research_parts",
         "research_part_diff",
     )
     mutations = (
@@ -266,6 +267,11 @@ def test_codegen_room_foresight_loop() -> None:
         assert part["kind"] == "function"
         assert part["module_name"] == "pkg.root"
 
+        inventory = commands.research_parts("sha-room-a")
+        root_parts = inventory["modules"]["pkg.root"]["parts"]
+        assert [row["name"] for row in root_parts] == ["cast"]
+        assert "def cast():" in root_parts[0]["text"]
+
         drift = commands.research_source_drift()
         assert drift["affected_modules"] == ["pkg.root"]
 
@@ -367,5 +373,19 @@ def test_codegen_room_synthesis_loop() -> None:
             "return 99" in line for line in part_verdict["unified_diff"]
         )
         assert part_verdict["impact"]["affected_modules"] == ["pkg.root"]
+
+        # Grain choice on the whole-version diff (owner ruling): the agent
+        # picks class grain via strategy="parts" and sees every part's code.
+        parts_verdict = commands.research_diff(
+            "sha-base", "sha-donor", strategy="parts",
+        )
+        donor_report = parts_verdict["result"]["module_reports"]["pkg.root"]
+        assert {row["name"] for row in donor_report["added_parts"]} == {
+            "fresh",
+        }
+        changed_names = {
+            row["name"] for row in donor_report["changed_parts"]
+        }
+        assert "cast" in changed_names
     finally:
         root._crystallizer = real_crystallizer

@@ -2,6 +2,9 @@ import threading
 from typing import Callable, Dict, List, Optional
 
 from melder.mutation_research.diff.diff_strategy import DiffStrategy
+from melder.mutation_research.diff.strategies.part_diff_strategy import (
+    PartDiffStrategy,
+)
 from melder.mutation_research.diff.strategies.source_diff_strategy import (
     SourceDiffStrategy,
 )
@@ -27,10 +30,12 @@ class DiffEngine(Cleanable):
         - `material_resolver(spell_id)` returns the detached material
           payload `{"spell_id", "sources", "fingerprints"}`; resolver
           errors propagate untouched (unknown identities stay loud).
-        - `SourceDiffStrategy` (text transport) and `StructuralDiffStrategy`
-          (AST reasoning layer) register by default; further strategies
-          extend the family via `register_strategy()` (open/closed - the
-          engine never changes to gain one).
+        - `SourceDiffStrategy` (whole-module text), `StructuralDiffStrategy`
+          (AST shape reports), and `PartDiffStrategy` (per-class/function
+          code diffs - the agent's grain choice, owner ruling 2026-07-11)
+          register by default; further strategies extend the family via
+          `register_strategy()` (open/closed - the engine never changes to
+          gain one).
         - Duplicate strategy names are refused; resolution failures name the
           known strategies.
         - Verdicts are detached payloads stamped with both identities and
@@ -83,6 +88,7 @@ class DiffEngine(Cleanable):
         if register_defaults:
             self.register_strategy(SourceDiffStrategy())
             self.register_strategy(StructuralDiffStrategy())
+            self.register_strategy(PartDiffStrategy())
 
     def cleanup(self) -> None:
         """
