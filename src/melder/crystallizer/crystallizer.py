@@ -2121,8 +2121,9 @@ class Crystallizer(Cleanable):
             Dict[str, object]: The graft record, ready for graft_index.
 
         Raises:
-            RuntimeError: If cleaned, not active, no fetch lane, or the
-                record's version MAJOR is newer than this melder reads.
+            RuntimeError: If cleaned, not active, or no fetch lane.
+            ValueError: If the record's version MAJOR is newer than this
+                melder reads (the reader-gate law).
             KeyError: If the remote store has no such graft.
         """
         self.check_cleaned()

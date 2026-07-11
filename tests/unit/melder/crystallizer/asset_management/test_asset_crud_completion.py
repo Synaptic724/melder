@@ -269,7 +269,10 @@ def test_fetch_index_graft_gates_newer_major(asset_system):
         "default",
         json.dumps({RecordVersion.KEY: "99.0.0", "index_id": "01NEW"}),
     )
-    with pytest.raises(RuntimeError):
+    # check_readable's contract is ValueError (the reader-gate law; same
+    # as from_cached_item) - the first draft asserted RuntimeError from
+    # a wrong docstring on fetch_index_graft, fixed together.
+    with pytest.raises(ValueError, match="99.0.0"):
         system.fetch_index_graft("01NEW")
 
 

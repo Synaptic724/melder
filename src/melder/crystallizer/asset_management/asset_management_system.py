@@ -827,9 +827,10 @@ class AssetManagementSystem(Cleanable):
             Dict[str, object]: The graft record, ready for graft_index.
 
         Raises:
-            RuntimeError: If cleaned, no manager/fetch lane, or the
-                payload's record_version MAJOR is newer than this
-                melder can read.
+            RuntimeError: If cleaned or no manager/fetch lane attached.
+            ValueError: If the payload's record_version MAJOR is newer
+                than this melder can read (RecordVersion.check_readable's
+                contract - the reader-gate law).
             KeyError: If the remote store has no such graft.
         """
         self.check_cleaned()
