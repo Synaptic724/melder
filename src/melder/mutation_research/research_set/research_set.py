@@ -489,23 +489,52 @@ class ResearchSet(Cleanable):
             raise ValueError("campaign must be a non-empty string.")
         with self._lock:
             nodes: List[Dict[str, object]] = []
-            involved: set = set()
-            for lane_id in sorted(self._lanes_by_id.keys()):
-                lane = self._lanes_by_id[lane_id]
-                for node in lane.nodes():
-                    if node.campaign == campaign:
-                        node_payload = node.describe()
-                        node_payload["lane_id"] = lane.lane_id
-                        node_payload["lane_name"] = lane.name
-                        nodes.append(node_payload)
-                        involved.add(lane.name)
             transitions: List[Dict[str, object]] = []
+            involved: set = set()
+            # Journal order IS the campaign's story: declaration events
+            # sequence the nodes deterministically (lane iteration would
+            # tie-break same-millisecond ULIDs on their random component -
+            # the owner-run full-tree flake of 2026-07-11).
             for entry in self._journal.entries():
-                if entry.campaign == campaign:
-                    transitions.append(entry.describe())
-                    lane = self._lanes_by_id.get(entry.lane_id)
-                    if lane is not None:
-                        involved.add(lane.name)
+                if entry.campaign != campaign:
+                    continue
+                transitions.append(entry.describe())
+                entry_lane = self._lanes_by_id.get(entry.lane_id)
+                if entry_lane is not None:
+                    involved.add(entry_lane.name)
+                if entry.act not in (
+                        TransitionAct.registered, TransitionAct.staged,
+                ):
+                    continue
+                spell_sha = entry.to_sha
+                holder_id = (
+                    self._residence.residence_of(spell_sha)
+                    if spell_sha
+                    else None
+                )
+                holder = (
+                    self._lanes_by_id.get(holder_id)
+                    if holder_id is not None
+                    else None
+                )
+                if holder is not None and holder.has_node(spell_sha):
+                    node_payload = holder.get_node(spell_sha).describe()
+                    node_payload["lane_id"] = holder.lane_id
+                    node_payload["lane_name"] = holder.name
+                    nodes.append(node_payload)
+                    involved.add(holder.name)
+                else:
+                    # Journaled but absent from the CURRENT organization
+                    # (e.g. a network restore rewound past the declaration);
+                    # report honestly instead of hiding the event.
+                    nodes.append(
+                        {
+                            "spell_sha": spell_sha,
+                            "lane_id": None,
+                            "lane_name": None,
+                            "missing_from_current_organization": True,
+                        }
+                    )
             return {
                 "campaign": campaign,
                 "nodes": nodes,
