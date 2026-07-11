@@ -1000,6 +1000,75 @@ class ResearchSet(Cleanable):
             metadata=metadata,
         )
 
+    def group_history(
+            self,
+            group_id: str,
+    ) -> Dict[str, object]:
+        """
+        Return everything the journal knows about one subsystem area.
+
+        Purpose:
+            The temporal composition read ("track changes in a larger
+            area to see what happened"): every journal event that touches
+            the composition's OWN lane (the subsystem timeline), any
+            pinned member identity, or any lane a pinned member resides
+            in - in journal order, campaign stamps intact.
+
+        Args:
+            group_id:
+                Composition identity to gather around.
+
+        Returns:
+            Dict[str, object]:
+                `{"group_id", "lane_id", "member_spell_ids",
+                "watched_lane_ids", "entries"}` - entries in journal
+                order.
+
+        Raises:
+            RuntimeError:
+                If the identity is unknown, or resident but a spell
+                version.
+        """
+        self.check_cleaned()
+        with self._lock:
+            lane_id = self._residence.residence_of(group_id)
+            if lane_id is None:
+                raise RuntimeError(
+                    f"Composition '{group_id}' is not resident in "
+                    f"research set '{self._name}'."
+                )
+            node = self._lanes_by_id[lane_id].get_node(group_id)
+            if not isinstance(node, GroupedResearchNode):
+                raise RuntimeError(
+                    f"Identity '{group_id}' is a spell version, not a "
+                    f"composition; group_history gathers "
+                    f"GroupedResearchNodes only."
+                )
+            members = set(node.member_spell_ids)
+            watched_lanes = {lane_id}
+            for member in members:
+                member_lane = self._residence.residence_of(member)
+                if member_lane is not None:
+                    watched_lanes.add(member_lane)
+            entries = [
+                entry
+                for entry in self._journal.describe()["entries"]
+                if (
+                    entry.get("lane_id") in watched_lanes
+                    or entry.get("to_spell_id") in members
+                    or entry.get("from_spell_id") in members
+                    or entry.get("to_spell_id") == group_id
+                    or entry.get("from_spell_id") == group_id
+                )
+            ]
+            return {
+                "group_id": group_id,
+                "lane_id": lane_id,
+                "member_spell_ids": sorted(members),
+                "watched_lane_ids": sorted(watched_lanes),
+                "entries": entries,
+            }
+
     def record_world_entry(
             self,
             spell_id: str,

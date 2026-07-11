@@ -1006,6 +1006,10 @@ class MutationResearch(Cleanable):
             "frame_name": frame_name,
             "index_id": index_id,
             "in_custody": in_custody,
+            # Reverse lift: which CURRENT compositions pin this spell.
+            "pinned_by_compositions": self.compositions_of(
+                spell_id, set_name=set_name,
+            ),
         }
 
     def _locate_live_membership(
@@ -1418,6 +1422,24 @@ class MutationResearch(Cleanable):
             str(sha) for sha in list(radius.get("affected_spells", []))
         ]
         radius["research"] = self._residency_join(affected, set_name)
+        # Composition lift (units-and-scales law: the crossing move rises
+        # to the highest rung): which CURRENT subsystems this radius
+        # touches.
+        affected_set = set(affected)
+        research_set = self.research_set(set_name)
+        affected_compositions: List[Dict[str, object]] = []
+        for tip_node in self._current_compositions(set_name):
+            shared = sorted(
+                set(tip_node.member_spell_ids) & affected_set
+            )
+            if shared:
+                tip_lane_id = research_set.residence_of(tip_node.group_id)
+                affected_compositions.append({
+                    "group_id": tip_node.group_id,
+                    "lane_name": research_set.get_lane(tip_lane_id).name,
+                    "shared_members": shared,
+                })
+        radius["affected_compositions"] = affected_compositions
         return radius
 
     def _residency_join(
@@ -2474,6 +2496,220 @@ class MutationResearch(Cleanable):
             "behind_count": behind_count,
         }
 
+    def _current_compositions(
+            self,
+            set_name: str = "default",
+    ) -> List["GroupedResearchNode"]:
+        """
+        Return every lane TIP that is a composition (current subsystems).
+
+        Contract:
+            - Tips only: historical compositions are history (walk the
+              lane); the CURRENT composition of a subsystem is its tip.
+
+        Args:
+            set_name:
+                Research set to scan.
+
+        Returns:
+            List[GroupedResearchNode]:
+                Tip compositions across all lanes.
+        """
+        research_set = self.research_set(set_name)
+        tips: List["GroupedResearchNode"] = []
+        for lane_name in research_set.lane_names():
+            lane = research_set.get_lane(lane_name)
+            tip = lane.tip_spell_id
+            if tip is None or not lane.has_node(tip):
+                continue
+            tip_node = lane.get_node(tip)
+            if isinstance(tip_node, GroupedResearchNode):
+                tips.append(tip_node)
+        return tips
+
+    def compositions_of(
+            self,
+            spell_id: str,
+            *,
+            set_name: str = "default",
+    ) -> List[Dict[str, object]]:
+        """
+        Return the current compositions pinning one spell (reverse lift).
+
+        Args:
+            spell_id:
+                Member identity to look up.
+            set_name:
+                Research set to scan.
+
+        Returns:
+            List[Dict[str, object]]:
+                `{"group_id", "lane_name"}` rows for every lane-tip
+                composition whose roster pins the identity.
+        """
+        self.check_cleaned()
+        if not isinstance(spell_id, str) or not spell_id:
+            raise ValueError("spell_id must be a non-empty string.")
+        research_set = self.research_set(set_name)
+        rows: List[Dict[str, object]] = []
+        for tip_node in self._current_compositions(set_name):
+            if spell_id in tip_node.member_spell_ids:
+                lane_id = research_set.residence_of(tip_node.group_id)
+                lane = research_set.get_lane(lane_id)
+                rows.append({
+                    "group_id": tip_node.group_id,
+                    "lane_name": lane.name,
+                })
+        return rows
+
+    def group_footprint_view(
+            self,
+            group_id: str,
+            *,
+            set_name: str = "default",
+    ) -> Dict[str, object]:
+        """
+        Return one composition's physical shadow (module footprint).
+
+        Purpose:
+            The union of the pinned members' recorded module worlds -
+            derived at read time, never stored (stored footprints would
+            rot as compositions evolve). The per-module member map exposes
+            SHARED matter: modules carried by more than one member are
+            where the subsystem physically couples to itself.
+
+        Args:
+            group_id:
+                Composition identity to shadow.
+            set_name:
+                Research set to resolve within.
+
+        Returns:
+            Dict[str, object]:
+                `{"group_id", "modules", "module_members":
+                {module: [members]}, "shared_modules",
+                "unknown_custody_members"}` - members without a custody
+                crystal report honestly instead of raising (the
+                composition is informational; its members may predate
+                custody).
+
+        Raises:
+            RuntimeError:
+                If the identity is unknown/not a composition, or the
+                crystallizer is cleaned or inactive.
+        """
+        self.check_cleaned()
+        node = self._locate_group_node(group_id, set_name)
+        crystallizer = self._require_live_custody()
+        module_members: Dict[str, List[str]] = {}
+        unknown_members: List[str] = []
+        for member in node.member_spell_ids:
+            try:
+                payload = crystallizer.get_spell_crystal(member).describe()
+            except Exception:
+                unknown_members.append(member)
+                continue
+            for module_name in list(payload.get("module_targets", [])):
+                module_members.setdefault(
+                    str(module_name), [],
+                ).append(member)
+        return {
+            "group_id": node.group_id,
+            "modules": sorted(module_members.keys()),
+            "module_members": module_members,
+            "shared_modules": sorted(
+                module_name
+                for module_name, members in module_members.items()
+                if len(members) > 1
+            ),
+            "unknown_custody_members": unknown_members,
+        }
+
+    def group_drift_view(
+            self,
+            group_id: str,
+            *,
+            set_name: str = "default",
+    ) -> Dict[str, object]:
+        """
+        Return recorded-vs-disk drift filtered to one composition's shadow.
+
+        Purpose:
+            "What is already broken in THIS area": the full custody drift
+            report (sealed fingerprints re-hashed against the live disk)
+            narrowed to the composition's module footprint, with counts
+            recomputed over the narrowed set so the numbers describe the
+            subsystem, not the world.
+
+        Args:
+            group_id:
+                Composition identity to check.
+            set_name:
+                Research set to resolve within.
+
+        Returns:
+            Dict[str, object]:
+                `{"group_id", "statuses": {module: status}, "radii":
+                {module: radius}, "counts": {status: n},
+                "footprint_size"}`.
+
+        Raises:
+            RuntimeError:
+                If the identity is unknown/not a composition, or the
+                crystallizer is cleaned or inactive.
+        """
+        self.check_cleaned()
+        footprint = self.group_footprint_view(group_id, set_name=set_name)
+        modules = set(footprint["modules"])
+        report = self._require_live_custody().analyze_impact()
+        drift = report.get("drift") if isinstance(report, dict) else None
+        statuses_all = (
+            drift.get("statuses") if isinstance(drift, dict) else None
+        )
+        radii_all = drift.get("radii") if isinstance(drift, dict) else None
+        statuses: Dict[str, str] = {}
+        counts: Dict[str, int] = {}
+        if isinstance(statuses_all, dict):
+            for module_name, status in statuses_all.items():
+                if str(module_name) in modules:
+                    statuses[str(module_name)] = str(status)
+                    counts[str(status)] = counts.get(str(status), 0) + 1
+        radii: Dict[str, object] = {}
+        if isinstance(radii_all, dict):
+            for module_name, radius in radii_all.items():
+                if str(module_name) in modules:
+                    radii[str(module_name)] = radius
+        return {
+            "group_id": footprint["group_id"],
+            "statuses": statuses,
+            "radii": radii,
+            "counts": counts,
+            "footprint_size": len(modules),
+        }
+
+    def group_history_view(
+            self,
+            group_id: str,
+            *,
+            set_name: str = "default",
+    ) -> Dict[str, object]:
+        """
+        Return the journal story of one subsystem area.
+
+        Args:
+            group_id:
+                Composition identity to gather around.
+            set_name:
+                Research set to resolve within.
+
+        Returns:
+            Dict[str, object]:
+                The set's `group_history` payload (subsystem-lane,
+                member, and member-lane events in journal order).
+        """
+        self.check_cleaned()
+        return self.research_set(set_name).group_history(group_id)
+
     def group_impact_view(
             self,
             group_id: str,
@@ -2539,23 +2775,17 @@ class MutationResearch(Cleanable):
             closure = len(internal) / len(affected_spells)
         research_set = self.research_set(set_name)
         affected_compositions: List[Dict[str, object]] = []
-        for lane_name in research_set.lane_names():
-            lane = research_set.get_lane(lane_name)
-            tip = lane.tip_spell_id
-            if tip is None or tip == node.group_id:
-                continue
-            if not lane.has_node(tip):
-                continue
-            tip_node = lane.get_node(tip)
-            if not isinstance(tip_node, GroupedResearchNode):
+        for tip_node in self._current_compositions(set_name):
+            if tip_node.group_id == node.group_id:
                 continue
             shared = sorted(
                 set(tip_node.member_spell_ids) & affected_spells
             )
             if shared:
+                tip_lane_id = research_set.residence_of(tip_node.group_id)
                 affected_compositions.append({
                     "group_id": tip_node.group_id,
-                    "lane_name": lane.name,
+                    "lane_name": research_set.get_lane(tip_lane_id).name,
                     "shared_members": shared,
                 })
         return {

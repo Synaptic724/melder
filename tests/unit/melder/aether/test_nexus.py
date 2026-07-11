@@ -2099,6 +2099,9 @@ def test_codegen_command_system_lists_selected_runtime_helpers_only() -> None:
         "research_group_view",
         "research_group_diff",
         "research_group_impact",
+        "research_group_footprint",
+        "research_group_drift",
+        "research_group_history",
     )
 
     assert supported_methods == expected_methods

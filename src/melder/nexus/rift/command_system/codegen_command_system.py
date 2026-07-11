@@ -104,6 +104,9 @@ class CodegenCommandSystem(CommandSystem):
         "research_group_view",
         "research_group_diff",
         "research_group_impact",
+        "research_group_footprint",
+        "research_group_drift",
+        "research_group_history",
     )
 
     __slots__ = CommandSystem.__slots__ + [
@@ -1539,6 +1542,62 @@ class CodegenCommandSystem(CommandSystem):
         ), self._lock:
             return self._require_live_mutation_research(
             ).group_impact_view(group_id)
+
+    def research_group_footprint(self, group_id: str) -> object:
+        """
+        Return one composition's physical shadow (module footprint).
+
+        Args:
+            group_id: Composition identity to shadow.
+
+        Returns:
+            object: Union of member module worlds, per-module member map,
+                shared modules, honest unknown-custody members.
+        """
+        self.check_cleaned()
+        with self._entered_command_action(
+                action_name="research_group_footprint",
+                frame_name=None,
+        ), self._lock:
+            return self._require_live_mutation_research(
+            ).group_footprint_view(group_id)
+
+    def research_group_drift(self, group_id: str) -> object:
+        """
+        Return recorded-vs-disk drift filtered to one composition.
+
+        Args:
+            group_id: Composition identity to check.
+
+        Returns:
+            object: Footprint-narrowed drift statuses, radii, and counts.
+        """
+        self.check_cleaned()
+        with self._entered_command_action(
+                action_name="research_group_drift",
+                frame_name=None,
+        ), self._lock:
+            return self._require_live_mutation_research(
+            ).group_drift_view(group_id)
+
+    def research_group_history(self, group_id: str) -> object:
+        """
+        Return the journal story of one subsystem area.
+
+        Args:
+            group_id: Composition identity to gather around.
+
+        Returns:
+            object: Subsystem-lane, member, and member-lane events in
+                journal order, campaign stamps intact.
+        """
+        self.check_cleaned()
+        with self._entered_command_action(
+                action_name="research_group_history",
+                frame_name=None,
+        ), self._lock:
+            return self._require_live_mutation_research(
+            ).group_history_view(group_id)
 
     def _emit_codegen_memory_if_enabled(
             self,

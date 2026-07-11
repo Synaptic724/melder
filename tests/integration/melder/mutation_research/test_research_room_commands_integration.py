@@ -134,6 +134,9 @@ def test_capability_room_surface_is_read_only() -> None:
         "research_group_view",
         "research_group_diff",
         "research_group_impact",
+        "research_group_footprint",
+        "research_group_drift",
+        "research_group_history",
     )
     mutations = (
         "research_create_lane",
@@ -447,5 +450,23 @@ def test_codegen_room_composition_loop() -> None:
         residency = commands.research_residency(second["group_id"])
         assert residency["node_type"] == "group"
         assert residency["runtime"] == "informational"
+
+        footprint = commands.research_group_footprint(second["group_id"])
+        assert footprint["modules"] == ["pkg.helper", "pkg.root"]
+        assert footprint["shared_modules"] == ["pkg.helper", "pkg.root"]
+
+        drift = commands.research_group_drift(second["group_id"])
+        assert drift["footprint_size"] == 2
+
+        story = commands.research_group_history(second["group_id"])
+        acts = [entry["act"] for entry in story["entries"]]
+        assert "group_registered" in acts
+        assert "group_recomposed" in acts
+
+        member_row = commands.research_residency("sha-room-a")
+        assert [
+            entry["group_id"]
+            for entry in member_row["pinned_by_compositions"]
+        ] == [second["group_id"]]
     finally:
         root._crystallizer = real_crystallizer
