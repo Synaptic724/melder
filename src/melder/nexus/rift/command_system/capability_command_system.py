@@ -61,6 +61,7 @@ class CapabilityCommandSystem(CommandSystem):
         "research_residency",
         "research_diff",
         "research_campaign_view",
+        "research_recent",
         "research_source",
         "research_impact",
         "research_module_graph",
@@ -1558,12 +1559,19 @@ class CapabilityCommandSystem(CommandSystem):
             return self._require_live_mutation_research(
             ).group_drift_view(group_id)
 
-    def research_group_history(self, group_id: str) -> object:
+    def research_group_history(
+            self,
+            group_id: str,
+            *,
+            campaign: Optional[str] = None,
+    ) -> object:
         """
         Return the journal story of one subsystem area.
 
         Args:
             group_id: Composition identity to gather around.
+            campaign: Optional campaign stamp - narrow the area's story
+                to one effort (the WHERE x WHEN join).
 
         Returns:
             object: Subsystem-lane, member, and member-lane events in
@@ -1575,7 +1583,30 @@ class CapabilityCommandSystem(CommandSystem):
                 frame_name=None,
         ), self._lock:
             return self._require_live_mutation_research(
-            ).group_history_view(group_id)
+            ).group_history_view(group_id, campaign=campaign)
+
+    def research_recent(self, *, limit: int = 50) -> object:
+        """
+        Return the newest journal events across the whole record.
+
+        Purpose:
+            The cold-landing read: "what happened here lately" in one
+            call, before choosing where to work.
+
+        Args:
+            limit: Bound on the number of newest entries.
+
+        Returns:
+            object: Newest journal entries in journal order, with the
+                total entry count and next sequence.
+        """
+        self.check_cleaned()
+        with self._entered_command_action(
+                action_name="research_recent",
+                frame_name=None,
+        ), self._lock:
+            return self._require_live_mutation_research(
+            ).recent_activity_view(limit=limit)
 
     def list_supported_command_methods(self) -> Tuple[str, ...]:
         """
