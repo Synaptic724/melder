@@ -5,6 +5,9 @@ from melder.mutation_research.diff.diff_strategy import DiffStrategy
 from melder.mutation_research.diff.strategies.source_diff_strategy import (
     SourceDiffStrategy,
 )
+from melder.mutation_research.diff.strategies.structural_diff_strategy import (
+    StructuralDiffStrategy,
+)
 from melder.utilities.general_base.cleanable import Cleanable
 
 
@@ -24,7 +27,8 @@ class DiffEngine(Cleanable):
         - `material_resolver(spell_sha)` returns the detached material
           payload `{"spell_sha", "sources", "fingerprints"}`; resolver
           errors propagate untouched (unknown identities stay loud).
-        - `SourceDiffStrategy` registers by default; further strategies
+        - `SourceDiffStrategy` (text transport) and `StructuralDiffStrategy`
+          (AST reasoning layer) register by default; further strategies
           extend the family via `register_strategy()` (open/closed - the
           engine never changes to gain one).
         - Duplicate strategy names are refused; resolution failures name the
@@ -78,6 +82,7 @@ class DiffEngine(Cleanable):
         self._lock: threading.RLock = threading.RLock()
         if register_defaults:
             self.register_strategy(SourceDiffStrategy())
+            self.register_strategy(StructuralDiffStrategy())
 
     def cleanup(self) -> None:
         """

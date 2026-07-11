@@ -143,9 +143,15 @@ def mock_frame_cls():
 @pytest.fixture
 def aether_with_mocks(mock_frame_cls):
     """
-    Returns an Aether instance initialized with a mocked default frame.
+    Returns an Aether instance with the mocked default frame materialized.
+
+    Frames are lazy (owner ruling 2026-07-11): boot creates ZERO frames, so
+    the fixture ensures "default" explicitly - downstream tests keep using
+    `a._default_frame` as the mock-frame handle exactly as before.
     """
-    return Aether()
+    aether = Aether()
+    aether._ensure_default_frame()
+    return aether
 
 # ----------------------------------------------------------------------
 # 1. Singleton & Lifecycle Tests
@@ -273,7 +279,9 @@ def test_reset_singleton_for_tests_creates_fresh_instance():
     assert second is not first
     assert id(second) != first_id
     assert second._cleaned is False
-    assert second._default_frame is not None
+    # Frames are lazy: a fresh singleton boots with ZERO frames.
+    assert second._default_frame is None
+    assert second._aetheric_frames == {}
 
 def test_cleanup_is_idempotent(aether_with_mocks):
     """Calling cleanup() multiple times is safe."""
@@ -327,7 +335,8 @@ def test_bottom_up_frame_cleanup_removes_custom_frame() -> None:
 def test_bottom_up_default_frame_cleanup_clears_reference() -> None:
     """Cleaning the default frame bottom-up clears the default reference."""
     a = Aether()
-    default_frame = a._default_frame
+    # Frames are lazy: materialize the default frame before cleaning it.
+    default_frame = a._ensure_default_frame()
 
     default_frame.cleanup()
 
@@ -379,7 +388,9 @@ def test_cleanup_unregistered_frame_is_safe() -> None:
 def test_detach_cleaned_frame_ignores_empty_frame_name() -> None:
     """_detach_cleaned_frame should no-op when frame_name is empty."""
     a = Aether()
-    frame = a._default_frame
+    # Frames are lazy: materialize the default frame so the no-op is
+    # proven against a real registered frame, not a None handle.
+    frame = a._ensure_default_frame()
     before_default = a._default_frame
     before_frames = dict(a._aetheric_frames)
 
@@ -392,7 +403,9 @@ def test_detach_cleaned_frame_ignores_empty_frame_name() -> None:
 def test_detach_cleaned_frame_ignores_missing_registry() -> None:
     """_detach_cleaned_frame should no-op when the frame registry is unavailable."""
     a = Aether()
-    frame = a._default_frame
+    # Frames are lazy: materialize the default frame before simulating
+    # the missing registry so the no-op is proven against a real frame.
+    frame = a._ensure_default_frame()
     a._aetheric_frames = None
     a._default_frame = frame
 
@@ -404,7 +417,8 @@ def test_detach_cleaned_frame_ignores_missing_registry() -> None:
 def test_detach_cleaned_frame_logs_nexus_error_but_removes_frame() -> None:
     """_detach_cleaned_frame should tolerate Nexus record cleanup failures."""
     a = Aether()
-    frame = a._default_frame
+    # Frames are lazy: materialize the default frame before detaching it.
+    frame = a._ensure_default_frame()
     nexus = MagicMock()
     nexus.check_for_aetheric_frame.side_effect = RuntimeError("nexus fail")
     logger = MagicMock()
@@ -1119,13 +1133,19 @@ def test_access_invalid_frame_raises(aether_with_mocks):
     with pytest.raises(ValueError, match="does not exist"):
         a._get_existing_frame("missing_frame")
 
-def test_ensure_default_frame_raises_if_missing(aether_with_mocks):
-    """RuntimeError if default frame is gone (e.g. manually removed)."""
+def test_ensure_default_frame_recovers_if_missing(aether_with_mocks):
+    """
+    Lazy frames (owner ruling 2026-07-11): a lost default pointer RECOVERS
+    on next use instead of raising - the registry entry repairs the
+    pointer, and a fully absent frame would lazily recreate.
+    """
     a = aether_with_mocks
     a._default_frame = None # Simulate loss
-    
-    with pytest.raises(RuntimeError, match="unavailable"):
-        a._ensure_default_frame()
+
+    recovered = a._ensure_default_frame()
+    assert recovered is not None
+    assert a._default_frame is recovered
+    assert a._aetheric_frames["default"] is recovered
 
 
 def test_ensure_frame_raises_when_registry_unavailable_before_lock() -> None:
@@ -1644,8 +1664,10 @@ def test_cleanup_failure_logging(mock_frame_cls):
         a = Aether()
         a.attach_logger(mock_logger)
         
-        # Force failure
-        a._default_frame.cleanup.side_effect = RuntimeError("Fail")
+        # Frames are lazy: materialize the (mocked) default frame, then
+        # force its cleanup to fail.
+        failing_frame = a._ensure_default_frame()
+        failing_frame.cleanup.side_effect = RuntimeError("Fail")
         
         a.cleanup()
         

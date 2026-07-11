@@ -709,6 +709,15 @@ class Aether(Cleanable):
 
             frame = self._aetheric_frames.get(aetheric_frame_name)
             if frame is not None:
+                # Lazy frames: the default pointer is set on CREATE, so a
+                # pointer that drifted from a live registry entry (e.g.
+                # manually cleared) heals on the next ensure instead of
+                # leaving default-frame verbs pointerless.
+                if (
+                    aetheric_frame_name == "default"
+                    and self._default_frame is not frame
+                ):
+                    self._default_frame = frame
                 return frame
 
             frame = AethericFrame(self, aetheric_frame_name)

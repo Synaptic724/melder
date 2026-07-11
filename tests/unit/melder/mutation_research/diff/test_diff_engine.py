@@ -41,13 +41,13 @@ def _materials():
     }
 
 
-def test_engine_registers_source_strategy_by_default() -> None:
+def test_engine_registers_default_strategy_family() -> None:
     """
     Verify the built-in family is present without registration calls.
     """
     engine = DiffEngine(_resolver_for(_materials()))
 
-    assert engine.list_strategy_names() == ["source"]
+    assert engine.list_strategy_names() == ["source", "structural"]
     engine.cleanup()
 
 
@@ -74,6 +74,19 @@ def test_engine_unknown_strategy_names_known_ones() -> None:
 
     with pytest.raises(KeyError, match="Known strategies.*source"):
         engine.diff("sha-left", "sha-right", strategy="ast")
+    engine.cleanup()
+
+
+def test_engine_structural_strategy_dispatches() -> None:
+    """
+    Verify the structural default is reachable through normal dispatch.
+    """
+    engine = DiffEngine(_resolver_for(_materials()))
+
+    verdict = engine.diff("sha-left", "sha-right", strategy="structural")
+
+    assert verdict["strategy"] == "structural"
+    assert "module_reports" in verdict["result"]
     engine.cleanup()
 
 

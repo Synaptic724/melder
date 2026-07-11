@@ -63,9 +63,12 @@ def test_init_success(manager, mock_dependencies, mock_sss, registry):
     """
     # Verify sub-managers were instantiated
     mock_dependencies["IncidentManager"].assert_called_once_with(registry)
+    # load_gate=None is the ungated default (Aether threads its LoadGate
+    # in real frames; direct construction stays gateless).
     mock_dependencies["ChangeControlManager"].assert_called_once_with(
         spell_system_states=mock_sss,
         devops_information_registry=registry,
+        load_gate=None,
     )
     
     # Verify internal state
