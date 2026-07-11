@@ -1,4 +1,5 @@
 import ast
+import hashlib
 import threading
 from typing import Dict, List, Optional, Tuple
 
@@ -253,8 +254,11 @@ class StructuralSynthesizer(Cleanable):
 
         Returns:
             List[Dict[str, object]]:
-                `{"name", "kind", "start_line", "end_line", "text"}` rows
-                in source order (decorators included in spans).
+                `{"name", "kind", "start_line", "end_line", "text",
+                "sha256"}` rows in source order (decorators included in
+                spans; sha256 = the PART FINGERPRINT over the part's
+                exact text - the depth-3 change index: two versions'
+                inventories compare part-by-part without pulling texts).
 
         Raises:
             ValueError:
@@ -272,16 +276,19 @@ class StructuralSynthesizer(Cleanable):
                     f"{error['message']}"
                 )
             index = self._top_level_index(source)
-            rows = [
-                {
+            rows = []
+            for (name, kind), span in index.items():
+                text = self._segment(source, span)
+                rows.append({
                     "name": name,
                     "kind": kind,
                     "start_line": span[0],
                     "end_line": span[1],
-                    "text": self._segment(source, span),
-                }
-                for (name, kind), span in index.items()
-            ]
+                    "text": text,
+                    "sha256": hashlib.sha256(
+                        text.encode("utf-8")
+                    ).hexdigest(),
+                })
         rows.sort(key=lambda row: row["start_line"])
         return rows
 

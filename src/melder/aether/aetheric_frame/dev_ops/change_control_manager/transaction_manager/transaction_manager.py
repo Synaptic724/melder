@@ -392,33 +392,6 @@ class ChangeControlTransactionManager(Cleanable):
             raise ValueError("frame_key and binding_key are required")
         return f"binding:{frame_key}:{binding_key}"
 
-    def make_scope_key_lineage(self, spell_index_id: str) -> str:
-        """
-        Build a normalized lineage scope key.
-
-        Purpose:
-            The remediation-mediation vocabulary (owner ruling
-            2026-07-12: mediate both threads): one scope naming a single
-            SpellIndex lineage, claimed EXCLUSIVE by the remediation
-            transaction family and added to the membership families'
-            seals (notch/add/remove/transfer) so a lazy revalidation
-            window and a membership repoint on the SAME lineage
-            provably serialize.
-
-        Args:
-            spell_index_id:
-                The lineage's stable SpellIndex ULID.
-
-        Returns:
-            str: Scope key in the form `"lineage:<spell_index_id>"`.
-
-        Raises:
-            ValueError: If `spell_index_id` is empty.
-        """
-        if not spell_index_id:
-            raise ValueError("spell_index_id is required")
-        return f"lineage:{spell_index_id}"
-
     def make_scope_key_contract(
             self,
             frame_key: str,

@@ -1003,6 +1003,8 @@ class ResearchSet(Cleanable):
     def group_history(
             self,
             group_id: str,
+            *,
+            campaign: Optional[str] = None,
     ) -> Dict[str, object]:
         """
         Return everything the journal knows about one subsystem area.
@@ -1012,17 +1014,22 @@ class ResearchSet(Cleanable):
             area to see what happened"): every journal event that touches
             the composition's OWN lane (the subsystem timeline), any
             pinned member identity, or any lane a pinned member resides
-            in - in journal order, campaign stamps intact.
+            in - in journal order, campaign stamps intact. With a
+            `campaign` the story narrows to one effort inside the area
+            (the WHERE x WHEN join: groups are structure, campaigns are
+            intent; neither owns the other, so the record joins them).
 
         Args:
             group_id:
                 Composition identity to gather around.
+            campaign:
+                Optional campaign stamp to narrow to.
 
         Returns:
             Dict[str, object]:
                 `{"group_id", "lane_id", "member_spell_ids",
-                "watched_lane_ids", "entries"}` - entries in journal
-                order.
+                "watched_lane_ids", "campaign", "entries"}` - entries in
+                journal order.
 
         Raises:
             RuntimeError:
@@ -1060,12 +1067,14 @@ class ResearchSet(Cleanable):
                     or entry.get("to_spell_id") == group_id
                     or entry.get("from_spell_id") == group_id
                 )
+                and (campaign is None or entry.get("campaign") == campaign)
             ]
             return {
                 "group_id": group_id,
                 "lane_id": lane_id,
                 "member_spell_ids": sorted(members),
                 "watched_lane_ids": sorted(watched_lanes),
+                "campaign": campaign,
                 "entries": entries,
             }
 

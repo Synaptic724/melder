@@ -44,10 +44,6 @@ class ChangeTransactionType(StrEnum):
     NOTCH = "notch"
     ADD_TO_INDEX = "add_to_index"
     REMOVE_FROM_INDEX = "remove_from_index"
-    # Remediation-mediation family (owner ruling 2026-07-12): meld-time
-    # lazy revalidation is a WRITER (it writes lineage/resolution
-    # validity) and rides admission like every writer.
-    REMEDIATION = "remediation"
     ELECT_CONDUIT_CLUSTER_LEADER = "elect_conduit_cluster_leader"
     UNELECT_CONDUIT_CLUSTER_LEADER = "unelect_conduit_cluster_leader"
     CLUSTER_JOIN = "cluster_join"

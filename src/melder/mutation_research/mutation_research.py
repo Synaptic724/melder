@@ -2691,6 +2691,7 @@ class MutationResearch(Cleanable):
             self,
             group_id: str,
             *,
+            campaign: Optional[str] = None,
             set_name: str = "default",
     ) -> Dict[str, object]:
         """
@@ -2699,6 +2700,9 @@ class MutationResearch(Cleanable):
         Args:
             group_id:
                 Composition identity to gather around.
+            campaign:
+                Optional campaign stamp - the WHERE x WHEN join: narrow
+                the area's story to one effort.
             set_name:
                 Research set to resolve within.
 
@@ -2708,7 +2712,47 @@ class MutationResearch(Cleanable):
                 member, and member-lane events in journal order).
         """
         self.check_cleaned()
-        return self.research_set(set_name).group_history(group_id)
+        return self.research_set(set_name).group_history(
+            group_id, campaign=campaign,
+        )
+
+    def recent_activity_view(
+            self,
+            *,
+            limit: int = 50,
+            set_name: str = "default",
+    ) -> Dict[str, object]:
+        """
+        Return the newest journal events across the whole record.
+
+        Purpose:
+            The cold-landing read: an agent arriving in a room asks "what
+            happened here lately" before choosing where to work - one
+            call, newest-first context, campaign stamps intact.
+
+        Args:
+            limit:
+                Bound on the number of newest entries (the journal's
+                bounded-window read).
+            set_name:
+                Research set to read.
+
+        Returns:
+            Dict[str, object]:
+                `{"set_name", "entries", "entry_count",
+                "next_sequence"}` - entries in journal order (oldest of
+                the window first).
+        """
+        self.check_cleaned()
+        payload = self.research_set(set_name).journal.describe(
+            recent=max(0, int(limit)),
+        )
+        return {
+            "set_name": set_name,
+            "entries": payload["entries"],
+            "entry_count": payload["entry_count"],
+            "next_sequence": payload["next_sequence"],
+        }
 
     def group_impact_view(
             self,
