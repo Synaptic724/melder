@@ -5,8 +5,8 @@ sweep net).
 """
 import pytest
 
-from melder.crystallizer.persistence.crystals.conduit_crystal import ConduitCrystal
-from melder.crystallizer.persistence.crystals.contract_crystal import (
+from melder.crystallizer.crystals.conduit_crystal import ConduitCrystal
+from melder.crystallizer.crystals.contract_crystal import (
     ContractCrystal,
 )
 from melder.crystallizer.persistence.persistence_profile import PersistenceProfile

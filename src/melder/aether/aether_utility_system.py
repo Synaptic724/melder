@@ -188,7 +188,7 @@ class AetherUtilitySystem(Cleanable):
         # module-level import; kept lazy here to keep the utility system's
         # import surface logging-only).
         from melder.crystallizer.crystallizer import Crystallizer
-        from melder.crystallizer.persistence.crystals.aether_crystal import (
+        from melder.crystallizer.crystals.aether_crystal import (
             AetherCrystal,
         )
 

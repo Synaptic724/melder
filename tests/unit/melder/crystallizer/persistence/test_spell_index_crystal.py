@@ -4,7 +4,7 @@ Unit contract tests for SpellIndexCrystal: the record's membership map
 """
 import pytest
 
-from melder.crystallizer.persistence.crystals.spell_index_crystal import (
+from melder.crystallizer.crystals.spell_index_crystal import (
     SpellIndexCrystal,
 )
 from melder.crystallizer.persistence.persistence_profile import PersistenceProfile

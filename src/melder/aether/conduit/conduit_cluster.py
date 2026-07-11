@@ -9,7 +9,7 @@ from melder.aether.aetheric_frame.dev_ops.devops_information_registry import (
     DevopsInformationRegistry,
 )
 from melder.crystallizer.crystallizer import Crystallizer
-from melder.crystallizer.persistence.crystals.cluster_crystal import (
+from melder.crystallizer.crystals.cluster_crystal import (
     ClusterCrystal,
 )
 from melder.utilities.general_base.cleanable import Cleanable

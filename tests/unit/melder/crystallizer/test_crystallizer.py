@@ -8,7 +8,7 @@ from melder.aether.aether import Aether
 from melder.aether.aether_utility_system import AetherUtilitySystem
 from melder.nexus.nexus import Nexus
 from melder.crystallizer.crystallizer import Crystallizer
-from melder.crystallizer.persistence.crystals.spell_crystal import SpellCrystal
+from melder.crystallizer.crystals.spell_crystal import SpellCrystal
 
 
 class _DummySpell:

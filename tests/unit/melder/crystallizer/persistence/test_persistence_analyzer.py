@@ -5,7 +5,7 @@ aggregate verdict semantics.
 
 Runs only on 3.14t (melder package root import chain).
 """
-from melder.crystallizer.persistence.analysis.persistence_analyzer import (
+from melder.crystallizer.crystal_analysis.preflight.persistence_analyzer import (
     PersistenceAnalyzer,
 )
 
@@ -33,7 +33,10 @@ def test_clean_bundle_verdicts_clean():
     """
     analyzer = PersistenceAnalyzer()
     report = analyzer.analyze({
+        "frame": {"covered": {"frame_name": "covered",
+                              "system_state_name": "dynamic"}},
         "spellbook": {"book-1": {"spellbook_id": "book-1",
+                                 "frame_name": "covered",
                                  "hook_names": []}},
         "conduit": {"cond-1": {"conduit_id": "cond-1",
                                "spellbook_id": "book-1",
@@ -99,7 +102,10 @@ def test_configuration_loss_reports_info_without_changing_verdict():
     """
     analyzer = PersistenceAnalyzer()
     report = analyzer.analyze({
+        "frame": {"covered": {"frame_name": "covered",
+                              "system_state_name": "dynamic"}},
         "spellbook": {"book-1": {"spellbook_id": "book-1",
+                                 "frame_name": "covered",
                                  "hook_names": ["conduit:on_link"]}},
         "aether": {"root": {"configuration_payload": {
             "channel_logger_activation_enabled": True,

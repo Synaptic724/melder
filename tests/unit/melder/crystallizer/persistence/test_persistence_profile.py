@@ -9,20 +9,20 @@ integration scope).
 """
 import pytest
 
-from melder.crystallizer.persistence.crystals.aether_crystal import AetherCrystal
-from melder.crystallizer.persistence.crystals.aetheric_frame_crystal import (
+from melder.crystallizer.crystals.aether_crystal import AetherCrystal
+from melder.crystallizer.crystals.aetheric_frame_crystal import (
     AethericFrameCrystal,
 )
-from melder.crystallizer.persistence.crystals.conduit_crystal import ConduitCrystal
-from melder.crystallizer.persistence.crystals.mutation_research_crystal import (
+from melder.crystallizer.crystals.conduit_crystal import ConduitCrystal
+from melder.crystallizer.crystals.mutation_research_crystal import (
     MutationResearchCrystal,
 )
-from melder.crystallizer.persistence.crystals.nexus_crystal import NexusCrystal
-from melder.crystallizer.persistence.crystals.spellbook_crystal import (
+from melder.crystallizer.crystals.nexus_crystal import NexusCrystal
+from melder.crystallizer.crystals.spellbook_crystal import (
     SpellbookCrystal,
 )
 from melder.crystallizer.persistence.persistence_profile import PersistenceProfile
-from melder.crystallizer.persistence.recorded_unit_state import RecordedUnitState
+from melder.crystallizer.crystals.recorded_unit_state import RecordedUnitState
 
 
 class _StubSpellCrystal:

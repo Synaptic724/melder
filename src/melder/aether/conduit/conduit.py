@@ -33,7 +33,7 @@ from melder.aether.conduit.conduit_ward.conduit_ward import ConduitWard
 from melder.aether.conduit.creations.conduit_creations import ConduitCreations
 from melder.aether.conduit.creations.cluster_creations import ClusterCreations
 from melder.aether.conduit.conduit_pool import ConduitPool
-from melder.crystallizer.persistence.crystals.conduit_crystal import ConduitCrystal
+from melder.crystallizer.crystals.conduit_crystal import ConduitCrystal
 from melder.aether.conduit.spell_space.spell_space import SpellSpace
 from melder.aether.conduit.spell_space.spell_space_pool import SpellSpacePool
 from melder.aether.conduit.spell_space.spell_space_thread_state import (

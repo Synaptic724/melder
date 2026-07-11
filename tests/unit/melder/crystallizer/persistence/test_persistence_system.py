@@ -5,12 +5,12 @@ retention dropout), and active-profile routing of the record verbs.
 """
 import pytest
 
-from melder.crystallizer.persistence.crystals.aether_crystal import AetherCrystal
-from melder.crystallizer.persistence.crystals.spellbook_crystal import (
+from melder.crystallizer.crystals.aether_crystal import AetherCrystal
+from melder.crystallizer.crystals.spellbook_crystal import (
     SpellbookCrystal,
 )
 from melder.crystallizer.persistence.persistence_system import PersistenceSystem
-from melder.crystallizer.persistence.recorded_unit_state import RecordedUnitState
+from melder.crystallizer.crystals.recorded_unit_state import RecordedUnitState
 
 
 class _StubSpellCrystal:
@@ -249,23 +249,36 @@ def test_load_checkpoint_validates_id_then_restores_empty_world():
     Purpose:
         Verify the boot verb's error ordering and its live contract.
     Contract:
-        Unknown ids raise KeyError FIRST; a known id folds its chain
-        through the restore engine - an empty-window checkpoint restores
-        to a completed report with nothing built (the placeholder
-        NotImplementedError is gone: restore_engine_2026_07_07).
+        RE-HOMED (S-test): the boot verb lives on CrystalLoaderSystem
+        over a borrowed record since S4. Unknown ids raise KeyError FIRST
+        (via the record's chain detachment); a known id folds its chain
+        through the gated engine - an empty-window checkpoint restores to
+        a completed report with nothing built, and the mediated payload
+        carries the additive world-scope admission view.
     Returns:
         None.
     Raises:
         AssertionError: If error ordering or the report contract drifts.
     """
+    from melder.crystallizer.crystal_loader_system.crystal_loader_system import (
+        CrystalLoaderSystem,
+    )
+
     system = PersistenceSystem()
+    loader = CrystalLoaderSystem(system)
     checkpoint_id = system.create_checkpoint()
     with pytest.raises(KeyError):
-        system.load_checkpoint("ghost")
-    report = system.load_checkpoint(checkpoint_id)
+        loader.load_checkpoint("ghost")
+    report = loader.load_checkpoint(checkpoint_id)
     assert report["status"] == "complete"
     assert report["built_counts"] == {}
     assert report["checkpoint_ids"] == [checkpoint_id]
+    assert report["admission"]["scope"] == "world"
+    # Durable load state: the loader remembers this exact payload.
+    remembered = loader.describe_last_load()
+    assert remembered["loaded"] is True
+    assert remembered["payload"]["checkpoint_ids"] == [checkpoint_id]
+    loader.cleanup()
 
 
 def test_removal_and_state_verbs_route_to_active_profile():
@@ -305,7 +318,10 @@ def test_describe_summarizes_the_whole_record():
         Verify the one-shot operational summary.
     Contract:
         describe() reports the active selection, all profiles with their
-        twin counts, the ledger size, and the cached count.
+        twin counts, and the ledger size. RE-HOMED (S-test): disk truth
+        (the cached checkpoint count) moved custody to the asset system
+        in S3 - the LEDGER's describe must NOT carry it (the Crystallizer
+        facade re-enriches its record description instead).
     Returns:
         None.
     Raises:
@@ -321,7 +337,8 @@ def test_describe_summarizes_the_whole_record():
     assert summary["profiles"]["kit-a"]["has_aether_crystal"] is True
     assert summary["profiles"]["default"]["has_aether_crystal"] is False
     assert summary["ledger_checkpoint_count"] == 1
-    assert isinstance(summary["cached_checkpoint_count"], int)
+    # Boundary law: the record owns no disk truth.
+    assert "cached_checkpoint_count" not in summary
 
 
 def test_cleanup_is_idempotent_and_blocks_further_use():

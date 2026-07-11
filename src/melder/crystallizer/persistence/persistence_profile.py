@@ -3,26 +3,26 @@
 import threading
 from typing import Dict, List, Optional, Tuple
 
-from melder.crystallizer.persistence.crystals.aether_crystal import AetherCrystal
-from melder.crystallizer.persistence.crystals.aetheric_frame_crystal import AethericFrameCrystal
-from melder.crystallizer.persistence.crystals.conduit_crystal import ConduitCrystal
-from melder.crystallizer.persistence.crystals.crystallizer_crystal import (
+from melder.crystallizer.crystals.aether_crystal import AetherCrystal
+from melder.crystallizer.crystals.aetheric_frame_crystal import AethericFrameCrystal
+from melder.crystallizer.crystals.conduit_crystal import ConduitCrystal
+from melder.crystallizer.crystals.crystallizer_crystal import (
     CrystallizerCrystal,
 )
-from melder.crystallizer.persistence.crystals.mutation_research_crystal import MutationResearchCrystal
-from melder.crystallizer.persistence.crystals.cluster_crystal import (
+from melder.crystallizer.crystals.mutation_research_crystal import MutationResearchCrystal
+from melder.crystallizer.crystals.cluster_crystal import (
     ClusterCrystal,
 )
-from melder.crystallizer.persistence.crystals.contract_crystal import (
+from melder.crystallizer.crystals.contract_crystal import (
     ContractCrystal,
 )
-from melder.crystallizer.persistence.crystals.spell_index_crystal import (
+from melder.crystallizer.crystals.spell_index_crystal import (
     SpellIndexCrystal,
 )
-from melder.crystallizer.persistence.recorded_unit_state import RecordedUnitState
-from melder.crystallizer.persistence.crystals.nexus_crystal import NexusCrystal
-from melder.crystallizer.persistence.crystals.spell_crystal import SpellCrystal
-from melder.crystallizer.persistence.crystals.spellbook_crystal import SpellbookCrystal
+from melder.crystallizer.crystals.recorded_unit_state import RecordedUnitState
+from melder.crystallizer.crystals.nexus_crystal import NexusCrystal
+from melder.crystallizer.crystals.spell_crystal import SpellCrystal
+from melder.crystallizer.crystals.spellbook_crystal import SpellbookCrystal
 from melder.utilities.general_base.cleanable import Cleanable
 
 

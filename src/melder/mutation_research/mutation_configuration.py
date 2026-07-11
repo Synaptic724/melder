@@ -4,7 +4,7 @@ from typing import Dict, Tuple, Type, Union
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.crystallizer.crystallizer import Crystallizer
-from melder.crystallizer.persistence.crystals.mutation_research_crystal import MutationResearchCrystal
+from melder.crystallizer.crystals.mutation_research_crystal import MutationResearchCrystal
 from melder.utilities.helpers.id_builder import IDBuilder
 
 

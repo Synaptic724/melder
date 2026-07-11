@@ -3,28 +3,28 @@
 import threading
 from typing import Dict, List, Optional
 
-from melder.crystallizer.persistence.crystallizer_cache import CrystallizerCache
 from melder.crystallizer.persistence.persistence_crystal import PersistenceCrystal
-from melder.crystallizer.persistence.crystals.spell_crystal import SpellCrystal
+from melder.crystallizer.crystals.spell_crystal import SpellCrystal
 from melder.crystallizer.persistence.persistence_profile import PersistenceProfile
-from melder.crystallizer.persistence.recorded_unit_state import RecordedUnitState
+from melder.crystallizer.crystals.recorded_unit_state import RecordedUnitState
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
 
 
 class PersistenceSystem(Cleanable):
     """
-    The crystallizer's persistence subsystem: profiles, checkpoints, cache.
+    The crystallizer's RECORD: profiles and the checkpoint ledger.
 
     Purpose:
-        House all persistence equipment in one concrete subsystem, following
-        the Aether/frames ownership model: profiles (live recording surfaces;
-        guaranteed "default" + named, ONE active selection that emissions
-        route to) sit PARALLEL to the checkpoint ledger (N PersistenceCrystal
-        snapshots, each capturing what happened in its profile since that
-        profile's previous checkpoint), with the CrystallizerCache as the
-        side item that will store/load checkpoint cached-items once the
-        cached data structures are formed.
+        The boring ledger (V3 ledger law): profiles (live recording
+        surfaces; guaranteed "default" + named, ONE active selection that
+        emissions route to) sit PARALLEL to the checkpoint ledger (N
+        PersistenceCrystal snapshots, each capturing what happened in its
+        profile since that profile's previous checkpoint). The ledger owns
+        IN-PROCESS truth only - disk and DB custody (cache files, formation
+        files, the ExternalPersistenceManager seam) live in
+        AssetManagementSystem, which reads feedstock from this record and
+        feeds reloads back through its insert sink.
 
     Contract:
         - "default" always exists; it can be cleared but never deleted.
@@ -45,8 +45,9 @@ class PersistenceSystem(Cleanable):
 
     Lifecycle:
         Owned by exactly one Crystallizer. `cleanup()` cleans every profile,
-        every ledger crystal, then the cache, then deletes owned fields
-        (lock last); idempotent.
+        then every ledger crystal, then deletes owned fields (lock last);
+        idempotent. The record never cleans the asset system (which merely
+        borrows it).
     """
 
     DEFAULT_PROFILE_NAME: str = "default"
@@ -56,7 +57,6 @@ class PersistenceSystem(Cleanable):
         "_profiles_by_name",
         "_active_profile_name",
         "_checkpoint_crystals_by_id",
-        "_crystallizer_cache",
         "_max_persistence_crystals",
     ]
 
@@ -67,8 +67,9 @@ class PersistenceSystem(Cleanable):
         Contract:
             - The default profile exists immediately and is the initial
               active profile; the emit path may record without setup.
-            - The checkpoint ledger starts empty; the cache side item is
-              constructed (placeholder depth).
+            - The checkpoint ledger starts empty. Disk custody (the
+              crystallizer cache) is AssetManagementSystem's, not the
+              record's (S1-S3 decomposition).
 
         Returns:
             None.
@@ -82,14 +83,15 @@ class PersistenceSystem(Cleanable):
         }
         self._active_profile_name: str = PersistenceSystem.DEFAULT_PROFILE_NAME
         self._checkpoint_crystals_by_id: Dict[str, PersistenceCrystal] = {}
-        self._crystallizer_cache: CrystallizerCache = CrystallizerCache()
         # Retention cap for the checkpoint ledger; Crystallizer.activate()
         # overrides this from CrystallizerConfiguration.max_persistence_crystals.
+        # The asset system reads it live (max_persistence_crystals property)
+        # so cache-file retention follows the same cap.
         self._max_persistence_crystals: int = 100
 
     def cleanup(self) -> None:
         """
-        Clean profiles, ledger crystals, then the cache (lock last).
+        Clean profiles, then ledger crystals (lock last).
 
         Contract:
             - Idempotent; del posture; lock deleted last.
@@ -108,12 +110,9 @@ class PersistenceSystem(Cleanable):
                 if not crystal.cleaned:
                     crystal.cleanup()
             self._checkpoint_crystals_by_id.clear()
-            if not self._crystallizer_cache.cleaned:
-                self._crystallizer_cache.cleanup()
         del self._profiles_by_name
         del self._active_profile_name
         del self._checkpoint_crystals_by_id
-        del self._crystallizer_cache
         del self._max_persistence_crystals
         del self._lock
 
@@ -570,23 +569,32 @@ class PersistenceSystem(Cleanable):
         with self._lock:
             return sorted(self._profiles_by_name.keys())
 
-    def flush_checkpoint_to_cache(self, checkpoint_id: Optional[str] = None) -> List[str]:
+    # NOTE (S3 decomposition): the cache lanes (flush_checkpoint_to_cache,
+    # reload_checkpoint_from_cache, list_cached_checkpoint_ids,
+    # reload_profile_from_cache) moved to AssetManagementSystem - the record
+    # now exposes FEEDSTOCK (cached_item_form/forms) and the INSERT SINK
+    # (insert_cached_items) and never touches disk itself.
+
+    def cached_item_forms(
+            self,
+            checkpoint_id: Optional[str] = None,
+    ) -> List[Dict[str, object]]:
         """
-        Flush sealed checkpoint(s) into the local crystallizer cache.
+        Return cached-item forms for one or every ledger crystal.
 
         Purpose:
-            The seal-then-ship lane: a ledger crystal's cached-item form
-            lands on disk so history survives the process (reload via
-            `reload_checkpoint_from_cache`; full world restore stays the
-            bootstrap epic's engine).
+            Flush feedstock for the asset system: each payload already
+            carries `checkpoint_id` and `profile_name`, so the shipping
+            side needs exactly one pull per flush (cache write AND remote
+            upload reuse the same payloads).
 
         Args:
             checkpoint_id:
-                One ledger ULID, or None to flush EVERY ledger crystal.
+                One ledger ULID, or None for EVERY ledger crystal.
 
         Returns:
-            List[str]:
-                The flushed checkpoint ids.
+            List[Dict[str, object]]:
+                Detached to_cached_item payloads.
 
         Raises:
             RuntimeError:
@@ -600,99 +608,47 @@ class PersistenceSystem(Cleanable):
                 targets = [self._require_checkpoint(checkpoint_id)]
             else:
                 targets = list(self._checkpoint_crystals_by_id.values())
-            flushed: List[str] = []
-            touched_profiles: List[str] = []
-            for crystal in targets:
-                self._crystallizer_cache.store_cached_item(
-                    crystal.id, crystal.to_cached_item()
-                )
-                flushed.append(crystal.id)
-                if crystal.profile_name not in touched_profiles:
-                    touched_profiles.append(crystal.profile_name)
-            # Owner ruling: without a DB emitter the cache follows the
-            # checkpoint limit too - FIFO the oldest cached files out.
-            # Durability beyond the cap is the user's opt-in via a DB
-            # emitter (future lane); "its on them".
-            for profile_name in touched_profiles:
-                self._crystallizer_cache.enforce_cache_retention(
-                    profile_name, self._max_persistence_crystals
-                )
-            return flushed
+            return [crystal.to_cached_item() for crystal in targets]
 
-    def reload_checkpoint_from_cache(self, checkpoint_id: str) -> Dict[str, object]:
+    @property
+    def max_persistence_crystals(self) -> int:
         """
-        Reload one cached checkpoint back into the ledger.
+        Return the live checkpoint-retention cap.
 
         Purpose:
-            History recovery: rebuild the sealed artifact from its cached
-            item (e.g. after a fresh boot) so describe/list see it again.
-
-        Contract:
-            - Insert-if-absent: an id already in the ledger keeps its live
-              crystal (the cache never overwrites live history).
-            - Retention dropout does NOT run here - reloading old history
-              must not evict newer crystals; the cap applies to new seals.
-
-        Args:
-            checkpoint_id:
-                ULID of a previously flushed checkpoint.
+            The asset system reads this per flush so cache-file FIFO
+            retention follows the SAME cap as the ledger (owner ruling:
+            without a DB emitter the cache follows the checkpoint limit;
+            durability beyond it is the user's DB opt-in - "its on them").
 
         Returns:
-            Dict[str, object]:
-                The (re)loaded crystal's describe() summary.
+            int: The current retention cap.
 
         Raises:
-            RuntimeError:
-                If the subsystem has been cleaned.
-            KeyError:
-                If no cached item exists for `checkpoint_id`.
+            RuntimeError: If the subsystem has been cleaned.
         """
         self.check_cleaned()
         with self._lock:
-            existing = self._checkpoint_crystals_by_id.get(checkpoint_id)
-            if existing is not None:
-                return existing.describe()
-            cached_item = self._crystallizer_cache.load_cached_item(
-                checkpoint_id
-            )
-            crystal = PersistenceCrystal.from_cached_item(cached_item)
-            self._checkpoint_crystals_by_id[crystal.id] = crystal
-            return crystal.describe()
+            return self._max_persistence_crystals
 
-    def list_cached_checkpoint_ids(self) -> List[str]:
-        """
-        Return every checkpoint id present in the local cache.
-
-        Returns:
-            List[str]:
-                Sorted cached checkpoint ids (empty when nothing flushed).
-
-        Raises:
-            RuntimeError:
-                If the subsystem has been cleaned.
-        """
-        self.check_cleaned()
-        with self._lock:
-            return self._crystallizer_cache.list_cached_item_ids()
-
-
-
-    def save_formation(
+    def capture_formation_record(
             self,
             formation_name: str,
             conduit_id: Optional[str] = None,
             frame_name: Optional[str] = None,
             profile_name: Optional[str] = None,
             description: str = "",
-    ) -> str:
+    ) -> Dict[str, object]:
         """
-        Capture and store one user-named formation (owner feature).
+        Capture one user-named formation RECORD (owner feature; record
+        side of the old save_formation - storage moved to the assets).
 
         Purpose:
             "If they like a conduit formation... just reload that
             conduit": capture the LIVE slice (conduit scope includes its
             spellbook; frame scope includes the frame subtree) from the
-            targeted profile and persist it as a named cache artifact.
+            targeted profile and assemble the storable record. The asset
+            system persists it (`AssetManagementSystem.store_formation`).
 
         Args:
             formation_name:
@@ -707,12 +663,11 @@ class PersistenceSystem(Cleanable):
                 Optional user note stored on the formation record.
 
         Returns:
-            str: Absolute path of the stored formation file.
+            Dict[str, object]: The assembled formation record.
 
         Raises:
             RuntimeError: If the subsystem has been cleaned.
-            ValueError: If the scope arguments are wrong or the name is
-                not filesystem-safe.
+            ValueError: If the scope arguments are wrong.
             KeyError: If the profile or the anchor twin does not exist.
         """
         self.check_cleaned()
@@ -731,7 +686,7 @@ class PersistenceSystem(Cleanable):
             ].capture_formation_slice(
                 conduit_id=conduit_id, frame_name=frame_name
             )
-        formation_record: Dict[str, object] = {
+        return {
             "formation_name": formation_name,
             "profile_name": resolved_name,
             "scope": (
@@ -743,146 +698,15 @@ class PersistenceSystem(Cleanable):
             "description": description,
             "payloads": payloads,
         }
-        return self._crystallizer_cache.store_formation(
-            resolved_name, formation_name, formation_record
-        )
 
-    def load_formation_record(
-            self,
-            formation_name: str,
-            profile_name: Optional[str] = None,
-    ) -> Dict[str, object]:
-        """
-        Load one stored formation record (payloads + metadata).
+    # NOTE (S3 decomposition): load_formation_record and list_formations
+    # moved to AssetManagementSystem (formation FILES are bytes at rest);
+    # the engine leg below consumes a record the asset system loaded.
 
-        Purpose:
-            Shared read lane for restore_formation and the persistence
-            analyzer facades.
-
-        Args:
-            formation_name:
-                The stored formation's name.
-            profile_name:
-                Profile whose formation store is read; None means the
-                active profile.
-
-        Returns:
-            Dict[str, object]: The stored formation record.
-
-        Raises:
-            RuntimeError: If the subsystem has been cleaned.
-            KeyError: If no formation exists under the name.
-        """
-        self.check_cleaned()
-        with self._lock:
-            resolved_name = (
-                profile_name
-                if profile_name is not None
-                else self._active_profile_name
-            )
-        return self._crystallizer_cache.load_formation(
-            resolved_name, formation_name
-        )
-
-    def restore_formation(
-            self,
-            formation_name: str,
-            profile_name: Optional[str] = None,
-    ) -> Dict[str, object]:
-        """
-        Rebuild one stored formation into the live runtime.
-
-        Purpose:
-            The scoped-restore lane: the formation's payload slice is
-            manufactured into ONE synthetic chain window (journal minted
-            in canonical kind order) and replayed by the EXISTING
-            RestoreEngine - identical all-or-nothing and shortfall
-            semantics as a whole-world restore, scoped to the formation.
-
-        Args:
-            formation_name:
-                The stored formation's name.
-            profile_name:
-                Profile whose formation store is read; None means the
-                active profile.
-
-        Returns:
-            Dict[str, object]:
-                The detached RestoreReport payload.
-
-        Raises:
-            RuntimeError: If the subsystem has been cleaned, or a replay
-                stage failed (after teardown; cause chained).
-            KeyError: If no formation exists under the name.
-        """
-        self.check_cleaned()
-        with self._lock:
-            resolved_name = (
-                profile_name
-                if profile_name is not None
-                else self._active_profile_name
-            )
-        formation_record = self._crystallizer_cache.load_formation(
-            resolved_name, formation_name
-        )
-        payloads = dict(formation_record["payloads"])
-        # Manufacture the single synthetic window: canonical kind order
-        # mirrors the engine's stage order so folds see parents first.
-        kind_order = (
-            "frame", "spellbook", "conduit", "spell_index",
-            "spell_crystal", "cluster", "contract",
-        )
-        journal: List[List[object]] = []
-        sequence = 0
-        for kind in kind_order:
-            for key in sorted(dict(payloads.get(kind, {})).keys()):
-                sequence += 1
-                journal.append([sequence, kind, key])
-        window = {"journal": journal, "payloads": payloads}
-        # Lazy import mirrors load_checkpoint (runtime import pressure).
-        from melder.crystallizer.persistence.restore_engine import (
-            RestoreEngine,
-        )
-
-        engine = RestoreEngine(
-            profile_name=resolved_name,
-            checkpoint_ids=["formation-{0}".format(formation_name)],
-            chain=[window],
-        )
-        try:
-            report = engine.restore()
-            payload = report.describe()
-            report.cleanup()
-            return payload
-        finally:
-            if not engine.cleaned:
-                engine.cleanup()
-
-    def list_formations(
-            self,
-            profile_name: Optional[str] = None,
-    ) -> List[str]:
-        """
-        Return the targeted profile's stored formation names.
-
-        Args:
-            profile_name:
-                Profile to list; None means the active profile.
-
-        Returns:
-            List[str]: Sorted formation names.
-
-        Raises:
-            RuntimeError: If the subsystem has been cleaned.
-        """
-        self.check_cleaned()
-        with self._lock:
-            resolved_name = (
-                profile_name
-                if profile_name is not None
-                else self._active_profile_name
-            )
-        return self._crystallizer_cache.list_formation_names(resolved_name)
+    # NOTE (S4 decomposition): restore_formation_record (the formation
+    # engine leg, incl. the canonical-kind-order synthetic window minting)
+    # moved to BootMediator.plan_formation_load + CrystalLoaderSystem.
+    # The ledger captures formation records; it never replays them.
 
     def cached_item_form(self, checkpoint_id: str) -> Dict[str, object]:
         """
@@ -951,70 +775,6 @@ class PersistenceSystem(Cleanable):
                 self._checkpoint_crystals_by_id[crystal.id] = crystal
                 inserted.append(crystal.id)
         return {"inserted": inserted, "skipped_existing": skipped_existing}
-
-    def reload_profile_from_cache(
-            self,
-            profile_name: str,
-    ) -> Dict[str, object]:
-        """
-        Reload EVERY cached checkpoint of one profile into the ledger.
-
-        Purpose:
-            "Import a world" the owner's way: a profile's cache folder IS
-            its portable form - copy the folder, call this verb on the
-            receiving process, then load_checkpoint unfolds the chain.
-            No manifests, no wrappers: the cached checkpoint items are
-            the whole truth.
-
-        Contract:
-            - Insert-if-absent per crystal (ids already in the ledger
-              keep their live crystals); re-running is idempotent.
-            - Retention dropout does NOT run here (reloading history must
-              not evict newer crystals; cache-reload precedent).
-
-        Args:
-            profile_name:
-                Profile whose cached checkpoints should reload.
-
-        Returns:
-            Dict[str, object]:
-                {"profile_name": str, "inserted": [ids],
-                 "skipped_existing": [ids]}.
-
-        Raises:
-            RuntimeError: If the subsystem has been cleaned.
-            KeyError: If the profile has no cached checkpoints.
-        """
-        self.check_cleaned()
-        cached_ids = (
-            self._crystallizer_cache.list_cached_item_ids_for_profile(
-                profile_name
-            )
-        )
-        if not cached_ids:
-            raise KeyError(
-                "No cached checkpoints exist for profile {0!r}; flush "
-                "some first (flush_checkpoint_to_cache) or copy the "
-                "profile's cache folder into place.".format(profile_name)
-            )
-        inserted: List[str] = []
-        skipped_existing: List[str] = []
-        with self._lock:
-            for checkpoint_id in cached_ids:
-                if checkpoint_id in self._checkpoint_crystals_by_id:
-                    skipped_existing.append(checkpoint_id)
-                    continue
-                cached_item = self._crystallizer_cache.load_cached_item(
-                    checkpoint_id
-                )
-                crystal = PersistenceCrystal.from_cached_item(cached_item)
-                self._checkpoint_crystals_by_id[crystal.id] = crystal
-                inserted.append(crystal.id)
-        return {
-            "profile_name": profile_name,
-            "inserted": inserted,
-            "skipped_existing": skipped_existing,
-        }
 
     def set_checkpoint_retention(self, max_crystals: int) -> None:
         """
@@ -1154,8 +914,10 @@ class PersistenceSystem(Cleanable):
         Returns:
             Dict[str, object]:
                 Active profile name, all profile names, per-profile twin
-                counts (each profile's describe), ledger size, and the
-                cached checkpoint count on disk.
+                counts (each profile's describe), and ledger size. Disk
+                truth (cached checkpoint count) is the asset system's;
+                the Crystallizer facade enriches its record description
+                with it so the facade payload stays complete.
 
         Raises:
             RuntimeError:
@@ -1172,9 +934,6 @@ class PersistenceSystem(Cleanable):
                 },
                 "ledger_checkpoint_count": len(
                     self._checkpoint_crystals_by_id
-                ),
-                "cached_checkpoint_count": len(
-                    self._crystallizer_cache.list_cached_item_ids()
                 ),
             }
 
@@ -1223,40 +982,33 @@ class PersistenceSystem(Cleanable):
         with self._lock:
             return list(self._checkpoint_crystals_by_id.keys())
 
-    def load_checkpoint(self, checkpoint_id: str) -> Dict[str, object]:
+    # NOTE (S4 decomposition): load_checkpoint's engine seat moved to
+    # CrystalLoaderSystem (crystal_loader_system/) - the ledger now hands
+    # out the DETACHED chain below and never constructs engines.
+
+    def detach_profile_chain(self, checkpoint_id: str) -> Dict[str, object]:
         """
-        Unfold one checkpoint's world into the live runtime (boot verb).
+        Assemble one checkpoint's detached profile chain (loader feedstock).
 
         Purpose:
-            The restore engine's seat: resolve the target's profile chain
-            (every ledger crystal sealed from the same profile up to and
-            including the target, in creation order), fold it, and replay
-            it through the public runtime verbs in canon order.
-
-        Contract:
-            - Restart-lane by design: intended for unfolding a world at
-              fresh boot, not for mutating a running system.
-            - All-or-nothing: a replay failure tears the partially built
-              world down and raises (the record itself is never mutated).
-            - The chain is assembled DETACHED under the subsystem lock; the
-              engine runs OUTSIDE it (replay re-enters the emit path, which
-              must be free to record the rebuilt world).
-            - Re-emission is intended: the rebuilt world re-records itself
-              into the ACTIVE profile under fresh identities.
+            Resolve the target's profile chain - every ledger crystal
+            sealed from the same profile up to and including the target,
+            in creation order - fully DETACHED under the subsystem lock so
+            the loader's engine can run OUTSIDE it (replay re-enters the
+            emit path, which must be free to record the rebuilt world).
 
         Args:
             checkpoint_id:
-                ULID identity of the checkpoint to load.
+                ULID identity of the target checkpoint.
 
         Returns:
             Dict[str, object]:
-                The detached RestoreReport payload (status, built counts,
-                shortfall entries, identity translation map).
+                {"profile_name": str, "checkpoint_ids": [ULIDs in
+                creation order], "chain": [detached replay_data windows]}.
 
         Raises:
             RuntimeError:
-                If the subsystem has been cleaned, or a replay stage failed
-                (after teardown; original error chained).
+                If the subsystem has been cleaned.
             KeyError:
                 If no checkpoint exists under `checkpoint_id`.
         """
@@ -1274,27 +1026,15 @@ class PersistenceSystem(Cleanable):
                 )
             ]
             chain_crystals.sort(key=lambda crystal: crystal.checkpoint_number)
-            checkpoint_ids = [crystal.id for crystal in chain_crystals]
-            chain = [crystal.replay_data() for crystal in chain_crystals]
-        # Lazy import: the engine drives runtime surfaces (3.14t-only import
-        # chain) and must not burden record-only usage of this module.
-        from melder.crystallizer.persistence.restore_engine import (
-            RestoreEngine,
-        )
-
-        engine = RestoreEngine(
-            profile_name=profile_name,
-            checkpoint_ids=checkpoint_ids,
-            chain=chain,
-        )
-        try:
-            report = engine.restore()
-            payload = report.describe()
-            report.cleanup()
-            return payload
-        finally:
-            if not engine.cleaned:
-                engine.cleanup()
+            return {
+                "profile_name": profile_name,
+                "checkpoint_ids": [
+                    crystal.id for crystal in chain_crystals
+                ],
+                "chain": [
+                    crystal.replay_data() for crystal in chain_crystals
+                ],
+            }
 
     def verify_checkpoint_chain(
             self,

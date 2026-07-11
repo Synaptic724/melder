@@ -17,7 +17,7 @@ from melder.crystallizer.configuration.crystallizer_configuration import (
     CrystallizerConfiguration,
 )
 from melder.crystallizer.crystallizer import Crystallizer
-from melder.crystallizer.persistence.recorded_unit_state import RecordedUnitState
+from melder.crystallizer.crystals.recorded_unit_state import RecordedUnitState
 
 
 class _StubSpellCrystal:
@@ -239,7 +239,7 @@ def test_auto_flush_ships_cadence_seals_to_the_cache(monkeypatch, tmp_path):
     Raises:
         AssertionError: If the auto-flush knob leaks or under-ships.
     """
-    from melder.crystallizer.persistence.crystallizer_cache import (
+    from melder.crystallizer.asset_management.crystallizer_cache import (
         CrystallizerCache,
     )
     cache_root = tmp_path / "__crystallizer_cache__"

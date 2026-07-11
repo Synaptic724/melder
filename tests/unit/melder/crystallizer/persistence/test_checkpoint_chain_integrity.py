@@ -14,7 +14,7 @@ from melder.crystallizer.persistence.persistence_crystal import (
 from melder.crystallizer.persistence.persistence_system import (
     PersistenceSystem,
 )
-from melder.crystallizer.persistence.recorded_unit_state import (
+from melder.crystallizer.crystals.recorded_unit_state import (
     RecordedUnitState,
 )
 

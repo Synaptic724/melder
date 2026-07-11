@@ -4,28 +4,28 @@ from typing import ClassVar, Dict, List, Optional, Sequence
 from melder.__melder_registration_guard__ import (
     __melder_registration_guard__ as _mrg,
 )
-from melder.crystallizer.persistence.analysis.cluster_membership_strategy import (
+from melder.crystallizer.crystal_analysis.preflight.cluster_membership_strategy import (
     ClusterMembershipStrategy,
 )
-from melder.crystallizer.persistence.analysis.configuration_loss_strategy import (
+from melder.crystallizer.crystal_analysis.preflight.configuration_loss_strategy import (
     ConfigurationLossStrategy,
 )
-from melder.crystallizer.persistence.analysis.contract_peer_strategy import (
+from melder.crystallizer.crystal_analysis.preflight.contract_peer_strategy import (
     ContractPeerStrategy,
 )
-from melder.crystallizer.persistence.analysis.frame_posture_strategy import (
+from melder.crystallizer.crystal_analysis.preflight.frame_posture_strategy import (
     FramePostureStrategy,
 )
-from melder.crystallizer.persistence.analysis.hydration_strategy import (
+from melder.crystallizer.crystal_analysis.preflight.hydration_strategy import (
     HydrationStrategy,
 )
-from melder.crystallizer.persistence.analysis.link_integrity_strategy import (
+from melder.crystallizer.crystal_analysis.preflight.link_integrity_strategy import (
     LinkIntegrityStrategy,
 )
-from melder.crystallizer.persistence.analysis.synthetic_source_integrity_strategy import (
+from melder.crystallizer.crystal_analysis.preflight.synthetic_source_integrity_strategy import (
     SyntheticSourceIntegrityStrategy,
 )
-from melder.crystallizer.persistence.analysis.persistence_analysis_strategy import (
+from melder.crystallizer.crystal_analysis.preflight.persistence_analysis_strategy import (
     PersistenceAnalysisStrategy,
 )
 from melder.utilities.general_base.cleanable import Cleanable

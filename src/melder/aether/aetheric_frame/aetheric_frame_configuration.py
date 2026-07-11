@@ -8,7 +8,7 @@ from melder.__melder_registration_guard__ import __melder_registration_guard__ a
 from melder.aether.spellbook.configuration.system_state import SystemState
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.crystallizer.crystallizer import Crystallizer
-from melder.crystallizer.persistence.crystals.aetheric_frame_crystal import AethericFrameCrystal
+from melder.crystallizer.crystals.aetheric_frame_crystal import AethericFrameCrystal
 from melder.utilities.helpers.general_helpers import EnumHelpers
 from melder.utilities.helpers.id_builder import IDBuilder
 from melder.utilities.synchronization.safeguard import SafeGuard

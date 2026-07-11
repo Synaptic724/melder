@@ -10,7 +10,7 @@ from melder.nexus.configuration.rift_space_type import RiftSpaceType
 from melder.nexus.configuration.rift_validation_mode import RiftValidationMode
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.crystallizer.crystallizer import Crystallizer
-from melder.crystallizer.persistence.crystals.nexus_crystal import NexusCrystal
+from melder.crystallizer.crystals.nexus_crystal import NexusCrystal
 from melder.utilities.helpers.general_helpers import EnumHelpers
 from melder.utilities.helpers.id_builder import IDBuilder
 

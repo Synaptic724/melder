@@ -3,14 +3,14 @@ Component tests for PersistenceSystem flows with real twins: multi-profile
 checkpoint isolation, ledger survival across profile deletion, clear-then-
 capture-from-zero, and eviction/state events inside sealed windows.
 """
-from melder.crystallizer.persistence.crystals.aether_crystal import AetherCrystal
-from melder.crystallizer.persistence.crystals.conduit_crystal import ConduitCrystal
-from melder.crystallizer.persistence.crystals.nexus_crystal import NexusCrystal
-from melder.crystallizer.persistence.crystals.spellbook_crystal import (
+from melder.crystallizer.crystals.aether_crystal import AetherCrystal
+from melder.crystallizer.crystals.conduit_crystal import ConduitCrystal
+from melder.crystallizer.crystals.nexus_crystal import NexusCrystal
+from melder.crystallizer.crystals.spellbook_crystal import (
     SpellbookCrystal,
 )
 from melder.crystallizer.persistence.persistence_system import PersistenceSystem
-from melder.crystallizer.persistence.recorded_unit_state import RecordedUnitState
+from melder.crystallizer.crystals.recorded_unit_state import RecordedUnitState
 
 
 class _StubSpellCrystal:

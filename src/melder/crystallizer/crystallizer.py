@@ -12,25 +12,28 @@ from melder.__melder_registration_guard__ import __melder_registration_guard__ a
 from melder.crystallizer.configuration.crystallizer_configuration import (
     CrystallizerConfiguration,
 )
-from melder.crystallizer.persistence.crystals.crystallizer_crystal import (
+from melder.crystallizer.crystals.crystallizer_crystal import (
     CrystallizerCrystal,
 )
-from melder.crystallizer.persistence.external_persistence_manager import (
-    ExternalPersistenceManager,
+from melder.crystallizer.asset_management.asset_management_system import (
+    AssetManagementSystem,
 )
-from melder.crystallizer.persistence.external_persistence_manager_configuration import (
+from melder.crystallizer.crystal_loader_system.crystal_loader_system import (
+    CrystalLoaderSystem,
+)
+from melder.crystallizer.asset_management.external_persistence_manager_configuration import (
     ExternalPersistenceManagerConfiguration,
 )
-from melder.crystallizer.persistence.crystals.spell_crystal import SpellCrystal
+from melder.crystallizer.crystals.spell_crystal import SpellCrystal
 from melder.crystallizer.synthetic_module import SyntheticModule
 from melder.crystallizer.persistence.persistence_system import PersistenceSystem
-from melder.crystallizer.persistence.crystals.contract_crystal import (
+from melder.crystallizer.crystals.contract_crystal import (
     ContractCrystal,
 )
-from melder.crystallizer.persistence.crystals.spell_index_crystal import (
+from melder.crystallizer.crystals.spell_index_crystal import (
     SpellIndexCrystal,
 )
-from melder.crystallizer.persistence.recorded_unit_state import RecordedUnitState
+from melder.crystallizer.crystals.recorded_unit_state import RecordedUnitState
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
 
@@ -64,7 +67,8 @@ class Crystallizer(Cleanable):
         "_configured",
         "_activated",
         "_persistence_system",
-        "_external_persistence_manager",
+        "_asset_management_system",
+        "_crystal_loader_system",
         "_checkpoint_interval_seconds",
         "_last_automatic_checkpoint_monotonic",
         "_auto_flush_checkpoints",
@@ -127,13 +131,20 @@ class Crystallizer(Cleanable):
             self._configured: bool = False
             self._activated: bool = False
             self._persistence_system: PersistenceSystem = PersistenceSystem()
-            # Sibling-rank remote transport (owner hierarchy: crystallizer
-            # -> persistence_system | external_persistence_manager). None
-            # until the user attaches handler callables via
+            # Same-rank children (V3 ownership): the record and the asset
+            # system. The asset system BORROWS the record (feedstock in,
+            # insert sink back) and OWNS the cache + the optional
+            # ExternalPersistenceManager the user attaches via
             # configure_external_persistence_manager.
-            self._external_persistence_manager: Optional[
-                ExternalPersistenceManager
-            ] = None
+            self._asset_management_system: AssetManagementSystem = (
+                AssetManagementSystem(self._persistence_system)
+            )
+            # The unfold owner (V3 third child): every load runs through
+            # its mediated admission pipeline and it remembers the last
+            # load's detached payload.
+            self._crystal_loader_system: CrystalLoaderSystem = (
+                CrystalLoaderSystem(self._persistence_system)
+            )
             # Automatic-checkpoint cadence; installed from the frozen
             # configuration at activate() (0.0 = not yet activated).
             self._checkpoint_interval_seconds: float = 0.0
@@ -163,11 +174,18 @@ class Crystallizer(Cleanable):
             if self._cleaned:
                 return
             self._cleaned = True
+            # Children first, borrowers BEFORE the record they borrow:
+            # loader, then assets, then the record.
             if (
-                    self._external_persistence_manager is not None
-                    and not self._external_persistence_manager.cleaned
+                    self._crystal_loader_system is not None
+                    and not self._crystal_loader_system.cleaned
             ):
-                self._external_persistence_manager.cleanup()
+                self._crystal_loader_system.cleanup()
+            if (
+                    self._asset_management_system is not None
+                    and not self._asset_management_system.cleaned
+            ):
+                self._asset_management_system.cleanup()
             if self._persistence_system is not None and not self._persistence_system.cleaned:
                 self._persistence_system.cleanup()
             if self._configuration is not None:
@@ -175,7 +193,8 @@ class Crystallizer(Cleanable):
             self._configured = False
             self._activated = False
 
-            del self._external_persistence_manager
+            del self._crystal_loader_system
+            del self._asset_management_system
             del self._persistence_system
             del self._checkpoint_interval_seconds
             del self._last_automatic_checkpoint_monotonic
@@ -466,10 +485,8 @@ class Crystallizer(Cleanable):
             # Crash-safe lane: the cadence seal ships to the local cache
             # immediately (one atomic JSON write per interval), then to
             # the external manager when one is attached (the DB opt-in).
-            flushed = self._persistence_system.flush_checkpoint_to_cache(
-                sealed_id
-            )
-            self._upload_flushed_checkpoints(flushed)
+            # S3 decomposition: one asset verb runs both legs.
+            self._asset_management_system.flush_checkpoint(sealed_id)
 
     def deactivate(self) -> None:
         """
@@ -1239,7 +1256,10 @@ class Crystallizer(Cleanable):
 
         Returns:
             Dict[str, object]:
-                The persistence system's describe() payload.
+                The persistence system's describe() payload, enriched
+                with the asset system's cached checkpoint count (disk
+                truth moved custody in S3; the facade payload stays
+                complete).
 
         Raises:
             RuntimeError:
@@ -1247,7 +1267,11 @@ class Crystallizer(Cleanable):
         """
         self.check_cleaned()
         self._require_activated()
-        return self._persistence_system.describe()
+        record_description = self._persistence_system.describe()
+        record_description["cached_checkpoint_count"] = len(
+            self._asset_management_system.list_cached_checkpoint_ids()
+        )
+        return record_description
 
     def checkpoint_replay_data(self, checkpoint_id: str) -> Dict[str, object]:
         """
@@ -1293,14 +1317,11 @@ class Crystallizer(Cleanable):
         """
         self.check_cleaned()
         self._require_activated()
-        flushed = self._persistence_system.flush_checkpoint_to_cache(
-            checkpoint_id
-        )
-        # DB opt-in: freshly flushed items also ship through the external
-        # manager when one is attached (lenient by default - the local
-        # lane never dies on a remote).
-        self._upload_flushed_checkpoints(flushed)
-        return flushed
+        # Seal-then-ship: the asset system pulls feedstock from the
+        # record, writes the cache, FIFO-caps it, and runs the lenient
+        # remote upload leg when a manager is attached - one verb, both
+        # legs (S3 decomposition absorbed the old upload hook).
+        return self._asset_management_system.flush_checkpoint(checkpoint_id)
 
     def reload_cached_checkpoint(self, checkpoint_id: str) -> Dict[str, object]:
         """
@@ -1323,7 +1344,7 @@ class Crystallizer(Cleanable):
         """
         self.check_cleaned()
         self._require_activated()
-        return self._persistence_system.reload_checkpoint_from_cache(
+        return self._asset_management_system.reload_checkpoint_from_cache(
             checkpoint_id
         )
 
@@ -1341,7 +1362,7 @@ class Crystallizer(Cleanable):
         """
         self.check_cleaned()
         self._require_activated()
-        return self._persistence_system.list_cached_checkpoint_ids()
+        return self._asset_management_system.list_cached_checkpoint_ids()
 
     def verify_checkpoint_chain(
             self,
@@ -1400,7 +1421,7 @@ class Crystallizer(Cleanable):
         """
         self.check_cleaned()
         self._require_activated()
-        return self._persistence_system.reload_profile_from_cache(
+        return self._asset_management_system.reload_profile_from_cache(
             profile_name
         )
 
@@ -1441,13 +1462,15 @@ class Crystallizer(Cleanable):
         """
         self.check_cleaned()
         self._require_activated()
-        return self._persistence_system.save_formation(
+        # Record side captures + assembles; asset side persists the file.
+        formation_record = self._persistence_system.capture_formation_record(
             formation_name,
             conduit_id=conduit_id,
             frame_name=frame_name,
             profile_name=profile_name,
             description=description,
         )
+        return self._asset_management_system.store_formation(formation_record)
 
     def restore_formation(
             self,
@@ -1478,8 +1501,14 @@ class Crystallizer(Cleanable):
         """
         self.check_cleaned()
         self._require_activated()
-        return self._persistence_system.restore_formation(
+        # Asset side loads the stored record; the loader side mints the
+        # scoped plan and runs the gated engine (S4 - the ledger never
+        # replays anything anymore).
+        formation_record = self._asset_management_system.load_formation_record(
             formation_name, profile_name=profile_name
+        )
+        return self._crystal_loader_system.restore_formation_record(
+            formation_record
         )
 
     def list_formations(
@@ -1501,7 +1530,7 @@ class Crystallizer(Cleanable):
         """
         self.check_cleaned()
         self._require_activated()
-        return self._persistence_system.list_formations(profile_name)
+        return self._asset_management_system.list_formations(profile_name)
 
     def analyze_formation(
             self,
@@ -1533,13 +1562,13 @@ class Crystallizer(Cleanable):
         """
         self.check_cleaned()
         self._require_activated()
-        from melder.crystallizer.persistence.analysis.persistence_analyzer import (
+        from melder.crystallizer.crystal_analysis.preflight.persistence_analyzer import (
             PersistenceAnalyzer,
         )
 
         formation_record = (
-            self._persistence_system.load_formation_record(
-                formation_name, profile_name
+            self._asset_management_system.load_formation_record(
+                formation_name, profile_name=profile_name
             )
         )
         analyzer = PersistenceAnalyzer()
@@ -1573,7 +1602,7 @@ class Crystallizer(Cleanable):
         """
         self.check_cleaned()
         self._require_activated()
-        from melder.crystallizer.persistence.analysis.persistence_analyzer import (
+        from melder.crystallizer.crystal_analysis.preflight.persistence_analyzer import (
             PersistenceAnalyzer,
         )
 
@@ -1599,8 +1628,9 @@ class Crystallizer(Cleanable):
             The DB opt-in seam (owner ruling): the user loads their own
             upload/download callables into a SEPARATE configuration -
             their SQL bootstrap, their secrets, their driver - and this
-            verb builds the crystallizer-owned ExternalPersistenceManager
-            from it. Same ownership rank as the persistence system.
+            verb builds the ASSET-OWNED ExternalPersistenceManager from
+            it (S3 decomposition: bytes-at-rest custody lives in
+            AssetManagementSystem, the record's same-rank sibling).
 
         Contract:
             - Freezes the configuration if the caller has not (load it
@@ -1622,14 +1652,11 @@ class Crystallizer(Cleanable):
                 construction contract.
         """
         self.check_cleaned()
-        if not manager_configuration.frozen:
-            manager_configuration.freeze()
-        manager = ExternalPersistenceManager(manager_configuration)
-        with self._lock:
-            previous = self._external_persistence_manager
-            self._external_persistence_manager = manager
-        if previous is not None and not previous.cleaned:
-            previous.cleanup()
+        # Custody moved (S3): the asset system owns the manager; freeze +
+        # replace-and-clean semantics live on its verb.
+        self._asset_management_system.configure_external_persistence_manager(
+            manager_configuration
+        )
 
     def describe_external_persistence_manager(self) -> Dict[str, object]:
         """
@@ -1644,12 +1671,10 @@ class Crystallizer(Cleanable):
             RuntimeError: If the crystallizer has been cleaned.
         """
         self.check_cleaned()
-        manager = self._external_persistence_manager
-        if manager is None:
-            return {"attached": False}
-        description = manager.describe()
-        description["attached"] = True
-        return description
+        return (
+            self._asset_management_system
+            .describe_external_persistence_manager()
+        )
 
     def reload_profile_from_external(
             self,
@@ -1679,48 +1704,14 @@ class Crystallizer(Cleanable):
         """
         self.check_cleaned()
         self._require_activated()
-        manager = self._external_persistence_manager
-        if manager is None:
-            raise RuntimeError(
-                "No ExternalPersistenceManager is attached; call "
-                "configure_external_persistence_manager(...) with your "
-                "handler configuration first."
-            )
-        cached_items = manager.download_profile(profile_name)
-        summary = self._persistence_system.insert_cached_items(cached_items)
-        summary["profile_name"] = profile_name
-        return summary
+        return self._asset_management_system.reload_profile_from_external(
+            profile_name
+        )
 
-    def _upload_flushed_checkpoints(self, checkpoint_ids: List[str]) -> None:
-        """
-        Internal
-
-        Push freshly flushed checkpoints through the external manager.
-
-        Contract:
-            - NO-OP when no manager is attached or uploads are disabled.
-            - Failure posture rides the manager's strictness knob
-              (lenient default never breaks the flush lane).
-
-        Args:
-            checkpoint_ids:
-                The just-flushed ledger ids.
-
-        Returns:
-            None.
-        """
-        manager = self._external_persistence_manager
-        if manager is None or not manager.upload_enabled:
-            return
-        for checkpoint_id in checkpoint_ids:
-            cached_item = self._persistence_system.cached_item_form(
-                checkpoint_id
-            )
-            manager.upload_checkpoint(
-                str(cached_item.get("profile_name", "default")),
-                checkpoint_id,
-                cached_item,
-            )
+    # NOTE (S3 decomposition): the upload hook
+    # (_upload_flushed_checkpoints) was absorbed into
+    # AssetManagementSystem.flush_checkpoint - one feedstock pull now
+    # serves both the cache write and the remote upload leg.
 
     def load_checkpoint(self, checkpoint_id: str) -> Dict[str, object]:
         """
@@ -1750,7 +1741,10 @@ class Crystallizer(Cleanable):
         """
         self.check_cleaned()
         self._require_activated()
-        return self._persistence_system.load_checkpoint(checkpoint_id)
+        # S4: every load runs the loader's mediated admission pipeline
+        # (plan -> gated engine -> adjudicated payload; blockers refuse
+        # before any replay). Payload gains the additive "admission" key.
+        return self._crystal_loader_system.load_checkpoint(checkpoint_id)
 
     def _require_configured(self) -> None:
         """

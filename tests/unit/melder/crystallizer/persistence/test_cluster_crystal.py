@@ -4,7 +4,7 @@ Unit contract tests for ClusterCrystal: the record's cluster map
 """
 import pytest
 
-from melder.crystallizer.persistence.crystals.cluster_crystal import ClusterCrystal
+from melder.crystallizer.crystals.cluster_crystal import ClusterCrystal
 from melder.crystallizer.persistence.persistence_profile import PersistenceProfile
 
 

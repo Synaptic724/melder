@@ -9,7 +9,7 @@ Runs only on 3.14t (melder package root import chain).
 """
 import pytest
 
-from melder.crystallizer.persistence.restore_engine import (
+from melder.crystallizer.crystal_loader_system.restore_engine import (
     RestoreEngine,
     RestoreReport,
 )
@@ -633,7 +633,7 @@ def test_spell_crystal_harvests_synthetic_module_sources():
     """
     import sys
 
-    from melder.crystallizer.persistence.crystals.spell_crystal import (
+    from melder.crystallizer.crystals.spell_crystal import (
         SpellCrystal,
     )
     from melder.crystallizer.synthetic_module import SyntheticModule

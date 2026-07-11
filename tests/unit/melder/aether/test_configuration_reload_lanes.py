@@ -22,7 +22,7 @@ from melder.aether.spellbook.configuration.system_state import SystemState
 from melder.crystallizer.configuration.crystallizer_configuration import (
     CrystallizerConfiguration,
 )
-from melder.crystallizer.persistence.crystals.crystallizer_crystal import (
+from melder.crystallizer.crystals.crystallizer_crystal import (
     CrystallizerCrystal,
 )
 from melder.nexus.configuration.nexus_configuration import NexusConfiguration

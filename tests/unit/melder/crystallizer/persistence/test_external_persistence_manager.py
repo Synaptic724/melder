@@ -7,16 +7,16 @@ Runs only on 3.14t (melder package root import chain).
 """
 import pytest
 
-from melder.crystallizer.persistence.external_persistence_manager import (
+from melder.crystallizer.asset_management.external_persistence_manager import (
     ExternalPersistenceManager,
 )
-from melder.crystallizer.persistence.external_persistence_manager_configuration import (
+from melder.crystallizer.asset_management.external_persistence_manager_configuration import (
     ExternalPersistenceManagerConfiguration,
 )
 from melder.crystallizer.persistence.persistence_system import (
     PersistenceSystem,
 )
-from melder.crystallizer.persistence.recorded_unit_state import (
+from melder.crystallizer.crystals.recorded_unit_state import (
     RecordedUnitState,
 )
 

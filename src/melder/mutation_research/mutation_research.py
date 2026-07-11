@@ -8,7 +8,7 @@ if TYPE_CHECKING:
     from melder.aether.spellbook.bind.spell_index import SpellIndex
 
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
-from melder.crystallizer.persistence.recorded_unit_state import RecordedUnitState
+from melder.crystallizer.crystals.recorded_unit_state import RecordedUnitState
 from melder.mutation_research.mutation_configuration import (
     MutationResearchConfiguration,
 )

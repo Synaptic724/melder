@@ -31,7 +31,7 @@ if TYPE_CHECKING:
         FrameACLProfile,
     )
 
-from melder.crystallizer.persistence.recorded_unit_state import RecordedUnitState
+from melder.crystallizer.crystals.recorded_unit_state import RecordedUnitState
 from melder.nexus.acl.frame_acl_compiler import FrameACLCompiler
 from melder.nexus.acl.frame_acl_compiled_access_surface import (
     CompiledFrameACLAccessSurface,

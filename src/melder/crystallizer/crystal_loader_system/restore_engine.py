@@ -301,6 +301,7 @@ class RestoreEngine(Cleanable):
         "_chain",
         "_report",
         "_consumed",
+        "_refuse_on_blockers",
         "_aether_payload",
         "_crystallizer_payload",
         "_nexus_payload",
@@ -326,6 +327,7 @@ class RestoreEngine(Cleanable):
             profile_name: str,
             checkpoint_ids: List[str],
             chain: List[Dict[str, object]],
+            refuse_on_blockers: bool = False,
     ) -> None:
         """
         Initialize one engine over a detached, ordered checkpoint chain.
@@ -339,6 +341,13 @@ class RestoreEngine(Cleanable):
                 The chain's `replay_data()` payloads in the same order:
                 each {"journal": [[sequence, kind, key], ...],
                       "payloads": {kind: {key: payload}}}.
+            refuse_on_blockers:
+                Admission gate (S4 verdict law): when True, a "blockers"
+                preflight verdict over the FOLDED bundle refuses the load
+                BEFORE any replay (nothing is built, so no teardown is
+                needed). The BootMediator always passes True; the default
+                False preserves the legacy direct-engine behavior for
+                existing unit suites.
 
         Returns:
             None.
@@ -360,6 +369,7 @@ class RestoreEngine(Cleanable):
             profile_name, checkpoint_ids
         )
         self._consumed: bool = False
+        self._refuse_on_blockers: bool = refuse_on_blockers
         # Folded stores: recorded truth after later-wins + tombstones.
         self._aether_payload: Optional[Dict[str, object]] = None
         self._crystallizer_payload: Optional[Dict[str, object]] = None
@@ -405,6 +415,7 @@ class RestoreEngine(Cleanable):
         del self._chain
         del self._report
         del self._consumed
+        del self._refuse_on_blockers
         del self._aether_payload
         del self._crystallizer_payload
         del self._nexus_payload
@@ -452,10 +463,38 @@ class RestoreEngine(Cleanable):
         self._fold_chain()
         # Owner ruling: analysis strategies run AS we load - the folded
         # bundle pre-flights before any replay, and the findings ride
-        # the restore report ("preflight"). The engine never gates on
-        # them (all-or-nothing + shortfall honesty already protect the
-        # world); the bootstrap's preflight gate is the opt-in refusal.
-        self._report.set_preflight(self._run_preflight())
+        # the restore report ("preflight"). S4 verdict law: when the
+        # admission knob is set (every mediated load), a "blockers"
+        # verdict REFUSES the load here - the only seam owning
+        # authoritative folded truth - before anything is built.
+        preflight_report = self._run_preflight()
+        self._report.set_preflight(preflight_report)
+        if (
+                self._refuse_on_blockers
+                and str(preflight_report.get("verdict", "clean")) == "blockers"
+        ):
+            blocker_rows = [
+                finding
+                for finding in list(preflight_report.get("findings", []))
+                if str(finding.get("severity", "")) == "blocker"
+            ]
+            self._report.mark_failed("admission")
+            raise RuntimeError(
+                "admission refused the load: the folded chain pre-flighted "
+                "with {0} blocker finding(s) - {1}. Fix the recorded world "
+                "(or its environment) and retry; nothing was built.".format(
+                    len(blocker_rows),
+                    "; ".join(
+                        "{0}[{1}:{2}] {3}".format(
+                            str(row.get("strategy", "?")),
+                            str(row.get("kind", "?")),
+                            str(row.get("key", "?")),
+                            str(row.get("detail", "")),
+                        )
+                        for row in blocker_rows
+                    ),
+                )
+            )
         stage = "fold"
         try:
             # Canonical configuration order (owner ruling):
@@ -506,7 +545,7 @@ class RestoreEngine(Cleanable):
                 The analyzer's {"findings", "counts", "verdict"} report.
         """
         # Lazy import mirrors the engine's runtime-surface import law.
-        from melder.crystallizer.persistence.analysis.persistence_analyzer import (
+        from melder.crystallizer.crystal_analysis.preflight.persistence_analyzer import (
             PersistenceAnalyzer,
         )
 

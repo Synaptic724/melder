@@ -8,7 +8,7 @@ from melder.utilities.helpers.ulid_factory import new_ulid
 # Melder imports
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.crystallizer.crystallizer import Crystallizer
-from melder.crystallizer.persistence.crystals.spellbook_crystal import SpellbookCrystal
+from melder.crystallizer.crystals.spellbook_crystal import SpellbookCrystal
 
 
 class SpellbookConfiguration(Cleanable):

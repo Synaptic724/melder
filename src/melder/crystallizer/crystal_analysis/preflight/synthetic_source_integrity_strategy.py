@@ -5,7 +5,7 @@ from typing import ClassVar, Dict, List
 from melder.__melder_registration_guard__ import (
     __melder_registration_guard__ as _mrg,
 )
-from melder.crystallizer.persistence.analysis.persistence_analysis_strategy import (
+from melder.crystallizer.crystal_analysis.preflight.persistence_analysis_strategy import (
     PersistenceAnalysisStrategy,
 )
 

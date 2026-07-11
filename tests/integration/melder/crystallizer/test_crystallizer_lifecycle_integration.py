@@ -19,7 +19,7 @@ from melder.crystallizer.configuration.crystallizer_configuration import (
     CrystallizerConfiguration,
 )
 from melder.crystallizer.crystallizer import Crystallizer
-from melder.crystallizer.persistence.recorded_unit_state import RecordedUnitState
+from melder.crystallizer.crystals.recorded_unit_state import RecordedUnitState
 from melder.mutation_research.mutation_configuration import (
     MutationResearchConfiguration,
 )

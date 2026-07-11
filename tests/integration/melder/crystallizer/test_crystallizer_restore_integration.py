@@ -20,7 +20,7 @@ from melder.crystallizer.configuration.crystallizer_configuration import (
     CrystallizerConfiguration,
 )
 from melder.crystallizer.crystallizer import Crystallizer
-from melder.crystallizer.persistence.restore_engine import RestoreEngine
+from melder.crystallizer.crystal_loader_system.restore_engine import RestoreEngine
 from melder.nexus.nexus import Nexus
 from tests._frame_posture_test_support import (
     apply_dynamic_defaults_for_spellbook_configuration,
@@ -102,7 +102,7 @@ def cache_root(tmp_path, monkeypatch):
     Returns:
         Path: The isolated cache root.
     """
-    from melder.crystallizer.persistence import crystallizer_cache
+    from melder.crystallizer.asset_management import crystallizer_cache
 
     root = tmp_path / "__melder_cache__" / "__crystallizer_cache__"
     monkeypatch.setattr(
@@ -653,10 +653,10 @@ def test_pod_bootstrap_rebuilds_the_world_from_the_remote(
     """
     import shutil
 
-    from melder.crystallizer.crystallizer_bootstrap import (
+    from melder.crystallizer.crystal_loader_system.bootstrap_loader import (
         CrystallizerBootstrap,
     )
-    from melder.crystallizer.persistence.external_persistence_manager_configuration import (
+    from melder.crystallizer.asset_management.external_persistence_manager_configuration import (
         ExternalPersistenceManagerConfiguration,
     )
 
@@ -764,7 +764,20 @@ def test_saved_conduit_formation_restores_directly_after_reboot(
     )
     assert crystallizer.list_formations() == ["my-keeper-formation"]
     preflight = crystallizer.analyze_formation("my-keeper-formation")
-    assert preflight["verdict"] == "clean"
+    # Conduit-scoped formations DELIBERATELY exclude the frame twin
+    # (frame posture is frame-scope material; restore fallback-postures
+    # from book hints), so the scope-blind frame_posture strategy warns.
+    # This is the documented current truth until the BootMediator makes
+    # admission scope-aware (decomposition epic S4) - then a conduit
+    # scope interprets frame-absence as expected and this flips back to
+    # a clean verdict for the scope.
+    assert preflight["verdict"] == "warnings"
+    warning_strategies = {
+        finding["strategy"]
+        for finding in preflight["findings"]
+        if finding["severity"] == "warning"
+    }
+    assert warning_strategies == {"frame_posture"}
 
     rebooted = _fresh_boot()
     assert rebooted.list_formations() == ["my-keeper-formation"]
@@ -774,7 +787,50 @@ def test_saved_conduit_formation_restores_directly_after_reboot(
     assert report["built_counts"]["spellbook"] == 1
     assert report["built_counts"]["conduit"] == 1
     assert report["built_counts"]["spell_active"] == 1
+    # S4 flip-back (the S1 acceptance criterion landed): admission is
+    # scope-aware - the conduit-scoped load adjudicates the expected
+    # frame_posture warning away, so the ADMISSION verdict is clean
+    # while the raw preflight above stays honest "warnings".
+    admission = dict(report["admission"])
+    assert admission["scope"] == "conduit"
+    assert admission["verdict"] == "clean"
+    assert len(list(admission["reclassified"])) >= 1
     assert rebooted.get_spell_crystal(spell_id).id == spell_id
+
+
+def test_auto_flush_cadence_ships_the_automatic_seal(cache_root):
+    """
+    Purpose:
+        Regression (S-test; symptom: the S3 decomposition left the
+        automatic-cadence auto-flush lane calling a removed ledger verb -
+        caught by gate grep, never by a test, and it would have
+        AttributeError'd in production on the first interval).
+    Contract:
+        With auto-flush armed and the cadence interval elapsed, one
+        cadence tick seals an automatic checkpoint AND ships it to the
+        local cache through the asset system (seal-then-ship, both legs).
+    Returns:
+        None.
+    Raises:
+        AssertionError: If the cadence seal never reaches the cache.
+    """
+    crystallizer = _activate_crystallizer()
+    book = _dynamic_book()
+    book.bind(
+        spell=RestoreAlpha,
+        existence=Existence.unique,
+        permissions="create",
+    )
+    book.conjure(dynamic=True, name="cadence")
+    # Arm the cadence directly (the regression harness forces the exact
+    # private posture the production ticker reaches: auto-flush on,
+    # interval elapsed) - the SEAM under test is the flush routing.
+    crystallizer._auto_flush_checkpoints = True
+    crystallizer._checkpoint_interval_seconds = 0.0
+    crystallizer._last_automatic_checkpoint_monotonic = 0.0
+    crystallizer._maybe_create_automatic_checkpoint()
+    cached_ids = crystallizer.list_cached_checkpoint_ids()
+    assert cached_ids != []
 
 
 def test_synthetic_rooted_spell_restores_across_the_boot_boundary(
@@ -799,18 +855,27 @@ def test_synthetic_rooted_spell_restores_across_the_boot_boundary(
     """
     import sys
 
+    import hashlib
+
     from melder.crystallizer.synthetic_module import SyntheticModule
 
     module_name = "m3_live_world"
+    module_source_text = (
+        "class M3LiveService:\n"
+        "    def __init__(self) -> None:\n"
+        "        self.alive = True\n"
+    )
     synthetic_module = SyntheticModule(
         module_name=module_name,
         spell_crystal_id="m3-live-crystal",
-        source_text=(
-            "class M3LiveService:\n"
-            "    def __init__(self) -> None:\n"
-            "        self.alive = True\n"
-        ),
-        source_sha256="m3-live-sha",
+        source_text=module_source_text,
+        # The REAL fingerprint: S4 admission refuses tampered-looking
+        # synthetic sources (synthetic_source_integrity blocker), so the
+        # fixture must carry true integrity - the old "m3-live-sha"
+        # placeholder read as tampering and correctly refused the boot.
+        source_sha256=hashlib.sha256(
+            module_source_text.encode("utf-8")
+        ).hexdigest(),
         binding_signature="m3-live-binding",
     )
     try:

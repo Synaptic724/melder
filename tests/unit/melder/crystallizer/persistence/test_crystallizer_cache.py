@@ -8,8 +8,8 @@ under src/melder/__melder_cache__ is never touched.
 """
 import pytest
 
-from melder.crystallizer.persistence.crystals.aether_crystal import AetherCrystal
-from melder.crystallizer.persistence.crystallizer_cache import CrystallizerCache
+from melder.crystallizer.crystals.aether_crystal import AetherCrystal
+from melder.crystallizer.asset_management.crystallizer_cache import CrystallizerCache
 from melder.crystallizer.persistence.persistence_system import PersistenceSystem
 
 
@@ -107,22 +107,32 @@ def test_flush_and_reload_recover_history_across_systems(cache_root):
     Raises:
         AssertionError: If history fails to survive the instance boundary.
     """
+    # RE-HOMED (S-test): the cache lanes live on AssetManagementSystem
+    # over a borrowed record since S3.
+    from melder.crystallizer.asset_management.asset_management_system import (
+        AssetManagementSystem,
+    )
+
     system_a = PersistenceSystem()
+    assets_a = AssetManagementSystem(system_a)
     system_a.record(AetherCrystal())
     checkpoint_id = system_a.create_checkpoint(description="durable")
-    flushed = system_a.flush_checkpoint_to_cache(checkpoint_id)
+    flushed = assets_a.flush_checkpoint(checkpoint_id)
     assert flushed == [checkpoint_id]
     original = system_a.describe_checkpoint(checkpoint_id)
 
     system_b = PersistenceSystem()
-    assert system_b.list_cached_checkpoint_ids() == [checkpoint_id]
+    assets_b = AssetManagementSystem(system_b)
+    assert assets_b.list_cached_checkpoint_ids() == [checkpoint_id]
     with pytest.raises(KeyError):
         system_b.describe_checkpoint(checkpoint_id)
-    reloaded = system_b.reload_checkpoint_from_cache(checkpoint_id)
+    reloaded = assets_b.reload_checkpoint_from_cache(checkpoint_id)
     assert reloaded == original
     assert system_b.describe_checkpoint(checkpoint_id) == original
     # Insert-if-absent: a second reload returns the LIVE crystal untouched.
-    assert system_b.reload_checkpoint_from_cache(checkpoint_id) == original
+    assert assets_b.reload_checkpoint_from_cache(checkpoint_id) == original
+    assets_b.cleanup()
+    assets_a.cleanup()
 
 
 def test_flush_all_ships_the_whole_ledger(cache_root):
@@ -130,16 +140,22 @@ def test_flush_all_ships_the_whole_ledger(cache_root):
     Purpose:
         Verify the flush-everything convenience.
     Contract:
-        flush_checkpoint_to_cache(None) ships every ledger crystal and
-        returns their ids; the cache lists all of them.
+        flush_checkpoint(None) ships every ledger crystal and returns
+        their ids; the cache lists all of them. (RE-HOMED: asset verb.)
     Returns:
         None.
     Raises:
         AssertionError: If any ledger crystal is skipped.
     """
+    from melder.crystallizer.asset_management.asset_management_system import (
+        AssetManagementSystem,
+    )
+
     system = PersistenceSystem()
+    assets = AssetManagementSystem(system)
     first = system.create_checkpoint()
     second = system.create_checkpoint()
-    flushed = system.flush_checkpoint_to_cache(None)
+    flushed = assets.flush_checkpoint(None)
     assert set(flushed) == {first, second}
-    assert set(system.list_cached_checkpoint_ids()) == {first, second}
+    assert set(assets.list_cached_checkpoint_ids()) == {first, second}
+    assets.cleanup()

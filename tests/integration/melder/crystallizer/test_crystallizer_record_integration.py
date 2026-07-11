@@ -258,7 +258,7 @@ def test_flush_and_reload_recover_a_recorded_worlds_history(tmp_path, monkeypatc
     Raises:
         AssertionError: If durable history diverges from the sealed truth.
     """
-    from melder.crystallizer.persistence.crystallizer_cache import (
+    from melder.crystallizer.asset_management.crystallizer_cache import (
         CrystallizerCache,
     )
     cache_root = tmp_path / "__crystallizer_cache__"
