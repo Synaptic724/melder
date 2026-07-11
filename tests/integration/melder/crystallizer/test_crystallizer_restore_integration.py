@@ -1738,3 +1738,90 @@ def test_multi_member_index_graft_parks_the_staged_members(cache_root):
     assert live_index.selected_spell_id == active_id
     assert live_index.has_spell(active_id)
     assert live_index.has_spell(staged_id)
+
+
+def test_merge_graft_grows_an_existing_index_and_adopts_selection(
+        cache_root,
+):
+    """
+    Purpose:
+        The merge lane end to end (finishing slice 3): a captured index
+        (active + parked member) merges into a host book's EXISTING
+        live index through public verbs only - no fresh index minted,
+        the target grows by both members, and the recorded selection is
+        adopted via the public notch.
+    Contract:
+        Report shows merged_into_existing True, members_parked==2,
+        members_bound==0, selection_adopted True, live_index_id == the
+        TARGET's id; the target index holds its own original member
+        PLUS both grafted ids with the recorded selection active; the
+        grafted members' live index IS the target (no fresh index);
+        adopt_recorded_selection without a merge target refuses
+        (ValueError) - fresh-lane semantics stay untouched.
+    """
+    from melder.aether.spellbook.configuration.spellbook_configuration import (
+        SpellbookConfiguration,
+    )
+
+    crystallizer = _activate_crystallizer()
+    source_book = _dynamic_book()
+    active_id = source_book.bind(
+        spell=RestoreAlpha, existence=Existence.unique, permissions="create"
+    )
+    source_conduit = source_book.conjure(dynamic=True, name="graft-merge-src")
+    active_spell = source_book._spells_by_id[active_id]
+    staged_id = source_conduit.bind_inactive(
+        spell=RestoreBeta,
+        spell_index=active_spell.spell_index,
+        existence=Existence.unique,
+        permissions="create",
+    )
+    record = crystallizer.capture_index_graft(active_spell.spell_index.id)
+
+    host_configuration = SpellbookConfiguration(
+        aether_frame="graft-merge-host-frame"
+    )
+    apply_dynamic_defaults_for_spellbook_configuration(host_configuration)
+    host_configuration.set_property(
+        "phase_scheduler_workers_per_spellbook", 1
+    )
+    host_configuration.finalize()
+    host_book = Spellbook(
+        aetheric_frame="graft-merge-host-frame",
+        configuration=host_configuration,
+    )
+    resident_id = host_book.bind(
+        spell=RestoreGamma, existence=Existence.unique, permissions="create"
+    )
+    host_book.conjure(dynamic=True, name="graft-merge-host")
+    target_index = host_book.find_spell_by_id(resident_id).spell_index
+
+    report = crystallizer.graft_index(
+        record,
+        host_book,
+        merge_into_index=target_index,
+        adopt_recorded_selection=True,
+    )
+    assert report["status"] == "complete"
+    assert report["merged_into_existing"] is True
+    assert report["members_bound"] == 0
+    assert report["members_parked"] == 2
+    assert report["selection_adopted"] is True
+    assert report["live_index_id"] == target_index.id
+    assert report["shortfalls"] == []
+
+    # The target GREW (public-verb growth, no fresh index anywhere):
+    assert target_index.has_spell(resident_id)
+    assert target_index.has_spell(active_id)
+    assert target_index.has_spell(staged_id)
+    assert target_index.selected_spell_id == active_id
+    merged_member = host_book.find_spell_by_id(active_id)
+    assert merged_member is not None
+    assert merged_member.spell_index.id == target_index.id
+
+    # Fresh-lane semantics untouched: adoption without a merge target
+    # is a contract refusal, not a silent fresh-index graft.
+    with pytest.raises(ValueError, match="merge_into_index"):
+        crystallizer.graft_index(
+            record, host_book, adopt_recorded_selection=True
+        )

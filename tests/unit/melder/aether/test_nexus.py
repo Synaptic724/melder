@@ -2094,6 +2094,11 @@ def test_codegen_command_system_lists_selected_runtime_helpers_only() -> None:
         "research_synthesize",
         "research_stage_ancestry",
         "research_clear_staged_ancestry",
+        "research_group_register",
+        "research_group_recompose",
+        "research_group_view",
+        "research_group_diff",
+        "research_group_impact",
     )
 
     assert supported_methods == expected_methods

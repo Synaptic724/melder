@@ -69,6 +69,9 @@ class CapabilityCommandSystem(CommandSystem):
         "research_part",
         "research_parts",
         "research_part_diff",
+        "research_group_view",
+        "research_group_diff",
+        "research_group_impact",
     )
 
     def get_links(
@@ -1445,6 +1448,75 @@ class CapabilityCommandSystem(CommandSystem):
                 spell_id,
                 module_name=module_name,
             )
+
+    def research_group_view(self, group_id: str) -> object:
+        """
+        Return one composition's roster with residence and drift truth.
+
+        Args:
+            group_id: Composition identity to gather.
+
+        Returns:
+            object: Roster + per-member lane joins + behind drift flags.
+        """
+        self.check_cleaned()
+        with self._entered_command_action(
+                action_name="research_group_view",
+                frame_name=None,
+        ), self._lock:
+            return self._require_live_mutation_research().group_view(
+                group_id,
+            )
+
+    def research_group_diff(
+            self,
+            left_group_id: str,
+            right_group_id: str,
+            *,
+            strategy: str = "members",
+    ) -> object:
+        """
+        Return a derived diff between two recorded compositions.
+
+        Args:
+            left_group_id: Left composition identity.
+            right_group_id: Right composition identity.
+            strategy: Registered grouped strategy ("members" default:
+                added/removed members + lane-evidenced version moves).
+
+        Returns:
+            object: Detached grouped-diff verdict.
+        """
+        self.check_cleaned()
+        with self._entered_command_action(
+                action_name="research_group_diff",
+                frame_name=None,
+        ), self._lock:
+            return self._require_live_mutation_research(
+            ).group_diff_research(
+                left_group_id,
+                right_group_id,
+                strategy=strategy,
+            )
+
+    def research_group_impact(self, group_id: str) -> object:
+        """
+        Return one composition's union blast radius with closure math.
+
+        Args:
+            group_id: Composition identity at the blast center.
+
+        Returns:
+            object: Union radius, internal/outbound split, closure
+                fraction, affected compositions, residency join.
+        """
+        self.check_cleaned()
+        with self._entered_command_action(
+                action_name="research_group_impact",
+                frame_name=None,
+        ), self._lock:
+            return self._require_live_mutation_research(
+            ).group_impact_view(group_id)
 
     def list_supported_command_methods(self) -> Tuple[str, ...]:
         """

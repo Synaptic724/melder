@@ -130,9 +130,16 @@ class MutationResearchCompositionStrategy(PersistenceAnalysisStrategy):
         # NEW keys are authoritative; OLD keys (checkpoints sealed before
         # the sweep) are tolerated with a named warning - MR hydration
         # reads new keys only, so an old sealed world should reseal.
+        # Node-family dispatch (GroupedResearchNode ruling 2026-07-11):
+        # node_type="group" payloads identify by "group_id" - a
+        # content-addressed COMPOSITION identity that claims residence
+        # like any node but carries NO custody crystal by design (purely
+        # informational); their pinned members are checked against the
+        # residence partition below.
         legacy_keys_seen = False
         described_lane_ids = set()
         held_lane_by_spell_id: Dict[str, str] = {}
+        members_by_group_id: Dict[str, List[str]] = {}
         for lane_payload in lanes:
             if not isinstance(lane_payload, dict):
                 findings.append(self._row(
@@ -145,6 +152,15 @@ class MutationResearchCompositionStrategy(PersistenceAnalysisStrategy):
             described_lane_ids.add(lane_id)
             for node_payload in list(lane_payload.get("nodes", [])):
                 node = dict(node_payload)
+                if node.get("node_type") == "group":
+                    group_id = str(node.get("group_id"))
+                    held_lane_by_spell_id[group_id] = lane_id
+                    members = node.get("member_spell_ids")
+                    members_by_group_id[group_id] = (
+                        [str(member) for member in members]
+                        if isinstance(members, list) else []
+                    )
+                    continue
                 spell_id = node.get("spell_id")
                 if spell_id is None and "spell_sha" in node:
                     spell_id = node.get("spell_sha")
@@ -179,6 +195,17 @@ class MutationResearchCompositionStrategy(PersistenceAnalysisStrategy):
                         spell_id[:12], lane_id, resident_lane
                     ),
                 ))
+        for group_id, members in members_by_group_id.items():
+            for member in members:
+                if member not in lane_id_by_spell_id:
+                    findings.append(self._row(
+                        "warning", set_name,
+                        "composition {0}... pins member {1}... that is "
+                        "not resident in this set (the composition "
+                        "identity itself is informational and rebuilds "
+                        "fine; the missing member is drift "
+                        "evidence)".format(group_id[:12], member[:12]),
+                    ))
         for spell_id, lane_id in lane_id_by_spell_id.items():
             if str(lane_id) not in described_lane_ids:
                 findings.append(self._row(

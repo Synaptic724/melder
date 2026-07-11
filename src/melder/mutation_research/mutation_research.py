@@ -21,6 +21,12 @@ from melder.mutation_research.mutation_configuration_builder import (
     MutationResearchConfigurationBuilder,
 )
 from melder.mutation_research.diff.diff_engine import DiffEngine
+from melder.mutation_research.group_diff.group_diff_engine import (
+    GroupDiffEngine,
+)
+from melder.mutation_research.research_set.grouped_research_node import (
+    GroupedResearchNode,
+)
 from melder.mutation_research.research_set.research_set import ResearchSet
 from melder.mutation_research.synthesis.structural_synthesizer import (
     StructuralSynthesizer,
@@ -78,6 +84,7 @@ class MutationResearch(Cleanable):
         "_activated",
         "_research_sets_by_name",
         "_diff_engine",
+        "_group_diff_engine",
         "_synthesizer",
         "_active_campaign",
         "_staged_ancestry",
@@ -136,6 +143,7 @@ class MutationResearch(Cleanable):
             self._activated: bool = False
             self._research_sets_by_name: Dict[str, ResearchSet] = {}
             self._diff_engine: Optional[DiffEngine] = None
+            self._group_diff_engine: Optional[GroupDiffEngine] = None
             self._synthesizer: Optional[StructuralSynthesizer] = None
             self._active_campaign: Optional[str] = None
             self._staged_ancestry: Optional[List[str]] = None
@@ -189,6 +197,11 @@ class MutationResearch(Cleanable):
                     self._diff_engine.cleanup()
                 except Exception:
                     pass
+            if self._group_diff_engine is not None:
+                try:
+                    self._group_diff_engine.cleanup()
+                except Exception:
+                    pass
             if self._synthesizer is not None:
                 try:
                     self._synthesizer.cleanup()
@@ -200,6 +213,7 @@ class MutationResearch(Cleanable):
             self._activated = False
             del self._crystallizer
             del self._diff_engine
+            del self._group_diff_engine
             del self._synthesizer
             del self._active_campaign
             del self._staged_ancestry
@@ -934,11 +948,38 @@ class MutationResearch(Cleanable):
         lane_name: Optional[str] = None
         lane_state: Optional[str] = None
         lane_type: Optional[str] = None
+        node_type: Optional[str] = None
         if lane_id is not None:
             lane = research_set.get_lane(lane_id)
             lane_name = lane.name
             lane_state = lane.state.value
             lane_type = lane.lane_type.value
+            if lane.has_node(spell_id):
+                node_type = (
+                    "group"
+                    if isinstance(
+                        lane.get_node(spell_id), GroupedResearchNode,
+                    )
+                    else "spell"
+                )
+        if node_type == "group":
+            # Composition identities are PURELY INFORMATIONAL: no custody
+            # crystal exists or is expected, and frame membership is a
+            # spell-grain question - probing either would report a
+            # misleading miss.
+            return {
+                "spell_id": spell_id,
+                "declared": True,
+                "lane_id": lane_id,
+                "lane_name": lane_name,
+                "lane_state": lane_state,
+                "lane_type": lane_type,
+                "node_type": node_type,
+                "runtime": "informational",
+                "frame_name": None,
+                "index_id": None,
+                "in_custody": None,
+            }
         frame_name, index_id, selected = self._locate_live_membership(
             spell_id,
         )
@@ -960,6 +1001,7 @@ class MutationResearch(Cleanable):
             "lane_name": lane_name,
             "lane_state": lane_state,
             "lane_type": lane_type,
+            "node_type": node_type,
             "runtime": runtime,
             "frame_name": frame_name,
             "index_id": index_id,
@@ -2220,6 +2262,316 @@ class MutationResearch(Cleanable):
             self.stage_ancestry([base_spell_id, donor_spell_id])
             result["ancestry_staged"] = True
         return result
+
+    # ------------------------------------------------------------------
+    # Composition reads (GroupedResearchNode surface)
+    # ------------------------------------------------------------------
+
+    def _locate_group_node(
+            self,
+            group_id: str,
+            set_name: str = "default",
+    ) -> "GroupedResearchNode":
+        """
+        Resolve one resident composition node or refuse teach-grade.
+
+        Args:
+            group_id:
+                Composition identity (content-addressed SHA256).
+            set_name:
+                Research set to resolve within.
+
+        Returns:
+            GroupedResearchNode:
+                The resident composition record.
+
+        Raises:
+            ValueError:
+                If group_id is empty.
+            RuntimeError:
+                If the identity is unknown, or resident but a spell
+                version (the error says which).
+            KeyError:
+                If `set_name` names no research set.
+        """
+        if not isinstance(group_id, str) or not group_id:
+            raise ValueError("group_id must be a non-empty string.")
+        research_set = self.research_set(set_name)
+        lane_id = research_set.residence_of(group_id)
+        if lane_id is None:
+            raise RuntimeError(
+                f"Composition '{group_id}' is not resident in research "
+                f"set '{set_name}'."
+            )
+        node = research_set.get_lane(lane_id).get_node(group_id)
+        if not isinstance(node, GroupedResearchNode):
+            raise RuntimeError(
+                f"Identity '{group_id}' is a spell version, not a "
+                f"composition; the grouped reads answer "
+                f"GroupedResearchNodes only."
+            )
+        return node
+
+    def _resolve_group_material(
+            self,
+            group_id: str,
+    ) -> Dict[str, object]:
+        """
+        Resolve one composition's diff material from the default set.
+
+        Contract:
+            - The members join carries lane-evidenced residence truth
+              (lane_id/name/state/type/tip) so the `members` strategy can
+              pair version moves without guessing.
+
+        Args:
+            group_id:
+                Composition identity to resolve.
+
+        Returns:
+            Dict[str, object]:
+                `{"group_id", "member_spell_ids", "parent_group_ids",
+                "members"}` material payload.
+        """
+        self.check_cleaned()
+        node = self._locate_group_node(group_id)
+        research_set = self.research_set()
+        members: Dict[str, Dict[str, object]] = {}
+        for member in node.member_spell_ids:
+            lane_id = research_set.residence_of(member)
+            if lane_id is None:
+                members[member] = {
+                    "lane_id": None,
+                    "lane_name": None,
+                    "lane_state": None,
+                    "lane_type": None,
+                    "lane_tip": None,
+                }
+                continue
+            lane = research_set.get_lane(lane_id)
+            members[member] = {
+                "lane_id": lane_id,
+                "lane_name": lane.name,
+                "lane_state": lane.state.value,
+                "lane_type": lane.lane_type.value,
+                "lane_tip": lane.tip_spell_id,
+            }
+        return {
+            "group_id": node.group_id,
+            "member_spell_ids": node.member_spell_ids,
+            "parent_group_ids": node.parent_group_ids,
+            "members": members,
+        }
+
+    def group_diff_research(
+            self,
+            left_group_id: str,
+            right_group_id: str,
+            *,
+            strategy: str = "members",
+    ) -> Dict[str, object]:
+        """
+        Compute one derived diff between two recorded compositions.
+
+        Purpose:
+            The grouped mirror of `diff_research`, dispatched through the
+            root-owned `GroupDiffEngine` (its own strategy family - owner
+            ruling 2026-07-11). The default `members` strategy answers
+            added/removed members and LANE-EVIDENCED version moves; each
+            moved pair descends into `diff_research` grains
+            (source/structural/parts) on the agent's next call.
+
+        Args:
+            left_group_id:
+                Left composition identity.
+            right_group_id:
+                Right composition identity.
+            strategy:
+                Registered grouped strategy name; "members" by default.
+
+        Returns:
+            Dict[str, object]:
+                Detached verdict payload from the owned engine.
+
+        Raises:
+            RuntimeError:
+                If either identity is unknown or not a composition.
+            KeyError:
+                If the strategy name is unknown.
+        """
+        self.check_cleaned()
+        with self._lock:
+            if self._group_diff_engine is None:
+                self._group_diff_engine = GroupDiffEngine(
+                    self._resolve_group_material,
+                )
+            engine = self._group_diff_engine
+        return engine.diff(
+            left_group_id, right_group_id, strategy=strategy,
+        )
+
+    def group_view(
+            self,
+            group_id: str,
+            *,
+            set_name: str = "default",
+    ) -> Dict[str, object]:
+        """
+        Return one composition's roster with residence and drift truth.
+
+        Args:
+            group_id:
+                Composition identity to gather.
+            set_name:
+                Research set to resolve within.
+
+        Returns:
+            Dict[str, object]:
+                `{"group_id", "member_count", "parent_group_ids",
+                "author", "campaign", "created_at", "members":
+                {spell_id: {lane join + "behind": bool|None}},
+                "behind_count"}` - `behind` is True when the member's lane
+                tip has moved past the pinned version (None when the
+                member is unresident and drift is unknowable).
+        """
+        self.check_cleaned()
+        node = self._locate_group_node(group_id, set_name)
+        research_set = self.research_set(set_name)
+        members: Dict[str, Dict[str, object]] = {}
+        behind_count = 0
+        for member in node.member_spell_ids:
+            lane_id = research_set.residence_of(member)
+            if lane_id is None:
+                members[member] = {
+                    "lane_id": None,
+                    "lane_name": None,
+                    "lane_state": None,
+                    "lane_type": None,
+                    "lane_tip": None,
+                    "behind": None,
+                }
+                continue
+            lane = research_set.get_lane(lane_id)
+            behind = lane.tip_spell_id != member
+            if behind:
+                behind_count += 1
+            members[member] = {
+                "lane_id": lane_id,
+                "lane_name": lane.name,
+                "lane_state": lane.state.value,
+                "lane_type": lane.lane_type.value,
+                "lane_tip": lane.tip_spell_id,
+                "behind": behind,
+            }
+        return {
+            "group_id": node.group_id,
+            "member_count": node.member_count,
+            "parent_group_ids": node.parent_group_ids,
+            "author": node.author,
+            "campaign": node.campaign,
+            "created_at": node.created_at,
+            "members": members,
+            "behind_count": behind_count,
+        }
+
+    def group_impact_view(
+            self,
+            group_id: str,
+            *,
+            set_name: str = "default",
+    ) -> Dict[str, object]:
+        """
+        Return one composition's union blast radius with the closure math.
+
+        Purpose:
+            The crossing move at composition grain: every member's blast
+            radius (custody truth) unioned, split by DIRECTION - internal
+            (consequences landing on fellow members) vs outbound
+            (consequences escaping the composition) - with CLOSURE (the
+            fraction of affected spells that are members; ~1.0 = a safe
+            workspace) and the ADJACENCY lift (which OTHER current
+            compositions the radius touches).
+
+        Args:
+            group_id:
+                Composition identity at the blast center.
+            set_name:
+                Research set supplying declared truth for the joins.
+
+        Returns:
+            Dict[str, object]:
+                `{"group_id", "member_count", "affected_modules",
+                "affected_spells", "internal_spells", "outbound_spells",
+                "closure", "affected_compositions", "research",
+                "per_member"}`.
+
+        Raises:
+            RuntimeError:
+                If the identity is unknown/not a composition, or the
+                crystallizer is cleaned or inactive.
+        """
+        self.check_cleaned()
+        node = self._locate_group_node(group_id, set_name)
+        crystallizer = self._require_live_custody()
+        member_set = set(node.member_spell_ids)
+        affected_modules: set = set()
+        affected_spells: set = set()
+        per_member: Dict[str, Dict[str, object]] = {}
+        for member in node.member_spell_ids:
+            radius = crystallizer.analyze_impact(spell_id=member)
+            member_modules = [
+                str(name) for name in list(radius.get("affected_modules", []))
+            ]
+            member_spells = [
+                str(sha) for sha in list(radius.get("affected_spells", []))
+            ]
+            affected_modules.update(member_modules)
+            affected_spells.update(member_spells)
+            per_member[member] = {
+                "affected_modules": sorted(member_modules),
+                "affected_spells": sorted(member_spells),
+                "unknown_spell": bool(radius.get("unknown_spell", False)),
+            }
+        internal = sorted(affected_spells & member_set)
+        outbound = sorted(affected_spells - member_set)
+        closure: Optional[float] = None
+        if affected_spells:
+            closure = len(internal) / len(affected_spells)
+        research_set = self.research_set(set_name)
+        affected_compositions: List[Dict[str, object]] = []
+        for lane_name in research_set.lane_names():
+            lane = research_set.get_lane(lane_name)
+            tip = lane.tip_spell_id
+            if tip is None or tip == node.group_id:
+                continue
+            if not lane.has_node(tip):
+                continue
+            tip_node = lane.get_node(tip)
+            if not isinstance(tip_node, GroupedResearchNode):
+                continue
+            shared = sorted(
+                set(tip_node.member_spell_ids) & affected_spells
+            )
+            if shared:
+                affected_compositions.append({
+                    "group_id": tip_node.group_id,
+                    "lane_name": lane.name,
+                    "shared_members": shared,
+                })
+        return {
+            "group_id": node.group_id,
+            "member_count": node.member_count,
+            "affected_modules": sorted(affected_modules),
+            "affected_spells": sorted(affected_spells),
+            "internal_spells": internal,
+            "outbound_spells": outbound,
+            "closure": closure,
+            "affected_compositions": affected_compositions,
+            "research": self._residency_join(
+                sorted(affected_spells), set_name,
+            ),
+            "per_member": per_member,
+        }
 
     # ------------------------------------------------------------------
     # Persistence emission seam

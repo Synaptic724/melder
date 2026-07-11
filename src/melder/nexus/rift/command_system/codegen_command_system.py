@@ -98,6 +98,12 @@ class CodegenCommandSystem(CommandSystem):
         "research_synthesize",
         "research_stage_ancestry",
         "research_clear_staged_ancestry",
+        # Research compositions (GroupedResearchNode subsystems)
+        "research_group_register",
+        "research_group_recompose",
+        "research_group_view",
+        "research_group_diff",
+        "research_group_impact",
     )
 
     __slots__ = CommandSystem.__slots__ + [
@@ -1393,6 +1399,146 @@ class CodegenCommandSystem(CommandSystem):
                 frame_name=None,
         ), self._lock:
             self._require_live_mutation_research().clear_staged_ancestry()
+
+    # ------------------------------------------------------------------
+    # Composition surface (GroupedResearchNode) - register / recompose
+    # are organization verbs (codegen-only); the reads live on both room
+    # types. Compositions are PURELY INFORMATIONAL by law.
+    # ------------------------------------------------------------------
+
+    def research_group_register(
+            self,
+            member_spell_ids: object,
+            *,
+            lane: Optional[str] = None,
+            reason: Optional[str] = None,
+    ) -> object:
+        """
+        Declare one subsystem composition over declared versions.
+
+        Args:
+            member_spell_ids: Non-empty member identities to pin.
+            lane: Optional lane (name or id); default lane when omitted.
+            reason: Optional reason line.
+
+        Returns:
+            object: The new composition node's describe() payload.
+        """
+        self.check_cleaned()
+        with self._entered_command_action(
+                action_name="research_group_register",
+                frame_name=None,
+        ), self._lock:
+            node = self._require_live_mutation_research().research_set(
+            ).register_group(
+                member_spell_ids,
+                lane=lane,
+                reason=reason,
+            )
+            return node.describe()
+
+    def research_group_recompose(
+            self,
+            previous_group_id: str,
+            *,
+            add: Optional[object] = None,
+            remove: Optional[object] = None,
+            reason: Optional[str] = None,
+    ) -> object:
+        """
+        Evolve one composition forward (iterate-and-add).
+
+        Args:
+            previous_group_id: The composition being evolved.
+            add: Member identities to add.
+            remove: Member identities to drop.
+            reason: Optional reason line.
+
+        Returns:
+            object: The new composition node's describe() payload.
+        """
+        self.check_cleaned()
+        with self._entered_command_action(
+                action_name="research_group_recompose",
+                frame_name=None,
+        ), self._lock:
+            node = self._require_live_mutation_research().research_set(
+            ).recompose_group(
+                previous_group_id,
+                add=add,
+                remove=remove,
+                reason=reason,
+            )
+            return node.describe()
+
+    def research_group_view(self, group_id: str) -> object:
+        """
+        Return one composition's roster with residence and drift truth.
+
+        Args:
+            group_id: Composition identity to gather.
+
+        Returns:
+            object: Roster + per-member lane joins + behind drift flags.
+        """
+        self.check_cleaned()
+        with self._entered_command_action(
+                action_name="research_group_view",
+                frame_name=None,
+        ), self._lock:
+            return self._require_live_mutation_research().group_view(
+                group_id,
+            )
+
+    def research_group_diff(
+            self,
+            left_group_id: str,
+            right_group_id: str,
+            *,
+            strategy: str = "members",
+    ) -> object:
+        """
+        Return a derived diff between two recorded compositions.
+
+        Args:
+            left_group_id: Left composition identity.
+            right_group_id: Right composition identity.
+            strategy: Registered grouped strategy ("members" default:
+                added/removed members + lane-evidenced version moves).
+
+        Returns:
+            object: Detached grouped-diff verdict.
+        """
+        self.check_cleaned()
+        with self._entered_command_action(
+                action_name="research_group_diff",
+                frame_name=None,
+        ), self._lock:
+            return self._require_live_mutation_research(
+            ).group_diff_research(
+                left_group_id,
+                right_group_id,
+                strategy=strategy,
+            )
+
+    def research_group_impact(self, group_id: str) -> object:
+        """
+        Return one composition's union blast radius with closure math.
+
+        Args:
+            group_id: Composition identity at the blast center.
+
+        Returns:
+            object: Union radius, internal/outbound split, closure
+                fraction, affected compositions, residency join.
+        """
+        self.check_cleaned()
+        with self._entered_command_action(
+                action_name="research_group_impact",
+                frame_name=None,
+        ), self._lock:
+            return self._require_live_mutation_research(
+            ).group_impact_view(group_id)
 
     def _emit_codegen_memory_if_enabled(
             self,

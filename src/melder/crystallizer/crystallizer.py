@@ -649,6 +649,8 @@ class Crystallizer(Cleanable):
             graft_record: Dict[str, object],
             host_spellbook: Any,
             skip_resident: bool = False,
+            merge_into_index: Optional[Any] = None,
+            adopt_recorded_selection: bool = False,
     ) -> Dict[str, object]:
         """
         Re-integrate one captured index into a LIVE host book.
@@ -672,10 +674,20 @@ class Crystallizer(Cleanable):
                 (shortfall each); False refuses the whole graft on the
                 first resident member (default - the conservative
                 overlap rule).
+            merge_into_index:
+                MERGE MODE (slice 3, 2026-07-11): a LIVE SpellIndex in
+                the host frame; members park onto IT via the public
+                bind_inactive verb instead of minting a fresh index.
+                Fresh-index-only remains the default.
+            adopt_recorded_selection:
+                Merge-mode only: notch the record's selected member
+                active on the target after grafting (public notch verb;
+                honest shortfall when the selection did not graft).
 
         Returns:
             Dict[str, object]: The runner's detached report ({status,
-            recorded/live index ids, members_bound, members_parked,
+            recorded/live index ids, merged_into_existing,
+            selection_adopted, members_bound, members_parked,
             skipped_resident, shortfalls}).
 
         Raises:
@@ -694,7 +706,11 @@ class Crystallizer(Cleanable):
         )
 
         runner = GraftRunner(
-            graft_record, host_spellbook, skip_resident=skip_resident
+            graft_record,
+            host_spellbook,
+            skip_resident=skip_resident,
+            merge_into_index=merge_into_index,
+            adopt_recorded_selection=adopt_recorded_selection,
         )
         try:
             return runner.run()

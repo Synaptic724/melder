@@ -8,10 +8,14 @@ from melder.mutation_research.research_set.network_versioner import (
 from melder.mutation_research.research_set.research_journal import (
     ResearchJournal,
 )
+from melder.mutation_research.research_set.grouped_research_node import (
+    GroupedResearchNode,
+)
 from melder.mutation_research.research_set.research_lane import (
     LaneState,
     LaneType,
     ResearchLane,
+    node_identity,
 )
 from melder.mutation_research.research_set.research_node import ResearchNode
 from melder.mutation_research.research_set.residence_registry import (
@@ -778,6 +782,224 @@ class ResearchSet(Cleanable):
         self._notify_mutation()
         return node
 
+    def register_group(
+            self,
+            member_spell_ids: List[str],
+            *,
+            lane: Optional[str] = None,
+            parent_group_ids: Optional[List[str]] = None,
+            author: Optional[str] = None,
+            campaign: Optional[str] = None,
+            reason: Optional[str] = None,
+            metadata: Optional[Dict[str, object]] = None,
+    ) -> GroupedResearchNode:
+        """
+        Formally declare one subsystem composition (GroupedResearchNode).
+
+        Purpose:
+            The grouped world-entry verb (owner ruling 2026-07-11): pin a
+            set of already-declared versions as ONE composition record.
+            Purely informational - members keep their own lanes, custody,
+            and runtime posture untouched; the composition gates nothing.
+
+        Contract:
+            - Every member must already be formally declared (resident) in
+              this set - the same law parents obey.
+            - Identity is content-addressed over the member set: an
+              identical roster IS the same identity, so re-registering an
+              unchanged composition surfaces the rediscovery error naming
+              the holding lane (not a new fact).
+            - `parent_group_ids` must reference resident compositions
+              (composition ancestry, separate from spell ancestry).
+
+        Args:
+            member_spell_ids:
+                Non-empty member identities to pin.
+            lane:
+                Optional lane (name or id); the guaranteed default lane
+                records the composition when omitted (subsystems deserve
+                their own lane - create one and pass it here).
+            parent_group_ids:
+                Optional previous composition identities.
+            author:
+                Optional registering agent name.
+            campaign:
+                Optional research-campaign stamp.
+            reason:
+                Optional reason line.
+            metadata:
+                Optional value-typed annotations.
+
+        Returns:
+            GroupedResearchNode:
+                The recorded composition node.
+
+        Raises:
+            RuntimeError:
+                Rediscovery - the composition identity already resides in
+                a lane (the error names it); or the target lane is not
+                open.
+            ValueError:
+                If a member or parent composition is unknown to this set.
+        """
+        self.check_cleaned()
+        with self._lock:
+            target = self._resolve_lane_locked(
+                lane if lane is not None else ResearchSet.DEFAULT_LANE_NAME,
+            )
+            members = list(member_spell_ids) if member_spell_ids else []
+            for member in members:
+                if not self._residence.is_resident(member):
+                    raise ValueError(
+                        f"Member identity '{member}' is not resident in "
+                        f"research set '{self._name}'; compositions pin "
+                        f"formally declared versions only."
+                    )
+            parents = list(parent_group_ids) if parent_group_ids else []
+            for parent in parents:
+                if not self._residence.is_resident(parent):
+                    raise ValueError(
+                        f"Parent composition '{parent}' is not resident in "
+                        f"research set '{self._name}'; composition ancestry "
+                        f"must reference recorded compositions."
+                    )
+            node = GroupedResearchNode(
+                members,
+                parent_group_ids=parents,
+                author=author,
+                reason=reason,
+                campaign=campaign,
+                metadata=metadata,
+            )
+            self._residence.claim(node.group_id, target.lane_id)
+            # Same compensation as register_spell: a refused add must not
+            # strand the claim.
+            try:
+                target.add_node(node)
+            except Exception:
+                self._residence._rollback_claim(
+                    node.group_id, target.lane_id,
+                )
+                raise
+            self._journal.record(
+                TransitionAct.group_recomposed
+                if parents else TransitionAct.group_registered,
+                target.lane_id,
+                from_spell_id=parents[0] if parents else None,
+                to_spell_id=node.group_id,
+                actor=author,
+                campaign=campaign,
+                reason=reason,
+                metadata={
+                    "member_spell_ids": node.member_spell_ids,
+                    "parent_group_ids": parents,
+                },
+            )
+            self._snapshot_locked()
+        self._notify_mutation()
+        return node
+
+    def recompose_group(
+            self,
+            previous_group_id: str,
+            *,
+            add: Optional[List[str]] = None,
+            remove: Optional[List[str]] = None,
+            author: Optional[str] = None,
+            campaign: Optional[str] = None,
+            reason: Optional[str] = None,
+            metadata: Optional[Dict[str, object]] = None,
+    ) -> GroupedResearchNode:
+        """
+        Evolve one composition forward (the iterate-and-add flow).
+
+        Purpose:
+            The agent loop the owner described: keep adding spells into
+            the composition. Reads the previous roster, applies adds and
+            removes, and registers the NEW composition into the SAME lane
+            with `parent_group_ids=[previous]` - forward-only; nothing is
+            edited.
+
+        Args:
+            previous_group_id:
+                The composition being evolved (must be resident).
+            add:
+                Member identities to add (must be resident).
+            remove:
+                Member identities to drop (must be in the previous roster).
+            author:
+                Optional acting agent name.
+            campaign:
+                Optional research-campaign stamp.
+            reason:
+                Optional reason line.
+            metadata:
+                Optional value-typed annotations.
+
+        Returns:
+            GroupedResearchNode:
+                The new composition node.
+
+        Raises:
+            RuntimeError:
+                If the identity is unknown, the resident node is not a
+                composition, the resulting roster is unchanged (identical
+                member set = same content address = the SAME composition;
+                nothing new to record), or the holding lane is not open.
+            ValueError:
+                If a removed member is not in the previous roster, an
+                added member is not resident, or the resulting roster is
+                empty.
+        """
+        self.check_cleaned()
+        with self._lock:
+            lane_id = self._residence.residence_of(previous_group_id)
+            if lane_id is None:
+                raise RuntimeError(
+                    f"Composition '{previous_group_id}' is not resident in "
+                    f"research set '{self._name}'."
+                )
+            holding_lane = self._lanes_by_id[lane_id]
+            previous = holding_lane.get_node(previous_group_id)
+            if not isinstance(previous, GroupedResearchNode):
+                raise RuntimeError(
+                    f"Identity '{previous_group_id}' is a spell version, "
+                    f"not a composition; recompose_group evolves "
+                    f"GroupedResearchNodes only."
+                )
+            roster = set(previous.member_spell_ids)
+            for member in list(remove) if remove else []:
+                if member not in roster:
+                    raise ValueError(
+                        f"Cannot remove '{member}': not in the previous "
+                        f"composition's roster."
+                    )
+                roster.discard(member)
+            for member in list(add) if add else []:
+                roster.add(member)
+            if not roster:
+                raise ValueError(
+                    "The resulting composition would be empty; a "
+                    "composition pins at least one member."
+                )
+            if roster == set(previous.member_spell_ids):
+                raise RuntimeError(
+                    f"The resulting roster is identical to composition "
+                    f"'{previous_group_id[:12]}...'; an identical member "
+                    f"set IS the same identity (content-addressed) - "
+                    f"nothing new to record."
+                )
+            lane_ref = holding_lane.lane_id
+        return self.register_group(
+            sorted(roster),
+            lane=lane_ref,
+            parent_group_ids=[previous_group_id],
+            author=author,
+            campaign=campaign,
+            reason=reason,
+            metadata=metadata,
+        )
+
     def record_world_entry(
             self,
             spell_id: str,
@@ -1161,7 +1383,7 @@ class ResearchSet(Cleanable):
                 try:
                     for node in detached:
                         target.add_node(node)
-                        added.append(node.spell_id)
+                        added.append(node_identity(node))
                 except Exception:
                     if added:
                         target.detach_nodes(added)

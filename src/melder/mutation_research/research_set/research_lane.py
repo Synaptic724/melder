@@ -3,9 +3,46 @@ import threading
 from datetime import datetime, timezone
 from typing import Dict, List, Optional
 
+from melder.mutation_research.research_set.grouped_research_node import (
+    GroupedResearchNode,
+)
 from melder.mutation_research.research_set.research_node import ResearchNode
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
+
+
+def node_identity(node: object) -> str:
+    """
+    Return one node's identity across BOTH node families.
+
+    Purpose:
+        The single dispatch point for heterogeneous lanes (owner ruling
+        2026-07-11: GroupedResearchNode is its own type; the carrying code
+        extends): spell nodes identify by binding-signature `spell_id`,
+        composition nodes by content-addressed `group_id`. Both live in
+        the same sha namespace, so lane indexing, residence, and journal
+        endpoints carry either without shape changes.
+
+    Args:
+        node:
+            ResearchNode or GroupedResearchNode.
+
+    Returns:
+        str:
+            The node's identity sha.
+
+    Raises:
+        TypeError:
+            If the object is neither node family (the error names both).
+    """
+    if isinstance(node, GroupedResearchNode):
+        return node.group_id
+    if isinstance(node, ResearchNode):
+        return node.spell_id
+    raise TypeError(
+        "node must be a ResearchNode or a GroupedResearchNode; got "
+        f"{type(node).__name__}."
+    )
 
 
 class LaneState(enum.Enum):
@@ -338,33 +375,37 @@ class ResearchLane(Cleanable):
         self.check_cleaned()
         return self._created_at
 
-    def add_node(self, node: ResearchNode) -> None:
+    def add_node(self, node: object) -> None:
         """
-        Append one version record and advance the tip.
+        Append one record (either node family) and advance the tip.
 
         Args:
             node:
-                Immutable version record to hold.
+                Immutable ResearchNode (version record) or
+                GroupedResearchNode (composition record) to hold.
 
         Raises:
             RuntimeError:
                 If the lane is not open.
+            TypeError:
+                If the object is neither node family.
             ValueError:
                 If the identity is already held by this lane (full-object
-                records dedup by content SHA).
+                records dedup by content SHA - for compositions, an
+                identical member set IS the same identity).
         """
         self.check_cleaned()
+        identity = node_identity(node)
         with self._lock:
             self._require_open()
-            spell_id = node.spell_id
-            if spell_id in self._nodes_by_spell_id:
+            if identity in self._nodes_by_spell_id:
                 raise ValueError(
                     f"Lane '{self._name}' already holds identity "
-                    f"'{spell_id}'."
+                    f"'{identity}'."
                 )
-            self._nodes_by_spell_id[spell_id] = node
-            self._node_order.append(spell_id)
-            self._tip_spell_id = spell_id
+            self._nodes_by_spell_id[identity] = node
+            self._node_order.append(identity)
+            self._tip_spell_id = identity
 
     def get_node(self, spell_id: str) -> ResearchNode:
         """
@@ -627,9 +668,20 @@ class ResearchLane(Cleanable):
             raise ValueError("payload is missing a valid 'nodes' list.")
         with lane._lock:
             for node_payload in node_payloads:
-                node = ResearchNode.from_payload(node_payload)
-                lane._nodes_by_spell_id[node.spell_id] = node
-                lane._node_order.append(node.spell_id)
+                # Node-family dispatch (owner ruling 2026-07-11): tagged
+                # payloads hydrate as compositions; untagged payloads are
+                # spell nodes - back-compat by absence.
+                if (
+                        isinstance(node_payload, dict)
+                        and node_payload.get("node_type")
+                        == GroupedResearchNode.NODE_TYPE
+                ):
+                    node = GroupedResearchNode.from_payload(node_payload)
+                else:
+                    node = ResearchNode.from_payload(node_payload)
+                identity = node_identity(node)
+                lane._nodes_by_spell_id[identity] = node
+                lane._node_order.append(identity)
             lane._tip_spell_id = (
                 lane._node_order[-1] if lane._node_order else None
             )

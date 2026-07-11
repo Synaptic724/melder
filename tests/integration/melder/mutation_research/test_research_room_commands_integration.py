@@ -131,6 +131,9 @@ def test_capability_room_surface_is_read_only() -> None:
         "research_part",
         "research_parts",
         "research_part_diff",
+        "research_group_view",
+        "research_group_diff",
+        "research_group_impact",
     )
     mutations = (
         "research_create_lane",
@@ -144,6 +147,8 @@ def test_capability_room_surface_is_read_only() -> None:
         "research_synthesize",
         "research_stage_ancestry",
         "research_clear_staged_ancestry",
+        "research_group_register",
+        "research_group_recompose",
     )
     for name in reads:
         assert hasattr(CapabilityCommandSystem, name), name
@@ -387,5 +392,60 @@ def test_codegen_room_synthesis_loop() -> None:
             row["name"] for row in donor_report["changed_parts"]
         }
         assert "cast" in changed_names
+    finally:
+        root._crystallizer = real_crystallizer
+
+
+def test_codegen_room_composition_loop() -> None:
+    """
+    Validate the GroupedResearchNode surface through a real codegen room:
+    register a composition over declared versions, iterate it forward,
+    read the roster with drift truth, diff the two compositions at member
+    grain, and take the union radius with closure - all mediated, the
+    composition purely informational.
+    """
+    conduit, space = _build_codegen_space()
+    commands = space.command_system
+    root = _activate_research(conduit)
+    real_crystallizer = root._crystallizer
+    root._crystallizer = _FakeCrystallizer()
+    try:
+        root.record_world_entry("sha-room-a")
+        root.record_world_entry("sha-room-b")
+        commands.research_create_lane("subsystem", lane_type="production")
+
+        first = commands.research_group_register(
+            ["sha-room-a"], lane="subsystem",
+        )
+        assert first["node_type"] == "group"
+
+        second = commands.research_group_recompose(
+            first["group_id"], add=["sha-room-b"],
+        )
+        assert second["member_spell_ids"] == ["sha-room-a", "sha-room-b"]
+        assert second["parent_group_ids"] == [first["group_id"]]
+
+        view = commands.research_group_view(second["group_id"])
+        assert view["member_count"] == 2
+        # Both members share the default lane whose tip is sha-room-b, so
+        # the pinned sha-room-a honestly reports behind.
+        assert view["behind_count"] == 1
+        assert view["members"]["sha-room-a"]["behind"] is True
+        assert view["members"]["sha-room-b"]["behind"] is False
+
+        verdict = commands.research_group_diff(
+            first["group_id"], second["group_id"],
+        )
+        assert verdict["result"]["added_members"] == ["sha-room-b"]
+        assert verdict["result"]["ancestry_related"] is True
+
+        impact = commands.research_group_impact(second["group_id"])
+        assert impact["member_count"] == 2
+        assert "pkg.root" in impact["affected_modules"]
+        assert impact["closure"] is not None
+
+        residency = commands.research_residency(second["group_id"])
+        assert residency["node_type"] == "group"
+        assert residency["runtime"] == "informational"
     finally:
         root._crystallizer = real_crystallizer

@@ -61,6 +61,9 @@ from melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_man
 from melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.notch_transaction_strategy import (
     NotchTransactionStrategy,
 )
+from melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.remediation_transaction_strategy import (
+    RemediationTransactionStrategy,
+)
 from melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.add_to_index_transaction_strategy import (
     AddToIndexTransactionStrategy,
 )
@@ -391,6 +394,10 @@ class TransactionStrategyBuilder:
         self.register_strategy(
             ChangeTransactionType.REMOVE_FROM_INDEX,
             RemoveFromIndexTransactionStrategy,
+        )
+        self.register_strategy(
+            ChangeTransactionType.REMEDIATION,
+            RemediationTransactionStrategy,
         )
         self.register_strategy(
             ChangeTransactionType.ELECT_CONDUIT_CLUSTER_LEADER,

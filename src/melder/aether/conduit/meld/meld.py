@@ -21,6 +21,9 @@ from melder.utilities.custom_exceptions.hook_execution_error import HookExecutio
 from melder.utilities.custom_exceptions.meld_execution_error import MeldExecutionError
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_validity import SpellValidity
+from melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_request.transaction_request import (
+    ChangeTransactionType,
+)
 from melder.utilities.custom_exceptions.spellbook_validation_error import SpellbookValidationError
 from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_state import SpellState
 from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_state_change_reason import (
@@ -572,24 +575,43 @@ class Meld(Cleanable, ABC):
                 the active resolution conduit.
         """
         state = spell.system_state
-        # Structural gating
+        # Structural gating. The rerun-and-write branch is a MEDIATED
+        # remediation transaction (owner ruling 2026-07-12: remediation
+        # writes validity, and writers ride admission) - it claims the
+        # lineage scope EXCLUSIVE, so it can never straddle a concurrent
+        # notch/add/remove/transfer on the same lineage (the probe-proven
+        # poisoning race). Admission happens BEFORE spell._lock, matching
+        # the one-way order every membership family already obeys. Plain
+        # reads and warm melds never reach this branch and never admit.
         if self._gated_validation_required(spell):
-            with spell._lock:
-                if self._gated_validation_required(spell):
-                    self._get_spell_compiler_system().run_structural_phases(
-                        self._spellbook,
-                        spell,
-                    )
+            mediator = self._admit_remediation_transaction(
+                spell, "structural"
+            )
+            try:
+                with spell._lock:
+                    if self._gated_validation_required(spell):
+                        self._get_spell_compiler_system().run_structural_phases(
+                            self._spellbook,
+                            spell,
+                        )
 
-                    # If structural validation produced errors, hard-pin to invalid and bail.
-                    if spell.is_broken:
-                        if state is not None:
-                            state.set_validity(SpellValidity.invalid)
-                        raise SpellbookValidationError([spell])
+                        # If structural validation produced errors, hard-pin to invalid and bail.
+                        if spell.is_broken:
+                            if state is not None:
+                                state.set_validity(SpellValidity.invalid)
+                            raise SpellbookValidationError([spell])
 
-                    refreshed_state = spell.system_state
-                    if refreshed_state is None or refreshed_state.validity is not SpellValidity.valid:
-                        raise SpellbookValidationError([spell])
+                        refreshed_state = spell.system_state
+                        if refreshed_state is None or refreshed_state.validity is not SpellValidity.valid:
+                            raise SpellbookValidationError([spell])
+            except Exception:
+                mediator.end_transaction(
+                    expected_type="remediation", success=False
+                )
+                raise
+            mediator.end_transaction(
+                expected_type="remediation", success=True
+            )
 
         self._check_contracts_and_force_revalidation(spell)
 
@@ -822,30 +844,146 @@ class Meld(Cleanable, ABC):
             raise SpellbookValidationError([spell])
 
         if resolution_validity is SpellValidity.unknown or resolution_validity is SpellValidity.gated:
-            with spell._lock:
-                resolution_state = spell_system_states.get_conduit_resolution_state(conduit_id)
-                resolution_validity = self._get_resolution_validity(spell, resolution_state)
-                if resolution_validity is SpellValidity.valid:
-                    return
-                if (
-                        resolution_validity is SpellValidity.invalid
-                        or resolution_validity is SpellValidity.disabled
-                        or resolution_validity is SpellValidity.cleaned
-                ):
-                    raise SpellbookValidationError([spell])
-
-                spellbook = spell._spellbook
-                if spellbook is None:
-                    raise RuntimeError("Spell has no owning Spellbook surface.")
-                spellbook._run_resolution_phases_for_target_spell(conduit_id, spell)
-
-                resolution_state = spell_system_states.get_conduit_resolution_state(conduit_id)
-                resolution_validity = self._get_resolution_validity(spell, resolution_state)
-                if resolution_validity is SpellValidity.valid:
-                    return
-
-            raise SpellbookValidationError([spell])
+            # Mediated remediation (owner ruling 2026-07-12): the
+            # conduit-scoped rerun WRITES resolution validity, so it
+            # rides admission under the lineage scope exactly like the
+            # structural rerun. Admission precedes spell._lock (one-way
+            # order). The helper raises on failure paths; success ends
+            # the transaction before the verdict returns.
+            mediator = self._admit_remediation_transaction(
+                spell, "resolution"
+            )
+            try:
+                self._locked_resolution_rerun(
+                    spell, spell_system_states, conduit_id
+                )
+            except Exception:
+                mediator.end_transaction(
+                    expected_type="remediation", success=False
+                )
+                raise
+            mediator.end_transaction(
+                expected_type="remediation", success=True
+            )
+            return
         raise SpellbookValidationError([spell])
+
+    def _locked_resolution_rerun(
+            self,
+            spell: Spell,
+            spell_system_states: Any,
+            conduit_id: str,
+    ) -> None:
+        """
+        Re-run conduit-scoped resolution phases under the spell lock.
+
+        Purpose:
+            The extracted write-arm of `_ensure_resolution_resolvable`
+            (remediation mediation, 2026-07-12): kept as its own unit so
+            the admitting caller can wrap it in one transaction with
+            clean success/failure ends despite the early-return shape.
+
+        Contract:
+            - Double-checks validity under the lock (a concurrent,
+              now-serialized remediation may have promoted it already).
+            - Returns silently when validity lands `valid`; raises
+              SpellbookValidationError otherwise (terminal states or a
+              rerun that could not promote).
+
+        Args:
+            spell:
+                The spell whose conduit-scoped resolution is re-derived.
+            spell_system_states:
+                The frame's SpellSystemStates registry.
+            conduit_id:
+                The active resolution conduit id.
+
+        Raises:
+            SpellbookValidationError: Terminal validity or a failed
+                promotion.
+            RuntimeError: If the spell has no owning Spellbook surface.
+        """
+        with spell._lock:
+            resolution_state = spell_system_states.get_conduit_resolution_state(conduit_id)
+            resolution_validity = self._get_resolution_validity(spell, resolution_state)
+            if resolution_validity is SpellValidity.valid:
+                return
+            if (
+                    resolution_validity is SpellValidity.invalid
+                    or resolution_validity is SpellValidity.disabled
+                    or resolution_validity is SpellValidity.cleaned
+            ):
+                raise SpellbookValidationError([spell])
+
+            spellbook = spell._spellbook
+            if spellbook is None:
+                raise RuntimeError("Spell has no owning Spellbook surface.")
+            spellbook._run_resolution_phases_for_target_spell(conduit_id, spell)
+
+            resolution_state = spell_system_states.get_conduit_resolution_state(conduit_id)
+            resolution_validity = self._get_resolution_validity(spell, resolution_state)
+            if resolution_validity is SpellValidity.valid:
+                return
+        raise SpellbookValidationError([spell])
+
+    def _admit_remediation_transaction(
+            self,
+            spell: Spell,
+            remediation_lane: str,
+    ) -> Any:
+        """
+        Admit one mediated remediation transaction for a lineage rerun.
+
+        Purpose:
+            The write-side admission of the remediation-mediation design
+            (owner ruling 2026-07-12): lazy revalidation writes lineage/
+            resolution validity, so it enters the change-control plane
+            claiming the lineage scope EXCLUSIVE - serializing against
+            notch/add_to_index/remove_from_index/transfer on the same
+            lineage in both directions.
+
+        Contract:
+            - Called BEFORE spell._lock (the one-way ordering law).
+            - The caller owns end_transaction on every path.
+            - The admitting identity is the owning spellbook's (the
+              lineage is a book-owned surface).
+
+        Args:
+            spell:
+                The spell whose lineage is being remediated.
+            remediation_lane:
+                "structural" or "resolution" (diagnostic context).
+
+        Returns:
+            Any: The transaction mediator holding the open transaction.
+
+        Raises:
+            RuntimeError: If the mediator is unreachable (no owning
+                spellbook/frame) - remediation must never write
+                unmediated once this law is in force.
+        """
+        spellbook = self._spellbook
+        if spellbook is None:
+            raise RuntimeError(
+                "Remediation requires an owning Spellbook surface to "
+                "admit its transaction."
+            )
+        mediator = (
+            spellbook._aetheric_frame.dev_ops_manager
+            .change_control_manager.transaction_mediator()
+        )
+        mediator.start_transaction(
+            identity=spellbook._transaction_identity,
+            transaction_type=ChangeTransactionType.REMEDIATION,
+            metadata={
+                "origin_surface": "meld.remediation",
+                "remediation_lane": remediation_lane,
+                "spellbook_id": spellbook._id,
+                "spell_id": spell.spell_id,
+                "spell_index_id": spell.spell_index.id,
+            },
+        )
+        return mediator
 
     def _check_contracts_and_force_revalidation(self, spell: Spell) -> None:
         """

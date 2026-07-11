@@ -34,6 +34,12 @@ class TransitionAct(enum.Enum):
           network snapshots; objects are indestructible).
         - `restored`: the network organization was rebuilt from a
           content-addressed snapshot (network-scope act).
+        - `group_registered` / `group_recomposed`: a subsystem COMPOSITION
+          (GroupedResearchNode) entered a lane - first composition vs an
+          evolution of a previous one (2026-07-11 owner ruling). Group-
+          scope acts carry the composition's content-addressed sha in
+          `to_spell_id` (the same sha namespace as spell identities); the
+          member roster and composition ancestry ride `metadata`.
     """
 
     lane_created = "lane_created"
@@ -45,6 +51,8 @@ class TransitionAct(enum.Enum):
     joined = "joined"
     archived = "archived"
     restored = "restored"
+    group_registered = "group_registered"
+    group_recomposed = "group_recomposed"
 
 
 class TransitionEntry(Cleanable):

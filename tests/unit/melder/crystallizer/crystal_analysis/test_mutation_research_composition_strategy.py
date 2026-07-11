@@ -73,6 +73,74 @@ def test_agreeing_composition_produces_no_rows():
     assert strategy.analyze({"spell_crystal": {}}) == []
 
 
+def test_group_nodes_identify_by_group_id_and_pass_clean():
+    """
+    Contract (GroupedResearchNode ruling 2026-07-11): node_type="group"
+    payloads identify by group_id - resident compositions with resident
+    members produce NO rows (no false "spell id None" warnings), and the
+    composition identity satisfies the residence agreement like any node.
+    """
+    strategy = MutationResearchCompositionStrategy()
+    clean = _bundle({
+        "default": _set_payload(
+            lanes=[
+                _lane("lane-1", ["sha-a", "sha-b"]),
+                {
+                    "lane_id": "lane-sub",
+                    "name": "subsystem",
+                    "state": "active",
+                    "nodes": [{
+                        "node_type": "group",
+                        "group_id": "g-1",
+                        "member_spell_ids": ["sha-a", "sha-b"],
+                        "parent_group_ids": [],
+                    }],
+                },
+            ],
+            residence={"lane_id_by_spell_id": {
+                "sha-a": "lane-1",
+                "sha-b": "lane-1",
+                "g-1": "lane-sub",
+            }},
+        ),
+    })
+    assert strategy.analyze(clean) == []
+
+
+def test_group_node_missing_member_warns_as_drift():
+    """
+    Contract: a composition pinning a member the residence partition does
+    not carry warns (drift evidence) without blocking - the composition
+    identity itself is informational and rebuilds fine.
+    """
+    strategy = MutationResearchCompositionStrategy()
+    rows = strategy.analyze(_bundle({
+        "default": _set_payload(
+            lanes=[
+                _lane("lane-1", ["sha-a"]),
+                {
+                    "lane_id": "lane-sub",
+                    "name": "subsystem",
+                    "state": "active",
+                    "nodes": [{
+                        "node_type": "group",
+                        "group_id": "g-1",
+                        "member_spell_ids": ["sha-a", "sha-ghost"],
+                        "parent_group_ids": [],
+                    }],
+                },
+            ],
+            residence={"lane_id_by_spell_id": {
+                "sha-a": "lane-1",
+                "g-1": "lane-sub",
+            }},
+        ),
+    }))
+    assert [row["severity"] for row in rows] == ["warning"]
+    assert "pins member" in rows[0]["detail"]
+    assert "sha-ghost"[:12] in rows[0]["detail"]
+
+
 def test_unparseable_shapes_block():
     """
     Contract: composition/set/lanes/residence with the wrong shapes are

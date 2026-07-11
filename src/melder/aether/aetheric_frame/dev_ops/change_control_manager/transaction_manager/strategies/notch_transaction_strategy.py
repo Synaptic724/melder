@@ -82,6 +82,17 @@ class NotchTransactionStrategy(TransactionStrategy):
             conduit_ids=conduit_ids,
             binding_key=binding_key,
         )
+        # Lineage claim (remediation mediation, owner ruling 2026-07-12):
+        # the targeted index's lineage scope joins the seal so a lazy
+        # revalidation window on this lineage can never straddle the
+        # notch (and vice versa) - the probe-proven poisoning race.
+        spell_index_id = metadata.get("spell_index_id")
+        if isinstance(spell_index_id, str) and spell_index_id:
+            lineage_scope = transaction_manager.make_scope_key_lineage(
+                spell_index_id
+            )
+            scope_keys.add(lineage_scope)
+            scope_claims.append((lineage_scope, ClaimMode.EXCLUSIVE.value))
         scope_keys.update(metadata.get("scope_keys", ()))
 
         normalized_metadata = dict(metadata)

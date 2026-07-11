@@ -107,7 +107,9 @@ def test_entry_cleanup_is_idempotent_and_guards_reads() -> None:
 
 def test_act_vocabulary_is_world_entry_only() -> None:
     """
-    Verify the act vocabulary carries no checkout/rollback acts.
+    Verify the act vocabulary carries no checkout/rollback acts (the
+    grouped acts are forward-only world entries for compositions -
+    2026-07-11 GroupedResearchNode ruling - not rewinds).
     """
     values = {act.value for act in TransitionAct}
 
@@ -121,4 +123,6 @@ def test_act_vocabulary_is_world_entry_only() -> None:
         "joined",
         "archived",
         "restored",
+        "group_registered",
+        "group_recomposed",
     }

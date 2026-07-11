@@ -5,14 +5,21 @@ A graft re-integrates ONE captured index - all members, custody,
 selection - into a LIVE host book through the normal verbs only: the
 selected member binds ACTIVE (bind creates the fresh index and selects
 it), parked members ride conduit.bind_inactive onto that new index.
-Existing indexes are NEVER mutated (fresh-index-only law: the index-ops
-seams belong to another lane); resident members refuse by default or
-skip with a shortfall under skip_resident. Grafts are user-verb activity
+Fresh-index-only is the DEFAULT; existing indexes are never touched
+through internals. The opt-in MERGE MODE (finishing slice 3,
+2026-07-11, dial owner-delegated + decided) grows a caller-named live
+index instead - still exclusively through its own public verbs
+(bind_inactive to park, notch_spell to optionally adopt the recorded
+selection). Historical note: the original "no index merging, ever" law
+protected the then-unfinished index-ops seams; those seams shipped
+(conduit.py:4003/:4075), which is what made a safe merge lane possible.
+Resident members refuse by default or skip with a shortfall under
+skip_resident, identically in both modes. Grafts are user-verb activity
 (per-verb transactions), not world replays - no LoadGate span.
 """
 
 import importlib
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.crystallizer.persistence.record_version import RecordVersion
@@ -33,11 +40,27 @@ class GraftRunner(Cleanable):
           report (never raises for per-member problems - shortfalls
           carry them; only structural refusals raise: version gate,
           unconjured host, resident member without skip_resident).
+        - INDEX IDENTITY IS DISPOSABLE (owner ruling 2026-07-11: "the
+          index_id doesn't matter, it's just about what spells are in
+          it"): a graft's contract is MEMBERSHIP placement, never index
+          identity preservation. The report's recorded/live index ids
+          are traceability only; fresh ids mint freely (the
+          never-rehydrate-ULIDs law applied to indexes).
+        - EVERY structural write rides the owner's mediator: the runner
+          only ever calls the self-admitting public verbs
+          (bind / bind_inactive / notch_spell -> the bind and notch
+          transaction families). Grafts are per-verb transactions by
+          design - each member entry is its own admission; there is no
+          umbrella claim spanning the graft (graft-level atomicity
+          against concurrent structural ops is a recorded future
+          decision, not an improvised bypass).
         - THE OVERLAP RULE (conservative resolution of the pinned open
           question): a member already resident anywhere in the host
           FRAME refuses the whole graft by default; skip_resident=True
           skips that member with the shortfall
-          "member_resident_in_host_skipped". No index merging, ever.
+          "member_resident_in_host_skipped". Applies identically in
+          merge mode. Index internals are never touched in either mode
+          (merge grows the target through its own public verbs only).
         - Hydration v1 is the normal import lane only; retained-text
           rebuild for graft members is a flagged follow-up (the ticket
           carries it).
@@ -55,6 +78,8 @@ class GraftRunner(Cleanable):
         "_record",
         "_host_book",
         "_skip_resident",
+        "_merge_into_index",
+        "_adopt_recorded_selection",
         "_consumed",
     ]
 
@@ -63,6 +88,8 @@ class GraftRunner(Cleanable):
             graft_record: Dict[str, object],
             host_spellbook: Any,
             skip_resident: bool = False,
+            merge_into_index: Optional[Any] = None,
+            adopt_recorded_selection: bool = False,
     ) -> None:
         """
         Initialize one single-use runner.
@@ -77,20 +104,41 @@ class GraftRunner(Cleanable):
                 True skips members already resident in the host frame
                 (shortfall per member); False refuses the whole graft on
                 the first resident member.
+            merge_into_index:
+                MERGE MODE (finishing slice 3, dial decided 2026-07-11):
+                a LIVE SpellIndex object in the host frame. When given,
+                NO fresh index is created - every graftable member
+                parks onto this existing index through the public
+                bind_inactive verb (the target's own selection stays
+                active). Live-object parameter by the graft_index
+                facade precedent; fresh-index-only remains the DEFAULT.
+            adopt_recorded_selection:
+                Merge-mode only: when True and the record's selected
+                member grafts in, notch it active on the target index
+                through the public conduit notch_spell verb. Default
+                False (the target index keeps its current selection).
 
         Returns:
             None.
 
         Raises:
             TypeError: If the record is not a dict or the host is None.
-            ValueError: If the record is not a spell_index graft, or was
-                written by a newer record major (RecordVersion gate).
+            ValueError: If the record is not a spell_index graft, was
+                written by a newer record major (RecordVersion gate),
+                or adopt_recorded_selection is set without a merge
+                target (selection adoption is a merge-mode concept).
         """
         super().__init__()
         if not isinstance(graft_record, dict):
             raise TypeError("graft_record must be a dict.")
         if host_spellbook is None:
             raise TypeError("host_spellbook cannot be None.")
+        if adopt_recorded_selection and merge_into_index is None:
+            raise ValueError(
+                "adopt_recorded_selection requires merge_into_index; a "
+                "fresh-index graft always selects the recorded member "
+                "already."
+            )
         RecordVersion.check_readable(
             graft_record,
             "index graft {0!r}".format(graft_record.get("index_id")),
@@ -105,6 +153,10 @@ class GraftRunner(Cleanable):
         self._record: Dict[str, object] = dict(graft_record)
         self._host_book: Any = host_spellbook
         self._skip_resident: bool = bool(skip_resident)
+        self._merge_into_index: Optional[Any] = merge_into_index
+        self._adopt_recorded_selection: bool = bool(
+            adopt_recorded_selection
+        )
         self._consumed: bool = False
 
     def cleanup(self) -> None:
@@ -120,6 +172,8 @@ class GraftRunner(Cleanable):
         del self._record
         del self._host_book
         del self._skip_resident
+        del self._merge_into_index
+        del self._adopt_recorded_selection
         del self._consumed
 
     def run(self) -> Dict[str, object]:
@@ -168,6 +222,26 @@ class GraftRunner(Cleanable):
 
         self._refuse_or_skip_residents(members, skipped, shortfalls)
 
+        # MERGE MODE (finishing slice 3): every graftable member parks
+        # onto the caller's existing live index through the public
+        # verbs; no fresh index, no anchor requirement, the target's
+        # selection stands unless adoption was requested.
+        if self._merge_into_index is not None:
+            parked, selection_adopted = self._merge_members(
+                selected_id, members, host_conduit, shortfalls
+            )
+            return {
+                "status": "complete",
+                "recorded_index_id": str(self._record.get("index_id")),
+                "live_index_id": str(self._merge_into_index.id),
+                "merged_into_existing": True,
+                "selection_adopted": selection_adopted,
+                "members_bound": 0,
+                "members_parked": parked,
+                "skipped_resident": skipped,
+                "shortfalls": shortfalls,
+            }
+
         if selected_id is None or str(selected_id) not in members:
             raise ValueError(
                 "The graft record carries no graftable SELECTED member; "
@@ -184,6 +258,8 @@ class GraftRunner(Cleanable):
             "status": "complete",
             "recorded_index_id": str(self._record.get("index_id")),
             "live_index_id": live_index_id,
+            "merged_into_existing": False,
+            "selection_adopted": True,
             "members_bound": bound,
             "members_parked": parked,
             "skipped_resident": skipped,
@@ -335,6 +411,88 @@ class GraftRunner(Cleanable):
             )
             parked += 1
         return parked
+
+    def _merge_members(
+            self,
+            selected_id: Optional[object],
+            members: Dict[str, Dict[str, object]],
+            host_conduit: Any,
+            shortfalls: List[Dict[str, object]],
+    ) -> Tuple[int, bool]:
+        """
+        Park every graftable member onto the existing merge target.
+
+        Purpose:
+            The merge lane (finishing slice 3): existing-index growth
+            through the SAME public verbs the fresh lane uses -
+            bind_inactive parks each member onto the caller's live
+            index; notch_spell optionally adopts the recorded
+            selection. Index internals stay untouched.
+
+        Contract:
+            - Spell SHAs are content-derived and stable, so the
+              recorded selected id addresses the freshly parked live
+              spell directly for the adoption notch.
+            - Adoption is honest: requested-but-ungrafted selection
+              lands a shortfall instead of a silent no-op.
+
+        Args:
+            selected_id:
+                The record's selected member id (adoption target).
+            members:
+                Graftable member map (residents already removed).
+            host_conduit:
+                The host book's live conduit (public-verb host).
+            shortfalls:
+                Collector for honest rows.
+
+        Returns:
+            Tuple[int, bool]: (members parked, selection adopted).
+        """
+        parked = 0
+        for spell_id, entry in members.items():
+            crystal = dict(entry.get("payload", {}))
+            target = self._hydrate(spell_id, crystal, shortfalls)
+            if target is None:
+                continue
+            host_conduit.bind_inactive(
+                spell=target,
+                spell_index=self._merge_into_index,
+                existence=str(crystal.get("existence_name", "unique")),
+                permissions=str(crystal.get("permissions_name", "create")),
+                spellframe=crystal.get("spellframe_name"),
+                binding_name=crystal.get("binding_name"),
+                profile=str(crystal.get("profile_family", "general")),
+            )
+            parked += 1
+        selection_adopted = False
+        if self._adopt_recorded_selection:
+            # TRIAGE (2026-07-12): the first cut resolved the adoptee via
+            # find_spell_by_id, which returns the index's ACTIVE spell
+            # for ANY member id (spellbook.py:1852-1855) - so adoption
+            # notched the target's own current selection (a self-notch)
+            # and the selection never moved. _get_owned_spell is the
+            # member-resolution seam the notch harness itself uses: it
+            # returns the owned spell active OR PARKED (the merged
+            # member is parked by construction). Read-only seam; the
+            # mediated write remains the public notch verb below.
+            adopted_spell = (
+                self._host_book._get_owned_spell(str(selected_id))
+                if selected_id is not None
+                else None
+            )
+            if adopted_spell is None:
+                shortfalls.append({
+                    "member": str(selected_id),
+                    "reason": "recorded_selection_not_grafted_not_adopted",
+                })
+            else:
+                host_conduit.notch_spell(
+                    spell_index=self._merge_into_index,
+                    spell=adopted_spell,
+                )
+                selection_adopted = True
+        return parked, selection_adopted
 
     def _hydrate(
             self,
