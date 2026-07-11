@@ -71,23 +71,32 @@ def _make_configuration(
     return configuration
 
 
-def test_bottom_up_default_frame_cleanup_blocks_default_access() -> None:
+def test_bottom_up_default_frame_cleanup_recreates_on_next_use() -> None:
     """
     Purpose:
-        Validate bottom-up default-frame cleanup clears default-frame access.
+        Validate bottom-up default-frame cleanup detaches the pointer and the
+        next default-frame user receives a FRESH lazily created frame.
     Contract:
-        - _ensure_default_frame raises after default is cleaned.
-        - Default-frame accessors raise after cleanup.
+        - Frames are lazy (owner ruling 2026-07-11): the default frame is
+          born on first ensure, not at boot.
+        - Cleaning the default frame clears the Aether default pointer.
+        - _ensure_default_frame RECREATES after an individual default-frame
+          cleanup (matching named-frame _ensure_frame semantics); the old
+          raise-instead-of-recreate contract is retired.
     Returns:
         None.
     Raises:
-        AssertionError: If default access is still available after cleanup.
+        AssertionError: If the pointer survives cleanup or recreation fails.
     """
     aether = Aether()
-    aether._default_frame.cleanup()
+    first = aether._ensure_default_frame()
+    first.cleanup()
+    assert aether._default_frame is None
 
-    with pytest.raises(RuntimeError, match="Default AethericFrame"):
-        aether._ensure_default_frame()
+    recreated = aether._ensure_default_frame()
+    assert recreated is not first
+    assert recreated is aether._default_frame
+    assert aether._aetheric_frames["default"] is recreated
 def test_aether_devops_accessors_missing_frame_raise() -> None:
     """
     Purpose:

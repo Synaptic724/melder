@@ -38,8 +38,9 @@ class LoadGate(Cleanable):
           exist, so frames born mid-load inherit coverage unconditionally.
 
     Lifecycle:
-        - "cleanup()" terminally opens the gate, wakes all waiters, and nulls
-          owned references; the instance is unusable afterwards.
+        - "cleanup()" terminally opens the gate and wakes all waiters. Holder
+          slots become None TOMBSTONES (documented; not del) so late waiters
+          exit cleanly; `wait_for_passage` after cleanup passes immediately.
     """
     __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
@@ -80,13 +81,20 @@ class LoadGate(Cleanable):
             across Aether teardown.
 
         Contract:
-            - Clears any holder and notifies all waiters before nulling.
-            - Marks this instance cleaned; all guarded operations refuse
-              afterwards via attribute removal.
+            - Clears any holder and notifies all waiters.
+            - DOCUMENTED TOMBSTONES (None, not del): a parked waiter may
+              still be inside `wait_for_passage` when cleanup runs; it wakes,
+              re-checks `_holder_thread_id`, observes the None tombstone, and
+              exits cleanly. Deleting the attributes (normal del posture)
+              would raise AttributeError inside that waiter, so the holder
+              slots stay as None tombstones and `_condition` stays alive as
+              the terminal-open surface.
+            - Marks this instance cleaned; the gate is terminally OPEN: late
+              `wait_for_passage` calls pass immediately.
 
         Threading:
             - Teardown runs under the condition lock; waiters are notified
-              before references are nulled so they release deterministically.
+              inside the lock so they release deterministically on exit.
 
         Returns:
             None.
@@ -96,14 +104,12 @@ class LoadGate(Cleanable):
         with self._condition:
             if self._cleaned:
                 return
+            # None tombstones (see Contract): late waiters must be able to
+            # re-check these after waking, so no del posture here.
             self._holder_thread_id = None
             self._holder_label = None
             self._condition.notify_all()
             self._cleaned = True
-
-            del self._holder_thread_id
-            del self._holder_label
-        del self._condition
 
     def acquire(self, label: str) -> None:
         """
@@ -128,13 +134,15 @@ class LoadGate(Cleanable):
 
         Raises:
             RuntimeError:
-                If the gate is already held (message names the holder label).
+                If the gate is already held (message names the holder label),
+                or the gate has been cleaned.
             ValueError:
                 If label is falsy.
 
         Returns:
             None.
         """
+        self.check_cleaned()
         if not label:
             raise ValueError("LoadGate.acquire requires a non-empty label.")
         with self._condition:
@@ -163,11 +171,13 @@ class LoadGate(Cleanable):
 
         Raises:
             RuntimeError:
-                If the gate is not held, or held by a different thread.
+                If the gate is not held, held by a different thread, or the
+                gate has been cleaned.
 
         Returns:
             None.
         """
+        self.check_cleaned()
         with self._condition:
             if self._holder_thread_id is None:
                 raise RuntimeError("LoadGate.release called on an open gate.")
@@ -205,6 +215,11 @@ class LoadGate(Cleanable):
         Raises:
             RuntimeError:
                 If the gate does not open before "timeout".
+
+        Notes:
+            Deliberately does NOT check cleaned state: after cleanup the gate
+            is terminally OPEN (tombstoned holder), so late mediator callers
+            pass immediately instead of raising during teardown races.
 
         Returns:
             None.

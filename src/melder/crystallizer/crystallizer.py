@@ -141,9 +141,11 @@ class Crystallizer(Cleanable):
             )
             # The unfold owner (V3 third child): every load runs through
             # its mediated admission pipeline and it remembers the last
-            # load's detached payload.
+            # load's detached payload. The borrowed aether (may be None in
+            # bare-record tests) lets load verbs claim system-wide load
+            # authority through the Aether LoadGate for their span.
             self._crystal_loader_system: CrystalLoaderSystem = (
-                CrystalLoaderSystem(self._persistence_system)
+                CrystalLoaderSystem(self._persistence_system, aether=aether)
             )
             # Automatic-checkpoint cadence; installed from the frozen
             # configuration at activate() (0.0 = not yet activated).

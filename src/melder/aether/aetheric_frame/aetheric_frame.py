@@ -150,9 +150,14 @@ class AethericFrame(Cleanable):
         )
 
         # Per-frame DevOps hub: incidents + change-control over this frame.
+        # The Aether-owned LoadGate is borrowed here (documented private seam:
+        # frames are Aether-owned) and forwarded to the TransactionMediator so
+        # root transaction starts on this frame respect load authority - even
+        # for frames born mid-load, since the gate predates every frame.
         self._dev_ops_manager: DevOpsManager = DevOpsManager(
             self._spell_system_states,
             self._devops_information_registry,
+            load_gate=aether._load_gate,
         )
 
         # Optional explicit frame-owned shared rich Spellbook configuration.

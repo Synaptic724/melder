@@ -190,18 +190,27 @@ def test_singleton_identity_under_concurrent_construction() -> None:
     assert Aether._instance is not None
     assert id(Aether._instance) == instance_ids[0]
 
-def test_initialization_creates_default_frame(mock_frame_cls):
+def test_initialization_defers_default_frame_until_first_use(mock_frame_cls):
     """
-    Verify initialization automatically creates the 'default' frame.
+    Verify initialization creates ZERO frames; "default" is born lazily.
 
-    Contract:
-    - `_aetheric_frames` must contain "default".
-    - `_default_frame` property must point to this frame.
-    - AethericFrame constructor must be called with the owning Aether plus "default".
+    Contract (owner ruling 2026-07-11 - frames are lazy):
+    - `_aetheric_frames` is EMPTY after init and `_default_frame` is None;
+      the AethericFrame constructor is never called at boot.
+    - The first `_ensure_default_frame()` lazily creates "default" through
+      `_ensure_frame`, registers it, and sets the default pointer.
+    - AethericFrame constructor is called with the owning Aether plus
+      "default" at ensure time, not init time.
     """
     a = Aether()
+    assert a._aetheric_frames == {}
+    assert a._default_frame is None
+    mock_frame_cls.assert_not_called()
+
+    ensured = a._ensure_default_frame()
     assert "default" in a._aetheric_frames
     mock_frame_cls.assert_called_with(ANY, "default")
+    assert ensured is mock_frame_cls.return_value
     assert a._default_frame is mock_frame_cls.return_value
     assert isinstance(a._nexus, Nexus)
     assert a._nexus.is_configured is False
@@ -226,8 +235,10 @@ def test_cleanup_clears_state(aether_with_mocks):
     - Singleton instance reference (`Aether._instance`) is cleared to allow fresh tests.
     """
     a = aether_with_mocks
-    default_frame = a._default_frame
-    
+    # Frames are lazy: materialize the default frame so cleanup has an owned
+    # frame to tear down (boot no longer creates one).
+    default_frame = a._ensure_default_frame()
+
     a.cleanup()
     
     assert a._cleaned is True

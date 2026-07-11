@@ -19,6 +19,7 @@ from melder.crystallizer.crystal_loader_system.load_admission import (
 )
 
 if TYPE_CHECKING:
+    from melder.aether.aether import Aether
     from melder.crystallizer.persistence.persistence_system import (
         PersistenceSystem,
     )
@@ -59,9 +60,14 @@ class CrystalLoaderSystem(Cleanable):
         "_persistence_system",
         "_load_admission",
         "_last_load",
+        "_aether",
     ]
 
-    def __init__(self, persistence_system: PersistenceSystem) -> None:
+    def __init__(
+            self,
+            persistence_system: PersistenceSystem,
+            aether: Optional["Aether"] = None,
+    ) -> None:
         """
         Initialize the loader over one borrowed record.
 
@@ -69,6 +75,13 @@ class CrystalLoaderSystem(Cleanable):
             persistence_system:
                 The crystallizer's record. Borrowed collaborator: used
                 and stored, never owned or cleaned here.
+            aether:
+                Optional borrowed Aether singleton. When supplied, every
+                load verb claims system-wide load authority through
+                `acquire_load_authority` for its span ("the loading
+                thread has all control"): foreign root transactions park
+                at the LoadGate until release. None runs loads ungated
+                (unit-test posture over bare records).
 
         Returns:
             None.
@@ -81,6 +94,7 @@ class CrystalLoaderSystem(Cleanable):
             raise TypeError("persistence_system cannot be None.")
         self._lock: threading.RLock = threading.RLock()
         self._persistence_system: PersistenceSystem = persistence_system
+        self._aether: Optional["Aether"] = aether
         self._load_admission: LoadAdmission = LoadAdmission(
             persistence_system
         )
@@ -107,6 +121,7 @@ class CrystalLoaderSystem(Cleanable):
         del self._load_admission
         del self._last_load
         del self._persistence_system
+        del self._aether
         del self._lock
 
     def load_checkpoint(self, checkpoint_id: str) -> Dict[str, object]:
@@ -137,14 +152,27 @@ class CrystalLoaderSystem(Cleanable):
         """
         self.check_cleaned()
         with self._lock:
-            plan = self._load_admission.plan_checkpoint_load(checkpoint_id)
+            # Load authority span: claim the Aether LoadGate (drain first)
+            # so this thread holds the whole system for the replay; always
+            # released, success or failure.
+            if self._aether is not None:
+                self._aether.acquire_load_authority(
+                    f"checkpoint_load:{checkpoint_id}"
+                )
             try:
-                payload = self._load_admission.execute_plan(plan)
+                plan = self._load_admission.plan_checkpoint_load(
+                    checkpoint_id
+                )
+                try:
+                    payload = self._load_admission.execute_plan(plan)
+                finally:
+                    if not plan.cleaned:
+                        plan.cleanup()
+                self._last_load = dict(payload)
+                return payload
             finally:
-                if not plan.cleaned:
-                    plan.cleanup()
-            self._last_load = dict(payload)
-            return payload
+                if self._aether is not None:
+                    self._aether.release_load_authority()
 
     def restore_formation_record(
             self,
@@ -179,14 +207,25 @@ class CrystalLoaderSystem(Cleanable):
         """
         self.check_cleaned()
         with self._lock:
-            plan = self._load_admission.plan_formation_load(formation_record)
+            # Load authority span: claim the Aether LoadGate (drain first)
+            # so this thread holds the whole system for the replay; always
+            # released, success or failure.
+            if self._aether is not None:
+                self._aether.acquire_load_authority("formation_load")
             try:
-                payload = self._load_admission.execute_plan(plan)
+                plan = self._load_admission.plan_formation_load(
+                    formation_record
+                )
+                try:
+                    payload = self._load_admission.execute_plan(plan)
+                finally:
+                    if not plan.cleaned:
+                        plan.cleanup()
+                self._last_load = dict(payload)
+                return payload
             finally:
-                if not plan.cleaned:
-                    plan.cleanup()
-            self._last_load = dict(payload)
-            return payload
+                if self._aether is not None:
+                    self._aether.release_load_authority()
 
     def describe_last_load(self) -> Dict[str, object]:
         """
