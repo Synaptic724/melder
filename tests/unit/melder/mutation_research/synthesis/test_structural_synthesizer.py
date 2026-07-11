@@ -175,6 +175,11 @@ def test_list_parts_inventories_in_source_order() -> None:
         ("Gadget", "class"),
     ]
     assert rows[1]["text"].startswith("@staticmethod")
+    # Part fingerprints (depth-3 change index): stable 64-hex shas over
+    # the exact part text, distinct across distinct parts.
+    assert all(len(row["sha256"]) == 64 for row in rows)
+    assert rows[0]["sha256"] != rows[1]["sha256"]
+    assert rows[0]["sha256"] == synthesizer.list_parts(DONOR)[0]["sha256"]
 
     with pytest.raises(ValueError, match="does not parse"):
         synthesizer.list_parts("def broken(:\n")

@@ -123,6 +123,7 @@ def test_capability_room_surface_is_read_only() -> None:
         "research_residency",
         "research_diff",
         "research_campaign_view",
+        "research_recent",
         "research_source",
         "research_impact",
         "research_module_graph",
@@ -468,5 +469,11 @@ def test_codegen_room_composition_loop() -> None:
             entry["group_id"]
             for entry in member_row["pinned_by_compositions"]
         ] == [second["group_id"]]
+
+        recent = commands.research_recent(limit=4)
+        assert len(recent["entries"]) == 4
+        assert "group_recomposed" in [
+            entry["act"] for entry in recent["entries"]
+        ]
     finally:
         root._crystallizer = real_crystallizer

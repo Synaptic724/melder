@@ -294,6 +294,31 @@ def test_group_history_gathers_the_area_story() -> None:
     with pytest.raises(RuntimeError, match="spell version"):
         root.group_history_view("sha-b")
 
+    # The WHERE x WHEN join: narrow the area's story to one campaign.
+    third = research_set.recompose_group(
+        second.group_id, remove=["sha-a1"], campaign="apollo",
+    )
+    stamped = root.group_history_view(third.group_id, campaign="apollo")
+    assert [entry["act"] for entry in stamped["entries"]] == [
+        "group_recomposed",
+    ]
+    assert stamped["campaign"] == "apollo"
+
+
+def test_recent_activity_is_the_cold_landing_read() -> None:
+    """
+    Verify the newest-window read: bounded entries in journal order, the
+    composition acts visible, totals honest.
+    """
+    root = _subsystem_root()
+
+    recent = root.recent_activity_view(limit=3)
+
+    assert len(recent["entries"]) == 3
+    assert recent["entries"][-1]["act"] == "group_registered"
+    assert recent["entry_count"] > 3
+    assert recent["set_name"] == "default"
+
 
 def test_impact_view_lifts_to_compositions() -> None:
     """

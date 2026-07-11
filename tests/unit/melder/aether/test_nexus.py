@@ -2075,6 +2075,7 @@ def test_codegen_command_system_lists_selected_runtime_helpers_only() -> None:
         "research_residency",
         "research_diff",
         "research_campaign_view",
+        "research_recent",
         "research_create_lane",
         "research_attach",
         "research_detach",
