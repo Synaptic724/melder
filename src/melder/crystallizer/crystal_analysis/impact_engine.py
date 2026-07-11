@@ -178,7 +178,7 @@ class ImpactEngine(Cleanable):
                  "affected_modules": sorted names (center included when
                  known), "affected_spells": sorted SHAs,
                  "affected_spellbooks": sorted book ids,
-                 "custody_states": {spell_sha: state}}.
+                 "custody_states": {spell_id: state}}.
 
         Raises:
             RuntimeError: If the engine has been cleaned.
@@ -222,7 +222,7 @@ class ImpactEngine(Cleanable):
             "custody_states": custody_states,
         }
 
-    def blast_radius_of_spell(self, spell_sha: str) -> Dict[str, object]:
+    def blast_radius_of_spell(self, spell_id: str) -> Dict[str, object]:
         """
         Return the impact of changing one spell (its root module world).
 
@@ -233,8 +233,9 @@ class ImpactEngine(Cleanable):
             - Unknown SHAs answer honestly ("unknown_spell": True).
 
         Args:
-            spell_sha:
-                The spell's SHA256 custody identity.
+            spell_id:
+                The spell's SHA256 custody identity (the system word is
+                spell_id; vocabulary conformance 2026-07-11).
 
         Returns:
             Dict[str, object]:
@@ -245,16 +246,16 @@ class ImpactEngine(Cleanable):
             RuntimeError: If the engine has been cleaned.
         """
         self.check_cleaned()
-        payload = self._custody_by_spell.get(str(spell_sha))
+        payload = self._custody_by_spell.get(str(spell_id))
         if payload is None:
             return {
-                "spell": str(spell_sha),
+                "spell": str(spell_id),
                 "unknown_spell": True,
                 "root_module": None,
             }
         root_module = str(payload.get("root_module_name"))
         radius = self.blast_radius_of_module(root_module)
-        radius["spell"] = str(spell_sha)
+        radius["spell"] = str(spell_id)
         radius["unknown_spell"] = False
         radius["root_module"] = root_module
         return radius
