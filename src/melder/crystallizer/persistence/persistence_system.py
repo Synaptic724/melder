@@ -705,7 +705,8 @@ class PersistenceSystem(Cleanable):
 
     # NOTE (S4 decomposition): restore_formation_record (the formation
     # engine leg, incl. the canonical-kind-order synthetic window minting)
-    # moved to BootMediator.plan_formation_load + CrystalLoaderSystem.
+    # moved to LoadAdmission.plan_formation_load (formerly BootMediator;
+    # renamed 2026-07-11) + CrystalLoaderSystem.
     # The ledger captures formation records; it never replays them.
 
     def cached_item_form(self, checkpoint_id: str) -> Dict[str, object]:

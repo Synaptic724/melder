@@ -38,6 +38,7 @@ from melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_req
 )
 
 if TYPE_CHECKING:
+    from melder.utilities.synchronization.load_gate import LoadGate
     from melder.aether.aetheric_frame.dev_ops.change_control_manager.embargo_manager.embargo_manager import (
         ChangeControlEmbargoManager,
     )
@@ -98,6 +99,7 @@ class TransactionMediator(Cleanable):
         "_strategy_builder",
         "_sessions_by_request_id",
         "_thread_local",
+        "_load_gate",
     ]
 
     def __init__(
@@ -110,6 +112,7 @@ class TransactionMediator(Cleanable):
             devops_information_registry: Optional[DevopsInformationRegistry],
             max_transaction_wait_time_in_seconds: float = 30.0,
             admit_request_fn: Optional[Callable[["ChangeControlTransactionRequest"], ChangeControlAdmissionResult]] = None,
+            load_gate: Optional["LoadGate"] = None,
     ) -> None:
         """
         Initialize the live transaction mediator.
@@ -131,6 +134,14 @@ class TransactionMediator(Cleanable):
                 transaction admission goes through that facade instead of
                 calling the orchestrator directly so manager-level policy like
                 change-control disablement still applies.
+            load_gate:
+                Optional Aether-owned LoadGate (borrowed, never cleaned here).
+                When supplied, every NEW-ROOT start waits for passage first:
+                while a crystallizer load holds system authority, the loading
+                thread passes free and all other threads park until release
+                (bounded by max_transaction_wait_time_in_seconds). Nested
+                same-thread joins never consult the gate. None constructs an
+                ungated mediator (unit-test posture).
 
         Raises:
             ValueError: If required collaborators are missing.
@@ -177,6 +188,7 @@ class TransactionMediator(Cleanable):
         )
         self._sessions_by_request_id: Dict[str, TransactionSession] = {}
         self._thread_local: threading.local = threading.local()
+        self._load_gate: Optional["LoadGate"] = load_gate
 
     def cleanup(self) -> None:
         """
@@ -210,6 +222,7 @@ class TransactionMediator(Cleanable):
             del self._admit_request
             del self._strategy_builder
             del self._thread_local
+            del self._load_gate
             del self._wait_condition
         del self._lock
 
@@ -297,6 +310,15 @@ class TransactionMediator(Cleanable):
         if staged is None:
             raise ValueError(
                 "staged must be supplied when starting a new root transaction session."
+            )
+
+        # NEW-ROOT starts only: while a crystallizer load holds system
+        # authority, foreign threads park here (the loading thread passes
+        # free). Joins above never reach this line. The wait runs on the
+        # gate's own condition, never while holding the mediator lock.
+        if self._load_gate is not None:
+            self._load_gate.wait_for_passage(
+                timeout=self._max_transaction_wait_time_in_seconds,
             )
 
         with self._lock:
@@ -430,6 +452,16 @@ class TransactionMediator(Cleanable):
                 metadata=normalized_metadata,
             )
             return active
+
+        # NEW-ROOT starts only: while a crystallizer load holds system
+        # authority, foreign threads park here (the loading thread passes
+        # free). The explicit-join branch above never reaches this line, and
+        # both start_transaction and _start_strategy_transaction funnel
+        # through here, so this single check covers every strategy ingress.
+        if self._load_gate is not None:
+            self._load_gate.wait_for_passage(
+                timeout=self._max_transaction_wait_time_in_seconds,
+            )
 
         request = self._transaction_manager.build_request(
             request_type=transaction_type,

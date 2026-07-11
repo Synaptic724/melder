@@ -767,8 +767,9 @@ def test_saved_conduit_formation_restores_directly_after_reboot(
     # Conduit-scoped formations DELIBERATELY exclude the frame twin
     # (frame posture is frame-scope material; restore fallback-postures
     # from book hints), so the scope-blind frame_posture strategy warns.
-    # This is the documented current truth until the BootMediator makes
-    # admission scope-aware (decomposition epic S4) - then a conduit
+    # This is the documented current truth until the admission plane makes
+    # admission scope-aware (decomposition epic S4; the plane is
+    # LoadAdmission since the 2026-07-11 rename) - then a conduit
     # scope interprets frame-absence as expected and this flips back to
     # a clean verdict for the scope.
     assert preflight["verdict"] == "warnings"

@@ -1,15 +1,20 @@
 """
-The small admission plane for boot transactions (owner design, 2026-07-09).
+The small admission plane for load transactions (owner design, 2026-07-09;
+renamed BootMediator -> LoadAdmission 2026-07-11 by owner ruling: the object
+runs a linear admission pipeline, it does not mediate peers - the name now
+matches the subsystem's established "admission" vocabulary and no longer
+collides with the DevOps TransactionMediator).
 
-Every load runs plan -> map -> verdict -> execute: the mediator BUILDS the
+Every load runs plan -> map -> verdict -> execute: LoadAdmission BUILDS the
 declarative LoadPlan, the ENGINE maps it (authoritative folded preflight -
 the only seam owning folded truth, so no fold logic is duplicated here) and
-GATES it (blockers refuse before any replay), and the mediator ADJUDICATES
+GATES it (blockers refuse before any replay), and LoadAdmission ADJUDICATES
 the resulting report per scope (conduit/frame loads reclassify the
 scope-blind frame_posture warnings into an expected-for-scope admission
 view without ever rewriting the raw findings).
 
-Lane: EPIC-2026-07-09-crystallizer-subsystem-decomposition, story S4.
+Lane: EPIC-2026-07-09-crystallizer-subsystem-decomposition, story S4;
+rename: EPIC-2026-07-11-crystallizer-v3-horizon-iteration, story S1.
 """
 
 from typing import Dict, List, TYPE_CHECKING
@@ -23,9 +28,9 @@ if TYPE_CHECKING:
     )
 
 
-class BootMediator(Cleanable):
+class LoadAdmission(Cleanable):
     """
-    Plan, execute, and adjudicate mediated boot transactions.
+    Plan, execute, and adjudicate admission-gated load transactions.
 
     Purpose:
         Give every load path (checkpoint chain, formation window) one
@@ -34,7 +39,7 @@ class BootMediator(Cleanable):
 
     Contract:
         - Deliberately SMALL (owner ruling): no lock table, no claim
-          modes - the mediator plans, delegates, and interprets.
+          modes - the admission plane plans, delegates, and interprets.
         - The engine runs with `refuse_on_blockers=True` ALWAYS: blocker
           refusal is standard admission, not an opt-in (verdict law).
         - Adjudication is a VIEW: raw preflight findings are never
@@ -65,7 +70,7 @@ class BootMediator(Cleanable):
 
     def __init__(self, persistence_system: PersistenceSystem) -> None:
         """
-        Initialize the mediator over one borrowed record.
+        Initialize the admission plane over one borrowed record.
 
         Args:
             persistence_system:
@@ -111,7 +116,7 @@ class BootMediator(Cleanable):
             LoadPlan: World-scoped plan carrying the detached chain.
 
         Raises:
-            RuntimeError: If the mediator has been cleaned.
+            RuntimeError: If the admission plane has been cleaned.
             KeyError: If no checkpoint exists under `checkpoint_id`.
         """
         self.check_cleaned()
@@ -147,7 +152,7 @@ class BootMediator(Cleanable):
             LoadPlan: Conduit- or frame-scoped plan with one window.
 
         Raises:
-            RuntimeError: If the mediator has been cleaned.
+            RuntimeError: If the admission plane has been cleaned.
             KeyError: If the record lacks its required keys.
         """
         self.check_cleaned()
@@ -159,7 +164,7 @@ class BootMediator(Cleanable):
 
         journal: List[List[object]] = []
         sequence = 0
-        for kind in BootMediator.FORMATION_KIND_ORDER:
+        for kind in LoadAdmission.FORMATION_KIND_ORDER:
             for key in sorted(dict(payloads.get(kind, {})).keys()):
                 sequence += 1
                 journal.append([sequence, kind, key])
@@ -199,8 +204,8 @@ class BootMediator(Cleanable):
 
         Raises:
             RuntimeError:
-                If the mediator was cleaned, admission refused the load
-                (blockers), or a replay stage failed (after teardown;
+                If the admission plane was cleaned, admission refused the
+                load (blockers), or a replay stage failed (after teardown;
                 cause chained).
         """
         self.check_cleaned()

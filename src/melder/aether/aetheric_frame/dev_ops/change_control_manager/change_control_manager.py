@@ -45,6 +45,7 @@ from melder.__melder_registration_guard__ import __melder_registration_guard__ a
 
 if TYPE_CHECKING:
     from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states import SpellSystemStates
+    from melder.utilities.synchronization.load_gate import LoadGate
     from melder.aether.spellbook.spell_compiler.blueprints.root_resolution_blueprint import (
         RootResolutionBlueprint,
     )
@@ -117,6 +118,7 @@ class ChangeControlManager(Cleanable):
             self,
             spell_system_states: SpellSystemStates,
             devops_information_registry: Optional[DevopsInformationRegistry] = None,
+            load_gate: Optional[LoadGate] = None,
     ) -> None:
         """
         Initialize a ChangeControlManager.
@@ -126,9 +128,14 @@ class ChangeControlManager(Cleanable):
         Contract:
             - Requires a non-null SpellSystemStates reference.
             - Creates per-manager scaffolding components.
+            - The load gate is Aether-owned and merely FORWARDED into the
+              TransactionMediator (not stored, not cleaned here).
         Args:
             spell_system_states:
                 Spell system state container for this frame.
+            load_gate:
+                Aether-owned LoadGate consulted at root transaction starts;
+                None constructs an ungated mediator (unit-test posture).
         Raises:
             ValueError: If spell_system_states is None.
         Threading:
@@ -187,6 +194,7 @@ class ChangeControlManager(Cleanable):
                 max_transaction_wait_time_in_seconds
             ),
             admit_request_fn=self.admit_request,
+            load_gate=load_gate,
         )
         self._commit_validator: Optional[Callable[[ChangeControlStagedMutation], None]] = None
         self._commit_hook: Optional[Callable[[ChangeControlStagedMutation], None]] = None

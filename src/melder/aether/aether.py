@@ -1,4 +1,5 @@
 ﻿import logging
+import time
 from threading import RLock
 from types import TracebackType
 from typing import TYPE_CHECKING, Optional, Any, Dict, Set, Tuple, ClassVar
@@ -18,6 +19,7 @@ from melder.utilities.general_base.cleanable import Cleanable
 from melder.aether.aetheric_frame.aetheric_frame import AethericFrame
 from melder.aether.aetheric_frame.aetheric_frame_configuration import AethericFrameConfiguration
 from melder.utilities.helpers.init_helpers import InitHelpers
+from melder.utilities.synchronization.load_gate import LoadGate
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 if TYPE_CHECKING:
     from melder.mutation_research.mutation_research import MutationResearch
@@ -118,9 +120,15 @@ class Aether(Cleanable):
                 # every frame/spellbook/conduit and into MutationResearch as the
                 # passive emission sink (they hold a non-owning reference; Aether
                 # owns and cleans it).
-                default_frame = AethericFrame(self, "default")
-                self._aetheric_frames["default"] = default_frame
-                self._default_frame = default_frame
+                # NOTE (2026-07-11): the eager `AethericFrame(self, "default")`
+                # construction that lived here was REMOVED - frames are lazy by
+                # design (owner ruling). The first Spellbook births the frame it
+                # names; a collapsed configuration falls back to "default" via
+                # `_ensure_default_frame`. `import melder` creates ZERO frames.
+                # LoadGate is constructed here - BEFORE any frame can exist - so
+                # every frame-local TransactionMediator born later (including
+                # frames born mid-load) inherits gate coverage unconditionally.
+                self._load_gate: LoadGate = LoadGate()
                 # MutationResearch is constructed lazily on first access
                 # (`_get_mutation_research`): its import chain and root build
                 # cost several milliseconds on the cold import path (Aether()
@@ -162,6 +170,10 @@ class Aether(Cleanable):
                 return
             try:
                 self._cleaned = True
+                # Gate first: cleanup opens it and wakes any parked waiters so
+                # teardown never deadlocks behind threads waiting for passage.
+                if self._load_gate is not None:
+                    self._load_gate.cleanup()
                 if self._aetheric_frames is not None:
                     self.cleanup_aetheric_frames() # This will clean each individual frame
                     self._aetheric_frames.clear() # This cleans the ConcurrentDictionary
@@ -185,6 +197,7 @@ class Aether(Cleanable):
                 del self._configuration
                 del self._nexus
                 del self._default_frame
+                del self._load_gate
 
 
                 # Reset Singleton state to allow re-initialization (e.g. in tests)
@@ -239,15 +252,22 @@ class Aether(Cleanable):
 
     def _ensure_default_frame(self) -> AethericFrame:
         """
-        Ensure the singleton still has a live default frame.
+        Ensure the "default" frame exists, lazily creating it on first use.
 
         Contract:
-            - Raises instead of silently recreating the default frame on a
-              cleaned or partially torn-down singleton.
+            - Returns the live default frame when the pointer is set.
+            - Lazily creates "default" through `_ensure_frame` when the
+              pointer is None (never-created boot state and an
+              individually-cleaned default frame both RECREATE; owner ruling
+              2026-07-11 - frames are lazy, and the collapsed-configuration
+              fallback must just work, matching named-frame semantics).
+            - `check_cleaned` inside `_ensure_frame` still refuses on a
+              cleaned or partially torn-down singleton, preserving the
+              protective intent of the old raise-instead-of-recreate guard.
         """
         frame = self._default_frame
         if frame is None:
-            raise RuntimeError("Default AethericFrame has been cleaned or is unavailable.")
+            frame = self._ensure_frame("default")
         return frame
 
     def _detach_cleaned_frame(
@@ -757,6 +777,112 @@ class Aether(Cleanable):
             if aetheric_frame_name == "default":
                 self._default_frame = frame
             return frame
+
+    def acquire_load_authority(
+            self,
+            label: str,
+            drain_timeout: float = 30.0,
+    ) -> None:
+        """
+        Public API
+
+        Grant the calling thread exclusive load authority over the system.
+
+        Purpose:
+            Entry verb for crystallizer loads: claim the singleton LoadGate,
+            then DRAIN - wait for every in-flight transaction session across
+            all live frames to finish - so replay begins against a quiescent
+            registry. New root transactions from other threads park at the
+            gate; the loading thread's own per-verb transactions pass free.
+
+        Contract:
+            - Claims the gate FIRST (barring new roots), then polls every
+              live frame's TransactionMediator active-session count to zero.
+            - Frames are re-snapshotted each poll slice: frames born mid-
+              drain (e.g. by a Spellbook on another thread) are counted.
+            - On drain timeout the gate is RELEASED before raising - a failed
+              acquisition never leaves the system barred.
+
+        Args:
+            label:
+                Load descriptor surfaced to blocked callers (typically the
+                crystal source label).
+            drain_timeout:
+                Maximum seconds to wait for in-flight sessions to drain.
+
+        Raises:
+            RuntimeError:
+                If another load already holds the gate, or the drain does not
+                complete before "drain_timeout".
+            ValueError:
+                If label is falsy.
+
+        Threading:
+            Drain polling runs WITHOUT the Aether lock held; each slice takes
+            a registry snapshot under the lock and releases it before
+            sleeping.
+
+        Returns:
+            None.
+        """
+        self.check_cleaned()
+        if self._load_gate is None:
+            raise RuntimeError("Aether LoadGate is unavailable.")
+        self._load_gate.acquire(label)
+        try:
+            deadline = time.monotonic() + drain_timeout
+            while True:
+                active = 0
+                with self._lock:
+                    frames = (
+                        list(self._aetheric_frames.values())
+                        if self._aetheric_frames is not None
+                        else []
+                    )
+                for frame in frames:
+                    mediator = (
+                        frame.dev_ops_manager
+                        .change_control_manager
+                        .transaction_mediator
+                    )
+                    active += mediator.describe()["active_session_count"]
+                if active == 0:
+                    return
+                if time.monotonic() >= deadline:
+                    raise RuntimeError(
+                        f"Load '{label}' timed out draining {active} "
+                        "in-flight transaction session(s)."
+                    )
+                time.sleep(0.05)
+        except Exception:
+            self._load_gate.release()
+            raise
+
+    def release_load_authority(self) -> None:
+        """
+        Public API
+
+        Release load authority and wake every parked root-transaction start.
+
+        Purpose:
+            Exit verb for crystallizer loads; pairs with
+            `acquire_load_authority` (callers wrap the load span in
+            try/finally).
+
+        Contract:
+            - Delegates to `LoadGate.release`: only the holder thread may
+              release, and all condition waiters are notified.
+
+        Raises:
+            RuntimeError:
+                If the gate is not held, or held by a different thread.
+
+        Returns:
+            None.
+        """
+        if self._load_gate is None:
+            raise RuntimeError("Aether LoadGate is unavailable.")
+        self._load_gate.release()
 
 
     def _bind_configuration(

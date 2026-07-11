@@ -25,8 +25,9 @@ class LoadPlan(Cleanable):
         the engine consumes the carried chain.
 
     Contract:
-        - Single-use and thread-confined: built by the BootMediator, fed
-          to exactly one engine run, then cleaned by the loader.
+        - Single-use and thread-confined: built by the LoadAdmission
+          plane, fed to exactly one engine run, then cleaned by the
+          loader.
         - `scope` is one of `world` | `conduit` | `frame` - the admission
           adjudication key (scope-aware verdict views).
         - The carried `chain` windows are DETACHED replay payloads; the

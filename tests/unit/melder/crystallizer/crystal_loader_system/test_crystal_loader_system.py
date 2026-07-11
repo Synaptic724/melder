@@ -1,13 +1,13 @@
 """
-Unit tests for the S4 unfold subsystem: LoadPlan declarativeness, the
-BootMediator's formation minting and scope adjudication, the engine's
-admission gate (refuse-on-blockers before any replay), and the loader's
-durable load state.
+Unit tests for the S4 unfold subsystem: LoadPlan declarativeness,
+LoadAdmission's formation minting and scope adjudication (renamed from
+BootMediator 2026-07-11), the engine's admission gate (refuse-on-blockers
+before any replay), and the loader's durable load state.
 
 Runs only on 3.14t (melder package root import chain).
 """
-from melder.crystallizer.crystal_loader_system.boot_mediator import (
-    BootMediator,
+from melder.crystallizer.crystal_loader_system.load_admission import (
+    LoadAdmission,
 )
 from melder.crystallizer.crystal_loader_system.crystal_loader_system import (
     CrystalLoaderSystem,
@@ -90,7 +90,7 @@ def test_formation_plan_mints_the_canonical_window(tmp_path):
     kind order (parents before dependents), sorted within each kind.
     """
     record_system = PersistenceSystem()
-    mediator = BootMediator(record_system)
+    admission_plane = LoadAdmission(record_system)
     formation_record = {
         "formation_name": "keeper",
         "profile_name": "default",
@@ -104,7 +104,7 @@ def test_formation_plan_mints_the_canonical_window(tmp_path):
         },
     }
     try:
-        plan = mediator.plan_formation_load(formation_record)
+        plan = admission_plane.plan_formation_load(formation_record)
         try:
             assert plan.scope == "conduit"
             assert plan.source_label == "formation-keeper"
@@ -122,7 +122,7 @@ def test_formation_plan_mints_the_canonical_window(tmp_path):
         finally:
             plan.cleanup()
     finally:
-        mediator.cleanup()
+        admission_plane.cleanup()
         record_system.cleanup()
 
 
@@ -141,7 +141,7 @@ def test_scope_adjudication_reclassifies_expected_frame_posture():
              "kind": "spellbook", "key": "book-1", "detail": "bare frame"},
         ],
     }
-    admission = BootMediator._adjudicate_for_scope(preflight, "conduit")
+    admission = LoadAdmission._adjudicate_for_scope(preflight, "conduit")
     assert admission["verdict"] == "clean"
     assert admission["scope"] == "conduit"
     assert len(admission["reclassified"]) == 1
@@ -157,7 +157,7 @@ def test_scope_adjudication_reclassifies_expected_frame_posture():
              "kind": "conduit", "key": "cond-1", "detail": "dangling"},
         ],
     }
-    mixed_admission = BootMediator._adjudicate_for_scope(mixed, "conduit")
+    mixed_admission = LoadAdmission._adjudicate_for_scope(mixed, "conduit")
     assert mixed_admission["verdict"] == "warnings"
 
     blocked = {
@@ -168,7 +168,7 @@ def test_scope_adjudication_reclassifies_expected_frame_posture():
              "kind": "spell_crystal", "key": "sha-1", "detail": "gone"},
         ],
     }
-    blocked_admission = BootMediator._adjudicate_for_scope(blocked, "frame")
+    blocked_admission = LoadAdmission._adjudicate_for_scope(blocked, "frame")
     assert blocked_admission["verdict"] == "blockers"
 
 
@@ -185,7 +185,7 @@ def test_world_scope_admission_is_the_raw_verdict():
              "kind": "spellbook", "key": "book-1", "detail": "bare"},
         ],
     }
-    admission = BootMediator._adjudicate_for_scope(preflight, "world")
+    admission = LoadAdmission._adjudicate_for_scope(preflight, "world")
     assert admission["verdict"] == "warnings"
     assert admission["reclassified"] == []
 

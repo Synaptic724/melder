@@ -345,7 +345,7 @@ class RestoreEngine(Cleanable):
                 Admission gate (S4 verdict law): when True, a "blockers"
                 preflight verdict over the FOLDED bundle refuses the load
                 BEFORE any replay (nothing is built, so no teardown is
-                needed). The BootMediator always passes True; the default
+                needed). LoadAdmission always passes True; the default
                 False preserves the legacy direct-engine behavior for
                 existing unit suites.
 

@@ -2,9 +2,10 @@
 The unfold owner: durable load state over the mediated boot pipeline.
 
 CrystalLoaderSystem is the child Crystallizer talks to for every load. It
-borrows the record, owns the BootMediator, drives plan -> gated engine ->
-adjudication, and REMEMBERS: for the first time, "what did we last load"
-has an owner (detached last-load payload + admission view).
+borrows the record, owns the LoadAdmission plane (renamed from BootMediator
+2026-07-11), drives plan -> gated engine -> adjudication, and REMEMBERS: for
+the first time, "what did we last load" has an owner (detached last-load
+payload + admission view).
 
 Lane: EPIC-2026-07-09-crystallizer-subsystem-decomposition, story S4.
 """
@@ -13,8 +14,8 @@ import threading
 from typing import Dict, Optional, TYPE_CHECKING
 
 from melder.utilities.general_base.cleanable import Cleanable
-from melder.crystallizer.crystal_loader_system.boot_mediator import (
-    BootMediator,
+from melder.crystallizer.crystal_loader_system.load_admission import (
+    LoadAdmission,
 )
 
 if TYPE_CHECKING:
@@ -30,13 +31,13 @@ class CrystalLoaderSystem(Cleanable):
     Purpose:
         One concrete owner for the unfold (V3 identity): checkpoint
         world loads and scoped formation loads run through the owned
-        BootMediator's admission pipeline, and the loader retains the
+        LoadAdmission plane's pipeline, and the loader retains the
         last load's detached payload for diagnostics and re-entry.
 
     Contract:
         - BORROWS the record (chain detachment through public verbs);
           never cleans it.
-        - OWNS the BootMediator and the durable last-load state.
+        - OWNS the LoadAdmission plane and the durable last-load state.
         - Every load is gated: the engine refuses "blockers" verdicts
           before any replay (standard admission).
         - Returned payloads are the engine report's describe() plus the
@@ -56,7 +57,7 @@ class CrystalLoaderSystem(Cleanable):
     __slots__ = Cleanable.__slots__ + [
         "_lock",
         "_persistence_system",
-        "_boot_mediator",
+        "_load_admission",
         "_last_load",
     ]
 
@@ -80,14 +81,16 @@ class CrystalLoaderSystem(Cleanable):
             raise TypeError("persistence_system cannot be None.")
         self._lock: threading.RLock = threading.RLock()
         self._persistence_system: PersistenceSystem = persistence_system
-        self._boot_mediator: BootMediator = BootMediator(persistence_system)
+        self._load_admission: LoadAdmission = LoadAdmission(
+            persistence_system
+        )
         # Durable load state: the last load's detached payload (report +
         # admission view). None until the first load completes.
         self._last_load: Optional[Dict[str, object]] = None
 
     def cleanup(self) -> None:
         """
-        Clean the owned mediator, release state and references.
+        Clean the owned admission plane, release state and references.
 
         Contract:
             - Idempotent; del posture; lock deleted last.
@@ -99,9 +102,9 @@ class CrystalLoaderSystem(Cleanable):
             if self._cleaned:
                 return
             self._cleaned = True
-            if not self._boot_mediator.cleaned:
-                self._boot_mediator.cleanup()
-        del self._boot_mediator
+            if not self._load_admission.cleaned:
+                self._load_admission.cleanup()
+        del self._load_admission
         del self._last_load
         del self._persistence_system
         del self._lock
@@ -134,9 +137,9 @@ class CrystalLoaderSystem(Cleanable):
         """
         self.check_cleaned()
         with self._lock:
-            plan = self._boot_mediator.plan_checkpoint_load(checkpoint_id)
+            plan = self._load_admission.plan_checkpoint_load(checkpoint_id)
             try:
-                payload = self._boot_mediator.execute_plan(plan)
+                payload = self._load_admission.execute_plan(plan)
             finally:
                 if not plan.cleaned:
                     plan.cleanup()
@@ -152,9 +155,9 @@ class CrystalLoaderSystem(Cleanable):
 
         Purpose:
             The scoped-restore lane's owner-side seat: the asset system
-            loads the record (facade-orchestrated), the mediator mints
-            the synthetic window and derives the scope, the gated engine
-            replays it, and the adjudicated payload is remembered.
+            loads the record (facade-orchestrated), the admission plane
+            mints the synthetic window and derives the scope, the gated
+            engine replays it, and the adjudicated payload is remembered.
 
         Args:
             formation_record:
@@ -176,9 +179,9 @@ class CrystalLoaderSystem(Cleanable):
         """
         self.check_cleaned()
         with self._lock:
-            plan = self._boot_mediator.plan_formation_load(formation_record)
+            plan = self._load_admission.plan_formation_load(formation_record)
             try:
-                payload = self._boot_mediator.execute_plan(plan)
+                payload = self._load_admission.execute_plan(plan)
             finally:
                 if not plan.cleaned:
                     plan.cleanup()

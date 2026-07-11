@@ -19,6 +19,7 @@ from melder.__melder_registration_guard__ import __melder_registration_guard__ a
 if TYPE_CHECKING:
     from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states import SpellSystemStates
     from melder.utilities.synchronization.cancellation_event_signal import CancellationEvent
+    from melder.utilities.synchronization.load_gate import LoadGate
 
 
 class DevOpsManager(Cleanable):
@@ -66,6 +67,7 @@ class DevOpsManager(Cleanable):
             self,
             spell_system_states: SpellSystemStates,
             devops_information_registry: DevopsInformationRegistry,
+            load_gate: Optional[LoadGate] = None,
     ) -> None:
         """
         Initialize the frame-level DevOps manager and owned subsystems.
@@ -79,6 +81,8 @@ class DevOpsManager(Cleanable):
             - RiskManager is attached to SpellSystemStates via
               set_risk_manager(...).
             - spell_system_states must be provided.
+            - The load gate is Aether-owned and merely FORWARDED to the
+              change-control plane (not stored, not cleaned here).
 
         Args:
             spell_system_states:
@@ -86,6 +90,10 @@ class DevOpsManager(Cleanable):
             devops_information_registry:
                 Frame-owned topology and transaction registry borrowed by this
                 manager for downstream consumers.
+            load_gate:
+                Aether-owned LoadGate consulted by the TransactionMediator at
+                root transaction starts; None constructs an ungated plane
+                (unit-test posture).
 
         Returns:
             None.
@@ -111,6 +119,7 @@ class DevOpsManager(Cleanable):
         self._change_control_manager: ChangeControlManager = ChangeControlManager(
             spell_system_states=spell_system_states,
             devops_information_registry=devops_information_registry,
+            load_gate=load_gate,
         )
         self._risk_manager: RiskManager = RiskManager(
             spell_system_states,
