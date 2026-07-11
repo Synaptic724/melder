@@ -235,23 +235,47 @@ class MutationResearchConfiguration(Cleanable):
         if Crystallizer._initialized:
             crystallizer = Crystallizer()
             if crystallizer.activated:
-                configuration_payload: Dict[str, object] = {}
-                for property_name, property_value in self._properties.items():
-                    if (
-                            isinstance(property_value, (str, int, float, bool))
-                            or property_value is None
-                    ):
-                        configuration_payload[property_name] = property_value
-                    else:
-                        configuration_payload[property_name] = str(property_value)
                 crystallizer.emit(
                     MutationResearchCrystal(
                         activated=True,
-                        configuration_payload=configuration_payload,
+                        configuration_payload=(
+                            self.describe_configuration_payload()
+                        ),
                     )
                 )
             del crystallizer
         return self
+
+    def describe_configuration_payload(self) -> Dict[str, object]:
+        """
+        Return the value-coerced configuration surface for recording.
+
+        Purpose:
+            The shared twin-payload builder: configuration activation and the
+            root's composition re-emissions both record the SAME value-typed
+            property mapping, so the persisted configuration surface can
+            never drift between emission seams.
+
+        Contract:
+            - Plain values (str/int/float/bool/None) pass through; anything
+              else records as its string form (records carry values only).
+
+        Returns:
+            Dict[str, object]:
+                Detached property name -> recorded value mapping.
+        """
+        self.check_cleaned()
+        configuration_payload: Dict[str, object] = {}
+        with self._lock:
+            for property_name, property_value in self._properties.items():
+                if (
+                        isinstance(property_value, (str, int, float, bool))
+                        or property_value is None
+                ):
+                    configuration_payload[property_name] = property_value
+                else:
+                    configuration_payload[property_name] = str(property_value)
+        return configuration_payload
 
     def with_defaults(self) -> "MutationResearchConfiguration":
         """
