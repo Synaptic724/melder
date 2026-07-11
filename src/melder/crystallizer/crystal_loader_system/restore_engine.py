@@ -953,6 +953,12 @@ class RestoreEngine(Cleanable):
                 ),
             )
         root = Aether()._get_mutation_research()
+        # Live-world loads (LoadGate authority spans make them real): a
+        # root that is ALREADY active refuses reconfiguration, and a
+        # world-scope load REPLACES the world - deactivate first (a
+        # truthful recorded act), then rebuild from folded truth.
+        if root.activated:
+            root.deactivate()
         root.activate(configuration, hydrate_from_record=False)
         composition_payload = dict(
             self._mutation_research_payload.get("composition_payload", {})

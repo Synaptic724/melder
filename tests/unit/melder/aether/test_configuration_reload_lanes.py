@@ -245,6 +245,9 @@ def test_crystallizer_load_recorded_dictionary_reloads_policy_and_seals():
     assert configuration.get_property("max_persistence_crystals") == 25
     assert sorted(outcome["backfilled"]) == [
         "auto_flush_checkpoints", "remove_inactive_synthmodules",
+        # S2 physical custody: retain_user_sources joined the schema and
+        # backfills False for pre-S2 recorded payloads.
+        "retain_user_sources",
     ]
     assert configuration.frozen is True
     configuration.cleanup()

@@ -1011,6 +1011,7 @@ def test_user_source_retention_rebuilds_deleted_files(
         AssertionError: If the deleted user world does not rebuild.
     """
     import importlib as _importlib
+    import sys
 
     module_root = tmp_path / "userland_s2"
     module_root.mkdir()

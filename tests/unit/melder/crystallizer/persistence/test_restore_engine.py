@@ -591,37 +591,40 @@ def test_fold_routes_nexus_twin_and_later_wins_lifecycle_state():
     engine.cleanup()
 
 
-def test_mutation_research_reports_in_order_never_silently():
+def test_mutation_research_folds_in_order_and_cleaned_reports_honestly():
     """
-    Contract: recorded MR truth folds to stores and the ordered stage
-    reports both the twin and the lifecycle state as not-restored
-    (owner scope) - never silently.
+    Contract (mr_restore_build_stage S2 - REWRITTEN from the retired
+    report-stage contract): recorded MR truth folds to the stores, and
+    the later-wins "cleaned" lifecycle keeps the stage from rebuilding -
+    one honest shortfall, no runtime touch, no first_cut vocabulary.
+    (The build path itself is proven by the checkpoint round-trip
+    integration test; this unit lane covers the fold + refusal half.)
     """
     engine = _engine([_window(
         [
             [1, "mutation_research", "root"],
-            [2, "mutation_research_state", "enabled"],
+            [2, "mutation_research_state", "cleaned"],
         ],
         {
             "mutation_research": {"root": {"configured": True}},
             "mutation_research_state": {
-                "enabled": {"state": "enabled", "twin_present": True},
+                "cleaned": {"state": "cleaned", "twin_present": True},
             },
         },
     )])
     engine._fold_chain()
+    assert engine._mutation_research_payload == {"configured": True}
+    assert engine._mutation_research_state_name == "cleaned"
     engine._replay_mutation_research()
     reasons = [
         entry["reason"]
         for entry in engine._report.describe()["shortfalls"]
     ]
     assert (
-        "mutation_research_recorded_not_restored_first_cut" in reasons
-    )
-    assert (
-        "mutation_research_state_recorded_not_restored_first_cut"
+        "mutation_research_recorded_but_cleaned_before_seal_not_rebuilt"
         in reasons
     )
+    assert all("first_cut" not in reason for reason in reasons)
     engine.cleanup()
 
 

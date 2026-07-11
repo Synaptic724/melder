@@ -105,12 +105,23 @@ class MutationResearchCompositionStrategy(PersistenceAnalysisStrategy):
                 "read it",
             ))
             return findings
-        lanes = set_payload.get("lanes")
-        residence = set_payload.get("residence")
+        # Shape source: ResearchSet.describe_composition() - the set
+        # payload nests {organization, journal, network_snapshot_shas,
+        # network_versioner}; lanes/residence live INSIDE organization.
+        organization = set_payload.get("organization")
+        if not isinstance(organization, dict):
+            findings.append(self._row(
+                "blocker", set_name,
+                "set payload carries no organization dict; the rebuild "
+                "seams cannot read it",
+            ))
+            return findings
+        lanes = organization.get("lanes")
+        residence = organization.get("residence")
         if not isinstance(lanes, list) or not isinstance(residence, dict):
             findings.append(self._row(
                 "blocker", set_name,
-                "set payload lanes/residence carry the wrong shapes "
+                "organization lanes/residence carry the wrong shapes "
                 "(expected list/dict)",
             ))
             return findings

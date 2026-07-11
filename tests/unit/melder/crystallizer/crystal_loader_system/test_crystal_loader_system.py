@@ -285,6 +285,11 @@ def test_engine_mr_stage_reports_cleaned_worlds_honestly():
                     "composition_payload": {},
                 },
             },
+            # State kinds fold from journal keys but the fold-honesty
+            # guard requires the payload row to exist.
+            "mutation_research_state": {
+                "cleaned": {"state": "cleaned", "twin_present": True},
+            },
         },
     }
     engine = RestoreEngine(

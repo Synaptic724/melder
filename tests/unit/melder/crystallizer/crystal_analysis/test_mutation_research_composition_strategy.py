@@ -28,12 +28,19 @@ def _bundle(composition):
 
 
 def _set_payload(*, lanes, residence):
+    # Mirrors ResearchSet.describe_composition(): organization nests the
+    # lanes/residence; journal + versioner ride beside it.
     return {
-        "set_id": "01SET",
-        "name": "default",
-        "created_at": "01J2",
-        "lanes": lanes,
-        "residence": residence,
+        "organization": {
+            "set_id": "01SET",
+            "name": "default",
+            "created_at": "01J2",
+            "lanes": lanes,
+            "residence": residence,
+        },
+        "journal": {"entries": []},
+        "network_snapshot_shas": [],
+        "network_versioner": {},
     }
 
 
@@ -83,6 +90,12 @@ def test_unparseable_shapes_block():
     }))
     assert [row["severity"] for row in rows] == ["blocker"]
 
+    rows = strategy.analyze(_bundle({
+        "default": {"journal": {}, "network_snapshot_shas": []},
+    }))
+    assert [row["severity"] for row in rows] == ["blocker"]
+    assert "no organization" in str(rows[0]["detail"])
+
 
 def test_residence_disagreements_warn_with_teach_grade_details():
     """
@@ -106,7 +119,10 @@ def test_residence_disagreements_warn_with_teach_grade_details():
     assert "not resident" in details
     assert "held by lane lane-1 but resident under lane lane-2" in details
     assert "does not describe" in details
-    assert len(rows) == 3
+    # Four rows: held-unresident, lane mismatch, and TWO undescribed-lane
+    # rows (sha-moved's residence lane-2 AND sha-ghost's lane-ghost are
+    # both absent from the organization).
+    assert len(rows) == 4
 
 
 def test_default_set_registers_the_strategy_ninth():

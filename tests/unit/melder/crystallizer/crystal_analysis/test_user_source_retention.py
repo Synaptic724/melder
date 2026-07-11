@@ -189,6 +189,10 @@ def test_hydration_downgrades_absent_module_with_retained_text():
     """
     def _bundle(with_retention):
         crystal = {
+            # The strategy's FIRST gate is owning-book presence - the
+            # bundle must carry the spellbook or every crystal blocks
+            # before the module checks even run.
+            "spellbook_id": "book-1",
             "rebindability": "hydratable",
             "root_target_kind": "class",
             "root_module_kind": "user_source",
@@ -203,7 +207,10 @@ def test_hydration_downgrades_absent_module_with_retained_text():
                     "is_package": False,
                 },
             }
-        return {"spell_crystal": {"sha-1": crystal}}
+        return {
+            "spellbook": {"book-1": {"spellbook_id": "book-1"}},
+            "spell_crystal": {"sha-1": crystal},
+        }
 
     # Preflight strategies are stateless ABCs (no lifecycle to clean).
     strategy = HydrationStrategy()
