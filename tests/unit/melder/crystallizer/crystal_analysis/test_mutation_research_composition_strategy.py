@@ -44,12 +44,12 @@ def _set_payload(*, lanes, residence):
     }
 
 
-def _lane(lane_id, shas):
+def _lane(lane_id, spell_ids):
     return {
         "lane_id": lane_id,
         "name": lane_id,
         "state": "active",
-        "nodes": [{"spell_sha": sha} for sha in shas],
+        "nodes": [{"spell_id": spell_id} for spell_id in spell_ids],
     }
 
 
@@ -63,7 +63,7 @@ def test_agreeing_composition_produces_no_rows():
     clean = _bundle({
         "default": _set_payload(
             lanes=[_lane("lane-1", ["sha-a", "sha-b"])],
-            residence={"lane_id_by_sha": {
+            residence={"lane_id_by_spell_id": {
                 "sha-a": "lane-1", "sha-b": "lane-1",
             }},
         ),
@@ -107,7 +107,7 @@ def test_residence_disagreements_warn_with_teach_grade_details():
     rows = strategy.analyze(_bundle({
         "default": _set_payload(
             lanes=[_lane("lane-1", ["sha-held-unresident", "sha-moved"])],
-            residence={"lane_id_by_sha": {
+            residence={"lane_id_by_spell_id": {
                 "sha-moved": "lane-2",
                 "sha-ghost": "lane-ghost",
             }},
@@ -123,6 +123,29 @@ def test_residence_disagreements_warn_with_teach_grade_details():
     # rows (sha-moved's residence lane-2 AND sha-ghost's lane-ghost are
     # both absent from the organization).
     assert len(rows) == 4
+
+
+def test_pre_sweep_payloads_warn_but_still_check():
+    """
+    Contract (vocabulary sync 2026-07-11, my compat call per mutation_0's
+    handoff): checkpoints sealed with the OLD spell_sha keys produce ONE
+    named pre_vocabulary_sweep_payload warning and the agreement checks
+    still run over the legacy values - never a crash, never a blocker.
+    """
+    strategy = MutationResearchCompositionStrategy()
+    rows = strategy.analyze(_bundle({
+        "default": _set_payload(
+            lanes=[{
+                "lane_id": "lane-1",
+                "name": "lane-1",
+                "state": "active",
+                "nodes": [{"spell_sha": "sha-old"}],
+            }],
+            residence={"lane_id_by_sha": {"sha-old": "lane-1"}},
+        ),
+    }))
+    assert [row["severity"] for row in rows] == ["warning"]
+    assert "pre_vocabulary_sweep_payload" in str(rows[0]["detail"])
 
 
 def test_default_set_registers_the_strategy_ninth():

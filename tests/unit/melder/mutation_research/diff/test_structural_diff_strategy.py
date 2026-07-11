@@ -19,7 +19,7 @@ def _material(sources=None, fingerprints=None):
         dict: Material payload.
     """
     return {
-        "spell_sha": "sha-x",
+        "spell_id": "sha-x",
         "sources": sources or {},
         "fingerprints": fingerprints or {},
     }

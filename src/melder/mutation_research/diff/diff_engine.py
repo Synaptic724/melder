@@ -24,8 +24,8 @@ class DiffEngine(Cleanable):
         records stay the only storage; diffs are always derived.
 
     Contract:
-        - `material_resolver(spell_sha)` returns the detached material
-          payload `{"spell_sha", "sources", "fingerprints"}`; resolver
+        - `material_resolver(spell_id)` returns the detached material
+          payload `{"spell_id", "sources", "fingerprints"}`; resolver
           errors propagate untouched (unknown identities stay loud).
         - `SourceDiffStrategy` (text transport) and `StructuralDiffStrategy`
           (AST reasoning layer) register by default; further strategies
@@ -145,8 +145,8 @@ class DiffEngine(Cleanable):
 
     def diff(
             self,
-            left_sha: str,
-            right_sha: str,
+            left_spell_id: str,
+            right_spell_id: str,
             *,
             strategy: str = "source",
     ) -> Dict[str, object]:
@@ -154,16 +154,16 @@ class DiffEngine(Cleanable):
         Compute one derived diff between two version identities.
 
         Args:
-            left_sha:
+            left_spell_id:
                 Left version identity (binding-signature SHA256).
-            right_sha:
+            right_spell_id:
                 Right version identity.
             strategy:
                 Registered strategy name; "source" by default.
 
         Returns:
             Dict[str, object]:
-                Detached verdict: `left_sha`, `right_sha`, `strategy`, and
+                Detached verdict: `left_spell_id`, `right_spell_id`, `strategy`, and
                 the strategy's `result` payload.
 
         Raises:
@@ -174,10 +174,10 @@ class DiffEngine(Cleanable):
                 strategies); resolver lookup failures propagate as raised.
         """
         self.check_cleaned()
-        if not isinstance(left_sha, str) or not left_sha:
-            raise ValueError("left_sha must be a non-empty string.")
-        if not isinstance(right_sha, str) or not right_sha:
-            raise ValueError("right_sha must be a non-empty string.")
+        if not isinstance(left_spell_id, str) or not left_spell_id:
+            raise ValueError("left_spell_id must be a non-empty string.")
+        if not isinstance(right_spell_id, str) or not right_spell_id:
+            raise ValueError("right_spell_id must be a non-empty string.")
         with self._lock:
             resolved = self._strategies_by_name.get(strategy)
             if resolved is None:
@@ -187,11 +187,11 @@ class DiffEngine(Cleanable):
                     f"strategies: {known}."
                 )
             resolver = self._material_resolver
-        left_material = resolver(left_sha)
-        right_material = resolver(right_sha)
+        left_material = resolver(left_spell_id)
+        right_material = resolver(right_spell_id)
         return {
-            "left_sha": left_sha,
-            "right_sha": right_sha,
+            "left_spell_id": left_spell_id,
+            "right_spell_id": right_spell_id,
             "strategy": strategy,
             "result": resolved.diff(left_material, right_material),
         }

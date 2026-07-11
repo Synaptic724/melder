@@ -7,18 +7,18 @@ from melder.mutation_research.research_set.research_lane import (
 from melder.mutation_research.research_set.research_node import ResearchNode
 
 
-def _node(spell_sha: str) -> ResearchNode:
+def _node(spell_id: str) -> ResearchNode:
     """
     Build one minimal version record for lane tests.
 
     Args:
-        spell_sha:
+        spell_id:
             Identity for the record.
 
     Returns:
         ResearchNode: Minimal node.
     """
-    return ResearchNode(spell_sha)
+    return ResearchNode(spell_id)
 
 
 def test_lane_starts_open_and_empty_with_ulid_identity() -> None:
@@ -29,7 +29,7 @@ def test_lane_starts_open_and_empty_with_ulid_identity() -> None:
 
     assert lane.state is LaneState.open
     assert lane.node_count == 0
-    assert lane.tip_sha is None
+    assert lane.tip_spell_id is None
     assert lane.anchor_lane_id is None
     assert lane.lane_id
     assert lane.name == "feature-x"
@@ -43,10 +43,10 @@ def test_lane_add_node_orders_and_advances_tip() -> None:
     lane.add_node(_node("sha-a"))
     lane.add_node(_node("sha-b"))
 
-    assert lane.node_shas() == ["sha-a", "sha-b"]
-    assert lane.tip_sha == "sha-b"
+    assert lane.node_spell_ids() == ["sha-a", "sha-b"]
+    assert lane.tip_spell_id == "sha-b"
     assert lane.has_node("sha-a") is True
-    assert lane.get_node("sha-a").spell_sha == "sha-a"
+    assert lane.get_node("sha-a").spell_id == "sha-a"
 
 
 def test_lane_rejects_duplicate_identity() -> None:
@@ -70,9 +70,9 @@ def test_lane_detach_nodes_preserves_order_and_recomputes_tip() -> None:
 
     detached = lane.detach_nodes(["sha-c", "sha-a"])
 
-    assert [node.spell_sha for node in detached] == ["sha-a", "sha-c"]
-    assert lane.node_shas() == ["sha-b"]
-    assert lane.tip_sha == "sha-b"
+    assert [node.spell_id for node in detached] == ["sha-a", "sha-c"]
+    assert lane.node_spell_ids() == ["sha-b"]
+    assert lane.tip_spell_id == "sha-b"
     with pytest.raises(KeyError):
         lane.detach_nodes(["sha-missing"])
 
@@ -85,7 +85,7 @@ def test_lane_anchor_set_and_clear() -> None:
     lane.set_anchor("lane-parent", "sha-base")
 
     assert lane.anchor_lane_id == "lane-parent"
-    assert lane.anchor_sha == "sha-base"
+    assert lane.anchor_spell_id == "sha-base"
 
     lane.clear_anchor()
     assert lane.anchor_lane_id is None
@@ -128,7 +128,7 @@ def test_lane_describe_from_payload_roundtrip() -> None:
 
     assert rebuilt.describe() == lane.describe()
     assert rebuilt.state is LaneState.joined
-    assert rebuilt.tip_sha == "sha-b"
+    assert rebuilt.tip_spell_id == "sha-b"
 
 
 def test_lane_cleanup_is_idempotent_and_guards_reads() -> None:

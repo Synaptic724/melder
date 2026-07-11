@@ -333,11 +333,24 @@ class AssetManagementSystem(Cleanable):
         """
         self.check_cleaned()
         with self._lock:
-            return self._crystallizer_cache.store_formation(
+            stored_path = self._crystallizer_cache.store_formation(
                 str(formation_record["profile_name"]),
                 str(formation_record["formation_name"]),
                 formation_record,
             )
+            manager = self._external_persistence_manager
+        # Flush-shipped mesh lane (external_mesh 2026-07-12, owner
+        # ruling): formations ship local-then-remote exactly like
+        # checkpoints - lenient + counted, the local artifact never dies
+        # on a remote failure.
+        if manager is not None and manager.store_enabled:
+            manager.store_unit(
+                "formation",
+                str(formation_record["profile_name"]),
+                str(formation_record["formation_name"]),
+                formation_record,
+            )
+        return stored_path
 
     def load_formation_record(
             self,
@@ -372,9 +385,19 @@ class AssetManagementSystem(Cleanable):
                 if profile_name is not None
                 else self._persistence_system.active_profile_name
             )
-            return self._crystallizer_cache.load_formation(
+            record = self._crystallizer_cache.load_formation(
                 resolved_name, formation_name
             )
+        # Read gate (record versioning, owner ruling 2026-07-12): a
+        # formation written by a NEWER major refuses before any replay.
+        from melder.crystallizer.persistence.record_version import (
+            RecordVersion,
+        )
+
+        RecordVersion.check_readable(
+            dict(record), "formation {0!r}".format(formation_name)
+        )
+        return record
 
     def list_formations(
             self,
@@ -511,3 +534,196 @@ class AssetManagementSystem(Cleanable):
         summary = self._persistence_system.insert_cached_items(cached_items)
         summary["profile_name"] = profile_name
         return summary
+
+    def reload_formations_from_external(
+            self,
+            profile_name: str,
+    ) -> Dict[str, object]:
+        """
+        Download and store EVERY remote formation of one profile.
+
+        Purpose:
+            The formation half of the remote import lane (external_mesh
+            2026-07-12): list + per-name fetch through the user's generic
+            callables, then insert-if-absent into the local formation
+            store - restore_formation reads them as usual afterwards.
+
+        Args:
+            profile_name:
+                Profile whose remote formations should reload.
+
+        Returns:
+            Dict[str, object]:
+                {"profile_name", "inserted": [names],
+                 "skipped_existing": [names]}.
+
+        Raises:
+            RuntimeError: If cleaned, no manager is attached, or the
+                generic fetch/list lanes are missing.
+            ValueError: If the remote lists a formation it cannot return.
+        """
+        self.check_cleaned()
+        with self._lock:
+            manager = self._external_persistence_manager
+        if manager is None:
+            raise RuntimeError(
+                "No ExternalPersistenceManager is attached; call "
+                "configure_external_persistence_manager(...) with your "
+                "handler configuration first."
+            )
+        existing = set(self.list_formations(profile_name))
+        inserted: List[str] = []
+        skipped: List[str] = []
+        for formation_name in manager.list_units(
+                "formation", profile_name
+        ):
+            if formation_name in existing:
+                skipped.append(formation_name)
+                continue
+            record = manager.fetch_unit("formation", formation_name)
+            if record is None:
+                raise ValueError(
+                    "Remote listed formation {0!r} for profile {1!r} but "
+                    "returned nothing for it - the remote store is "
+                    "inconsistent; repair it before reloading.".format(
+                        formation_name, profile_name
+                    )
+                )
+            with self._lock:
+                self._crystallizer_cache.store_formation(
+                    profile_name, formation_name, record
+                )
+            inserted.append(formation_name)
+        return {
+            "profile_name": profile_name,
+            "inserted": inserted,
+            "skipped_existing": skipped,
+        }
+
+    def apply_external_retention(
+            self,
+            profile_name: str,
+            max_checkpoints: int,
+    ) -> List[str]:
+        """
+        Delete the oldest remote checkpoints beyond one retention cap.
+
+        Purpose:
+            Melder-driven remote retention (owner ruling 2026-07-12,
+            opt-in via the delete handler; mirrors the local FIFO cap):
+            checkpoint ids are ULIDs, so the sorted listing IS creation
+            order - everything before the newest `max_checkpoints` ids
+            deletes through the user's callable.
+
+        Contract:
+            - Requires the generic list-units AND delete lanes (loud
+              refusal otherwise; a retention pass must never guess).
+            - Deletes are strict: a failing delete propagates so the
+              caller knows the remote was only partially trimmed.
+
+        Args:
+            profile_name:
+                Profile whose remote checkpoint history is trimmed.
+            max_checkpoints:
+                How many NEWEST checkpoints survive; must be positive.
+
+        Returns:
+            List[str]: The deleted checkpoint ids, oldest first.
+
+        Raises:
+            RuntimeError: If cleaned, no manager attached, or the
+                list-units/delete lanes are missing.
+            ValueError: If `max_checkpoints` is not a positive int.
+        """
+        self.check_cleaned()
+        if (
+            not isinstance(max_checkpoints, int)
+            or isinstance(max_checkpoints, bool)
+            or max_checkpoints <= 0
+        ):
+            raise ValueError("max_checkpoints must be a positive int.")
+        with self._lock:
+            manager = self._external_persistence_manager
+        if manager is None:
+            raise RuntimeError(
+                "No ExternalPersistenceManager is attached; call "
+                "configure_external_persistence_manager(...) with your "
+                "handler configuration first."
+            )
+        identifiers = manager.list_units("checkpoint", profile_name)
+        overflow = identifiers[:-max_checkpoints] if (
+            len(identifiers) > max_checkpoints
+        ) else []
+        for checkpoint_id in overflow:
+            manager.delete_unit("checkpoint", checkpoint_id)
+        return overflow
+
+    @property
+    def emission_tap_enabled(self) -> bool:
+        """
+        Return whether the opt-in emission tap should fire.
+
+        Purpose:
+            The emit() hot-path gate: the sink checks this BEFORE building
+            a twin payload, so worlds without the tap pay one property
+            read and nothing else.
+
+        Returns:
+            bool: True when a manager is attached with a store handler
+            and stream_emissions opted in.
+        """
+        self.check_cleaned()
+        with self._lock:
+            manager = self._external_persistence_manager
+        return manager is not None and manager.stream_emissions_enabled
+
+    def stream_emission(
+            self,
+            profile_name: str,
+            crystal_kind: str,
+            payload: Dict[str, object],
+    ) -> bool:
+        """
+        Ship one emission event through the user's store handler.
+
+        Contract:
+            - Each event rides a FRESH ULID unit id (events are a stream,
+              not replace-on-emit rows) with a
+              {"crystal_kind", "payload"} envelope.
+            - Lenient + counted via the manager's store lane; the R-A
+              covenant never blocks on a remote.
+            - NO-OP (False) when the tap is not enabled.
+
+        Args:
+            profile_name:
+                The recording profile.
+            crystal_kind:
+                The emitted twin's class name.
+            payload:
+                The twin's describe() dict.
+
+        Returns:
+            bool: True when the handler ran successfully.
+
+        Raises:
+            RuntimeError: If the asset system has been cleaned.
+        """
+        self.check_cleaned()
+        with self._lock:
+            manager = self._external_persistence_manager
+        if manager is None or not manager.stream_emissions_enabled:
+            return False
+        from melder.utilities.helpers.ulid_factory import new_ulid
+        from melder.crystallizer.persistence.record_version import (
+            RecordVersion,
+        )
+
+        return manager.store_unit(
+            "emission",
+            profile_name,
+            new_ulid(),
+            RecordVersion.stamp({
+                "crystal_kind": str(crystal_kind),
+                "payload": dict(payload),
+            }),
+        )

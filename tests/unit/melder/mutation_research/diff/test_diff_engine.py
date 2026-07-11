@@ -10,13 +10,13 @@ def _resolver_for(materials):
 
     Args:
         materials:
-            spell_sha -> material payload mapping.
+            spell_id -> material payload mapping.
 
     Returns:
         callable: Resolver raising KeyError on unknown identities.
     """
-    def resolve(spell_sha):
-        return materials[spell_sha]
+    def resolve(spell_id):
+        return materials[spell_id]
     return resolve
 
 
@@ -29,12 +29,12 @@ def _materials():
     """
     return {
         "sha-left": {
-            "spell_sha": "sha-left",
+            "spell_id": "sha-left",
             "sources": {"mod.a": "x = 1\n"},
             "fingerprints": {},
         },
         "sha-right": {
-            "spell_sha": "sha-right",
+            "spell_id": "sha-right",
             "sources": {"mod.a": "x = 2\n"},
             "fingerprints": {},
         },
@@ -59,8 +59,8 @@ def test_engine_diff_dispatches_and_stamps_identities() -> None:
 
     verdict = engine.diff("sha-left", "sha-right")
 
-    assert verdict["left_sha"] == "sha-left"
-    assert verdict["right_sha"] == "sha-right"
+    assert verdict["left_spell_id"] == "sha-left"
+    assert verdict["right_spell_id"] == "sha-right"
     assert verdict["strategy"] == "source"
     assert verdict["result"]["changed_modules"] == ["mod.a"]
     engine.cleanup()
@@ -108,9 +108,9 @@ def test_engine_validates_inputs_and_construction() -> None:
     with pytest.raises(ValueError, match="material_resolver"):
         DiffEngine(None)
     engine = DiffEngine(_resolver_for(_materials()))
-    with pytest.raises(ValueError, match="left_sha"):
+    with pytest.raises(ValueError, match="left_spell_id"):
         engine.diff("", "sha-right")
-    with pytest.raises(ValueError, match="right_sha"):
+    with pytest.raises(ValueError, match="right_spell_id"):
         engine.diff("sha-left", "")
     engine.cleanup()
 

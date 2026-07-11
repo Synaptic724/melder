@@ -126,8 +126,13 @@ class MutationResearchCompositionStrategy(PersistenceAnalysisStrategy):
             ))
             return findings
 
+        # Vocabulary sync 2026-07-11 (owner ruling: MR speaks spell_id):
+        # NEW keys are authoritative; OLD keys (checkpoints sealed before
+        # the sweep) are tolerated with a named warning - MR hydration
+        # reads new keys only, so an old sealed world should reseal.
+        legacy_keys_seen = False
         described_lane_ids = set()
-        held_lane_by_sha: Dict[str, str] = {}
+        held_lane_by_spell_id: Dict[str, str] = {}
         for lane_payload in lanes:
             if not isinstance(lane_payload, dict):
                 findings.append(self._row(
@@ -139,31 +144,48 @@ class MutationResearchCompositionStrategy(PersistenceAnalysisStrategy):
             lane_id = str(lane_payload.get("lane_id"))
             described_lane_ids.add(lane_id)
             for node_payload in list(lane_payload.get("nodes", [])):
-                node_sha = str(dict(node_payload).get("spell_sha"))
-                held_lane_by_sha[node_sha] = lane_id
+                node = dict(node_payload)
+                spell_id = node.get("spell_id")
+                if spell_id is None and "spell_sha" in node:
+                    spell_id = node.get("spell_sha")
+                    legacy_keys_seen = True
+                held_lane_by_spell_id[str(spell_id)] = lane_id
 
-        lane_id_by_sha = dict(residence.get("lane_id_by_sha", {}))
-        for sha, lane_id in held_lane_by_sha.items():
-            resident_lane = lane_id_by_sha.get(sha)
+        residence_map = residence.get("lane_id_by_spell_id")
+        if residence_map is None and "lane_id_by_sha" in residence:
+            residence_map = residence.get("lane_id_by_sha")
+            legacy_keys_seen = True
+        lane_id_by_spell_id = dict(residence_map or {})
+        if legacy_keys_seen:
+            findings.append(self._row(
+                "warning", set_name,
+                "pre_vocabulary_sweep_payload: this set was sealed with "
+                "the old spell_sha keys; MR hydration reads spell_id "
+                "keys only - reseal the world to modernize the record",
+            ))
+        for spell_id, lane_id in held_lane_by_spell_id.items():
+            resident_lane = lane_id_by_spell_id.get(spell_id)
             if resident_lane is None:
                 findings.append(self._row(
                     "warning", set_name,
-                    "lane-held sha {0}... is not resident in the "
-                    "residence partition".format(sha[:12]),
+                    "lane-held spell id {0}... is not resident in the "
+                    "residence partition".format(spell_id[:12]),
                 ))
             elif str(resident_lane) != lane_id:
                 findings.append(self._row(
                     "warning", set_name,
-                    "sha {0}... is held by lane {1} but resident under "
-                    "lane {2}".format(sha[:12], lane_id, resident_lane),
+                    "spell id {0}... is held by lane {1} but resident "
+                    "under lane {2}".format(
+                        spell_id[:12], lane_id, resident_lane
+                    ),
                 ))
-        for sha, lane_id in lane_id_by_sha.items():
+        for spell_id, lane_id in lane_id_by_spell_id.items():
             if str(lane_id) not in described_lane_ids:
                 findings.append(self._row(
                     "warning", set_name,
-                    "residence points sha {0}... at lane {1}, which the "
-                    "organization does not describe".format(
-                        str(sha)[:12], lane_id
+                    "residence points spell id {0}... at lane {1}, which "
+                    "the organization does not describe".format(
+                        str(spell_id)[:12], lane_id
                     ),
                 ))
         return findings

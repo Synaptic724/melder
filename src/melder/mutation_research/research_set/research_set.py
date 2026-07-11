@@ -364,12 +364,12 @@ class ResearchSet(Cleanable):
         with self._lock:
             return sorted(self._lane_id_by_name.keys())
 
-    def residence_of(self, spell_sha: str) -> Optional[str]:
+    def residence_of(self, spell_id: str) -> Optional[str]:
         """
         Return the lane id holding one identity, when resident.
 
         Args:
-            spell_sha:
+            spell_id:
                 Identity to look up.
 
         Returns:
@@ -377,7 +377,7 @@ class ResearchSet(Cleanable):
                 Holding lane id or None.
         """
         self.check_cleaned()
-        return self._residence.residence_of(spell_sha)
+        return self._residence.residence_of(spell_id)
 
     def heads(self) -> Dict[str, Optional[str]]:
         """
@@ -393,7 +393,7 @@ class ResearchSet(Cleanable):
             for name, lane_id in self._lane_id_by_name.items():
                 lane = self._lanes_by_id[lane_id]
                 if lane.state is LaneState.open:
-                    result[name] = lane.tip_sha
+                    result[name] = lane.tip_spell_id
             return result
 
     def walk(self, lane_ref: str) -> List[Dict[str, object]]:
@@ -412,7 +412,7 @@ class ResearchSet(Cleanable):
         Returns:
             List[Dict[str, object]]:
                 Ordered node payloads; each carries `lane_id`, `lane_name`,
-                `anchor_lane_id`, and `anchor_sha` alongside the node fields.
+                `anchor_lane_id`, and `anchor_spell_id` alongside the node fields.
         """
         self.check_cleaned()
         with self._lock:
@@ -423,16 +423,16 @@ class ResearchSet(Cleanable):
                 step["lane_id"] = lane.lane_id
                 step["lane_name"] = lane.name
                 step["anchor_lane_id"] = lane.anchor_lane_id
-                step["anchor_sha"] = lane.anchor_sha
+                step["anchor_spell_id"] = lane.anchor_spell_id
                 steps.append(step)
             return steps
 
-    def history(self, spell_sha: str) -> Dict[str, object]:
+    def history(self, spell_id: str) -> Dict[str, object]:
         """
         Return everything the record knows about one identity.
 
         Args:
-            spell_sha:
+            spell_id:
                 Identity to report on.
 
         Returns:
@@ -446,22 +446,22 @@ class ResearchSet(Cleanable):
         """
         self.check_cleaned()
         with self._lock:
-            lane_id = self._residence.residence_of(spell_sha)
+            lane_id = self._residence.residence_of(spell_id)
             if lane_id is None:
                 raise KeyError(
-                    f"Identity '{spell_sha}' is not resident in research "
+                    f"Identity '{spell_id}' is not resident in research "
                     f"set '{self._name}'."
                 )
             lane = self._lanes_by_id[lane_id]
             return {
-                "spell_sha": spell_sha,
+                "spell_id": spell_id,
                 "lane_id": lane_id,
                 "lane_name": lane.name,
                 "lane_state": lane.state.value,
-                "node": lane.get_node(spell_sha).describe(),
+                "node": lane.get_node(spell_id).describe(),
                 "transitions": [
                     entry.describe()
-                    for entry in self._journal.entries_for_sha(spell_sha)
+                    for entry in self._journal.entries_for_spell_id(spell_id)
                 ],
             }
 
@@ -506,10 +506,10 @@ class ResearchSet(Cleanable):
                         TransitionAct.registered, TransitionAct.staged,
                 ):
                     continue
-                spell_sha = entry.to_sha
+                spell_id = entry.to_spell_id
                 holder_id = (
-                    self._residence.residence_of(spell_sha)
-                    if spell_sha
+                    self._residence.residence_of(spell_id)
+                    if spell_id
                     else None
                 )
                 holder = (
@@ -517,8 +517,8 @@ class ResearchSet(Cleanable):
                     if holder_id is not None
                     else None
                 )
-                if holder is not None and holder.has_node(spell_sha):
-                    node_payload = holder.get_node(spell_sha).describe()
+                if holder is not None and holder.has_node(spell_id):
+                    node_payload = holder.get_node(spell_id).describe()
                     node_payload["lane_id"] = holder.lane_id
                     node_payload["lane_name"] = holder.name
                     nodes.append(node_payload)
@@ -529,7 +529,7 @@ class ResearchSet(Cleanable):
                     # report honestly instead of hiding the event.
                     nodes.append(
                         {
-                            "spell_sha": spell_sha,
+                            "spell_id": spell_id,
                             "lane_id": None,
                             "lane_name": None,
                             "missing_from_current_organization": True,
@@ -551,7 +551,7 @@ class ResearchSet(Cleanable):
             name: str,
             *,
             attach_to: Optional[str] = None,
-            attach_at_sha: Optional[str] = None,
+            attach_at_spell_id: Optional[str] = None,
             actor: Optional[str] = None,
             campaign: Optional[str] = None,
             reason: Optional[str] = None,
@@ -565,8 +565,8 @@ class ResearchSet(Cleanable):
                 Unique lane name within this set.
             attach_to:
                 Optional lane (name or id) to anchor onto; requires
-                attach_at_sha.
-            attach_at_sha:
+                attach_at_spell_id.
+            attach_at_spell_id:
                 Node identity within `attach_to` to anchor at.
             actor:
                 Optional acting agent name.
@@ -589,29 +589,29 @@ class ResearchSet(Cleanable):
                 held by that lane.
         """
         self.check_cleaned()
-        if (attach_to is None) != (attach_at_sha is None):
+        if (attach_to is None) != (attach_at_spell_id is None):
             raise ValueError(
-                "attach_to and attach_at_sha must be supplied together."
+                "attach_to and attach_at_spell_id must be supplied together."
             )
         with self._lock:
             anchor_lane: Optional[ResearchLane] = None
             if attach_to is not None:
                 anchor_lane = self._resolve_lane_locked(attach_to)
-                if not anchor_lane.has_node(attach_at_sha):
+                if not anchor_lane.has_node(attach_at_spell_id):
                     raise KeyError(
                         f"Lane '{anchor_lane.name}' holds no identity "
-                        f"'{attach_at_sha}' to anchor at."
+                        f"'{attach_at_spell_id}' to anchor at."
                     )
             lane = self._create_lane_locked(name, metadata=metadata)
             entry_metadata: Dict[str, object] = {}
             if anchor_lane is not None:
-                lane.set_anchor(anchor_lane.lane_id, attach_at_sha)
+                lane.set_anchor(anchor_lane.lane_id, attach_at_spell_id)
                 entry_metadata["anchor_lane_id"] = anchor_lane.lane_id
                 entry_metadata["anchor_lane_name"] = anchor_lane.name
             self._journal.record(
                 TransitionAct.lane_created,
                 lane.lane_id,
-                from_sha=attach_at_sha,
+                from_spell_id=attach_at_spell_id,
                 actor=actor,
                 campaign=campaign,
                 reason=reason,
@@ -623,11 +623,11 @@ class ResearchSet(Cleanable):
 
     def register_spell(
             self,
-            spell_sha: str,
+            spell_id: str,
             *,
             lane: Optional[str] = None,
-            module_sha: Optional[str] = None,
-            parent_shas: Optional[List[str]] = None,
+            module_source_sha256: Optional[str] = None,
+            parent_spell_ids: Optional[List[str]] = None,
             author: Optional[str] = None,
             campaign: Optional[str] = None,
             reason: Optional[str] = None,
@@ -642,14 +642,14 @@ class ResearchSet(Cleanable):
             id). This records that the version is part of a research stream.
 
         Args:
-            spell_sha:
+            spell_id:
                 Binding-signature SHA256 (doubles as the custody crystal id).
             lane:
                 Optional lane (name or id); the guaranteed default lane
                 records the version when omitted.
-            module_sha:
+            module_source_sha256:
                 Optional module-version SHA256 the version binds against.
-            parent_shas:
+            parent_spell_ids:
                 Optional ancestry; every parent must already be resident in
                 this set (multi-parent = codegen-workshop composition).
             author:
@@ -677,7 +677,7 @@ class ResearchSet(Cleanable):
             target = self._resolve_lane_locked(
                 lane if lane is not None else ResearchSet.DEFAULT_LANE_NAME,
             )
-            parents = list(parent_shas) if parent_shas else []
+            parents = list(parent_spell_ids) if parent_spell_ids else []
             for parent_sha in parents:
                 if not self._residence.is_resident(parent_sha):
                     raise ValueError(
@@ -686,24 +686,24 @@ class ResearchSet(Cleanable):
                         f"reference formally declared versions."
                     )
             node = ResearchNode(
-                spell_sha,
-                module_sha=module_sha,
-                parent_shas=parents,
+                spell_id,
+                module_source_sha256=module_source_sha256,
+                parent_spell_ids=parents,
                 author=author,
                 reason=reason,
                 campaign=campaign,
                 metadata=metadata,
             )
-            self._residence.claim(spell_sha, target.lane_id)
+            self._residence.claim(spell_id, target.lane_id)
             target.add_node(node)
             self._journal.record(
                 TransitionAct.registered,
                 target.lane_id,
-                to_sha=spell_sha,
+                to_spell_id=spell_id,
                 actor=author,
                 campaign=campaign,
                 reason=reason,
-                metadata={"module_sha": module_sha, "parent_shas": parents},
+                metadata={"module_source_sha256": module_source_sha256, "parent_spell_ids": parents},
             )
             self._snapshot_locked()
         self._notify_mutation()
@@ -711,11 +711,11 @@ class ResearchSet(Cleanable):
 
     def record_world_entry(
             self,
-            spell_sha: str,
+            spell_id: str,
             *,
             staged: bool = False,
             lane: Optional[str] = None,
-            module_sha: Optional[str] = None,
+            module_source_sha256: Optional[str] = None,
             author: Optional[str] = None,
             campaign: Optional[str] = None,
             reason: Optional[str] = None,
@@ -733,14 +733,14 @@ class ResearchSet(Cleanable):
             when the entry was parked.
 
         Args:
-            spell_sha:
+            spell_id:
                 Binding-signature SHA256 entering the world.
             staged:
                 True for `bind_inactive` entries (journals `staged`);
                 False for active binds (journals `registered`).
             lane:
                 Optional lane (name or id); default lane when omitted.
-            module_sha:
+            module_source_sha256:
                 Optional module-version SHA256.
             author:
                 Optional acting agent name.
@@ -758,29 +758,29 @@ class ResearchSet(Cleanable):
         """
         self.check_cleaned()
         with self._lock:
-            if self._residence.is_resident(spell_sha):
+            if self._residence.is_resident(spell_id):
                 return None
             target = self._resolve_lane_locked(
                 lane if lane is not None else ResearchSet.DEFAULT_LANE_NAME,
             )
             node = ResearchNode(
-                spell_sha,
-                module_sha=module_sha,
+                spell_id,
+                module_source_sha256=module_source_sha256,
                 author=author,
                 reason=reason,
                 campaign=campaign,
                 metadata=metadata,
             )
-            self._residence.claim(spell_sha, target.lane_id)
+            self._residence.claim(spell_id, target.lane_id)
             target.add_node(node)
             self._journal.record(
                 TransitionAct.staged if staged else TransitionAct.registered,
                 target.lane_id,
-                to_sha=spell_sha,
+                to_spell_id=spell_id,
                 actor=author,
                 campaign=campaign,
                 reason=reason,
-                metadata={"module_sha": module_sha, "parent_shas": []},
+                metadata={"module_source_sha256": module_source_sha256, "parent_spell_ids": []},
             )
             self._snapshot_locked()
         self._notify_mutation()
@@ -788,8 +788,8 @@ class ResearchSet(Cleanable):
 
     def record_promotion(
             self,
-            from_sha: Optional[str],
-            to_sha: str,
+            from_spell_id: Optional[str],
+            to_spell_id: str,
             *,
             actor: Optional[str] = None,
             campaign: Optional[str] = None,
@@ -802,14 +802,14 @@ class ResearchSet(Cleanable):
         Contract:
             - Journal-only: promotion changes what is LIVE, never which lane
               holds a version, so the organization does not re-snapshot.
-            - `to_sha` must be a declared identity; `from_sha` may be None
+            - `to_spell_id` must be a declared identity; `from_spell_id` may be None
               (first selection) or an identity outside the record (honest
               passthrough - pre-MR history is not fabricated).
 
         Args:
-            from_sha:
+            from_spell_id:
                 Previously selected identity, when known.
-            to_sha:
+            to_spell_id:
                 Newly selected identity (must be resident).
             actor:
                 Optional acting agent name.
@@ -826,22 +826,22 @@ class ResearchSet(Cleanable):
 
         Raises:
             KeyError:
-                If `to_sha` is not resident in this set.
+                If `to_spell_id` is not resident in this set.
         """
         self.check_cleaned()
         with self._lock:
-            to_lane_id = self._residence.residence_of(to_sha)
+            to_lane_id = self._residence.residence_of(to_spell_id)
             if to_lane_id is None:
                 raise KeyError(
-                    f"Identity '{to_sha}' is not declared in research set "
+                    f"Identity '{to_spell_id}' is not declared in research set "
                     f"'{self._name}'; declare the world entry before "
                     f"recording its promotion."
                 )
             entry = self._journal.record(
                 TransitionAct.promoted,
                 to_lane_id,
-                from_sha=from_sha,
-                to_sha=to_sha,
+                from_spell_id=from_spell_id,
+                to_spell_id=to_spell_id,
                 actor=actor,
                 campaign=campaign,
                 reason=reason,
@@ -855,7 +855,7 @@ class ResearchSet(Cleanable):
             lane_ref: str,
             *,
             onto: str,
-            at_sha: str,
+            at_spell_id: str,
             actor: Optional[str] = None,
             campaign: Optional[str] = None,
             reason: Optional[str] = None,
@@ -864,7 +864,7 @@ class ResearchSet(Cleanable):
         Anchor one lane's ancestry onto another lane's node.
 
         Contract:
-            - Organization only: content never moves; `onto`/`at_sha` are
+            - Organization only: content never moves; `onto`/`at_spell_id` are
               mandatory so the act is never scope-blind.
 
         Args:
@@ -872,7 +872,7 @@ class ResearchSet(Cleanable):
                 Lane (name or id) being organized.
             onto:
                 Lane (name or id) to anchor onto.
-            at_sha:
+            at_spell_id:
                 Node identity within `onto` to anchor at.
             actor:
                 Optional acting agent name.
@@ -895,16 +895,16 @@ class ResearchSet(Cleanable):
                 raise RuntimeError(
                     f"Lane '{lane.name}' cannot anchor onto itself."
                 )
-            if not target.has_node(at_sha):
+            if not target.has_node(at_spell_id):
                 raise KeyError(
-                    f"Lane '{target.name}' holds no identity '{at_sha}' to "
+                    f"Lane '{target.name}' holds no identity '{at_spell_id}' to "
                     f"anchor at."
                 )
-            lane.set_anchor(target.lane_id, at_sha)
+            lane.set_anchor(target.lane_id, at_spell_id)
             self._journal.record(
                 TransitionAct.attached,
                 lane.lane_id,
-                to_sha=at_sha,
+                to_spell_id=at_spell_id,
                 actor=actor,
                 campaign=campaign,
                 reason=reason,
@@ -944,12 +944,12 @@ class ResearchSet(Cleanable):
         self.check_cleaned()
         with self._lock:
             lane = self._resolve_lane_locked(lane_ref)
-            previous_anchor = lane.anchor_sha
+            previous_anchor = lane.anchor_spell_id
             lane.clear_anchor()
             self._journal.record(
                 TransitionAct.detached,
                 lane.lane_id,
-                from_sha=previous_anchor,
+                from_spell_id=previous_anchor,
                 actor=actor,
                 campaign=campaign,
                 reason=reason,
@@ -1025,34 +1025,34 @@ class ResearchSet(Cleanable):
                 )
             clean = (
                 source.anchor_lane_id == target.lane_id
-                and source.anchor_sha is not None
-                and target.tip_sha == source.anchor_sha
+                and source.anchor_spell_id is not None
+                and target.tip_spell_id == source.anchor_spell_id
             )
             if not clean and not force:
                 raise RuntimeError(
                     f"Divergent join: lane '{source.name}' anchors at "
-                    f"'{source.anchor_sha}' on lane "
+                    f"'{source.anchor_spell_id}' on lane "
                     f"'{source.anchor_lane_id}' while receiver "
-                    f"'{target.name}' tips at '{target.tip_sha}'. Compose a "
+                    f"'{target.name}' tips at '{target.tip_spell_id}'. Compose a "
                     f"reconciling version in the codegen workshop and "
                     f"register it, or pass force=True to supersede."
                 )
-            previous_target_tip = target.tip_sha
-            moved_shas: List[str] = []
+            previous_target_tip = target.tip_spell_id
+            moved_spell_ids: List[str] = []
             if source.node_count > 0:
                 if collapse:
-                    moved_shas = [source.tip_sha]
+                    moved_spell_ids = [source.tip_spell_id]
                 else:
-                    moved_shas = source.node_shas()
-                for node in source.detach_nodes(moved_shas):
+                    moved_spell_ids = source.node_spell_ids()
+                for node in source.detach_nodes(moved_spell_ids):
                     target.add_node(node)
-                self._residence.transfer(moved_shas, target.lane_id)
+                self._residence.transfer(moved_spell_ids, target.lane_id)
             source.mark_joined(target.lane_id)
             self._journal.record(
                 TransitionAct.joined,
                 target.lane_id,
-                from_sha=previous_target_tip,
-                to_sha=target.tip_sha,
+                from_spell_id=previous_target_tip,
+                to_spell_id=target.tip_spell_id,
                 actor=actor,
                 campaign=campaign,
                 reason=reason,
@@ -1061,7 +1061,7 @@ class ResearchSet(Cleanable):
                     "joined_lane_name": source.name,
                     "collapse": collapse,
                     "forced": bool(not clean),
-                    "moved_shas": moved_shas,
+                    "moved_spell_ids": moved_spell_ids,
                 },
             )
             self._snapshot_locked()
@@ -1219,12 +1219,15 @@ class ResearchSet(Cleanable):
             self._lanes_by_id = rebuilt_lanes
             self._lane_id_by_name = rebuilt_names
             self._residence = rebuilt_residence
+            # Honesty: the restore target is a NETWORK SNAPSHOT address, not
+            # a spell identity - it rides metadata so the typed endpoint
+            # fields never lie about what they carry.
             self._journal.record(
                 TransitionAct.restored,
                 self._set_id,
-                to_sha=snapshot_sha,
                 actor=actor,
                 reason=reason,
+                metadata={"snapshot_address": snapshot_sha},
             )
             self._snapshot_locked()
         self._notify_mutation()

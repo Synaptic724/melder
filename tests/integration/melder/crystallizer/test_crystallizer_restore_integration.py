@@ -971,11 +971,12 @@ def test_mutation_research_round_trips_through_checkpoints(cache_root):
         restored_set = restored_root.research_set()
         assert set(restored_set.lane_names()) == {"default", "experiments"}
         assert restored_set.residence_of("f" * 64) is not None
-        walked_shas = [
-            str(entry.get("spell_sha"))
+        # Vocabulary sync 2026-07-11: node payloads speak spell_id.
+        walked_ids = [
+            str(entry.get("spell_id"))
             for entry in restored_set.walk("experiments")
         ]
-        assert "f" * 64 in walked_shas
+        assert "f" * 64 in walked_ids
 
         # Continuable: new research lands on the restored organization.
         restored_set.register_spell(
@@ -988,6 +989,68 @@ def test_mutation_research_round_trips_through_checkpoints(cache_root):
         restored_root.activate(hydrate_from_record=True)
         assert restored_set.residence_of("b" * 64) is not None
         assert set(restored_set.lane_names()) == {"default", "experiments"}
+    finally:
+        MutationResearch._reset_singleton_for_tests()
+
+
+def test_mutation_research_disabled_worlds_restore_deactivated(cache_root):
+    """
+    Purpose:
+        The disabled later-wins lane (owner + mutation_0 ruling 15:22Z:
+        KEEP deactivate/disabled): a world sealed with a deactivated MR
+        restores with its research PRESENT but the root SWITCHED OFF -
+        activate-then-deactivate replays both truthful acts.
+    Contract:
+        Research organization survives (research_set() reads while
+        inactive); root.activated is False post-restore. DOCUMENTED
+        NUANCE (mutation_0, accepted behavior): because MR builds before
+        books, a spell bound during a pre-seal DEACTIVATED window seals
+        undeclared but would restore DECLARED in worlds sealed ACTIVE;
+        in THIS lane the root restores deactivated before the books
+        stage, so replayed binds do not auto-record - the sealed truth
+        (undeclared) holds.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If the deactivated world restores switched on or
+            loses its research.
+    """
+    from melder.mutation_research.mutation_configuration import (
+        MutationResearchConfiguration,
+    )
+    from melder.mutation_research.mutation_research import MutationResearch
+
+    MutationResearch._reset_singleton_for_tests()
+    try:
+        crystallizer = _activate_crystallizer()
+        root = Aether()._get_mutation_research()
+        root.activate(MutationResearchConfiguration().with_defaults().activate())
+        research = root.research_set()
+        research.register_spell("c" * 64, author="s3c", reason="pre-off")
+
+        # The kill switch: run-without-declaring from here on; the world
+        # seals with MR truthfully OFF.
+        root.deactivate()
+
+        checkpoint_id = crystallizer.create_checkpoint()
+        crystallizer.flush_checkpoint(checkpoint_id)
+
+        MutationResearch._reset_singleton_for_tests()
+        rebooted = _fresh_boot()
+        rebooted.reload_cached_checkpoint(checkpoint_id)
+        report = rebooted.load_checkpoint(checkpoint_id)
+
+        assert report["status"] == "complete"
+        assert report["built_counts"]["mutation_research"] == 1
+
+        restored_root = Aether()._get_mutation_research()
+        # Both truthful acts replayed: built, then switched back off.
+        assert restored_root.activated is False
+        # The organization survives the off switch (reads need no
+        # activation).
+        assert restored_root.research_set().residence_of(
+            "c" * 64
+        ) is not None
     finally:
         MutationResearch._reset_singleton_for_tests()
 
@@ -1065,3 +1128,467 @@ def test_user_source_retention_rebuilds_deleted_files(
         assert "s2_retained_widget" in sys.modules
     finally:
         sys.modules.pop("s2_retained_widget", None)
+
+
+def _sqlite_handler_trio(db_path):
+    """
+    Build the upload/download/list handler callables over one SQLite file.
+
+    The user-side pattern the external persistence lane was ruled around
+    (callables-first, no ORM): the handlers own their connection, their
+    schema, and their serialization - melder only calls them.
+    """
+    import json
+    import sqlite3
+
+    def _connect():
+        connection = sqlite3.connect(str(db_path))
+        connection.execute(
+            "CREATE TABLE IF NOT EXISTS checkpoints ("
+            "checkpoint_id TEXT PRIMARY KEY, "
+            "profile_name TEXT NOT NULL, "
+            "payload TEXT NOT NULL)"
+        )
+        return connection
+
+    def upload(profile_name, checkpoint_id, cached_item):
+        connection = _connect()
+        try:
+            with connection:
+                # INSERT OR REPLACE = the remote Update lane: re-flushed
+                # ids overwrite their row (replace-on-emit parity).
+                connection.execute(
+                    "INSERT OR REPLACE INTO checkpoints VALUES (?, ?, ?)",
+                    (checkpoint_id, profile_name, json.dumps(cached_item)),
+                )
+        finally:
+            connection.close()
+
+    def download(checkpoint_id):
+        connection = _connect()
+        try:
+            row = connection.execute(
+                "SELECT payload FROM checkpoints WHERE checkpoint_id = ?",
+                (checkpoint_id,),
+            ).fetchone()
+            return json.loads(row[0]) if row is not None else None
+        finally:
+            connection.close()
+
+    def list_ids(profile_name):
+        connection = _connect()
+        try:
+            return [
+                row[0]
+                for row in connection.execute(
+                    "SELECT checkpoint_id FROM checkpoints "
+                    "WHERE profile_name = ?",
+                    (profile_name,),
+                )
+            ]
+        finally:
+            connection.close()
+
+    return upload, download, list_ids
+
+
+def _external_configuration(upload=None, download=None, list_ids=None):
+    """Build one handler configuration (frozen by the facade attach)."""
+    from melder.crystallizer.asset_management.external_persistence_manager_configuration import (
+        ExternalPersistenceManagerConfiguration,
+    )
+
+    configuration = ExternalPersistenceManagerConfiguration()
+    if upload is not None:
+        configuration.with_upload_handler(upload)
+    if download is not None:
+        configuration.with_download_handler(download)
+    if list_ids is not None:
+        configuration.with_list_handler(list_ids)
+    return configuration
+
+
+def test_flush_pushes_checkpoints_into_sqlite(cache_root, tmp_path):
+    """
+    Purpose:
+        The C/U half of the DB lane over a REAL stdlib sqlite3 store:
+        flush ships local-then-remote through the user's upload handler,
+        and re-flushing the same id upserts (INSERT OR REPLACE) instead
+        of duplicating.
+    Contract:
+        The row exists, its JSON payload parses, and the id round-trips
+        through the download handler.
+    """
+    import json
+    import sqlite3
+
+    db_path = tmp_path / "melder_checkpoints.sqlite3"
+    upload, download, list_ids = _sqlite_handler_trio(db_path)
+
+    crystallizer = _activate_crystallizer()
+    crystallizer.configure_external_persistence_manager(
+        _external_configuration(upload, download, list_ids)
+    )
+    book = _dynamic_book()
+    book.bind(
+        spell=RestoreAlpha, existence=Existence.unique, permissions="create"
+    )
+    book.conjure(dynamic=True, name="root")
+
+    checkpoint_id = crystallizer.create_checkpoint()
+    crystallizer.flush_checkpoint(checkpoint_id)
+    # Upsert lane: a second flush of the same id must not duplicate.
+    crystallizer.flush_checkpoint(checkpoint_id)
+
+    connection = sqlite3.connect(str(db_path))
+    try:
+        rows = connection.execute(
+            "SELECT checkpoint_id, payload FROM checkpoints"
+        ).fetchall()
+    finally:
+        connection.close()
+    stored_ids = [row[0] for row in rows]
+    assert checkpoint_id in stored_ids
+    assert len(stored_ids) == len(set(stored_ids))
+    assert json.loads(rows[0][1])
+    assert download(checkpoint_id) is not None
+    assert checkpoint_id in list_ids("default")
+
+
+def test_pod_death_rebuilds_the_world_from_sqlite(cache_root, tmp_path):
+    """
+    Purpose:
+        The R half end to end: seal + flush to SQLite, then POD DEATH
+        (local cache erased, fresh boot) - the world rebuilds purely
+        from the user's DB: reload_profile_from_external inserts the
+        remote history, load_checkpoint unfolds it.
+    Contract:
+        Inserted count >= 1; the restored world re-records the SAME
+        content-derived spell SHA.
+    """
+    import shutil
+
+    db_path = tmp_path / "melder_checkpoints.sqlite3"
+    upload, download, list_ids = _sqlite_handler_trio(db_path)
+
+    crystallizer = _activate_crystallizer()
+    crystallizer.configure_external_persistence_manager(
+        _external_configuration(upload, download, list_ids)
+    )
+    book = _dynamic_book()
+    spell_id = book.bind(
+        spell=RestoreAlpha, existence=Existence.unique, permissions="create"
+    )
+    book.conjure(dynamic=True, name="root")
+    checkpoint_id = crystallizer.create_checkpoint()
+    crystallizer.flush_checkpoint(checkpoint_id)
+
+    # Pod death: the entire local cache is gone; only the DB survives.
+    shutil.rmtree(cache_root, ignore_errors=True)
+
+    rebooted = _fresh_boot()
+    rebooted.configure_external_persistence_manager(
+        _external_configuration(upload, download, list_ids)
+    )
+    outcome = rebooted.reload_profile_from_external("default")
+    assert outcome["inserted"] >= 1
+
+    report = rebooted.load_checkpoint(checkpoint_id)
+    assert report["status"] == "complete"
+    assert rebooted.get_spell_crystal(spell_id).id == spell_id
+
+
+def test_broken_upload_handler_is_lenient_and_counted(cache_root, tmp_path):
+    """
+    Purpose:
+        The lenient-upload law: a dying DB handler never kills the local
+        seal/flush lane - the failure counts on the manager's diagnostic
+        surface instead.
+    Contract:
+        flush completes; describe_external_persistence_manager reports
+        the failure count.
+    """
+    def broken_upload(profile_name, checkpoint_id, cached_item):
+        raise RuntimeError("db is down")
+
+    crystallizer = _activate_crystallizer()
+    crystallizer.configure_external_persistence_manager(
+        _external_configuration(upload=broken_upload)
+    )
+    book = _dynamic_book()
+    book.bind(
+        spell=RestoreAlpha, existence=Existence.unique, permissions="create"
+    )
+    book.conjure(dynamic=True, name="root")
+
+    checkpoint_id = crystallizer.create_checkpoint()
+    crystallizer.flush_checkpoint(checkpoint_id)  # must not raise
+
+    described = crystallizer.describe_external_persistence_manager()
+    assert described["upload_failure_count"] == 1
+
+
+def test_inconsistent_remote_refuses_loudly(cache_root, tmp_path):
+    """
+    Purpose:
+        The remote-contradiction law: a DB that LISTS an id but returns
+        nothing for it is inconsistent - the reload refuses with a
+        teach-grade error instead of silently rebuilding a partial world.
+    """
+    def lying_list(profile_name):
+        return ["01LIEDABOUTTHISCHECKPOINT0"]
+
+    def empty_download(checkpoint_id):
+        return None
+
+    crystallizer = _activate_crystallizer()
+    crystallizer.configure_external_persistence_manager(
+        _external_configuration(
+            download=empty_download, list_ids=lying_list
+        )
+    )
+    with pytest.raises(ValueError, match="inconsistent"):
+        crystallizer.reload_profile_from_external("default")
+
+
+def _sqlite_mesh_handlers(db_path):
+    """
+    Build the GENERIC kind-partitioned handler quartet over one SQLite
+    file (external_mesh 2026-07-12): one table, a kind column, four plain
+    callables - store/fetch/list/delete for ANY mesh unit.
+    """
+    import json
+    import sqlite3
+
+    def _connect():
+        connection = sqlite3.connect(str(db_path))
+        connection.execute(
+            "CREATE TABLE IF NOT EXISTS mesh_units ("
+            "kind TEXT NOT NULL, "
+            "unit_id TEXT NOT NULL, "
+            "profile_name TEXT NOT NULL, "
+            "payload TEXT NOT NULL, "
+            "PRIMARY KEY (kind, unit_id))"
+        )
+        return connection
+
+    def store(kind, profile_name, unit_id, payload):
+        connection = _connect()
+        try:
+            with connection:
+                connection.execute(
+                    "INSERT OR REPLACE INTO mesh_units VALUES (?, ?, ?, ?)",
+                    (kind, unit_id, profile_name, json.dumps(payload)),
+                )
+        finally:
+            connection.close()
+
+    def fetch(kind, unit_id):
+        connection = _connect()
+        try:
+            row = connection.execute(
+                "SELECT payload FROM mesh_units "
+                "WHERE kind = ? AND unit_id = ?",
+                (kind, unit_id),
+            ).fetchone()
+            return json.loads(row[0]) if row is not None else None
+        finally:
+            connection.close()
+
+    def list_units(kind, profile_name):
+        connection = _connect()
+        try:
+            return [
+                row[0]
+                for row in connection.execute(
+                    "SELECT unit_id FROM mesh_units "
+                    "WHERE kind = ? AND profile_name = ?",
+                    (kind, profile_name),
+                )
+            ]
+        finally:
+            connection.close()
+
+    def delete(kind, unit_id):
+        connection = _connect()
+        try:
+            with connection:
+                connection.execute(
+                    "DELETE FROM mesh_units "
+                    "WHERE kind = ? AND unit_id = ?",
+                    (kind, unit_id),
+                )
+        finally:
+            connection.close()
+
+    return store, fetch, list_units, delete
+
+
+def _mesh_configuration(db_path, *, stream_emissions=False, delete=False):
+    """One generic-lane configuration over the SQLite mesh handlers."""
+    store, fetch, list_units, delete_fn = _sqlite_mesh_handlers(db_path)
+    configuration = _external_configuration()
+    configuration.with_store_handler(store)
+    configuration.with_fetch_handler(fetch)
+    configuration.with_list_units_handler(list_units)
+    if delete:
+        configuration.with_delete_handler(delete_fn)
+    if stream_emissions:
+        configuration.with_stream_emissions(True)
+    return configuration
+
+
+def test_generic_mesh_handlers_carry_checkpoints_via_the_bridge(
+        cache_root, tmp_path,
+):
+    """
+    Purpose:
+        The legacy bridge: with ONLY the generic quartet attached
+        (no legacy checkpoint handlers), flush ships kind="checkpoint"
+        rows and the pod-death reload reads them back through the same
+        callables - one handler set serves the whole mesh.
+    """
+    import shutil
+    import sqlite3
+
+    db_path = tmp_path / "mesh.sqlite3"
+    crystallizer = _activate_crystallizer()
+    crystallizer.configure_external_persistence_manager(
+        _mesh_configuration(db_path)
+    )
+    book = _dynamic_book()
+    spell_id = book.bind(
+        spell=RestoreAlpha, existence=Existence.unique, permissions="create"
+    )
+    book.conjure(dynamic=True, name="root")
+    checkpoint_id = crystallizer.create_checkpoint()
+    crystallizer.flush_checkpoint(checkpoint_id)
+
+    connection = sqlite3.connect(str(db_path))
+    try:
+        kinds = [
+            row[0]
+            for row in connection.execute(
+                "SELECT DISTINCT kind FROM mesh_units"
+            )
+        ]
+    finally:
+        connection.close()
+    assert "checkpoint" in kinds
+
+    shutil.rmtree(cache_root, ignore_errors=True)
+    rebooted = _fresh_boot()
+    rebooted.configure_external_persistence_manager(
+        _mesh_configuration(db_path)
+    )
+    outcome = rebooted.reload_profile_from_external("default")
+    assert outcome["inserted"] >= 1
+    report = rebooted.load_checkpoint(checkpoint_id)
+    assert report["status"] == "complete"
+    assert rebooted.get_spell_crystal(spell_id).id == spell_id
+
+
+def test_formations_ship_remote_and_reload(cache_root, tmp_path):
+    """
+    Purpose:
+        The formation mesh lane: store_formation ships local-then-remote
+        (kind="formation", unit_id=name); after pod death the formations
+        reload from the DB and restore_formation unfolds one as usual.
+    """
+    import shutil
+
+    db_path = tmp_path / "mesh.sqlite3"
+    crystallizer = _activate_crystallizer()
+    crystallizer.configure_external_persistence_manager(
+        _mesh_configuration(db_path)
+    )
+    book = _dynamic_book()
+    book.bind(
+        spell=RestoreAlpha, existence=Existence.unique, permissions="create"
+    )
+    conduit = book.conjure(dynamic=True, name="root")
+    crystallizer.save_formation("mesh_slice", conduit_id=conduit._id)
+
+    store, fetch, list_units, _delete = _sqlite_mesh_handlers(db_path)
+    assert "mesh_slice" in list_units("formation", "default")
+
+    shutil.rmtree(cache_root, ignore_errors=True)
+    rebooted = _fresh_boot()
+    rebooted.configure_external_persistence_manager(
+        _mesh_configuration(db_path)
+    )
+    outcome = rebooted.reload_formations_from_external()
+    assert "mesh_slice" in outcome["inserted"]
+    report = rebooted.restore_formation("mesh_slice")
+    assert report["status"] == "complete"
+
+
+def test_emission_tap_streams_delta_rows(cache_root, tmp_path):
+    """
+    Purpose:
+        The opt-in tap: with stream_emissions on, every recorded twin
+        ships a kind="emission" row carrying {crystal_kind, payload} -
+        a live DB mirror of the mesh, fed by the same store callable.
+    """
+    import json
+    import sqlite3
+
+    db_path = tmp_path / "mesh.sqlite3"
+    crystallizer = _activate_crystallizer()
+    crystallizer.configure_external_persistence_manager(
+        _mesh_configuration(db_path, stream_emissions=True)
+    )
+    book = _dynamic_book()
+    book.bind(
+        spell=RestoreAlpha, existence=Existence.unique, permissions="create"
+    )
+    book.conjure(dynamic=True, name="root")
+
+    connection = sqlite3.connect(str(db_path))
+    try:
+        rows = connection.execute(
+            "SELECT payload FROM mesh_units WHERE kind = 'emission'"
+        ).fetchall()
+    finally:
+        connection.close()
+    assert len(rows) >= 1
+    envelopes = [json.loads(row[0]) for row in rows]
+    crystal_kinds = {envelope["crystal_kind"] for envelope in envelopes}
+    assert any("Crystal" in kind for kind in crystal_kinds)
+    # Record versioning: every emission envelope carries the stamp.
+    assert all(
+        envelope.get("record_version") == "1.0.0"
+        for envelope in envelopes
+    )
+
+
+def test_external_retention_trims_oldest_checkpoints(cache_root, tmp_path):
+    """
+    Purpose:
+        Melder-driven remote retention (opt-in delete lane): with more
+        remote checkpoints than the cap, apply_external_retention deletes
+        the oldest (ULID order) and the survivors are the newest ids.
+    """
+    db_path = tmp_path / "mesh.sqlite3"
+    crystallizer = _activate_crystallizer()
+    crystallizer.configure_external_persistence_manager(
+        _mesh_configuration(db_path, delete=True)
+    )
+    book = _dynamic_book()
+    book.bind(
+        spell=RestoreAlpha, existence=Existence.unique, permissions="create"
+    )
+    book.conjure(dynamic=True, name="root")
+
+    checkpoint_ids = []
+    for _ in range(3):
+        checkpoint_id = crystallizer.create_checkpoint()
+        crystallizer.flush_checkpoint(checkpoint_id)
+        checkpoint_ids.append(checkpoint_id)
+
+    deleted = crystallizer.apply_external_retention(max_checkpoints=2)
+    assert deleted == sorted(checkpoint_ids)[:1]
+
+    _store, _fetch, list_units, _delete = _sqlite_mesh_handlers(db_path)
+    survivors = list_units("checkpoint", "default")
+    assert sorted(survivors) == sorted(checkpoint_ids)[1:]

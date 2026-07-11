@@ -555,6 +555,69 @@ class Crystallizer(Cleanable):
         self._require_activated()
         return self._persistence_system.describe_mutation_research_record()
 
+    def analyze_impact(
+            self,
+            module_name: Optional[str] = None,
+            spell_id: Optional[str] = None,
+    ) -> Dict[str, object]:
+        """
+        Answer blast-radius questions over the recorded custody surface.
+
+        Purpose:
+            The S3 impact facade: "which spells does this module reach?",
+            "what does changing this spell touch?", or - with no
+            arguments - the full source-drift report ("what will my
+            uncommitted edits break?"). Read-only over the record; the
+            live runtime is never inspected.
+
+        Contract:
+            - module_name -> that module's transitive blast radius.
+            - spell_id -> the spell's root-module radius (+ identity).
+            - Both None -> the engine's full describe (custody counts +
+              drift statuses + radii for every drifted/absent module).
+            - Supplying BOTH refuses (one question per call).
+            - Unknown modules/spells answer honestly with "unknown_*"
+              markers, never a raise.
+
+        Args:
+            module_name:
+                Optional canonical module name at the blast center.
+            spell_id:
+                Optional spell SHA256 custody identity.
+
+        Returns:
+            Dict[str, object]: The detached impact view.
+
+        Raises:
+            RuntimeError:
+                If crystallizer is cleaned or not yet active.
+            ValueError:
+                If both module_name and spell_id are supplied.
+        """
+        self.check_cleaned()
+        self._require_activated()
+        if module_name is not None and spell_id is not None:
+            raise ValueError(
+                "analyze_impact answers one question per call: supply "
+                "module_name OR spell_id, not both."
+            )
+        # Lazy import mirrors the loader's runtime-surface import law.
+        from melder.crystallizer.crystal_analysis.impact_engine import (
+            ImpactEngine,
+        )
+
+        engine = ImpactEngine(
+            self._persistence_system.describe_spell_crystals()
+        )
+        try:
+            if module_name is not None:
+                return engine.blast_radius_of_module(module_name)
+            if spell_id is not None:
+                return engine.blast_radius_of_spell(spell_id)
+            return engine.describe()
+        finally:
+            engine.cleanup()
+
     def emit_spell_crystal(self, crystal: SpellCrystal, active: bool = True) -> None:
         """
         Record one custody crystal into the active profile's locations.
@@ -1006,6 +1069,18 @@ class Crystallizer(Cleanable):
         if not self._activated:
             return
         self._persistence_system.record(twin)
+        # Opt-in emission tap (external_mesh 2026-07-12, owner ruling):
+        # every recorded twin streams as a delta row through the user's
+        # generic store handler. The cheap property gate keeps untapped
+        # worlds at one read; the lane is lenient + counted, so a dying
+        # DB never touches the R-A covenant. The tap fires AFTER the
+        # record lands - the local truth always leads the mirror.
+        if self._asset_management_system.emission_tap_enabled:
+            self._asset_management_system.stream_emission(
+                self._persistence_system.active_profile_name,
+                type(twin).__name__,
+                twin.describe(),
+            )
         self._maybe_create_automatic_checkpoint()
 
     def create_spell_crystal(
@@ -1755,6 +1830,89 @@ class Crystallizer(Cleanable):
         self._require_activated()
         return self._asset_management_system.reload_profile_from_external(
             profile_name
+        )
+
+    def reload_formations_from_external(
+            self,
+            profile_name: Optional[str] = None,
+    ) -> Dict[str, object]:
+        """
+        Download and store EVERY remote formation of one profile.
+
+        Purpose:
+            The formation half of the remote import lane (external_mesh
+            2026-07-12): the manager lists + fetches through the user's
+            generic callables, the local formation store inserts-if-
+            absent, and restore_formation reads them as usual afterwards.
+
+        Args:
+            profile_name:
+                Profile whose remote formations reload; None = active.
+
+        Returns:
+            Dict[str, object]:
+                {"profile_name", "inserted", "skipped_existing"}.
+
+        Raises:
+            RuntimeError: If cleaned, not yet active, no manager is
+                attached, or the generic fetch/list lanes are missing.
+            ValueError: If the remote lists a formation it cannot return.
+        """
+        self.check_cleaned()
+        self._require_activated()
+        resolved = (
+            profile_name
+            if profile_name is not None
+            else self._persistence_system.active_profile_name
+        )
+        return self._asset_management_system.reload_formations_from_external(
+            resolved
+        )
+
+    def apply_external_retention(
+            self,
+            profile_name: Optional[str] = None,
+            max_checkpoints: Optional[int] = None,
+    ) -> List[str]:
+        """
+        Trim the remote checkpoint history to one retention cap.
+
+        Purpose:
+            Melder-driven remote retention (owner ruling 2026-07-12,
+            opt-in via the delete handler): mirrors the local FIFO - the
+            newest `max_checkpoints` survive, everything older deletes
+            through the user's callable.
+
+        Args:
+            profile_name:
+                Profile to trim; None = active.
+            max_checkpoints:
+                Survivor cap; None = the crystallizer configuration's
+                max_persistence_crystals (the same knob the local FIFO
+                honors).
+
+        Returns:
+            List[str]: The deleted checkpoint ids, oldest first.
+
+        Raises:
+            RuntimeError: If cleaned, not yet active, no manager is
+                attached, or the list-units/delete lanes are missing.
+            ValueError: If the resolved cap is not a positive int.
+        """
+        self.check_cleaned()
+        self._require_activated()
+        resolved_profile = (
+            profile_name
+            if profile_name is not None
+            else self._persistence_system.active_profile_name
+        )
+        resolved_cap = (
+            max_checkpoints
+            if max_checkpoints is not None
+            else self._configuration.max_persistence_crystals
+        )
+        return self._asset_management_system.apply_external_retention(
+            resolved_profile, resolved_cap
         )
 
     # NOTE (S3 decomposition): the upload hook

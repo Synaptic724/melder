@@ -61,9 +61,9 @@ class TransitionEntry(Cleanable):
         - `sequence` is minted monotonically by the owning `ResearchJournal`.
         - `lane_id` names the subject lane, or the owning set id for
           network-scope acts (`restored`).
-        - `from_sha` / `to_sha` carry binding-signature SHA256 identities for
+        - `from_spell_id` / `to_spell_id` carry binding-signature SHA256 identities for
           spell-scope acts; `restored` carries the network snapshot SHA in
-          `to_sha`.
+          `to_spell_id`.
         - `campaign` is the cross-lane research-campaign stamp (owner default:
           always carried, may be None when uncampaigned).
         - `describe()` returns the detached serialization-ready payload;
@@ -81,8 +81,8 @@ class TransitionEntry(Cleanable):
         "_sequence",
         "_act",
         "_lane_id",
-        "_from_sha",
-        "_to_sha",
+        "_from_spell_id",
+        "_to_spell_id",
         "_actor",
         "_campaign",
         "_reason",
@@ -96,8 +96,8 @@ class TransitionEntry(Cleanable):
             act: TransitionAct,
             lane_id: str,
             *,
-            from_sha: Optional[str] = None,
-            to_sha: Optional[str] = None,
+            from_spell_id: Optional[str] = None,
+            to_spell_id: Optional[str] = None,
             actor: Optional[str] = None,
             campaign: Optional[str] = None,
             reason: Optional[str] = None,
@@ -114,10 +114,10 @@ class TransitionEntry(Cleanable):
                 World-entry act this event records.
             lane_id:
                 Subject lane id, or the owning set id for network-scope acts.
-            from_sha:
+            from_spell_id:
                 Optional origin identity (previous tip, anchor node, or
                 pre-restore snapshot context depending on the act).
-            to_sha:
+            to_spell_id:
                 Optional destination identity (registered version SHA, join
                 tip, or network snapshot SHA depending on the act).
             actor:
@@ -146,8 +146,8 @@ class TransitionEntry(Cleanable):
         self._sequence: int = sequence
         self._act: TransitionAct = act
         self._lane_id: str = lane_id
-        self._from_sha: Optional[str] = from_sha
-        self._to_sha: Optional[str] = to_sha
+        self._from_spell_id: Optional[str] = from_spell_id
+        self._to_spell_id: Optional[str] = to_spell_id
         self._actor: Optional[str] = actor
         self._campaign: Optional[str] = campaign
         self._reason: Optional[str] = reason
@@ -171,8 +171,8 @@ class TransitionEntry(Cleanable):
         del self._sequence
         del self._act
         del self._lane_id
-        del self._from_sha
-        del self._to_sha
+        del self._from_spell_id
+        del self._to_spell_id
         del self._actor
         del self._campaign
         del self._reason
@@ -216,7 +216,7 @@ class TransitionEntry(Cleanable):
         return self._lane_id
 
     @property
-    def from_sha(self) -> Optional[str]:
+    def from_spell_id(self) -> Optional[str]:
         """
         Return the origin identity of this event, when one exists.
 
@@ -225,10 +225,10 @@ class TransitionEntry(Cleanable):
                 Origin SHA256 (spell or snapshot scope) or None.
         """
         self.check_cleaned()
-        return self._from_sha
+        return self._from_spell_id
 
     @property
-    def to_sha(self) -> Optional[str]:
+    def to_spell_id(self) -> Optional[str]:
         """
         Return the destination identity of this event, when one exists.
 
@@ -237,7 +237,7 @@ class TransitionEntry(Cleanable):
                 Destination SHA256 (spell or snapshot scope) or None.
         """
         self.check_cleaned()
-        return self._to_sha
+        return self._to_spell_id
 
     @property
     def actor(self) -> Optional[str]:
@@ -299,20 +299,20 @@ class TransitionEntry(Cleanable):
         self.check_cleaned()
         return dict(self._metadata)
 
-    def touches_sha(self, spell_sha: str) -> bool:
+    def touches_spell_id(self, spell_id: str) -> bool:
         """
         Return whether this event references the given identity on either end.
 
         Args:
-            spell_sha:
-                Identity to test against `from_sha` and `to_sha`.
+            spell_id:
+                Identity to test against `from_spell_id` and `to_spell_id`.
 
         Returns:
             bool:
                 True when either endpoint matches.
         """
         self.check_cleaned()
-        return spell_sha == self._from_sha or spell_sha == self._to_sha
+        return spell_id == self._from_spell_id or spell_id == self._to_spell_id
 
     def describe(self) -> Dict[str, object]:
         """
@@ -327,8 +327,8 @@ class TransitionEntry(Cleanable):
             "sequence": self._sequence,
             "act": self._act.value,
             "lane_id": self._lane_id,
-            "from_sha": self._from_sha,
-            "to_sha": self._to_sha,
+            "from_spell_id": self._from_spell_id,
+            "to_spell_id": self._to_spell_id,
             "actor": self._actor,
             "campaign": self._campaign,
             "reason": self._reason,
@@ -367,8 +367,8 @@ class TransitionEntry(Cleanable):
             sequence,
             TransitionAct(act_value),
             lane_id,
-            from_sha=payload.get("from_sha"),
-            to_sha=payload.get("to_sha"),
+            from_spell_id=payload.get("from_spell_id"),
+            to_spell_id=payload.get("to_spell_id"),
             actor=payload.get("actor"),
             campaign=payload.get("campaign"),
             reason=payload.get("reason"),

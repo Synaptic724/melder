@@ -14,23 +14,23 @@ def test_entry_carries_all_recorded_fields() -> None:
         3,
         TransitionAct.registered,
         "lane-1",
-        from_sha=None,
-        to_sha="sha-a",
+        from_spell_id=None,
+        to_spell_id="sha-a",
         actor="mutation_0",
         campaign="campaign-x",
         reason="first declaration",
-        metadata={"module_sha": "mod-1"},
+        metadata={"module_source_sha256": "mod-1"},
     )
 
     assert entry.sequence == 3
     assert entry.act is TransitionAct.registered
     assert entry.lane_id == "lane-1"
-    assert entry.to_sha == "sha-a"
-    assert entry.from_sha is None
+    assert entry.to_spell_id == "sha-a"
+    assert entry.from_spell_id is None
     assert entry.actor == "mutation_0"
     assert entry.campaign == "campaign-x"
     assert entry.reason == "first declaration"
-    assert entry.metadata == {"module_sha": "mod-1"}
+    assert entry.metadata == {"module_source_sha256": "mod-1"}
     assert entry.created_at
 
 
@@ -46,7 +46,7 @@ def test_entry_validation_rejects_bad_inputs() -> None:
         TransitionEntry(1, "registered", "lane-1")
 
 
-def test_entry_touches_sha_matches_either_end() -> None:
+def test_entry_touches_spell_id_matches_either_end() -> None:
     """
     Verify identity matching covers both endpoints.
     """
@@ -54,13 +54,13 @@ def test_entry_touches_sha_matches_either_end() -> None:
         1,
         TransitionAct.joined,
         "lane-1",
-        from_sha="sha-old",
-        to_sha="sha-new",
+        from_spell_id="sha-old",
+        to_spell_id="sha-new",
     )
 
-    assert entry.touches_sha("sha-old") is True
-    assert entry.touches_sha("sha-new") is True
-    assert entry.touches_sha("sha-other") is False
+    assert entry.touches_spell_id("sha-old") is True
+    assert entry.touches_spell_id("sha-new") is True
+    assert entry.touches_spell_id("sha-other") is False
 
 
 def test_entry_describe_from_payload_roundtrip() -> None:
@@ -71,7 +71,7 @@ def test_entry_describe_from_payload_roundtrip() -> None:
         7,
         TransitionAct.attached,
         "lane-2",
-        to_sha="sha-anchor",
+        to_spell_id="sha-anchor",
         actor="agent",
         metadata={"anchor_lane_id": "lane-1"},
     )

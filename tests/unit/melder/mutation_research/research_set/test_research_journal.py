@@ -14,7 +14,7 @@ def test_journal_mints_monotonic_sequences() -> None:
     """
     journal = ResearchJournal()
     first = journal.record(TransitionAct.lane_created, "lane-1")
-    second = journal.record(TransitionAct.registered, "lane-1", to_sha="sha-a")
+    second = journal.record(TransitionAct.registered, "lane-1", to_spell_id="sha-a")
     third = journal.record(TransitionAct.archived, "lane-2")
 
     assert [first.sequence, second.sequence, third.sequence] == [1, 2, 3]
@@ -27,17 +27,17 @@ def test_journal_lane_and_sha_filters() -> None:
     Verify filtered reads select by subject lane and by touched identity.
     """
     journal = ResearchJournal()
-    journal.record(TransitionAct.registered, "lane-1", to_sha="sha-a")
-    journal.record(TransitionAct.registered, "lane-2", to_sha="sha-b")
+    journal.record(TransitionAct.registered, "lane-1", to_spell_id="sha-a")
+    journal.record(TransitionAct.registered, "lane-2", to_spell_id="sha-b")
     journal.record(
-        TransitionAct.joined, "lane-1", from_sha="sha-a", to_sha="sha-b",
+        TransitionAct.joined, "lane-1", from_spell_id="sha-a", to_spell_id="sha-b",
     )
 
     assert len(journal.entries_for_lane("lane-1")) == 2
     assert len(journal.entries_for_lane("lane-2")) == 1
-    assert len(journal.entries_for_sha("sha-a")) == 2
-    assert len(journal.entries_for_sha("sha-b")) == 2
-    assert journal.entries_for_sha("sha-none") == []
+    assert len(journal.entries_for_spell_id("sha-a")) == 2
+    assert len(journal.entries_for_spell_id("sha-b")) == 2
+    assert journal.entries_for_spell_id("sha-none") == []
 
 
 def test_journal_reads_are_detached() -> None:
@@ -59,13 +59,13 @@ def test_journal_describe_bounds_recent_window() -> None:
     journal = ResearchJournal()
     for index in range(5):
         journal.record(
-            TransitionAct.registered, "lane-1", to_sha=f"sha-{index}",
+            TransitionAct.registered, "lane-1", to_spell_id=f"sha-{index}",
         )
 
     payload = journal.describe(recent=2)
 
     assert len(payload["entries"]) == 2
-    assert payload["entries"][-1]["to_sha"] == "sha-4"
+    assert payload["entries"][-1]["to_spell_id"] == "sha-4"
     assert payload["entry_count"] == 5
     assert payload["next_sequence"] == 6
 
@@ -77,7 +77,7 @@ def test_journal_from_payload_continues_minting_without_reuse() -> None:
     journal = ResearchJournal()
     for index in range(4):
         journal.record(
-            TransitionAct.registered, "lane-1", to_sha=f"sha-{index}",
+            TransitionAct.registered, "lane-1", to_spell_id=f"sha-{index}",
         )
 
     rebuilt = ResearchJournal.from_payload(journal.describe(recent=2))
@@ -95,7 +95,7 @@ def test_journal_describe_from_payload_full_roundtrip() -> None:
     journal.record(
         TransitionAct.registered,
         "lane-1",
-        to_sha="sha-a",
+        to_spell_id="sha-a",
         actor="agent",
         campaign="c1",
     )

@@ -741,6 +741,45 @@ class PersistenceProfile(Cleanable):
                 )
             return crystal
 
+    def describe_spell_crystals(self) -> Dict[str, Dict[str, object]]:
+        """
+        Return every recorded custody crystal as a detached payload map.
+
+        Purpose:
+            The impact-engine read seam (S3): blast-radius questions need
+            the WHOLE custody surface at once, not per-spell lookups.
+            Payloads only - no twin object escapes (record law).
+
+        Contract:
+            - Covers BOTH custody maps; each payload gains the additive
+              "custody_state" key ("active" | "inactive").
+            - Detached describe() dicts; mutating them never touches the
+              record.
+
+        Returns:
+            Dict[str, Dict[str, object]]:
+                spell_id -> crystal describe() payload + custody_state.
+
+        Raises:
+            RuntimeError: If the profile has been cleaned.
+        """
+        self.check_cleaned()
+        with self._lock:
+            payloads: Dict[str, Dict[str, object]] = {}
+            for spell_id, crystal in (
+                    self._spell_crystals_by_spell_id.items()
+            ):
+                payload = crystal.describe()
+                payload["custody_state"] = "active"
+                payloads[spell_id] = payload
+            for spell_id, crystal in (
+                    self._inactive_spell_crystals_by_spell_id.items()
+            ):
+                payload = crystal.describe()
+                payload["custody_state"] = "inactive"
+                payloads[spell_id] = payload
+            return payloads
+
     def describe_mutation_research_record(self) -> Optional[Dict[str, object]]:
         """
         Return the recorded MutationResearch twin payload, when one exists.

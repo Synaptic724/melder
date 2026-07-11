@@ -51,6 +51,7 @@ class ExternalPersistenceManager(Cleanable):
         "_lock",
         "_configuration",
         "_upload_failure_count",
+        "_store_failure_count",
     ]
 
     def __init__(
@@ -88,6 +89,9 @@ class ExternalPersistenceManager(Cleanable):
         # Diagnostic surface for the lenient upload lane: callers/tests
         # can see how many remote pushes failed without raising.
         self._upload_failure_count: int = 0
+        # Same posture for the generic mesh store lane (external_mesh
+        # 2026-07-12): formation ships + emission-tap rows count here.
+        self._store_failure_count: int = 0
 
     def cleanup(self) -> None:
         """
@@ -103,6 +107,7 @@ class ExternalPersistenceManager(Cleanable):
             self._configuration.cleanup()
         del self._configuration
         del self._upload_failure_count
+        del self._store_failure_count
         del self._lock
 
     @property
@@ -166,7 +171,12 @@ class ExternalPersistenceManager(Cleanable):
         self.check_cleaned()
         handler = self._configuration.upload_handler
         if handler is None:
-            return False
+            # LEGACY BRIDGE (external_mesh 2026-07-12): the generic store
+            # lane carries checkpoints when no dedicated handler exists -
+            # one callable set can serve the whole mesh.
+            return self.store_unit(
+                "checkpoint", profile_name, checkpoint_id, cached_item
+            )
         try:
             handler(profile_name, checkpoint_id, dict(cached_item))
             return True
@@ -201,10 +211,16 @@ class ExternalPersistenceManager(Cleanable):
         self.check_cleaned()
         handler = self._configuration.download_handler
         if handler is None:
+            # LEGACY BRIDGE: the generic fetch lane serves checkpoints
+            # when no dedicated handler exists; only a fully read-less
+            # configuration refuses.
+            if self._configuration.fetch_handler is not None:
+                return self.fetch_unit("checkpoint", checkpoint_id)
             raise RuntimeError(
                 "ExternalPersistenceManager has no download handler attached; "
-                "attach one via with_download_handler(...) before asking "
-                "for remote checkpoints."
+                "attach one via with_download_handler(...) or "
+                "with_fetch_handler(...) before asking for remote "
+                "checkpoints."
             )
         payload = handler(checkpoint_id)
         return dict(payload) if payload is not None else None
@@ -237,15 +253,23 @@ class ExternalPersistenceManager(Cleanable):
         self.check_cleaned()
         list_handler = self._configuration.list_handler
         if list_handler is None:
-            raise RuntimeError(
-                "ExternalPersistenceManager has no list handler attached; attach "
-                "one via with_list_handler(...) before asking for a "
-                "profile's remote history."
+            # LEGACY BRIDGE: the generic listing lane serves checkpoint
+            # history when no dedicated handler exists.
+            if self._configuration.list_units_handler is not None:
+                identifiers = self.list_units("checkpoint", profile_name)
+            else:
+                raise RuntimeError(
+                    "ExternalPersistenceManager has no list handler attached; "
+                    "attach one via with_list_handler(...) or "
+                    "with_list_units_handler(...) before asking for a "
+                    "profile's remote history."
+                )
+        else:
+            identifiers = sorted(
+                str(entry) for entry in list_handler(profile_name)
             )
         payloads: List[Dict[str, object]] = []
-        for checkpoint_id in sorted(
-                str(entry) for entry in list_handler(profile_name)
-        ):
+        for checkpoint_id in identifiers:
             payload = self.download_checkpoint(checkpoint_id)
             if payload is None:
                 raise ValueError(
@@ -257,6 +281,196 @@ class ExternalPersistenceManager(Cleanable):
                 )
             payloads.append(payload)
         return payloads
+
+    @property
+    def store_enabled(self) -> bool:
+        """
+        Return whether flush-shipped mesh lanes should store remote.
+
+        Returns:
+            bool: True when a store handler is attached AND
+            upload_on_flush is set (the flush knob governs every
+            flush-shipped lane, legacy and generic alike).
+        """
+        self.check_cleaned()
+        return (
+            self._configuration.store_handler is not None
+            and self._configuration.upload_on_flush
+        )
+
+    @property
+    def stream_emissions_enabled(self) -> bool:
+        """
+        Return whether the opt-in emission tap should fire.
+
+        Returns:
+            bool: True when a store handler is attached AND
+            stream_emissions was opted in.
+        """
+        self.check_cleaned()
+        return (
+            self._configuration.store_handler is not None
+            and self._configuration.stream_emissions
+        )
+
+    @property
+    def store_failure_count(self) -> int:
+        """
+        Return how many lenient-mode generic stores have failed so far.
+
+        Returns:
+            int: Count of swallowed-and-counted store failures.
+        """
+        self.check_cleaned()
+        return self._store_failure_count
+
+    def store_unit(
+            self,
+            kind: str,
+            profile_name: str,
+            unit_id: str,
+            payload: Dict[str, object],
+    ) -> bool:
+        """
+        Push one mesh unit through the user's generic store handler.
+
+        Contract:
+            - NO-OP (returns False) when no store handler is attached.
+            - Lenient default mirrors the upload lane: handler exceptions
+              increment store_failure_count and return False;
+              strict_uploads=True re-raises. This is the second sanctioned
+              broad-except in this class (same documented posture).
+
+        Args:
+            kind:
+                Mesh unit kind ("checkpoint" | "formation" | "emission").
+            profile_name:
+                Owning profile (the handler's partitioning key).
+            unit_id:
+                The unit's identity (ULID / formation name / event ULID).
+            payload:
+                JSON-safe unit payload.
+
+        Returns:
+            bool: True when the handler ran successfully.
+
+        Raises:
+            RuntimeError: If the manager has been cleaned.
+            Exception: The handler's own error, when strict_uploads.
+        """
+        self.check_cleaned()
+        handler = self._configuration.store_handler
+        if handler is None:
+            return False
+        try:
+            handler(str(kind), profile_name, unit_id, dict(payload))
+            return True
+        except Exception:
+            if self._configuration.strict_uploads:
+                raise
+            with self._lock:
+                self._store_failure_count += 1
+            return False
+
+    def fetch_unit(
+            self,
+            kind: str,
+            unit_id: str,
+    ) -> Optional[Dict[str, object]]:
+        """
+        Fetch one mesh unit through the user's generic fetch handler.
+
+        Args:
+            kind:
+                Mesh unit kind.
+            unit_id:
+                The wanted unit's identity.
+
+        Returns:
+            Optional[Dict[str, object]]:
+                The stored payload, or None when the remote lacks it.
+
+        Raises:
+            RuntimeError: If cleaned, or no fetch handler is attached
+                (asking for remote units with no read lane is a
+                misconfiguration, refused loudly).
+        """
+        self.check_cleaned()
+        handler = self._configuration.fetch_handler
+        if handler is None:
+            raise RuntimeError(
+                "ExternalPersistenceManager has no fetch handler attached; "
+                "attach one via with_fetch_handler(...) before asking for "
+                "remote mesh units."
+            )
+        payload = handler(str(kind), unit_id)
+        return dict(payload) if payload is not None else None
+
+    def list_units(
+            self,
+            kind: str,
+            profile_name: str,
+    ) -> List[str]:
+        """
+        List one kind's stored unit ids through the user's handler.
+
+        Args:
+            kind:
+                Mesh unit kind.
+            profile_name:
+                Profile whose units are wanted.
+
+        Returns:
+            List[str]: Sorted unit ids (ULID kinds sort into creation
+            order for free).
+
+        Raises:
+            RuntimeError: If cleaned, or no list-units handler attached.
+        """
+        self.check_cleaned()
+        handler = self._configuration.list_units_handler
+        if handler is None:
+            raise RuntimeError(
+                "ExternalPersistenceManager has no list-units handler "
+                "attached; attach one via with_list_units_handler(...) "
+                "before asking for remote unit listings."
+            )
+        return sorted(str(entry) for entry in handler(str(kind), profile_name))
+
+    def delete_unit(self, kind: str, unit_id: str) -> None:
+        """
+        Delete one mesh unit through the user's opt-in delete handler.
+
+        Contract:
+            - Retention is opt-in (owner ruling 2026-07-12; the
+              2026-07-07 "remote retention is the DB owner's business"
+              default stands without this handler): no handler = loud
+              refusal, never a silent skip.
+            - Deletes are NOT lenient: a retention pass that silently
+              half-runs would lie about the remote's contents.
+
+        Args:
+            kind:
+                Mesh unit kind.
+            unit_id:
+                The unit to delete.
+
+        Returns:
+            None.
+
+        Raises:
+            RuntimeError: If cleaned, or no delete handler is attached.
+            Exception: The handler's own error (propagated).
+        """
+        self.check_cleaned()
+        handler = self._configuration.delete_handler
+        if handler is None:
+            raise RuntimeError(
+                "ExternalPersistenceManager has no delete handler attached; "
+                "attach one via with_delete_handler(...) before asking for "
+                "remote retention."
+            )
+        handler(str(kind), unit_id)
 
     def describe(self) -> Dict[str, object]:
         """
@@ -271,4 +485,5 @@ class ExternalPersistenceManager(Cleanable):
         self.check_cleaned()
         description = self._configuration.describe_presence()
         description["upload_failure_count"] = self._upload_failure_count
+        description["store_failure_count"] = self._store_failure_count
         return description

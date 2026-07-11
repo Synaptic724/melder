@@ -37,7 +37,7 @@ def test_claim_validates_inputs() -> None:
     """
     registry = ResidenceRegistry()
 
-    with pytest.raises(ValueError, match="spell_sha"):
+    with pytest.raises(ValueError, match="spell_id"):
         registry.claim("", "lane-1")
     with pytest.raises(ValueError, match="lane_id"):
         registry.claim("sha-a", "")

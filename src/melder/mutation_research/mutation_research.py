@@ -1,5 +1,5 @@
 import threading
-from typing import TYPE_CHECKING, ClassVar, Dict, List, Optional
+from typing import TYPE_CHECKING, ClassVar, Dict, List, Optional, Tuple
 
 if TYPE_CHECKING:
     from melder.aether.aether import Aether
@@ -71,6 +71,7 @@ class MutationResearch(Cleanable):
         "_activated",
         "_research_sets_by_name",
         "_diff_engine",
+        "_active_campaign",
         "_crystallizer",
     ]
 
@@ -126,6 +127,7 @@ class MutationResearch(Cleanable):
             self._activated: bool = False
             self._research_sets_by_name: Dict[str, ResearchSet] = {}
             self._diff_engine: Optional[DiffEngine] = None
+            self._active_campaign: Optional[str] = None
             self._research_sets_by_name[
                 MutationResearch.DEFAULT_RESEARCH_SET_NAME
             ] = ResearchSet(
@@ -182,6 +184,7 @@ class MutationResearch(Cleanable):
             self._activated = False
             del self._crystallizer
             del self._diff_engine
+            del self._active_campaign
             del self._research_sets_by_name
             del self._configuration
             del self._aether
@@ -589,16 +592,73 @@ class MutationResearch(Cleanable):
         self._emit_research_composition()
 
     # ------------------------------------------------------------------
+    # Campaign context
+    # ------------------------------------------------------------------
+
+    @property
+    def active_campaign(self) -> Optional[str]:
+        """
+        Return the ambient campaign stamp, when one is set.
+
+        Returns:
+            Optional[str]:
+                Active campaign name or None.
+        """
+        self.check_cleaned()
+        with self._lock:
+            return self._active_campaign
+
+    def set_active_campaign(self, campaign: str) -> None:
+        """
+        Set the ambient research-campaign stamp.
+
+        Purpose:
+            Multi-agent campaigns stamp work ACROSS lanes; once set, every
+            runtime auto-record routed through the root facades
+            (`record_world_entry` / `record_promotion` - i.e. every dynamic
+            bind, staged bind, and notch) carries this stamp until cleared,
+            so campaign membership never depends on remembering to pass it.
+
+        Args:
+            campaign:
+                Non-empty campaign name.
+
+        Returns:
+            None.
+
+        Raises:
+            ValueError:
+                If campaign is empty.
+        """
+        self.check_cleaned()
+        if not isinstance(campaign, str) or not campaign:
+            raise ValueError("campaign must be a non-empty string.")
+        with self._lock:
+            self._active_campaign = campaign
+
+    def clear_active_campaign(self) -> None:
+        """
+        Clear the ambient research-campaign stamp.
+
+        Returns:
+            None.
+        """
+        self.check_cleaned()
+        with self._lock:
+            self._active_campaign = None
+
+    # ------------------------------------------------------------------
     # Runtime world-entry seams
     # ------------------------------------------------------------------
 
     def record_world_entry(
             self,
-            spell_sha: str,
+            spell_id: str,
             *,
             staged: bool = False,
             author: Optional[str] = None,
             reason: Optional[str] = None,
+            campaign: Optional[str] = None,
     ) -> bool:
         """
         Idempotently declare one world-entry into the default set.
@@ -611,7 +671,7 @@ class MutationResearch(Cleanable):
             bookkeeping.
 
         Args:
-            spell_sha:
+            spell_id:
                 Binding-signature SHA256 entering the world.
             staged:
                 True for parked (`bind_inactive`) entries.
@@ -627,34 +687,39 @@ class MutationResearch(Cleanable):
         """
         self.check_cleaned()
         research_set = self.research_set()
+        effective_campaign = (
+            campaign if campaign is not None else self.active_campaign
+        )
         node = research_set.record_world_entry(
-            spell_sha,
+            spell_id,
             staged=staged,
             author=author,
             reason=reason,
+            campaign=effective_campaign,
         )
         return node is not None
 
     def record_promotion(
             self,
-            from_sha: Optional[str],
-            to_sha: str,
+            from_spell_id: Optional[str],
+            to_spell_id: str,
             *,
             actor: Optional[str] = None,
             reason: Optional[str] = None,
+            campaign: Optional[str] = None,
     ) -> None:
         """
         Record one runtime selection change (notch) into the default set.
 
         Contract:
-            - An undeclared `to_sha` is declared first (world-entry
+            - An undeclared `to_spell_id` is declared first (world-entry
               catch-up: a promotion proves the version exists), then the
               `promoted` event records with the supplied endpoints.
 
         Args:
-            from_sha:
+            from_spell_id:
                 Previously selected identity, when known.
-            to_sha:
+            to_spell_id:
                 Newly selected identity.
             actor:
                 Optional acting agent name.
@@ -666,19 +731,163 @@ class MutationResearch(Cleanable):
         """
         self.check_cleaned()
         research_set = self.research_set()
-        if research_set.residence_of(to_sha) is None:
+        effective_campaign = (
+            campaign if campaign is not None else self.active_campaign
+        )
+        if research_set.residence_of(to_spell_id) is None:
             research_set.record_world_entry(
-                to_sha,
+                to_spell_id,
                 staged=True,
                 author=actor,
                 reason="world-entry catch-up at promotion",
+                campaign=effective_campaign,
             )
         research_set.record_promotion(
-            from_sha,
-            to_sha,
+            from_spell_id,
+            to_spell_id,
             actor=actor,
             reason=reason,
+            campaign=effective_campaign,
         )
+
+    # ------------------------------------------------------------------
+    # Residency reads
+    # ------------------------------------------------------------------
+
+    def residency_view(
+            self,
+            spell_id: str,
+            *,
+            set_name: str = "default",
+    ) -> Dict[str, object]:
+        """
+        Return the query-time residency join for one identity.
+
+        Purpose:
+            The record stores NO active flags by design; where a version
+            currently lives (active / parked / stored) is a runtime +
+            custody JOIN performed at read time. This verb performs it:
+            declared truth from the research set, runtime truth from the
+            frames (SpellIndex membership + selection), custody truth from
+            the crystallizer.
+
+        Contract:
+            - Total read: never raises for unknown identities (empty sha is
+              the only refusal); every uncertainty reports honestly.
+            - `runtime` verdicts: `active` (some index's selected member),
+              `parked` (a live index member, not selected), `stored`
+              (custody only), `declared_only` (record only), `unknown`
+              (nowhere, incl. custody unavailable).
+            - `in_custody` is None when the crystallizer cannot answer
+              (inactive/cleaned) - a read never fabricates or raises there.
+
+        Args:
+            spell_id:
+                Binding-signature SHA256 to locate.
+            set_name:
+                Research set to read declared truth from.
+
+        Returns:
+            Dict[str, object]:
+                `spell_id`, `declared`, `lane_id`/`lane_name`/`lane_state`
+                (None when undeclared), `runtime`, `frame_name`/`index_id`
+                (None when not live), and `in_custody`.
+        """
+        self.check_cleaned()
+        if not isinstance(spell_id, str) or not spell_id:
+            raise ValueError("spell_id must be a non-empty string.")
+        research_set = self.research_set(set_name)
+        lane_id = research_set.residence_of(spell_id)
+        lane_name: Optional[str] = None
+        lane_state: Optional[str] = None
+        if lane_id is not None:
+            lane = research_set.get_lane(lane_id)
+            lane_name = lane.name
+            lane_state = lane.state.value
+        frame_name, index_id, selected = self._locate_live_membership(
+            spell_id,
+        )
+        in_custody = self._probe_custody(spell_id)
+        if selected:
+            runtime = "active"
+        elif index_id is not None:
+            runtime = "parked"
+        elif in_custody:
+            runtime = "stored"
+        elif lane_id is not None:
+            runtime = "declared_only"
+        else:
+            runtime = "unknown"
+        return {
+            "spell_id": spell_id,
+            "declared": lane_id is not None,
+            "lane_id": lane_id,
+            "lane_name": lane_name,
+            "lane_state": lane_state,
+            "runtime": runtime,
+            "frame_name": frame_name,
+            "index_id": index_id,
+            "in_custody": in_custody,
+        }
+
+    def _locate_live_membership(
+            self,
+            spell_id: str,
+    ) -> Tuple[Optional[str], Optional[str], bool]:
+        """
+        Scan live frames for one identity's index membership.
+
+        Args:
+            spell_id:
+                Identity to locate.
+
+        Returns:
+            Tuple[Optional[str], Optional[str], bool]:
+                `(frame_name, index_id, selected)` - Nones/False when the
+                identity is not a live index member anywhere.
+        """
+        aether = self._aether
+        if aether is None or aether.cleaned:
+            return None, None, False
+        for frame_name, frame in list(aether._aetheric_frames.items()):
+            try:
+                if frame.cleaned:
+                    continue
+                index = frame.find_index_for_spell(spell_id)
+            except Exception:
+                continue
+            if index is None or index.cleaned:
+                continue
+            return (
+                frame_name,
+                index.id,
+                index.selected_spell_id == spell_id,
+            )
+        return None, None, False
+
+    def _probe_custody(self, spell_id: str) -> Optional[bool]:
+        """
+        Probe crystallizer custody for one identity, without raising.
+
+        Args:
+            spell_id:
+                Identity to probe.
+
+        Returns:
+            Optional[bool]:
+                True/False for custody presence; None when the crystallizer
+                cannot answer (inactive or cleaned).
+        """
+        crystallizer = self._crystallizer
+        if crystallizer.cleaned or not crystallizer.activated:
+            return None
+        try:
+            crystallizer.get_spell_crystal(spell_id)
+        except KeyError:
+            return False
+        except Exception:
+            return None
+        return True
 
     # ------------------------------------------------------------------
     # Derived diff reads
@@ -686,8 +895,8 @@ class MutationResearch(Cleanable):
 
     def diff_research(
             self,
-            left_sha: str,
-            right_sha: str,
+            left_spell_id: str,
+            right_spell_id: str,
             *,
             strategy: str = "source",
     ) -> Dict[str, object]:
@@ -701,9 +910,9 @@ class MutationResearch(Cleanable):
             registered strategy - nothing is stored.
 
         Args:
-            left_sha:
+            left_spell_id:
                 Left version identity (binding-signature SHA256).
-            right_sha:
+            right_spell_id:
                 Right version identity.
             strategy:
                 Registered strategy name; "source" by default.
@@ -724,7 +933,7 @@ class MutationResearch(Cleanable):
             if self._diff_engine is None:
                 self._diff_engine = DiffEngine(self._resolve_diff_material)
             engine = self._diff_engine
-        return engine.diff(left_sha, right_sha, strategy=strategy)
+        return engine.diff(left_spell_id, right_spell_id, strategy=strategy)
 
     def create_diff_engine(self) -> DiffEngine:
         """
@@ -740,7 +949,7 @@ class MutationResearch(Cleanable):
 
     def _resolve_diff_material(
             self,
-            spell_sha: str,
+            spell_id: str,
     ) -> Dict[str, object]:
         """
         Resolve one version's diff material from crystallizer custody.
@@ -753,12 +962,12 @@ class MutationResearch(Cleanable):
               than fabricating empty material.
 
         Args:
-            spell_sha:
+            spell_id:
                 Version identity to resolve.
 
         Returns:
             Dict[str, object]:
-                `{"spell_sha", "sources", "fingerprints"}` material payload.
+                `{"spell_id", "sources", "fingerprints"}` material payload.
 
         Raises:
             RuntimeError:
@@ -773,7 +982,7 @@ class MutationResearch(Cleanable):
                 "Crystallizer custody is unavailable (inactive or cleaned); "
                 "diff material cannot be resolved."
             )
-        payload = crystallizer.get_spell_crystal(spell_sha).describe()
+        payload = crystallizer.get_spell_crystal(spell_id).describe()
         sources: Dict[str, object] = {}
         synthetic = payload.get("synthetic_module_sources")
         if isinstance(synthetic, dict):
@@ -784,7 +993,7 @@ class MutationResearch(Cleanable):
                         sources[str(module_name)] = text
         fingerprints = payload.get("physical_module_fingerprints")
         return {
-            "spell_sha": spell_sha,
+            "spell_id": spell_id,
             "sources": sources,
             "fingerprints": (
                 dict(fingerprints) if isinstance(fingerprints, dict) else {}

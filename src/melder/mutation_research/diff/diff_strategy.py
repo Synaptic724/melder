@@ -18,7 +18,7 @@ class DiffStrategy(Cleanable):
         - `name` is the stable registry key strategies are resolved by.
         - `diff(left_material, right_material)` receives the detached
           material payloads produced by the engine's injected resolver:
-          `{"spell_sha": str, "sources": Dict[module_name, source_text],
+          `{"spell_id": str, "sources": Dict[module_name, source_text],
           "fingerprints": Dict[module_name, sha256]}`.
         - Strategies return detached, value-typed verdict payloads and never
           retain or mutate the material.

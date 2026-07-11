@@ -14,16 +14,16 @@ class ResearchNode(Cleanable):
         payload, because custody lives with the crystallizer - the spell's
         binding-signature SHA256 is simultaneously the `SpellCrystal` id
         (`SpellCrystal.__init__` adopts `spell.spell_id` as its manifest id),
-        so `spell_sha` alone is the custody key.
+        so `spell_id` alone is the custody key.
 
     Contract:
         - Value object; immutable after construction (no setters, no lock).
-        - `spell_sha` is REQUIRED and is both the version identity and the
+        - `spell_id` is REQUIRED and is both the version identity and the
           custody-crystal reference (one field, one truth).
-        - `module_sha` carries the module-version SHA256 the spell was bound
+        - `module_source_sha256` carries the module-version SHA256 the spell was bound
           against, so recall can never resurrect a spell into the wrong
           module world.
-        - `parent_shas` is ancestry only; multi-parent records express
+        - `parent_spell_ids` is ancestry only; multi-parent records express
           composition performed in the codegen workshop (there is no
           merge/rebase machinery to reference).
         - `describe()` returns the detached serialization-ready payload;
@@ -38,9 +38,9 @@ class ResearchNode(Cleanable):
     """
 
     __slots__ = Cleanable.__slots__ + [
-        "_spell_sha",
-        "_module_sha",
-        "_parent_shas",
+        "_spell_id",
+        "_module_source_sha256",
+        "_parent_spell_ids",
         "_author",
         "_reason",
         "_campaign",
@@ -50,10 +50,10 @@ class ResearchNode(Cleanable):
 
     def __init__(
             self,
-            spell_sha: str,
+            spell_id: str,
             *,
-            module_sha: Optional[str] = None,
-            parent_shas: Optional[List[str]] = None,
+            module_source_sha256: Optional[str] = None,
+            parent_spell_ids: Optional[List[str]] = None,
             author: Optional[str] = None,
             reason: Optional[str] = None,
             campaign: Optional[str] = None,
@@ -64,12 +64,12 @@ class ResearchNode(Cleanable):
         Initialize one immutable version record.
 
         Args:
-            spell_sha:
+            spell_id:
                 Binding-signature SHA256 of the registered version; doubles as
                 the custody `SpellCrystal` id.
-            module_sha:
+            module_source_sha256:
                 Optional module-version SHA256 the version was bound against.
-            parent_shas:
+            parent_spell_ids:
                 Optional ancestry identities (detached copy is stored).
             author:
                 Optional registering agent name.
@@ -84,18 +84,18 @@ class ResearchNode(Cleanable):
 
         Raises:
             ValueError:
-                If spell_sha is empty or any parent sha is empty.
+                If spell_id is empty or any parent sha is empty.
         """
         super().__init__()
-        if not isinstance(spell_sha, str) or not spell_sha:
-            raise ValueError("spell_sha must be a non-empty string.")
-        parents: List[str] = list(parent_shas) if parent_shas else []
+        if not isinstance(spell_id, str) or not spell_id:
+            raise ValueError("spell_id must be a non-empty string.")
+        parents: List[str] = list(parent_spell_ids) if parent_spell_ids else []
         for parent_sha in parents:
             if not isinstance(parent_sha, str) or not parent_sha:
-                raise ValueError("parent_shas must contain non-empty strings.")
-        self._spell_sha: str = spell_sha
-        self._module_sha: Optional[str] = module_sha
-        self._parent_shas: Tuple[str, ...] = tuple(parents)
+                raise ValueError("parent_spell_ids must contain non-empty strings.")
+        self._spell_id: str = spell_id
+        self._module_source_sha256: Optional[str] = module_source_sha256
+        self._parent_spell_ids: Tuple[str, ...] = tuple(parents)
         self._author: Optional[str] = author
         self._reason: Optional[str] = reason
         self._campaign: Optional[str] = campaign
@@ -116,9 +116,9 @@ class ResearchNode(Cleanable):
         if self._cleaned:
             return
         self._cleaned = True
-        del self._spell_sha
-        del self._module_sha
-        del self._parent_shas
+        del self._spell_id
+        del self._module_source_sha256
+        del self._parent_spell_ids
         del self._author
         del self._reason
         del self._campaign
@@ -126,7 +126,7 @@ class ResearchNode(Cleanable):
         del self._metadata
 
     @property
-    def spell_sha(self) -> str:
+    def spell_id(self) -> str:
         """
         Return the version identity (and custody-crystal id).
 
@@ -135,10 +135,10 @@ class ResearchNode(Cleanable):
                 Binding-signature SHA256.
         """
         self.check_cleaned()
-        return self._spell_sha
+        return self._spell_id
 
     @property
-    def module_sha(self) -> Optional[str]:
+    def module_source_sha256(self) -> Optional[str]:
         """
         Return the module-version SHA256 this version binds against.
 
@@ -147,10 +147,10 @@ class ResearchNode(Cleanable):
                 Module-version SHA256 or None when unrecorded.
         """
         self.check_cleaned()
-        return self._module_sha
+        return self._module_source_sha256
 
     @property
-    def parent_shas(self) -> List[str]:
+    def parent_spell_ids(self) -> List[str]:
         """
         Return a detached copy of the ancestry identities.
 
@@ -159,7 +159,7 @@ class ResearchNode(Cleanable):
                 Parent SHA256 identities in declaration order.
         """
         self.check_cleaned()
-        return list(self._parent_shas)
+        return list(self._parent_spell_ids)
 
     @property
     def author(self) -> Optional[str]:
@@ -231,9 +231,9 @@ class ResearchNode(Cleanable):
         """
         self.check_cleaned()
         return {
-            "spell_sha": self._spell_sha,
-            "module_sha": self._module_sha,
-            "parent_shas": list(self._parent_shas),
+            "spell_id": self._spell_id,
+            "module_source_sha256": self._module_source_sha256,
+            "parent_spell_ids": list(self._parent_spell_ids),
             "author": self._author,
             "reason": self._reason,
             "campaign": self._campaign,
@@ -260,15 +260,15 @@ class ResearchNode(Cleanable):
         """
         if not isinstance(payload, dict):
             raise ValueError("payload must be a dict produced by describe().")
-        spell_sha = payload.get("spell_sha")
-        if not isinstance(spell_sha, str) or not spell_sha:
-            raise ValueError("payload is missing a valid 'spell_sha' value.")
-        parents = payload.get("parent_shas")
+        spell_id = payload.get("spell_id")
+        if not isinstance(spell_id, str) or not spell_id:
+            raise ValueError("payload is missing a valid 'spell_id' value.")
+        parents = payload.get("parent_spell_ids")
         metadata = payload.get("metadata")
         return cls(
-            spell_sha,
-            module_sha=payload.get("module_sha"),
-            parent_shas=list(parents) if isinstance(parents, list) else None,
+            spell_id,
+            module_source_sha256=payload.get("module_source_sha256"),
+            parent_spell_ids=list(parents) if isinstance(parents, list) else None,
             author=payload.get("author"),
             reason=payload.get("reason"),
             campaign=payload.get("campaign"),

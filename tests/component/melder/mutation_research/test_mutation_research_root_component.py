@@ -110,14 +110,14 @@ def test_component_research_flow_on_real_aether(case_index: int) -> None:
 
     research_set.register_spell(base_sha)
     research_set.create_lane(
-        lane_name, attach_to="default", attach_at_sha=base_sha,
+        lane_name, attach_to="default", attach_at_spell_id=base_sha,
     )
     research_set.register_spell(
-        next_sha, lane=lane_name, parent_shas=[base_sha],
+        next_sha, lane=lane_name, parent_spell_ids=[base_sha],
     )
     research_set.join(lane_name, into="default")
 
-    assert research_set.default_lane.tip_sha == next_sha
+    assert research_set.default_lane.tip_spell_id == next_sha
     assert research_set.get_lane(lane_name).state is LaneState.joined
     assert research_set.heads() == {"default": next_sha}
 

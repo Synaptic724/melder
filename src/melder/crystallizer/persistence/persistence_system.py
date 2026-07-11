@@ -434,6 +434,25 @@ class PersistenceSystem(Cleanable):
         self.check_cleaned()
         return self.active_profile.describe_mutation_research_record()
 
+    def describe_spell_crystals(self) -> Dict[str, Dict[str, object]]:
+        """
+        Return the ACTIVE profile's custody surface as detached payloads.
+
+        Purpose:
+            The impact-engine read seam (S3): active-profile passthrough
+            to `PersistenceProfile.describe_spell_crystals`.
+
+        Returns:
+            Dict[str, Dict[str, object]]:
+                spell_id -> crystal describe() payload + "custody_state".
+
+        Raises:
+            RuntimeError:
+                If the subsystem has been cleaned.
+        """
+        self.check_cleaned()
+        return self.active_profile.describe_spell_crystals()
+
     def get_profile(self, profile_name: str) -> PersistenceProfile:
         """
         Return one profile by name.
@@ -702,7 +721,13 @@ class PersistenceSystem(Cleanable):
             ].capture_formation_slice(
                 conduit_id=conduit_id, frame_name=frame_name
             )
-        return {
+        # Record versioning (owner ruling 2026-07-12): every durable
+        # artifact carries the schema stamp; readers gate on the major.
+        from melder.crystallizer.persistence.record_version import (
+            RecordVersion,
+        )
+
+        return RecordVersion.stamp({
             "formation_name": formation_name,
             "profile_name": resolved_name,
             "scope": (
@@ -713,7 +738,7 @@ class PersistenceSystem(Cleanable):
             "created_at": IDBuilder.create_id(),
             "description": description,
             "payloads": payloads,
-        }
+        })
 
     # NOTE (S3 decomposition): load_formation_record and list_formations
     # moved to AssetManagementSystem (formation FILES are bytes at rest);

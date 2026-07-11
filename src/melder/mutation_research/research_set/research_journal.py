@@ -79,8 +79,8 @@ class ResearchJournal(Cleanable):
             act: TransitionAct,
             lane_id: str,
             *,
-            from_sha: Optional[str] = None,
-            to_sha: Optional[str] = None,
+            from_spell_id: Optional[str] = None,
+            to_spell_id: Optional[str] = None,
             actor: Optional[str] = None,
             campaign: Optional[str] = None,
             reason: Optional[str] = None,
@@ -94,9 +94,9 @@ class ResearchJournal(Cleanable):
                 World-entry act to record.
             lane_id:
                 Subject lane id (or set id for network-scope acts).
-            from_sha:
+            from_spell_id:
                 Optional origin identity.
-            to_sha:
+            to_spell_id:
                 Optional destination identity.
             actor:
                 Optional acting agent name.
@@ -117,8 +117,8 @@ class ResearchJournal(Cleanable):
                 self._next_sequence,
                 act,
                 lane_id,
-                from_sha=from_sha,
-                to_sha=to_sha,
+                from_spell_id=from_spell_id,
+                to_spell_id=to_spell_id,
                 actor=actor,
                 campaign=campaign,
                 reason=reason,
@@ -184,13 +184,13 @@ class ResearchJournal(Cleanable):
                 entry for entry in self._entries if entry.lane_id == lane_id
             ]
 
-    def entries_for_sha(self, spell_sha: str) -> List[TransitionEntry]:
+    def entries_for_spell_id(self, spell_id: str) -> List[TransitionEntry]:
         """
         Return every event touching the given identity on either end.
 
         Args:
-            spell_sha:
-                Identity to filter on (`from_sha` or `to_sha`).
+            spell_id:
+                Identity to filter on (`from_spell_id` or `to_spell_id`).
 
         Returns:
             List[TransitionEntry]:
@@ -201,7 +201,7 @@ class ResearchJournal(Cleanable):
             return [
                 entry
                 for entry in self._entries
-                if entry.touches_sha(spell_sha)
+                if entry.touches_spell_id(spell_id)
             ]
 
     def describe(

@@ -143,7 +143,7 @@ def test_root_emits_composition_twin_when_recording() -> None:
     assert isinstance(twin, MutationResearchCrystal)
     composition = twin.composition_payload
     organization = composition["default"]["organization"]
-    assert organization["residence"]["lane_id_by_sha"].keys() == {"sha-a"}
+    assert organization["residence"]["lane_id_by_spell_id"].keys() == {"sha-a"}
 
 
 def test_root_emission_skips_while_inactive() -> None:
@@ -209,7 +209,7 @@ def test_root_record_promotion_catches_up_unknown_targets() -> None:
     acts = [entry.act.value for entry in research_set.journal.entries()]
     assert acts[-2:] == ["staged", "promoted"]
     last = research_set.journal.entries()[-1]
-    assert last.from_sha == "sha-old" and last.to_sha == "sha-new"
+    assert last.from_spell_id == "sha-old" and last.to_spell_id == "sha-new"
 
 
 def test_root_activation_hydrates_virgin_registry_from_record() -> None:
@@ -320,6 +320,99 @@ def test_root_diff_research_refuses_dead_custody() -> None:
 
     with pytest.raises(RuntimeError, match="custody is unavailable"):
         root.diff_research("sha-left", "sha-right")
+
+
+def test_root_ambient_campaign_stamps_auto_records() -> None:
+    """
+    Verify the ambient campaign context stamps every root-facade record
+    until cleared, and explicit stamps still win.
+    """
+    root = MutationResearch(aether=_mock_aether())
+    root.set_active_campaign("apollo")
+
+    root.record_world_entry("sha-a")
+    root.record_promotion("sha-a", "sha-b")
+    root.clear_active_campaign()
+    root.record_world_entry("sha-c")
+    root.record_world_entry("sha-d", campaign="artemis")
+
+    entries = root.research_set().journal.entries()
+    stamps = {
+        entry.to_spell_id: entry.campaign
+        for entry in entries
+        if entry.to_spell_id is not None
+    }
+    assert stamps["sha-a"] == "apollo"
+    assert stamps["sha-b"] == "apollo"
+    assert stamps["sha-c"] is None
+    assert stamps["sha-d"] == "artemis"
+    assert root.active_campaign is None
+    with pytest.raises(ValueError, match="campaign"):
+        root.set_active_campaign("")
+
+
+def test_root_residency_view_reports_runtime_and_custody_join() -> None:
+    """
+    Verify the query-time join: active/parked from live index membership,
+    stored from custody, declared_only from the record, honest None custody
+    when the crystallizer cannot answer.
+    """
+    aether = _mock_aether(recording=True)
+    aether.cleaned = False
+    index = MagicMock()
+    index.cleaned = False
+    index.id = "index-1"
+    index.selected_spell_id = "sha-active"
+    frame = MagicMock()
+    frame.cleaned = False
+    frame.find_index_for_spell.side_effect = (
+        lambda sha: index if sha in ("sha-active", "sha-parked") else None
+    )
+    aether._aetheric_frames = {"default": frame}
+    root = MutationResearch(aether=aether)
+    root.record_world_entry("sha-active")
+    root.record_world_entry("sha-parked")
+    root.record_world_entry("sha-stored")
+
+    active = root.residency_view("sha-active")
+    parked = root.residency_view("sha-parked")
+    stored = root.residency_view("sha-stored")
+    ghost = root.residency_view("sha-ghost")
+
+    assert active["runtime"] == "active"
+    assert active["frame_name"] == "default"
+    assert active["index_id"] == "index-1"
+    assert parked["runtime"] == "parked"
+    assert stored["runtime"] == "stored"
+    assert stored["declared"] is True
+    assert stored["lane_name"] == "default"
+    assert ghost["runtime"] == "stored"
+    assert ghost["declared"] is False
+
+
+def test_root_residency_view_is_honest_without_custody() -> None:
+    """
+    Verify custody unavailability degrades to None/declared_only instead of
+    raising (reads never fabricate).
+    """
+    aether = _mock_aether()
+    aether.cleaned = False
+    aether._crystallizer.cleaned = True
+    frame = MagicMock()
+    frame.cleaned = False
+    frame.find_index_for_spell.return_value = None
+    aether._aetheric_frames = {"default": frame}
+    root = MutationResearch(aether=aether)
+    root.record_world_entry("sha-a")
+
+    view = root.residency_view("sha-a")
+
+    assert view["in_custody"] is None
+    assert view["runtime"] == "declared_only"
+    unknown = root.residency_view("sha-ghost")
+    assert unknown["runtime"] == "unknown"
+    with pytest.raises(ValueError, match="spell_sha"):
+        root.residency_view("")
 
 
 def test_root_cleanup_cascades_into_sets() -> None:

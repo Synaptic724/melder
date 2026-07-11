@@ -14,10 +14,10 @@ def _seeded_set() -> ResearchSet:
     research_set = ResearchSet("default")
     research_set.register_spell("sha-a")
     research_set.create_lane(
-        "child", attach_to="default", attach_at_sha="sha-a",
+        "child", attach_to="default", attach_at_spell_id="sha-a",
     )
-    research_set.register_spell("sha-b", lane="child", parent_shas=["sha-a"])
-    research_set.register_spell("sha-c", lane="child", parent_shas=["sha-b"])
+    research_set.register_spell("sha-b", lane="child", parent_spell_ids=["sha-a"])
+    research_set.register_spell("sha-c", lane="child", parent_spell_ids=["sha-b"])
     return research_set
 
 
@@ -37,13 +37,13 @@ def test_register_spell_defaults_to_default_lane() -> None:
     Verify the auto-default ruling: no orphan binds, no history holes.
     """
     research_set = ResearchSet("default")
-    node = research_set.register_spell("sha-a", module_sha="mod-1")
+    node = research_set.register_spell("sha-a", module_source_sha256="mod-1")
 
-    assert node.spell_sha == "sha-a"
+    assert node.spell_id == "sha-a"
     assert research_set.residence_of("sha-a") == (
         research_set.default_lane.lane_id
     )
-    assert research_set.default_lane.tip_sha == "sha-a"
+    assert research_set.default_lane.tip_spell_id == "sha-a"
     research_set.cleanup()
 
 
@@ -66,7 +66,7 @@ def test_register_spell_requires_known_parents() -> None:
     research_set = ResearchSet("default")
 
     with pytest.raises(ValueError, match="not resident"):
-        research_set.register_spell("sha-a", parent_shas=["sha-ghost"])
+        research_set.register_spell("sha-a", parent_spell_ids=["sha-ghost"])
     research_set.cleanup()
 
 
@@ -81,7 +81,7 @@ def test_create_lane_anchoring_requires_full_arguments() -> None:
         research_set.create_lane("half", attach_to="default")
     with pytest.raises(KeyError, match="sha-ghost"):
         research_set.create_lane(
-            "bad", attach_to="default", attach_at_sha="sha-ghost",
+            "bad", attach_to="default", attach_at_spell_id="sha-ghost",
         )
     with pytest.raises(ValueError, match="already has a lane"):
         research_set.create_lane("default")
@@ -96,8 +96,8 @@ def test_clean_join_folds_history_and_archives_source() -> None:
     research_set = _seeded_set()
     receiver = research_set.join("child", into="default")
 
-    assert receiver.node_shas() == ["sha-a", "sha-b", "sha-c"]
-    assert receiver.tip_sha == "sha-c"
+    assert receiver.node_spell_ids() == ["sha-a", "sha-b", "sha-c"]
+    assert receiver.tip_spell_id == "sha-c"
     child = research_set.get_lane("child")
     assert child.state is LaneState.joined
     assert research_set.residence_of("sha-b") == receiver.lane_id
@@ -113,10 +113,10 @@ def test_divergent_join_requires_force() -> None:
     """
     research_set = _seeded_set()
     research_set.create_lane(
-        "rival", attach_to="default", attach_at_sha="sha-a",
+        "rival", attach_to="default", attach_at_spell_id="sha-a",
     )
     research_set.register_spell(
-        "sha-r1", lane="rival", parent_shas=["sha-a"],
+        "sha-r1", lane="rival", parent_spell_ids=["sha-a"],
     )
     research_set.join("child", into="default")
 
@@ -124,7 +124,7 @@ def test_divergent_join_requires_force() -> None:
         research_set.join("rival", into="default")
     research_set.join("rival", into="default", force=True)
 
-    assert research_set.default_lane.tip_sha == "sha-r1"
+    assert research_set.default_lane.tip_spell_id == "sha-r1"
     research_set.cleanup()
 
 
@@ -137,7 +137,7 @@ def test_collapse_join_moves_tip_only() -> None:
     research_set.join("child", into="default", collapse=True)
 
     child = research_set.get_lane("child")
-    assert research_set.default_lane.tip_sha == "sha-c"
+    assert research_set.default_lane.tip_spell_id == "sha-c"
     assert child.has_node("sha-b") is True
     assert research_set.residence_of("sha-b") == child.lane_id
     assert research_set.residence_of("sha-c") == (
@@ -153,10 +153,10 @@ def test_attach_detach_organize_ancestry_only() -> None:
     research_set = _seeded_set()
     research_set.register_spell("sha-z")
     research_set.create_lane("floater")
-    research_set.attach("floater", onto="default", at_sha="sha-z")
+    research_set.attach("floater", onto="default", at_spell_id="sha-z")
 
     floater = research_set.get_lane("floater")
-    assert floater.anchor_sha == "sha-z"
+    assert floater.anchor_spell_id == "sha-z"
     assert floater.node_count == 0
     assert research_set.default_lane.has_node("sha-z") is True
 
@@ -164,7 +164,7 @@ def test_attach_detach_organize_ancestry_only() -> None:
     assert floater.anchor_lane_id is None
 
     with pytest.raises(RuntimeError, match="itself"):
-        research_set.attach("floater", onto="floater", at_sha="sha-z")
+        research_set.attach("floater", onto="floater", at_spell_id="sha-z")
     research_set.cleanup()
 
 
@@ -191,13 +191,13 @@ def test_walk_history_heads_read_surfaces() -> None:
     research_set.join("child", into="default")
 
     walk = research_set.walk("default")
-    assert [step["spell_sha"] for step in walk] == [
+    assert [step["spell_id"] for step in walk] == [
         "sha-a", "sha-b", "sha-c",
     ]
 
     history = research_set.history("sha-b")
     assert history["lane_name"] == "default"
-    assert history["node"]["parent_shas"] == ["sha-a"]
+    assert history["node"]["parent_spell_ids"] == ["sha-a"]
     assert len(history["transitions"]) >= 1
     with pytest.raises(KeyError, match="not resident"):
         research_set.history("sha-ghost")
@@ -221,7 +221,7 @@ def test_restore_network_recovers_organization_and_keeps_history() -> None:
 
     child = research_set.get_lane("child")
     assert child.state is LaneState.open
-    assert child.node_shas() == ["sha-b", "sha-c"]
+    assert child.node_spell_ids() == ["sha-b", "sha-c"]
     assert research_set.residence_of("sha-b") == child.lane_id
     assert research_set.journal.entry_count == entries_before_restore + 1
     assert research_set.journal.entries()[-1].act.value == "restored"
@@ -290,7 +290,7 @@ def test_record_promotion_is_journal_only_and_validated() -> None:
     )
 
     assert entry.act.value == "promoted"
-    assert entry.from_sha == "sha-old" and entry.to_sha == "sha-new"
+    assert entry.from_spell_id == "sha-old" and entry.to_spell_id == "sha-new"
     assert len(research_set.network_snapshot_shas()) == snapshots_before
     assert research_set.default_lane.node_count == 2
     with pytest.raises(KeyError, match="not declared"):
@@ -330,7 +330,7 @@ def test_composition_carries_and_restores_the_undo_ring() -> None:
 
     child = rebuilt.get_lane("child")
     assert child.state is LaneState.open
-    assert child.node_shas() == ["sha-b", "sha-c"]
+    assert child.node_spell_ids() == ["sha-b", "sha-c"]
     research_set.cleanup()
     rebuilt.cleanup()
 
@@ -343,17 +343,17 @@ def test_campaign_view_gathers_across_lanes() -> None:
     research_set = ResearchSet("default")
     research_set.register_spell("sha-a", campaign="apollo")
     research_set.create_lane(
-        "side", attach_to="default", attach_at_sha="sha-a",
+        "side", attach_to="default", attach_at_spell_id="sha-a",
         campaign="apollo",
     )
     research_set.register_spell(
-        "sha-b", lane="side", parent_shas=["sha-a"], campaign="apollo",
+        "sha-b", lane="side", parent_spell_ids=["sha-a"], campaign="apollo",
     )
     research_set.register_spell("sha-unrelated")
 
     view = research_set.campaign_view("apollo")
 
-    assert [n["spell_sha"] for n in view["nodes"]] == ["sha-a", "sha-b"]
+    assert [n["spell_id"] for n in view["nodes"]] == ["sha-a", "sha-b"]
     assert sorted(view["lane_names"]) == ["default", "side"]
     assert all(t["campaign"] == "apollo" for t in view["transitions"])
     assert len(view["transitions"]) == 3

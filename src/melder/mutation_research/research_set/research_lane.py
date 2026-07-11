@@ -43,7 +43,7 @@ class ResearchLane(Cleanable):
           diffs are a derived read feature, never storage.
         - One node per SHA per lane; the set-level `ResidenceRegistry`
           guarantees one lane per SHA network-wide.
-        - The anchor (`anchor_lane_id` + `anchor_sha`) organizes ancestry
+        - The anchor (`anchor_lane_id` + `anchor_spell_id`) organizes ancestry
           onto another lane's node; it never moves content.
         - State machine: open -> joined | archived; both exits are terminal
           for this container (recovery happens via network restore, which
@@ -64,10 +64,10 @@ class ResearchLane(Cleanable):
         "_lane_id",
         "_name",
         "_anchor_lane_id",
-        "_anchor_sha",
-        "_nodes_by_sha",
+        "_anchor_spell_id",
+        "_nodes_by_spell_id",
         "_node_order",
-        "_tip_sha",
+        "_tip_spell_id",
         "_state",
         "_joined_into_lane_id",
         "_created_at",
@@ -108,10 +108,10 @@ class ResearchLane(Cleanable):
         self._lane_id: str = lane_id if lane_id else IDBuilder.create_id()
         self._name: str = name
         self._anchor_lane_id: Optional[str] = None
-        self._anchor_sha: Optional[str] = None
-        self._nodes_by_sha: Dict[str, ResearchNode] = {}
+        self._anchor_spell_id: Optional[str] = None
+        self._nodes_by_spell_id: Dict[str, ResearchNode] = {}
         self._node_order: List[str] = []
-        self._tip_sha: Optional[str] = None
+        self._tip_spell_id: Optional[str] = None
         self._state: LaneState = LaneState.open
         self._joined_into_lane_id: Optional[str] = None
         self._created_at: str = (
@@ -135,18 +135,18 @@ class ResearchLane(Cleanable):
             if self._cleaned:
                 return
             self._cleaned = True
-            for node in self._nodes_by_sha.values():
+            for node in self._nodes_by_spell_id.values():
                 try:
                     node.cleanup()
                 except Exception:
                     pass
-            self._nodes_by_sha.clear()
+            self._nodes_by_spell_id.clear()
             self._node_order.clear()
-            del self._nodes_by_sha
+            del self._nodes_by_spell_id
             del self._node_order
-            del self._tip_sha
+            del self._tip_spell_id
             del self._anchor_lane_id
-            del self._anchor_sha
+            del self._anchor_spell_id
             del self._state
             del self._joined_into_lane_id
             del self._metadata
@@ -208,7 +208,7 @@ class ResearchLane(Cleanable):
             return self._state
 
     @property
-    def tip_sha(self) -> Optional[str]:
+    def tip_spell_id(self) -> Optional[str]:
         """
         Return the newest registered identity in this lane, when any.
 
@@ -218,7 +218,7 @@ class ResearchLane(Cleanable):
         """
         self.check_cleaned()
         with self._lock:
-            return self._tip_sha
+            return self._tip_spell_id
 
     @property
     def anchor_lane_id(self) -> Optional[str]:
@@ -234,7 +234,7 @@ class ResearchLane(Cleanable):
             return self._anchor_lane_id
 
     @property
-    def anchor_sha(self) -> Optional[str]:
+    def anchor_spell_id(self) -> Optional[str]:
         """
         Return the node identity this lane anchors at, when attached.
 
@@ -244,7 +244,7 @@ class ResearchLane(Cleanable):
         """
         self.check_cleaned()
         with self._lock:
-            return self._anchor_sha
+            return self._anchor_spell_id
 
     @property
     def joined_into_lane_id(self) -> Optional[str]:
@@ -302,22 +302,22 @@ class ResearchLane(Cleanable):
         self.check_cleaned()
         with self._lock:
             self._require_open()
-            spell_sha = node.spell_sha
-            if spell_sha in self._nodes_by_sha:
+            spell_id = node.spell_id
+            if spell_id in self._nodes_by_spell_id:
                 raise ValueError(
                     f"Lane '{self._name}' already holds identity "
-                    f"'{spell_sha}'."
+                    f"'{spell_id}'."
                 )
-            self._nodes_by_sha[spell_sha] = node
-            self._node_order.append(spell_sha)
-            self._tip_sha = spell_sha
+            self._nodes_by_spell_id[spell_id] = node
+            self._node_order.append(spell_id)
+            self._tip_spell_id = spell_id
 
-    def get_node(self, spell_sha: str) -> ResearchNode:
+    def get_node(self, spell_id: str) -> ResearchNode:
         """
         Return the version record for one held identity.
 
         Args:
-            spell_sha:
+            spell_id:
                 Identity to fetch.
 
         Returns:
@@ -330,19 +330,19 @@ class ResearchLane(Cleanable):
         """
         self.check_cleaned()
         with self._lock:
-            node = self._nodes_by_sha.get(spell_sha)
+            node = self._nodes_by_spell_id.get(spell_id)
             if node is None:
                 raise KeyError(
-                    f"Lane '{self._name}' holds no identity '{spell_sha}'."
+                    f"Lane '{self._name}' holds no identity '{spell_id}'."
                 )
             return node
 
-    def has_node(self, spell_sha: str) -> bool:
+    def has_node(self, spell_id: str) -> bool:
         """
         Return whether this lane holds one identity.
 
         Args:
-            spell_sha:
+            spell_id:
                 Identity to test.
 
         Returns:
@@ -351,9 +351,9 @@ class ResearchLane(Cleanable):
         """
         self.check_cleaned()
         with self._lock:
-            return spell_sha in self._nodes_by_sha
+            return spell_id in self._nodes_by_spell_id
 
-    def node_shas(self) -> List[str]:
+    def node_spell_ids(self) -> List[str]:
         """
         Return the held identities in registration order.
 
@@ -375,9 +375,9 @@ class ResearchLane(Cleanable):
         """
         self.check_cleaned()
         with self._lock:
-            return [self._nodes_by_sha[sha] for sha in self._node_order]
+            return [self._nodes_by_spell_id[sha] for sha in self._node_order]
 
-    def detach_nodes(self, spell_shas: List[str]) -> List[ResearchNode]:
+    def detach_nodes(self, spell_ids: List[str]) -> List[ResearchNode]:
         """
         Remove and return the given records in registration order.
 
@@ -386,7 +386,7 @@ class ResearchLane(Cleanable):
             records; this container stops holding them.
 
         Args:
-            spell_shas:
+            spell_ids:
                 Identities to detach; every one must be held here.
 
         Returns:
@@ -402,32 +402,32 @@ class ResearchLane(Cleanable):
         self.check_cleaned()
         with self._lock:
             self._require_open()
-            requested = set(spell_shas)
-            for spell_sha in requested:
-                if spell_sha not in self._nodes_by_sha:
+            requested = set(spell_ids)
+            for spell_id in requested:
+                if spell_id not in self._nodes_by_spell_id:
                     raise KeyError(
                         f"Lane '{self._name}' holds no identity "
-                        f"'{spell_sha}'."
+                        f"'{spell_id}'."
                     )
             detached: List[ResearchNode] = []
             remaining_order: List[str] = []
-            for spell_sha in self._node_order:
-                if spell_sha in requested:
-                    detached.append(self._nodes_by_sha.pop(spell_sha))
+            for spell_id in self._node_order:
+                if spell_id in requested:
+                    detached.append(self._nodes_by_spell_id.pop(spell_id))
                 else:
-                    remaining_order.append(spell_sha)
+                    remaining_order.append(spell_id)
             self._node_order = remaining_order
-            self._tip_sha = remaining_order[-1] if remaining_order else None
+            self._tip_spell_id = remaining_order[-1] if remaining_order else None
             return detached
 
-    def set_anchor(self, anchor_lane_id: str, anchor_sha: str) -> None:
+    def set_anchor(self, anchor_lane_id: str, anchor_spell_id: str) -> None:
         """
         Attach this lane's ancestry onto another lane's node.
 
         Args:
             anchor_lane_id:
                 Lane being anchored onto.
-            anchor_sha:
+            anchor_spell_id:
                 Node identity within that lane to anchor at.
 
         Raises:
@@ -439,12 +439,12 @@ class ResearchLane(Cleanable):
         self.check_cleaned()
         if not isinstance(anchor_lane_id, str) or not anchor_lane_id:
             raise ValueError("anchor_lane_id must be a non-empty string.")
-        if not isinstance(anchor_sha, str) or not anchor_sha:
-            raise ValueError("anchor_sha must be a non-empty string.")
+        if not isinstance(anchor_spell_id, str) or not anchor_spell_id:
+            raise ValueError("anchor_spell_id must be a non-empty string.")
         with self._lock:
             self._require_open()
             self._anchor_lane_id = anchor_lane_id
-            self._anchor_sha = anchor_sha
+            self._anchor_spell_id = anchor_spell_id
 
     def clear_anchor(self) -> None:
         """
@@ -462,7 +462,7 @@ class ResearchLane(Cleanable):
                     f"Lane '{self._name}' has no anchor to detach."
                 )
             self._anchor_lane_id = None
-            self._anchor_sha = None
+            self._anchor_spell_id = None
 
     def mark_joined(self, into_lane_id: str) -> None:
         """
@@ -515,13 +515,13 @@ class ResearchLane(Cleanable):
                 "name": self._name,
                 "state": self._state.value,
                 "anchor_lane_id": self._anchor_lane_id,
-                "anchor_sha": self._anchor_sha,
-                "tip_sha": self._tip_sha,
+                "anchor_spell_id": self._anchor_spell_id,
+                "tip_spell_id": self._tip_spell_id,
                 "joined_into_lane_id": self._joined_into_lane_id,
                 "created_at": self._created_at,
                 "metadata": dict(self._metadata),
                 "nodes": [
-                    self._nodes_by_sha[sha].describe()
+                    self._nodes_by_spell_id[sha].describe()
                     for sha in self._node_order
                 ],
             }
@@ -562,16 +562,16 @@ class ResearchLane(Cleanable):
         with lane._lock:
             for node_payload in node_payloads:
                 node = ResearchNode.from_payload(node_payload)
-                lane._nodes_by_sha[node.spell_sha] = node
-                lane._node_order.append(node.spell_sha)
-            lane._tip_sha = (
+                lane._nodes_by_spell_id[node.spell_id] = node
+                lane._node_order.append(node.spell_id)
+            lane._tip_spell_id = (
                 lane._node_order[-1] if lane._node_order else None
             )
             anchor_lane_id = payload.get("anchor_lane_id")
-            anchor_sha = payload.get("anchor_sha")
-            if isinstance(anchor_lane_id, str) and isinstance(anchor_sha, str):
+            anchor_spell_id = payload.get("anchor_spell_id")
+            if isinstance(anchor_lane_id, str) and isinstance(anchor_spell_id, str):
                 lane._anchor_lane_id = anchor_lane_id
-                lane._anchor_sha = anchor_sha
+                lane._anchor_spell_id = anchor_spell_id
             state_value = payload.get("state")
             if isinstance(state_value, str):
                 lane._state = LaneState(state_value)

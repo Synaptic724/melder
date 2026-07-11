@@ -82,11 +82,11 @@ def test_unit_default_set_registration_matrix(sha_index: int) -> None:
     identities.
     """
     root = MutationResearch(aether=MagicMock())
-    spell_sha = f"sha-{sha_index:02d}"
+    spell_id = f"sha-{sha_index:02d}"
     try:
-        node = root.research_set().register_spell(spell_sha)
-        assert node.spell_sha == spell_sha
-        assert root.research_set().residence_of(spell_sha) == (
+        node = root.research_set().register_spell(spell_id)
+        assert node.spell_id == spell_id
+        assert root.research_set().residence_of(spell_id) == (
             root.research_set().default_lane.lane_id
         )
     finally:

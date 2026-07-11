@@ -4,6 +4,7 @@ from datetime import datetime, timezone
 from typing import Dict, List, Optional, Tuple
 
 from melder.utilities.general_base.cleanable import Cleanable
+from melder.crystallizer.persistence.record_version import RecordVersion
 
 
 class PersistenceCrystal(Cleanable):
@@ -285,7 +286,9 @@ class PersistenceCrystal(Cleanable):
                 twin payloads).
         """
         self.check_cleaned()
-        return {
+        # Record versioning (owner ruling 2026-07-12): the stamp rides
+        # every cached item; from_cached_item gates on the major.
+        return RecordVersion.stamp({
             "checkpoint_id": self._id,
             "profile_name": self._profile_name,
             "checkpoint_number": self._checkpoint_number,
@@ -300,7 +303,7 @@ class PersistenceCrystal(Cleanable):
                 kind: {key: dict(payload) for key, payload in by_key.items()}
                 for kind, by_key in self._captured_payloads.items()
             },
-        }
+        })
 
     @classmethod
     def from_cached_item(cls, cached_item: Dict[str, object]) -> "PersistenceCrystal":
@@ -321,6 +324,14 @@ class PersistenceCrystal(Cleanable):
             ValueError:
                 If field values violate the construction contract.
         """
+        # Read gate (record versioning): a cached item written by a NEWER
+        # major refuses here - its shape is undefined for this code.
+        RecordVersion.check_readable(
+            dict(cached_item),
+            "cached checkpoint {0!r}".format(
+                cached_item.get("checkpoint_id")
+            ),
+        )
         journal = [
             (int(entry[0]), str(entry[1]), str(entry[2]))
             for entry in cached_item["journal_segment"]

@@ -4349,7 +4349,7 @@ and logging.
 
     def _record_research_world_entry(
             self,
-            spell_sha: str,
+            spell_id: str,
             *,
             staged: bool,
     ) -> None:
@@ -4370,7 +4370,7 @@ and logging.
               gates a bind.
 
         Args:
-            spell_sha:
+            spell_id:
                 Binding-signature SHA256 entering the world.
             staged:
                 True for parked (`bind_inactive`) entries.
@@ -4384,25 +4384,25 @@ and logging.
         research = aether._mutation_research
         if research is None or research.cleaned or not research.activated:
             return
-        research.record_world_entry(spell_sha, staged=staged)
+        research.record_world_entry(spell_id, staged=staged)
 
     def _record_research_promotion(
             self,
-            from_sha: Optional[str],
-            to_sha: str,
+            from_spell_id: Optional[str],
+            to_spell_id: str,
     ) -> None:
         """
         Record one notch selection change into the research record.
 
         Contract:
             - Same liveness gates as `_record_research_world_entry`; the
-              root declares an unknown `to_sha` before journaling the
+              root declares an unknown `to_spell_id` before journaling the
               promotion (world-entry catch-up).
 
         Args:
-            from_sha:
+            from_spell_id:
                 Previously selected spell id, when one existed.
-            to_sha:
+            to_spell_id:
                 Newly selected spell id.
 
         Returns:
@@ -4414,7 +4414,7 @@ and logging.
         research = aether._mutation_research
         if research is None or research.cleaned or not research.activated:
             return
-        research.record_promotion(from_sha, to_sha)
+        research.record_promotion(from_spell_id, to_spell_id)
 
     def bind(
             self,

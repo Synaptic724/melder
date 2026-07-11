@@ -37,7 +37,7 @@ class ResidenceRegistry(Cleanable):
     """
 
     __slots__ = Cleanable.__slots__ + [
-        "_lane_id_by_sha",
+        "_lane_id_by_spell_id",
         "_lock",
     ]
 
@@ -46,7 +46,7 @@ class ResidenceRegistry(Cleanable):
         Initialize one empty residence partition.
         """
         super().__init__()
-        self._lane_id_by_sha: Dict[str, str] = {}
+        self._lane_id_by_spell_id: Dict[str, str] = {}
         self._lock: threading.RLock = threading.RLock()
 
     def cleanup(self) -> None:
@@ -62,16 +62,16 @@ class ResidenceRegistry(Cleanable):
             if self._cleaned:
                 return
             self._cleaned = True
-            self._lane_id_by_sha.clear()
-            del self._lane_id_by_sha
+            self._lane_id_by_spell_id.clear()
+            del self._lane_id_by_spell_id
         del self._lock
 
-    def claim(self, spell_sha: str, lane_id: str) -> None:
+    def claim(self, spell_id: str, lane_id: str) -> None:
         """
         Claim residence of one identity for one lane.
 
         Args:
-            spell_sha:
+            spell_id:
                 Binding-signature SHA256 to claim.
             lane_id:
                 Lane taking residence.
@@ -84,22 +84,22 @@ class ResidenceRegistry(Cleanable):
                 rediscovery signal, naming the holding lane.
         """
         self.check_cleaned()
-        if not isinstance(spell_sha, str) or not spell_sha:
-            raise ValueError("spell_sha must be a non-empty string.")
+        if not isinstance(spell_id, str) or not spell_id:
+            raise ValueError("spell_id must be a non-empty string.")
         if not isinstance(lane_id, str) or not lane_id:
             raise ValueError("lane_id must be a non-empty string.")
         with self._lock:
-            holder = self._lane_id_by_sha.get(spell_sha)
+            holder = self._lane_id_by_spell_id.get(spell_id)
             if holder is not None:
                 raise RuntimeError(
-                    f"Rediscovery: spell identity '{spell_sha}' already "
+                    f"Rediscovery: spell identity '{spell_id}' already "
                     f"resides in lane '{holder}'. A spell identity lives in "
                     f"exactly one lane; identical content rebinds to the "
                     f"same SHA256."
                 )
-            self._lane_id_by_sha[spell_sha] = lane_id
+            self._lane_id_by_spell_id[spell_id] = lane_id
 
-    def transfer(self, spell_shas: List[str], to_lane_id: str) -> None:
+    def transfer(self, spell_ids: List[str], to_lane_id: str) -> None:
         """
         Repoint residence of the given identities onto one lane.
 
@@ -108,7 +108,7 @@ class ResidenceRegistry(Cleanable):
             in one all-or-nothing motion.
 
         Args:
-            spell_shas:
+            spell_ids:
                 Identities to repoint; every one must already be resident.
             to_lane_id:
                 Receiving lane id.
@@ -124,21 +124,21 @@ class ResidenceRegistry(Cleanable):
         if not isinstance(to_lane_id, str) or not to_lane_id:
             raise ValueError("to_lane_id must be a non-empty string.")
         with self._lock:
-            for spell_sha in spell_shas:
-                if spell_sha not in self._lane_id_by_sha:
+            for spell_id in spell_ids:
+                if spell_id not in self._lane_id_by_spell_id:
                     raise KeyError(
-                        f"spell identity '{spell_sha}' has no residence to "
+                        f"spell identity '{spell_id}' has no residence to "
                         f"transfer."
                     )
-            for spell_sha in spell_shas:
-                self._lane_id_by_sha[spell_sha] = to_lane_id
+            for spell_id in spell_ids:
+                self._lane_id_by_spell_id[spell_id] = to_lane_id
 
-    def residence_of(self, spell_sha: str) -> Optional[str]:
+    def residence_of(self, spell_id: str) -> Optional[str]:
         """
         Return the lane holding one identity, when resident.
 
         Args:
-            spell_sha:
+            spell_id:
                 Identity to look up.
 
         Returns:
@@ -147,14 +147,14 @@ class ResidenceRegistry(Cleanable):
         """
         self.check_cleaned()
         with self._lock:
-            return self._lane_id_by_sha.get(spell_sha)
+            return self._lane_id_by_spell_id.get(spell_id)
 
-    def is_resident(self, spell_sha: str) -> bool:
+    def is_resident(self, spell_id: str) -> bool:
         """
         Return whether one identity is resident anywhere.
 
         Args:
-            spell_sha:
+            spell_id:
                 Identity to test.
 
         Returns:
@@ -163,7 +163,7 @@ class ResidenceRegistry(Cleanable):
         """
         self.check_cleaned()
         with self._lock:
-            return spell_sha in self._lane_id_by_sha
+            return spell_id in self._lane_id_by_spell_id
 
     @property
     def resident_count(self) -> int:
@@ -176,7 +176,7 @@ class ResidenceRegistry(Cleanable):
         """
         self.check_cleaned()
         with self._lock:
-            return len(self._lane_id_by_sha)
+            return len(self._lane_id_by_spell_id)
 
     def describe(self) -> Dict[str, object]:
         """
@@ -189,7 +189,7 @@ class ResidenceRegistry(Cleanable):
         self.check_cleaned()
         with self._lock:
             return {
-                "lane_id_by_sha": dict(self._lane_id_by_sha),
+                "lane_id_by_spell_id": dict(self._lane_id_by_spell_id),
             }
 
     @classmethod
@@ -211,13 +211,13 @@ class ResidenceRegistry(Cleanable):
         """
         if not isinstance(payload, dict):
             raise ValueError("payload must be a dict produced by describe().")
-        mapping = payload.get("lane_id_by_sha")
+        mapping = payload.get("lane_id_by_spell_id")
         if not isinstance(mapping, dict):
             raise ValueError(
-                "payload is missing a valid 'lane_id_by_sha' mapping."
+                "payload is missing a valid 'lane_id_by_spell_id' mapping."
             )
         registry = cls()
         with registry._lock:
-            for spell_sha, lane_id in mapping.items():
-                registry._lane_id_by_sha[str(spell_sha)] = str(lane_id)
+            for spell_id, lane_id in mapping.items():
+                registry._lane_id_by_spell_id[str(spell_id)] = str(lane_id)
         return registry

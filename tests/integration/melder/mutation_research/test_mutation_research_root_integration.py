@@ -95,7 +95,7 @@ def test_integration_dynamic_conduit_returns_shared_root(case_index: int) -> Non
     "case_index",
     list(range(1, 11)),
 )
-def test_integration_bound_spell_sha_registers_into_default_set(case_index: int) -> None:
+def test_integration_bound_spell_id_registers_into_default_set(case_index: int) -> None:
     """
     Validate a live bind's SHA256 spell id registers as formal research in
     the root's default set (the spell id IS the custody-crystal id).
@@ -119,7 +119,7 @@ def test_integration_bound_spell_sha_registers_into_default_set(case_index: int)
             author=f"integration-{case_index:02d}",
             reason="declared research from a live bind",
         )
-        assert node.spell_sha == spell_id
+        assert node.spell_id == spell_id
         assert research_set.residence_of(spell_id) == (
             research_set.default_lane.lane_id
         )
@@ -175,6 +175,43 @@ def test_integration_dynamic_bind_auto_declares_research(case_index: int) -> Non
     "case_index",
     list(range(1, 11)),
 )
+def test_integration_residency_view_joins_live_runtime(case_index: int) -> None:
+    """
+    Validate the query-time residency join against a real bound world: a
+    live selected spell reports active with its frame and index named.
+    """
+    frame_name = f"integration-residency-frame-{case_index:02d}"
+    spellbook = Spellbook(
+        aetheric_frame=frame_name,
+        configuration=_make_dynamic_configuration(frame_name),
+    )
+    spell_id = spellbook.bind(
+        spell=BasicService,
+        existence=Existence.unique,
+        permissions="create",
+    )
+    conduit = spellbook.conjure(dynamic=True, name=f"root-{case_index:02d}")
+    try:
+        root = conduit._aether.mutation_research
+        root.research_set().register_spell(spell_id)
+
+        view = root.residency_view(spell_id)
+
+        assert view["declared"] is True
+        assert view["lane_name"] == "default"
+        assert view["runtime"] == "active"
+        assert view["frame_name"] == frame_name
+        ghost = root.residency_view("no-such-sha")
+        assert ghost["runtime"] in ("unknown", "declared_only")
+        assert ghost["declared"] is False
+    finally:
+        conduit.cleanup()
+
+
+@pytest.mark.parametrize(
+    "case_index",
+    list(range(1, 11)),
+)
 def test_integration_research_lines_survive_composition_roundtrip(case_index: int) -> None:
     """
     Validate the persistence composition payload round-trips a live-bound
@@ -198,7 +235,7 @@ def test_integration_research_lines_survive_composition_roundtrip(case_index: in
         research_set.create_lane(
             f"exp-{case_index:02d}",
             attach_to="default",
-            attach_at_sha=spell_id,
+            attach_at_spell_id=spell_id,
         )
         recorded = root.describe_research_composition()
 
@@ -209,6 +246,6 @@ def test_integration_research_lines_survive_composition_roundtrip(case_index: in
             rebuilt.default_lane.lane_id
         )
         assert f"exp-{case_index:02d}" in rebuilt.lane_names()
-        assert rebuilt.get_lane(f"exp-{case_index:02d}").anchor_sha == spell_id
+        assert rebuilt.get_lane(f"exp-{case_index:02d}").anchor_spell_id == spell_id
     finally:
         conduit.cleanup()
