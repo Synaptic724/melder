@@ -21,6 +21,9 @@ from melder.mutation_research.mutation_configuration_builder import (
 )
 from melder.mutation_research.diff.diff_engine import DiffEngine
 from melder.mutation_research.research_set.research_set import ResearchSet
+from melder.mutation_research.synthesis.structural_synthesizer import (
+    StructuralSynthesizer,
+)
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
 
@@ -74,7 +77,9 @@ class MutationResearch(Cleanable):
         "_activated",
         "_research_sets_by_name",
         "_diff_engine",
+        "_synthesizer",
         "_active_campaign",
+        "_staged_ancestry",
         "_crystallizer",
     ]
 
@@ -130,7 +135,9 @@ class MutationResearch(Cleanable):
             self._activated: bool = False
             self._research_sets_by_name: Dict[str, ResearchSet] = {}
             self._diff_engine: Optional[DiffEngine] = None
+            self._synthesizer: Optional[StructuralSynthesizer] = None
             self._active_campaign: Optional[str] = None
+            self._staged_ancestry: Optional[List[str]] = None
             self._research_sets_by_name[
                 MutationResearch.DEFAULT_RESEARCH_SET_NAME
             ] = ResearchSet(
@@ -181,13 +188,20 @@ class MutationResearch(Cleanable):
                     self._diff_engine.cleanup()
                 except Exception:
                     pass
+            if self._synthesizer is not None:
+                try:
+                    self._synthesizer.cleanup()
+                except Exception:
+                    pass
             if self._configuration is not None:
                 self._configuration.cleanup()
             self._configured = False
             self._activated = False
             del self._crystallizer
             del self._diff_engine
+            del self._synthesizer
             del self._active_campaign
+            del self._staged_ancestry
             del self._research_sets_by_name
             del self._configuration
             del self._aether
@@ -375,9 +389,35 @@ class MutationResearch(Cleanable):
                 )
         if hydrate_from_record:
             self._hydrate_from_record_when_virgin()
+        # Policy propagation AFTER hydration so rebuilt sets carry the
+        # configured posture too (sets stay configuration-free).
+        self._propagate_lane_type_enforcement()
         # Activation makes the composition recordable: re-emit the twin so
         # the record carries whatever research exists now (hydrated or live).
         self._emit_research_composition()
+
+    def _propagate_lane_type_enforcement(self) -> None:
+        """
+        Push the configured lane-type-enforcement posture onto every set.
+
+        Contract:
+            - NO-OP while unconfigured or when the configuration predates
+              the `lane_type_enforcement` key (absent = off, the default).
+
+        Returns:
+            None.
+        """
+        if not self._configured or self._configuration is None:
+            return
+        if not self._configuration.has_property("lane_type_enforcement"):
+            return
+        enabled = bool(
+            self._configuration.get_property("lane_type_enforcement")
+        )
+        with self._lock:
+            research_sets = list(self._research_sets_by_name.values())
+        for research_set in research_sets:
+            research_set.set_lane_type_enforcement(enabled)
 
     def _registry_is_virgin(self) -> bool:
         """
@@ -512,6 +552,8 @@ class MutationResearch(Cleanable):
                 on_mutation=self._emit_research_composition,
             )
             self._research_sets_by_name[name] = research_set
+        # New sets inherit the configured join-policy posture immediately.
+        self._propagate_lane_type_enforcement()
         self._emit_research_composition()
         return research_set
 
@@ -592,6 +634,8 @@ class MutationResearch(Cleanable):
                 except Exception:
                     pass
             self._research_sets_by_name = rebuilt
+        # Rebuilt sets inherit the configured join-policy posture.
+        self._propagate_lane_type_enforcement()
         self._emit_research_composition()
 
     # ------------------------------------------------------------------
@@ -651,6 +695,79 @@ class MutationResearch(Cleanable):
             self._active_campaign = None
 
     # ------------------------------------------------------------------
+    # Staged ancestry (the synthesis mint seam)
+    # ------------------------------------------------------------------
+
+    @property
+    def staged_ancestry(self) -> Optional[List[str]]:
+        """
+        Return the staged parent identities, when any.
+
+        Returns:
+            Optional[List[str]]:
+                Detached parent list or None.
+        """
+        self.check_cleaned()
+        with self._lock:
+            return (
+                list(self._staged_ancestry)
+                if self._staged_ancestry is not None
+                else None
+            )
+
+    def stage_ancestry(self, parent_spell_ids: List[str]) -> None:
+        """
+        Stage parent ancestry for the NEXT world entry (one-shot).
+
+        Purpose:
+            The mint half of surgical synthesis: composition happens in the
+            codegen workshop, but the composed candidate's binding-signature
+            SHA does not exist until it binds - and the bind auto-record
+            fires before the agent ever sees that SHA. Staging bridges the
+            gap exactly like the ambient campaign stamp: stage the parents,
+            execute the candidate, and the next fresh world entry mints the
+            multi-parent node. Consumed ONE-SHOT by the first NEW
+            declaration (rediscoveries do not consume it); restage for
+            another synthesis.
+
+        Args:
+            parent_spell_ids:
+                Non-empty list of parent identities; each must be formally
+                declared by the time the world entry lands (the set
+                validates residence at mint time).
+
+        Returns:
+            None.
+
+        Raises:
+            ValueError:
+                If the list is empty or carries non-string entries.
+        """
+        self.check_cleaned()
+        if not isinstance(parent_spell_ids, list) or not parent_spell_ids:
+            raise ValueError(
+                "parent_spell_ids must be a non-empty list of identities."
+            )
+        for parent in parent_spell_ids:
+            if not isinstance(parent, str) or not parent:
+                raise ValueError(
+                    "parent_spell_ids entries must be non-empty strings."
+                )
+        with self._lock:
+            self._staged_ancestry = list(parent_spell_ids)
+
+    def clear_staged_ancestry(self) -> None:
+        """
+        Clear the staged parent ancestry without consuming it.
+
+        Returns:
+            None.
+        """
+        self.check_cleaned()
+        with self._lock:
+            self._staged_ancestry = None
+
+    # ------------------------------------------------------------------
     # Runtime world-entry seams
     # ------------------------------------------------------------------
 
@@ -693,13 +810,25 @@ class MutationResearch(Cleanable):
         effective_campaign = (
             campaign if campaign is not None else self.active_campaign
         )
+        # One-shot ancestry consumption (the synthesis mint): staged parents
+        # ride the FIRST fresh declaration only. A rediscovery (quiet None
+        # below) re-stages them untouched, because identical content
+        # re-entering the world is not the synthesized candidate arriving.
+        with self._lock:
+            staged_parents = self._staged_ancestry
+            self._staged_ancestry = None
         node = research_set.record_world_entry(
             spell_id,
             staged=staged,
+            parent_spell_ids=staged_parents,
             author=author,
             reason=reason,
             campaign=effective_campaign,
         )
+        if node is None and staged_parents is not None:
+            with self._lock:
+                if self._staged_ancestry is None:
+                    self._staged_ancestry = staged_parents
         return node is not None
 
     def record_promotion(
@@ -803,10 +932,12 @@ class MutationResearch(Cleanable):
         lane_id = research_set.residence_of(spell_id)
         lane_name: Optional[str] = None
         lane_state: Optional[str] = None
+        lane_type: Optional[str] = None
         if lane_id is not None:
             lane = research_set.get_lane(lane_id)
             lane_name = lane.name
             lane_state = lane.state.value
+            lane_type = lane.lane_type.value
         frame_name, index_id, selected = self._locate_live_membership(
             spell_id,
         )
@@ -827,6 +958,7 @@ class MutationResearch(Cleanable):
             "lane_id": lane_id,
             "lane_name": lane_name,
             "lane_state": lane_state,
+            "lane_type": lane_type,
             "runtime": runtime,
             "frame_name": frame_name,
             "index_id": index_id,
@@ -1263,6 +1395,7 @@ class MutationResearch(Cleanable):
                     "lane_id": None,
                     "lane_name": None,
                     "lane_state": None,
+                    "lane_type": None,
                     "campaign": None,
                 }
                 continue
@@ -1275,6 +1408,7 @@ class MutationResearch(Cleanable):
                 "lane_id": lane_id,
                 "lane_name": lane.name,
                 "lane_state": lane.state.value,
+                "lane_type": lane.lane_type.value,
                 "campaign": campaign,
             }
         return joined
@@ -1527,6 +1661,121 @@ class MutationResearch(Cleanable):
             },
             "import_roots": sorted(set(roots)),
         }
+
+    def synthesize_candidate(
+            self,
+            base_spell_id: str,
+            donor_spell_id: str,
+            *,
+            take_functions: Optional[List[str]] = None,
+            take_classes: Optional[List[str]] = None,
+            stage_ancestry: bool = False,
+            set_name: str = "default",
+    ) -> Dict[str, object]:
+        """
+        Surgically compose one candidate from two recorded versions.
+
+        Purpose:
+            The salvaged May "surgical mutation" verb: take named top-level
+            parts (functions/classes) from the DONOR version's root module
+            and splice them into the BASE version's root module, then run
+            the composed candidate through the full foresight preview
+            (against the base). With `stage_ancestry=True`, both parents
+            stage for the next world entry, so executing the candidate
+            mints the multi-parent node automatically - compose, preview,
+            execute, and the record keeps the whole story.
+
+        Contract:
+            - Read-only (staging is ambient context, not a record write).
+            - Source resolution rides `source_view` (recorded-first,
+              live-disk fallback); a root module with no resolvable text on
+              either side answers `text_unavailable` honestly.
+            - Unknown selections refuse loudly (synthesizer law); parse
+              errors on recorded text answer honestly inside the verdict.
+
+        Args:
+            base_spell_id:
+                Version being upgraded (the candidate starts as its root
+                module text; the preview diffs against it).
+            donor_spell_id:
+                Version parts are taken from.
+            take_functions:
+                Top-level function names to take.
+            take_classes:
+                Top-level class names to take.
+            stage_ancestry:
+                Stage [base, donor] as the next world entry's parents.
+            set_name:
+                Research set for the preview's residency join.
+
+        Returns:
+            Dict[str, object]:
+                `{"base_spell_id", "donor_spell_id", "parents",
+                "base_module", "donor_module", "selections",
+                "composed_source", "parse_error", "text_unavailable",
+                "ancestry_staged", "preview"}`.
+
+        Raises:
+            ValueError:
+                If identities are empty, no selection is supplied, or a
+                selection is unknown to the donor.
+            RuntimeError:
+                If the crystallizer is cleaned or inactive.
+            KeyError:
+                If either identity has no custody crystal.
+        """
+        self.check_cleaned()
+        if not isinstance(base_spell_id, str) or not base_spell_id:
+            raise ValueError("base_spell_id must be a non-empty string.")
+        if not isinstance(donor_spell_id, str) or not donor_spell_id:
+            raise ValueError("donor_spell_id must be a non-empty string.")
+        base_view = self.source_view(base_spell_id)
+        donor_view = self.source_view(donor_spell_id)
+        result: Dict[str, object] = {
+            "base_spell_id": base_spell_id,
+            "donor_spell_id": donor_spell_id,
+            "parents": [base_spell_id, donor_spell_id],
+            "base_module": base_view["root_module"],
+            "donor_module": donor_view["root_module"],
+            "selections": [],
+            "composed_source": None,
+            "parse_error": None,
+            "text_unavailable": False,
+            "ancestry_staged": False,
+            "preview": None,
+        }
+        base_row = base_view["modules"].get(str(base_view["root_module"]))
+        donor_row = donor_view["modules"].get(str(donor_view["root_module"]))
+        base_text = base_row.get("source") if base_row else None
+        donor_text = donor_row.get("source") if donor_row else None
+        if not base_text or not donor_text:
+            result["text_unavailable"] = True
+            return result
+        with self._lock:
+            if self._synthesizer is None:
+                self._synthesizer = StructuralSynthesizer()
+            synthesizer = self._synthesizer
+        verdict = synthesizer.synthesize(
+            base_text,
+            donor_text,
+            take_functions=take_functions,
+            take_classes=take_classes,
+        )
+        result["parse_error"] = verdict["parse_error"]
+        result["selections"] = verdict["selections"]
+        composed = verdict["composed_source"]
+        result["composed_source"] = composed
+        if composed is None:
+            return result
+        result["preview"] = self.preview_candidate(
+            composed,
+            against_spell_id=base_spell_id,
+            set_name=set_name,
+        )
+        if stage_ancestry:
+            self.stage_ancestry([base_spell_id, donor_spell_id])
+            result["ancestry_staged"] = True
+        return result
 
     # ------------------------------------------------------------------
     # Persistence emission seam

@@ -2005,6 +2005,180 @@ class Crystallizer(Cleanable):
             resolved_profile, resolved_cap
         )
 
+    def delete_cached_checkpoint(self, checkpoint_id: str) -> str:
+        """
+        Evict one checkpoint cached-item from the local cache by id.
+
+        Purpose:
+            Facade of the asset system's single-item delete (asset CRUD
+            completion, 2026-07-11): the FIFO cap trims by age; this
+            removes one specific cached snapshot.
+
+        Args:
+            checkpoint_id:
+                ULID identity of a previously flushed checkpoint.
+
+        Returns:
+            str: The deleted file's path.
+
+        Raises:
+            RuntimeError: If cleaned or not yet active.
+            KeyError: If no cached item exists for `checkpoint_id`.
+        """
+        self.check_cleaned()
+        self._require_activated()
+        return self._asset_management_system.delete_cached_checkpoint(
+            checkpoint_id
+        )
+
+    def delete_formation(
+            self,
+            formation_name: str,
+            profile_name: Optional[str] = None,
+            include_remote: bool = False,
+    ) -> Dict[str, object]:
+        """
+        Delete one stored formation locally and, optionally, remotely.
+
+        Args:
+            formation_name:
+                The user-chosen formation name to delete.
+            profile_name:
+                Owning profile; None = the active profile.
+            include_remote:
+                When True, also delete the remote copy (STRICT leg via
+                the user's delete handler).
+
+        Returns:
+            Dict[str, object]: {"deleted_local_path", "remote_deleted"}.
+
+        Raises:
+            RuntimeError: If cleaned, not active, or include_remote is
+                set without a manager/delete lane.
+            KeyError: If the local formation file does not exist.
+        """
+        self.check_cleaned()
+        self._require_activated()
+        resolved_profile = (
+            profile_name
+            if profile_name is not None
+            else self._persistence_system.active_profile_name
+        )
+        return self._asset_management_system.delete_formation(
+            resolved_profile, formation_name, include_remote
+        )
+
+    def store_index_graft_external(
+            self,
+            graft_record: Dict[str, object],
+            profile_name: Optional[str] = None,
+    ) -> str:
+        """
+        Ship one captured spell-index graft through the generic mesh.
+
+        Purpose:
+            First-class graft lane (asset CRUD completion): the record
+            ships under kind "index_graft" keyed by its own index_id, so
+            capture -> store -> fetch -> graft_index round-trips without
+            the user naming a kind.
+
+        Args:
+            graft_record:
+                The dict from capture_index_graft(...), unmodified.
+            profile_name:
+                Recording profile; None = the active profile.
+
+        Returns:
+            str: The unit id the record shipped under (its index_id).
+
+        Raises:
+            RuntimeError: If cleaned, not active, or no store lane.
+            ValueError: If the record carries no "index_id".
+        """
+        self.check_cleaned()
+        self._require_activated()
+        resolved_profile = (
+            profile_name
+            if profile_name is not None
+            else self._persistence_system.active_profile_name
+        )
+        return self._asset_management_system.store_index_graft(
+            resolved_profile, graft_record
+        )
+
+    def fetch_index_graft_external(
+            self,
+            index_id: str,
+    ) -> Dict[str, object]:
+        """
+        Fetch one graft record back from the user's store, version-gated.
+
+        Args:
+            index_id:
+                The captured index id the graft shipped under.
+
+        Returns:
+            Dict[str, object]: The graft record, ready for graft_index.
+
+        Raises:
+            RuntimeError: If cleaned, not active, no fetch lane, or the
+                record's version MAJOR is newer than this melder reads.
+            KeyError: If the remote store has no such graft.
+        """
+        self.check_cleaned()
+        self._require_activated()
+        return self._asset_management_system.fetch_index_graft(index_id)
+
+    def list_index_grafts_external(
+            self,
+            profile_name: Optional[str] = None,
+    ) -> List[str]:
+        """
+        List one profile's stored graft ids through the generic lane.
+
+        Args:
+            profile_name:
+                Profile to list; None = the active profile.
+
+        Returns:
+            List[str]: Unit ids (captured index ids) the store reports.
+
+        Raises:
+            RuntimeError: If cleaned, not active, or no list lane.
+        """
+        self.check_cleaned()
+        self._require_activated()
+        resolved_profile = (
+            profile_name
+            if profile_name is not None
+            else self._persistence_system.active_profile_name
+        )
+        return self._asset_management_system.list_index_grafts(
+            resolved_profile
+        )
+
+    def describe_external_interface(self) -> Dict[str, object]:
+        """
+        Emit the mesh interface contract joined with live presence.
+
+        Purpose:
+            The owner's "emit the table and the shape" verb: the static
+            kind/shape/signature table (MeshInterfaceContract) plus this
+            world's live handler presence, so users build storage and
+            register callables from the emitted contract alone.
+
+        Returns:
+            Dict[str, object]: The stamped contract dict plus
+            "live_manager" (the attached manager's presence flags, or
+            None when nothing is attached).
+
+        Raises:
+            RuntimeError: If cleaned or not yet active.
+        """
+        self.check_cleaned()
+        self._require_activated()
+        return self._asset_management_system.describe_external_interface()
+
     # NOTE (S3 decomposition): the upload hook
     # (_upload_flushed_checkpoints) was absorbed into
     # AssetManagementSystem.flush_checkpoint - one feedstock pull now

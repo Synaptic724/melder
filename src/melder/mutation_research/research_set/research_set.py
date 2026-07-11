@@ -10,6 +10,7 @@ from melder.mutation_research.research_set.research_journal import (
 )
 from melder.mutation_research.research_set.research_lane import (
     LaneState,
+    LaneType,
     ResearchLane,
 )
 from melder.mutation_research.research_set.research_node import ResearchNode
@@ -77,6 +78,7 @@ class ResearchSet(Cleanable):
         "_residence",
         "_versioner",
         "_on_mutation",
+        "_lane_type_enforcement",
         "_created_at",
         "_lock",
     ]
@@ -118,10 +120,14 @@ class ResearchSet(Cleanable):
             max_snapshots=max_network_snapshots,
         )
         self._on_mutation: Optional[Callable[[], None]] = on_mutation
+        self._lane_type_enforcement: bool = False
         self._created_at: str = datetime.now(timezone.utc).isoformat()
         self._lock: threading.RLock = threading.RLock()
         with self._lock:
-            self._create_lane_locked(ResearchSet.DEFAULT_LANE_NAME)
+            self._create_lane_locked(
+                ResearchSet.DEFAULT_LANE_NAME,
+                lane_type=LaneType.development.value,
+            )
             self._snapshot_locked()
         self._notify_mutation()
 
@@ -163,6 +169,7 @@ class ResearchSet(Cleanable):
             del self._residence
             del self._versioner
             del self._on_mutation
+            del self._lane_type_enforcement
             del self._created_at
             del self._name
             del self._set_id
@@ -217,6 +224,7 @@ class ResearchSet(Cleanable):
             self,
             name: str,
             *,
+            lane_type: Optional[str] = None,
             metadata: Optional[Dict[str, object]] = None,
     ) -> ResearchLane:
         """
@@ -225,6 +233,9 @@ class ResearchSet(Cleanable):
         Args:
             name:
                 Unique lane name within this set.
+            lane_type:
+                Optional policy vocabulary word (`LaneType` value);
+                `experiment` when omitted.
             metadata:
                 Optional value-typed annotations.
 
@@ -234,17 +245,54 @@ class ResearchSet(Cleanable):
 
         Raises:
             ValueError:
-                If the name is already taken.
+                If the name is already taken, or the lane_type is unknown.
         """
         if name in self._lane_id_by_name:
             raise ValueError(
                 f"Research set '{self._name}' already has a lane named "
                 f"'{name}'."
             )
-        lane = ResearchLane(name, metadata=metadata)
+        lane = ResearchLane(name, lane_type=lane_type, metadata=metadata)
         self._lanes_by_id[lane.lane_id] = lane
         self._lane_id_by_name[name] = lane.lane_id
         return lane
+
+    # ------------------------------------------------------------------
+    # Lane-type policy posture
+    # ------------------------------------------------------------------
+
+    @property
+    def lane_type_enforcement(self) -> bool:
+        """
+        Return whether type-mixing joins currently require force.
+
+        Returns:
+            bool:
+                True when the join gate is armed.
+        """
+        self.check_cleaned()
+        with self._lock:
+            return self._lane_type_enforcement
+
+    def set_lane_type_enforcement(self, enabled: bool) -> None:
+        """
+        Arm or disarm the lane-type join gate.
+
+        Purpose:
+            The root propagates the configured `lane_type_enforcement`
+            posture here at activation (and onto sets created afterwards);
+            the set itself stays configuration-free and standalone-testable.
+
+        Args:
+            enabled:
+                Whether type-mixing joins require force=True.
+
+        Returns:
+            None.
+        """
+        self.check_cleaned()
+        with self._lock:
+            self._lane_type_enforcement = bool(enabled)
 
     def _organization_payload_locked(self) -> Dict[str, object]:
         """
@@ -458,6 +506,7 @@ class ResearchSet(Cleanable):
                 "lane_id": lane_id,
                 "lane_name": lane.name,
                 "lane_state": lane.state.value,
+                "lane_type": lane.lane_type.value,
                 "node": lane.get_node(spell_id).describe(),
                 "transitions": [
                     entry.describe()
@@ -550,6 +599,7 @@ class ResearchSet(Cleanable):
             self,
             name: str,
             *,
+            lane_type: Optional[str] = None,
             attach_to: Optional[str] = None,
             attach_at_spell_id: Optional[str] = None,
             actor: Optional[str] = None,
@@ -563,6 +613,10 @@ class ResearchSet(Cleanable):
         Args:
             name:
                 Unique lane name within this set.
+            lane_type:
+                Optional policy vocabulary word (`LaneType` value:
+                development/experiment/production/test); `experiment` when
+                omitted. Names stay freeform; the type is the policy word.
             attach_to:
                 Optional lane (name or id) to anchor onto; requires
                 attach_at_spell_id.
@@ -583,7 +637,8 @@ class ResearchSet(Cleanable):
 
         Raises:
             ValueError:
-                If the name is taken, or anchor arguments are half-supplied.
+                If the name is taken, the lane_type is unknown, or anchor
+                arguments are half-supplied.
             KeyError:
                 If `attach_to` does not resolve, or the anchor node is not
                 held by that lane.
@@ -602,8 +657,14 @@ class ResearchSet(Cleanable):
                         f"Lane '{anchor_lane.name}' holds no identity "
                         f"'{attach_at_spell_id}' to anchor at."
                     )
-            lane = self._create_lane_locked(name, metadata=metadata)
-            entry_metadata: Dict[str, object] = {}
+            lane = self._create_lane_locked(
+                name,
+                lane_type=lane_type,
+                metadata=metadata,
+            )
+            entry_metadata: Dict[str, object] = {
+                "lane_type": lane.lane_type.value,
+            }
             if anchor_lane is not None:
                 lane.set_anchor(anchor_lane.lane_id, attach_at_spell_id)
                 entry_metadata["anchor_lane_id"] = anchor_lane.lane_id
@@ -724,6 +785,7 @@ class ResearchSet(Cleanable):
             staged: bool = False,
             lane: Optional[str] = None,
             module_source_sha256: Optional[str] = None,
+            parent_spell_ids: Optional[List[str]] = None,
             author: Optional[str] = None,
             campaign: Optional[str] = None,
             reason: Optional[str] = None,
@@ -750,6 +812,11 @@ class ResearchSet(Cleanable):
                 Optional lane (name or id); default lane when omitted.
             module_source_sha256:
                 Optional module-version SHA256.
+            parent_spell_ids:
+                Optional ancestry (the synthesis-mint lane: the root's
+                staged-ancestry stamp routes through here); every parent
+                must already be resident in this set, mirroring
+                `register_spell`.
             author:
                 Optional acting agent name.
             campaign:
@@ -763,6 +830,10 @@ class ResearchSet(Cleanable):
             Optional[ResearchNode]:
                 The new version node, or None when the identity was already
                 declared (rediscovery is not an error on this verb).
+
+        Raises:
+            ValueError:
+                If a parent identity is unknown to this set.
         """
         self.check_cleaned()
         with self._lock:
@@ -771,9 +842,18 @@ class ResearchSet(Cleanable):
             target = self._resolve_lane_locked(
                 lane if lane is not None else ResearchSet.DEFAULT_LANE_NAME,
             )
+            parents = list(parent_spell_ids) if parent_spell_ids else []
+            for parent_sha in parents:
+                if not self._residence.is_resident(parent_sha):
+                    raise ValueError(
+                        f"Parent identity '{parent_sha}' is not resident in "
+                        f"research set '{self._name}'; ancestry must "
+                        f"reference formally declared versions."
+                    )
             node = ResearchNode(
                 spell_id,
                 module_source_sha256=module_source_sha256,
+                parent_spell_ids=parents,
                 author=author,
                 reason=reason,
                 campaign=campaign,
@@ -794,7 +874,7 @@ class ResearchSet(Cleanable):
                 actor=author,
                 campaign=campaign,
                 reason=reason,
-                metadata={"module_source_sha256": module_source_sha256, "parent_spell_ids": []},
+                metadata={"module_source_sha256": module_source_sha256, "parent_spell_ids": parents},
             )
             self._snapshot_locked()
         self._notify_mutation()
@@ -1036,6 +1116,18 @@ class ResearchSet(Cleanable):
                 raise RuntimeError(
                     f"Receiving lane '{target.name}' is "
                     f"{target.state.value}; join requires an open receiver."
+                )
+            if (
+                    self._lane_type_enforcement
+                    and source.lane_type is not target.lane_type
+                    and not force
+            ):
+                raise RuntimeError(
+                    f"Type-mixing join: lane '{source.name}' is "
+                    f"'{source.lane_type.value}' while receiver "
+                    f"'{target.name}' is '{target.lane_type.value}', and "
+                    f"lane-type enforcement is on. Pass force=True to "
+                    f"supersede the type policy explicitly."
                 )
             clean = (
                 source.anchor_lane_id == target.lane_id

@@ -68,6 +68,32 @@ class CodegenCommandSystem(CommandSystem):
     _CODEGEN_COMMAND_METHOD_NAMES: Tuple[str, ...] = (
         "validate_codegen",
         "execute_codegen",
+        # Research record reads
+        "research_walk",
+        "research_history",
+        "research_heads",
+        "research_residency",
+        "research_diff",
+        "research_campaign_view",
+        # Research organization
+        "research_create_lane",
+        "research_attach",
+        "research_detach",
+        "research_join",
+        "research_archive",
+        # Research campaign context
+        "research_set_campaign",
+        "research_clear_campaign",
+        # Research foresight
+        "research_source",
+        "research_impact",
+        "research_module_graph",
+        "research_source_drift",
+        "research_preview",
+        # Research synthesis (codegen-workshop composition)
+        "research_synthesize",
+        "research_stage_ancestry",
+        "research_clear_staged_ancestry",
     )
 
     __slots__ = CommandSystem.__slots__ + [
@@ -823,6 +849,7 @@ class CodegenCommandSystem(CommandSystem):
             self,
             name: str,
             *,
+            lane_type: Optional[str] = None,
             attach_to: Optional[str] = None,
             attach_at_spell_id: Optional[str] = None,
             reason: Optional[str] = None,
@@ -832,6 +859,9 @@ class CodegenCommandSystem(CommandSystem):
 
         Args:
             name: Unique lane name.
+            lane_type: Optional policy vocabulary word
+                (development/experiment/production/test); experiment when
+                omitted.
             attach_to: Optional lane (name or id) to anchor onto.
             attach_at_spell_id: Node identity within `attach_to`.
             reason: Optional reason line.
@@ -847,6 +877,7 @@ class CodegenCommandSystem(CommandSystem):
             lane = self._require_live_mutation_research().research_set(
             ).create_lane(
                 name,
+                lane_type=lane_type,
                 attach_to=attach_to,
                 attach_at_spell_id=attach_at_spell_id,
                 reason=reason,
@@ -1156,6 +1187,84 @@ class CodegenCommandSystem(CommandSystem):
             )
         preview["validation"] = validation
         return preview
+
+    def research_synthesize(
+            self,
+            base_spell_id: str,
+            donor_spell_id: str,
+            *,
+            take_functions: Optional[object] = None,
+            take_classes: Optional[object] = None,
+            stage_ancestry: bool = False,
+    ) -> object:
+        """
+        Surgically compose one candidate from two recorded versions.
+
+        Purpose:
+            The codegen-workshop composition verb: take named top-level
+            functions/classes from the donor version's root module, splice
+            them into the base version's, and return the composed source
+            with its full foresight preview. With stage_ancestry=True the
+            two parents stage for the next world entry, so executing the
+            composed candidate mints the multi-parent node automatically.
+
+        Args:
+            base_spell_id: Version being upgraded.
+            donor_spell_id: Version parts are taken from.
+            take_functions: Top-level function names to take.
+            take_classes: Top-level class names to take.
+            stage_ancestry: Stage [base, donor] as the next entry's parents.
+
+        Returns:
+            object: Synthesis verdict incl. composed_source, selections,
+                provenance, and the preview payload.
+        """
+        self.check_cleaned()
+        with self._entered_command_action(
+                action_name="research_synthesize",
+                frame_name=None,
+        ), self._lock:
+            return self._require_live_mutation_research(
+            ).synthesize_candidate(
+                base_spell_id,
+                donor_spell_id,
+                take_functions=take_functions,
+                take_classes=take_classes,
+                stage_ancestry=stage_ancestry,
+            )
+
+    def research_stage_ancestry(self, parent_spell_ids: object) -> None:
+        """
+        Stage parent ancestry for the NEXT world entry (one-shot).
+
+        Args:
+            parent_spell_ids: Non-empty list of declared parent identities.
+
+        Returns:
+            None.
+        """
+        self.check_cleaned()
+        with self._entered_command_action(
+                action_name="research_stage_ancestry",
+                frame_name=None,
+        ), self._lock:
+            self._require_live_mutation_research().stage_ancestry(
+                parent_spell_ids,
+            )
+
+    def research_clear_staged_ancestry(self) -> None:
+        """
+        Clear the staged parent ancestry without consuming it.
+
+        Returns:
+            None.
+        """
+        self.check_cleaned()
+        with self._entered_command_action(
+                action_name="research_clear_staged_ancestry",
+                frame_name=None,
+        ), self._lock:
+            self._require_live_mutation_research().clear_staged_ancestry()
 
     def _emit_codegen_memory_if_enabled(
             self,

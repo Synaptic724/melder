@@ -48,6 +48,7 @@ class MutationResearchConfiguration(Cleanable):
         self._properties: Dict[str, object] = {}
         self.available_properties: Dict[str, Union[Type, Tuple[Type, ...]]] = {
             "unrestricted_module_mutations": bool,
+            "lane_type_enforcement": bool,
         }
 
     def cleanup(self) -> None:
@@ -357,6 +358,8 @@ class MutationResearchConfiguration(Cleanable):
 
         Contract:
             - Unrestricted module mutation is disabled by default.
+            - Lane-type enforcement is disabled by default (the vocabulary
+              is always available; the join policy gate is opt-in).
 
         Returns:
             MutationResearchConfiguration: This configuration instance.
@@ -364,6 +367,7 @@ class MutationResearchConfiguration(Cleanable):
         self.check_cleaned()
         defaults = {
             "unrestricted_module_mutations": False,
+            "lane_type_enforcement": False,
         }
         for key, value in defaults.items():
             self.set_property(key, value)
@@ -385,4 +389,27 @@ class MutationResearchConfiguration(Cleanable):
         """
         self.check_cleaned()
         self.set_property("unrestricted_module_mutations", enabled)
+        return self
+
+    def with_lane_type_enforcement(
+            self,
+            enabled: bool,
+    ) -> "MutationResearchConfiguration":
+        """
+        Set the lane-type-enforcement posture.
+
+        Purpose:
+            When enabled, joining two lanes of DIFFERENT types (e.g.
+            experiment -> production) requires the explicit force=True
+            supersede; the lane-type vocabulary itself is always available.
+
+        Args:
+            enabled:
+                Whether type-mixing joins require force.
+
+        Returns:
+            MutationResearchConfiguration: This configuration instance.
+        """
+        self.check_cleaned()
+        self.set_property("lane_type_enforcement", enabled)
         return self

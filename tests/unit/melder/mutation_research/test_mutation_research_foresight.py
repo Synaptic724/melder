@@ -360,3 +360,174 @@ def test_preview_candidate_with_module_name_centers_impact() -> None:
 
     assert preview["diff"] is None
     assert preview["impact"]["affected_modules"] == ["pkg.other"]
+
+
+def test_staged_ancestry_is_one_shot_and_rediscovery_safe() -> None:
+    """
+    Verify the synthesis mint seam: staged parents ride the FIRST fresh
+    world entry only (multi-parent node minted, stamp consumed), while a
+    rediscovery re-stages them untouched; clear works without consuming.
+    """
+    root = _activated_root(_mock_aether())
+    root.record_world_entry("sha-left")
+    root.record_world_entry("sha-right")
+
+    with pytest.raises(ValueError, match="non-empty list"):
+        root.stage_ancestry([])
+    root.stage_ancestry(["sha-left", "sha-right"])
+    assert root.staged_ancestry == ["sha-left", "sha-right"]
+
+    # Rediscovery: the stamp survives untouched.
+    assert root.record_world_entry("sha-left") is False
+    assert root.staged_ancestry == ["sha-left", "sha-right"]
+
+    # Fresh entry: the stamp mints and consumes.
+    assert root.record_world_entry("sha-child") is True
+    assert root.staged_ancestry is None
+    child = root.research_set().get_lane(
+        root.research_set().residence_of("sha-child")
+    ).get_node("sha-child")
+    assert child.parent_spell_ids == ["sha-left", "sha-right"]
+
+    # Next fresh entry: parentless (one-shot proven).
+    root.record_world_entry("sha-after")
+    after = root.research_set().get_lane(
+        root.research_set().residence_of("sha-after")
+    ).get_node("sha-after")
+    assert after.parent_spell_ids == []
+
+    root.stage_ancestry(["sha-left"])
+    root.clear_staged_ancestry()
+    assert root.staged_ancestry is None
+
+
+def _two_world_aether() -> MagicMock:
+    """
+    Build one mocked host whose custody carries TWO recorded worlds.
+
+    Returns:
+        MagicMock: Aether double; get_spell_crystal answers per identity
+        (sha-base / sha-donor), analyze_impact answers a fixed radius.
+    """
+    aether = _mock_aether()
+    base_payload = _custody_payload()
+    donor_payload = _custody_payload()
+    donor_payload["synthetic_module_sources"] = {
+        "pkg.root": {
+            "source_text": (
+                "def cast():\n"
+                "    return 99\n"
+                "\n"
+                "def fresh():\n"
+                "    return 'donor'\n"
+            ),
+        },
+    }
+    crystals = {
+        "sha-base": base_payload,
+        "sha-donor": donor_payload,
+    }
+
+    def _get(spell_id):
+        crystal = MagicMock()
+        crystal.describe.return_value = crystals[spell_id]
+        return crystal
+
+    aether._crystallizer.get_spell_crystal.side_effect = _get
+    aether._crystallizer.analyze_impact.return_value = {
+        "root_module": "pkg.root",
+        "affected_spells": ["sha-base"],
+        "affected_modules": ["pkg.root"],
+    }
+    return aether
+
+
+def test_synthesize_candidate_composes_previews_and_stages() -> None:
+    """
+    Verify the surgical verb end to end: donor parts splice into the base
+    root module, the composed candidate rides the full foresight preview
+    against the base, parents are reported, and stage_ancestry=True arms
+    the mint seam.
+    """
+    aether = _two_world_aether()
+    root = _activated_root(aether)
+
+    verdict = root.synthesize_candidate(
+        "sha-base",
+        "sha-donor",
+        take_functions=["cast", "fresh"],
+        stage_ancestry=True,
+    )
+
+    assert verdict["parents"] == ["sha-base", "sha-donor"]
+    assert verdict["parse_error"] is None
+    composed = verdict["composed_source"]
+    assert "return 99" in composed
+    assert "def fresh():" in composed
+    actions = {row["name"]: row["action"] for row in verdict["selections"]}
+    assert actions == {"cast": "replaced", "fresh": "added"}
+    preview = verdict["preview"]
+    assert preview["module_name"] == "pkg.root"
+    assert "pkg.root" in (
+        preview["diff"]["source"]["result"]["changed_modules"]
+    )
+    assert verdict["ancestry_staged"] is True
+    assert root.staged_ancestry == ["sha-base", "sha-donor"]
+
+
+def test_synthesize_candidate_honest_and_loud_arms() -> None:
+    """
+    Verify the refusal split: unresolvable source text answers
+    text_unavailable honestly (no compose, nothing staged), while an
+    unknown donor selection refuses loudly (explicit ask).
+    """
+    aether = _two_world_aether()
+    root = _activated_root(aether)
+
+    with pytest.raises(ValueError, match="no top-level function"):
+        root.synthesize_candidate(
+            "sha-base",
+            "sha-donor",
+            take_functions=["missing"],
+        )
+
+    bare = _custody_payload()
+    bare["synthetic_module_sources"] = {}
+    aether._crystallizer.get_spell_crystal.side_effect = None
+    crystal = MagicMock()
+    crystal.describe.return_value = bare
+    aether._crystallizer.get_spell_crystal.return_value = crystal
+
+    verdict = root.synthesize_candidate(
+        "sha-base",
+        "sha-donor",
+        take_functions=["cast"],
+        stage_ancestry=True,
+    )
+    assert verdict["text_unavailable"] is True
+    assert verdict["composed_source"] is None
+    assert verdict["preview"] is None
+    assert verdict["ancestry_staged"] is False
+    assert root.staged_ancestry is None
+
+
+def test_lane_type_enforcement_propagates_from_configuration() -> None:
+    """
+    Verify the configured posture reaches every set: armed at activation,
+    inherited by sets created afterwards.
+    """
+    aether = _mock_aether()
+    root = MutationResearch(aether=aether)
+    configuration = (
+        root.create_configuration()
+        .with_defaults()
+        .with_lane_type_enforcement(True)
+        .activate()
+    )
+    root.configure(configuration)
+    root.activate(hydrate_from_record=False)
+
+    assert root.research_set().lane_type_enforcement is True
+    assert root.create_research_set(
+        "side"
+    ).lane_type_enforcement is True

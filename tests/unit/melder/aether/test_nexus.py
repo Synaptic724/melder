@@ -2033,8 +2033,10 @@ def test_all_room_viewers_expose_frame_navigation_name_queries() -> None:
 
 def test_codegen_command_system_lists_selected_runtime_helpers_only() -> None:
     """
-    Verify codegen command discovery exposes only the selected helper set plus
-    the codegen placeholders.
+    Verify codegen command discovery exposes the selected helper set, the
+    codegen execution seams, and the FULL research command family
+    (discoverability law 2026-07-11: an agent asking the room "what can you
+    do" must learn the research surface exists).
 
     Returns:
         None.
@@ -2067,6 +2069,27 @@ def test_codegen_command_system_lists_selected_runtime_helpers_only() -> None:
         "execute_target_method",
         "validate_codegen",
         "execute_codegen",
+        "research_walk",
+        "research_history",
+        "research_heads",
+        "research_residency",
+        "research_diff",
+        "research_campaign_view",
+        "research_create_lane",
+        "research_attach",
+        "research_detach",
+        "research_join",
+        "research_archive",
+        "research_set_campaign",
+        "research_clear_campaign",
+        "research_source",
+        "research_impact",
+        "research_module_graph",
+        "research_source_drift",
+        "research_preview",
+        "research_synthesize",
+        "research_stage_ancestry",
+        "research_clear_staged_ancestry",
     )
 
     assert supported_methods == expected_methods

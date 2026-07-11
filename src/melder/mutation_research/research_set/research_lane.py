@@ -27,6 +27,29 @@ class LaneState(enum.Enum):
     archived = "archived"
 
 
+class LaneType(enum.Enum):
+    """
+    Policy vocabulary for one research lane (salvaged May classification).
+
+    Contract:
+        - The type is the POLICY word; lane names stay freeform.
+        - Vocabulary: `development` (the trunk posture; the guaranteed
+          default lane), `experiment` (the default for freeform lanes -
+          this is a research tool), `production` (a lane whose tip is
+          runtime-promotion-worthy), `test` (throwaway validation work).
+        - The type never gates registration or reads; the ONLY policy hook
+          is the join gate, and only while the set's lane-type enforcement
+          posture is on (configuration `lane_type_enforcement`, default
+          off) - a type-mixing join then requires the same force=True
+          supersede the divergence law already uses.
+    """
+
+    development = "development"
+    experiment = "experiment"
+    production = "production"
+    test = "test"
+
+
 class ResearchLane(Cleanable):
     """
     One object's line of versions inside the research network.
@@ -63,6 +86,7 @@ class ResearchLane(Cleanable):
     __slots__ = Cleanable.__slots__ + [
         "_lane_id",
         "_name",
+        "_lane_type",
         "_anchor_lane_id",
         "_anchor_spell_id",
         "_nodes_by_spell_id",
@@ -79,6 +103,7 @@ class ResearchLane(Cleanable):
             self,
             name: str,
             *,
+            lane_type: Optional[str] = None,
             lane_id: Optional[str] = None,
             created_at: Optional[str] = None,
             metadata: Optional[Dict[str, object]] = None,
@@ -90,6 +115,10 @@ class ResearchLane(Cleanable):
             name:
                 Human-facing lane name (uniqueness is enforced by the owning
                 set, which indexes lanes by name).
+            lane_type:
+                Optional policy vocabulary word (`LaneType` value). Defaults
+                to `experiment` (this is a research tool); the owning set
+                passes `development` for the guaranteed default lane.
             lane_id:
                 Optional stable id (restore path); a fresh ULID is minted
                 when omitted.
@@ -100,13 +129,25 @@ class ResearchLane(Cleanable):
 
         Raises:
             ValueError:
-                If name is empty.
+                If name is empty, or lane_type is not a `LaneType` value
+                (the error names the vocabulary).
         """
         super().__init__()
         if not isinstance(name, str) or not name:
             raise ValueError("name must be a non-empty string.")
         self._lane_id: str = lane_id if lane_id else IDBuilder.create_id()
         self._name: str = name
+        if lane_type is None:
+            self._lane_type: LaneType = LaneType.experiment
+        else:
+            try:
+                self._lane_type = LaneType(lane_type)
+            except ValueError:
+                known = [member.value for member in LaneType]
+                raise ValueError(
+                    f"Unknown lane_type '{lane_type}'. Known types: "
+                    f"{known}."
+                ) from None
         self._anchor_lane_id: Optional[str] = None
         self._anchor_spell_id: Optional[str] = None
         self._nodes_by_spell_id: Dict[str, ResearchNode] = {}
@@ -151,6 +192,7 @@ class ResearchLane(Cleanable):
             del self._joined_into_lane_id
             del self._metadata
             del self._created_at
+            del self._lane_type
             del self._name
             del self._lane_id
         del self._lock
@@ -193,6 +235,18 @@ class ResearchLane(Cleanable):
         """
         self.check_cleaned()
         return self._name
+
+    @property
+    def lane_type(self) -> LaneType:
+        """
+        Return the policy vocabulary word for this lane.
+
+        Returns:
+            LaneType:
+                development, experiment, production, or test.
+        """
+        self.check_cleaned()
+        return self._lane_type
 
     @property
     def state(self) -> LaneState:
@@ -513,6 +567,7 @@ class ResearchLane(Cleanable):
             return {
                 "lane_id": self._lane_id,
                 "name": self._name,
+                "lane_type": self._lane_type.value,
                 "state": self._state.value,
                 "anchor_lane_id": self._anchor_lane_id,
                 "anchor_spell_id": self._anchor_spell_id,
@@ -550,8 +605,19 @@ class ResearchLane(Cleanable):
         if not isinstance(name, str) or not isinstance(lane_id, str):
             raise ValueError("payload is missing 'name'/'lane_id' values.")
         metadata = payload.get("metadata")
+        lane_type = payload.get("lane_type")
+        if not isinstance(lane_type, str):
+            # Back-compat: payloads sealed before the type vocabulary carry
+            # no lane_type. The guaranteed default lane hydrates as the
+            # trunk posture; every other lane hydrates as research work.
+            lane_type = (
+                LaneType.development.value
+                if name == "default"
+                else LaneType.experiment.value
+            )
         lane = cls(
             name,
+            lane_type=lane_type,
             lane_id=lane_id,
             created_at=payload.get("created_at"),
             metadata=metadata if isinstance(metadata, dict) else None,

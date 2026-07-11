@@ -137,11 +137,17 @@ def test_capability_room_surface_is_read_only() -> None:
         "research_set_campaign",
         "research_clear_campaign",
         "research_preview",
+        "research_synthesize",
+        "research_stage_ancestry",
+        "research_clear_staged_ancestry",
     )
     for name in reads:
         assert hasattr(CapabilityCommandSystem, name), name
     for name in mutations:
         assert not hasattr(CapabilityCommandSystem, name), name
+    # Discoverability law: both rooms ADVERTISE their research surface.
+    for name in reads:
+        assert name in CapabilityCommandSystem._CAPABILITY_COMMAND_METHOD_NAMES
 
 
 class _FakeCrystal:
@@ -158,8 +164,9 @@ class _FakeCrystal:
 
 class _FakeCrystallizer:
     """
-    Minimal live-custody double for the foresight room loop: one recorded
-    two-module world plus a fixed blast radius.
+    Minimal live-custody double for the foresight/synthesis room loops:
+    recorded two-module worlds (per-identity source overrides) plus a
+    fixed blast radius.
     """
 
     cleaned = False
@@ -182,9 +189,17 @@ class _FakeCrystallizer:
             "export_surfaces": {"pkg.root": ["cast"]},
             "module_load_order": ["pkg.helper", "pkg.root"],
         }
+        self.source_overrides = {}
 
     def get_spell_crystal(self, spell_id: str) -> _FakeCrystal:
-        return _FakeCrystal(self.payload)
+        override = self.source_overrides.get(spell_id)
+        if override is None:
+            return _FakeCrystal(self.payload)
+        payload = dict(self.payload)
+        payload["synthetic_module_sources"] = {
+            "pkg.root": {"source_text": override},
+        }
+        return _FakeCrystal(payload)
 
     def analyze_impact(self, module_name=None, spell_id=None) -> dict:
         return {
@@ -233,6 +248,7 @@ def test_codegen_room_foresight_loop() -> None:
         impact = commands.research_impact(spell_id="sha-room-a")
         assert impact["research"]["sha-room-a"]["declared"] is True
         assert impact["research"]["sha-room-a"]["lane_name"] == "default"
+        assert impact["research"]["sha-room-a"]["lane_type"] == "development"
 
         graph = commands.research_module_graph("sha-room-a")
         assert graph["local_importers"]["pkg.helper"] == ["pkg.root"]
@@ -251,5 +267,79 @@ def test_codegen_room_foresight_loop() -> None:
         )
         assert preview["impact"]["research"]["sha-room-a"]["declared"] is True
         assert preview["validation"] is None
+
+        # Composed lane (the test-debt slice): frame_name routes the
+        # candidate through the room's REAL codegen validation pass.
+        validated = commands.research_preview(
+            "result = 1\n",
+            module_name="pkg.root",
+            frame_name="ops",
+        )
+        assert validated["validation"] == {
+            "accepted": True,
+            "reason": "codegen_validation_accepted",
+            "frame_name": "ops",
+        }
+        assert validated["impact"]["affected_modules"] == ["pkg.root"]
+    finally:
+        root._crystallizer = real_crystallizer
+
+
+def test_codegen_room_synthesis_loop() -> None:
+    """
+    Validate the surgical-synthesis surface through a real codegen room:
+    lane typed at creation, donor parts composed into the base with a full
+    preview, ancestry staged by the command, and the next world entry
+    minting the multi-parent node - all mediated, nothing executed.
+    """
+    conduit, space = _build_codegen_space()
+    commands = space.command_system
+    root = _activate_research(conduit)
+    real_crystallizer = root._crystallizer
+    fake = _FakeCrystallizer()
+    fake.source_overrides["sha-donor"] = (
+        "def cast():\n"
+        "    return 99\n"
+        "\n"
+        "def fresh():\n"
+        "    return 'donor'\n"
+    )
+    root._crystallizer = fake
+    try:
+        lane_payload = commands.research_create_lane(
+            "surgical", lane_type="experiment",
+        )
+        assert lane_payload["lane_type"] == "experiment"
+
+        root.record_world_entry("sha-base")
+        root.record_world_entry("sha-donor")
+
+        verdict = commands.research_synthesize(
+            "sha-base",
+            "sha-donor",
+            take_functions=["cast", "fresh"],
+            stage_ancestry=True,
+        )
+        assert verdict["parents"] == ["sha-base", "sha-donor"]
+        assert "return 99" in verdict["composed_source"]
+        assert verdict["preview"]["module_name"] == "pkg.root"
+        assert verdict["ancestry_staged"] is True
+
+        # The composed candidate "binds": the auto-record seam mints the
+        # multi-parent node from the staged ancestry, one-shot.
+        assert root.record_world_entry("sha-composed") is True
+        residency = commands.research_residency("sha-composed")
+        assert residency["declared"] is True
+        history = commands.research_history("sha-composed")
+        assert history["node"]["parent_spell_ids"] == [
+            "sha-base", "sha-donor",
+        ]
+        assert root.staged_ancestry is None
+
+        # Restage/clear loop through the room commands.
+        commands.research_stage_ancestry(["sha-base"])
+        assert root.staged_ancestry == ["sha-base"]
+        commands.research_clear_staged_ancestry()
+        assert root.staged_ancestry is None
     finally:
         root._crystallizer = real_crystallizer

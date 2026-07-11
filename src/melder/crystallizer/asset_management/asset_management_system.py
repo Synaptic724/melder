@@ -21,6 +21,9 @@ from melder.crystallizer.asset_management.crystallizer_cache import (
 from melder.crystallizer.asset_management.external_persistence_manager import (
     ExternalPersistenceManager,
 )
+from melder.crystallizer.asset_management.mesh_interface_contract import (
+    MeshInterfaceContract,
+)
 
 if TYPE_CHECKING:
     from melder.crystallizer.asset_management.external_persistence_manager_configuration import (
@@ -657,6 +660,255 @@ class AssetManagementSystem(Cleanable):
         for checkpoint_id in overflow:
             manager.delete_unit("checkpoint", checkpoint_id)
         return overflow
+
+    def delete_cached_checkpoint(self, checkpoint_id: str) -> str:
+        """
+        Evict one checkpoint cached-item from the LOCAL cache by id.
+
+        Purpose:
+            System-rank passthrough of the cache's single-item delete
+            (asset CRUD completion, 2026-07-11): removes one specific
+            cached snapshot without touching neighbours or the sealed
+            in-process ledger.
+
+        Args:
+            checkpoint_id:
+                ULID identity of a previously flushed checkpoint.
+
+        Returns:
+            str: The deleted file's path (teach-grade evidence).
+
+        Raises:
+            RuntimeError: If the asset system has been cleaned.
+            KeyError: If no cached item exists for `checkpoint_id`.
+        """
+        self.check_cleaned()
+        with self._lock:
+            return self._crystallizer_cache.delete_cached_item(
+                checkpoint_id
+            )
+
+    def delete_formation(
+            self,
+            profile_name: str,
+            formation_name: str,
+            include_remote: bool = False,
+    ) -> Dict[str, object]:
+        """
+        Delete one stored formation locally and, optionally, remotely.
+
+        Purpose:
+            The missing D of the formation CRUD square: formations are
+            name-keyed, so no retention pass ever removes them - this is
+            the only melder-driven formation delete lane.
+
+        Contract:
+            - The local leg always runs (teach-grade KeyError on miss).
+            - The remote leg is opt-in and STRICT (mirrors the retention
+              law: a failing delete propagates so the caller knows the
+              remote was only partially trimmed); it requires the
+              generic delete lane and refuses loudly without it.
+
+        Args:
+            profile_name:
+                Owning profile.
+            formation_name:
+                The user-chosen formation name to delete.
+            include_remote:
+                When True, also delete the remote copy through the
+                user's delete handler under kind "formation".
+
+        Returns:
+            Dict[str, object]: {"deleted_local_path": str,
+            "remote_deleted": bool}.
+
+        Raises:
+            RuntimeError: If cleaned, or `include_remote` is set with no
+                manager/delete lane attached.
+            KeyError: If the local formation file does not exist.
+        """
+        self.check_cleaned()
+        with self._lock:
+            manager = self._external_persistence_manager
+            deleted_local_path = self._crystallizer_cache.delete_formation(
+                profile_name, formation_name
+            )
+        remote_deleted = False
+        if include_remote:
+            if manager is None:
+                raise RuntimeError(
+                    "include_remote=True but no ExternalPersistenceManager "
+                    "is attached; call "
+                    "configure_external_persistence_manager(...) first."
+                )
+            manager.delete_unit(
+                MeshInterfaceContract.UNIT_KIND_FORMATION, formation_name
+            )
+            remote_deleted = True
+        return {
+            "deleted_local_path": deleted_local_path,
+            "remote_deleted": remote_deleted,
+        }
+
+    def store_index_graft(
+            self,
+            profile_name: str,
+            graft_record: Dict[str, object],
+    ) -> str:
+        """
+        Ship one captured spell-index graft record to the user's store.
+
+        Purpose:
+            First-class mesh lane for graft records (they previously
+            rode no kind - the user had to name one). The record's own
+            index_id is the unit id, so grafts are fetchable by the
+            identity the capture already carries.
+
+        Contract:
+            - Requires a manager with the generic store lane (loud
+              refusal otherwise; the legacy upload lane cannot carry
+              kinds).
+            - The record must look like a graft: an "index_id" key is
+              required (teach-grade ValueError otherwise). Deeper shape
+              truth stays with the producer and the GraftRunner gate.
+
+        Args:
+            profile_name:
+                The recording profile the graft belongs to.
+            graft_record:
+                The dict from Crystallizer.capture_index_graft(...).
+
+        Returns:
+            str: The unit id the record shipped under (its index_id).
+
+        Raises:
+            RuntimeError: If cleaned, no manager attached, or the store
+                lane is missing.
+            ValueError: If the record carries no "index_id".
+        """
+        self.check_cleaned()
+        with self._lock:
+            manager = self._external_persistence_manager
+        if manager is None or not manager.store_enabled:
+            raise RuntimeError(
+                "Storing a graft requires an attached manager with the "
+                "generic store lane (with_store_handler)."
+            )
+        index_id = graft_record.get("index_id")
+        if not isinstance(index_id, str) or not index_id:
+            raise ValueError(
+                "graft_record carries no 'index_id'; pass the dict from "
+                "capture_index_graft(...) unmodified."
+            )
+        manager.store_unit(
+            MeshInterfaceContract.UNIT_KIND_INDEX_GRAFT,
+            profile_name,
+            index_id,
+            dict(graft_record),
+        )
+        return index_id
+
+    def fetch_index_graft(self, index_id: str) -> Dict[str, object]:
+        """
+        Fetch one graft record back from the user's store, version-gated.
+
+        Contract:
+            - Requires the generic fetch lane (loud refusal otherwise).
+            - Absent unit = teach-grade KeyError (a fetch you meant is a
+              miss you should hear about).
+            - RecordVersion.check_readable gates the payload before it
+              is returned, mirroring from_cached_item's reader law.
+
+        Args:
+            index_id:
+                The captured index id (the unit id grafts ship under).
+
+        Returns:
+            Dict[str, object]: The graft record, ready for graft_index.
+
+        Raises:
+            RuntimeError: If cleaned, no manager/fetch lane, or the
+                payload's record_version MAJOR is newer than this
+                melder can read.
+            KeyError: If the remote store has no such graft.
+        """
+        self.check_cleaned()
+        with self._lock:
+            manager = self._external_persistence_manager
+        if manager is None:
+            raise RuntimeError(
+                "Fetching a graft requires an attached manager with the "
+                "generic fetch lane (with_fetch_handler)."
+            )
+        payload = manager.fetch_unit(
+            MeshInterfaceContract.UNIT_KIND_INDEX_GRAFT, index_id
+        )
+        if payload is None:
+            raise KeyError(
+                "No stored index graft for id {0!r}; check "
+                "list_index_grafts(profile).".format(index_id)
+            )
+        from melder.crystallizer.persistence.record_version import (
+            RecordVersion,
+        )
+        RecordVersion.check_readable(payload, "index graft record")
+        return dict(payload)
+
+    def list_index_grafts(self, profile_name: str) -> List[str]:
+        """
+        List one profile's stored graft ids through the generic lane.
+
+        Args:
+            profile_name:
+                Profile whose grafts are listed.
+
+        Returns:
+            List[str]: Unit ids (captured index ids) the store reports.
+
+        Raises:
+            RuntimeError: If cleaned or no manager/list lane attached.
+        """
+        self.check_cleaned()
+        with self._lock:
+            manager = self._external_persistence_manager
+        if manager is None:
+            raise RuntimeError(
+                "Listing grafts requires an attached manager with the "
+                "generic list lane (with_list_units_handler)."
+            )
+        return [
+            str(unit_id)
+            for unit_id in manager.list_units(
+                MeshInterfaceContract.UNIT_KIND_INDEX_GRAFT, profile_name
+            )
+        ]
+
+    def describe_external_interface(self) -> Dict[str, object]:
+        """
+        Emit the mesh interface contract joined with live presence.
+
+        Purpose:
+            The owner's "emit the table and the shape" verb at system
+            rank: the static MeshInterfaceContract table plus THIS
+            world's live handler presence, so a caller sees both what
+            the interface is and which lanes are currently wired.
+
+        Returns:
+            Dict[str, object]: The stamped contract dict plus a
+            "live_manager" key - the attached manager's describe()
+            presence flags, or None when no manager is attached.
+
+        Raises:
+            RuntimeError: If the asset system has been cleaned.
+        """
+        self.check_cleaned()
+        with self._lock:
+            manager = self._external_persistence_manager
+        contract = MeshInterfaceContract.describe()
+        contract["live_manager"] = (
+            manager.describe() if manager is not None else None
+        )
+        return contract
 
     @property
     def emission_tap_enabled(self) -> bool:

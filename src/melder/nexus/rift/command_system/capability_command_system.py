@@ -54,6 +54,17 @@ class CapabilityCommandSystem(CommandSystem):
         "get_spells_in_contract_by_conduit_name",
         "meld",
         "meld_existing_spell",
+        # Research reads (capability rooms carry the reads ONLY)
+        "research_walk",
+        "research_history",
+        "research_heads",
+        "research_residency",
+        "research_diff",
+        "research_campaign_view",
+        "research_source",
+        "research_impact",
+        "research_module_graph",
+        "research_source_drift",
     )
 
     def get_links(
