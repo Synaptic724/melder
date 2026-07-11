@@ -19,7 +19,13 @@ class TransitionAct(enum.Enum):
         - `lane_created`: a research lane entered the network (optionally
           anchored onto another lane's node).
         - `registered`: a bound version was formally declared research and
-          landed in a lane (the world-entry moment; bind-side).
+          landed in a lane (the world-entry moment; active bind-side).
+        - `staged`: a version entered the world PARKED (`bind_inactive`);
+          same declaration mechanics as `registered`, different runtime
+          posture at entry.
+        - `promoted`: the runtime selection moved (a notch repointed the
+          SpellIndex active member); journal-only - promotion changes what
+          is live, never which lane holds the version.
         - `attached` / `detached`: a lane's ancestry anchor was organized onto
           or off another lane's node (organization only, never content).
         - `joined`: a lane finished into its parent (divergence-aware; the
@@ -28,13 +34,12 @@ class TransitionAct(enum.Enum):
           network snapshots; objects are indestructible).
         - `restored`: the network organization was rebuilt from a
           content-addressed snapshot (network-scope act).
-        - Staged/promoted acts arrive with the runtime seam wiring slice; they
-          are intentionally absent until the notch/bind_inactive seams can
-          actually perform them.
     """
 
     lane_created = "lane_created"
     registered = "registered"
+    staged = "staged"
+    promoted = "promoted"
     attached = "attached"
     detached = "detached"
     joined = "joined"

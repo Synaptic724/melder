@@ -741,6 +741,32 @@ class PersistenceProfile(Cleanable):
                 )
             return crystal
 
+    def describe_mutation_research_record(self) -> Optional[Dict[str, object]]:
+        """
+        Return the recorded MutationResearch twin payload, when one exists.
+
+        Purpose:
+            The MR hydration read: the root pulls the recorded composition
+            (twin `describe()` form) at activation to rebuild its research
+            registry from the record. A detached dict is returned - the
+            twin object never escapes the profile.
+
+        Returns:
+            Optional[Dict[str, object]]:
+                The recorded twin's `describe()` payload, or None when the
+                profile has never recorded the MR twin.
+
+        Raises:
+            RuntimeError:
+                If the profile has been cleaned.
+        """
+        self.check_cleaned()
+        with self._lock:
+            twin = self._mutation_research_crystal
+            if twin is None or twin.cleaned:
+                return None
+            return twin.describe()
+
     def describe(self) -> Dict[str, object]:
         """
         Return a detached structural summary of this profile.

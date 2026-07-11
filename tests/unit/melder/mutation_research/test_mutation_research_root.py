@@ -177,6 +177,113 @@ def test_root_load_recorded_composition_rebuilds_registry() -> None:
         root.load_recorded_composition("not-a-dict")
 
 
+def test_root_record_world_entry_is_idempotent() -> None:
+    """
+    Verify the seam facade declares once and no-ops on rediscovery.
+    """
+    root = MutationResearch(aether=_mock_aether())
+
+    assert root.record_world_entry("sha-a") is True
+    assert root.record_world_entry("sha-a") is False
+    assert root.record_world_entry("sha-b", staged=True) is True
+    acts = [
+        entry.act.value
+        for entry in root.research_set().journal.entries()
+    ]
+    assert acts.count("registered") == 1
+    assert acts.count("staged") == 1
+
+
+def test_root_record_promotion_catches_up_unknown_targets() -> None:
+    """
+    Verify promotion of an undeclared identity declares it first (staged
+    catch-up), then journals the promoted event.
+    """
+    root = MutationResearch(aether=_mock_aether())
+    root.record_world_entry("sha-old")
+
+    root.record_promotion("sha-old", "sha-new", actor="mutation_0")
+
+    research_set = root.research_set()
+    assert research_set.residence_of("sha-new") is not None
+    acts = [entry.act.value for entry in research_set.journal.entries()]
+    assert acts[-2:] == ["staged", "promoted"]
+    last = research_set.journal.entries()[-1]
+    assert last.from_sha == "sha-old" and last.to_sha == "sha-new"
+
+
+def test_root_activation_hydrates_virgin_registry_from_record() -> None:
+    """
+    Verify the twin docking loop: a virgin root rebuilds its registry from
+    the active profile's recorded composition at activation.
+    """
+    donor = ResearchSet("default")
+    donor.register_spell("sha-recorded", author="past-life")
+    recorded_composition = {"default": donor.describe_composition()}
+    donor.cleanup()
+
+    aether = _mock_aether(recording=True)
+    aether._crystallizer.describe_mutation_research_record.return_value = {
+        "twin_kind": "mutation_research",
+        "activated": True,
+        "configuration_payload": {},
+        "composition_payload": recorded_composition,
+    }
+    root = MutationResearch(aether=aether)
+    configuration = root.create_configuration().with_defaults().activate()
+    root.configure(configuration)
+
+    root.activate()
+
+    hydrated = root.research_set()
+    assert hydrated.residence_of("sha-recorded") == (
+        hydrated.default_lane.lane_id
+    )
+
+
+def test_root_activation_never_clobbers_live_research() -> None:
+    """
+    Verify a non-virgin registry skips hydration: live research wins and
+    re-records itself instead.
+    """
+    donor = ResearchSet("default")
+    donor.register_spell("sha-recorded")
+    recorded_composition = {"default": donor.describe_composition()}
+    donor.cleanup()
+
+    aether = _mock_aether(recording=True)
+    aether._crystallizer.describe_mutation_research_record.return_value = {
+        "composition_payload": recorded_composition,
+    }
+    root = MutationResearch(aether=aether)
+    root.research_set().register_spell("sha-live")
+    configuration = root.create_configuration().with_defaults().activate()
+    root.configure(configuration)
+
+    root.activate()
+
+    live = root.research_set()
+    assert live.residence_of("sha-live") is not None
+    assert live.residence_of("sha-recorded") is None
+
+
+def test_root_activation_hydration_opt_out() -> None:
+    """
+    Verify hydrate_from_record=False leaves even a virgin registry alone.
+    """
+    aether = _mock_aether(recording=True)
+    aether._crystallizer.describe_mutation_research_record.return_value = {
+        "composition_payload": {"default": {}},
+    }
+    root = MutationResearch(aether=aether)
+    configuration = root.create_configuration().with_defaults().activate()
+    root.configure(configuration)
+
+    root.activate(hydrate_from_record=False)
+
+    aether._crystallizer.describe_mutation_research_record.assert_not_called()
+
+
 def test_root_diff_research_resolves_material_from_custody() -> None:
     """
     Verify diff_research pulls custody material through the crystallizer

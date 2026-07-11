@@ -524,7 +524,14 @@ class LoadAdmission(Cleanable):
                 continue
             if severity != "warning":
                 continue
-            if strategy == "frame_posture":
+            # frame_posture: conduit/frame slices deliberately exclude or
+            # partially carry frame twins. mutation_research_composition:
+            # MR is a WORLD-scope root - formation loads never rebuild it,
+            # so its findings are expected context, not admission signal.
+            if strategy in (
+                "frame_posture",
+                "mutation_research_composition",
+            ):
                 adjusted_row = dict(finding)
                 adjusted_row["severity"] = "expected_for_scope"
                 reclassified.append(adjusted_row)

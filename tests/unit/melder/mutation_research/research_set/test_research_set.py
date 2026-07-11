@@ -253,6 +253,51 @@ def test_composition_roundtrip_hydrates_equivalent_set() -> None:
     rebuilt.cleanup()
 
 
+def test_record_world_entry_is_idempotent_and_act_aware() -> None:
+    """
+    Verify the runtime-seam verb: fresh identities register (staged or
+    registered act), rediscovery is a quiet None.
+    """
+    research_set = ResearchSet("default")
+
+    active_node = research_set.record_world_entry("sha-active")
+    staged_node = research_set.record_world_entry("sha-parked", staged=True)
+    rediscovered = research_set.record_world_entry("sha-active")
+
+    assert active_node is not None and staged_node is not None
+    assert rediscovered is None
+    acts = [entry.act.value for entry in research_set.journal.entries()]
+    assert acts.count("registered") == 1
+    assert acts.count("staged") == 1
+    assert research_set.residence_of("sha-parked") == (
+        research_set.default_lane.lane_id
+    )
+    research_set.cleanup()
+
+
+def test_record_promotion_is_journal_only_and_validated() -> None:
+    """
+    Verify promotion journals a forward event without reorganizing lanes
+    or minting a new organization snapshot, and refuses undeclared targets.
+    """
+    research_set = ResearchSet("default")
+    research_set.register_spell("sha-old")
+    research_set.register_spell("sha-new")
+    snapshots_before = len(research_set.network_snapshot_shas())
+
+    entry = research_set.record_promotion(
+        "sha-old", "sha-new", actor="mutation_0", reason="notch",
+    )
+
+    assert entry.act.value == "promoted"
+    assert entry.from_sha == "sha-old" and entry.to_sha == "sha-new"
+    assert len(research_set.network_snapshot_shas()) == snapshots_before
+    assert research_set.default_lane.node_count == 2
+    with pytest.raises(KeyError, match="not declared"):
+        research_set.record_promotion(None, "sha-ghost")
+    research_set.cleanup()
+
+
 def test_on_mutation_fires_per_mutating_verb_only() -> None:
     """
     Verify the persistence emission hook cadence: one call per successful

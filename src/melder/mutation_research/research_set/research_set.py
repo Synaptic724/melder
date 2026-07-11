@@ -632,6 +632,147 @@ class ResearchSet(Cleanable):
         self._notify_mutation()
         return node
 
+    def record_world_entry(
+            self,
+            spell_sha: str,
+            *,
+            staged: bool = False,
+            lane: Optional[str] = None,
+            module_sha: Optional[str] = None,
+            author: Optional[str] = None,
+            campaign: Optional[str] = None,
+            reason: Optional[str] = None,
+            metadata: Optional[Dict[str, object]] = None,
+    ) -> Optional[ResearchNode]:
+        """
+        Idempotently declare one world-entry (the runtime-seam verb).
+
+        Purpose:
+            The bind/bind_inactive seams call this on EVERY dynamic-lane
+            world entry: identical content rebinds to the same SHA, so an
+            already-resident identity is a quiet no-op here (the runtime
+            must never fail on research bookkeeping), while a fresh identity
+            registers exactly like `register_spell` - with the `staged` act
+            when the entry was parked.
+
+        Args:
+            spell_sha:
+                Binding-signature SHA256 entering the world.
+            staged:
+                True for `bind_inactive` entries (journals `staged`);
+                False for active binds (journals `registered`).
+            lane:
+                Optional lane (name or id); default lane when omitted.
+            module_sha:
+                Optional module-version SHA256.
+            author:
+                Optional acting agent name.
+            campaign:
+                Optional research-campaign stamp.
+            reason:
+                Optional reason line.
+            metadata:
+                Optional value-typed annotations.
+
+        Returns:
+            Optional[ResearchNode]:
+                The new version node, or None when the identity was already
+                declared (rediscovery is not an error on this verb).
+        """
+        self.check_cleaned()
+        with self._lock:
+            if self._residence.is_resident(spell_sha):
+                return None
+            target = self._resolve_lane_locked(
+                lane if lane is not None else ResearchSet.DEFAULT_LANE_NAME,
+            )
+            node = ResearchNode(
+                spell_sha,
+                module_sha=module_sha,
+                author=author,
+                reason=reason,
+                campaign=campaign,
+                metadata=metadata,
+            )
+            self._residence.claim(spell_sha, target.lane_id)
+            target.add_node(node)
+            self._journal.record(
+                TransitionAct.staged if staged else TransitionAct.registered,
+                target.lane_id,
+                to_sha=spell_sha,
+                actor=author,
+                campaign=campaign,
+                reason=reason,
+                metadata={"module_sha": module_sha, "parent_shas": []},
+            )
+            self._snapshot_locked()
+        self._notify_mutation()
+        return node
+
+    def record_promotion(
+            self,
+            from_sha: Optional[str],
+            to_sha: str,
+            *,
+            actor: Optional[str] = None,
+            campaign: Optional[str] = None,
+            reason: Optional[str] = None,
+            metadata: Optional[Dict[str, object]] = None,
+    ) -> TransitionEntry:
+        """
+        Record one runtime selection change (notch) as a forward event.
+
+        Contract:
+            - Journal-only: promotion changes what is LIVE, never which lane
+              holds a version, so the organization does not re-snapshot.
+            - `to_sha` must be a declared identity; `from_sha` may be None
+              (first selection) or an identity outside the record (honest
+              passthrough - pre-MR history is not fabricated).
+
+        Args:
+            from_sha:
+                Previously selected identity, when known.
+            to_sha:
+                Newly selected identity (must be resident).
+            actor:
+                Optional acting agent name.
+            campaign:
+                Optional research-campaign stamp.
+            reason:
+                Optional reason line.
+            metadata:
+                Optional value-typed annotations.
+
+        Returns:
+            TransitionEntry:
+                The recorded `promoted` event.
+
+        Raises:
+            KeyError:
+                If `to_sha` is not resident in this set.
+        """
+        self.check_cleaned()
+        with self._lock:
+            to_lane_id = self._residence.residence_of(to_sha)
+            if to_lane_id is None:
+                raise KeyError(
+                    f"Identity '{to_sha}' is not declared in research set "
+                    f"'{self._name}'; declare the world entry before "
+                    f"recording its promotion."
+                )
+            entry = self._journal.record(
+                TransitionAct.promoted,
+                to_lane_id,
+                from_sha=from_sha,
+                to_sha=to_sha,
+                actor=actor,
+                campaign=campaign,
+                reason=reason,
+                metadata=metadata,
+            )
+        self._notify_mutation()
+        return entry
+
     def attach(
             self,
             lane_ref: str,

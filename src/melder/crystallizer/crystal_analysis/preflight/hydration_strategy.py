@@ -94,6 +94,22 @@ class HydrationStrategy(PersistenceAnalysisStrategy):
             except (ImportError, ValueError):
                 spec = None
             if spec is None:
+                # S2 physical custody: retained source text downgrades
+                # the absent-module blocker - the engine's rebuild lane
+                # reconstructs it through the synthetic module path with
+                # an honest shortfall, so the load can proceed.
+                if module_name in dict(
+                        payload.get("user_module_sources", {})
+                ):
+                    findings.append(self._finding(
+                        "info", spell_id,
+                        "root module {0!r} is absent but its source is "
+                        "RETAINED (opt-in physical custody); the engine "
+                        "rebuilds it through the synthetic lane".format(
+                            module_name
+                        ),
+                    ))
+                    continue
                 findings.append(self._finding(
                     "blocker", spell_id,
                     "root module {0!r} is not importable in this "

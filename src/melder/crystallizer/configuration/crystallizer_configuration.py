@@ -54,6 +54,7 @@ class CrystallizerConfiguration(Cleanable):
         self._properties: Dict[str, object] = {}
         self.available_properties: Dict[str, Union[Type, Tuple[Type, ...]]] = {
             "user_source_root_paths": tuple,
+            "retain_user_sources": bool,
             "remove_inactive_synthmodules": bool,
             "checkpoint_interval_minutes": int,
             "max_persistence_crystals": int,
@@ -193,6 +194,30 @@ class CrystallizerConfiguration(Cleanable):
         """
         self.check_cleaned()
         return self._properties[key]
+
+    @property
+    def retain_user_sources(self) -> bool:
+        """
+        Return whether user-owned module SOURCE TEXT is retained at seal.
+
+        Contract:
+            - Default FALSE (opt-in only; S2 physical custody): user code
+              may be large or sensitive, so retention is a deliberate
+              policy choice - False is byte-identical to the pre-S2
+              record at every surface.
+            - TRUE: every module the spell analysis classifies as
+              user_source retains {text, sha256, path, package} inside
+              the SpellCrystal ("user_module_sources"); on restore, an
+              ABSENT user file rebuilds through the synthetic module lane
+              with an honest shortfall. Retained text never overrides a
+              live file (the live file wins; drift reports a warning).
+
+        Returns:
+            bool: The configured knob, default False.
+        """
+        self.check_cleaned()
+        value = self._properties.get("retain_user_sources", False)
+        return bool(value)
 
     @property
     def remove_inactive_synthmodules(self) -> bool:
@@ -436,6 +461,7 @@ class CrystallizerConfiguration(Cleanable):
             CrystallizerConfiguration: This configuration instance.
         """
         self.with_user_source_root_paths((Path.cwd().resolve(),))
+        self.set_property("retain_user_sources", False)
         self.set_property("remove_inactive_synthmodules", False)
         self.set_property("checkpoint_interval_minutes", 60)
         self.set_property("max_persistence_crystals", 100)
@@ -563,6 +589,25 @@ class CrystallizerConfiguration(Cleanable):
         """
         self._require_positive_int("max_persistence_crystals", max_crystals)
         self.set_property("max_persistence_crystals", max_crystals)
+        return self
+
+    def with_retain_user_sources(
+            self,
+            retain: bool,
+    ) -> "CrystallizerConfiguration":
+        """
+        Set the opt-in user-source TEXT retention policy (S2 custody).
+
+        Args:
+            retain:
+                True retains user-owned module source text inside sealed
+                SpellCrystals for fresh-pod rebuilds; False (default)
+                records paths and fingerprints only.
+
+        Returns:
+            CrystallizerConfiguration: This configuration instance.
+        """
+        self.set_property("retain_user_sources", retain)
         return self
 
     def with_user_source_root_paths(

@@ -11,7 +11,7 @@ Lane: EPIC-2026-07-09-crystallizer-subsystem-decomposition, story S1.
 """
 
 from pathlib import Path
-from typing import Any, Optional, Tuple
+from typing import Any, Dict, Optional, Tuple
 
 from melder.crystallizer.crystal_analysis.custody.source_custody_strategy import (
     SourceCustodyStrategy,
@@ -141,3 +141,47 @@ class UserSourceCustodyStrategy(SourceCustodyStrategy):
                 `(source_text, error_text)` per the custody contract.
         """
         return self._read_source_like_file(module_name, module_path)
+
+    def harvest_payload(
+            self,
+            *,
+            module_name: str,
+            module_path: Optional[Path],
+    ) -> Optional[Dict[str, object]]:
+        """
+        Capture one user module's rebuildable truth (S2 physical custody).
+
+        Contract:
+            - Returns None when the backing file exposes no readable
+              source (pathless, binary, or read failure) - the walk-error
+              honesty channel already carries the read failure from the
+              facts pass; retention never invents text.
+            - Plain detached values only; payload keys mirror the M3
+              synthetic lane (source_text/source_sha256) plus the
+              user-side identity (module_path, is_package).
+            - The sha256 is computed from the SAME text that is retained,
+              so preflight can compare it against the bind-time
+              physical_module_fingerprints row for tamper detection.
+
+        Args:
+            module_name:
+                Canonical user module name being walked.
+            module_path:
+                Physical module path when available.
+
+        Returns:
+            Optional[Dict[str, object]]:
+                {source_text, source_sha256, module_path, is_package},
+                or None when nothing readable backs the module.
+        """
+        source_text, _error_text = self._read_source_like_file(
+            module_name, module_path
+        )
+        if source_text is None or module_path is None:
+            return None
+        return {
+            "source_text": source_text,
+            "source_sha256": self.fingerprint(source_text),
+            "module_path": str(module_path),
+            "is_package": module_path.name == "__init__.py",
+        }

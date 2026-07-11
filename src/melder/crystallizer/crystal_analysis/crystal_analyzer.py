@@ -91,7 +91,7 @@ class CrystalAnalyzer(Cleanable):
         children-first then deletes the owned lists (del posture).
     """
 
-    __slots__ = ("_custody_strategies", "_fact_strategies")
+    __slots__ = ("_custody_strategies", "_fact_strategies", "_retain_user_sources")
 
     def __init__(
             self,
@@ -100,6 +100,7 @@ class CrystalAnalyzer(Cleanable):
             site_package_root_paths: Tuple[Path, ...],
             custody_strategies: Optional[Sequence[SourceCustodyStrategy]] = None,
             fact_strategies: Optional[Sequence[CrystalFactStrategy]] = None,
+            retain_user_sources: bool = False,
     ) -> None:
         """
         Initialize one analyzer with its strategy families.
@@ -119,11 +120,17 @@ class CrystalAnalyzer(Cleanable):
                 Optional override of the fact passes. When omitted, the
                 default set is built: import_statement,
                 from_import_statement, export_surface, dependency_view.
+            retain_user_sources:
+                Opt-in S2 physical custody: True harvests the source
+                TEXT of every walked user_source module (mirror of the
+                M3 synthetic harvest); False (default) harvests nothing
+                user-side - byte-identical to the pre-S2 result.
 
         Returns:
             None.
         """
         super().__init__()
+        self._retain_user_sources: bool = bool(retain_user_sources)
         if custody_strategies is None:
             self._custody_strategies: List[SourceCustodyStrategy] = [
                 SyntheticCustodyStrategy(),
@@ -369,6 +376,12 @@ class CrystalAnalyzer(Cleanable):
                 payload.get("synthetic_module_sources", {})
         ).items():
             result.record_synthetic_module_source(module_name, source_payload)
+        # S2 physical custody: re-fold retained user sources (absent in
+        # pre-S2 and retention-off payloads - .get keeps them empty).
+        for module_name, source_payload in dict(
+                payload.get("user_module_sources", {})
+        ).items():
+            result.record_user_module_source(module_name, source_payload)
         for module_name, fingerprint in dict(
                 payload.get("physical_module_fingerprints", {})
         ).items():
@@ -491,6 +504,21 @@ class CrystalAnalyzer(Cleanable):
                     current_name,
                     synthetic_payload,
                 )
+            # S2 physical custody (opt-in mirror of the M3 synthetic
+            # harvest above): retain the TEXT of every walked user_source
+            # module so absent files can rebuild on fresh pods. `custody`
+            # is the matched strategy; the base default returns None, so
+            # only the user-source class ever yields a payload here.
+            if self._retain_user_sources and custody.kind == "user_source":
+                user_payload = custody.harvest_payload(
+                    module_name=current_name,
+                    module_path=current_path,
+                )
+                if user_payload is not None:
+                    result.record_user_module_source(
+                        current_name,
+                        user_payload,
+                    )
             result.record_module_target(
                 module_name=current_name,
                 module_path=(

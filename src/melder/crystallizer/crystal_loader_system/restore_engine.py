@@ -2,6 +2,7 @@
 
 import importlib
 import sys
+from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, Tuple
 
 from melder.utilities.general_base.cleanable import Cleanable
@@ -583,6 +584,10 @@ class RestoreEngine(Cleanable):
             }
         if self._nexus_payload is not None:
             bundle["nexus"] = {"root": dict(self._nexus_payload)}
+        if self._mutation_research_payload is not None:
+            bundle["mutation_research"] = {
+                "root": dict(self._mutation_research_payload)
+            }
         analyzer = PersistenceAnalyzer()
         try:
             return analyzer.analyze(bundle)
@@ -881,25 +886,90 @@ class RestoreEngine(Cleanable):
 
     def _replay_mutation_research(self) -> None:
         """
-        Stage 3: report recorded MR truth (owner scope: not restored).
+        Stage 3: rebuild the recorded MR root (config + composition).
 
-        Contract:
-            - MR is too new to restore; the folded twin and lifecycle
-              state report honestly in canonical order, never silently.
+        Contract (mirrors the Nexus build stage; owner directive
+        2026-07-11 "we gotta be able to reload the MR" - the first-cut
+        report-only shortfalls are RETIRED):
+            - No recorded MR twin: NO-OP (a world without research stays
+              without it).
+            - Folded lifecycle "cleaned" is later-wins truth: honest
+              shortfall, no rebuild (the world sealed AFTER its MR died).
+            - The configuration rebuilds through the RELOAD lane
+              (MutationResearchConfiguration.load_recorded_dictionary;
+              per-key rejected/backfilled shortfalls; the verb seals via
+              activate, which is what root activation requires).
+            - The root comes from the HOSTED accessor
+              (Aether()._get_mutation_research(); never
+              free-constructed) and activates with
+              hydrate_from_record=False: the engine owns FOLDED truth
+              and the fresh active profile is empty mid-replay - the
+              root's own hydration lane is for normal boots only.
+            - load_recorded_composition rebuilds the registry wholesale
+              and re-emits into the fresh profile (re-recording
+              covenant, Nexus precedent).
+            - Pre-Phase-B payloads (no composition key) rebuild the
+              config only + shortfall "composition_not_recorded_pre_phase_b".
+            - Folded "disabled" later-wins replays
+              activate-then-deactivate (both acts are recorded history).
 
         Returns:
             None.
         """
-        if self._mutation_research_payload is not None:
+        if self._mutation_research_payload is None:
+            return
+        if self._mutation_research_state_name == "cleaned":
             self._report.add_shortfall(
                 "mutation_research", "root",
-                "mutation_research_recorded_not_restored_first_cut",
+                "mutation_research_recorded_but_cleaned_before_seal_"
+                "not_rebuilt",
             )
-        if self._mutation_research_state_name is not None:
+            return
+        from melder.aether.aether import Aether
+        from melder.mutation_research.mutation_configuration import (
+            MutationResearchConfiguration,
+        )
+
+        configuration = MutationResearchConfiguration()
+        reload_outcome = configuration.load_recorded_dictionary(
+            dict(
+                self._mutation_research_payload.get(
+                    "configuration_payload", {}
+                )
+            )
+        )
+        for rejected_entry in reload_outcome["rejected"]:
             self._report.add_shortfall(
-                "mutation_research", self._mutation_research_state_name,
-                "mutation_research_state_recorded_not_restored_first_cut",
+                "mutation_research", "root",
+                "config_property_not_replayable: {0}".format(
+                    rejected_entry
+                ),
             )
+        for backfilled_key in reload_outcome["backfilled"]:
+            self._report.add_shortfall(
+                "mutation_research", "root",
+                "config_property_backfilled_schema_default: {0}".format(
+                    backfilled_key
+                ),
+            )
+        root = Aether()._get_mutation_research()
+        root.activate(configuration, hydrate_from_record=False)
+        composition_payload = dict(
+            self._mutation_research_payload.get("composition_payload", {})
+        )
+        if composition_payload:
+            root.load_recorded_composition(composition_payload)
+        else:
+            self._report.add_shortfall(
+                "mutation_research", "root",
+                "composition_not_recorded_pre_phase_b",
+            )
+        if self._mutation_research_state_name == "disabled":
+            # Recorded history: the world sealed with a deactivated MR -
+            # activate-then-deactivate replays both truthful acts.
+            root.deactivate()
+        self._built_stack.append(("mutation_research", root))
+        self._report.record_built("mutation_research")
 
     def _replay_nexus(self) -> None:
         """
@@ -1661,11 +1731,19 @@ class RestoreEngine(Cleanable):
         module_name = str(crystal.get("root_module_name"))
         qualname = str(crystal.get("root_target_qualname"))
         try:
-            module = importlib.import_module(module_name)
-            target: Any = module
-            for part in qualname.split("."):
-                target = getattr(target, part)
+            return self._import_qualified_target(module_name, qualname)
         except Exception as error:
+            # S2 physical custody: an ABSENT user source tree is the one
+            # failure retained text may heal. Rebuild only retained
+            # modules whose backing file is GONE (the live file always
+            # wins), then retry the normal import lane exactly once.
+            if self._rebuild_user_world(spell_id, crystal):
+                try:
+                    return self._import_qualified_target(
+                        module_name, qualname
+                    )
+                except Exception as retry_error:
+                    error = retry_error
             self._report.add_shortfall(
                 "spell_crystal", spell_id,
                 "hydration_failed ({0}.{1}): {2}".format(
@@ -1673,6 +1751,29 @@ class RestoreEngine(Cleanable):
                 ),
             )
             return None
+
+    @staticmethod
+    def _import_qualified_target(module_name: str, qualname: str) -> Any:
+        """
+        Import one module and walk the recorded qualname to the target.
+
+        Args:
+            module_name:
+                Canonical module to import (normal import lane).
+            qualname:
+                Dotted attribute path from the module to the bind target.
+
+        Returns:
+            Any: The live class/function target.
+
+        Raises:
+            Exception: Any import or attribute-walk failure (the caller
+                owns shortfall reporting and the retained-source retry).
+        """
+        module = importlib.import_module(module_name)
+        target: Any = module
+        for part in qualname.split("."):
+            target = getattr(target, part)
         return target
 
     def _rebuild_synthetic_world(
@@ -1756,6 +1857,100 @@ class RestoreEngine(Cleanable):
             self._built_stack.append(("synthetic_module", module))
             self._report.record_built("synthetic_module")
         return True
+
+    def _rebuild_user_world(
+            self,
+            spell_id: str,
+            crystal: Dict[str, object],
+    ) -> bool:
+        """
+        Rebuild ABSENT user modules from retained source text (S2).
+
+        Purpose:
+            Opt-in physical custody's restore half: when a fresh pod
+            lacks the user source tree, the retained
+            `user_module_sources` payloads rebuild through the SYNTHETIC
+            MODULE LANE (the sanctioned from-text path - normal-verbs
+            law), after which the ordinary import lane resolves the bind
+            target like any other module.
+
+        Contract:
+            - THE LIVE FILE ALWAYS WINS: a retained module whose recorded
+              backing path still exists on disk is NEVER rebuilt from
+              text (drift is the preflight's warning, not this lane's
+              override). Modules already in sys.modules are skipped.
+            - Parents build before children (dot-depth order); every
+              rebuilt module rides _built_stack for all-or-nothing
+              teardown and files the honest shortfall
+              "user_module_rebuilt_synthetic_from_retained_source".
+            - Returns True only when at least one module was rebuilt
+              (the caller retries the import lane exactly once).
+            - Payloads without retention (pre-S2 or retention-off) return
+              False untouched - byte-identical legacy behavior.
+
+        Args:
+            spell_id:
+                Custody identity (shortfall anchor).
+            crystal:
+                The folded custody payload.
+
+        Returns:
+            bool: True when a retry of the import lane is warranted.
+        """
+        from melder.crystallizer.synthetic_module import SyntheticModule
+
+        sources = dict(crystal.get("user_module_sources", {}))
+        if not sources:
+            return False
+        rebuilt_any = False
+        for module_name in sorted(
+                sources.keys(), key=lambda name: (name.count("."), name)
+        ):
+            if module_name in sys.modules:
+                continue
+            payload = dict(sources[module_name])
+            recorded_path = payload.get("module_path")
+            if (
+                recorded_path is not None
+                and Path(str(recorded_path)).exists()
+            ):
+                # Live file wins: never mask a real file with retained
+                # text - whatever made its import fail stays visible.
+                continue
+            try:
+                module = SyntheticModule(
+                    module_name=module_name,
+                    spell_crystal_id=spell_id,
+                    source_text=str(payload.get("source_text", "")),
+                    source_sha256=str(payload.get("source_sha256", "")),
+                    binding_signature="user_source_retained",
+                    parent_name=(
+                        module_name.rsplit(".", 1)[0]
+                        if "." in module_name
+                        else None
+                    ),
+                    is_package=bool(payload.get("is_package", False)),
+                )
+                module.register_in_import_registry()
+                module.publish_to_sys_modules()
+                module.execute_source()
+            except Exception as error:
+                self._report.add_shortfall(
+                    "spell_crystal", spell_id,
+                    "user_module_rebuild_failed ({0}): {1}".format(
+                        module_name, error
+                    ),
+                )
+                return False
+            self._built_stack.append(("synthetic_module", module))
+            self._report.record_built("synthetic_module")
+            self._report.add_shortfall(
+                "spell_crystal", spell_id,
+                "user_module_rebuilt_synthetic_from_retained_source: "
+                "{0}".format(module_name),
+            )
+            rebuilt_any = True
+        return rebuilt_any
 
     def _teardown_built(self) -> None:
         """

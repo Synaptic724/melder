@@ -114,6 +114,8 @@ def test_act_vocabulary_is_world_entry_only() -> None:
     assert values == {
         "lane_created",
         "registered",
+        "staged",
+        "promoted",
         "attached",
         "detached",
         "joined",

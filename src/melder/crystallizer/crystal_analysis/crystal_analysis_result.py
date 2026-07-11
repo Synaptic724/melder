@@ -57,6 +57,7 @@ class CrystalAnalysisResult(Cleanable):
         "_path_targets",
         "_synthetic_module_targets",
         "_synthetic_module_sources",
+        "_user_module_sources",
         "_user_source_targets",
         "_site_package_targets",
         "_unknown_targets",
@@ -99,6 +100,9 @@ class CrystalAnalysisResult(Cleanable):
         # Loader chain M3 custody: synthetic modules have no files, so their
         # rebuildable truth (source + identity metadata) rides the result.
         self._synthetic_module_sources: Dict[str, Dict[str, object]] = {}
+        # S2 physical custody (opt-in): retained user-module source
+        # payloads; empty when retention is off or no user modules walked.
+        self._user_module_sources: Dict[str, Dict[str, object]] = {}
         # Per-module lookup maps.
         self._module_to_path: Dict[str, str] = {}
         self._module_to_kind: Dict[str, str] = {}
@@ -140,6 +144,7 @@ class CrystalAnalysisResult(Cleanable):
             del self._path_targets
             del self._synthetic_module_targets
             del self._synthetic_module_sources
+            del self._user_module_sources
             del self._user_source_targets
             del self._site_package_targets
             del self._unknown_targets
@@ -280,6 +285,38 @@ class CrystalAnalysisResult(Cleanable):
         self.check_cleaned()
         with self._lock:
             self._synthetic_module_sources[module_name] = dict(source_payload)
+
+    def record_user_module_source(
+            self,
+            module_name: str,
+            source_payload: Mapping[str, object],
+    ) -> None:
+        """
+        Record the retained source payload for one user module (S2).
+
+        Purpose:
+            Opt-in physical custody: mirror of the synthetic source store
+            for user-owned files, so a fresh pod whose user source tree
+            is ABSENT can rebuild the module world through the synthetic
+            lane (retained text never overrides a live file).
+
+        Args:
+            module_name:
+                Canonical user-source module name.
+            source_payload:
+                Value-only payload (source_text, source_sha256,
+                module_path, is_package) as harvested by the user-source
+                custody strategy.
+
+        Raises:
+            RuntimeError: If the result was cleaned.
+
+        Returns:
+            None.
+        """
+        self.check_cleaned()
+        with self._lock:
+            self._user_module_sources[module_name] = dict(source_payload)
 
     def record_physical_fingerprint(
             self,
@@ -451,6 +488,23 @@ class CrystalAnalysisResult(Cleanable):
             return {
                 name: dict(payload)
                 for name, payload in self._synthetic_module_sources.items()
+            }
+
+    @property
+    def user_module_sources(self) -> Dict[str, Dict[str, object]]:
+        """
+        Return the retained user-module source payloads (S2 custody).
+
+        Returns:
+            Dict[str, Dict[str, object]]:
+                Detached map of module name to retention payload; empty
+                when retention was off or no user modules were walked.
+        """
+        self.check_cleaned()
+        with self._lock:
+            return {
+                name: dict(payload)
+                for name, payload in self._user_module_sources.items()
             }
 
     @property
@@ -653,6 +707,10 @@ class CrystalAnalysisResult(Cleanable):
                 "synthetic_module_sources": {
                     name: dict(payload)
                     for name, payload in self._synthetic_module_sources.items()
+                },
+                "user_module_sources": {
+                    name: dict(payload)
+                    for name, payload in self._user_module_sources.items()
                 },
                 "user_source_targets": list(self._user_source_targets),
                 "site_package_targets": list(self._site_package_targets),

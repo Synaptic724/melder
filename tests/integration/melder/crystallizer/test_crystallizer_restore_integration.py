@@ -916,3 +916,77 @@ def test_synthetic_rooted_spell_restores_across_the_boot_boundary(
         if not synthetic_module.cleaned:
             synthetic_module.cleanup()
         sys.modules.pop(module_name, None)
+
+
+def test_mutation_research_round_trips_through_checkpoints(cache_root):
+    """
+    Purpose:
+        S3c of mr_restore_build_stage_2026_07_11: prove a checkpointed
+        world unfolds WITH its research - declare -> seal -> flush ->
+        fresh boot -> load_checkpoint -> lanes, membership, and residence
+        present; research CONTINUABLE; a later activation hydration NO-OPs
+        because the engine-restored registry is non-virgin.
+    Contract:
+        The report shows mutation_research under built stages and carries
+        ZERO first_cut shortfalls; the rebuilt set walks the recorded
+        lanes and accepts new research afterwards.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If the unfolded research diverges from the record.
+    """
+    from melder.mutation_research.mutation_configuration import (
+        MutationResearchConfiguration,
+    )
+    from melder.mutation_research.mutation_research import MutationResearch
+
+    MutationResearch._reset_singleton_for_tests()
+    try:
+        crystallizer = _activate_crystallizer()
+        root = Aether()._get_mutation_research()
+        root.activate(MutationResearchConfiguration().with_defaults().activate())
+        research = root.research_set()
+        research.create_lane("experiments", actor="s3c")
+        research.register_spell(
+            "f" * 64, lane="experiments", author="s3c", reason="round-trip"
+        )
+        research.register_spell("a" * 64, author="s3c")
+
+        checkpoint_id = crystallizer.create_checkpoint()
+        crystallizer.flush_checkpoint(checkpoint_id)
+
+        MutationResearch._reset_singleton_for_tests()
+        rebooted = _fresh_boot()
+        rebooted.reload_cached_checkpoint(checkpoint_id)
+        report = rebooted.load_checkpoint(checkpoint_id)
+
+        assert report["status"] == "complete"
+        assert report["built_counts"]["mutation_research"] == 1
+        assert all(
+            "first_cut" not in str(shortfall)
+            for shortfall in report.get("shortfalls", [])
+        )
+
+        restored_root = Aether()._get_mutation_research()
+        restored_set = restored_root.research_set()
+        assert set(restored_set.lane_names()) == {"default", "experiments"}
+        assert restored_set.residence_of("f" * 64) is not None
+        walked_shas = [
+            str(entry.get("spell_sha"))
+            for entry in restored_set.walk("experiments")
+        ]
+        assert "f" * 64 in walked_shas
+
+        # Continuable: new research lands on the restored organization.
+        restored_set.register_spell(
+            "b" * 64, lane="experiments", author="s3c", reason="post-restore"
+        )
+        assert restored_set.residence_of("b" * 64) is not None
+
+        # Non-virgin registry: a later activation hydration NO-OPs (the
+        # engine-restored organization survives untouched).
+        restored_root.activate(hydrate_from_record=True)
+        assert restored_set.residence_of("b" * 64) is not None
+        assert set(restored_set.lane_names()) == {"default", "experiments"}
+    finally:
+        MutationResearch._reset_singleton_for_tests()

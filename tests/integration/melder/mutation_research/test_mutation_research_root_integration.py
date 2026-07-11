@@ -135,6 +135,46 @@ def test_integration_bound_spell_sha_registers_into_default_set(case_index: int)
     "case_index",
     list(range(1, 11)),
 )
+def test_integration_dynamic_bind_auto_declares_research(case_index: int) -> None:
+    """
+    Validate the runtime seam: with the MR root activated, a dynamic-lane
+    bind auto-declares its SHA into the default set (P3 ruling - no orphan
+    binds, no history holes).
+    """
+    aether = Aether()
+    root = aether.mutation_research
+    configuration = root.create_configuration().with_defaults().activate()
+    root.configure(configuration)
+    root.activate(hydrate_from_record=False)
+
+    frame_name = f"integration-seam-frame-{case_index:02d}"
+    spellbook = Spellbook(
+        aetheric_frame=frame_name,
+        configuration=_make_dynamic_configuration(frame_name),
+    )
+    spell_id = spellbook.bind(
+        spell=BasicService,
+        existence=Existence.unique,
+        permissions="create",
+    )
+    conduit = spellbook.conjure(dynamic=True, name=f"root-{case_index:02d}")
+    try:
+        research_set = root.research_set()
+        assert research_set.residence_of(spell_id) == (
+            research_set.default_lane.lane_id
+        )
+        history = research_set.history(spell_id)
+        acts = [t["act"] for t in history["transitions"]]
+        assert "registered" in acts
+    finally:
+        conduit.cleanup()
+        root.deactivate()
+
+
+@pytest.mark.parametrize(
+    "case_index",
+    list(range(1, 11)),
+)
 def test_integration_research_lines_survive_composition_roundtrip(case_index: int) -> None:
     """
     Validate the persistence composition payload round-trips a live-bound

@@ -325,6 +325,8 @@ class MutationResearch(Cleanable):
     def activate(
             self,
             configuration: Optional[MutationResearchConfiguration] = None,
+            *,
+            hydrate_from_record: bool = True,
     ) -> None:
         """
         Activate the mutation-research root using one activated configuration.
@@ -332,6 +334,13 @@ class MutationResearch(Cleanable):
         Args:
             configuration:
                 Optional configuration to install before activation.
+            hydrate_from_record:
+                When True (default), a VIRGIN registry (nothing but the
+                untouched default set) rebuilds itself from the active
+                profile's recorded composition at activation - the twin
+                docking loop: emit while live, hydrate on the way up. Live
+                research is never clobbered; a non-virgin registry skips
+                hydration and re-records itself instead.
 
         Returns:
             None.
@@ -358,9 +367,66 @@ class MutationResearch(Cleanable):
                 self._crystallizer.emit_mutation_research_state(
                     RecordedUnitState.enabled
                 )
+        if hydrate_from_record:
+            self._hydrate_from_record_when_virgin()
         # Activation makes the composition recordable: re-emit the twin so
-        # the record carries whatever research already exists.
+        # the record carries whatever research exists now (hydrated or live).
         self._emit_research_composition()
+
+    def _registry_is_virgin(self) -> bool:
+        """
+        Return whether no research has ever been declared on this root.
+
+        Contract:
+            - Virgin means exactly the guaranteed default set with its
+              untouched default lane: one set, one lane, zero registered
+              versions, and no journal history beyond the birth event.
+
+        Returns:
+            bool:
+                True when hydration may safely replace the registry.
+        """
+        with self._lock:
+            if len(self._research_sets_by_name) != 1:
+                return False
+            default_set = self._research_sets_by_name.get(
+                MutationResearch.DEFAULT_RESEARCH_SET_NAME
+            )
+            if default_set is None:
+                return False
+            if default_set.lane_names() != [ResearchSet.DEFAULT_LANE_NAME]:
+                return False
+            if default_set.default_lane.node_count != 0:
+                return False
+            return default_set.journal.latest_sequence <= 1
+
+    def _hydrate_from_record_when_virgin(self) -> None:
+        """
+        Rebuild a virgin registry from the recorded composition, when any.
+
+        Contract:
+            - NO-OP while the crystallizer is cleaned/inactive, when the
+              active profile has never recorded the MR twin, when the
+              recorded composition is empty, or when live research already
+              exists (live truth wins; it re-records at the next emission).
+
+        Returns:
+            None.
+        """
+        crystallizer = self._crystallizer
+        if crystallizer.cleaned:
+            return
+        if not crystallizer.activated:
+            return
+        recorded = crystallizer.describe_mutation_research_record()
+        if not isinstance(recorded, dict):
+            return
+        composition = recorded.get("composition_payload")
+        if not isinstance(composition, dict) or not composition:
+            return
+        if not self._registry_is_virgin():
+            return
+        self.load_recorded_composition(composition)
 
     def deactivate(self) -> None:
         """
@@ -521,6 +587,98 @@ class MutationResearch(Cleanable):
                     pass
             self._research_sets_by_name = rebuilt
         self._emit_research_composition()
+
+    # ------------------------------------------------------------------
+    # Runtime world-entry seams
+    # ------------------------------------------------------------------
+
+    def record_world_entry(
+            self,
+            spell_sha: str,
+            *,
+            staged: bool = False,
+            author: Optional[str] = None,
+            reason: Optional[str] = None,
+    ) -> bool:
+        """
+        Idempotently declare one world-entry into the default set.
+
+        Purpose:
+            The runtime-seam facade: the spellbook's bind and bind_inactive
+            confirmation points call this on every dynamic-lane world entry
+            once the root is active. Rediscovery (identical content, same
+            SHA) is a quiet no-op - the runtime never fails on research
+            bookkeeping.
+
+        Args:
+            spell_sha:
+                Binding-signature SHA256 entering the world.
+            staged:
+                True for parked (`bind_inactive`) entries.
+            author:
+                Optional acting agent name.
+            reason:
+                Optional reason line.
+
+        Returns:
+            bool:
+                True when a new declaration was recorded; False when the
+                identity was already declared.
+        """
+        self.check_cleaned()
+        research_set = self.research_set()
+        node = research_set.record_world_entry(
+            spell_sha,
+            staged=staged,
+            author=author,
+            reason=reason,
+        )
+        return node is not None
+
+    def record_promotion(
+            self,
+            from_sha: Optional[str],
+            to_sha: str,
+            *,
+            actor: Optional[str] = None,
+            reason: Optional[str] = None,
+    ) -> None:
+        """
+        Record one runtime selection change (notch) into the default set.
+
+        Contract:
+            - An undeclared `to_sha` is declared first (world-entry
+              catch-up: a promotion proves the version exists), then the
+              `promoted` event records with the supplied endpoints.
+
+        Args:
+            from_sha:
+                Previously selected identity, when known.
+            to_sha:
+                Newly selected identity.
+            actor:
+                Optional acting agent name.
+            reason:
+                Optional reason line.
+
+        Returns:
+            None.
+        """
+        self.check_cleaned()
+        research_set = self.research_set()
+        if research_set.residence_of(to_sha) is None:
+            research_set.record_world_entry(
+                to_sha,
+                staged=True,
+                author=actor,
+                reason="world-entry catch-up at promotion",
+            )
+        research_set.record_promotion(
+            from_sha,
+            to_sha,
+            actor=actor,
+            reason=reason,
+        )
 
     # ------------------------------------------------------------------
     # Derived diff reads

@@ -3165,6 +3165,13 @@ and logging.
                         spell_index, self._id
                     )
                 )
+        # Research record: the selection moved - journal the promotion
+        # (forward-only; None on a first selection; the root declares an
+        # unknown incoming id before journaling).
+        self._record_research_promotion(
+            outgoing.spell_id if outgoing is not None else None,
+            new_id,
+        )
         # Structural gate: re-register marks the index gated + dirty so meld-time
         # revalidation recompiles on next resolve (lazy).
         self._spell_system_states.register_index(
@@ -4329,11 +4336,85 @@ and logging.
                             new_spell.spell_index, self._id
                         )
                     )
+                # Research record: a staged bind is a world entry too
+                # (bind_inactive is structurally dynamic-only, so no
+                # posture re-check is needed here).
+                self._record_research_world_entry(
+                    new_spell.spell_id, staged=True,
+                )
                 return new_spell.spell_id
             except Exception as e:
                 self._logger.error(f"Error while binding spell: {e}", "bind", exc_info=True)
                 raise
 
+    def _record_research_world_entry(
+            self,
+            spell_sha: str,
+            *,
+            staged: bool,
+    ) -> None:
+        """
+        Declare one world entry into the research record, when it is live.
+
+        Purpose:
+            The MutationResearch runtime seam: every dynamic-lane world
+            entry (active bind or staged bind_inactive) is a formal
+            research declaration once the MR root is active.
+
+        Contract:
+            - NO-OP unless the Aether-hosted MutationResearch root ALREADY
+              EXISTS (it is never lazily constructed from the bind path)
+              and is activated.
+            - Rediscovery (identical content rebinding to the same SHA256)
+              is a quiet no-op inside the root - research bookkeeping never
+              gates a bind.
+
+        Args:
+            spell_sha:
+                Binding-signature SHA256 entering the world.
+            staged:
+                True for parked (`bind_inactive`) entries.
+
+        Returns:
+            None.
+        """
+        aether = Spellbook._aether
+        if aether is None:
+            return
+        research = aether._mutation_research
+        if research is None or research.cleaned or not research.activated:
+            return
+        research.record_world_entry(spell_sha, staged=staged)
+
+    def _record_research_promotion(
+            self,
+            from_sha: Optional[str],
+            to_sha: str,
+    ) -> None:
+        """
+        Record one notch selection change into the research record.
+
+        Contract:
+            - Same liveness gates as `_record_research_world_entry`; the
+              root declares an unknown `to_sha` before journaling the
+              promotion (world-entry catch-up).
+
+        Args:
+            from_sha:
+                Previously selected spell id, when one existed.
+            to_sha:
+                Newly selected spell id.
+
+        Returns:
+            None.
+        """
+        aether = Spellbook._aether
+        if aether is None:
+            return
+        research = aether._mutation_research
+        if research is None or research.cleaned or not research.activated:
+            return
+        research.record_promotion(from_sha, to_sha)
 
     def bind(
             self,
@@ -4576,6 +4657,13 @@ and logging.
                         self._crystallizer.create_spell_index_crystal(
                             new_spell.spell_index, self._id
                         )
+                    )
+                # Research record: every dynamic-lane world entry is a formal
+                # declaration once MutationResearch is active (independent of
+                # crystallizer recording; the root handles rediscovery).
+                if self._is_dynamic_posture():
+                    self._record_research_world_entry(
+                        new_spell.spell_id, staged=False,
                     )
                 if self._conjured and self._conduit is not None:
                     Spellbook._aether._register_single_spell_index(

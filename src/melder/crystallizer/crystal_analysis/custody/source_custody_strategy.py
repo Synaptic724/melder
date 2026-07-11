@@ -13,7 +13,7 @@ Lane: EPIC-2026-07-09-crystallizer-subsystem-decomposition, story S1.
 import hashlib
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import Any, Optional, Tuple
+from typing import Any, Dict, Optional, Tuple
 
 from melder.utilities.general_base.cleanable import Cleanable
 
@@ -126,6 +126,39 @@ class SourceCustodyStrategy(Cleanable, ABC):
             Tuple[Optional[str], Optional[str]]:
                 `(source_text, error_text)` per the contract above.
         """
+
+    def harvest_payload(
+            self,
+            *,
+            module_name: str,
+            module_path: Optional[Path],
+    ) -> Optional[Dict[str, object]]:
+        """
+        Return this authority class's RETENTION payload for one module.
+
+        Contract:
+            Default implementation returns None: most custody classes
+            retain nothing (site packages are provenance; binaries have
+            no source claim). Subclasses that own a retention lane
+            override this - UserSourceCustodyStrategy returns the S2
+            physical-custody payload ({source_text, source_sha256,
+            module_path, is_package}) when the backing file reads.
+            The SYNTHETIC lane keeps its own object-driven static
+            (harvest works off the live SyntheticModule, not a path) -
+            this seam is for path-backed retention only.
+
+        Args:
+            module_name:
+                Canonical module name being walked.
+            module_path:
+                Physical module path when available.
+
+        Returns:
+            Optional[Dict[str, object]]:
+                Detached retention payload, or None when this custody
+                class retains nothing.
+        """
+        return None
 
     def fingerprint(self, source_text: str) -> Optional[str]:
         """

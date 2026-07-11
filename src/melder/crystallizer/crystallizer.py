@@ -531,6 +531,30 @@ class Crystallizer(Cleanable):
         self._require_activated()
         return self._persistence_system.get_spell_crystal(spell_id)
 
+    def describe_mutation_research_record(self) -> Optional[Dict[str, object]]:
+        """
+        Return the recorded MutationResearch twin payload (active profile).
+
+        Purpose:
+            The MR hydration read facade: at activation the MR root pulls
+            the recorded composition to rebuild its research registry from
+            the record. Detached dict only - the persistence model stays
+            in the depths.
+
+        Returns:
+            Optional[Dict[str, object]]:
+                The recorded twin's `describe()` payload (carrying
+                `configuration_payload` and `composition_payload`), or None
+                when the active profile has never recorded the MR twin.
+
+        Raises:
+            RuntimeError:
+                If crystallizer is cleaned or not yet active.
+        """
+        self.check_cleaned()
+        self._require_activated()
+        return self._persistence_system.describe_mutation_research_record()
+
     def emit_spell_crystal(self, crystal: SpellCrystal, active: bool = True) -> None:
         """
         Record one custody crystal into the active profile's locations.
@@ -1012,6 +1036,7 @@ class Crystallizer(Cleanable):
             spell,
             user_source_root_paths=self._configuration.user_source_root_paths,
             spellbook_id=spellbook_id,
+            retain_user_sources=self._configuration.retain_user_sources,
         )
 
 

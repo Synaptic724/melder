@@ -1,5 +1,5 @@
 import threading
-from typing import Dict, Tuple, Type, Union
+from typing import Any, Dict, List, Tuple, Type, Union
 
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.utilities.general_base.cleanable import Cleanable
@@ -276,6 +276,80 @@ class MutationResearchConfiguration(Cleanable):
                 else:
                     configuration_payload[property_name] = str(property_value)
         return configuration_payload
+
+    def load_recorded_dictionary(
+            self,
+            recorded_properties: Dict[str, Any],
+    ) -> Dict[str, List[str]]:
+        """
+        Reload lane: apply one RECORDED property payload as configuration
+        truth and seal.
+
+        Purpose:
+            The restore counterpart to `with_defaults` (owner reload-lane
+            law; MR's original exclusion from the directive is obsolete
+            now that the skeleton is a real subsystem). A sealed world's
+            research posture rebuilds from its recorded values - never
+            from present-day defaults - and the lane loads and seals in
+            one motion.
+
+        Contract:
+            - Defaults land first as the backfill floor (`with_defaults`),
+              then every recorded key OVERWRITES its default (recorded
+              truth wins); registry keys the record did not carry are
+              returned under "backfilled" so nothing defaults silently.
+            - A recorded value the property system refuses is skipped and
+              returned under "rejected" as "key: reason" (documented
+              best-effort collection for the caller's shortfall
+              reporting). The registry's single bool key needs no
+              type coercion (JSON round-trips bools natively).
+            - SEALS VIA `activate()` on return (freeze + activated): the
+              config's activation is its emission factor, so the reload
+              re-records into the fresh active profile mid-replay - the
+              Nexus-precedent re-recording covenant; replace-on-emit
+              means the root's later composition re-emission supersedes
+              this twin in the same profile.
+
+        Args:
+            recorded_properties:
+                Property name -> recorded value mapping (one sealed
+                MutationResearchCrystal configuration_payload, as built
+                by `describe_configuration_payload`).
+
+        Returns:
+            Dict[str, List[str]]:
+                {"rejected": ["key: reason", ...],
+                 "backfilled": [key, ...]}.
+
+        Raises:
+            RuntimeError: If the configuration is cleaned or already
+                frozen.
+            ValueError: If the reloaded property set fails validation at
+                the internal freeze.
+        """
+        self.check_cleaned()
+        if self._frozen:
+            raise RuntimeError(
+                "MutationResearchConfiguration is already frozen; the "
+                "reload lane requires a fresh configuration object."
+            )
+        self.with_defaults()
+        rejected: List[str] = []
+        applied: List[str] = []
+        for key, value in dict(recorded_properties).items():
+            try:
+                self.set_property(key, value)
+                applied.append(key)
+            except Exception as error:
+                # Best-effort collection by contract: the refusal reason
+                # rides back to the caller for shortfall reporting.
+                rejected.append("{0}: {1}".format(key, error))
+        backfilled = sorted(
+            key for key in self.available_properties.keys()
+            if key not in applied
+        )
+        self.activate()
+        return {"rejected": rejected, "backfilled": backfilled}
 
     def with_defaults(self) -> "MutationResearchConfiguration":
         """

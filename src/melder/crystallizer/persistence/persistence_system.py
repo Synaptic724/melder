@@ -418,6 +418,22 @@ class PersistenceSystem(Cleanable):
         self.check_cleaned()
         return self.active_profile.get_spell_crystal(spell_id)
 
+    def describe_mutation_research_record(self) -> Optional[Dict[str, object]]:
+        """
+        Return the ACTIVE profile's recorded MutationResearch twin payload.
+
+        Returns:
+            Optional[Dict[str, object]]:
+                The recorded twin's `describe()` payload, or None when the
+                active profile has never recorded the MR twin.
+
+        Raises:
+            RuntimeError:
+                If the subsystem has been cleaned.
+        """
+        self.check_cleaned()
+        return self.active_profile.describe_mutation_research_record()
+
     def get_profile(self, profile_name: str) -> PersistenceProfile:
         """
         Return one profile by name.

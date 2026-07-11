@@ -25,6 +25,12 @@ from melder.crystallizer.crystal_analysis.preflight.link_integrity_strategy impo
 from melder.crystallizer.crystal_analysis.preflight.synthetic_source_integrity_strategy import (
     SyntheticSourceIntegrityStrategy,
 )
+from melder.crystallizer.crystal_analysis.preflight.mutation_research_composition_strategy import (
+    MutationResearchCompositionStrategy,
+)
+from melder.crystallizer.crystal_analysis.preflight.user_source_integrity_strategy import (
+    UserSourceIntegrityStrategy,
+)
 from melder.crystallizer.crystal_analysis.preflight.persistence_analysis_strategy import (
     PersistenceAnalysisStrategy,
 )
@@ -44,8 +50,10 @@ class PersistenceAnalyzer(Cleanable):
     Contract:
         - Default strategy set: link integrity, contract peers,
           hydration, configuration loss, cluster membership, frame
-          posture, synthetic source integrity; callers may supply their
-          own sequence (each a PersistenceAnalysisStrategy).
+          posture, synthetic source integrity, user source integrity
+          (S2 physical custody: retained-text tamper + live-file drift);
+          callers may supply their own sequence (each a
+          PersistenceAnalysisStrategy).
         - This same default set runs AT LOAD TIME inside the
           RestoreEngine (owner ruling): every restore report carries a
           "preflight" section from the folded bundle.
@@ -84,7 +92,7 @@ class PersistenceAnalyzer(Cleanable):
                 Optional explicit strategy sequence; None installs the
                 default set (link integrity, contract peers, hydration,
                 configuration loss, cluster membership, frame posture,
-                synthetic source integrity).
+                synthetic source integrity, user source integrity).
 
         Returns:
             None.
@@ -101,6 +109,8 @@ class PersistenceAnalyzer(Cleanable):
                 ClusterMembershipStrategy(),
                 FramePostureStrategy(),
                 SyntheticSourceIntegrityStrategy(),
+                UserSourceIntegrityStrategy(),
+                MutationResearchCompositionStrategy(),
             ]
         )
 

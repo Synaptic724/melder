@@ -91,6 +91,7 @@ class SpellCrystal(Cleanable):
             spell: Spell,
             user_source_root_paths: Optional[Sequence[Union[str, Path]]] = None,
             spellbook_id: Optional[str] = None,
+            retain_user_sources: bool = False,
     ) -> None:
         """
         Initialize one spell-targeted module dependency manifest.
@@ -130,6 +131,13 @@ class SpellCrystal(Cleanable):
                 seam. It is the crystal's parent edge inside a
                 PersistenceProfile; None when the crystal is built
                 outside a bind context.
+            retain_user_sources:
+                Opt-in S2 physical custody: True harvests the source
+                TEXT of every walked user_source module into the carried
+                analysis ("user_module_sources") so fresh pods can
+                rebuild absent user files through the synthetic module
+                lane. False (default) records paths and fingerprints
+                only - byte-identical to the pre-S2 record.
 
         Returns:
             None.
@@ -249,6 +257,7 @@ class SpellCrystal(Cleanable):
         analyzer = CrystalAnalyzer(
             user_source_root_paths=self._user_root_paths,
             site_package_root_paths=self._site_package_root_paths,
+            retain_user_sources=retain_user_sources,
         )
         try:
             self._analysis: CrystalAnalysisResult = analyzer.analyze_spell_root(
@@ -994,6 +1003,12 @@ class SpellCrystal(Cleanable):
                 ],
                 "synthetic_module_sources": analysis_payload[
                     "synthetic_module_sources"
+                ],
+                # S2 physical custody (opt-in): retained user-module
+                # sources; empty dict when retention is off (additive,
+                # byte-compatible for consumers using .get).
+                "user_module_sources": analysis_payload[
+                    "user_module_sources"
                 ],
                 "user_source_targets": analysis_payload["user_source_targets"],
                 "site_package_targets": analysis_payload["site_package_targets"],
