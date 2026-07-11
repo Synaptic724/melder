@@ -133,12 +133,17 @@ def test_component_root_configuration_activation_matrix(
     unrestricted: bool,
 ) -> None:
     """
-    Validate the Aether-owned root accepts activated configuration across both postures.
+    Validate the Aether-owned root accepts activated configuration across the
+    posture matrix (both registry keys are required at validate; the
+    enforcement posture alternates on its own axis and must propagate to the
+    owned sets at activation).
     """
+    enforcement = case_index % 3 == 0
     aether = Aether()
     root = aether.mutation_research
     configuration = root.create_configuration()
     configuration.with_unrestricted_module_mutations(unrestricted)
+    configuration.with_lane_type_enforcement(enforcement)
     configuration.activate()
 
     root.configure(configuration)
@@ -148,5 +153,7 @@ def test_component_root_configuration_activation_matrix(
     assert root.is_activated is True
     assert root.configuration is configuration
     assert root.configuration.get_property("unrestricted_module_mutations") is unrestricted
+    assert root.configuration.get_property("lane_type_enforcement") is enforcement
+    assert root.research_set().lane_type_enforcement is enforcement
     root.deactivate()
     assert root.is_activated is False

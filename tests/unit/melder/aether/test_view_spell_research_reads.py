@@ -9,12 +9,19 @@ from melder.nexus.rift.frame_viewer.view_spell import ViewSpell
 @pytest.fixture()
 def _spell_viewer(monkeypatch: pytest.MonkeyPatch) -> ViewSpell:
     """
-    Build one detached ViewSpell whose identity read answers a fixed spell.
+    Build one ViewSpell over a mocked frame helper with a stubbed identity.
+
+    Contract notes:
+        - The frame helper must be PRESENT (a MagicMock context-managers
+          through `_entered_view_action`): every public view verb enters
+          the frame-scoped action hook before its body runs, so a detached
+          viewer refuses at the hook, not in the verb.
+        - The identity stub is class-level; ViewSpell is slotted, so
+          per-instance method assignment is unavailable.
 
     Args:
         monkeypatch:
-            Pytest patcher (class-level identity stub; ViewSpell is
-            slotted, so per-instance method assignment is unavailable).
+            Pytest patcher.
 
     Returns:
         ViewSpell: Viewer with `describe_spell_identity` stubbed.
@@ -27,7 +34,7 @@ def _spell_viewer(monkeypatch: pytest.MonkeyPatch) -> ViewSpell:
             "spell_id": "sha-viewer",
         },
     )
-    return ViewSpell(frame_view=None)
+    return ViewSpell(frame_view=MagicMock())
 
 
 def test_describe_spell_source_honest_when_research_inactive(

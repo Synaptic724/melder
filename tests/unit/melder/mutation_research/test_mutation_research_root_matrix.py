@@ -53,7 +53,10 @@ def test_unit_configuration_builder_handoff_matrix(case_index: int) -> None:
     if case_index % 2 == 0:
         builder.with_defaults()
     else:
+        # The explicit lane sets the FULL registry (validate requires every
+        # key at freeze/activate time).
         builder.with_unrestricted_module_mutations(True)
+        builder.with_lane_type_enforcement(True)
 
     if case_index % 4 == 0:
         configuration = builder.activate()
@@ -66,10 +69,13 @@ def test_unit_configuration_builder_handoff_matrix(case_index: int) -> None:
         assert configuration.cleaned is False
 
     assert configuration.has_property("unrestricted_module_mutations") is True
+    assert configuration.has_property("lane_type_enforcement") is True
     if case_index % 2 == 0:
         assert configuration.get_property("unrestricted_module_mutations") is False
+        assert configuration.get_property("lane_type_enforcement") is False
     else:
         assert configuration.get_property("unrestricted_module_mutations") is True
+        assert configuration.get_property("lane_type_enforcement") is True
 
 
 @pytest.mark.parametrize(

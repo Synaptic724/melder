@@ -22,13 +22,15 @@ def test_reload_applies_recorded_truth_over_defaults():
     """
     configuration = MutationResearchConfiguration()
     try:
-        outcome = configuration.load_recorded_dictionary(
-            {"unrestricted_module_mutations": True}
-        )
+        outcome = configuration.load_recorded_dictionary({
+            "unrestricted_module_mutations": True,
+            "lane_type_enforcement": True,
+        })
         assert outcome == {"rejected": [], "backfilled": []}
         assert configuration.get_property(
             "unrestricted_module_mutations"
         ) is True
+        assert configuration.get_property("lane_type_enforcement") is True
         assert configuration.frozen is True
         assert configuration.activated is True
     finally:
@@ -44,10 +46,14 @@ def test_reload_backfills_missing_keys_and_reports_them():
     try:
         outcome = configuration.load_recorded_dictionary({})
         assert outcome["rejected"] == []
-        assert outcome["backfilled"] == ["unrestricted_module_mutations"]
+        assert outcome["backfilled"] == [
+            "lane_type_enforcement",
+            "unrestricted_module_mutations",
+        ]
         assert configuration.get_property(
             "unrestricted_module_mutations"
         ) is False
+        assert configuration.get_property("lane_type_enforcement") is False
     finally:
         configuration.cleanup()
 
@@ -75,10 +81,15 @@ def test_reload_rejects_unknown_and_mistyped_keys_with_reasons():
         # A refused registry key rides BOTH lists (Nexus-lane semantics):
         # "rejected" carries the reason, and because it never applied,
         # "backfilled" honestly reports that the defaults floor holds.
+        # lane_type_enforcement was never recorded here, so it backfills
+        # alongside the refused key.
         assert configuration.get_property(
             "unrestricted_module_mutations"
         ) is False
-        assert outcome["backfilled"] == ["unrestricted_module_mutations"]
+        assert outcome["backfilled"] == [
+            "lane_type_enforcement",
+            "unrestricted_module_mutations",
+        ]
     finally:
         configuration.cleanup()
 

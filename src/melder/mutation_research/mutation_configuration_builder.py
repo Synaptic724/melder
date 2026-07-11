@@ -98,6 +98,24 @@ class MutationResearchConfigurationBuilder(Cleanable):
         self._configuration.with_unrestricted_module_mutations(enabled)
         return self
 
+    def with_lane_type_enforcement(
+            self,
+            enabled: bool,
+    ) -> "MutationResearchConfigurationBuilder":
+        """
+        Set the lane-type-enforcement posture on the wrapped config.
+
+        Args:
+            enabled:
+                Whether type-mixing lane joins require force=True.
+
+        Returns:
+            MutationResearchConfigurationBuilder: This builder.
+        """
+        self.check_cleaned()
+        self._configuration.with_lane_type_enforcement(enabled)
+        return self
+
     def build(self) -> MutationResearchConfiguration:
         """
         Transfer the wrapped mutable configuration to the caller.
