@@ -1433,8 +1433,10 @@ class CodegenCommandSystem(CommandSystem):
                 action_name="research_group_register",
                 frame_name=None,
         ), self._lock:
-            node = self._require_live_mutation_research().research_set(
-            ).register_group(
+            # Root facade (not the set directly): the ambient campaign
+            # stamp rides compositions exactly as it rides runtime
+            # auto-records (parity law).
+            node = self._require_live_mutation_research().register_group(
                 member_spell_ids,
                 lane=lane,
                 reason=reason,
@@ -1466,8 +1468,8 @@ class CodegenCommandSystem(CommandSystem):
                 action_name="research_group_recompose",
                 frame_name=None,
         ), self._lock:
-            node = self._require_live_mutation_research().research_set(
-            ).recompose_group(
+            # Root facade: ambient campaign stamp (parity law).
+            node = self._require_live_mutation_research().recompose_group(
                 previous_group_id,
                 add=add,
                 remove=remove,

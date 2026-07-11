@@ -556,7 +556,10 @@ class ResearchSet(Cleanable):
                 if entry_lane is not None:
                     involved.add(entry_lane.name)
                 if entry.act not in (
-                        TransitionAct.registered, TransitionAct.staged,
+                        TransitionAct.registered,
+                        TransitionAct.staged,
+                        TransitionAct.group_registered,
+                        TransitionAct.group_recomposed,
                 ):
                     continue
                 spell_id = entry.to_spell_id

@@ -272,6 +272,77 @@ def test_mutation_research_lifecycle_records_all_three_states():
     assert summary["has_mutation_research_crystal"] is True
 
 
+def test_mutation_research_composition_twin_survives_the_real_record():
+    """
+    Purpose:
+        Prove the GroupedResearchNode twin + bootstrap loop END TO END on
+        the REAL crystallizer (no mocks anywhere): a composition emitted
+        through the live persistence sink survives root death and rebuilds
+        in a REBORN root through the virgin-hydration lane at activation.
+    Contract:
+        register_group emits the composition twin; the recorded payload is
+        JSON-serializable with the tagged group node inside; after
+        cleanup + singleton reset, a fresh root's activate() (default
+        hydrate_from_record=True) pulls the record and every grouped read
+        answers over the hydrated registry.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If any hop of the loop drops the composition.
+    """
+    import json
+
+    crystallizer = _activate_crystallizer()
+    research = MutationResearch(Aether())
+    configuration = MutationResearchConfiguration().with_defaults()
+    configuration.activate()
+    research.activate(configuration, hydrate_from_record=False)
+    research_set = research.research_set()
+    member_a = "a" * 64
+    member_b = "b" * 64
+    research_set.register_spell(member_a)
+    research_set.register_spell(member_b)
+    research_set.create_lane("subsystem", lane_type="production")
+    first = research_set.register_group(
+        [member_a, member_b], lane="subsystem", author="mutation_0",
+    )
+    group_id = first.group_id
+
+    # The REAL record carries the tagged composition, JSON-clean.
+    recorded = crystallizer.describe_mutation_research_record()
+    composition = recorded["composition_payload"]
+    assert json.loads(json.dumps(composition)) == composition
+    lanes = composition["default"]["organization"]["lanes"]
+    group_payloads = [
+        node
+        for lane in lanes
+        for node in lane.get("nodes", [])
+        if node.get("node_type") == "group"
+    ]
+    assert [node["group_id"] for node in group_payloads] == [group_id]
+
+    # Root death, then REBIRTH through the bootstrap lane.
+    research.cleanup()
+    MutationResearch._reset_singleton_for_tests()
+    reborn = MutationResearch(Aether())
+    reborn_configuration = MutationResearchConfiguration().with_defaults()
+    reborn_configuration.activate()
+    reborn.activate(reborn_configuration)  # hydrate_from_record default
+
+    view = reborn.group_view(group_id)
+    assert view["member_count"] == 2
+    assert sorted(view["members"].keys()) == [member_a, member_b]
+    row = reborn.residency_view(group_id)
+    assert row["node_type"] == "group"
+    assert row["runtime"] == "informational"
+    assert row["lane_name"] == "subsystem"
+    assert row["lane_type"] == "production"
+    story = reborn.group_history_view(group_id)
+    assert "group_registered" in [
+        entry["act"] for entry in story["entries"]
+    ]
+
+
 def test_frame_cleanup_evicts_the_frame_and_its_whole_subtree():
     """
     Purpose:

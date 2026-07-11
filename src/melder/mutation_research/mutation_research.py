@@ -1164,7 +1164,7 @@ class MutationResearch(Cleanable):
                 "Crystallizer custody is unavailable (inactive or cleaned); "
                 "diff material cannot be resolved."
             )
-        payload = crystallizer.get_spell_crystal(spell_id).describe()
+        payload = self._get_spell_crystal_for_read(spell_id).describe()
         sources: Dict[str, object] = {}
         # BOTH recorded carriers feed comparison material (owner ruling
         # 2026-07-11: diffs speak the FULL module, physical or synthetic):
@@ -1194,6 +1194,59 @@ class MutationResearch(Cleanable):
     # ------------------------------------------------------------------
     # Foresight reads (source / impact / module graph / candidate preview)
     # ------------------------------------------------------------------
+
+    def _get_spell_crystal_for_read(self, spell_id: str) -> object:
+        """
+        Fetch one custody crystal for a spell-grain read, teach-grade.
+
+        Contract:
+            - Parity law: pointing a spell-grain read at a COMPOSITION
+              identity must teach, not confuse - a raw custody KeyError
+              says "no crystal" when the truth is "wrong grain". When the
+              custody miss turns out to be a resident GroupedResearchNode,
+              the refusal names the grain and the right verbs.
+
+        Args:
+            spell_id:
+                Identity the read was pointed at.
+
+        Returns:
+            object:
+                The custody crystal.
+
+        Raises:
+            RuntimeError:
+                If the crystallizer is cleaned/inactive, or the identity
+                is a composition (teach-grade redirect).
+            KeyError:
+                If no custody crystal exists and the identity is not a
+                composition (the honest original).
+        """
+        crystallizer = self._require_live_custody()
+        try:
+            return crystallizer.get_spell_crystal(spell_id)
+        except KeyError:
+            try:
+                research_set = self.research_set()
+                lane_id = research_set.residence_of(spell_id)
+                if lane_id is not None and isinstance(
+                        research_set.get_lane(lane_id).get_node(spell_id),
+                        GroupedResearchNode,
+                ):
+                    raise RuntimeError(
+                        f"Identity '{spell_id[:12]}...' is a COMPOSITION "
+                        f"(GroupedResearchNode) - it has no custody "
+                        f"crystal of its own. Use the composition reads "
+                        f"(group_view / group_footprint_view / "
+                        f"group_impact_view / group_drift_view / "
+                        f"group_history_view) or descend to a member "
+                        f"spell_id for spell-grain reads."
+                    ) from None
+            except RuntimeError:
+                raise
+            except Exception:
+                pass
+            raise
 
     def _require_live_custody(self) -> "Crystallizer":
         """
@@ -1269,9 +1322,7 @@ class MutationResearch(Cleanable):
         self.check_cleaned()
         if not isinstance(spell_id, str) or not spell_id:
             raise ValueError("spell_id must be a non-empty string.")
-        payload = self._require_live_custody().get_spell_crystal(
-            spell_id
-        ).describe()
+        payload = self._get_spell_crystal_for_read(spell_id).describe()
         targets = [str(name) for name in list(payload.get("module_targets", []))]
         if module_name is not None:
             if str(module_name) not in targets:
@@ -1527,9 +1578,7 @@ class MutationResearch(Cleanable):
         self.check_cleaned()
         if not isinstance(spell_id, str) or not spell_id:
             raise ValueError("spell_id must be a non-empty string.")
-        payload = self._require_live_custody().get_spell_crystal(
-            spell_id
-        ).describe()
+        payload = self._get_spell_crystal_for_read(spell_id).describe()
         dependency_map = {
             str(importer): [str(name) for name in list(imported)]
             for importer, imported in dict(
@@ -1626,9 +1675,7 @@ class MutationResearch(Cleanable):
             raise ValueError("spell_id must be a non-empty string.")
         if not isinstance(module_name, str) or not module_name:
             raise ValueError("module_name must be a non-empty string.")
-        payload = self._require_live_custody().get_spell_crystal(
-            spell_id
-        ).describe()
+        payload = self._get_spell_crystal_for_read(spell_id).describe()
         targets = [str(name) for name in list(payload.get("module_targets", []))]
         if module_name not in targets:
             return {
@@ -1724,9 +1771,7 @@ class MutationResearch(Cleanable):
                 f"Unknown part kind '{kind}'. Known kinds: "
                 f"['class', 'function']."
             )
-        payload = self._require_live_custody().get_spell_crystal(
-            spell_id
-        ).describe()
+        payload = self._get_spell_crystal_for_read(spell_id).describe()
         targets = [str(name) for name in list(payload.get("module_targets", []))]
         if module_name is not None:
             search_order = [module_name] if module_name in targets else []
@@ -1806,9 +1851,7 @@ class MutationResearch(Cleanable):
         self.check_cleaned()
         if not isinstance(spell_id, str) or not spell_id:
             raise ValueError("spell_id must be a non-empty string.")
-        payload = self._require_live_custody().get_spell_crystal(
-            spell_id
-        ).describe()
+        payload = self._get_spell_crystal_for_read(spell_id).describe()
         targets = [str(name) for name in list(payload.get("module_targets", []))]
         if module_name is not None:
             if str(module_name) not in targets:
@@ -2087,7 +2130,7 @@ class MutationResearch(Cleanable):
         target_module: Optional[str] = module_name
         if against_spell_id is not None:
             left_material = self._resolve_diff_material(against_spell_id)
-            root_payload = self._require_live_custody().get_spell_crystal(
+            root_payload = self._get_spell_crystal_for_read(
                 against_spell_id
             ).describe()
             target_module = str(root_payload.get("root_module_name"))
@@ -2495,6 +2538,102 @@ class MutationResearch(Cleanable):
             "members": members,
             "behind_count": behind_count,
         }
+
+    def register_group(
+            self,
+            member_spell_ids: List[str],
+            *,
+            lane: Optional[str] = None,
+            parent_group_ids: Optional[List[str]] = None,
+            author: Optional[str] = None,
+            campaign: Optional[str] = None,
+            reason: Optional[str] = None,
+            set_name: str = "default",
+    ) -> "GroupedResearchNode":
+        """
+        Declare one composition WITH the ambient campaign stamp (parity
+        law: compositions registered through the root carry the active
+        campaign exactly as runtime auto-records do).
+
+        Args:
+            member_spell_ids:
+                Non-empty member identities to pin.
+            lane:
+                Optional lane (name or id).
+            parent_group_ids:
+                Optional composition ancestry.
+            author:
+                Optional registering agent name.
+            campaign:
+                Optional explicit stamp (wins over the ambient one).
+            reason:
+                Optional reason line.
+            set_name:
+                Research set to register into.
+
+        Returns:
+            GroupedResearchNode:
+                The recorded composition node.
+        """
+        self.check_cleaned()
+        effective_campaign = (
+            campaign if campaign is not None else self.active_campaign
+        )
+        return self.research_set(set_name).register_group(
+            member_spell_ids,
+            lane=lane,
+            parent_group_ids=parent_group_ids,
+            author=author,
+            campaign=effective_campaign,
+            reason=reason,
+        )
+
+    def recompose_group(
+            self,
+            previous_group_id: str,
+            *,
+            add: Optional[List[str]] = None,
+            remove: Optional[List[str]] = None,
+            author: Optional[str] = None,
+            campaign: Optional[str] = None,
+            reason: Optional[str] = None,
+            set_name: str = "default",
+    ) -> "GroupedResearchNode":
+        """
+        Evolve one composition WITH the ambient campaign stamp.
+
+        Args:
+            previous_group_id:
+                The composition being evolved.
+            add:
+                Member identities to add.
+            remove:
+                Member identities to drop.
+            author:
+                Optional acting agent name.
+            campaign:
+                Optional explicit stamp (wins over the ambient one).
+            reason:
+                Optional reason line.
+            set_name:
+                Research set to evolve within.
+
+        Returns:
+            GroupedResearchNode:
+                The new composition node.
+        """
+        self.check_cleaned()
+        effective_campaign = (
+            campaign if campaign is not None else self.active_campaign
+        )
+        return self.research_set(set_name).recompose_group(
+            previous_group_id,
+            add=add,
+            remove=remove,
+            author=author,
+            campaign=effective_campaign,
+            reason=reason,
+        )
 
     def _current_compositions(
             self,

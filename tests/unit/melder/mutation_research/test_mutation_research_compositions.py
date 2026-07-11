@@ -364,6 +364,66 @@ def test_reverse_lift_names_pinning_compositions() -> None:
     ] == [group_id]
 
 
+def test_compositions_carry_the_ambient_campaign() -> None:
+    """
+    Verify the parity law: compositions registered/evolved through the
+    ROOT carry the active campaign exactly as runtime auto-records do
+    (explicit stamps win), and campaign_view gathers stamped composition
+    NODES alongside stamped spell nodes.
+    """
+    root = _activated_root(_mock_aether())
+    research_set = root.research_set()
+    research_set.register_spell("sha-a")
+    research_set.register_spell("sha-b")
+    research_set.create_lane("subsystem")
+    root.set_active_campaign("apollo")
+
+    first = root.register_group(["sha-a"], lane="subsystem")
+    assert first.campaign == "apollo"
+
+    second = root.recompose_group(first.group_id, add=["sha-b"])
+    assert second.campaign == "apollo"
+
+    explicit = root.recompose_group(
+        second.group_id, remove=["sha-b"], campaign="artemis",
+    )
+    assert explicit.campaign == "artemis"
+
+    gathered = research_set.campaign_view("apollo")
+    gathered_ids = {
+        row.get("group_id") for row in gathered["nodes"]
+        if row.get("node_type") == "group"
+    }
+    assert gathered_ids == {first.group_id, second.group_id}
+
+
+def test_spell_grain_reads_teach_on_composition_ids() -> None:
+    """
+    Verify the parity refusal: pointing a spell-grain custody read at a
+    composition identity refuses TEACH-GRADE (naming the grain and the
+    composition reads) instead of a raw custody KeyError; unknown
+    identities keep the honest original KeyError.
+    """
+    aether = _mock_aether()
+    root = _activated_root(aether)
+    research_set = root.research_set()
+    research_set.register_spell("sha-a")
+    research_set.create_lane("subsystem")
+    group = research_set.register_group(["sha-a"], lane="subsystem")
+
+    def _no_crystal(spell_id):
+        raise KeyError(spell_id)
+
+    aether._crystallizer.get_spell_crystal.side_effect = _no_crystal
+
+    with pytest.raises(RuntimeError, match="COMPOSITION"):
+        root.source_view(group.group_id)
+    with pytest.raises(RuntimeError, match="group_footprint_view"):
+        root.module_graph_view(group.group_id)
+    with pytest.raises(KeyError):
+        root.source_view("sha-truly-unknown")
+
+
 def test_residency_view_answers_node_type_honestly() -> None:
     """
     Verify kind-awareness: a composition identity answers runtime
