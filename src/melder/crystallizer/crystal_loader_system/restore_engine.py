@@ -302,6 +302,7 @@ class RestoreEngine(Cleanable):
         "_report",
         "_consumed",
         "_refuse_on_blockers",
+        "_skip_existing",
         "_aether_payload",
         "_crystallizer_payload",
         "_nexus_payload",
@@ -328,6 +329,7 @@ class RestoreEngine(Cleanable):
             checkpoint_ids: List[str],
             chain: List[Dict[str, object]],
             refuse_on_blockers: bool = False,
+            skip_existing: bool = False,
     ) -> None:
         """
         Initialize one engine over a detached, ordered checkpoint chain.
@@ -348,6 +350,16 @@ class RestoreEngine(Cleanable):
                 needed). LoadAdmission always passes True; the default
                 False preserves the legacy direct-engine behavior for
                 existing unit suites.
+            skip_existing:
+                S1 skip lanes: when True, live-host name collisions met
+                DURING replay skip instead of failing - a taken conduit
+                name conjures UNNAMED with shortfall
+                "conduit_name_taken_built_unnamed", and an existing
+                cluster is REUSED (members join it) with shortfall
+                "cluster_existed_members_joined". False preserves the
+                fail-fast behavior (host preflight normally refused these
+                rows already; mid-replay collisions then surface as
+                stage failures).
 
         Returns:
             None.
@@ -370,6 +382,7 @@ class RestoreEngine(Cleanable):
         )
         self._consumed: bool = False
         self._refuse_on_blockers: bool = refuse_on_blockers
+        self._skip_existing: bool = bool(skip_existing)
         # Folded stores: recorded truth after later-wins + tombstones.
         self._aether_payload: Optional[Dict[str, object]] = None
         self._crystallizer_payload: Optional[Dict[str, object]] = None
@@ -416,6 +429,7 @@ class RestoreEngine(Cleanable):
         del self._report
         del self._consumed
         del self._refuse_on_blockers
+        del self._skip_existing
         del self._aether_payload
         del self._crystallizer_payload
         del self._nexus_payload
@@ -1194,10 +1208,27 @@ class RestoreEngine(Cleanable):
         if not recorded:
             return None
         conduit_id, payload = recorded[0]
+        recorded_name = payload.get("conduit_name")
+        if (
+            self._skip_existing
+            and recorded_name is not None
+            and spellbook._aetheric_frame._conduit_cloud.has_conduit_name(
+                str(recorded_name)
+            )
+        ):
+            # S1 skip lane: the live world already owns this conduit name;
+            # build UNNAMED so the replay completes, and report the dropped
+            # identity honestly (names are never replay resolution keys -
+            # links and contracts resolve through the identity map, so the
+            # name drop is safe).
+            recorded_name = None
+            self._report.add_shortfall(
+                "conduit", conduit_id, "conduit_name_taken_built_unnamed"
+            )
         conduit = spellbook.conjure(
             policy=str(payload.get("policy_name", "default")),
             dynamic=bool(payload.get("dynamic", True)),
-            name=payload.get("conduit_name"),
+            name=recorded_name,
         )
         self._built_stack.append(("conduit", conduit))
         self._live_conduits[conduit_id] = conduit
@@ -1477,8 +1508,20 @@ class RestoreEngine(Cleanable):
             # yet; direct field access is deliberate (owned repo, visible
             # contract) - follow-up: public accessor on AethericFrame.
             cloud = frame._conduit_cloud
-            cloud.create_cluster(str(cluster_name))
-            self._report.record_built("cluster")
+            if (
+                self._skip_existing
+                and str(cluster_name) in cloud._conduit_clusters
+            ):
+                # S1 skip lane: the live world already owns this cluster;
+                # REUSE it - recorded members join the existing cluster
+                # below, and the reuse is reported honestly (not counted
+                # as built).
+                self._report.add_shortfall(
+                    "cluster", cluster_id, "cluster_existed_members_joined"
+                )
+            else:
+                cloud.create_cluster(str(cluster_name))
+                self._report.record_built("cluster")
             for member_recorded_id in list(
                     payload.get("member_conduit_ids", [])
             ):

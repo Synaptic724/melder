@@ -17,12 +17,13 @@ Lane: EPIC-2026-07-09-crystallizer-subsystem-decomposition, story S4;
 rename: EPIC-2026-07-11-crystallizer-v3-horizon-iteration, story S1.
 """
 
-from typing import Dict, List, TYPE_CHECKING
+from typing import Dict, List, Optional, TYPE_CHECKING
 
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.crystallizer.crystal_loader_system.load_plan import LoadPlan
 
 if TYPE_CHECKING:
+    from melder.aether.aether import Aether
     from melder.crystallizer.persistence.persistence_system import (
         PersistenceSystem,
     )
@@ -66,9 +67,14 @@ class LoadAdmission(Cleanable):
 
     __slots__ = Cleanable.__slots__ + [
         "_persistence_system",
+        "_aether",
     ]
 
-    def __init__(self, persistence_system: PersistenceSystem) -> None:
+    def __init__(
+            self,
+            persistence_system: PersistenceSystem,
+            aether: Optional["Aether"] = None,
+    ) -> None:
         """
         Initialize the admission plane over one borrowed record.
 
@@ -76,6 +82,13 @@ class LoadAdmission(Cleanable):
             persistence_system:
                 The crystallizer's record (borrowed; used for chain
                 detachment only, never cleaned here).
+            aether:
+                Optional borrowed Aether singleton (S1 load-scope
+                maturity): when supplied, formation loads run the HOST
+                preflight - live-world collision checks (frame presence/
+                posture, conduit and cluster name collisions) - before
+                any replay. None = bare-record posture: no host to check,
+                host preflight reports empty (unit suites over records).
 
         Returns:
             None.
@@ -87,10 +100,11 @@ class LoadAdmission(Cleanable):
         if persistence_system is None:
             raise TypeError("persistence_system cannot be None.")
         self._persistence_system: PersistenceSystem = persistence_system
+        self._aether: Optional["Aether"] = aether
 
     def cleanup(self) -> None:
         """
-        Idempotently dereference the borrowed record.
+        Idempotently dereference the borrowed record and host.
 
         Returns:
             None.
@@ -99,6 +113,7 @@ class LoadAdmission(Cleanable):
             return
         self._cleaned = True
         del self._persistence_system
+        del self._aether
 
     # ------------------------------------------------------------------
     # PLAN
@@ -134,6 +149,8 @@ class LoadAdmission(Cleanable):
     def plan_formation_load(
             self,
             formation_record: Dict[str, object],
+            target_frame_name: Optional[str] = None,
+            skip_existing: bool = False,
     ) -> LoadPlan:
         """
         Build the declarative plan for one scoped formation load.
@@ -141,12 +158,30 @@ class LoadAdmission(Cleanable):
         Purpose:
             Manufacture the single synthetic chain window (journal minted
             in the canonical kind order - moved from the ledger in S4)
-            and derive the plan's scope from the stored record.
+            and derive the plan's scope from the stored record. S1
+            load-scope maturity: an optional RETARGET rewrites the
+            window's frame identity so a formation captured on one frame
+            composes into another.
+
+        Contract:
+            - The retarget rewrite happens in the DETACHED window ONLY:
+              frame twins re-key, journal frame rows re-key, and book/
+              cluster `frame_name` edges rewrite; the stored record dict
+              the caller passed is never mutated (copy-on-write).
+            - Formations are single-frame slices by capture design;
+              retargeting a window carrying MORE than one frame twin
+              refuses (teach-grade).
 
         Args:
             formation_record:
                 A stored formation record (payloads + metadata) as
                 captured by the ledger and loaded by the asset system.
+            target_frame_name:
+                Optional frame the load should aim at instead of the
+                recorded identity. None = keep the recorded frame.
+            skip_existing:
+                When True, host name-collision blockers downgrade to
+                "skipped_existing" and the engine runs its skip lanes.
 
         Returns:
             LoadPlan: Conduit- or frame-scoped plan with one window.
@@ -154,6 +189,8 @@ class LoadAdmission(Cleanable):
         Raises:
             RuntimeError: If the admission plane has been cleaned.
             KeyError: If the record lacks its required keys.
+            ValueError: If a retarget hits a multi-frame window or a
+                falsy/non-string target name.
         """
         self.check_cleaned()
         profile_name = str(formation_record["profile_name"])
@@ -161,6 +198,10 @@ class LoadAdmission(Cleanable):
         scope_record = dict(formation_record["scope"])
         plan_scope = "conduit" if "conduit_id" in scope_record else "frame"
         payloads = dict(formation_record["payloads"])
+        if target_frame_name is not None:
+            payloads = LoadAdmission._retarget_payloads(
+                payloads, target_frame_name
+            )
 
         journal: List[List[object]] = []
         sequence = 0
@@ -176,7 +217,67 @@ class LoadAdmission(Cleanable):
             source_label="formation-{0}".format(formation_name),
             checkpoint_ids=["formation-{0}".format(formation_name)],
             chain=[window],
+            target_frame_name=target_frame_name,
+            skip_existing=skip_existing,
         )
+
+    @staticmethod
+    def _retarget_payloads(
+            payloads: Dict[str, object],
+            target_frame_name: str,
+    ) -> Dict[str, object]:
+        """
+        Rewrite one detached payload map's frame identity (copy-on-write).
+
+        Contract:
+            - Frame twins re-key to the target (posture payloads carry no
+              inner name field - the key IS the identity).
+            - Every spellbook and cluster payload's `frame_name` edge
+              rewrites to the target (formations are single-frame slices;
+              the engine derives conduit frames from their books, so
+              conduit payloads carry no frame edge of their own).
+            - Inputs are never mutated: touched kinds are shallow-copied
+              per payload before rewrite.
+
+        Args:
+            payloads:
+                The record's kind -> {key -> payload} map (detached).
+            target_frame_name:
+                The frame the window should aim at.
+
+        Returns:
+            Dict[str, object]: A rewritten copy of the payload map.
+
+        Raises:
+            ValueError: If the target name is falsy/non-string or the
+                window carries more than one frame twin.
+        """
+        if not isinstance(target_frame_name, str) or not target_frame_name:
+            raise ValueError(
+                "target_frame_name must be a non-empty string; got "
+                "{0!r}.".format(target_frame_name)
+            )
+        rewritten = dict(payloads)
+        frame_twins = dict(rewritten.get("frame", {}))
+        if len(frame_twins) > 1:
+            raise ValueError(
+                "Retarget refused: the window carries {0} frame twins "
+                "({1}); formations retarget single-frame slices only."
+                .format(len(frame_twins), sorted(frame_twins.keys()))
+            )
+        if frame_twins:
+            recorded_name, frame_payload = next(iter(frame_twins.items()))
+            rewritten["frame"] = {target_frame_name: dict(frame_payload)}
+        for kind in ("spellbook", "cluster"):
+            kind_payloads = dict(rewritten.get(kind, {}))
+            for key, payload in list(kind_payloads.items()):
+                adjusted = dict(payload)
+                if "frame_name" in adjusted:
+                    adjusted["frame_name"] = target_frame_name
+                kind_payloads[key] = adjusted
+            if kind_payloads:
+                rewritten[kind] = kind_payloads
+        return rewritten
 
     # ------------------------------------------------------------------
     # EXECUTE + ADJUDICATE
@@ -189,9 +290,15 @@ class LoadAdmission(Cleanable):
         Contract:
             - The engine refuses "blockers" verdicts BEFORE any replay
               (standard admission; teach-grade error names the rows).
+            - S1 HOST PREFLIGHT (conduit/frame scopes, live host wired):
+              live-world collision findings are computed FIRST; host
+              blockers refuse pre-replay unless the plan carries
+              skip_existing (which downgrades them to "skipped_existing"
+              and arms the engine's skip lanes).
             - The returned payload is the engine report's describe() plus
               the additive "admission" view (facade payloads stay
-              byte-compatible superset).
+              byte-compatible superset); the admission view gains the
+              additive "host" key.
 
         Args:
             plan:
@@ -200,15 +307,38 @@ class LoadAdmission(Cleanable):
         Returns:
             Dict[str, object]:
                 The detached report payload + {"admission": {"scope",
-                "verdict", "reclassified"}}.
+                "verdict", "reclassified", "host"}}.
 
         Raises:
             RuntimeError:
                 If the admission plane was cleaned, admission refused the
-                load (blockers), or a replay stage failed (after teardown;
-                cause chained).
+                load (host-collision or preflight blockers), or a replay
+                stage failed (after teardown; cause chained).
         """
         self.check_cleaned()
+        host_findings = self._preflight_host(plan)
+        host_blockers = [
+            row for row in host_findings
+            if row["severity"] == "blocker"
+        ]
+        if host_blockers and not plan.skip_existing:
+            raise RuntimeError(
+                "Load admission refused by host preflight ({0} blocker "
+                "row(s)): {1}".format(
+                    len(host_blockers),
+                    "; ".join(
+                        "{0} {1}={2}".format(
+                            row["check"], row["kind"], row["key"]
+                        )
+                        for row in host_blockers
+                    ),
+                )
+            )
+        if plan.skip_existing:
+            for row in host_findings:
+                if row["severity"] == "blocker":
+                    row["severity"] = "skipped_existing"
+
         # Lazy import: the engine drives runtime surfaces (3.14t-only
         # import chain) and must not burden plan-only usage.
         from melder.crystallizer.crystal_loader_system.restore_engine import (
@@ -220,6 +350,7 @@ class LoadAdmission(Cleanable):
             checkpoint_ids=plan.checkpoint_ids,
             chain=plan.chain,
             refuse_on_blockers=True,
+            skip_existing=plan.skip_existing,
         )
         try:
             report = engine.restore()
@@ -232,7 +363,122 @@ class LoadAdmission(Cleanable):
             dict(payload.get("preflight", {})),
             plan.scope,
         )
+        payload["admission"]["host"] = {
+            "findings": host_findings,
+            "checked": self._aether is not None,
+        }
         return payload
+
+    def _preflight_host(self, plan: LoadPlan) -> List[Dict[str, object]]:
+        """
+        Compute live-world collision findings for one formation plan.
+
+        Contract:
+            - Conduit/frame scopes only; world loads replay onto fresh
+              boots and skip host checks entirely.
+            - NEVER creates frames: frame presence reads the Aether
+              registry directly (documented private seam - the
+              crystallizer is Aether-owned; under lazy frames an
+              _ensure_frame probe would BIRTH the frame it checks for).
+            - Checks: frame missing -> "info" (replay creates it);
+              recorded-vs-live posture conflict -> "warning"; conduit
+              name collision (cloud.has_conduit_name) -> "blocker";
+              cluster name collision -> "blocker" (documented private
+              seam: the cloud has no public cluster-existence probe yet;
+              follow-up tracked in the S1 story).
+            - No host wired (self._aether is None) -> empty findings.
+
+        Args:
+            plan:
+                The plan whose single window is checked against the host.
+
+        Returns:
+            List[Dict[str, object]]:
+                Rows of {"check", "severity", "kind", "key", "detail"}.
+        """
+        if self._aether is None or plan.scope == "world":
+            return []
+        findings: List[Dict[str, object]] = []
+        window = plan.chain[0]
+        payloads = dict(window.get("payloads", {}))
+        frames = self._aether._aetheric_frames
+
+        for frame_name, frame_payload in dict(
+                payloads.get("frame", {})
+        ).items():
+            live_frame = frames.get(str(frame_name))
+            if live_frame is None:
+                findings.append({
+                    "check": "frame_missing", "severity": "info",
+                    "kind": "frame", "key": str(frame_name),
+                    "detail": "replay postures it into existence",
+                })
+                continue
+            recorded_state = dict(frame_payload).get("system_state")
+            live_state = str(
+                live_frame.frame_configuration.system_state.name
+            )
+            if (
+                recorded_state is not None
+                and str(recorded_state) != live_state
+            ):
+                findings.append({
+                    "check": "frame_posture_conflict",
+                    "severity": "warning",
+                    "kind": "frame", "key": str(frame_name),
+                    "detail": "recorded={0} live={1}".format(
+                        recorded_state, live_state
+                    ),
+                })
+
+        book_frames = {
+            str(book_key): str(dict(book).get("frame_name", "default"))
+            for book_key, book in dict(
+                payloads.get("spellbook", {})
+            ).items()
+        }
+        for conduit_key, conduit_payload in dict(
+                payloads.get("conduit", {})
+        ).items():
+            recorded_name = dict(conduit_payload).get("conduit_name")
+            if recorded_name is None:
+                continue
+            host_frame = frames.get(book_frames.get(
+                str(dict(conduit_payload).get("spellbook_id")), "default"
+            ))
+            if host_frame is None:
+                continue
+            if host_frame._conduit_cloud.has_conduit_name(
+                    str(recorded_name)
+            ):
+                findings.append({
+                    "check": "conduit_name_taken", "severity": "blocker",
+                    "kind": "conduit", "key": str(conduit_key),
+                    "detail": "name={0}".format(recorded_name),
+                })
+
+        for cluster_key, cluster_payload in dict(
+                payloads.get("cluster", {})
+        ).items():
+            cluster_name = dict(cluster_payload).get("cluster_name")
+            if cluster_name is None:
+                continue
+            host_frame = frames.get(str(
+                dict(cluster_payload).get("frame_name", "default")
+            ))
+            if host_frame is None:
+                continue
+            # Documented private seam (mirrors the engine's cluster
+            # replay): no public cluster-existence probe on the cloud.
+            if str(cluster_name) in (
+                    host_frame._conduit_cloud._conduit_clusters
+            ):
+                findings.append({
+                    "check": "cluster_name_taken", "severity": "blocker",
+                    "kind": "cluster", "key": str(cluster_key),
+                    "detail": "name={0}".format(cluster_name),
+                })
+        return findings
 
     @staticmethod
     def _adjudicate_for_scope(

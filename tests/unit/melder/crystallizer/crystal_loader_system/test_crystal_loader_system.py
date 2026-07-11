@@ -269,3 +269,222 @@ def test_detach_profile_chain_refuses_unknown_checkpoints():
         assert raised
     finally:
         record_system.cleanup()
+
+
+def _stub_host(frames):
+    """
+    Build a minimal Aether stand-in for host-preflight unit runs.
+
+    The admission plane touches exactly: `_aetheric_frames` (registry
+    read, never creating), `frame.frame_configuration.system_state.name`,
+    `cloud.has_conduit_name`, and the documented `_conduit_clusters`
+    seam - so the stubs carry exactly those surfaces.
+    """
+    class _StubCloud:
+        def __init__(self, taken_names=(), clusters=()):
+            self._taken = set(taken_names)
+            self._conduit_clusters = {name: object() for name in clusters}
+
+        def has_conduit_name(self, name):
+            return name in self._taken
+
+    class _StubState:
+        def __init__(self, name):
+            self.name = name
+
+    class _StubFrameConfiguration:
+        def __init__(self, state_name):
+            self.system_state = _StubState(state_name)
+
+    class _StubFrame:
+        def __init__(self, state_name="dynamic", taken_names=(),
+                     clusters=()):
+            self.frame_configuration = _StubFrameConfiguration(state_name)
+            self._conduit_cloud = _StubCloud(taken_names, clusters)
+
+    class _StubAether:
+        def __init__(self, frame_map):
+            self._aetheric_frames = frame_map
+
+    built = {
+        name: _StubFrame(**spec) for name, spec in frames.items()
+    }
+    return _StubAether(built)
+
+
+def _retargetable_record():
+    """One frame-scoped formation record with every frame-edge carrier."""
+    return {
+        "formation_name": "mover",
+        "profile_name": "default",
+        "scope": {"frame_name": "alpha"},
+        "created_at": "01J1",
+        "description": "",
+        "payloads": {
+            "frame": {"alpha": {"system_state": "dynamic"}},
+            "spellbook": {
+                "book-1": {"spellbook_id": "book-1", "frame_name": "alpha"},
+            },
+            "conduit": {
+                "cond-1": {
+                    "conduit_id": "cond-1", "spellbook_id": "book-1",
+                    "conduit_name": "pump",
+                },
+            },
+            "cluster": {
+                "clu-1": {
+                    "cluster_id": "clu-1", "cluster_name": "pod",
+                    "frame_name": "alpha",
+                },
+            },
+        },
+    }
+
+
+def test_retarget_rewrites_the_detached_window_only():
+    """
+    Contract (S1): target_frame_name re-keys the frame twin, rewrites the
+    journal's frame row and every book/cluster frame edge - and the stored
+    record the caller passed is NEVER mutated (copy-on-write).
+    """
+    record_system = PersistenceSystem()
+    admission_plane = LoadAdmission(record_system)
+    formation_record = _retargetable_record()
+    try:
+        plan = admission_plane.plan_formation_load(
+            formation_record, target_frame_name="beta"
+        )
+        try:
+            assert plan.target_frame_name == "beta"
+            window = plan.chain[0]
+            payloads = window["payloads"]
+            assert list(payloads["frame"].keys()) == ["beta"]
+            assert payloads["spellbook"]["book-1"]["frame_name"] == "beta"
+            assert payloads["cluster"]["clu-1"]["frame_name"] == "beta"
+            frame_rows = [
+                entry for entry in window["journal"] if entry[1] == "frame"
+            ]
+            assert [entry[2] for entry in frame_rows] == ["beta"]
+            # Copy-on-write: the caller's record still says alpha.
+            assert list(
+                formation_record["payloads"]["frame"].keys()
+            ) == ["alpha"]
+            assert formation_record["payloads"]["spellbook"]["book-1"][
+                "frame_name"
+            ] == "alpha"
+        finally:
+            plan.cleanup()
+    finally:
+        admission_plane.cleanup()
+        record_system.cleanup()
+
+
+def test_retarget_refuses_multi_frame_windows_and_bad_names():
+    """
+    Contract (S1): formations are single-frame slices - a multi-frame
+    window refuses retargeting, and falsy/non-string targets refuse.
+    """
+    record_system = PersistenceSystem()
+    admission_plane = LoadAdmission(record_system)
+    formation_record = _retargetable_record()
+    formation_record["payloads"]["frame"]["gamma"] = {
+        "system_state": "dynamic"
+    }
+    try:
+        for bad_target in ("beta", ""):
+            try:
+                admission_plane.plan_formation_load(
+                    formation_record, target_frame_name=bad_target
+                )
+                raised = False
+            except ValueError:
+                raised = True
+            assert raised
+    finally:
+        admission_plane.cleanup()
+        record_system.cleanup()
+
+
+def test_host_preflight_reports_all_four_check_kinds():
+    """
+    Contract (S1): against a wired host, the preflight reports frame
+    absence as info, posture conflict as warning, and conduit/cluster
+    name collisions as blockers; with no host wired it reports empty.
+    """
+    record_system = PersistenceSystem()
+    host = _stub_host({
+        "alpha": {
+            "state_name": "automatic",
+            "taken_names": ("pump",),
+            "clusters": ("pod",),
+        },
+    })
+    admission_plane = LoadAdmission(record_system, aether=host)
+    bare_plane = LoadAdmission(PersistenceSystem())
+    try:
+        plan = admission_plane.plan_formation_load(_retargetable_record())
+        try:
+            findings = admission_plane._preflight_host(plan)
+            by_check = {row["check"]: row for row in findings}
+            assert by_check["frame_posture_conflict"]["severity"] == (
+                "warning"
+            )
+            assert by_check["conduit_name_taken"]["severity"] == "blocker"
+            assert by_check["cluster_name_taken"]["severity"] == "blocker"
+            assert bare_plane._preflight_host(plan) == []
+
+            retargeted = admission_plane.plan_formation_load(
+                _retargetable_record(), target_frame_name="elsewhere"
+            )
+            try:
+                moved = admission_plane._preflight_host(retargeted)
+                moved_checks = {row["check"] for row in moved}
+                # The target frame does not exist: replay creates it, and
+                # nothing can collide inside a frame that is not there.
+                assert moved_checks == {"frame_missing"}
+            finally:
+                retargeted.cleanup()
+        finally:
+            plan.cleanup()
+    finally:
+        admission_plane.cleanup()
+        bare_plane.cleanup()
+        record_system.cleanup()
+
+
+def test_host_blockers_refuse_before_any_replay_unless_skipping():
+    """
+    Contract (S1): host-collision blockers refuse execute_plan BEFORE the
+    engine is even imported (teach-grade error names the rows); the same
+    plan with skip_existing carries the downgrade armed instead.
+    """
+    record_system = PersistenceSystem()
+    host = _stub_host({
+        "alpha": {"state_name": "dynamic", "taken_names": ("pump",)},
+    })
+    admission_plane = LoadAdmission(record_system, aether=host)
+    try:
+        plan = admission_plane.plan_formation_load(_retargetable_record())
+        try:
+            try:
+                admission_plane.execute_plan(plan)
+                raised = None
+            except RuntimeError as exc:
+                raised = str(exc)
+            assert raised is not None
+            assert "host preflight" in raised
+            assert "conduit_name_taken" in raised
+        finally:
+            plan.cleanup()
+
+        armed = admission_plane.plan_formation_load(
+            _retargetable_record(), skip_existing=True
+        )
+        try:
+            assert armed.skip_existing is True
+            assert armed.describe()["skip_existing"] is True
+        finally:
+            armed.cleanup()
+    finally:
+        admission_plane.cleanup()
+        record_system.cleanup()

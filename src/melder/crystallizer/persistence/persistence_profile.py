@@ -785,51 +785,12 @@ class PersistenceProfile(Cleanable):
                     len(self._inactive_spell_crystals_by_spell_id),
             }
 
-    def compose_frame_subtree(self, frame_name: str) -> Dict[str, object]:
-        """
-        Compose the tree view of one frame subtree (frame -> spellbooks ->
-        spell crystals / conduits) from the flat maps.
-
-        Args:
-            frame_name:
-                Canonical frame name to compose.
-
-        Returns:
-            Dict[str, object]:
-                Composed subtree payload (restore-engine input shape).
-
-        Raises:
-            NotImplementedError:
-                Placeholder: composition lands with the restore-engine story.
-        """
-        self.check_cleaned()
-        raise NotImplementedError(
-            "compose_frame_subtree is a placeholder; the tree-view composer "
-            "lands with the restore-engine story (bootstrap epic)."
-        )
-
-    def compose_conduit_subtree(self, conduit_id: str) -> Dict[str, object]:
-        """
-        Compose the tree view of one conduit subtree (conduit + its
-        spellbook's spell crystals) from the flat maps.
-
-        Args:
-            conduit_id:
-                Conduit identity to compose.
-
-        Returns:
-            Dict[str, object]:
-                Composed subtree payload (restore-engine input shape).
-
-        Raises:
-            NotImplementedError:
-                Placeholder: composition lands with the restore-engine story.
-        """
-        self.check_cleaned()
-        raise NotImplementedError(
-            "compose_conduit_subtree is a placeholder; the tree-view composer "
-            "lands with the restore-engine story (bootstrap epic)."
-        )
+    # NOTE (2026-07-11, S1 load-scope maturity, owner ruling): the
+    # compose_frame_subtree / compose_conduit_subtree NotImplementedError
+    # placeholders that lived here were DELETED, not implemented - zero
+    # callers tree-wide, and capture_formation_slice is the composer that
+    # actually shipped (formation records + the LoadAdmission synthetic
+    # window replaced the imagined tree-view shape).
 
     def clear(self) -> None:
         """

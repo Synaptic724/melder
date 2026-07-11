@@ -9,7 +9,7 @@ mediator builds and the engine consumes.
 Lane: EPIC-2026-07-09-crystallizer-subsystem-decomposition, story S4.
 """
 
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from melder.utilities.general_base.cleanable import Cleanable
 
@@ -47,6 +47,8 @@ class LoadPlan(Cleanable):
         "_checkpoint_ids",
         "_chain",
         "_kind_key_counts",
+        "_target_frame_name",
+        "_skip_existing",
     )
 
     def __init__(
@@ -57,6 +59,8 @@ class LoadPlan(Cleanable):
             source_label: str,
             checkpoint_ids: List[str],
             chain: List[Dict[str, object]],
+            target_frame_name: Optional[str] = None,
+            skip_existing: bool = False,
     ) -> None:
         """
         Initialize one declarative load plan.
@@ -75,6 +79,17 @@ class LoadPlan(Cleanable):
                 for formation windows).
             chain:
                 Detached replay windows ({"journal", "payloads"} each).
+            target_frame_name:
+                Retarget provenance (S1 load-scope maturity): when the
+                admission plane rewrote the window's frame identity, this
+                carries the frame name the load now aims at. None = the
+                recorded identity was kept. Descriptive only - the rewrite
+                already happened in the DETACHED window before the plan
+                was built.
+            skip_existing:
+                When True, host-collision blockers were downgraded to
+                "skipped_existing" at admission and the engine runs its
+                skip lanes (unnamed conjure fallback, cluster reuse).
 
         Returns:
             None.
@@ -105,6 +120,8 @@ class LoadPlan(Cleanable):
         self._kind_key_counts: Dict[str, int] = {
             kind: len(keys) for kind, keys in seen_kind_keys.items()
         }
+        self._target_frame_name: Optional[str] = target_frame_name
+        self._skip_existing: bool = bool(skip_existing)
 
     def cleanup(self) -> None:
         """
@@ -122,6 +139,8 @@ class LoadPlan(Cleanable):
         del self._checkpoint_ids
         del self._chain
         del self._kind_key_counts
+        del self._target_frame_name
+        del self._skip_existing
 
     @property
     def scope(self) -> str:
@@ -194,6 +213,30 @@ class LoadPlan(Cleanable):
         self.check_cleaned()
         return dict(self._kind_key_counts)
 
+    @property
+    def target_frame_name(self) -> Optional[str]:
+        """
+        Return the retarget provenance (None = recorded identity kept).
+
+        Returns:
+            Optional[str]: The frame name this load was rewritten to aim
+            at, or None when no retarget happened.
+        """
+        self.check_cleaned()
+        return self._target_frame_name
+
+    @property
+    def skip_existing(self) -> bool:
+        """
+        Return whether host collisions downgrade to skip lanes.
+
+        Returns:
+            bool: True when the engine should run its skip lanes instead
+            of the admission plane refusing on host-collision blockers.
+        """
+        self.check_cleaned()
+        return self._skip_existing
+
     def describe(self) -> Dict[str, Any]:
         """
         Return the plan's inspectable summary (counts, never payloads).
@@ -201,7 +244,8 @@ class LoadPlan(Cleanable):
         Returns:
             Dict[str, Any]:
                 {"scope", "profile_name", "source_label", "window_count",
-                 "checkpoint_ids", "kind_key_counts"}.
+                 "checkpoint_ids", "kind_key_counts", "target_frame_name",
+                 "skip_existing"}.
         """
         self.check_cleaned()
         return {
@@ -211,4 +255,6 @@ class LoadPlan(Cleanable):
             "window_count": len(self._chain),
             "checkpoint_ids": list(self._checkpoint_ids),
             "kind_key_counts": dict(self._kind_key_counts),
+            "target_frame_name": self._target_frame_name,
+            "skip_existing": self._skip_existing,
         }

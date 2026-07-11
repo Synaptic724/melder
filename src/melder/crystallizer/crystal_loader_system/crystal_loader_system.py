@@ -96,7 +96,7 @@ class CrystalLoaderSystem(Cleanable):
         self._persistence_system: PersistenceSystem = persistence_system
         self._aether: Optional["Aether"] = aether
         self._load_admission: LoadAdmission = LoadAdmission(
-            persistence_system
+            persistence_system, aether=aether
         )
         # Durable load state: the last load's detached payload (report +
         # admission view). None until the first load completes.
@@ -177,6 +177,8 @@ class CrystalLoaderSystem(Cleanable):
     def restore_formation_record(
             self,
             formation_record: Dict[str, object],
+            target_frame_name: Optional[str] = None,
+            skip_existing: bool = False,
     ) -> Dict[str, object]:
         """
         Rebuild one loaded formation record through the admission pipeline.
@@ -186,10 +188,20 @@ class CrystalLoaderSystem(Cleanable):
             loads the record (facade-orchestrated), the admission plane
             mints the synthetic window and derives the scope, the gated
             engine replays it, and the adjudicated payload is remembered.
+            S1 load-scope maturity: the load can RETARGET onto another
+            frame and can SKIP host name collisions instead of refusing.
 
         Args:
             formation_record:
                 A stored formation record (payloads + metadata).
+            target_frame_name:
+                Optional frame the formation should compose into instead
+                of its recorded frame (rewrite happens in the detached
+                window only).
+            skip_existing:
+                When True, host name-collision blockers downgrade to
+                "skipped_existing" and the engine runs its skip lanes
+                (unnamed conjure fallback, cluster reuse).
 
         Returns:
             Dict[str, object]:
@@ -214,7 +226,9 @@ class CrystalLoaderSystem(Cleanable):
                 self._aether.acquire_load_authority("formation_load")
             try:
                 plan = self._load_admission.plan_formation_load(
-                    formation_record
+                    formation_record,
+                    target_frame_name=target_frame_name,
+                    skip_existing=skip_existing,
                 )
                 try:
                     payload = self._load_admission.execute_plan(plan)

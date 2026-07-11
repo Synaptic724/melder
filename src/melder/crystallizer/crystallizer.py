@@ -1478,6 +1478,8 @@ class Crystallizer(Cleanable):
             self,
             formation_name: str,
             profile_name: Optional[str] = None,
+            target_frame_name: Optional[str] = None,
+            skip_existing: bool = False,
     ) -> Dict[str, object]:
         """
         Rebuild one stored formation directly (scoped restore).
@@ -1485,21 +1487,39 @@ class Crystallizer(Cleanable):
         Purpose:
             Facade over PersistenceSystem.restore_formation: reload JUST
             the formation - not the world - with the engine's normal
-            all-or-nothing and shortfall semantics.
+            all-or-nothing and shortfall semantics. S1 load-scope
+            maturity: formations COMPOSE into live worlds - optionally
+            retargeted onto another frame, optionally skipping host name
+            collisions instead of refusing on them.
 
         Args:
             formation_name:
                 The stored formation's name.
             profile_name:
                 Profile whose formation store is read; None = active.
+            target_frame_name:
+                Optional frame the formation should compose into instead
+                of its recorded frame (the rewrite happens in the
+                detached window; the stored record is never mutated).
+            skip_existing:
+                When True, host name-collision blockers downgrade to
+                "skipped_existing" in the admission view and the engine
+                runs its skip lanes (a taken conduit name builds unnamed
+                with a shortfall; an existing cluster is reused and
+                recorded members join it).
 
         Returns:
-            Dict[str, object]: The detached restore report.
+            Dict[str, object]: The detached restore report (+ "admission"
+                view carrying the additive "host" findings key).
 
         Raises:
             RuntimeError: If crystallizer is cleaned or not yet active,
-                or the replay failed (torn down; cause chained).
+                admission refused the load (host-collision or preflight
+                blockers), or the replay failed (torn down; cause
+                chained).
             KeyError: If the formation does not exist.
+            ValueError: If a retarget hits a multi-frame window or an
+                invalid target name.
         """
         self.check_cleaned()
         self._require_activated()
@@ -1510,7 +1530,9 @@ class Crystallizer(Cleanable):
             formation_name, profile_name=profile_name
         )
         return self._crystal_loader_system.restore_formation_record(
-            formation_record
+            formation_record,
+            target_frame_name=target_frame_name,
+            skip_existing=skip_existing,
         )
 
     def list_formations(
