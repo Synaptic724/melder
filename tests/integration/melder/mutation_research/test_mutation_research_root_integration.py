@@ -86,7 +86,7 @@ def test_integration_dynamic_conduit_returns_shared_root(case_index: int) -> Non
     )
     conduit = spellbook.conjure(dynamic=True, name=f"root-{case_index:02d}")
     try:
-        assert conduit.get_mutation_research() is conduit._aether.mutation_research
+        assert conduit._aether.mutation_research is Aether().mutation_research
     finally:
         conduit.cleanup()
 

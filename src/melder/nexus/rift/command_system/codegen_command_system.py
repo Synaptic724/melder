@@ -664,6 +664,349 @@ class CodegenCommandSystem(CommandSystem):
                         execution_result=execution_result,
                     )
 
+    # ------------------------------------------------------------------
+    # Research surface (MutationResearch) - full: reads + organization
+    # ------------------------------------------------------------------
+
+    def _require_live_mutation_research(self) -> object:
+        """
+        Return the Aether-hosted MutationResearch root, when it is live.
+
+        Contract:
+            - Non-constructing peek (the command path never births MR).
+            - Teach-grade refusal when research is absent or inactive: a
+              user ASKING for research deserves an error, not a None.
+
+        Returns:
+            object: The live, activated MutationResearch root.
+
+        Raises:
+            RuntimeError: If the root does not exist, is cleaned, or is
+                not activated.
+        """
+        research = self._aether._mutation_research
+        if research is None or research.cleaned or not research.activated:
+            raise RuntimeError(
+                "MutationResearch is not active in this world; activate the "
+                "root (configuration + activate) before using research "
+                "commands."
+            )
+        return research
+
+    def research_walk(self, lane: str = "default") -> object:
+        """
+        Return one research lane's line of versions with its ancestry hop.
+
+        Args:
+            lane: Lane name or id; the default lane when omitted.
+
+        Returns:
+            object: Ordered node payloads (detached).
+        """
+        self.check_cleaned()
+        with self._entered_command_action(
+                action_name="research_walk",
+                frame_name=None,
+        ), self._lock:
+            return self._require_live_mutation_research().research_set().walk(
+                lane,
+            )
+
+    def research_history(self, spell_id: str) -> object:
+        """
+        Return everything the research record knows about one identity.
+
+        Args:
+            spell_id: Binding-signature SHA256 to report on.
+
+        Returns:
+            object: History payload (holder lane, record, journal events).
+        """
+        self.check_cleaned()
+        with self._entered_command_action(
+                action_name="research_history",
+                frame_name=None,
+        ), self._lock:
+            return (
+                self._require_live_mutation_research()
+                .research_set()
+                .history(spell_id)
+            )
+
+    def research_heads(self) -> object:
+        """
+        Return the tip identity of every open research lane.
+
+        Returns:
+            object: lane name -> tip spell id mapping (detached).
+        """
+        self.check_cleaned()
+        with self._entered_command_action(
+                action_name="research_heads",
+                frame_name=None,
+        ), self._lock:
+            return (
+                self._require_live_mutation_research().research_set().heads()
+            )
+
+    def research_residency(self, spell_id: str) -> object:
+        """
+        Return the query-time residency join for one identity.
+
+        Args:
+            spell_id: Binding-signature SHA256 to locate.
+
+        Returns:
+            object: Residency payload (declared/runtime/custody verdicts).
+        """
+        self.check_cleaned()
+        with self._entered_command_action(
+                action_name="research_residency",
+                frame_name=None,
+        ), self._lock:
+            return self._require_live_mutation_research().residency_view(
+                spell_id,
+            )
+
+    def research_diff(
+            self,
+            left_spell_id: str,
+            right_spell_id: str,
+            *,
+            strategy: str = "structural",
+    ) -> object:
+        """
+        Return a derived diff between two research identities.
+
+        Args:
+            left_spell_id: Left version identity.
+            right_spell_id: Right version identity.
+            strategy: Registered diff strategy ("structural" default here -
+                the room's reasoning layer; "source" for text transport).
+
+        Returns:
+            object: Detached diff verdict.
+        """
+        self.check_cleaned()
+        with self._entered_command_action(
+                action_name="research_diff",
+                frame_name=None,
+        ), self._lock:
+            return self._require_live_mutation_research().diff_research(
+                left_spell_id,
+                right_spell_id,
+                strategy=strategy,
+            )
+
+    def research_campaign_view(self, campaign: str) -> object:
+        """
+        Return everything the record knows about one research campaign.
+
+        Args:
+            campaign: Campaign stamp to gather.
+
+        Returns:
+            object: Campaign payload (nodes, transitions, lanes involved).
+        """
+        self.check_cleaned()
+        with self._entered_command_action(
+                action_name="research_campaign_view",
+                frame_name=None,
+        ), self._lock:
+            return (
+                self._require_live_mutation_research()
+                .research_set()
+                .campaign_view(campaign)
+            )
+
+    def research_create_lane(
+            self,
+            name: str,
+            *,
+            attach_to: Optional[str] = None,
+            attach_at_spell_id: Optional[str] = None,
+            reason: Optional[str] = None,
+    ) -> object:
+        """
+        Create one research lane, optionally anchored onto an existing node.
+
+        Args:
+            name: Unique lane name.
+            attach_to: Optional lane (name or id) to anchor onto.
+            attach_at_spell_id: Node identity within `attach_to`.
+            reason: Optional reason line.
+
+        Returns:
+            object: The new lane's describe() payload (detached).
+        """
+        self.check_cleaned()
+        with self._entered_command_action(
+                action_name="research_create_lane",
+                frame_name=None,
+        ), self._lock:
+            lane = self._require_live_mutation_research().research_set(
+            ).create_lane(
+                name,
+                attach_to=attach_to,
+                attach_at_spell_id=attach_at_spell_id,
+                reason=reason,
+            )
+            return lane.describe()
+
+    def research_attach(
+            self,
+            lane: str,
+            *,
+            onto: str,
+            at_spell_id: str,
+            reason: Optional[str] = None,
+    ) -> None:
+        """
+        Anchor one lane's ancestry onto another lane's node.
+
+        Args:
+            lane: Lane (name or id) being organized.
+            onto: Lane (name or id) to anchor onto.
+            at_spell_id: Node identity within `onto`.
+            reason: Optional reason line.
+
+        Returns:
+            None.
+        """
+        self.check_cleaned()
+        with self._entered_command_action(
+                action_name="research_attach",
+                frame_name=None,
+        ), self._lock:
+            self._require_live_mutation_research().research_set().attach(
+                lane,
+                onto=onto,
+                at_spell_id=at_spell_id,
+                reason=reason,
+            )
+
+    def research_detach(
+            self,
+            lane: str,
+            *,
+            reason: Optional[str] = None,
+    ) -> None:
+        """
+        Remove one lane's ancestry anchor.
+
+        Args:
+            lane: Lane (name or id) being organized.
+            reason: Optional reason line.
+
+        Returns:
+            None.
+        """
+        self.check_cleaned()
+        with self._entered_command_action(
+                action_name="research_detach",
+                frame_name=None,
+        ), self._lock:
+            self._require_live_mutation_research().research_set().detach(
+                lane,
+                reason=reason,
+            )
+
+    def research_join(
+            self,
+            lane: str,
+            *,
+            into: str,
+            collapse: bool = False,
+            force: bool = False,
+            reason: Optional[str] = None,
+    ) -> object:
+        """
+        Finish one lane into a receiving lane (divergence-aware).
+
+        Args:
+            lane: Source lane (name or id) to finish.
+            into: Receiving lane (name or id).
+            collapse: Move only the tip when True.
+            force: Permit a divergent join (explicit supersede).
+            reason: Optional reason line.
+
+        Returns:
+            object: The receiving lane's describe() payload (detached).
+        """
+        self.check_cleaned()
+        with self._entered_command_action(
+                action_name="research_join",
+                frame_name=None,
+        ), self._lock:
+            receiver = self._require_live_mutation_research().research_set(
+            ).join(
+                lane,
+                into=into,
+                collapse=collapse,
+                force=force,
+                reason=reason,
+            )
+            return receiver.describe()
+
+    def research_archive(
+            self,
+            lane: str,
+            *,
+            reason: Optional[str] = None,
+    ) -> None:
+        """
+        Retire one dead-end research lane from the active view.
+
+        Args:
+            lane: Lane (name or id) to archive.
+            reason: Optional reason line.
+
+        Returns:
+            None.
+        """
+        self.check_cleaned()
+        with self._entered_command_action(
+                action_name="research_archive",
+                frame_name=None,
+        ), self._lock:
+            self._require_live_mutation_research().research_set().archive(
+                lane,
+                reason=reason,
+            )
+
+    def research_set_campaign(self, campaign: str) -> None:
+        """
+        Set the ambient research-campaign stamp for this world's records.
+
+        Args:
+            campaign: Non-empty campaign name.
+
+        Returns:
+            None.
+        """
+        self.check_cleaned()
+        with self._entered_command_action(
+                action_name="research_set_campaign",
+                frame_name=None,
+        ), self._lock:
+            self._require_live_mutation_research().set_active_campaign(
+                campaign,
+            )
+
+    def research_clear_campaign(self) -> None:
+        """
+        Clear the ambient research-campaign stamp.
+
+        Returns:
+            None.
+        """
+        self.check_cleaned()
+        with self._entered_command_action(
+                action_name="research_clear_campaign",
+                frame_name=None,
+        ), self._lock:
+            self._require_live_mutation_research().clear_active_campaign()
+
     def _emit_codegen_memory_if_enabled(
             self,
             *,

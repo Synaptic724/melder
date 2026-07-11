@@ -780,6 +780,78 @@ class PersistenceProfile(Cleanable):
                 payloads[spell_id] = payload
             return payloads
 
+    def capture_index_graft(self, index_id: str) -> Dict[str, object]:
+        """
+        Capture one spell_index's full graft record (S-graft lane).
+
+        Purpose:
+            The graft unit is the INDEX (owner ruling): all member spells
+            active + parked, their custody payloads, and the selection -
+            one versioned, JSON-safe dict the GraftRunner re-integrates
+            into a LIVE host book. Storage is the caller's choice (mesh
+            handlers, formations, plain files).
+
+        Contract:
+            - Detached payloads only (no twin escapes).
+            - Members missing custody report under "members_without_
+              custody" instead of raising (shortfall honesty; the runner
+              refuses those members at graft time).
+
+        Args:
+            index_id:
+                The recorded index identity.
+
+        Returns:
+            Dict[str, object]:
+                {record_version, "graft_kind": "spell_index", index_id,
+                 "index_payload", "members": {spell_id: {"payload",
+                 "custody_state"}}, "members_without_custody": [ids]}.
+
+        Raises:
+            RuntimeError: If the profile has been cleaned.
+            KeyError: If no index twin is recorded under `index_id`.
+        """
+        from melder.crystallizer.persistence.record_version import (
+            RecordVersion,
+        )
+
+        self.check_cleaned()
+        with self._lock:
+            twin = self._spell_index_crystals_by_index_id.get(index_id)
+            if twin is None:
+                raise KeyError(
+                    "No spell_index crystal recorded under {0!r} "
+                    "({1} recorded).".format(
+                        index_id,
+                        len(self._spell_index_crystals_by_index_id),
+                    )
+                )
+            index_payload = twin.describe()
+            members: Dict[str, Dict[str, object]] = {}
+            missing: List[str] = []
+            for spell_id in list(index_payload.get("member_spell_ids", [])):
+                crystal = self._spell_crystals_by_spell_id.get(spell_id)
+                custody_state = "active"
+                if crystal is None:
+                    crystal = self._inactive_spell_crystals_by_spell_id.get(
+                        spell_id
+                    )
+                    custody_state = "inactive"
+                if crystal is None:
+                    missing.append(str(spell_id))
+                    continue
+                members[str(spell_id)] = {
+                    "payload": crystal.describe(),
+                    "custody_state": custody_state,
+                }
+            return RecordVersion.stamp({
+                "graft_kind": "spell_index",
+                "index_id": str(index_id),
+                "index_payload": index_payload,
+                "members": members,
+                "members_without_custody": missing,
+            })
+
     def describe_mutation_research_record(self) -> Optional[Dict[str, object]]:
         """
         Return the recorded MutationResearch twin payload, when one exists.

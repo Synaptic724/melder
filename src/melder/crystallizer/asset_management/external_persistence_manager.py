@@ -116,12 +116,20 @@ class ExternalPersistenceManager(Cleanable):
         Return whether the flush path should upload through this manager.
 
         Returns:
-            bool: True when an upload handler is attached AND
-            upload_on_flush is set.
+            bool: True when a WRITE lane is attached AND upload_on_flush
+            is set. Since the generic mesh lane (external_mesh
+            2026-07-12) the store handler counts: upload_checkpoint
+            bridges to store_unit("checkpoint", ...) when no legacy
+            upload handler exists, so a quartet-only configuration ships
+            flushes exactly like the legacy trio (mirrors validate()'s
+            widened write-lane rule).
         """
         self.check_cleaned()
         return (
-            self._configuration.upload_handler is not None
+            (
+                self._configuration.upload_handler is not None
+                or self._configuration.store_handler is not None
+            )
             and self._configuration.upload_on_flush
         )
 

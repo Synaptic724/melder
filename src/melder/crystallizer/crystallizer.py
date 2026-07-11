@@ -618,6 +618,89 @@ class Crystallizer(Cleanable):
         finally:
             engine.cleanup()
 
+    def capture_index_graft(self, index_id: str) -> Dict[str, object]:
+        """
+        Capture one spell_index's graft record from the active profile.
+
+        Purpose:
+            The graft lane's capture half (owner ruling: the graft unit
+            is the INDEX - all members, custody, selection). The record
+            is a versioned, JSON-safe dict; store it wherever you like
+            (mesh handlers, formations, plain files) and hand it to
+            graft_index against any live conjured book.
+
+        Args:
+            index_id:
+                The recorded index identity.
+
+        Returns:
+            Dict[str, object]: The versioned graft record.
+
+        Raises:
+            RuntimeError: If crystallizer is cleaned or not yet active.
+            KeyError: If no index twin is recorded under `index_id`.
+        """
+        self.check_cleaned()
+        self._require_activated()
+        return self._persistence_system.capture_index_graft(index_id)
+
+    def graft_index(
+            self,
+            graft_record: Dict[str, object],
+            host_spellbook: Any,
+            skip_resident: bool = False,
+    ) -> Dict[str, object]:
+        """
+        Re-integrate one captured index into a LIVE host book.
+
+        Purpose:
+            The graft lane's restore half: the selected member binds
+            ACTIVE (bind creates the fresh index and selects it), parked
+            members ride bind_inactive onto it - normal verbs only,
+            existing indexes never mutated. Blast-radius due diligence
+            is one call away: analyze_impact BEFORE grafting into a
+            world you care about.
+
+        Args:
+            graft_record:
+                The versioned record from capture_index_graft.
+            host_spellbook:
+                The live, CONJURED book receiving the graft (live-object
+                facade per the create_spell_crystal precedent).
+            skip_resident:
+                True skips members already resident in the host frame
+                (shortfall each); False refuses the whole graft on the
+                first resident member (default - the conservative
+                overlap rule).
+
+        Returns:
+            Dict[str, object]: The runner's detached report ({status,
+            recorded/live index ids, members_bound, members_parked,
+            skipped_resident, shortfalls}).
+
+        Raises:
+            RuntimeError: If crystallizer is cleaned/not active, the
+                host is unconjured, or a resident member is met without
+                skip_resident.
+            ValueError: If the record is not a spell_index graft, was
+                written by a newer record major, or its selected member
+                cannot anchor.
+        """
+        self.check_cleaned()
+        self._require_activated()
+        # Lazy import mirrors the loader's runtime-surface import law.
+        from melder.crystallizer.crystal_loader_system.graft_runner import (
+            GraftRunner,
+        )
+
+        runner = GraftRunner(
+            graft_record, host_spellbook, skip_resident=skip_resident
+        )
+        try:
+            return runner.run()
+        finally:
+            runner.cleanup()
+
     def emit_spell_crystal(self, crystal: SpellCrystal, active: bool = True) -> None:
         """
         Record one custody crystal into the active profile's locations.
@@ -1068,18 +1151,25 @@ class Crystallizer(Cleanable):
         self.check_cleaned()
         if not self._activated:
             return
-        self._persistence_system.record(twin)
         # Opt-in emission tap (external_mesh 2026-07-12, owner ruling):
         # every recorded twin streams as a delta row through the user's
-        # generic store handler. The cheap property gate keeps untapped
-        # worlds at one read; the lane is lenient + counted, so a dying
-        # DB never touches the R-A covenant. The tap fires AFTER the
-        # record lands - the local truth always leads the mirror.
-        if self._asset_management_system.emission_tap_enabled:
+        # generic store handler. THREAD SAFETY: the payload is captured
+        # BEFORE record() - once recorded, replace-on-emit means a
+        # concurrent same-kind emit may clean THIS twin, and a
+        # post-record describe() would race that cleanup. Shipping still
+        # happens AFTER the record lands (local truth leads the mirror);
+        # the lane is lenient + counted, so a dying DB never touches the
+        # R-A covenant. Untapped worlds pay one property read.
+        tap_enabled = self._asset_management_system.emission_tap_enabled
+        if tap_enabled:
+            tap_kind = type(twin).__name__
+            tap_payload = twin.describe()
+        self._persistence_system.record(twin)
+        if tap_enabled:
             self._asset_management_system.stream_emission(
                 self._persistence_system.active_profile_name,
-                type(twin).__name__,
-                twin.describe(),
+                tap_kind,
+                tap_payload,
             )
         self._maybe_create_automatic_checkpoint()
 

@@ -506,6 +506,63 @@ class ViewSpell(Cleanable):
             "payload_version": spell_record.payload.payload_version,
         }
 
+    def describe_spell_research(
+            self,
+            spell_source_id: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> Dict[str, object]:
+        """
+        Return the research annotation for one visible spell.
+
+        Purpose:
+            Join the viewer's runtime truth with the MutationResearch record:
+            whether this spell's identity is formally declared research, which
+            lane holds it, and its query-time residency verdict - alongside
+            the identity the operator already sees.
+
+        Contract:
+            - Non-constructing peek: the viewer never births the MR root.
+            - Honest unavailability: an absent or inactive root returns
+              `research_available=False` with a named reason instead of
+              raising - viewing a spell must never fail on research state.
+
+        Args:
+            spell_source_id:
+                Published spell source id.
+            frame_name:
+                Optional frame-name assertion passed through to the selected-
+                frame helper.
+
+        Returns:
+            Dict[str, object]: `source_id`, `spell_id`, and either the
+            residency payload (declared/lane/runtime/custody) or the
+            unavailability reason.
+        """
+        self.check_cleaned()
+        identity = self.describe_spell_identity(
+            spell_source_id,
+            frame_name=frame_name,
+        )
+        spell_id = identity["spell_id"]
+        from melder.aether.aether import Aether
+
+        aether = Aether._instance
+        research = (
+            aether._mutation_research if aether is not None else None
+        )
+        if research is None or research.cleaned or not research.activated:
+            return {
+                "source_id": spell_source_id,
+                "spell_id": spell_id,
+                "research_available": False,
+                "reason": "mutation_research_not_active",
+            }
+        residency = research.residency_view(spell_id)
+        residency["source_id"] = spell_source_id
+        residency["research_available"] = True
+        return residency
+
     def describe_spell_origin(
             self,
             spell_source_id: str,

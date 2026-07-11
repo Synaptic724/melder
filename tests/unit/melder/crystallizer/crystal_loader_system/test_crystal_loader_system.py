@@ -346,16 +346,20 @@ def _stub_host(frames):
 
     The admission plane touches exactly: `_aetheric_frames` (registry
     read, never creating), `frame.frame_configuration.system_state.name`,
-    `cloud.has_conduit_name`, and the documented `_conduit_clusters`
-    seam - so the stubs carry exactly those surfaces.
+    and the PUBLIC cloud probes `has_conduit_name` / `has_cluster_name`
+    via `frame.conduit_cloud` (public_cloud_seams 2026-07-12) - so the
+    stubs carry exactly those surfaces.
     """
     class _StubCloud:
         def __init__(self, taken_names=(), clusters=()):
             self._taken = set(taken_names)
-            self._conduit_clusters = {name: object() for name in clusters}
+            self._clusters = set(clusters)
 
         def has_conduit_name(self, name):
             return name in self._taken
+
+        def has_cluster_name(self, cluster_name):
+            return cluster_name in self._clusters
 
     class _StubState:
         def __init__(self, name):
@@ -369,7 +373,8 @@ def _stub_host(frames):
         def __init__(self, state_name="dynamic", taken_names=(),
                      clusters=()):
             self.frame_configuration = _StubFrameConfiguration(state_name)
-            self._conduit_cloud = _StubCloud(taken_names, clusters)
+            # Public accessor spelling (public_cloud_seams 2026-07-12).
+            self.conduit_cloud = _StubCloud(taken_names, clusters)
 
     class _StubAether:
         def __init__(self, frame_map):

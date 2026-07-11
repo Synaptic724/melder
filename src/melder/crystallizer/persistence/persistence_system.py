@@ -453,6 +453,25 @@ class PersistenceSystem(Cleanable):
         self.check_cleaned()
         return self.active_profile.describe_spell_crystals()
 
+    def capture_index_graft(self, index_id: str) -> Dict[str, object]:
+        """
+        Capture one index's graft record from the ACTIVE profile.
+
+        Args:
+            index_id:
+                The recorded index identity.
+
+        Returns:
+            Dict[str, object]: The versioned graft record (see
+            PersistenceProfile.capture_index_graft).
+
+        Raises:
+            RuntimeError: If the subsystem has been cleaned.
+            KeyError: If no index twin is recorded under `index_id`.
+        """
+        self.check_cleaned()
+        return self.active_profile.capture_index_graft(index_id)
+
     def get_profile(self, profile_name: str) -> PersistenceProfile:
         """
         Return one profile by name.

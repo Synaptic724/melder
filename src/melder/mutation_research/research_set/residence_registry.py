@@ -133,6 +133,36 @@ class ResidenceRegistry(Cleanable):
             for spell_id in spell_ids:
                 self._lane_id_by_spell_id[spell_id] = to_lane_id
 
+    def _rollback_claim(self, spell_id: str, lane_id: str) -> None:
+        """
+        Remove one claim as FAILURE COMPENSATION only.
+
+        Purpose:
+            Registration is claim-then-hold across two structures; when the
+            lane refuses the node AFTER the claim landed (a direct lane-state
+            race under real threads), the claim must not strand - a resident
+            identity with no held node would corrupt the partition. This is
+            the ONLY path that removes a residence, it is private, and it is
+            guarded: it only removes a claim that still points at the failed
+            lane.
+
+        Contract:
+            - The public no-release law stands: residence is permanent for
+              every SUCCESSFUL registration.
+
+        Args:
+            spell_id:
+                Identity whose failed claim is being compensated.
+            lane_id:
+                The lane the failed registration targeted.
+
+        Returns:
+            None.
+        """
+        with self._lock:
+            if self._lane_id_by_spell_id.get(spell_id) == lane_id:
+                del self._lane_id_by_spell_id[spell_id]
+
     def residence_of(self, spell_id: str) -> Optional[str]:
         """
         Return the lane holding one identity, when resident.

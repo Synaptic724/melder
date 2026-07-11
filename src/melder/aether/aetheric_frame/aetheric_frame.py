@@ -408,6 +408,26 @@ class AethericFrame(Cleanable):
         return self._spell_system_states
 
     @property
+    def conduit_cloud(self) -> "ConduitCloud":
+        """
+        Return the frame-owned conduit cloud (public accessor).
+
+        Purpose:
+            Retire the documented cross-package seam (public_cloud_seams
+            2026-07-12): the restore engine and the load-admission host
+            preflight previously read `_conduit_cloud` directly with a
+            deliberate-seam comment; borrowers now come through here.
+
+        Returns:
+            ConduitCloud: The cloud owned by this frame.
+
+        Raises:
+            RuntimeError: If the frame has been cleaned.
+        """
+        self.check_cleaned()
+        return self._conduit_cloud
+
+    @property
     def dev_ops_manager(self) -> DevOpsManager:
         """
         Per-frame DevOps hub.

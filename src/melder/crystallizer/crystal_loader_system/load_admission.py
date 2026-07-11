@@ -448,7 +448,7 @@ class LoadAdmission(Cleanable):
             ))
             if host_frame is None:
                 continue
-            if host_frame._conduit_cloud.has_conduit_name(
+            if host_frame.conduit_cloud.has_conduit_name(
                     str(recorded_name)
             ):
                 findings.append({
@@ -468,10 +468,11 @@ class LoadAdmission(Cleanable):
             ))
             if host_frame is None:
                 continue
-            # Documented private seam (mirrors the engine's cluster
-            # replay): no public cluster-existence probe on the cloud.
-            if str(cluster_name) in (
-                    host_frame._conduit_cloud._conduit_clusters
+            # NOTE (public_cloud_seams 2026-07-12): the documented
+            # private seam retired - the cloud now exposes
+            # has_cluster_name.
+            if host_frame.conduit_cloud.has_cluster_name(
+                    str(cluster_name)
             ):
                 findings.append({
                     "check": "cluster_name_taken", "severity": "blocker",

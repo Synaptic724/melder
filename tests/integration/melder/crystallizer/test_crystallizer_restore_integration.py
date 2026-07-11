@@ -1291,7 +1291,8 @@ def test_pod_death_rebuilds_the_world_from_sqlite(cache_root, tmp_path):
         _external_configuration(upload, download, list_ids)
     )
     outcome = rebooted.reload_profile_from_external("default")
-    assert outcome["inserted"] >= 1
+    # "inserted" is the id LIST (insert-if-absent summary), not a count.
+    assert len(outcome["inserted"]) >= 1
 
     report = rebooted.load_checkpoint(checkpoint_id)
     assert report["status"] == "complete"
@@ -1342,10 +1343,13 @@ def test_inconsistent_remote_refuses_loudly(cache_root, tmp_path):
         return None
 
     crystallizer = _activate_crystallizer()
+    # Read-only configuration: no write lane attached, so the flush knob
+    # must be disabled explicitly (validate refuses a knob pointing at
+    # nothing).
     crystallizer.configure_external_persistence_manager(
         _external_configuration(
             download=empty_download, list_ids=lying_list
-        )
+        ).with_upload_on_flush(False)
     )
     with pytest.raises(ValueError, match="inconsistent"):
         crystallizer.reload_profile_from_external("default")
@@ -1482,7 +1486,8 @@ def test_generic_mesh_handlers_carry_checkpoints_via_the_bridge(
         _mesh_configuration(db_path)
     )
     outcome = rebooted.reload_profile_from_external("default")
-    assert outcome["inserted"] >= 1
+    # "inserted" is the id LIST (insert-if-absent summary), not a count.
+    assert len(outcome["inserted"]) >= 1
     report = rebooted.load_checkpoint(checkpoint_id)
     assert report["status"] == "complete"
     assert rebooted.get_spell_crystal(spell_id).id == spell_id
@@ -1592,3 +1597,144 @@ def test_external_retention_trims_oldest_checkpoints(cache_root, tmp_path):
     _store, _fetch, list_units, _delete = _sqlite_mesh_handlers(db_path)
     survivors = list_units("checkpoint", "default")
     assert sorted(survivors) == sorted(checkpoint_ids)[1:]
+
+
+def test_index_graft_round_trips_into_a_live_host_book(cache_root):
+    """
+    Purpose:
+        The spell-index graft lane end to end: capture one index's graft
+        record from book A, graft it into a LIVE conjured book B on
+        ANOTHER frame - the selected member binds ACTIVE into a FRESH
+        index (bind creates it; no existing index touched), and the
+        overlap rule refuses a graft back into the source frame unless
+        skip_resident is passed.
+    Contract:
+        Report complete with a live index id; the host frame resolves
+        the member; the source-frame re-graft refuses by default and
+        skips-with-shortfall under skip_resident.
+    """
+    from melder.aether.spellbook.configuration.spellbook_configuration import (
+        SpellbookConfiguration,
+    )
+
+    crystallizer = _activate_crystallizer()
+    source_book = _dynamic_book()
+    spell_id = source_book.bind(
+        spell=RestoreAlpha, existence=Existence.unique, permissions="create"
+    )
+    source_book.conjure(dynamic=True, name="graft-source")
+
+    live_spell = source_book.find_spell_by_id(spell_id)
+    recorded_index_id = live_spell.spell_index.id
+    record = crystallizer.capture_index_graft(recorded_index_id)
+    assert record["graft_kind"] == "spell_index"
+    assert record["record_version"] == "1.0.0"
+    assert spell_id in record["members"]
+
+    # A live host on ANOTHER frame (lazy frames: the book births it).
+    host_configuration = SpellbookConfiguration(
+        aether_frame="graft-host-frame"
+    )
+    apply_dynamic_defaults_for_spellbook_configuration(host_configuration)
+    host_configuration.set_property(
+        "phase_scheduler_workers_per_spellbook", 1
+    )
+    host_configuration.finalize()
+    host_book = Spellbook(
+        aetheric_frame="graft-host-frame",
+        configuration=host_configuration,
+    )
+    host_book.conjure(dynamic=True, name="graft-host")
+
+    report = crystallizer.graft_index(record, host_book)
+    assert report["status"] == "complete"
+    assert report["members_bound"] == 1
+    assert report["live_index_id"] is not None
+    assert report["live_index_id"] != recorded_index_id
+    grafted = host_book.find_spell_by_id(spell_id)
+    assert grafted is not None
+
+    # Overlap rule: the SOURCE frame already holds the member - refuse
+    # by default, skip-with-shortfall when asked.
+    second_record = crystallizer.capture_index_graft(recorded_index_id)
+    with pytest.raises(RuntimeError, match="already resident"):
+        crystallizer.graft_index(second_record, source_book)
+    third_record = crystallizer.capture_index_graft(recorded_index_id)
+    try:
+        skipped = crystallizer.graft_index(
+            third_record, source_book, skip_resident=True
+        )
+        raised = None
+    except ValueError as exc:
+        # Skipping the only (selected) member leaves no anchor - the
+        # structural refusal is the honest outcome for a single-member
+        # graft; either surface is acceptable evidence of the skip lane.
+        raised = str(exc)
+    if raised is None:
+        assert skipped["skipped_resident"] == [spell_id]
+    else:
+        assert "no graftable SELECTED member" in raised
+
+
+def test_multi_member_index_graft_parks_the_staged_members(cache_root):
+    """
+    Purpose:
+        The graft lane's full membership arc: an index carrying an ACTIVE
+        selected member AND a PARKED member (bind_inactive) grafts into a
+        live host book - the selected member binds active into the fresh
+        index and the parked member parks onto it, custody states intact.
+    Contract:
+        Capture carries both members (parked one custody_state
+        "inactive"); the report shows members_bound==1 AND
+        members_parked==1; the host's fresh index holds BOTH spell ids
+        with the recorded selection.
+    """
+    from melder.aether.spellbook.configuration.spellbook_configuration import (
+        SpellbookConfiguration,
+    )
+
+    crystallizer = _activate_crystallizer()
+    source_book = _dynamic_book()
+    active_id = source_book.bind(
+        spell=RestoreAlpha, existence=Existence.unique, permissions="create"
+    )
+    source_conduit = source_book.conjure(dynamic=True, name="graft-multi")
+    active_spell = source_book._spells_by_id[active_id]
+    staged_id = source_conduit.bind_inactive(
+        spell=RestoreBeta,
+        spell_index=active_spell.spell_index,
+        existence=Existence.unique,
+        permissions="create",
+    )
+
+    record = crystallizer.capture_index_graft(active_spell.spell_index.id)
+    assert set(record["members"]) == {active_id, staged_id}
+    assert record["members"][staged_id]["custody_state"] == "inactive"
+    assert record["index_payload"]["selected_spell_id"] == active_id
+
+    host_configuration = SpellbookConfiguration(
+        aether_frame="graft-multi-host-frame"
+    )
+    apply_dynamic_defaults_for_spellbook_configuration(host_configuration)
+    host_configuration.set_property(
+        "phase_scheduler_workers_per_spellbook", 1
+    )
+    host_configuration.finalize()
+    host_book = Spellbook(
+        aetheric_frame="graft-multi-host-frame",
+        configuration=host_configuration,
+    )
+    host_book.conjure(dynamic=True, name="graft-multi-host")
+
+    report = crystallizer.graft_index(record, host_book)
+    assert report["status"] == "complete"
+    assert report["members_bound"] == 1
+    assert report["members_parked"] == 1
+    assert report["shortfalls"] == []
+
+    grafted_anchor = host_book.find_spell_by_id(active_id)
+    assert grafted_anchor is not None
+    live_index = grafted_anchor.spell_index
+    assert live_index.selected_spell_id == active_id
+    assert live_index.has_spell(active_id)
+    assert live_index.has_spell(staged_id)

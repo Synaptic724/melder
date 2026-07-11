@@ -164,22 +164,55 @@ def test_integrity_strategy_blocks_tamper_and_warns_on_drift(tmp_path):
         },
     }
     # Preflight strategies are stateless ABCs (no lifecycle to clean).
+    # NARROWED (source_drift_preflight 2026-07-12): integrity owns record
+    # self-consistency ONLY - exactly one tamper blocker; the drifted and
+    # absent entries produce NOTHING here (SourceDriftStrategy owns disk
+    # relationships).
     findings = UserSourceIntegrityStrategy().analyze(bundle)
-    by_severity = {}
-    for row in findings:
-        by_severity.setdefault(row["severity"], []).append(row["detail"])
-    assert any(
-        "userland.tampered" in detail for detail in by_severity["blocker"]
+    assert [row["severity"] for row in findings] == ["blocker"]
+    assert "userland.tampered" in str(findings[0]["detail"])
+
+
+def test_source_drift_strategy_covers_every_fingerprint(tmp_path):
+    """
+    Contract (source_drift_preflight 2026-07-12): EVERY bind-time
+    fingerprint checks against disk regardless of retention - unchanged
+    is silent, edits warn (user_source_drifted_since_seal), absent
+    backing files warn honestly, and shared modules deduplicate across
+    crystals.
+    """
+    from melder.crystallizer.crystal_analysis.preflight.source_drift_strategy import (
+        SourceDriftStrategy,
     )
-    assert any(
-        "user_source_drifted_since_seal" in detail
-        for detail in by_severity["warning"]
-    )
-    assert all(
-        "userland.absent" not in detail
-        for rows in by_severity.values()
-        for detail in rows
-    )
+
+    steady = tmp_path / "steady.py"
+    steady.write_text("VALUE = 1\n", encoding="utf-8")
+    edited = tmp_path / "edited.py"
+    edited.write_text("VALUE = 2\n", encoding="utf-8")
+
+    def _crystal():
+        return {
+            "physical_module_fingerprints": {
+                "steady": _sha("VALUE = 1\n"),
+                "edited": _sha("VALUE = ORIGINAL\n"),
+                "gone": _sha("VALUE = 3\n"),
+            },
+            "module_to_path": {
+                "steady": str(steady),
+                "edited": str(edited),
+                "gone": str(tmp_path / "gone.py"),
+            },
+        }
+
+    # Two crystals sharing the same module world: rows deduplicate.
+    bundle = {"spell_crystal": {"sha-1": _crystal(), "sha-2": _crystal()}}
+    findings = SourceDriftStrategy().analyze(bundle)
+    details = [str(row["detail"]) for row in findings]
+    assert len(findings) == 2
+    assert all(row["severity"] == "warning" for row in findings)
+    assert any("user_source_drifted_since_seal" in d for d in details)
+    assert any("no backing file" in d for d in details)
+    assert all("steady" not in d for d in details)
 
 
 def test_hydration_downgrades_absent_module_with_retained_text():

@@ -60,7 +60,6 @@ if TYPE_CHECKING:
         DevopsInformationRegistry,
     )
     from melder.aether.aetheric_frame.dev_ops.spell_system_states.conduit_resolution_state import ConduitResolutionState
-    from melder.mutation_research.mutation_research import MutationResearch
     from melder.utilities.logger.safe_logger import SafeLogger
     from melder.utilities.synchronization.creation_gate import CreationGate
     from melder.utilities.synchronization.creation_gate_controller import CreationGateController
@@ -2945,55 +2944,10 @@ class Conduit(Cleanable):
         self._logger.error(f"Spell with ID {spell_id} not found", "get_spell_permissions")
         raise RuntimeError(f"Spell with ID {spell_id} not found in the spellbook.")
 
-    def get_mutation_research(self) -> MutationResearch:
-        """
-        Public API
-
-        Return the Aether-owned MutationResearch root visible to this conduit.
-
-        Purpose:
-            Expose the process-wide mutation-research root through the conduit
-            state to access the Aether-owned runtime surface.
-
-        Deprecated:
-            The conduit door is out of the converged MR model: conduits and
-            frames carry NO mutation dimension (owner ruling 2026-07-06).
-            Research is declared through `Aether.mutation_research` and its
-            `ResearchSet` surface; this accessor remains only until callers
-            migrate and will be removed with the runtime seam slice.
-
-        Returns:
-            MutationResearch: Process-wide mutation-research root.
-
-        Raises:
-            RuntimeError:
-                If the conduit has been cleaned, the conduit is not in a
-                dynamic environment, or the Aether-owned MutationResearch root
-                is unavailable.
-        """
-        self.check_cleaned()
-        if self._conduit_state is not ConduitState.normal:
-            raise RuntimeError("Only normal conduits can access MutationResearch.")
-        frame_configuration = self._spellbook._aetheric_frame_configuration
-        if (
-                not self.__dynamic_environment__
-                or (
-                    frame_configuration is not None
-                    and (
-                        frame_configuration.disable_mutations
-                        or frame_configuration.disable_all_transactions_after_conjure
-                    )
-                )
-        ):
-            raise RuntimeError(
-                "Dynamic environment is not enabled. Cannot access MutationResearch."
-            )
-        mutation_research: Optional[MutationResearch] = (
-            self._spellbook._aether.mutation_research
-        )
-        if mutation_research is None:
-            raise RuntimeError("MutationResearch is unavailable.")
-        return mutation_research
+    # NOTE (2026-07-11): get_mutation_research() DELETED - the conduit door
+    # is out of the converged MR model (owner ruling: conduits and frames
+    # carry no mutation dimension). Research is exposed through the Rift
+    # room research commands; the world root lives at Aether.mutation_research.
 
 
 

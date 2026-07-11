@@ -1,0 +1,141 @@
+
+import hashlib
+from pathlib import Path
+from typing import ClassVar, Dict, List, Set, Tuple
+
+from melder.__melder_registration_guard__ import (
+    __melder_registration_guard__ as _mrg,
+)
+from melder.crystallizer.crystal_analysis.preflight.persistence_analysis_strategy import (
+    PersistenceAnalysisStrategy,
+)
+
+
+class SourceDriftStrategy(PersistenceAnalysisStrategy):
+    """
+    Compare every bind-time fingerprint against the live disk at load.
+
+    Purpose:
+        A restore should TELL you your working tree diverged from the
+        sealed world BEFORE it builds anything. Every custody crystal
+        ships physical_module_fingerprints (bind-time sha256 of each
+        physical module's text) regardless of retention - this pass owns
+        ALL disk-vs-seal comparison (the integrity strategy owns only
+        retained-text TAMPER, its record-self-consistency half).
+
+    Contract:
+        - WARNING on drift ("user_source_drifted_since_seal": the live
+          file wins at import - this is notice, never a refusal) and on
+          absent backing files (honest wording: the import may still
+          resolve via sys.path; hydration owns the importability
+          blocker for roots).
+        - INFO on unreadable files (unverifiable, not proven divergence).
+        - Silent on unchanged; per-(module, path) pairs deduplicate
+          across crystals (shared modules report once).
+        - Reads use read_text/utf-8 - the SAME read that sealed the
+          fingerprints, so CRLF files never false-drift.
+    """
+
+    __melder_internal__: ClassVar[object] = _mrg.sentinel
+
+    @property
+    def name(self) -> str:
+        """
+        Return the strategy's stable report name.
+
+        Returns:
+            str: "source_drift".
+        """
+        return "source_drift"
+
+    def analyze(
+            self,
+            payload_bundle: Dict[str, Dict[str, Dict[str, object]]],
+    ) -> List[Dict[str, object]]:
+        """
+        Re-hash every fingerprinted module and report divergence.
+
+        Args:
+            payload_bundle:
+                {kind: {key: payload}} bundle under analysis.
+
+        Returns:
+            List[Dict[str, object]]: Warning rows for drifted/absent
+            modules; info rows for unreadable ones.
+        """
+        findings: List[Dict[str, object]] = []
+        seen: Set[Tuple[str, str]] = set()
+        for spell_id, payload in dict(
+                payload_bundle.get("spell_crystal", {})
+        ).items():
+            paths = dict(payload.get("module_to_path", {}))
+            for module_name, sealed_sha in dict(
+                    payload.get("physical_module_fingerprints", {})
+            ).items():
+                recorded_path = paths.get(str(module_name))
+                if recorded_path is None:
+                    continue
+                dedupe_key = (str(module_name), str(recorded_path))
+                if dedupe_key in seen:
+                    continue
+                seen.add(dedupe_key)
+                live_path = Path(str(recorded_path))
+                if not live_path.exists():
+                    findings.append(self._row(
+                        "warning", spell_id,
+                        "sealed module {0!r} has no backing file at its "
+                        "recorded path (the import may still resolve via "
+                        "sys.path; retained text rebuilds it when "
+                        "custody carries one)".format(module_name),
+                    ))
+                    continue
+                try:
+                    disk_sha = hashlib.sha256(
+                        live_path.read_text(
+                            encoding="utf-8"
+                        ).encode("utf-8")
+                    ).hexdigest()
+                except Exception as error:
+                    findings.append(self._row(
+                        "info", spell_id,
+                        "sealed module {0!r} could not be read for drift "
+                        "verification: {1}".format(module_name, error),
+                    ))
+                    continue
+                if disk_sha != str(sealed_sha):
+                    findings.append(self._row(
+                        "warning", spell_id,
+                        "user_source_drifted_since_seal: module {0!r} on "
+                        "disk differs from the sealed world (the LIVE "
+                        "file wins at import; reseal to modernize the "
+                        "record)".format(module_name),
+                    ))
+        return findings
+
+    def _row(
+            self,
+            severity: str,
+            spell_id: str,
+            detail: str,
+    ) -> Dict[str, object]:
+        """
+        Build one finding row in the shared preflight shape.
+
+        Args:
+            severity:
+                "warning" | "info" per the class contract.
+            spell_id:
+                Custody anchor (first carrier of the deduplicated pair).
+            detail:
+                Human-facing explanation with remediation context.
+
+        Returns:
+            Dict[str, object]: The finding row.
+        """
+        return {
+            "strategy": self.name,
+            "severity": severity,
+            "kind": "spell_crystal",
+            "key": spell_id,
+            "detail": detail,
+        }

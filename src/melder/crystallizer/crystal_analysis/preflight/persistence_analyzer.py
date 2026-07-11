@@ -28,6 +28,9 @@ from melder.crystallizer.crystal_analysis.preflight.synthetic_source_integrity_s
 from melder.crystallizer.crystal_analysis.preflight.mutation_research_composition_strategy import (
     MutationResearchCompositionStrategy,
 )
+from melder.crystallizer.crystal_analysis.preflight.source_drift_strategy import (
+    SourceDriftStrategy,
+)
 from melder.crystallizer.crystal_analysis.preflight.user_source_integrity_strategy import (
     UserSourceIntegrityStrategy,
 )
@@ -111,6 +114,7 @@ class PersistenceAnalyzer(Cleanable):
                 SyntheticSourceIntegrityStrategy(),
                 UserSourceIntegrityStrategy(),
                 MutationResearchCompositionStrategy(),
+                SourceDriftStrategy(),
             ]
         )
 

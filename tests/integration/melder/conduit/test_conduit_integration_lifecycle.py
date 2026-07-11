@@ -613,11 +613,13 @@ def test_conduit_get_mutation_research_dynamic_returns_manager() -> None:
     Purpose:
         Validate MutationResearch access in dynamic mode.
     Contract:
-        - Dynamic normal conduits return a MutationResearch manager.
+        - The conduit door is GONE (owner model: conduits carry no mutation
+          dimension); the world root is the Aether-hosted singleton and the
+          user surface is the Rift room research commands.
     Returns:
         None.
     Raises:
-        AssertionError: If MutationResearch is not returned.
+        AssertionError: If the Aether-hosted root is unavailable.
     """
     configuration = _make_dynamic_configuration()
     spellbook = Spellbook(configuration=configuration)
@@ -629,37 +631,9 @@ def test_conduit_get_mutation_research_dynamic_returns_manager() -> None:
 
     conduit = spellbook.conjure(dynamic=True, name="root")
     try:
-        manager = conduit.get_mutation_research()
+        manager = conduit._aether.mutation_research
         assert manager is not None
-        assert manager is conduit._aether.mutation_research
-    finally:
-        conduit.permanent_cleanup()
-
-
-def test_conduit_get_mutation_research_rejects_automatic() -> None:
-    """
-    Purpose:
-        Validate MutationResearch access is blocked in automatic mode.
-    Contract:
-        - Automatic conduits raise when requesting MutationResearch.
-    Returns:
-        None.
-    Raises:
-        AssertionError: If automatic access is allowed.
-    """
-    spellbook = Spellbook()
-    config = spellbook.get_configuration()
-    config.set_property("phase_scheduler_workers_per_spellbook", 1)
-    spellbook.bind(
-        spell=BasicService,
-        existence=Existence.unique,
-        permissions="create",
-    )
-
-    conduit = spellbook.conjure(name="root")
-    try:
-        with pytest.raises(RuntimeError, match="Dynamic environment is not enabled"):
-            conduit.get_mutation_research()
+        assert manager.research_set() is not None
     finally:
         conduit.permanent_cleanup()
 

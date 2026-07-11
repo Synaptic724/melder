@@ -204,19 +204,6 @@ def test_transfer_spell_ownership_raises_when_source_conduit_is_lesser(
         )
 
 
-def test_get_mutation_research_raises_when_source_conduit_is_lesser(
-    conduit_dynamic_lesser: Conduit,
-) -> None:
-    """
-    Verify get_mutation_research fails immediately for lesser conduits.
-
-    Contract:
-        - Lesser conduits are rejected before mutation-runtime access.
-    """
-    with pytest.raises(RuntimeError, match="Only normal conduits can access MutationResearch"):
-        conduit_dynamic_lesser.get_mutation_research()
-
-
 def test_transfer_spell_ownership_delegates_when_dynamic(
     conduit_dynamic_normal: Conduit,
     conduit_lesser: Conduit,

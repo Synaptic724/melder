@@ -69,8 +69,10 @@ def test_component_conduit_returns_aether_owned_mutation_research(case_index: in
     )
     conduit = spellbook.conjure(dynamic=True, name=f"root-{case_index:02d}")
     try:
-        manager = conduit.get_mutation_research()
-        assert manager is conduit._aether.mutation_research
+        # Conduit door deleted (owner model): the Aether-hosted root is the
+        # world truth; rooms are the user surface.
+        manager = conduit._aether.mutation_research
+        assert manager is Aether().mutation_research
     finally:
         conduit.cleanup()
 

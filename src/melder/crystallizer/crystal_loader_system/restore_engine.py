@@ -1288,7 +1288,7 @@ class RestoreEngine(Cleanable):
         if (
             self._skip_existing
             and recorded_name is not None
-            and spellbook._aetheric_frame._conduit_cloud.has_conduit_name(
+            and spellbook._aetheric_frame.conduit_cloud.has_conduit_name(
                 str(recorded_name)
             )
         ):
@@ -1580,13 +1580,14 @@ class RestoreEngine(Cleanable):
                 )
                 continue
             frame = Aether()._ensure_frame(frame_name)
-            # Cross-package seam: the cloud has no public frame accessor
-            # yet; direct field access is deliberate (owned repo, visible
-            # contract) - follow-up: public accessor on AethericFrame.
-            cloud = frame._conduit_cloud
+            # NOTE (public_cloud_seams 2026-07-12): the documented
+            # private seam here retired - the frame now exposes a public
+            # conduit_cloud accessor and the cloud a has_cluster_name
+            # probe.
+            cloud = frame.conduit_cloud
             if (
                 self._skip_existing
-                and str(cluster_name) in cloud._conduit_clusters
+                and cloud.has_cluster_name(str(cluster_name))
             ):
                 # S1 skip lane: the live world already owns this cluster;
                 # REUSE it - recorded members join the existing cluster
@@ -1903,60 +1904,24 @@ class RestoreEngine(Cleanable):
         Returns:
             bool: True when a retry of the import lane is warranted.
         """
-        from melder.crystallizer.synthetic_module import SyntheticModule
+        # NOTE (spell_index_graft 2026-07-12): the mechanics moved to the
+        # shared user_world_rebuild lane so the GraftRunner rebuilds
+        # identically against live hosts; the engine keeps its
+        # all-or-nothing built-stack + report semantics via callbacks.
+        from melder.crystallizer.crystal_loader_system.user_world_rebuild import (
+            rebuild_absent_user_modules,
+        )
 
-        sources = dict(crystal.get("user_module_sources", {}))
-        if not sources:
-            return False
-        rebuilt_any = False
-        for module_name in sorted(
-                sources.keys(), key=lambda name: (name.count("."), name)
-        ):
-            if module_name in sys.modules:
-                continue
-            payload = dict(sources[module_name])
-            recorded_path = payload.get("module_path")
-            if (
-                recorded_path is not None
-                and Path(str(recorded_path)).exists()
-            ):
-                # Live file wins: never mask a real file with retained
-                # text - whatever made its import fail stays visible.
-                continue
-            try:
-                module = SyntheticModule(
-                    module_name=module_name,
-                    spell_crystal_id=spell_id,
-                    source_text=str(payload.get("source_text", "")),
-                    source_sha256=str(payload.get("source_sha256", "")),
-                    binding_signature="user_source_retained",
-                    parent_name=(
-                        module_name.rsplit(".", 1)[0]
-                        if "." in module_name
-                        else None
-                    ),
-                    is_package=bool(payload.get("is_package", False)),
-                )
-                module.register_in_import_registry()
-                module.publish_to_sys_modules()
-                module.execute_source()
-            except Exception as error:
-                self._report.add_shortfall(
-                    "spell_crystal", spell_id,
-                    "user_module_rebuild_failed ({0}): {1}".format(
-                        module_name, error
-                    ),
-                )
-                return False
+        def _on_built(module: Any) -> None:
             self._built_stack.append(("synthetic_module", module))
             self._report.record_built("synthetic_module")
-            self._report.add_shortfall(
-                "spell_crystal", spell_id,
-                "user_module_rebuilt_synthetic_from_retained_source: "
-                "{0}".format(module_name),
-            )
-            rebuilt_any = True
-        return rebuilt_any
+
+        def _on_shortfall(reason: str) -> None:
+            self._report.add_shortfall("spell_crystal", spell_id, reason)
+
+        return rebuild_absent_user_modules(
+            spell_id, crystal, _on_built, _on_shortfall
+        )
 
     def _teardown_built(self) -> None:
         """

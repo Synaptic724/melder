@@ -376,6 +376,28 @@ class ConduitCloud(Cleanable):
         with self._lock:
             return name in self._conduit_ids_by_name
 
+    def has_cluster_name(self, cluster_name: str) -> bool:
+        """
+        Return whether one cluster name exists in this frame's cloud.
+
+        Purpose:
+            The public cluster-existence probe (public_cloud_seams
+            2026-07-12): the crystallizer's admission preflight and the
+            restore engine's cluster reuse lane previously read the
+            private registry directly as a documented seam - this verb
+            retires that debt (mirrors has_conduit_name).
+
+        Args:
+            cluster_name:
+                Cluster name to check.
+
+        Returns:
+            bool: True when the cluster name is registered.
+        """
+        self.check_cleaned()
+        with self._lock:
+            return cluster_name in self._conduit_clusters
+
     def find_conduit_id_by_name(self, name: str) -> Optional[str]:
         """
         Return the root conduit id registered under one conduit name, if present.

@@ -5408,6 +5408,26 @@ and logging.
         """
         return Spellbook(self._aetheric_frame_name, self._configuration)
 
+    @property
+    def conduit(self) -> Optional["Conduit"]:
+        """
+        Return this book's conjured root conduit, or None pre-conjure.
+
+        Purpose:
+            Public accessor (spell_index_graft 2026-07-12): borrowers -
+            the crystallizer's graft runner first among them - previously
+            had no public read for the conjured conduit and would have
+            needed the `_conduit` slot as a documented seam.
+
+        Returns:
+            Optional[Conduit]: The live root conduit, or None when this
+            book has not conjured yet.
+
+        Raises:
+            RuntimeError: If the spellbook has been cleaned.
+        """
+        self.check_cleaned()
+        return self._conduit
 
     def conjure(
             self,

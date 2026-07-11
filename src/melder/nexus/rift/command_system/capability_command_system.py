@@ -1059,6 +1059,159 @@ class CapabilityCommandSystem(CommandSystem):
                 binding_name=binding_name,
             )
 
+    # ------------------------------------------------------------------
+    # Research surface (MutationResearch) - READ ONLY in this room
+    # ------------------------------------------------------------------
+
+    def _require_live_mutation_research(self) -> object:
+        """
+        Return the Aether-hosted MutationResearch root, when it is live.
+
+        Contract:
+            - Non-constructing peek (the command path never births MR).
+            - Teach-grade refusal when research is absent or inactive.
+
+        Returns:
+            object: The live, activated MutationResearch root.
+
+        Raises:
+            RuntimeError: If the root does not exist, is cleaned, or is
+                not activated.
+        """
+        research = self._aether._mutation_research
+        if research is None or research.cleaned or not research.activated:
+            raise RuntimeError(
+                "MutationResearch is not active in this world; activate the "
+                "root (configuration + activate) before using research "
+                "commands."
+            )
+        return research
+
+    def research_walk(self, lane: str = "default") -> object:
+        """
+        Return one research lane's line of versions (read-only).
+
+        Args:
+            lane: Lane name or id; the default lane when omitted.
+
+        Returns:
+            object: Ordered node payloads (detached).
+        """
+        self.check_cleaned()
+        with self._entered_command_action(
+                action_name="research_walk",
+                frame_name=None,
+        ), self._lock:
+            return self._require_live_mutation_research().research_set().walk(
+                lane,
+            )
+
+    def research_history(self, spell_id: str) -> object:
+        """
+        Return everything the research record knows about one identity.
+
+        Args:
+            spell_id: Binding-signature SHA256 to report on.
+
+        Returns:
+            object: History payload (detached).
+        """
+        self.check_cleaned()
+        with self._entered_command_action(
+                action_name="research_history",
+                frame_name=None,
+        ), self._lock:
+            return (
+                self._require_live_mutation_research()
+                .research_set()
+                .history(spell_id)
+            )
+
+    def research_heads(self) -> object:
+        """
+        Return the tip identity of every open research lane.
+
+        Returns:
+            object: lane name -> tip spell id mapping (detached).
+        """
+        self.check_cleaned()
+        with self._entered_command_action(
+                action_name="research_heads",
+                frame_name=None,
+        ), self._lock:
+            return (
+                self._require_live_mutation_research().research_set().heads()
+            )
+
+    def research_residency(self, spell_id: str) -> object:
+        """
+        Return the query-time residency join for one identity.
+
+        Args:
+            spell_id: Binding-signature SHA256 to locate.
+
+        Returns:
+            object: Residency payload (detached).
+        """
+        self.check_cleaned()
+        with self._entered_command_action(
+                action_name="research_residency",
+                frame_name=None,
+        ), self._lock:
+            return self._require_live_mutation_research().residency_view(
+                spell_id,
+            )
+
+    def research_diff(
+            self,
+            left_spell_id: str,
+            right_spell_id: str,
+            *,
+            strategy: str = "structural",
+    ) -> object:
+        """
+        Return a derived diff between two research identities (read-only).
+
+        Args:
+            left_spell_id: Left version identity.
+            right_spell_id: Right version identity.
+            strategy: Registered diff strategy name.
+
+        Returns:
+            object: Detached diff verdict.
+        """
+        self.check_cleaned()
+        with self._entered_command_action(
+                action_name="research_diff",
+                frame_name=None,
+        ), self._lock:
+            return self._require_live_mutation_research().diff_research(
+                left_spell_id,
+                right_spell_id,
+                strategy=strategy,
+            )
+
+    def research_campaign_view(self, campaign: str) -> object:
+        """
+        Return everything the record knows about one research campaign.
+
+        Args:
+            campaign: Campaign stamp to gather.
+
+        Returns:
+            object: Campaign payload (detached).
+        """
+        self.check_cleaned()
+        with self._entered_command_action(
+                action_name="research_campaign_view",
+                frame_name=None,
+        ), self._lock:
+            return (
+                self._require_live_mutation_research()
+                .research_set()
+                .campaign_view(campaign)
+            )
+
     def list_supported_command_methods(self) -> Tuple[str, ...]:
         """
         Return the public command methods supported by capability rooms.

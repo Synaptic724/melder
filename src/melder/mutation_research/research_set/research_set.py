@@ -695,7 +695,15 @@ class ResearchSet(Cleanable):
                 metadata=metadata,
             )
             self._residence.claim(spell_id, target.lane_id)
-            target.add_node(node)
+            # Threadsafety compensation: lanes are handed out live, so a
+            # direct terminal-state call can race between the claim and the
+            # add under real threads - a refused add must not strand the
+            # claim (partition corruption).
+            try:
+                target.add_node(node)
+            except Exception:
+                self._residence._rollback_claim(spell_id, target.lane_id)
+                raise
             self._journal.record(
                 TransitionAct.registered,
                 target.lane_id,
@@ -772,7 +780,13 @@ class ResearchSet(Cleanable):
                 metadata=metadata,
             )
             self._residence.claim(spell_id, target.lane_id)
-            target.add_node(node)
+            # Same compensation as register_spell: a refused add must not
+            # strand the claim.
+            try:
+                target.add_node(node)
+            except Exception:
+                self._residence._rollback_claim(spell_id, target.lane_id)
+                raise
             self._journal.record(
                 TransitionAct.staged if staged else TransitionAct.registered,
                 target.lane_id,
@@ -1044,8 +1058,24 @@ class ResearchSet(Cleanable):
                     moved_spell_ids = [source.tip_spell_id]
                 else:
                     moved_spell_ids = source.node_spell_ids()
-                for node in source.detach_nodes(moved_spell_ids):
-                    target.add_node(node)
+                detached = source.detach_nodes(moved_spell_ids)
+                # Threadsafety compensation: a mid-loop refusal (direct
+                # terminal-state race on the receiver) must not leave
+                # detached records in limbo - everything returns to the
+                # still-open source in original order, then the failure
+                # re-raises. Residence transfers only after EVERY add
+                # landed, so the partition stays all-or-nothing.
+                added: List[str] = []
+                try:
+                    for node in detached:
+                        target.add_node(node)
+                        added.append(node.spell_id)
+                except Exception:
+                    if added:
+                        target.detach_nodes(added)
+                    for node in detached:
+                        source.add_node(node)
+                    raise
                 self._residence.transfer(moved_spell_ids, target.lane_id)
             source.mark_joined(target.lane_id)
             self._journal.record(

@@ -597,16 +597,26 @@ class ExternalPersistenceManagerConfiguration(Cleanable):
             bool: True when valid.
 
         Raises:
-            ValueError: If upload_on_flush is enabled with no upload
-                handler attached (a knob pointing at nothing is a
-                misconfiguration, not a no-op).
+            ValueError: If upload_on_flush is enabled with no WRITE lane
+                attached (a knob pointing at nothing is a
+                misconfiguration, not a no-op). Since the generic mesh
+                lane (external_mesh 2026-07-12), the store handler
+                satisfies the flush knob - the legacy bridge ships
+                checkpoints through it. Read-only configurations
+                (fetch/list only) must disable the knob explicitly.
         """
         self.check_cleaned()
-        if self._upload_on_flush and self._upload_handler is None:
+        if (
+            self._upload_on_flush
+            and self._upload_handler is None
+            and self._store_handler is None
+        ):
             raise ValueError(
-                "upload_on_flush is enabled but no upload handler is "
+                "upload_on_flush is enabled but no write lane is "
                 "attached. Attach one via with_upload_handler(...) or "
-                "disable with_upload_on_flush(False)."
+                "with_store_handler(...), or disable "
+                "with_upload_on_flush(False) for read-only "
+                "configurations."
             )
         return True
 

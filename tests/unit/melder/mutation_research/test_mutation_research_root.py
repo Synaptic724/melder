@@ -411,7 +411,7 @@ def test_root_residency_view_is_honest_without_custody() -> None:
     assert view["runtime"] == "declared_only"
     unknown = root.residency_view("sha-ghost")
     assert unknown["runtime"] == "unknown"
-    with pytest.raises(ValueError, match="spell_sha"):
+    with pytest.raises(ValueError, match="spell_id"):
         root.residency_view("")
 
 
