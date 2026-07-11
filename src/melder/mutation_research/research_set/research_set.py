@@ -465,6 +465,54 @@ class ResearchSet(Cleanable):
                 ],
             }
 
+    def campaign_view(self, campaign: str) -> Dict[str, object]:
+        """
+        Return everything the record knows about one research campaign.
+
+        Purpose:
+            Campaigns stamp work ACROSS lanes (multi-agent research); this
+            read gathers the stamped version records and journal events into
+            one detached payload without any organizational side effects.
+
+        Args:
+            campaign:
+                Campaign stamp to gather.
+
+        Returns:
+            Dict[str, object]:
+                Payload with `campaign`, stamped `nodes` (each carrying its
+                holding lane), stamped `transitions`, and the sorted
+                `lane_names` involved.
+        """
+        self.check_cleaned()
+        if not isinstance(campaign, str) or not campaign:
+            raise ValueError("campaign must be a non-empty string.")
+        with self._lock:
+            nodes: List[Dict[str, object]] = []
+            involved: set = set()
+            for lane_id in sorted(self._lanes_by_id.keys()):
+                lane = self._lanes_by_id[lane_id]
+                for node in lane.nodes():
+                    if node.campaign == campaign:
+                        node_payload = node.describe()
+                        node_payload["lane_id"] = lane.lane_id
+                        node_payload["lane_name"] = lane.name
+                        nodes.append(node_payload)
+                        involved.add(lane.name)
+            transitions: List[Dict[str, object]] = []
+            for entry in self._journal.entries():
+                if entry.campaign == campaign:
+                    transitions.append(entry.describe())
+                    lane = self._lanes_by_id.get(entry.lane_id)
+                    if lane is not None:
+                        involved.add(lane.name)
+            return {
+                "campaign": campaign,
+                "nodes": nodes,
+                "transitions": transitions,
+                "lane_names": sorted(involved),
+            }
+
     # ------------------------------------------------------------------
     # Mutating verbs
     # ------------------------------------------------------------------
@@ -1184,6 +1232,10 @@ class ResearchSet(Cleanable):
                 "organization": self._organization_payload_locked(),
                 "journal": self._journal.describe(recent=recent_transitions),
                 "network_snapshot_shas": self._versioner.snapshot_shas(),
+                # The undo ring rides the record (owner dial 2026-07-11) so
+                # restore_network reaches pre-death organization states on a
+                # rebuilt pod; bounded by the ring's own retention.
+                "network_versioner": self._versioner.describe(),
             }
 
     def describe(self) -> Dict[str, object]:
@@ -1275,6 +1327,15 @@ class ResearchSet(Cleanable):
             research_set._journal = ResearchJournal.from_payload(
                 journal_payload,
             )
+            versioner_payload = payload.get("network_versioner")
+            if isinstance(versioner_payload, dict):
+                try:
+                    research_set._versioner.cleanup()
+                except Exception:
+                    pass
+                research_set._versioner = NetworkVersioner.from_payload(
+                    versioner_payload,
+                )
             if isinstance(set_id, str) and set_id:
                 research_set._set_id = set_id
             recorded_created_at = organization.get("created_at")

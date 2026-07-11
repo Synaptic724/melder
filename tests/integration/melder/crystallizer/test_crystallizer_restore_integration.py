@@ -990,3 +990,77 @@ def test_mutation_research_round_trips_through_checkpoints(cache_root):
         assert set(restored_set.lane_names()) == {"default", "experiments"}
     finally:
         MutationResearch._reset_singleton_for_tests()
+
+
+def test_user_source_retention_rebuilds_deleted_files(
+        cache_root, tmp_path, monkeypatch,
+):
+    """
+    Purpose:
+        S2 physical custody end to end: seal a world with retention ON
+        whose spell target lives in a USER FILE, delete the file, fresh
+        boot, load_checkpoint - the spell rebuilds from retained text
+        through the synthetic module lane with the honest shortfall.
+    Contract:
+        The report completes; the rebuild names itself
+        ("user_module_rebuilt_synthetic_from_retained_source"); the
+        module is import-resolvable again for the rebuilt bind.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If the deleted user world does not rebuild.
+    """
+    import importlib as _importlib
+
+    module_root = tmp_path / "userland_s2"
+    module_root.mkdir()
+    module_file = module_root / "s2_retained_widget.py"
+    module_file.write_text(
+        "class S2RetainedWidget:\n"
+        "    def run(self):\n"
+        "        return 42\n",
+        encoding="utf-8",
+    )
+    monkeypatch.syspath_prepend(str(module_root))
+    module = _importlib.import_module("s2_retained_widget")
+    try:
+        # Retention ON + the temp root as user-source authority.
+        configuration = CrystallizerConfiguration().with_defaults()
+        configuration.with_user_source_root_paths((module_root,))
+        configuration.with_retain_user_sources(True)
+        configuration.activate()
+        crystallizer = Crystallizer()
+        crystallizer.activate(configuration)
+
+        book = _dynamic_book()
+        spell_id = book.bind(
+            spell=module.S2RetainedWidget,
+            existence=Existence.unique,
+            permissions="create",
+        )
+        book.conjure(dynamic=True, name="root")
+
+        # Retention proof at the record: the crystal carries the text.
+        sealed = crystallizer.get_spell_crystal(spell_id).describe()
+        assert "s2_retained_widget" in sealed["user_module_sources"]
+
+        checkpoint_id = crystallizer.create_checkpoint()
+        crystallizer.flush_checkpoint(checkpoint_id)
+
+        # The fresh pod: no user file, no cached import.
+        module_file.unlink()
+        sys.modules.pop("s2_retained_widget", None)
+
+        rebooted = _fresh_boot()
+        rebooted.reload_cached_checkpoint(checkpoint_id)
+        report = rebooted.load_checkpoint(checkpoint_id)
+
+        assert report["status"] == "complete"
+        assert report["built_counts"]["spell_active"] == 1
+        assert (
+            "user_module_rebuilt_synthetic_from_retained_source"
+            in str(report.get("shortfalls", []))
+        )
+        assert "s2_retained_widget" in sys.modules
+    finally:
+        sys.modules.pop("s2_retained_widget", None)

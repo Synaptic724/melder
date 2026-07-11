@@ -240,6 +240,70 @@ def test_legacy_direct_engines_still_report_without_gating():
             engine.cleanup()
 
 
+def test_engine_mr_stage_noops_without_a_recorded_twin():
+    """
+    Contract (mr_restore_build_stage S2): a world without research stays
+    without it - no built row, no shortfall, and the retired first_cut
+    vocabulary never appears.
+    """
+    engine = RestoreEngine(
+        profile_name="default",
+        checkpoint_ids=["ck-no-mr"],
+        chain=[{"journal": [], "payloads": {}}],
+    )
+    try:
+        report = engine.restore()
+        payload = report.describe()
+        report.cleanup()
+        assert "mutation_research" not in payload["built_counts"]
+        assert "first_cut" not in str(payload)
+        assert "mutation_research" not in str(payload.get("shortfalls", []))
+    finally:
+        if not engine.cleaned:
+            engine.cleanup()
+
+
+def test_engine_mr_stage_reports_cleaned_worlds_honestly():
+    """
+    Contract (mr_restore_build_stage S2): folded lifecycle "cleaned" is
+    later-wins truth - the world sealed AFTER its MR died, so the stage
+    files the honest shortfall and rebuilds NOTHING (no runtime touch,
+    which is why this lane is unit-testable over a bare window).
+    """
+    window = {
+        "journal": [
+            [1, "mutation_research", "root"],
+            [2, "mutation_research_state", "cleaned"],
+        ],
+        "payloads": {
+            "mutation_research": {
+                "root": {
+                    "activated": True,
+                    "configuration_payload": {
+                        "unrestricted_module_mutations": False,
+                    },
+                    "composition_payload": {},
+                },
+            },
+        },
+    }
+    engine = RestoreEngine(
+        profile_name="default",
+        checkpoint_ids=["ck-mr-cleaned"],
+        chain=[window],
+    )
+    try:
+        report = engine.restore()
+        payload = report.describe()
+        report.cleanup()
+        assert "mutation_research" not in payload["built_counts"]
+        assert "cleaned_before_seal_not_rebuilt" in str(payload)
+        assert "first_cut" not in str(payload)
+    finally:
+        if not engine.cleaned:
+            engine.cleanup()
+
+
 def test_loader_remembers_nothing_until_the_first_load():
     """
     Contract: durable load state starts honest - {"loaded": False} before

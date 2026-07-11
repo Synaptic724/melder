@@ -316,6 +316,52 @@ def test_on_mutation_fires_per_mutating_verb_only() -> None:
     research_set.cleanup()
 
 
+def test_composition_carries_and_restores_the_undo_ring() -> None:
+    """
+    Verify the network-versioner ring rides the composition payload so
+    restore_network reaches pre-death organization states after hydration.
+    """
+    research_set = _seeded_set()
+    snapshot_before_join = research_set.latest_network_snapshot
+    research_set.join("child", into="default")
+
+    rebuilt = ResearchSet.from_payload(research_set.describe_composition())
+    rebuilt.restore_network(snapshot_before_join, reason="post-death undo")
+
+    child = rebuilt.get_lane("child")
+    assert child.state is LaneState.open
+    assert child.node_shas() == ["sha-b", "sha-c"]
+    research_set.cleanup()
+    rebuilt.cleanup()
+
+
+def test_campaign_view_gathers_across_lanes() -> None:
+    """
+    Verify the campaign read collects stamped nodes and events across lanes
+    without side effects.
+    """
+    research_set = ResearchSet("default")
+    research_set.register_spell("sha-a", campaign="apollo")
+    research_set.create_lane(
+        "side", attach_to="default", attach_at_sha="sha-a",
+        campaign="apollo",
+    )
+    research_set.register_spell(
+        "sha-b", lane="side", parent_shas=["sha-a"], campaign="apollo",
+    )
+    research_set.register_spell("sha-unrelated")
+
+    view = research_set.campaign_view("apollo")
+
+    assert [n["spell_sha"] for n in view["nodes"]] == ["sha-a", "sha-b"]
+    assert sorted(view["lane_names"]) == ["default", "side"]
+    assert all(t["campaign"] == "apollo" for t in view["transitions"])
+    assert len(view["transitions"]) == 3
+    with pytest.raises(ValueError, match="campaign"):
+        research_set.campaign_view("")
+    research_set.cleanup()
+
+
 def test_set_cleanup_cascades_and_guards() -> None:
     """
     Verify cleanup cascades into every owned structure.

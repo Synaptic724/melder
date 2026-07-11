@@ -330,3 +330,122 @@ def test_transaction_mediator_root_failure_aborts_and_clears_session() -> None:
     assert transaction_manager.get_in_flight(request.request_id) is None
     assert orchestrator.get_staged(request.request_id) is None
     assert mediator.has_active_session() is False
+
+
+def _build_gated_bundle(load_gate, wait_seconds):
+    """
+    Build one admitted bundle whose mediator carries a LoadGate.
+
+    The gate check fires at NEW-ROOT starts only (begin_frame /
+    begin_transaction); joins never consult it. begin_frame is the
+    ingress under test - begin_transaction shares the identical
+    wait_for_passage call.
+    """
+    transaction_manager = ChangeControlTransactionManager()
+    conflict_manager = ChangeControlConflictManager()
+    embargo_manager = ChangeControlEmbargoManager()
+    orchestrator = ChangeControlOrchestrator()
+    request = transaction_manager.build_request(
+        request_type=ChangeTransactionType.BIND,
+        initiator_conduit_id="conduit-gated",
+        spellbook_id="spellbook-gated",
+        scope_keys=["scope:spellbook:spellbook-gated"],
+    )
+    orchestrator.admit_request(
+        request,
+        transaction_manager=transaction_manager,
+        conflict_manager=conflict_manager,
+        embargo_manager=embargo_manager,
+    )
+    staged = orchestrator.get_staged(request.request_id)
+    assert staged is not None
+    mediator = TransactionMediator(
+        transaction_manager=transaction_manager,
+        conflict_manager=conflict_manager,
+        embargo_manager=embargo_manager,
+        orchestrator=orchestrator,
+        devops_information_registry=None,
+        max_transaction_wait_time_in_seconds=wait_seconds,
+        load_gate=load_gate,
+    )
+    return request, staged, mediator
+
+
+def test_gated_mediator_passes_the_load_holder_thread() -> None:
+    """
+    LoadGate law: while a load holds the system, the LOADING thread's own
+    root transactions pass free ("the loading thread has all control").
+    """
+    from melder.utilities.synchronization.load_gate import LoadGate
+
+    gate = LoadGate()
+    request, staged, mediator = _build_gated_bundle(gate, 5.0)
+    gate.acquire("holder_thread_load")
+    try:
+        session = mediator.begin_frame(request=request, staged=staged)
+        assert session.request is request
+        assert mediator.has_active_session() is True
+    finally:
+        gate.release()
+        gate.cleanup()
+
+
+def test_gated_mediator_parks_foreign_roots_until_release() -> None:
+    """
+    LoadGate law: a foreign thread's NEW-ROOT start parks at the gate and
+    resumes when the load releases; the session then admits normally.
+    """
+    from melder.utilities.synchronization.load_gate import LoadGate
+
+    gate = LoadGate()
+    request, staged, mediator = _build_gated_bundle(gate, 10.0)
+    outcomes = {}
+
+    def foreign_root() -> None:
+        session = mediator.begin_frame(request=request, staged=staged)
+        outcomes["session"] = session
+
+    holder = threading.Thread(target=gate.acquire, args=("parking_load",))
+    holder.start()
+    holder.join()
+    # The gate is now held by a FINISHED thread - the current thread is
+    # foreign to it, so a root start here would park. Run the root start
+    # in a worker and release from this thread.
+    worker = threading.Thread(target=foreign_root)
+    worker.start()
+    time.sleep(0.2)
+    assert "session" not in outcomes
+
+    # Release must come from the holder thread; it is gone, so cleanup
+    # (terminal open, wakes waiters) stands in for release here.
+    gate.cleanup()
+    worker.join(timeout=5.0)
+    assert outcomes["session"].request is request
+
+
+def test_gated_mediator_times_out_naming_the_holding_load() -> None:
+    """
+    LoadGate law: a starved foreign root start fails teach-grade - the
+    error names the load that holds the system.
+    """
+    from melder.utilities.synchronization.load_gate import LoadGate
+
+    gate = LoadGate()
+    request, staged, mediator = _build_gated_bundle(gate, 0.2)
+    errors = {}
+
+    def starved_root() -> None:
+        try:
+            mediator.begin_frame(request=request, staged=staged)
+        except RuntimeError as exc:
+            errors["message"] = str(exc)
+
+    gate.acquire("slow_world_load")
+    try:
+        worker = threading.Thread(target=starved_root)
+        worker.start()
+        worker.join(timeout=5.0)
+        assert "slow_world_load" in errors["message"]
+    finally:
+        gate.release()
+        gate.cleanup()
