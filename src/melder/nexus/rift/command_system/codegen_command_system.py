@@ -1007,6 +1007,156 @@ class CodegenCommandSystem(CommandSystem):
         ), self._lock:
             self._require_live_mutation_research().clear_active_campaign()
 
+    # ------------------------------------------------------------------
+    # Foresight surface (MutationResearch) - source / impact / graph /
+    # drift / candidate preview. Read-only by law: nothing here executes,
+    # binds, or records.
+    # ------------------------------------------------------------------
+
+    def research_source(
+            self,
+            spell_id: str,
+            *,
+            module_name: Optional[str] = None,
+    ) -> object:
+        """
+        Return the code of one spell's module world (or one module of it).
+
+        Args:
+            spell_id: Binding-signature SHA256 whose world to read.
+            module_name: Optional single module to return.
+
+        Returns:
+            object: Per-module source rows (recorded-first, live-disk
+                fallback, honest text_unavailable).
+        """
+        self.check_cleaned()
+        with self._entered_command_action(
+                action_name="research_source",
+                frame_name=None,
+        ), self._lock:
+            return self._require_live_mutation_research().source_view(
+                spell_id,
+                module_name=module_name,
+            )
+
+    def research_impact(
+            self,
+            *,
+            spell_id: Optional[str] = None,
+            module_name: Optional[str] = None,
+    ) -> object:
+        """
+        Return one blast radius joined with research residency.
+
+        Args:
+            spell_id: Optional spell SHA256 at the blast center.
+            module_name: Optional canonical module name at the blast center.
+
+        Returns:
+            object: Radius payload plus the per-spell `research` join
+                (declared/lane/campaign rows).
+        """
+        self.check_cleaned()
+        with self._entered_command_action(
+                action_name="research_impact",
+                frame_name=None,
+        ), self._lock:
+            return self._require_live_mutation_research().impact_view(
+                spell_id=spell_id,
+                module_name=module_name,
+            )
+
+    def research_module_graph(self, spell_id: str) -> object:
+        """
+        Return one spell's module world as a walkable graph payload.
+
+        Args:
+            spell_id: Binding-signature SHA256 whose world to walk.
+
+        Returns:
+            object: Modules, dependency edges, local reverse edges,
+                export surfaces, fingerprints, paths, and load order.
+        """
+        self.check_cleaned()
+        with self._entered_command_action(
+                action_name="research_module_graph",
+                frame_name=None,
+        ), self._lock:
+            return self._require_live_mutation_research().module_graph_view(
+                spell_id,
+            )
+
+    def research_source_drift(self) -> object:
+        """
+        Return the full recorded-vs-disk drift report with radii.
+
+        Returns:
+            object: Drift statuses per sealed module plus blast radii for
+                every module that is not unchanged.
+        """
+        self.check_cleaned()
+        with self._entered_command_action(
+                action_name="research_source_drift",
+                frame_name=None,
+        ), self._lock:
+            return (
+                self._require_live_mutation_research().source_drift_view()
+            )
+
+    def research_preview(
+            self,
+            code: str,
+            *,
+            against_spell_id: Optional[str] = None,
+            module_name: Optional[str] = None,
+            frame_name: Optional[str] = None,
+    ) -> object:
+        """
+        Mock one candidate codegen and report what would happen next.
+
+        Purpose:
+            The codegen room's foresight centerpiece: BEFORE anything
+            executes or binds, report what the candidate defines and
+            imports, the would-be source + structural diff against the
+            version it would replace, the current blast radius of that
+            replacement joined with research residency, and - when a
+            frame_name is supplied - the room's normal codegen validation
+            verdict for the candidate.
+
+        Contract:
+            - Read-only: nothing executes, binds, or records.
+            - Validation is optional because it is frame-scoped; without a
+              frame_name the `validation` section is None and the agent can
+              call validate_codegen separately.
+
+        Args:
+            code: Candidate Python source text.
+            against_spell_id: Optional current version it would replace.
+            module_name: Optional module identity when no against-version
+                exists.
+            frame_name: Optional frame for the namespace-scoped validation
+                pass.
+
+        Returns:
+            object: The root preview payload plus a `validation` section.
+        """
+        self.check_cleaned()
+        validation: Optional[object] = None
+        if frame_name is not None:
+            validation = self.validate_codegen(code, frame_name=frame_name)
+        with self._entered_command_action(
+                action_name="research_preview",
+                frame_name=None,
+        ), self._lock:
+            preview = self._require_live_mutation_research().preview_candidate(
+                code,
+                against_spell_id=against_spell_id,
+                module_name=module_name,
+            )
+        preview["validation"] = validation
+        return preview
+
     def _emit_codegen_memory_if_enabled(
             self,
             *,

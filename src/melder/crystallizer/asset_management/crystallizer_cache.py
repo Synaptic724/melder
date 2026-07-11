@@ -220,6 +220,53 @@ class CrystallizerCache(Cleanable):
                 "list_cached_item_ids().".format(checkpoint_id, str(root))
             )
 
+    def delete_cached_item(self, checkpoint_id: str) -> str:
+        """
+        Evict one checkpoint cached-item from the crystallizer cache.
+
+        Purpose:
+            Single-item delete (asset CRUD completion, 2026-07-11): the
+            FIFO retention pass trims by age only; this verb removes one
+            specific cached checkpoint by id (a corrupt or unwanted
+            snapshot) without touching its neighbours.
+
+        Contract:
+            - Mirrors load_cached_item's resolution exactly: the
+              profile-scoped layout is searched first, then the flat
+              legacy path, so every readable item is deletable.
+            - The unlink is a plain file removal; the sealed ledger
+              crystal (when still live) is untouched - cache eviction
+              never rewrites in-process truth.
+
+        Args:
+            checkpoint_id:
+                ULID identity of a previously stored checkpoint.
+
+        Returns:
+            str: The deleted file's path (teach-grade evidence).
+
+        Raises:
+            RuntimeError: If the cache has been cleaned.
+            KeyError: If no cached item exists for `checkpoint_id`.
+        """
+        self.check_cleaned()
+        with self._lock:
+            root = self.resolve_cache_root_path()
+            if root.is_dir():
+                for candidate in root.glob("*/{0}.json".format(checkpoint_id)):
+                    candidate.unlink()
+                    return str(candidate)
+                legacy_path = root / "{0}.json".format(checkpoint_id)
+                if legacy_path.exists():
+                    legacy_path.unlink()
+                    return str(legacy_path)
+            raise KeyError(
+                "No cached checkpoint item for id {0!r} under {1}; "
+                "nothing was deleted. Check list_cached_item_ids().".format(
+                    checkpoint_id, str(root)
+                )
+            )
+
     def list_cached_item_ids(self) -> List[str]:
         """
         Return every checkpoint id present in the cache directory.
@@ -350,6 +397,57 @@ class CrystallizerCache(Cleanable):
                     )
                 )
             return json.loads(formation_path.read_text(encoding="utf-8"))
+
+    def delete_formation(
+            self,
+            profile_name: str,
+            formation_name: str,
+    ) -> str:
+        """
+        Delete one stored formation file from the local cache.
+
+        Purpose:
+            The missing local D of the formation CRUD square (asset CRUD
+            completion, 2026-07-11): formations are name-keyed, so no
+            FIFO retention pass ever removes them - this verb is the
+            only local delete lane.
+
+        Contract:
+            - Path form mirrors store/load exactly:
+              <cache root>/{profile}/__formations__/{name}.json.
+            - Local file removal only; any remote copy is the asset
+              system's delete lane (strict, per the retention law).
+
+        Args:
+            profile_name:
+                Owning profile.
+            formation_name:
+                The user-chosen formation name to delete.
+
+        Returns:
+            str: The deleted file's path (teach-grade evidence).
+
+        Raises:
+            RuntimeError: If the cache has been cleaned.
+            KeyError: If the formation file does not exist.
+        """
+        self.check_cleaned()
+        with self._lock:
+            formation_path = (
+                self.resolve_cache_root_path()
+                / profile_name
+                / "__formations__"
+                / "{0}.json".format(formation_name)
+            )
+            if not formation_path.exists():
+                raise KeyError(
+                    "No stored formation {0!r} for profile {1!r} at {2}; "
+                    "nothing was deleted. Check list_formation_names.".format(
+                        formation_name, profile_name, str(formation_path)
+                    )
+                )
+            formation_path.unlink()
+            return str(formation_path)
 
     def list_formation_names(self, profile_name: str) -> List[str]:
         """

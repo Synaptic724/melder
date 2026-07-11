@@ -115,6 +115,55 @@ def test_engine_validates_inputs_and_construction() -> None:
     engine.cleanup()
 
 
+def test_engine_diff_materials_skips_resolution() -> None:
+    """
+    Verify the candidate-preview entry: caller-supplied materials dispatch
+    directly (the resolver is never consulted), identities ride the
+    materials, and the verdict shape matches diff().
+    """
+    def _refusing_resolver(spell_id):
+        raise AssertionError("diff_materials must not resolve identities.")
+
+    engine = DiffEngine(_refusing_resolver)
+    materials = _materials()
+
+    verdict = engine.diff_materials(
+        materials["sha-left"],
+        {
+            "spell_id": "candidate:abc123",
+            "sources": {"mod.a": "x = 3\n"},
+            "fingerprints": {},
+        },
+    )
+
+    assert verdict["left_spell_id"] == "sha-left"
+    assert verdict["right_spell_id"] == "candidate:abc123"
+    assert verdict["strategy"] == "source"
+    assert verdict["result"]["changed_modules"] == ["mod.a"]
+    engine.cleanup()
+
+
+def test_engine_diff_materials_validates_and_names_strategies() -> None:
+    """
+    Verify diff_materials refuses non-dict materials and unknown strategy
+    names teach-grade (naming the known family).
+    """
+    engine = DiffEngine(_resolver_for(_materials()))
+    materials = _materials()
+
+    with pytest.raises(ValueError, match="material dict"):
+        engine.diff_materials("sha-left", materials["sha-right"])
+    with pytest.raises(ValueError, match="material dict"):
+        engine.diff_materials(materials["sha-left"], None)
+    with pytest.raises(KeyError, match="source"):
+        engine.diff_materials(
+            materials["sha-left"],
+            materials["sha-right"],
+            strategy="unknown",
+        )
+    engine.cleanup()
+
+
 def test_engine_open_closed_registration() -> None:
     """
     Verify new strategies extend the family without engine edits and

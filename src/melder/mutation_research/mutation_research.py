@@ -1,4 +1,7 @@
+import ast
+import hashlib
 import threading
+from pathlib import Path
 from typing import TYPE_CHECKING, ClassVar, Dict, List, Optional, Tuple
 
 if TYPE_CHECKING:
@@ -998,6 +1001,531 @@ class MutationResearch(Cleanable):
             "fingerprints": (
                 dict(fingerprints) if isinstance(fingerprints, dict) else {}
             ),
+        }
+
+    # ------------------------------------------------------------------
+    # Foresight reads (source / impact / module graph / candidate preview)
+    # ------------------------------------------------------------------
+
+    def _require_live_custody(self) -> "Crystallizer":
+        """
+        Return the live crystallizer or refuse teach-grade.
+
+        Contract:
+            - Foresight reads ask for RECORDED truth explicitly, so a dead
+              or inactive record refuses loudly (diff precedent) instead of
+              fabricating empty answers.
+
+        Returns:
+            Crystallizer:
+                The live, activated crystallizer.
+
+        Raises:
+            RuntimeError:
+                If the crystallizer is cleaned or inactive.
+        """
+        crystallizer = self._crystallizer
+        if crystallizer.cleaned or not crystallizer.activated:
+            raise RuntimeError(
+                "Crystallizer custody is unavailable (inactive or cleaned); "
+                "foresight reads need the record - activate the "
+                "crystallizer before asking for source, impact, or module "
+                "graphs."
+            )
+        return crystallizer
+
+    def source_view(
+            self,
+            spell_id: str,
+            *,
+            module_name: Optional[str] = None,
+    ) -> Dict[str, object]:
+        """
+        Return the code of one spell's module world (or one module of it).
+
+        Purpose:
+            The agent QoL bedrock: "show me the code of this object". Text
+            resolves recorded-first (synthetic module sources are always
+            harvested; user module text rides the opt-in retention lane),
+            then falls back to a live disk read through the recorded module
+            path, and reports honestly when neither side has text.
+
+        Contract:
+            - Per-module rows carry `source`, `origin`
+              ("recorded" | "live_disk" | None), `drifted` (live text vs the
+              sealed fingerprint; None when unknowable), and
+              `text_unavailable`.
+            - `module_name` narrows the answer to one module; a module the
+              spell's world does not carry answers `unknown_module: True`
+              (a read never raises on an honest miss).
+
+        Args:
+            spell_id:
+                Binding-signature SHA256 whose world to read.
+            module_name:
+                Optional single module to return.
+
+        Returns:
+            Dict[str, object]:
+                `{"spell_id", "root_module", "modules": {name: row},
+                "unknown_module"?}`.
+
+        Raises:
+            ValueError:
+                If spell_id is empty.
+            RuntimeError:
+                If the crystallizer is cleaned or inactive.
+            KeyError:
+                If no custody crystal exists for the identity.
+        """
+        self.check_cleaned()
+        if not isinstance(spell_id, str) or not spell_id:
+            raise ValueError("spell_id must be a non-empty string.")
+        payload = self._require_live_custody().get_spell_crystal(
+            spell_id
+        ).describe()
+        targets = [str(name) for name in list(payload.get("module_targets", []))]
+        if module_name is not None:
+            if str(module_name) not in targets:
+                return {
+                    "spell_id": spell_id,
+                    "root_module": str(payload.get("root_module_name")),
+                    "unknown_module": True,
+                    "modules": {},
+                }
+            targets = [str(module_name)]
+        modules: Dict[str, Dict[str, object]] = {}
+        for name in targets:
+            modules[name] = self._resolve_module_source(payload, name)
+        return {
+            "spell_id": spell_id,
+            "root_module": str(payload.get("root_module_name")),
+            "modules": modules,
+        }
+
+    def _resolve_module_source(
+            self,
+            payload: Dict[str, object],
+            module_name: str,
+    ) -> Dict[str, object]:
+        """
+        Resolve one module's source row from a custody payload.
+
+        Args:
+            payload:
+                One crystal describe() payload.
+            module_name:
+                Module to resolve within that payload.
+
+        Returns:
+            Dict[str, object]:
+                `{"source", "origin", "drifted", "text_unavailable"}` row.
+        """
+        for carrier_key in ("synthetic_module_sources", "user_module_sources"):
+            carrier = payload.get(carrier_key)
+            if isinstance(carrier, dict):
+                entry = carrier.get(module_name)
+                if isinstance(entry, dict):
+                    text = entry.get("source_text")
+                    if isinstance(text, str) and text:
+                        return {
+                            "source": text,
+                            "origin": "recorded",
+                            "drifted": None,
+                            "text_unavailable": False,
+                        }
+        paths = payload.get("module_to_path")
+        recorded_path = (
+            paths.get(module_name) if isinstance(paths, dict) else None
+        )
+        if recorded_path:
+            live_path = Path(str(recorded_path))
+            if live_path.exists():
+                try:
+                    text = live_path.read_text(encoding="utf-8")
+                except Exception:
+                    text = None
+                if text is not None:
+                    drifted: Optional[bool] = None
+                    fingerprints = payload.get(
+                        "physical_module_fingerprints"
+                    )
+                    if isinstance(fingerprints, dict):
+                        sealed = fingerprints.get(module_name)
+                        if sealed is not None:
+                            live_sha = hashlib.sha256(
+                                text.encode("utf-8")
+                            ).hexdigest()
+                            drifted = live_sha != str(sealed)
+                    return {
+                        "source": text,
+                        "origin": "live_disk",
+                        "drifted": drifted,
+                        "text_unavailable": False,
+                    }
+        return {
+            "source": None,
+            "origin": None,
+            "drifted": None,
+            "text_unavailable": True,
+        }
+
+    def impact_view(
+            self,
+            *,
+            spell_id: Optional[str] = None,
+            module_name: Optional[str] = None,
+            set_name: str = "default",
+    ) -> Dict[str, object]:
+        """
+        Return one blast radius joined with research residency.
+
+        Purpose:
+            The agent-meaningful impact answer: not just "these modules and
+            spells sit in the radius" (the crystallizer's raw view) but
+            "these spells, in these lanes, under these campaigns" - the
+            join between recorded custody impact and the research record.
+
+        Contract:
+            - Exactly one question per call (spell_id OR module_name).
+            - The raw radius payload is preserved verbatim; the join adds
+              one `research` map (affected spell_id -> declared/lane_id/
+              lane_name/lane_state/campaign row; undeclared spells report
+              `declared: False` honestly).
+
+        Args:
+            spell_id:
+                Optional spell SHA256 at the blast center.
+            module_name:
+                Optional canonical module name at the blast center.
+            set_name:
+                Research set supplying declared truth for the join.
+
+        Returns:
+            Dict[str, object]:
+                The `analyze_impact` payload plus `research`.
+
+        Raises:
+            ValueError:
+                If neither or both center arguments are supplied.
+            RuntimeError:
+                If the crystallizer is cleaned or inactive.
+            KeyError:
+                If `set_name` names no research set.
+        """
+        self.check_cleaned()
+        if (spell_id is None) == (module_name is None):
+            raise ValueError(
+                "impact_view answers one question per call: supply "
+                "spell_id OR module_name."
+            )
+        crystallizer = self._require_live_custody()
+        radius = crystallizer.analyze_impact(
+            module_name=module_name,
+            spell_id=spell_id,
+        )
+        affected = [
+            str(sha) for sha in list(radius.get("affected_spells", []))
+        ]
+        radius["research"] = self._residency_join(affected, set_name)
+        return radius
+
+    def _residency_join(
+            self,
+            spell_ids: List[str],
+            set_name: str,
+    ) -> Dict[str, Dict[str, object]]:
+        """
+        Join affected identities with declared research truth.
+
+        Args:
+            spell_ids:
+                Identities to join.
+            set_name:
+                Research set supplying declared truth.
+
+        Returns:
+            Dict[str, Dict[str, object]]:
+                spell_id -> `{"declared", "lane_id", "lane_name",
+                "lane_state", "campaign"}` rows.
+
+        Raises:
+            KeyError:
+                If `set_name` names no research set.
+        """
+        research_set = self.research_set(set_name)
+        joined: Dict[str, Dict[str, object]] = {}
+        for spell_id in spell_ids:
+            lane_id = research_set.residence_of(spell_id)
+            if lane_id is None:
+                joined[spell_id] = {
+                    "declared": False,
+                    "lane_id": None,
+                    "lane_name": None,
+                    "lane_state": None,
+                    "campaign": None,
+                }
+                continue
+            lane = research_set.get_lane(lane_id)
+            campaign: Optional[str] = None
+            if lane.has_node(spell_id):
+                campaign = lane.get_node(spell_id).campaign
+            joined[spell_id] = {
+                "declared": True,
+                "lane_id": lane_id,
+                "lane_name": lane.name,
+                "lane_state": lane.state.value,
+                "campaign": campaign,
+            }
+        return joined
+
+    def module_graph_view(self, spell_id: str) -> Dict[str, object]:
+        """
+        Return one spell's module world as a walkable graph payload.
+
+        Purpose:
+            The "walk the graph and understand the underlying module
+            impacts" read: every module the spell's recorded world carries,
+            the direct dependency edges between them, the LOCAL reverse
+            edges (who inside this world imports whom), export surfaces,
+            sealed fingerprints, recorded paths, and the topological load
+            order. Cross-record radius stays `impact_view`'s job.
+
+        Args:
+            spell_id:
+                Binding-signature SHA256 whose world to walk.
+
+        Returns:
+            Dict[str, object]:
+                `{"spell_id", "root_module", "modules",
+                "direct_dependencies", "local_importers",
+                "export_surfaces", "fingerprints", "module_paths",
+                "load_order"}`.
+
+        Raises:
+            ValueError:
+                If spell_id is empty.
+            RuntimeError:
+                If the crystallizer is cleaned or inactive.
+            KeyError:
+                If no custody crystal exists for the identity.
+        """
+        self.check_cleaned()
+        if not isinstance(spell_id, str) or not spell_id:
+            raise ValueError("spell_id must be a non-empty string.")
+        payload = self._require_live_custody().get_spell_crystal(
+            spell_id
+        ).describe()
+        dependency_map = {
+            str(importer): [str(name) for name in list(imported)]
+            for importer, imported in dict(
+                payload.get("module_to_direct_dependencies", {})
+            ).items()
+        }
+        local_importers: Dict[str, List[str]] = {}
+        for importer, imported_list in dependency_map.items():
+            for imported in imported_list:
+                local_importers.setdefault(imported, []).append(importer)
+        for imported in local_importers:
+            local_importers[imported].sort()
+        exports = payload.get("export_surfaces")
+        fingerprints = payload.get("physical_module_fingerprints")
+        paths = payload.get("module_to_path")
+        return {
+            "spell_id": spell_id,
+            "root_module": str(payload.get("root_module_name")),
+            "modules": sorted(
+                str(name) for name in list(payload.get("module_targets", []))
+            ),
+            "direct_dependencies": dependency_map,
+            "local_importers": local_importers,
+            "export_surfaces": (
+                dict(exports) if isinstance(exports, dict) else {}
+            ),
+            "fingerprints": (
+                dict(fingerprints) if isinstance(fingerprints, dict) else {}
+            ),
+            "module_paths": dict(paths) if isinstance(paths, dict) else {},
+            "load_order": [
+                str(name) for name in list(payload.get("module_load_order", []))
+            ],
+        }
+
+    def source_drift_view(self) -> Dict[str, object]:
+        """
+        Return the full recorded-vs-disk drift report.
+
+        Purpose:
+            The "what will my uncommitted edits break" read: every sealed
+            fingerprint re-hashed against the live disk, with a blast
+            radius attached to every module that is not unchanged.
+
+        Returns:
+            Dict[str, object]:
+                The crystallizer's full impact describe (custody counts +
+                drift statuses + radii).
+
+        Raises:
+            RuntimeError:
+                If the crystallizer is cleaned or inactive.
+        """
+        self.check_cleaned()
+        return self._require_live_custody().analyze_impact()
+
+    def preview_candidate(
+            self,
+            code: str,
+            *,
+            against_spell_id: Optional[str] = None,
+            module_name: Optional[str] = None,
+            set_name: str = "default",
+    ) -> Dict[str, object]:
+        """
+        Mock one candidate codegen and report what would happen next.
+
+        Purpose:
+            The foresight centerpiece: BEFORE anything executes, binds, or
+            records, answer what the candidate code defines, what it
+            imports, how it differs from the version it would replace, and
+            what blast radius that replacement would have - so an agent can
+            guess what happens next instead of finding out.
+
+        Contract:
+            - Read-only: nothing executes, binds, or records.
+            - Unparseable code answers honestly (`parse_error` row; the
+              analysis/diff/impact sections go None) - previewing broken
+              code is a legitimate question.
+            - With `against_spell_id`, the candidate text adopts that
+              spell's root module name so the would-be diff compares module
+              universes honestly; the impact section is that root module's
+              current blast radius joined with research residency.
+            - With only `module_name`, the impact section is that module's
+              radius; with neither, impact is None (nothing to center on).
+
+        Args:
+            code:
+                Candidate Python source text.
+            against_spell_id:
+                Optional current version the candidate would replace.
+            module_name:
+                Optional module identity for the candidate when no
+                against-version exists.
+            set_name:
+                Research set for the impact residency join.
+
+        Returns:
+            Dict[str, object]:
+                `{"candidate_sha256", "module_name", "parse_error",
+                "defines", "import_roots", "diff", "impact",
+                "against_spell_id"}`.
+
+        Raises:
+            ValueError:
+                If code is empty.
+            RuntimeError:
+                If an against/impact read needs custody and the
+                crystallizer is cleaned or inactive.
+            KeyError:
+                If `against_spell_id` has no custody crystal.
+        """
+        self.check_cleaned()
+        if not isinstance(code, str) or not code:
+            raise ValueError("code must be a non-empty string.")
+        candidate_sha = hashlib.sha256(code.encode("utf-8")).hexdigest()
+        analysis = self._analyze_candidate(code)
+        result: Dict[str, object] = {
+            "candidate_sha256": candidate_sha,
+            "module_name": module_name,
+            "against_spell_id": against_spell_id,
+            "parse_error": analysis["parse_error"],
+            "defines": analysis["defines"],
+            "import_roots": analysis["import_roots"],
+            "diff": None,
+            "impact": None,
+        }
+        if analysis["parse_error"] is not None:
+            return result
+        target_module: Optional[str] = module_name
+        if against_spell_id is not None:
+            left_material = self._resolve_diff_material(against_spell_id)
+            root_payload = self._require_live_custody().get_spell_crystal(
+                against_spell_id
+            ).describe()
+            target_module = str(root_payload.get("root_module_name"))
+            result["module_name"] = target_module
+            right_material = {
+                "spell_id": f"candidate:{candidate_sha[:12]}",
+                "sources": {target_module: code},
+                "fingerprints": {target_module: candidate_sha},
+            }
+            with self._lock:
+                if self._diff_engine is None:
+                    self._diff_engine = DiffEngine(
+                        self._resolve_diff_material
+                    )
+                engine = self._diff_engine
+            result["diff"] = {
+                "source": engine.diff_materials(
+                    left_material, right_material, strategy="source",
+                ),
+                "structural": engine.diff_materials(
+                    left_material, right_material, strategy="structural",
+                ),
+            }
+        if target_module is not None:
+            result["impact"] = self.impact_view(
+                module_name=target_module,
+                set_name=set_name,
+            )
+        return result
+
+    def _analyze_candidate(self, code: str) -> Dict[str, object]:
+        """
+        Statically analyze one candidate source text.
+
+        Args:
+            code:
+                Candidate Python source text.
+
+        Returns:
+            Dict[str, object]:
+                `{"parse_error": None | {"message", "line"},
+                "defines": {"classes": [...], "functions": [...]},
+                "import_roots": [...]}` - names sorted, roots deduped.
+        """
+        try:
+            tree = ast.parse(code)
+        except SyntaxError as error:
+            return {
+                "parse_error": {
+                    "message": str(error.msg),
+                    "line": error.lineno,
+                },
+                "defines": {"classes": [], "functions": []},
+                "import_roots": [],
+            }
+        classes: List[str] = []
+        functions: List[str] = []
+        roots: List[str] = []
+        for node in tree.body:
+            if isinstance(node, ast.ClassDef):
+                classes.append(node.name)
+            elif isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                functions.append(node.name)
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Import):
+                for alias in node.names:
+                    roots.append(alias.name.split(".")[0])
+            elif isinstance(node, ast.ImportFrom):
+                if node.module and node.level == 0:
+                    roots.append(node.module.split(".")[0])
+        return {
+            "parse_error": None,
+            "defines": {
+                "classes": sorted(classes),
+                "functions": sorted(functions),
+            },
+            "import_roots": sorted(set(roots)),
         }
 
     # ------------------------------------------------------------------

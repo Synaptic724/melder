@@ -563,6 +563,67 @@ class ViewSpell(Cleanable):
         residency["research_available"] = True
         return residency
 
+    def describe_spell_source(
+            self,
+            spell_source_id: str,
+            *,
+            module_name: Optional[str] = None,
+            frame_name: Optional[str] = None,
+    ) -> Dict[str, object]:
+        """
+        Return the recorded source of one visible spell's module world.
+
+        Purpose:
+            Foresight read for the operator: the actual code behind the spell
+            they are looking at - recorded custody text first (synthetic
+            always recorded; user text when retained), live-disk fallback
+            with a drift marker, honest text_unavailable otherwise.
+
+        Contract:
+            - Non-constructing peek: routes through the SAME MutationResearch
+              door as `describe_spell_research`; the viewer never births the
+              MR root.
+            - Honest unavailability: an absent or inactive root returns
+              `research_available=False` with a named reason instead of
+              raising - viewing a spell must never fail on research state.
+
+        Args:
+            spell_source_id:
+                Published spell source id.
+            module_name:
+                Optional single module of the world to return.
+            frame_name:
+                Optional frame-name assertion passed through to the selected-
+                frame helper.
+
+        Returns:
+            Dict[str, object]: `source_id`, `spell_id`, and either the
+            per-module source payload or the unavailability reason.
+        """
+        self.check_cleaned()
+        identity = self.describe_spell_identity(
+            spell_source_id,
+            frame_name=frame_name,
+        )
+        spell_id = identity["spell_id"]
+        from melder.aether.aether import Aether
+
+        aether = Aether._instance
+        research = (
+            aether._mutation_research if aether is not None else None
+        )
+        if research is None or research.cleaned or not research.activated:
+            return {
+                "source_id": spell_source_id,
+                "spell_id": spell_id,
+                "research_available": False,
+                "reason": "mutation_research_not_active",
+            }
+        source = research.source_view(spell_id, module_name=module_name)
+        source["source_id"] = spell_source_id
+        source["research_available"] = True
+        return source
+
     def describe_spell_origin(
             self,
             spell_source_id: str,

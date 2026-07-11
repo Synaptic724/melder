@@ -112,8 +112,9 @@ def test_codegen_room_full_research_loop() -> None:
 
 def test_capability_room_surface_is_read_only() -> None:
     """
-    Validate the room split: capability rooms carry exactly the six research
-    reads and NONE of the organization or campaign mutation commands.
+    Validate the room split: capability rooms carry exactly the ten research
+    reads and NONE of the organization, campaign-mutation, or code-taking
+    commands (the candidate preview takes code and stays codegen-only).
     """
     reads = (
         "research_walk",
@@ -122,6 +123,10 @@ def test_capability_room_surface_is_read_only() -> None:
         "research_residency",
         "research_diff",
         "research_campaign_view",
+        "research_source",
+        "research_impact",
+        "research_module_graph",
+        "research_source_drift",
     )
     mutations = (
         "research_create_lane",
@@ -131,8 +136,120 @@ def test_capability_room_surface_is_read_only() -> None:
         "research_archive",
         "research_set_campaign",
         "research_clear_campaign",
+        "research_preview",
     )
     for name in reads:
         assert hasattr(CapabilityCommandSystem, name), name
     for name in mutations:
         assert not hasattr(CapabilityCommandSystem, name), name
+
+
+class _FakeCrystal:
+    """
+    Minimal custody-crystal double answering describe() verbatim.
+    """
+
+    def __init__(self, payload: dict) -> None:
+        self._payload = payload
+
+    def describe(self) -> dict:
+        return self._payload
+
+
+class _FakeCrystallizer:
+    """
+    Minimal live-custody double for the foresight room loop: one recorded
+    two-module world plus a fixed blast radius.
+    """
+
+    cleaned = False
+    activated = True
+
+    def __init__(self) -> None:
+        self.payload = {
+            "root_module_name": "pkg.root",
+            "module_targets": ["pkg.root", "pkg.helper"],
+            "synthetic_module_sources": {
+                "pkg.root": {"source_text": "def cast():\n    return 1\n"},
+            },
+            "user_module_sources": {},
+            "module_to_path": {},
+            "physical_module_fingerprints": {"pkg.root": "sealed-print"},
+            "module_to_direct_dependencies": {
+                "pkg.root": ["pkg.helper"],
+                "pkg.helper": [],
+            },
+            "export_surfaces": {"pkg.root": ["cast"]},
+            "module_load_order": ["pkg.helper", "pkg.root"],
+        }
+
+    def get_spell_crystal(self, spell_id: str) -> _FakeCrystal:
+        return _FakeCrystal(self.payload)
+
+    def analyze_impact(self, module_name=None, spell_id=None) -> dict:
+        return {
+            "root_module": "pkg.root",
+            "affected_spells": ["sha-room-a"],
+            "affected_modules": ["pkg.root"],
+        }
+
+    def emit(self, crystal) -> None:
+        return None
+
+    def emit_mutation_research_state(self, state) -> None:
+        return None
+
+
+def test_codegen_room_foresight_loop() -> None:
+    """
+    Validate the foresight surface end to end through a real codegen room:
+    refusal while MR is inactive, then source return, residency-joined
+    impact, module graph walk, drift report, and the candidate preview -
+    all mediated, all read-only.
+
+    Note:
+        The fake crystallizer is swapped in ONLY for the command window and
+        the real one is restored before teardown, so the singleton-reset
+        lane (MR cleanup emits its recorded-unit state into live custody)
+        always talks to the real record.
+    """
+    conduit, space = _build_codegen_space()
+    commands = space.command_system
+
+    with pytest.raises(RuntimeError, match="not active"):
+        commands.research_source("sha-room-a")
+
+    root = _activate_research(conduit)
+    real_crystallizer = root._crystallizer
+    root._crystallizer = _FakeCrystallizer()
+    try:
+        root.record_world_entry("sha-room-a")
+
+        source = commands.research_source(
+            "sha-room-a", module_name="pkg.root",
+        )
+        assert source["modules"]["pkg.root"]["origin"] == "recorded"
+
+        impact = commands.research_impact(spell_id="sha-room-a")
+        assert impact["research"]["sha-room-a"]["declared"] is True
+        assert impact["research"]["sha-room-a"]["lane_name"] == "default"
+
+        graph = commands.research_module_graph("sha-room-a")
+        assert graph["local_importers"]["pkg.helper"] == ["pkg.root"]
+
+        drift = commands.research_source_drift()
+        assert drift["affected_modules"] == ["pkg.root"]
+
+        preview = commands.research_preview(
+            "def cast():\n    return 2\n",
+            against_spell_id="sha-room-a",
+        )
+        assert preview["module_name"] == "pkg.root"
+        assert (
+            "pkg.root"
+            in preview["diff"]["source"]["result"]["changed_modules"]
+        )
+        assert preview["impact"]["research"]["sha-room-a"]["declared"] is True
+        assert preview["validation"] is None
+    finally:
+        root._crystallizer = real_crystallizer

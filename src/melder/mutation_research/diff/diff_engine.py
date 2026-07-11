@@ -143,6 +143,65 @@ class DiffEngine(Cleanable):
         with self._lock:
             return sorted(self._strategies_by_name.keys())
 
+    def diff_materials(
+            self,
+            left_material: Dict[str, object],
+            right_material: Dict[str, object],
+            *,
+            strategy: str = "source",
+    ) -> Dict[str, object]:
+        """
+        Compute one derived diff between two pre-resolved materials.
+
+        Purpose:
+            The candidate-preview entry: when one side is not (yet) a
+            recorded identity - e.g. unbound codegen output - the caller
+            supplies both material payloads directly and the engine only
+            dispatches the strategy. Recorded-identity diffs should keep
+            using `diff()`, which resolves through custody.
+
+        Args:
+            left_material:
+                Detached material payload
+                (`{"spell_id", "sources", "fingerprints"}`).
+            right_material:
+                Detached material payload of the same shape.
+            strategy:
+                Registered strategy name; "source" by default.
+
+        Returns:
+            Dict[str, object]:
+                Detached verdict: `left_spell_id`, `right_spell_id`
+                (as carried by the materials), `strategy`, and the
+                strategy's `result` payload.
+
+        Raises:
+            ValueError:
+                If either material is not a dict.
+            KeyError:
+                If the strategy name is unknown (the error names the known
+                strategies).
+        """
+        self.check_cleaned()
+        if not isinstance(left_material, dict):
+            raise ValueError("left_material must be a material dict.")
+        if not isinstance(right_material, dict):
+            raise ValueError("right_material must be a material dict.")
+        with self._lock:
+            resolved = self._strategies_by_name.get(strategy)
+            if resolved is None:
+                known = sorted(self._strategies_by_name.keys())
+                raise KeyError(
+                    f"DiffEngine has no strategy '{strategy}'. Known "
+                    f"strategies: {known}."
+                )
+        return {
+            "left_spell_id": str(left_material.get("spell_id")),
+            "right_spell_id": str(right_material.get("spell_id")),
+            "strategy": strategy,
+            "result": resolved.diff(left_material, right_material),
+        }
+
     def diff(
             self,
             left_spell_id: str,
