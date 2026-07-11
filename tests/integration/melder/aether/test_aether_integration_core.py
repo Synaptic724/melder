@@ -281,3 +281,48 @@ def test_aether_cleanup_resets_singleton() -> None:
     assert new_aether is not aether
     assert new_aether._id != old_id
     assert new_aether.cleaned is False
+
+
+def test_bound_posture_wait_bound_reaches_the_live_mediator() -> None:
+    """
+    Purpose:
+        Prove the recorded/rebound transaction wait bound propagates into
+        the live TransactionMediator (2026-07-11 propagation fix).
+    Contract:
+        - A frame is born with the default posture (mediator captures the
+          boot-time 30.0 wait bound at construction).
+        - Binding a posture with a non-default
+          max_transaction_wait_time_in_seconds routes the value through
+          mediator.configure via _propagate_transaction_wait_posture.
+        - The mediator enforces the bound posture's value afterwards -
+          this is exactly the restore path (frames stage rebinds recorded
+          truth onto frames born mid-replay with defaults).
+    Returns:
+        None.
+    Raises:
+        AssertionError: If the mediator keeps the boot-time wait bound.
+    """
+    from melder.aether.aetheric_frame.aetheric_frame_configuration import (
+        AethericFrameConfiguration,
+    )
+    from melder.aether.spellbook.configuration.system_state import (
+        SystemState,
+    )
+
+    aether = Aether()
+    frame = aether._ensure_frame("wait-bound-frame")
+    mediator = (
+        frame.dev_ops_manager.change_control_manager.transaction_mediator()
+    )
+    assert mediator._max_transaction_wait_time_in_seconds == 30.0
+
+    posture = AethericFrameConfiguration(
+        origin_spellbook_id=None,
+        system_state=SystemState.dynamic,
+        ai_native_enabled=False,
+        rift_enabled=False,
+        max_transaction_wait_time_in_seconds=44.0,
+    )
+    frame.bind_frame_configuration(posture)
+
+    assert mediator._max_transaction_wait_time_in_seconds == 44.0

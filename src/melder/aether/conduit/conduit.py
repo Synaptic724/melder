@@ -2955,6 +2955,13 @@ class Conduit(Cleanable):
             Expose the process-wide mutation-research root through the conduit
             state to access the Aether-owned runtime surface.
 
+        Deprecated:
+            The conduit door is out of the converged MR model: conduits and
+            frames carry NO mutation dimension (owner ruling 2026-07-06).
+            Research is declared through `Aether.mutation_research` and its
+            `ResearchSet` surface; this accessor remains only until callers
+            migrate and will be removed with the runtime seam slice.
+
         Returns:
             MutationResearch: Process-wide mutation-research root.
 

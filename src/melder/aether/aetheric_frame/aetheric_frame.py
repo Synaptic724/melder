@@ -563,9 +563,11 @@ class AethericFrame(Cleanable):
             existing_frame_configuration = self._frame_configuration
             if existing_frame_configuration is None:
                 self._frame_configuration = frame_configuration
-                return self.freeze_frame_configuration(
+                canonical = self.freeze_frame_configuration(
                     origin_spellbook_id=frame_configuration.origin_spellbook_id
                 )
+                self._propagate_transaction_wait_posture(canonical)
+                return canonical
 
             if not existing_frame_configuration._frozen:
                 origin_spellbook_id = frame_configuration.origin_spellbook_id
@@ -615,6 +617,9 @@ class AethericFrame(Cleanable):
                     origin_spellbook_id=origin_spellbook_id,
                     origin_frame_name=self.name,
                 )
+                self._propagate_transaction_wait_posture(
+                    existing_frame_configuration
+                )
                 return existing_frame_configuration
 
             if existing_frame_configuration.matches_posture(frame_configuration):
@@ -634,6 +639,52 @@ class AethericFrame(Cleanable):
                 )
             frame_configuration.cleanup()
             return existing_frame_configuration
+
+    def _propagate_transaction_wait_posture(
+            self,
+            posture: AethericFrameConfiguration,
+    ) -> None:
+        """
+        Internal
+
+        Push the canonical posture's transaction wait bound into the live
+        TransactionMediator.
+
+        Purpose:
+            Close the recorded-posture propagation gap (2026-07-11,
+            source-verified): the mediator captures
+            max_transaction_wait_time_in_seconds ONCE at frame
+            construction, so a posture bound AFTER construction - every
+            restore under lazy frames (frames are born mid-replay with the
+            default posture before the frames stage rebinds recorded
+            truth) and every live rebind - would otherwise leave the
+            mediator enforcing the boot-time value forever.
+
+        Contract:
+            - Routes through the EXISTING public verbs only
+              (dev_ops_manager -> change_control_manager ->
+              transaction_mediator().configure): normal-verbs law; the
+              reload exception stays on the configuration side. NOTE:
+              transaction_mediator is a plain accessor METHOD on the CCM
+              (not a property) - it must be CALLED.
+            - Called from the two posture-LANDING branches of
+              `bind_frame_configuration` only; the idempotent-match and
+              conflict-refusal branches change nothing so they propagate
+              nothing.
+            - Propagating an unchanged value is a harmless re-set.
+
+        Args:
+            posture:
+                The canonical frame-owned posture after a successful bind.
+
+        Returns:
+            None.
+        """
+        self._dev_ops_manager.change_control_manager.transaction_mediator().configure(
+            max_transaction_wait_time_in_seconds=(
+                posture.max_transaction_wait_time_in_seconds
+            ),
+        )
 
     def has_spell(self, spell_id: str) -> bool:
         """

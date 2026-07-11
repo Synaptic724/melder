@@ -1,14 +1,11 @@
-from __future__ import annotations
-
 import pytest
 
 from melder.aether.aether import Aether
 from melder.aether.conduit.conduit import Conduit
-from melder.mutation_research.mutation_conduit import MutationConduit
-from melder.mutation_research.mutation_frame import MutationFrame
 from melder.aether.spellbook.configuration.spellbook_configuration import SpellbookConfiguration
 from melder.aether.spellbook.existence.existence import Existence
 from melder.aether.spellbook.spellbook import Spellbook
+from melder.mutation_research.research_set.research_lane import LaneState
 from tests.mocks.spellbook.core_classes import BasicService
 
 
@@ -82,58 +79,47 @@ def test_component_conduit_returns_aether_owned_mutation_research(case_index: in
     "case_index",
     list(range(1, 11)),
 )
-def test_component_root_create_mutation_conduit_returns_placeholder(case_index: int) -> None:
+def test_component_root_default_set_ready_on_real_aether(case_index: int) -> None:
     """
-    Validate the Aether-owned root can build MutationConduit placeholders from live conduits.
+    Validate the Aether-owned root births the guaranteed default set with
+    its guaranteed default lane.
     """
-    frame_name = f"component-conduit-frame-{case_index:02d}"
-    spellbook = Spellbook(
-        aetheric_frame=frame_name,
-        configuration=_make_dynamic_configuration(frame_name),
-    )
-    spellbook._aetheric_frame_configuration.with_disable_mutations(False)
-    spellbook.bind(
-        spell=BasicService,
-        existence=Existence.unique,
-        permissions="create",
-    )
-    conduit = spellbook.conjure(dynamic=True, name=f"root-{case_index:02d}")
-    try:
-        placeholder = conduit._aether.mutation_research.create_mutation_conduit(conduit)
-        assert isinstance(placeholder, MutationConduit)
-        assert placeholder.conduit is conduit
-        assert placeholder.mutation_research is conduit._aether.mutation_research
-    finally:
-        conduit.cleanup()
+    aether = Aether()
+    root = aether.mutation_research
+
+    assert root.list_research_set_names() == ["default"]
+    research_set = root.research_set()
+    assert research_set.lane_names() == ["default"]
+    assert research_set.default_lane.state is LaneState.open
 
 
 @pytest.mark.parametrize(
     "case_index",
     list(range(1, 11)),
 )
-def test_component_root_create_mutation_frame_returns_placeholder(case_index: int) -> None:
+def test_component_research_flow_on_real_aether(case_index: int) -> None:
     """
-    Validate the Aether-owned root can build MutationFrame placeholders from live frames.
+    Validate a register -> branch -> join research flow against the real
+    Aether-owned root.
     """
-    frame_name = f"component-frame-surface-{case_index:02d}"
-    spellbook = Spellbook(
-        aetheric_frame=frame_name,
-        configuration=_make_dynamic_configuration(frame_name),
+    aether = Aether()
+    research_set = aether.mutation_research.research_set()
+    base_sha = f"component-sha-{case_index:02d}-base"
+    next_sha = f"component-sha-{case_index:02d}-next"
+    lane_name = f"component-lane-{case_index:02d}"
+
+    research_set.register_spell(base_sha)
+    research_set.create_lane(
+        lane_name, attach_to="default", attach_at_sha=base_sha,
     )
-    spellbook._aetheric_frame_configuration.with_disable_mutations(False)
-    spellbook.bind(
-        spell=BasicService,
-        existence=Existence.unique,
-        permissions="create",
+    research_set.register_spell(
+        next_sha, lane=lane_name, parent_shas=[base_sha],
     )
-    conduit = spellbook.conjure(dynamic=True, name=f"root-{case_index:02d}")
-    try:
-        placeholder = conduit._aether.mutation_research.create_mutation_frame(frame_name)
-        assert isinstance(placeholder, MutationFrame)
-        assert placeholder.aetheric_frame_name == frame_name
-        assert placeholder.mutation_research is conduit._aether.mutation_research
-    finally:
-        conduit.cleanup()
+    research_set.join(lane_name, into="default")
+
+    assert research_set.default_lane.tip_sha == next_sha
+    assert research_set.get_lane(lane_name).state is LaneState.joined
+    assert research_set.heads() == {"default": next_sha}
 
 
 @pytest.mark.parametrize(

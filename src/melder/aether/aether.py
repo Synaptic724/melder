@@ -840,10 +840,12 @@ class Aether(Cleanable):
                         else []
                     )
                 for frame in frames:
+                    # transaction_mediator is an accessor METHOD on the
+                    # CCM (not a property) - it must be called.
                     mediator = (
                         frame.dev_ops_manager
                         .change_control_manager
-                        .transaction_mediator
+                        .transaction_mediator()
                     )
                     active += mediator.describe()["active_session_count"]
                 if active == 0:

@@ -16,6 +16,7 @@ from melder.mutation_research.mutation_configuration import (
 from melder.mutation_research.mutation_configuration_builder import (
     MutationResearchConfigurationBuilder,
 )
+from melder.mutation_research.diff.diff_engine import DiffEngine
 from melder.mutation_research.research_set.research_set import ResearchSet
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
@@ -69,6 +70,7 @@ class MutationResearch(Cleanable):
         "_configured",
         "_activated",
         "_research_sets_by_name",
+        "_diff_engine",
         "_crystallizer",
     ]
 
@@ -123,6 +125,7 @@ class MutationResearch(Cleanable):
             self._configured: bool = False
             self._activated: bool = False
             self._research_sets_by_name: Dict[str, ResearchSet] = {}
+            self._diff_engine: Optional[DiffEngine] = None
             self._research_sets_by_name[
                 MutationResearch.DEFAULT_RESEARCH_SET_NAME
             ] = ResearchSet(
@@ -168,11 +171,17 @@ class MutationResearch(Cleanable):
                     except Exception:
                         pass
                 self._research_sets_by_name.clear()
+            if self._diff_engine is not None:
+                try:
+                    self._diff_engine.cleanup()
+                except Exception:
+                    pass
             if self._configuration is not None:
                 self._configuration.cleanup()
             self._configured = False
             self._activated = False
             del self._crystallizer
+            del self._diff_engine
             del self._research_sets_by_name
             del self._configuration
             del self._aether
@@ -512,6 +521,117 @@ class MutationResearch(Cleanable):
                     pass
             self._research_sets_by_name = rebuilt
         self._emit_research_composition()
+
+    # ------------------------------------------------------------------
+    # Derived diff reads
+    # ------------------------------------------------------------------
+
+    def diff_research(
+            self,
+            left_sha: str,
+            right_sha: str,
+            *,
+            strategy: str = "source",
+    ) -> Dict[str, object]:
+        """
+        Compute one derived diff between two version identities.
+
+        Purpose:
+            The read verb behind "commits are full objects, diffs are
+            derived": material resolves through crystallizer custody (the
+            SHA is the SpellCrystal id) and the comparison runs in the
+            registered strategy - nothing is stored.
+
+        Args:
+            left_sha:
+                Left version identity (binding-signature SHA256).
+            right_sha:
+                Right version identity.
+            strategy:
+                Registered strategy name; "source" by default.
+
+        Returns:
+            Dict[str, object]:
+                Detached verdict payload from the owned `DiffEngine`.
+
+        Raises:
+            RuntimeError:
+                If the crystallizer is not live (custody unavailable).
+            KeyError:
+                If either identity has no custody crystal, or the strategy
+                name is unknown.
+        """
+        self.check_cleaned()
+        with self._lock:
+            if self._diff_engine is None:
+                self._diff_engine = DiffEngine(self._resolve_diff_material)
+            engine = self._diff_engine
+        return engine.diff(left_sha, right_sha, strategy=strategy)
+
+    def create_diff_engine(self) -> DiffEngine:
+        """
+        Create one standalone diff engine over crystallizer custody.
+
+        Returns:
+            DiffEngine:
+                Caller-owned engine (the caller cleans it up); the root's
+                own engine stays private to `diff_research`.
+        """
+        self.check_cleaned()
+        return DiffEngine(self._resolve_diff_material)
+
+    def _resolve_diff_material(
+            self,
+            spell_sha: str,
+    ) -> Dict[str, object]:
+        """
+        Resolve one version's diff material from crystallizer custody.
+
+        Contract:
+            - The custody crystal shares the spell's binding-signature
+              SHA256 as its id; its describe() payload supplies synthetic
+              module SOURCE TEXT and physical module FINGERPRINTS.
+            - Loud by design: a dead/inactive crystallizer raises rather
+              than fabricating empty material.
+
+        Args:
+            spell_sha:
+                Version identity to resolve.
+
+        Returns:
+            Dict[str, object]:
+                `{"spell_sha", "sources", "fingerprints"}` material payload.
+
+        Raises:
+            RuntimeError:
+                If the crystallizer is cleaned or inactive.
+            KeyError:
+                If no custody crystal exists for the identity.
+        """
+        self.check_cleaned()
+        crystallizer = self._crystallizer
+        if crystallizer.cleaned or not crystallizer.activated:
+            raise RuntimeError(
+                "Crystallizer custody is unavailable (inactive or cleaned); "
+                "diff material cannot be resolved."
+            )
+        payload = crystallizer.get_spell_crystal(spell_sha).describe()
+        sources: Dict[str, object] = {}
+        synthetic = payload.get("synthetic_module_sources")
+        if isinstance(synthetic, dict):
+            for module_name, custody_payload in synthetic.items():
+                if isinstance(custody_payload, dict):
+                    text = custody_payload.get("source_text")
+                    if isinstance(text, str) and text:
+                        sources[str(module_name)] = text
+        fingerprints = payload.get("physical_module_fingerprints")
+        return {
+            "spell_sha": spell_sha,
+            "sources": sources,
+            "fingerprints": (
+                dict(fingerprints) if isinstance(fingerprints, dict) else {}
+            ),
+        }
 
     # ------------------------------------------------------------------
     # Persistence emission seam

@@ -1,10 +1,7 @@
-from __future__ import annotations
-
 import pytest
 
 from melder.aether.aether import Aether
 from melder.aether.conduit.conduit import Conduit
-from melder.mutation_research.mutation_frame import MutationFrame
 from melder.aether.spellbook.configuration.spellbook_configuration import SpellbookConfiguration
 from melder.aether.spellbook.existence.existence import Existence
 from melder.aether.spellbook.spellbook import Spellbook
@@ -98,39 +95,12 @@ def test_integration_dynamic_conduit_returns_shared_root(case_index: int) -> Non
     "case_index",
     list(range(1, 11)),
 )
-def test_integration_create_mutation_frame_is_wired_to_live_frame_services(case_index: int) -> None:
+def test_integration_bound_spell_sha_registers_into_default_set(case_index: int) -> None:
     """
-    Validate MutationFrame placeholders read the correct live frame services.
+    Validate a live bind's SHA256 spell id registers as formal research in
+    the root's default set (the spell id IS the custody-crystal id).
     """
-    frame_name = f"integration-frame-surface-{case_index:02d}"
-    spellbook = Spellbook(
-        aetheric_frame=frame_name,
-        configuration=_make_dynamic_configuration(frame_name),
-    )
-    spellbook.bind(
-        spell=BasicService,
-        existence=Existence.unique,
-        permissions="create",
-    )
-    conduit = spellbook.conjure(dynamic=True, name=f"root-{case_index:02d}")
-    try:
-        placeholder = conduit._aether.mutation_research.create_mutation_frame(frame_name)
-        assert isinstance(placeholder, MutationFrame)
-        assert placeholder.spell_system_states is conduit._aether._get_spell_system_states(frame_name)
-        assert placeholder.change_control_manager is conduit._aether._get_change_control_manager(frame_name)
-    finally:
-        conduit.cleanup()
-
-
-@pytest.mark.parametrize(
-    "case_index",
-    list(range(1, 11)),
-)
-def test_integration_root_session_management_works_across_frames(case_index: int) -> None:
-    """
-    Validate the Aether-owned root can manage sessions for spell indexes from many frames.
-    """
-    frame_name = f"integration-session-frame-{case_index:02d}"
+    frame_name = f"integration-register-frame-{case_index:02d}"
     spellbook = Spellbook(
         aetheric_frame=frame_name,
         configuration=_make_dynamic_configuration(frame_name),
@@ -142,12 +112,63 @@ def test_integration_root_session_management_works_across_frames(case_index: int
     )
     conduit = spellbook.conjure(dynamic=True, name=f"root-{case_index:02d}")
     try:
-        spell = spellbook.find_spell_by_id(spell_id)
-        assert spell is not None
-        index = spell.spell_index
         root = conduit._aether.mutation_research
-        session = root.create_session(index, name=f"session-{case_index:02d}")
-        assert root.get_session_for_index(index) is session
-        assert root.get_session_by_index_id(index.id) is session
+        research_set = root.research_set()
+        node = research_set.register_spell(
+            spell_id,
+            author=f"integration-{case_index:02d}",
+            reason="declared research from a live bind",
+        )
+        assert node.spell_sha == spell_id
+        assert research_set.residence_of(spell_id) == (
+            research_set.default_lane.lane_id
+        )
+        history = research_set.history(spell_id)
+        assert history["lane_name"] == "default"
+        with pytest.raises(RuntimeError, match="Rediscovery"):
+            research_set.register_spell(spell_id)
+    finally:
+        conduit.cleanup()
+
+
+@pytest.mark.parametrize(
+    "case_index",
+    list(range(1, 11)),
+)
+def test_integration_research_lines_survive_composition_roundtrip(case_index: int) -> None:
+    """
+    Validate the persistence composition payload round-trips a live-bound
+    research line through the hydration seam.
+    """
+    frame_name = f"integration-composition-frame-{case_index:02d}"
+    spellbook = Spellbook(
+        aetheric_frame=frame_name,
+        configuration=_make_dynamic_configuration(frame_name),
+    )
+    spell_id = spellbook.bind(
+        spell=BasicService,
+        existence=Existence.unique,
+        permissions="create",
+    )
+    conduit = spellbook.conjure(dynamic=True, name=f"root-{case_index:02d}")
+    try:
+        root = conduit._aether.mutation_research
+        research_set = root.research_set()
+        research_set.register_spell(spell_id)
+        research_set.create_lane(
+            f"exp-{case_index:02d}",
+            attach_to="default",
+            attach_at_sha=spell_id,
+        )
+        recorded = root.describe_research_composition()
+
+        root.load_recorded_composition(recorded)
+
+        rebuilt = root.research_set()
+        assert rebuilt.residence_of(spell_id) == (
+            rebuilt.default_lane.lane_id
+        )
+        assert f"exp-{case_index:02d}" in rebuilt.lane_names()
+        assert rebuilt.get_lane(f"exp-{case_index:02d}").anchor_sha == spell_id
     finally:
         conduit.cleanup()
