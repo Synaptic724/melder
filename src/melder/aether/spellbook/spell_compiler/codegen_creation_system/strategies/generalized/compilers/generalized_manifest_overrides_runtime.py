@@ -115,10 +115,16 @@ def build_overrides_execute_runtime(
     bound_executor_cache: Dict[Tuple[Any, ...], Callable[..., Any]] = {}
     prefilter_step_targets_cache: Dict[Tuple[Any, ...], Tuple[Tuple[Any, ...], ...]] = {}
     prefilter_path_metadata_cache: Dict[Any, Tuple[Any, Any]] = {}
-    # Last-shape fast path uses one 3-slot list instead of a string-keyed
-    # dict: indexed loads/stores beat hashed lookups on the per-meld path.
-    # Slots: [socket_shape, root_positional_arity, executor].
-    last_state: list = [None, -2, None]
+    # Last-shape fast path: ONE-slot cell holding one immutable
+    # (socket_shape, root_positional_arity, executor) tuple snapshot
+    # (torn-publication fix, 2026-07-12). The previous 3-slot list was
+    # read/written as three separate subscript ops - each individually
+    # safe, but interleaved writers could publish shape_B with
+    # executor_A, handing a later matching call an executor specialized
+    # for another shape's sockets. Readers load cell[0] ONCE and unpack;
+    # writers publish one tuple reference (atomic on 3.14t). The indexed
+    # load still beats a hashed lookup on the per-meld path.
+    last_state_cell: list = [None]
 
     def _get_or_bind_executor(
             *,
@@ -242,13 +248,18 @@ def build_overrides_execute_runtime(
             root_positional_arity = -1
         else:
             root_positional_arity = len(root_positional_override)
-        if (
-                socket_shape is last_state[0]
-                and root_positional_arity == last_state[1]
-        ):
-            executor = last_state[2]
-        else:
-            executor = None
+        # One-load snapshot read (torn-publication fix): shape, arity,
+        # and executor travel together, so a guard hit can never hand
+        # back an executor published by a different interleaved meld.
+        last_snapshot = last_state_cell[0]
+        executor = None
+        if last_snapshot is not None:
+            cached_shape, cached_arity, cached_executor = last_snapshot
+            if (
+                    socket_shape is cached_shape
+                    and root_positional_arity == cached_arity
+            ):
+                executor = cached_executor
 
         if executor is None:
             shape_key = (
@@ -271,9 +282,12 @@ def build_overrides_execute_runtime(
                 any_overrides_present=overrides is not None,
                 prefilter_cache_key=(plan_signature, socket_shape),
             )
-            last_state[0] = socket_shape
-            last_state[1] = root_positional_arity
-            last_state[2] = executor
+            # One-store snapshot publication (atomic reference swap).
+            last_state_cell[0] = (
+                socket_shape,
+                root_positional_arity,
+                executor,
+            )
 
         return executor(
             meld,

@@ -65,13 +65,8 @@ class SpellOverrideTargetingCodegenCreation(Cleanable):
         "_targets_by_spec",
         "_specificity_by_spec",
         "_resolved_targets_by_raw_key",
-        "_last_single_raw_key",
-        "_last_single_value",
-        "_last_single_override_map",
-        "_last_single_socket_shape",
-        "_last_multi_signature",
-        "_last_multi_override_map",
-        "_last_multi_socket_shape",
+        "_last_single_cache",
+        "_last_multi_cache",
     ]
 
     def __init__(
@@ -101,20 +96,27 @@ class SpellOverrideTargetingCodegenCreation(Cleanable):
                 tuple[tuple[object, ...], ...],
             ],
         ] = {}
-        self._last_single_raw_key: Optional[str] = None
-        self._last_single_value: Optional[object] = None
-        self._last_single_override_map: Optional[
-            Dict[SpellOverrideTargetSocketRef, object]
+        # Last-entry caches publish as ONE immutable tuple snapshot per
+        # slot (torn-publication fix, 2026-07-12): this runtime is shared
+        # by every thread melding the same compiled root, and per-field
+        # publication let interleaved writers assemble a cache entry that
+        # never existed in any real meld (key_B/value_B paired with
+        # map_A/shape_A). A single reference store is atomic on 3.14t;
+        # readers load the snapshot once and unpack.
+        self._last_single_cache: Optional[
+            tuple[
+                str,
+                object,
+                Dict[SpellOverrideTargetSocketRef, object],
+                tuple[tuple[object, ...], ...],
+            ]
         ] = None
-        self._last_single_socket_shape: Optional[
-            tuple[tuple[object, ...], ...]
-        ] = None
-        self._last_multi_signature: Optional[tuple[tuple[str, int], ...]] = None
-        self._last_multi_override_map: Optional[
-            Dict[SpellOverrideTargetSocketRef, object]
-        ] = None
-        self._last_multi_socket_shape: Optional[
-            tuple[tuple[object, ...], ...]
+        self._last_multi_cache: Optional[
+            tuple[
+                tuple[tuple[str, int], ...],
+                Dict[SpellOverrideTargetSocketRef, object],
+                tuple[tuple[object, ...], ...],
+            ]
         ] = None
 
     @classmethod
@@ -163,13 +165,8 @@ class SpellOverrideTargetingCodegenCreation(Cleanable):
         del self._targets_by_spec
         del self._specificity_by_spec
         del self._resolved_targets_by_raw_key
-        del self._last_single_raw_key
-        del self._last_single_value
-        del self._last_single_override_map
-        del self._last_single_socket_shape
-        del self._last_multi_signature
-        del self._last_multi_override_map
-        del self._last_multi_socket_shape
+        del self._last_single_cache
+        del self._last_multi_cache
 
     def _apply_with_socket_shape_prechecked(
             self,
@@ -187,13 +184,15 @@ class SpellOverrideTargetingCodegenCreation(Cleanable):
         if len(spell_override) == 1:
             raw_key = next(iter(spell_override))
             value = spell_override[raw_key]
-            if (
-                    raw_key == self._last_single_raw_key
-                    and value is self._last_single_value
-            ):
-                cached_map = self._last_single_override_map
-                cached_shape = self._last_single_socket_shape
-                if cached_map is not None and cached_shape is not None:
+            # One-load snapshot read (torn-publication fix): the whole
+            # cache entry travels as one tuple, so a hit can never pair
+            # this call's key/value with another call's map/shape.
+            single_snapshot = self._last_single_cache
+            if single_snapshot is not None:
+                cached_key, cached_value, cached_map, cached_shape = (
+                    single_snapshot
+                )
+                if raw_key == cached_key and value is cached_value:
                     return cached_map, cached_shape
             matches, _, socket_shape = self._resolve_targets_for_raw_key(raw_key)
             if len(matches) == 1:
@@ -203,10 +202,13 @@ class SpellOverrideTargetingCodegenCreation(Cleanable):
                     socket_ref: value
                     for socket_ref in matches
                 }
-            self._last_single_raw_key = raw_key
-            self._last_single_value = value
-            self._last_single_override_map = override_map
-            self._last_single_socket_shape = socket_shape
+            # One-store snapshot publication (atomic reference swap).
+            self._last_single_cache = (
+                raw_key,
+                value,
+                override_map,
+                socket_shape,
+            )
             return override_map, socket_shape
 
         multi_signature: Optional[tuple[tuple[str, int], ...]] = None
@@ -220,10 +222,11 @@ class SpellOverrideTargetingCodegenCreation(Cleanable):
                     for raw_key, value in spell_override.items()
                 )
             )
-            if multi_signature == self._last_multi_signature:
-                cached_map = self._last_multi_override_map
-                cached_shape = self._last_multi_socket_shape
-                if cached_map is not None and cached_shape is not None:
+            # One-load snapshot read (torn-publication fix, multi lane).
+            multi_snapshot = self._last_multi_cache
+            if multi_snapshot is not None:
+                cached_signature, cached_map, cached_shape = multi_snapshot
+                if multi_signature == cached_signature:
                     return cached_map, cached_shape
 
         per_socket: Dict[
@@ -254,9 +257,12 @@ class SpellOverrideTargetingCodegenCreation(Cleanable):
             matches=tuple(override_map),
         )
         if multi_signature is not None:
-            self._last_multi_signature = multi_signature
-            self._last_multi_override_map = override_map
-            self._last_multi_socket_shape = socket_shape
+            # One-store snapshot publication (atomic reference swap).
+            self._last_multi_cache = (
+                multi_signature,
+                override_map,
+                socket_shape,
+            )
         return override_map, socket_shape
 
     def _resolve_targets_for_raw_key(

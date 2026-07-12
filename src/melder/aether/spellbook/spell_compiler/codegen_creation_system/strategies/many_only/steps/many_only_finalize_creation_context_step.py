@@ -289,11 +289,15 @@ class ManyOnlyFinalizeCreationContextStep(CodegenCreationFamilyStep):
             Tuple[Tuple[Any, ...], ...],
         ] = {}
         override_prefilter_path_metadata_cache: Dict[Any, Tuple[Any, Any]] = {}
-        override_last_state: Dict[str, Any] = {
-            "socket_shape": None,
-            "root_positional_arity": -2,
-            "executor": None,
-        }
+        # Last-shape fast path: ONE-slot cell holding one immutable
+        # (socket_shape, root_positional_arity, executor) tuple snapshot
+        # (torn-publication fix, 2026-07-12). The previous three-key dict
+        # was read/written per key - each op safe, but interleaved
+        # writers could publish shape_B with executor_A, handing a later
+        # matching call an executor specialized for another shape's
+        # sockets. Readers load cell[0] ONCE and unpack; writers publish
+        # one tuple reference (atomic on 3.14t).
+        override_last_state_cell: list = [None]
         if baseline_executor is not None:
             override_specialization_cache[empty_shape_key] = baseline_executor
 
@@ -369,14 +373,18 @@ class ManyOnlyFinalizeCreationContextStep(CodegenCreationFamilyStep):
                 root_positional_arity = -1
             else:
                 root_positional_arity = len(root_positional_override)
-            if (
-                    socket_shape is override_last_state["socket_shape"]
-                    and root_positional_arity
-                    == override_last_state["root_positional_arity"]
-            ):
-                executor = override_last_state["executor"]
-            else:
-                executor = None
+            # One-load snapshot read (torn-publication fix): shape, arity,
+            # and executor travel together, so a guard hit can never hand
+            # back an executor published by a different interleaved meld.
+            last_snapshot = override_last_state_cell[0]
+            executor = None
+            if last_snapshot is not None:
+                cached_shape, cached_arity, cached_executor = last_snapshot
+                if (
+                        socket_shape is cached_shape
+                        and root_positional_arity == cached_arity
+                ):
+                    executor = cached_executor
 
             if executor is None:
                 shape_key = (
@@ -423,11 +431,12 @@ class ManyOnlyFinalizeCreationContextStep(CodegenCreationFamilyStep):
                             socket_shape,
                         ),
                     )
-                override_last_state["socket_shape"] = socket_shape
-                override_last_state["root_positional_arity"] = (
-                    root_positional_arity
+                # One-store snapshot publication (atomic reference swap).
+                override_last_state_cell[0] = (
+                    socket_shape,
+                    root_positional_arity,
+                    executor,
                 )
-                override_last_state["executor"] = executor
 
             if executor is None:
                 raise RuntimeError("Override executor resolution failed.")
