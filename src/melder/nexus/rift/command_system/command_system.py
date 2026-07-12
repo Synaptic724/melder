@@ -1025,8 +1025,11 @@ class CommandSystem(Cleanable):
         rift_gate = self._get_rift_gate_if_available()
         if rift_gate is None:
             return None
-        rift_gate.admit()
-        rift_gate.register_ticket()
+        # Ticket-first admission (drain-race fix 2026-07-12): one verb
+        # acquires a VISIBLE ticket before validating state, so a
+        # projection refresh's drain can never observe zero tickets while
+        # this command sits between admit and register.
+        rift_gate.admit_ticket()
         return rift_gate
 
     def _finish_command_action(

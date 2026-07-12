@@ -81,6 +81,13 @@ class AddToIndexTransactionStrategy(TransactionStrategy):
         normalized_metadata = dict(metadata)
         normalized_metadata["transaction_identity"] = identity.describe()
         normalized_metadata["index_mode"] = "add_to_index"
+        # Freeze footprint (freeze parity with notch, owner-ruled
+        # 2026-07-12): the runtime quiesce in on_start/on_end targets
+        # exactly the conduit set this plan seals EXCLUSIVE, so no
+        # in-flight meld/validator can straddle the member move.
+        normalized_metadata["quiesce_root_conduit_ids"] = tuple(
+            sorted(conduit_ids)
+        )
 
         initiator = metadata.get("initiator_conduit_id")
         if not isinstance(initiator, str) or not initiator:
@@ -164,10 +171,41 @@ class AddToIndexTransactionStrategy(TransactionStrategy):
 
     @staticmethod
     def on_start(*, devops_information_registry: DevopsInformationRegistry, identity: DevopsIdentity, metadata: Dict[str, object]) -> None:
-        """Add-to-index transactions need no extra local start-side effects right now."""
-        return None
+        """
+        Freeze the sealed conduits' runtime gates (scopes held) before the move.
+
+        Contract (freeze parity with notch, patch
+        notch_conduit_gate_freeze_2026_07_12):
+            - Quiesces every plan-derived lineage through the
+              metadata-carried DevOps facade in PARK mode; absent facade
+              = no-op (envelope-only starts stay legal).
+            - A drain timeout raises -> the mediator aborts the start and
+              root finalize still dispatches `on_end` (reopen).
+
+        Raises:
+            RuntimeError: Propagated from a gate drain timeout.
+        """
+        del devops_information_registry, identity
+        gate_ops = metadata.get("conduit_lineage_gate_ops")
+        if gate_ops is None:
+            return
+        for root_id in metadata.get("quiesce_root_conduit_ids", ()):
+            if isinstance(root_id, str) and root_id:
+                gate_ops.quiesce_conduit_lineage(root_id)
 
     @staticmethod
     def on_end(*, devops_information_registry: DevopsInformationRegistry, identity: DevopsIdentity, metadata: Dict[str, object]) -> None:
-        """Add-to-index transactions need no extra local end-side effects right now."""
-        return None
+        """
+        Reopen every frozen conduit lineage on every exit path (fail-closed).
+
+        Contract:
+            - Mirrors `on_start`'s footprint exactly; absent facade = no-op.
+            - Dispatched by the mediator from root-session finalize.
+        """
+        del devops_information_registry, identity
+        gate_ops = metadata.get("conduit_lineage_gate_ops")
+        if gate_ops is None:
+            return
+        for root_id in metadata.get("quiesce_root_conduit_ids", ()):
+            if isinstance(root_id, str) and root_id:
+                gate_ops.enable_conduit_lineage(root_id)

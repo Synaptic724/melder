@@ -64,6 +64,7 @@ if TYPE_CHECKING:
     from melder.utilities.synchronization.creation_gate import CreationGate
     from melder.utilities.synchronization.creation_gate_controller import CreationGateController
     from melder.crystallizer.crystallizer import Crystallizer
+    from melder.mutation_research.mutation_research import MutationResearch
 
 
 # NOTE: the former `_SpellSpaceContextManager` wrapper was removed:
@@ -148,6 +149,7 @@ class Conduit(Cleanable):
        "_conduit_ward",
         "_permanent_cleanup_requested",
         "_crystallizer",
+        "_mutation_research",
     ]
     _DEFAULT_ROOT_CONDUIT_NAME: ClassVar[str] = "default"
     __melder_internal__: ClassVar[object] = _mrg.sentinel
@@ -246,6 +248,10 @@ class Conduit(Cleanable):
         self._conduit_state: ConduitState = conduit_state  # can be normal, lesser
         self._spellbook: Spellbook = spellbook
         self._crystallizer: Crystallizer = spellbook._crystallizer
+        # Borrowed world-root reference (owner ruling 2026-07-12): inherited
+        # from the owning spellbook exactly like `_crystallizer` above, so
+        # lesser conduits and the upgrade path share the same root for free.
+        self._mutation_research: MutationResearch = spellbook._mutation_research
         self._nexus: Nexus = spellbook._nexus
         if creation_gate_controller is None:
             raise ValueError("creation_gate_controller cannot be None.")
@@ -792,6 +798,7 @@ class Conduit(Cleanable):
         del self._aetheric_frame_name
         del self._root_conduit_id
         del self._crystallizer
+        del self._mutation_research
         del self._nexus
 
     def _publish_conduit_record_to_nexus(self) -> None:
@@ -2945,9 +2952,43 @@ class Conduit(Cleanable):
         raise RuntimeError(f"Spell with ID {spell_id} not found in the spellbook.")
 
     # NOTE (2026-07-11): get_mutation_research() DELETED - the conduit door
-    # is out of the converged MR model (owner ruling: conduits and frames
-    # carry no mutation dimension). Research is exposed through the Rift
-    # room research commands; the world root lives at Aether.mutation_research.
+    # was ruled out of the converged MR model (owner ruling: conduits and
+    # frames carry no mutation dimension). REVERSED for conduits/spellbooks
+    # only by owner ruling 2026-07-12 (patch
+    # mutation_research_accessor_doors_2026_07_12): the door returns below
+    # as a borrowed get-the-object property. Frames still carry no mutation
+    # dimension; the Rift rooms remain the mediated agent surface.
+
+    @property
+    def mutation_research(self) -> MutationResearch:
+        """
+        Return the Aether-hosted MutationResearch WORLD root.
+
+        Purpose:
+            Accessor door (owner ruling 2026-07-12): hand back the one
+            process-wide research root from the conduit, mirroring how
+            this conduit already carries `_crystallizer` from its owning
+            spellbook.
+
+        Contract:
+            - The reference is BORROWED and world-scoped: it is the exact
+              object `Aether().mutation_research` returns, never a
+              conduit-scoped view. This conduit never cleans it.
+            - The door only returns the object. Activation, liveness, and
+              recording gates are enforced by the root's own verbs; an
+              inactive root refuses research work itself.
+            - Bound once at `__init__` from the owning spellbook; lesser
+              conduits share the same root through the shared book. The
+              reference is deleted during cleanup.
+
+        Returns:
+            MutationResearch: The hosted mutation-research singleton root.
+
+        Raises:
+            RuntimeError: If the conduit has been cleaned.
+        """
+        self.check_cleaned()
+        return self._mutation_research
 
 
 

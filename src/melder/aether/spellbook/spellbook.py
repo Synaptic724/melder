@@ -48,6 +48,7 @@ if TYPE_CHECKING:
     from melder.aether.aetheric_frame.aetheric_frame_configuration import AethericFrameConfiguration
     from melder.utilities.logger.safe_logger import SafeLogger
     from melder.crystallizer.crystallizer import Crystallizer
+    from melder.mutation_research.mutation_research import MutationResearch
 
 #region Spellbook
 
@@ -158,6 +159,7 @@ and logging.
         "_transaction_identity",
         "_whitelist_all_spells",
         "_crystallizer",
+        "_mutation_research",
     ]
 
     def __init__(self, aetheric_frame: str = "default", configuration: Optional[SpellbookConfiguration] = None,
@@ -228,6 +230,12 @@ and logging.
             raise TypeError(f"aetheric_frame must be a string, got {type(self._aetheric_frame_name).__name__}")
         self._aetheric_frame = Spellbook._aether._ensure_frame(self._aetheric_frame_name)
         self._crystallizer: Crystallizer = self._aetheric_frame._crystallizer
+        # Borrowed world-root reference (owner ruling 2026-07-12): bound at
+        # init exactly like `_crystallizer` above. `Aether.mutation_research`
+        # lazily builds the (inactive) root on first touch and RAISES for a
+        # cleaned root - a cleaned MR root under a live Aether therefore
+        # fail-fasts Spellbook construction by design.
+        self._mutation_research: MutationResearch = Spellbook._aether.mutation_research
         self._transaction_identity: DevopsIdentity = DevopsIdentity(
             owner_kind="spellbook",
             owner_id=self._id,
@@ -450,6 +458,7 @@ and logging.
         del self._cache_emit_required
         del self._caching_enabled
         del self._crystallizer
+        del self._mutation_research
         self._aetheric_frame_configuration = None
 
         try:
@@ -639,6 +648,7 @@ and logging.
         del self._nexus_publish_enabled
         del self._nexus
         self._crystallizer = None
+        self._mutation_research = None
 
         try:
             if hasattr(self._logger, "cleanup"):
@@ -5428,6 +5438,35 @@ and logging.
         """
         self.check_cleaned()
         return self._conduit
+
+    @property
+    def mutation_research(self) -> MutationResearch:
+        """
+        Return the Aether-hosted MutationResearch WORLD root.
+
+        Purpose:
+            Accessor door (owner ruling 2026-07-12): hand back the one
+            process-wide research root without routing through `Aether`,
+            mirroring how this book already carries `_crystallizer`.
+
+        Contract:
+            - The reference is BORROWED and world-scoped: it is the exact
+              object `Aether().mutation_research` returns, never a book-
+              or conduit-scoped view. This book never cleans it.
+            - The door only returns the object. Activation, liveness, and
+              recording gates are enforced by the root's own verbs; an
+              inactive root refuses research work itself.
+            - Bound once at `__init__`; the reference is stable for this
+              book's lifetime and deleted during cleanup.
+
+        Returns:
+            MutationResearch: The hosted mutation-research singleton root.
+
+        Raises:
+            RuntimeError: If the spellbook has been cleaned.
+        """
+        self.check_cleaned()
+        return self._mutation_research
 
     def conjure(
             self,

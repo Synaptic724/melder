@@ -154,6 +154,13 @@ class TransferOwnershipTransactionStrategy(TransactionStrategy):
         normalized_metadata["affected_identity_keys"] = tuple(
             sorted(affected_identity_keys)
         )
+        # Freeze footprint (freeze parity with notch, owner-ruled
+        # 2026-07-12): the runtime quiesce in on_start/on_end targets the
+        # full participant conduit set, so no in-flight meld/validator can
+        # straddle the ownership flip.
+        normalized_metadata["quiesce_root_conduit_ids"] = tuple(
+            sorted(conduit_ids)
+        )
 
         return {
             "initiator_conduit_id": identity.owner_id,
@@ -234,9 +241,27 @@ class TransferOwnershipTransactionStrategy(TransactionStrategy):
             metadata: Dict[str, object],
     ) -> None:
         """
-        Ownership-transfer transactions do not need extra local start effects yet.
+        Freeze the participant conduits' runtime gates (scopes held) before
+        the ownership flip.
+
+        Contract (freeze parity with notch, patch
+        notch_conduit_gate_freeze_2026_07_12):
+            - Quiesces every plan-derived lineage through the
+              metadata-carried DevOps facade in PARK mode; absent facade
+              = no-op (envelope-only starts stay legal).
+            - A drain timeout raises -> the mediator aborts the start and
+              root finalize still dispatches `on_end` (reopen).
+
+        Raises:
+            RuntimeError: Propagated from a gate drain timeout.
         """
-        return None
+        del devops_information_registry, identity
+        gate_ops = metadata.get("conduit_lineage_gate_ops")
+        if gate_ops is None:
+            return
+        for root_id in metadata.get("quiesce_root_conduit_ids", ()):
+            if isinstance(root_id, str) and root_id:
+                gate_ops.quiesce_conduit_lineage(root_id)
 
     @staticmethod
     def on_end(
@@ -246,6 +271,17 @@ class TransferOwnershipTransactionStrategy(TransactionStrategy):
             metadata: Dict[str, object],
     ) -> None:
         """
-        Ownership-transfer transactions do not need extra local end effects yet.
+        Reopen every frozen conduit lineage on every exit path (fail-closed).
+
+        Contract:
+            - Mirrors `on_start`'s freeze footprint exactly; absent facade
+              = no-op.
+            - Dispatched by the mediator from root-session finalize.
         """
-        return None
+        del devops_information_registry, identity
+        gate_ops = metadata.get("conduit_lineage_gate_ops")
+        if gate_ops is None:
+            return
+        for root_id in metadata.get("quiesce_root_conduit_ids", ()):
+            if isinstance(root_id, str) and root_id:
+                gate_ops.enable_conduit_lineage(root_id)

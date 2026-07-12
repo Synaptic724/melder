@@ -196,6 +196,61 @@ class RiftGate(Cleanable):
         if self._closed:
             raise RuntimeError("RiftGate is closed.")
 
+    def admit_ticket(self) -> None:
+        """
+        Atomically-by-ordering admit one command: acquire a VISIBLE ticket
+        first, then validate gate state, honoring the configured entry mode.
+
+        Purpose:
+            Close the check-then-register drain race (same class as the
+            conduit CreationGate fix, 2026-07-12): with `admit()` and
+            `register_ticket()` as two separate steps, a projection
+            refresh could disable admission, observe zero tickets, and
+            run its refresh while an already-admitted command registered
+            late and executed inside the drained window. Ticket-first
+            admission closes that lock-free: the ticket is appended
+            BEFORE the state reads, so either the drain poll counts this
+            caller and waits, or this caller's post-append read sees the
+            freeze and backs out.
+
+        Contract:
+            - LOOP: append ticket -> terminally closed: pop + raise ->
+              enabled: return (ADMITTED, ticket held) -> disabled +
+              entry_mode "raise": pop + raise -> disabled + "wait": pop +
+              park + retry on wake.
+            - On return the caller HOLDS one ticket and must pair it with
+              `unregister_ticket()`; on raise no ticket is held.
+            - Parked callers hold NO steady ticket (drains never wait on
+              waiters).
+
+        Threading:
+            Lock-free by append-before-read ordering (deque ops are
+            thread-safe primitives); cleaned-state guard at entry only.
+
+        Returns:
+            None. (The caller holds one admitted ticket.)
+
+        Raises:
+            RuntimeError:
+                If the gate is terminally closed, entry is disabled in
+                "raise" mode, or the gate was cleaned.
+        """
+        self.check_cleaned()
+        tickets = self._tickets
+        while True:
+            # Visibility FIRST: from this append until the pop below, any
+            # drain poll counts this caller and must wait.
+            tickets.append(None)
+            if self._closed:
+                tickets.pop()
+                raise RuntimeError("RiftGate is closed.")
+            if self.enabled:
+                return
+            tickets.pop()
+            if self._entry_mode == self.ENTRY_MODE_RAISE:
+                raise RuntimeError("RiftGate entry is disabled.")
+            self._event.wait()
+
     def set_entry_mode(self, entry_mode: str) -> None:
         """
         Set the gate admission mode.
