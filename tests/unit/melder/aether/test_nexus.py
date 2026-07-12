@@ -2069,6 +2069,7 @@ def test_codegen_command_system_lists_selected_runtime_helpers_only() -> None:
         "execute_target_method",
         "validate_codegen",
         "execute_codegen",
+        "materialize_codegen",
         "research_walk",
         "research_history",
         "research_heads",
