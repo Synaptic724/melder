@@ -562,7 +562,9 @@ def test_transaction_mediator_start_strategy_transaction_aborts_when_on_start_fa
         Verify strategy-owned starts abort when strategy on_start fails.
     Contract:
         - Failing on_start marks the session abort_only and tears it down.
-        - on_end is still invoked during cleanup.
+        - on_end is still invoked during cleanup - dispatched exactly once by
+          root finalize (the notch_conduit_gate_freeze_2026_07_12 relocation),
+          not by an explicit failure-path call.
     Returns:
         None.
     Raises:
@@ -594,6 +596,10 @@ def test_transaction_mediator_start_strategy_transaction_aborts_when_on_start_fa
                 "metadata": {},
             }
 
+        def resolve(self, _transaction_type):
+            """Report a registered family so finalize dispatches on_end."""
+            return object()
+
         def on_start(self, **_kwargs):
             raise RuntimeError("boom")
 
@@ -612,3 +618,119 @@ def test_transaction_mediator_start_strategy_transaction_aborts_when_on_start_fa
 
     assert mediator.describe()["active_session_count"] == 0
     assert builder.on_end_calls == 1
+
+
+class _RecordingOnEndBuilder:
+    """
+    Builder fake recording finalize-driven on_end dispatches.
+
+    Purpose:
+        Prove the on_end reliability law (patch
+        notch_conduit_gate_freeze_2026_07_12): strategy on_end fires exactly
+        once per ROOT session end - on commit AND on abort - regardless of
+        which end verb the caller used. Coordination strategies (the notch
+        conduit-lineage freeze, the unelect leader freeze) depend on this
+        for their gate reopens.
+    """
+
+    def __init__(self) -> None:
+        """Start with an empty dispatch log."""
+        self.on_end_calls: list[tuple[str, str]] = []
+
+    def resolve(self, _transaction_type):
+        """Report a registered family so finalize dispatches on_end."""
+        return object()
+
+    def apply_commit_delta(self, **_kwargs) -> None:
+        """Accept the commit-delta call without registry effects."""
+        return None
+
+    def on_end(self, *, transaction_type, identity, metadata) -> None:
+        """Record one dispatched end with its transaction name."""
+        del metadata
+        self.on_end_calls.append((str(transaction_type), identity.owner_id))
+
+
+def test_transaction_mediator_dispatches_on_end_once_on_plain_end_success() -> None:
+    """
+    Purpose:
+        Verify strategy on_end fires exactly once when a root session ends
+        successfully through PLAIN end_transaction (the notch/unelect caller
+        shape that previously never fired on_end - the freeze-leak defect).
+    Contract:
+        - One commit-path root end dispatches on_end exactly once.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If on_end is skipped or double-fired on success.
+    """
+    registry, identity = _build_registry_identity(
+        metadata={"conjured": False},
+        available_transactions=("bind",),
+    )
+    _tm, _cm, _em, _orch, mediator = _build_mediator(registry=registry)
+    session = mediator.begin_transaction(identity=identity, transaction_type="bind")
+    builder = _RecordingOnEndBuilder()
+    mediator._strategy_builder = builder
+
+    mediator.end_transaction(expected_type="bind", success=True)
+
+    assert builder.on_end_calls == [("bind", identity.owner_id)]
+    assert session.status == "committed"
+
+
+def test_transaction_mediator_dispatches_on_end_once_on_abort() -> None:
+    """
+    Purpose:
+        Verify strategy on_end fires exactly once when a root session ends
+        in abort, so freeze-holding strategies always get their reopen.
+    Contract:
+        - One abort-path root end dispatches on_end exactly once.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If on_end is skipped or double-fired on abort.
+    """
+    registry, identity = _build_registry_identity(
+        metadata={"conjured": False},
+        available_transactions=("bind",),
+    )
+    _tm, _cm, _em, _orch, mediator = _build_mediator(registry=registry)
+    session = mediator.begin_transaction(identity=identity, transaction_type="bind")
+    builder = _RecordingOnEndBuilder()
+    mediator._strategy_builder = builder
+
+    mediator.end_transaction(expected_type="bind", success=False)
+
+    assert builder.on_end_calls == [("bind", identity.owner_id)]
+    assert session.status == "aborted"
+
+
+def test_transaction_mediator_identity_end_does_not_double_fire_on_end() -> None:
+    """
+    Purpose:
+        Verify end_transaction_for_identity no longer carries its own on_end
+        dispatch: the root finalize dispatch is the single source, so one
+        identity-ended root fires on_end exactly once.
+    Contract:
+        - end_transaction_for_identity on a depth-1 root -> one dispatch.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If the identity-end path double-fires on_end.
+    """
+    registry, identity = _build_registry_identity(
+        metadata={"conjured": False},
+        available_transactions=("bind",),
+    )
+    _tm, _cm, _em, _orch, mediator = _build_mediator(registry=registry)
+    mediator.begin_transaction(identity=identity, transaction_type="bind")
+    builder = _RecordingOnEndBuilder()
+    mediator._strategy_builder = builder
+
+    mediator.end_transaction_for_identity(
+        identity=identity,
+        transaction_type="bind",
+    )
+
+    assert builder.on_end_calls == [("bind", identity.owner_id)]

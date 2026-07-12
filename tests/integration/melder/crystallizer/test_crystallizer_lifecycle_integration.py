@@ -321,6 +321,17 @@ def test_mutation_research_composition_twin_survives_the_real_record():
     ]
     assert [node["group_id"] for node in group_payloads] == [group_id]
 
+    # EXPLICIT NODE OBJECTS on the live twin (owner ruling 2026-07-12):
+    # both families as flat DB-storable rows, straight off the record.
+    group_rows = recorded["grouped_research_nodes"]
+    assert [row["group_id"] for row in group_rows] == [group_id]
+    assert group_rows[0]["member_spell_ids"] == [member_a, member_b]
+    assert group_rows[0]["lane_name"] == "subsystem"
+    assert group_rows[0]["lane_type"] == "production"
+    spell_rows = recorded["research_nodes"]
+    assert {row["spell_id"] for row in spell_rows} == {member_a, member_b}
+    assert json.loads(json.dumps(recorded)) == recorded
+
     # Root death, then REBIRTH through the bootstrap lane.
     research.cleanup()
     MutationResearch._reset_singleton_for_tests()

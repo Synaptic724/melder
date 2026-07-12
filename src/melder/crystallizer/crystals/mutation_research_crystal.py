@@ -1,6 +1,6 @@
 
 
-from typing import Dict, Optional
+from typing import Dict, List, Optional
 
 from melder.utilities.general_base.cleanable import Cleanable
 
@@ -26,6 +26,15 @@ class MutationResearchCrystal(Cleanable):
         - `composition_payload` is optional so Phase-A emitters (the
           configuration activation seam) stay valid; None records as an
           empty composition.
+        - EXPLICIT NODE OBJECTS (owner ruling 2026-07-12): the twin carries
+          its research record as PROPER OBJECTS, not only as the nested
+          composition blob - `research_nodes` and `grouped_research_nodes`
+          are FLAT, value-typed, DB-storable rows (one per recorded node,
+          each carrying its set/lane context), DERIVED from the
+          composition payload at construction so the blob and the rows can
+          never disagree. Storage handlers map these lists straight to
+          tables; hydration keeps reading the composition (the proven
+          loop); the rows are the record's queryable face.
 
     Threading:
         Immutable-after-init; the owning PersistenceProfile serializes
@@ -40,6 +49,8 @@ class MutationResearchCrystal(Cleanable):
         "_activated",
         "_configuration_payload",
         "_composition_payload",
+        "_research_node_rows",
+        "_grouped_research_node_rows",
     ]
 
     def __init__(
@@ -73,6 +84,90 @@ class MutationResearchCrystal(Cleanable):
         self._composition_payload: Dict[str, object] = (
             dict(composition_payload) if composition_payload else {}
         )
+        spell_rows, group_rows = MutationResearchCrystal._derive_node_rows(
+            self._composition_payload,
+        )
+        self._research_node_rows: List[Dict[str, object]] = spell_rows
+        self._grouped_research_node_rows: List[Dict[str, object]] = group_rows
+
+    @staticmethod
+    def _derive_node_rows(
+            composition_payload: Dict[str, object],
+    ) -> "tuple[List[Dict[str, object]], List[Dict[str, object]]]":
+        """
+        Flatten one composition into DB-storable node rows, per family.
+
+        Contract:
+            - Derivation is the agreement guarantee: rows are computed
+              from the same payload the twin records, at construction -
+              the blob and the objects cannot drift.
+            - Best-effort over shape (isinstance guards): a twin must
+              record whatever it was handed; malformed fragments simply
+              contribute no rows.
+
+        Args:
+            composition_payload:
+                Set name -> `describe_composition()` payload mapping.
+
+        Returns:
+            tuple[List[Dict[str, object]], List[Dict[str, object]]]:
+                (research_node_rows, grouped_research_node_rows) - flat,
+                value-typed, each row carrying its set/lane context.
+        """
+        spell_rows: List[Dict[str, object]] = []
+        group_rows: List[Dict[str, object]] = []
+        for set_name, set_payload in dict(composition_payload).items():
+            if not isinstance(set_payload, dict):
+                continue
+            organization = set_payload.get("organization")
+            if not isinstance(organization, dict):
+                continue
+            lanes = organization.get("lanes")
+            if not isinstance(lanes, list):
+                continue
+            for lane_payload in lanes:
+                if not isinstance(lane_payload, dict):
+                    continue
+                lane_context = {
+                    "set_name": str(set_name),
+                    "lane_id": lane_payload.get("lane_id"),
+                    "lane_name": lane_payload.get("name"),
+                    "lane_type": lane_payload.get("lane_type"),
+                }
+                for node in list(lane_payload.get("nodes", [])):
+                    if not isinstance(node, dict):
+                        continue
+                    if node.get("node_type") == "group":
+                        group_rows.append({
+                            **lane_context,
+                            "group_id": node.get("group_id"),
+                            "member_spell_ids": list(
+                                node.get("member_spell_ids", [])
+                            ),
+                            "parent_group_ids": list(
+                                node.get("parent_group_ids", [])
+                            ),
+                            "author": node.get("author"),
+                            "campaign": node.get("campaign"),
+                            "reason": node.get("reason"),
+                            "created_at": node.get("created_at"),
+                        })
+                    else:
+                        spell_rows.append({
+                            **lane_context,
+                            "spell_id": node.get("spell_id"),
+                            "module_source_sha256": node.get(
+                                "module_source_sha256"
+                            ),
+                            "parent_spell_ids": list(
+                                node.get("parent_spell_ids", [])
+                            ),
+                            "author": node.get("author"),
+                            "campaign": node.get("campaign"),
+                            "reason": node.get("reason"),
+                            "created_at": node.get("created_at"),
+                        })
+        return spell_rows, group_rows
 
     def cleanup(self) -> None:
         """
@@ -87,6 +182,8 @@ class MutationResearchCrystal(Cleanable):
         del self._activated
         del self._configuration_payload
         del self._composition_payload
+        del self._research_node_rows
+        del self._grouped_research_node_rows
 
     @property
     def activated(self) -> bool:
@@ -125,13 +222,45 @@ class MutationResearchCrystal(Cleanable):
         self.check_cleaned()
         return dict(self._composition_payload)
 
+    @property
+    def research_nodes(self) -> List[Dict[str, object]]:
+        """
+        Return the recorded ResearchNodes as flat, DB-storable rows.
+
+        Returns:
+            List[Dict[str, object]]:
+                One row per spell version record: `{"set_name", "lane_id",
+                "lane_name", "lane_type", "spell_id",
+                "module_source_sha256", "parent_spell_ids", "author",
+                "campaign", "reason", "created_at"}` (detached copies).
+        """
+        self.check_cleaned()
+        return [dict(row) for row in self._research_node_rows]
+
+    @property
+    def grouped_research_nodes(self) -> List[Dict[str, object]]:
+        """
+        Return the recorded GroupedResearchNodes as flat, DB-storable rows.
+
+        Returns:
+            List[Dict[str, object]]:
+                One row per composition record: `{"set_name", "lane_id",
+                "lane_name", "lane_type", "group_id", "member_spell_ids",
+                "parent_group_ids", "author", "campaign", "reason",
+                "created_at"}` (detached copies).
+        """
+        self.check_cleaned()
+        return [dict(row) for row in self._grouped_research_node_rows]
+
     def describe(self) -> Dict[str, object]:
         """
         Return a detached, serialization-ready snapshot of this twin.
 
         Returns:
             Dict[str, object]:
-                Plain-value payload (the cached-item form for this twin).
+                Plain-value payload (the cached-item form for this twin):
+                the composition blob (the hydration carrier) PLUS the
+                explicit per-family node rows (the DB-storable objects).
         """
         self.check_cleaned()
         return {
@@ -139,4 +268,10 @@ class MutationResearchCrystal(Cleanable):
             "activated": self._activated,
             "configuration_payload": dict(self._configuration_payload),
             "composition_payload": dict(self._composition_payload),
+            "research_nodes": [
+                dict(row) for row in self._research_node_rows
+            ],
+            "grouped_research_nodes": [
+                dict(row) for row in self._grouped_research_node_rows
+            ],
         }

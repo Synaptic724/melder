@@ -61,21 +61,27 @@ def _leader_identity(transaction_name: str) -> DevopsIdentity:
 
 class _RecordingGateOps:
     """
-    Lineage-gate double recording drain/reopen calls for unelect coordination tests.
+    Lineage-gate double recording drain/reopen calls for freeze coordination
+    tests (unelect terminal drain + notch park-mode quiesce).
 
     Purpose:
-        Capture the order and footprint of conduit-lineage drain/reopen requests
-        without standing up the real CreationGateController.
+        Capture the order and footprint of conduit-lineage drain/quiesce/reopen
+        requests without standing up the real CreationGateController.
     """
 
     def __init__(self) -> None:
-        """Start with empty drain and reopen logs."""
+        """Start with empty drain, quiesce, and reopen logs."""
         self.closed: List[str] = []
+        self.quiesced: List[str] = []
         self.enabled: List[str] = []
 
     def close_and_wait_conduit_lineage(self, root_id: str) -> None:
-        """Record a drain-to-zero request for one root lineage."""
+        """Record a terminal drain-to-zero request for one root lineage."""
         self.closed.append(root_id)
+
+    def quiesce_conduit_lineage(self, root_id: str) -> None:
+        """Record a park-mode freeze+drain request for one root lineage."""
+        self.quiesced.append(root_id)
 
     def enable_conduit_lineage(self, root_id: str) -> None:
         """Record a reopen request for one root lineage."""
@@ -180,6 +186,159 @@ def test_notch_includes_spellbook_conduit_and_binding_in_scope_keys() -> None:
     assert "scope:spellbook:spellbook-1" in scope_keys
     assert "scope:conduit:conduit-1" in scope_keys
     assert binding_scope in scope_keys
+
+
+def test_notch_plan_quiesce_footprint_matches_the_sealed_conduits() -> None:
+    """
+    Purpose:
+        Verify the plan-derived runtime-freeze footprint is exactly the
+        conduit set the notch seals EXCLUSIVE (gate freeze and embargo seal
+        must never diverge).
+    Contract:
+        - normalized metadata carries quiesce_root_conduit_ids equal to the
+          plan's conduit_ids (sorted, deduplicated).
+    Returns:
+        None.
+    Raises:
+        AssertionError: If the freeze footprint diverges from the seal.
+    """
+    transaction_manager, registry = _manager_and_registry()
+    identity = _spellbook_identity("spellbook-1", "notch")
+    registry.register_identity(identity)
+
+    plan = NotchTransactionStrategy.build_start_plan(
+        transaction_manager=transaction_manager,
+        devops_information_registry=registry,
+        identity=identity,
+        metadata={
+            "owner_conduit_id": "conduit-1",
+            "binding_key": ("frame-1", "lookup-key-A"),
+        },
+    )
+
+    assert plan["metadata"]["quiesce_root_conduit_ids"] == plan["conduit_ids"]
+    assert "conduit-1" in plan["metadata"]["quiesce_root_conduit_ids"]
+
+
+def test_notch_on_start_quiesces_every_planned_lineage_park_mode() -> None:
+    """
+    Purpose:
+        Verify the notch freeze quiesces (park-mode, never terminal) every
+        plan-derived lineage through the DevOps gate facade.
+    Contract:
+        - on_start calls quiesce_conduit_lineage once per planned root id.
+        - The terminal drain verb is never used by the notch freeze.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If the freeze footprint or verb is wrong.
+    """
+    _, registry = _manager_and_registry()
+    identity = _spellbook_identity("spellbook-1", "notch")
+    gate_ops = _RecordingGateOps()
+
+    NotchTransactionStrategy.on_start(
+        devops_information_registry=registry,
+        identity=identity,
+        metadata={
+            "conduit_lineage_gate_ops": gate_ops,
+            "quiesce_root_conduit_ids": ("conduit-1", "conduit-2"),
+        },
+    )
+
+    assert gate_ops.quiesced == ["conduit-1", "conduit-2"]
+    assert gate_ops.closed == []
+    assert gate_ops.enabled == []
+
+
+def test_notch_on_end_reopens_every_planned_lineage() -> None:
+    """
+    Purpose:
+        Verify the notch reopen restores admission for every frozen lineage
+        (fail-closed: dispatched by the mediator on every root end).
+    Contract:
+        - on_end calls enable_conduit_lineage once per planned root id.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If any frozen lineage is not reopened.
+    """
+    _, registry = _manager_and_registry()
+    identity = _spellbook_identity("spellbook-1", "notch")
+    gate_ops = _RecordingGateOps()
+
+    NotchTransactionStrategy.on_end(
+        devops_information_registry=registry,
+        identity=identity,
+        metadata={
+            "conduit_lineage_gate_ops": gate_ops,
+            "quiesce_root_conduit_ids": ("conduit-1", "conduit-2"),
+        },
+    )
+
+    assert gate_ops.enabled == ["conduit-1", "conduit-2"]
+    assert gate_ops.quiesced == []
+
+
+def test_notch_freeze_is_a_noop_without_the_gate_facade() -> None:
+    """
+    Purpose:
+        Verify envelope-only notch starts stay legal: no facade in metadata
+        means neither freeze nor reopen fires (unelect precedent).
+    Contract:
+        - on_start and on_end tolerate absent conduit_lineage_gate_ops.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If the freeze path raises without a facade.
+    """
+    _, registry = _manager_and_registry()
+    identity = _spellbook_identity("spellbook-1", "notch")
+
+    NotchTransactionStrategy.on_start(
+        devops_information_registry=registry,
+        identity=identity,
+        metadata={"quiesce_root_conduit_ids": ("conduit-1",)},
+    )
+    NotchTransactionStrategy.on_end(
+        devops_information_registry=registry,
+        identity=identity,
+        metadata={"quiesce_root_conduit_ids": ("conduit-1",)},
+    )
+
+
+def test_notch_freeze_and_reopen_footprints_are_symmetric() -> None:
+    """
+    Purpose:
+        Verify the freeze and reopen walk the same root set in the same
+        order, so no lineage is frozen without a matching reopen.
+    Contract:
+        - quiesced and enabled logs are identical for one metadata payload.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If the footprints diverge.
+    """
+    _, registry = _manager_and_registry()
+    identity = _spellbook_identity("spellbook-1", "notch")
+    gate_ops = _RecordingGateOps()
+    metadata = {
+        "conduit_lineage_gate_ops": gate_ops,
+        "quiesce_root_conduit_ids": ("conduit-3", "conduit-7", "conduit-9"),
+    }
+
+    NotchTransactionStrategy.on_start(
+        devops_information_registry=registry,
+        identity=identity,
+        metadata=metadata,
+    )
+    NotchTransactionStrategy.on_end(
+        devops_information_registry=registry,
+        identity=identity,
+        metadata=metadata,
+    )
+
+    assert gate_ops.quiesced == gate_ops.enabled
 
 
 # ---------------------------------------------------------------------------
