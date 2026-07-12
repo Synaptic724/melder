@@ -75,7 +75,7 @@ class CachingSystem(Cleanable):
     # (GC-untracked resident cache; see class contract). Version 2 carried
     # decoded manifest-package dicts; version 1 carried legacy executor
     # shapes. Older bundles are treated as cold cache and regenerated.
-    CURRENT_VERSION: ClassVar[int] = 5
+    CURRENT_VERSION: ClassVar[int] = 6
     BUNDLE_SUFFIX: ClassVar[str] = ".melc"
 
     __slots__ = Cleanable.__slots__ + [

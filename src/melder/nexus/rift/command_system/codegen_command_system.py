@@ -1,3 +1,5 @@
+import hashlib
+
 from typing import TYPE_CHECKING, Dict, Optional, Tuple
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
@@ -68,6 +70,7 @@ class CodegenCommandSystem(CommandSystem):
     _CODEGEN_COMMAND_METHOD_NAMES: Tuple[str, ...] = (
         "validate_codegen",
         "execute_codegen",
+        "materialize_codegen",
         # Research record reads
         "research_walk",
         "research_history",
@@ -702,6 +705,157 @@ class CodegenCommandSystem(CommandSystem):
                         action_name="execute_codegen",
                         transaction_context=transaction_context,
                         execution_result=execution_result,
+                    )
+
+    def materialize_codegen(
+            self,
+            code: str,
+            *,
+            module_name: str,
+            frame_name: str,
+    ) -> Dict[str, object]:
+        """
+        Promote validated codegen source to a live SyntheticModule.
+
+        Purpose:
+            The codegen room's missing materialization lane (epic M5, "the
+            X"): the residency-ladder Progenitor act. Execution and preview
+            lanes stay ephemeral by design; THIS verb is the one explicit
+            opt-in step that turns generated source into a durable, importable
+            world object. Binding the class inside it afterwards (a Spellbook
+            act) mints custody through the landed bind seam and closes the
+            codegen -> synthmodule -> bind -> crystal loop.
+
+        Contract:
+            - Validation-gated: the source runs through the attached engine's
+              full validation policy first; a rejected verdict returns the
+              validator's payload marked `materialized: False` and NOTHING is
+              registered or published.
+            - Accepted source materializes as one SyntheticModule
+              (register -> parent shells -> publish -> exec -> importlib
+              metadata) with the import hook installed, so plain `import
+              <module_name>` resolves onto the world object immediately.
+            - Pre-bind sentinel identity: the module carries
+              `spell_crystal_id="unbound_codegen"` and
+              `binding_signature="codegen_materialized"` until a bind mints
+              real custody (rebuild-lane sentinel precedent).
+            - R8 no-half-published law: if module exec raises, the module is
+              torn down (cleanup) before the error propagates.
+            - Emits one full-source codegen memory record for the completed
+              top-level action when room memory is enabled.
+
+        Args:
+            code:
+                Generated Python source to materialize.
+            module_name:
+                Canonical import name for the new module; every dotted
+                segment must be a legal Python identifier.
+            frame_name:
+                Target frame whose codegen ACL/validation policy applies.
+
+        Returns:
+            Dict[str, object]: `materialized` flag, module identity
+            (`module_name`, `source_sha256`, `module_file`), public export
+            names, and the validation payload.
+
+        Raises:
+            ValueError: If `code`, `module_name`, or `frame_name` is empty,
+                or `module_name` is not dotted-identifier legal.
+            RuntimeError: If the room's codegen engine is not attached or the
+                command system has been cleaned.
+        """
+        self.check_cleaned()
+        if not isinstance(code, str) or not code:
+            raise ValueError("code cannot be empty.")
+        if not isinstance(frame_name, str) or not frame_name:
+            raise ValueError("frame_name cannot be empty.")
+        if not isinstance(module_name, str) or not module_name:
+            raise ValueError("module_name cannot be empty.")
+        if not all(part.isidentifier() for part in module_name.split(".")):
+            raise ValueError(
+                "module_name must be dotted-identifier legal; got '{0}'.".format(
+                    module_name,
+                )
+            )
+        # Method-local import (Aether `_get_mutation_research` precedent):
+        # keeps the crystallizer import chain off nexus module import time.
+        from melder.crystallizer.synthetic_module import SyntheticModule
+        with self._entered_action_hook_scope_if_available(
+                category="codegen",
+                action_name="materialize_codegen",
+        ):
+            rift_gate = self._begin_command_action()
+            transaction_context: Optional[CodegenTransactionContext] = None
+            validation_result: Optional[CodegenValidationResult] = None
+            try:
+                with self._lock:
+                    codegen_system = self._require_codegen_system()
+                    transaction_context, validation_result = (
+                        codegen_system.validate_codegen_request(
+                            code,
+                            frame_name=frame_name,
+                        )
+                    )
+                    validation_payload = codegen_system.report_validation_result(
+                        validation_result,
+                    )
+                    if not validation_result.accepted:
+                        # Refusal lane: the validator's own verdict answers;
+                        # no registry or sys.modules mutation happened.
+                        return {
+                            "materialized": False,
+                            "module_name": module_name,
+                            "validation": validation_payload,
+                        }
+                    source_sha256 = hashlib.sha256(
+                        code.encode("utf-8"),
+                    ).hexdigest()
+                    module = SyntheticModule(
+                        module_name=module_name,
+                        spell_crystal_id="unbound_codegen",
+                        source_text=code,
+                        source_sha256=source_sha256,
+                        binding_signature="codegen_materialized",
+                        parent_name=(
+                            module_name.rsplit(".", 1)[0]
+                            if "." in module_name
+                            else None
+                        ),
+                        is_package=False,
+                    )
+                    try:
+                        module.materialize(install_import_hook=True)
+                    except BaseException:
+                        # R8: never leave a half-published module behind.
+                        try:
+                            module.cleanup()
+                        except Exception:
+                            pass
+                        raise
+                    export_names = sorted(
+                        name
+                        for name in module.__dict__
+                        if not name.startswith("_")
+                    )
+                    return {
+                        "materialized": True,
+                        "module_name": module_name,
+                        "source_sha256": source_sha256,
+                        "module_file": module.__file__,
+                        "export_names": export_names,
+                        "validation": validation_payload,
+                    }
+            finally:
+                if rift_gate is not None:
+                    rift_gate.unregister_ticket()
+                if (
+                        transaction_context is not None
+                        and validation_result is not None
+                ):
+                    self._emit_codegen_memory_if_enabled(
+                        action_name="materialize_codegen",
+                        transaction_context=transaction_context,
+                        validation_result=validation_result,
                     )
 
     # ------------------------------------------------------------------

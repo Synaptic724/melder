@@ -2,6 +2,7 @@
 import importlib
 import importlib.abc
 import importlib.util
+import linecache
 import sys
 import threading
 from importlib.machinery import ModuleSpec
@@ -75,6 +76,43 @@ class _SyntheticModuleImportLoader(importlib.abc.Loader):
                 "Synthetic loader can only execute SyntheticModule objects."
             )
         SyntheticModule.exec_registered_module(module.__name__)
+
+    def get_source(self, fullname: str) -> str:
+        """
+        Return the retained source text for one registered synthetic module.
+
+        Purpose:
+            Complete the importlib InspectLoader contract (M1 introspection
+            fix, FIX B): when linecache stat-fails on the synthetic
+            `__file__`, it falls back to this hook, which makes
+            `inspect.getsource`, tracebacks, and `pdb` work on synthetic
+            classes exactly as they do for zipimport modules.
+
+        Contract:
+            - Read-only: returns the module's LIVE `source_text` (the same
+              text `execute_source()` runs), never a stale copy.
+            - Registry lookup happens under the class registry lock.
+
+        Args:
+            fullname:
+                Registered synthetic module name.
+
+        Returns:
+            str: The module's retained source text.
+
+        Raises:
+            ImportError:
+                If `fullname` is not a registered synthetic module.
+        """
+        with SyntheticModule._registry_lock:
+            module = SyntheticModule._registered_modules_by_name.get(fullname)
+        if module is None:
+            raise ImportError(
+                "No registered synthetic module exists for '{0}'.".format(
+                    fullname,
+                )
+            )
+        return module.source_text
 
 
 class _SyntheticModuleMetaPathFinder(importlib.abc.MetaPathFinder):
@@ -274,7 +312,13 @@ class SyntheticModule(ModuleType):
         self._is_package: bool = is_package
         self._executed_source: bool = False
 
-        self.__file__ = "<synthetic:{0}>".format(module_name)
+        # FIX B (M1, patch persistence_loop_m1_m5_residue_2026_07_12): a
+        # non-angle-bracket, never-stat-resolvable file identity. linecache's
+        # angle-bracket guard used to short-circuit on "<synthetic:...>"
+        # BEFORE consulting the loader; the scheme-style form stat-fails on
+        # every OS (":" is illegal in Windows path segments) and falls back
+        # to `__loader__.get_source`, so inspect/traceback/pdb see source.
+        self.__file__ = "synthetic://{0}.py".format(module_name)
         self.__package__ = module_name if is_package else (self._parent_name or "")
         if is_package:
             self.__path__ = [self.__file__]
@@ -309,6 +353,8 @@ class SyntheticModule(ModuleType):
             published_module = sys.modules.get(self.__name__)
             if published_module is self:
                 del sys.modules[self.__name__]
+            # R12 (M1): hard teardown clears the cached source lines too.
+            linecache.cache.pop(self.__file__, None)
 
             removable_names = [
                 name
@@ -719,6 +765,9 @@ class SyntheticModule(ModuleType):
             self._attach_to_parent_package()
             exec(self._source_text, self.__dict__, self.__dict__)
             self._executed_source = True
+            # R12 (M1): a re-exec may carry NEW source text; drop any cached
+            # lines so introspection re-resolves the live source, never v1.
+            linecache.cache.pop(self.__file__, None)
 
     def publish_to_sys_modules(self) -> None:
         """
@@ -757,6 +806,9 @@ class SyntheticModule(ModuleType):
                 del sys.modules[self.__name__]
             self._detach_from_parent_package()
             self._published_in_sys_modules = False
+            # R12 (M1): an unpublished module must stop serving cached source
+            # lines; the next introspection re-resolves through get_source.
+            linecache.cache.pop(self.__file__, None)
 
     def register_in_import_registry(
             self,
