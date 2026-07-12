@@ -142,8 +142,16 @@ class CrystallizerCache(Cleanable):
             Owner ruling: without a DB emitter, cached files follow the
             same checkpoint limit as the ledger - durability beyond the
             cap is the user's explicit opt-in via a DB emitter (future
-            lane). Oldest files (ULID name order = creation order) delete
-            first.
+            lane). Oldest files delete first, where "oldest" is the
+            recorded `checkpoint_number` carried in each cached payload
+            (monotonic per profile, minted by the record) - NOT the ULID
+            filename: two checkpoints sealed within one millisecond share
+            a ULID time component and order by their RANDOM tails, so
+            name order can invert true creation order (owner-run flake,
+            fixed 2026-07-12). Unreadable/legacy files sort oldest and
+            reclaim first (a cache file that cannot rehydrate is dead
+            weight); files without a usable number fall back to name
+            order among themselves.
 
         Args:
             profile_name:
@@ -173,8 +181,31 @@ class CrystallizerCache(Cleanable):
             profile_directory = self.resolve_cache_root_path() / profile_name
             if not profile_directory.is_dir():
                 return []
+
+            def _creation_order(path) -> "tuple[int, int, str]":
+                """
+                True creation-order key for one cached checkpoint file.
+
+                The recorded `checkpoint_number` (monotonic per profile)
+                is the authoritative age; ULID filenames tie within one
+                millisecond (random tails), so they only break ties.
+                Unreadable payloads sort OLDEST (group 0) so dead cache
+                weight reclaims first.
+                """
+                try:
+                    payload = json.loads(
+                        path.read_text(encoding="utf-8")
+                    )
+                    number = payload.get("checkpoint_number")
+                    if isinstance(number, int):
+                        return (1, number, path.name)
+                except (OSError, ValueError):
+                    pass
+                return (0, 0, path.name)
+
             cached = sorted(
-                entry for entry in profile_directory.glob("*.json")
+                profile_directory.glob("*.json"),
+                key=_creation_order,
             )
             removed: List[str] = []
             while len(cached) > max_cached_items:

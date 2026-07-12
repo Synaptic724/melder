@@ -120,6 +120,70 @@ def test_cache_files_follow_the_checkpoint_limit(cache_root):
     _teardown(assets, system)
 
 
+def test_cache_retention_orders_by_checkpoint_number_not_ulid_name(cache_root):
+    """
+    Regression (owner-run flake, 2026-07-12): two checkpoints sealed
+    within one millisecond share a ULID time component and order by
+    their RANDOM tails, so filename order can invert true creation
+    order and retention would evict the NEWER file. Retention must
+    order by the recorded `checkpoint_number` (monotonic per profile);
+    the filename only breaks ties. Reproduced deterministically here
+    with an inverted name/number pair.
+    """
+    import json as _json
+
+    profile_directory = cache_root / "default"
+    profile_directory.mkdir(parents=True)
+    # OLDER by number, but LARGER by name (the same-ms tail inversion).
+    older_name = "01AAAAAAAAAAAAAAAAAAAAAAAB"
+    newer_name = "01AAAAAAAAAAAAAAAAAAAAAAAA"
+    (profile_directory / f"{older_name}.json").write_text(
+        _json.dumps({"checkpoint_id": older_name, "checkpoint_number": 1}),
+        encoding="utf-8",
+    )
+    (profile_directory / f"{newer_name}.json").write_text(
+        _json.dumps({"checkpoint_id": newer_name, "checkpoint_number": 2}),
+        encoding="utf-8",
+    )
+
+    probe = CrystallizerCache()
+    try:
+        removed = probe.enforce_cache_retention("default", 1)
+    finally:
+        probe.cleanup()
+
+    assert removed == [older_name]
+    assert _cached_ids_for_profile("default") == [newer_name]
+
+
+def test_cache_retention_reclaims_unreadable_files_first(cache_root):
+    """
+    Contract: a cache file that cannot rehydrate (unreadable JSON) is
+    dead weight - retention reclaims it before any numbered checkpoint.
+    """
+    import json as _json
+
+    profile_directory = cache_root / "default"
+    profile_directory.mkdir(parents=True)
+    (profile_directory / "01ZZZZZZZZZZZZZZZZZZZZZZZZ.json").write_text(
+        "{not json", encoding="utf-8",
+    )
+    (profile_directory / "01AAAAAAAAAAAAAAAAAAAAAAAA.json").write_text(
+        _json.dumps({"checkpoint_number": 1}), encoding="utf-8",
+    )
+    (profile_directory / "01AAAAAAAAAAAAAAAAAAAAAAAB.json").write_text(
+        _json.dumps({"checkpoint_number": 2}), encoding="utf-8",
+    )
+
+    probe = CrystallizerCache()
+    try:
+        removed = probe.enforce_cache_retention("default", 2)
+    finally:
+        probe.cleanup()
+
+    assert removed == ["01ZZZZZZZZZZZZZZZZZZZZZZZZ"]
+
+
 def test_reload_profile_from_cache_imports_a_world_idempotently(cache_root):
     """
     Contract: copying a profile folder + reload_profile_from_cache IS the

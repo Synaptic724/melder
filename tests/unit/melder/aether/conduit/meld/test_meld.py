@@ -1023,14 +1023,23 @@ def test_meld_non_string_cache_hit_reuses_input_resolution_entry(monkeypatch: py
     assert context.calls == ["no_hooks_no_overrides", "no_hooks_no_overrides"]
 
 
-def test_meld_non_string_unhashable_input_uses_identity_fallback_cache_key(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_meld_non_string_unhashable_input_skips_the_resolution_cache(monkeypatch: pytest.MonkeyPatch) -> None:
     """
-    Verify unhashable non-string inputs use the id-based fallback cache key.
+    Verify unhashable non-string inputs BYPASS the resolution cache
+    (id-reuse aliasing fix, 2026-07-12).
+
+    History:
+        The old fallback cached under raw
+        `(spell_name, id(spell), id(spellframe), binding_name)` keys.
+        id() values outlive their objects - address reuse could serve a
+        dead entry's resolution to a different unhashable object - so
+        the fallback now skips caching entirely.
 
     Contract:
         - Unhashable inputs do not raise during cache lookup.
-        - Cache stores and reuses the id-based fallback key.
-        - `_resolve_spell` is called once across two identical calls.
+        - NO cache entry is written (no id-shaped keys, ever).
+        - `_resolve_spell` runs on EVERY call (uncached is the safe
+          lane; unhashable inputs are the rare/exotic path).
     """
     creations, _ = _make_creations()
     meld = _make_meld(creations=creations)
@@ -1047,7 +1056,7 @@ def test_meld_non_string_unhashable_input_uses_identity_fallback_cache_key(monke
 
     class _Unhashable:
         """
-        Minimal unhashable object for cache-key fallback tests.
+        Minimal unhashable object for cache-skip contract tests.
         """
 
         __hash__ = None
@@ -1057,13 +1066,14 @@ def test_meld_non_string_unhashable_input_uses_identity_fallback_cache_key(monke
     _patch_meld_method(monkeypatch, "_resolve_spell", resolve_spell)
 
     first = meld.meld(spell=unhashable_spell)
-    fallback_key = (None, id(unhashable_spell), id(None), None)
     assert first == "instance"
-    assert fallback_key in meld._input_resolution_cache
+    assert meld._input_resolution_cache == {}
 
     second = meld.meld(spell=unhashable_spell)
     assert second == "instance"
-    resolve_spell.assert_called_once_with(
+    assert meld._input_resolution_cache == {}
+    assert resolve_spell.call_count == 2
+    resolve_spell.assert_called_with(
         spell=unhashable_spell,
         spell_name=None,
         spellframe=None,
