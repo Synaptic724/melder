@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
 
 from melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_injection_analysis import (
     SpellInjectionAnalysis,
@@ -8,9 +8,15 @@ from melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_inject
 from melder.aether.spellbook.spell_compiler.artifact_processor.spell_artifact_processor_strategy import (
     SpellArtifactProcessorStrategy,
 )
+from melder.utilities.custom_exceptions.meld_execution_error import (
+    MeldExecutionError,
+)
 
 if TYPE_CHECKING:
     from melder.aether.spellbook.spell import Spell
+    from melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_occurrence_contract_analysis import (
+        SpellOccurrenceContractAnalysis,
+    )
     from melder.aether.spellbook.spell_compiler.artifact_processor.spell_codegen_model import (
         SpellCodegenModel,
     )
@@ -185,9 +191,18 @@ class SpellInjectionProcessorStrategy(SpellArtifactProcessorStrategy):
                     )
 
                 dependencies = occurrence_graph[occurrence]
-                contract_payload = contract_shape.contract_overrides_by_occurrence.get(
-                    occurrence
-                )
+                if shared_spell:
+                    contract_payload = self._resolve_shared_contract_payload(
+                        spell_id=spell_id,
+                        canonical_occurrence=occurrence,
+                        contract_shape=contract_shape,
+                    )
+                else:
+                    contract_payload = (
+                        contract_shape.contract_overrides_by_occurrence.get(
+                            occurrence
+                        )
+                    )
                 normalized_contract_payload = self._clone_contract_payload(
                     contract_payload
                 )
@@ -249,6 +264,66 @@ class SpellInjectionProcessorStrategy(SpellArtifactProcessorStrategy):
         return instance_specs_by_instance_key
 
     @staticmethod
+    @staticmethod
+    def _resolve_shared_contract_payload(
+            *,
+            spell_id: str,
+            canonical_occurrence: OccurrenceKey,
+            contract_shape: SpellOccurrenceContractAnalysis,
+    ) -> Optional[Dict[str, Any]]:
+        """
+        Resolve the single applicable contract payload for one shared provider.
+
+        Purpose:
+            Shared-existence providers construct exactly once, but phase-9
+            contract compilation records payloads against path-specific
+            provider occurrences. Reading only the canonical occurrence made
+            payload application depend on which edge the phase-8 shared
+            collapse happened to retain (owner finding 2026-07-12). This
+            resolver aggregates every recorded payload for the provider.
+
+        Contract:
+            - Zero recorded payloads: falls back to the canonical occurrence
+              read (returns `None` when nothing is recorded there either),
+              preserving prior no-payload behavior.
+            - Exactly one DISTINCT payload (any edge): returns it, so a single
+              user intent applies regardless of canonical-edge selection.
+            - Multiple distinct payloads: raises `MeldExecutionError` -- one
+              shared instance cannot be constructed two different ways.
+
+        Raises:
+            MeldExecutionError:
+                When distinct SpellContract override payloads target the same
+                shared provider across different contract edges.
+        """
+        recorded = contract_shape.contract_overrides_by_spell_id.get(spell_id)
+        if not recorded:
+            return contract_shape.contract_overrides_by_occurrence.get(
+                canonical_occurrence
+            )
+        distinct_payloads: List[Dict[str, Any]] = []
+        for _occurrence, payload in recorded:
+            if not any(payload == existing for existing in distinct_payloads):
+                distinct_payloads.append(payload)
+        if len(distinct_payloads) == 1:
+            return distinct_payloads[0]
+        raise MeldExecutionError(
+            spell_id=spell_id,
+            spell_name=spell_id,
+            node_id=spell_id,
+            param_name="<shared_contract_payload>",
+            message=(
+                "Shared provider received "
+                f"{len(distinct_payloads)} distinct SpellContract override "
+                f"payloads across {len(recorded)} contract edges. A "
+                "shared-existence spell constructs exactly once, so "
+                "conflicting payloads cannot all apply. Make the payloads "
+                "identical, or bind the provider with a non-shared existence "
+                "(for example Existence.many) so each edge constructs its "
+                "own instance."
+            ),
+        )
+
     def _clone_contract_payload(
             payload: Optional[Dict[str, Any]],
     ) -> Optional[Dict[str, Any]]:

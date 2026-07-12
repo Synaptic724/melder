@@ -57,6 +57,12 @@ class CachingSystem(Cleanable):
     """
 
     __melder_internal__: ClassVar[object] = _mrg.sentinel
+    # Version 7: phase-10 family selection is root-visible (the phase-8
+    # existence analysis filters the shared pool walk down to the root's
+    # occurrence graph) and shared-provider SpellContract payloads resolve by
+    # distinct-payload aggregation with fail-fast on conflict. Version-6
+    # bundles may carry family selections and payload routing contaminated by
+    # unrelated spellbook members or canonical-edge luck.
     # Version 6: zero-provider required collection sockets now inject []
     # (owner policy 2026-07-06): the analyzer publishes empty-collection
     # dependency entries, solo declines collection-bearing models, and all
@@ -82,6 +88,7 @@ class CachingSystem(Cleanable):
         4: "generalized_collection_param_names",
         5: "many_only_collection_param_names",
         6: "zero_provider_required_collections",
+        7: "root_visible_family_selection",
     })
     CURRENT_VERSION: ClassVar[int] = max(CACHE_VERSION_HISTORY)
     BUNDLE_SUFFIX: ClassVar[str] = ".melc"
@@ -499,12 +506,4 @@ class CachingSystem(Cleanable):
             "conduit_name": self._cache_data["conduit_name"],
             "spell_payloads": self._cache_data["spell_payloads"],
         }
-        serialized_cache_data = marshal.dumps(cache_data)
-        bundle_path = self._bundle_path
-        bundle_path.parent.mkdir(parents=True, exist_ok=True)
-        temp_bundle_path = bundle_path.with_suffix(
-            self.BUNDLE_SUFFIX + ".tmp"
-        )
-        temp_bundle_path.write_bytes(serialized_cache_data)
-        temp_bundle_path.replace(bundle_path)
-        self._cache_data = cache_data
+        serialized

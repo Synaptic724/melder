@@ -1,6 +1,6 @@
 import inspect
 from collections import deque
-from typing import TYPE_CHECKING, Any, Dict, Iterable, List, Optional, Sequence, Set, Tuple
+from typing import TYPE_CHECKING, A, Setny, Dict, Iterable, List, Optional, Sequence, Set, Tuple
 
 from melder.aether.conduit.meld.contracts.spell_contract import SpellContract
 from melder.aether.spellbook.configuration.system_state import SystemState
@@ -138,16 +138,11 @@ class SpellOccurrenceGraphAnalyzerStrategy(SpellAnalyzerStrategy):
         # shared `analysis_pass_cache` dict when one is supplied. The dict
         # dies with the pass units, so no invalidation protocol exists --
         # the same lifetime contract as the phase-3/phase-4 pass caches.
-        spell_rows_and_existence = self._build_spell_rows_and_existence_occurrence_analysis(
-            root_spell_id=root_blueprint.root_spell_id,
+        shared_spell_walk = self._get_shared_spell_walk(
             spell_lookup=spellbook._spell_id_pool,
             analysis_pass_cache=analysis_pass_cache,
         )
-        if spell_rows_and_existence is None:
-            spell_rows = None
-            existence_occurrence_analysis = None
-        else:
-            spell_rows, existence_occurrence_analysis = spell_rows_and_existence
+        spell_rows = None if shared_spell_walk is None else shared_spell_walk[0]
 
         graph_shape = self._build_graph_shape_rows(
             spellbook=spellbook,
@@ -195,6 +190,20 @@ class SpellOccurrenceGraphAnalyzerStrategy(SpellAnalyzerStrategy):
             spellbook=spellbook,
             root_blueprint=root_blueprint,
         )
+        # Family selection must see the ROOT-VISIBLE spell set, not the whole
+        # spellbook pool (owner finding 2026-07-12): filter the shared pool
+        # walk down to the spell ids that actually appear in this root's
+        # fully built occurrence graph before building the existence analysis.
+        existence_occurrence_analysis = None
+        if shared_spell_walk is not None:
+            visible_spell_ids = {
+                occurrence[0] for occurrence in occurrence_graph
+            }
+            existence_occurrence_analysis = self._build_existence_occurrence_analysis(
+                root_spell_id=root_blueprint.root_spell_id,
+                shared_spell_walk=shared_spell_walk,
+                visible_spell_ids=visible_spell_ids,
+            )
         graph_analysis = SpellOccurrenceGraphAnalysis(
             root_spell_id=root_blueprint.root_spell_id,
             occurrence_graph=occurrence_graph,
@@ -433,29 +442,28 @@ class SpellOccurrenceGraphAnalyzerStrategy(SpellAnalyzerStrategy):
             analysis_pass_cache["phase8_graph_shape_rows"] = shared
         return shared
 
-    def _build_spell_rows_and_existence_occurrence_analysis(
+    def _get_shared_spell_walk(
             self,
             *,
-            root_spell_id: str,
             spell_lookup: Dict[str, "Spell"],
-            analysis_pass_cache: Optional[Dict[str, Any]] = None,
-    ) -> Optional[Tuple[Tuple[Any, ...], SpellExistenceOccurrenceAnalysis]]:
+            analysis_pass_cache: Optional[Dict[str, Any]],
+    ) -> Optional[Tuple[Any, ...]]:
         """
-        Build fast-key/input-signature spell rows plus existence-occurrence data.
+        Return the pass-shared full-pool spell walk bundle, memoized per pass.
 
         Contract:
-            - The full-pool walk is root-independent and is pass-memoized when
-              an `analysis_pass_cache` is supplied (it made phase 8
-              O(spells^2) when rebuilt per spell).
-            - Only `root_existence` differs per spell; the per-spell analysis
-              object is assembled cheaply over the SHARED immutable row
-              tuples. `SpellExistenceOccurrenceAnalysis` is frozen and the
-              graph-analysis cleanup only drops its reference, so sharing is
-              cross-artifact safe.
+            - Returns the immutable six-slot bundle produced by
+              `_build_spell_walk_rows` (spell rows, occurrence rows, existence
+              counts, disposal-enabled count, existence/disposal counts, and
+              existence by spell id), reusing the `phase8_spell_walk`
+              pass-cache slot when a cache is supplied.
+            - Returns `None` when no lookup is supplied or the walk fails.
+            - The bundle is POOL-scoped by design (one walk per pass); callers
+              needing root-scoped truth must filter it through
+              `_build_existence_occurrence_analysis`.
         """
-        if not root_spell_id or spell_lookup is None:
+        if spell_lookup is None:
             return None
-
         shared = None
         if analysis_pass_cache is not None:
             shared = analysis_pass_cache.get("phase8_spell_walk")
@@ -465,25 +473,77 @@ class SpellOccurrenceGraphAnalyzerStrategy(SpellAnalyzerStrategy):
                 return None
             if analysis_pass_cache is not None:
                 analysis_pass_cache["phase8_spell_walk"] = shared
+        return shared
 
+    @staticmethod
+    def _build_existence_occurrence_analysis(
+            *,
+            root_spell_id: str,
+            shared_spell_walk: Tuple[Any, ...],
+            visible_spell_ids: Set[str],
+    ) -> Optional[SpellExistenceOccurrenceAnalysis]:
+        """
+        Build the ROOT-VISIBLE existence-occurrence analysis for one root.
+
+        Purpose:
+            Phase-10 family discovery reasons about the root's visible spell
+            set. The shared pass walk is pool-scoped for performance, so this
+            builder filters its rows down to the spell ids present in the
+            root's occurrence graph and recomputes every aggregate from the
+            filtered rows (owner finding 2026-07-12: pool-scoped counts were
+            contaminating solo/many_only family selection with unrelated
+            spellbook members, so the same root could select different
+            compiler families depending on unrelated pool composition).
+
+        Contract:
+            - `visible_spell_ids` must come from the fully built (and
+              ordered-node-extended) occurrence graph for this root.
+            - `total_spell_count`, rows, and every aggregate reflect ONLY the
+              visible rows; `root_existence` resolution is unchanged.
+            - Returns `None` when the root id is missing.
+
+        Returns:
+            Optional[SpellExistenceOccurrenceAnalysis]:
+                The root-scoped analysis, or `None` without a root id.
+        """
+        if not root_spell_id:
+            return None
         (
-            spell_rows,
+            _spell_rows,
             occurrence_rows,
-            existence_counts,
-            disposal_enabled_spell_count,
-            existence_disposal_counts,
+            _existence_counts,
+            _disposal_enabled_spell_count,
+            _existence_disposal_counts,
             existence_by_spell_id,
-        ) = shared
+        ) = shared_spell_walk
 
-        analysis = SpellExistenceOccurrenceAnalysis(
-            root_existence=existence_by_spell_id.get(root_spell_id),
-            total_spell_count=len(occurrence_rows),
-            spell_existence_rows=occurrence_rows,
-            existence_counts=existence_counts,
-            disposal_enabled_spell_count=disposal_enabled_spell_count,
-            existence_disposal_counts=existence_disposal_counts,
+        visible_rows = tuple(
+            row for row in occurrence_rows if row.spell_id in visible_spell_ids
         )
-        return spell_rows, analysis
+        existence_counts_by_name: Dict[Existence, int] = {}
+        existence_disposal_counts_by_name: Dict[Tuple[Existence, bool], int] = {}
+        disposal_enabled_spell_count = 0
+        for row in visible_rows:
+            existence_counts_by_name[row.existence] = (
+                existence_counts_by_name.get(row.existence, 0) + 1
+            )
+            disposal_key = (row.existence, row.has_disposal_methods)
+            existence_disposal_counts_by_name[disposal_key] = (
+                existence_disposal_counts_by_name.get(disposal_key, 0) + 1
+            )
+            if row.has_disposal_methods:
+                disposal_enabled_spell_count += 1
+
+        return SpellExistenceOccurrenceAnalysis(
+            root_existence=existence_by_spell_id.get(root_spell_id),
+            total_spell_count=len(visible_rows),
+            spell_existence_rows=visible_rows,
+            existence_counts=tuple(existence_counts_by_name.items()),
+            disposal_enabled_spell_count=disposal_enabled_spell_count,
+            existence_disposal_counts=tuple(
+                existence_disposal_counts_by_name.items()
+            ),
+        )
 
     @staticmethod
     def _build_spell_walk_rows(
