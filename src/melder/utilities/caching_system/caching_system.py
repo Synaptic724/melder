@@ -75,7 +75,15 @@ class CachingSystem(Cleanable):
     # (GC-untracked resident cache; see class contract). Version 2 carried
     # decoded manifest-package dicts; version 1 carried legacy executor
     # shapes. Older bundles are treated as cold cache and regenerated.
-    CURRENT_VERSION: ClassVar[int] = 6
+    CACHE_VERSION_HISTORY: ClassVar[Mapping[int, str]] = MappingProxyType({
+        1: "legacy_executor_payloads",
+        2: "decoded_manifest_package_payloads",
+        3: "nested_marshal_spell_payload_bytes",
+        4: "generalized_collection_param_names",
+        5: "many_only_collection_param_names",
+        6: "zero_provider_required_collections",
+    })
+    CURRENT_VERSION: ClassVar[int] = max(CACHE_VERSION_HISTORY)
     BUNDLE_SUFFIX: ClassVar[str] = ".melc"
 
     __slots__ = Cleanable.__slots__ + [
