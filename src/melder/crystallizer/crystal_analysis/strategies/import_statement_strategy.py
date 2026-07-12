@@ -29,8 +29,11 @@ class ImportStatementStrategy(CrystalFactStrategy):
         - Appends alias names verbatim (dotted names included); the
           analyzer owns deduplication on merge.
         - Nested imports (inside functions/classes) are captured because
-        the analyzer dispatch walks the full tree, mirroring the
-        historical `ast.walk` extraction.
+          the analyzer dispatch walks the full tree, mirroring the
+          historical `ast.walk` extraction.
+        - Each matching node also appends one value-only memo event with kind
+          `import`, relative level zero, no raw module name, and the alias
+          names as a tuple. No AST node or alias object enters that event.
     """
 
     __slots__ = ()
@@ -49,6 +52,16 @@ class ImportStatementStrategy(CrystalFactStrategy):
         """
         Append `import` alias names to the flat candidate list.
 
+        Purpose:
+            Feed both immediate cold-path dependency extraction and the
+            ordered value stream used by later memo hits.
+
+        Contract:
+            - Non-Import nodes leave the context unchanged.
+            - Matching aliases remain in source order, including dotted names.
+            - The immutable event is appended before the mutable flat targets,
+              preserving one event per AST node.
+
         Args:
             node:
                 Current node from the shared walk.
@@ -57,6 +70,13 @@ class ImportStatementStrategy(CrystalFactStrategy):
 
         Returns:
             None.
+
+        Threading:
+            Mutates one thread-confined FactContext; no shared cache is touched.
+
+        Lifecycle / Cleanup:
+            The context owns both accumulators until the analyzer freezes
+            memo values and cleans the context.
         """
         if not isinstance(node, ast.Import):
             return

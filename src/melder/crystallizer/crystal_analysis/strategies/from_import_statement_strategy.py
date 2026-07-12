@@ -39,6 +39,12 @@ class FromImportStatementStrategy(CrystalFactStrategy):
         - Star imports are recorded in the member map but never probed.
         - Candidate order per node: probed member submodules first (in
           alias order), then the base module.
+        - Every matching node first records a raw value event containing its
+          relative level, unresolved module name, and alias-name tuple.
+          Recording occurs even when the live relative base cannot resolve.
+        - Memo replay consumes that raw event and repeats relative resolution
+          plus find_spec probing; only source-stable syntax is reused.
+        - Events retain no AST node, alias object, module, or spec reference.
     """
 
     __slots__ = ()
@@ -57,6 +63,17 @@ class FromImportStatementStrategy(CrystalFactStrategy):
         """
         Resolve one from-import node into candidates and member entries.
 
+        Purpose:
+            Capture source syntax separately from the live environment
+            decisions needed for the current dependency graph.
+
+        Contract:
+            - Non-ImportFrom nodes leave the context unchanged.
+            - The raw immutable event is appended before resolution.
+            - Relative bases and candidate submodules resolve live.
+            - A failed find_spec probe means only that the member is not
+              promoted to a submodule candidate; the base/member map remains.
+
         Args:
             node:
                 Current node from the shared walk.
@@ -65,6 +82,13 @@ class FromImportStatementStrategy(CrystalFactStrategy):
 
         Returns:
             None.
+
+        Threading:
+            Mutates one thread-confined FactContext. find_spec observes the
+            process import environment but no cache lock is held.
+
+        Lifecycle / Cleanup:
+            The context owns the event until the analyzer freezes its values.
         """
         if not isinstance(node, ast.ImportFrom):
             return
@@ -117,6 +141,15 @@ class FromImportStatementStrategy(CrystalFactStrategy):
         """
         Resolve one relative import target into an absolute module name.
 
+        Purpose:
+            Use one historical resolution rule for cold extraction and
+            memo-event replay.
+
+        Contract:
+            Calls importlib.util.resolve_name with the supplied package.
+            Resolution failures are treated as an honest unresolved base and
+            return None; no module is imported or retained here.
+
         Args:
             current_package:
                 Package context of the module being parsed.
@@ -127,6 +160,9 @@ class FromImportStatementStrategy(CrystalFactStrategy):
             Optional[str]:
                 Absolute module name, or None when the relative path
                 cannot be resolved safely.
+
+        Threading:
+            Stateless resolution; no strategy or memo state is mutated.
         """
         try:
             return importlib.util.resolve_name(

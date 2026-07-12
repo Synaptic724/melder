@@ -45,12 +45,22 @@ class FactContext(Cleanable):
           sequence produced by `ast.walk`; each event contains only strings,
           integers, and tuples so the analyzer may memoize it without
           retaining AST nodes or live module objects.
+        - Each import event has the shape (kind, relative level, raw module
+          name, imported-name tuple). Strategies append events in the same
+          mixed order used for immediate dependency extraction.
+        - `export_all_declared` and `export_public_names` carry the
+          export strategy's value output to the analyzer for freezing.
+        - Source text and the AST are transient cold-path inputs; neither is
+          copied into the shared memo.
 
     Threading:
         Thread-confined to one analyzer pass; no locks.
 
     Lifecycle / Cleanup:
-        Cleaned by the analyzer immediately after the module is recorded.
+        Cleaned by the analyzer in a finally block after the module is
+        recorded. On a memo-eligible cold path, the analyzer first freezes
+        event/export values into tuples, then cleanup deletes every transient
+        source, AST, and accumulator reference.
     """
 
     __slots__ = (
@@ -76,6 +86,17 @@ class FactContext(Cleanable):
         """
         Initialize one per-module fact context.
 
+        Purpose:
+            Provide the default strategies one ordered, thread-confined
+            workspace for cold-path extraction.
+
+        Contract:
+            - Stores source text and the parsed AST only for this module pass.
+            - Allocates fresh dependency, import-event, and export-name
+              accumulators; no collection is shared across modules.
+            - Import/export accumulators are mutable only while strategies run.
+            - Construction does not access or publish to the analyzer memo.
+
         Args:
             module_name:
                 Canonical module name being analyzed.
@@ -90,6 +111,14 @@ class FactContext(Cleanable):
 
         Returns:
             None.
+
+        Threading:
+            No lock is allocated; the constructing analyzer thread becomes the
+            sole owner.
+
+        Lifecycle / Cleanup:
+            The analyzer retains this context only for one cold module pass
+            and releases it from the enclosing finally block.
         """
         super().__init__()
         self._module_name: str = module_name
@@ -106,8 +135,25 @@ class FactContext(Cleanable):
         """
         Idempotently release the context's retained references.
 
+        Contract:
+            - Repeated calls return immediately.
+            - Deletes source text, the AST, identity/package fields, and every
+              mutable accumulator.
+            - Any memoized facts have already been detached as immutable
+              tuples by the analyzer; cleanup cannot invalidate them.
+            - The context is unusable after cleanup.
+
         Returns:
             None.
+
+        Threading:
+            Must run on the owning analyzer thread with no concurrent strategy
+            access.
+
+        Lifecycle / Cleanup:
+            The analyzer owns this context from construction through the
+            enclosing finally block and must call cleanup exactly as the
+            cold-path contract requires.
         """
         if self._cleaned:
             return

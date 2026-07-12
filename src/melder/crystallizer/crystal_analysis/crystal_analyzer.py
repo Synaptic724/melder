@@ -88,11 +88,28 @@ class CrystalAnalyzer(Cleanable):
           match classifies the module - the order [synthetic, user_source,
           site_package, fallback] reproduces the historical
           `_classify_module_target` decision table exactly.
-        - Each module's AST is walked ONCE; nodes dispatch to every fact
-          strategy in registration order, preserving the historical
-          single-pass extraction order (manifest-order parity).
+        - On a memo miss or custom-strategy path, each parsed module AST is
+          walked ONCE and nodes dispatch in strategy registration order,
+          preserving historical manifest ordering. Memo hits skip AST work.
         - The analyzer is the only writer of manifest-structural records
           (module targets); strategies write only their own fact channels.
+        - The default fact-strategy family participates in a shared bounded
+          LRU keyed by the analysis-fact schema version and SHA-256 of current
+          source text. Explicitly supplied fact strategies bypass that memo
+          because their purity and environment dependencies are unknown.
+        - Memo entries contain only ordered import-event descriptors and
+          export-name tuples. They never retain source text, AST nodes,
+          modules, paths, functions, classes, crystals, analysis results, or
+          strategy instances, so the memo cannot extend those objects'
+          lifetimes or interfere with module garbage collection.
+        - A cache hit replays plain imports but resolves relative imports and
+          probes member submodules against the live package environment.
+          Custody classification, source resolution, source fingerprinting,
+          dependency traversal, provenance capture, and result construction
+          therefore remain current on every analysis.
+        - Source edits invalidate entries naturally because the digest changes;
+          fact-schema changes invalidate them by incrementing
+          '_MEMOIZED_MODULE_FACT_SCHEMA_VERSION'.
 
     Threading:
         Each analyzer instance is thread-confined to its caller. The shared
@@ -107,6 +124,9 @@ class CrystalAnalyzer(Cleanable):
         survives individual analyzer cleanup.
     """
 
+    # Process-local memo of immutable syntax facts. Capacity bounds retained
+    # value data; LRU eviction releases only tuples/strings and has no effect
+    # on imported modules or their sys.modules residency.
     _MEMOIZED_MODULE_FACT_SCHEMA_VERSION = 1
     _MAX_MEMOIZED_MODULE_FACTS = 2048
     _memoized_module_fact_lock = threading.RLock()
@@ -136,6 +156,22 @@ class CrystalAnalyzer(Cleanable):
         """
         Initialize one analyzer with its strategy families.
 
+        Purpose:
+            Bind one analysis pass to explicit custody policy and fact
+            strategies while selecting whether the safe default-strategy memo
+            may participate.
+
+        Contract:
+            - Strategy sequences are copied into analyzer-owned lists; callers
+              retain ownership only of any objects they supplied explicitly.
+            - Omitting fact strategies installs the known default family and
+              enables value-only syntax memoization.
+            - Supplying any fact-strategy sequence, including an empty one,
+              disables memoization rather than assuming custom behavior is
+              source-pure.
+            - Construction does not read modules, parse source, or populate
+              the shared memo; work begins at an analysis entry point.
+
         Args:
             user_source_root_paths:
                 Resolved roots defining `user_source` authority (policy
@@ -159,6 +195,14 @@ class CrystalAnalyzer(Cleanable):
 
         Returns:
             None.
+
+        Threading:
+            The constructed analyzer is thread-confined. Shared memo locking
+            occurs only if a later live analysis uses the default strategies.
+
+        Lifecycle / Cleanup:
+            The analyzer owns its strategy instances and must be cleaned after
+            its single analysis pass. It does not own the class-level memo.
         """
         super().__init__()
         self._retain_user_sources: bool = bool(retain_user_sources)
@@ -186,8 +230,26 @@ class CrystalAnalyzer(Cleanable):
         """
         Idempotently clean owned strategies (children first), then fields.
 
+        Contract:
+            - Repeated calls return without touching deleted fields.
+            - Cleans every owned custody and fact strategy before deleting the
+              owned strategy lists and memo-eligibility flag.
+            - Does not clear, mutate, or otherwise own the shared memoized
+              syntax facts; they remain available to later analyzer instances.
+            - After cleanup, live analysis methods are invalid through the
+              inherited Cleanable contract.
+
         Returns:
             None.
+
+        Threading:
+            Analyzer instances are thread-confined; callers must not race
+            cleanup with active analysis.
+
+        Lifecycle / Cleanup:
+            Child strategies are released first. The process-local memo keeps
+            only immutable values and follows its independent bounded-LRU
+            lifetime.
         """
         if self._cleaned:
             return
@@ -204,6 +266,10 @@ class CrystalAnalyzer(Cleanable):
     def _clear_memoized_module_facts_for_tests(cls) -> None:
         """
         Clear the shared syntax-fact memo for deterministic test isolation.
+
+        Purpose:
+            Give regression tests a known empty memo without coupling normal
+            analyzer cleanup to shared-cache lifetime.
 
         Contract:
             This test-only hook removes value entries and resets counters. It
@@ -224,6 +290,15 @@ class CrystalAnalyzer(Cleanable):
     def _memoized_module_fact_stats_for_tests(cls) -> Dict[str, int]:
         """
         Return detached counters for memoization regression assertions.
+
+        Purpose:
+            Expose deterministic observability for tests without returning the
+            mutable OrderedDict or its lock.
+
+        Contract:
+            The returned dictionary is newly allocated and contains exactly
+            size, capacity, hits, and misses as integer values. Mutating it
+            cannot affect the memo.
 
         Returns:
             Dict[str, int]:
@@ -247,6 +322,18 @@ class CrystalAnalyzer(Cleanable):
     ) -> Optional[MemoizedModuleFacts]:
         """
         Look up immutable syntax facts for the current source digest.
+
+        Purpose:
+            Reuse source-derived work across independent analyzer instances
+            while preserving live custody and import-environment decisions.
+
+        Contract:
+            - The effective key combines the fact-schema version with the
+              supplied digest.
+            - A miss increments misses and returns None without publishing.
+            - A hit promotes the entry to most-recently-used, increments hits,
+              and returns the immutable tuple already stored.
+            - Lookup never stores source text or receives a module reference.
 
         Args:
             source_digest:
@@ -280,6 +367,10 @@ class CrystalAnalyzer(Cleanable):
         """
         Publish one immutable syntax-fact entry into the bounded LRU.
 
+        Purpose:
+            Make a completed cold-path extraction reusable without retaining
+            any live analysis machinery.
+
         Contract:
             Concurrent misses may compute the same deterministic value. The
             first published value wins; later publishers only promote it.
@@ -297,6 +388,11 @@ class CrystalAnalyzer(Cleanable):
 
         Threading:
             Publication and eviction are serialized by the memo lock.
+
+        Lifecycle / Cleanup:
+            Entries survive analyzer-instance cleanup and remain until LRU
+            eviction or the explicit test reset. Eviction releases value data
+            only; it never unloads or destroys a Python module.
         """
         key = (cls._MEMOIZED_MODULE_FACT_SCHEMA_VERSION, source_digest)
         with cls._memoized_module_fact_lock:
@@ -314,6 +410,14 @@ class CrystalAnalyzer(Cleanable):
     def _source_digest(source_text: str) -> str:
         """
         Return the memo key digest without retaining the source text.
+
+        Purpose:
+            Create a stable content identity for safe syntax-fact reuse without
+            placing the source itself in the memo key or value.
+
+        Contract:
+            Encodes source as UTF-8 and returns the lowercase SHA-256
+            hexadecimal digest. The method is pure and retains no state.
 
         Args:
             source_text:
@@ -734,7 +838,12 @@ class CrystalAnalyzer(Cleanable):
             module_path: Optional[Path],
     ) -> Tuple[List[str], Dict[str, List[str]]]:
         """
-        Resolve source, run one shared AST pass, and collect fact output.
+        Resolve current source, reuse or derive syntax facts, and collect
+        module output.
+
+        Purpose:
+            Reuse source-stable syntax work without weakening the analyzer's
+            live custody, import-resolution, provenance, or result contracts.
 
         Contract:
             - Source/read errors and AST parse failures land in the
@@ -742,6 +851,20 @@ class CrystalAnalyzer(Cleanable):
               empty facts in those cases (historical behavior).
             - Custody fingerprints record only when the strategy makes a
               claim (user_source in S1).
+            - Source is resolved on every call. Empty or unavailable source
+              returns empty dependency facts and never enters the memo.
+            - Default strategies look up the current source digest before
+              parsing. Hits skip AST construction and replay immutable facts
+              into the fresh result.
+            - Misses parse once, dispatch every node in historical order, and
+              freeze only ordered import descriptors and export-name values.
+            - Explicit custom fact strategies bypass lookup and publication;
+              their behavior is never assumed to be source-pure.
+            - Relative imports and member-submodule find_spec probes remain
+              live on memo hits, while plain import names and static exports
+              replay from source-derived values.
+            - The cache never receives module_obj, module_path, source_text,
+              syntax_tree, FactContext, or result.
 
         Args:
             result:
@@ -759,6 +882,18 @@ class CrystalAnalyzer(Cleanable):
             Tuple[List[str], Dict[str, List[str]]]:
                 Deduplicated flat dependency candidates (first-seen order)
                 and the `from ... import ...` diagnostics map.
+
+        Raises:
+            RuntimeError:
+                If a memo entry contains an unknown internal event kind.
+
+        Threading:
+            The analyzer instance and result are thread-confined. Shared memo
+            lookup/publication uses the class lock; parsing occurs outside it.
+
+        Lifecycle / Cleanup:
+            Cold-path FactContext ownership is released in a finally block.
+            Memo hits allocate a fresh export record and retain no result.
         """
         source_text, error_text = custody.resolve_source(
             module_name=module_name,
@@ -848,11 +983,24 @@ class CrystalAnalyzer(Cleanable):
         """
         Replay immutable syntax facts against the live import environment.
 
+        Purpose:
+            Reconstruct the default strategies' observable module facts on a
+            cache hit without rebuilding or retaining an AST.
+
         Contract:
             Plain imports replay verbatim. From-import bases, relative names,
             and member-submodule probes are resolved again for every analysis,
             so memoization cannot freeze find_spec or package-context truth.
             A fresh result receives a detached export-surface record.
+            Import events retain mixed AST-walk order and have the value-only
+            shape (kind, relative level, raw module name, imported-name tuple).
+            Star members enter diagnostics but are never probed as submodules.
+            Unknown relative bases are skipped exactly as on the cold path.
+            Input tuples are never mutated; output lists/dictionaries and the
+            export-surface record are newly allocated for the current result.
+            The method never explicitly unloads, destroys, or retains a
+            module. Any import-system side effects come only from the same
+            find_spec probing already used by cold analysis.
 
         Args:
             result:
@@ -862,7 +1010,8 @@ class CrystalAnalyzer(Cleanable):
             current_package:
                 Live package context for relative imports.
             facts:
-                Value-only import events and export names.
+                Value-only ordered import events, statically declared
+                __all__ names, and public top-level names.
 
         Returns:
             Tuple[List[str], Dict[str, List[str]]]:
@@ -871,6 +1020,14 @@ class CrystalAnalyzer(Cleanable):
         Raises:
             RuntimeError:
                 If an internally published event has an unknown kind.
+
+        Threading:
+            Called by one thread-confined analyzer. It reads immutable tuples
+            without holding the memo lock.
+
+        Lifecycle / Cleanup:
+            Returned containers and the recorded export surface belong to the
+            current analysis result; no reference back to the memo is stored.
         """
         import_events, all_declared, public_names = facts
         flat_import_targets: List[str] = []
@@ -934,6 +1091,17 @@ class CrystalAnalyzer(Cleanable):
         """
         Detach and deduplicate import outputs with first-seen ordering.
 
+        Purpose:
+            Normalize cold and warm extraction paths through the same ordering
+            and ownership boundary before module facts enter a result.
+
+        Contract:
+            - Preserves the first occurrence of each flat dependency.
+            - Preserves mapping insertion order and member order.
+            - Never mutates either input collection.
+            - Always returns new list and dictionary containers, so callers
+              cannot mutate strategy accumulators or memoized tuples.
+
         Args:
             flat_import_targets:
                 Dependency candidates in AST visit order.
@@ -943,6 +1111,9 @@ class CrystalAnalyzer(Cleanable):
         Returns:
             Tuple[List[str], Dict[str, List[str]]]:
                 First-seen dependency candidates and detached member lists.
+
+        Threading:
+            Pure value transformation; no shared analyzer state is accessed.
         """
         deduped_targets: List[str] = []
         seen_targets: Set[str] = set()

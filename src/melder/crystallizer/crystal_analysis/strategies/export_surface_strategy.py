@@ -43,6 +43,11 @@ class ExportSurfaceStrategy(CrystalFactStrategy):
         - Records via `result.record_export_surface` in `analyze_module`
           (module-scoped fact; the analyzer remains the recorder for
           manifest-structural facts only).
+        - Publishes the same ordered value lists through FactContext so the
+          analyzer can freeze them into a memo entry after all strategies
+          complete.
+        - Memo replay records fresh lists into a fresh result; neither the AST
+          nor the cold-path result is retained by the memo.
     """
 
     __slots__ = ()
@@ -65,6 +70,17 @@ class ExportSurfaceStrategy(CrystalFactStrategy):
         """
         Record the module's static export surface into the result.
 
+        Purpose:
+            Produce one export truth that serves the current result and the
+            source-stable memo value without analyzing the module twice.
+
+        Contract:
+            - Reads only top-level statements from the context's parsed tree.
+            - Records newly built ordered lists in the current result.
+            - Assigns those same lists to the thread-confined context for
+              analyzer-side tuple freezing after strategy completion.
+            - Does not access or publish the shared memo directly.
+
         Args:
             context:
                 Shared per-module accumulator carrying the parsed tree.
@@ -73,6 +89,14 @@ class ExportSurfaceStrategy(CrystalFactStrategy):
 
         Returns:
             None.
+
+        Threading:
+            Mutates one thread-confined FactContext and result; no shared lock
+            is required.
+
+        Lifecycle / Cleanup:
+            The result detaches the recorded values. Context lists are deleted
+            when the analyzer cleans the module context.
         """
         module_body = getattr(context.syntax_tree, "body", [])
         all_declared: List[str] = []
