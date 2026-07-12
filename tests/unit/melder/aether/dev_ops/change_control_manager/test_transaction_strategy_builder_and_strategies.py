@@ -996,17 +996,24 @@ def test_remove_from_index_transaction_strategy_seals_spellbook_conduit_binding_
 
 class _RecordingGateOps:
     """
-    Records lineage drain/reopen calls for cluster-leader coordination tests.
+    Records lineage drain/quiesce/reopen calls for cluster-leader
+    coordination tests (park-mode freeze since patch
+    notch_conduit_gate_freeze_2026_07_12).
     """
 
     def __init__(self) -> None:
-        """Start with empty drain and reopen logs."""
+        """Start with empty drain, quiesce, and reopen logs."""
         self.closed: list = []
+        self.quiesced: list = []
         self.enabled: list = []
 
     def close_and_wait_conduit_lineage(self, root_id: str) -> None:
-        """Record a drain request for one root lineage."""
+        """Record a terminal drain request for one root lineage."""
         self.closed.append(root_id)
+
+    def quiesce_conduit_lineage(self, root_id: str) -> None:
+        """Record a park-mode freeze+drain request for one root lineage."""
+        self.quiesced.append(root_id)
 
     def enable_conduit_lineage(self, root_id: str) -> None:
         """Record a reopen request for one root lineage."""

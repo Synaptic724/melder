@@ -195,14 +195,16 @@ class SqliteMeshAdapter(Cleanable):
         """
         self.check_cleaned()
         document = json.dumps(payload)
-        with self._connection() as connection:
+        # closing() guarantees the deterministic close (never left to GC);
+        # the inner `connection` context scopes the transaction (commit on
+        # success, rollback on error).
+        with closing(self._connection()) as connection, connection:
             connection.execute(
                 f"INSERT OR REPLACE INTO {self._table_name} "
                 "(kind, profile_name, unit_id, payload) "
                 "VALUES (?, ?, ?, ?)",
                 (kind, profile_name, unit_id, document),
             )
-            connection.commit()
 
     def fetch_unit(
             self,
@@ -230,7 +232,7 @@ class SqliteMeshAdapter(Cleanable):
             sqlite3.Error: Propagated on read failure.
         """
         self.check_cleaned()
-        with self._connection() as connection:
+        with closing(self._connection()) as connection:
             row = connection.execute(
                 f"SELECT payload FROM {self._table_name} "
                 "WHERE kind = ? AND unit_id = ?",
@@ -266,7 +268,7 @@ class SqliteMeshAdapter(Cleanable):
             sqlite3.Error: Propagated on read failure.
         """
         self.check_cleaned()
-        with self._connection() as connection:
+        with closing(self._connection()) as connection:
             rows = connection.execute(
                 f"SELECT unit_id FROM {self._table_name} "
                 "WHERE kind = ? AND profile_name = ? "
@@ -302,13 +304,14 @@ class SqliteMeshAdapter(Cleanable):
             sqlite3.Error: Propagated on delete failure.
         """
         self.check_cleaned()
-        with self._connection() as connection:
+        with closing(self._connection()) as connection, connection:
             cursor = connection.execute(
                 f"DELETE FROM {self._table_name} "
                 "WHERE kind = ? AND unit_id = ?",
                 (kind, unit_id),
             )
-            connection.commit()
+            # Zero rows deleted = nothing to roll back; raising inside the
+            # transaction scope is safe and keeps the strict contract loud.
             if cursor.rowcount == 0:
                 raise KeyError(
                     f"No mesh unit stored for kind={kind!r}, "
@@ -382,11 +385,13 @@ class SqliteMeshAdapter(Cleanable):
         Open one fresh connection for one operation.
 
         Contract:
-            - Connection-per-operation: callers use it as a context
-              manager; sqlite3's context manager handles the
-              transaction, and the connection is closed by the runtime
-              when the object drops (no shared connection ever exists,
-              so no cross-thread reuse can occur).
+            - Connection-per-operation: every verb wraps the result in
+              `contextlib.closing(...)` so the close is DETERMINISTIC
+              (never left to GC); write verbs additionally use the
+              connection's own context manager for transaction scope
+              (commit on success, rollback on error). No shared
+              connection ever exists, so no cross-thread reuse can
+              occur.
 
         Returns:
             sqlite3.Connection: A fresh connection to the bound file.
@@ -412,7 +417,7 @@ class SqliteMeshAdapter(Cleanable):
         Raises:
             sqlite3.Error: Propagated when schema creation fails.
         """
-        with self._connection() as connection:
+        with closing(self._connection()) as connection, connection:
             connection.execute(
                 f"CREATE TABLE IF NOT EXISTS {self._table_name} ("
                 "kind TEXT NOT NULL, "
@@ -426,4 +431,3 @@ class SqliteMeshAdapter(Cleanable):
                 f"idx_{self._table_name}_kind_profile "
                 f"ON {self._table_name} (kind, profile_name)"
             )
-            connection.commit()
