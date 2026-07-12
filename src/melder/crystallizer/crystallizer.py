@@ -1133,7 +1133,23 @@ class Crystallizer(Cleanable):
         if active:
             module.publish_to_sys_modules()
         elif self._configuration.remove_inactive_synthmodules:
-            module.unpublish_from_sys_modules()
+            # R11 (patch persistence_loop_load_order_r11_2026_07_12):
+            # reverse-edge-aware unseed - a parked module with LIVE
+            # synthetic dependents stays resident; unpublishing it would
+            # strand their next lazy/deferred import mid-flight. The
+            # registry is the checkable live surface (physical importers
+            # cannot be enumerated at runtime; their edges are recorded
+            # at analysis time and governed by the hot-swap law).
+            if SyntheticModule.has_live_synthetic_dependents(module_name):
+                self._logger.info(
+                    "Park kept module '{0}' resident: live synthetic "
+                    "dependents exist (R11 reverse-edge law).".format(
+                        module_name,
+                    ),
+                    "record_spell_activity",
+                )
+            else:
+                module.unpublish_from_sys_modules()
 
     def emit(self, twin: Cleanable) -> None:
         """

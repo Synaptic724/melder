@@ -1347,6 +1347,41 @@ class SyntheticModule(ModuleType):
             if not module.cleaned:
                 module.unpublish_from_sys_modules()
 
+    @classmethod
+    def has_live_synthetic_dependents(cls, module_name: str) -> bool:
+        """
+        Report whether any OTHER live published module depends on one name.
+
+        Purpose:
+            The R11 reverse-edge check: before a park unseeds a synthetic
+            module, callers ask whether the registry holds a different,
+            non-cleaned, currently PUBLISHED module whose declared internal
+            dependencies name the target - if so, the target must stay
+            resident so dependent deferred imports keep resolving.
+
+        Contract:
+            - Registry scan under the class registry lock; read-only.
+            - Only PUBLISHED dependents count: an unpublished/parked
+              dependent no longer holds the import surface open.
+
+        Args:
+            module_name:
+                Canonical module name being considered for unseed.
+
+        Returns:
+            bool: True when at least one live published dependent exists.
+        """
+        with cls._registry_lock:
+            registered = list(cls._registered_modules_by_name.values())
+        for candidate in registered:
+            if candidate.cleaned or candidate.__name__ == module_name:
+                continue
+            if not candidate._published_in_sys_modules:
+                continue
+            if module_name in candidate._internal_dependency_names:
+                return True
+        return False
+
     def describe(self) -> Dict[str, Any]:
         """
         Return a snapshot of the live synthetic module state.

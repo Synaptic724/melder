@@ -7,8 +7,10 @@ graft lane needs the identical behavior against a live host, so the
 mechanics live here as one free function with collector callbacks - the
 engine keeps its all-or-nothing built-stack semantics, the graft runner
 keeps its shortfall rows, and the LAWS stay in exactly one place: the
-live file always wins, sys.modules entries are never masked, parents
-build before children, every rebuild files the honest shortfall.
+live file always wins, sys.modules entries are never masked, modules
+build in the crystal's recorded topological load order (dot-depth
+parents-first as the pre-load-order fallback), every rebuild files the
+honest shortfall.
 """
 
 import sys
@@ -36,7 +38,8 @@ def rebuild_absent_user_modules(
         - THE LIVE FILE ALWAYS WINS: a retained module whose recorded
           backing path still exists is NEVER rebuilt from text; modules
           already in sys.modules are skipped.
-        - Parents build before children (dot-depth order); every rebuilt
+        - Modules build in recorded `module_load_order` when the crystal
+          carries it (dot-depth fallback otherwise); every rebuilt
           module is handed to `on_built` (teardown custody is the
           CALLER'S semantics - the engine stacks for all-or-nothing, the
           graft runner keeps them as normal user activity) and files
@@ -66,9 +69,21 @@ def rebuild_absent_user_modules(
     if not sources:
         return False
     rebuilt_any = False
-    for module_name in sorted(
-            sources.keys(), key=lambda name: (name.count("."), name)
-    ):
+    # load_order residue fix (patch persistence_loop_load_order_r11_2026_07_12):
+    # the crystal's topological module_load_order is the true dependency
+    # order when present - dot-depth is only the fallback for payloads
+    # sealed before the analysis service recorded load order. Names the
+    # order does not know still rebuild, appended in dot-depth order.
+    recorded_order = [
+        str(name)
+        for name in crystal.get("module_load_order", [])
+        if str(name) in sources
+    ]
+    unordered_names = sorted(
+        (name for name in sources.keys() if name not in set(recorded_order)),
+        key=lambda name: (name.count("."), name),
+    )
+    for module_name in (*recorded_order, *unordered_names):
         if module_name in sys.modules:
             continue
         payload = dict(sources[module_name])
