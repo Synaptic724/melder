@@ -60,5 +60,7 @@ class ImportStatementStrategy(CrystalFactStrategy):
         """
         if not isinstance(node, ast.Import):
             return
+        alias_names = tuple(alias.name for alias in node.names)
+        context.import_events.append(("import", 0, None, alias_names))
         for alias in node.names:
             context.flat_import_targets.append(alias.name)

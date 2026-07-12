@@ -68,6 +68,14 @@ class FromImportStatementStrategy(CrystalFactStrategy):
         """
         if not isinstance(node, ast.ImportFrom):
             return
+        context.import_events.append(
+            (
+                "from",
+                node.level,
+                node.module,
+                tuple(alias.name for alias in node.names),
+            )
+        )
         if node.level > 0:
             relative_name = "." * node.level
             if node.module:

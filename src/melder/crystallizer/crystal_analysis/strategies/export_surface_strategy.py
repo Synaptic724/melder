@@ -111,6 +111,8 @@ class ExportSurfaceStrategy(CrystalFactStrategy):
             all_declared,
             public_names,
         )
+        context.export_all_declared = all_declared
+        context.export_public_names = public_names
 
     @staticmethod
     def _append_public(

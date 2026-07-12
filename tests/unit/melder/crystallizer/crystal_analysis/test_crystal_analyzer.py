@@ -5,7 +5,11 @@ drift detection, and payload validation honesty.
 
 Runs only on 3.14t (melder package root import chain).
 """
+import importlib
 import sys
+from pathlib import Path
+
+import pytest
 
 from melder.crystallizer.crystal_analysis.crystal_analyzer import (
     CrystalAnalyzer,
@@ -243,3 +247,269 @@ def test_unresolvable_imports_stay_honest_unknown_leaves(tmp_path):
         ] == "unknown"
     finally:
         result.cleanup()
+
+
+def _assert_memo_value_only(value: object) -> None:
+    """
+    Assert recursively that a memoized value cannot retain runtime objects.
+
+    Args:
+        value:
+            Cache key or fact payload being inspected.
+
+    Returns:
+        None.
+
+    Raises:
+        AssertionError:
+            If the value is not None, an integer, a string, or a tuple made
+            exclusively from those value types.
+    """
+    if value is None or isinstance(value, (int, str)):
+        return
+    assert isinstance(value, tuple)
+    for item in value:
+        _assert_memo_value_only(item)
+
+
+def test_memoized_facts_survive_analyzer_cleanup_and_preserve_payload_order(
+        tmp_path: Path,
+        monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """
+    Regression: repeated analyses reuse syntax facts after the first analyzer
+    is cleaned while producing an identical, independently owned payload.
+    """
+    CrystalAnalyzer._clear_memoized_module_facts_for_tests()
+    package_name = "t7memoorderpkg"
+    package_dir = _build_package(tmp_path, package_name)
+    root_name = "{0}.rootmod".format(package_name)
+    missing_a = "t7memo_missing_a"
+    missing_b = "t7memo_missing_b"
+    (package_dir / "rootmod.py").write_text(
+        "import {0}\n"
+        "from {1} import helper\n"
+        "def delayed():\n"
+        "    import {2}\n"
+        "class Root:\n"
+        "    pass\n".format(missing_a, package_name, missing_b),
+        encoding="utf-8",
+    )
+    monkeypatch.syspath_prepend(str(tmp_path))
+
+    try:
+        first = _analyze(tmp_path, package_name)
+        try:
+            first_payload = first.describe()
+            assert first.module_to_direct_dependencies[root_name] == [
+                missing_a,
+                "{0}.helper".format(package_name),
+                package_name,
+                missing_b,
+            ]
+        finally:
+            first.cleanup()
+        cold_stats = CrystalAnalyzer._memoized_module_fact_stats_for_tests()
+        assert cold_stats["misses"] > 0
+        assert cold_stats["hits"] == 0
+
+        second = _analyze(tmp_path, package_name)
+        try:
+            assert second.describe() == first_payload
+        finally:
+            second.cleanup()
+        warm_stats = CrystalAnalyzer._memoized_module_fact_stats_for_tests()
+        assert warm_stats["misses"] == cold_stats["misses"]
+        assert warm_stats["hits"] == cold_stats["misses"]
+    finally:
+        CrystalAnalyzer._clear_memoized_module_facts_for_tests()
+
+
+def test_source_edit_invalidates_only_changed_memoized_module_facts(
+        tmp_path: Path,
+        monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """
+    Regression: changing one dependency source misses that entry while
+    unchanged modules continue to reuse their memoized syntax facts.
+    """
+    CrystalAnalyzer._clear_memoized_module_facts_for_tests()
+    package_name = "t7memodriftpkg"
+    package_dir = _build_package(tmp_path, package_name)
+    helper_name = "{0}.helper".format(package_name)
+    monkeypatch.syspath_prepend(str(tmp_path))
+
+    try:
+        before = _analyze(tmp_path, package_name)
+        try:
+            assert "Helper" in before.export_surfaces[helper_name]["public_names"]
+        finally:
+            before.cleanup()
+        cold_stats = CrystalAnalyzer._memoized_module_fact_stats_for_tests()
+
+        (package_dir / "helper.py").write_text(
+            "__all__ = [\"Changed\"]\n"
+            "class Changed:\n"
+            "    pass\n",
+            encoding="utf-8",
+        )
+        after = _analyze(tmp_path, package_name)
+        try:
+            assert "Changed" in after.export_surfaces[helper_name]["public_names"]
+            assert "Helper" not in after.export_surfaces[helper_name]["public_names"]
+        finally:
+            after.cleanup()
+
+        drift_stats = CrystalAnalyzer._memoized_module_fact_stats_for_tests()
+        assert drift_stats["misses"] == cold_stats["misses"] + 1
+        assert drift_stats["hits"] >= 1
+    finally:
+        CrystalAnalyzer._clear_memoized_module_facts_for_tests()
+
+
+def test_from_import_submodule_probe_remains_live_on_memo_hit(
+        tmp_path: Path,
+        monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """
+    Regression: a cached from-import descriptor reruns find_spec, allowing a
+    newly created submodule to enter the current dependency graph.
+    """
+    CrystalAnalyzer._clear_memoized_module_facts_for_tests()
+    package_name = "t7memoprobepkg"
+    package_dir = tmp_path / package_name
+    package_dir.mkdir()
+    (package_dir / "__init__.py").write_text("", encoding="utf-8")
+    (package_dir / "rootmod.py").write_text(
+        "from {0} import maybe_child\n".format(package_name),
+        encoding="utf-8",
+    )
+    root_name = "{0}.rootmod".format(package_name)
+    child_name = "{0}.maybe_child".format(package_name)
+    monkeypatch.syspath_prepend(str(tmp_path))
+
+    try:
+        before = _analyze(tmp_path, package_name)
+        try:
+            assert child_name not in before.module_to_direct_dependencies[root_name]
+        finally:
+            before.cleanup()
+        cold_stats = CrystalAnalyzer._memoized_module_fact_stats_for_tests()
+
+        (package_dir / "maybe_child.py").write_text(
+            "VALUE = 1\n",
+            encoding="utf-8",
+        )
+        importlib.invalidate_caches()
+
+        after = _analyze(tmp_path, package_name)
+        try:
+            assert child_name in after.module_to_direct_dependencies[root_name]
+        finally:
+            after.cleanup()
+        warm_stats = CrystalAnalyzer._memoized_module_fact_stats_for_tests()
+        assert warm_stats["hits"] > cold_stats["hits"]
+    finally:
+        CrystalAnalyzer._clear_memoized_module_facts_for_tests()
+
+
+def test_memoized_facts_contain_values_only(
+        tmp_path: Path,
+        monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """
+    Contract: cache entries contain no modules, AST nodes, source text,
+    functions, classes, paths, crystals, results, or other runtime objects.
+    """
+    CrystalAnalyzer._clear_memoized_module_facts_for_tests()
+    package_name = "t7memovaluepkg"
+    _build_package(tmp_path, package_name)
+    monkeypatch.syspath_prepend(str(tmp_path))
+
+    try:
+        result = _analyze(tmp_path, package_name)
+        result.cleanup()
+        with CrystalAnalyzer._memoized_module_fact_lock:
+            cached_items = tuple(
+                CrystalAnalyzer._memoized_module_facts.items()
+            )
+        assert cached_items
+        for key, facts in cached_items:
+            _assert_memo_value_only(key)
+            _assert_memo_value_only(facts)
+    finally:
+        CrystalAnalyzer._clear_memoized_module_facts_for_tests()
+
+
+def test_custom_fact_strategies_bypass_default_syntax_memo(
+        tmp_path: Path,
+) -> None:
+    """
+    Contract: explicitly supplied fact strategies keep their historical live
+    AST path and never publish assumptions into the default-strategy memo.
+    """
+    CrystalAnalyzer._clear_memoized_module_facts_for_tests()
+    module_file = tmp_path / "custom_fact_module.py"
+    module_file.write_text("VALUE = 1\n", encoding="utf-8")
+    analyzer = CrystalAnalyzer(
+        user_source_root_paths=(tmp_path.resolve(),),
+        site_package_root_paths=(),
+        fact_strategies=(),
+    )
+    try:
+        result = analyzer.analyze_spell_root(
+            root_module_name="custom_fact_module",
+            root_module_obj=None,
+            root_module_path=module_file,
+        )
+    finally:
+        analyzer.cleanup()
+    result.cleanup()
+
+    stats = CrystalAnalyzer._memoized_module_fact_stats_for_tests()
+    assert stats == {
+        "size": 0,
+        "capacity": CrystalAnalyzer._MAX_MEMOIZED_MODULE_FACTS,
+        "hits": 0,
+        "misses": 0,
+    }
+
+
+def test_memoized_fact_cache_evicts_least_recently_used_values(
+        tmp_path: Path,
+        monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """
+    Contract: the shared memo remains bounded and evicts value entries without
+    interacting with analyzed modules or their results.
+    """
+    monkeypatch.setattr(CrystalAnalyzer, "_MAX_MEMOIZED_MODULE_FACTS", 2)
+    CrystalAnalyzer._clear_memoized_module_facts_for_tests()
+    try:
+        for index in range(3):
+            module_name = "bounded_memo_{0}".format(index)
+            module_file = tmp_path / "{0}.py".format(module_name)
+            module_file.write_text(
+                "VALUE_{0} = {0}\n".format(index),
+                encoding="utf-8",
+            )
+            analyzer = CrystalAnalyzer(
+                user_source_root_paths=(tmp_path.resolve(),),
+                site_package_root_paths=(),
+            )
+            try:
+                result = analyzer.analyze_spell_root(
+                    root_module_name=module_name,
+                    root_module_obj=None,
+                    root_module_path=module_file,
+                )
+            finally:
+                analyzer.cleanup()
+            result.cleanup()
+
+        stats = CrystalAnalyzer._memoized_module_fact_stats_for_tests()
+        assert stats["size"] == 2
+        assert stats["capacity"] == 2
+        assert stats["misses"] == 3
+    finally:
+        CrystalAnalyzer._clear_memoized_module_facts_for_tests()

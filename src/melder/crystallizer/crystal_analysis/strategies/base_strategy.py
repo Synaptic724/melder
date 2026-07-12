@@ -12,7 +12,7 @@ Lane: EPIC-2026-07-09-crystallizer-subsystem-decomposition, story S1.
 
 import ast
 from abc import ABC, abstractmethod
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Tuple
 
 from melder.utilities.general_base.cleanable import Cleanable
 
@@ -21,6 +21,9 @@ from melder.utilities.general_base.cleanable import Cleanable
 from melder.crystallizer.crystal_analysis.crystal_analysis_result import (
     CrystalAnalysisResult,
 )
+
+
+ImportEvent = Tuple[str, int, Optional[str], Tuple[str, ...]]
 
 
 class FactContext(Cleanable):
@@ -38,6 +41,10 @@ class FactContext(Cleanable):
           duplicates; the analyzer deduplicates on merge (first-seen wins),
           matching the historical extractor.
         - Value-only besides the parsed `syntax_tree` reference.
+        - `import_events` preserves the mixed `Import` / `ImportFrom`
+          sequence produced by `ast.walk`; each event contains only strings,
+          integers, and tuples so the analyzer may memoize it without
+          retaining AST nodes or live module objects.
 
     Threading:
         Thread-confined to one analyzer pass; no locks.
@@ -53,6 +60,9 @@ class FactContext(Cleanable):
         "_syntax_tree",
         "flat_import_targets",
         "from_import_targets",
+        "import_events",
+        "export_all_declared",
+        "export_public_names",
     )
 
     def __init__(
@@ -88,6 +98,9 @@ class FactContext(Cleanable):
         self._syntax_tree: ast.AST = syntax_tree
         self.flat_import_targets: List[str] = []
         self.from_import_targets: Dict[str, List[str]] = {}
+        self.import_events: List[ImportEvent] = []
+        self.export_all_declared: List[str] = []
+        self.export_public_names: List[str] = []
 
     def cleanup(self) -> None:
         """
@@ -105,6 +118,9 @@ class FactContext(Cleanable):
         del self._syntax_tree
         del self.flat_import_targets
         del self.from_import_targets
+        del self.import_events
+        del self.export_all_declared
+        del self.export_public_names
 
     @property
     def module_name(self) -> str:

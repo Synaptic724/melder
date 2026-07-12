@@ -15,9 +15,12 @@ Lane: EPIC-2026-07-09-crystallizer-subsystem-decomposition, story S1.
 """
 
 import ast
+import hashlib
 import importlib.util
 import site
 import sys
+import threading
+from collections import OrderedDict
 from pathlib import Path
 from typing import Any, Dict, List, Mapping, Optional, Sequence, Set, Tuple, Union
 
@@ -44,6 +47,7 @@ from melder.crystallizer.crystal_analysis.custody.binary_unknown_custody_strateg
 from melder.crystallizer.crystal_analysis.strategies.base_strategy import (
     CrystalFactStrategy,
     FactContext,
+    ImportEvent,
 )
 from melder.crystallizer.crystal_analysis.strategies.import_statement_strategy import (
     ImportStatementStrategy,
@@ -57,6 +61,14 @@ from melder.crystallizer.crystal_analysis.strategies.export_surface_strategy imp
 from melder.crystallizer.crystal_analysis.strategies.dependency_view_strategy import (
     DependencyViewStrategy,
 )
+
+
+MemoizedModuleFactKey = Tuple[int, str]
+MemoizedModuleFacts = Tuple[
+    Tuple[ImportEvent, ...],
+    Tuple[str, ...],
+    Tuple[str, ...],
+]
 
 
 class CrystalAnalyzer(Cleanable):
@@ -83,15 +95,34 @@ class CrystalAnalyzer(Cleanable):
           (module targets); strategies write only their own fact channels.
 
     Threading:
-        Thread-confined to its caller; no locks. The analysis reads
-        `sys.modules` best-effort exactly as the historical walk did.
+        Each analyzer instance is thread-confined to its caller. The shared
+        value-only syntax memo is guarded by a class lock; expensive parsing
+        occurs outside that lock and concurrent misses may compute the same
+        deterministic fact entry before one wins publication.
 
     Lifecycle / Cleanup:
         Owns its strategy instances; cleanup cleans strategies
-        children-first then deletes the owned lists (del posture).
+        children-first then deletes the owned lists (del posture). The shared
+        bounded memo is not owned by an analyzer instance and therefore
+        survives individual analyzer cleanup.
     """
 
-    __slots__ = ("_custody_strategies", "_fact_strategies", "_retain_user_sources")
+    _MEMOIZED_MODULE_FACT_SCHEMA_VERSION = 1
+    _MAX_MEMOIZED_MODULE_FACTS = 2048
+    _memoized_module_fact_lock = threading.RLock()
+    _memoized_module_facts: OrderedDict[
+        MemoizedModuleFactKey,
+        MemoizedModuleFacts,
+    ] = OrderedDict()
+    _memoized_module_fact_hits = 0
+    _memoized_module_fact_misses = 0
+
+    __slots__ = (
+        "_custody_strategies",
+        "_fact_strategies",
+        "_retain_user_sources",
+        "_uses_default_fact_strategies",
+    )
 
     def __init__(
             self,
@@ -131,6 +162,7 @@ class CrystalAnalyzer(Cleanable):
         """
         super().__init__()
         self._retain_user_sources: bool = bool(retain_user_sources)
+        self._uses_default_fact_strategies: bool = fact_strategies is None
         if custody_strategies is None:
             self._custody_strategies: List[SourceCustodyStrategy] = [
                 SyntheticCustodyStrategy(),
@@ -166,6 +198,131 @@ class CrystalAnalyzer(Cleanable):
             fact_strategy.cleanup()
         del self._custody_strategies
         del self._fact_strategies
+        del self._uses_default_fact_strategies
+
+    @classmethod
+    def _clear_memoized_module_facts_for_tests(cls) -> None:
+        """
+        Clear the shared syntax-fact memo for deterministic test isolation.
+
+        Contract:
+            This test-only hook removes value entries and resets counters. It
+            never unloads modules or mutates any live analysis result.
+
+        Returns:
+            None.
+
+        Threading:
+            Serialized by the memo lock.
+        """
+        with cls._memoized_module_fact_lock:
+            cls._memoized_module_facts.clear()
+            cls._memoized_module_fact_hits = 0
+            cls._memoized_module_fact_misses = 0
+
+    @classmethod
+    def _memoized_module_fact_stats_for_tests(cls) -> Dict[str, int]:
+        """
+        Return detached counters for memoization regression assertions.
+
+        Returns:
+            Dict[str, int]:
+                Current entry count, capacity, hits, and misses.
+
+        Threading:
+            Captures one consistent snapshot under the memo lock.
+        """
+        with cls._memoized_module_fact_lock:
+            return {
+                "size": len(cls._memoized_module_facts),
+                "capacity": cls._MAX_MEMOIZED_MODULE_FACTS,
+                "hits": cls._memoized_module_fact_hits,
+                "misses": cls._memoized_module_fact_misses,
+            }
+
+    @classmethod
+    def _lookup_memoized_module_facts(
+            cls,
+            source_digest: str,
+    ) -> Optional[MemoizedModuleFacts]:
+        """
+        Look up immutable syntax facts for the current source digest.
+
+        Args:
+            source_digest:
+                SHA-256 of the current source text.
+
+        Returns:
+            Optional[MemoizedModuleFacts]:
+                Value-only facts on a hit, otherwise None.
+
+        Threading:
+            Lookup, LRU promotion, and counters are serialized by the memo
+            lock. Returned tuples are immutable and safe to replay after the
+            lock is released.
+        """
+        key = (cls._MEMOIZED_MODULE_FACT_SCHEMA_VERSION, source_digest)
+        with cls._memoized_module_fact_lock:
+            facts = cls._memoized_module_facts.get(key)
+            if facts is None:
+                cls._memoized_module_fact_misses += 1
+                return None
+            cls._memoized_module_facts.move_to_end(key)
+            cls._memoized_module_fact_hits += 1
+            return facts
+
+    @classmethod
+    def _store_memoized_module_facts(
+            cls,
+            source_digest: str,
+            facts: MemoizedModuleFacts,
+    ) -> None:
+        """
+        Publish one immutable syntax-fact entry into the bounded LRU.
+
+        Contract:
+            Concurrent misses may compute the same deterministic value. The
+            first published value wins; later publishers only promote it.
+            Eviction removes value tuples only and never touches modules.
+
+        Args:
+            source_digest:
+                SHA-256 of the source that produced the facts.
+            facts:
+                Immutable import events and export names. No source text, AST,
+                module, function, class, path, crystal, or result references.
+
+        Returns:
+            None.
+
+        Threading:
+            Publication and eviction are serialized by the memo lock.
+        """
+        key = (cls._MEMOIZED_MODULE_FACT_SCHEMA_VERSION, source_digest)
+        with cls._memoized_module_fact_lock:
+            if key in cls._memoized_module_facts:
+                cls._memoized_module_facts.move_to_end(key)
+                return
+            cls._memoized_module_facts[key] = facts
+            while (
+                    len(cls._memoized_module_facts)
+                    > cls._MAX_MEMOIZED_MODULE_FACTS
+            ):
+                cls._memoized_module_facts.popitem(last=False)
+
+    @staticmethod
+    def _source_digest(source_text: str) -> str:
+        """
+        Return the memo key digest without retaining the source text.
+
+        Args:
+            source_text:
+                Current source resolved by the custody strategy.
+
+        Returns:
+            str: SHA-256 hexadecimal digest.
+        """
+        return hashlib.sha256(source_text.encode("utf-8")).hexdigest()
 
     # ------------------------------------------------------------------
     # Policy-root resolution (moved from SpellCrystal; crystals call these
@@ -613,6 +770,31 @@ class CrystalAnalyzer(Cleanable):
         if not source_text:
             return [], {}
 
+        source_digest = (
+            self._source_digest(source_text)
+            if self._uses_default_fact_strategies
+            else None
+        )
+        current_package = self._derive_current_package(
+            module_name,
+            module_obj,
+        )
+        if source_digest is not None:
+            memoized_facts = self._lookup_memoized_module_facts(source_digest)
+            if memoized_facts is not None:
+                fingerprint = custody.fingerprint(source_text)
+                if fingerprint is not None:
+                    result.record_physical_fingerprint(
+                        module_name,
+                        fingerprint,
+                    )
+                return self._replay_memoized_module_facts(
+                    result=result,
+                    module_name=module_name,
+                    current_package=current_package,
+                    facts=memoized_facts,
+                )
+
         try:
             syntax_tree = ast.parse(source_text)
         except SyntaxError as exc:
@@ -630,10 +812,7 @@ class CrystalAnalyzer(Cleanable):
 
         context = FactContext(
             module_name=module_name,
-            current_package=self._derive_current_package(
-                module_name,
-                module_obj,
-            ),
+            current_package=current_package,
             source_text=source_text,
             syntax_tree=syntax_tree,
         )
@@ -644,20 +823,139 @@ class CrystalAnalyzer(Cleanable):
             for fact_strategy in self._fact_strategies:
                 fact_strategy.analyze_module(context, result)
 
-            deduped_targets: List[str] = []
-            seen_targets: Set[str] = set()
-            for target_name in context.flat_import_targets:
-                if target_name in seen_targets:
-                    continue
-                seen_targets.add(target_name)
-                deduped_targets.append(target_name)
-            from_targets = {
-                base_name: list(member_names)
-                for base_name, member_names in context.from_import_targets.items()
-            }
-            return deduped_targets, from_targets
+            if source_digest is not None:
+                facts: MemoizedModuleFacts = (
+                    tuple(context.import_events),
+                    tuple(context.export_all_declared),
+                    tuple(context.export_public_names),
+                )
+                self._store_memoized_module_facts(source_digest, facts)
+            return self._deduplicate_import_facts(
+                context.flat_import_targets,
+                context.from_import_targets,
+            )
         finally:
             context.cleanup()
+
+    @staticmethod
+    def _replay_memoized_module_facts(
+            *,
+            result: CrystalAnalysisResult,
+            module_name: str,
+            current_package: str,
+            facts: MemoizedModuleFacts,
+    ) -> Tuple[List[str], Dict[str, List[str]]]:
+        """
+        Replay immutable syntax facts against the live import environment.
+
+        Contract:
+            Plain imports replay verbatim. From-import bases, relative names,
+            and member-submodule probes are resolved again for every analysis,
+            so memoization cannot freeze find_spec or package-context truth.
+            A fresh result receives a detached export-surface record.
+
+        Args:
+            result:
+                Fresh per-crystal result receiving the export surface.
+            module_name:
+                Current module identity used only as the result key.
+            current_package:
+                Live package context for relative imports.
+            facts:
+                Value-only import events and export names.
+
+        Returns:
+            Tuple[List[str], Dict[str, List[str]]]:
+                Deduplicated dependency candidates and from-import diagnostics.
+
+        Raises:
+            RuntimeError:
+                If an internally published event has an unknown kind.
+        """
+        import_events, all_declared, public_names = facts
+        flat_import_targets: List[str] = []
+        from_import_targets: Dict[str, List[str]] = {}
+        for event_kind, level, raw_module_name, imported_names in import_events:
+            if event_kind == "import":
+                flat_import_targets.extend(imported_names)
+                continue
+            if event_kind != "from":
+                raise RuntimeError(
+                    "CrystalAnalyzer memo contains unknown import event kind "
+                    "'{0}'.".format(event_kind)
+                )
+            if level > 0:
+                relative_name = "." * level
+                if raw_module_name:
+                    relative_name += raw_module_name
+                resolved_base = (
+                    FromImportStatementStrategy._resolve_relative_import_target(
+                        current_package=current_package,
+                        relative_module_name=relative_name,
+                    )
+                )
+            else:
+                resolved_base = raw_module_name
+            if not resolved_base:
+                continue
+            for imported_name in imported_names:
+                if imported_name == "*":
+                    continue
+                candidate_module_name = "{0}.{1}".format(
+                    resolved_base,
+                    imported_name,
+                )
+                try:
+                    spec = importlib.util.find_spec(candidate_module_name)
+                except Exception:
+                    spec = None
+                if spec is not None:
+                    flat_import_targets.append(candidate_module_name)
+            from_import_targets.setdefault(resolved_base, []).extend(
+                imported_names
+            )
+            flat_import_targets.append(resolved_base)
+
+        result.record_export_surface(
+            module_name,
+            list(all_declared),
+            list(public_names),
+        )
+        return CrystalAnalyzer._deduplicate_import_facts(
+            flat_import_targets,
+            from_import_targets,
+        )
+
+    @staticmethod
+    def _deduplicate_import_facts(
+            flat_import_targets: Sequence[str],
+            from_import_targets: Mapping[str, Sequence[str]],
+    ) -> Tuple[List[str], Dict[str, List[str]]]:
+        """
+        Detach and deduplicate import outputs with first-seen ordering.
+
+        Args:
+            flat_import_targets:
+                Dependency candidates in AST visit order.
+            from_import_targets:
+                Resolved bases mapped to imported member names.
+
+        Returns:
+            Tuple[List[str], Dict[str, List[str]]]:
+                First-seen dependency candidates and detached member lists.
+        """
+        deduped_targets: List[str] = []
+        seen_targets: Set[str] = set()
+        for target_name in flat_import_targets:
+            if target_name in seen_targets:
+                continue
+            seen_targets.add(target_name)
+            deduped_targets.append(target_name)
+        detached_from_targets = {
+            base_name: list(member_names)
+            for base_name, member_names in from_import_targets.items()
+        }
+        return deduped_targets, detached_from_targets
 
     # ------------------------------------------------------------------
     # Shared resolution helpers (ported from SpellCrystal)
