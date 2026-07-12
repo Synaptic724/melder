@@ -378,3 +378,68 @@ class CreationGate(Cleanable):
             if time.monotonic() >= deadline:
                 raise RuntimeError("Timeout waiting for creation tickets to drain.")
             time.sleep(interval)
+
+    def close_and_drain(
+        self,
+        timeout: float = 30.0,
+        interval: float = 0.1,
+    ) -> None:
+        """
+        Public API
+
+        Temporarily freeze the gate and wait for all tickets to drain.
+
+        Purpose:
+            Give one coordinating thread (a transaction window such as a
+            SpellIndex notch) exclusive runtime rights for a short span:
+            new entrants park in "wait()" while every in-flight guarded
+            call finishes, and a later "open()" fully restores admission.
+
+        Contract:
+            - PARK mode, not terminal: "enabled=False" and the event is
+              cleared (new callers block in "wait()"), but "_closed" is
+              NOT touched - "is_closed()" stays False throughout, and
+              "open()" resumes every parked waiter.
+            - Polls until "active_ticket_count == 0" so in-flight guarded
+              work (a meld holds its ticket across its whole executor,
+              validators included) completes BEFORE the caller proceeds.
+            - On drain timeout the gate is left frozen (parked, never
+              terminal) and RuntimeError raises; the caller's reopen path
+              owns restoring admission.
+
+        Args:
+            timeout:
+                Maximum seconds to wait for ticket drain.
+            interval:
+                Poll interval in seconds for checking drain progress.
+
+        Raises:
+            RuntimeError:
+                If ticket drain does not complete before "timeout".
+                Also raised when called after "cleanup()".
+
+        Threading:
+            - Freeze-state transition is lock-guarded.
+            - Drain wait loop is cooperative polling based on ticket queue
+              length; no runtime locks are held while waiting.
+
+        Returns:
+            None.
+
+        Notes:
+            This is the non-terminal sibling of
+            :meth:`close_and_wait_until_free`; shutdown paths keep the
+            terminal verb, coordination windows use this one.
+        """
+        with self._lock:
+            self.enabled = False
+            self._event.clear()
+
+        deadline = time.monotonic() + timeout
+        while self.has_active_tickets():
+            if time.monotonic() >= deadline:
+                raise RuntimeError(
+                    "Timeout waiting for creation tickets to drain during "
+                    "a temporary gate freeze (close_and_drain)."
+                )
+            time.sleep(interval)

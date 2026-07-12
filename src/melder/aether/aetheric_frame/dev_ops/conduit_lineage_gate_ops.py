@@ -153,6 +153,58 @@ class ConduitLineageGateOps(Cleanable):
             interval=interval,
         )
 
+    def quiesce_conduit_lineage(
+            self,
+            root_conduit_id: str,
+            *,
+            timeout: float = 30.0,
+            interval: float = 0.1,
+    ) -> None:
+        """
+        Temporarily freeze one root lineage: park new melds and drain
+        in-flight creation tickets, WITHOUT terminal closure.
+
+        Purpose:
+            The exclusivity primitive a coordinating transaction strategy
+            (e.g. the SpellIndex notch freeze) runs while its scope claims
+            are held: every in-flight guarded call on the lineage finishes
+            (a meld holds its gate ticket across its whole executor,
+            meld-time validators included), new callers park at their
+            gate, and the strategy's reopen path
+            (`enable_conduit_lineage`) resumes them after the domain
+            effect commits or aborts.
+
+        Contract:
+            - PARK mode: gates stay non-terminal (`is_closed()` False), so
+              `enable_conduit_lineage` fully restores admission - unlike
+              `close_and_wait_conduit_lineage`, whose terminal closure is
+              reserved for shutdown paths.
+            - A drain timeout raises with the lineage left frozen-parked;
+              the caller's reopen path (on_end, every exit path) owns
+              recovery.
+
+        Args:
+            root_conduit_id:
+                Lineage root whose conduit gates are frozen and drained.
+            timeout:
+                Maximum seconds to wait per gate for its tickets to drain.
+            interval:
+                Poll interval in seconds while draining each gate.
+
+        Returns:
+            None.
+
+        Raises:
+            RuntimeError:
+                If the facade or controller is cleaned, or a gate drain
+                times out.
+        """
+        self._controller().close_and_drain_conduit_lineage(
+            root_conduit_id,
+            timeout=timeout,
+            interval=interval,
+        )
+
     def enable_conduit_lineage(self, root_conduit_id: str) -> None:
         """
         Reopen every conduit gate under one root lineage.

@@ -636,6 +636,55 @@ class CreationGateController(Cleanable):
         for gate in lineage_map.values():
             gate.close_and_wait_until_free(timeout=timeout, interval=interval)
 
+    def close_and_drain_conduit_lineage(
+        self,
+        root_conduit_id: str,
+        timeout: float = 30.0,
+        interval: float = 0.1,
+    ) -> None:
+        """
+        Public API
+
+        Temporarily freeze and drain all conduit gates under one lineage root.
+
+        Purpose:
+            Give a coordination window (e.g. a SpellIndex notch transaction)
+            exclusive runtime rights over one conduit lineage: new melds park
+            at their gate while every in-flight guarded call drains, and the
+            window's reopen path restores admission afterwards.
+
+        Contract:
+            - PARK mode: delegates to `CreationGate.close_and_drain(...)` per
+              gate, so no gate is terminally closed and a later `open()`
+              (see `enable` paths) fully resumes parked callers.
+            - Uses a detached lineage snapshot from the root index.
+            - Missing or empty root_conduit_id is a no-op.
+            - Does not unregister or cleanup gates.
+
+        Args:
+            root_conduit_id:
+                Root lineage key used to select conduit gates.
+            timeout:
+                Maximum seconds to wait per gate for ticket drain.
+            interval:
+                Poll interval in seconds while draining each gate.
+
+        Returns:
+            None.
+
+        Raises:
+            RuntimeError:
+                If called after cleanup() or if any lineage gate drain
+                times out (gates already frozen stay frozen-parked; the
+                caller's reopen path owns recovery).
+        """
+        self.check_cleaned()
+        if not root_conduit_id:
+            return
+        lineage_map = self.get_conduit_lineage_gates(root_conduit_id)
+        for gate in lineage_map.values():
+            gate.close_and_drain(timeout=timeout, interval=interval)
+
     def enable_all_conduit_gates(self) -> None:
         """
         Public API

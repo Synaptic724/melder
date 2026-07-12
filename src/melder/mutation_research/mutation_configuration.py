@@ -236,12 +236,29 @@ class MutationResearchConfiguration(Cleanable):
         if Crystallizer._initialized:
             crystallizer = Crystallizer()
             if crystallizer.activated:
+                # DOCKING-LOOP LAW (bug caught by the zero-mock rebirth
+                # test 2026-07-12): the profile is REPLACE-ON-EMIT, so a
+                # config twin emitted WITHOUT the recorded composition
+                # would WIPE it moments before the root's virgin
+                # hydration reads it (config activation necessarily
+                # precedes root activation). The configuration owns ONLY
+                # its property payload - the recorded composition is
+                # CARRIED FORWARD, never authored and never destroyed
+                # here; the root's next composition re-emission
+                # supersedes it as ever.
+                prior = crystallizer.describe_mutation_research_record()
+                prior_composition = (
+                    dict(prior.get("composition_payload", {}))
+                    if isinstance(prior, dict)
+                    else {}
+                )
                 crystallizer.emit(
                     MutationResearchCrystal(
                         activated=True,
                         configuration_payload=(
                             self.describe_configuration_payload()
                         ),
+                        composition_payload=prior_composition,
                     )
                 )
             del crystallizer

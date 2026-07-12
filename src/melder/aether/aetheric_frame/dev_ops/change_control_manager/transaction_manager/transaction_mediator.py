@@ -641,21 +641,17 @@ class TransactionMediator(Cleanable):
         )
         if session is None:
             raise RuntimeError("No active transaction session exists for this identity.")
-        transaction_name = self._normalize_transaction_name(transaction_type)
         exc_type, _exc, _tb = sys.exc_info()
         success = exc_type is None and session.status != TransactionSession.STATUS_ABORT_ONLY
-        try:
-            return self.end_transaction_by_request_id(
-                session.request.request_id,
-                expected_type=transaction_type,
-                success=success,
-            )
-        finally:
-            self._strategy_builder.on_end(
-                transaction_type=transaction_name,
-                identity=identity,
-                metadata=dict(session.request.metadata),
-            )
+        # Strategy on_end now dispatches from _finalize_root_session (exactly
+        # once per ROOT end, every exit path). Dispatching here as well would
+        # double-fire it - and the old here-only dispatch also fired on nested
+        # leaves, which no coordination strategy may rely on.
+        return self.end_transaction_by_request_id(
+            session.request.request_id,
+            expected_type=transaction_type,
+            success=success,
+        )
 
     def get_session_by_request_id(
             self,
@@ -842,38 +838,95 @@ class TransactionMediator(Cleanable):
     def _finalize_root_session(self, session: TransactionSession) -> None:
         """
         Commit or abort one root session through the existing orchestrator path.
-        """
-        if session.status == TransactionSession.STATUS_ABORT_ONLY:
-            session.run_abort_pipeline()
-            session.mark_aborted()
-            self._orchestrator.abort_request(
-                session.request.request_id,
-                transaction_manager=self._transaction_manager,
-                embargo_manager=self._embargo_manager,
-            )
-            return
 
-        session.mark_committing()
+        Contract:
+            - Strategy `on_end` dispatches from the finally block, so it fires
+              EXACTLY ONCE per root session end on every exit path (commit,
+              abort, or commit-pipeline failure). This is the reliability law
+              coordination strategies depend on: a strategy that froze runtime
+              gates in `on_start` (e.g. the notch conduit-lineage freeze, the
+              unelect leader freeze) is guaranteed its reopen. Before the
+              notch_conduit_gate_freeze_2026_07_12 patch this dispatch lived
+              only on the identity-end and start-failure paths, so plain
+              `end_transaction` callers leaked their freeze on success.
+        """
         try:
-            session.run_commit_pipeline()
-            self._apply_strategy_commit_delta(session)
-            self._orchestrator.commit_request(
-                session.request.request_id,
-                transaction_manager=self._transaction_manager,
-                embargo_manager=self._embargo_manager,
-            )
-        except Exception as exc:
-            session.mark_abort_only("Commit pipeline failed.", exc)
-            session.run_abort_pipeline()
-            session.mark_aborted()
-            self._orchestrator.abort_request(
-                session.request.request_id,
-                transaction_manager=self._transaction_manager,
-                embargo_manager=self._embargo_manager,
-            )
-            raise
-        else:
-            session.mark_committed()
+            if session.status == TransactionSession.STATUS_ABORT_ONLY:
+                session.run_abort_pipeline()
+                session.mark_aborted()
+                self._orchestrator.abort_request(
+                    session.request.request_id,
+                    transaction_manager=self._transaction_manager,
+                    embargo_manager=self._embargo_manager,
+                )
+                return
+
+            session.mark_committing()
+            try:
+                session.run_commit_pipeline()
+                self._apply_strategy_commit_delta(session)
+                self._orchestrator.commit_request(
+                    session.request.request_id,
+                    transaction_manager=self._transaction_manager,
+                    embargo_manager=self._embargo_manager,
+                )
+            except Exception as exc:
+                session.mark_abort_only("Commit pipeline failed.", exc)
+                session.run_abort_pipeline()
+                session.mark_aborted()
+                self._orchestrator.abort_request(
+                    session.request.request_id,
+                    transaction_manager=self._transaction_manager,
+                    embargo_manager=self._embargo_manager,
+                )
+                raise
+            else:
+                session.mark_committed()
+        finally:
+            self._dispatch_strategy_on_end(session)
+
+    def _dispatch_strategy_on_end(self, session: TransactionSession) -> None:
+        """
+        Dispatch the owning strategy's `on_end` for one ending root session.
+
+        Purpose:
+            Make strategy end-side coordination (gate reopens, freeze
+            teardown) as reliable as claim release: called from
+            `_finalize_root_session`'s finally, it runs once per root end
+            regardless of how the session exited.
+
+        Contract:
+            - Skips silently when the session has no submitter identity (raw
+              `begin_frame` sessions) or when no strategy family is
+              registered for the request type - mirroring
+              `_apply_strategy_commit_delta`.
+            - `on_end` failures propagate loudly; when a commit/abort
+              exception is already in flight, the `on_end` error chains over
+              it (context preserved) - a freeze left closed must never be
+              silent.
+
+        Args:
+            session:
+                Root session being finalized.
+
+        Returns:
+            None.
+        """
+        identity = session.submitter_identity
+        if identity is None:
+            return
+        transaction_name = self._normalize_transaction_name(
+            session.request.request_type
+        )
+        try:
+            self._strategy_builder.resolve(transaction_name)
+        except NotImplementedError:
+            return
+        self._strategy_builder.on_end(
+            transaction_type=transaction_name,
+            identity=identity,
+            metadata=dict(session.request.metadata),
+        )
 
     def _apply_strategy_commit_delta(self, session: TransactionSession) -> None:
         """
@@ -1184,14 +1237,13 @@ class TransactionMediator(Cleanable):
             session.mark_abort_only(
                 f"{transaction_type.value} transaction start strategy failed.",
             )
+            # end_transaction_by_request_id finalizes the root session, and
+            # _finalize_root_session dispatches strategy on_end in its finally
+            # - so a failed on_start (e.g. a gate-freeze drain timeout) still
+            # gets its reopen without an explicit second dispatch here.
             self.end_transaction_by_request_id(
                 session.request.request_id,
                 expected_type=transaction_type,
                 success=False,
-            )
-            self._strategy_builder.on_end(
-                transaction_type=transaction_type,
-                identity=identity,
-                metadata=dict(bind_request["metadata"]),
             )
             raise

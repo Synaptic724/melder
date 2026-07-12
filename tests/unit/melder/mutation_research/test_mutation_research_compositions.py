@@ -375,6 +375,7 @@ def test_compositions_carry_the_ambient_campaign() -> None:
     research_set = root.research_set()
     research_set.register_spell("sha-a")
     research_set.register_spell("sha-b")
+    research_set.register_spell("sha-c")
     research_set.create_lane("subsystem")
     root.set_active_campaign("apollo")
 
@@ -385,7 +386,7 @@ def test_compositions_carry_the_ambient_campaign() -> None:
     assert second.campaign == "apollo"
 
     explicit = root.recompose_group(
-        second.group_id, remove=["sha-b"], campaign="artemis",
+        second.group_id, add=["sha-c"], campaign="artemis",
     )
     assert explicit.campaign == "artemis"
 
@@ -395,6 +396,14 @@ def test_compositions_carry_the_ambient_campaign() -> None:
         if row.get("node_type") == "group"
     }
     assert gathered_ids == {first.group_id, second.group_id}
+
+    # The content-address law, taught: cycling a roster back to an
+    # ANCESTOR's exact member set is a rediscovery of THAT composition
+    # (identical roster = same identity), refused composition-grade.
+    with pytest.raises(RuntimeError, match="same composition"):
+        root.recompose_group(
+            explicit.group_id, remove=["sha-b", "sha-c"],
+        )
 
 
 def test_spell_grain_verbs_are_polymorphic_over_compositions() -> None:

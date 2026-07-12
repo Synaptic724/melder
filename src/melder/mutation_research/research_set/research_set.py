@@ -874,6 +874,21 @@ class ResearchSet(Cleanable):
                 campaign=campaign,
                 metadata=metadata,
             )
+            # Composition-grade rediscovery (teach before the raw claim
+            # signal): identity is content-addressed over the member set,
+            # so ANY roster that matches an existing composition - even a
+            # recompose cycling back to an ancestor's exact roster - IS
+            # that composition, not a new fact.
+            existing_lane = self._residence.residence_of(node.group_id)
+            if existing_lane is not None:
+                raise RuntimeError(
+                    f"Rediscovery: this exact member set is already "
+                    f"recorded as composition '{node.group_id[:12]}...' "
+                    f"in lane '{existing_lane}'. An identical roster IS "
+                    f"the same composition (content-addressed identity); "
+                    f"evolve from the existing composition instead of "
+                    f"re-recording it."
+                )
             self._residence.claim(node.group_id, target.lane_id)
             # Same compensation as register_spell: a refused add must not
             # strand the claim.
