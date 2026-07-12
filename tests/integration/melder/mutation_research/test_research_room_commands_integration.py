@@ -475,5 +475,18 @@ def test_codegen_room_composition_loop() -> None:
         assert "group_recomposed" in [
             entry["act"] for entry in recent["entries"]
         ]
+
+        # Parity law through the rooms: the ORDINARY verbs accept the
+        # composition id - source fans out per member, diff on two
+        # compositions routes through the members engine.
+        fanned = commands.research_source(second["group_id"])
+        assert fanned["node_type"] == "group"
+        assert set(fanned["members"].keys()) == {
+            "sha-room-a", "sha-room-b",
+        }
+        poly_verdict = commands.research_diff(
+            first["group_id"], second["group_id"],
+        )
+        assert poly_verdict["result"]["added_members"] == ["sha-room-b"]
     finally:
         root._crystallizer = real_crystallizer

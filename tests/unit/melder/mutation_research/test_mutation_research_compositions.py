@@ -397,31 +397,95 @@ def test_compositions_carry_the_ambient_campaign() -> None:
     assert gathered_ids == {first.group_id, second.group_id}
 
 
-def test_spell_grain_reads_teach_on_composition_ids() -> None:
+def test_spell_grain_verbs_are_polymorphic_over_compositions() -> None:
     """
-    Verify the parity refusal: pointing a spell-grain custody read at a
-    composition identity refuses TEACH-GRADE (naming the grain and the
-    composition reads) instead of a raw custody KeyError; unknown
-    identities keep the honest original KeyError.
+    Verify the parity law executed (owner: "the same features we have for
+    normal nodes for grouped nodes"): the ORDINARY spell-grain verbs
+    accept composition ids and fan out per member - source_view returns
+    the members' code, module_graph_view the members' worlds, part_view
+    finds the part across the roster naming the carrying member,
+    impact_view answers the group radius, diff_research on two
+    compositions routes through the members engine, and a mixed pair
+    refuses teach-grade. Only the code-grain verbs (preview against /
+    synthesize) refuse, teaching the member descent.
     """
     aether = _mock_aether()
     root = _activated_root(aether)
     research_set = root.research_set()
-    research_set.register_spell("sha-a")
+    research_set.register_spell("sha-base")
+    research_set.register_spell("sha-donor")
     research_set.create_lane("subsystem")
-    group = research_set.register_group(["sha-a"], lane="subsystem")
+    first = research_set.register_group(["sha-base"], lane="subsystem")
+    second = research_set.recompose_group(
+        first.group_id, add=["sha-donor"],
+    )
+    group_id = second.group_id
 
-    def _no_crystal(spell_id):
-        raise KeyError(spell_id)
+    worlds = {
+        "sha-base": "def cast():\n    return 1\n",
+        "sha-donor": (
+            "def cast():\n    return 99\n"
+            "\n"
+            "def fresh():\n    return 'donor'\n"
+        ),
+    }
 
-    aether._crystallizer.get_spell_crystal.side_effect = _no_crystal
+    def _crystal(spell_id):
+        if spell_id not in worlds:
+            raise KeyError(spell_id)
+        crystal = MagicMock()
+        crystal.describe.return_value = {
+            "root_module_name": "pkg.root",
+            "module_targets": ["pkg.root"],
+            "synthetic_module_sources": {
+                "pkg.root": {"source_text": worlds[spell_id]},
+            },
+            "user_module_sources": {},
+            "module_to_path": {},
+            "physical_module_fingerprints": {"pkg.root": "sealed"},
+            "module_to_direct_dependencies": {"pkg.root": []},
+            "export_surfaces": {},
+            "module_load_order": ["pkg.root"],
+        }
+        return crystal
 
+    aether._crystallizer.get_spell_crystal.side_effect = _crystal
+    aether._crystallizer.analyze_impact.return_value = {
+        "root_module": "pkg.root",
+        "affected_spells": ["sha-base"],
+        "affected_modules": ["pkg.root"],
+    }
+
+    fanned = root.source_view(group_id)
+    assert fanned["node_type"] == "group"
+    assert "def cast():" in (
+        fanned["members"]["sha-base"]["modules"]["pkg.root"]["source"]
+    )
+
+    graphs = root.module_graph_view(group_id)
+    assert graphs["members"]["sha-donor"]["root_module"] == "pkg.root"
+
+    part = root.part_view(group_id, "fresh")
+    assert part["found"] is True
+    assert part["member_spell_id"] == "sha-donor"
+    assert part["group_id"] == group_id
+
+    impact = root.impact_view(spell_id=group_id)
+    assert impact["group_id"] == group_id
+    assert impact["member_count"] == 2
+
+    verdict = root.diff_research(first.group_id, second.group_id)
+    assert verdict["result"]["added_members"] == ["sha-donor"]
+
+    with pytest.raises(ValueError, match="COMPOSITION"):
+        root.diff_research("sha-base", group_id)
+    with pytest.raises(RuntimeError, match="member spell_id"):
+        root.preview_candidate(
+            "VALUE = 1\n", against_spell_id=group_id,
+        )
     with pytest.raises(RuntimeError, match="COMPOSITION"):
-        root.source_view(group.group_id)
-    with pytest.raises(RuntimeError, match="group_footprint_view"):
-        root.module_graph_view(group.group_id)
-    with pytest.raises(KeyError):
-        root.source_view("sha-truly-unknown")
+        root.synthesize_candidate(group_id, "sha-donor",
+                                  take_functions=["cast"])
 
 
 def test_residency_view_answers_node_type_honestly() -> None:

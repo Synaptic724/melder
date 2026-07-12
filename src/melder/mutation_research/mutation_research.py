@@ -3,7 +3,7 @@ import difflib
 import hashlib
 import threading
 from pathlib import Path
-from typing import TYPE_CHECKING, ClassVar, Dict, List, Optional, Tuple
+from typing import TYPE_CHECKING, Callable, ClassVar, Dict, List, Optional, Tuple
 
 if TYPE_CHECKING:
     from melder.aether.aether import Aether
@@ -1111,6 +1111,21 @@ class MutationResearch(Cleanable):
                 name is unknown.
         """
         self.check_cleaned()
+        # Kind dispatch (parity law - same verb, both node families):
+        # two compositions diff through the grouped engine; a mixed pair
+        # refuses teach-grade (a spell and a subsystem share no grain).
+        left_group = self._as_group_node(left_spell_id)
+        right_group = self._as_group_node(right_spell_id)
+        if left_group is not None and right_group is not None:
+            return self.group_diff_research(
+                left_group.group_id, right_group.group_id,
+            )
+        if (left_group is None) != (right_group is None):
+            raise ValueError(
+                "diff_research cannot compare a spell version with a "
+                "COMPOSITION - diff two spells, diff two compositions, "
+                "or descend the composition to a member spell_id."
+            )
         with self._lock:
             if self._diff_engine is None:
                 self._diff_engine = DiffEngine(self._resolve_diff_material)
@@ -1194,6 +1209,74 @@ class MutationResearch(Cleanable):
     # ------------------------------------------------------------------
     # Foresight reads (source / impact / module graph / candidate preview)
     # ------------------------------------------------------------------
+
+    def _as_group_node(
+            self,
+            identity: str,
+            set_name: str = "default",
+    ) -> Optional["GroupedResearchNode"]:
+        """
+        Return the resident composition for one identity, or None.
+
+        Purpose:
+            The kind-dispatch point (owner ruling: the SAME verbs serve
+            both node families): spell-grain reads call this first and
+            fan out per member when the identity is a composition.
+
+        Args:
+            identity:
+                Identity to classify.
+            set_name:
+                Research set to resolve within.
+
+        Returns:
+            Optional[GroupedResearchNode]:
+                The composition node, or None for spells/unknowns.
+        """
+        try:
+            research_set = self.research_set(set_name)
+            lane_id = research_set.residence_of(identity)
+            if lane_id is None:
+                return None
+            node = research_set.get_lane(lane_id).get_node(identity)
+            return node if isinstance(node, GroupedResearchNode) else None
+        except Exception:
+            return None
+
+    def _fan_out_members(
+            self,
+            node: "GroupedResearchNode",
+            read: "Callable[[str], Dict[str, object]]",
+    ) -> Dict[str, object]:
+        """
+        Apply one spell-grain read to every member of a composition.
+
+        Args:
+            node:
+                The composition being read.
+            read:
+                The per-member read (bound verb accepting one member
+                identity).
+
+        Returns:
+            Dict[str, object]:
+                `{"node_type": "group", "group_id", "member_count",
+                "members": {member: payload | {"unknown_custody": True}}}`
+                - custody-less members answer honestly instead of killing
+                the fan-out.
+        """
+        members: Dict[str, object] = {}
+        for member in node.member_spell_ids:
+            try:
+                members[member] = read(member)
+            except KeyError:
+                members[member] = {"unknown_custody": True}
+        return {
+            "node_type": "group",
+            "group_id": node.group_id,
+            "member_count": node.member_count,
+            "members": members,
+        }
 
     def _get_spell_crystal_for_read(self, spell_id: str) -> object:
         """
@@ -1309,7 +1392,10 @@ class MutationResearch(Cleanable):
         Returns:
             Dict[str, object]:
                 `{"spell_id", "root_module", "modules": {name: row},
-                "unknown_module"?}`.
+                "unknown_module"?}`. A COMPOSITION identity fans out per
+                member (same verb, both node families - parity law):
+                `{"node_type": "group", "group_id", "member_count",
+                "members": {member: <this payload>}}`.
 
         Raises:
             ValueError:
@@ -1322,6 +1408,14 @@ class MutationResearch(Cleanable):
         self.check_cleaned()
         if not isinstance(spell_id, str) or not spell_id:
             raise ValueError("spell_id must be a non-empty string.")
+        group = self._as_group_node(spell_id)
+        if group is not None:
+            return self._fan_out_members(
+                group,
+                lambda member: self.source_view(
+                    member, module_name=module_name,
+                ),
+            )
         payload = self._get_spell_crystal_for_read(spell_id).describe()
         targets = [str(name) for name in list(payload.get("module_targets", []))]
         if module_name is not None:
@@ -1464,6 +1558,14 @@ class MutationResearch(Cleanable):
                 "impact_view answers one question per call: supply "
                 "spell_id OR module_name."
             )
+        if spell_id is not None:
+            group = self._as_group_node(spell_id, set_name)
+            if group is not None:
+                # Same verb, both node families: a composition's impact
+                # IS its group radius (union + direction split + closure).
+                return self.group_impact_view(
+                    group.group_id, set_name=set_name,
+                )
         crystallizer = self._require_live_custody()
         radius = crystallizer.analyze_impact(
             module_name=module_name,
@@ -1578,6 +1680,12 @@ class MutationResearch(Cleanable):
         self.check_cleaned()
         if not isinstance(spell_id, str) or not spell_id:
             raise ValueError("spell_id must be a non-empty string.")
+        group = self._as_group_node(spell_id)
+        if group is not None:
+            return self._fan_out_members(
+                group,
+                lambda member: self.module_graph_view(member),
+            )
         payload = self._get_spell_crystal_for_read(spell_id).describe()
         dependency_map = {
             str(importer): [str(name) for name in list(imported)]
@@ -1675,6 +1783,12 @@ class MutationResearch(Cleanable):
             raise ValueError("spell_id must be a non-empty string.")
         if not isinstance(module_name, str) or not module_name:
             raise ValueError("module_name must be a non-empty string.")
+        group = self._as_group_node(spell_id)
+        if group is not None:
+            return self._fan_out_members(
+                group,
+                lambda member: self.module_view(member, module_name),
+            )
         payload = self._get_spell_crystal_for_read(spell_id).describe()
         targets = [str(name) for name in list(payload.get("module_targets", []))]
         if module_name not in targets:
@@ -1771,6 +1885,34 @@ class MutationResearch(Cleanable):
                 f"Unknown part kind '{kind}'. Known kinds: "
                 f"['class', 'function']."
             )
+        group = self._as_group_node(spell_id)
+        if group is not None:
+            # First hit across the roster (a subsystem's part is one of
+            # its members' parts); the winning member is named.
+            searched_members: List[str] = []
+            for member in group.member_spell_ids:
+                searched_members.append(member)
+                try:
+                    hit = self.part_view(
+                        member,
+                        part_name,
+                        kind=kind,
+                        module_name=module_name,
+                    )
+                except KeyError:
+                    continue
+                if hit.get("found"):
+                    hit["member_spell_id"] = member
+                    hit["group_id"] = group.group_id
+                    return hit
+            return {
+                "found": False,
+                "node_type": "group",
+                "group_id": group.group_id,
+                "part_name": part_name,
+                "kind": kind,
+                "searched_members": searched_members,
+            }
         payload = self._get_spell_crystal_for_read(spell_id).describe()
         targets = [str(name) for name in list(payload.get("module_targets", []))]
         if module_name is not None:
@@ -1851,6 +1993,14 @@ class MutationResearch(Cleanable):
         self.check_cleaned()
         if not isinstance(spell_id, str) or not spell_id:
             raise ValueError("spell_id must be a non-empty string.")
+        group = self._as_group_node(spell_id)
+        if group is not None:
+            return self._fan_out_members(
+                group,
+                lambda member: self.parts_view(
+                    member, module_name=module_name,
+                ),
+            )
         payload = self._get_spell_crystal_for_read(spell_id).describe()
         targets = [str(name) for name in list(payload.get("module_targets", []))]
         if module_name is not None:
@@ -1967,6 +2117,12 @@ class MutationResearch(Cleanable):
             "right_module": right_part["module_name"] if right_part else None,
             "left_kind": left_part["kind"] if left_part else None,
             "right_kind": right_part["kind"] if right_part else None,
+            "left_member": (
+                left_part.get("member_spell_id") if left_part else None
+            ),
+            "right_member": (
+                right_part.get("member_spell_id") if right_part else None
+            ),
             "identical": None,
             "unified_diff": None,
             "impact": None,
@@ -2021,6 +2177,24 @@ class MutationResearch(Cleanable):
                 unparseable recorded modules skip quietly - the diff
                 verdict reports found flags honestly).
         """
+        group = self._as_group_node(spell_id)
+        if group is not None:
+            # A composition's recorded part lives in one of its members'
+            # recorded material; the first roster hit wins and is named.
+            for member in group.member_spell_ids:
+                try:
+                    located = self._locate_recorded_part(
+                        member,
+                        part_name,
+                        kind=kind,
+                        module_name=module_name,
+                    )
+                except KeyError:
+                    continue
+                if located is not None:
+                    located["member_spell_id"] = member
+                    return located
+            return None
         material = self._resolve_diff_material(spell_id)
         sources = material["sources"]
         if module_name is not None:
@@ -2113,6 +2287,14 @@ class MutationResearch(Cleanable):
         self.check_cleaned()
         if not isinstance(code, str) or not code:
             raise ValueError("code must be a non-empty string.")
+        if against_spell_id is not None and (
+                self._as_group_node(against_spell_id) is not None
+        ):
+            raise RuntimeError(
+                f"'{against_spell_id[:12]}...' is a COMPOSITION - a "
+                f"candidate previews against ONE version's module world; "
+                f"preview against a member spell_id instead."
+            )
         candidate_sha = hashlib.sha256(code.encode("utf-8")).hexdigest()
         analysis = self._analyze_candidate(code)
         result: Dict[str, object] = {
@@ -2280,6 +2462,16 @@ class MutationResearch(Cleanable):
             raise ValueError("base_spell_id must be a non-empty string.")
         if not isinstance(donor_spell_id, str) or not donor_spell_id:
             raise ValueError("donor_spell_id must be a non-empty string.")
+        for role, identity in (
+                ("base", base_spell_id), ("donor", donor_spell_id),
+        ):
+            if self._as_group_node(identity) is not None:
+                raise RuntimeError(
+                    f"The {role} '{identity[:12]}...' is a COMPOSITION - "
+                    f"synthesis splices ONE version's module world; use "
+                    f"member spell_ids (part_view on the composition "
+                    f"finds the carrying member)."
+                )
         base_view = self.source_view(base_spell_id)
         donor_view = self.source_view(donor_spell_id)
         result: Dict[str, object] = {
