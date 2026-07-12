@@ -261,13 +261,15 @@ class ConduitMeld(Meld):
             try:
                 cached_spell_id = input_resolution_cache.get(cache_key)
             except TypeError:
-                cache_key = (
-                    spell_name,
-                    id(spell),
-                    id(spellframe),
-                    binding_name,
-                )
-                cached_spell_id = input_resolution_cache.get(cache_key)
+                # Unhashable spell/spellframe input: SKIP the cache entirely
+                # (id-reuse aliasing fix, 2026-07-12). Raw id() keys outlive
+                # their objects - CPython reuses a dead object's address, so
+                # a later unhashable input could HIT the dead entry and meld
+                # the wrong spell. Unhashable inputs are the rare lane
+                # (classes/strings/Protocols all hash), so resolving them
+                # uncached every call is the safe, cost-free answer.
+                cache_key = None
+                cached_spell_id = None
             if cached_spell_id is not None:
                 target_spell = self._spell_id_pool.get(cached_spell_id)
                 if target_spell is None:
@@ -282,12 +284,13 @@ class ConduitMeld(Meld):
                     spellframe=spellframe,
                     binding_name=binding_name,
                 )
-                if len(input_resolution_cache) >= self._max_resolution_cache_size:
-                    input_resolution_cache.pop(
-                        next(iter(input_resolution_cache)),
-                        None,
-                    )
-                input_resolution_cache[cache_key] = target_spell.spell_id
+                if cache_key is not None:
+                    if len(input_resolution_cache) >= self._max_resolution_cache_size:
+                        input_resolution_cache.pop(
+                            next(iter(input_resolution_cache)),
+                            None,
+                        )
+                    input_resolution_cache[cache_key] = target_spell.spell_id
         if target_spell.requires_spellspace_request:
             raise RuntimeError(
                 "{0} must be built from a spellspace.".format(
@@ -458,13 +461,12 @@ class ConduitMeld(Meld):
             try:
                 cached_spell_id = input_resolution_cache.get(cache_key)
             except TypeError:
-                cache_key = (
-                    spell_name,
-                    id(spell),
-                    id(spellframe),
-                    binding_name,
-                )
-                cached_spell_id = input_resolution_cache.get(cache_key)
+                # Unhashable spell/spellframe input: SKIP the cache entirely
+                # (id-reuse aliasing fix, 2026-07-12). Raw id() keys outlive
+                # their objects - address reuse could serve a dead entry's
+                # resolution to a different object. Resolve uncached.
+                cache_key = None
+                cached_spell_id = None
             if cached_spell_id is not None:
                 target_spell = self._spell_id_pool.get(cached_spell_id)
                 if target_spell is None:
@@ -479,12 +481,13 @@ class ConduitMeld(Meld):
                     spellframe=spellframe,
                     binding_name=binding_name,
                 )
-                if len(input_resolution_cache) >= self._max_resolution_cache_size:
-                    input_resolution_cache.pop(
-                        next(iter(input_resolution_cache)),
-                        None,
-                    )
-                input_resolution_cache[cache_key] = target_spell.spell_id
+                if cache_key is not None:
+                    if len(input_resolution_cache) >= self._max_resolution_cache_size:
+                        input_resolution_cache.pop(
+                            next(iter(input_resolution_cache)),
+                            None,
+                        )
+                    input_resolution_cache[cache_key] = target_spell.spell_id
 
         if target_spell.is_existing_creation:
             if target_spell.user_created_object is None:

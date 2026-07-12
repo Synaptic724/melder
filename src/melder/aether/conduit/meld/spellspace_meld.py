@@ -283,13 +283,12 @@ class SpellSpaceMeld(Meld):
             try:
                 cached_spell_id = input_resolution_cache.get(cache_key)
             except TypeError:
-                cache_key = (
-                    spell_name,
-                    id(spell),
-                    id(spellframe),
-                    binding_name,
-                )
-                cached_spell_id = input_resolution_cache.get(cache_key)
+                # Unhashable spell/spellframe input: SKIP the cache entirely
+                # (id-reuse aliasing fix, 2026-07-12). Raw id() keys outlive
+                # their objects - address reuse could serve a dead entry's
+                # resolution to a different object. Resolve uncached.
+                cache_key = None
+                cached_spell_id = None
             if cached_spell_id is not None:
                 target_spell = self._spell_id_pool.get(cached_spell_id)
                 if target_spell is None:
@@ -304,12 +303,13 @@ class SpellSpaceMeld(Meld):
                     spellframe=spellframe,
                     binding_name=binding_name,
                 )
-                if len(input_resolution_cache) >= self._max_resolution_cache_size:
-                    input_resolution_cache.pop(
-                        next(iter(input_resolution_cache)),
-                        None,
-                    )
-                input_resolution_cache[cache_key] = target_spell.spell_id
+                if cache_key is not None:
+                    if len(input_resolution_cache) >= self._max_resolution_cache_size:
+                        input_resolution_cache.pop(
+                            next(iter(input_resolution_cache)),
+                            None,
+                        )
+                    input_resolution_cache[cache_key] = target_spell.spell_id
         # 2) Caller overrides replace the stored mutation override payload.
         # Hot path: read the owned slot directly instead of paying the
         # `mutation_override` property descriptor per meld.
@@ -473,13 +473,12 @@ class SpellSpaceMeld(Meld):
             try:
                 cached_spell_id = input_resolution_cache.get(cache_key)
             except TypeError:
-                cache_key = (
-                    spell_name,
-                    id(spell),
-                    id(spellframe),
-                    binding_name,
-                )
-                cached_spell_id = input_resolution_cache.get(cache_key)
+                # Unhashable spell/spellframe input: SKIP the cache entirely
+                # (id-reuse aliasing fix, 2026-07-12). Raw id() keys outlive
+                # their objects - address reuse could serve a dead entry's
+                # resolution to a different object. Resolve uncached.
+                cache_key = None
+                cached_spell_id = None
             if cached_spell_id is not None:
                 target_spell = self._spell_id_pool.get(cached_spell_id)
                 if target_spell is None:
@@ -494,12 +493,13 @@ class SpellSpaceMeld(Meld):
                     spellframe=spellframe,
                     binding_name=binding_name,
                 )
-                if len(input_resolution_cache) >= self._max_resolution_cache_size:
-                    input_resolution_cache.pop(
-                        next(iter(input_resolution_cache)),
-                        None,
-                    )
-                input_resolution_cache[cache_key] = target_spell.spell_id
+                if cache_key is not None:
+                    if len(input_resolution_cache) >= self._max_resolution_cache_size:
+                        input_resolution_cache.pop(
+                            next(iter(input_resolution_cache)),
+                            None,
+                        )
+                    input_resolution_cache[cache_key] = target_spell.spell_id
 
         if target_spell.is_existing_creation:
             if target_spell.user_created_object is None:

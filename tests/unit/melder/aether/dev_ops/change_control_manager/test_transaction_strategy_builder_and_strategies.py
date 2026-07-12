@@ -1129,18 +1129,20 @@ def test_unelect_cluster_leader_strategy_seals_member_conduits_exclusive() -> No
     assert plan["metadata"]["cluster_leader_mode"] == "unelect"
 
 
-def test_unelect_cluster_leader_drains_then_reopens_member_root_lineages() -> None:
+def test_unelect_cluster_leader_quiesces_then_reopens_member_root_lineages() -> None:
     """
     Purpose:
-        Verify unelect drains every member root lineage on_start and reopens every
-        member root lineage on_end (the use-after-dispose guard, fail-closed).
+        Verify unelect quiesces every member root lineage on_start (PARK
+        mode - concurrent melds wait, never error) and reopens every member
+        root lineage on_end (the use-after-dispose guard, fail-closed).
     Contract:
-        - on_start drains each member root once.
+        - on_start quiesces each member root once; the terminal drain verb
+          is never used (the pre-freeze-patch defect).
         - on_end reopens each member root once.
     Returns:
         None.
     Raises:
-        AssertionError: If drain/reopen footprints do not match the member roots.
+        AssertionError: If freeze/reopen footprints do not match the member roots.
     """
     gate_ops = _RecordingGateOps()
     registry = DevopsInformationRegistry("frame-1")
@@ -1162,7 +1164,8 @@ def test_unelect_cluster_leader_drains_then_reopens_member_root_lineages() -> No
         metadata=metadata,
     )
 
-    assert gate_ops.closed == ["root-1", "root-2"]
+    assert gate_ops.quiesced == ["root-1", "root-2"]
+    assert gate_ops.closed == []
     assert gate_ops.enabled == ["root-1", "root-2"]
 
 
@@ -1193,3 +1196,4 @@ def test_elect_cluster_leader_on_start_does_not_drain() -> None:
     )
 
     assert gate_ops.closed == []
+    assert gate_ops.quiesced == []
