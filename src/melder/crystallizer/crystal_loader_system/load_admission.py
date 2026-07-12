@@ -10,8 +10,8 @@ declarative LoadPlan, the ENGINE maps it (authoritative folded preflight -
 the only seam owning folded truth, so no fold logic is duplicated here) and
 GATES it (blockers refuse before any replay), and LoadAdmission ADJUDICATES
 the resulting report per scope (conduit/frame loads reclassify the
-scope-blind frame_posture warnings into an expected-for-scope admission
-view without ever rewriting the raw findings).
+scope-blind frame-posture and mutation-research warnings into an
+expected-for-scope admission view without ever rewriting the raw findings).
 
 Lane: EPIC-2026-07-09-crystallizer-subsystem-decomposition, story S4;
 rename: EPIC-2026-07-11-crystallizer-v3-horizon-iteration, story S1.
@@ -48,6 +48,9 @@ class LoadAdmission(Cleanable):
           additive "admission" payload only.
         - Formation windows are minted here in the canonical kind order
           (moved from the ledger in S4) so folds see parents first.
+        - The persistence record and optional `Aether` host are borrowed;
+          admission never cleans either collaborator and never creates a frame
+          merely to inspect host posture.
 
     Threading:
         Thread-confined to its owning CrystalLoaderSystem, which
@@ -106,8 +109,20 @@ class LoadAdmission(Cleanable):
         """
         Idempotently dereference the borrowed record and host.
 
+        Contract:
+            Terminal for this admission object. Neither collaborator is owned,
+            so cleanup does not clean the persistence record or `Aether`.
+
         Returns:
             None.
+
+        Threading:
+            Called by the owning loader after serialized load work has ended;
+            it must not race with planning or execution.
+
+        Lifecycle / Cleanup:
+            `CrystalLoaderSystem` owns this object and cleans it before
+            releasing its own borrowed record reference.
         """
         if self._cleaned:
             return
@@ -122,6 +137,12 @@ class LoadAdmission(Cleanable):
     def plan_checkpoint_load(self, checkpoint_id: str) -> LoadPlan:
         """
         Build the declarative plan for one whole-world checkpoint load.
+
+        Contract:
+            Detaches the target checkpoint's same-profile chain through the
+            record's public seam. The returned plan owns the detached windows
+            and preserves checkpoint creation order; no replay or preflight
+            runs during planning.
 
         Args:
             checkpoint_id:
@@ -382,10 +403,9 @@ class LoadAdmission(Cleanable):
               _ensure_frame probe would BIRTH the frame it checks for).
             - Checks: frame missing -> "info" (replay creates it);
               recorded-vs-live posture conflict -> "warning"; conduit
-              name collision (cloud.has_conduit_name) -> "blocker";
-              cluster name collision -> "blocker" (documented private
-              seam: the cloud has no public cluster-existence probe yet;
-              follow-up tracked in the S1 story).
+              name collision -> "blocker"; cluster name collision ->
+              "blocker". Both collision checks use the frame's public
+              `conduit_cloud` accessor and public name probes.
             - No host wired (self._aether is None) -> empty findings.
 
         Args:
@@ -491,12 +511,14 @@ class LoadAdmission(Cleanable):
 
         Contract:
             - World scope: the admission verdict IS the raw verdict.
-            - Conduit/frame scope: frame_posture warnings are EXPECTED
-              (those scopes deliberately exclude/partially carry frame
-              twins; the engine fallback-postures from book hints) - they
-              reclassify to "expected_for_scope" rows and the admission
-              verdict recomputes without them. Raw findings are never
-              mutated.
+            - Conduit/frame scope: `frame_posture` warnings are expected
+              because those scopes exclude or only partially carry frame
+              twins. `mutation_research_composition` findings are also
+              expected because MutationResearch is a world-scope root. Those
+              rows reclassify to `expected_for_scope`, and the effective
+              verdict is recomputed without them.
+            - Raw findings are never mutated; reclassified rows are copies in
+              the additive admission view.
 
         Args:
             preflight:

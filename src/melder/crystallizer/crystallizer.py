@@ -39,21 +39,43 @@ from melder.utilities.helpers.id_builder import IDBuilder
 
 class Crystallizer(Cleanable):
     """
-    Singleton policy and activation root for crystallizer behavior.
+    Public facade and singleton ownership root for crystallizer behavior.
 
     Purpose:
-        Provide the first real ownership root above `SpellCrystal` and
-        `SyntheticModule`. The crystallizer owns:
-        - installed configuration
-        - configured/activated state
-        - the policy inputs used for crystal construction
+        Present one stable user surface over the crystallizer's three V3
+        subsystems while keeping their implementation objects private:
+
+        - `PersistenceSystem`: the in-process record and checkpoint ledger.
+        - `AssetManagementSystem`: cache, formation files, and external mesh.
+        - `CrystalLoaderSystem`: admission planning and runtime unfolding.
+
+        The package-level crystal classes remain value carriers, and
+        `crystal_analysis` remains a shared service; neither becomes another
+        root owned by callers.
 
     Contract:
-        - process-wide singleton
-        - hosted by `Aether` in the same private-root posture as `Nexus`
-        - configuration is explicit
-        - activation is explicit and starts disabled by default
-        - lower-level crystallizer objects do not own config policy directly
+        - Process-wide singleton privately hosted by `Aether`.
+        - Construction starts unconfigured and inactive unless an explicit
+          configuration is supplied; activation remains a separate act.
+        - Public record, asset, analysis, and load operations require an
+          activated root and reject use after cleanup.
+        - Users exchange names, ids, detached dictionaries, and crystal
+          carriers through this facade. Persistence profiles, load plans,
+          engines, and asset managers do not escape as public state.
+        - Recording is passive: runtime owners push twins into `emit()`;
+          this root does not discover or walk the live world.
+        - Crystallizer-off worlds preserve runtime behavior because inactive
+          emission paths do not record.
+
+    Threading:
+        The class lock protects singleton publication. The instance lock
+        serializes lifecycle and facade state transitions; owned subsystems
+        apply their own narrower locking contracts.
+
+    Lifecycle / Cleanup:
+        `Aether` owns the singleton. Cleanup is terminal and orders borrowers
+        before the record: loader, assets, persistence, then configuration.
+        Singleton bookkeeping is reset only after child teardown completes.
     """
 
     __melder_internal__ = _mrg.sentinel
@@ -165,10 +187,26 @@ class Crystallizer(Cleanable):
 
     def cleanup(self) -> None:
         """
-        Idempotently clear crystallizer state and reset singleton bookkeeping.
+        Tear down the crystallizer root and release singleton publication.
+
+        Contract:
+            - Idempotent and terminal; public methods reject later use.
+            - Cleans the loader and asset borrowers before the persistence
+              record they reference, preserving the V3 edge and lock laws.
+            - Cleans the installed configuration after all three subsystems.
+            - Resets class-level singleton state only after instance teardown.
 
         Returns:
             None.
+
+        Threading:
+            Serialized by the instance lock. Singleton publication is reset
+            under the class lock after owned state has been released.
+
+        Lifecycle / Cleanup:
+            Called by the hosting `Aether` during root teardown. This method
+            does not deactivate and preserve state; use `deactivate()` for
+            that reversible lifecycle transition.
         """
         if self._cleaned:
             return
@@ -494,8 +532,21 @@ class Crystallizer(Cleanable):
         """
         Deactivate the crystallizer root without dropping configuration.
 
+        Contract:
+            Stops activated-only facade operations and future recording while
+            preserving the installed configuration and all subsystem state.
+            Existing profiles, checkpoints, cache files, and formation files
+            are not deleted.
+
         Returns:
             None.
+
+        Threading:
+            Serialized by the instance lock.
+
+        Lifecycle / Cleanup:
+            Reversible through `activate()`. This is not teardown and does
+            not clean any owned object.
         """
         self.check_cleaned()
         with self._lock:
@@ -1213,6 +1264,17 @@ class Crystallizer(Cleanable):
         """
         Build one `SpellCrystal` using the installed crystallizer policy.
 
+        Purpose:
+            Capture one live spell's bind identity and module-world analysis
+            into the carrier used by persistence and restore.
+
+        Contract:
+            `SpellCrystal` invokes a single-use `CrystalAnalyzer`, retains
+            only its value-only `CrystalAnalysisResult`, and never owns the
+            analyzer or strategy machinery. User-source text is retained only
+            when the installed policy enables it; bind-time fingerprints are
+            recorded independently of that opt-in.
+
         Args:
             spell:
                 Live spell whose module world should be crystallized.
@@ -1404,9 +1466,13 @@ class Crystallizer(Cleanable):
         Contract:
             - Checkpoint ids are ULIDs: they sort by creation time, so id
               order IS checkpoint chronology.
-            - CURRENT DEPTH: metadata registration only (the record carries
-              `"twin_custody": "pending"`); the twin seal-copy + cache/save
-              land with the bootstrap and persistence epics.
+            - The crystallizer policy twin is emitted into the window before
+              sealing, so every checkpoint identifies the policy that made it.
+            - `PersistenceSystem` captures the current incremental window as
+              value-only twin custody and advances that profile's journal mark.
+            - Sealing updates the in-process ledger only. Use
+              `flush_checkpoint()` to ship the sealed artifact to local cache
+              and the optional external mesh.
 
         Args:
             profile_name:
@@ -1787,10 +1853,15 @@ class Crystallizer(Cleanable):
         Pre-flight one stored formation's bootload viability.
 
         Purpose:
-            Facade over the PersistenceAnalyzer: run the default strategy
-            passes (link integrity, contract peers, hydration,
-            configuration loss) over the formation's payloads BEFORE the
-            user trusts a restore.
+            Run the complete default `PersistenceAnalyzer` strategy set over
+            the stored formation before the user trusts a restore. The set
+            covers topology, hydration, configuration, frame/cluster posture,
+            synthetic and retained-source integrity, mutation-research
+            composition, and live source drift.
+
+        Contract:
+            Analysis is read-only over the stored payload bundle. It does not
+            execute admission, claim the LoadGate, or replay any runtime unit.
 
         Args:
             formation_name:
@@ -1831,8 +1902,14 @@ class Crystallizer(Cleanable):
         Pre-flight one sealed checkpoint's bootload viability.
 
         Purpose:
-            The same analyzer passes over a checkpoint's captured
-            payloads - what would the restore of THIS window hit.
+            Run the complete default `PersistenceAnalyzer` strategy set over
+            this checkpoint's captured window.
+
+        Contract:
+            This method analyzes the named checkpoint window only; it does not
+            fold the target's complete profile chain and does not replay any
+            runtime unit. `load_checkpoint()` owns chain detachment, folded
+            preflight, blocker refusal, and execution.
 
         Args:
             checkpoint_id:
@@ -2226,6 +2303,13 @@ class Crystallizer(Cleanable):
             chain and replays it through the public runtime verbs in canon
             order (all-or-nothing; shortfalls reported, never silently
             under-built).
+
+        Contract:
+            The owned loader builds a world-scoped `LoadPlan`, claims
+            Aether's load authority for the replay span, refuses blocker
+            verdicts before activation, and always releases authority.
+            Successful payloads include the additive, detached `admission`
+            view alongside the restore report.
 
         Args:
             checkpoint_id:

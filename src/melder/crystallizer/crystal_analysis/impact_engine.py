@@ -63,6 +63,14 @@ class ImpactEngine(Cleanable):
         """
         Build the reverse indexes over one detached custody map.
 
+        Contract:
+            Copies each spell's top-level payload map, then derives reverse
+            module and importer indexes plus fingerprint/path lookups. When
+            multiple crystals describe the same physical module, the first
+            fingerprint and path encountered become the comparison baseline.
+            Construction performs no disk I/O; disk is read only by the drift
+            verb.
+
         Args:
             custody_payloads:
                 spell_id -> crystal describe() payload (+ the seam's
@@ -122,8 +130,20 @@ class ImpactEngine(Cleanable):
         """
         Idempotently release the carried indexes.
 
+        Contract:
+            Terminal for this engine. Only detached custody payloads and
+            derived sets/maps are released; no crystal, module, or record is
+            owned or cleaned here.
+
         Returns:
             None.
+
+        Threading:
+            Must not race with a read verb.
+
+        Lifecycle / Cleanup:
+            The crystallizer facade builds an engine per impact request and
+            cleans it in `finally` after producing a detached answer.
         """
         if self._cleaned:
             return
@@ -137,6 +157,11 @@ class ImpactEngine(Cleanable):
     def spells_touching_module(self, module_name: str) -> List[str]:
         """
         Return the spells whose recorded world carries one module.
+
+        Contract:
+            This is direct custody membership, not transitive impact. Use
+            `blast_radius_of_module()` to include importing modules and the
+            spells that carry them.
 
         Args:
             module_name:
@@ -319,6 +344,11 @@ class ImpactEngine(Cleanable):
     def describe(self) -> Dict[str, object]:
         """
         Return the engine's full detached report.
+
+        Contract:
+            This is not a metadata-only snapshot: it invokes
+            `describe_source_drift()` and therefore reads every recorded
+            physical path from disk at call time.
 
         Returns:
             Dict[str, object]:

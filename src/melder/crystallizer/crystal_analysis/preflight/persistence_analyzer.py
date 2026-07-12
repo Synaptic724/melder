@@ -51,12 +51,12 @@ class PersistenceAnalyzer(Cleanable):
         peers, unhydratable custody, code participation expectations.
 
     Contract:
-        - Default strategy set: link integrity, contract peers,
-          hydration, configuration loss, cluster membership, frame
-          posture, synthetic source integrity, user source integrity
-          (S2 physical custody: retained-text tamper + live-file drift);
-          callers may supply their own sequence (each a
-          PersistenceAnalysisStrategy).
+        - The ten-strategy default set runs, in order: link integrity,
+          contract peers, hydration, configuration loss, cluster membership,
+          frame posture, synthetic source integrity, retained user-source
+          integrity, mutation-research composition, and live source drift.
+          Callers may replace the complete set with an explicit sequence of
+          `PersistenceAnalysisStrategy` objects.
         - This same default set runs AT LOAD TIME inside the
           RestoreEngine (owner ruling): every restore report carries a
           "preflight" section from the folded bundle.
@@ -92,10 +92,9 @@ class PersistenceAnalyzer(Cleanable):
 
         Args:
             strategies:
-                Optional explicit strategy sequence; None installs the
-                default set (link integrity, contract peers, hydration,
-                configuration loss, cluster membership, frame posture,
-                synthetic source integrity, user source integrity).
+                Optional explicit strategy sequence. None installs the ten
+                default passes documented on the class. Supplying even one
+                strategy replaces, rather than extends, that default set.
 
         Returns:
             None.
@@ -123,7 +122,17 @@ class PersistenceAnalyzer(Cleanable):
         Drop the strategy list and mark the analyzer cleaned.
 
         Contract:
-            - Idempotent; del posture (strategies are stateless).
+            - Idempotent and terminal; later analysis is rejected.
+            - Deletes only the owned strategy list. Default strategies are
+              stateless and hold no teardown-sensitive collaborators.
+
+        Threading:
+            Must not race with `analyze()`; callers finish all reads before
+            releasing the strategy list.
+
+        Lifecycle / Cleanup:
+            A facade or restore engine owns the analyzer for one preflight
+            span and cleans it in `finally`.
         """
         if self._cleaned:
             return
@@ -137,10 +146,17 @@ class PersistenceAnalyzer(Cleanable):
         """
         Run every strategy over one bundle and aggregate the report.
 
+        Contract:
+            Strategies run in configured order over the same read-only bundle.
+            Their rows retain that order. The aggregate verdict is `blockers`
+            when any blocker exists, otherwise `warnings` when any warning
+            exists, otherwise `clean`; informational rows do not escalate it.
+
         Args:
             payload_bundle:
-                {kind: {key: payload}} - a formation's payload slice or
-                a checkpoint's captured payloads.
+                `{kind: {key: payload}}` for a formation slice, checkpoint
+                window, or folded restore bundle. The analyzer does not mutate
+                it or consult live runtime state directly.
 
         Returns:
             Dict[str, object]:

@@ -36,6 +36,16 @@ class DependencyViewStrategy(CrystalFactStrategy):
         - Cycle-tolerant: when a cycle blocks completion, the remaining
           nodes are appended in sorted order and one walk error names
           them - the order stays usable, the honesty ledger stays honest.
+        - Analysis only: the strategy records value facts on the supplied
+          result and neither imports modules nor participates in restore.
+
+    Threading:
+        Stateless strategy object. The supplied result remains owned by the
+        analyzer thread while `finalize()` writes the order.
+
+    Lifecycle / Cleanup:
+        Holds no resources or references between calls; inherited cleanup is a
+        no-op beyond the strategy lifecycle contract.
     """
 
     __slots__ = ()
@@ -54,12 +64,26 @@ class DependencyViewStrategy(CrystalFactStrategy):
         """
         Compute and record the topological load order.
 
+        Contract:
+            Reads a detached dependency map from the result, runs Kahn's
+            algorithm over edges whose endpoints were both walked, and writes
+            exactly one ordered list back. Dependencies outside the walked
+            module set remain manifest facts but do not become ordering nodes.
+            A cycle never raises: unresolved nodes are appended
+            deterministically and reported through the result's honesty lane.
+
         Args:
             result:
                 Analysis result carrying the completed dependency edges.
 
         Returns:
             None.
+
+        Raises:
+            RuntimeError: If the supplied result has been cleaned.
+
+        Threading:
+            Must run during the analyzer's single-writer finalize phase.
         """
         dependency_edges: Dict[str, List[str]] = (
             result.module_to_direct_dependencies

@@ -65,6 +65,13 @@ class LoadPlan(Cleanable):
         """
         Initialize one declarative load plan.
 
+        Contract:
+            Copies the checkpoint-id list and outer chain list. The window
+            dictionaries are already detached feedstock supplied by admission
+            and are intentionally not deep-copied again. Per-kind counts come
+            from distinct `(kind, key)` journal entries across all windows;
+            payloads without journal rows do not inflate the summary.
+
         Args:
             scope:
                 `world` | `conduit` | `frame` - drives admission
@@ -127,8 +134,19 @@ class LoadPlan(Cleanable):
         """
         Idempotently release the carried plan fields.
 
+        Contract:
+            Terminal for this plan; deletes only value feedstock and metadata.
+            It owns no record, engine, or live runtime object.
+
         Returns:
             None.
+
+        Threading:
+            Called by the owning loader thread after execution or failure.
+
+        Lifecycle / Cleanup:
+            The loader cleans the plan in `finally`, including when admission
+            or replay raises.
         """
         if self._cleaned:
             return
@@ -192,9 +210,11 @@ class LoadPlan(Cleanable):
         Return the carried replay windows (engine feedstock).
 
         Contract:
-            The returned list object is the carried one (the engine
-            consumes it once); callers other than the mediator should
-            treat it as read-only.
+            The returned list is the plan's carried list, not another copy,
+            because the single-use engine consumes that exact feedstock.
+            This property is an internal loader boundary: mutating it changes
+            what execution will see. User-facing inspection belongs to
+            `describe()`, which intentionally omits payload bodies.
 
         Returns:
             List[Dict[str, object]]: Detached replay windows.
@@ -240,6 +260,11 @@ class LoadPlan(Cleanable):
     def describe(self) -> Dict[str, Any]:
         """
         Return the plan's inspectable summary (counts, never payloads).
+
+        Contract:
+            Returns fresh outer containers for checkpoint ids and kind counts.
+            Replay journals and payload bodies are deliberately excluded, so
+            inspection cannot mutate engine feedstock.
 
         Returns:
             Dict[str, Any]:

@@ -80,11 +80,17 @@ class CrystalAnalysisResult(Cleanable):
 
         Contract:
             - Every field is initialized deterministically and empty.
-            - `root_module_kind` starts None and is set exactly once by the
-              analyzer's root classification step.
+            - `root_module_kind` starts None and is populated by the analyzer's
+              root-classification step.
+            - Construction does not retain a spell, module, AST, analyzer, or
+              strategy; all later writes accept value-shaped inputs.
 
         Returns:
             None.
+
+        Lifecycle / Cleanup:
+            The analyzer creates one result per analysis and transfers it to
+            the caller without retaining a back-reference.
         """
         super().__init__()
         self._lock: threading.RLock = threading.RLock()
@@ -136,6 +142,14 @@ class CrystalAnalysisResult(Cleanable):
 
         Returns:
             None.
+
+        Threading:
+            Serialized by the instance lock. Callers must not begin new reads
+            after cleanup starts.
+
+        Lifecycle / Cleanup:
+            The owning crystal or transient analysis caller releases the
+            result. Cleanup does not reach back into an analyzer or module.
         """
         if self._cleaned:
             return
@@ -757,6 +771,12 @@ class CrystalAnalysisResult(Cleanable):
             Persistence-facing view consumed by SpellCrystal.describe()
             (which merges it with crystal-owned identity fields) and by
             MutationResearch when re-analyzing retained versions.
+
+        Contract:
+            Every list and dictionary layer owned by this result is recreated
+            for the response. Mutating the returned payload cannot alter the
+            carried analysis, and no lock, module, AST, analyzer, or strategy
+            crosses the boundary.
 
         Returns:
             Dict[str, Any]:
