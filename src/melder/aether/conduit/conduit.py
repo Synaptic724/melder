@@ -3975,6 +3975,14 @@ class Conduit(Cleanable):
             "spell_index_id": spell_index._id,
             "spell_id": spell.spell_id,
             "binding_key": spell._key,
+            # Runtime-freeze facade (patch notch_conduit_gate_freeze_2026_07_12,
+            # unelect precedent): the notch strategy's on_start quiesces the
+            # sealed conduits' CreationGates through this DevOps facade so no
+            # in-flight meld/validator can straddle the active-member repoint;
+            # on_end reopens on every exit path via root finalize.
+            "conduit_lineage_gate_ops": (
+                self._aetheric_frame.dev_ops_manager.conduit_lineage_gate_ops
+            ),
         }
         # The index's current active member is the outgoing spell. The conduit
         # admits the notch (it owns the change-control envelope); the owning

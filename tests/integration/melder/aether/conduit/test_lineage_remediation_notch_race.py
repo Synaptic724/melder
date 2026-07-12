@@ -122,22 +122,30 @@ def test_notch_during_open_remediation_window_cannot_poison_post_settle_truth(
 
     History:
         2026-07-12 this probe CONFIRMED the race on the unpatched
-        runtime - a remediation window straddling a notch wrote a stale
-        terminal verdict onto the shared lineage record, permanently
-        poisoning the notched-in member. The fix (owner ruling: mediate
-        both threads) admits remediation as a mediated transaction
-        claiming the lineage scope EXCLUSIVE, with the notch family
-        claiming the same scope - the straddle is now impossible in
-        both directions. This test stays green as the proof and MUST
-        NOT regress.
+        runtime - a validation window straddling a notch wrote a stale
+        terminal verdict onto the freshly promoted member (validity
+        writes key by live `selected_spell_id` at write time), and
+        `invalid` is terminal, so the notched-in member was permanently
+        poisoned. An earlier fix (mediating the validator as its own
+        transaction) was owner-reverted (commit 7abb39e62). The LANDED
+        fix (owner ruling, patch notch_conduit_gate_freeze_2026_07_12):
+        the NOTCH strategy's on_start freezes the sealed conduits'
+        CreationGates through the DevOps ConduitLineageGateOps facade -
+        new melds park, in-flight melds (this probe's barriered
+        validator included, since a meld holds its conduit gate ticket
+        across its whole executor) drain to zero BEFORE the repoint -
+        and on_end reopens on every exit path via root finalize. This
+        test stays green as the proof and MUST NOT regress.
 
     Contract (post-fix expectations):
-        The notch either PARKS behind the held remediation window
-        (scope-wait) and completes after release, or completes before
-        the window opens - never interleaves inside it. Post-settle:
-        the index selects B, a fresh meld yields B, no deadlocks
-        (timeout-guarded joins fail loudly), and the in-window meld
-        returns either an A-instance or a legal refusal.
+        The notch either PARKS behind the held validation window (gate
+        drain waits for the in-flight meld ticket) and completes after
+        release, or completes before the window opens - never
+        interleaves inside it. Post-settle: the index selects B, a
+        fresh meld yields B, no deadlocks (timeout-guarded joins fail
+        loudly), and the in-window meld returns either an A-instance
+        or a legal refusal. The probe's 15s self-opening barrier stays
+        inside the freeze's 30s drain bound.
     """
     with _two_member_index() as (book, conduit, id_a, id_b, index, spell_b):
         in_window = threading.Event()
