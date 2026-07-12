@@ -41,12 +41,20 @@ class UnelectConduitClusterLeaderTransactionStrategy(TransactionStrategy):
 
     Lifecycle (the freeze):
         - build_start_plan: seal the member conduits EXCLUSIVE.
-        - on_start (scopes held, before the domain unbind): drain every member root
-          lineage via the gate facade. A drain timeout raises here -> abort.
+        - on_start (scopes held, before the domain unbind): QUIESCE every member
+          root lineage via the gate facade - PARK mode (patch
+          notch_conduit_gate_freeze_2026_07_12): concurrent melds park at their
+          gate and resume on reopen. The original terminal drain verb made
+          in-window melds RAISE and left gates unresurrectable (open() never
+          clears the terminal flag) - the same freeze-verb defect the notch
+          lane fixed. A drain timeout raises here -> abort.
         - commit: base fact-baseline stamp only (no domain effect here).
-        - on_end (every exit path -- commit, abort, or error): reopen every member
-          root lineage. A failed drain leaves the leader still bound and the
-          lineages reopened (fail-closed), never permanently gated.
+        - on_end (every exit path -- commit, abort, or error; dispatched by the
+          mediator from root finalize since the same patch, which is what makes
+          the reopen actually fire on plain end_transaction callers): reopen
+          every member root lineage. A failed drain leaves the leader still
+          bound and the lineages reopened (fail-closed), never permanently
+          gated.
     """
 
     @classmethod
@@ -100,8 +108,13 @@ class UnelectConduitClusterLeaderTransactionStrategy(TransactionStrategy):
             metadata: Dict[str, object],
     ) -> None:
         """
-        Drain every member root lineage (scopes held) so no meld is mid-create
-        when the domain call site unbinds the team-store.
+        Quiesce every member root lineage (scopes held) so no meld is
+        mid-create when the domain call site unbinds the team-store.
+
+        Contract:
+            - PARK mode (`quiesce_conduit_lineage`): concurrent melds wait at
+              their gate and resume when `on_end` reopens - they are never
+              turned into errors and the gates are never terminally closed.
         """
         del devops_information_registry, identity
         gate_ops = metadata.get("conduit_lineage_gate_ops")
@@ -109,7 +122,7 @@ class UnelectConduitClusterLeaderTransactionStrategy(TransactionStrategy):
             return
         for root_id in metadata.get("member_root_conduit_ids", ()):
             if isinstance(root_id, str) and root_id:
-                gate_ops.close_and_wait_conduit_lineage(root_id)
+                gate_ops.quiesce_conduit_lineage(root_id)
 
     @staticmethod
     def on_end(

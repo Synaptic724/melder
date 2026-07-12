@@ -612,17 +612,20 @@ def test_unelect_seals_member_conduits_exclusive_and_marks_mode() -> None:
     assert plan["metadata"]["cluster_leader_mode"] == "unelect"
 
 
-def test_unelect_on_start_drains_every_member_root_lineage() -> None:
+def test_unelect_on_start_quiesces_every_member_root_lineage() -> None:
     """
     Purpose:
-        Verify unelect drains every member root lineage on_start (the use-after-dispose
-        guard: no meld may be mid-create against a store about to be unbound).
+        Verify unelect quiesces every member root lineage on_start (the
+        use-after-dispose guard: no meld may be mid-create against a store
+        about to be unbound) in PARK mode, so concurrent melds wait instead
+        of erroring and the gates stay reopenable.
     Contract:
-        - on_start drains each supplied member root exactly once.
+        - on_start quiesces each supplied member root exactly once.
+        - The terminal drain verb is never used (the pre-patch defect).
     Returns:
         None.
     Raises:
-        AssertionError: If the drain footprint does not match the member roots.
+        AssertionError: If the freeze footprint or verb does not match.
     """
     registry = DevopsInformationRegistry("frame-1")
     identity = _leader_identity("unelect_conduit_cluster_leader")
@@ -638,7 +641,8 @@ def test_unelect_on_start_drains_every_member_root_lineage() -> None:
         },
     )
 
-    assert sorted(gate_ops.closed) == ["root-1", "root-2"]
+    assert sorted(gate_ops.quiesced) == ["root-1", "root-2"]
+    assert gate_ops.closed == []
     assert gate_ops.enabled == []
 
 
@@ -671,17 +675,17 @@ def test_unelect_on_end_reopens_every_member_root_lineage() -> None:
     assert sorted(gate_ops.enabled) == ["root-1", "root-2"]
 
 
-def test_unelect_drain_then_reopen_cover_the_same_root_set() -> None:
+def test_unelect_quiesce_then_reopen_cover_the_same_root_set() -> None:
     """
     Purpose:
-        Verify the drain (on_start) and reopen (on_end) footprints are the same root set,
-        so every gate closed is later reopened.
+        Verify the quiesce (on_start) and reopen (on_end) footprints are the
+        same root set, so every gate frozen is later reopened.
     Contract:
-        - The set of drained roots equals the set of reopened roots.
+        - The set of quiesced roots equals the set of reopened roots.
     Returns:
         None.
     Raises:
-        AssertionError: If drain and reopen footprints diverge.
+        AssertionError: If freeze and reopen footprints diverge.
     """
     registry = DevopsInformationRegistry("frame-1")
     identity = _leader_identity("unelect_conduit_cluster_leader")
@@ -699,5 +703,5 @@ def test_unelect_drain_then_reopen_cover_the_same_root_set() -> None:
         devops_information_registry=registry, identity=identity, metadata=metadata,
     )
 
-    assert set(gate_ops.closed) == set(gate_ops.enabled)
-    assert set(gate_ops.closed) == {"root-1", "root-2", "root-3"}
+    assert set(gate_ops.quiesced) == set(gate_ops.enabled)
+    assert set(gate_ops.quiesced) == {"root-1", "root-2", "root-3"}
