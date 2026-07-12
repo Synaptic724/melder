@@ -256,6 +256,74 @@ class CreationGate(Cleanable):
         """
         self._tickets.pop()
 
+    def admit_ticket(self) -> None:
+        """
+        Public API
+
+        Atomically-by-ordering admit one guarded operation: acquire a
+        VISIBLE ticket first, then validate gate state, retrying through
+        parks until admitted or terminally refused.
+
+        Purpose:
+            Close the check-then-register drain race (owner finding,
+            2026-07-12): with separate checks, a drainer could disable
+            admission, observe zero tickets, and return while a meld that
+            had already passed its checks registered late and executed
+            inside the "drained" exclusive window. Ticket-first admission
+            makes that impossible without any lock: the ticket is
+            appended BEFORE the state reads, so either the drainer's
+            zero-poll sees this ticket and waits, or this caller's state
+            read happens after the freeze and it backs out.
+
+        Contract:
+            - LOOP: append ticket -> if terminally closed: pop + raise ->
+              if enabled: return (ADMITTED, ticket held) -> else pop +
+              park in the gate event -> retry on wake.
+            - On return the caller HOLDS one ticket and must pair it with
+              `unregister_ticket()` (try/finally at the call site).
+            - On raise no ticket is held (the transient ticket is popped
+              before the refusal), so callers never unregister after a
+              failed admission.
+            - Parked callers hold NO ticket (a frozen window's drain is
+              never extended by waiters) - at most a transient one for
+              the instant between append and the state read, which only
+              delays a drain poll by one interval.
+            - Wakes from terminal closure re-check and refuse
+              (`close_and_wait_until_free` sets the event with
+              `_closed=True` exactly so waiters can observe it).
+
+        Threading:
+            - Lock-free by design (owner ruling): deque append/pop are
+              thread-safe primitives, and the append-before-read ordering
+              carries the drain guarantee on free-threaded builds. The
+              only cleaned-state guard is at entry; a cleanup racing the
+              loop surfaces as the standard deleted-slot AttributeError
+              (lifecycle misuse, loud by contract).
+
+        Returns:
+            None. (The caller holds one admitted ticket.)
+
+        Raises:
+            RuntimeError:
+                If the gate is terminally closed, or if called after
+                "cleanup()".
+        """
+        self.check_cleaned()
+        tickets = self._tickets
+        while True:
+            # Visibility FIRST: from this append until the pop below, any
+            # drain poll counts this caller and must wait.
+            tickets.append(None)
+            if self._closed:
+                tickets.pop()
+                raise RuntimeError("CreationGate is closed.")
+            if self.enabled:
+                return
+            # Not admitted: become invisible again, then park until the
+            # gate reopens (or terminally closes and wakes everyone).
+            tickets.pop()
+            self._event.wait()
+
     def has_active_tickets(self) -> bool:
         """
         Public API

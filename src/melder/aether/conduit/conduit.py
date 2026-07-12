@@ -3579,17 +3579,14 @@ class Conduit(Cleanable):
         if self.__dynamic_environment__:
             creation_gate = self._creation_gate
 
-            if creation_gate.is_closed():
-                raise RuntimeError(f"[CONDUIT: {self.id}] CreationGate is closed.")
-
-            if not creation_gate.enabled:
-                creation_gate.wait()
-                if creation_gate.is_closed():
-                    raise RuntimeError(f"[CONDUIT: {self.id}] CreationGate is closed.")
-
+            # Ticket-first admission (drain-race fix 2026-07-12): the gate
+            # verb acquires a VISIBLE ticket before validating state, so a
+            # concurrent freeze-and-drain can never observe zero tickets
+            # while this meld is between its check and its registration.
+            # Raises the closed refusal itself; parks through temporary
+            # freezes. On return this thread HOLDS the ticket.
+            creation_gate.admit_ticket()
             try:
-                # Track active melds for shutdown/drain semantics.
-                creation_gate.register_ticket()
                 # Hot path: `spell` rides positionally end to end so the
                 # dominant id-string call never pays keyword marshaling.
                 return meld_component.meld(
@@ -3668,16 +3665,10 @@ class Conduit(Cleanable):
         if self.__dynamic_environment__:
             creation_gate = self._creation_gate
 
-            if creation_gate.is_closed():
-                raise RuntimeError(f"[CONDUIT: {self.id}] CreationGate is closed.")
-
-            if not creation_gate.enabled:
-                creation_gate.wait()
-                if creation_gate.is_closed():
-                    raise RuntimeError(f"[CONDUIT: {self.id}] CreationGate is closed.")
-
+            # Ticket-first admission (drain-race fix 2026-07-12): visible
+            # ticket before state validation - see CreationGate.admit_ticket.
+            creation_gate.admit_ticket()
             try:
-                creation_gate.register_ticket()
                 return meld_component.meld_existing_spell(
                     spell_name=spell_name,
                     spell=spell,

@@ -414,6 +414,79 @@ def test_creation_gate_close_and_drain_times_out_when_ticket_never_exits() -> No
     gate.unregister_ticket()
 
 
+def test_creation_gate_admit_ticket_holds_ticket_on_open_gate() -> None:
+    """
+    Purpose:
+        Verify ticket-first admission on an open gate: the caller returns
+        holding exactly one visible ticket (the drain-race fix's happy
+        path).
+    Contract:
+        - admit_ticket() returns with active_ticket_count == 1.
+        - unregister_ticket() pairs back to zero.
+    """
+    gate = CreationGate()
+    gate.admit_ticket()
+    assert gate.active_ticket_count() == 1
+    gate.unregister_ticket()
+    assert gate.active_ticket_count() == 0
+
+
+def test_creation_gate_admit_ticket_refuses_terminal_close_without_leak() -> None:
+    """
+    Purpose:
+        Verify terminal refusal leaves NO ticket behind: the transient
+        visibility ticket is popped before the raise, so failed
+        admissions never extend a shutdown drain.
+    Contract:
+        - admit_ticket() on a terminally closed gate raises RuntimeError.
+        - active_ticket_count stays zero afterwards.
+    """
+    gate = CreationGate()
+    gate.close_and_wait_until_free(timeout=0.1, interval=0.01)
+    with pytest.raises(RuntimeError, match="CreationGate is closed"):
+        gate.admit_ticket()
+    assert gate.active_ticket_count() == 0
+
+
+def test_creation_gate_admit_ticket_parks_invisibly_through_a_freeze() -> None:
+    """
+    Purpose:
+        Regression for the drain race (owner finding 2026-07-12): during
+        a park-mode freeze, a pending admitter must hold NO ticket (so
+        close_and_drain's zero-poll is truthful) and must admit with one
+        visible ticket only after open().
+    Contract:
+        - close_and_drain returns while an admitter is parked (no ticket
+          extends the drained window).
+        - The parked admitter holds zero steady-state tickets.
+        - open() admits it with exactly one ticket.
+    """
+    gate = CreationGate()
+    gate.close_and_drain(timeout=0.5, interval=0.01)
+    admitted = threading.Event()
+
+    def _pending_meld() -> None:
+        gate.admit_ticket()
+        admitted.set()
+
+    admitter = threading.Thread(target=_pending_meld)
+    admitter.start()
+    # The admitter parks: it must not become admitted and must not hold a
+    # steady ticket while the freeze stands (transient blips are popped
+    # before the park; steady-state must read zero).
+    assert not admitted.wait(timeout=0.2)
+    for _ in range(5):
+        assert gate.active_ticket_count() == 0
+        time.sleep(0.01)
+
+    gate.open()
+    assert admitted.wait(timeout=5.0)
+    assert gate.active_ticket_count() == 1
+    gate.unregister_ticket()
+    admitter.join(timeout=5.0)
+    assert not admitter.is_alive()
+
+
 def test_creation_gate_open_resumes_parked_waiter_after_close_and_drain() -> None:
     """
     Purpose:

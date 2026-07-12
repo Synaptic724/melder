@@ -204,18 +204,10 @@ class CreationContext(Cleanable):
             raise RuntimeError(
                 f"CreationGate is unavailable for spell index '{index_id}'."
             )
-        if creation_gate.is_closed():
-            raise RuntimeError(
-                f"CreationGate is closed for spell index '{index_id}'."
-            )
-        if not creation_gate.enabled:
-            creation_gate.wait()
-            if creation_gate.is_closed():
-                raise RuntimeError(
-                    f"CreationGate is closed for spell index '{index_id}'."
-                )
+        # Ticket-first admission (drain-race fix 2026-07-12): visible
+        # ticket before state validation - see CreationGate.admit_ticket.
+        creation_gate.admit_ticket()
         try:
-            creation_gate.register_ticket()
             if overrides is None:
                 no_overrides_executor = self._no_overrides_executor
                 return no_overrides_executor(meld)
@@ -250,18 +242,10 @@ class CreationContext(Cleanable):
             raise RuntimeError(
                 f"CreationGate is unavailable for spell index '{index_id}'."
             )
-        if creation_gate.is_closed():
-            raise RuntimeError(
-                f"CreationGate is closed for spell index '{index_id}'."
-            )
-        if not creation_gate.enabled:
-            creation_gate.wait()
-            if creation_gate.is_closed():
-                raise RuntimeError(
-                    f"CreationGate is closed for spell index '{index_id}'."
-                )
+        # Ticket-first admission (drain-race fix 2026-07-12): visible
+        # ticket before state validation - see CreationGate.admit_ticket.
+        creation_gate.admit_ticket()
         try:
-            creation_gate.register_ticket()
             if overrides is None:
                 return self._no_overrides_instance_executor(meld)
             overrides_executor = self._overrides_executor

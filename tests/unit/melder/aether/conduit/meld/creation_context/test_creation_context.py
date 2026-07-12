@@ -11,7 +11,15 @@ from melder.aether.conduit.meld.creation_context.creation_context import (
 
 
 class _Gate:
-    """Minimal CreationGate stub for execute-path tests."""
+    """
+    Minimal CreationGate stub for execute-path tests.
+
+    Mirrors the ticket-first admission contract (drain-race fix
+    2026-07-12): `admit_ticket()` refuses terminal closure, parks once
+    on a disabled gate (modeled as wait-then-reopen), and returns
+    holding one counted ticket. The counters keep the pre-existing
+    observable assertions (wait/register/unregister) meaningful.
+    """
 
     def __init__(self, *, enabled: bool = True, closed: bool = False) -> None:
         self.enabled = enabled
@@ -25,12 +33,25 @@ class _Gate:
 
     def wait(self) -> None:
         self.wait_calls += 1
+        # Model the freeze reopening so admit_ticket's retry loop admits
+        # (a real gate parks here until open()).
+        self.enabled = True
 
     def register_ticket(self) -> None:
         self.register_calls += 1
 
     def unregister_ticket(self) -> None:
         self.unregister_calls += 1
+
+    def admit_ticket(self) -> None:
+        """Ticket-first admission mirroring CreationGate's contract."""
+        while True:
+            if self._closed:
+                raise RuntimeError("CreationGate is closed.")
+            if self.enabled:
+                self.register_ticket()
+                return
+            self.wait()
 
 
 def _make_spell(spell_id: str = "spell-1") -> Any:
