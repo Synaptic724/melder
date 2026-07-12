@@ -589,6 +589,39 @@ def test_disable_all_closes_both_registries() -> None:
     assert lg.enabled is False
 
 
+def test_close_and_drain_conduit_lineage_freezes_every_gate_park_mode() -> None:
+    """
+    Purpose:
+        Verify the park-mode lineage freeze (the notch transaction's
+        exclusivity primitive) disables every gate under one root WITHOUT
+        terminal closure, so a later reopen fully restores admission.
+    Contract:
+        - Every lineage gate ends enabled=False and is_closed()=False.
+        - Gates outside the lineage are untouched.
+        - An unknown root is a no-op.
+    """
+    controller = CreationGateController()
+    root_gate = controller.create_conduit_gate("root-1")
+    child_gate = controller.create_conduit_gate(
+        "lesser-1", root_conduit_id="root-1"
+    )
+    other_gate = controller.create_conduit_gate("root-2")
+
+    controller.close_and_drain_conduit_lineage(
+        "root-1", timeout=0.5, interval=0.01
+    )
+
+    assert root_gate.enabled is False
+    assert child_gate.enabled is False
+    assert root_gate.is_closed() is False
+    assert child_gate.is_closed() is False
+    assert other_gate.enabled is True
+
+    controller.close_and_drain_conduit_lineage(
+        "unknown-root", timeout=0.1, interval=0.01
+    )
+
+
 @pytest.mark.parametrize(
     "method_name,args",
     [
@@ -612,6 +645,7 @@ def test_disable_all_closes_both_registries() -> None:
         ("disable_all", ()),
         ("close_and_wait_until_conduit_free", ("c1",)),
         ("close_and_wait_until_conduit_lineage_free", ("root-1",)),
+        ("close_and_drain_conduit_lineage", ("root-1",)),
         ("close_and_wait_until_spell_index_free", ("i1",)),
     ],
 )

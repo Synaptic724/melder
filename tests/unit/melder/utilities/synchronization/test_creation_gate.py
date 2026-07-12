@@ -351,3 +351,92 @@ def test_creation_gate_close_keeps_non_terminal_state() -> None:
     gate.close()
     assert gate.enabled is False
     assert gate.is_closed() is False
+
+
+def test_creation_gate_close_and_drain_parks_without_terminal_closure() -> None:
+    """
+    Purpose:
+        Verify the park-mode freeze (close_and_drain) disables entry, returns
+        immediately with zero tickets, and never sets the terminal flag.
+    Contract:
+        - enabled=False after the call (new callers would park in wait()).
+        - is_closed() stays False (non-terminal - the freeze is reversible).
+    """
+    gate = CreationGate()
+    gate.close_and_drain(timeout=0.5, interval=0.01)
+    assert gate.enabled is False
+    assert gate.is_closed() is False
+    assert gate.has_active_tickets() is False
+
+
+def test_creation_gate_close_and_drain_waits_for_ticket_exit() -> None:
+    """
+    Purpose:
+        Verify the freeze blocks until in-flight tickets drain (the meld
+        holds its ticket across its whole executor - validators included).
+    Contract:
+        - close_and_drain returns only after the last ticket unregisters.
+    """
+    gate = CreationGate()
+    gate.register_ticket()
+    released = threading.Event()
+
+    def _finish_inflight_work() -> None:
+        time.sleep(0.05)
+        gate.unregister_ticket()
+        released.set()
+
+    worker = threading.Thread(target=_finish_inflight_work)
+    worker.start()
+    gate.close_and_drain(timeout=5.0, interval=0.01)
+    worker.join(timeout=5.0)
+    assert released.is_set()
+    assert gate.active_ticket_count() == 0
+    assert gate.is_closed() is False
+
+
+def test_creation_gate_close_and_drain_times_out_when_ticket_never_exits() -> None:
+    """
+    Purpose:
+        Verify a stuck in-flight ticket bounds the freeze with a loud error
+        (the self-deadlock refusal: e.g. a notch issued from inside a meld
+        hook on its own lineage).
+    Contract:
+        - RuntimeError raises at the timeout; the gate stays frozen-parked
+          (non-terminal) for the caller's reopen path to recover.
+    """
+    gate = CreationGate()
+    gate.register_ticket()
+    with pytest.raises(RuntimeError, match="close_and_drain"):
+        gate.close_and_drain(timeout=0.05, interval=0.01)
+    assert gate.enabled is False
+    assert gate.is_closed() is False
+    gate.unregister_ticket()
+
+
+def test_creation_gate_open_resumes_parked_waiter_after_close_and_drain() -> None:
+    """
+    Purpose:
+        Verify the full freeze round trip: a caller parked at wait() during
+        the freeze resumes when open() fires (the notch strategy's on_end
+        reopen), proving the freeze is fully reversible.
+    Contract:
+        - wait() blocks while frozen and returns after open().
+        - The reopened gate admits normally (enabled=True, not closed).
+    """
+    gate = CreationGate()
+    gate.close_and_drain(timeout=0.5, interval=0.01)
+    resumed = threading.Event()
+
+    def _parked_meld_entry() -> None:
+        gate.wait()
+        resumed.set()
+
+    waiter = threading.Thread(target=_parked_meld_entry)
+    waiter.start()
+    assert not resumed.wait(timeout=0.1)
+    gate.open()
+    assert resumed.wait(timeout=5.0)
+    waiter.join(timeout=5.0)
+    assert gate.enabled is True
+    assert gate.is_closed() is False
