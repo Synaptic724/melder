@@ -21,10 +21,16 @@ import hashlib
 import sys
 from pathlib import Path
 
+_REPO_ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(_REPO_ROOT / "src"))
 sys.path.insert(0, str(Path(__file__).parent))
 from profile_harness import ProfileScenario, run_scenarios
 
+from melder.aether.aether import Aether
+from melder.aether.aether_utility_system import AetherUtilitySystem
+from melder.crystallizer.crystallizer import Crystallizer
 from melder.mutation_research.mutation_research import MutationResearch
+from melder.nexus.nexus import Nexus
 
 _TIER_SPELLS = {"small": 100, "medium": 500, "large": 2000}
 
@@ -37,13 +43,17 @@ def _sha(index: int, tier: str) -> str:
 
 
 def _fresh_root():
-    """Build one activated, standalone MR root (no Aether world needed)."""
+    """Build the activated Aether-owned MutationResearch root."""
+    Aether._reset_singleton_for_tests()
+    AetherUtilitySystem._reset_singleton_for_tests()
+    Nexus._reset_singleton_for_tests()
+    Crystallizer._reset_singleton_for_tests()
     MutationResearch._reset_singleton_for_tests()
-    root = MutationResearch(aether=None)
+    root = Aether().mutation_research
     configuration = root.create_configuration()
     configuration.with_defaults()
-    root.configure(configuration)
-    root.activate(hydrate_from_record=False)
+    configuration.activate()
+    root.activate(configuration, hydrate_from_record=False)
     return root
 
 
@@ -68,11 +78,11 @@ def _setup_populated(tier: str):
 
 
 def _teardown(state) -> None:
-    """Clean the bench root (best-effort)."""
-    try:
-        state["root"].cleanup()
-    except Exception:
-        pass
+    """Reset the Aether-owned root and its collaborating singletons."""
+    Aether._reset_singleton_for_tests()
+    AetherUtilitySystem._reset_singleton_for_tests()
+    Nexus._reset_singleton_for_tests()
+    Crystallizer._reset_singleton_for_tests()
     MutationResearch._reset_singleton_for_tests()
 
 

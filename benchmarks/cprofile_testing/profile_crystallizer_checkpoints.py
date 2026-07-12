@@ -22,33 +22,50 @@ Rot check:
 import sys
 from pathlib import Path
 
+_REPO_ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(_REPO_ROOT))
+sys.path.insert(0, str(_REPO_ROOT / "src"))
 sys.path.insert(0, str(Path(__file__).parent))
 from profile_harness import ProfileScenario, run_scenarios
 
 from melder.aether.aether import Aether
+from melder.aether.aether_utility_system import AetherUtilitySystem
+from melder.aether.conduit.conduit import Conduit
 from melder.aether.spellbook.configuration.spellbook_configuration import (
     SpellbookConfiguration,
 )
+from melder.aether.spellbook.existence.existence import Existence
 from melder.aether.spellbook.spellbook import Spellbook
 from melder.crystallizer.crystallizer import Crystallizer
+from melder.nexus.nexus import Nexus
+from tests._frame_posture_test_support import (
+    apply_dynamic_defaults_for_spellbook_configuration,
+)
 
 _TIER_BINDS = {"small": 20, "medium": 100, "large": 400}
 _TIER_BOOKS = {"small": 2, "medium": 5, "large": 10}
 
 
 def _reset_world() -> None:
-    """Reset the Aether singleton world between scenario states."""
-    if Aether._instance is not None:
-        try:
-            Aether().cleanup()
-        except Exception:
-            pass
-    Aether._instance = None
-    Aether._initialized = False
+    """Reset every world singleton between scenario states."""
+    Aether._reset_singleton_for_tests()
+    AetherUtilitySystem._reset_singleton_for_tests()
+    Nexus._reset_singleton_for_tests()
+    Crystallizer._reset_singleton_for_tests()
     aether = Aether()
     Spellbook._aether = aether
-    from melder.aether.conduit.conduit import Conduit
     Conduit._aether = aether
+
+
+def _activate_crystallizer() -> Crystallizer:
+    """Activate one fresh Crystallizer with benchmark source retention."""
+    crystallizer = Crystallizer()
+    configuration = crystallizer.create_configuration()
+    configuration.set_property("user_source_root_paths", [str(_REPO_ROOT)])
+    configuration.with_defaults()
+    configuration.activate()
+    crystallizer.activate(configuration)
+    return crystallizer
 
 
 def _make_service_classes(count: int, stamp: str):
@@ -74,29 +91,25 @@ def _build_recorded_world(tier: str):
         Dict[str, object]: {crystallizer, books, checkpoint_id (unsealed)}.
     """
     _reset_world()
-    crystallizer = Crystallizer()
-    configuration = crystallizer.create_configuration()
-    configuration.set_property("user_source_root_paths", [str(Path.cwd())])
-    configuration.with_defaults()
-    crystallizer.configure(configuration)
-    crystallizer.activate()
+    crystallizer = _activate_crystallizer()
     books = []
     for book_index in range(_TIER_BOOKS[tier]):
-        book_configuration = SpellbookConfiguration()
-        book_configuration.load_default_dictionary()
-        book_configuration.set_property("system_state", "dynamic")
+        frame_name = "bench_frame_{0}".format(book_index)
+        book_configuration = SpellbookConfiguration(aether_frame=frame_name)
+        apply_dynamic_defaults_for_spellbook_configuration(book_configuration)
         book_configuration.set_property(
             "phase_scheduler_workers_per_spellbook", 1,
         )
+        book_configuration.finalize()
         book = Spellbook(
-            aetheric_frame="bench_frame_{0}".format(book_index),
+            aetheric_frame=frame_name,
             configuration=book_configuration,
         )
         for cls in _make_service_classes(
                 _TIER_BINDS[tier] // _TIER_BOOKS[tier],
                 "{0}_{1}".format(tier, book_index),
         ):
-            book.bind(cls)
+            book.bind(spell=cls, existence=Existence.unique)
         book.conjure(dynamic=True, name="root_{0}".format(book_index))
         books.append(book)
     return {"crystallizer": crystallizer, "books": books}
@@ -121,10 +134,18 @@ def _cache_round_trip(state) -> None:
 
 
 def _setup_sealed(tier: str):
-    """Setup for load: recorded world + one sealed checkpoint id."""
+    """Setup a cached checkpoint and a genuinely fresh restore world."""
     state = _build_recorded_world(tier)
-    state["checkpoint_id"] = state["crystallizer"].create_checkpoint()
-    return state
+    checkpoint_id = state["crystallizer"].create_checkpoint()
+    state["crystallizer"].flush_checkpoint(checkpoint_id)
+    _reset_world()
+    rebooted = _activate_crystallizer()
+    rebooted.reload_cached_checkpoint(checkpoint_id)
+    return {
+        "crystallizer": rebooted,
+        "books": [],
+        "checkpoint_id": checkpoint_id,
+    }
 
 
 def _load(state) -> None:
