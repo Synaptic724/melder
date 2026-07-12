@@ -85,6 +85,11 @@ class AssetManagementSystem(Cleanable):
         """
         Initialize the asset system over one borrowed record.
 
+        Contract:
+            Creates and owns one local `CrystallizerCache`; no external manager
+            exists until configured. Construction neither reads nor writes the
+            filesystem and does not inspect the borrowed record.
+
         Args:
             persistence_system:
                 The crystallizer's record. Borrowed collaborator: used
@@ -111,8 +116,19 @@ class AssetManagementSystem(Cleanable):
         Clean owned custody (manager, then cache), release references.
 
         Contract:
-            - Idempotent; del posture; lock deleted last.
-            - The borrowed record is dereferenced, never cleaned.
+            - Idempotent and terminal; the external manager cleans before the
+              cache, then the borrowed record is dereferenced.
+            - The record is never cleaned here, and cache cleanup does not
+              delete checkpoint or formation files from disk.
+            - The instance lock is deleted last.
+
+        Threading:
+            Serialized by the asset lock; no flush, reload, or manager swap may
+            race with teardown.
+
+        Lifecycle / Cleanup:
+            Called by `Crystallizer.cleanup()` before persistence cleanup,
+            satisfying borrower-before-record ownership.
         """
         if self._cleaned:
             return

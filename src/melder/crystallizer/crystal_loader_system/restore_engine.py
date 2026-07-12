@@ -86,7 +86,16 @@ class RestoreReport(Cleanable):
         Delete owned report fields and mark the report cleaned.
 
         Contract:
-            - Idempotent; del posture (no tombstone fields retained).
+            - Idempotent and terminal; no tombstone fields are retained.
+            - Releases value-only reporting state and never tears down or
+              cleans a runtime unit described by the report.
+
+        Threading:
+            Must not race with engine writes or caller reads.
+
+        Lifecycle / Cleanup:
+            After a successful restore, the caller owns this report and decides
+            when its detached result is no longer needed.
         """
         if self._cleaned:
             return
@@ -417,9 +426,21 @@ class RestoreEngine(Cleanable):
         Delete owned fold/replay state and mark the engine cleaned.
 
         Contract:
-            - Idempotent; del posture.
-            - Does NOT clean the report: its ownership passes to the caller
-              when `restore()` returns (a never-run engine cleans it).
+            - Idempotent and terminal; deletes detached fold state and borrowed
+              live handles without tearing down a successfully rebuilt world.
+            - A never-started engine cleans its owned report. Once `restore()`
+              marks the engine consumed, report ownership is treated as
+              transferred and cleanup only releases the engine's reference.
+            - Runtime rollback belongs to the restore failure path, not generic
+              engine cleanup.
+
+        Threading:
+            Runs on the engine's single owning thread after restore activity has
+            stopped.
+
+        Lifecycle / Cleanup:
+            `CrystalLoaderSystem` cleans every engine in `finally`, regardless
+            of success, admission refusal, or replay failure.
         """
         if self._cleaned:
             return

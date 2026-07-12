@@ -32,10 +32,11 @@ class PersistenceCrystal(Cleanable):
     Threading:
         Immutable-after-init; safe to share across threads without locking.
 
-    Lifecycle:
-        Owned by exactly one PersistenceSystem ledger entry. `cleanup()`
-        (= wipe) deletes owned fields; idempotent; reload via
-        `from_cached_item` when the cached form was stored.
+    Lifecycle / Cleanup:
+        Owned by exactly one `PersistenceSystem` ledger entry. Cleanup wipes
+        only the in-memory artifact and is terminal for that instance; a stored
+        cached item can construct an equivalent new instance through
+        `from_cached_item()`.
     """
 
     __slots__ = Cleanable.__slots__ + [
@@ -62,6 +63,12 @@ class PersistenceCrystal(Cleanable):
     ) -> None:
         """
         Initialize one sealed checkpoint from a captured profile segment.
+
+        Contract:
+            Normalizes journal tuples, copies each captured payload mapping,
+            and stores no profile or twin reference. A missing `created_at`
+            mints an ISO-8601 UTC timestamp; rehydration preserves the recorded
+            timestamp supplied by the cached item.
 
         Args:
             checkpoint_id:
@@ -127,9 +134,19 @@ class PersistenceCrystal(Cleanable):
         Wipe the in-memory snapshot and mark it cleaned.
 
         Contract:
-            - Idempotent; del posture (no tombstones).
-            - Wiping is safe once the cached form exists elsewhere; reload
-              via `from_cached_item`.
+            - Idempotent and terminal; deletes all metadata and replay data.
+            - Does not delete a cached item or remote copy and does not mutate
+              the source profile from which this checkpoint was captured.
+            - Recovery means constructing a new instance through
+              `from_cached_item()`; the cleaned object is never revived.
+
+        Threading:
+            The object is immutable while live, but cleanup must not race with
+            a reader because it removes the carried fields.
+
+        Lifecycle / Cleanup:
+            Normally called by ledger retention, profile-system teardown, or
+            replacement of an inserted cached checkpoint.
         """
         if self._cleaned:
             return
@@ -218,6 +235,11 @@ class PersistenceCrystal(Cleanable):
     def describe(self) -> Dict[str, object]:
         """
         Return the checkpoint's detached metadata summary (ledger view).
+
+        Contract:
+            Exposes identity, capture bounds, and per-kind counts only. Replay
+            journals and twin payload bodies remain behind `replay_data()` or
+            `to_cached_item()`.
 
         Returns:
             Dict[str, object]:

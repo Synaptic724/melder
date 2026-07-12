@@ -107,8 +107,20 @@ class CrystalLoaderSystem(Cleanable):
         Clean the owned admission plane, release state and references.
 
         Contract:
-            - Idempotent; del posture; lock deleted last.
-            - The borrowed record is dereferenced, never cleaned.
+            - Idempotent and terminal; cleans the owned admission plane before
+              releasing last-load state and borrowed collaborators.
+            - The persistence record and optional `Aether` host are
+              dereferenced, never cleaned.
+            - Does not tear down any world built by an earlier successful load.
+              Runtime ownership transferred through normal public verbs.
+
+        Threading:
+            Serialized by the loader lock; no load-authority span or plan
+            execution may still be active.
+
+        Lifecycle / Cleanup:
+            Called by the crystallizer before the asset system and persistence
+            record, preserving borrower-before-record order.
         """
         if self._cleaned:
             return

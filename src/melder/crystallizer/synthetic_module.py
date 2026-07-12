@@ -20,6 +20,19 @@ class _SyntheticModuleImportLoader(importlib.abc.Loader):
         Let normal importlib machinery create and execute registered synthetic
         modules without forcing callers to manually juggle `sys.modules`,
         `ModuleSpec`, or package-shell setup themselves.
+
+    Contract:
+        The loader never allocates a second world object. Specs resolve back to
+        the exact `SyntheticModule` held by the class registry, and execution
+        delegates to that object's retained source.
+
+    Threading:
+        Registry lookup is serialized by `SyntheticModule._registry_lock`;
+        source execution follows the target module's instance-lock contract.
+
+    Lifecycle / Cleanup:
+        One process-wide loader is created lazily by `SyntheticModule`. It owns
+        no module and has no independent cleanup surface.
     """
     __melder_internal__ = _mrg.sentinel
     def create_module(self, spec: ModuleSpec) -> ModuleType:
@@ -122,6 +135,18 @@ class _SyntheticModuleMetaPathFinder(importlib.abc.MetaPathFinder):
     Purpose:
         Allow normal `import ...` / `importlib.import_module(...)` flows to
         discover crystallizer-owned synthetic modules through the registry.
+
+    Contract:
+        Returns a spec only for a currently registered name. Returning None
+        delegates resolution to later meta-path finders without changing any
+        synthetic state.
+
+    Threading:
+        Discovery is registry-lock protected through `build_registered_spec()`.
+
+    Lifecycle / Cleanup:
+        The singleton finder may be installed or removed repeatedly. Removing
+        it does not unregister, unpublish, execute, or clean a module.
     """
     __melder_internal__ = _mrg.sentinel
     def find_spec(
@@ -179,6 +204,26 @@ class SyntheticModule(ModuleType):
         - cleanup is deterministic, unregisters the module from the synthetic
           import registry, unpublishes it, detaches parent bindings, and then
           drops owned metadata
+        - registration, import-hook installation, publication, and source
+          execution are four distinct states; none should be inferred from
+          another. `materialize()` is the convenience path that composes them.
+        - parent package shells are separate synthetic modules registered and
+          materialized parents-first for dotted names.
+
+    Threading:
+        Each module's `RLock` guards its metadata, namespace mutation,
+        publication flag, and execution. A class-level `RLock` independently
+        guards the registry, registration order, shared loader/finder, and
+        meta-path hook changes. User source executes while the instance lock is
+        held and may invoke normal import machinery.
+
+    Lifecycle / Cleanup:
+        Construction is inert: unregistered, unpublished, and unexecuted.
+        Registration enables discovery; publication exposes the exact object in
+        `sys.modules`; execution populates its namespace. Unpublish and
+        unregister are reversible visibility changes. Cleanup is terminal for
+        one module but does not remove the global hook or clean other registry
+        members; `clear_import_registry()` owns that broader reset.
 
     Why this exists:
         The experiments proved that world-first module behavior depends on more
@@ -224,6 +269,12 @@ class SyntheticModule(ModuleType):
             - importlib-loaded
             - reloaded
             - unloaded cleanly
+
+        Contract:
+            Copies caller-provided name sequences and initializes importlib
+            identity metadata without registering, publishing, or executing the
+            module. `source_sha256` is recorded as supplied; construction does
+            not recompute or verify it against `source_text`.
 
         Args:
             module_name:
@@ -329,17 +380,29 @@ class SyntheticModule(ModuleType):
         """
         Unregister, unpublish, and clear owned metadata.
 
-        Cleanup contract:
-        - idempotent
-        - removes the module from the synthetic import registry
-        - removes the module from `sys.modules` when this exact object is
-          currently published
-        - detaches the module from its parent package binding when applicable
-        - removes non-dunder runtime namespace values
-        - clears owned metadata and then drops the lock reference
+        Contract:
+            - Idempotent and terminal.
+            - Removes this exact object from the synthetic registry and from
+              `sys.modules`; a different object published under the same name
+              is preserved.
+            - Detaches only a parent attribute that still points to this object.
+            - Drops linecache source, non-dunder runtime namespace values,
+              importlib metadata, owned analysis/source fields, and the lock.
+            - Does not remove the process-wide finder or clean automatically
+              created parent shells and sibling modules.
 
         Returns:
             None.
+
+        Threading:
+            Serialized by the instance lock; registry removal additionally uses
+            the class registry lock. Callers must not begin new module work
+            after cleanup starts.
+
+        Lifecycle / Cleanup:
+            Use `unpublish_from_sys_modules()` or
+            `unregister_from_import_registry()` for reversible visibility
+            changes. Cleanup is permanent object teardown.
         """
         if self._cleaned:
             return
@@ -821,6 +884,13 @@ class SyntheticModule(ModuleType):
             Make the module discoverable through the class-level
             importlib-backed finder/loader path.
 
+        Contract:
+            Registration does not publish or execute this module. Re-registering
+            the same object is idempotent for load-order bookkeeping; registering
+            another object under the same name replaces the registry entry.
+            Optional parent shells are registered recursively but remain
+            unmaterialized until an activation path needs them.
+
         Args:
             auto_parent_package_shells:
                 When True, register missing parent package shells for dotted
@@ -853,6 +923,11 @@ class SyntheticModule(ModuleType):
             Stop importlib-driven discovery of this module without requiring an
             immediate object destruction.
 
+        Contract:
+            Removes the entry only when it still points to this exact object and
+            removes every matching load-order row. Publication, namespace state,
+            and the global import hook are unchanged.
+
         Returns:
             None.
         """
@@ -879,6 +954,14 @@ class SyntheticModule(ModuleType):
         Purpose:
             Provide one direct first-load path without forcing the caller to
             juggle registry, publication, and execution manually.
+
+        Contract:
+            Performs register -> optional hook install -> parent-shell
+            materialization -> publication -> execution -> importlib metadata.
+            Publication precedes execution so circular imports can observe the
+            same partially initialized module object. An execution exception
+            propagates and does not automatically roll back prior visibility
+            steps; the owner must unpublish or clean during failure handling.
 
         Args:
             auto_parent_package_shells:
@@ -1119,6 +1202,11 @@ class SyntheticModule(ModuleType):
             Make registered synthetic modules discoverable through normal import
             machinery.
 
+        Contract:
+            Process-global and idempotent. The one shared finder is inserted at
+            the front of `sys.meta_path`, giving registered synthetic names the
+            first opportunity to resolve while unknown names fall through.
+
         Returns:
             None.
         """
@@ -1136,6 +1224,11 @@ class SyntheticModule(ModuleType):
         Purpose:
             Stop synthetic-module discovery through importlib without deleting
             the registered/live modules themselves.
+
+        Contract:
+            Process-global and idempotent. Removes every occurrence of this
+            class's shared finder while preserving all other meta-path entries,
+            registry members, `sys.modules` publications, and namespaces.
 
         Returns:
             None.
@@ -1335,6 +1428,13 @@ class SyntheticModule(ModuleType):
             Reset the synthetic import system for isolated tests or runtime
             teardown without keeping stale finder state around.
 
+        Contract:
+            Removes the shared finder, atomically detaches the complete registry
+            and registration-order list, then unpublishes the detached modules
+            in reverse registration order. Module objects are not cleaned, so
+            owners may still inspect, re-register, or explicitly clean them.
+            Auto-created parent shells follow the same rule.
+
         Returns:
             None.
         """
@@ -1391,6 +1491,12 @@ class SyntheticModule(ModuleType):
             module world state, including package posture, executed state, and
             publication state, without exposing the internal mutable fields
             themselves.
+
+        Contract:
+            Returns fresh dependency/export lists and scalar metadata under the
+            instance lock. Runtime namespace values, registry state, parent
+            objects, loader/spec objects, and the synchronization lock are not
+            exposed. The retained source text is intentionally included.
 
         Returns:
             Dict[str, Any]:

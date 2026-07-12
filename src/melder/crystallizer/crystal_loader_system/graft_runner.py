@@ -61,9 +61,10 @@ class GraftRunner(Cleanable):
           "member_resident_in_host_skipped". Applies identically in
           merge mode. Index internals are never touched in either mode
           (merge grows the target through its own public verbs only).
-        - Hydration v1 is the normal import lane only; retained-text
-          rebuild for graft members is a flagged follow-up (the ticket
-          carries it).
+        - Hydration uses the normal import lane first. When the target is
+          absent and retained user-source text exists, the shared
+          `user_world_rebuild` lane rebuilds missing modules parents-first and
+          retries the import exactly once; live files always win.
 
     Threading:
         Thread-confined to the calling thread (the host book's verbs run
@@ -163,8 +164,21 @@ class GraftRunner(Cleanable):
         """
         Idempotently release the carried record and host references.
 
+        Contract:
+            Terminal for this runner. Cleanup releases only the detached graft
+            record and borrowed live references; it does not undo completed
+            binds, parked members, selection changes, or rebuilt modules.
+
         Returns:
             None.
+
+        Threading:
+            Must run on the owning thread after `run()` has returned or raised.
+
+        Lifecycle / Cleanup:
+            The facade constructs one runner per graft request and cleans it in
+            `finally`; successful runtime mutations have already transferred to
+            their normal owners.
         """
         if self._cleaned:
             return
@@ -179,6 +193,13 @@ class GraftRunner(Cleanable):
     def run(self) -> Dict[str, object]:
         """
         Execute the graft against the live host book.
+
+        Contract:
+            Consumes the runner before host validation, so any return or error
+            makes the instance non-reusable. Per-member hydration failures are
+            reported as shortfalls; structural refusals raise. Fresh-index and
+            merge modes both mutate only through public transaction-admitting
+            verbs and return newly allocated report containers.
 
         Returns:
             Dict[str, object]:

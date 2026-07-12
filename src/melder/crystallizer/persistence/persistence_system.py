@@ -36,18 +36,19 @@ class PersistenceSystem(Cleanable):
           profile's journal segment since the last checkpoint into a new
           PersistenceCrystal (detached plain data), appends it to the
           ledger, and advances the profile's checkpoint mark.
-        - `load_checkpoint` is a boot verb by design (restart-lane): live
-          world collapse-and-rebuild is not the supported path.
+        - The record never executes a load or constructs a restore engine.
+          It detaches value-only checkpoint chains for the loader, whose
+          admission pipeline owns folded preflight and runtime replay.
 
     Threading:
         One instance RLock serializes registry mutation, active selection,
         and checkpoint sealing. Profiles serialize their own content ops.
 
-    Lifecycle:
-        Owned by exactly one Crystallizer. `cleanup()` cleans every profile,
-        then every ledger crystal, then deletes owned fields (lock last);
-        idempotent. The record never cleans the asset system (which merely
-        borrows it).
+    Lifecycle / Cleanup:
+        Owned by exactly one `Crystallizer`. Borrowing subsystems are cleaned
+        first by that root. This record then cleans every profile, followed by
+        every ledger crystal, and deletes its lock last. It never cleans the
+        asset or loader systems that borrowed it.
     """
 
     DEFAULT_PROFILE_NAME: str = "default"
@@ -73,6 +74,14 @@ class PersistenceSystem(Cleanable):
 
         Returns:
             None.
+
+        Threading:
+            Construction is single-threaded; the instance lock guards all
+            later registry, selection, and sealing operations.
+
+        Lifecycle / Cleanup:
+            The default profile and all future ledger crystals are owned by
+            this system. The cache and external mesh are not constructed here.
         """
         super().__init__()
         self._lock: threading.RLock = threading.RLock()
@@ -94,7 +103,18 @@ class PersistenceSystem(Cleanable):
         Clean profiles, then ledger crystals (lock last).
 
         Contract:
-            - Idempotent; del posture; lock deleted last.
+            - Idempotent and terminal; later record reads and writes reject.
+            - Cleans all profile-owned twins before cleaning sealed ledger
+              crystals, then deletes registry fields and the lock.
+            - Does not touch cache files, formation files, remote storage, or
+              either subsystem that borrowed this record.
+
+        Threading:
+            Serialized by the record lock. Borrowers must already be quiescent
+            under the root's cleanup order.
+
+        Lifecycle / Cleanup:
+            Called by `Crystallizer.cleanup()` after loader and asset teardown.
         """
         if self._cleaned:
             return

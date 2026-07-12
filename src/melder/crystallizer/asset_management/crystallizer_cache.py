@@ -9,15 +9,14 @@ from melder.utilities.general_base.cleanable import Cleanable
 
 class CrystallizerCache(Cleanable):
     """
-    Local filesystem cache for persisted checkpoint cached-items.
+    Local filesystem custody for checkpoint cached-items and formations.
 
     Purpose:
-        The crystallizer-side sibling of the conjure cache: checkpoint
-        cached-items (`PersistenceCrystal.to_cached_item()` payloads) store
-        as one JSON file per checkpoint ULID under the shared melder cache
-        root at `__melder_cache__/__crystallizer_cache__`. This is the
-        BUILT-IN local durability lane; host-owned storage (DB adapters)
-        is the persistence epic's adapter contract and layers separately.
+        Provide the built-in disk layer beneath `AssetManagementSystem`:
+        checkpoint cached-items store as profile-scoped JSON files, while
+        user-named formations store beneath each profile's `__formations__`
+        directory. The optional external mesh is a separate, user-configured
+        durability layer and does not change these local file contracts.
 
     Contract:
         - The cache root always resolves under the melder package root
@@ -28,13 +27,16 @@ class CrystallizerCache(Cleanable):
         - Payloads are JSON round-trip safe by construction
           (`to_cached_item` emits plain values; `from_cached_item`
           normalizes list/tuple shapes back).
+        - Checkpoint retention is FIFO by recorded checkpoint number.
+          Formations are name-addressed and remain until explicitly deleted.
 
     Threading:
         One instance RLock serializes storage operations.
 
-    Lifecycle:
-        Owned by exactly one PersistenceSystem. `cleanup()` releases owned
-        fields (lock last); idempotent.
+    Lifecycle / Cleanup:
+        Owned by exactly one `AssetManagementSystem`, not by the persistence
+        record. Cleanup releases the in-memory lock only; cached checkpoints
+        and formation files deliberately survive for later reload.
     """
 
     __slots__ = Cleanable.__slots__ + [
@@ -44,6 +46,10 @@ class CrystallizerCache(Cleanable):
     def __init__(self) -> None:
         """
         Initialize the cache surface.
+
+        Contract:
+            Allocates only the synchronization lock. Cache directories are
+            resolved or created lazily by storage operations.
 
         Returns:
             None.
@@ -56,7 +62,17 @@ class CrystallizerCache(Cleanable):
         Release owned fields and mark the cache cleaned.
 
         Contract:
-            - Idempotent; del posture; lock deleted last.
+            - Idempotent and terminal for this cache object.
+            - Deletes no filesystem entry; cleanup is reference teardown, not
+              cache eviction. Explicit delete/retention verbs own file removal.
+            - Deletes the synchronization lock after operations are quiescent.
+
+        Threading:
+            Must not race with a storage operation.
+
+        Lifecycle / Cleanup:
+            Invoked by the owning asset system before that system releases its
+            borrowed persistence-record reference.
         """
         if self._cleaned:
             return
@@ -141,8 +157,8 @@ class CrystallizerCache(Cleanable):
         Purpose:
             Owner ruling: without a DB emitter, cached files follow the
             same checkpoint limit as the ledger - durability beyond the
-            cap is the user's explicit opt-in via a DB emitter (future
-            lane). Oldest files delete first, where "oldest" is the
+            cap is the user's explicit opt-in through the external mesh.
+            Oldest files delete first, where "oldest" is the
             recorded `checkpoint_number` carried in each cached payload
             (monotonic per profile, minted by the record) - NOT the ULID
             filename: two checkpoints sealed within one millisecond share
@@ -512,7 +528,7 @@ class CrystallizerCache(Cleanable):
             profile_name: str,
     ) -> List[str]:
         """
-        Return one profile's cached checkpoint ids (creation order).
+        Return one profile's cached checkpoint ids in lexical ULID order.
 
         Args:
             profile_name:
@@ -520,8 +536,10 @@ class CrystallizerCache(Cleanable):
 
         Returns:
             List[str]:
-                Sorted cached ids (ULID order = creation order; empty
-                when the profile has no cached checkpoints).
+                Lexically sorted cached ids; empty when the profile has no
+                cached checkpoints. This is time-ordered at ULID timestamp
+                granularity, but random tails do not prove exact order for
+                checkpoints minted in the same millisecond.
 
         Raises:
             RuntimeError:

@@ -69,8 +69,17 @@ class CrystallizerBootstrap(Cleanable):
         """
         Initialize an empty bootstrap chain (defaults everywhere).
 
+        Contract:
+            Holds no crystallizer singleton or runtime object. Optional
+            configurations remain owned by this builder until `bootstrap()`
+            transfers them downstream; remote pulls and formation reloads
+            default on, and the profile defaults to `default`.
+
         Returns:
             None.
+
+        Threading:
+            Builder-thread confined; fluent mutation is unsynchronized.
         """
         super().__init__()
         # Optional inputs: None means "use the documented default" at
@@ -88,10 +97,9 @@ class CrystallizerBootstrap(Cleanable):
         # FILES pull back beside the checkpoint history; mirrors
         # _pull_remote's default-on-when-a-manager-is-attached posture.
         self._reload_formations: bool = True
-        # Opt-in strictness: when True, a "blockers" verdict in the
-        # restore report's load-time preflight refuses the boot AFTER
-        # the all-or-nothing restore already protected the world (the
-        # engine never gates; the boot lane may).
+        # Compatibility-only storage for with_preflight_gate(). The
+        # value no longer changes behavior: mediated loads always refuse a
+        # folded blocker verdict before replay inside standard admission.
         self._preflight_gate: bool = False
         self._consumed: bool = False
 
@@ -100,9 +108,20 @@ class CrystallizerBootstrap(Cleanable):
         Release unconsumed configurations and mark the builder cleaned.
 
         Contract:
-            - Idempotent; children first, then del posture.
-            - Configurations consumed by bootstrap() are owned downstream
-              (crystallizer/manager) and are NOT cleaned here.
+            - Idempotent and terminal; unconsumed configurations clean before
+              builder fields are deleted.
+            - Configurations consumed by `bootstrap()` transferred downstream
+              and are not cleaned here.
+            - Does not deactivate or clean the crystallizer world produced by
+              a successful bootstrap.
+
+        Threading:
+            Must run on the builder thread after fluent/bootstrap activity has
+            stopped.
+
+        Lifecycle / Cleanup:
+            Safe in `finally` on both successful and failed boot chains; the
+            consumed flag determines whether configuration ownership moved.
         """
         if self._cleaned:
             return
@@ -429,8 +448,9 @@ class CrystallizerBootstrap(Cleanable):
         Return the profile's most recent ledger checkpoint id.
 
         Contract:
-            - Checkpoint ids are ULIDs, so id order IS time order; the
-              newest is the last profile-owned id.
+            - `list_checkpoint_ids()` returns exact ledger insertion order,
+              including checkpoints minted in the same millisecond. The newest
+              matching profile id is therefore the last one encountered.
 
         Args:
             crystallizer:

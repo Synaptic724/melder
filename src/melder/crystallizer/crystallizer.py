@@ -1464,8 +1464,8 @@ class Crystallizer(Cleanable):
         Snapshot one persistence profile and return the checkpoint's ULID id.
 
         Contract:
-            - Checkpoint ids are ULIDs: they sort by creation time, so id
-              order IS checkpoint chronology.
+            - Checkpoint ids are ULIDs, while exact chronology comes from
+              the ledger's insertion order (including same-millisecond seals).
             - The crystallizer policy twin is emitted into the window before
               sealing, so every checkpoint identifies the policy that made it.
             - `PersistenceSystem` captures the current incremental window as
@@ -1525,7 +1525,7 @@ class Crystallizer(Cleanable):
 
     def list_checkpoint_ids(self) -> List[str]:
         """
-        Return all checkpoint ids in creation order (ULID = time order).
+        Return all checkpoint ids in exact ledger creation order.
 
         Returns:
             List[str]:

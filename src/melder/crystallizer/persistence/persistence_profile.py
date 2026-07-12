@@ -45,9 +45,10 @@ class PersistenceProfile(Cleanable):
                      & ConduitCrystal
 
     Contract:
-        - Replace-on-emit: recording a twin REPLACES the prior twin for that
-          identity wholesale (the replaced twin is cleaned); twins are never
-          mutated in place, so readers can hold a twin without torn state.
+        - Replace-on-emit: recording a twin replaces the prior twin for
+          that identity wholesale and cleans the displaced object. Readers see
+          whole-object state rather than in-place mutation, but must fetch
+          fresh for each use instead of retaining a long-lived twin reference.
         - The L3 spell node IS the SpellCrystal: it carries both the bind
           signatures (binding_name / spellframe / existence / permissions /
           rebindability) and the module-world custody in one object.
@@ -61,9 +62,11 @@ class PersistenceProfile(Cleanable):
         objects themselves are immutable-after-init (SpellCrystal carries its
         own internal lock).
 
-    Lifecycle:
-        Owned by exactly one PersistenceCrystal. `cleanup()` cleans every
-        held twin, then deletes owned fields (lock last); idempotent.
+    Lifecycle / Cleanup:
+        Owned by exactly one `PersistenceSystem`; checkpoint crystals are
+        detached snapshots and never own profiles. Cleanup releases every live
+        twin held by this profile, clears journal/state surfaces, and deletes
+        the profile lock last.
     """
 
     __slots__ = Cleanable.__slots__ + [
@@ -91,6 +94,11 @@ class PersistenceProfile(Cleanable):
     def __init__(self, profile_name: str) -> None:
         """
         Initialize one empty profile store.
+
+        Contract:
+            Starts with sequence and checkpoint marks at zero, empty level
+            maps, and no singleton state observations. Construction creates no
+            twin and performs no disk or remote operation.
 
         Args:
             profile_name:
@@ -136,7 +144,20 @@ class PersistenceProfile(Cleanable):
         Clean every held twin, then release owned fields (lock last).
 
         Contract:
-            - Idempotent; del posture; lock deleted last.
+            - Idempotent and terminal; cleans every currently held twin.
+            - Singleton slots, level maps, state switches, emission journal,
+              and checkpoint mark are then deleted; the lock is deleted last.
+            - Sealed `PersistenceCrystal` snapshots are not owned here and
+              survive profile cleanup in the system ledger.
+
+        Threading:
+            Serialized by the profile lock. No record/clear operation may race
+            with teardown.
+
+        Lifecycle / Cleanup:
+            Invoked by profile deletion, system cleanup, or profile replacement
+            ownership paths; displaced twins have already followed the same
+            child-cleanup rule individually.
         """
         if self._cleaned:
             return

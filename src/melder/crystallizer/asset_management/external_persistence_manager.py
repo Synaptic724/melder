@@ -13,21 +13,25 @@ from melder.utilities.general_base.cleanable import Cleanable
 
 class ExternalPersistenceManager(Cleanable):
     """
-    Remote transport owner for cached checkpoint items (the DB opt-in).
+    User-callable transport for the crystallizer's external mesh.
 
     Purpose:
-        Owns UPLOADING and DOWNLOADING of checkpoint cached-items through
-        USER-ATTACHED callables (owner ruling: the local cache caps at
-        the checkpoint limit; durability beyond it is the user's DB -
-        their SQL bootstrap, their secrets, their driver; melder owns the
-        seam only, no third-party dependency).
+        Carry checkpoint cached-items, formations, index grafts, and emission
+        events across a host-owned persistence boundary without imposing a
+        database dependency. The user owns storage bootstrap, credentials,
+        durability, and handler synchronization; Melder owns the value-shaped
+        callable contract and failure accounting.
 
     Contract:
-        - Constructed from a FROZEN ExternalPersistenceManagerConfiguration;
-          owned by PersistenceSystem (which owns all caches/transports).
-        - Upload lane: handler-gated NO-OP when no upload handler is
-          attached; failures follow the strictness knob (lenient default
-          - the local seal/cache lane must never die on a remote).
+        - Constructed from and owns one frozen
+          `ExternalPersistenceManagerConfiguration`; the containing
+          `AssetManagementSystem` owns this manager.
+        - Legacy checkpoint upload/download/list handlers bridge to the generic
+          store/fetch/list lanes, allowing one handler family to carry the
+          complete mesh.
+        - Write lanes are handler-gated no-ops when absent. Failures follow the
+          strictness knob: lenient by default so local custody survives remote
+          failure; strict mode re-raises user exceptions.
         - Download lanes: missing handlers refuse loudly (a caller asking
           for remote history with no remote attached is a
           misconfiguration).
@@ -36,13 +40,15 @@ class ExternalPersistenceManager(Cleanable):
           (presence flags only via describe()).
 
     Threading:
-        The manager's own lock guards its lifecycle fields only; handler
-        invocations are deliberately unguarded (user code owns its own
-        synchronization; 3.14t nogil callers may invoke concurrently).
+        Handler invocations are deliberately unguarded; user code owns its own
+        synchronization and may be invoked concurrently. The manager lock
+        protects only lenient failure-counter increments. The installed
+        configuration is frozen and read-only while live.
 
-    Lifecycle:
-        Owned by exactly one PersistenceSystem. cleanup() cleans the
-        owned configuration and deletes owned fields; idempotent.
+    Lifecycle / Cleanup:
+        Owned by one `AssetManagementSystem` at a time. Cleanup releases the
+        owned configuration and counters but never calls a remote handler to
+        close, delete, or otherwise mutate user storage.
     """
 
     __melder_internal__: ClassVar[object] = _mrg.sentinel
@@ -60,6 +66,11 @@ class ExternalPersistenceManager(Cleanable):
     ) -> None:
         """
         Initialize the manager over one frozen configuration.
+
+        Contract:
+            Ownership of the already-frozen configuration transfers to this
+            manager. No handler is invoked during construction, and both
+            lenient failure counters start at zero.
 
         Args:
             configuration:
@@ -98,7 +109,17 @@ class ExternalPersistenceManager(Cleanable):
         Clean the owned configuration and mark the manager cleaned.
 
         Contract:
-            - Idempotent; children first, then del posture.
+            - Idempotent and terminal; cleans the owned configuration before
+              deleting counters and the manager lock.
+            - Does not invoke upload, store, fetch, list, or delete handlers.
+              Remote connection/resource lifetime remains the user's contract.
+
+        Threading:
+            Callers must quiesce handler invocations before cleanup; cleanup is
+            not serialized against user callbacks.
+
+        Lifecycle / Cleanup:
+            The owning asset system cleans the manager before its local cache.
         """
         if self._cleaned:
             return
