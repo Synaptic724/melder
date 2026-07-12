@@ -15,6 +15,7 @@ EXPECTED_CACHE_VERSION_HISTORY = {
     4: "generalized_collection_param_names",
     5: "many_only_collection_param_names",
     6: "zero_provider_required_collections",
+    7: "root_visible_family_selection",
 }
 
 

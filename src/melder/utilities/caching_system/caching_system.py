@@ -506,4 +506,12 @@ class CachingSystem(Cleanable):
             "conduit_name": self._cache_data["conduit_name"],
             "spell_payloads": self._cache_data["spell_payloads"],
         }
-        serialized
+        serialized_cache_data = marshal.dumps(cache_data)
+        bundle_path = self._bundle_path
+        bundle_path.parent.mkdir(parents=True, exist_ok=True)
+        temp_bundle_path = bundle_path.with_suffix(
+            self.BUNDLE_SUFFIX + ".tmp"
+        )
+        temp_bundle_path.write_bytes(serialized_cache_data)
+        temp_bundle_path.replace(bundle_path)
+        self._cache_data = cache_data

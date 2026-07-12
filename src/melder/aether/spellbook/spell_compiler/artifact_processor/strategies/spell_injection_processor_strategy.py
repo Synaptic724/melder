@@ -264,7 +264,6 @@ class SpellInjectionProcessorStrategy(SpellArtifactProcessorStrategy):
         return instance_specs_by_instance_key
 
     @staticmethod
-    @staticmethod
     def _resolve_shared_contract_payload(
             *,
             spell_id: str,
@@ -324,6 +323,7 @@ class SpellInjectionProcessorStrategy(SpellArtifactProcessorStrategy):
             ),
         )
 
+    @staticmethod
     def _clone_contract_payload(
             payload: Optional[Dict[str, Any]],
     ) -> Optional[Dict[str, Any]]:
