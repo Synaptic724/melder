@@ -2,7 +2,7 @@
 Crystallizer checkpoint profiles, pytest-style.
 
 Run (3.14t, repo root; -s shows the timing tables):
-    python -m pytest benchmarks/cprofile_testing/test_profile_crystallizer_checkpoints.py -q -s
+    .venv_new\\Scripts\\python.exe -m pytest tests/experiments/cprofile_testing/pytest_profile_crystallizer_checkpoints.py -q -s
 
 Tier via env (default small):
     MELDER_BENCH_TIER=large python -m pytest ... -q -s
@@ -35,6 +35,7 @@ def test_profile_crystallizer_checkpoint_seal() -> None:
         [ProfileScenario(
             "crystallizer_checkpoint_seal",
             _build_recorded_world, _seal, _teardown,
+            repeats=3, fresh_state_per_run=True,
         )],
         tier=_tier(),
     )
@@ -46,6 +47,7 @@ def test_profile_crystallizer_cache_round_trip() -> None:
         [ProfileScenario(
             "crystallizer_cache_round_trip",
             _build_recorded_world, _cache_round_trip, _teardown,
+            repeats=3, fresh_state_per_run=True,
         )],
         tier=_tier(),
     )

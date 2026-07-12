@@ -16,7 +16,7 @@ Rot-finding method:
 Usage:
     Scenario scripts build a `ProfileScenario` per (name, setup, action) and
     call `run_scenarios([...], tier="small|medium|large")`. Outputs land in
-    `benchmarks/cprofile_testing/results/<scenario>__<tier>.prof` plus a
+    `tests/experiments/cprofile_testing/results/<scenario>__<tier>.prof` plus a
     plain-text report beside it.
 
 Threading:

@@ -1,28 +1,29 @@
 """
-Crystallizer checkpoint save/load profiles (the slow-test suspects).
+Normal construction versus Crystallizer recording/bootstrap profiles.
 
 Scenarios (tiered by world size):
-    - checkpoint_seal:    create_checkpoint over a recorded dynamic world.
-    - cache_round_trip:   flush_checkpoint + reload_cached_checkpoint.
-    - checkpoint_load:    load_checkpoint (full RestoreEngine unfold) - the
-                          scenario the owner's slow tests point at.
+    - normal_world_build_unrecorded: ordinary construction baseline.
+    - normal_world_build_recorded:   same construction while recording.
+    - checkpoint_seal:               create_checkpoint over a recorded world.
+    - cache_round_trip:              seal + flush + reload from disk.
+    - checkpoint_load:               restore-only from an in-memory checkpoint.
+    - bootstrap_cache_load:          disk reload plus full restore.
 
 Run (3.14t):
-    python benchmarks/cprofile_testing/profile_crystallizer_checkpoints.py small
-    python benchmarks/cprofile_testing/profile_crystallizer_checkpoints.py medium
-    python benchmarks/cprofile_testing/profile_crystallizer_checkpoints.py large
+    .venv_new\\Scripts\\python.exe tests/experiments/cprofile_testing/profile_crystallizer_checkpoints.py small
+    .venv_new\\Scripts\\python.exe tests/experiments/cprofile_testing/profile_crystallizer_checkpoints.py medium
+    .venv_new\\Scripts\\python.exe tests/experiments/cprofile_testing/profile_crystallizer_checkpoints.py large
 
 Rot check:
-    tiers scale binds 20 -> 100 -> 400 (x5, x4). If checkpoint_load's
-    best-seconds ratio grows faster than the tier ratio, open the .prof and
-    look at the tottime table: fold/preflight/emit frames growing
-    super-linearly are the finding.
+    Compare profiler-free wall-clock for the two normal builds and the two
+    restore paths. Use cProfile only to attribute the difference, especially
+    SpellIndex bind/hydration frames; profiler time is not a speed result.
 """
 
 import sys
 from pathlib import Path
 
-_REPO_ROOT = Path(__file__).resolve().parents[2]
+_REPO_ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(_REPO_ROOT))
 sys.path.insert(0, str(_REPO_ROOT / "src"))
 sys.path.insert(0, str(Path(__file__).parent))
@@ -83,17 +84,44 @@ def _make_service_classes(count: int, stamp: str):
     return classes
 
 
-def _build_recorded_world(tier: str):
-    """
-    Build one dynamic, crystallizer-recorded world at tier size.
+def _make_service_matrix(tier: str):
+    """Build the tier's service classes outside the measured body."""
+    return [
+        _make_service_classes(
+            _TIER_BINDS[tier] // _TIER_BOOKS[tier],
+            "{0}_{1}".format(tier, book_index),
+        )
+        for book_index in range(_TIER_BOOKS[tier])
+    ]
 
-    Returns:
-        Dict[str, object]: {crystallizer, books, checkpoint_id (unsealed)}.
-    """
+
+def _setup_direct_world(tier: str, *, recorded: bool):
+    """Prepare a fresh world for one measured direct-build pass."""
     _reset_world()
-    crystallizer = _activate_crystallizer()
+    crystallizer = _activate_crystallizer() if recorded else Crystallizer()
+    return {
+        "crystallizer": crystallizer,
+        "tier": tier,
+        "service_matrix": _make_service_matrix(tier),
+        "books": [],
+    }
+
+
+def _setup_direct_world_unrecorded(tier: str):
+    """Prepare a normal build with crystallizer recording disabled."""
+    return _setup_direct_world(tier, recorded=False)
+
+
+def _setup_direct_world_recorded(tier: str):
+    """Prepare a normal build with crystallizer recording enabled."""
+    return _setup_direct_world(tier, recorded=True)
+
+
+def _build_direct_world(state) -> object:
+    """Measured body: configure frames, bind spells, and conjure roots."""
     books = []
-    for book_index in range(_TIER_BOOKS[tier]):
+    tier = state["tier"]
+    for book_index, service_classes in enumerate(state["service_matrix"]):
         frame_name = "bench_frame_{0}".format(book_index)
         book_configuration = SpellbookConfiguration(aether_frame=frame_name)
         apply_dynamic_defaults_for_spellbook_configuration(book_configuration)
@@ -105,14 +133,19 @@ def _build_recorded_world(tier: str):
             aetheric_frame=frame_name,
             configuration=book_configuration,
         )
-        for cls in _make_service_classes(
-                _TIER_BINDS[tier] // _TIER_BOOKS[tier],
-                "{0}_{1}".format(tier, book_index),
-        ):
+        for cls in service_classes:
             book.bind(spell=cls, existence=Existence.unique)
         book.conjure(dynamic=True, name="root_{0}".format(book_index))
         books.append(book)
-    return {"crystallizer": crystallizer, "books": books}
+    state["books"] = books
+    return books
+
+
+def _build_recorded_world(tier: str):
+    """Build one dynamic world with Crystallizer recording enabled."""
+    state = _setup_direct_world_recorded(tier)
+    _build_direct_world(state)
+    return state
 
 
 def _teardown(state) -> None:
@@ -133,14 +166,13 @@ def _cache_round_trip(state) -> None:
     crystallizer.reload_cached_checkpoint(checkpoint_id)
 
 
-def _setup_sealed(tier: str):
-    """Setup a cached checkpoint and a genuinely fresh restore world."""
+def _setup_cached_checkpoint(tier: str):
+    """Create a cached checkpoint, then return a fresh bootstrap world."""
     state = _build_recorded_world(tier)
     checkpoint_id = state["crystallizer"].create_checkpoint()
     state["crystallizer"].flush_checkpoint(checkpoint_id)
     _reset_world()
     rebooted = _activate_crystallizer()
-    rebooted.reload_cached_checkpoint(checkpoint_id)
     return {
         "crystallizer": rebooted,
         "books": [],
@@ -148,9 +180,24 @@ def _setup_sealed(tier: str):
     }
 
 
+def _setup_sealed(tier: str):
+    """Setup a checkpoint already decoded into a fresh restore world."""
+    state = _setup_cached_checkpoint(tier)
+    state["crystallizer"].reload_cached_checkpoint(state["checkpoint_id"])
+    return state
+
+
 def _load(state) -> None:
-    """Measured body: full RestoreEngine unfold of the sealed checkpoint."""
+    """Measured body: restore an already decoded checkpoint."""
     state["crystallizer"].load_checkpoint(state["checkpoint_id"])
+
+
+def _bootstrap_cache_load(state) -> None:
+    """Measured body: reload a checkpoint from disk and restore its world."""
+    crystallizer = state["crystallizer"]
+    checkpoint_id = state["checkpoint_id"]
+    crystallizer.reload_cached_checkpoint(checkpoint_id)
+    crystallizer.load_checkpoint(checkpoint_id)
 
 
 if __name__ == "__main__":
@@ -158,16 +205,33 @@ if __name__ == "__main__":
     run_scenarios(
         [
             ProfileScenario(
+                "normal_world_build_unrecorded",
+                _setup_direct_world_unrecorded, _build_direct_world, _teardown,
+                repeats=3, fresh_state_per_run=True,
+            ),
+            ProfileScenario(
+                "normal_world_build_recorded",
+                _setup_direct_world_recorded, _build_direct_world, _teardown,
+                repeats=3, fresh_state_per_run=True,
+            ),
+            ProfileScenario(
                 "crystallizer_checkpoint_seal",
                 _build_recorded_world, _seal, _teardown,
+                repeats=3, fresh_state_per_run=True,
             ),
             ProfileScenario(
                 "crystallizer_cache_round_trip",
                 _build_recorded_world, _cache_round_trip, _teardown,
+                repeats=3, fresh_state_per_run=True,
             ),
             ProfileScenario(
                 "crystallizer_checkpoint_load",
                 _setup_sealed, _load, _teardown,
+                repeats=3, fresh_state_per_run=True,
+            ),
+            ProfileScenario(
+                "crystallizer_bootstrap_cache_load",
+                _setup_cached_checkpoint, _bootstrap_cache_load, _teardown,
                 repeats=3, fresh_state_per_run=True,
             ),
         ],

@@ -2,7 +2,7 @@
 MutationResearch verb profiles, pytest-style.
 
 Run (3.14t, repo root; -s shows the timing tables):
-    python -m pytest benchmarks/cprofile_testing/test_profile_mutation_research.py -q -s
+    .venv_new\\Scripts\\python.exe -m pytest tests/experiments/cprofile_testing/pytest_profile_mutation_research.py -q -s
 
 Tier via env (default small):
     MELDER_BENCH_TIER=large python -m pytest ... -q -s

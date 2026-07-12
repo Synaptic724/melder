@@ -9,7 +9,7 @@ Scenarios (tiered by declared-spell count):
       (journal-walk cost).
 
 Run (3.14t):
-    python benchmarks/cprofile_testing/profile_mutation_research.py small|medium|large
+    .venv_new\\Scripts\\python.exe tests/experiments/cprofile_testing/profile_mutation_research.py small|medium|large
 
 Rot check:
     tiers scale 100 -> 500 -> 2000 declarations. residency_view is the one to
@@ -21,7 +21,7 @@ import hashlib
 import sys
 from pathlib import Path
 
-_REPO_ROOT = Path(__file__).resolve().parents[2]
+_REPO_ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(_REPO_ROOT / "src"))
 sys.path.insert(0, str(Path(__file__).parent))
 from profile_harness import ProfileScenario, run_scenarios

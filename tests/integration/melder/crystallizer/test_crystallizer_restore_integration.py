@@ -162,6 +162,7 @@ def _fresh_boot():
 
 def test_round_trip_restores_binds_and_conduit_from_cached_checkpoint(
         cache_root,
+        monkeypatch,
 ):
     """
     Purpose:
@@ -188,6 +189,18 @@ def test_round_trip_restores_binds_and_conduit_from_cached_checkpoint(
 
     rebooted = _fresh_boot()
     rebooted.reload_cached_checkpoint(checkpoint_id)
+    from melder.crystallizer.crystal_analysis.crystal_analyzer import (
+        CrystalAnalyzer,
+    )
+
+    def refuse_live_reanalysis(*_args, **_kwargs):
+        raise AssertionError(
+            "clean restore must reuse the sealed SpellCrystal analysis"
+        )
+
+    monkeypatch.setattr(
+        CrystalAnalyzer, "analyze_spell_root", refuse_live_reanalysis,
+    )
     report = rebooted.load_checkpoint(checkpoint_id)
 
     assert report["status"] == "complete"
