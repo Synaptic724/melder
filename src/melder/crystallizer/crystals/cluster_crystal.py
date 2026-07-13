@@ -13,6 +13,14 @@ class ClusterCrystal(Cleanable):
         optional elected leader. This twin records membership, shares, and
         leadership so restore can regroup a frame's cluster topology.
 
+    Guidance:
+        Treat membership as replayable topology and leadership/share rows as
+        recorded evidence. Restore recreates the named cluster and rejoins
+        rebuilt members, but leader election remains a runtime act and explicit
+        share rows are reported through shortfalls because member-join
+        auto-sharing cannot prove exact historical equivalence. Resolve member
+        conduit ids through the restore identity map.
+
     Contract:
         - Pure data from birth; replace-on-emit at every membership, share,
           or leadership change (full snapshot per emission).
@@ -23,6 +31,10 @@ class ClusterCrystal(Cleanable):
 
     Threading:
         Immutable after construction; safe to share across threads.
+
+    Lifecycle / Cleanup:
+        Owned by one `PersistenceProfile`. Cleanup releases copied membership,
+        leadership, and share rows; it does not mutate a live cluster.
     """
 
     __melder_internal__ = True
@@ -75,6 +87,10 @@ class ClusterCrystal(Cleanable):
     def cleanup(self) -> None:
         """
         Idempotently release the twin's held data.
+
+        Contract:
+            Terminal for this value carrier. Deletes identity, membership,
+            leadership, and copied share rows without issuing cluster verbs.
 
         Returns:
             None.

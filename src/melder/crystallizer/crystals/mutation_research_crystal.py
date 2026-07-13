@@ -19,6 +19,14 @@ class MutationResearchCrystal(Cleanable):
         exactly as emitted by
         `MutationResearch.describe_research_composition()`.
 
+    Guidance:
+        Interpret this twin together with the profile's
+        `RecordedUnitState` for MutationResearch. The twin carries configured
+        policy and composition; the later state switch decides whether restore
+        leaves the rebuilt root enabled, disabled, or refuses resurrection after
+        observed cleanup. Use the nested composition as hydration truth and the
+        flat/grouped node rows as query-oriented projections of that same truth.
+
     Contract:
         - Value payload only; immutable after construction (replace-on-emit).
         - MR is codegen-lane-only at runtime, so this twin appears only in
@@ -40,9 +48,10 @@ class MutationResearchCrystal(Cleanable):
         Immutable-after-init; the owning PersistenceProfile serializes
         replacement.
 
-    Lifecycle:
-        Owned by exactly one PersistenceProfile; `cleanup()` deletes owned
-        fields; idempotent.
+    Lifecycle / Cleanup:
+        Owned by exactly one `PersistenceProfile`. Cleanup releases copied
+        configuration/composition/node rows only and does not alter the hosted
+        MutationResearch root or research sets.
     """
 
     __slots__ = Cleanable.__slots__ + [

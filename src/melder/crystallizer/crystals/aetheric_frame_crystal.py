@@ -16,6 +16,13 @@ class AethericFrameCrystal(Cleanable):
         in the runtime, so this twin is where the dynamic-lane gate reads its
         recorded truth during restore.
 
+    Guidance:
+        Use this twin to recover frame posture and as the parent coordinate for
+        spellbook twins. Its absence is not proof that no such live frame
+        existed: automatic-posture frames are intentionally outside the dynamic
+        recording lane. `frame_name` is the stable reconstruction coordinate;
+        restore never reuses a frame runtime identity from this payload.
+
     Contract:
         - Value payload only; immutable after construction (replace-on-emit).
         - Only DYNAMIC-posture frames are emitted (dynamic-lane hard gate);
@@ -27,9 +34,10 @@ class AethericFrameCrystal(Cleanable):
         Immutable-after-init; the owning PersistenceProfile serializes
         replacement.
 
-    Lifecycle:
-        Owned by exactly one PersistenceProfile; `cleanup()` deletes owned
-        fields; idempotent.
+    Lifecycle / Cleanup:
+        Owned by exactly one `PersistenceProfile`. Cleanup releases recorded
+        posture/configuration values only and never disposes the live frame or
+        its spellbooks.
     """
 
     __slots__ = Cleanable.__slots__ + [

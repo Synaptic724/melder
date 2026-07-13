@@ -16,6 +16,13 @@ class NexusCrystal(Cleanable):
         surface worth cloning + remembering (governing principle: we twin
         anything we want to configure/persist).
 
+    Guidance:
+        Interpret this twin with the profile's Nexus `RecordedUnitState`: the
+        twin preserves installed configuration, while the state switch carries
+        the later enabled/disabled/cleaned intent. Do not use it to infer Rift
+        instances, room state, workstations, or active projections; those are
+        session/runtime assets deliberately outside this root twin.
+
     Contract:
         - Value payload only; immutable after construction (replace-on-emit).
         - Records configuration truth, not Rift registry state (live Rifts
@@ -25,9 +32,9 @@ class NexusCrystal(Cleanable):
         Immutable-after-init; the owning PersistenceProfile serializes
         replacement.
 
-    Lifecycle:
-        Owned by exactly one PersistenceProfile; `cleanup()` deletes owned
-        fields; idempotent.
+    Lifecycle / Cleanup:
+        Owned by exactly one `PersistenceProfile`. Cleanup releases the recorded
+        flags/configuration only and does not disable or clean the live Nexus.
     """
 
     __slots__ = Cleanable.__slots__ + [

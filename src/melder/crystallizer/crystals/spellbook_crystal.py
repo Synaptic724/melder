@@ -17,6 +17,15 @@ class SpellbookCrystal(Cleanable):
         it by `spellbook_id`, mirroring the runtime where spells bind to the
         spellbook and the conduit is conjured from it.
 
+    Guidance:
+        Use this twin as the parent record for spell custody, index membership,
+        and the root conduit. `bind_order` determines replay order before
+        conjure. `hook_names` are participation markers only: callable bodies do
+        not cross persistence, so their presence predicts explicit restore
+        shortfalls or application reattachment rather than automatic hydration.
+        Resolve the record-local `spellbook_id` through the restore identity map;
+        `frame_name` remains the stable parent coordinate.
+
     Contract:
         - Value payload only; immutable after construction (replace-on-emit).
         - Hook callables are NOT persistable: `hook_names` records their
@@ -34,9 +43,10 @@ class SpellbookCrystal(Cleanable):
         Immutable-after-init; the owning PersistenceProfile serializes
         replacement.
 
-    Lifecycle:
-        Owned by exactly one PersistenceProfile; `cleanup()` deletes owned
-        fields; idempotent.
+    Lifecycle / Cleanup:
+        Owned by exactly one `PersistenceProfile`. Cleanup releases configuration,
+        hook markers, and bind-order values only; it never cleans the live
+        spellbook, conduit, or bound spells.
     """
 
     __slots__ = Cleanable.__slots__ + [

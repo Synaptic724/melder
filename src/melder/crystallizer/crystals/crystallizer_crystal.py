@@ -17,6 +17,14 @@ class CrystallizerCrystal(Cleanable):
         rest of the world - the recorder's policy is part of the recorded
         truth, not ambient process state.
 
+    Guidance:
+        This twin answers which recording policy produced a sealed world. It is
+        not permission to replace policy on an already-active crystallizer
+        during restore. Bootstrap code that intends to reproduce recorded policy
+        should load its `configuration_payload` into a fresh
+        `CrystallizerConfiguration` before activating the root; the restore
+        engine otherwise reports the recorded policy as boot-time context.
+
     Contract:
         - Value payload only: no live objects, no callables, no locks.
         - Immutable after construction; profiles replace the whole twin on
@@ -30,9 +38,10 @@ class CrystallizerCrystal(Cleanable):
         Immutable-after-init; safe to share across threads without locking.
         The owning PersistenceProfile serializes replacement.
 
-    Lifecycle:
-        Owned by exactly one PersistenceProfile. `cleanup()` deletes owned
-        fields and marks the twin cleaned; idempotent.
+    Lifecycle / Cleanup:
+        Owned by exactly one `PersistenceProfile`. Cleanup releases the recorded
+        policy document only; it neither reconfigures nor deactivates the live
+        crystallizer.
     """
 
     __slots__ = Cleanable.__slots__ + [

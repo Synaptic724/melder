@@ -16,6 +16,13 @@ class AetherCrystal(Cleanable):
         deep Aether state (frames, registries, hosted singletons) is owned by
         the child twins beneath it, so this twin records configuration only.
 
+    Guidance:
+        Interpret this twin as root policy, not a snapshot of the complete
+        runtime. Frames, spellbooks, Nexus, MutationResearch, and crystallizer
+        state have their own twins or state switches. An empty configuration
+        payload means the root emitted without installed policy; it does not
+        mean the process lacked an `Aether` object.
+
     Contract:
         - Value payload only: no live objects, no callables, no locks.
         - Immutable after construction; profiles replace the whole twin on
@@ -27,9 +34,10 @@ class AetherCrystal(Cleanable):
         Immutable-after-init; safe to share across threads without locking.
         The owning PersistenceProfile serializes replacement.
 
-    Lifecycle:
-        Owned by exactly one PersistenceProfile. `cleanup()` deletes owned
-        fields and marks the twin cleaned; idempotent.
+    Lifecycle / Cleanup:
+        Owned by exactly one `PersistenceProfile`. Replacement or profile
+        teardown cleans the displaced twin's value fields only; no live Aether
+        root, logger, frame, or hosted subsystem is affected.
     """
 
     __slots__ = Cleanable.__slots__ + [

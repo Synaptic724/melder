@@ -14,6 +14,14 @@ class SpellIndexCrystal(Cleanable):
         regroup staged members onto the right lineage and transfer of
         ownership can re-anchor a moved index under its new spellbook.
 
+    Guidance:
+        Treat `index_id` as a record-local grouping key, not durable identity.
+        Stable spell SHA members and the selected SHA are the meaningful
+        cross-session coordinates. Whole-world restore creates fresh indexes;
+        finer-grained movement should use `capture_index_graft()` and
+        `graft_index()` because a twin alone does not carry each member's
+        custody payload required for hydration.
+
     Contract:
         - Pure data from birth; replace-on-emit at every membership,
           selection, or ownership change (full snapshot per emission).
@@ -24,6 +32,10 @@ class SpellIndexCrystal(Cleanable):
 
     Threading:
         Immutable after construction; safe to share across threads.
+
+    Lifecycle / Cleanup:
+        Owned by one `PersistenceProfile`. Cleanup releases copied membership
+        data only and never mutates a live `SpellIndex` or its selection.
     """
 
     __melder_internal__ = True
@@ -66,6 +78,10 @@ class SpellIndexCrystal(Cleanable):
     def cleanup(self) -> None:
         """
         Idempotently release the twin's held data.
+
+        Contract:
+            Terminal for this value carrier; deletes owner, selection, and
+            member coordinates without removing any live spell.
 
         Returns:
             None.

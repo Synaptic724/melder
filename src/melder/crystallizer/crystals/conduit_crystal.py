@@ -16,6 +16,14 @@ class ConduitCrystal(Cleanable):
         binds (L3 intra-level rule), and applies link edges LAST, once every
         conduit in the profile exists.
 
+    Guidance:
+        Read this twin as the root conduit's conjure record plus its outbound
+        initiated link edges. It does not contain borrowed spell/lineage detail;
+        join it with `ContractCrystal` for contract projections and
+        `ClusterCrystal` for cluster membership. During restore, resolve
+        `spellbook_id` and `link_targets` through fresh identity translation
+        rather than treating record-local conduit ids as reusable.
+
     Contract:
         - Value payload only; immutable after construction (replace-on-emit).
         - ROOT conduits only: lesser conduits are ephemeral scope machinery,
@@ -32,9 +40,10 @@ class ConduitCrystal(Cleanable):
         Immutable-after-init; the owning PersistenceProfile serializes
         replacement.
 
-    Lifecycle:
-        Owned by exactly one PersistenceProfile; `cleanup()` deletes owned
-        fields; idempotent.
+    Lifecycle / Cleanup:
+        Owned by exactly one `PersistenceProfile`. Cleanup releases the conjure
+        and edge payload only; conduit disposal remains a live-runtime owner
+        responsibility.
     """
 
     __slots__ = Cleanable.__slots__ + [
