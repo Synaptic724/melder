@@ -12,26 +12,34 @@ from melder.utilities.helpers.id_builder import IDBuilder
 
 class CrystallizerConfigurationBuilder(Cleanable):
     """
-    One-shot builder for crystallizer configuration assembly.
+    One-shot ownership helper for crystallizer configuration authoring.
 
     Purpose:
-        Mirror the repo's mutable-then-finalize configuration style while also
-        making ownership explicit. The builder owns one mutable wrapped
-        configuration until the caller either:
-        - hands it off through `build()`, `finalize()`, or `activate()`
-        - or discards it through `cleanup()`
+        Give callers and agents an explicit handoff boundary around one mutable
+        `CrystallizerConfiguration`. Use the builder when ownership transfer is
+        useful to the surrounding construction flow; direct configuration
+        fluents remain the simpler choice when no ownership wrapper is needed.
+
+    Guidance:
+        `with_defaults()` and `with_user_source_root_paths()` cover the common
+        starting posture. `build()` returns the still-mutable configuration so
+        the caller can apply advanced knobs such as source retention or
+        automatic flushing. `finalize()` returns frozen policy; `activate()`
+        returns policy ready for `Crystallizer.activate(...)`.
 
     Contract:
-        - full concrete file name, not a generic helper path
-        - builder owns the wrapped configuration until handoff or cleanup
-        - `build()`, `finalize()`, and `activate()` are one-shot transfer
-          points
-        - after handoff, the builder is consumed and must not be reused
+        - Owns exactly one configuration until handoff or cleanup.
+        - `build()`, `finalize()`, and `activate()` are one-shot ownership
+          transfers and consume the builder.
+        - Cleanup destroys only a configuration that was not handed off.
 
-    Lifecycle:
-        The builder is a short-lived authoring helper. Cleanup destroys the
-        still-owned configuration. Handoff methods transfer configuration
-        ownership to the caller and consume the builder.
+    Threading:
+        One `RLock` protects ownership transfer and cleanup. Fluent authoring is
+        intended for one builder thread.
+
+    Lifecycle / Cleanup:
+        Short-lived by design. After handoff, the caller owns the returned
+        configuration and the builder is terminal.
     """
 
     __melder_internal__ = _mrg.sentinel
@@ -43,7 +51,12 @@ class CrystallizerConfigurationBuilder(Cleanable):
 
     def __init__(self) -> None:
         """
-        Initialize one builder with a fresh configuration.
+        Initialize one builder with a fresh empty configuration.
+
+        Contract:
+            The wrapped configuration has no defaults yet; call
+            `with_defaults()` or set the required source roots before a
+            finalize/activate handoff.
 
         Returns:
             None.
@@ -60,10 +73,17 @@ class CrystallizerConfigurationBuilder(Cleanable):
         Idempotently cleanup the builder and any still-owned configuration.
 
         Contract:
-            - safe to call more than once
-            - cleans the wrapped configuration only while the builder still
-              owns it
-            - leaves the builder unusable after cleanup
+            - Idempotent and terminal.
+            - Cleans the wrapped configuration only while ownership has not
+              transferred; handed-off policy is never reclaimed here.
+            - Deletes builder identity and lock state after child cleanup.
+
+        Threading:
+            Serialized by the builder lock.
+
+        Lifecycle / Cleanup:
+            Safe in `finally`; ownership state determines whether the child is
+            cleaned or deliberately left with the caller.
 
         Returns:
             None.
@@ -94,7 +114,12 @@ class CrystallizerConfigurationBuilder(Cleanable):
 
     def with_defaults(self) -> "CrystallizerConfigurationBuilder":
         """
-        Apply the first crystallizer defaults.
+        Apply the complete default crystallizer policy.
+
+        Purpose:
+            Produce the same valid baseline as
+            `CrystallizerConfiguration.with_defaults()`, including source-text,
+            inactive-module, checkpoint, retention, and flush defaults.
 
         Returns:
             CrystallizerConfigurationBuilder: This builder.
@@ -128,8 +153,10 @@ class CrystallizerConfigurationBuilder(Cleanable):
         Transfer the wrapped mutable configuration to the caller.
 
         Contract:
-            - ownership moves to the caller
-            - the builder is consumed after handoff
+            - Ownership moves to the caller and the builder is consumed.
+            - The returned configuration remains mutable. This is the handoff
+              to choose when the caller still needs advanced configuration
+              fluents not mirrored by the builder.
 
         Returns:
             CrystallizerConfiguration: Wrapped configuration instance.
@@ -142,9 +169,9 @@ class CrystallizerConfigurationBuilder(Cleanable):
         Finalize and transfer the wrapped configuration to the caller.
 
         Contract:
-            - freezes the wrapped configuration first
-            - ownership moves to the caller
-            - the builder is consumed after handoff
+            - Validates and freezes the wrapped configuration first.
+            - Ownership moves to the caller and the builder is consumed.
+            - The returned policy is not marked activated.
 
         Returns:
             CrystallizerConfiguration: Frozen configuration instance.
@@ -159,9 +186,10 @@ class CrystallizerConfigurationBuilder(Cleanable):
         Activate and transfer the wrapped configuration to the caller.
 
         Contract:
-            - validates/finalizes/activates the wrapped configuration first
-            - ownership moves to the caller
-            - the builder is consumed after handoff
+            - Validates, freezes, and marks the wrapped configuration active.
+            - Ownership moves to the caller and the builder is consumed.
+            - The caller must still pass it to `Crystallizer.activate(...)`;
+              builder activation does not activate the singleton itself.
 
         Returns:
             CrystallizerConfiguration: Activated configuration instance.

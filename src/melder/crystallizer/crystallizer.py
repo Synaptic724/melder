@@ -42,7 +42,7 @@ class Crystallizer(Cleanable):
     Public facade and singleton ownership root for crystallizer behavior.
 
     Purpose:
-        Present one stable user surface over the crystallizer's three V3
+        Present one stable public surface over the crystallizer's three V3
         subsystems while keeping their implementation objects private:
 
         - `PersistenceSystem`: the in-process record and checkpoint ledger.
@@ -53,13 +53,21 @@ class Crystallizer(Cleanable):
         `crystal_analysis` remains a shared service; neither becomes another
         root owned by callers.
 
+    Usage:
+        Importing `melder` constructs the hosting `Aether`, so subsequent
+        `Crystallizer()` calls return its hosted facade. Create and activate a
+        configuration, activate this root, then use facade verbs for profiles,
+        checkpoints, formations, impact analysis, or restore. Treat the three
+        owned subsystem classes as implementation boundaries; construct and
+        operate them only through this facade.
+
     Contract:
         - Process-wide singleton privately hosted by `Aether`.
         - Construction starts unconfigured and inactive unless an explicit
           configuration is supplied; activation remains a separate act.
         - Public record, asset, analysis, and load operations require an
           activated root and reject use after cleanup.
-        - Users exchange names, ids, detached dictionaries, and crystal
+        - Callers exchange names, ids, detached dictionaries, and crystal
           carriers through this facade. Persistence profiles, load plans,
           engines, and asset managers do not escape as public state.
         - Recording is passive: runtime owners push twins into `emit()`;
@@ -1945,15 +1953,20 @@ class Crystallizer(Cleanable):
             manager_configuration: ExternalPersistenceManagerConfiguration,
     ) -> None:
         """
-        Attach the user's external transport at the configuration step.
+        Attach an external transport at the configuration step.
 
         Purpose:
-            The DB opt-in seam (owner ruling): the user loads their own
-            upload/download callables into a SEPARATE configuration -
-            their SQL bootstrap, their secrets, their driver - and this
-            verb builds the ASSET-OWNED ExternalPersistenceManager from
-            it (S3 decomposition: bytes-at-rest custody lives in
-            AssetManagementSystem, the record's same-rank sibling).
+            Attach optional durability beyond the built-in local cache. An
+            integration may register generic mesh callables or use a provider
+            such as `SqliteMeshAdapter`; this verb builds the asset-owned manager
+            while credentials, connection policy, and remote-store operation
+            remain application responsibilities.
+
+        Guidance:
+            Prefer the generic store/fetch/list/delete handlers for new code
+            because they carry checkpoints, formations, grafts, and emission
+            events. The legacy upload/download/list trio remains supported for
+            checkpoint-only integrations.
 
         Contract:
             - Freezes the configuration if the caller has not (load it

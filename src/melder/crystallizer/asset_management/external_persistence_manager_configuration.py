@@ -11,34 +11,42 @@ from melder.utilities.helpers.id_builder import IDBuilder
 
 class ExternalPersistenceManagerConfiguration(Cleanable):
     """
-    Separate configuration for the ExternalPersistenceManager's remote transport.
+    Handler configuration for the optional external persistence mesh.
 
     Purpose:
-        The DB opt-in seam (owner ruling): the local cache caps at the
-        checkpoint limit, and durability beyond it is the user's explicit
-        responsibility - so the USER attaches their own upload/download
-        callables here at the crystallizer configuration step. Deliberately
-        a SEPARATE configuration from CrystallizerConfiguration because it
-        carries live code, not plain values.
+        Connect crystallizer assets to storage chosen by the application. New
+        integrations should normally provide the generic store/fetch/list/delete
+        handlers, which carry checkpoints, formations, grafts, and emission
+        events. The legacy upload/download/list trio remains available for
+        checkpoint-only integrations. Deployments that do not need custom
+        storage code can register the first-party `SqliteMeshAdapter` handlers.
+
+    Guidance:
+        Callables belong in this separate configuration because executable code
+        cannot be serialized into a world record. Author the handlers, choose
+        failure/streaming posture, then pass the configuration to
+        `Crystallizer.configure_external_persistence_manager(...)`; that facade
+        freezes it if necessary and transfers ownership to the asset system.
+        A read-only configuration must explicitly disable upload-on-flush.
 
     Contract:
-        - Callables can NEVER round-trip through the record: any twin or
-          reload surface for this configuration carries PRESENCE FLAGS
-          only (the logger-resolver precedent).
-        - Fluent authoring lane, then freeze(); mutation refused after
-          freeze; validate() runs at freeze.
-        - No third-party dependency lives here by design: a first-party
-          adapter package may PROVIDE these callables later (seam now,
-          product later - agent take adopted by owner lane).
+        - Records expose handler presence flags, never callable objects.
+        - Authoring is fluent and mutation closes at `freeze()`.
+        - Generic and legacy checkpoint handlers may coexist; legacy handlers
+          take the checkpoint-specific path while generic handlers carry the
+          rest of the mesh and provide fallback checkpoint transport.
+        - Storage credentials, connection lifetime, transactions, and handler
+          synchronization remain application responsibilities.
 
     Threading:
-        Guarded by an RLock for authoring; frozen instances are
-        effectively immutable and safe to share.
+        An `RLock` serializes authoring. Frozen instances are effectively
+        immutable, but the eventual handler callables must provide any
+        synchronization required by their storage client.
 
-    Lifecycle:
-        Owned by the caller until attached via
-        Crystallizer.configure_persistence_manager; cleanup() deletes
-        owned fields; idempotent.
+    Lifecycle / Cleanup:
+        Caller-owned until attached through the crystallizer facade, after which
+        the asset-owned manager owns and eventually cleans it. Cleanup drops
+        callable references but never invokes them or deletes remote data.
     """
 
     __melder_internal__: ClassVar[object] = _mrg.sentinel
@@ -62,6 +70,12 @@ class ExternalPersistenceManagerConfiguration(Cleanable):
     def __init__(self) -> None:
         """
         Initialize one empty manager configuration (no handlers attached).
+
+        Contract:
+            Upload-on-flush defaults True and strict failures/streaming default
+            False. Therefore the empty object is intentionally not valid for
+            freezing until a write handler is attached or upload-on-flush is
+            disabled for a read-only deployment.
 
         Returns:
             None.
@@ -93,7 +107,16 @@ class ExternalPersistenceManagerConfiguration(Cleanable):
         Release owned fields and mark the configuration cleaned.
 
         Contract:
-            - Idempotent; del posture (no tombstones).
+            - Idempotent and terminal; drops every handler reference, knob,
+              identity field, and the authoring lock.
+            - Does not call user handlers and does not mutate external storage.
+
+        Threading:
+            Authoring and handler installation must be quiescent before cleanup.
+
+        Lifecycle / Cleanup:
+            Performed by the current owner: caller before attachment or the
+            external manager after ownership transfer.
         """
         if self._cleaned:
             return
@@ -500,9 +523,10 @@ class ExternalPersistenceManagerConfiguration(Cleanable):
         Attach the list callable and return `self`.
 
         Contract:
-            - Signature: handler(profile_name: str) -> List[str] (the
-              remotely stored checkpoint ids for the profile, any order;
-              the manager sorts ULIDs into creation order).
+            - Signature: handler(profile_name: str) -> `Iterable[str]`
+              containing remotely stored checkpoint ids for the profile. The
+              manager returns lexical ULID order; this is timestamp ordered but
+              does not prove exact ordering inside one millisecond.
 
         Args:
             handler:
@@ -567,8 +591,8 @@ class ExternalPersistenceManagerConfiguration(Cleanable):
 
         Args:
             enabled:
-                True makes upload failures raise; False logs and
-                continues (default).
+                True makes write-handler failures raise; False counts the
+                failure and continues (default), preserving local custody.
 
         Returns:
             ExternalPersistenceManagerConfiguration: This instance (fluent).
@@ -623,6 +647,11 @@ class ExternalPersistenceManagerConfiguration(Cleanable):
     def freeze(self) -> None:
         """
         Validate and seal the configuration.
+
+        Purpose:
+            Close handler authoring before ownership transfers to the live
+            manager. Most callers can let the crystallizer facade invoke this
+            automatically during attachment.
 
         Contract:
             - Idempotent when already frozen.

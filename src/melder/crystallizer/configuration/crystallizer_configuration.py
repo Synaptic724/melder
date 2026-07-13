@@ -10,23 +10,46 @@ from melder.utilities.helpers.id_builder import IDBuilder
 
 class CrystallizerConfiguration(Cleanable):
     """
-    Mutable-to-frozen configuration surface for the crystallizer root.
+    Authoring surface for crystallizer capture and durability policy.
 
     Purpose:
-        Hold crystallizer-wide policy inputs before the crystallizer root is
-        activated. This is the correct home for source-classification policy
-        such as `user_source_root_paths`, not the low-level `SpellCrystal`
-        constructor.
+        Tell the public `Crystallizer` how to recognize user-owned modules, how
+        much source custody to retain, when to seal checkpoints, how much
+        in-process/local history to keep, and whether automatic seals should be
+        shipped to durable assets. These are world-recording decisions, so they
+        belong here rather than on individual `SpellCrystal` objects.
+
+    Guidance:
+        Start with `with_defaults()` unless restoring recorded policy. Override
+        only deployment-specific decisions, then call `activate()` and pass the
+        result to `Crystallizer.activate(...)`. Common choices are:
+
+        - `with_user_source_root_paths(...)`: classify application source roots.
+        - `with_retain_user_sources(True)`: permit fresh-host source rebuilding.
+        - `with_auto_flush_checkpoints(True)`: ship cadence seals to assets.
+        - `with_max_persistence_crystals(...)`: bound rolling history.
+
+        Source retention can preserve sensitive or large code text; it is
+        deliberately off by default. Root paths classify authority only?they do
+        not modify `sys.path`, import modules, or grant filesystem access.
 
     Contract:
-        - mutable until frozen
-        - validates required properties before freeze/activation
-        - activation is explicit and implies successful validation/freeze
-        - thread-safe mutations are serialized with the instance lock
+        - Mutable until `freeze()`, `finalize()`, or `activate()`.
+        - `with_defaults()` produces a complete, valid baseline.
+        - `finalize()` freezes without marking the configuration active;
+          `activate()` freezes and marks it ready for the crystallizer root.
+        - Recorded-policy reload uses a fresh instance and freezes it after
+          applying recorded values over the compatibility defaults.
 
-    Lifecycle:
-        The configuration may be created, mutated, validated, frozen, and then
-        activated before the singleton crystallizer root accepts it.
+    Threading:
+        One instance `RLock` serializes authoring and state transitions. Frozen
+        instances are read-only and may be shared with the hosted root.
+
+    Lifecycle / Cleanup:
+        The caller owns the configuration until installation; the
+        `Crystallizer` owns it afterwards and cleans it during root teardown.
+        Callers must not independently clean an installed configuration because
+        the live root continues to read policy from it.
     """
 
     __melder_internal__ = _mrg.sentinel
@@ -42,6 +65,11 @@ class CrystallizerConfiguration(Cleanable):
     def __init__(self) -> None:
         """
         Initialize one empty crystallizer configuration.
+
+        Contract:
+            No policy key is populated. In particular,
+            `user_source_root_paths` is required before validation; call
+            `with_defaults()` for the normal complete baseline.
 
         Returns:
             None.
@@ -65,8 +93,22 @@ class CrystallizerConfiguration(Cleanable):
         """
         Idempotently clear configuration state.
 
+        Contract:
+            Terminal for this object. Marks it frozen/inactive, clears every
+            policy value, and deletes identity/schema fields and the lock. It
+            does not clean the crystallizer or remove persisted artifacts.
+            Once installed, only the owning crystallizer should call cleanup;
+            external cleanup would violate the live root's ownership contract.
+
         Returns:
             None.
+
+        Threading:
+            Serialized by the configuration lock; authoring must be quiescent.
+
+        Lifecycle / Cleanup:
+            The current owner?caller, builder, or crystallizer?cleans it when
+            the policy object is no longer needed.
         """
         if self._cleaned:
             return
@@ -205,12 +247,11 @@ class CrystallizerConfiguration(Cleanable):
               may be large or sensitive, so retention is a deliberate
               policy choice - False is byte-identical to the pre-S2
               record at every surface.
-            - TRUE: every module the spell analysis classifies as
-              user_source retains {text, sha256, path, package} inside
-              the SpellCrystal ("user_module_sources"); on restore, an
-              ABSENT user file rebuilds through the synthetic module lane
-              with an honest shortfall. Retained text never overrides a
-              live file (the live file wins; drift reports a warning).
+            - True: every module classified as user source retains text,
+              SHA256, path, and package posture inside the `SpellCrystal`. On a
+              fresh host, an absent file may rebuild through the synthetic
+              module lane. Retained text never overrides a live file; drift is
+              reported and the live file remains authoritative.
 
         Returns:
             bool: The configured knob, default False.
@@ -225,14 +266,15 @@ class CrystallizerConfiguration(Cleanable):
         Return whether inactive spells' synthetic modules are unpublished.
 
         Contract:
-            - Default FALSE (insert-only): parking a spell flips its
-              crystal to the inactive record location but leaves the
-              synthetic module resident in `sys.modules` (validated, low
-              hazard). TRUE additionally unpublishes the spell's synthetic
-              root module on park (depth-2 removal: reversible, registry
-              and custody retained; captured references survive as ghosts
-              per the hot-swap law; dependents' deferred imports break on
-              their next call until reverse-edge-aware unseed lands).
+            - Default False: parking changes recorded custody but leaves
+              the synthetic root module published for maximum runtime
+              continuity.
+            - True: parking may unpublish that root while retaining registry
+              and custody state, making promotion reversible. A module with
+              live published synthetic dependents stays resident under the
+              reverse-edge safety check. Existing Python references remain live
+              even after unpublication; this knob controls import visibility,
+              not object destruction.
 
         Returns:
             bool: The configured knob, default False.
@@ -273,10 +315,11 @@ class CrystallizerConfiguration(Cleanable):
         Return the checkpoint-ledger retention cap.
 
         Contract:
-            - Default 100: when a new PersistenceCrystal would grow the
-              ledger past this cap, the OLDEST crystal is dropped and
-              cleaned first (FIFO dropout; ULID order = age order), so the
-              ledger is a rolling window of the most recent checkpoints.
+            - Default 100: when a new `PersistenceCrystal` would exceed
+              the cap, the oldest ledger entry by exact insertion order drops
+              and cleans first. Local cache retention follows recorded
+              checkpoint numbers, avoiding ambiguous same-millisecond ULID
+              tails. External retention is a separate opt-in operation.
             - Must be a positive int when set explicitly.
 
         Returns:
@@ -297,11 +340,11 @@ class CrystallizerConfiguration(Cleanable):
         Return whether automatic checkpoints also flush to the local cache.
 
         Contract:
-            - Default False: automatic cadence seals stay in-memory ledger
-              crystals; durability is a manual flush_checkpoint call.
-              TRUE makes every automatic seal ALSO ship its cached-item to
-              the local crystallizer cache (crash-safe history at the cost
-              of one atomic JSON write per cadence seal).
+            - Default False: cadence seals remain in the in-process ledger
+              until a caller explicitly flushes them.
+            - True: every automatic seal runs the normal asset flush?local
+              atomic cache write first, followed by the optional external mesh
+              write when a manager is attached and uploads are enabled.
 
         Returns:
             bool: The configured knob, default False.
@@ -372,7 +415,8 @@ class CrystallizerConfiguration(Cleanable):
 
         Contract:
             - `user_source_root_paths` is the only hard-required property.
-            - `remove_inactive_synthmodules` (False),
+            - `retain_user_sources` (False),
+              `remove_inactive_synthmodules` (False),
               `checkpoint_interval_minutes` (60),
               `max_persistence_crystals` (100), and
               `auto_flush_checkpoints` (False) carry defaults and are only
@@ -405,7 +449,11 @@ class CrystallizerConfiguration(Cleanable):
 
     def freeze(self) -> None:
         """
-        Validate and freeze the configuration.
+        Validate and freeze the configuration without activating it.
+
+        Contract:
+            Idempotent. After success, all authoring methods refuse mutation;
+            the configuration is suitable for inspection or later activation.
 
         Returns:
             None.
@@ -422,6 +470,11 @@ class CrystallizerConfiguration(Cleanable):
         """
         Validate and freeze the configuration, then return it.
 
+        Guidance:
+            Choose this when another owner should decide when activation occurs.
+            Use `activate()` when the next step is installation on the live
+            crystallizer root.
+
         Returns:
             CrystallizerConfiguration: This configuration instance.
         """
@@ -431,6 +484,11 @@ class CrystallizerConfiguration(Cleanable):
     def activate(self) -> "CrystallizerConfiguration":
         """
         Validate, freeze, and mark the configuration active.
+
+        Guidance:
+            This is the normal final authoring step before
+            `Crystallizer.activate(configuration)`. It changes only this policy
+            object's readiness; it does not activate the singleton by itself.
 
         Returns:
             CrystallizerConfiguration: This activated configuration instance.
@@ -451,11 +509,12 @@ class CrystallizerConfiguration(Cleanable):
             fully valid configuration.
 
         Contract:
-            - user_source_root_paths: the resolved current working directory.
-            - remove_inactive_synthmodules: False (insert-only).
-            - checkpoint_interval_minutes: 60 (one automatic checkpoint per
-              hour of recorded activity).
-            - max_persistence_crystals: 100 (rolling FIFO ledger window).
+            - `user_source_root_paths`: resolved current working directory.
+            - `retain_user_sources`: False (fingerprints/paths, no source text).
+            - `remove_inactive_synthmodules`: False (keep imports resident).
+            - `checkpoint_interval_minutes`: 60 activity-driven minutes.
+            - `max_persistence_crystals`: 100-entry rolling ledger/cache cap.
+            - `auto_flush_checkpoints`: False (manual durability flush).
 
         Returns:
             CrystallizerConfiguration: This configuration instance.
@@ -616,6 +675,16 @@ class CrystallizerConfiguration(Cleanable):
     ) -> "CrystallizerConfiguration":
         """
         Set the user-owned source roots used for module classification.
+
+        Purpose:
+            Distinguish application code from site packages and unknown/binary
+            authority during crystal analysis. Inputs resolve to absolute,
+            deduplicated `Path` values at authoring time.
+
+        Contract:
+            This policy does not require the roots to exist immediately, does
+            not add them to `sys.path`, and does not read their contents. It is
+            a classification boundary consumed later by analysis.
 
         Args:
             root_paths:

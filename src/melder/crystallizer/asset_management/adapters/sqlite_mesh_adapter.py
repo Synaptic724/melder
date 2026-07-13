@@ -18,17 +18,21 @@ if TYPE_CHECKING:
 
 class SqliteMeshAdapter(Cleanable):
     """
-    First-party SQLite adapter PROVIDING the external persistence mesh
-    callables (patch sqlite_mesh_adapter_2026_07_12).
+    First-party SQLite provider for the external persistence mesh.
 
     Purpose:
-        Give users a zero-storage-code path onto the mesh: construct the
-        adapter with a database path, register its four handlers through
-        the NORMAL configuration fluents (`register_with(...)` is sugar
-        over exactly those fluents), and every mesh unit kind -
-        checkpoints, formations, index grafts, emissions, and any future
-        kind - persists into one SQLite table shaped exactly like
-        `MeshInterfaceContract.IDENTITY_COLUMNS`.
+        Provide a durable, local, zero-custom-handler option. Create
+        the adapter with a database path, register its four generic handlers on
+        an `ExternalPersistenceManagerConfiguration`, then attach that
+        configuration through the crystallizer facade. Checkpoints, formations,
+        index grafts, emissions, and future kinds share one contract-shaped
+        table while remaining partitioned by kind and profile.
+
+    Usage:
+        Create the adapter for an application-owned database file, call
+        `adapter.register_with(manager_configuration)`, and pass the returned
+        configuration to `configure_external_persistence_manager(...)`. Keep
+        the adapter alive as long as the manager may call its bound methods.
 
     Contract:
         - The callables-first law stands: melder core NEVER imports this
@@ -42,9 +46,10 @@ class SqliteMeshAdapter(Cleanable):
         - Handler semantics mirror `MeshInterfaceContract
           .HANDLER_SIGNATURES`: fetch returns the payload dict or None
           when absent; list returns unit_id strings for one
-          kind+profile partition in lexicographic order (ULID order =
-          age); delete is STRICT and raises `KeyError` for a missing
-          unit (a half-run retention pass must not lie).
+          kind+profile partition in lexicographic order. ULID timestamp
+          prefixes provide coarse time order, but random tails do not establish
+          exact same-millisecond chronology. Delete is strict and raises
+          `KeyError` for a missing unit so retention cannot silently half-run.
         - Reader gates stay melder-side (RecordVersion.check_readable at
           the reload seams); the adapter never inspects payload content.
 
@@ -252,9 +257,10 @@ class SqliteMeshAdapter(Cleanable):
 
         Contract:
             - Registered as the `with_list_units_handler` callable.
-            - Lexicographic order: mesh unit ids are ULIDs where age
-              matters (checkpoints/emissions), so lexicographic = age;
-              retention passes rely on that ordering.
+            - Returns the database's lexical `unit_id` order. For ULID
+              kinds this follows timestamp order, with no claim about exact
+              creation order among ids minted in the same millisecond. Remote
+              retention deliberately uses this lexical policy.
 
         Args:
             kind: Unit kind partition.
@@ -342,9 +348,10 @@ class SqliteMeshAdapter(Cleanable):
                 The mutable (not yet frozen) manager configuration.
 
         Returns:
-            ExternalPersistenceManagerConfiguration: The same
-            configuration, for fluent chaining (the caller still owns
-            freeze/validate).
+            ExternalPersistenceManagerConfiguration: The same mutable
+            configuration for further knob selection or immediate attachment.
+            The caller may freeze it explicitly; the crystallizer facade also
+            freezes it during manager configuration.
 
         Raises:
             RuntimeError: If the adapter has been cleaned.
