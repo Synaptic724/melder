@@ -19,17 +19,22 @@ class CrystallizerBootstrap(Cleanable):
     Fluent pod-boot lane: from a fresh process to a rebuilt world.
 
     Purpose:
-        The restart story (owner charter, kube scenario): a rebuilt pod
-        always needs to set up the crystallizer + persistence system,
-        attach its external transport, pull its history (local cache
-        first, then the user's DB), pick the MOST RECENT checkpoint, and
-        load it - then the whole system bootstraps. This builder is that
-        flow as one fluent chain:
+        Compose the restart sequence for a fresh process: activate the
+        crystallizer, attach optional external assets, recover local and remote
+        history, verify the selected profile's chain, and load its newest
+        checkpoint. A process with no history is valid and starts an empty
+        recording world.
 
-            report = (CrystallizerBootstrap()
-                      .with_external_persistence_manager(pm_configuration)
-                      .with_profile("default")
-                      .bootstrap())
+    Usage:
+        Choose this object for process/pod restart orchestration. Use direct
+        `Crystallizer` facade verbs when the process is already configured and
+        only one checkpoint, formation, or graft operation is needed. The
+        builder is single-use because it transfers configuration ownership and
+        may create a live world.
+
+        Remote history is written back through the normal flush lane so the
+        local cache is repopulated. Consequently, attached write handlers must
+        tolerate idempotent re-storage of an existing checkpoint id.
 
     Contract:
         - Composes ONLY Crystallizer facades (the crystallizer owns its
@@ -38,9 +43,8 @@ class CrystallizerBootstrap(Cleanable):
         - A fresh-ever pod is LEGAL: no history anywhere boots an empty
           recording world (restored_checkpoint_id None, no error).
         - Remote-pulled checkpoints re-flush through the facade so the
-          local cache holds them ("store it if it needs to be done");
-          consequence: the flush upload hook re-upserts those ids, so
-          user upload handlers must be upsert-safe (documented).
+          local cache holds them; remote write handlers may therefore receive
+          the same checkpoint id again and must be upsert-safe.
         - The chain verdict GATES the load: "broken" refuses loudly
           (bootstrapping a wrong world is worse than not booting);
           "truncated_prefix" boots and rides the report.
@@ -48,9 +52,10 @@ class CrystallizerBootstrap(Cleanable):
     Threading:
         Builder-thread confined; not shared.
 
-    Lifecycle:
-        cleanup() releases held configurations that bootstrap() did not
-        consume; idempotent.
+    Lifecycle / Cleanup:
+        Cleanup releases configurations that were never consumed. After
+        `bootstrap()` begins, configuration ownership transfers downstream and
+        cleanup never tears down the resulting crystallizer world.
     """
 
     __melder_internal__: ClassVar[object] = _mrg.sentinel
@@ -180,12 +185,18 @@ class CrystallizerBootstrap(Cleanable):
             manager_configuration: ExternalPersistenceManagerConfiguration,
     ) -> "CrystallizerBootstrap":
         """
-        Supply the user's external transport configuration, return `self`.
+        Supply an external transport configuration and return `self`.
+
+        Guidance:
+            Use the generic mesh handlers for complete checkpoint/formation/
+            graft support. A checkpoint-only legacy handler trio is valid, but
+            remote formation reload is then skipped because that capability is
+            absent.
 
         Args:
             manager_configuration:
-                Handler-bearing configuration (the user's DB callables);
-                ownership transfers to this builder until consumed.
+                Handler-bearing configuration; ownership transfers to this
+                builder until bootstrap consumes it.
 
         Returns:
             CrystallizerBootstrap: This builder (fluent).
@@ -289,13 +300,13 @@ class CrystallizerBootstrap(Cleanable):
         Accepted no-op knob: blocker refusal is standard admission now.
 
         Purpose:
-            ABSORBED (S4 decomposition): every mediated load runs the
-            engine with the admission gate armed - a "blockers" folded
-            preflight verdict refuses the load BEFORE any replay. This
-            knob predates that law (it was the opt-in refusal AFTER the
-            restore) and is kept as an accepted no-op so existing fluent
-            chains keep working; the value is recorded but changes
-            nothing.
+            Preserve compatibility with older fluent chains. Every mediated load
+            now refuses folded blocker verdicts before replay regardless of this
+            value.
+
+        Guidance:
+            Omit this method in new code. It communicates no current policy and
+            exists only so previously authored bootstrap chains remain valid.
 
         Args:
             enabled:
@@ -335,9 +346,9 @@ class CrystallizerBootstrap(Cleanable):
                restores work on the rebuilt pod.
             6. Verify the chain: "broken" REFUSES loudly; anything else
                rides the report.
-            7. Load the MOST RECENT checkpoint (last ULID in the
-               profile's ledger); a history-less pod boots an empty
-               world (restored_checkpoint_id None).
+            7. Load the profile's most recent checkpoint by exact ledger
+               insertion order; a history-less process boots an empty world
+               (`restored_checkpoint_id` is None).
 
         Returns:
             Dict[str, object]:
@@ -351,8 +362,12 @@ class CrystallizerBootstrap(Cleanable):
                  "restore_report": report | None}.
 
         Raises:
-            RuntimeError: If cleaned, already consumed, or the chain
-                verdict is "broken".
+            RuntimeError:
+                If cleaned, already consumed, chain verification is broken,
+                folded admission finds blockers, or replay fails.
+            ValueError/TypeError/KeyError:
+                Propagated from configuration activation, transport setup, or
+                selected profile/history operations.
         """
         self.check_cleaned()
         self._require_unconsumed()

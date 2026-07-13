@@ -19,9 +19,16 @@ class RecordVersion:
     The persistence record's schema version authority.
 
     Purpose:
-        One place that says what version the record speaks, stamps it
-        into outgoing artifacts, and answers the only question readers
-        need: "may this payload be read here?".
+        Define the schema version spoken by durable crystallizer artifacts,
+        stamp outgoing value payloads, and gate readers before they trust an
+        unfamiliar shape.
+
+    Guidance:
+        Producers should call `stamp()` only at the durable boundary. Adapters
+        must preserve the existing `record_version` field rather than replacing
+        it with an adapter version. Readers should call `check_readable()` before
+        interpreting payload keys. An older or absent major enters compatibility
+        lanes; a newer major is undefined and must refuse.
 
     Contract:
         - CURRENT is semantic: MAJOR breaks reader shape, MINOR adds
@@ -31,6 +38,15 @@ class RecordVersion:
           oldest possible record - always readable, tolerance lanes own
           the gaps).
         - Static-only surface; never constructed.
+        - Version compatibility covers schema shape, not business validity;
+          normal validation and preflight still run after the version gate.
+
+    Threading:
+        Stateless class operations over caller-owned dictionaries; safe from any
+        thread when the supplied payload is not concurrently mutated.
+
+    Lifecycle / Cleanup:
+        None. This class owns no runtime state or external resource.
     """
 
     CURRENT: ClassVar[str] = "1.0.0"
@@ -41,10 +57,14 @@ class RecordVersion:
         """
         Stamp one outgoing artifact payload with the current version.
 
+        Contract:
+            Mutates and returns the same dictionary. Existing version text is
+            overwritten with `CURRENT`; use only while producing a new artifact,
+            never while proxying an artifact created by another runtime.
+
         Args:
             payload:
-                The artifact dict being built (mutated in place for
-                builder ergonomics).
+                The outgoing artifact dictionary.
 
         Returns:
             Dict[str, object]: The same payload, stamped.
@@ -73,9 +93,14 @@ class RecordVersion:
         """
         Parse one semantic version string into comparable parts.
 
+        Contract:
+            Reads at most the first three dot-separated components. Missing
+            minor/patch components become zero; extra components are ignored.
+            Every present component must be an integer.
+
         Args:
             version_text:
-                "MAJOR.MINOR.PATCH" (missing parts read as 0).
+                Semantic version text such as `MAJOR.MINOR.PATCH`.
 
         Returns:
             Tuple[int, int, int]: (major, minor, patch).
@@ -98,11 +123,11 @@ class RecordVersion:
         Refuse artifacts written by a NEWER major than this code speaks.
 
         Purpose:
-            The single read gate: rehydration and reload lanes call this
-            before trusting a payload's shape. Older majors (and
-            pre-versioning "0.0.0") pass - the record's tolerance lanes
-            own their gaps; a newer major is undefined here and refuses
-            with the upgrade instruction.
+            The single schema read gate used before rehydration. Same/older
+            majors and pre-versioning `0.0.0` pass into ordinary tolerance and
+            validation lanes; a newer major refuses with an upgrade instruction.
+            Minor and patch differences never refuse at this gate because they
+            are additive/documentary by contract.
 
         Args:
             payload:

@@ -24,6 +24,19 @@ class SpellCrystal(Cleanable):
         so loaders can validate and activate that world before bind/conjure
         work continues.
 
+    Guidance:
+        Obtain crystals through `Crystallizer.create_spell_crystal(...)` when
+        capturing a live spell or `Crystallizer.get_spell_crystal(...)` when
+        reading recorded custody. Direct construction is primarily an internal
+        analysis seam because the facade supplies the installed source-authority
+        and retention policy. Treat a returned crystal as a current custody
+        snapshot: replace-on-emit may clean a displaced instance, so fetch fresh
+        for each independent operation instead of retaining it indefinitely.
+
+        Use `describe()` for persistence, diagnostics, or agent inspection. The
+        individual properties are convenient focused reads over the same carried
+        truth; neither surface is a live `Spell` or executable replay plan.
+
     Contract:
         - constructed from one live `Spell`
         - anchored to the spell's concrete SHA256 identity
@@ -55,6 +68,15 @@ class SpellCrystal(Cleanable):
         - it is not the mutation engine
         - it is not a package manager
         - it does not prove runtime reachability beyond source/import truth
+
+    Threading:
+        One instance `RLock` guards the carried identity and analysis result.
+        Read surfaces return value copies, but cleanup must not race with reads.
+
+    Lifecycle / Cleanup:
+        A persistence profile owns recorded instances. Cleanup releases the
+        carried `CrystalAnalysisResult` first, then identity and policy fields;
+        it never cleans the original spell, module, or analyzer.
     """
 
     __melder_internal__ = _mrg.sentinel
@@ -279,13 +301,21 @@ class SpellCrystal(Cleanable):
         Idempotently clear the retained manifest state.
 
         Contract:
-            - Idempotent.
-            - Clears all retained manifest fields and diagnostics.
-            - Drops classification flags and resolved root-path caches.
-            - Leaves the object unusable after cleanup completes.
+            - Idempotent and terminal.
+            - Cleans the owned analysis result before dropping crystal identity,
+              bind signature, classification flags, and policy-root caches.
+            - Does not unpublish modules, remove persisted files, or clean the
+              live spell from which the snapshot was captured.
 
         Returns:
             None.
+
+        Threading:
+            Serialized by the crystal lock; callers must finish reads first.
+
+        Lifecycle / Cleanup:
+            Invoked when custody is replaced/evicted or its owning profile is
+            torn down. A cleaned crystal must be fetched or reconstructed anew.
         """
         if self._cleaned:
             return
@@ -960,14 +990,20 @@ class SpellCrystal(Cleanable):
         Return a loader-facing snapshot of the manifest state.
 
         Purpose:
-            Provide one detached, serialization-friendly view of the current
-            crystal manifest so tests, diagnostics, and later persistence work
-            can inspect the manifest without mutating the live object.
+            Provide the complete value-shaped custody document consumed by
+            persistence, restore preflight, impact analysis, diagnostics, and
+            agent inspection without exposing the crystal's mutable containers.
+
+        Contract:
+            Combines crystal-owned identity/bind-policy fields with a detached
+            `CrystalAnalysisResult` payload. Returned lists and dictionaries are
+            independent of the carried manifest; no live spell, module, target,
+            analyzer, strategy, or synchronization object crosses the boundary.
 
         Returns:
             Dict[str, Any]:
-                Detached manifest snapshot suitable for debugging, inspection,
-                or future persistence/loader handoff work.
+                Complete detached manifest snapshot suitable for durable record
+                capture and read-only inspection.
         """
         self.check_cleaned()
         with self._lock:

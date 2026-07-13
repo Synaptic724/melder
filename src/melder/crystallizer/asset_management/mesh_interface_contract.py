@@ -8,13 +8,22 @@ class MeshInterfaceContract:
     Static authority describing the external persistence mesh interface.
 
     Purpose:
-        The mesh is an INTERFACE LAYER (owner directive 2026-07-11):
-        melder forms the calls, the user registers plain callables, and
-        versioned JSON flows both ways. This class emits the whole
-        contract - the unit-kind table, each kind's payload shape, the
-        identity columns, and the handler call signatures - as one plain
-        dict, so a user can build their storage and register handlers
-        from the emitted contract alone, without reading melder source.
+        Describe the complete value/callable boundary between crystallizer
+        assets and an external store: unit kinds, identity columns, payload
+        shapes, handler signatures, and their configuration fluents. The
+        emitted dictionary is sufficient to implement an adapter without
+        depending on crystallizer internals.
+
+    Guidance:
+        Read this authority through `Crystallizer.describe_external_interface()`
+        when generating or validating an integration. Implement handlers against
+        `HANDLER_SIGNATURES`, preserve the stamped payload unchanged, and use
+        `kind` as the storage partition. `IDENTITY_COLUMNS` is a suggested
+        portable model rather than required DDL. The emitted checkpoint phrase
+        "lexicographic = age" describes timestamp ordering only; exact ordering
+        among checkpoints minted in one millisecond comes from the recorded
+        checkpoint number or ledger insertion order. Do not instantiate or
+        mutate this class; `describe()` returns detached copies for inspection.
 
     Contract:
         - Pure and stateless: class-level data plus static reads; never
@@ -147,10 +156,8 @@ class MeshInterfaceContract:
         Emit the whole mesh interface contract as one stamped dict.
 
         Purpose:
-            The "emit the table and the shape" verb: everything a user
-            needs to build storage and register handlers - kinds,
-            identity columns, payload shapes, and the call signatures
-            with their registration fluent names.
+            Emit the adapter-authoring table: kinds, identity columns, payload
+            shapes, and handler signatures with their registration fluent names.
 
         Contract:
             - Detached copies only; mutating the result never touches

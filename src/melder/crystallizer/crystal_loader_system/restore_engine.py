@@ -18,6 +18,13 @@ class RestoreReport(Cleanable):
         (shortfall entries), and how recorded identities map onto the fresh
         identities the rebuilt world minted (the old->new translation map).
 
+    Guidance:
+        Judge a restore from `status`, `failed_stage`, `preflight`, and
+        `shortfalls` together. Built counts report successful actions, not proof
+        that every recorded capability was reconstructable. Recorded runtime ids
+        are diagnostic only; use `identity_map` to locate freshly minted live
+        identities after a successful load.
+
     Contract:
         - Value-only state: strings, ints, plain dicts/lists. No live twin or
           runtime references, no locks, no callables.
@@ -30,9 +37,10 @@ class RestoreReport(Cleanable):
         Mutated by exactly one RestoreEngine on one thread during one restore
         call; readers consume `describe()` afterwards. No lock by contract.
 
-    Lifecycle:
+    Lifecycle / Cleanup:
         Owned by the engine while the run is live; ownership passes to the
-        caller with the return. `cleanup()` deletes owned fields; idempotent.
+        caller with the return. Cleanup deletes reporting fields only and never
+        tears down the rebuilt runtime.
     """
 
     __slots__ = Cleanable.__slots__ + [
@@ -250,7 +258,12 @@ class RestoreReport(Cleanable):
 
     def describe(self) -> Dict[str, object]:
         """
-        Return the detached report payload.
+        Return the report payload as value-shaped containers.
+
+        Contract:
+            Recreates checkpoint ids, built counts, shortfall rows, and identity
+            mappings. The preflight dictionary is copied at its outer boundary;
+            consumers should treat nested finding rows as immutable report data.
 
         Returns:
             Dict[str, object]:

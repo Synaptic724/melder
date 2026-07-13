@@ -30,10 +30,19 @@ class GraftRunner(Cleanable):
     Re-integrate one captured spell_index into a live host book.
 
     Purpose:
-        The finer-than-conduit restore grain (owner-approved lane): the
-        graft record is the index twin's membership map plus per-member
-        custody payloads; the runner replays it against a HOST the
-        caller already owns.
+        The finer-than-conduit restore grain: replay one captured index's
+        membership, custody, and selection into a live host spellbook through
+        ordinary public bind/notch verbs.
+
+    Guidance:
+        Prefer `Crystallizer.graft_index(...)` instead of constructing this
+        runner directly. Choose the default fresh-index mode when the captured
+        membership should arrive as an independent index. Supply
+        `merge_into_index` only when intentionally growing an existing live
+        index; `adopt_recorded_selection` controls whether that merge also moves
+        its active member. A graft is a sequence of admitted public mutations,
+        not a world-load transaction, so inspect `shortfalls` and do not assume
+        graft-wide atomicity.
 
     Contract:
         - Single-use; run() executes once and returns the detached
@@ -193,6 +202,11 @@ class GraftRunner(Cleanable):
     def run(self) -> Dict[str, object]:
         """
         Execute the graft against the live host book.
+
+        Guidance:
+            Treat structural exceptions as a refused graft. A `complete` report
+            may still contain member-level shortfalls; inspect them before
+            considering the requested membership fully reconstructed.
 
         Contract:
             Consumes the runner before host validation, so any return or error
