@@ -477,6 +477,12 @@ class Aether(Cleanable):
             - Passing a real logger attaches it through the `SafeLogger`
               facade.
             - Passing None resets Aether back to the null logger wrapper.
+            - Successful replacement RETIRES the displaced owned wrapper
+              (best-effort cleanup; BUG-278, 2026-07-17 audit) so a
+              cleanup-capable sink can never be orphaned by re-attachment.
+            - Same-sink re-attachment never tears the sink down: the
+              displaced wrapper is retired only when the underlying raw
+              sinks differ (sink-identity aliasing law, mirrors BUG-279).
 
         Args:
             logger:
@@ -487,7 +493,20 @@ class Aether(Cleanable):
             None.
         """
         self.check_cleaned()
-        self._logger = InitHelpers.resolve_safe_logger(logger)
+        previous_logger = self._logger
+        next_logger = InitHelpers.resolve_safe_logger(logger)
+        if (
+                previous_logger is not next_logger
+                and previous_logger._logger is not next_logger._logger
+        ):
+            try:
+                # BUG-278 (2026-07-17 audit): retire the displaced owned
+                # wrapper on replacement; best-effort - attachment must never
+                # fail because old-handle cleanup raised.
+                previous_logger.cleanup()
+            except Exception:
+                pass
+        self._logger = next_logger
 
     def enable_logging(
             self,
@@ -510,6 +529,12 @@ class Aether(Cleanable):
                 utility system (channel resolver or default logger)
             - The automatic path fails fast when that setup is incomplete
               instead of silently leaving Aether on the null logger path.
+            - The automatic result is validated BEFORE publication (BUG-278,
+              2026-07-17 audit): a resolution that yields no logger raises
+              while the previously attached working logger stays installed
+              and untouched.
+            - A successful automatic attach retires the displaced owned
+              wrapper unless it shares the same underlying raw sink.
 
         Args:
             logger:
@@ -522,8 +547,10 @@ class Aether(Cleanable):
             RuntimeError:
                 If the automatic logger path is requested before Aether root
                 configuration has been activated, if automatic channel logger
-                activation is disabled, or if no automatic logger provider has
-                been registered into the utility system.
+                activation is disabled, if no automatic logger provider has
+                been registered into the utility system, or if automatic
+                resolution returns no logger (the existing logger is
+                preserved in that case).
         """
         self.check_cleaned()
         if logger is not None:
@@ -552,17 +579,32 @@ class Aether(Cleanable):
                 "AetherUtilitySystem has no automatic logger provider "
                 "configured."
             )
-        self._logger = InitHelpers.resolve_channel_logger(
+        next_logger = InitHelpers.resolve_channel_logger(
             self,
             groups=["aether", "lifecycle"],
             system_groups=["aether"],
             props={"component": "aether"},
             channels="system",
         )
-        if self._logger._logger is None:
+        if next_logger._logger is None:
+            # BUG-278 (2026-07-17 audit): validate BEFORE publication - a
+            # failed automatic resolution must preserve the existing working
+            # logger instead of destroying it with a null wrapper.
             raise RuntimeError(
                 "Automatic Aether logger resolution returned no logger."
             )
+        previous_logger = self._logger
+        if (
+                previous_logger is not next_logger
+                and previous_logger._logger is not next_logger._logger
+        ):
+            try:
+                # Retire the displaced owned wrapper on successful automatic
+                # replacement; best-effort by the same law as attach_logger.
+                previous_logger.cleanup()
+            except Exception:
+                pass
+        self._logger = next_logger
 
     @property
     def configuration(self) -> Optional[AetherConfiguration]:

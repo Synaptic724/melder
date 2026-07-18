@@ -754,3 +754,45 @@ def test_restore_runs_the_preflight_strategies_at_load_time():
     assert "link_integrity" in strategies
     report.cleanup()
     engine.cleanup()
+
+
+def test_bug163_same_window_record_then_remove_files_no_false_shortfall():
+    """
+    BUG-163 regression: an identity recorded and then removed within one
+    checkpoint window leaves its emission entry with NO captured payload (the
+    twin was gone at seal), followed by the removal tombstone. The final
+    tombstone fully explains the missing payload, so the restore folds to
+    empty custody WITHOUT filing a journal_entry_without_captured_payload
+    shortfall for routine record-then-remove churn.
+    """
+    engine = _engine([
+        _window(
+            [[1, "spell_crystal", "sha-1"], [2, "spell_removed", "sha-1"]],
+            # Only the tombstone is captured; the emission payload is absent
+            # because the twin was removed before this seal.
+            {"spell_removed": {"sha-1": {"spell_id": "sha-1", "removed": True}}},
+        ),
+    ])
+    engine._fold_chain()
+    assert engine._report.describe()["shortfalls"] == []
+    assert "sha-1" not in engine._custody_active
+    assert "sha-1" not in engine._custody_inactive
+    engine.cleanup()
+
+
+def test_bug163_orphan_emission_without_removal_still_files_shortfall():
+    """
+    BUG-163 honesty guard preserved: an emission entry with no captured
+    payload AND no explaining same-window removal is still a genuine capture
+    anomaly and must file a journal_entry_without_captured_payload shortfall.
+    """
+    engine = _engine([
+        _window([[1, "spell_crystal", "sha-2"]], {}),
+    ])
+    engine._fold_chain()
+    shortfalls = engine._report.describe()["shortfalls"]
+    assert len(shortfalls) == 1
+    assert shortfalls[0]["kind"] == "spell_crystal"
+    assert shortfalls[0]["key"] == "sha-2"
+    assert shortfalls[0]["reason"] == "journal_entry_without_captured_payload"
+    engine.cleanup()

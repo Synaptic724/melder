@@ -646,16 +646,37 @@ class RestoreEngine(Cleanable):
         """
         for window in self._chain:
             payloads = window["payloads"]
-            for entry in window["journal"]:
+            journal = window["journal"]
+            # Same-window record-then-remove is normal churn (BUG-163): an
+            # identity emitted and then removed before this seal leaves its
+            # emission entry with no captured payload (the twin was gone at
+            # capture), followed by the removal tombstone that fully explains
+            # it. Pre-scan the window's removals (same key) so a superseded
+            # emission folds without a false
+            # "journal_entry_without_captured_payload" shortfall; journal order
+            # is ascending, so the last write per key is its latest removal.
+            removal_sequence_by_key: Dict[str, int] = {}
+            for other in journal:
+                if str(other[1]).endswith("_removed"):
+                    removal_sequence_by_key[str(other[2])] = int(other[0])
+            for entry in journal:
                 kind = str(entry[1])
                 key = str(entry[2])
                 payload = payloads.get(kind, {}).get(key)
                 if payload is None:
-                    # Honesty guard (triage #2 lesson): a journaled entry
-                    # with no captured payload is a capture anomaly, not a
-                    # normal shape - the SpellbookCrystal emission gap hid
-                    # behind a silent skip here and restores reported
-                    # "complete" over empty worlds. Report it, keep folding.
+                    superseding_removal = removal_sequence_by_key.get(key)
+                    if (
+                            superseding_removal is not None
+                            and superseding_removal > int(entry[0])
+                    ):
+                        # A later same-window tombstone removes this key, so
+                        # the missing payload is expected churn, not a gap.
+                        continue
+                    # Honesty guard (triage #2 lesson): a journaled entry with
+                    # no captured payload AND no explaining removal is a
+                    # capture anomaly, not a normal shape - the SpellbookCrystal
+                    # emission gap hid behind a silent skip here and restores
+                    # reported "complete" over empty worlds. Report it, keep folding.
                     self._report.add_shortfall(
                         kind, key, "journal_entry_without_captured_payload"
                     )

@@ -205,16 +205,21 @@ class CrystallizerCache(Cleanable):
                 The recorded `checkpoint_number` (monotonic per profile)
                 is the authoritative age; ULID filenames tie within one
                 millisecond (random tails), so they only break ties.
-                Unreadable payloads sort OLDEST (group 0) so dead cache
-                weight reclaims first.
+                Unreadable or non-object payloads sort OLDEST (group 0) so
+                dead cache weight reclaims first.
                 """
                 try:
                     payload = json.loads(
                         path.read_text(encoding="utf-8")
                     )
-                    number = payload.get("checkpoint_number")
-                    if isinstance(number, int):
-                        return (1, number, path.name)
+                    # A checkpoint payload is a JSON object; any other
+                    # root shape (list, null, scalar) parses cleanly but
+                    # cannot represent a checkpoint, so it is dead weight
+                    # and must not crash the sort on `.get()` (BUG-160).
+                    if isinstance(payload, dict):
+                        number = payload.get("checkpoint_number")
+                        if isinstance(number, int):
+                            return (1, number, path.name)
                 except (OSError, ValueError):
                     pass
                 return (0, 0, path.name)

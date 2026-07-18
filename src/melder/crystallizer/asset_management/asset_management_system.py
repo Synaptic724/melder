@@ -781,9 +781,10 @@ class AssetManagementSystem(Cleanable):
             identity the capture already carries.
 
         Contract:
-            - Requires a manager with the generic store lane (loud
-              refusal otherwise; the legacy upload lane cannot carry
-              kinds).
+            - Requires a manager with the generic store lane attached (loud
+              refusal otherwise; the legacy upload lane cannot carry kinds).
+              Handler PRESENCE governs this explicit store, NOT the automatic
+              upload_on_flush knob (BUG-161).
             - The record must look like a graft: an "index_id" key is
               required (teach-grade ValueError otherwise). Deeper shape
               truth stays with the producer and the GraftRunner gate.
@@ -807,7 +808,7 @@ class AssetManagementSystem(Cleanable):
         self.check_cleaned()
         with self._lock:
             manager = self._external_persistence_manager
-        if manager is None or not manager.store_enabled:
+        if manager is None or not manager.has_store_handler:
             raise RuntimeError(
                 "Storing a graft requires an attached manager with the "
                 "generic store lane (with_store_handler)."

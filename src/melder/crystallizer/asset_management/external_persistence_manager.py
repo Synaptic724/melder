@@ -328,6 +328,20 @@ class ExternalPersistenceManager(Cleanable):
         )
 
     @property
+    def has_store_handler(self) -> bool:
+        """
+        Return whether a generic store handler is attached.
+
+        Returns:
+            bool: True when a store handler is wired, independent of the
+            upload_on_flush knob. Explicit store operations (e.g. graft
+            storage) depend on handler PRESENCE, not on the automatic
+            checkpoint-flush upload policy (BUG-161).
+        """
+        self.check_cleaned()
+        return self._configuration.store_handler is not None
+
+    @property
     def stream_emissions_enabled(self) -> bool:
         """
         Return whether the opt-in emission tap should fire.

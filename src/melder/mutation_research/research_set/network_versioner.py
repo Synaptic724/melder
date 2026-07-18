@@ -95,7 +95,9 @@ class NetworkVersioner(Cleanable):
         Returns:
             str:
                 SHA256 hex address of the canonical payload form. Identical
-                payloads return the existing address without duplication.
+                payloads return the existing address without duplication,
+                MOVED to the newest retention position - recency follows
+                the operation order, not first insertion.
         """
         self.check_cleaned()
         canonical = json.dumps(
@@ -106,6 +108,14 @@ class NetworkVersioner(Cleanable):
         snapshot_sha = hashlib.sha256(canonical.encode("utf-8")).hexdigest()
         with self._lock:
             if snapshot_sha in self._canonical_by_sha:
+                # Dedupe stores the canonical once but recency is the
+                # OPERATION's (BUG-261): a re-snapshot (for example a
+                # restore's closing snapshot) moves the address to the
+                # newest position so latest_sha identifies the restored
+                # organization and bounded retention keeps it as the next
+                # mutation's immediate predecessor - the undo ring holds.
+                self._order.remove(snapshot_sha)
+                self._order.append(snapshot_sha)
                 return snapshot_sha
             self._canonical_by_sha[snapshot_sha] = canonical
             self._order.append(snapshot_sha)

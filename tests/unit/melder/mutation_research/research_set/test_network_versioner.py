@@ -117,3 +117,28 @@ def test_from_payload_still_accepts_true_content_addresses() -> None:
 
     assert rebuilt.latest_sha == address
     assert rebuilt.get(address) == {"v": 1}
+
+
+def test_restoring_deduplicated_snapshot_refreshes_recency() -> None:
+    """
+    Regression (BUG-261): the dedupe path returned the existing address
+    without refreshing FIFO recency, so re-snapshotting A after B left
+    `latest_sha` on B, and with max_snapshots=2 the next mutation C evicted
+    the freshly restored A while retaining older B - an immediate undo to
+    the true predecessor then raised KeyError. Corrected behavior: dedupe
+    stores content once but moves the address to the newest position; the
+    undo ring keeps the restored organization as C's immediate predecessor.
+    """
+    versioner = NetworkVersioner(max_snapshots=2)
+    address_a = versioner.snapshot({"org": "A"})
+    address_b = versioner.snapshot({"org": "B"})
+    assert versioner.latest_sha == address_b
+
+    assert versioner.snapshot({"org": "A"}) == address_a  # dedupe hit
+    assert versioner.latest_sha == address_a  # recency follows the operation
+
+    address_c = versioner.snapshot({"org": "C"})
+    assert versioner.snapshot_shas() == [address_a, address_c]
+    assert versioner.get(address_a) == {"org": "A"}  # undo ring intact
+    with pytest.raises(KeyError):
+        versioner.get(address_b)  # oldest-by-operation evicted, not A

@@ -509,3 +509,51 @@ def test_bug162_failed_remote_graft_store_raises_not_reports_shipped(cache_root)
     # The failed store must not have left a phantom durable row.
     assert ("index_graft", "01IDX") not in rows
     system.cleanup()
+
+
+def test_bug161_store_index_graft_ignores_upload_on_flush(cache_root):
+    """
+    BUG-161 regression: explicit graft storage depends on store-handler
+    PRESENCE, not on the automatic checkpoint-flush upload knob. With a store
+    handler attached but upload_on_flush disabled, store_index_graft still
+    ships (previously store_enabled=False disabled this valid explicit store).
+    """
+    rows = {}
+
+    def store(kind, profile_name, unit_id, payload):
+        rows[(kind, unit_id)] = (profile_name, json.dumps(payload))
+
+    def fetch(kind, unit_id):
+        row = rows.get((kind, unit_id))
+        return json.loads(row[1]) if row is not None else None
+
+    def list_units(kind, profile_name):
+        return [
+            unit_id
+            for (row_kind, unit_id), (row_profile, _p) in rows.items()
+            if row_kind == kind and row_profile == profile_name
+        ]
+
+    def delete(kind, unit_id):
+        del rows[(kind, unit_id)]
+
+    configuration = ExternalPersistenceManagerConfiguration()
+    configuration.with_store_handler(store)
+    configuration.with_fetch_handler(fetch)
+    configuration.with_list_units_handler(list_units)
+    configuration.with_delete_handler(delete)
+    configuration.with_upload_on_flush(False)  # automatic flush uploads OFF
+    configuration.freeze()
+    system = AssetManagementSystem(PersistenceSystem())
+    system.configure_external_persistence_manager(configuration)
+    record = RecordVersion.stamp({
+        "graft_kind": "spell_index",
+        "index_id": "01IDX",
+        "index_payload": {},
+        "members": {},
+        "members_without_custody": [],
+    })
+    # Handler present, so the explicit store ships despite upload_on_flush=False.
+    assert system.store_index_graft("default", record) == "01IDX"
+    assert ("index_graft", "01IDX") in rows
+    system.cleanup()

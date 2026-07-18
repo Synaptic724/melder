@@ -6,6 +6,7 @@ recovery across PersistenceSystem instances (the cache's whole purpose).
 All tests redirect the cache root to a pytest tmp_path - the real root
 under src/melder/__melder_cache__ is never touched.
 """
+import json
 import pytest
 
 from melder.crystallizer.crystals.aether_crystal import AetherCrystal
@@ -159,3 +160,28 @@ def test_flush_all_ships_the_whole_ledger(cache_root):
     assert set(flushed) == {first, second}
     assert set(assets.list_cached_checkpoint_ids()) == {first, second}
     assets.cleanup()
+
+
+def test_bug160_non_object_json_is_reclaimed_not_crash(cache_root):
+    """
+    BUG-160 regression: a structurally invalid but parseable JSON file (a
+    list, null, or scalar - not an object) must sort as dead weight and be
+    reclaimed, never crash retention with AttributeError on `.get()`. One such
+    file used to permanently block FIFO cleanup for its profile.
+    """
+    profile_directory = cache_root / "prof"
+    profile_directory.mkdir(parents=True)
+    (profile_directory / "01VALID.json").write_text(
+        json.dumps({"checkpoint_number": 1, "checkpoint_id": "01VALID"}),
+        encoding="utf-8",
+    )
+    (profile_directory / "BAD.json").write_text("[]", encoding="utf-8")
+
+    cache = CrystallizerCache()
+    removed = cache.enforce_cache_retention("prof", 1)
+
+    # The non-object dead weight reclaims first; the valid checkpoint survives.
+    assert "BAD" in removed
+    remaining = sorted(p.name for p in profile_directory.glob("*.json"))
+    assert remaining == ["01VALID.json"]
+    cache.cleanup()

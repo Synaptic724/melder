@@ -343,6 +343,15 @@ class Nexus(Cleanable):
             2) AetherUtilitySystem channel logger
             3) Silent no-op logger
 
+        Contract:
+            - Same-sink refresh REUSES the existing wrapper (BUG-279,
+              2026-07-17 audit): refreshing with the raw sink the current
+              wrapper already owns is a no-op, so the sink retained by the
+              live wrapper is never torn down by its own refresh.
+            - The displaced wrapper is retired only when the underlying raw
+              sinks differ; alias detection is at sink identity, not wrapper
+              identity, because every refresh builds a distinct wrapper.
+
         Args:
             logger:
                 Optional explicit logger override.
@@ -356,6 +365,13 @@ class Nexus(Cleanable):
         previous_logger = self._logger
         try:
             if logger is not None:
+                if previous_logger._logger is logger:
+                    # BUG-279 (2026-07-17 audit): same-sink refresh - the
+                    # current wrapper already owns this exact raw sink.
+                    # Building a replacement and cleaning the "displaced"
+                    # wrapper would terminally clean the sink the new wrapper
+                    # still references, so reuse the existing wrapper as-is.
+                    return
                 next_logger = InitHelpers.resolve_safe_logger(logger)
             else:
                 next_logger = InitHelpers.resolve_channel_logger(
@@ -365,10 +381,14 @@ class Nexus(Cleanable):
                     props=self._get_default_logger_properties(),
                     channels="system",
                 )
-            if previous_logger is not next_logger:
+            if (
+                previous_logger is not next_logger
+                and previous_logger._logger is not next_logger._logger
+            ):
                 try:
                     # Best-effort teardown of the displaced logger; a logger
                     # swap must never fail because old-handle cleanup raised.
+                    # Skipped when both wrappers share one raw sink (BUG-279).
                     previous_logger.cleanup()
                 except Exception:
                     pass
