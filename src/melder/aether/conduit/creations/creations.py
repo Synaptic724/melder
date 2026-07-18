@@ -237,34 +237,46 @@ class Creations(Cleanable):
             - Rejects collisions with non-list slots.
             - Preserves insertion order inside both the live many bucket and
               the matching disposable metadata bucket.
+            - First-use bucket creation and both appends are atomic with
+              respect to competing resolutions (BUG-073, 2026-07-17 audit):
+              the whole live+disposable mutation runs under `_lock`, so two
+              threads first-resolving the same key can never overwrite each
+              other's bucket and strand a successfully returned creation
+              outside lifetime and disposal tracking.
+
+        Threading:
+            - Runs under `_lock` (re-entrant, shared with extract/restore/
+              clear); every successfully returned managed creation is
+              represented in both registries once this method returns.
         """
-        live_value = self._creations.get(key)
-        if live_value is None:
-            self._creations[key] = []
-            live_value = self._creations[key]
-        if not isinstance(live_value, list):
-            raise ValueError(
-                f"Key {key} already exists in creations with non-list slot."
-            )
-        live_value.append(item)
+        with self._lock:
+            live_value = self._creations.get(key)
+            if live_value is None:
+                self._creations[key] = []
+                live_value = self._creations[key]
+            if not isinstance(live_value, list):
+                raise ValueError(
+                    f"Key {key} already exists in creations with non-list slot."
+                )
+            live_value.append(item)
 
-        if not has_disposal_methods:
-            return
+            if not has_disposal_methods:
+                return
 
-        disposable_value = self._disposable_creations.get(key)
-        if disposable_value is None:
-            self._disposable_creations[key] = []
-            disposable_value = self._disposable_creations[key]
-        if not isinstance(disposable_value, list):
-            raise ValueError(
-                f"Key {key} already exists in disposable creations with non-list slot."
+            disposable_value = self._disposable_creations.get(key)
+            if disposable_value is None:
+                self._disposable_creations[key] = []
+                disposable_value = self._disposable_creations[key]
+            if not isinstance(disposable_value, list):
+                raise ValueError(
+                    f"Key {key} already exists in disposable creations with non-list slot."
+                )
+            disposable_value.append(
+                (
+                    item,
+                    list(disposal_methods) if disposal_methods else [],
+                )
             )
-        disposable_value.append(
-            (
-                item,
-                list(disposal_methods) if disposal_methods else [],
-            )
-        )
 
     def get_creation(self, spell_id: str) -> Optional[Any]:
         """
