@@ -1528,6 +1528,47 @@ class Conduit(Cleanable):
                 overwrite=False,
             )
 
+    def _validate_conduit_hooks_payload(
+            self,
+            hooks: Optional[Dict[str, Any]],
+    ) -> None:
+        """
+        Internal
+
+        Validate a hooks mapping without mutating any hook registry.
+
+        Purpose:
+            Give mutation-bearing flows a validate-before-mutate seam
+            (BUG-071, 2026-07-17 audit: `upgrade_to_normal` registered hooks
+            LAST, so an invalid payload raised after the upgrade had already
+            committed irreversibly). Rejecting a bad payload here, before the
+            first mutation, keeps a reported failure equal to zero state
+            change.
+
+        Contract:
+            - Accepts None/empty as valid (registration would no-op).
+            - Applies exactly the `_merge_conduit_hooks` rules by merging into
+              a throwaway map: hook names must be in
+              `Configuration._ALLOWED_HOOKS`; values must be a callable or a
+              list/tuple of callables. Identical error surface by
+              construction, zero duplicated validation logic.
+            - Never touches `_local_conduit_hooks`, meld hooks, or any other
+              owned state.
+
+        Args:
+            hooks:
+                Candidate mapping of hook name -> callable or iterable of
+                callables, or None.
+
+        Raises:
+            ValueError: On an unknown hook name.
+            TypeError: On a non-callable hook value shape.
+        """
+        if not hooks:
+            return
+        scratch: Dict[str, Any] = {}
+        self._merge_conduit_hooks(scratch, hooks)
+
     def _add_root_conduit(self) -> None:
         """
         Internal
@@ -1778,9 +1819,14 @@ class Conduit(Cleanable):
             RuntimeError: If the dynamic environment is not enabled.
             RuntimeError: If the current conduit state is not 'lesser'.
             ValueError / TypeError:
-                Propagated from register_conduit_hooks(...) if the hook set is invalid
-                (unknown hook names, non-callables, etc.).
+                Raised by hook-payload validation BEFORE any mutation if the
+                hook set is invalid (unknown hook names, non-callables, etc.);
+                the conduit is left exactly as it was and the upgrade may be
+                retried (BUG-071, 2026-07-17 audit).
         Contract:
+            - The hooks payload is validated BEFORE the first mutation: an
+              invalid mapping fails the upgrade with zero state change instead
+              of raising after the upgrade has irreversibly committed.
             - Preserves the current creations manager during lesser -> normal upgrade.
             - Rewires Meld/CreationContext execution to use the current creations manager.
             - Seeds per-conduit resolution state from the prior root conduit when available.
@@ -1794,6 +1840,13 @@ class Conduit(Cleanable):
             if self._conduit_state != ConduitState.lesser:
                 self._logger.error("upgrade_to_normal called when not lesser", "upgrade_to_normal")
                 raise RuntimeError("Only lesser conduits can be upgraded.")
+            # BUG-071 (2026-07-17 audit): hook registration is the only
+            # input-fallible step of this upgrade and used to run LAST, so an
+            # invalid payload raised only after the state flip, pool creation,
+            # ward conversion, and root registration had all committed - an
+            # irreversible half-upgrade behind a reported failure. Validate
+            # the payload up front so failure means zero state change.
+            self._validate_conduit_hooks_payload(hooks)
 
             try:
                 # Snapshot root conduit resolution state before converting lineage.
@@ -3895,6 +3948,14 @@ class Conduit(Cleanable):
         Linking is only allowed if the world is in dynamic mode. This process initiates a contract
         relationship between the two conduits based on the current policy.
 
+        Admission:
+            The link is admitted through the frame-owned change-control
+            transaction mediator as a self-admitted `link` transaction (the
+            same shape `sever_link` uses for `unlink`): the transaction is
+            started before the ward mutation, the ward mutation runs inside
+            the transaction window under the conduit lock, and the
+            transaction ends with `success=False` when the mutation raises.
+
         On success, the following hook will be fired on this Conduit (if configured):
 
             - "on_conduit_post_link(self, target_conduit)"
@@ -3908,6 +3969,7 @@ class Conduit(Cleanable):
         Raises:
             RuntimeError: If the Conduit is cleaned.
             RuntimeError: If dynamic environment is not enabled.
+            RuntimeError: If change-control admission is denied by the mediator.
             TypeError: If `target_conduit` is not an `Conduit` instance.
             RuntimeError: If the target conduit does not have a valid creation context.
             RuntimeError: If the target conduit belongs to a different `AethericFrame`.
@@ -3933,8 +3995,9 @@ class Conduit(Cleanable):
             self._logger.error("link target has no valid creation context", "link")
             raise RuntimeError("Target conduit does not have a valid creation context.")
 
-        with self._lock:
-            linked = self._conduit_ward._link(target_conduit)
+        with self.transaction(ChangeTransactionType.LINK, conduits=[self, target_conduit]):
+            with self._lock:
+                linked = self._conduit_ward._link(target_conduit)
 
         if linked:
             # Fire post-link hook with both ends of the relationship.

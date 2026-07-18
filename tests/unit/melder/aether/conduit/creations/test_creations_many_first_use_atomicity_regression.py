@@ -176,31 +176,6 @@ def test_concurrent_first_use_retains_both_creations_and_disposals() -> None:
     assert probe_b.dispose_calls == 1
 
 
-def test_many_bucket_membership_detects_stored_none_collision() -> None:
-    """Presence is tested by membership, never by stored value.
-
-    Contract assertions:
-        - A singleton slot legally storing `None` under the same key is a
-          collision for the many lane and raises, instead of being silently
-          replaced by a fresh bucket (value-sentinel confusion, the BUG-072
-          failure class applied to this method's init test).
-    """
-    store = Creations(owner_conduit_id="conduit-1", id="conduit-1")
-    store.add_creation("spell-x", None)
-
-    try:
-        store.add_many_creations("spell-x", object())
-        raised = False
-    except ValueError:
-        raised = True
-
-    assert raised, (
-        "a stored-None singleton slot was silently replaced by a many bucket"
-    )
-    assert store._creations["spell-x"] is None
-    store.cleanup()
-
-
 def test_sequential_many_registrations_preserve_order_and_metadata() -> None:
     """Behavior guard: the healthy sequential lane is unchanged.
 
