@@ -45,6 +45,19 @@ class CounterSwitch(Cleanable):
     Design intent:
         - Minimal API surface for hot paths.
         - Non-defensive by design.
+
+    Lifecycle:
+        - "cleanup()" terminally opens and idles the switch: tickets clear to
+          the terminal "0" state and the event is set so parked selectors are
+          released. All four slots are RETAINED ALIVE as documented terminal
+          surfaces (LoadGate tombstone law; not del): a parked selector may
+          still be inside "selector()" when cleanup runs, wakes on the event,
+          re-checks cleaned state, and exits with the terminal "0". Deleting
+          the slots (normal del posture) would raise AttributeError inside
+          that waiter, so "_event" stays alive terminally set as the
+          terminal-open surface, "_tickets" stays alive empty, and
+          "_lock"/"fast_state" stay alive for in-flight leader claims and
+          hot readers.
     """
 
     __slots__ = ("_lock", "_event", "_tickets", "fast_state")
@@ -78,19 +91,34 @@ class CounterSwitch(Cleanable):
         Tear down this primitive and release any waiting selectors.
 
         Contract:
-            - Clears all tickets before invalidation.
-            - Sets the event before nulling references so waiting followers are
-              released.
-            - Marks the switch cleaned and drops lock/event/ticket storage plus
-              the fast-state mirror.
+            - Idempotent; safe under concurrent double-cleanup.
+            - Clears all tickets and the fast-state mirror to the terminal
+              "0" state, then sets the event so parked followers are released
+              into that terminal state.
+            - RETAINED TERMINAL SURFACES (LoadGate tombstone law; not del):
+              a parked follower may still be inside "selector()" when cleanup
+              runs; it wakes on the event, re-checks cleaned state, and exits
+              with the terminal "0". Deleting the slots (normal del posture)
+              would raise AttributeError inside that waiter, so all four
+              slots stay alive: "_event" terminally set as the terminal-open
+              surface, "_tickets" alive and empty, "_lock" alive for
+              in-flight leader claims, "fast_state" zeroed for hot readers.
+
+        Threading:
+            - Teardown serializes with "selector()" leader claims on the
+              existing claim lock so a racing claim can never clear the
+              terminally set event after cleanup. Hot paths ("advance",
+              the ">=2" selector fast path) remain lockless and untouched.
         """
         if self._cleaned:
             return
-
-        self._tickets.clear()
-        self.fast_state = 0
-        self._event.set()
-        self._cleaned = True
+        with self._lock:
+            if self._cleaned:
+                return
+            self._tickets.clear()
+            self.fast_state = 0
+            self._event.set()
+            self._cleaned = True
 
         del self._event
         del self._tickets
@@ -153,7 +181,7 @@ class CounterSwitch(Cleanable):
             self._event.set()
         return count
 
-    def selector(self, timeout_seconds: float | None = None) -> int:
+    def selector(self, timeout_seconds: Optional[float] = None) -> int:
         """
         Public API
 
@@ -166,6 +194,8 @@ class CounterSwitch(Cleanable):
         Returns:
             int:
                 Current state after leader election or follower wake-up.
+                Terminal "0" when cleanup released this selector or the
+                switch is already cleaned at the claim point.
 
         Raises:
             TimeoutError:
@@ -178,6 +208,11 @@ class CounterSwitch(Cleanable):
 
         if count == 0:
             with self._lock:
+                if self._cleaned:
+                    # Terminal posture: cleanup already idled the switch.
+                    # Claiming here would clear the terminally set event
+                    # and park later followers forever.
+                    return 0
                 count = len(self._tickets)
                 if count >= 2:
                     return count
@@ -194,4 +229,9 @@ class CounterSwitch(Cleanable):
             raise TimeoutError(
                 "CounterSwitch selector timed out while pending."
             )
+        if self._cleaned:
+            # Woken (or passed) by cleanup: re-check per the retained
+            # terminal-surface contract and exit with the terminal state
+            # instead of re-reading live-path state.
+            return 0
         return len(self._tickets)
