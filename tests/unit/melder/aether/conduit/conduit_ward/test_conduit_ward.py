@@ -1353,7 +1353,9 @@ def test_remove_contract_logs_cleanup_failure_but_returns_true(ward) -> None:
 
 def test_remove_contract_raises_when_spellbook_sever_fails(ward) -> None:
     """
-    Verify _remove_contract surfaces spellbook sever failures without mutating the contract registries.
+    Verify _remove_contract surfaces spellbook detach failures without mutating
+    the contract registries (BUG-005 reversible-detach contract: a second-side
+    failure restores the already-detached first side and re-raises).
     """
     target_conduit, target_ward = _make_conduit_with_ward("conduit-2")
 
@@ -1362,18 +1364,33 @@ def test_remove_contract_raises_when_spellbook_sever_fails(ward) -> None:
 
     ward._create_new_contract(target_conduit)
     contract_id = next(iter(ward._contracts))
-    ward._conduit._spellbook._sever_link_contract.side_effect = RuntimeError("sever boom")
+    # Failure on the SECOND detach (target side): the first side must be
+    # restored via _reattach_link_contract and the original error re-raised.
+    target_conduit._spellbook._detach_link_contract.side_effect = RuntimeError("sever boom")
 
     with pytest.raises(RuntimeError, match="sever boom"):
         ward._remove_contract(target_conduit)
 
     assert contract_id in ward._contracts
     assert contract_id in target_ward._contracts
+    ward._conduit._spellbook._reattach_link_contract.assert_called_once_with(
+        target_conduit._id,
+        ward._conduit._spellbook._detach_link_contract.return_value,
+    )
+    ward._conduit._spellbook._destroy_detached_link_contract.assert_not_called()
+    target_conduit._spellbook._destroy_detached_link_contract.assert_not_called()
     ward._logger.error.assert_called()
 
-def test_remove_contract_raises_when_registry_delete_fails(ward) -> None:
+def test_remove_contract_commits_after_detach_with_residue_tolerant_pops(ward) -> None:
     """
-    Verify _remove_contract surfaces registry deletion failures after severing spellbook links.
+    Verify the BUG-005 commit order: after both sides detach, the registry
+    commit uses residue-tolerant pops (a pre-dropped registry entry cannot
+    fail the removal) and both detached payloads are destroyed.
+
+    Replaces test_remove_contract_raises_when_registry_delete_fails: the
+    registry-delete-fails scenario is designed out by the BUG-005 contract -
+    the commit step is a plain non-fallible dict pop, so a registry delete
+    failure surface no longer exists after the point of no return.
     """
     target_conduit, target_ward = _make_conduit_with_ward("conduit-2")
 
@@ -1382,23 +1399,20 @@ def test_remove_contract_raises_when_registry_delete_fails(ward) -> None:
 
     ward._create_new_contract(target_conduit)
     contract_id = next(iter(ward._contracts))
-    contract = ward._contracts[contract_id]
+    # Simulate fault residue: the target ward already lost its registry entry.
+    target_ward._contracts.pop(contract_id)
 
-    class ExplodingDict(dict):
-        """Dictionary that raises when a contract delete is attempted."""
+    result = ward._remove_contract(target_conduit)
 
-        def __delitem__(self, key) -> None:
-            raise RuntimeError("delete boom")
-
-    ward._contracts = ExplodingDict({contract_id: contract})
-
-    with pytest.raises(RuntimeError, match="delete boom"):
-        ward._remove_contract(target_conduit)
-
-    assert contract_id in target_ward._contracts
-    ward._conduit._spellbook._sever_link_contract.assert_called_once_with(target_conduit._id)
-    target_conduit._spellbook._sever_link_contract.assert_called_once_with(ward._id)
-    ward._logger.error.assert_called()
+    assert result is True
+    assert ward._contracts == {}
+    assert target_ward._contracts == {}
+    ward._conduit._spellbook._detach_link_contract.assert_called_once_with(target_conduit._id)
+    target_conduit._spellbook._detach_link_contract.assert_called_once_with(ward._id)
+    ward._conduit._spellbook._destroy_detached_link_contract.assert_called_once()
+    target_conduit._spellbook._destroy_detached_link_contract.assert_called_once()
+    ward._conduit._spellbook._reattach_link_contract.assert_not_called()
+    target_conduit._spellbook._reattach_link_contract.assert_not_called()
 
 # ----------------------------------------------------------------------
 # 14. Validation Helpers (Additional Paths)

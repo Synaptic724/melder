@@ -874,14 +874,25 @@ class MutationResearch(Cleanable):
         with self._lock:
             staged_parents = self._staged_ancestry
             self._staged_ancestry = None
-        node = research_set.record_world_entry(
-            spell_id,
-            staged=staged,
-            parent_spell_ids=staged_parents,
-            author=author,
-            reason=reason,
-            campaign=effective_campaign,
-        )
+        try:
+            node = research_set.record_world_entry(
+                spell_id,
+                staged=staged,
+                parent_spell_ids=staged_parents,
+                author=author,
+                reason=reason,
+                campaign=effective_campaign,
+            )
+        except Exception:
+            # One-shot means consumed by the first SUCCESSFUL declaration
+            # (BUG-151): a pre-commit refusal (for example an unresident
+            # parent) re-arms the stamp for the corrected retry, then the
+            # refusal re-raises untouched.
+            if staged_parents is not None:
+                with self._lock:
+                    if self._staged_ancestry is None:
+                        self._staged_ancestry = staged_parents
+            raise
         if node is None and staged_parents is not None:
             with self._lock:
                 if self._staged_ancestry is None:
@@ -1283,7 +1294,9 @@ class MutationResearch(Cleanable):
                         continue
                     if isinstance(custody_payload, dict):
                         text = custody_payload.get("source_text")
-                        if isinstance(text, str) and text:
+                        # Empty string is VALID recorded Python (BUG-152):
+                        # presence is the str type, never truthiness.
+                        if isinstance(text, str):
                             sources[str(module_name)] = text
         fingerprints = payload.get("physical_module_fingerprints")
         return {
@@ -1551,7 +1564,8 @@ class MutationResearch(Cleanable):
                 entry = carrier.get(module_name)
                 if isinstance(entry, dict):
                     text = entry.get("source_text")
-                    if isinstance(text, str) and text:
+                    # Empty string is VALID recorded Python (BUG-152).
+                    if isinstance(text, str):
                         return {
                             "source": text,
                             "origin": "recorded",
@@ -2992,18 +3006,25 @@ class MutationResearch(Cleanable):
 
         Returns:
             List[GroupedResearchNode]:
-                Tip compositions across all lanes.
+                Each lane's latest composition record (unaffected by later
+                ordinary spell entries on the same lane).
         """
         research_set = self.research_set(set_name)
         tips: List["GroupedResearchNode"] = []
         for lane_name in research_set.lane_names():
             lane = research_set.get_lane(lane_name)
-            tip = lane.tip_spell_id
-            if tip is None or not lane.has_node(tip):
-                continue
-            tip_node = lane.get_node(tip)
-            if isinstance(tip_node, GroupedResearchNode):
-                tips.append(tip_node)
+            # Current means each lane's LATEST composition record
+            # (BUG-150): raw-tip probing let any later unrelated spell on
+            # a mixed/default lane displace a still-resident composition
+            # out of the reverse lift. Registration order decides; ordinary
+            # spell records never revoke an informational composition.
+            latest_group: Optional["GroupedResearchNode"] = None
+            for candidate_id in lane.node_spell_ids():
+                candidate = lane.get_node(candidate_id)
+                if isinstance(candidate, GroupedResearchNode):
+                    latest_group = candidate
+            if latest_group is not None:
+                tips.append(latest_group)
         return tips
 
     def compositions_of(

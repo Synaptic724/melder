@@ -436,7 +436,7 @@ class Crystallizer(Cleanable):
         ):
             self._aether.configuration.emit_configured_twin_when_recording()
 
-    def _emit_policy_twin(self) -> None:
+    def _emit_policy_twin(self, profile_name: Optional[str] = None) -> None:
         """
         Internal emission seam
 
@@ -459,6 +459,13 @@ class Crystallizer(Cleanable):
               reload lane backfills-with-report on the way back in.
             - Replace-on-emit keeps exactly one live twin per profile;
               per-seal re-emission costs one journal entry per window.
+
+        Args:
+            profile_name:
+                Profile the policy twin records into; None means the
+                active profile. A profile-scoped checkpoint passes its
+                explicit target so the twin lands in the sealed profile's
+                window instead of leaking into the active one (BUG-158).
 
         Returns:
             None.
@@ -486,7 +493,8 @@ class Crystallizer(Cleanable):
         # mid-checkpoint. The record verb is the same sink minus the
         # ticker.
         self._persistence_system.record(
-            CrystallizerCrystal(configuration_payload=configuration_payload)
+            CrystallizerCrystal(configuration_payload=configuration_payload),
+            profile_name=profile_name,
         )
 
     def _maybe_create_automatic_checkpoint(self) -> None:
@@ -1503,7 +1511,7 @@ class Crystallizer(Cleanable):
         # Every snapshot is self-describing: the policy twin re-emits into
         # this seal's window (owner ruling), so a single cached crystal
         # carries the recording policy that made it.
-        self._emit_policy_twin()
+        self._emit_policy_twin(profile_name)
         return self._persistence_system.create_checkpoint(
             profile_name=profile_name,
             description=description,

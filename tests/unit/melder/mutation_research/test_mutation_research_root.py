@@ -804,3 +804,56 @@ def test_group_ancestry_relation_walks_transitive_parents() -> None:
     verdict = root.group_diff_research(g1.group_id, g3.group_id)
 
     assert verdict["result"]["ancestry_related"] is True
+
+
+def test_unrelated_default_lane_spell_cannot_revoke_composition() -> None:
+    """
+    Regression (BUG-150): current-composition discovery probed the raw lane
+    tip, so an unrelated ordinary spell registered later on the shared
+    default lane displaced a still-resident composition out of
+    `compositions_of` (the reverse lift went empty). Corrected behavior:
+    each lane's LATEST composition record stays current regardless of later
+    ordinary entries.
+    """
+    aether = _mock_aether(recording=True)
+    root = MutationResearch(aether=aether)
+    member = "a" * 64
+    unrelated = "b" * 64
+    root.record_world_entry(member)
+    group = root.research_set().register_group([member])
+    assert [
+        entry["group_id"] for entry in root.compositions_of(member)
+    ] == [group.group_id]
+
+    root.record_world_entry(unrelated)  # later unrelated default-lane spell
+
+    assert [
+        entry["group_id"] for entry in root.compositions_of(member)
+    ] == [group.group_id]
+
+
+def test_rejected_world_entry_restores_staged_ancestry() -> None:
+    """
+    Regression (BUG-151): record_world_entry cleared the one-shot ancestry
+    stamp BEFORE set validation and restored it only for rediscovery, so a
+    pre-commit refusal (unresident parent) destroyed the synthesized
+    lineage - the corrected retry minted the candidate parentless.
+    Corrected behavior: any pre-commit failure re-arms the stamp; the first
+    SUCCESSFUL declaration consumes it.
+    """
+    aether = _mock_aether(recording=True)
+    root = MutationResearch(aether=aether)
+    parent = "a" * 64
+    candidate = "b" * 64
+    root.stage_ancestry([parent])  # parent not resident yet
+
+    with pytest.raises(ValueError, match="not resident"):
+        root.record_world_entry(candidate)
+
+    # The stamp survived the refusal: declare the parent through the SET
+    # surface (root consumption is one-shot-any-declaration by design),
+    # then the retried candidate mints the intended lineage.
+    root.research_set().register_spell(parent)
+    assert root.record_world_entry(candidate) is True
+    node = root.research_set().default_lane.get_node(candidate)
+    assert node.parent_spell_ids == [parent]

@@ -211,14 +211,19 @@ class PersistenceSystem(Cleanable):
             self._active_profile_name = profile_name
             return profile
 
-    def record(self, twin: Cleanable) -> None:
+    def record(self, twin: Cleanable, profile_name: Optional[str] = None) -> None:
         """
-        Record one emitted twin into the ACTIVE profile.
+        Record one emitted twin into a profile (the active profile by default).
 
         Args:
             twin:
                 One twin from the persistence crystal family (SpellCrystal is
                 the L3 spell node).
+            profile_name:
+                Target profile; None routes to the active profile. A named
+                target lets a profile-scoped seal record its own policy twin
+                into that profile instead of leaking it into the active one
+                (BUG-158).
 
         Returns:
             None.
@@ -226,11 +231,19 @@ class PersistenceSystem(Cleanable):
         Raises:
             RuntimeError:
                 If the subsystem has been cleaned.
+            KeyError:
+                If `profile_name` names no existing profile.
             TypeError:
                 If the twin type is unsupported (raised by the profile).
         """
         self.check_cleaned()
-        self.active_profile.record(twin)
+        with self._lock:
+            profile = (
+                self._require_profile(profile_name)
+                if profile_name is not None
+                else self._profiles_by_name[self._active_profile_name]
+            )
+        profile.record(twin)
 
     def record_spell_crystal(self, crystal: SpellCrystal, active: bool) -> None:
         """

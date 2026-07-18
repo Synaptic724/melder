@@ -204,6 +204,21 @@ class StructuralDiffStrategy(DiffStrategy):
                 "left": left_class["bases"],
                 "right": right_class["bases"],
             }
+        # Construction-header truth (BUG-153): decorator and keyword
+        # (metaclass and friends) changes are structural class changes.
+        # .get() keeps detached older shape payloads comparable.
+        if left_class.get("decorators", []) != right_class.get(
+                "decorators", [],
+        ):
+            report["class_decorators_changed"] = {
+                "left": left_class.get("decorators", []),
+                "right": right_class.get("decorators", []),
+            }
+        if left_class.get("keywords", []) != right_class.get("keywords", []):
+            report["class_keywords_changed"] = {
+                "left": left_class.get("keywords", []),
+                "right": right_class.get("keywords", []),
+            }
         method_report = self._diff_callable_maps(
             left_class["methods"], right_class["methods"],
         )
@@ -298,7 +313,8 @@ class StructuralDiffStrategy(DiffStrategy):
 
         Returns:
             Dict[str, object]:
-                `docstring`, `bases` (unparsed), and `methods` shapes.
+                `docstring`, `bases` (unparsed), `decorators`,
+                `keywords` (metaclass and friends), and `methods` shapes.
         """
         methods: Dict[str, Dict[str, object]] = {}
         for child in node.body:
@@ -307,6 +323,19 @@ class StructuralDiffStrategy(DiffStrategy):
         return {
             "docstring": ast.get_docstring(node),
             "bases": [ast.unparse(base) for base in node.bases],
+            # Full class-header structure (BUG-153): decorators and
+            # keywords (metaclass=... and friends) are behaviorally
+            # significant construction surface - their change marks the
+            # class changed.
+            "decorators": [
+                ast.unparse(decorator)
+                for decorator in node.decorator_list
+            ],
+            "keywords": sorted(
+                f"{keyword.arg}={ast.unparse(keyword.value)}"
+                for keyword in node.keywords
+                if keyword.arg is not None
+            ),
             "methods": methods,
         }
 

@@ -153,3 +153,32 @@ def test_deactivate_regates_facades_and_silences_sinks():
     configuration.activate()
     crystallizer.activate(configuration)
     assert crystallizer.describe_profile()["spell_crystal_count"] == 0
+
+
+def test_bug158_profile_scoped_checkpoint_records_policy_twin_into_that_profile():
+    """
+    BUG-158 regression: create_checkpoint(profile_name=X) must emit the
+    self-describing policy twin into X's window, not into the active profile.
+    With default active and an inactive 'named' profile, checkpointing 'named'
+    must leave 'named' self-describing (a real, non-empty window) and must not
+    advance the unrelated active default's emission sequence.
+    """
+    crystallizer = _activated_crystallizer()
+    # "default" is the active emission target after activation.
+    crystallizer.create_profile("named", activate=False)
+    assert crystallizer.active_profile_name == "default"
+    default_before = crystallizer.describe_profile("default")
+
+    checkpoint_id = crystallizer.create_checkpoint(profile_name="named")
+
+    # The policy twin landed in the TARGETED profile's window (self-describing,
+    # non-empty), not in the active default.
+    record = crystallizer.describe_checkpoint(checkpoint_id)
+    assert record["profile_name"] == "named"
+    assert record["journal_entry_count"] >= 1
+    first, last = record["sequence_range"]
+    assert first <= last  # a real window, not the empty/inverted marker the bug produced
+
+    # The unrelated active profile is untouched (no stray policy traffic; its
+    # emission sequence did not advance).
+    assert crystallizer.describe_profile("default") == default_before

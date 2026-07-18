@@ -54,13 +54,29 @@ class FakeLogger:
         self.messages.append(("error", message))
 
 
+class FakeSpellIndex:
+    """Hashable spell-index stand-in reporting one selected id.
+
+    Contract:
+        - Instances are used as `_contracted_spells` bucket KEYS, so they
+          must be hashable. `types.SimpleNamespace` defines `__eq__` and
+          therefore has `__hash__ = None`; a plain class keeps default
+          identity hashing, matching how real `SpellIndex` objects key
+          these maps.
+    """
+
+    def __init__(self, spell_id: str) -> None:
+        """Record the one selected version id the destroy seam reads."""
+        self.selected_spell_id = spell_id
+
+
 class FakeSpell:
     """Value-light stand-in carrying only what the sever seams read."""
 
     def __init__(self, spell_id: str) -> None:
         """Create a fake spell whose index reports one selected id."""
         self.spell_id = spell_id
-        self.spell_index = SimpleNamespace(selected_spell_id=spell_id)
+        self.spell_index = FakeSpellIndex(spell_id)
 
 
 class FakeSpellbook:

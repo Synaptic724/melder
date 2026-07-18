@@ -158,6 +158,9 @@ class FakeSpellbook:
         self._remove_contracted_calls: list[tuple[str, str]] = []
         self._clear_contracted_calls: list[str] = []
         self._sever_link_calls: list[str] = []
+        self._detach_link_calls: list[str] = []
+        self._reattach_link_calls: list[str] = []
+        self._destroy_detached_calls: list[str] = []
 
     def add_local_spell(self, spell: FakeSpell) -> None:
         """Register a locally owned spell for lineage checks."""
@@ -340,6 +343,71 @@ class FakeSpellbook:
         self._contracted_spells.pop(conduit_id, None)
         self._lookup_contracted_spells.pop(conduit_id, None)
         self._contracted_spell_ids.pop(conduit_id, None)
+
+    def _detach_link_contract(
+        self, conduit_id: str
+    ) -> tuple[
+        dict[SpellIndex, FakeSpell],
+        dict[tuple[str, str], SpellIndex],
+        set[str],
+    ] | None:
+        """Reversibly pop the peer's buckets in lockstep (BUG-005 seam).
+
+        Mirrors the real Spellbook contract over this fake's map set: raises
+        on inconsistent lockstep state, returns None when the peer has no
+        buckets, otherwise pops and returns the payload for reattach/destroy.
+        """
+        self._detach_link_calls.append(conduit_id)
+        a_exists = conduit_id in self._contracted_spells
+        b_exists = conduit_id in self._lookup_contracted_spells
+        c_exists = conduit_id in self._contracted_spell_ids
+        if not (a_exists == b_exists == c_exists):
+            raise RuntimeError("Inconsistent link contract state.")
+        if not a_exists:
+            return None
+        return (
+            self._contracted_spells.pop(conduit_id),
+            self._lookup_contracted_spells.pop(conduit_id),
+            self._contracted_spell_ids.pop(conduit_id),
+        )
+
+    def _reattach_link_contract(
+        self,
+        conduit_id: str,
+        payload: tuple[
+            dict[SpellIndex, FakeSpell],
+            dict[tuple[str, str], SpellIndex],
+            set[str],
+        ],
+    ) -> None:
+        """Restore a detached payload exactly; refuse overwrite (BUG-005 seam)."""
+        self._reattach_link_calls.append(conduit_id)
+        if (
+            conduit_id in self._contracted_spells
+            or conduit_id in self._lookup_contracted_spells
+            or conduit_id in self._contracted_spell_ids
+        ):
+            raise RuntimeError("Link contract already present; refusing overwrite.")
+        spell_map, lookup_map, versions_set = payload
+        self._contracted_spells[conduit_id] = spell_map
+        self._lookup_contracted_spells[conduit_id] = lookup_map
+        self._contracted_spell_ids[conduit_id] = versions_set
+
+    def _destroy_detached_link_contract(
+        self,
+        conduit_id: str,
+        payload: tuple[
+            dict[SpellIndex, FakeSpell],
+            dict[tuple[str, str], SpellIndex],
+            set[str],
+        ],
+    ) -> None:
+        """Destructively tear down a detached payload (BUG-005 seam)."""
+        self._destroy_detached_calls.append(conduit_id)
+        spell_map, lookup_map, versions_set = payload
+        spell_map.clear()
+        lookup_map.clear()
+        versions_set.clear()
 
 
 class FakeConduit:
@@ -907,8 +975,12 @@ def test_remove_spell_from_contract_removes_detail_and_severs_contract_when_empt
     assert owner._conduit_ward._contracts == {}
     assert owner._id not in borrower._spellbook._contracted_spells
     assert borrower._id not in owner._spellbook._contracted_spells
-    assert borrower._spellbook._sever_link_calls == [owner._id]
-    assert owner._spellbook._sever_link_calls == [borrower._id]
+    assert borrower._spellbook._detach_link_calls == [owner._id]
+    assert owner._spellbook._detach_link_calls == [borrower._id]
+    assert borrower._spellbook._destroy_detached_calls == [owner._id]
+    assert owner._spellbook._destroy_detached_calls == [borrower._id]
+    assert borrower._spellbook._sever_link_calls == []
+    assert owner._spellbook._sever_link_calls == []
 
 
 def test_remove_spell_from_contract_only_removes_source(
@@ -1505,8 +1577,12 @@ def test_remove_root_from_contracts_severs_when_empty(
     assert borrower._conduit_ward._contracts == {}
     assert owner._conduit_ward._contracts == {}
     assert borrower._spellbook._remove_contracted_calls == [(owner._id, spell.spell_id)]
-    assert borrower._spellbook._sever_link_calls == [owner._id]
-    assert owner._spellbook._sever_link_calls == [borrower._id]
+    assert borrower._spellbook._detach_link_calls == [owner._id]
+    assert owner._spellbook._detach_link_calls == [borrower._id]
+    assert borrower._spellbook._destroy_detached_calls == [owner._id]
+    assert owner._spellbook._destroy_detached_calls == [borrower._id]
+    assert borrower._spellbook._sever_link_calls == []
+    assert owner._spellbook._sever_link_calls == []
 
 
 def test_remove_root_from_contracts_preserves_detail_with_multiple_sources(

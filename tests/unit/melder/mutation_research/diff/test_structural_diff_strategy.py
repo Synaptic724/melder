@@ -173,3 +173,41 @@ def test_strategy_cleanup_guards_use() -> None:
     assert strategy.cleaned is True
     with pytest.raises(RuntimeError):
         strategy.diff(_material(), _material())
+
+
+def test_class_metaclass_and_decorator_changes_mark_the_class_changed() -> None:
+    """
+    Regression (BUG-153): the class shape recorded docstring, bases, and
+    methods but omitted decorators and class keywords, so
+    `class C(metaclass=M1)` vs `class C(metaclass=M2)` and `@d1 class C`
+    vs `@d2 class C` both reported identical. Corrected behavior: the
+    promised AST class-change report covers the full construction header.
+    """
+    strategy = StructuralDiffStrategy()
+    metaclass_left = {
+        "spell_id": "sha-l",
+        "sources": {"mod.a": "class M1(type):\n    pass\n\nclass C(metaclass=M1):\n    pass\n"},
+        "fingerprints": {},
+    }
+    metaclass_right = {
+        "spell_id": "sha-r",
+        "sources": {"mod.a": "class M1(type):\n    pass\n\nclass C(metaclass=M2):\n    pass\n"},
+        "fingerprints": {},
+    }
+    verdict = strategy.diff(metaclass_left, metaclass_right)
+    assert verdict["identical"] is False
+    assert "mod.a" in verdict["changed_modules"]
+
+    decorated_left = {
+        "spell_id": "sha-l",
+        "sources": {"mod.b": "def d1(cls):\n    return cls\n\n@d1\nclass C:\n    pass\n"},
+        "fingerprints": {},
+    }
+    decorated_right = {
+        "spell_id": "sha-r",
+        "sources": {"mod.b": "def d1(cls):\n    return cls\n\n@d2\nclass C:\n    pass\n"},
+        "fingerprints": {},
+    }
+    verdict = strategy.diff(decorated_left, decorated_right)
+    assert verdict["identical"] is False
+    assert "mod.b" in verdict["changed_modules"]
