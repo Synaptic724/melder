@@ -735,6 +735,19 @@ class ConduitWard(Cleanable):
               `SafeGuard` critical section.
             - Link relation reporting originates here because this method is
               the real source of truth for peer-contract creation.
+            - Creation is atomic from the caller's view (BUG-004, 2026-07-17
+              audit): every fallible step (both spellbook bucket creates and
+              `Contract` construction) runs BEFORE the ward registries and
+              indexes are published, so a failed link leaves no observable
+              topology or sharing state on either side.
+            - Rollback removes only buckets this call created; a pre-existing
+              bucket (fault residue from an earlier failure) is left untouched.
+
+        Raises:
+            Exception: Re-raises whatever the failing bucket create or
+                `Contract` construction raised. Rollback of the buckets this
+                call created is best-effort: a rollback failure is logged and
+                never masks the original error.
         """
         ward_a = self
         ward_b = target_conduit._conduit_ward
@@ -743,16 +756,21 @@ class ConduitWard(Cleanable):
             if self._find_contract(target_conduit):
                 return True
 
-            contract = Contract(self, ward_b)
-            self._contracts[contract._id] = contract
-            ward_b._contracts[contract._id] = contract
-            self._initiated_index[target_id] = contract._id
-            ward_b._received_index[self._id] = contract._id
-
+            spellbook_a = self._conduit._spellbook
+            spellbook_b = ward_b._conduit._spellbook
+            # A healthy world only holds a peer bucket while a ward contract
+            # exists, and no contract exists here (checked above under both
+            # ward locks) - so pre-existence is fault residue. Track it so the
+            # rollback below removes ONLY what this call created.
+            created_a = target_id not in spellbook_a._contracted_spells
+            created_b = self._id not in spellbook_b._contracted_spells
             try:
-                # Each side needs a contracted-spell bucket keyed by its peer's conduit id.
-                self._conduit._spellbook._create_link_contract(target_id)
-                ward_b._conduit._spellbook._create_link_contract(self._id)
+                # Each side needs a contracted-spell bucket keyed by its peer's
+                # conduit id. These are the fallible steps, so they run before
+                # any ward-registry publication (BUG-004).
+                spellbook_a._create_link_contract(target_id)
+                spellbook_b._create_link_contract(self._id)
+                contract = Contract(self, ward_b)
             except Exception as e:
                 self._logger.error(
                     f"spellbook link create failed: {e}",
@@ -760,7 +778,40 @@ class ConduitWard(Cleanable):
                     owner_id=self._id, owner_display=self._display_name,
                     mask=True, groups=self._log_groups, system_groups=self._log_sysgroups,
                 )
+                # Best-effort rollback (documented): `_remove_link_contract` is
+                # the exact inverse of a fresh, still-empty bucket create, and
+                # both ward locks are held so nothing can populate the buckets
+                # mid-rollback. Rollback failures are logged and intentionally
+                # swallowed so the ORIGINAL failure stays the surfaced error.
+                if created_b:
+                    try:
+                        spellbook_b._remove_link_contract(self._id)
+                    except Exception as rollback_error:
+                        self._logger.error(
+                            f"link rollback failed for target-side bucket: {rollback_error}",
+                            method_name="_create_new_contract", exc_info=True,
+                            owner_id=self._id, owner_display=self._display_name,
+                            mask=True, groups=self._log_groups, system_groups=self._log_sysgroups,
+                        )
+                if created_a:
+                    try:
+                        spellbook_a._remove_link_contract(target_id)
+                    except Exception as rollback_error:
+                        self._logger.error(
+                            f"link rollback failed for own-side bucket: {rollback_error}",
+                            method_name="_create_new_contract", exc_info=True,
+                            owner_id=self._id, owner_display=self._display_name,
+                            mask=True, groups=self._log_groups, system_groups=self._log_sysgroups,
+                        )
                 raise
+
+            # Publication: plain dict writes under both held ward locks. These
+            # cannot fail, so ward topology and spellbook sharing state always
+            # agree after this method returns or raises.
+            self._contracts[contract._id] = contract
+            ward_b._contracts[contract._id] = contract
+            self._initiated_index[target_id] = contract._id
+            ward_b._received_index[self._id] = contract._id
 
             self._logger.info(
                 f"create_contract: success id={contract._id} target={target_id}",

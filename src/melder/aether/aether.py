@@ -85,26 +85,48 @@ class Aether(Cleanable):
 
     def __init__(self) -> None:
         """
-        Initialize the Aether singleton and its always-on frame substrate.
+        Initialize the Aether singleton and its hosted subsystem roots.
 
         Purpose:
-            Create the root `Aether` host, bootstrap the default
-            `AethericFrame`, and prepare optional hosted subsystems such as the
-            private `Nexus` singleton.
+            Create the root `Aether` host and construct the hosted
+            singleton-level subsystems (Crystallizer, utility system, LoadGate,
+            and the private `Nexus` root). Frames are lazy by design: no
+            `AethericFrame` is constructed at boot - the first Spellbook births
+            the frame it names.
 
         Contract:
-            - Initializes the default frame eagerly.
+            - Initialization is once-only: the `_initialized` check and the
+              whole construction body run under the class-level `_lock`, so
+              exactly one thread builds the subsystem graph and every
+              concurrent first caller blocks until that build completes, then
+              returns the fully initialized singleton (BUG-002 regression
+              contract, 2026-07-17 audit).
             - Initializes the hosted Nexus singleton eagerly as an object, but
               leaves it unconfigured and disabled until a user explicitly
               engages it.
             - Starts with a null SafeLogger wrapper and no attached raw logger.
             - Does not try to attach a real logger during boot.
             - Does not preinstall a Nexus configuration during normal boot.
+            - On construction failure, singleton bookkeeping (`_instance`,
+              `_initialized`) is reset under the held lock so a later
+              `Aether()` can boot cleanly.
+
+        Threading / Concurrency:
+            - The post-boot fast path reads `_initialized` without the lock;
+              the pre-boot path re-checks it under `Aether._lock` before
+              constructing (double-checked initialization).
+            - Lock nesting is one-way `Aether._lock` -> `Nexus._lock` via the
+              hosted `Nexus(aether=self)` construction; no subsystem
+              constructed here re-enters `Aether()`.
 
         Returns:
             None.
         """
-        if not Aether._initialized:
+        if Aether._initialized:
+            return
+        with Aether._lock:
+            if Aether._initialized:
+                return
             try:
                 super().__init__()
                 self._id: str = new_ulid()
@@ -135,12 +157,16 @@ class Aether(Cleanable):
                 # runs at package import) while serving zero boot traffic.
                 self._mutation_research: Optional["MutationResearch"] = None
                 self._nexus: Nexus = Nexus(aether=self)
+                # BUG-002 (2026-07-17 audit): the once-only latch flips while
+                # the class lock is still held so the unlocked fast path above
+                # can only observe a fully constructed singleton.
                 Aether._initialized = True
             except Exception:
-                with Aether._lock:
-                    if Aether._instance is self:
-                        Aether._instance = None
-                    Aether._initialized = False
+                # Already under Aether._lock: reset bookkeeping so a later
+                # Aether() call can construct a fresh singleton cleanly.
+                if Aether._instance is self:
+                    Aether._instance = None
+                Aether._initialized = False
                 raise
 
     def cleanup(self) -> None:

@@ -239,8 +239,9 @@ class MutationResearchConfiguration(Cleanable):
                 # DOCKING-LOOP LAW (bug caught by the zero-mock rebirth
                 # test 2026-07-12): the profile is REPLACE-ON-EMIT, so a
                 # config twin emitted WITHOUT the recorded composition
-                # would WIPE it moments before the root's virgin
-                # hydration reads it (config activation necessarily
+                # would WIPE it moments before the root's
+                # untouched-registry hydration reads it (config
+                # activation necessarily
                 # precedes root activation). The configuration owns ONLY
                 # its property payload - the recorded composition is
                 # CARRIED FORWARD, never authored and never destroyed

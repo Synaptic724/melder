@@ -115,7 +115,6 @@ class MutationResearch(Cleanable):
                 if instance is None:
                     instance = super(MutationResearch, cls).__new__(cls)
                     cls._instance = instance
-        assert instance is not None
         return instance
 
     def __init__(
@@ -145,7 +144,7 @@ class MutationResearch(Cleanable):
             # Serializes snapshot build + publication in the emission seam;
             # must exist before the first ResearchSet fires on_mutation.
             self._emission_lock: threading.RLock = threading.RLock()
-            self._aether: Optional["Aether"] = aether
+            self._aether: "Aether" = aether
             self._crystallizer: "Crystallizer" = aether._crystallizer
             self._configuration: Optional[MutationResearchConfiguration] = None
             self._configured: bool = False
@@ -207,15 +206,14 @@ class MutationResearch(Cleanable):
                     )
             except Exception:
                 pass
-            if self._research_sets_by_name is not None:
-                for _, research_set in list(
-                        self._research_sets_by_name.items()
-                ):
-                    try:
-                        research_set.cleanup()
-                    except Exception:
-                        pass
-                self._research_sets_by_name.clear()
+            for _, research_set in list(
+                    self._research_sets_by_name.items()
+            ):
+                try:
+                    research_set.cleanup()
+                except Exception:
+                    pass
+            self._research_sets_by_name.clear()
             if self._diff_engine is not None:
                 try:
                     self._diff_engine.cleanup()
@@ -260,9 +258,8 @@ class MutationResearch(Cleanable):
         """
         with cls._lock:
             instance = cls._instance
-        if instance is not None:
-            if getattr(instance, "_cleaned", None) is False:
-                instance.cleanup()
+        if instance is not None and not instance._cleaned:
+            instance.cleanup()
         with cls._lock:
             cls._instance = None
             cls._initialized = False
@@ -395,11 +392,11 @@ class MutationResearch(Cleanable):
             configuration:
                 Optional configuration to install before activation.
             hydrate_from_record:
-                When True (default), a VIRGIN registry (nothing but the
-                untouched default set) rebuilds itself from the active
+                When True (default), an UNTOUCHED registry (nothing but
+                the pristine default set) rebuilds itself from the active
                 profile's recorded composition at activation - the twin
                 docking loop: emit while live, hydrate on the way up. Live
-                research is never clobbered; a non-virgin registry skips
+                research is never clobbered; a touched registry skips
                 hydration and re-records itself instead. Hydration runs
                 BEFORE the root reports active, so the public ingress can
                 never open into a registry that is about to be swapped.
@@ -423,12 +420,12 @@ class MutationResearch(Cleanable):
         self._configuration.validate()
         # Hydration precedes the activation flip (BUG-035): the public
         # ingress opens when the root reports active, so completing the
-        # virgin-check/registry-swap FIRST guarantees live research recorded
+        # untouched-check/registry-swap FIRST guarantees live research recorded
         # through the documented seam can never race the swap and be
         # clobbered. Mid-hydration emissions no-op on the inactive guard;
         # the final emission below records the hydrated (or live) truth.
         if hydrate_from_record:
-            self._hydrate_from_record_when_virgin()
+            self._hydrate_from_record()
         with self._lock:
             self._activated = True
             # Record the lifecycle flip: the twin (emitted at configuration
@@ -455,7 +452,7 @@ class MutationResearch(Cleanable):
         Returns:
             None.
         """
-        if not self._configured or self._configuration is None:
+        if not self._configured:
             return
         if not self._configuration.has_property("lane_type_enforcement"):
             return
@@ -467,12 +464,12 @@ class MutationResearch(Cleanable):
         for research_set in research_sets:
             research_set.set_lane_type_enforcement(enabled)
 
-    def _registry_is_virgin(self) -> bool:
+    def _registry_is_untouched(self) -> bool:
         """
         Return whether no research has ever been declared on this root.
 
         Contract:
-            - Virgin means exactly the guaranteed default set with its
+            - Untouched means exactly the guaranteed default set with its
               untouched default lane: one set, one lane, zero registered
               versions, and no journal history beyond the birth event.
 
@@ -494,9 +491,9 @@ class MutationResearch(Cleanable):
                 return False
             return default_set.journal.latest_sequence <= 1
 
-    def _hydrate_from_record_when_virgin(self) -> None:
+    def _hydrate_from_record(self) -> None:
         """
-        Rebuild a virgin registry from the recorded composition, when any.
+        Rebuild an untouched registry from the recorded composition, when any.
 
         Contract:
             - NO-OP while the crystallizer is cleaned/inactive, when the
@@ -508,17 +505,15 @@ class MutationResearch(Cleanable):
             None.
         """
         crystallizer = self._crystallizer
-        if crystallizer.cleaned:
-            return
         if not crystallizer.activated:
             return
         recorded = crystallizer.describe_mutation_research_record()
-        if not isinstance(recorded, dict):
+        if recorded is None:
             return
         composition = recorded.get("composition_payload")
         if not isinstance(composition, dict) or not composition:
             return
-        if not self._registry_is_virgin():
+        if not self._registry_is_untouched():
             return
         self.load_recorded_composition(composition)
 
@@ -979,8 +974,8 @@ class MutationResearch(Cleanable):
               `parked` (a live index member, not selected), `stored`
               (custody only), `declared_only` (record only), `unknown`
               (nowhere, incl. custody unavailable).
-            - `in_custody` is None when the crystallizer cannot answer
-              (inactive/cleaned) - a read never fabricates or raises there.
+            - `in_custody` is None when the crystallizer is not recording
+              (inactive) - a read never fabricates or raises there.
 
         Args:
             spell_id:
@@ -1090,8 +1085,6 @@ class MutationResearch(Cleanable):
                 identity is not a live index member anywhere.
         """
         aether = self._aether
-        if aether is None or aether.cleaned:
-            return None, None, False
         parked_frame: Optional[str] = None
         parked_index: Optional[str] = None
         for frame_name, frame in list(aether._aetheric_frames.items()):
@@ -1121,17 +1114,15 @@ class MutationResearch(Cleanable):
         Returns:
             Optional[bool]:
                 True/False for custody presence; None when the crystallizer
-                cannot answer (inactive or cleaned).
+                is not recording (inactive).
         """
         crystallizer = self._crystallizer
-        if crystallizer.cleaned or not crystallizer.activated:
+        if not crystallizer.activated:
             return None
         try:
             crystallizer.get_spell_crystal(spell_id)
         except KeyError:
             return False
-        except Exception:
-            return None
         return True
 
     # ------------------------------------------------------------------
@@ -1143,7 +1134,7 @@ class MutationResearch(Cleanable):
             left_spell_id: str,
             right_spell_id: str,
             *,
-            strategy: str = "source",
+            strategy: Optional[str] = None,
     ) -> Dict[str, object]:
         """
         Compute one derived diff between two version identities.
@@ -1180,8 +1171,17 @@ class MutationResearch(Cleanable):
         left_group = self._as_group_node(left_spell_id)
         right_group = self._as_group_node(right_spell_id)
         if left_group is not None and right_group is not None:
+            # The caller's strategy rides the dispatch (BUG-044): an unknown
+            # name must surface the documented KeyError, never silently
+            # reroute to the grouped default.
+            if strategy is None:
+                return self.group_diff_research(
+                    left_group.group_id, right_group.group_id,
+                )
             return self.group_diff_research(
-                left_group.group_id, right_group.group_id,
+                left_group.group_id,
+                right_group.group_id,
+                strategy=strategy,
             )
         if (left_group is None) != (right_group is None):
             raise ValueError(
@@ -1193,7 +1193,11 @@ class MutationResearch(Cleanable):
             if self._diff_engine is None:
                 self._diff_engine = DiffEngine(self._resolve_diff_material)
             engine = self._diff_engine
-        return engine.diff(left_spell_id, right_spell_id, strategy=strategy)
+        return engine.diff(
+            left_spell_id,
+            right_spell_id,
+            strategy=strategy if strategy is not None else "source",
+        )
 
     def create_diff_engine(self) -> DiffEngine:
         """
@@ -1237,9 +1241,9 @@ class MutationResearch(Cleanable):
         """
         self.check_cleaned()
         crystallizer = self._crystallizer
-        if crystallizer.cleaned or not crystallizer.activated:
+        if not crystallizer.activated:
             raise RuntimeError(
-                "Crystallizer custody is unavailable (inactive or cleaned); "
+                "Crystallizer custody is unavailable (not recording); "
                 "diff material cannot be resolved."
             )
         payload = self._get_spell_crystal_for_read(spell_id).describe()
@@ -1409,12 +1413,12 @@ class MutationResearch(Cleanable):
 
         Raises:
             RuntimeError:
-                If the crystallizer is cleaned or inactive.
+                If the crystallizer is not recording (inactive).
         """
         crystallizer = self._crystallizer
-        if crystallizer.cleaned or not crystallizer.activated:
+        if not crystallizer.activated:
             raise RuntimeError(
-                "Crystallizer custody is unavailable (inactive or cleaned); "
+                "Crystallizer custody is unavailable (not recording); "
                 "foresight reads need the record - activate the "
                 "crystallizer before asking for source, impact, or module "
                 "graphs."
@@ -3254,9 +3258,9 @@ class MutationResearch(Cleanable):
               call this through their injected `on_mutation` callback after
               every successful mutating verb; the root also calls it at
               activation and after hydration.
-            - NO-OP while the root is inactive, or while the crystallizer is
-              cleaned/inactive (the sink additionally no-ops when recording
-              is off, preserving the R-A covenant).
+            - NO-OP while the root is inactive or the crystallizer is not
+              recording (cleanup sets `_activated` False, so late teardown
+              callbacks fall out here too - no cleaned-probing needed).
 
         Threading:
             The whole verb runs under the reentrant emission lock: the
@@ -3269,18 +3273,16 @@ class MutationResearch(Cleanable):
         Returns:
             None.
         """
-        if self._cleaned or not self._activated:
+        if not self._activated:
             return
         with self._emission_lock:
-            if self._cleaned or not self._activated:
+            if not self._activated:
                 return
             crystallizer = self._crystallizer
-            if crystallizer.cleaned:
-                return
             if not crystallizer.activated:
                 return
             configuration_payload: Dict[str, object] = {}
-            if self._configured and self._configuration is not None:
+            if self._configured:
                 configuration_payload = (
                     self._configuration.describe_configuration_payload()
                 )

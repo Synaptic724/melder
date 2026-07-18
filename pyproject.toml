@@ -5,9 +5,9 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "melder"
 version = "0.1.0"
-description = "Lightweight, high-performance dependency injection container for Python 3.13+ applications."
+description = "Lightweight, high-performance dependency injection container for Python 3.14+ applications."
 readme = { file = "README.md", content-type = "text/markdown" }
-requires-python = ">=3.13"
+requires-python = ">=3.14"
 license = "Apache-2.0"
 
 authors = [
@@ -34,7 +34,7 @@ keywords = [
 
 classifiers = [
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
     "Programming Language :: Python :: Implementation :: CPython",
     "Operating System :: OS Independent",
     "Intended Audience :: Developers",

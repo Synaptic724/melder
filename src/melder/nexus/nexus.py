@@ -155,9 +155,28 @@ class Nexus(Cleanable):
             - First construction requires a non-None `Aether` substrate.
             - Later constructor calls reuse the existing singleton and may only
               refresh the logger override.
+            - Initialization is once-only: the `_initialized` check and the
+              whole manager-graph construction run under the class-level
+              `_lock`, so exactly one thread builds the singleton state and
+              every concurrent first caller blocks until that build completes
+              (BUG-003 regression contract, 2026-07-17 audit).
             - Registry, manager, and counter state start empty on first
               initialization.
             - The singleton starts disabled even when configuration is supplied.
+            - On construction failure (including a missing `Aether` on first
+              init), singleton bookkeeping (`_instance`, `_initialized`) is
+              reset under the held lock so a later `Nexus(...)` can construct
+              cleanly.
+
+        Threading:
+            - The post-boot fast path reads `_initialized` without the lock,
+              so the logger-only refresh stays lock-free; the pre-boot path
+              re-checks it under `Nexus._lock` before constructing
+              (double-checked initialization).
+            - `Aether.__init__` constructs `Nexus(aether=self)` while holding
+              `Aether._lock`, so lock nesting is one-way
+              `Aether._lock` -> `Nexus._lock`; nothing constructed in this
+              body re-enters `Aether()` or `Nexus()`.
 
         Args:
             aether:
@@ -182,44 +201,57 @@ class Nexus(Cleanable):
             if logger is not None:
                 self._initialize_logging(logger)
             return
-        if aether is None:
-            with Nexus._lock:
+        with Nexus._lock:
+            if Nexus._initialized:
+                # A concurrent first caller finished construction while this
+                # thread waited on the lock: honor the logger-refresh contract
+                # and return the fully built singleton.
+                if logger is not None:
+                    self._initialize_logging(logger)
+                return
+            if aether is None:
+                # Already under Nexus._lock: reset bookkeeping so a later
+                # properly-formed first construction can proceed.
                 if Nexus._instance is self:
                     Nexus._instance = None
                 Nexus._initialized = False
-            raise ValueError("Nexus must be initialized with an Aether instance.")
-        try:
-            super().__init__()
-            self._id: str = IDBuilder.create_id()
-            self._logger = InitHelpers.resolve_safe_logger(None)
-            self._aether: Aether = aether
-            self._crystallizer: Crystallizer = aether._crystallizer
-            self._configuration: Optional[NexusConfiguration] = configuration
-            self._configured: bool = configuration is not None
-            self._enabled: bool = False
+                raise ValueError("Nexus must be initialized with an Aether instance.")
+            try:
+                super().__init__()
+                self._id: str = IDBuilder.create_id()
+                self._logger = InitHelpers.resolve_safe_logger(None)
+                self._aether: Aether = aether
+                self._crystallizer: Crystallizer = aether._crystallizer
+                self._configuration: Optional[NexusConfiguration] = configuration
+                self._configured: bool = configuration is not None
+                self._enabled: bool = False
 
-            self._rifts_by_id: Dict[str, Rift] = {}
-            self._rift_ids_by_name: Dict[str, str] = {}
-            self._next_default_rift_number: int = 1
-            self._rift_profiles_by_name: Dict[str, RiftConfiguration] = {}
-            self._rift_gate_controller: RiftGateController = RiftGateController()
-            self._frame_acl_manager: FrameACLManager = FrameACLManager(
-                change_callback=self._on_frame_acl_changed,
-            )
-            self._target_frame_ref_counts: Dict[str, int] = {}
+                self._rifts_by_id: Dict[str, Rift] = {}
+                self._rift_ids_by_name: Dict[str, str] = {}
+                self._next_default_rift_number: int = 1
+                self._rift_profiles_by_name: Dict[str, RiftConfiguration] = {}
+                self._rift_gate_controller: RiftGateController = RiftGateController()
+                self._frame_acl_manager: FrameACLManager = FrameACLManager(
+                    change_callback=self._on_frame_acl_changed,
+                )
+                self._target_frame_ref_counts: Dict[str, int] = {}
 
-            self._frame_descriptor_manager: FrameDescriptorManager = FrameDescriptorManager(aether)
-            self._frame_manager: NexusFrameManager = NexusFrameManager(
-                nexus=self,
-            )
-            self._initialize_logging(logger)
-            Nexus._initialized = True
-        except Exception:
-            with Nexus._lock:
+                self._frame_descriptor_manager: FrameDescriptorManager = FrameDescriptorManager(aether)
+                self._frame_manager: NexusFrameManager = NexusFrameManager(
+                    nexus=self,
+                )
+                self._initialize_logging(logger)
+                # BUG-003 (2026-07-17 audit): the once-only latch flips while
+                # the class lock is still held so the unlocked fast path above
+                # can only observe a fully constructed singleton.
+                Nexus._initialized = True
+            except Exception:
+                # Already under Nexus._lock: reset bookkeeping so a later
+                # Nexus(...) call can construct a fresh singleton cleanly.
                 if Nexus._instance is self:
                     Nexus._instance = None
                 Nexus._initialized = False
-            raise
+                raise
 
     def cleanup(self) -> None:
         """

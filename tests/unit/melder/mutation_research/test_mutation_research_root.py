@@ -37,16 +37,20 @@ def _mock_aether(*, recording: bool = False) -> MagicMock:
     Args:
         recording:
             When True, the mocked crystallizer poses as live-and-recording so
-            the emission seam proceeds; otherwise emission short-circuits on
-            the cleaned guard.
+            the emission seam proceeds; otherwise it poses as live but NOT
+            recording (inactive), the only reachable custody-unavailable
+            state - teardown states are unreachable mid-use by contract.
 
     Returns:
         MagicMock: Aether double carrying a crystallizer double.
     """
     aether = MagicMock()
+    aether.cleaned = False
+    aether._crystallizer.cleaned = False
     if recording:
-        aether._crystallizer.cleaned = False
         aether._crystallizer.activated = True
+    else:
+        aether._crystallizer.activated = False
     return aether
 
 
@@ -214,9 +218,9 @@ def test_root_record_promotion_catches_up_unknown_targets() -> None:
     assert last.from_spell_id == "sha-old" and last.to_spell_id == "sha-new"
 
 
-def test_root_activation_hydrates_virgin_registry_from_record() -> None:
+def test_root_activation_hydrates_untouched_registry_from_record() -> None:
     """
-    Verify the twin docking loop: a virgin root rebuilds its registry from
+    Verify the twin docking loop: an untouched root rebuilds its registry from
     the active profile's recorded composition at activation.
     """
     donor = ResearchSet("default")
@@ -245,7 +249,7 @@ def test_root_activation_hydrates_virgin_registry_from_record() -> None:
 
 def test_root_activation_never_clobbers_live_research() -> None:
     """
-    Verify a non-virgin registry skips hydration: live research wins and
+    Verify an already-touched registry skips hydration: live research wins and
     re-records itself instead.
     """
     donor = ResearchSet("default")
@@ -271,7 +275,7 @@ def test_root_activation_never_clobbers_live_research() -> None:
 
 def test_root_activation_hydration_opt_out() -> None:
     """
-    Verify hydrate_from_record=False leaves even a virgin registry alone.
+    Verify hydrate_from_record=False leaves even an untouched registry alone.
     """
     aether = _mock_aether(recording=True)
     aether._crystallizer.describe_mutation_research_record.return_value = {
@@ -600,7 +604,7 @@ def test_emission_never_publishes_stale_composition_over_newer_one() -> None:
 def test_activation_completes_hydration_before_reporting_active() -> None:
     """
     Regression (BUG-035): `activate()` flipped `_activated` (opening the
-    public ingress) BEFORE the virgin-check/hydration sequence, so a live
+    public ingress) BEFORE the untouched-check/hydration sequence, so a live
     entry recorded through the already-open ingress could be clobbered by
     the registry swap. Corrected behavior: hydration completes before the
     root ever reports active, so the documented seam (ingress opens at
@@ -694,3 +698,31 @@ def test_promotion_catchup_consumes_staged_ancestry_for_its_candidate() -> None:
     unrelated_node = research_set.default_lane.get_node(unrelated)
     assert candidate_node.parent_spell_ids == [base, donor]
     assert unrelated_node.parent_spell_ids == []
+
+
+def test_composition_diff_refuses_unknown_strategy() -> None:
+    """
+    Regression (BUG-044): diff_research on two compositions dropped the
+    caller's strategy and silently routed to the `members` default, so
+    `strategy='definitely-missing'` returned a normal members diff.
+    Corrected behavior: the documented unknown-strategy KeyError applies
+    to the composition branch too, and the per-kind defaults survive.
+    """
+    aether = _mock_aether(recording=True)
+    root = MutationResearch(aether=aether)
+    base = "a" * 64
+    donor = "b" * 64
+    root.record_world_entry(base)
+    root.record_world_entry(donor)
+    research_set = root.research_set()
+    left = research_set.register_group([base])
+    right = research_set.register_group([base, donor])
+
+    with pytest.raises(KeyError, match="definitely-missing"):
+        root.diff_research(
+            left.group_id, right.group_id, strategy="definitely-missing",
+        )
+    # Default routing still works for compositions.
+    verdict = root.diff_research(left.group_id, right.group_id)
+    assert verdict["strategy"] == "members"
+    assert verdict["result"]["added_members"] == [donor]

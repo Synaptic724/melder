@@ -878,6 +878,15 @@ class NexusFrameManager(Cleanable):
             manager registry now that the legacy descriptor-owned Nexus frame
             record path has been removed.
 
+        Contract:
+            - Must be called while holding ``self._lock``.
+            - Counts published frames (``_frames_by_name``) and in-flight
+              reservations (``_creating_frame_names``) together, so a concurrent
+              creation that has reserved a name but not yet published still
+              consumes the budget. Without counting reservations, two threads on
+              the free-threaded runtime each observe only published frames and
+              both pass a cap they would jointly exceed at publication.
+
         Args:
             frame_names:
                 Candidate authored frame names being added.
@@ -894,12 +903,19 @@ class NexusFrameManager(Cleanable):
         for frame_name in frame_names:
             if frame_name in self._frames_by_name:
                 continue
+            if frame_name in self._creating_frame_names:
+                continue
             if frame_name in unique_new_frame_names:
                 continue
             unique_new_frame_names.append(frame_name)
         if not unique_new_frame_names:
             return
-        if len(self._frames_by_name) + len(unique_new_frame_names) > self._get_max_nexus_frame_count():
+        projected_frame_count = (
+            len(self._frames_by_name)
+            + len(self._creating_frame_names)
+            + len(unique_new_frame_names)
+        )
+        if projected_frame_count > self._get_max_nexus_frame_count():
             raise ValueError("Nexus internal frame cap has been reached.")
 
     @staticmethod

@@ -278,7 +278,7 @@ def test_mutation_research_composition_twin_survives_the_real_record():
         Prove the GroupedResearchNode twin + bootstrap loop END TO END on
         the REAL crystallizer (no mocks anywhere): a composition emitted
         through the live persistence sink survives root death and rebuilds
-        in a REBORN root through the virgin-hydration lane at activation.
+        in a REBORN root through the untouched-registry hydration lane at activation.
     Contract:
         register_group emits the composition twin; the recorded payload is
         JSON-serializable with the tagged group node inside; after

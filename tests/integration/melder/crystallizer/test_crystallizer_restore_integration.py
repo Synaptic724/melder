@@ -925,7 +925,7 @@ def test_mutation_research_round_trips_through_checkpoints(cache_root):
         world unfolds WITH its research - declare -> seal -> flush ->
         fresh boot -> load_checkpoint -> lanes, membership, and residence
         present; research CONTINUABLE; a later activation hydration NO-OPs
-        because the engine-restored registry is non-virgin.
+        because the engine-restored registry is already touched.
     Contract:
         The report shows mutation_research under built stages and carries
         ZERO first_cut shortfalls; the rebuilt set walks the recorded
@@ -984,7 +984,7 @@ def test_mutation_research_round_trips_through_checkpoints(cache_root):
         )
         assert restored_set.residence_of("b" * 64) is not None
 
-        # Non-virgin registry: a later activation hydration NO-OPs (the
+        # Already-touched registry: a later activation hydration NO-OPs (the
         # engine-restored organization survives untouched).
         restored_root.activate(hydrate_from_record=True)
         assert restored_set.residence_of("b" * 64) is not None
