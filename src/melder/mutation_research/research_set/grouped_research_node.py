@@ -1,3 +1,4 @@
+import copy
 import hashlib
 from datetime import datetime, timezone
 from typing import Dict, List, Optional, Tuple
@@ -130,7 +131,7 @@ class GroupedResearchNode(Cleanable):
             if created_at
             else datetime.now(timezone.utc).isoformat()
         )
-        self._metadata: Dict[str, object] = dict(metadata) if metadata else {}
+        self._metadata: Dict[str, object] = copy.deepcopy(metadata) if metadata else {}
 
     @staticmethod
     def compute_group_id(member_spell_ids: List[str]) -> str:
@@ -274,7 +275,7 @@ class GroupedResearchNode(Cleanable):
                 Detached metadata mapping.
         """
         self.check_cleaned()
-        return dict(self._metadata)
+        return copy.deepcopy(self._metadata)
 
     def describe(self) -> Dict[str, object]:
         """
@@ -296,7 +297,7 @@ class GroupedResearchNode(Cleanable):
             "reason": self._reason,
             "campaign": self._campaign,
             "created_at": self._created_at,
-            "metadata": dict(self._metadata),
+            "metadata": copy.deepcopy(self._metadata),
         }
 
     @classmethod

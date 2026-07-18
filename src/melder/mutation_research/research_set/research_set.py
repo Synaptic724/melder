@@ -730,7 +730,7 @@ class ResearchSet(Cleanable):
                 "lane_type": lane.lane_type.value,
             }
             if anchor_lane is not None:
-                lane.set_anchor(anchor_lane.lane_id, attach_at_spell_id)
+                lane._set_anchor(anchor_lane.lane_id, attach_at_spell_id)
                 entry_metadata["anchor_lane_id"] = anchor_lane.lane_id
                 entry_metadata["anchor_lane_name"] = anchor_lane.name
             self._journal.record(
@@ -836,7 +836,7 @@ class ResearchSet(Cleanable):
             # add under real threads - a refused add must not strand the
             # claim (partition corruption).
             try:
-                target.add_node(node)
+                target._add_node(node)
             except Exception:
                 self._residence._rollback_claim(spell_id, target.lane_id)
                 raise
@@ -981,7 +981,7 @@ class ResearchSet(Cleanable):
             # Same compensation as register_spell: a refused add must not
             # strand the claim.
             try:
-                target.add_node(node)
+                target._add_node(node)
             except Exception:
                 self._residence._rollback_claim(
                     node.group_id, target.lane_id,
@@ -1282,7 +1282,7 @@ class ResearchSet(Cleanable):
             # Same compensation as register_spell: a refused add must not
             # strand the claim.
             try:
-                target.add_node(node)
+                target._add_node(node)
             except Exception:
                 self._residence._rollback_claim(spell_id, target.lane_id)
                 raise
@@ -1415,7 +1415,7 @@ class ResearchSet(Cleanable):
                     f"Lane '{target.name}' holds no identity '{at_spell_id}' to "
                     f"anchor at."
                 )
-            lane.set_anchor(target.lane_id, at_spell_id)
+            lane._set_anchor(target.lane_id, at_spell_id)
             self._journal.record(
                 TransitionAct.attached,
                 lane.lane_id,
@@ -1538,7 +1538,7 @@ class ResearchSet(Cleanable):
             # Receiver custody (BUG-037): hold the receiver's own reentrant
             # lane lock across the ENTIRE commit (open-check through journal
             # + snapshot), so a direct lane-surface state flip (for example
-            # mark_archived on a live handout) serializes entirely before
+            # _mark_archived racing from another set verb) serializes entirely before
             # or entirely after the join - the open-receiver contract holds
             # through commit. Lock order set -> lane is the one-way order
             # every set verb already uses; lanes never call back into the
@@ -1635,7 +1635,7 @@ class ResearchSet(Cleanable):
                 moved_spell_ids = [source.tip_spell_id]
             else:
                 moved_spell_ids = source.node_spell_ids()
-            detached = source.detach_nodes(moved_spell_ids)
+            detached = source._detach_nodes(moved_spell_ids)
             # Threadsafety compensation: a mid-loop refusal (direct
             # terminal-state race on the receiver) must not leave
             # detached records in limbo - everything returns to the
@@ -1645,16 +1645,16 @@ class ResearchSet(Cleanable):
             added: List[str] = []
             try:
                 for node in detached:
-                    target.add_node(node)
+                    target._add_node(node)
                     added.append(node_identity(node))
             except Exception:
                 if added:
-                    target.detach_nodes(added)
+                    target._detach_nodes(added)
                 for node in detached:
-                    source.add_node(node)
+                    source._add_node(node)
                 raise
             self._residence.transfer(moved_spell_ids, target.lane_id)
-        source.mark_joined(target.lane_id)
+        source._mark_joined(target.lane_id)
         self._journal.record(
             TransitionAct.joined,
             target.lane_id,
@@ -1716,7 +1716,7 @@ class ResearchSet(Cleanable):
                     "The default lane is the guaranteed world-entry record "
                     "and never archives."
                 )
-            lane.mark_archived()
+            lane._mark_archived()
             self._journal.record(
                 TransitionAct.archived,
                 lane.lane_id,

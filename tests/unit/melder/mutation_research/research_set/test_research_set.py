@@ -456,7 +456,8 @@ def test_join_refuses_receiver_archived_between_check_and_commit() -> None:
     """
     Regression (BUG-037): join checked the receiver's open state once and
     committed without holding the receiver, so a direct
-    `lane.mark_archived()` (lanes are handed out live) could land INSIDE
+    lane-surface state flip (lanes were handed out live with public
+    mutators pre-BUG-048) could land INSIDE
     the commit window - the audit observed joined nodes inside an archived
     receiver with no exception. Corrected behavior: join holds the
     receiver's lane lock for the whole commit, so a racing archive
@@ -479,7 +480,7 @@ def test_join_refuses_receiver_archived_between_check_and_commit() -> None:
         release_archive.wait(timeout=10.0)
         archive_attempting.set()
         try:
-            receiver.mark_archived()
+            receiver._mark_archived()
             archive_outcome.append("archived")
         except RuntimeError:
             archive_outcome.append("refused")
@@ -487,7 +488,7 @@ def test_join_refuses_receiver_archived_between_check_and_commit() -> None:
     racer = threading.Thread(target=racing_archive)
     racer.start()
 
-    original_detach = type(receiver).detach_nodes
+    original_detach = type(receiver)._detach_nodes
 
     def detach_with_open_window(self, spell_ids):
         # Runs inside join's commit, after the receiver open-check: wake
@@ -497,11 +498,11 @@ def test_join_refuses_receiver_archived_between_check_and_commit() -> None:
         time.sleep(0.3)
         return original_detach(self, spell_ids)
 
-    type(receiver).detach_nodes = detach_with_open_window
+    type(receiver)._detach_nodes = detach_with_open_window
     try:
         result = research_set.join("child", into="default")
     finally:
-        type(receiver).detach_nodes = original_detach
+        type(receiver)._detach_nodes = original_detach
     racer.join(timeout=10.0)
 
     assert not racer.is_alive()
@@ -596,4 +597,65 @@ def test_empty_campaign_stamp_refused_at_the_write_seam() -> None:
     view = research_set.campaign_view("alpha")
     assert view["campaign"] == "alpha"
     assert [n["spell_id"] for n in view["nodes"]] == ["sha-a"]
+    research_set.cleanup()
+
+
+def test_public_lane_surface_cannot_bypass_set_invariants() -> None:
+    """
+    Regression (BUG-048): publicly returned lane objects exposed mutators
+    (add_node, detach_nodes, set_anchor, mark_joined, mark_archived) that
+    bypassed the set's residence claim, journal, snapshot callback, and
+    persistence emission - the same identity could be added to multiple
+    lanes with residence=None. Corrected behavior (owner ruling 2026-07-18,
+    option a): lanes are read surfaces; every mutator is set-internal, so
+    the public surface physically cannot construct a state the
+    single-residence model forbids.
+    """
+    research_set = ResearchSet("default")
+    research_set.register_spell("sha-a")
+    research_set.create_lane(
+        "side", attach_to="default", attach_at_spell_id="sha-a",
+    )
+    default_lane = research_set.default_lane
+    node = default_lane.get_node("sha-a")
+
+    for public_mutator in (
+        "add_node", "detach_nodes", "set_anchor",
+        "mark_joined", "mark_archived",
+    ):
+        with pytest.raises(AttributeError):
+            getattr(default_lane, public_mutator)
+
+    # The governed path still enforces single residence end to end.
+    with pytest.raises(RuntimeError, match="Rediscovery"):
+        research_set.register_spell("sha-a", lane="side")
+    assert research_set.residence_of("sha-a") == default_lane.lane_id
+    assert node.spell_id == "sha-a"
+    research_set.cleanup()
+
+
+def test_nested_metadata_mutation_cannot_bypass_publication_control() -> None:
+    """
+    Regression (BUG-039): metadata carriers copied only the OUTER dict, so
+    mutating a nested object obtained from public metadata changed live
+    describe() state with no lock, journal record, snapshot, or emission.
+    Corrected behavior: metadata is deep-copied at intake and exposure -
+    published state changes only through governed mutation.
+    """
+    research_set = ResearchSet("default")
+    supplied = {"tags": ["alpha"], "grades": {"initial": 1}}
+    node = research_set.register_spell("sha-a", metadata=supplied)
+
+    # Caller-side mutation after intake never reaches the record.
+    supplied["tags"].append("smuggled-in")
+    exposed = node.metadata
+    exposed["grades"]["initial"] = 999
+    exposed["tags"].append("smuggled-out")
+
+    fresh = node.metadata
+    assert fresh["tags"] == ["alpha"]
+    assert fresh["grades"] == {"initial": 1}
+    described = node.describe()["metadata"]
+    assert described["tags"] == ["alpha"]
+    assert described["grades"] == {"initial": 1}
     research_set.cleanup()

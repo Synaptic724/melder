@@ -40,8 +40,8 @@ def test_lane_add_node_orders_and_advances_tip() -> None:
     Verify registration order and tip advancement.
     """
     lane = ResearchLane("feature-x")
-    lane.add_node(_node("sha-a"))
-    lane.add_node(_node("sha-b"))
+    lane._add_node(_node("sha-a"))
+    lane._add_node(_node("sha-b"))
 
     assert lane.node_spell_ids() == ["sha-a", "sha-b"]
     assert lane.tip_spell_id == "sha-b"
@@ -54,10 +54,10 @@ def test_lane_rejects_duplicate_identity() -> None:
     Verify full-object records dedup by content SHA within a lane.
     """
     lane = ResearchLane("feature-x")
-    lane.add_node(_node("sha-a"))
+    lane._add_node(_node("sha-a"))
 
     with pytest.raises(ValueError, match="already holds"):
-        lane.add_node(_node("sha-a"))
+        lane._add_node(_node("sha-a"))
 
 
 def test_lane_detach_nodes_preserves_order_and_recomputes_tip() -> None:
@@ -66,15 +66,15 @@ def test_lane_detach_nodes_preserves_order_and_recomputes_tip() -> None:
     """
     lane = ResearchLane("feature-x")
     for sha in ["sha-a", "sha-b", "sha-c"]:
-        lane.add_node(_node(sha))
+        lane._add_node(_node(sha))
 
-    detached = lane.detach_nodes(["sha-c", "sha-a"])
+    detached = lane._detach_nodes(["sha-c", "sha-a"])
 
     assert [node.spell_id for node in detached] == ["sha-a", "sha-c"]
     assert lane.node_spell_ids() == ["sha-b"]
     assert lane.tip_spell_id == "sha-b"
     with pytest.raises(KeyError):
-        lane.detach_nodes(["sha-missing"])
+        lane._detach_nodes(["sha-missing"])
 
 
 def test_lane_anchor_set_and_clear() -> None:
@@ -82,7 +82,7 @@ def test_lane_anchor_set_and_clear() -> None:
     Verify ancestry anchoring is organization-only state.
     """
     lane = ResearchLane("feature-x")
-    lane.set_anchor("lane-parent", "sha-base")
+    lane._set_anchor("lane-parent", "sha-base")
 
     assert lane.anchor_lane_id == "lane-parent"
     assert lane.anchor_spell_id == "sha-base"
@@ -98,19 +98,19 @@ def test_lane_terminal_states_refuse_further_work() -> None:
     Verify joined/archived are terminal for the container.
     """
     joined = ResearchLane("joined-lane")
-    joined.mark_joined("lane-target")
+    joined._mark_joined("lane-target")
     assert joined.state is LaneState.joined
     assert joined.joined_into_lane_id == "lane-target"
     with pytest.raises(RuntimeError, match="joined"):
-        joined.add_node(_node("sha-a"))
+        joined._add_node(_node("sha-a"))
     with pytest.raises(RuntimeError, match="joined"):
-        joined.mark_archived()
+        joined._mark_archived()
 
     archived = ResearchLane("archived-lane")
-    archived.mark_archived()
+    archived._mark_archived()
     assert archived.state is LaneState.archived
     with pytest.raises(RuntimeError, match="archived"):
-        archived.set_anchor("lane-x", "sha-x")
+        archived._set_anchor("lane-x", "sha-x")
 
 
 def test_lane_describe_from_payload_roundtrip() -> None:
@@ -119,10 +119,10 @@ def test_lane_describe_from_payload_roundtrip() -> None:
     state, anchor, order, and nested nodes.
     """
     lane = ResearchLane("feature-x")
-    lane.add_node(_node("sha-a"))
-    lane.add_node(_node("sha-b"))
-    lane.set_anchor("lane-parent", "sha-base")
-    lane.mark_joined("lane-target")
+    lane._add_node(_node("sha-a"))
+    lane._add_node(_node("sha-b"))
+    lane._set_anchor("lane-parent", "sha-base")
+    lane._mark_joined("lane-target")
 
     rebuilt = ResearchLane.from_payload(lane.describe())
 
@@ -137,11 +137,11 @@ def test_lane_cleanup_is_idempotent_and_guards_reads() -> None:
     """
     lane = ResearchLane("feature-x")
     node = _node("sha-a")
-    lane.add_node(node)
+    lane._add_node(node)
     lane.cleanup()
     lane.cleanup()
 
     assert lane.cleaned is True
     assert node.cleaned is True
     with pytest.raises(RuntimeError):
-        lane.add_node(_node("sha-b"))
+        lane._add_node(_node("sha-b"))

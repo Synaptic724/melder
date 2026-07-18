@@ -461,3 +461,51 @@ def test_bootstrap_formation_reload_fluent_contract():
     fresh.cleanup()
     with pytest.raises(RuntimeError):
         fresh.with_formation_reload(True)
+
+
+def test_bug162_failed_remote_graft_store_raises_not_reports_shipped(cache_root):
+    """
+    BUG-162 regression: in lenient mode a raising store handler makes
+    store_unit swallow the error into False (and count it). The graft lane
+    has NO local durable fallback, so store_index_graft must NOT return the
+    id as if shipped - it raises so a caller never discards its only copy.
+    """
+    rows = {}
+
+    def raising_store(kind, profile_name, unit_id, payload):
+        raise ConnectionError("remote store unavailable")
+
+    def fetch(kind, unit_id):
+        row = rows.get((kind, unit_id))
+        return json.loads(row[1]) if row is not None else None
+
+    def list_units(kind, profile_name):
+        return [
+            unit_id
+            for (row_kind, unit_id), (row_profile, _p) in rows.items()
+            if row_kind == kind and row_profile == profile_name
+        ]
+
+    def delete(kind, unit_id):
+        del rows[(kind, unit_id)]
+
+    configuration = ExternalPersistenceManagerConfiguration()
+    configuration.with_store_handler(raising_store)
+    configuration.with_fetch_handler(fetch)
+    configuration.with_list_units_handler(list_units)
+    configuration.with_delete_handler(delete)
+    configuration.freeze()
+    system = AssetManagementSystem(PersistenceSystem())
+    system.configure_external_persistence_manager(configuration)
+    record = RecordVersion.stamp({
+        "graft_kind": "spell_index",
+        "index_id": "01IDX",
+        "index_payload": {},
+        "members": {},
+        "members_without_custody": [],
+    })
+    with pytest.raises(RuntimeError):
+        system.store_index_graft("default", record)
+    # The failed store must not have left a phantom durable row.
+    assert ("index_graft", "01IDX") not in rows
+    system.cleanup()

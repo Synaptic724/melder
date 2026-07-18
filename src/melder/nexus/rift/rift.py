@@ -1,4 +1,4 @@
-﻿import threading
+import threading
 from typing import Any, Dict, Optional, Sequence, Tuple, TYPE_CHECKING
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
@@ -429,7 +429,13 @@ class Rift(Cleanable):
             configuration.cleanup()
         is_new_frame = frame_name not in self._frame_link_contracts_by_frame_name
         if is_new_frame:
-            self._nexus._validate_target_frame_budget((frame_name,))
+            # Atomic check-and-increment on the shared Nexus target-frame budget
+            # BEFORE creating the Rift-local contract: the validate and the
+            # ref-count increment must be one critical section so two Rifts
+            # attaching distinct frames cannot both pass the same empty budget
+            # under the free-threaded runtime (BUG-055). Reserving first means a
+            # cap refusal raises before any Rift-local state is created.
+            self._nexus._reserve_target_frame(frame_name)
             from melder.nexus.rift.frame_link.frame_link_contract import (
                 FrameLinkContract,
             )
@@ -440,8 +446,6 @@ class Rift(Cleanable):
                     "rift_name": self._rift_name,
                 },
             )
-        if is_new_frame:
-            self._nexus._increment_target_frame_ref_count(frame_name)
         self.refresh_runtime_projections()
 
     def _authorize_nexus_managed_frame_link(self, frame_name: str) -> bool:

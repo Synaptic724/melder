@@ -1,4 +1,4 @@
-﻿import threading
+import threading
 import time
 from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Mapping, Optional, Sequence, Tuple, Union
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
@@ -2868,6 +2868,38 @@ class Nexus(Cleanable):
             None.
         """
         self._increment_ref_count(self._target_frame_ref_counts, target_frame_name)
+
+    def _reserve_target_frame(self, target_frame_name: str) -> None:
+        """
+        Internal
+
+        Atomically reserve one target-frame slot: validate the target-frame
+        budget and increment its ref count as one critical section.
+
+        Contract:
+            - Acquires the Nexus ``ClassVar`` ``_lock`` so the budget check and
+              the ref-count increment cannot interleave. Two Rifts attaching
+              distinct target frames therefore cannot both observe the same
+              empty budget and both commit past ``max_target_frame_count`` under
+              the free-threaded runtime (BUG-055).
+            - Acquires only the Nexus lock; the caller must not hold a Rift lock
+              across this call, so no cross-object lock ordering is introduced.
+            - Re-entrant-safe because ``_lock`` is an ``RLock``.
+
+        Args:
+            target_frame_name:
+                Target frame name being newly attached.
+
+        Returns:
+            None.
+
+        Raises:
+            ValueError:
+                If the configured target-frame budget would be exceeded.
+        """
+        with self._lock:
+            self._validate_target_frame_budget((target_frame_name,))
+            self._increment_target_frame_ref_count(target_frame_name)
 
     def _remove_frame_acl_container(self, frame_name: str) -> bool:
         """

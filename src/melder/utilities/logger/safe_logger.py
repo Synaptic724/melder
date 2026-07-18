@@ -70,11 +70,17 @@ class SafeLogger(Cleanable):
         Idempotently release the wrapped logger reference.
 
         Contract:
+        - Safe to call multiple times; only the first call performs teardown.
         - If the wrapped logger exposes `cleanup()`, this method attempts to
           call it once on teardown.
         - Always clears the local logger reference afterward.
+        - Marks this adapter cleaned per the `Cleanable` contract: `cleaned`
+          reads True and `check_cleaned()` refuses use-after-clean, while the
+          emit surface stays a safe no-op through the null-logger path.
         - Does not assume stdlib loggers own a cleanup lifecycle.
         """
+        if self._cleaned:
+            return
         # Allow external polymorphic cleanup; std loggers won't have it.
         if self._logger is not None and hasattr(self._logger, "cleanup"):
             try:
@@ -82,6 +88,10 @@ class SafeLogger(Cleanable):
             except Exception:
                 pass
         self._logger = None
+        # BUG-147 (2026-07-17 audit): terminal cleanup must flip the Cleanable
+        # lifecycle flag so owners and diagnostics can distinguish a cleaned
+        # adapter from an active silent one.
+        self._cleaned = True
 
     @property
     def is_attached(self) -> bool:
@@ -231,6 +241,8 @@ class SafeLogger(Cleanable):
           is below the current threshold.
         - Preserves channel-specific metadata when using `IChannelLogger`.
         - Ignores masking on stdlib logger paths by design.
+        - Forwards explicit exception objects on the stdlib error path;
+          boolean `True` uses the active exception context.
         """
         logger = self._logger
         if logger is None:
@@ -268,8 +280,13 @@ class SafeLogger(Cleanable):
             logger.warning(msg)
             return
         if level == logging.ERROR:
-            if exc_info:
-                # Match your current semantics: exception() when exc_info truthy.
+            if isinstance(exc_info, BaseException):
+                # BUG-148 (2026-07-17 audit): forward the explicit exception
+                # object so the record carries the caller-supplied type,
+                # value, and traceback even outside an active handler.
+                logger.error(msg, exc_info=exc_info)
+            elif exc_info:
+                # Boolean True: use the active exception context.
                 logger.exception(msg)
             else:
                 logger.error(msg)

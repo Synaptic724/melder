@@ -1,3 +1,4 @@
+import copy
 import enum
 import threading
 from datetime import datetime, timezone
@@ -89,6 +90,13 @@ class LaneType(enum.Enum):
 
 class ResearchLane(Cleanable):
     """
+    Governance (single-residence law, BUG-048):
+        Lanes are handed out LIVE as read surfaces. Every mutator on this
+        class is set-internal (underscore-prefixed): residence claims, the
+        journal, snapshots, and persistence emission all live on the owning
+        `ResearchSet`, so public state change flows through set verbs ONLY.
+        Public callers read; the owning set writes.
+
     One object's line of versions inside the research network.
 
     Purpose:
@@ -197,7 +205,7 @@ class ResearchLane(Cleanable):
             if created_at
             else datetime.now(timezone.utc).isoformat()
         )
-        self._metadata: Dict[str, object] = dict(metadata) if metadata else {}
+        self._metadata: Dict[str, object] = copy.deepcopy(metadata) if metadata else {}
         self._lock: threading.RLock = threading.RLock()
 
     def cleanup(self) -> None:
@@ -375,7 +383,7 @@ class ResearchLane(Cleanable):
         self.check_cleaned()
         return self._created_at
 
-    def add_node(self, node: object) -> None:
+    def _add_node(self, node: object) -> None:
         """
         Append one record (either node family) and advance the tip.
 
@@ -472,7 +480,7 @@ class ResearchLane(Cleanable):
         with self._lock:
             return [self._nodes_by_spell_id[sha] for sha in self._node_order]
 
-    def detach_nodes(self, spell_ids: List[str]) -> List[ResearchNode]:
+    def _detach_nodes(self, spell_ids: List[str]) -> List[ResearchNode]:
         """
         Remove and return the given records in registration order.
 
@@ -515,7 +523,7 @@ class ResearchLane(Cleanable):
             self._tip_spell_id = remaining_order[-1] if remaining_order else None
             return detached
 
-    def set_anchor(self, anchor_lane_id: str, anchor_spell_id: str) -> None:
+    def _set_anchor(self, anchor_lane_id: str, anchor_spell_id: str) -> None:
         """
         Attach this lane's ancestry onto another lane's node.
 
@@ -559,7 +567,7 @@ class ResearchLane(Cleanable):
             self._anchor_lane_id = None
             self._anchor_spell_id = None
 
-    def mark_joined(self, into_lane_id: str) -> None:
+    def _mark_joined(self, into_lane_id: str) -> None:
         """
         Finish this lane into a receiving lane (terminal).
 
@@ -581,7 +589,7 @@ class ResearchLane(Cleanable):
             self._state = LaneState.joined
             self._joined_into_lane_id = into_lane_id
 
-    def mark_archived(self) -> None:
+    def _mark_archived(self) -> None:
         """
         Archive this lane as a dead end (terminal for this container).
 
@@ -615,7 +623,7 @@ class ResearchLane(Cleanable):
                 "tip_spell_id": self._tip_spell_id,
                 "joined_into_lane_id": self._joined_into_lane_id,
                 "created_at": self._created_at,
-                "metadata": dict(self._metadata),
+                "metadata": copy.deepcopy(self._metadata),
                 "nodes": [
                     self._nodes_by_spell_id[sha].describe()
                     for sha in self._node_order

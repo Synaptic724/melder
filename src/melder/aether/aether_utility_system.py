@@ -75,17 +75,34 @@ class AetherUtilitySystem(Cleanable):
 
         Contract:
             - Initializes process-wide resolver/default-logger state exactly
-              once per singleton lifetime.
+              once per singleton lifetime: the `_initialized` check and the
+              whole init body run under the class-level `_singleton_lock`, so
+              a concurrent first constructor can never re-enter the body and
+              erase provider registrations completed after the winning
+              thread's build (BUG-146 regression contract, 2026-07-17 audit).
+
+        Threading / Concurrency:
+            - The post-boot fast path reads `_initialized` without the lock;
+              the pre-boot path re-checks it under `_singleton_lock` before
+              initializing (double-checked initialization, mirroring the
+              Aether/Nexus once-only contract).
 
         Returns:
             None.
         """
-        if not AetherUtilitySystem._initialized:
+        if AetherUtilitySystem._initialized:
+            return
+        with AetherUtilitySystem._singleton_lock:
+            if AetherUtilitySystem._initialized:
+                return
             super().__init__()
             self._lock: threading.RLock = threading.RLock()
             self._channel_logger_activation_enabled: bool = False
             self._channel_logger_resolver: Optional[Callable[..., Any]] = None
             self._default_logger: Optional[logging.Logger] = None
+            # BUG-146 (2026-07-17 audit): the once-only latch flips while the
+            # singleton lock is still held so the unlocked fast path above can
+            # only observe a fully initialized provider surface.
             AetherUtilitySystem._initialized = True
 
     @classmethod

@@ -182,8 +182,13 @@ class Aether(Cleanable):
             - Idempotent.
             - Cleans owned frames before dropping singleton-level references.
             - Cleans the hosted Nexus singleton and utility system when they exist.
-            - Resets singleton bootstrap state so `Aether()` can be safely
-              reinitialized later.
+            - Resets singleton bootstrap state in a `finally`, so `Aether()`
+              can construct a fresh root even when a child cleanup fails: the
+              child error is logged and re-raised, but this cleaned instance
+              is never republished as the singleton (BUG-149 regression
+              contract, 2026-07-17 audit). A failed child keeps its own
+              singleton/lifecycle state; only this root's constructibility
+              is recovered here.
             - Logger cleanup is performed after frame and subsystem teardown.
 
         Returns:
@@ -224,14 +229,19 @@ class Aether(Cleanable):
                 del self._nexus
                 del self._default_frame
                 del self._load_gate
-
-
-                # Reset Singleton state to allow re-initialization (e.g. in tests)
-                Aether._instance = None
-                Aether._initialized = False
             except Exception as e:
                 self._logger.error(f"Error cleaning up Aether: {e}", "cleanup", exc_info=True)
                 raise
+            finally:
+                # BUG-149 (2026-07-17 audit): reset singleton bookkeeping even
+                # when a child cleanup fails. This instance is already marked
+                # cleaned and must never be republished by `Aether()`; without
+                # this finally, one child teardown error left the cleaned husk
+                # installed as the singleton for the rest of the process. The
+                # failed child keeps its own singleton/lifecycle state - what
+                # recovers here is this root's constructibility.
+                Aether._instance = None
+                Aether._initialized = False
 
         if self._logger is not None:
             if hasattr(self._logger, 'cleanup'):

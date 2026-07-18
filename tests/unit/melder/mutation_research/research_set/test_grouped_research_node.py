@@ -75,15 +75,15 @@ def test_lane_carries_both_node_families() -> None:
     spell = ResearchNode("sha-spell")
     group = GroupedResearchNode(["sha-spell"])
 
-    lane.add_node(spell)
-    lane.add_node(group)
+    lane._add_node(spell)
+    lane._add_node(group)
     assert lane.tip_spell_id == group.group_id
     assert lane.node_count == 2
 
     with pytest.raises(ValueError, match="already holds"):
-        lane.add_node(GroupedResearchNode(["sha-spell"]))
+        lane._add_node(GroupedResearchNode(["sha-spell"]))
     with pytest.raises(TypeError, match="ResearchNode or a Grouped"):
-        lane.add_node(object())
+        lane._add_node(object())
     assert node_identity(spell) == "sha-spell"
     assert node_identity(group) == group.group_id
 

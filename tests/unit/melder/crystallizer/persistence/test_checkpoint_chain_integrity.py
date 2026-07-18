@@ -1,8 +1,9 @@
 """
 Unit tests for the chain-integrity verb (verify_checkpoint_chain) and the
 retention-safe checkpoint numbering it guards: intact chains, empty-window
-markers, retention-truncated prefixes, full-dropout restarts, and damaged
-ledgers with break evidence.
+markers, retention-truncated prefixes, full-dropout restarts, damaged
+ledgers with break evidence, and the BUG-159 restorability gate (only an
+intact chain folds back to the true world).
 
 Runs only on 3.14t (melder package root import chain).
 """
@@ -46,6 +47,7 @@ def test_intact_chain_reports_contiguous_from_one():
         system.create_checkpoint()
     report = system.verify_checkpoint_chain()
     assert report["verdict"] == "intact"
+    assert report["restorable"] is True
     assert report["ledger_count"] == 3
     assert report["first_checkpoint_number"] == 1
     assert report["last_checkpoint_number"] == 3
@@ -61,6 +63,7 @@ def test_empty_ledger_reports_empty_verdict():
     system, _emit = _system_with_journal_driver()
     report = system.verify_checkpoint_chain()
     assert report["verdict"] == "empty"
+    assert report["restorable"] is False
     assert report["ledger_count"] == 0
     assert report["first_checkpoint_number"] is None
     system.cleanup()
@@ -77,6 +80,7 @@ def test_empty_seal_windows_list_without_breaking_the_verdict():
     marker_id = system.create_checkpoint()
     report = system.verify_checkpoint_chain()
     assert report["verdict"] == "intact"
+    assert report["restorable"] is True
     assert report["empty_windows"] == [marker_id]
     system.cleanup()
 
@@ -94,6 +98,7 @@ def test_retention_dropout_reports_truncated_prefix_and_mints_no_duplicates():
         system.create_checkpoint()
     report = system.verify_checkpoint_chain()
     assert report["verdict"] == "truncated_prefix"
+    assert report["restorable"] is False
     assert report["first_checkpoint_number"] == 2
     assert report["dropped_prefix_count"] == 1
     assert report["breaks"] == []
@@ -127,6 +132,7 @@ def test_full_dropout_restart_is_detected_by_the_first_window():
     assert report["first_checkpoint_number"] == 1
     assert report["dropped_prefix_count"] == 0
     assert report["verdict"] == "truncated_prefix"
+    assert report["restorable"] is False
     system.cleanup()
 
 
@@ -143,6 +149,7 @@ def test_missing_middle_crystal_reports_broken_with_evidence():
     system._checkpoint_crystals_by_id.pop(seal_ids[1]).cleanup()
     report = system.verify_checkpoint_chain()
     assert report["verdict"] == "broken"
+    assert report["restorable"] is False
     kinds = sorted(row["kind"] for row in report["breaks"])
     assert kinds == ["checkpoint_number_gap", "window_discontinuity"]
     system.cleanup()
@@ -168,6 +175,7 @@ def test_duplicate_checkpoint_number_reports_broken():
     system._checkpoint_crystals_by_id[forged.id] = forged
     report = system.verify_checkpoint_chain()
     assert report["verdict"] == "broken"
+    assert report["restorable"] is False
     assert any(
         row["kind"] == "duplicate_checkpoint_number"
         for row in report["breaks"]
@@ -186,3 +194,45 @@ def test_unknown_profile_raises_and_cleaned_system_guards():
     system.cleanup()
     with pytest.raises(RuntimeError):
         system.verify_checkpoint_chain()
+
+
+def test_bug159_retention_dropped_baseline_is_not_restorable():
+    """
+    BUG-159 (Critical) regression: with retention cap one, seal Nexus state,
+    then seal an unrelated MutationResearch state. FIFO drops the Nexus
+    baseline, so the surviving single-crystal chain can no longer fold back to
+    the true (Nexus + MutationResearch) world. The integrity verb must refuse
+    to certify it: verdict stays "truncated_prefix" but restorable is False -
+    never the old "a fold yields the post-prefix world" reading that let a
+    restore silently rebuild a world missing the evicted state.
+    """
+    system = PersistenceSystem()
+    system.set_checkpoint_retention(1)
+    system.record_nexus_state(RecordedUnitState.enabled)
+    system.create_checkpoint()
+    system.record_mutation_research_state(RecordedUnitState.enabled)
+    system.create_checkpoint()
+    report = system.verify_checkpoint_chain()
+    # The baseline that uniquely held Nexus state was evicted by retention.
+    assert report["ledger_count"] == 1
+    assert report["dropped_prefix_count"] == 1
+    assert report["verdict"] == "truncated_prefix"
+    assert report["breaks"] == []
+    # BUG-159 fix: the gate must NOT declare the truncated chain usable.
+    assert report["restorable"] is False
+    system.cleanup()
+
+
+def test_intact_chain_is_restorable_control():
+    """
+    Positive control for the restorability gate: a contiguous chain that
+    still holds its baseline (checkpoint 1, sequence 1) is restorable.
+    """
+    system, emit = _system_with_journal_driver()
+    for _round in range(2):
+        emit()
+        system.create_checkpoint()
+    report = system.verify_checkpoint_chain()
+    assert report["verdict"] == "intact"
+    assert report["restorable"] is True
+    system.cleanup()

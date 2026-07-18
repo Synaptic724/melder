@@ -798,8 +798,10 @@ class AssetManagementSystem(Cleanable):
             str: The unit id the record shipped under (its index_id).
 
         Raises:
-            RuntimeError: If cleaned, no manager attached, or the store
-                lane is missing.
+            RuntimeError: If cleaned, no manager attached, the store lane
+                is missing, or the remote store failed (lenient mode) - the
+                graft lane has no local durable fallback, so a failed store
+                is never reported as shipped.
             ValueError: If the record carries no "index_id".
         """
         self.check_cleaned()
@@ -816,12 +818,25 @@ class AssetManagementSystem(Cleanable):
                 "graft_record carries no 'index_id'; pass the dict from "
                 "capture_index_graft(...) unmodified."
             )
-        manager.store_unit(
+        stored = manager.store_unit(
             MeshInterfaceContract.UNIT_KIND_INDEX_GRAFT,
             profile_name,
             index_id,
             dict(graft_record),
         )
+        if not stored:
+            # BUG-162: unlike checkpoint/formation writes, the graft lane
+            # has NO local durable fallback. In lenient mode store_unit
+            # swallows a handler failure into False (and counts it);
+            # returning index_id here would report the graft durable when
+            # its only copy never shipped, so a caller could discard it.
+            raise RuntimeError(
+                "graft {0!r} was not stored: the remote store handler "
+                "failed (store_failure_count incremented) and this lane "
+                "has no local durable fallback. Retry, or set "
+                "strict_uploads to surface the handler error "
+                "directly.".format(index_id)
+            )
         return index_id
 
     def fetch_index_graft(self, index_id: str) -> Dict[str, object]:

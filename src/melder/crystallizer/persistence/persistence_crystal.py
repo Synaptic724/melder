@@ -95,8 +95,9 @@ class PersistenceCrystal(Cleanable):
 
         Raises:
             ValueError:
-                If `checkpoint_id` / `profile_name` is empty or
-                `checkpoint_number` < 1.
+                If `checkpoint_id` / `profile_name` is empty,
+                `checkpoint_number` < 1, or the journal segment is not
+                strictly increasing and within its declared window.
         """
         super().__init__()
         if not checkpoint_id:
@@ -128,6 +129,34 @@ class PersistenceCrystal(Cleanable):
             int(sequence_range[0]),
             int(sequence_range[1]),
         )
+        # Journal integrity (BUG-164): a non-empty capture window must
+        # carry strictly increasing, unique journal sequences that all
+        # fall inside the declared range. Rehydrating a reordered,
+        # duplicated, or out-of-range journal (an imported cached item is
+        # untrusted) would otherwise replay the wrong chronology while the
+        # chain verifier still called the run intact. Empty-window markers
+        # (no entries) are exempt: their inverted range carries no order.
+        first_sequence, last_sequence = self._sequence_range
+        previous_sequence: Optional[int] = None
+        for sequence, _kind, _key in self._journal_segment:
+            if (
+                    previous_sequence is not None
+                    and sequence <= previous_sequence
+            ):
+                raise ValueError(
+                    "journal_segment sequences must be strictly "
+                    "increasing; got {0} after {1}.".format(
+                        sequence, previous_sequence
+                    )
+                )
+            if sequence < first_sequence or sequence > last_sequence:
+                raise ValueError(
+                    "journal_segment sequence {0} falls outside the "
+                    "declared window [{1}, {2}].".format(
+                        sequence, first_sequence, last_sequence
+                    )
+                )
+            previous_sequence = sequence
 
     def cleanup(self) -> None:
         """

@@ -1,3 +1,4 @@
+import copy
 import enum
 from datetime import datetime, timezone
 from typing import Dict, List, Optional
@@ -164,7 +165,7 @@ class TransitionEntry(Cleanable):
             if created_at
             else datetime.now(timezone.utc).isoformat()
         )
-        self._metadata: Dict[str, object] = dict(metadata) if metadata else {}
+        self._metadata: Dict[str, object] = copy.deepcopy(metadata) if metadata else {}
 
     def cleanup(self) -> None:
         """
@@ -305,7 +306,7 @@ class TransitionEntry(Cleanable):
                 Detached metadata mapping.
         """
         self.check_cleaned()
-        return dict(self._metadata)
+        return copy.deepcopy(self._metadata)
 
     def touches_spell_id(self, spell_id: str) -> bool:
         """
@@ -341,7 +342,7 @@ class TransitionEntry(Cleanable):
             "campaign": self._campaign,
             "reason": self._reason,
             "created_at": self._created_at,
-            "metadata": dict(self._metadata),
+            "metadata": copy.deepcopy(self._metadata),
         }
 
     @classmethod

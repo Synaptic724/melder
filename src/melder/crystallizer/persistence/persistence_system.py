@@ -1128,15 +1128,24 @@ class PersistenceSystem(Cleanable):
             The chain-integrity verb: before anyone folds a chain (the
             restore engine trusts its shape), answer whether the retained
             ledger run is contiguous - in checkpoint numbers AND in journal
-            windows - and how much prefix history retention dropped.
+            windows - how much prefix history retention dropped, and whether
+            the run can still be folded back to the true world (restorable).
 
         Contract:
             - Read-only: never mutates the ledger or any profile.
-            - Verdicts: "intact" (contiguous from checkpoint 1),
-              "truncated_prefix" (contiguous run, head dropped by retention;
-              a fold yields the post-prefix world), "broken" (number gap,
-              duplicate number, or non-contiguous windows; folding is
-              unsafe). An empty ledger run reports "empty".
+            - Verdicts: "intact" (contiguous from checkpoint 1 with the
+              baseline retained), "truncated_prefix" (contiguous run whose
+              head was dropped by retention), "broken" (number gap, duplicate
+              number, or non-contiguous windows). An empty ledger run reports
+              "empty".
+            - Restorability (BUG-159): only an "intact" chain is `restorable`.
+              Once retention drops the prefix, the evicted baseline may have
+              carried live state that no surviving incremental supersedes, and
+              this read-only verb cannot prove otherwise from structure alone;
+              folding a truncated/broken/empty chain is NOT guaranteed to
+              reconstruct the true world, so `restorable` is False. Callers
+              must gate any fold on `restorable`, never on structural
+              contiguity alone.
             - Empty seal windows (first == last + 1) are legal markers and
               never break the verdict; they are listed for visibility.
 
@@ -1149,7 +1158,7 @@ class PersistenceSystem(Cleanable):
                 {"profile_name", "ledger_count", "first_checkpoint_number",
                  "last_checkpoint_number", "dropped_prefix_count",
                  "breaks": [evidence rows], "empty_windows": [ids],
-                 "verdict"} - fully detached.
+                 "restorable": bool, "verdict"} - fully detached.
 
         Raises:
             RuntimeError:
@@ -1185,6 +1194,7 @@ class PersistenceSystem(Cleanable):
                     "dropped_prefix_count": 0,
                     "breaks": [],
                     "empty_windows": [],
+                    "restorable": False,
                     "verdict": "empty",
                 }
             previous = None
@@ -1246,6 +1256,15 @@ class PersistenceSystem(Cleanable):
                 verdict = "truncated_prefix"
             else:
                 verdict = "intact"
+            # BUG-159 (Critical): a fold only reconstructs the true world when
+            # the whole baseline chain survives. A truncated_prefix run is
+            # structurally contiguous, but its dropped baseline may have held
+            # live state no surviving incremental re-captures - and this verb
+            # sees only structure, never payloads, so it cannot prove the loss
+            # away. Fail closed: certify restorable ONLY for a fully intact
+            # chain; retention truncation, breaks, and emptiness are all
+            # unrestorable.
+            restorable = verdict == "intact"
             return {
                 "profile_name": resolved_name,
                 "ledger_count": len(run),
@@ -1254,6 +1273,7 @@ class PersistenceSystem(Cleanable):
                 "dropped_prefix_count": dropped_prefix,
                 "breaks": breaks,
                 "empty_windows": empty_windows,
+                "restorable": restorable,
                 "verdict": verdict,
             }
 

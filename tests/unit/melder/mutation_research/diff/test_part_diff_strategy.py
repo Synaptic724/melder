@@ -125,3 +125,31 @@ def test_parts_strategy_cleanup_guards_dispatch() -> None:
 
     with pytest.raises(RuntimeError):
         strategy.diff(_material(LEFT, "a"), _material(RIGHT, "b"))
+
+
+def test_custody_absence_is_not_reported_as_module_removal() -> None:
+    """
+    Regression (BUG-043): a module whose text custody was absent on one
+    side (fingerprint retained) landed in `removed_modules` as if it were
+    structurally deleted. Corrected behavior: modules known on both sides
+    where at least one side lacks text report `text_unavailable_modules`;
+    `removed_modules` means the module is structurally GONE from the right
+    side (no text AND no fingerprint).
+    """
+    strategy = PartDiffStrategy()
+    left = {
+        "spell_id": "sha-left",
+        "sources": {"mod.a": "def f():\n    return 1\n"},
+        "fingerprints": {"mod.a": "f" * 64},
+    }
+    right = {
+        "spell_id": "sha-right",
+        "sources": {},
+        "fingerprints": {"mod.a": "f" * 64},
+    }
+
+    result = strategy.diff(left, right)
+
+    assert result["text_unavailable_modules"] == ["mod.a"]
+    assert result["removed_modules"] == []
+    assert result["added_modules"] == []

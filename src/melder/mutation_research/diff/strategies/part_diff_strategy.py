@@ -74,7 +74,8 @@ class PartDiffStrategy(DiffStrategy):
             Dict[str, object]:
                 Verdict payload with `identical`, `added_modules`,
                 `removed_modules`, `changed_modules`, `identical_modules`,
-                `text_unavailable_modules`, and per-module part detail
+                `text_unavailable_modules` (modules known on both sides where at
+                least one side lacks text custody), and per-module part detail
                 under `module_reports`.
         """
         self.check_cleaned()
@@ -82,11 +83,20 @@ class PartDiffStrategy(DiffStrategy):
         right_sources = self._string_sources(right_material)
         left_names = set(left_sources)
         right_names = set(right_sources)
-        both_prints = self._fingerprint_union(left_material, right_material)
 
-        added = sorted(right_names - left_names)
-        removed = sorted(left_names - right_names)
-        text_unavailable = sorted(both_prints - left_names - right_names)
+        # Structural truth rides EVERYTHING a side knows (text custody OR
+        # fingerprint); custody absence is a text-availability fact, never
+        # a structural deletion (BUG-043).
+        left_prints = self._fingerprints(left_material)
+        right_prints = self._fingerprints(right_material)
+        left_known = left_names | left_prints
+        right_known = right_names | right_prints
+
+        added = sorted(right_known - left_known)
+        removed = sorted(left_known - right_known)
+        text_unavailable = sorted(
+            (left_known & right_known) - (left_names & right_names)
+        )
         changed: List[str] = []
         identical: List[str] = []
         module_reports: Dict[str, object] = {}
@@ -255,6 +265,28 @@ class PartDiffStrategy(DiffStrategy):
             for name, value in mapping.items()
             if isinstance(value, str)
         }
+
+    @staticmethod
+    def _fingerprints(material: Dict[str, object]) -> set:
+        """
+        Return one side's fingerprint-known module names.
+
+        Args:
+            material:
+                Resolver material payload.
+
+        Returns:
+            set:
+                Names present in this side's fingerprints mapping.
+        """
+        mapping = (
+            material.get("fingerprints")
+            if isinstance(material, dict)
+            else None
+        )
+        if not isinstance(mapping, dict):
+            return set()
+        return {str(name) for name in mapping}
 
     @staticmethod
     def _fingerprint_union(

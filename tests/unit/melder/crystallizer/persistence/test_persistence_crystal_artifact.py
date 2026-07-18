@@ -174,3 +174,80 @@ def test_wipe_is_cleanup_and_blocks_further_use():
         crystal.describe()
     with pytest.raises(RuntimeError):
         crystal.to_cached_item()
+
+
+def test_bug164_reordered_journal_is_rejected():
+    """
+    BUG-164 regression: a non-monotonic journal segment (sequences out of
+    order) is rejected at construction, so a reordered import can never
+    replay the wrong chronology while the chain verifier still calls the run
+    intact.
+    """
+    with pytest.raises(ValueError):
+        PersistenceCrystal(
+            checkpoint_id="01TESTULID0000000000000000",
+            profile_name="default",
+            checkpoint_number=3,
+            description="reordered",
+            journal_segment=[(5, "spell_removed", "sha-b"), (4, "spell_crystal", "sha-a")],
+            captured_payloads={},
+            sequence_range=(4, 5),
+        )
+
+
+def test_bug164_duplicate_journal_sequence_is_rejected():
+    """BUG-164 regression: duplicate journal sequences are not strictly increasing."""
+    with pytest.raises(ValueError):
+        PersistenceCrystal(
+            checkpoint_id="01TESTULID0000000000000000",
+            profile_name="default",
+            checkpoint_number=3,
+            description="duplicate",
+            journal_segment=[(4, "k", "a"), (4, "k", "b")],
+            captured_payloads={},
+            sequence_range=(4, 4),
+        )
+
+
+def test_bug164_out_of_range_journal_sequence_is_rejected():
+    """BUG-164 regression: a journal sequence outside the declared window is rejected."""
+    with pytest.raises(ValueError):
+        PersistenceCrystal(
+            checkpoint_id="01TESTULID0000000000000000",
+            profile_name="default",
+            checkpoint_number=3,
+            description="out_of_range",
+            journal_segment=[(4, "k", "a"), (9, "k", "b")],
+            captured_payloads={},
+            sequence_range=(4, 5),
+        )
+
+
+def test_bug164_reordered_cached_item_is_rejected_on_import():
+    """
+    BUG-164 regression: from_cached_item (the untrusted import path the audit
+    names) must reject a cached item whose journal_segment was reordered on
+    the wire, not rehydrate a chronology-inverted crystal.
+    """
+    good = _crystal()
+    item = good.to_cached_item()
+    item["journal_segment"] = [[5, "spell_removed", "sha-b"], [4, "spell_crystal", "sha-a"]]
+    with pytest.raises(ValueError):
+        PersistenceCrystal.from_cached_item(item)
+
+
+def test_bug164_empty_window_marker_still_allowed():
+    """
+    BUG-164 guard: an empty-window marker (no entries, inverted range) carries
+    no order and must remain constructible.
+    """
+    marker = PersistenceCrystal(
+        checkpoint_id="01TESTULID0000000000000000",
+        profile_name="default",
+        checkpoint_number=3,
+        description="marker",
+        journal_segment=[],
+        captured_payloads={},
+        sequence_range=(6, 5),
+    )
+    assert marker.describe()["journal_entry_count"] == 0

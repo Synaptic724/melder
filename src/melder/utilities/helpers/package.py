@@ -472,8 +472,11 @@ class Package(Cleanable, Generic[P, R]):
             - Snapshots the current callable and bound args/kwargs under lock.
             - Hashes the callable by identity and the bound arguments by value.
         """
-        # copy under lock, then compute hash lock-free
+        # Freeze-on-hash: equality/hash derive from the mutable bindings, so the
+        # package is frozen the first time it is hashed to keep its hash and
+        # set/dict membership stable for its lifetime (binding mutators then raise).
         with self._lock:
+            self._frozen = True
             f = self._wrapped_func
             a = tuple(self._args)
             k = frozenset(self._kwargs.items())
@@ -656,7 +659,12 @@ class Package(Cleanable, Generic[P, R]):
             raise TypeError("Tasks input cannot be None.")
 
         # Single task input still normalizes to a one-element package list.
-        if isinstance(tasks, Package) or callable(tasks):
+        # An existing Package is returned as-is so its bound args/kwargs survive;
+        # only a raw callable is wrapped. Routing a Package through _normalize_task
+        # (which unwraps to the inner callable) would silently drop its bindings.
+        if isinstance(tasks, Package):
+            return [tasks]
+        if callable(tasks):
             return [Package(Package._normalize_task(tasks))]
 
         if not isinstance(tasks, Iterable):
@@ -825,9 +833,13 @@ class Package(Cleanable, Generic[P, R]):
 
     @property
     def kwargs(self) -> Dict:
-        """Return the live stored keyword-argument mapping."""
+        """Return a copy of the stored keyword arguments.
+
+        A copy is returned (mirroring `args`) so external mutation cannot
+        bypass `bind()`/`freeze()` and leave the cached signature stale.
+        """
         with self._lock:
-            return self._kwargs
+            return dict(self._kwargs)
 
     @property
     def signature(self) ->  Any:
@@ -871,8 +883,17 @@ class Package(Cleanable, Generic[P, R]):
         returns the wrapped callable reference itself when the package does not
         define `item`.
         """
+        # object.__getattribute__ avoids re-entering __getattr__ (no recursion).
+        # After cleanup the owned slots (_func, _lock, ...) are deleted, so any
+        # access lands here; surface the canonical cleaned-object error.
         try:
-            return self._func
+            cleaned = object.__getattribute__(self, "_cleaned")
+        except AttributeError:
+            cleaned = False
+        if cleaned:
+            raise RuntimeError(f"{type(self).__name__} has already been cleaned. ")
+        try:
+            return object.__getattribute__(self, "_func")
         except AttributeError:
             raise AttributeError(item) from None
 
