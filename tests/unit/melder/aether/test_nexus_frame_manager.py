@@ -913,6 +913,27 @@ def test_nexus_frame_manager_validate_frame_budget_matrix(
     manager._validate_frame_budget(candidate_frame_names)
 
 
+def test_nexus_frame_manager_validate_frame_budget_counts_inflight_reservations() -> None:
+    """
+    In-flight reservations consume the Nexus frame budget (BUG-051 regression).
+
+    A concurrent create records its frame name in ``_creating_frame_names`` under
+    ``_lock`` before it publishes into ``_frames_by_name``. ``_validate_frame_budget``
+    must count those reservations, otherwise a second create validated during that
+    window observes only published frames and slips past ``max_nexus_frame_count``.
+    With a cap of one and one name already reserved, a new candidate must be refused.
+    """
+    manager, _ = _build_manager(max_nexus_frame_count=1)
+    manager._creating_frame_names.add("frame_a")
+
+    with pytest.raises(ValueError, match="frame cap has been reached"):
+        manager._validate_frame_budget(("frame_b",))
+
+    # A revalidation of the already-reserved name is not double-counted: it is
+    # excluded from the candidate set, so the single reservation stays within cap.
+    manager._validate_frame_budget(("frame_a",))
+
+
 def test_nexus_frame_manager_bootstrap_root_conduit_binds_and_refreshes_overview(
         monkeypatch: pytest.MonkeyPatch,
 ) -> None:

@@ -542,3 +542,58 @@ def test_restore_network_refuses_snapshot_without_default_lane() -> None:
         research_set.default_lane.lane_id
     )
     research_set.cleanup()
+
+
+def test_forced_cross_type_join_is_journaled_as_forced() -> None:
+    """
+    Regression (BUG-040): a clean experiment->development join that REQUIRED
+    force=True (armed lane-type gate) journaled `forced: False` because the
+    metadata recorded divergence only. Corrected behavior: the audit trail
+    records that type policy was overridden.
+    """
+    research_set = ResearchSet("default")
+    research_set.set_lane_type_enforcement(True)
+    research_set.register_spell("sha-a")
+    research_set.create_lane(
+        "exp",
+        attach_to="default",
+        attach_at_spell_id="sha-a",
+        lane_type="experiment",
+    )
+    research_set.register_spell(
+        "sha-b", lane="exp", parent_spell_ids=["sha-a"],
+    )
+
+    with pytest.raises(RuntimeError, match="Type-mixing"):
+        research_set.join("exp", into="default")
+    research_set.join("exp", into="default", force=True)
+
+    joined = [
+        entry
+        for entry in research_set.describe_composition()["journal"]["entries"]
+        if entry["act"] == "joined"
+    ]
+    assert joined[-1]["metadata"]["forced"] is True
+    research_set.cleanup()
+
+
+def test_empty_campaign_stamp_refused_at_the_write_seam() -> None:
+    """
+    Regression (BUG-047): write paths accepted campaign="" while
+    campaign_view("") rejects the same identifier - public writes created
+    records the public query API could not address. Corrected behavior:
+    every campaign-accepting verb refuses empty stamps up front.
+    """
+    research_set = ResearchSet("default")
+
+    with pytest.raises(ValueError, match="non-empty"):
+        research_set.register_spell("sha-a", campaign="")
+    with pytest.raises(ValueError, match="non-empty"):
+        research_set.record_world_entry("sha-b", campaign="")
+
+    # Valid stamps still record and stay queryable.
+    research_set.register_spell("sha-a", campaign="alpha")
+    view = research_set.campaign_view("alpha")
+    assert view["campaign"] == "alpha"
+    assert [n["spell_id"] for n in view["nodes"]] == ["sha-a"]
+    research_set.cleanup()

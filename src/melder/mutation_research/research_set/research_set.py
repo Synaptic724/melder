@@ -253,6 +253,33 @@ class ResearchSet(Cleanable):
             "group" if isinstance(node, GroupedResearchNode) else "spell"
         )
 
+    @staticmethod
+    def _validate_campaign(campaign: Optional[str]) -> None:
+        """
+        Refuse campaign stamps the public query API cannot address.
+
+        Purpose:
+            Write/read agreement (BUG-047): `campaign_view` rejects empty
+            identifiers, so the write seams must refuse them too - a public
+            write may never create a record the public query API cannot
+            reach.
+
+        Args:
+            campaign:
+                Optional research-campaign stamp to validate.
+
+        Raises:
+            ValueError:
+                If a campaign is supplied but is not a non-empty string.
+        """
+        if campaign is not None and (
+                not isinstance(campaign, str) or not campaign
+        ):
+            raise ValueError(
+                "campaign must be a non-empty string when supplied; an "
+                "empty stamp would be unqueryable through campaign_view."
+            )
+
     def _create_lane_locked(
             self,
             name: str,
@@ -680,6 +707,7 @@ class ResearchSet(Cleanable):
                 held by that lane.
         """
         self.check_cleaned()
+        self._validate_campaign(campaign)
         if (attach_to is None) != (attach_at_spell_id is None):
             raise ValueError(
                 "attach_to and attach_at_spell_id must be supplied together."
@@ -771,6 +799,7 @@ class ResearchSet(Cleanable):
                 composition (group) identity instead of a spell version.
         """
         self.check_cleaned()
+        self._validate_campaign(campaign)
         with self._lock:
             target = self._resolve_lane_locked(
                 lane if lane is not None else ResearchSet.DEFAULT_LANE_NAME,
@@ -889,6 +918,7 @@ class ResearchSet(Cleanable):
                 composition names a spell identity.
         """
         self.check_cleaned()
+        self._validate_campaign(campaign)
         with self._lock:
             target = self._resolve_lane_locked(
                 lane if lane is not None else ResearchSet.DEFAULT_LANE_NAME,
@@ -1028,6 +1058,7 @@ class ResearchSet(Cleanable):
                 empty.
         """
         self.check_cleaned()
+        self._validate_campaign(campaign)
         with self._lock:
             lane_id = self._residence.residence_of(previous_group_id)
             if lane_id is None:
@@ -1113,6 +1144,7 @@ class ResearchSet(Cleanable):
                 version.
         """
         self.check_cleaned()
+        self._validate_campaign(campaign)
         with self._lock:
             lane_id = self._residence.residence_of(group_id)
             if lane_id is None:
@@ -1213,6 +1245,7 @@ class ResearchSet(Cleanable):
                 composition (group) identity instead of a spell version.
         """
         self.check_cleaned()
+        self._validate_campaign(campaign)
         with self._lock:
             if self._residence.is_resident(spell_id):
                 return None
@@ -1309,6 +1342,7 @@ class ResearchSet(Cleanable):
                 If `to_spell_id` is not resident in this set.
         """
         self.check_cleaned()
+        self._validate_campaign(campaign)
         with self._lock:
             to_lane_id = self._residence.residence_of(to_spell_id)
             if to_lane_id is None:
@@ -1368,6 +1402,7 @@ class ResearchSet(Cleanable):
                 If lanes or the anchor node do not resolve.
         """
         self.check_cleaned()
+        self._validate_campaign(campaign)
         with self._lock:
             lane = self._resolve_lane_locked(lane_ref)
             target = self._resolve_lane_locked(onto)
@@ -1422,6 +1457,7 @@ class ResearchSet(Cleanable):
                 If the lane is not open or holds no anchor.
         """
         self.check_cleaned()
+        self._validate_campaign(campaign)
         with self._lock:
             lane = self._resolve_lane_locked(lane_ref)
             previous_anchor = lane.anchor_spell_id
@@ -1491,6 +1527,7 @@ class ResearchSet(Cleanable):
                 error names both tips).
         """
         self.check_cleaned()
+        self._validate_campaign(campaign)
         with self._lock:
             source = self._resolve_lane_locked(lane_ref)
             target = self._resolve_lane_locked(into)
@@ -1565,11 +1602,11 @@ class ResearchSet(Cleanable):
                 f"Receiving lane '{target.name}' is "
                 f"{target.state.value}; join requires an open receiver."
             )
-        if (
-                self._lane_type_enforcement
-                and source.lane_type is not target.lane_type
-                and not force
-        ):
+        type_mixing = (
+            self._lane_type_enforcement
+            and source.lane_type is not target.lane_type
+        )
+        if type_mixing and not force:
             raise RuntimeError(
                 f"Type-mixing join: lane '{source.name}' is "
                 f"'{source.lane_type.value}' while receiver "
@@ -1630,7 +1667,10 @@ class ResearchSet(Cleanable):
                 "joined_lane_id": source.lane_id,
                 "joined_lane_name": source.name,
                 "collapse": collapse,
-                "forced": bool(not clean),
+                # Audit truth (BUG-040): forced records whether ANY policy
+                # was overridden - divergence OR the armed lane-type gate -
+                # not merely divergence.
+                "forced": bool(not clean or type_mixing),
                 "moved_spell_ids": moved_spell_ids,
             },
         )
@@ -1668,6 +1708,7 @@ class ResearchSet(Cleanable):
                 If targeting the default lane or a non-open lane.
         """
         self.check_cleaned()
+        self._validate_campaign(campaign)
         with self._lock:
             lane = self._resolve_lane_locked(lane_ref)
             if lane.name == ResearchSet.DEFAULT_LANE_NAME:

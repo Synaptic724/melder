@@ -255,7 +255,8 @@ class ResearchJournal(Cleanable):
 
         Raises:
             ValueError:
-                If the payload shape is invalid.
+                If the payload shape is invalid, or restored entries are
+                not strictly ascending by sequence (corrupt history).
         """
         if not isinstance(payload, dict):
             raise ValueError("payload must be a dict produced by describe().")
@@ -266,11 +267,28 @@ class ResearchJournal(Cleanable):
         rebuilt: List[TransitionEntry] = []
         for entry_payload in entry_payloads:
             rebuilt.append(TransitionEntry.from_payload(entry_payload))
+        # Sequence integrity (BUG-041): restored journal order stays
+        # monotonic and sequences are never reused, so entries must arrive
+        # strictly ascending and the counter must clear every one of them.
+        previous_sequence = 0
+        for entry in rebuilt:
+            if entry.sequence <= previous_sequence:
+                raise ValueError(
+                    f"Journal payload entries are not strictly ascending: "
+                    f"sequence {entry.sequence} follows "
+                    f"{previous_sequence}. The payload is corrupt; "
+                    f"refusing to hydrate a reusable history."
+                )
+            previous_sequence = entry.sequence
+        minimum_next = rebuilt[-1].sequence + 1 if rebuilt else 1
         next_sequence = payload.get("next_sequence")
         with journal._lock:
             journal._entries.extend(rebuilt)
-            if isinstance(next_sequence, int) and next_sequence >= 1:
+            if (
+                    isinstance(next_sequence, int)
+                    and next_sequence >= minimum_next
+            ):
                 journal._next_sequence = next_sequence
-            elif rebuilt:
-                journal._next_sequence = rebuilt[-1].sequence + 1
+            else:
+                journal._next_sequence = minimum_next
         return journal

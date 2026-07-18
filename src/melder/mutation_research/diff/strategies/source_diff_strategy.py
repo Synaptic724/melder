@@ -100,6 +100,20 @@ class SourceDiffStrategy(DiffStrategy):
                         "text_unavailable": False,
                         "unified_diff": diff_lines,
                     }
+                elif left_text != right_text:
+                    # splitlines() erases a terminal-newline delta
+                    # (BUG-042); the whole-module-text contract compares
+                    # COMPLETE recorded text, so surface it explicitly.
+                    changed.append(name)
+                    module_diffs[name] = {
+                        "text_unavailable": False,
+                        "unified_diff": [
+                            f"--- left/{name}",
+                            f"+++ right/{name}",
+                            "@@ terminal newline differs "
+                            "(texts otherwise line-identical) @@",
+                        ],
+                    }
                 else:
                     identical.append(name)
             else:

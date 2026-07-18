@@ -117,3 +117,34 @@ def test_journal_cleanup_is_idempotent_and_guards_reads() -> None:
     assert journal.cleaned is True
     with pytest.raises(RuntimeError):
         journal.record(TransitionAct.archived, "lane-1")
+
+
+def test_from_payload_refuses_reversed_or_reusable_sequences() -> None:
+    """
+    Regression (BUG-041): hydration accepted any `next_sequence >= 1`, so
+    an entry at sequence 10 with `next_sequence=1` made the next public
+    record REUSE sequence 1 after 10 (order became [(10, ...), (1, ...)]).
+    Corrected behavior: non-ascending restored entries refuse loudly, and
+    a too-low counter clears every hydrated entry.
+    """
+    journal = ResearchJournal()
+    journal.record(TransitionAct.registered, "lane-1", to_spell_id="a")
+    payload = journal.describe()
+    payload["next_sequence"] = 1  # claims reuse of an existing sequence
+
+    rebuilt = ResearchJournal.from_payload(payload)
+    entry = rebuilt.record(
+        TransitionAct.registered, "lane-1", to_spell_id="b",
+    )
+
+    assert entry.sequence == 2  # counter cleared the hydrated entry
+
+    reversed_payload = journal.describe()
+    reversed_payload["entries"] = list(reversed(payload["entries"]))
+    journal.record(TransitionAct.registered, "lane-1", to_spell_id="c")
+    two_entry_payload = journal.describe()
+    two_entry_payload["entries"] = list(
+        reversed(two_entry_payload["entries"])
+    )
+    with pytest.raises(ValueError, match="strictly ascending"):
+        ResearchJournal.from_payload(two_entry_payload)

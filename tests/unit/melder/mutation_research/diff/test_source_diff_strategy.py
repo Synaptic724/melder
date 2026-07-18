@@ -105,3 +105,25 @@ def test_strategy_cleanup_guards_use() -> None:
     assert strategy.cleaned is True
     with pytest.raises(RuntimeError):
         strategy.diff(_material(), _material())
+
+
+def test_terminal_newline_delta_reports_changed() -> None:
+    """
+    Regression (BUG-042): splitlines() erased a terminal-newline delta, so
+    "x = 1\n" versus "x = 1" reported identical=True with no changed
+    modules. Corrected behavior: the whole-module-text contract compares
+    COMPLETE recorded text - the module reports changed with an explicit
+    terminal-newline marker row.
+    """
+    strategy = SourceDiffStrategy()
+    left = _material(sources={"mod.a": "x = 1\n"})
+    right = _material(sources={"mod.a": "x = 1"})
+
+    result = strategy.diff(left, right)
+
+    assert result["identical"] is False
+    assert result["changed_modules"] == ["mod.a"]
+    assert any(
+        "terminal newline" in row
+        for row in result["module_diffs"]["mod.a"]["unified_diff"]
+    )
