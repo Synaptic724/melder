@@ -1129,6 +1129,27 @@ class MutationResearch(Cleanable):
     # Derived diff reads
     # ------------------------------------------------------------------
 
+    def is_composition(self, identity: str) -> bool:
+        """
+        Return whether one identity resolves to a recorded composition.
+
+        Purpose:
+            Public kind probe for mediating seams (the codegen room's
+            polymorphic verbs pick kind-aware strategy defaults with it)
+            without exposing node internals.
+
+        Args:
+            identity:
+                Spell or composition identity to classify.
+
+        Returns:
+            bool:
+                True when the identity is a recorded GroupedResearchNode
+                in any owned set; False otherwise (including unknown).
+        """
+        self.check_cleaned()
+        return self._as_group_node(identity) is not None
+
     def diff_research(
             self,
             left_spell_id: str,
@@ -2655,7 +2676,9 @@ class MutationResearch(Cleanable):
         Returns:
             Dict[str, object]:
                 `{"group_id", "member_spell_ids", "parent_group_ids",
-                "members"}` material payload.
+                "ancestor_group_ids", "members"}` material payload (each
+                member row carries its lane join plus transitive
+                `ancestor_spell_ids`).
         """
         self.check_cleaned()
         node = self._locate_group_node(group_id)
@@ -2670,6 +2693,7 @@ class MutationResearch(Cleanable):
                     "lane_state": None,
                     "lane_type": None,
                     "lane_tip": None,
+                    "ancestor_spell_ids": [],
                 }
                 continue
             lane = research_set.get_lane(lane_id)
@@ -2679,13 +2703,70 @@ class MutationResearch(Cleanable):
                 "lane_state": lane.state.value,
                 "lane_type": lane.lane_type.value,
                 "lane_tip": lane.tip_spell_id,
+                # Version truth for honest move pairing (BUG-046): the
+                # member's TRANSITIVE spell ancestry, so the strategy can
+                # require a real version relation instead of inferring one
+                # from a shared lane.
+                "ancestor_spell_ids": self._transitive_ancestors(
+                    research_set, member, kind="spell",
+                ),
             }
         return {
             "group_id": node.group_id,
             "member_spell_ids": node.member_spell_ids,
             "parent_group_ids": node.parent_group_ids,
+            # Transitive composition ancestry (BUG-045): the documented
+            # parent-chain relationship includes every recorded ancestor,
+            # not just direct parents.
+            "ancestor_group_ids": self._transitive_ancestors(
+                research_set, node.group_id, kind="group",
+            ),
             "members": members,
         }
+
+    def _transitive_ancestors(
+            self,
+            research_set: ResearchSet,
+            identity: str,
+            *,
+            kind: str,
+    ) -> List[str]:
+        """
+        Walk one identity's recorded ancestry chain to closure.
+
+        Args:
+            research_set:
+                Owning set to resolve residence and nodes through.
+            identity:
+                Spell or composition identity to start from.
+            kind:
+                "spell" walks parent_spell_ids; "group" walks
+                parent_group_ids.
+
+        Returns:
+            List[str]:
+                Sorted transitive ancestor identities (cycle-safe; the
+                starting identity is excluded; unresident links end their
+                branch - ancestry never guesses).
+        """
+        seen: set = set()
+        frontier: List[str] = [identity]
+        while frontier:
+            current = frontier.pop()
+            lane_id = research_set.residence_of(current)
+            if lane_id is None:
+                continue
+            node = research_set.get_lane(lane_id).get_node(current)
+            parents = (
+                node.parent_group_ids
+                if kind == "group"
+                else node.parent_spell_ids
+            )
+            for parent in parents:
+                if parent not in seen and parent != identity:
+                    seen.add(parent)
+                    frontier.append(parent)
+        return sorted(seen)
 
     def group_diff_research(
             self,

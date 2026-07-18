@@ -174,12 +174,14 @@ def test_source_view_honest_misses() -> None:
 def test_foresight_reads_refuse_dead_custody() -> None:
     """
     Verify the loud posture: foresight reads ask for recorded truth, so a
-    cleaned/inactive crystallizer refuses teach-grade instead of
-    fabricating empty answers.
+    non-recording (inactive) crystallizer refuses teach-grade instead of
+    fabricating empty answers. (Owner ruling 2026-07-18: a CLEANED
+    crystallizer is unreachable while MR serves reads - teardown means the
+    whole system is down - so inactive is the one real dead-custody state.)
     """
     aether = _mock_aether()
     root = _activated_root(aether)
-    aether._crystallizer.cleaned = True
+    aether._crystallizer.activated = False
 
     with pytest.raises(RuntimeError, match="custody is unavailable"):
         root.source_view("sha-1")

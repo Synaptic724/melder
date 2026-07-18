@@ -726,3 +726,81 @@ def test_composition_diff_refuses_unknown_strategy() -> None:
     verdict = root.diff_research(left.group_id, right.group_id)
     assert verdict["strategy"] == "members"
     assert verdict["result"]["added_members"] == [donor]
+
+
+def test_group_diff_never_fabricates_moves_for_unrelated_identities() -> None:
+    """
+    Regression (BUG-046): same-lane pairing treated two UNRELATED
+    auto-recorded identities sharing the catch-all default lane as one
+    object at two versions (`version_moved=[A -> B]`). Corrected behavior:
+    a move requires a real ancestry relation; unrelated identities report
+    as honest removals/additions.
+    """
+    aether = _mock_aether(recording=True)
+    root = MutationResearch(aether=aether)
+    unrelated_a = "a" * 64
+    unrelated_b = "b" * 64
+    root.record_world_entry(unrelated_a)
+    root.record_world_entry(unrelated_b)
+    research_set = root.research_set()
+    left = research_set.register_group([unrelated_a])
+    right = research_set.register_group([unrelated_b])
+
+    verdict = root.group_diff_research(left.group_id, right.group_id)
+
+    assert verdict["result"]["version_moved"] == []
+    assert verdict["result"]["removed_members"] == [unrelated_a]
+    assert verdict["result"]["added_members"] == [unrelated_b]
+
+
+def test_group_diff_pairs_true_version_moves() -> None:
+    """
+    Guard against over-correction: a member replaced by its recorded
+    descendant on the same lane still pairs as a version move.
+    """
+    aether = _mock_aether(recording=True)
+    root = MutationResearch(aether=aether)
+    base = "a" * 64
+    descendant = "b" * 64
+    root.record_world_entry(base)
+    research_set = root.research_set()
+    research_set.register_spell(descendant, parent_spell_ids=[base])
+    left = research_set.register_group([base])
+    right = research_set.register_group([descendant])
+
+    verdict = root.group_diff_research(left.group_id, right.group_id)
+
+    moves = verdict["result"]["version_moved"]
+    assert len(moves) == 1
+    assert moves[0]["from_spell_id"] == base
+    assert moves[0]["to_spell_id"] == descendant
+    assert verdict["result"]["added_members"] == []
+    assert verdict["result"]["removed_members"] == []
+
+
+def test_group_ancestry_relation_walks_transitive_parents() -> None:
+    """
+    Regression (BUG-045): `ancestry_related` checked only DIRECT parents,
+    so G1 -> G2 -> G3 reported `group_diff_research(G1, G3)` unrelated.
+    Corrected behavior: the documented parent-chain relationship includes
+    transitive ancestry.
+    """
+    aether = _mock_aether(recording=True)
+    root = MutationResearch(aether=aether)
+    first = "a" * 64
+    second = "b" * 64
+    third = "c" * 64
+    for sha in (first, second, third):
+        root.record_world_entry(sha)
+    research_set = root.research_set()
+    g1 = research_set.register_group([first])
+    g2 = research_set.register_group(
+        [first, second], parent_group_ids=[g1.group_id],
+    )
+    g3 = research_set.register_group(
+        [first, second, third], parent_group_ids=[g2.group_id],
+    )
+
+    verdict = root.group_diff_research(g1.group_id, g3.group_id)
+
+    assert verdict["result"]["ancestry_related"] is True

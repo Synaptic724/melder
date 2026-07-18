@@ -78,6 +78,8 @@ class MemberDiffStrategy(GroupDiffStrategy):
 
         left_lanes = self._lane_join(left_material, raw_removed)
         right_lanes = self._lane_join(right_material, raw_added)
+        left_ancestry = self._member_ancestry(left_material)
+        right_ancestry = self._member_ancestry(right_material)
         version_moved: List[Dict[str, object]] = []
         moved_from: set = set()
         moved_to: set = set()
@@ -86,7 +88,19 @@ class MemberDiffStrategy(GroupDiffStrategy):
                 (
                     (r_lane_id, to_spell_id)
                     for r_lane_id, to_spell_id, _ in right_lanes
-                    if r_lane_id == lane_id and to_spell_id not in moved_to
+                    if r_lane_id == lane_id
+                    and to_spell_id not in moved_to
+                    # Version truth (BUG-046): a move is the SAME object at
+                    # another version - the pair must be ancestry-related
+                    # in either direction. A shared catch-all lane alone
+                    # never fabricates movement; unrelated identities stay
+                    # honest additions/removals.
+                    and (
+                        from_spell_id
+                        in right_ancestry.get(to_spell_id, ())
+                        or to_spell_id
+                        in left_ancestry.get(from_spell_id, ())
+                    )
                 ),
                 None,
             )
@@ -119,10 +133,68 @@ class MemberDiffStrategy(GroupDiffStrategy):
             "removed_members": removed,
             "version_moved": version_moved,
             "unchanged_members": unchanged,
+            # Transitive parent-chain truth (BUG-045): related through ANY
+            # recorded ancestor hop, not only direct parents; the resolver
+            # material carries the closure, direct parents remain the
+            # fallback for detached older payloads.
             "ancestry_related": (
-                left_id in right_parents or right_id in left_parents
+                left_id in right_parents
+                or right_id in left_parents
+                or left_id in self._group_ancestors(right_material)
+                or right_id in self._group_ancestors(left_material)
             ),
         }
+
+
+    @staticmethod
+    def _member_ancestry(material: Dict[str, object]) -> Dict[str, set]:
+        """
+        Extract each member's transitive spell-ancestor set from material.
+
+        Args:
+            material:
+                Resolver material payload.
+
+        Returns:
+            Dict[str, set]:
+                member identity -> ancestor identity set; members without
+                recorded ancestry map to an empty set.
+        """
+        join = material.get("members") if isinstance(material, dict) else None
+        if not isinstance(join, dict):
+            return {}
+        ancestry: Dict[str, set] = {}
+        for spell_id, entry in join.items():
+            raw = (
+                entry.get("ancestor_spell_ids")
+                if isinstance(entry, dict)
+                else None
+            )
+            ancestry[str(spell_id)] = (
+                {str(item) for item in raw} if isinstance(raw, list) else set()
+            )
+        return ancestry
+
+    @staticmethod
+    def _group_ancestors(material: Dict[str, object]) -> set:
+        """
+        Extract one composition's transitive ancestor-id set from material.
+
+        Args:
+            material:
+                Resolver material payload.
+
+        Returns:
+            set:
+                Ancestor composition identities (empty when the payload
+                carries none).
+        """
+        raw = (
+            material.get("ancestor_group_ids")
+            if isinstance(material, dict)
+            else None
+        )
+        return {str(item) for item in raw} if isinstance(raw, list) else set()
 
     @staticmethod
     def _member_set(material: Dict[str, object]) -> set:

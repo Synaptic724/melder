@@ -967,7 +967,7 @@ class CodegenCommandSystem(CommandSystem):
             left_spell_id: str,
             right_spell_id: str,
             *,
-            strategy: str = "structural",
+            strategy: Optional[str] = None,
     ) -> object:
         """
         Return a derived diff between two research identities.
@@ -975,10 +975,13 @@ class CodegenCommandSystem(CommandSystem):
         Args:
             left_spell_id: Left version identity.
             right_spell_id: Right version identity.
-            strategy: Registered diff strategy ("structural" default here -
-                the room's reasoning layer; "source" for whole-module text;
-                "parts" for per-class/function code diffs - the agent's
-                grain choice).
+            strategy: Registered diff strategy. None picks the kind-aware
+                room default: "structural" for spell pairs (the room's
+                reasoning layer; "source" for whole-module text, "parts"
+                for per-class/function grain), and the root's "members"
+                default for composition pairs. An explicit unknown name
+                surfaces the engine's KeyError - the room never silently
+                reroutes a caller's strategy ask (BUG-044 law).
 
         Returns:
             object: Detached diff verdict.
@@ -988,7 +991,18 @@ class CodegenCommandSystem(CommandSystem):
                 action_name="research_diff",
                 frame_name=None,
         ), self._lock:
-            return self._require_live_mutation_research().diff_research(
+            research = self._require_live_mutation_research()
+            if strategy is None and not (
+                    research.is_composition(left_spell_id)
+                    and research.is_composition(right_spell_id)
+            ):
+                strategy = "structural"
+            if strategy is None:
+                return research.diff_research(
+                    left_spell_id,
+                    right_spell_id,
+                )
+            return research.diff_research(
                 left_spell_id,
                 right_spell_id,
                 strategy=strategy,
