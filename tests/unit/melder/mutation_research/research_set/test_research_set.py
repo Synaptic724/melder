@@ -1,3 +1,5 @@
+import threading
+
 import pytest
 
 from melder.mutation_research.research_set.research_lane import LaneState
@@ -377,3 +379,166 @@ def test_set_cleanup_cascades_and_guards() -> None:
     assert lane.cleaned is True
     with pytest.raises(RuntimeError):
         research_set.register_spell("sha-x")
+
+
+def test_group_identity_refused_as_spell_parent() -> None:
+    """
+    Regression (BUG-033): ancestry validation was residency-only, so a
+    composition (group) identity was accepted as a spell parent. Corrected
+    behavior: spell ancestry refuses group identities, naming the kind.
+    """
+    research_set = ResearchSet("default")
+    research_set.register_spell("sha-a")
+    group = research_set.register_group(["sha-a"])
+
+    with pytest.raises(ValueError, match="composition"):
+        research_set.register_spell(
+            "sha-b", parent_spell_ids=[group.group_id],
+        )
+    research_set.cleanup()
+
+
+def test_group_identity_refused_as_group_member() -> None:
+    """
+    Regression (BUG-033): membership validation was residency-only, so a
+    composition identity was accepted as a member of another composition
+    (G2=[G1]). Corrected behavior: members must be declared spell versions.
+    """
+    research_set = ResearchSet("default")
+    research_set.register_spell("sha-a")
+    group = research_set.register_group(["sha-a"])
+
+    with pytest.raises(ValueError, match="compositions pin declared"):
+        research_set.register_group([group.group_id])
+    research_set.cleanup()
+
+
+def test_spell_identity_refused_as_group_parent() -> None:
+    """
+    Regression (BUG-033 reverse leak): `parent_group_ids` validation was
+    residency-only, so a SPELL identity was accepted as composition
+    ancestry. Corrected behavior: composition ancestry must reference
+    recorded compositions.
+    """
+    research_set = ResearchSet("default")
+    research_set.register_spell("sha-a")
+    research_set.register_spell("sha-b")
+    research_set.register_group(["sha-a"])
+
+    with pytest.raises(ValueError, match="spell\\s+identity"):
+        research_set.register_group(["sha-b"], parent_group_ids=["sha-a"])
+    research_set.cleanup()
+
+
+def test_group_ancestry_still_accepts_recorded_compositions() -> None:
+    """
+    Guard against over-rejection: proper composition ancestry (a recorded
+    group as `parent_group_ids`) and proper spell ancestry keep recording.
+    """
+    research_set = ResearchSet("default")
+    research_set.register_spell("sha-a")
+    research_set.register_spell("sha-b")
+    parent_group = research_set.register_group(["sha-a"])
+
+    child_group = research_set.register_group(
+        ["sha-a", "sha-b"], parent_group_ids=[parent_group.group_id],
+    )
+    child_spell = research_set.register_spell(
+        "sha-c", parent_spell_ids=["sha-a", "sha-b"],
+    )
+
+    assert child_group.parent_group_ids == [parent_group.group_id]
+    assert child_spell.parent_spell_ids == ["sha-a", "sha-b"]
+    research_set.cleanup()
+
+
+def test_join_refuses_receiver_archived_between_check_and_commit() -> None:
+    """
+    Regression (BUG-037): join checked the receiver's open state once and
+    committed without holding the receiver, so a direct
+    `lane.mark_archived()` (lanes are handed out live) could land INSIDE
+    the commit window - the audit observed joined nodes inside an archived
+    receiver with no exception. Corrected behavior: join holds the
+    receiver's lane lock for the whole commit, so a racing archive
+    serializes entirely before or entirely after the join - it can never
+    interleave mid-commit. (Pre-fix, this test's paused window lets the
+    archive win mid-join and the join explodes on the archived receiver;
+    post-fix the archive blocks until the join has fully committed.)
+    """
+    import time
+
+    research_set = _seeded_set()
+    receiver = research_set.get_lane(
+        research_set.default_lane.lane_id,
+    )
+    release_archive = threading.Event()
+    archive_attempting = threading.Event()
+    archive_outcome: list = []
+
+    def racing_archive() -> None:
+        release_archive.wait(timeout=10.0)
+        archive_attempting.set()
+        try:
+            receiver.mark_archived()
+            archive_outcome.append("archived")
+        except RuntimeError:
+            archive_outcome.append("refused")
+
+    racer = threading.Thread(target=racing_archive)
+    racer.start()
+
+    original_detach = type(receiver).detach_nodes
+
+    def detach_with_open_window(self, spell_ids):
+        # Runs inside join's commit, after the receiver open-check: wake
+        # the racing archive and give it the window the bug left open.
+        release_archive.set()
+        archive_attempting.wait(timeout=10.0)
+        time.sleep(0.3)
+        return original_detach(self, spell_ids)
+
+    type(receiver).detach_nodes = detach_with_open_window
+    try:
+        result = research_set.join("child", into="default")
+    finally:
+        type(receiver).detach_nodes = original_detach
+    racer.join(timeout=10.0)
+
+    assert not racer.is_alive()
+    # The join must have fully committed into a receiver that stayed open
+    # through the whole commit: every moved identity resides in the
+    # receiver and the receiver holds the folded history.
+    assert result is receiver
+    assert receiver.node_spell_ids() == ["sha-a", "sha-b", "sha-c"]
+    for spell_id in ("sha-a", "sha-b", "sha-c"):
+        assert research_set.residence_of(spell_id) == receiver.lane_id
+    # The racing archive serialized AFTER the join (archiving the joined
+    # receiver afterwards is an ordinary archive).
+    assert archive_outcome == ["archived"]
+    assert receiver.state.value == "archived"
+    research_set.cleanup()
+
+
+def test_restore_network_refuses_snapshot_without_default_lane() -> None:
+    """
+    Regression (BUG-038): restore installed decoded lanes/residence without
+    validating core invariants, so a payload with no default lane replaced
+    live state and `default_lane` then raised KeyError. Corrected behavior:
+    restore validates the guaranteed-default-lane invariant BEFORE touching
+    live state and refuses loudly, leaving the current organization intact.
+    """
+    research_set = ResearchSet("default")
+    research_set.register_spell("sha-a")
+    # Forge a retained snapshot whose organization carries no lanes at all.
+    versioner = research_set._versioner
+    forged_address = versioner.snapshot({"lanes": [], "residence": {}})
+
+    with pytest.raises(ValueError, match="default lane"):
+        research_set.restore_network(forged_address)
+
+    # Live organization untouched: the default lane and residence survive.
+    assert research_set.lane_names() == ["default"]
+    assert research_set.residence_of("sha-a") == (
+        research_set.default_lane.lane_id
+    )
+    research_set.cleanup()

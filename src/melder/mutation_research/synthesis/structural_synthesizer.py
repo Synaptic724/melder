@@ -1,7 +1,7 @@
 import ast
 import hashlib
 import threading
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Set, Tuple
 
 from melder.utilities.general_base.cleanable import Cleanable
 
@@ -25,6 +25,10 @@ class StructuralSynthesizer(Cleanable):
         - Selections are EXPLICIT asks: an unknown name (or a name of the
           wrong kind) refuses loudly, naming what the donor actually
           carries (teach-grade, strategy-resolution precedent).
+        - Selections are UNIQUE asks: the same (name, kind) may be selected
+          once. Duplicates refuse loudly - replaying one base span against
+          already-spliced lines would corrupt neighboring parts, and a
+          duplicated addition would append the same definition twice.
         - Parse failures on either side answer honestly (`parse_error`
           names the side and location; nothing composes) - synthesizing
           over broken recorded text is a legitimate question, not a crash.
@@ -102,9 +106,11 @@ class StructuralSynthesizer(Cleanable):
 
         Raises:
             ValueError:
-                If no selection is supplied, either source is empty, or a
+                If no selection is supplied, either source is empty, a
                 selected name is not a top-level part of that kind in the
-                donor (the error names what the donor carries).
+                donor (the error names what the donor carries), or the same
+                (name, kind) selection is requested more than once (the
+                error names each duplicate).
         """
         self.check_cleaned()
         if not isinstance(base_source, str) or not base_source:
@@ -142,6 +148,22 @@ class StructuralSynthesizer(Cleanable):
                 [(name, "function") for name in functions]
                 + [(name, "class") for name in classes]
             )
+            # Duplicate selections are refused, not deduplicated: a repeated
+            # replacement replays the original base span against the
+            # already-spliced line list (deleting whatever follows the part),
+            # and a repeated addition appends the same definition twice.
+            seen_selections: Set[Tuple[str, str]] = set()
+            duplicated: List[str] = []
+            for name, kind in requested:
+                if (name, kind) in seen_selections:
+                    duplicated.append(f"{kind} '{name}'")
+                seen_selections.add((name, kind))
+            if duplicated:
+                raise ValueError(
+                    f"Duplicate selection(s): {sorted(set(duplicated))}. "
+                    f"Each (name, kind) may be selected once per synthesis; "
+                    f"remove the repeated ask(s)."
+                )
             for name, kind in requested:
                 donor_part = donor_index.get((name, kind))
                 if donor_part is None:

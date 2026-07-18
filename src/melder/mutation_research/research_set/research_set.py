@@ -224,6 +224,35 @@ class ResearchSet(Cleanable):
             f"Known lanes: {known}."
         )
 
+    def _resident_node_kind_locked(self, identity: str) -> Optional[str]:
+        """
+        Classify one identity's resident node kind (caller holds the lock).
+
+        Purpose:
+            Spell and composition identities live in separate namespaces:
+            spell nodes carry source/custody state; composition
+            (GroupedResearchNode) identities are purely informational.
+            Ancestry and membership validation uses this classifier so the
+            two namespaces cannot accept each other's IDs.
+
+        Args:
+            identity:
+                Spell or composition identity to classify.
+
+        Returns:
+            Optional[str]:
+                "group" when the resident node is a GroupedResearchNode,
+                "spell" when it is a spell ResearchNode, None when the
+                identity is not resident in this set.
+        """
+        lane_id = self._residence.residence_of(identity)
+        if lane_id is None:
+            return None
+        node = self._lanes_by_id[lane_id].get_node(identity)
+        return (
+            "group" if isinstance(node, GroupedResearchNode) else "spell"
+        )
+
     def _create_lane_locked(
             self,
             name: str,
@@ -738,7 +767,8 @@ class ResearchSet(Cleanable):
                 Rediscovery - the identity already resides in a lane (the
                 error names it); or the target lane is not open.
             ValueError:
-                If a parent identity is unknown to this set.
+                If a parent identity is unknown to this set, or names a
+                composition (group) identity instead of a spell version.
         """
         self.check_cleaned()
         with self._lock:
@@ -747,11 +777,20 @@ class ResearchSet(Cleanable):
             )
             parents = list(parent_spell_ids) if parent_spell_ids else []
             for parent_sha in parents:
-                if not self._residence.is_resident(parent_sha):
+                parent_kind = self._resident_node_kind_locked(parent_sha)
+                if parent_kind is None:
                     raise ValueError(
                         f"Parent identity '{parent_sha}' is not resident in "
                         f"research set '{self._name}'; ancestry must "
                         f"reference formally declared versions."
+                    )
+                if parent_kind != "spell":
+                    raise ValueError(
+                        f"Parent identity '{parent_sha}' is a composition "
+                        f"(group) identity; spell ancestry must reference "
+                        f"declared spell versions only. Compositions are "
+                        f"informational and carry no source or custody "
+                        f"state to inherit."
                     )
             node = ResearchNode(
                 spell_id,
@@ -807,7 +846,9 @@ class ResearchSet(Cleanable):
 
         Contract:
             - Every member must already be formally declared (resident) in
-              this set - the same law parents obey.
+              this set AND be a spell version - the spell/group namespaces
+              are enforced separately, so a composition identity can never
+              ride as a member or as spell ancestry.
             - Identity is content-addressed over the member set: an
               identical roster IS the same identity, so re-registering an
               unchanged composition surfaces the rediscovery error naming
@@ -843,7 +884,9 @@ class ResearchSet(Cleanable):
                 a lane (the error names it); or the target lane is not
                 open.
             ValueError:
-                If a member or parent composition is unknown to this set.
+                If a member or parent composition is unknown to this set,
+                if a member names a composition identity, or if a parent
+                composition names a spell identity.
         """
         self.check_cleaned()
         with self._lock:
@@ -852,19 +895,34 @@ class ResearchSet(Cleanable):
             )
             members = list(member_spell_ids) if member_spell_ids else []
             for member in members:
-                if not self._residence.is_resident(member):
+                member_kind = self._resident_node_kind_locked(member)
+                if member_kind is None:
                     raise ValueError(
                         f"Member identity '{member}' is not resident in "
                         f"research set '{self._name}'; compositions pin "
                         f"formally declared versions only."
                     )
+                if member_kind != "spell":
+                    raise ValueError(
+                        f"Member identity '{member}' is a composition "
+                        f"(group) identity; compositions pin declared "
+                        f"spell versions only - nesting one composition "
+                        f"inside another is not part of the model."
+                    )
             parents = list(parent_group_ids) if parent_group_ids else []
             for parent in parents:
-                if not self._residence.is_resident(parent):
+                parent_kind = self._resident_node_kind_locked(parent)
+                if parent_kind is None:
                     raise ValueError(
                         f"Parent composition '{parent}' is not resident in "
                         f"research set '{self._name}'; composition ancestry "
                         f"must reference recorded compositions."
+                    )
+                if parent_kind != "group":
+                    raise ValueError(
+                        f"Parent composition '{parent}' is a spell "
+                        f"identity; composition ancestry must reference "
+                        f"recorded compositions, not spell versions."
                     )
             node = GroupedResearchNode(
                 members,
@@ -1151,7 +1209,8 @@ class ResearchSet(Cleanable):
 
         Raises:
             ValueError:
-                If a parent identity is unknown to this set.
+                If a parent identity is unknown to this set, or names a
+                composition (group) identity instead of a spell version.
         """
         self.check_cleaned()
         with self._lock:
@@ -1162,11 +1221,20 @@ class ResearchSet(Cleanable):
             )
             parents = list(parent_spell_ids) if parent_spell_ids else []
             for parent_sha in parents:
-                if not self._residence.is_resident(parent_sha):
+                parent_kind = self._resident_node_kind_locked(parent_sha)
+                if parent_kind is None:
                     raise ValueError(
                         f"Parent identity '{parent_sha}' is not resident in "
                         f"research set '{self._name}'; ancestry must "
                         f"reference formally declared versions."
+                    )
+                if parent_kind != "spell":
+                    raise ValueError(
+                        f"Parent identity '{parent_sha}' is a composition "
+                        f"(group) identity; spell ancestry must reference "
+                        f"declared spell versions only. Compositions are "
+                        f"informational and carry no source or custody "
+                        f"state to inherit."
                     )
             node = ResearchNode(
                 spell_id,
@@ -1430,83 +1498,143 @@ class ResearchSet(Cleanable):
                 raise RuntimeError(
                     f"Lane '{source.name}' cannot join into itself."
                 )
-            if target.state is not LaneState.open:
-                raise RuntimeError(
-                    f"Receiving lane '{target.name}' is "
-                    f"{target.state.value}; join requires an open receiver."
+            # Receiver custody (BUG-037): hold the receiver's own reentrant
+            # lane lock across the ENTIRE commit (open-check through journal
+            # + snapshot), so a direct lane-surface state flip (for example
+            # mark_archived on a live handout) serializes entirely before
+            # or entirely after the join - the open-receiver contract holds
+            # through commit. Lock order set -> lane is the one-way order
+            # every set verb already uses; lanes never call back into the
+            # set, so no inversion exists.
+            with target._lock:
+                self._join_locked(
+                    source,
+                    target,
+                    collapse=collapse,
+                    force=force,
+                    actor=actor,
+                    campaign=campaign,
+                    reason=reason,
                 )
-            if (
-                    self._lane_type_enforcement
-                    and source.lane_type is not target.lane_type
-                    and not force
-            ):
-                raise RuntimeError(
-                    f"Type-mixing join: lane '{source.name}' is "
-                    f"'{source.lane_type.value}' while receiver "
-                    f"'{target.name}' is '{target.lane_type.value}', and "
-                    f"lane-type enforcement is on. Pass force=True to "
-                    f"supersede the type policy explicitly."
-                )
-            clean = (
-                source.anchor_lane_id == target.lane_id
-                and source.anchor_spell_id is not None
-                and target.tip_spell_id == source.anchor_spell_id
-            )
-            if not clean and not force:
-                raise RuntimeError(
-                    f"Divergent join: lane '{source.name}' anchors at "
-                    f"'{source.anchor_spell_id}' on lane "
-                    f"'{source.anchor_lane_id}' while receiver "
-                    f"'{target.name}' tips at '{target.tip_spell_id}'. Compose a "
-                    f"reconciling version in the codegen workshop and "
-                    f"register it, or pass force=True to supersede."
-                )
-            previous_target_tip = target.tip_spell_id
-            moved_spell_ids: List[str] = []
-            if source.node_count > 0:
-                if collapse:
-                    moved_spell_ids = [source.tip_spell_id]
-                else:
-                    moved_spell_ids = source.node_spell_ids()
-                detached = source.detach_nodes(moved_spell_ids)
-                # Threadsafety compensation: a mid-loop refusal (direct
-                # terminal-state race on the receiver) must not leave
-                # detached records in limbo - everything returns to the
-                # still-open source in original order, then the failure
-                # re-raises. Residence transfers only after EVERY add
-                # landed, so the partition stays all-or-nothing.
-                added: List[str] = []
-                try:
-                    for node in detached:
-                        target.add_node(node)
-                        added.append(node_identity(node))
-                except Exception:
-                    if added:
-                        target.detach_nodes(added)
-                    for node in detached:
-                        source.add_node(node)
-                    raise
-                self._residence.transfer(moved_spell_ids, target.lane_id)
-            source.mark_joined(target.lane_id)
-            self._journal.record(
-                TransitionAct.joined,
-                target.lane_id,
-                from_spell_id=previous_target_tip,
-                to_spell_id=target.tip_spell_id,
-                actor=actor,
-                campaign=campaign,
-                reason=reason,
-                metadata={
-                    "joined_lane_id": source.lane_id,
-                    "joined_lane_name": source.name,
-                    "collapse": collapse,
-                    "forced": bool(not clean),
-                    "moved_spell_ids": moved_spell_ids,
-                },
-            )
-            self._snapshot_locked()
         self._notify_mutation()
         return target
+
+    def _join_locked(
+            self,
+            source: ResearchLane,
+            target: ResearchLane,
+            *,
+            collapse: bool,
+            force: bool,
+            actor: Optional[str],
+            campaign: Optional[str],
+            reason: Optional[str],
+    ) -> None:
+        """
+        Run the join commit (caller holds the set AND receiver lane locks).
+
+        Contract:
+            - The receiver's open state is checked and then HELD true by the
+              caller-owned receiver lock until the journal record and
+              snapshot land; a concurrent direct archive can never
+              interleave mid-commit.
+
+        Args:
+            source:
+                Resolved source lane.
+            target:
+                Resolved receiving lane (its lock is held by the caller).
+            collapse:
+                Move only the tip when True.
+            force:
+                Permit a divergent or type-mixing join.
+            actor:
+                Optional acting agent name.
+            campaign:
+                Optional research-campaign stamp.
+            reason:
+                Optional reason line.
+
+        Raises:
+            RuntimeError:
+                On non-open receiver, unforced type-mixing, or unforced
+                divergence (the error names both tips).
+        """
+        if target.state is not LaneState.open:
+            raise RuntimeError(
+                f"Receiving lane '{target.name}' is "
+                f"{target.state.value}; join requires an open receiver."
+            )
+        if (
+                self._lane_type_enforcement
+                and source.lane_type is not target.lane_type
+                and not force
+        ):
+            raise RuntimeError(
+                f"Type-mixing join: lane '{source.name}' is "
+                f"'{source.lane_type.value}' while receiver "
+                f"'{target.name}' is '{target.lane_type.value}', and "
+                f"lane-type enforcement is on. Pass force=True to "
+                f"supersede the type policy explicitly."
+            )
+        clean = (
+            source.anchor_lane_id == target.lane_id
+            and source.anchor_spell_id is not None
+            and target.tip_spell_id == source.anchor_spell_id
+        )
+        if not clean and not force:
+            raise RuntimeError(
+                f"Divergent join: lane '{source.name}' anchors at "
+                f"'{source.anchor_spell_id}' on lane "
+                f"'{source.anchor_lane_id}' while receiver "
+                f"'{target.name}' tips at '{target.tip_spell_id}'. Compose a "
+                f"reconciling version in the codegen workshop and "
+                f"register it, or pass force=True to supersede."
+            )
+        previous_target_tip = target.tip_spell_id
+        moved_spell_ids: List[str] = []
+        if source.node_count > 0:
+            if collapse:
+                moved_spell_ids = [source.tip_spell_id]
+            else:
+                moved_spell_ids = source.node_spell_ids()
+            detached = source.detach_nodes(moved_spell_ids)
+            # Threadsafety compensation: a mid-loop refusal (direct
+            # terminal-state race on the receiver) must not leave
+            # detached records in limbo - everything returns to the
+            # still-open source in original order, then the failure
+            # re-raises. Residence transfers only after EVERY add
+            # landed, so the partition stays all-or-nothing.
+            added: List[str] = []
+            try:
+                for node in detached:
+                    target.add_node(node)
+                    added.append(node_identity(node))
+            except Exception:
+                if added:
+                    target.detach_nodes(added)
+                for node in detached:
+                    source.add_node(node)
+                raise
+            self._residence.transfer(moved_spell_ids, target.lane_id)
+        source.mark_joined(target.lane_id)
+        self._journal.record(
+            TransitionAct.joined,
+            target.lane_id,
+            from_spell_id=previous_target_tip,
+            to_spell_id=target.tip_spell_id,
+            actor=actor,
+            campaign=campaign,
+            reason=reason,
+            metadata={
+                "joined_lane_id": source.lane_id,
+                "joined_lane_name": source.name,
+                "collapse": collapse,
+                "forced": bool(not clean),
+                "moved_spell_ids": moved_spell_ids,
+            },
+        )
+        self._snapshot_locked()
 
     def archive(
             self,
@@ -1625,6 +1753,9 @@ class ResearchSet(Cleanable):
         Raises:
             KeyError:
                 If the address is unknown (possibly aged out of retention).
+            ValueError:
+                If the snapshot's organization payload is invalid or lacks
+                the guaranteed default lane (live state stays untouched).
         """
         self.check_cleaned()
         with self._lock:
@@ -1644,6 +1775,17 @@ class ResearchSet(Cleanable):
                 lane = ResearchLane.from_payload(lane_payload)
                 rebuilt_lanes[lane.lane_id] = lane
                 rebuilt_names[lane.name] = lane.lane_id
+            # Core-invariant gate (BUG-038): the guaranteed default lane
+            # must exist in the incoming organization BEFORE any live state
+            # is torn down - a restore can never install a network that
+            # `default_lane` immediately refuses to serve.
+            if ResearchSet.DEFAULT_LANE_NAME not in rebuilt_names:
+                raise ValueError(
+                    f"Snapshot '{snapshot_sha}' carries no "
+                    f"'{ResearchSet.DEFAULT_LANE_NAME}' default lane; the "
+                    f"guaranteed-default-lane invariant refuses the "
+                    f"restore. Live organization is untouched."
+                )
             rebuilt_residence = ResidenceRegistry.from_payload(
                 residence_payload,
             )

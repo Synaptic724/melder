@@ -238,7 +238,9 @@ class NetworkVersioner(Cleanable):
 
         Raises:
             ValueError:
-                If the payload shape is invalid.
+                If the payload shape is invalid, or a retained entry's
+                claimed content address does not match the recomputed
+                digest of its canonical text (corrupt/forged payload).
         """
         if not isinstance(payload, dict):
             raise ValueError("payload must be a dict produced by describe().")
@@ -260,6 +262,20 @@ class NetworkVersioner(Cleanable):
             for snapshot_sha in order:
                 canonical = canonical_by_sha.get(snapshot_sha)
                 if isinstance(canonical, str):
+                    # Content-address integrity: the key IS the digest.
+                    # Recompute it so a forged/corrupt claimed SHA can never
+                    # enter the store as if it were content-verified.
+                    actual_sha = hashlib.sha256(
+                        canonical.encode("utf-8")
+                    ).hexdigest()
+                    if actual_sha != str(snapshot_sha):
+                        raise ValueError(
+                            f"Snapshot content address mismatch during "
+                            f"hydration: claimed '{snapshot_sha}' but the "
+                            f"canonical text digests to '{actual_sha}'. "
+                            f"The payload is corrupt or forged; refusing "
+                            f"to install a false content address."
+                        )
                     versioner._canonical_by_sha[str(snapshot_sha)] = canonical
                     versioner._order.append(str(snapshot_sha))
         return versioner

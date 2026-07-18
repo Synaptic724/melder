@@ -1,3 +1,5 @@
+import threading
+import time
 from unittest.mock import MagicMock
 
 import pytest
@@ -427,3 +429,268 @@ def test_root_cleanup_cascades_into_sets() -> None:
     assert default_set.cleaned is True
     with pytest.raises(RuntimeError):
         root.research_set()
+
+
+def _fake_frame(index_id: str, selected_spell_id: str) -> MagicMock:
+    """
+    Build one live frame double whose index scan answers a fixed index.
+
+    Args:
+        index_id:
+            Index id the frame reports for any queried spell.
+        selected_spell_id:
+            The index's currently selected member.
+
+    Returns:
+        MagicMock: Frame double for `_locate_live_membership` scans.
+    """
+    index = MagicMock()
+    index.cleaned = False
+    index.id = index_id
+    index.selected_spell_id = selected_spell_id
+    frame = MagicMock()
+    frame.cleaned = False
+    frame.find_index_for_spell.return_value = index
+    return frame
+
+
+def test_residency_view_prefers_selected_membership_in_later_frame() -> None:
+    """
+    Regression (BUG-032): the live-membership scan returned the FIRST frame
+    membership found, so a spell parked in an earlier-iterated frame and
+    selected in a later one reported a false `parked` posture. Corrected
+    behavior: a selected membership anywhere wins (active-if-any).
+    """
+    spell_id = "s" * 64
+    aether = _mock_aether(recording=True)
+    aether.cleaned = False
+    aether._aetheric_frames = {
+        "frame_parked": _fake_frame("idx-parked", selected_spell_id="other"),
+        "frame_active": _fake_frame("idx-active", selected_spell_id=spell_id),
+    }
+    root = MutationResearch(aether=aether)
+
+    view = root.residency_view(spell_id)
+
+    assert view["runtime"] == "active"
+    assert view["frame_name"] == "frame_active"
+    assert view["index_id"] == "idx-active"
+
+
+def test_residency_view_still_reports_parked_when_nothing_selects() -> None:
+    """
+    Guard against over-correction: with live memberships but no selection
+    anywhere, the first live membership still reports `parked`.
+    """
+    spell_id = "s" * 64
+    aether = _mock_aether(recording=True)
+    aether.cleaned = False
+    aether._aetheric_frames = {
+        "frame_one": _fake_frame("idx-one", selected_spell_id="other"),
+        "frame_two": _fake_frame("idx-two", selected_spell_id="another"),
+    }
+    root = MutationResearch(aether=aether)
+
+    view = root.residency_view(spell_id)
+
+    assert view["runtime"] == "parked"
+    assert view["frame_name"] == "frame_one"
+    assert view["index_id"] == "idx-one"
+
+
+class _GatedRecordingCrystallizer:
+    """
+    Crystallizer double that can hold ONE emission at the publish boundary.
+
+    Purpose:
+        Deterministic stand-in for a free-threaded preemption between the
+        emission seam's snapshot build and its record: the first emit after
+        arming parks at the boundary until released, while every recorded
+        composition's node count is captured in arrival order.
+    """
+
+    def __init__(self) -> None:
+        self.cleaned = False
+        self.activated = True
+        self.recorded_node_counts: list = []
+        self.hold_next_emit = False
+        self.parked_in_emit = threading.Event()
+        self.release_gate = threading.Event()
+        self._lock = threading.Lock()
+
+    def _composition_node_count(self, crystal) -> int:
+        total = 0
+        payload = crystal.composition_payload or {}
+        for set_payload in payload.values():
+            for lane in set_payload["organization"]["lanes"]:
+                total += len(lane["nodes"])
+        return total
+
+    def emit(self, crystal) -> None:
+        hold = False
+        with self._lock:
+            if self.hold_next_emit:
+                self.hold_next_emit = False
+                hold = True
+        if hold:
+            self.parked_in_emit.set()
+            assert self.release_gate.wait(timeout=10.0), (
+                "emission gate never released"
+            )
+        with self._lock:
+            self.recorded_node_counts.append(
+                self._composition_node_count(crystal)
+            )
+
+    def emit_mutation_research_state(self, state) -> None:
+        pass
+
+    def describe_mutation_research_record(self):
+        return None
+
+
+def test_emission_never_publishes_stale_composition_over_newer_one() -> None:
+    """
+    Regression (BUG-031): the emission seam built its snapshot and published
+    with no serialization, so an emitter paused before its record let a
+    second thread commit AND publish a newer composition first - the paused
+    thread then replaced it with the stale snapshot, silently dropping the
+    newest research record from persistence. Corrected behavior: snapshot
+    build + publication are atomic under the emission lock, so recorded
+    compositions never move backwards.
+    """
+    crystallizer = _GatedRecordingCrystallizer()
+    aether = MagicMock()
+    aether.cleaned = False
+    aether._aetheric_frames = {}
+    aether._crystallizer = crystallizer
+    root = MutationResearch(aether=aether)
+    root.configure(root.create_configuration().with_defaults().activate())
+    root.activate()
+    crystallizer.recorded_node_counts.clear()
+    crystallizer.hold_next_emit = True
+
+    def register_first() -> None:
+        root.research_set().register_spell("a" * 64)
+
+    def register_second() -> None:
+        root.research_set().register_spell("b" * 64)
+
+    first = threading.Thread(target=register_first)
+    first.start()
+    assert crystallizer.parked_in_emit.wait(timeout=10.0)
+    second = threading.Thread(target=register_second)
+    second.start()
+    time.sleep(0.5)  # window where unserialized emission would publish
+    published_during_hold = bool(crystallizer.recorded_node_counts)
+    crystallizer.release_gate.set()
+    first.join(timeout=10.0)
+    second.join(timeout=10.0)
+
+    assert not first.is_alive() and not second.is_alive()
+    # Serialization: nothing may publish while the first emission is parked.
+    assert published_during_hold is False
+    # Monotone replace-on-emit: durable composition never moves backwards.
+    counts = crystallizer.recorded_node_counts
+    assert counts == sorted(counts)
+    # The final record carries the full live composition (both spells).
+    assert counts[-1] == 2
+
+
+def test_activation_completes_hydration_before_reporting_active() -> None:
+    """
+    Regression (BUG-035): `activate()` flipped `_activated` (opening the
+    public ingress) BEFORE the virgin-check/hydration sequence, so a live
+    entry recorded through the already-open ingress could be clobbered by
+    the registry swap. Corrected behavior: hydration completes before the
+    root ever reports active, so the documented seam (ingress opens at
+    activation) cannot race the swap.
+    """
+    observed_active_during_hydration: list = []
+    root_box: list = []
+
+    crystallizer = MagicMock()
+    crystallizer.cleaned = False
+    crystallizer.activated = True
+
+    def record_probe():
+        observed_active_during_hydration.append(root_box[0].is_activated)
+        return {
+            "composition_payload": {
+                "default": ResearchSet("default").describe_composition(),
+            },
+        }
+
+    crystallizer.describe_mutation_research_record.side_effect = record_probe
+    aether = MagicMock()
+    aether.cleaned = False
+    aether._crystallizer = crystallizer
+    root = MutationResearch(aether=aether)
+    root_box.append(root)
+    root.configure(root.create_configuration().with_defaults().activate())
+
+    root.activate()
+
+    assert observed_active_during_hydration == [False]
+    assert root.is_activated is True
+    # Post-activation ingress works normally on the hydrated registry.
+    assert root.record_world_entry("c" * 64) is True
+
+
+def test_cleanup_completes_cascade_when_state_sink_raises() -> None:
+    """
+    Regression (BUG-036): root cleanup marked `_cleaned=True`, then called
+    the state-emission sink unguarded - a raising sink aborted child
+    cleanup and singleton reset, and every retry early-returned on the
+    cleaned flag, leaving the cascade permanently half-complete. Corrected
+    behavior: the sink is best-effort; a raising observer never stops the
+    cascade or the singleton reset.
+    """
+    crystallizer = MagicMock()
+    crystallizer.cleaned = False
+    crystallizer.activated = True
+    crystallizer.emit_mutation_research_state.side_effect = RuntimeError(
+        "sink down"
+    )
+    aether = MagicMock()
+    aether.cleaned = False
+    aether._crystallizer = crystallizer
+    root = MutationResearch(aether=aether)
+    default_set = root.research_set()
+
+    root.cleanup()
+
+    assert root.cleaned is True
+    assert default_set.cleaned is True
+    assert MutationResearch._instance is None
+    assert MutationResearch._initialized is False
+
+
+def test_promotion_catchup_consumes_staged_ancestry_for_its_candidate() -> None:
+    """
+    Regression (BUG-049): promotion's world-entry catch-up declared the
+    candidate directly through the set, bypassing the root's one-shot
+    staged-ancestry consumption - the promoted candidate landed parentless
+    while the stamp stayed armed and leaked onto the next unrelated world
+    entry. Corrected behavior: catch-up routes through the root world-entry
+    verb, so staged ancestry rides the candidate it was staged to describe.
+    """
+    aether = _mock_aether(recording=True)
+    aether.cleaned = False
+    root = MutationResearch(aether=aether)
+    base = "a" * 64
+    donor = "b" * 64
+    candidate = "c" * 64
+    unrelated = "d" * 64
+    root.record_world_entry(base)
+    root.record_world_entry(donor)
+    root.stage_ancestry([base, donor])
+
+    root.record_promotion(None, candidate)
+    root.record_world_entry(unrelated)
+
+    research_set = root.research_set()
+    candidate_node = research_set.default_lane.get_node(candidate)
+    unrelated_node = research_set.default_lane.get_node(unrelated)
+    assert candidate_node.parent_spell_ids == [base, donor]
+    assert unrelated_node.parent_spell_ids == []

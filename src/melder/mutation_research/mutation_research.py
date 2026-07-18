@@ -61,8 +61,13 @@ class MutationResearch(Cleanable):
 
     Threading:
         Class lock guards singleton identity; instance verbs serialize under
-        the same reentrant lock; lock order is root -> set -> crystallizer,
-        one-way.
+        the same reentrant lock. A dedicated reentrant emission lock makes
+        the persistence emission atomic (snapshot build + replace-on-emit
+        publication happen under one holder, so a paused emitter can never
+        publish a stale composition over a newer one). Lock order is
+        emission -> root -> set -> crystallizer, one-way: every path that
+        can trigger an emission while holding the root lock (set creation,
+        hydration) acquires the emission lock first.
 
     Lifecycle:
         `cleanup()` cascades into owned sets and configuration, emits the
@@ -89,6 +94,7 @@ class MutationResearch(Cleanable):
         "_active_campaign",
         "_staged_ancestry",
         "_crystallizer",
+        "_emission_lock",
     ]
 
     def __new__(
@@ -136,6 +142,9 @@ class MutationResearch(Cleanable):
         try:
             super().__init__()
             self._id: str = IDBuilder.create_id()
+            # Serializes snapshot build + publication in the emission seam;
+            # must exist before the first ResearchSet fires on_mutation.
+            self._emission_lock: threading.RLock = threading.RLock()
             self._aether: Optional["Aether"] = aether
             self._crystallizer: "Crystallizer" = aether._crystallizer
             self._configuration: Optional[MutationResearchConfiguration] = None
@@ -167,6 +176,11 @@ class MutationResearch(Cleanable):
         """
         Idempotently clear mutation-research root state and reset singleton bookkeeping.
 
+        Contract:
+            - The teardown state emission is BEST-EFFORT: a raising sink is
+              swallowed so the cascade (sets, engines, configuration) and
+              the singleton reset always complete.
+
         Returns:
             None.
         """
@@ -179,10 +193,20 @@ class MutationResearch(Cleanable):
             # Record the teardown when the record outlives MR. In the Aether
             # full-teardown lane the crystallizer is already cleaned
             # (frames -> crystallizer -> MR), so this skips there.
-            if not self._crystallizer.cleaned and self._crystallizer.activated:
-                self._crystallizer.emit_mutation_research_state(
-                    RecordedUnitState.cleaned
-                )
+            # Best-effort by contract (BUG-036): the state sink is an
+            # optional observer - a raising sink must never abort the
+            # cascade or the singleton reset, or cleanup wedges
+            # half-complete forever behind the idempotency guard.
+            try:
+                if (
+                        not self._crystallizer.cleaned
+                        and self._crystallizer.activated
+                ):
+                    self._crystallizer.emit_mutation_research_state(
+                        RecordedUnitState.cleaned
+                    )
+            except Exception:
+                pass
             if self._research_sets_by_name is not None:
                 for _, research_set in list(
                         self._research_sets_by_name.items()
@@ -212,6 +236,7 @@ class MutationResearch(Cleanable):
             self._configured = False
             self._activated = False
             del self._crystallizer
+            del self._emission_lock
             del self._diff_engine
             del self._group_diff_engine
             del self._synthesizer
@@ -375,7 +400,9 @@ class MutationResearch(Cleanable):
                 profile's recorded composition at activation - the twin
                 docking loop: emit while live, hydrate on the way up. Live
                 research is never clobbered; a non-virgin registry skips
-                hydration and re-records itself instead.
+                hydration and re-records itself instead. Hydration runs
+                BEFORE the root reports active, so the public ingress can
+                never open into a registry that is about to be swapped.
 
         Returns:
             None.
@@ -394,6 +421,14 @@ class MutationResearch(Cleanable):
                 "MutationResearchConfiguration must be activated before activating MutationResearch."
             )
         self._configuration.validate()
+        # Hydration precedes the activation flip (BUG-035): the public
+        # ingress opens when the root reports active, so completing the
+        # virgin-check/registry-swap FIRST guarantees live research recorded
+        # through the documented seam can never race the swap and be
+        # clobbered. Mid-hydration emissions no-op on the inactive guard;
+        # the final emission below records the hydrated (or live) truth.
+        if hydrate_from_record:
+            self._hydrate_from_record_when_virgin()
         with self._lock:
             self._activated = True
             # Record the lifecycle flip: the twin (emitted at configuration
@@ -402,8 +437,6 @@ class MutationResearch(Cleanable):
                 self._crystallizer.emit_mutation_research_state(
                     RecordedUnitState.enabled
                 )
-        if hydrate_from_record:
-            self._hydrate_from_record_when_virgin()
         # Policy propagation AFTER hydration so rebuilt sets carry the
         # configured posture too (sets stay configuration-free).
         self._propagate_lane_type_enforcement()
@@ -557,19 +590,24 @@ class MutationResearch(Cleanable):
         self.check_cleaned()
         if not isinstance(name, str) or not name:
             raise ValueError("name must be a non-empty string.")
-        with self._lock:
-            if name in self._research_sets_by_name:
-                raise ValueError(
-                    f"MutationResearch already owns a research set '{name}'."
+        # Emission lock first: the set constructor fires on_mutation while
+        # the root lock is held, and the one-way order is emission -> root.
+        with self._emission_lock:
+            with self._lock:
+                if name in self._research_sets_by_name:
+                    raise ValueError(
+                        f"MutationResearch already owns a research set "
+                        f"'{name}'."
+                    )
+                research_set = ResearchSet(
+                    name,
+                    on_mutation=self._emit_research_composition,
                 )
-            research_set = ResearchSet(
-                name,
-                on_mutation=self._emit_research_composition,
-            )
-            self._research_sets_by_name[name] = research_set
-        # New sets inherit the configured join-policy posture immediately.
-        self._propagate_lane_type_enforcement()
-        self._emit_research_composition()
+                self._research_sets_by_name[name] = research_set
+            # New sets inherit the configured join-policy posture
+            # immediately.
+            self._propagate_lane_type_enforcement()
+            self._emit_research_composition()
         return research_set
 
     def list_research_set_names(self) -> List[str]:
@@ -629,29 +667,38 @@ class MutationResearch(Cleanable):
             raise ValueError(
                 "composition_payload must be a dict of set payloads."
             )
-        with self._lock:
-            rebuilt: Dict[str, ResearchSet] = {}
-            for name, set_payload in composition_payload.items():
-                rebuilt[str(name)] = ResearchSet.from_payload(
-                    set_payload,
-                    on_mutation=self._emit_research_composition,
-                )
-            if MutationResearch.DEFAULT_RESEARCH_SET_NAME not in rebuilt:
-                rebuilt[
-                    MutationResearch.DEFAULT_RESEARCH_SET_NAME
-                ] = ResearchSet(
-                    MutationResearch.DEFAULT_RESEARCH_SET_NAME,
-                    on_mutation=self._emit_research_composition,
-                )
-            for _, research_set in list(self._research_sets_by_name.items()):
-                try:
-                    research_set.cleanup()
-                except Exception:
-                    pass
-            self._research_sets_by_name = rebuilt
-        # Rebuilt sets inherit the configured join-policy posture.
-        self._propagate_lane_type_enforcement()
-        self._emit_research_composition()
+        # Emission lock first: rebuilt-set constructors fire on_mutation
+        # while the root lock is held, and the one-way order is
+        # emission -> root.
+        with self._emission_lock:
+            with self._lock:
+                rebuilt: Dict[str, ResearchSet] = {}
+                for name, set_payload in composition_payload.items():
+                    rebuilt[str(name)] = ResearchSet.from_payload(
+                        set_payload,
+                        on_mutation=self._emit_research_composition,
+                    )
+                if (
+                        MutationResearch.DEFAULT_RESEARCH_SET_NAME
+                        not in rebuilt
+                ):
+                    rebuilt[
+                        MutationResearch.DEFAULT_RESEARCH_SET_NAME
+                    ] = ResearchSet(
+                        MutationResearch.DEFAULT_RESEARCH_SET_NAME,
+                        on_mutation=self._emit_research_composition,
+                    )
+                for _, research_set in list(
+                        self._research_sets_by_name.items()
+                ):
+                    try:
+                        research_set.cleanup()
+                    except Exception:
+                        pass
+                self._research_sets_by_name = rebuilt
+            # Rebuilt sets inherit the configured join-policy posture.
+            self._propagate_lane_type_enforcement()
+            self._emit_research_composition()
 
     # ------------------------------------------------------------------
     # Campaign context
@@ -860,8 +907,10 @@ class MutationResearch(Cleanable):
 
         Contract:
             - An undeclared `to_spell_id` is declared first (world-entry
-              catch-up: a promotion proves the version exists), then the
-              `promoted` event records with the supplied endpoints.
+              catch-up: a promotion proves the version exists) THROUGH the
+              root world-entry verb, so staged ancestry is consumed by the
+              candidate it was staged for; then the `promoted` event
+              records with the supplied endpoints.
 
         Args:
             from_spell_id:
@@ -882,7 +931,12 @@ class MutationResearch(Cleanable):
             campaign if campaign is not None else self.active_campaign
         )
         if research_set.residence_of(to_spell_id) is None:
-            research_set.record_world_entry(
+            # Catch-up rides the ROOT world-entry verb (BUG-049): the
+            # promoted candidate IS the arrival any staged ancestry was
+            # staged to describe, so the one-shot consumption must fire
+            # here - a direct set-level declaration would leave the stamp
+            # armed to leak onto the next unrelated entry.
+            self.record_world_entry(
                 to_spell_id,
                 staged=True,
                 author=actor,
@@ -1023,6 +1077,13 @@ class MutationResearch(Cleanable):
             spell_id:
                 Identity to locate.
 
+        Contract:
+            - Scans EVERY live frame: a selected (active) membership
+              anywhere wins over any unselected membership, honoring the
+              residency contract's active-if-any verdict rule.
+            - When no frame selects the identity, the first live unselected
+              membership (frame iteration order) is reported as parked.
+
         Returns:
             Tuple[Optional[str], Optional[str], bool]:
                 `(frame_name, index_id, selected)` - Nones/False when the
@@ -1031,6 +1092,8 @@ class MutationResearch(Cleanable):
         aether = self._aether
         if aether is None or aether.cleaned:
             return None, None, False
+        parked_frame: Optional[str] = None
+        parked_index: Optional[str] = None
         for frame_name, frame in list(aether._aetheric_frames.items()):
             try:
                 if frame.cleaned:
@@ -1040,12 +1103,12 @@ class MutationResearch(Cleanable):
                 continue
             if index is None or index.cleaned:
                 continue
-            return (
-                frame_name,
-                index.id,
-                index.selected_spell_id == spell_id,
-            )
-        return None, None, False
+            if index.selected_spell_id == spell_id:
+                return frame_name, index.id, True
+            if parked_frame is None:
+                parked_frame = frame_name
+                parked_index = index.id
+        return parked_frame, parked_index, False
 
     def _probe_custody(self, spell_id: str) -> Optional[bool]:
         """
@@ -3195,28 +3258,39 @@ class MutationResearch(Cleanable):
               cleaned/inactive (the sink additionally no-ops when recording
               is off, preserving the R-A covenant).
 
+        Threading:
+            The whole verb runs under the reentrant emission lock: the
+            composition snapshot is built and published by the same holder,
+            so replace-on-emit publication can never move the durable
+            composition backwards relative to committed live mutations (a
+            later-arriving emitter always reads the newer live state before
+            it publishes). Lock order is emission -> root -> set.
+
         Returns:
             None.
         """
         if self._cleaned or not self._activated:
             return
-        crystallizer = self._crystallizer
-        if crystallizer.cleaned:
-            return
-        if not crystallizer.activated:
-            return
-        configuration_payload: Dict[str, object] = {}
-        if self._configured and self._configuration is not None:
-            configuration_payload = (
-                self._configuration.describe_configuration_payload()
+        with self._emission_lock:
+            if self._cleaned or not self._activated:
+                return
+            crystallizer = self._crystallizer
+            if crystallizer.cleaned:
+                return
+            if not crystallizer.activated:
+                return
+            configuration_payload: Dict[str, object] = {}
+            if self._configured and self._configuration is not None:
+                configuration_payload = (
+                    self._configuration.describe_configuration_payload()
+                )
+            crystallizer.emit(
+                MutationResearchCrystal(
+                    activated=self._activated,
+                    configuration_payload=configuration_payload,
+                    composition_payload=self.describe_research_composition(),
+                )
             )
-        crystallizer.emit(
-            MutationResearchCrystal(
-                activated=self._activated,
-                configuration_payload=configuration_payload,
-                composition_payload=self.describe_research_composition(),
-            )
-        )
 
     def _require_configured(self) -> None:
         """

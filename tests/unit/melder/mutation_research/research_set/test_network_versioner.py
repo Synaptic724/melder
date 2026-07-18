@@ -81,3 +81,39 @@ def test_versioner_cleanup_is_idempotent_and_guards_reads() -> None:
     assert versioner.cleaned is True
     with pytest.raises(RuntimeError):
         versioner.snapshot({"v": 2})
+
+
+def test_from_payload_refuses_false_content_addresses() -> None:
+    """
+    Regression (BUG-038): hydration installed `canonical_by_sha` entries
+    under their CLAIMED keys without recomputing the digest, so a false
+    (for example all-zero) SHA stayed addressable as if content-verified.
+    Corrected behavior: every hydrated entry's digest is recomputed and a
+    mismatch refuses loudly, naming claimed vs actual.
+    """
+    versioner = NetworkVersioner()
+    address = versioner.snapshot({"lanes": [{"name": "default"}]})
+    payload = versioner.describe()
+    forged = "0" * 64
+    payload["canonical_by_sha"] = {
+        forged: payload["canonical_by_sha"][address],
+    }
+    payload["order"] = [forged]
+
+    with pytest.raises(ValueError, match="content address"):
+        NetworkVersioner.from_payload(payload)
+
+
+def test_from_payload_still_accepts_true_content_addresses() -> None:
+    """
+    Guard against over-rejection: an untampered describe() payload keeps
+    hydrating exactly as before.
+    """
+    versioner = NetworkVersioner(max_snapshots=4)
+    versioner.snapshot({"v": 1})
+    address = versioner.latest_sha
+
+    rebuilt = NetworkVersioner.from_payload(versioner.describe())
+
+    assert rebuilt.latest_sha == address
+    assert rebuilt.get(address) == {"v": 1}

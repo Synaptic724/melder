@@ -213,3 +213,82 @@ def test_synthesize_cleanup_guards_dispatch() -> None:
 
     with pytest.raises(RuntimeError):
         synthesizer.synthesize(BASE, DONOR, take_functions=["cast"])
+
+
+def test_synthesize_duplicate_selection_refuses_instead_of_deleting_neighbor() -> None:
+    """
+    Regression (BUG-034): a duplicate selection used to schedule the same
+    original base span twice; the second splice replayed stale coordinates
+    against the already-spliced line list, so a shorter donor part silently
+    DELETED the part that followed it while reporting 'replaced' twice.
+    Corrected behavior: duplicate (name, kind) selections refuse loudly and
+    nothing composes.
+    """
+    synthesizer = StructuralSynthesizer()
+    neighbor_base = (
+        "def f():\n"
+        "    a = 1\n"
+        "    b = 2\n"
+        "    return a + b\n"
+        "def g():\n"
+        "    return 'g-alive'\n"
+    )
+    shorter_donor = (
+        "def f():\n"
+        "    return 99\n"
+    )
+
+    with pytest.raises(ValueError, match="Duplicate selection"):
+        synthesizer.synthesize(
+            neighbor_base, shorter_donor, take_functions=["f", "f"],
+        )
+    synthesizer.cleanup()
+
+
+def test_synthesize_duplicate_addition_refuses_instead_of_appending_twice() -> None:
+    """
+    Regression (BUG-034 facet): a duplicated selection of a part ABSENT from
+    the base used to append the same definition twice (the later def
+    silently shadowing the earlier one). Corrected behavior: same loud
+    duplicate refusal as the replacement arm.
+    """
+    synthesizer = StructuralSynthesizer()
+    donor_with_new_part = (
+        "def h():\n"
+        "    return 7\n"
+    )
+
+    with pytest.raises(ValueError, match="Duplicate selection"):
+        synthesizer.synthesize(
+            BASE, donor_with_new_part, take_functions=["h", "h"],
+        )
+    synthesizer.cleanup()
+
+
+def test_synthesize_same_name_across_kinds_is_not_a_duplicate() -> None:
+    """
+    Guard against over-rejection: duplicates are (name, kind) pairs, so one
+    function and one class sharing a name remain two distinct legal asks.
+    """
+    synthesizer = StructuralSynthesizer()
+    donor_shared_name = (
+        "def twin():\n"
+        "    return 'twin-function'\n"
+        "\n"
+        "class twin:\n"
+        "    marker = 'twin-class'\n"
+    )
+
+    verdict = synthesizer.synthesize(
+        BASE,
+        donor_shared_name,
+        take_functions=["twin"],
+        take_classes=["twin"],
+    )
+
+    composed = verdict["composed_source"]
+    assert verdict["parse_error"] is None
+    assert "twin-function" in composed
+    assert "twin-class" in composed
+    ast.parse(composed)
+    synthesizer.cleanup()
