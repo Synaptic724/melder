@@ -704,3 +704,34 @@ def test_lane_type_enforcement_propagates_from_configuration() -> None:
     assert root.create_research_set(
         "side"
     ).lane_type_enforcement is True
+
+
+def test_empty_recorded_module_is_present_source_not_absence() -> None:
+    """
+    Regression (BUG-152): source reads and diff material required
+    `source_text` to be truthy, so a validly recorded EMPTY module was
+    classified as unavailable/omitted - source_view reported no
+    source/origin with text_unavailable=True, and diff material dropped
+    the module entirely (a later version with content reported the module
+    as ADDED instead of changed). Corrected behavior: presence is the str
+    type; empty source is real recorded Python with origin='recorded' and
+    participates in comparisons.
+    """
+    aether = _mock_aether()
+    root = _activated_root(aether)
+    payload = _custody_payload()
+    payload["synthetic_module_sources"]["pkg.empty"] = {"source_text": ""}
+    payload["module_targets"] = list(payload["module_targets"]) + ["pkg.empty"]
+    payload["physical_module_fingerprints"]["pkg.empty"] = hashlib.sha256(
+        b""
+    ).hexdigest()
+    _install_crystal(aether, payload)
+
+    view = root.source_view("sha-1", module_name="pkg.empty")
+
+    assert "unknown_module" not in view
+    row = view["modules"]["pkg.empty"]
+    assert row["source"] == ""
+    assert row["origin"] == "recorded"
+    assert row["drifted"] is None
+    assert row["text_unavailable"] is False
