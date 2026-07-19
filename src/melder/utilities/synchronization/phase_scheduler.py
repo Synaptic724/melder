@@ -116,8 +116,94 @@ class PhaseScheduler(Cleanable):
       * Creating appropriately labelled UnitOfWork instances via
         :meth:`create_unit_of_work` so that all work items share the
         CURRENT RUN's CancellationEvent.
+
+    THE WORKER-LOOP CONTRACT (everything depends on it):
+        Every dequeued unit reports into its latch EXACTLY ONCE - no more, no
+        fewer. The loop wraps execution in a defensive catch even though
+        `run_for_scheduler()` is documented never to raise, because a unit that
+        somehow escaped without reporting would leave the control thread
+        blocked until the full barrier timeout to discover it. Reporting is the
+        invariant; correctness of the unit is secondary to it.
+
+        Cancellation reports as `complete()`, NOT `record_error()`. A cancelled
+        unit is an expected outcome of an already-aborted run, so counting it as
+        a failure would bury the ORIGINAL error under a pile of derived ones.
+
+    QUIESCE BEFORE UNWINDING (fail-fast is not enough):
+        The fail-fast wake returns while sibling unit BODIES may still be
+        executing on pool workers. Raising immediately lets the caller's failure
+        handler - for the restore lane, an all-or-nothing teardown - run
+        concurrently with those stragglers, and a straggler can then register
+        runtime state into a world that is being destroyed. So a failing phase
+        calls `latch.wait_all_reported(...)` before raising.
+
+        Bounded by the same barrier budget: a hung straggler times the quiesce
+        out and the raise proceeds anyway.
+
+    DOCUMENTED RESIDUAL - the scheduler never kills threads:
+        There is no forced termination anywhere. Abort paths mark units via
+        `set_exception` and rely on cooperative cancellation; a unit that
+        ignores its cancel event and never returns will occupy a pool worker
+        for the scheduler's lifetime. Bounded waits mean the CONTROL thread
+        always makes progress, but a genuinely hung unit is a leaked worker,
+        not a recovered one.
+
+        Aborts deliberately use `set_exception` rather than `uow.cancel()`:
+        workers still dequeue and invoke units, and the unit-side outcome
+        writes are race-guarded, so cancelling the Future would fight the
+        worker instead of informing it.
+
+    THE POST-SCAN (why a phase checks twice):
+        After a clean barrier, every unit is re-read for a stored exception.
+        This catches units handed to the scheduler ALREADY DONE with a
+        pre-recorded failure - the worker skips done units, so the latch never
+        sees them. All units are finished at that point, so the reads never
+        block.
+
+    Owned State:
+        - Persistent worker pool, spawned lazily on first run and reused for
+          the scheduler's whole lifetime. Spawn/join cost moves to owner
+          teardown rather than being paid per conjure.
+        - One queue feeding every worker; workers block on it and exit only on
+          an explicit sentinel.
+        - A per-run `CancellationEventSignal`, replaced at each
+          `run_all_phases(...)`, so one run's failure can never poison a later
+          run on the same pool.
+        - Phase registrations, cleared after each run.
+
+    Registration:
+        MELDER KERNEL - guarded. The scheduler is runtime machinery constructed
+        by its owner (a Spellbook, or the restore lane through the
+        explicit-value constructor).
+
+    Subsystem Context:
+        The orchestrator of the phase family in `utilities/synchronization/`.
+        The full chain per unit: this enqueues `(UnitOfWork, PhaseLatch)` -> a
+        worker dequeues and calls `run_for_scheduler()` -> that returns a
+        failure or None -> the worker calls `latch.record_error(...)` or
+        `latch.complete()` -> the latch fires -> this wakes, and on failure
+        quiesces before raising. `CancellationEventSignal` is the fifth
+        participant, checked by each unit before it runs.
+
+    System Context:
+        Every conjure runs phases 1-4 (structural), 5-7 (foundational
+        resolution), and 8-11 (plan resolution) through one of these, and the
+        crystallizer restore lane drives its own via the explicit-value
+        constructor. A `PhaseExecutionError` or `PhaseTimeoutError` here is what
+        the Spellbook surfaces to a user as a failed conjure - which is why the
+        quiesce matters: without it, a failed conjure could tear down a world
+        while units are still writing into it.
     """
     __melder_internal__: ClassVar[object] = _mrg.sentinel
+    _ast_helper_access: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. Persistent multi-phase runner. register_phase() in "
+        "order, then run_all_phases(): each phase is a barrier, units run on a "
+        "reused worker pool, a unit failure wakes the barrier immediately, and "
+        "the phase QUIESCES before raising so caller teardown never races "
+        "in-flight stragglers. Never kills threads - cancellation is "
+        "cooperative, so a unit that ignores its cancel event leaks a worker."
+    )
     __slots__ = Cleanable.__slots__ + [
         "_configuration",
         "_workers",

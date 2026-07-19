@@ -26,14 +26,93 @@ class CreationGateController(Cleanable):
         - Missing-key lookups return None.
         - Missing-key count/drain operations are no-ops returning zero/None.
         - enable_all / disable_all fan out to both registries.
-        - All public methods enforce check_cleaned().
+        - Every public method except `cleanup()` enforces check_cleaned();
+          `cleanup()` guards on its own `_cleaned` flag for idempotence instead.
+
+    Responsibilities:
+        - Own two independent gate registries: conduit-scope and spell-index.
+        - Resolve a conduit to its root so lineage-wide operations can fan out.
+        - Aggregate active-ticket counts across a conduit, a lineage, or all.
+        - Drive bulk enable/disable and close-and-drain over whole lineages.
+
+    TWO REGISTRIES, ONE PRIMITIVE:
+        The same `CreationGate` is reused for two unrelated scopes, kept in
+        separate maps so neither can shadow the other:
+
+        - CONDUIT scope, two-level: `root_conduit_id -> conduit_id -> gate`,
+          plus a reverse `conduit_id -> root_conduit_id` index. The two-level
+          shape is what makes "drain this whole lineage" a single fan-out rather
+          than a search, and the reverse map is what lets a caller holding only
+          a conduit id find its lineage without walking every root.
+        - SPELL-INDEX scope, flat: `index_id -> gate`, guarding
+          creation-context lifecycle rather than meld entry.
+
+    Contract:
+        - Each registry key must be non-empty and unique within its registry.
+        - Missing-key lookups return None.
+        - Missing-key count/drain operations are no-ops returning zero/None.
+        - enable_all / disable_all fan out to both registries.
+        - Every public method except `cleanup()` enforces check_cleaned();
+          `cleanup()` guards on its own `_cleaned` flag for idempotence instead.
+
+    MISSING KEYS ARE NOT ERRORS:
+        Lookups return None and count/drain verbs no-op rather than raising.
+        That is deliberate for a control plane: gates come and go with conduits,
+        so a drain issued against a lineage that has already torn itself down
+        should be a quiet success, not an exception the caller must catch. The
+        strictness lives at REGISTRATION instead - duplicate or empty keys
+        refuse loudly, because those are authoring bugs rather than lifecycle
+        races.
+
+    Owned State:
+        - Conduit gate map, its reverse conduit->root index, and the
+          spell-index gate map. The controller owns the REGISTRIES; the gates
+          themselves are owned by whoever created them.
 
     Threading:
         - The controller uses an internal RLock to make teardown
           deterministic under concurrent access.
         - Callers should still serialize concurrent registry mutations.
+        - Note what that caveat means in practice: the lock makes each
+          individual registry operation safe, NOT a multi-step sequence. A
+          read-then-mutate across two calls can interleave, so callers doing
+          compound work own that serialization themselves.
+        - Drains delegate to the gates, so a lineage drain inherits
+          `CreationGate`'s poll-with-deadline behaviour per gate rather than
+          holding this controller's lock for the duration.
+
+    Lifecycle / Cleanup:
+        - Teardown is deterministic under the controller lock.
+        - The controller releases its registries; it does not own the lifetime
+          of the gates it indexed, which belong to their creating conduits.
+
+    Registration:
+        MELDER KERNEL - guarded. This is frame-owned control-plane machinery.
+
+    Subsystem Context:
+        The collection tier above `CreationGate` in
+        `utilities/synchronization/`. One gate answers "may this caller enter";
+        this answers the same question for a whole lineage at once. Compare
+        `LoadGate`, which needs no controller because there is exactly one per
+        process.
+
+    System Context:
+        Frame-owned. Each `Conduit` registers its gate here at construction, so
+        the frame can freeze an entire conduit lineage - drain in-flight melds,
+        land a structural change, reopen - which is precisely the sequence
+        change-control needs when topology mutates under live resolution. The
+        spell-index registry serves the same purpose one level down, guarding
+        creation-context rebuilds per index.
     """
     __melder_internal__: ClassVar[object] = _mrg.sentinel
+    _ast_helper_access: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. Frame-owned registry of CreationGates across two "
+        "scopes: conduit gates (indexed root->conduit, with a reverse lookup so "
+        "a whole lineage can be drained in one fan-out) and spell-index gates. "
+        "Use it to freeze a lineage, drain in-flight melds, land a structural "
+        "change, then reopen. Missing keys are quiet no-ops, not errors."
+    )
     __slots__ = Cleanable.__slots__ + [
         "_lock",
         "_conduit_creation_gates",

@@ -45,12 +45,101 @@ class LoadGate(Cleanable):
         - Hosted once per Aether, constructed BEFORE any AethericFrame can
           exist, so frames born mid-load inherit coverage unconditionally.
 
-    Lifecycle:
+    Responsibilities:
+        - Grant one loading thread exclusive system-wide authority for a span.
+        - Let that holder enroll its worker threads into the span's cohort.
+        - Park every other thread at root-transaction ingress until release.
+        - Fail a parked thread loudly, naming the holding load, at its deadline.
+        - Guarantee no cohort membership outlives its span.
+
+    NO MEMBERSHIP SURVIVES A SPAN:
+        The cohort is cleared at THREE points - `acquire()` (a fresh span always
+        begins as a cohort of one), `release()`, and `cleanup()`. That is what
+        keeps the single-thread law intact between loads: a stale ident from a
+        previous span can never grant passage during the next one.
+
+    AUTHORITY IS NOT DELEGATED:
+        Only the holder may `enroll_worker` / `withdraw_worker` / `release`.
+        Workers never self-enroll. If enrolment were open, any thread could
+        write itself into the cohort and walk through the gate, which would
+        defeat the entire barrier. Withdrawal takes effect at the withdrawn
+        thread's NEXT passage check - a parked thread re-reads membership on
+        every condition wake, so nothing is ever interrupted mid-flight.
+
+    Owned State:
+        - `_condition`: the one lock, wrapped as a Condition. All mutation and
+          all parking happen under it.
+        - `_holder_thread_id` / `_holder_label`: who holds the system and under
+          what name. The label exists purely so a timeout can say WHICH load
+          blocked the caller.
+        - `_cohort_thread_ids`: idents the current holder enrolled.
+
+    Threading:
+        - All state transitions are guarded by one "Lock" wrapped in a
+          "Condition"; waiters park on the condition and are notified on
+          release and on cleanup.
+        - Hosted once per Aether, constructed BEFORE any AethericFrame can
+          exist, so frames born mid-load inherit coverage unconditionally.
+        - Guarding is split by role. The four MUTATING verbs - `acquire`,
+          `release`, `enroll_worker`, `withdraw_worker` - all call
+          `check_cleaned()` and refuse on a torn-down gate. The three READ
+          paths - `wait_for_passage`, `is_held`, `describe` - deliberately do
+          not.
+        - `wait_for_passage` skipping the guard is the load-bearing case: after
+          cleanup the gate is terminally OPEN, so a late mediator call must PASS
+          rather than raise. Teardown must never turn into a spurious admission
+          failure. `is_held` and `describe` skip it for the milder reason that a
+          probe should stay answerable during teardown.
+
+    Lifecycle / Cleanup:
         - "cleanup()" terminally opens the gate and wakes all waiters. Holder
           slots become None TOMBSTONES (documented; not del) so late waiters
           exit cleanly; `wait_for_passage` after cleanup passes immediately.
+        - The cohort set is cleared IN PLACE rather than released, for the same
+          late-waiter safety reason: a waking thread must be able to re-read it.
+        - This is the origin of the "LoadGate tombstone law" that sibling
+          primitives cite. Note it is a CHOICE driven by who is expected to be
+          parked at teardown: `CounterSwitch` faces the same question and
+          answers it the other way (normal del posture), because its owner
+          quiesces it before cleanup while this gate cannot assume that.
+
+    Registration:
+        MELDER KERNEL - guarded. System-wide load authority is Melder's; a user
+        registering one would be claiming the right to bar the runtime's own
+        transactions.
+
+    Subsystem Context:
+        The widest-scoped primitive in `utilities/synchronization/`. The other
+        members coordinate WITHIN an operation - `PhaseLatch` a phase barrier,
+        `CreationGate` one conduit's melds, `SafeGuard` a lock set. This one
+        coordinates BETWEEN whole subsystems: it is the only gate whose scope is
+        the entire process.
+
+    System Context:
+        Hosted by `Aether` and constructed before any frame can exist, so the
+        coverage guarantee is unconditional. It reaches the mediators as an
+        additive constructor kwarg threaded frame -> DevOpsManager ->
+        ChangeControlManager -> TransactionMediator, and the mediator consults
+        it at BOTH new-root ingresses. The crystallizer wraps each load verb in
+        an authority span.
+
+        Why it exists: a checkpoint restore replays a world through public
+        verbs, so its own per-verb transactions must keep running while every
+        foreign transaction waits - otherwise concurrent structural mutation
+        would race a half-rebuilt world. The cohort extension exists because
+        restore went parallel: the scheduler's restore workers are logically
+        part of the load and must pass, while genuinely foreign threads keep
+        parking exactly as before.
     """
     __melder_internal__: ClassVar[object] = _mrg.sentinel
+    _ast_helper_access: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. Process-wide exclusive load authority. acquire(label) "
+        "claims the system for one loading thread; enroll_worker() adds that "
+        "span's workers so they pass too; every foreign thread parks at "
+        "wait_for_passage() until release or times out naming the holding load. "
+        "One load at a time - nested acquire is a pairing bug, not a wait."
+    )
     __slots__ = Cleanable.__slots__ + [
         "_condition",
         "_holder_thread_id",

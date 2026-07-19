@@ -4452,6 +4452,12 @@ and logging.
                     existence=existence_enum,
                     aetheric_frame=self._aetheric_frame_name,
                     configured_disposal_method_names=self._configured_disposal_method_names,
+                    # Owner ruling 2026-07-19: non-hook bind kwargs thread into
+                    # Spell's construction (its native **kwargs metadata channel).
+                    **{
+                        key: value for key, value in kwargs.items()
+                        if key not in ("pre_hooks", "activation_hooks", "post_hooks")
+                    },
                 )
 
                 if Spellbook._aether._check_for_spell(new_spell.spell_id, self._aetheric_frame_name):
@@ -4743,6 +4749,12 @@ and logging.
                     existence=existence_enum,
                     aetheric_frame=self._aetheric_frame_name,
                     configured_disposal_method_names=self._configured_disposal_method_names,
+                    # Owner ruling 2026-07-19: non-hook bind kwargs thread into
+                    # Spell's construction (its native **kwargs metadata channel).
+                    **{
+                        key: value for key, value in kwargs.items()
+                        if key not in ("pre_hooks", "activation_hooks", "post_hooks")
+                    },
                 )
 
                 if Spellbook._aether._check_for_spell(new_spell.spell_id, self._aetheric_frame_name):

@@ -55,7 +55,95 @@ class UnitOfWork(Cleanable, Future):
         - The internal lock is set to None.
         - Subsequent guarded operations will fail via: meth:`check_cleaned` or by
           detecting that the lock is None.
+
+    Responsibilities:
+        - Bind one callable with its args, kwargs, and optional cancellation view.
+        - Execute it exactly once, recording the outcome on the Future surface.
+        - Check cooperative cancellation BEFORE invoking the callable.
+        - Carry a label and metadata for supervision and telemetry.
+
+    TWO EXECUTION LANES - pick by caller, they differ on exceptions:
+
+        `run_synchronously()` - the GENERAL lane.
+            Takes `_lock`, guards on cleaned state, and RE-RAISES whatever the
+            callable raised after recording it. Use it when a human-shaped
+            caller wants normal exception flow. Also reachable as `uow()`, so
+            the instance can be a plain thread target.
+
+        `run_for_scheduler()` - the HOT lane, for `PhaseScheduler` workers.
+            LOCK-FREE and NEVER RAISES. It RETURNS the failure instead, so the
+            worker can hand it straight to `PhaseLatch.record_error(...)`
+            without a try/except around every dispatch. Returns None on success
+            OR when the control thread already decided the outcome.
+
+        The lock-free reads in the hot lane are justified by THREAD CONFINEMENT,
+        not by luck: a scheduler unit is built on the control thread, handed to
+        exactly one worker through the queue (that hand-off is the
+        synchronization point), executed once, and inspected only after the
+        phase barrier. No second thread touches `_func`/`_args`/`_kwargs`/
+        `_cancel_event` while it runs, and scheduler units are never cleaned
+        mid-run.
+
+    OUTCOME RACES ARE EXPECTED AND HAVE A DEFINED WINNER:
+        The control thread can abort a phase (timeout or fail-fast) by writing
+        `set_exception(...)` on units that are still running. When a worker then
+        tries to record its own outcome it gets `InvalidStateError`. Every such
+        site swallows it deliberately: THE CONTROL THREAD'S OUTCOME WINS. A unit
+        that lost the race still returns cleanly so the latch keeps progressing.
+
+    Owned State:
+        - `_func` / `_args` / `_kwargs`: the bound call.
+        - `_cancel_event`: borrowed `CancellationEvent` view, or None.
+        - `_label` / `_metadata`: supervision payload, never interpreted here.
+        - `_lock`: guards THIS object's fields. Distinct from the lock `Future`
+          keeps internally for result state - they are not the same lock and do
+          not protect each other.
+
+    Threading:
+        - The context-manager form (`with uow:`) acquires the INSTANCE lock so a
+          caller can read or adjust metadata atomically. It has nothing to do
+          with execution and does not serialize the callable.
+        - `run_synchronously()` holds the instance lock for the whole call,
+          including the user callable. Do not use that lane for long work you
+          also want to inspect concurrently.
+        - `run_for_scheduler()` takes no lock at all.
+
+    Lifecycle / Cleanup:
+        - Idempotent, double-checked, releases every owned slot under normal del
+          posture with `_lock` dropped last.
+        - IMPORTANT: cleanup deliberately does NOT touch the underlying Future's
+          result or exception state. Anything awaiting this unit can still
+          observe the outcome after the unit itself has been torn down. The
+          bound call is released; the answer is not.
+
+    Registration:
+        MELDER KERNEL - guarded. The scheduler constructs units; a user has no
+        reason to register one as a spell.
+
+    Subsystem Context:
+        The work half of the phase machinery in `utilities/synchronization/`.
+        `PhaseScheduler` owns the pool and phase ordering, `PhaseLatch` owns the
+        barrier, and this owns one runnable item. The chain per unit is:
+        scheduler dequeues -> `run_for_scheduler()` -> returns failure or None ->
+        worker calls `latch.record_error(...)` or `latch.complete()`.
+        `CancellationEvent` is the fourth participant, checked before the call.
+
+    System Context:
+        Every conjure runs phases 1-4, 5-7, and 8-11 through the scheduler, and
+        each spell's per-phase work is one of these. That is why the hot lane
+        never raises: a raising unit would unwind a pool worker instead of
+        reporting into its latch, and the phase barrier would then wait out a
+        unit that is already dead.
     """
+
+    _ast_helper_access: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. One runnable unit bound to a callable, exposed as a "
+        "Future. Two lanes: run_synchronously() locks and re-raises for normal "
+        "callers; run_for_scheduler() is lock-free, never raises, and RETURNS "
+        "the failure so a PhaseScheduler worker can report it into its "
+        "PhaseLatch. Cleanup releases the bound call but preserves the outcome."
+    )
     __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
         "_func",

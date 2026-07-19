@@ -59,6 +59,92 @@ job").
    signature-rejection rows).
 
 ## Notes
+- DATETIME: 2026-07-19T14:58:00Z
+  TYPE: MEASURE
+  CLAIM: LANDED per the owner's design, exactly as stated - and the mechanism
+    already existed ON SPELL: Spell.__init__ ends in *args/**kwargs and STORES them
+    ("self.metadata = kwargs" - "Optional keyword metadata map attached to this
+    spell"); bind simply never threaded into it. CODE: (1) Bind.bind gains
+    **kwargs, threaded through BOTH usage paths (decorator + direct) into
+    _bind_logic (**kwargs param) and appended to the Spell(...) construction call -
+    the Spell is BORN with them, no setters, no override lanes touched. (2)
+    Spellbook.bind both call sites pass the non-hook remainder down (hook keys stay
+    owned by the hook lane). Native sovereignty: bind's declared params capture
+    their names before **kwargs (Python), and a key colliding with a bind-filled
+    Spell param (e.g. spell_id) raises TypeError from Spell's own signature. (3) 3
+    unit rows: kwargs land in spell.metadata verbatim; hook keys never leak; native
+    param collision fails loudly. compile green x3. pytest Not run - owner 3.14t:
+    pytest tests/unit/melder/aether/spellbook/test_bind_kwargs_metadata.py -q
+  EVIDENCE:
+  - src/melder/aether/spellbook/spell.py:271-273
+  - src/melder/aether/spellbook/bind/bind.py:112-132
+  - tests/unit/melder/aether/spellbook/test_bind_kwargs_metadata.py:1-60
+  IMPACT: bind(spell=X, existence=..., anything=value) attaches the extra values to
+    the Spell's own metadata map - the extension channel Spell always advertised.
+  NEXT: Owner green -> close; scan_bind parity (decorator metadata kwargs) worth a
+    follow-up ruling.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-07-19T14:54:00Z
+  TYPE: DECISION
+  CLAIM: CLOSED at owner direction - session f is OFF this story; a different agent
+    implements later. Session f repeatedly misread the design (stored payload in
+    _mutation_override; then framed precedence against spell_override - both wrong,
+    both rolled back by the owner; NO runtime changes remain). FOR THE NEXT AGENT,
+    the owner's design in his own words, final statement 2026-07-19: "spell has its
+    own kwargs but we would POP out any SPELL INIT ITEMS that are not owned by BIND
+    because bind itself doesn't FILL EVERYTHING" - i.e. Spell.__init__ has its own
+    signature and Bind._bind_logic only fills part of it when constructing the
+    Spell; bind(**kwargs) exists so callers can supply the REMAINING Spell.__init__
+    parameters: pop keys matching Spell init params that Bind does not natively
+    fill and pass them into Spell's construction. It is NOT about spell_override,
+    NOT about mutation_override, NOT a stored payload for the user object's ctor.
+    Kwargs extend; they never replace values Bind natively owns (Python signature
+    binding already enforces this at bind()). Earlier session-f notes in this file
+    reflect its misreadings - trust THIS note and the owner's words over them.
+  EVIDENCE:
+  - src/melder/aether/spellbook/spell.py:205-223
+  - src/melder/aether/spellbook/bind/bind.py:179-179
+  IMPACT: Clean handoff; no code changes outstanding from session f on this story.
+  NEXT: Next agent: read Spell.__init__'s full signature + Bind._bind_logic's
+    Spell(...) construction call FIRST, confirm the pop-and-fill design with the
+    owner, then implement.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-07-19T14:51:00Z
+  TYPE: DECISION
+  CLAIM: FINAL LOCKED DESIGN (owner, after rolling back session f's bad landing).
+    (1) Keep kwargs - the natural idiom. (2) THREADING, not attachment: bind()
+    collects **kwargs (hook keys pop as today) and passes the remainder as ONE
+    EXPLICIT DICT PARAM - construction_kwargs - through Bind._bind_logic into
+    Spell.__init__; the Spell is BORN carrying it in a dedicated slot. No setters,
+    no after-the-fact moves, and NEVER _mutation_override (mutation-research lane;
+    session f wrongly hijacked it - owner reverted all of it: spell verb, spellbook
+    split, test file). (3) Kwargs EXTEND, never replace: Python's own signature
+    binding means declared bind params capture their names before **kwargs -
+    native values are unstealable; dict-threading (never re-unpacking **kwargs
+    into Spell(...)) keeps every downstream native signature sovereign too.
+    (4) Validation happens INSIDE Spell.__init__ (shape: keyword-construction
+    material); the CONTENT judge stays the user object's own signature at
+    creation. (5) Consumption: payload -> user object __init__ at creation;
+    meld spell_override wins per-call; consumption seam is the creation-context/
+    phase-11 lane - READ FIRST (spell.py Spell.__init__, bind.py _bind_logic
+    Spell-construction site, creation-context build), then cut. Dependency-
+    position delivery remains the acceptance bar.
+  EVIDENCE:
+  - context_compass/system_docs/patches/active/bind_kwargs_spell_transplant_2026_07_19/architecture_patch.md:1-1
+  IMPACT: Design is now unambiguous and owner-confirmed at every seam; the failed
+    shortcut and its revert are on the record as the anti-pattern to not repeat.
+  NEXT: Fresh-wave implementation in this exact order: read Spell.__init__ +
+    _bind_logic construction site + creation-context assembly; thread the dict;
+    slot + init validation; creation consumption; tests (incl. collision row:
+    payload key matching a Spell init param name must be inert-safe); tier-02
+    example; probe flips.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
 - DATETIME: 2026-07-19T14:31:00Z
   TYPE: MEASURE
   CLAIM: LANDED (owner: "lets see what happens") - the deep seam ALREADY EXISTED:

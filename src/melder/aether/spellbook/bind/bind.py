@@ -120,6 +120,7 @@ class Bind(Cleanable):
             binding_name: Optional[str] = None,
             configured_disposal_method_names: Optional[frozenset[str]] = None,
             profile: str = "general",
+            **kwargs: Any,
     ) -> Union[Spell, Any]:
         """
         Register a class, function, or existing object as a `Spell`.
@@ -171,6 +172,7 @@ class Bind(Cleanable):
                     aetheric_frame,
                     configured_disposal_method_names,
                     profile,
+                    **kwargs,
                 )
 
             return decorator
@@ -185,6 +187,7 @@ class Bind(Cleanable):
                 aetheric_frame,
                 configured_disposal_method_names,
                 profile,
+                **kwargs,
             )
 
     def _bind_logic(
@@ -197,6 +200,7 @@ class Bind(Cleanable):
             aetheric_frame: str,
             configured_disposal_method_names: Optional[frozenset[str]] = None,
             profile: str = "general",
+            **kwargs: Any,
     ) -> Spell:
         """
         Internal logic for processing the binding of a spell object.
@@ -352,6 +356,11 @@ class Bind(Cleanable):
                 existing_object=spell if is_instance else None,
                 spellbook=self._spellbook,
                 disposal_method_names=resolved_disposal_method_names,
+                # Owner ruling 2026-07-19: leftover bind kwargs flow into
+                # Spell's OWN kwargs channel (Spell.__init__ stores them as
+                # spell.metadata). Native params stay sovereign: a colliding
+                # key fails loudly from Spell's signature.
+                **kwargs,
             )
 
             provisional_general_profile.complete_with_spell(new_spell)
