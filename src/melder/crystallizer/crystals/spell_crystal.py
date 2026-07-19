@@ -114,6 +114,7 @@ class SpellCrystal(Cleanable):
             user_source_root_paths: Optional[Sequence[Union[str, Path]]] = None,
             spellbook_id: Optional[str] = None,
             retain_user_sources: bool = False,
+            site_package_dependency_descent: bool = True,
     ) -> None:
         """
         Initialize one spell-targeted module dependency manifest.
@@ -160,6 +161,14 @@ class SpellCrystal(Cleanable):
                 rebuild absent user files through the synthetic module
                 lane. False (default) records paths and fingerprints
                 only - byte-identical to the pre-S2 record.
+            site_package_dependency_descent:
+                Analysis walk policy for installed third-party
+                packages (IO-economy lane, 2026-07-19): True (raw
+                default, byte-compatible) walks into their
+                dependencies; False records them as
+                provenance-carrying leaves with no source read. The
+                crystallizer facade passes the configuration truth
+                (schema default False).
 
         Returns:
             None.
@@ -280,6 +289,7 @@ class SpellCrystal(Cleanable):
             user_source_root_paths=self._user_root_paths,
             site_package_root_paths=self._site_package_root_paths,
             retain_user_sources=retain_user_sources,
+            site_package_dependency_descent=site_package_dependency_descent,
         )
         try:
             self._analysis: CrystalAnalysisResult = analyzer.analyze_spell_root(

@@ -1330,6 +1330,9 @@ class Crystallizer(Cleanable):
             user_source_root_paths=self._configuration.user_source_root_paths,
             spellbook_id=spellbook_id,
             retain_user_sources=self._configuration.retain_user_sources,
+            site_package_dependency_descent=(
+                self._configuration.site_package_dependency_descent
+            ),
         )
 
 

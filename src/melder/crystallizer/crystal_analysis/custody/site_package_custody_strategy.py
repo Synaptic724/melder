@@ -149,6 +149,16 @@ class SitePackageCustodyStrategy(SourceCustodyStrategy):
         """
         return self._read_source_like_file(module_name, module_path)
 
+    @property
+    def claims_sha256_source_fingerprint(self) -> bool:
+        """
+        Mirror of `fingerprint()`: site packages make no claim (S1 law).
+
+        Returns:
+            bool: False.
+        """
+        return False
+
     def fingerprint(self, source_text: str) -> Optional[str]:
         """
         Make no custody fingerprint claim over third-party code (S1 law).

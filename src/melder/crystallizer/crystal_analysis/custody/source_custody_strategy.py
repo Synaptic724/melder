@@ -160,6 +160,41 @@ class SourceCustodyStrategy(Cleanable, ABC):
         """
         return None
 
+    @property
+    def reads_physical_source(self) -> bool:
+        """
+        Whether this authority class resolves source from a disk file.
+
+        Contract:
+            True for the base read law (user_source and site_package read
+            `.py`/`.pyi` backing files); overridden False by strategies whose
+            source lives elsewhere (synthetic module objects) or nowhere
+            (binary/unknown leaves). The analyzer routes physical readers
+            through the shared `PhysicalSourceCache` stat-guard lane.
+
+        Returns:
+            bool: True when `resolve_source` reads the module's backing file.
+        """
+        return True
+
+    @property
+    def claims_sha256_source_fingerprint(self) -> bool:
+        """
+        Whether this class's fingerprint claim IS the base UTF-8 SHA256 law.
+
+        Contract:
+            The 1:1 mirror of the `fingerprint()` overrides: True only when
+            `fingerprint(text)` returns `sha256(text.encode("utf-8"))`. The
+            analyzer's stat fast path records cached SHA256 values as
+            fingerprints WITHOUT re-reading text, so a subclass that
+            overrides `fingerprint()` with any other law MUST override this
+            to False or the fast path would misclaim custody.
+
+        Returns:
+            bool: True when the base SHA256 fingerprint law applies.
+        """
+        return True
+
     def fingerprint(self, source_text: str) -> Optional[str]:
         """
         Return this authority class's fingerprint claim over source text.

@@ -197,3 +197,44 @@ def test_custody_cleanup_is_idempotent(tmp_path):
     fallback = BinaryUnknownCustodyStrategy()
     fallback.cleanup()
     fallback.cleanup()
+def test_physical_read_and_fingerprint_claim_contract_mirrors():
+    """
+    Purpose:
+        Pin the IO-economy contract properties 1:1 against the custody
+        family's read/fingerprint laws: physical readers route through the
+        stat cache; only base-SHA256 claimers may fast-path fingerprints.
+    Contract:
+        user_source: reads physical + claims sha256. site_package: reads
+        physical, NO claim (S1). synthetic + binary/unknown: neither.
+    """
+    from melder.crystallizer.crystal_analysis.custody.user_source_custody_strategy import (
+        UserSourceCustodyStrategy,
+    )
+    from melder.crystallizer.crystal_analysis.custody.site_package_custody_strategy import (
+        SitePackageCustodyStrategy,
+    )
+    from melder.crystallizer.crystal_analysis.custody.synthetic_custody_strategy import (
+        SyntheticCustodyStrategy,
+    )
+    from melder.crystallizer.crystal_analysis.custody.binary_unknown_custody_strategy import (
+        BinaryUnknownCustodyStrategy,
+    )
+
+    user = UserSourceCustodyStrategy(())
+    site = SitePackageCustodyStrategy(())
+    synthetic = SyntheticCustodyStrategy()
+    unknown = BinaryUnknownCustodyStrategy()
+    try:
+        assert user.reads_physical_source is True
+        assert user.claims_sha256_source_fingerprint is True
+        assert site.reads_physical_source is True
+        assert site.claims_sha256_source_fingerprint is False
+        assert synthetic.reads_physical_source is False
+        assert synthetic.claims_sha256_source_fingerprint is False
+        assert unknown.reads_physical_source is False
+        assert unknown.claims_sha256_source_fingerprint is False
+    finally:
+        user.cleanup()
+        site.cleanup()
+        synthetic.cleanup()
+        unknown.cleanup()

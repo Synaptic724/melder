@@ -436,3 +436,139 @@ def test_component_dag_topological_levels_is_side_effect_free() -> None:
     assert first == second == [["n1"], ["n2"]]
     assert [node.id for node in dag.topological_sort()] == ["n1", "n2"]
     dag.cleanup()
+
+
+def test_component_dag_topological_levels_wide_star_is_two_levels():
+    """
+    Purpose:
+        Validate maximum width: one root fanning out to 40 children peels
+        into exactly two levels with the whole fan mutually independent
+        (the restore plan's many-books-one-frame shape at scale).
+    Contract:
+        Level 0 = [root]; level 1 = all 40 children ascending by id.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If fan-out width or in-level order drifts.
+    """
+    dag = DirectedAcyclicWorkGraph()
+    children = ["child-{0:02d}".format(i) for i in range(40)]
+    dag.add_node("root")
+    for child in children:
+        dag.add_dependency(parent_key="root", child_key=child)
+    levels = dag.topological_levels()
+    assert [[node.id for node in level] for level in levels] == [
+        ["root"], sorted(children)
+    ]
+    dag.cleanup()
+
+
+def test_component_dag_topological_levels_deep_chain_is_one_per_level():
+    """
+    Purpose:
+        Validate maximum depth: a 60-node chain peels into 60 singleton
+        levels in exact dependency order (no level ever coalesces nodes
+        with an edge between them).
+    Contract:
+        Level i holds exactly node i of the chain.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If chain depth collapses or reorders.
+    """
+    dag = DirectedAcyclicWorkGraph()
+    keys = ["n-{0:03d}".format(i) for i in range(60)]
+    for earlier, later in zip(keys, keys[1:]):
+        dag.add_dependency(parent_key=earlier, child_key=later)
+    levels = dag.topological_levels()
+    assert [[node.id for node in level] for level in levels] == [
+        [key] for key in keys
+    ]
+    dag.cleanup()
+
+
+def test_component_dag_duplicate_edge_does_not_distort_levels():
+    """
+    Purpose:
+        Validate edge set semantics: adding the SAME dependency twice
+        must not double-count indegree - otherwise one peel could never
+        release the child and the plan would refuse as a phantom cycle.
+    Contract:
+        Levels are identical to the single-edge graph.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If a duplicate edge distorts the peel.
+    """
+    dag = DirectedAcyclicWorkGraph()
+    dag.add_dependency(parent_key="a", child_key="b")
+    dag.add_dependency(parent_key="a", child_key="b")
+    levels = dag.topological_levels()
+    assert [[node.id for node in level] for level in levels] == [
+        ["a"], ["b"]
+    ]
+    dag.cleanup()
+
+
+def test_component_dag_bulk_edges_flatten_like_individual_edges():
+    """
+    Purpose:
+        Validate the bulk edge lane against the individual lane: both
+        must produce identical levels for the same recorded shape.
+    Contract:
+        A diamond built via add_dependencies_bulk equals one built edge
+        by edge.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If the two edge lanes diverge structurally.
+    """
+    edges = [
+        ("root", "mid_a", None, None),
+        ("root", "mid_b", None, None),
+        ("mid_a", "sink", None, None),
+        ("mid_b", "sink", None, None),
+    ]
+    bulk = DirectedAcyclicWorkGraph()
+    bulk.add_dependencies_bulk(edges)
+    individual = DirectedAcyclicWorkGraph()
+    for parent_key, child_key, _param, _kind in edges:
+        individual.add_dependency(
+            parent_key=parent_key, child_key=child_key
+        )
+    bulk_shape = [
+        [node.id for node in level]
+        for level in bulk.topological_levels()
+    ]
+    individual_shape = [
+        [node.id for node in level]
+        for level in individual.topological_levels()
+    ]
+    assert bulk_shape == individual_shape == [
+        ["root"], ["mid_a", "mid_b"], ["sink"]
+    ]
+    bulk.cleanup()
+    individual.cleanup()
+
+
+def test_component_dag_levels_preserve_payload_object_identity():
+    """
+    Purpose:
+        Validate the planner's payload contract: topological_levels hands
+        back the SAME node objects, so payloads attached at add_node time
+        (the restore plan's (kind, key) descriptors) survive by identity.
+    Contract:
+        The payload object in the peeled level IS the attached object.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If payloads are copied or dropped by the peel.
+    """
+    dag = DirectedAcyclicWorkGraph()
+    payload = ("book", ("b1", "extra"))
+    dag.add_node("book:b1", payload=payload)
+    dag.add_dependency(parent_key="frame:f", child_key="book:b1")
+    levels = dag.topological_levels()
+    assert levels[1][0].payload is payload
+    assert levels[0][0].payload is None
+    dag.cleanup()

@@ -755,14 +755,29 @@ class Conduit(Cleanable):
         except Exception:
             self._logger.error("Error cleaning conduit pool", "_cleanup_normal_conduit", exc_info=True)
 
-        # 4) Unregister from Aether (spells + root conduit + cloud)
+        # 4) Unregister from Aether (spells + root conduit + cloud).
+        # Frame truth FIRST and independently (frame-truth hardening,
+        # 2026-07-19): the frame's root-conduit registry must never retain
+        # a cleaned husk because a sibling verb failed - e.g. a spellbook
+        # already cleaned by an out-of-order teardown makes the spell
+        # unregistration raise, and one shared try/except used to skip the
+        # frame removal entirely. Each verb now fails alone and is logged
+        # alone. Ordering is safe: spell unregistration works the frame's
+        # SPELL registry keyed by conduit id and never reads the
+        # root-conduit registry this removal pops.
+        try:
+            self._remove_root_conduit()
+        except Exception as e:
+            self._logger.error(f"Error removing root conduit from frame: {e}", "_cleanup_normal_conduit", exc_info=True)
         try:
             if self._spellbook is not None:
                 self._spellbook._unregister_conduit_spells_from_aether(self._id)
-            self._remove_root_conduit()
+        except Exception as e:
+            self._logger.error(f"Error unregistering conduit spells: {e}", "_cleanup_normal_conduit", exc_info=True)
+        try:
             self._publish_frame_record_to_nexus()
         except Exception as e:
-            self._logger.error(f"Error unregistering root conduit state: {e}", "_cleanup_normal_conduit", exc_info=True)
+            self._logger.error(f"Error publishing frame record to Nexus: {e}", "_cleanup_normal_conduit", exc_info=True)
 
         # 4.5) Drop per-conduit resolution state (normal conduits only)
         try:

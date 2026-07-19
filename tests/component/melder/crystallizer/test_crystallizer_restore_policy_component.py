@@ -18,6 +18,7 @@ import pytest
 
 from melder.aether.aether import Aether
 from melder.aether.aether_utility_system import AetherUtilitySystem
+from melder.crystallizer.crystals.aether_crystal import AetherCrystal
 from melder.crystallizer.configuration.crystallizer_configuration import (
     CrystallizerConfiguration,
 )
@@ -170,3 +171,111 @@ def test_deactivate_keeps_the_pool_and_reactivation_replaces_it():
     assert first.cleaned is True
     assert second is not first
     assert second.cleaned is False
+
+
+def test_recorded_reload_polarity_drives_the_driver_selection():
+    """
+    Purpose:
+        Pin the record -> policy -> driver chain: a recorded payload
+        carrying restore_parallel_enabled False reloads through the
+        reload lane and activation wires the SEQUENTIAL driver.
+    Contract:
+        load_recorded_dictionary + activate() -> no loader pool.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If recorded polarity is lost on the way to the
+            loader.
+    """
+    configuration = CrystallizerConfiguration()
+    outcome = configuration.load_recorded_dictionary({
+        "user_source_root_paths": ["/recorded/root"],
+        "restore_parallel_enabled": False,
+    })
+    assert outcome["rejected"] == []
+    configuration.activate()
+    crystallizer = Crystallizer()
+    crystallizer.activate(configuration)
+    assert crystallizer.activated is True
+    assert _restore_pool(crystallizer) is None
+
+
+def test_recorded_reload_backfill_reaches_the_pool_width():
+    """
+    Purpose:
+        Pin the backfill floor end to end: a pre-epic recorded payload
+        (no restore keys) backfills the schema defaults and activation
+        wires a pool of exactly the default width.
+    Contract:
+        Backfilled True/4/60000 -> live pool with workers == 4 and the
+        default barrier bound.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If a backfilled knob is lost in the wiring.
+    """
+    configuration = CrystallizerConfiguration()
+    outcome = configuration.load_recorded_dictionary({
+        "user_source_root_paths": ["/recorded/root"],
+    })
+    assert "restore_parallel_enabled" in outcome["backfilled"]
+    configuration.activate()
+    crystallizer = Crystallizer()
+    crystallizer.activate(configuration)
+    pool = _restore_pool(crystallizer)
+    assert pool is not None
+    assert pool.workers == 4
+    assert pool.barrier_timeout_ms == 60000
+
+
+def test_configure_refuses_while_active():
+    """
+    Purpose:
+        Pin the policy-safety refusal: the crystallizer rejects
+        reconfiguration while activated (a live pool and record must
+        never hot-swap policy).
+    Contract:
+        configure(new) on an active root raises RuntimeError; the
+        original pool object stays owned and live.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If a hot reconfiguration is admitted.
+    """
+    crystallizer = Crystallizer()
+    crystallizer.activate(
+        CrystallizerConfiguration().with_defaults().activate()
+    )
+    pool = _restore_pool(crystallizer)
+    replacement = CrystallizerConfiguration().with_defaults().activate()
+    with pytest.raises(RuntimeError):
+        crystallizer.configure(replacement)
+    assert _restore_pool(crystallizer) is pool
+    assert pool.cleaned is False
+
+
+def test_record_lane_is_undisturbed_by_the_owned_pool():
+    """
+    Purpose:
+        Pin lane isolation: owning a live restore pool must not disturb
+        the emission/checkpoint lane (the pool is loader plumbing, not a
+        record participant).
+    Contract:
+        With the pool wired, an emitted twin seals into a checkpoint
+        whose replay window carries the journaled entry.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If pool ownership bleeds into the record lane.
+    """
+    crystallizer = Crystallizer()
+    crystallizer.activate(
+        CrystallizerConfiguration().with_defaults().activate()
+    )
+    assert _restore_pool(crystallizer) is not None
+    crystallizer.emit(AetherCrystal())
+    checkpoint_id = crystallizer.create_checkpoint()
+    window = crystallizer.checkpoint_replay_data(checkpoint_id)
+    journaled_kinds = {str(entry[1]) for entry in window["journal"]}
+    assert "aether" in journaled_kinds
+    assert "aether" in window["payloads"]

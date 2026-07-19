@@ -482,3 +482,149 @@ def test_describe_reports_cohort_truthfully() -> None:
     assert gate.describe()["cohort_size"] == 2
     gate.release()
     gate.cleanup()
+
+
+def test_acquire_refuses_while_held_from_any_thread():
+    """
+    Purpose:
+        Pin the one-load-at-a-time law: acquire refuses while ANY holder
+        exists - including the holder itself (nested acquire is a pairing
+        bug) and any other thread.
+    Contract:
+        Both refusals raise RuntimeError naming the holding label.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If a second span can open over a held gate.
+    """
+    gate = LoadGate()
+    try:
+        gate.acquire("span-alpha")
+        with pytest.raises(RuntimeError, match="span-alpha"):
+            gate.acquire("nested")
+        errors = []
+
+        def foreign_acquire():
+            try:
+                gate.acquire("intruder")
+            except RuntimeError as error:
+                errors.append(str(error))
+
+        thread = threading.Thread(target=foreign_acquire)
+        thread.start()
+        thread.join()
+        assert len(errors) == 1
+        assert "span-alpha" in errors[0]
+        gate.release()
+    finally:
+        gate.cleanup()
+
+
+def test_release_refuses_open_gate_and_foreign_thread():
+    """
+    Purpose:
+        Pin the release pairing law: only the holder thread may release,
+        and releasing an open gate is a caller bug.
+    Contract:
+        Open-gate release raises; a non-holder thread's release raises
+        naming the holding load; the holder then releases cleanly.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If a foreign or unpaired release succeeds.
+    """
+    gate = LoadGate()
+    try:
+        with pytest.raises(RuntimeError, match="open gate"):
+            gate.release()
+        gate.acquire("span-owner")
+        errors = []
+
+        def foreign_release():
+            try:
+                gate.release()
+            except RuntimeError as error:
+                errors.append(str(error))
+
+        thread = threading.Thread(target=foreign_release)
+        thread.start()
+        thread.join()
+        assert len(errors) == 1
+        assert "span-owner" in errors[0]
+        gate.release()
+        assert gate.is_held() is False
+    finally:
+        gate.cleanup()
+
+
+def test_three_enrolled_members_pass_concurrently():
+    """
+    Purpose:
+        Pin cohort breadth: several enrolled workers pass the held gate
+        at once (the parallel pool shape), none serialized behind the
+        condition.
+    Contract:
+        All three member threads return from wait_for_passage within the
+        bound while the gate stays held.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If any member parks or the span leaks.
+    """
+    gate = LoadGate()
+    try:
+        gate.acquire("wide-span")
+        started = []
+        passed = []
+        record_lock = threading.Lock()
+        all_started = threading.Barrier(4, timeout=5.0)
+        release_members = threading.Event()
+
+        def member():
+            with record_lock:
+                started.append(threading.get_ident())
+            all_started.wait()
+            release_members.wait(timeout=5.0)
+            gate.wait_for_passage(timeout=2.0)
+            with record_lock:
+                passed.append(threading.get_ident())
+
+        threads = [threading.Thread(target=member) for _ in range(3)]
+        for thread in threads:
+            thread.start()
+        all_started.wait()
+        for ident in list(started):
+            gate.enroll_worker(ident)
+        release_members.set()
+        for thread in threads:
+            thread.join()
+        assert sorted(passed) == sorted(started)
+        assert gate.is_held() is True
+        gate.release()
+    finally:
+        gate.cleanup()
+
+
+def test_acquire_label_and_held_truth_lifecycle():
+    """
+    Purpose:
+        Pin the span bookkeeping edges: a falsy label refuses with
+        ValueError, and is_held() tracks the exact span lifecycle.
+    Contract:
+        False before acquire, True during, False after release.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If span truth or label validation drifts.
+    """
+    gate = LoadGate()
+    try:
+        with pytest.raises(ValueError):
+            gate.acquire("")
+        assert gate.is_held() is False
+        gate.acquire("lifecycle")
+        assert gate.is_held() is True
+        gate.release()
+        assert gate.is_held() is False
+    finally:
+        gate.cleanup()

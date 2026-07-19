@@ -67,7 +67,11 @@ class PhaseScheduler(Cleanable):
           per-unit Future waits.
         * Timeout: if the barrier is not reached in time, the phase aborts.
         * Fail-fast: a unit failure wakes the barrier immediately and
-          cancels the rest of the run.
+          cancels the rest of the run; before the failure surfaces to the
+          caller, the phase QUIESCES - it waits (bounded by the barrier
+          budget) until every in-flight sibling unit has reported, so
+          caller-side unwind/teardown never runs concurrently with a
+          straggler unit body still building state.
 
     Lifespan
     --------
@@ -652,7 +656,9 @@ class PhaseScheduler(Cleanable):
             1. Ask the factory for UnitsOfWork.
             2. Enqueue all units (each paired with this phase's latch).
             3. Wait on the latch: all-done, first-error, or timeout.
-            4. Aggregate any exceptions and raise PhaseExecutionError.
+            4. On first-error: cancel the run, quiesce in-flight stragglers
+               (bounded by the barrier budget), then aggregate exceptions
+               and raise PhaseExecutionError.
 
         Args:
             phase_name:
@@ -731,6 +737,20 @@ class PhaseScheduler(Cleanable):
                     except Exception:
                         # Ignore races with workers completing the unit.
                         pass
+
+            # QUIESCE before unwinding (parallel_restore lane, 2026-07-19):
+            # the fail-fast wake fires while sibling unit BODIES may still
+            # be executing on pool workers, and raising immediately lets a
+            # caller's failure handler (the restore engine's all-or-nothing
+            # teardown) run concurrently with those stragglers - a straggler
+            # can then register runtime state mid-teardown (the cleaned-husk
+            # frame leak on the owner's red run). Every dequeued unit
+            # reports into its latch exactly once (worker-loop contract) and
+            # already-done units no-op to complete(), so the all-reported
+            # barrier terminates. Bounded by the same barrier budget: a hung
+            # straggler times the quiesce out and the raise proceeds (the
+            # scheduler never kills threads; documented residual).
+            latch.wait_all_reported(timeout_sec)
 
             raise PhaseExecutionError(phase_name, errors)
 

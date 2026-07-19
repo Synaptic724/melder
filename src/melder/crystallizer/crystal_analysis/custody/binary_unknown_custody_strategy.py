@@ -111,6 +111,26 @@ class BinaryUnknownCustodyStrategy(SourceCustodyStrategy):
         """
         return None, None
 
+    @property
+    def reads_physical_source(self) -> bool:
+        """
+        Unknown/binary leaves expose no readable source lane.
+
+        Returns:
+            bool: False.
+        """
+        return False
+
+    @property
+    def claims_sha256_source_fingerprint(self) -> bool:
+        """
+        Mirror of `fingerprint()`: no claim is ever made here.
+
+        Returns:
+            bool: False.
+        """
+        return False
+
     def fingerprint(self, source_text: str) -> Optional[str]:
         """
         Make no fingerprint claim for unknown targets.

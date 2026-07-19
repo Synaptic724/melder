@@ -28,6 +28,11 @@ class PhaseLatch:
           owned by exactly one phase run and is never reused, so stale
           completions from an abandoned phase can never touch a newer
           barrier (each queued unit carries its own latch reference).
+        - `wait_all_reported(timeout)` is the QUIESCE barrier: it fires only
+          when every expected unit has reported (success, cooperative
+          cancel, or failure), so a fail-fast control thread can wait out
+          in-flight stragglers before unwinding into caller teardown. Late
+          reports drive this second event exactly like the first.
 
     Threading:
         - `complete()` / `record_error()` are called from worker threads;
@@ -39,7 +44,7 @@ class PhaseLatch:
           event, holds no external resources, and requires no cleanup call.
     """
 
-    __slots__ = ["_lock", "_event", "_remaining", "_errors"]
+    __slots__ = ["_lock", "_event", "_all_reported_event", "_remaining", "_errors"]
 
     def __init__(self, expected: int) -> None:
         """
@@ -57,6 +62,7 @@ class PhaseLatch:
             raise ValueError("PhaseLatch expected count must be a positive int.")
         self._lock = threading.Lock()
         self._event = threading.Event()
+        self._all_reported_event = threading.Event()
         self._remaining: int = expected
         self._errors: List[BaseException] = []
 
@@ -76,6 +82,7 @@ class PhaseLatch:
             self._remaining -= 1
             if self._remaining <= 0:
                 self._event.set()
+                self._all_reported_event.set()
 
     def record_error(self, exc: BaseException) -> None:
         """
@@ -97,6 +104,37 @@ class PhaseLatch:
             self._errors.append(exc)
             self._remaining -= 1
             self._event.set()
+            if self._remaining <= 0:
+                self._all_reported_event.set()
+
+    def wait_all_reported(self, timeout_seconds: float) -> bool:
+        """
+        Wait until EVERY expected unit has reported, bounded (quiesce).
+
+        Purpose:
+            The fail-fast wake (`wait`) returns while straggler unit bodies
+            may still be executing on pool workers. Callers that unwind
+            into teardown must not race those bodies: this verb parks until
+            the remaining count reaches zero - success, cooperative
+            cancellation, and failure reports all count - so a True return
+            means no unit body is still in flight.
+
+        Contract:
+            - Returns True when all expected reports landed within the
+              timeout; False when at least one unit is still unreported
+              (hung or still running) at the bound.
+            - Idempotent after the fact: once all units have reported,
+              every later call returns True immediately.
+            - Termination rides the worker-loop law: every dequeued unit
+              reports into its latch exactly once.
+
+        Args:
+            timeout_seconds: Maximum seconds to wait.
+
+        Returns:
+            bool: True when the phase is fully quiesced, else False.
+        """
+        return self._all_reported_event.wait(timeout_seconds)
 
     def wait(self, timeout_seconds: float) -> bool:
         """

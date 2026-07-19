@@ -1,4 +1,4 @@
-"""Unit tests for the package version metadata contract."""
+"""Unit tests for the package version metadata contract (single-truth law)."""
 
 
 def test_version_module_exposes_expected_base_version() -> None:
@@ -8,9 +8,16 @@ def test_version_module_exposes_expected_base_version() -> None:
     assert __version__ == "0.1.0"
 
 
-def test_package_version_reexport_appends_dev_suffix() -> None:
-    """Ensure the package-level __version__ remains derived from the base version."""
+def test_package_version_is_the_single_truth_unmutated() -> None:
+    """
+    Purpose:
+        Regression for the retired DEBUG_MODE lane: the package-level
+        __version__ IS the metadata module's literal - no environment
+        mutation, no dev suffix, one truth for runtime and build alike.
+    Contract:
+        melder.__version__ == melder.__version__.__version__ byte-equal.
+    """
     import melder
     from melder.__version__ import __version__ as base_version
 
-    assert melder.__version__ == base_version + ".dev0"
+    assert melder.__version__ == base_version

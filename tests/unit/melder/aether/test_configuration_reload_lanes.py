@@ -254,6 +254,9 @@ def test_crystallizer_load_recorded_dictionary_reloads_policy_and_seals():
         # S2 physical custody: retain_user_sources joined the schema and
         # backfills False for pre-S2 recorded payloads.
         "retain_user_sources",
+        # Analysis IO economy 2026-07-19: the site-package descent policy
+        # joined the schema and backfills False for older payloads.
+        "site_package_dependency_descent",
     ]
     assert configuration.frozen is True
     configuration.cleanup()

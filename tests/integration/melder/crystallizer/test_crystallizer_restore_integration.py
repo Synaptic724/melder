@@ -2302,3 +2302,775 @@ def test_roots_only_configuration_parallel_restores_a_sealed_world(
     assert report["built_counts"].get("link", 0) == 1
     # The load span released: no residual authority bars root work.
     assert Aether()._load_gate.is_held() is False
+
+
+def test_unknown_checkpoint_refusal_releases_load_authority(cache_root):
+    """
+    Purpose:
+        Safety wave 2 (2026-07-19): the authority finally-law on the
+        refusal path - an unknown checkpoint id raises INSIDE the load
+        span (plan minting), and the LoadGate must still release so the
+        world is not bricked by a typo'd id.
+    Contract:
+        - load_checkpoint(unknown) raises KeyError (teach-grade).
+        - The gate is released afterwards and a normal root transaction
+          (bind + conjure) proceeds unbarred.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If refusal leaks held authority.
+    """
+    crystallizer = _activate_crystallizer()
+    with pytest.raises(KeyError):
+        crystallizer.load_checkpoint("01UNKNOWNCHECKPOINT0000000")
+    assert Aether()._load_gate.is_held() is False
+    book = _dynamic_book()
+    book.bind(
+        spell=RestoreAlpha,
+        existence=Existence.unique,
+        permissions="create",
+    )
+    conduit = book.conjure(dynamic=True, name="post-refusal")
+    assert conduit is not None
+
+
+def test_reload_over_live_world_fails_atomically_and_releases_authority(
+        cache_root,
+):
+    """
+    Purpose:
+        Safety wave 2: the all-or-nothing law when a PARALLEL load fails
+        over a LIVE world. World-scope loads skip host preflight by
+        contract (load_admission._preflight_host), so replaying a
+        checkpoint onto its own restored world fails mid-replay on the
+        named-conduit collision - the failing run must tear down ONLY its
+        own partial units, release authority, and leave the first restored
+        world standing.
+    Contract:
+        - First load completes (parallel driver, plan present).
+        - Second load of the SAME checkpoint raises RuntimeError (stage
+          failure, cause chained).
+        - Gate released; the restored world's named conduits are still
+          registered afterwards (public cloud probe).
+    Returns:
+        None.
+    Raises:
+        AssertionError: If the failed reload bricks authority or damages
+            the standing world.
+    """
+    crystallizer = _activate_crystallizer()
+    book_a = _dynamic_book()
+    book_a.bind(
+        spell=RestoreAlpha,
+        existence=Existence.unique,
+        permissions="create",
+    )
+    conduit_a = book_a.conjure(dynamic=True, name="alpha")
+    book_b = _dynamic_book()
+    book_b.bind(
+        spell=RestoreGamma,
+        existence=Existence.unique,
+        permissions="create",
+    )
+    conduit_b = book_b.conjure(dynamic=True, name="beta")
+    assert conduit_a.link(conduit_b) is True
+    checkpoint_id = crystallizer.create_checkpoint()
+    crystallizer.flush_checkpoint(checkpoint_id)
+
+    crystallizer = _fresh_boot()
+    crystallizer.reload_cached_checkpoint(checkpoint_id)
+    first = crystallizer.load_checkpoint(checkpoint_id)
+    assert first["status"] == "complete"
+    assert first["plan"]["level_count"] >= 2
+
+    with pytest.raises(RuntimeError):
+        crystallizer.load_checkpoint(checkpoint_id)
+
+    assert Aether()._load_gate.is_held() is False
+    cloud = Aether()._aetheric_frames["default"].conduit_cloud
+    assert cloud.has_conduit_name("alpha") is True
+    assert cloud.has_conduit_name("beta") is True
+
+
+def test_single_worker_parallel_restore_completes_without_deadlock(
+        cache_root,
+):
+    """
+    Purpose:
+        Safety wave 2: the degenerate-pool law - restore_scheduler_workers
+        = 1 must still complete a multi-level parallel restore (one worker
+        drains every level behind its barrier; the cohort of one enrolled
+        worker passes the gate).
+    Contract:
+        Restore completes with the plan summary populated and both books
+        rebuilt; authority fully released.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If the width-1 pool deadlocks or diverges.
+    """
+    crystallizer = _activate_crystallizer()
+    book_a = _dynamic_book()
+    book_a.bind(
+        spell=RestoreAlpha,
+        existence=Existence.unique,
+        permissions="create",
+    )
+    conduit_a = book_a.conjure(dynamic=True, name="alpha")
+    book_b = _dynamic_book()
+    book_b.bind(
+        spell=RestoreGamma,
+        existence=Existence.unique,
+        permissions="create",
+    )
+    conduit_b = book_b.conjure(dynamic=True, name="beta")
+    assert conduit_a.link(conduit_b) is True
+    checkpoint_id = crystallizer.create_checkpoint()
+    crystallizer.flush_checkpoint(checkpoint_id)
+
+    Aether._reset_singleton_for_tests()
+    AetherUtilitySystem._reset_singleton_for_tests()
+    Nexus._reset_singleton_for_tests()
+    Crystallizer._reset_singleton_for_tests()
+    aether = Aether()
+    Spellbook._aether = aether
+    Conduit._aether = aether
+    configuration = CrystallizerConfiguration().with_defaults()
+    configuration.set_property("restore_scheduler_workers", 1)
+    configuration.activate()
+    crystallizer = Crystallizer()
+    crystallizer.activate(configuration)
+
+    crystallizer.reload_cached_checkpoint(checkpoint_id)
+    report = crystallizer.load_checkpoint(checkpoint_id)
+    assert report["status"] == "complete"
+    assert report["plan"]["level_count"] >= 2
+    assert report["built_counts"].get("spellbook", 0) == 2
+    assert report["built_counts"].get("link", 0) == 1
+    assert Aether()._load_gate.is_held() is False
+
+
+def _seal_linked_world():
+    """
+    Build the house two-book linked world and seal it.
+
+    Returns:
+        str: The flushed checkpoint id.
+    """
+    crystallizer = _activate_crystallizer()
+    book_a = _dynamic_book()
+    book_a.bind(
+        spell=RestoreAlpha,
+        existence=Existence.unique,
+        permissions="create",
+    )
+    conduit_a = book_a.conjure(dynamic=True, name="alpha")
+    book_b = _dynamic_book()
+    book_b.bind(
+        spell=RestoreGamma,
+        existence=Existence.unique,
+        permissions="create",
+    )
+    conduit_b = book_b.conjure(dynamic=True, name="beta")
+    assert conduit_a.link(conduit_b) is True
+    checkpoint_id = crystallizer.create_checkpoint()
+    crystallizer.flush_checkpoint(checkpoint_id)
+    return checkpoint_id
+
+
+def test_restored_world_recheckpoints_and_restores_again(cache_root):
+    """
+    Purpose:
+        Wave 3: the re-emission covenant across GENERATIONS - a restored
+        world re-records itself, so its own checkpoint must restore on a
+        third boot with the same structure (record -> world -> record
+        lineage is closed).
+    Contract:
+        Generation-2 checkpoint (sealed from the restored world) rebuilds
+        2 spellbooks and 1 link on boot 3, matching generation 1.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If the second generation loses structure.
+    """
+    checkpoint_one = _seal_linked_world()
+
+    generation_two = _fresh_boot()
+    generation_two.reload_cached_checkpoint(checkpoint_one)
+    first_report = generation_two.load_checkpoint(checkpoint_one)
+    assert first_report["status"] == "complete"
+    checkpoint_two = generation_two.create_checkpoint()
+    generation_two.flush_checkpoint(checkpoint_two)
+
+    generation_three = _fresh_boot()
+    generation_three.reload_cached_checkpoint(checkpoint_two)
+    second_report = generation_three.load_checkpoint(checkpoint_two)
+    assert second_report["status"] == "complete"
+    assert second_report["built_counts"].get("spellbook", 0) == 2
+    assert second_report["built_counts"].get("link", 0) == 1
+    assert (
+        second_report["built_counts"].get("spellbook", 0)
+        == first_report["built_counts"].get("spellbook", 0)
+    )
+
+
+def test_cluster_world_parallel_restore_rebuilds_membership(cache_root):
+    """
+    Purpose:
+        Wave 3: the cluster vocabulary under the parallel driver - a
+        recorded cluster with two member conduits rebuilds as one cluster
+        unit plus per-member joins in a plan level behind the books.
+    Contract:
+        built_counts cluster == 1 and cluster_member == 2; plan present.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If cluster topology loses members on restore.
+    """
+    crystallizer = _activate_crystallizer()
+    book_a = _dynamic_book()
+    book_a.bind(
+        spell=RestoreAlpha,
+        existence=Existence.unique,
+        permissions="create",
+    )
+    conduit_a = book_a.conjure(dynamic=True, name="alpha")
+    book_b = _dynamic_book()
+    book_b.bind(
+        spell=RestoreGamma,
+        existence=Existence.unique,
+        permissions="create",
+    )
+    conduit_b = book_b.conjure(dynamic=True, name="beta")
+    cloud = Aether()._aetheric_frames["default"].conduit_cloud
+    cloud.create_cluster("workers")
+    cloud.add_conduit_to_cluster(conduit_a, "workers")
+    cloud.add_conduit_to_cluster(conduit_b, "workers")
+    checkpoint_id = crystallizer.create_checkpoint()
+    crystallizer.flush_checkpoint(checkpoint_id)
+
+    rebooted = _fresh_boot()
+    rebooted.reload_cached_checkpoint(checkpoint_id)
+    report = rebooted.load_checkpoint(checkpoint_id)
+    assert report["status"] == "complete"
+    assert report["plan"]["level_count"] >= 3
+    assert report["built_counts"].get("cluster", 0) == 1
+    assert report["built_counts"].get("cluster_member", 0) == 2
+
+
+def test_staged_member_world_restores_identically_on_both_drivers(
+        cache_root,
+):
+    """
+    Purpose:
+        Wave 3: staged-member parity - a world with a parked member on
+        the active index restores to the same staged/active shape under
+        the sequential AND parallel drivers (no notch fabricated by
+        either).
+    Contract:
+        Both drivers: spell_active == 1, spell_staged == 1, no
+        selection_notch; the parallel report additionally carries a plan.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If the drivers diverge on staged custody.
+    """
+    crystallizer = _activate_crystallizer()
+    book = _dynamic_book()
+    active_id = book.bind(
+        spell=RestoreAlpha,
+        existence=Existence.unique,
+        permissions="create",
+    )
+    conduit = book.conjure(dynamic=True, name="root")
+    active_spell = book._spells_by_id[active_id]
+    conduit.bind_inactive(
+        spell=RestoreBeta,
+        spell_index=active_spell.spell_index,
+        existence=Existence.unique,
+        permissions="create",
+    )
+    checkpoint_id = crystallizer.create_checkpoint()
+    crystallizer.flush_checkpoint(checkpoint_id)
+
+    reports = {}
+    for parallel_enabled in (False, True):
+        Aether._reset_singleton_for_tests()
+        AetherUtilitySystem._reset_singleton_for_tests()
+        Nexus._reset_singleton_for_tests()
+        Crystallizer._reset_singleton_for_tests()
+        aether = Aether()
+        Spellbook._aether = aether
+        Conduit._aether = aether
+        configuration = CrystallizerConfiguration().with_defaults()
+        configuration.set_property(
+            "restore_parallel_enabled", parallel_enabled
+        )
+        configuration.activate()
+        crystallizer = Crystallizer()
+        crystallizer.activate(configuration)
+        crystallizer.reload_cached_checkpoint(checkpoint_id)
+        reports[parallel_enabled] = crystallizer.load_checkpoint(
+            checkpoint_id
+        )
+
+    for parallel_enabled, report in reports.items():
+        assert report["status"] == "complete"
+        assert report["built_counts"].get("spell_active", 0) == 1
+        assert report["built_counts"].get("spell_staged", 0) == 1
+        assert report["built_counts"].get("selection_notch") is None
+    assert reports[False]["plan"] == {}
+    assert reports[True]["plan"]["level_count"] >= 2
+
+
+def test_recorded_policy_twin_drives_driver_selection_on_reload(
+        cache_root,
+):
+    """
+    Purpose:
+        Wave 3: the record -> policy -> driver chain end to end - a world
+        sealed under a sequential-polarity policy carries that truth in
+        its own crystallizer twin; a boot that reloads policy FROM THE
+        RECORD (the documented cache-boot lane) must select the
+        sequential driver.
+    Contract:
+        The sealed window's crystallizer payload reloads via
+        load_recorded_dictionary; activation wires no pool; the load runs
+        sequential (empty plan) and completes.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If recorded polarity is lost anywhere in the
+            chain.
+    """
+    configuration = CrystallizerConfiguration().with_defaults()
+    configuration.set_property("restore_parallel_enabled", False)
+    configuration.activate()
+    crystallizer = Crystallizer()
+    crystallizer.activate(configuration)
+    book = _dynamic_book()
+    book.bind(
+        spell=RestoreAlpha,
+        existence=Existence.unique,
+        permissions="create",
+    )
+    book.conjure(dynamic=True, name="solo")
+    checkpoint_id = crystallizer.create_checkpoint()
+    window = crystallizer.checkpoint_replay_data(checkpoint_id)
+    recorded_policy = dict(
+        next(iter(window["payloads"]["crystallizer"].values()))
+    )["configuration_payload"]
+    assert recorded_policy["restore_parallel_enabled"] is False
+    crystallizer.flush_checkpoint(checkpoint_id)
+
+    Aether._reset_singleton_for_tests()
+    AetherUtilitySystem._reset_singleton_for_tests()
+    Nexus._reset_singleton_for_tests()
+    Crystallizer._reset_singleton_for_tests()
+    aether = Aether()
+    Spellbook._aether = aether
+    Conduit._aether = aether
+    rebooted_configuration = CrystallizerConfiguration()
+    outcome = rebooted_configuration.load_recorded_dictionary(
+        dict(recorded_policy)
+    )
+    assert outcome["rejected"] == []
+    rebooted_configuration.activate()
+    rebooted = Crystallizer()
+    rebooted.activate(rebooted_configuration)
+    assert (
+        rebooted._crystal_loader_system._restore_scheduler is None
+    )
+    rebooted.reload_cached_checkpoint(checkpoint_id)
+    report = rebooted.load_checkpoint(checkpoint_id)
+    assert report["status"] == "complete"
+    assert report["plan"] == {}
+
+
+def test_formation_restore_under_the_pool_carries_a_plan(cache_root):
+    """
+    Purpose:
+        Wave 3: the scoped-restore lane under the parallel driver - a
+        conduit-scope formation composes through the SAME plan/level
+        machinery, so its report carries a plan summary beside the
+        scope-aware clean admission.
+    Contract:
+        restore_formation on a defaults boot (parallel driver) completes
+        with plan level_count >= 1 and admission scope "conduit".
+    Returns:
+        None.
+    Raises:
+        AssertionError: If the scoped lane bypasses the plan machinery.
+    """
+    crystallizer = _activate_crystallizer()
+    book = _dynamic_book()
+    book.bind(
+        spell=RestoreAlpha,
+        existence=Existence.unique,
+        permissions="create",
+    )
+    conduit = book.conjure(dynamic=True, name="keeper")
+    crystallizer.save_formation(
+        "pooled-formation", conduit_id=conduit._id
+    )
+
+    rebooted = _fresh_boot()
+    report = rebooted.restore_formation("pooled-formation")
+    assert report["status"] == "complete"
+    assert report["plan"]["level_count"] >= 1
+    admission = dict(report["admission"])
+    assert admission["scope"] == "conduit"
+    assert admission["verdict"] == "clean"
+
+
+def test_skip_existing_formation_composes_over_a_live_world(cache_root):
+    """
+    Purpose:
+        Wave 3: the S1 skip lanes under the parallel driver - composing a
+        formation whose conduit NAME is already live must downgrade the
+        host collision and build UNNAMED with the honesty shortfall,
+        never refuse or damage the resident conduit.
+    Contract:
+        - The live world owns a DIFFERENT spell under the colliding name
+          ("keeper" carries RestoreGamma), so ONLY the conduit name
+          collides: content-stable spell SHAs never join the skip
+          vocabulary, and re-composing a formation whose spells are
+          already resident refuses by design (Aether spell-id collision).
+        - Compose with skip_existing=True completes; shortfall
+          "conduit_name_taken_built_unnamed" reported; the resident named
+          conduit survives untouched as the SAME live object.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If the skip lane refuses or drops honesty.
+    """
+    crystallizer = _activate_crystallizer()
+    book = _dynamic_book()
+    book.bind(
+        spell=RestoreAlpha,
+        existence=Existence.unique,
+        permissions="create",
+    )
+    conduit = book.conjure(dynamic=True, name="keeper")
+    crystallizer.save_formation(
+        "skip-formation", conduit_id=conduit._id
+    )
+
+    rebooted = _fresh_boot()
+    resident_book = _dynamic_book()
+    resident_book.bind(
+        spell=RestoreGamma,
+        existence=Existence.unique,
+        permissions="create",
+    )
+    resident = resident_book.conjure(dynamic=True, name="keeper")
+    resident_id = resident._id
+
+    composed = rebooted.restore_formation(
+        "skip-formation", skip_existing=True
+    )
+    assert composed["status"] == "complete"
+    reasons = {row["reason"] for row in composed["shortfalls"]}
+    assert "conduit_name_taken_built_unnamed" in reasons
+    assert composed["built_counts"]["spellbook"] == 1
+    assert composed["built_counts"]["conduit"] == 1
+    cloud = Aether()._aetheric_frames["default"].conduit_cloud
+    assert cloud.has_conduit_name("keeper") is True
+    survivor = cloud.get_conduit("keeper")
+    assert survivor._id == resident_id
+    assert survivor.cleaned is False
+
+
+def test_wide_pool_chaos_tears_down_three_book_world(cache_root):
+    """
+    Purpose:
+        Wave 3: the chaos law at width 4 over three books - one poisoned
+        conduit policy fails its level while healthy siblings build
+        concurrently, and the all-or-nothing teardown still leaves zero
+        survivors.
+    Contract:
+        RuntimeError names a level_N stage; the frame holds no conduits;
+        the report reads failed with the level stage.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If a sibling unit survives the poisoned level.
+    """
+    from melder.utilities.synchronization.phase_scheduler import (
+        PhaseScheduler,
+    )
+
+    _activate_crystallizer()
+
+    def book_payload(book_id):
+        return {
+            "spellbook_id": book_id,
+            "frame_name": "default",
+            "configuration_payload": {
+                "system_state": "dynamic",
+                "ai_native_enabled": True,
+                "rift_enabled": True,
+                "phase_scheduler_workers_per_spellbook": 1,
+            },
+            "hook_names": [],
+            "bind_order": [],
+        }
+
+    window = {
+        "journal": [
+            [1, "spellbook", "book-1"],
+            [2, "spellbook", "book-2"],
+            [3, "spellbook", "book-3"],
+            [4, "conduit", "cond-1"],
+            [5, "conduit", "cond-2"],
+            [6, "conduit", "cond-3"],
+        ],
+        "payloads": {
+            "spellbook": {
+                "book-1": book_payload("book-1"),
+                "book-2": book_payload("book-2"),
+                "book-3": book_payload("book-3"),
+            },
+            "conduit": {
+                "cond-1": {
+                    "conduit_id": "cond-1",
+                    "spellbook_id": "book-1",
+                    "conduit_name": "healthy-one",
+                    "policy_name": "default",
+                    "dynamic": True,
+                    "link_targets": [],
+                },
+                "cond-2": {
+                    "conduit_id": "cond-2",
+                    "spellbook_id": "book-2",
+                    "conduit_name": "healthy-two",
+                    "policy_name": "default",
+                    "dynamic": True,
+                    "link_targets": [],
+                },
+                "cond-3": {
+                    "conduit_id": "cond-3",
+                    "spellbook_id": "book-3",
+                    "conduit_name": "poisoned",
+                    "policy_name": "no_such_policy_anywhere",
+                    "dynamic": True,
+                    "link_targets": [],
+                },
+            },
+        },
+    }
+    scheduler = PhaseScheduler(
+        spellbook=None,
+        configuration=None,
+        worker_count=4,
+        barrier_timeout_ms=60000,
+    )
+    engine = RestoreEngine(
+        profile_name="default",
+        checkpoint_ids=["01CHAOSWIDEPOOL000000000"],
+        chain=[window],
+        scheduler=scheduler,
+    )
+    try:
+        with pytest.raises(RuntimeError) as raised:
+            engine.restore()
+        report_payload = engine._report.describe()
+    finally:
+        engine.cleanup()
+        scheduler.cleanup()
+    assert "level_" in str(raised.value)
+    assert report_payload["status"] == "failed"
+    assert str(report_payload["failed_stage"]).startswith("level_")
+    frame = Aether()._aetheric_frames["default"]
+    assert frame._conduits == {}
+
+
+def test_restored_borrower_melds_the_granted_spell(cache_root):
+    """
+    Purpose:
+        Wave 3: the restored world must WORK, not just count - after a
+        parallel restore of a linked world with a contract grant, the
+        borrower conduit (found through the identity map) melds the
+        granted spell into a live instance.
+    Contract:
+        The recorded borrower id translates to a fresh conduit whose
+        meld(spell=RestoreAlpha) returns a RestoreAlpha instance.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If the rebuilt grant cannot resolve.
+    """
+    crystallizer = _activate_crystallizer()
+    book_a = _dynamic_book()
+    granted_id = book_a.bind(
+        spell=RestoreAlpha,
+        existence=Existence.unique,
+        permissions="create",
+    )
+    conduit_a = book_a.conjure(dynamic=True, name="alpha")
+    book_b = _dynamic_book()
+    book_b.bind(
+        spell=RestoreGamma,
+        existence=Existence.unique,
+        permissions="create",
+    )
+    conduit_b = book_b.conjure(dynamic=True, name="beta")
+    assert conduit_a.link(conduit_b) is True
+    with conduit_b.transaction("link", conduits=[conduit_a, conduit_b]):
+        conduit_b.add_spell_to_contract(
+            spell_id=granted_id,
+            conduit=conduit_a,
+            permissions="create",
+        )
+    recorded_borrower_id = conduit_a._id
+    checkpoint_id = crystallizer.create_checkpoint()
+    crystallizer.flush_checkpoint(checkpoint_id)
+
+    rebooted = _fresh_boot()
+    rebooted.reload_cached_checkpoint(checkpoint_id)
+    report = rebooted.load_checkpoint(checkpoint_id)
+    assert report["status"] == "complete"
+    fresh_borrower_id = report["identity_map"][recorded_borrower_id]
+    cloud = Aether()._aetheric_frames["default"].conduit_cloud
+    borrower = cloud.get_conduit_by_id(fresh_borrower_id)
+    instance = borrower.meld(spell=RestoreAlpha)
+    assert isinstance(instance, RestoreAlpha)
+
+
+def test_identity_map_covers_every_recorded_structural_id(cache_root):
+    """
+    Purpose:
+        Wave 3: identity-translation completeness - every structural
+        identity captured pre-seal (books, conduits, the link's contract
+        ULID) must appear as an identity-map KEY after a parallel
+        restore, and every mapped value must be a fresh identity.
+    Contract:
+        Recorded ids are all keys; no recorded id maps to itself
+        (never-rehydrate-ULIDs).
+    Returns:
+        None.
+    Raises:
+        AssertionError: If any structural identity is left untranslated.
+    """
+    crystallizer = _activate_crystallizer()
+    book_a = _dynamic_book()
+    book_a.bind(
+        spell=RestoreAlpha,
+        existence=Existence.unique,
+        permissions="create",
+    )
+    conduit_a = book_a.conjure(dynamic=True, name="alpha")
+    book_b = _dynamic_book()
+    book_b.bind(
+        spell=RestoreGamma,
+        existence=Existence.unique,
+        permissions="create",
+    )
+    conduit_b = book_b.conjure(dynamic=True, name="beta")
+    assert conduit_a.link(conduit_b) is True
+    recorded_ids = {
+        book_a._id, book_b._id, conduit_a._id, conduit_b._id,
+        str(conduit_a._conduit_ward._initiated_index[conduit_b._id]),
+    }
+    checkpoint_id = crystallizer.create_checkpoint()
+    crystallizer.flush_checkpoint(checkpoint_id)
+
+    rebooted = _fresh_boot()
+    rebooted.reload_cached_checkpoint(checkpoint_id)
+    report = rebooted.load_checkpoint(checkpoint_id)
+    assert report["status"] == "complete"
+    identity_map = dict(report["identity_map"])
+    missing = recorded_ids - set(identity_map)
+    assert missing == set()
+    for recorded_id in recorded_ids:
+        assert identity_map[recorded_id] != recorded_id
+
+
+def test_full_vocabulary_world_restores_identically_on_both_drivers(
+        cache_root,
+):
+    """
+    Purpose:
+        Wave 3: the superset parity arc - link + cluster + contract grant
+        + staged member in ONE world; the sequential and parallel drivers
+        must agree on every outcome surface at full vocabulary width.
+    Contract:
+        Identical built_counts, identical sorted shortfalls, identical
+        identity-map key sets; plan populated only on parallel.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If any entity family diverges between drivers.
+    """
+    crystallizer = _activate_crystallizer()
+    book_a = _dynamic_book()
+    granted_id = book_a.bind(
+        spell=RestoreAlpha,
+        existence=Existence.unique,
+        permissions="create",
+    )
+    conduit_a = book_a.conjure(dynamic=True, name="alpha")
+    active_spell = book_a._spells_by_id[granted_id]
+    conduit_a.bind_inactive(
+        spell=RestoreBeta,
+        spell_index=active_spell.spell_index,
+        existence=Existence.unique,
+        permissions="create",
+    )
+    book_b = _dynamic_book()
+    book_b.bind(
+        spell=RestoreGamma,
+        existence=Existence.unique,
+        permissions="create",
+    )
+    conduit_b = book_b.conjure(dynamic=True, name="beta")
+    assert conduit_a.link(conduit_b) is True
+    with conduit_b.transaction("link", conduits=[conduit_a, conduit_b]):
+        conduit_b.add_spell_to_contract(
+            spell_id=granted_id,
+            conduit=conduit_a,
+            permissions="create",
+        )
+    cloud = Aether()._aetheric_frames["default"].conduit_cloud
+    cloud.create_cluster("everything")
+    cloud.add_conduit_to_cluster(conduit_a, "everything")
+    cloud.add_conduit_to_cluster(conduit_b, "everything")
+    checkpoint_id = crystallizer.create_checkpoint()
+    crystallizer.flush_checkpoint(checkpoint_id)
+
+    reports = {}
+    for parallel_enabled in (False, True):
+        Aether._reset_singleton_for_tests()
+        AetherUtilitySystem._reset_singleton_for_tests()
+        Nexus._reset_singleton_for_tests()
+        Crystallizer._reset_singleton_for_tests()
+        aether = Aether()
+        Spellbook._aether = aether
+        Conduit._aether = aether
+        configuration = CrystallizerConfiguration().with_defaults()
+        configuration.set_property(
+            "restore_parallel_enabled", parallel_enabled
+        )
+        configuration.activate()
+        booted = Crystallizer()
+        booted.activate(configuration)
+        booted.reload_cached_checkpoint(checkpoint_id)
+        reports[parallel_enabled] = booted.load_checkpoint(checkpoint_id)
+
+    sequential, parallel = reports[False], reports[True]
+    assert sequential["status"] == parallel["status"] == "complete"
+    assert sequential["built_counts"] == parallel["built_counts"]
+
+    def shortfall_key(row):
+        return (row["kind"], row["key"], row["reason"])
+
+    assert (
+        sorted(sequential["shortfalls"], key=shortfall_key)
+        == sorted(parallel["shortfalls"], key=shortfall_key)
+    )
+    assert set(sequential["identity_map"]) == set(parallel["identity_map"])
+    assert sequential["plan"] == {}
+    assert parallel["plan"]["level_count"] >= 3
+    assert parallel["built_counts"].get("cluster", 0) == 1
+    assert parallel["built_counts"].get("spell_staged", 0) == 1
+    assert parallel["built_counts"].get("link", 0) == 1

@@ -1,14 +1,15 @@
 [build-system]
-requires = ["setuptools>=61.0", "wheel>=0.37"]
+requires = ["setuptools>=77.0", "wheel>=0.37"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "melder"
-version = "0.1.0"
+dynamic = ["version"]
 description = "Lightweight, high-performance dependency injection container for Python 3.14+ applications."
 readme = { file = "README.md", content-type = "text/markdown" }
 requires-python = ">=3.14"
 license = "Apache-2.0"
+license-files = ["LICENSE", "NOTICE"]
 
 authors = [
     { name = "Mark Geleta", email = "SynapticAISystems@gmail.com" }
@@ -55,6 +56,11 @@ LinkedIn = "https://www.linkedin.com/in/mark-geleta-4b59b752/"
 
 [tool.setuptools]
 package-dir = { "" = "src" }
+
+# Single version truth: setuptools reads the plain literal in
+# src/melder/__version__.py via static AST (no import at build time).
+[tool.setuptools.dynamic]
+version = { attr = "melder.__version__.__version__" }
 
 [tool.setuptools.packages.find]
 where = ["src"]

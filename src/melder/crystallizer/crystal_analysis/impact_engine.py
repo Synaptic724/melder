@@ -12,10 +12,12 @@ payloads from the record's describe seam and never mutates anything.
 Lane: EPIC-2026-07-11-crystallizer-v3-horizon-iteration, story S3.
 """
 
-import hashlib
 from pathlib import Path
 from typing import Dict, List, Optional, Set
 
+from melder.crystallizer.crystal_analysis.physical_source_cache import (
+    PhysicalSourceCache,
+)
 from melder.utilities.general_base.cleanable import Cleanable
 
 
@@ -320,19 +322,29 @@ class ImpactEngine(Cleanable):
             if recorded_path is not None:
                 live_path = Path(recorded_path)
                 if live_path.exists():
-                    try:
-                        disk_sha = hashlib.sha256(
-                            live_path.read_text(
-                                encoding="utf-8"
-                            ).encode("utf-8")
-                        ).hexdigest()
+                    # IO-economy stat guard (2026-07-19): unchanged stat
+                    # serves the cached sha; a miss reads through the
+                    # shared cache and feeds the next drift pass.
+                    disk_sha = (
+                        PhysicalSourceCache.fingerprint_if_unchanged(
+                            live_path
+                        )
+                    )
+                    if disk_sha is None:
+                        _text, disk_sha, _error = (
+                            PhysicalSourceCache.read_text_and_fingerprint(
+                                module_name,
+                                live_path,
+                            )
+                        )
+                    if disk_sha is None:
+                        status = "unreadable"
+                    else:
                         status = (
                             "unchanged"
                             if disk_sha == sealed_sha
                             else "drifted"
                         )
-                    except Exception:
-                        status = "unreadable"
             statuses[module_name] = status
             counts[status] += 1
             if status != "unchanged":

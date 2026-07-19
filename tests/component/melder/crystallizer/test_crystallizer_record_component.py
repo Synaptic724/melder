@@ -18,6 +18,8 @@ from melder.crystallizer.crystals.aetheric_frame_crystal import (
     AethericFrameCrystal,
 )
 from melder.crystallizer.crystals.conduit_crystal import ConduitCrystal
+from melder.crystallizer.crystals.contract_crystal import ContractCrystal
+from melder.crystallizer.crystals.cluster_crystal import ClusterCrystal
 from melder.crystallizer.crystals.nexus_crystal import NexusCrystal
 from melder.crystallizer.crystals.spellbook_crystal import (
     SpellbookCrystal,
@@ -275,3 +277,121 @@ def test_replayed_activity_keeps_single_custody_after_moves():
     assert summary["spell_crystal_count"] == 1
     assert summary["inactive_spell_crystal_count"] == 0
     assert custody.cleaned is False
+
+
+def test_contract_twin_rides_the_sealed_replay_window():
+    """
+    Purpose:
+        Pin the S1 record half: an emitted relationship twin seals into
+        the checkpoint replay window with both endpoints intact - the
+        exact payload the restore planner reads as a link graph edge.
+    Contract:
+        payloads["contract"][id] carries conduit_a_id/conduit_b_id; the
+        journal carries the contract entry.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If the relationship record loses an endpoint.
+    """
+    crystallizer = _activated_crystallizer()
+    _emit_world(crystallizer)
+    crystallizer.emit(
+        ContractCrystal(
+            contract_id="ct-1",
+            conduit_a_id="conduit-1",
+            conduit_b_id="conduit-2",
+            details_a=[],
+            details_b=[],
+            index_details_a=[],
+            index_details_b=[],
+        )
+    )
+    checkpoint_id = crystallizer.create_checkpoint()
+    window = crystallizer.checkpoint_replay_data(checkpoint_id)
+    payload = window["payloads"]["contract"]["ct-1"]
+    assert payload["conduit_a_id"] == "conduit-1"
+    assert payload["conduit_b_id"] == "conduit-2"
+    assert ["contract", "ct-1"] in [
+        [str(entry[1]), str(entry[2])] for entry in window["journal"]
+    ]
+
+
+def test_contract_removal_tombstone_rides_the_next_window():
+    """
+    Purpose:
+        Pin sever recording: after emit_contract_removed, the NEXT sealed
+        window carries the contract_removed tombstone (the fold's
+        eviction signal) and no live contract payload.
+    Contract:
+        journal names contract_removed for the id; payloads carry the
+        tombstone kind, not a live "contract" entry for the id.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If a severed contract survives its window.
+    """
+    crystallizer = _activated_crystallizer()
+    _emit_world(crystallizer)
+    crystallizer.emit(
+        ContractCrystal(
+            contract_id="ct-doomed",
+            conduit_a_id="conduit-1",
+            conduit_b_id="conduit-2",
+            details_a=[],
+            details_b=[],
+            index_details_a=[],
+            index_details_b=[],
+        )
+    )
+    crystallizer.create_checkpoint()
+    crystallizer.emit_contract_removed("ct-doomed")
+    checkpoint_id = crystallizer.create_checkpoint()
+    window = crystallizer.checkpoint_replay_data(checkpoint_id)
+    journaled = [
+        [str(entry[1]), str(entry[2])] for entry in window["journal"]
+    ]
+    assert ["contract_removed", "ct-doomed"] in journaled
+    assert "ct-doomed" not in window["payloads"].get("contract", {})
+    assert "ct-doomed" in window["payloads"]["contract_removed"]
+
+
+def test_cluster_twin_records_and_evicts_through_the_facade():
+    """
+    Purpose:
+        Pin cluster topology recording: the cluster twin seals with its
+        membership roster, and live cluster deletion tombstones it in
+        the following window.
+    Contract:
+        Window 1 carries the cluster payload with member ids; window 2
+        carries cluster_removed for the id.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If cluster membership or eviction drops.
+    """
+    crystallizer = _activated_crystallizer()
+    _emit_world(crystallizer)
+    crystallizer.emit(
+        ClusterCrystal(
+            cluster_id="cl-1",
+            cluster_name="workers",
+            frame_name="frame-a",
+            member_conduit_ids=["conduit-1", "conduit-2"],
+            leader_conduit_id="conduit-1",
+            shared_spells=[],
+        )
+    )
+    first_id = crystallizer.create_checkpoint()
+    first = crystallizer.checkpoint_replay_data(first_id)
+    payload = first["payloads"]["cluster"]["cl-1"]
+    assert payload["member_conduit_ids"] == ["conduit-1", "conduit-2"]
+    assert payload["cluster_name"] == "workers"
+
+    crystallizer.emit_cluster_removed("cl-1")
+    second_id = crystallizer.create_checkpoint()
+    second = crystallizer.checkpoint_replay_data(second_id)
+    journaled = [
+        [str(entry[1]), str(entry[2])] for entry in second["journal"]
+    ]
+    assert ["cluster_removed", "cl-1"] in journaled
+    assert "cl-1" not in second["payloads"].get("cluster", {})

@@ -87,6 +87,26 @@ class SyntheticCustodyStrategy(SourceCustodyStrategy):
             return False
         return isinstance(module_obj, SyntheticModule)
 
+    @property
+    def reads_physical_source(self) -> bool:
+        """
+        Synthetic source lives on the module object, never on disk.
+
+        Returns:
+            bool: False.
+        """
+        return False
+
+    @property
+    def claims_sha256_source_fingerprint(self) -> bool:
+        """
+        Synthetic custody rides `harvest_payload`, not the fingerprint lane.
+
+        Returns:
+            bool: False.
+        """
+        return False
+
     def resolve_source(
             self,
             *,

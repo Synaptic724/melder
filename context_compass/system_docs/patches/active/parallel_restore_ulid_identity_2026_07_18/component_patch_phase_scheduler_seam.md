@@ -33,3 +33,10 @@ Lane: parallel_restore_ulid_identity_2026_07_18. Ticket: STORY-2026-07-18-phase-
 - Existing spellbook scheduler suites pass untouched (config path proof). New unit rows:
   explicit construction, invalid values raise, precedence (explicit beats config), docstring
   contract updated. Density >= 10/100 LOC.
+
+## Delta 2026-07-19 (S4 REOPEN): fail-fast quiesce
+- The fail-fast error path now quiesces in-flight stragglers before raising; full
+  control-flow contract in code_description_patch_phase_scheduler_quiesce.md (authored
+  BEFORE code per the concurrency-sensitive trigger). PhaseLatch gains the additive
+  wait_all_reported(timeout) verb. Pool, queue, config seam, and timeout preemption
+  semantics unchanged.

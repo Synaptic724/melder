@@ -96,6 +96,13 @@ class CrystallizerConfiguration(Cleanable):
             "restore_scheduler_workers": int,
             "restore_scheduler_barrier_timeout_milliseconds": int,
             "restore_parallel_enabled": bool,
+            # Analysis IO economy (crystallizer_analysis_io_cache lane,
+            # 2026-07-19): descent policy for installed third-party
+            # packages during the bind-time module-world walk. Default
+            # False - site-package nodes record as provenance-carrying
+            # leaves; True restores the interior walk wholesale. Old
+            # records backfill False through the reload lane's floor.
+            "site_package_dependency_descent": bool,
         }
 
     def cleanup(self) -> None:
@@ -267,6 +274,30 @@ class CrystallizerConfiguration(Cleanable):
         """
         self.check_cleaned()
         value = self._properties.get("retain_user_sources", False)
+        return bool(value)
+
+    @property
+    def site_package_dependency_descent(self) -> bool:
+        """
+        Return whether the analysis walk descends INTO installed packages.
+
+        Contract:
+            - Defaulted-optional (schema default False): when the key is
+              absent, the walk records site-package modules as
+              provenance-carrying LEAVES - distribution name/version and
+              file identity still capture, but their source is never read
+              and their dependencies never enqueue. Bind latency stays
+              proportional to the USER world, not the installed one.
+            - True restores the pre-lane interior walk wholesale (module
+              inventories of third-party packages re-enter the record).
+            - Site packages make no fingerprint claims either way (S1
+              law), so drift and restore surfaces are unaffected.
+
+        Returns:
+            bool: The configured knob, default False.
+        """
+        self.check_cleaned()
+        value = self._properties.get("site_package_dependency_descent", False)
         return bool(value)
 
     @property
@@ -611,6 +642,8 @@ class CrystallizerConfiguration(Cleanable):
             - `restore_parallel_enabled`: True (owner ruling 2026-07-19:
               parallel is THE restore driver; False selects the sequential
               fallback driver).
+            - `site_package_dependency_descent`: False (analysis walks stop
+              AT installed third-party packages; provenance still captures).
 
         Returns:
             CrystallizerConfiguration: This configuration instance.
@@ -626,6 +659,7 @@ class CrystallizerConfiguration(Cleanable):
             "restore_scheduler_barrier_timeout_milliseconds", 60000
         )
         self.set_property("restore_parallel_enabled", True)
+        self.set_property("site_package_dependency_descent", False)
         return self
 
     def load_recorded_dictionary(

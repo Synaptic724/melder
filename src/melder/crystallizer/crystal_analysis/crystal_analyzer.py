@@ -26,6 +26,9 @@ from typing import Any, Dict, List, Mapping, Optional, Sequence, Set, Tuple, Uni
 
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.crystallizer.synthetic_module import SyntheticModule
+from melder.crystallizer.crystal_analysis.physical_source_cache import (
+    PhysicalSourceCache,
+)
 from melder.crystallizer.crystal_analysis.crystal_analysis_result import (
     CrystalAnalysisResult,
 )
@@ -128,6 +131,12 @@ class CrystalAnalyzer(Cleanable):
     # value data; LRU eviction releases only tuples/strings and has no effect
     # on imported modules or their sys.modules residency.
     _MEMOIZED_MODULE_FACT_SCHEMA_VERSION = 1
+    # Empty-source law anchor (IO-economy lane, 2026-07-19): empty
+    # modules never enter the syntax memo, so the stat fast path must
+    # short-circuit them BEFORE the memo lookup - otherwise every warm
+    # pass counts a phantom miss per empty __init__.py (and pays a
+    # pointless read). sha256 of zero bytes == sha256 of the empty str.
+    _EMPTY_SOURCE_SHA256 = hashlib.sha256(b"").hexdigest()
     _MAX_MEMOIZED_MODULE_FACTS = 2048
     _memoized_module_fact_lock = threading.RLock()
     _memoized_module_facts: OrderedDict[
@@ -141,6 +150,7 @@ class CrystalAnalyzer(Cleanable):
         "_custody_strategies",
         "_fact_strategies",
         "_retain_user_sources",
+        "_site_package_dependency_descent",
         "_uses_default_fact_strategies",
     )
 
@@ -152,6 +162,7 @@ class CrystalAnalyzer(Cleanable):
             custody_strategies: Optional[Sequence[SourceCustodyStrategy]] = None,
             fact_strategies: Optional[Sequence[CrystalFactStrategy]] = None,
             retain_user_sources: bool = False,
+            site_package_dependency_descent: bool = True,
     ) -> None:
         """
         Initialize one analyzer with its strategy families.
@@ -192,6 +203,13 @@ class CrystalAnalyzer(Cleanable):
                 TEXT of every walked user_source module (mirror of the
                 M3 synthetic harvest); False (default) harvests nothing
                 user-side - byte-identical to the pre-S2 result.
+            site_package_dependency_descent:
+                Descent policy for installed third-party packages: True
+                (raw-analyzer default, byte-compatible) walks INTO their
+                dependencies; False records site-package nodes as
+                provenance-carrying leaves with no source read. The
+                shipped default lives on CrystallizerConfiguration
+                (False) and threads through SpellCrystal.
 
         Returns:
             None.
@@ -206,6 +224,15 @@ class CrystalAnalyzer(Cleanable):
         """
         super().__init__()
         self._retain_user_sources: bool = bool(retain_user_sources)
+        # Descent policy for installed third-party packages: when False
+        # the walk records site-package nodes as provenance-carrying
+        # LEAVES (no source read, no interior enqueue). Raw analyzer
+        # constructions default True (byte-compatible); the shipped
+        # default lives on CrystallizerConfiguration (False) and is
+        # threaded through SpellCrystal.
+        self._site_package_dependency_descent: bool = bool(
+            site_package_dependency_descent
+        )
         self._uses_default_fact_strategies: bool = fact_strategies is None
         if custody_strategies is None:
             self._custody_strategies: List[SourceCustodyStrategy] = [
@@ -675,6 +702,36 @@ class CrystalAnalyzer(Cleanable):
     # Walk (ported from SpellCrystal._walk_module_dependencies)
     # ------------------------------------------------------------------
 
+    def _custody_descends(self, custody: SourceCustodyStrategy) -> bool:
+        """
+        Apply the descent policy on top of the strategy's own contract.
+
+        Contract:
+            A strategy that does not descend never descends. Site-package
+            custody additionally answers to the analyzer's
+            `site_package_dependency_descent` policy knob: when the knob
+            is off, installed third-party modules become honest
+            provenance-carrying leaves (no source read, no interior
+            enqueue) - their file identity and distribution provenance
+            still record.
+
+        Args:
+            custody:
+                Matched custody strategy for the module.
+
+        Returns:
+            bool: True when the walk may extract facts and enqueue the
+            module's dependencies.
+        """
+        if not custody.descends:
+            return False
+        if (
+                custody.kind == "site_package"
+                and not self._site_package_dependency_descent
+        ):
+            return False
+        return True
+
     def _walk_module_dependencies(
             self,
             *,
@@ -722,13 +779,19 @@ class CrystalAnalyzer(Cleanable):
                 module_obj=current_obj,
                 module_path=current_path,
             )
-            flat_targets, from_targets = self._extract_module_facts(
-                result=result,
-                custody=custody,
-                module_name=current_name,
-                module_obj=current_obj,
-                module_path=current_path,
-            )
+            if self._custody_descends(custody):
+                flat_targets, from_targets = self._extract_module_facts(
+                    result=result,
+                    custody=custody,
+                    module_name=current_name,
+                    module_obj=current_obj,
+                    module_path=current_path,
+                )
+            else:
+                # Descent-off site-package root/node: an honest leaf -
+                # no source read, no facts; provenance still harvests
+                # below and the node still records.
+                flat_targets, from_targets = [], {}
 
             tracked_dependencies: List[str] = []
             for dependency_name in flat_targets:
@@ -743,7 +806,7 @@ class CrystalAnalyzer(Cleanable):
                     module_path=dependency_path,
                 )
                 tracked_dependencies.append(dependency_name)
-                if not dependency_custody.descends:
+                if not self._custody_descends(dependency_custody):
                     # Honest leaf (historical unknown-target law).
                     result.record_module_target(
                         module_name=dependency_name,
@@ -895,24 +958,74 @@ class CrystalAnalyzer(Cleanable):
             Cold-path FactContext ownership is released in a finally block.
             Memo hits allocate a fresh export record and retain no result.
         """
-        source_text, error_text = custody.resolve_source(
-            module_name=module_name,
-            module_obj=module_obj,
-            module_path=module_path,
+        # IO-economy lanes (crystallizer_analysis_io_cache lane,
+        # 2026-07-19): physical readers route through the shared
+        # stat-guarded PhysicalSourceCache. FAST PATH: an unchanged stat
+        # plus a syntax-memo hit replays facts with ZERO reads and ZERO
+        # hashes (the cached sha IS the memo digest - same UTF-8 SHA256
+        # law). COLD PATH: one read through the cache computes ONE sha
+        # reused as memo digest AND fingerprint claim (the historical
+        # double hash is gone). Non-physical lanes (synthetic module
+        # text, binary leaves) keep custody.resolve_source verbatim.
+        physical_lane = (
+            custody.reads_physical_source and module_path is not None
         )
+        current_package = self._derive_current_package(
+            module_name,
+            module_obj,
+        )
+        if physical_lane and self._uses_default_fact_strategies:
+            cached_sha = PhysicalSourceCache.fingerprint_if_unchanged(
+                module_path
+            )
+            if cached_sha is not None:
+                if cached_sha == self._EMPTY_SOURCE_SHA256:
+                    # Cold-path parity for empty sources: no facts, no
+                    # fingerprint, no memo participation - and now also
+                    # no read.
+                    return [], {}
+                memoized_facts = self._lookup_memoized_module_facts(
+                    cached_sha
+                )
+                if memoized_facts is not None:
+                    if custody.claims_sha256_source_fingerprint:
+                        result.record_physical_fingerprint(
+                            module_name,
+                            cached_sha,
+                        )
+                    return self._replay_memoized_module_facts(
+                        result=result,
+                        module_name=module_name,
+                        current_package=current_package,
+                        facts=memoized_facts,
+                    )
+        if physical_lane:
+            source_text, source_sha, error_text = (
+                PhysicalSourceCache.read_text_and_fingerprint(
+                    module_name,
+                    module_path,
+                )
+            )
+        else:
+            source_text, error_text = custody.resolve_source(
+                module_name=module_name,
+                module_obj=module_obj,
+                module_path=module_path,
+            )
+            source_sha = None
         if error_text:
             result.record_walk_error(error_text)
         if not source_text:
             return [], {}
 
         source_digest = (
-            self._source_digest(source_text)
+            (
+                source_sha
+                if source_sha is not None
+                else self._source_digest(source_text)
+            )
             if self._uses_default_fact_strategies
             else None
-        )
-        current_package = self._derive_current_package(
-            module_name,
-            module_obj,
         )
         if source_digest is not None:
             memoized_facts = self._lookup_memoized_module_facts(source_digest)

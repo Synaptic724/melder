@@ -513,3 +513,190 @@ def test_memoized_fact_cache_evicts_least_recently_used_values(
         assert stats["misses"] == 3
     finally:
         CrystalAnalyzer._clear_memoized_module_facts_for_tests()
+def test_second_analysis_of_an_unchanged_tree_reads_zero_files(
+        tmp_path, monkeypatch,
+):
+    """
+    Purpose:
+        The IO-economy law (2026-07-19): the first analysis pays the
+        reads; a second analysis of the SAME unchanged tree serves every
+        module from the stat guard + syntax memo with ZERO file reads.
+    Contract:
+        Fingerprint maps are identical across the two passes (parity),
+        and the second pass performs no read_text calls.
+    """
+    from melder.crystallizer.crystal_analysis.physical_source_cache import (
+        PhysicalSourceCache,
+    )
+    from melder.crystallizer.crystal_analysis.crystal_analyzer import (
+        CrystalAnalyzer,
+    )
+
+    PhysicalSourceCache._clear_for_tests()
+    CrystalAnalyzer._clear_memoized_module_facts_for_tests()
+    _build_package(tmp_path, "iopkg")
+    monkeypatch.syspath_prepend(str(tmp_path))
+    first = _analyze(tmp_path, "iopkg")
+    first_prints = dict(first.physical_module_fingerprints)
+    assert "iopkg.helper" in first_prints
+
+    read_calls = []
+    original_read_text = Path.read_text
+
+    def _counting_read_text(self, *args, **kwargs):
+        read_calls.append(str(self))
+        return original_read_text(self, *args, **kwargs)
+
+    monkeypatch.setattr(Path, "read_text", _counting_read_text)
+    second = _analyze(tmp_path, "iopkg")
+    source_reads = [
+        entry for entry in read_calls if entry.endswith(".py")
+    ]
+    assert source_reads == []
+    assert dict(second.physical_module_fingerprints) == first_prints
+    first.cleanup()
+    second.cleanup()
+    PhysicalSourceCache._clear_for_tests()
+    CrystalAnalyzer._clear_memoized_module_facts_for_tests()
+
+
+def test_changed_file_between_analyses_re_fingerprints(
+        tmp_path, monkeypatch,
+):
+    """
+    Purpose:
+        The cache must never mask a real edit: changing one module
+        between analyses re-reads it and records the NEW fingerprint.
+    Contract:
+        The changed module's fingerprint differs; untouched modules keep
+        their first-pass values.
+    """
+    from melder.crystallizer.crystal_analysis.physical_source_cache import (
+        PhysicalSourceCache,
+    )
+
+    PhysicalSourceCache._clear_for_tests()
+    package_dir = _build_package(tmp_path, "driftpkg")
+    monkeypatch.syspath_prepend(str(tmp_path))
+    first = _analyze(tmp_path, "driftpkg")
+    first_prints = dict(first.physical_module_fingerprints)
+    assert "driftpkg.helper" in first_prints
+    (package_dir / "helper.py").write_text(
+        "__all__ = [\"Helper\"]\n"
+        "class Helper:\n"
+        "    CHANGED = True\n",
+        encoding="utf-8",
+    )
+    second = _analyze(tmp_path, "driftpkg")
+    second_prints = dict(second.physical_module_fingerprints)
+    helper_name = "driftpkg.helper"
+    root_name = "driftpkg.rootmod"
+    assert second_prints[helper_name] != first_prints[helper_name]
+    assert second_prints[root_name] == first_prints[root_name]
+    first.cleanup()
+    second.cleanup()
+    PhysicalSourceCache._clear_for_tests()
+
+
+def _build_site_world(tmp_path):
+    """
+    Build one user root module importing one fake installed package whose
+    interior imports a deeper module (the descent probe shape).
+    """
+    site_root = tmp_path / "siteroot"
+    site_pkg = site_root / "fakedist"
+    site_pkg.mkdir(parents=True)
+    (site_pkg / "__init__.py").write_text(
+        "from fakedist import interior\n", encoding="utf-8"
+    )
+    (site_pkg / "interior.py").write_text(
+        "DEEP = True\n", encoding="utf-8"
+    )
+    user_root = tmp_path / "userroot"
+    user_root.mkdir()
+    (user_root / "consumer.py").write_text(
+        "import fakedist\n"
+        "class Consumer:\n"
+        "    pass\n",
+        encoding="utf-8",
+    )
+    return user_root, site_root
+
+
+def _analyze_site_world(user_root, site_root, descend):
+    """
+    Analyze the consumer root with an explicit descent posture.
+    """
+    from melder.crystallizer.crystal_analysis.crystal_analyzer import (
+        CrystalAnalyzer,
+    )
+
+    analyzer = CrystalAnalyzer(
+        user_source_root_paths=(user_root.resolve(),),
+        site_package_root_paths=(site_root.resolve(),),
+        site_package_dependency_descent=descend,
+    )
+    try:
+        return analyzer.analyze_spell_root(
+            root_module_name="consumer",
+            root_module_obj=None,
+            root_module_path=user_root / "consumer.py",
+        )
+    finally:
+        analyzer.cleanup()
+
+
+def test_descent_off_records_site_packages_as_leaves(
+        tmp_path, monkeypatch,
+):
+    """
+    Purpose:
+        The descent policy (config default False): installed third-party
+        modules record as leaves - present in the module inventory, no
+        interior dependencies walked, no fingerprint claim.
+    Contract:
+        fakedist records with empty deps; fakedist.interior never enters
+        the inventory; no site module is fingerprinted.
+    """
+    import sys
+
+    user_root, site_root = _build_site_world(tmp_path)
+    monkeypatch.syspath_prepend(str(site_root))
+    sys.modules.pop("fakedist", None)
+    sys.modules.pop("fakedist.interior", None)
+    result = _analyze_site_world(user_root, site_root, descend=False)
+    kinds = dict(result.module_to_kind)
+    assert kinds.get("fakedist") == "site_package"
+    deps = dict(result.module_to_direct_dependencies)
+    assert deps.get("fakedist") == []
+    assert "fakedist.interior" not in kinds
+    prints = dict(result.physical_module_fingerprints)
+    assert "fakedist" not in prints
+    assert "consumer" in prints
+    result.cleanup()
+
+
+def test_descent_on_walks_the_site_package_interior(
+        tmp_path, monkeypatch,
+):
+    """
+    Purpose:
+        The reversibility guarantee: descent True restores the interior
+        walk wholesale (raw-analyzer default stays byte-compatible).
+    Contract:
+        fakedist records real deps and fakedist.interior joins the
+        inventory - still without fingerprint claims (S1 law).
+    """
+    import sys
+
+    user_root, site_root = _build_site_world(tmp_path)
+    monkeypatch.syspath_prepend(str(site_root))
+    sys.modules.pop("fakedist", None)
+    sys.modules.pop("fakedist.interior", None)
+    result = _analyze_site_world(user_root, site_root, descend=True)
+    kinds = dict(result.module_to_kind)
+    assert kinds.get("fakedist") == "site_package"
+    assert kinds.get("fakedist.interior") == "site_package"
+    prints = dict(result.physical_module_fingerprints)
+    assert "fakedist" not in prints and "fakedist.interior" not in prints
+    result.cleanup()

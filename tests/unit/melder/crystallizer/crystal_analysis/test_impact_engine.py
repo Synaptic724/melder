@@ -4,6 +4,7 @@ custody-state flagging, and fingerprint drift over real temp files.
 """
 
 import hashlib
+from pathlib import Path
 
 from melder.crystallizer.crystal_analysis.impact_engine import ImpactEngine
 
@@ -171,3 +172,88 @@ def test_source_drift_classifies_and_carries_radii(tmp_path):
         assert report["drift"]["counts"]["drifted"] == 1
     finally:
         engine.cleanup()
+def test_source_drift_stat_guard_serves_unchanged_files_without_reads(
+        tmp_path, monkeypatch,
+):
+    """
+    Purpose:
+        IO-economy law (2026-07-19): a second drift pass over an
+        unchanged world serves every verdict from the stat guard with
+        ZERO file reads - and the verdicts are identical.
+    Contract:
+        With read_text poisoned after the priming pass, the second pass
+        still answers; statuses match the first pass exactly.
+    """
+    from melder.crystallizer.crystal_analysis.physical_source_cache import (
+        PhysicalSourceCache,
+    )
+
+    PhysicalSourceCache._clear_for_tests()
+    steady = tmp_path / "steady.py"
+    steady.write_text("VALUE = 1\n", encoding="utf-8")
+    custody = {
+        "sha-alpha": _crystal(
+            spell_id="sha-alpha",
+            root_module="steady",
+            modules=["steady"],
+            dependencies={"steady": []},
+            fingerprints={"steady": _sha("VALUE = 1\n")},
+            paths={"steady": str(steady)},
+        ),
+    }
+    engine = ImpactEngine(custody)
+    try:
+        first = engine.describe_source_drift()
+        assert first["statuses"] == {"steady": "unchanged"}
+
+        def _explode(*args, **kwargs):
+            raise AssertionError(
+                "stat-guarded drift must not re-read unchanged files"
+            )
+
+        monkeypatch.setattr(Path, "read_text", _explode)
+        second = engine.describe_source_drift()
+        assert second["statuses"] == first["statuses"]
+    finally:
+        monkeypatch.undo()
+        engine.cleanup()
+        PhysicalSourceCache._clear_for_tests()
+
+
+def test_source_drift_still_detects_tamper_through_the_cache(tmp_path):
+    """
+    Purpose:
+        The cache must never mask truth: an edit AFTER a primed pass is
+        detected on the next pass (the stat guard misses and re-hashes).
+    Contract:
+        unchanged -> drifted across the two passes.
+    """
+    from melder.crystallizer.crystal_analysis.physical_source_cache import (
+        PhysicalSourceCache,
+    )
+
+    PhysicalSourceCache._clear_for_tests()
+    mutable = tmp_path / "mutable.py"
+    mutable.write_text("VALUE = 1\n", encoding="utf-8")
+    custody = {
+        "sha-alpha": _crystal(
+            spell_id="sha-alpha",
+            root_module="mutable",
+            modules=["mutable"],
+            dependencies={"mutable": []},
+            fingerprints={"mutable": _sha("VALUE = 1\n")},
+            paths={"mutable": str(mutable)},
+        ),
+    }
+    engine = ImpactEngine(custody)
+    try:
+        assert engine.describe_source_drift()["statuses"] == {
+            "mutable": "unchanged",
+        }
+        mutable.write_text("VALUE = 1\nTAMPERED = True\n", encoding="utf-8")
+        assert engine.describe_source_drift()["statuses"] == {
+            "mutable": "drifted",
+        }
+    finally:
+        engine.cleanup()
+        PhysicalSourceCache._clear_for_tests()

@@ -69,3 +69,43 @@ def test_cross_thread_completion_wakes_waiter():
     thread.start()
     assert latch.wait(2.0) is True
     thread.join(timeout=2.0)
+def test_wait_all_reported_lags_the_fail_fast_wake():
+    """
+    Purpose:
+        Regression for the fail-fast/teardown race: the barrier event fires
+        on the FIRST error, but the quiesce barrier must hold until every
+        expected unit has reported.
+    Contract:
+        wait() is True immediately after one error; wait_all_reported()
+        stays False until the last straggler reports, then latches True.
+    """
+    latch = PhaseLatch(3)
+    latch.record_error(RuntimeError("boom"))
+    assert latch.wait(0.0) is True
+    assert latch.wait_all_reported(0.0) is False
+    latch.complete()
+    assert latch.wait_all_reported(0.0) is False
+    latch.complete()
+    assert latch.wait_all_reported(0.0) is True
+    assert latch.wait_all_reported(0.0) is True
+
+
+def test_wait_all_reported_wakes_cross_thread_on_the_last_report():
+    """
+    Purpose:
+        The quiesce waiter parks on a real event: the LAST report from a
+        worker thread must wake a control thread blocked in
+        wait_all_reported().
+    Contract:
+        The bounded wait returns True once the straggler reports.
+    """
+    latch = PhaseLatch(2)
+    latch.record_error(RuntimeError("first"))
+
+    def _straggler() -> None:
+        latch.complete()
+
+    thread = threading.Thread(target=_straggler, daemon=True)
+    thread.start()
+    assert latch.wait_all_reported(2.0) is True
+    thread.join(timeout=2.0)

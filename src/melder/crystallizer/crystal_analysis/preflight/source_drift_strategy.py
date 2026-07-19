@@ -1,10 +1,12 @@
 
-import hashlib
 from pathlib import Path
 from typing import ClassVar, Dict, List, Set, Tuple
 
 from melder.__melder_registration_guard__ import (
     __melder_registration_guard__ as _mrg,
+)
+from melder.crystallizer.crystal_analysis.physical_source_cache import (
+    PhysicalSourceCache,
 )
 from melder.crystallizer.crystal_analysis.preflight.persistence_analysis_strategy import (
     PersistenceAnalysisStrategy,
@@ -89,19 +91,32 @@ class SourceDriftStrategy(PersistenceAnalysisStrategy):
                         "custody carries one)".format(module_name),
                     ))
                     continue
-                try:
-                    disk_sha = hashlib.sha256(
-                        live_path.read_text(
-                            encoding="utf-8"
-                        ).encode("utf-8")
-                    ).hexdigest()
-                except Exception as error:
-                    findings.append(self._row(
-                        "info", spell_id,
-                        "sealed module {0!r} could not be read for drift "
-                        "verification: {1}".format(module_name, error),
-                    ))
-                    continue
+                # IO-economy stat guard (2026-07-19): an unchanged stat
+                # serves the cached sha without a read; a miss reads
+                # THROUGH the cache so the next load pays a stat only.
+                disk_sha = PhysicalSourceCache.fingerprint_if_unchanged(
+                    live_path
+                )
+                if disk_sha is None:
+                    read_text, read_sha, read_error = (
+                        PhysicalSourceCache.read_text_and_fingerprint(
+                            str(module_name),
+                            live_path,
+                        )
+                    )
+                    if read_error is not None or read_sha is None:
+                        findings.append(self._row(
+                            "info", spell_id,
+                            "sealed module {0!r} could not be read for drift "
+                            "verification: {1}".format(
+                                module_name,
+                                read_error
+                                if read_error is not None
+                                else "no readable source",
+                            ),
+                        ))
+                        continue
+                    disk_sha = read_sha
                 if disk_sha != str(sealed_sha):
                     findings.append(self._row(
                         "warning", spell_id,

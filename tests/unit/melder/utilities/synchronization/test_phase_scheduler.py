@@ -521,3 +521,109 @@ def test_worker_thread_idents_refuses_after_cleanup():
     scheduler.cleanup()
     with pytest.raises(RuntimeError):
         scheduler.worker_thread_idents()
+
+
+def test_explicit_lane_barrier_timeout_carries_phase_name():
+    """
+    Purpose:
+        Pin the explicit-construction lane's timeout law (the restore
+        pool's failure shape): a unit outlasting the barrier raises
+        PhaseTimeoutError whose phase_name names the level.
+    Contract:
+        barrier_timeout_ms=100 with a 500ms unit -> PhaseTimeoutError,
+        .phase_name == "level_slow".
+    Returns:
+        None.
+    Raises:
+        AssertionError: If the timeout loses its phase identity.
+    """
+    scheduler = PhaseScheduler(
+        spellbook=None,
+        configuration=None,
+        worker_count=1,
+        barrier_timeout_ms=100,
+    )
+    try:
+        def slow_factory():
+            return [
+                scheduler.create_unit_of_work(lambda: time.sleep(0.5))
+            ]
+
+        scheduler.register_phase("level_slow", slow_factory)
+        with pytest.raises(PhaseTimeoutError) as raised:
+            scheduler.run_all_phases()
+        assert raised.value.phase_name == "level_slow"
+    finally:
+        scheduler.cleanup()
+
+
+def test_worker_thread_idents_matches_explicit_worker_count():
+    """
+    Purpose:
+        Pin the pool-width law the cohort enrollment relies on: the
+        ident probe names exactly worker_count distinct live threads.
+    Contract:
+        A 3-worker explicit pool reports 3 distinct positive idents, and
+        a repeat probe answers the same set (persistent pool).
+    Returns:
+        None.
+    Raises:
+        AssertionError: If pool width or ident stability drifts.
+    """
+    scheduler = PhaseScheduler(
+        spellbook=None,
+        configuration=None,
+        worker_count=3,
+        barrier_timeout_ms=5000,
+    )
+    try:
+        idents = scheduler.worker_thread_idents()
+        assert len(idents) == 3
+        assert len(set(idents)) == 3
+        assert all(
+            isinstance(ident, int) and ident > 0 for ident in idents
+        )
+        assert scheduler.worker_thread_idents() == idents
+    finally:
+        scheduler.cleanup()
+def test_fail_fast_quiesces_in_flight_stragglers_before_raising():
+    """
+    Purpose:
+        Regression for the parallel-restore husk leak: the fail-fast error
+        path must wait out sibling unit BODIES before PhaseExecutionError
+        surfaces, so a caller's teardown handler never runs concurrently
+        with a straggler still building runtime state.
+    Contract:
+        The straggler's final side effect is visible BEFORE
+        run_all_phases raises (Event-sequenced; the failure itself
+        releases the straggler, so the OLD immediate-raise behavior
+        raced this assertion).
+    """
+    cfg = DummyConfig(workers=2, timeout_ms=5000)
+    scheduler = PhaseScheduler(spellbook=object(), configuration=cfg)
+    straggler_started = threading.Event()
+    release_straggler = threading.Event()
+    footprints: list[str] = []
+
+    def straggler():
+        straggler_started.set()
+        release_straggler.wait(5.0)
+        footprints.append("straggler-finished")
+        return "done"
+
+    def failer():
+        # Deterministic ordering: the straggler is mid-body when the
+        # failure lands, and only the failure releases it.
+        straggler_started.wait(5.0)
+        release_straggler.set()
+        raise RuntimeError("boom")
+
+    scheduler.register_phase(
+        "p1", lambda: [UnitOfWork(straggler), UnitOfWork(failer)]
+    )
+    try:
+        with pytest.raises(PhaseExecutionError):
+            scheduler.run_all_phases("cid")
+        assert footprints == ["straggler-finished"]
+    finally:
+        scheduler.cleanup()
