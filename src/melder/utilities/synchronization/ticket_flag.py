@@ -20,13 +20,97 @@ class TicketFlag(Cleanable):
         - Setting "value=True" appends one "None" ticket.
         - Setting "value=False" removes one ticket when available.
 
+    Responsibilities:
+        - Hold a truthy/falsey value derived from ticket cardinality.
+        - Support nested scoping through the context-manager protocol.
+        - Guard every operation against use after cleanup.
+
+    IT IS A DEPTH COUNTER, NOT A BOOLEAN:
+        Truth is `count > 0`, and truthy writes STACK. Three `set_true()` calls
+        need three `set_false()` calls to go falsey again. That is what makes
+        the context-manager form meaningful: nested `with flag:` blocks track
+        how many regions are currently active, and the flag stays truthy until
+        the outermost one exits.
+
+            with flag:          # count 1 - truthy
+                with flag:      # count 2 - still truthy
+                    ...
+                                # count 1 - STILL truthy, inner exit only
+                                # count 0 - now falsey
+
+        Use it to answer "is anything currently inside this region", not "is
+        this thing on".
+
+    Contract:
+        - Empty-pop is a NO-OP. `set_false()` on an already-falsey flag leaves
+          it falsey rather than raising, so unbalanced exits degrade quietly.
+        - `__exit__` never suppresses exceptions from the with-body.
+        - `has_tickets()` and `active_ticket_count()` are thin aliases over
+          `__bool__` and `__len__`.
+
+    Cleaned-State Guarding:
+        Uniform, unlike its `FastSwitch` sibling. Every public operation guards:
+        `__bool__`, `__len__`, the `value` setter, `set_true`, `set_false`, and
+        `clear_tickets` call `check_cleaned()` directly; the `value` getter,
+        `has_tickets()`, `active_ticket_count()`, `__enter__`, and `__exit__`
+        guard transitively through the methods they delegate to.
+
+    Owned State:
+        - `_tickets`: a deque whose LENGTH is the entire state. Elements are
+          `None`; only the count carries meaning.
+
     Threading:
         - This primitive does not use an explicit Python lock.
         - It relies on the runtime's deque operation safety for individual
           append/pop/len operations.
         - Multi-step workflows across multiple method calls are not atomic as
           a single transaction.
+        - LIMIT OF THAT GUARANTEE: individual `append`/`pop` are atomic, so the
+          COUNT is safe under concurrency. A read-then-act sequence is not -
+          `if flag: ...` can be invalidated between the test and the body. Use
+          the context-manager form when the region itself must be tracked.
+
+    Lifecycle / Cleanup:
+        - Idempotent: guarded on `_cleaned`, so a second call is a no-op.
+        - Clears tickets, marks cleaned, then releases `_tickets` under normal
+          del posture. Post-cleanup use raises, which is the intended loud
+          failure for out-of-contract use.
+
+    Registration:
+        USER-BINDABLE - deliberately unguarded. Owner ruling 2026-07-19: the
+        switches are fair to expose. A user may legitimately hold or inject one
+        as their own scope-depth flag.
+
+    Subsystem Context:
+        Part of the switch family in `utilities/synchronization/`, and the SAFE
+        counterpart to `FastSwitch`. Same deque-cardinality idea, opposite
+        trade-offs at every point:
+
+            FastSwitch  - `__bool__` unguarded, empty-pop RAISES IndexError,
+                          cleanup NOT idempotent, no context manager.
+            TicketFlag  - every op guarded, empty-pop is a no-op, cleanup IS
+                          idempotent, usable as a context manager.
+
+        Reach for `FastSwitch` only on a proven hot path where you own the
+        invariant; reach for this one by default. `CounterSwitch` is the third
+        member and answers a different question entirely - it elects a leader
+        and parks followers rather than counting depth.
+
+    System Context:
+        A substrate primitive with no position in the DGR boot order. Its
+        context-manager shape is the reason it exists: regions of runtime work
+        that need to know whether anyone is currently inside them can wrap
+        entry and exit without hand-maintaining a counter and without paying
+        for a lock.
     """
+
+    _ast_helper_access: str = "public"
+    __agent_purpose__: str = (
+        "access: public. Depth-counting flag: truthy while at least one ticket "
+        "is held, and truthy writes STACK. Use `with flag:` to track whether "
+        "anything is currently inside a region. Safe sibling of FastSwitch - "
+        "every op is guarded and empty-pop is a no-op rather than an error."
+    )
 
     __slots__ = ("_tickets",)
 

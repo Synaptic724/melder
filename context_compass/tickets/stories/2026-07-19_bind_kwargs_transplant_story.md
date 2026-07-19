@@ -59,6 +59,36 @@ job").
    signature-rejection rows).
 
 ## Notes
+- DATETIME: 2026-07-19T14:31:00Z
+  TYPE: MEASURE
+  CLAIM: LANDED (owner: "lets see what happens") - the deep seam ALREADY EXISTED:
+    Spell._mutation_override is a persistent stored-override payload meld consumes
+    when the caller passes no spell_override (conduit_meld.py:303; caller REPLACES
+    stored = the exact ruled precedence). Bind payload rides that lane. CODE: (1)
+    Spell.receive_bind_construction_payload (beside apply_mutation_override) - fresh
+    dict copy into _mutation_override; no dynamic-runtime guard (spell being born in
+    the bind transaction); bind never interprets keys. (2) Spellbook.bind BOTH sites
+    (4471/4762): hooks -> _add_hooks_to_spell unchanged; non-hook remainder pushes
+    into the spell untouched. (3) 4 unit rows: payload-on-spell verbatim, payload
+    reaches object at meld, spell_override replaces per call, typo fails via the
+    OBJECT's signature. compile green x3. pytest Not run - owner 3.14t. HONEST
+    SCOPE: (a) consumption scope = existing mutation-override scope (root melds);
+    dependency-position delivery via phase-11 stays the open acceptance bar; (b)
+    instance-profile rejection not yet enforced (stored-but-inert on instance
+    spells; next slice); (c) bind payload overwrites a pre-existing restored
+    mutation_override - ordering ruling needed if both lanes live on one spell.
+  EVIDENCE:
+  - src/melder/aether/spellbook/spell.py:1237-1237
+  - src/melder/aether/conduit/meld/conduit_meld.py:300-306
+  - tests/unit/melder/aether/spellbook/test_bind_construction_payload.py:1-105
+  IMPACT: bind(spell=SmtpMailer, host=..., port=...) works end to end for root
+    melds on the house stored-override lane.
+  NEXT: Owner: pytest tests/unit/melder/aether/spellbook/test_bind_construction_payload.py -q
+    then full suite; remaining slices: phase-11 dependency delivery, instance
+    rejection, crystal record, tier-02 example, probe flips.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
 - DATETIME: 2026-07-19T14:22:00Z
   TYPE: MEASURE
   CLAIM: Owner said SEND IT + refined once more: kwargs must NOT unfold into bind -
