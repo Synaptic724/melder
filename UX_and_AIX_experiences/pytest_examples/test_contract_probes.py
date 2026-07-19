@@ -64,7 +64,11 @@ def test_probe_meld_by_binding_name_alone_is_refused():
     conduit = book.conjure()
     with pytest.raises(ValueError):
         conduit.meld(binding_name="the-probe")
-    assert conduit.meld(spell_name="Probe") is not None
+    # the bind placed the spell at ("probe", "the-probe") - so the name
+    # form must carry the binding_name to construct the same key
+    assert conduit.meld(spell_name="Probe", binding_name="the-probe") is not None
+    with pytest.raises(KeyError):
+        conduit.meld(spell_name="Probe")  # default slot is empty
 
 
 def test_probe_meld_by_spell_name_form():

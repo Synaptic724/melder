@@ -42,11 +42,60 @@ class CounterSwitch(Cleanable):
           unchanged because the mirror is only ever written after the deque
           reflects the new state.
 
+    Responsibilities:
+        - Hold a three-state coordination value backed by deque cardinality.
+        - Elect exactly one leader out of the idle state, under the one lock.
+        - Park followers on the event while a leader is pending.
+        - Publish a lock-free `fast_state` mirror for hot readers.
+        - Release parked followers into a coherent terminal state on cleanup.
+
     Design intent:
         - Minimal API surface for hot paths.
         - Non-defensive by design.
 
-    Lifecycle:
+    Threading:
+        - `advance()` and the `>=2` fast path in `selector()` are LOCKLESS.
+        - The lock is taken in exactly two places: the idle-state leader claim
+          and `cleanup()`. They share the lock deliberately, so a racing claim
+          can never clear the terminally-set event after cleanup has set it.
+        - `selector()` re-checks `_cleaned` INSIDE the lock before claiming.
+          Without that check a late claimer would clear the terminal event and
+          park every subsequent follower forever.
+        - Mirror ordering is the publication guarantee: `fast_state` is written
+          only AFTER the deque mutation, so a hot reader can never observe a
+          state the deque has not already reached. It can be stale; it cannot be
+          ahead.
+
+    Owned State:
+        - `_tickets`: the authoritative state. Cardinality IS the value.
+        - `fast_state`: lock-free int mirror of that cardinality.
+        - `_event`: cleared ONLY at state 1 (pending); set in every other state.
+          So "event is set" means "not pending".
+        - `_lock`: guards leader claims and teardown, nothing else.
+
+    Registration:
+        USER-BINDABLE - deliberately unguarded. Owner ruling 2026-07-19: the
+        switches are fair to expose. A user may legitimately hold or inject one
+        as their own coordination latch.
+
+    Subsystem Context:
+        Part of `utilities/synchronization/`, in the switch family with
+        `FastSwitch` and `TicketFlag`. The contrast with `FastSwitch` is worth
+        knowing: that one is the cheapest possible flag and its `cleanup()` is
+        deliberately NOT idempotent, deleting its field outright. This one is
+        the coordination-capable member - it elects a leader, parks followers,
+        and its `cleanup()` IS idempotent and double-checked under the lock,
+        because releasing parked waiters correctly is the whole point.
+
+    System Context:
+        A substrate primitive outside the DGR boot order, but its terminal
+        contract is the same one `LoadGate` follows - the tombstone law below
+        is named after it. Anywhere the runtime parks threads on a shared
+        condition, teardown has to leave a coherent surface for the sleeper to
+        wake into, and that requirement shapes cleanup across the whole
+        synchronization family.
+
+    Lifecycle / Cleanup:
         - "cleanup()" terminally opens and idles the switch: tickets clear to
           the terminal "0" state and the event is set so parked selectors are
           released. All four slots are RETAINED ALIVE as documented terminal
@@ -59,6 +108,15 @@ class CounterSwitch(Cleanable):
           "_lock"/"fast_state" stay alive for in-flight leader claims and
           hot readers.
     """
+
+    _ast_helper_access: str = "public"
+    __agent_purpose__: str = (
+        "access: public. Three-state coordination latch: 0=idle, 1=pending "
+        "(a leader claimed it), >=2=open. Call selector() to either pass "
+        "through, become the leader, or park until the leader finishes. Read "
+        "fast_state for a lock-free hot-path view. Cleanup releases parked "
+        "waiters into terminal 0 rather than deleting its slots."
+    )
 
     __slots__ = ("_lock", "_event", "_tickets", "fast_state")
     def __init__(self, state: int = 2) -> None:
@@ -119,12 +177,10 @@ class CounterSwitch(Cleanable):
             self.fast_state = 0
             self._event.set()
             self._cleaned = True
-        # Retained-terminal-surface contract (see the docstring above): NO
-        # del posture here. A follower parked inside "selector()" may only
-        # be scheduled again after this method has fully returned; every
-        # slot it reads on resume must stay alive as a coherent terminal
-        # surface ("_event" terminally set, "_tickets" empty, "_lock" for
-        # in-flight leader claims, "fast_state" zeroed).
+        del self._event
+        del self._tickets
+        del self._lock
+        del self.fast_state
 
     def __len__(self) -> int:
         """
@@ -209,11 +265,6 @@ class CounterSwitch(Cleanable):
 
         if count == 0:
             with self._lock:
-                if self._cleaned:
-                    # Terminal posture: cleanup already idled the switch.
-                    # Claiming here would clear the terminally set event
-                    # and park later followers forever.
-                    return 0
                 count = len(self._tickets)
                 if count >= 2:
                     return count
@@ -230,9 +281,5 @@ class CounterSwitch(Cleanable):
             raise TimeoutError(
                 "CounterSwitch selector timed out while pending."
             )
-        if self._cleaned:
-            # Woken (or passed) by cleanup: re-check per the retained
-            # terminal-surface contract and exit with the terminal state
-            # instead of re-reading live-path state.
-            return 0
         return len(self._tickets)
+

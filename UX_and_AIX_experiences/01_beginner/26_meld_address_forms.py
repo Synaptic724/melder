@@ -1,9 +1,12 @@
 """
 TIER: beginner (26)
-GOAL: The three meld address forms (probe-proven): the spell object,
-      the spell's NAME string (spell_name), and (spellframe,
-      binding_name). binding_name alone is a sub-key, NEVER an address -
-      the runtime refuses it with a clear ValueError.
+GOAL: THE ADDRESS LAW (run-proven): every spell lives at exactly one
+      (frame_key, binding_key) address - frame_key is your spellframe,
+      or the spell's normalized name if you gave none; binding_key is
+      your binding_name, or the default slot. The meld forms are just
+      three ways to CONSTRUCT that key - so a frameless, nameless bind
+      answers to the spell object and to spell_name; a framed+named
+      bind answers only at (frame, name).
 SURFACE EXERCISED: meld(spell=...), meld(spell_name=...),
                    meld(spellframe=..., binding_name=...)
 """
@@ -15,21 +18,35 @@ class BillingService:
         return 42
 
 
+class LedgerService:
+    pass
+
+
 def main() -> None:
     book = md.Spellbook()
-    book.bind(spell=BillingService, existence="unique",
-              spellframe="services", binding_name="billing")
+    # default address: ("billingservice", default slot)
+    book.bind(spell=BillingService, existence="unique")
+    # explicit address: ("finance", "ledger")
+    book.bind(spell=LedgerService, existence="unique",
+              spellframe="finance", binding_name="ledger")
     conduit = book.conjure()
 
-    by_object = conduit.meld(spell=BillingService, spellframe="services",
-                             binding_name="billing")
+    by_object = conduit.meld(spell=BillingService)
     by_name = conduit.meld(spell_name="BillingService")
-    by_address = conduit.meld(spellframe="services", binding_name="billing")
-    assert by_object is by_name is by_address
-    print("three addresses, one instance:", by_object.total())
+    assert by_object is by_name
+    print("default-address spell answers both forms:", by_object.total())
+
+    ledger = conduit.meld(spellframe="finance", binding_name="ledger")
+    assert isinstance(ledger, LedgerService)
+    print("framed spell answers at (frame, name)")
 
     try:
-        conduit.meld(binding_name="billing")
+        conduit.meld(spell_name="LedgerService")
+    except KeyError as err:
+        print("name-derived key misses a framed bind:", err)
+
+    try:
+        conduit.meld(binding_name="ledger")
     except ValueError as err:
         print("binding_name alone refused:", err)
 

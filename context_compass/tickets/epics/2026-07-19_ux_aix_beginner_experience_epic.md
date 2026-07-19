@@ -30,6 +30,87 @@ First-contact UX + the agent first-read: bind/conjure/meld, lifecycles, function
 - DECISION for every init-surface change the tier proposes.
 
 ## Notes
+- DATETIME: 2026-07-19T14:12:00Z
+  TYPE: MEASURE
+  CLAIM: Run 4 (owner): 51/51 GREEN - the beginner tier is VALIDATED end to end. 40
+    examples + 11 contract probes, every lesson run-proven, four runtime laws
+    discovered and pinned along the way (callable-unique, the address law, single-
+    conjure, silent kwargs swallow) plus one divergence flag (name strategy vs
+    owner's SHA design intent, decision A open). Owner approved the kwargs
+    pass-through -> STORY-2026-07-19-bind-kwargs-transplant opened with the full
+    seam map; teaching reserved for tier 02 per owner ("its an intermediate job").
+  EVIDENCE:
+  - tickets/stories/2026-07-19_bind_kwargs_transplant_story.md:1-1
+  IMPACT: Tier 01 done and defended by its own harness; the exploration lane has
+    already paid two runtime improvements back into the package.
+  NEXT: Kwargs implementation wave (fresh context), then tier 02 authoring; owner
+    rules decision A when ready.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-07-19T14:04:00Z
+  TYPE: MEASURE
+  CLAIM: Run 3: 47/51 green; the two remaining reds COMPLETED the address model -
+    spell_name resolution derives its key from the NAME, so it misses framed binds
+    (('billingservice','__default__') vs the bind's ('services','billing')) and a
+    named bind answers only when the meld carries the same binding_name
+    (('probe','the-probe') vs ('probe','__default__')). THE ADDRESS LAW is now fully
+    mapped and taught: one spell = one (frame_key, binding_key) address; frame_key =
+    spellframe else normalized name; binding_key = binding_name else default; meld
+    forms are key constructors. 26 rewritten around the law (default-address spell
+    answers object+name forms; framed spell answers only at (frame,name); both misses
+    demonstrated); probe extended (spell_name+binding_name composes the key; bare
+    spell_name KeyErrors on an empty default slot); charter law updated. Run 3 also
+    CONFIRMED: silent-swallow pin, spell_name form, KeyError contract, double-bind
+    RuntimeError, disposal at conduit.cleanup, and both divergence pins all green.
+    Expected next run: 51/51.
+  EVIDENCE:
+  - UX_and_AIX_experiences/01_beginner/26_meld_address_forms.py:1-60
+  - UX_and_AIX_experiences/pytest_examples/test_contract_probes.py:60-75
+  IMPACT: The beginner tier now teaches the complete, run-proven resolution model.
+  NEXT: Owner rerun (expected fully green) -> beginner tier VALIDATED; then tier 02
+    authoring + the two runtime stories (kwargs pass-through per refined ruling;
+    decision A still open).
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-07-19T14:14:00Z
+  TYPE: DECISION
+  CLAIM: Owner REFINED the kwargs ruling: bind leftovers are the CONSTRUCTION PAYLOAD
+    FOR THE USER'S SPELL OBJECT - "literally only for the spell object, not the
+    binding object." Not binding metadata, not identity, no strategy interlock. The
+    Spell carries the payload opaquely; creation passes it into the object
+    (UserClass(**payload) / callable(**payload); instance spells reject non-empty
+    payloads); rejection authority is the spell object's OWN signature. Patch doc
+    rewritten to match; my earlier binding-identity framing retracted. Decision A
+    (name strategy) stands alone and remains open.
+  EVIDENCE:
+  - context_compass/system_docs/patches/active/bind_kwargs_spell_transplant_2026_07_19/architecture_patch.md:1-45
+  IMPACT: Simpler design: bind kwargs = deferred constructor args, nothing more.
+  NEXT: Owner rules decision A; implementation story lands both (or transplant alone).
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-07-19T14:01:00Z
+  TYPE: DECISION
+  CLAIM: Owner RULED decision B (upgraded): bind(**kwargs) leftovers TRANSPLANT ONTO
+    THE SPELL - the Spell consumes what its profile recognizes and raises on
+    leftovers itself ("fail via the spell object"), popping hook transfers first.
+    Architecture patch authored: system_docs/patches/active/
+    bind_kwargs_spell_transplant_2026_07_19/ (semantics, precedence law
+    spell_override > bind kwargs > signature defaults, per-profile consumption,
+    persistence + identity rules, blast radius). Implementation is its own story -
+    NOT landed this wave. Decision A (DuplicateSpellNameStrategy honoring SHA +
+    binding-address disambiguation) remains OPEN and interlocks via the identity
+    rule; recommend ruling it before the transplant story lands.
+  EVIDENCE:
+  - context_compass/system_docs/patches/active/bind_kwargs_spell_transplant_2026_07_19/architecture_patch.md:1-60
+  IMPACT: The silent-swallow footgun dies by design; bind gains the configured-
+    construction lane users (and agents) instinctively reach for.
+  NEXT: Owner rules decision A; then I open the implementation story and land both.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
 - DATETIME: 2026-07-19T13:56:00Z
   TYPE: MEASURE
   CLAIM: Run 2 processed - 30/40 examples green; every remaining red decoded into

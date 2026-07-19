@@ -43,9 +43,12 @@ a probe here first; the probe's printed outcome then hardens the example.
 - Callable spells (functions, lambdas, methods) are ALWAYS unique; lambdas
   additionally REQUIRE a binding_name. Fresh-per-meld factories are CLASSES
   bound "many".
-- Meld has exactly three address forms: the spell object, spell_name (the
-  spell's name string), and (spellframe, binding_name). binding_name alone is
-  refused with ValueError.
+- THE ADDRESS LAW: every spell lives at exactly one (frame_key, binding_key)
+  address - frame_key = spellframe else normalized spell name; binding_key =
+  binding_name else the default slot. Meld forms construct that key: spell
+  object / spell_name derive the frame key from the NAME (so they miss framed
+  binds), and a bind with binding_name answers only when the meld carries the
+  same binding_name. binding_name alone is refused with ValueError.
 - Spell NAMES are unique per book at conjure - CURRENT behavior refuses any
   name collision regardless of binding names, frames, or content SHA.
   DIVERGENCE FLAG: owner design intent (twice stated) is SHA256 content
