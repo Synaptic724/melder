@@ -14,6 +14,7 @@ def _material(
         *,
         parents: list = None,
         lanes: dict = None,
+        ancestors: dict = None,
 ) -> dict:
     """
     Build one composition material payload.
@@ -27,6 +28,10 @@ def _material(
             Optional composition ancestry.
         lanes:
             Optional spell_id -> lane_id join (lane names mirror ids).
+        ancestors:
+            Optional spell_id -> transitive spell-ancestor list carried on
+            the member join (`ancestor_spell_ids`; the BUG-046 version
+            truth the pairing requires beside the shared lane).
 
     Returns:
         dict: Resolver-shaped material.
@@ -42,6 +47,9 @@ def _material(
                 "lane_state": "open",
                 "lane_type": "experiment",
                 "lane_tip": spell_id,
+                "ancestor_spell_ids": list(
+                    (ancestors or {}).get(spell_id, []),
+                ),
             }
             for spell_id, lane_id in (lanes or {}).items()
         },
@@ -97,10 +105,12 @@ def test_engine_registers_members_default_and_dispatches() -> None:
 def test_members_strategy_pairs_lane_evidenced_moves() -> None:
     """
     Verify the semantic win: a removed identity and an added identity
-    sharing a LANE pair as version_moved (never guessed - identities
-    without a lane join report as plain added/removed), unchanged members
-    list by name, and ancestry_related fires when one composition parents
-    the other.
+    sharing a LANE and a recorded VERSION relation pair as version_moved
+    (never guessed, BUG-046: a shared lane alone is not movement evidence
+    - the pair must also be ancestry-related through the members join;
+    identities without either report as plain added/removed), unchanged
+    members list by name, and ancestry_related fires when one composition
+    parents the other.
     """
     materials = {
         "g-1": _material(
@@ -113,6 +123,7 @@ def test_members_strategy_pairs_lane_evidenced_moves() -> None:
             ["sha-a2", "sha-b", "sha-new"],
             parents=["g-1"],
             lanes={"sha-a2": "lane-a", "sha-b": "lane-b"},
+            ancestors={"sha-a2": ["sha-a1"]},
         ),
     }
     engine = GroupDiffEngine(_resolver_for(materials))

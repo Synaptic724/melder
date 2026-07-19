@@ -275,6 +275,71 @@ class DirectedAcyclicWorkGraph(Cleanable):
 
             return ordered
 
+    def topological_levels(self) -> List[List[DagNode]]:
+        """
+        Return the DAG's nodes peeled into dependency LEVELS.
+
+        Purpose:
+            The flatten surface for parallel execution planners
+            (parallel_restore_ulid_identity S4): level N holds every node
+            whose dependencies all live in levels < N, so all nodes within
+            one level are mutually independent and may execute
+            concurrently, with a barrier between levels preserving the
+            recorded partial order.
+
+        Contract:
+            - Level 0 is exactly the dependency-free nodes.
+            - In-level order is deterministic: ascending node id, matching
+              `topological_sort`'s tie law.
+            - Side-effect free; the DAG structure is never mutated.
+            - Flattening the returned levels yields one valid topological
+              order (levels are a coarsening of `topological_sort`).
+
+        Returns:
+            List[List[DagNode]]: Levels in dependency order; empty list
+            for an empty graph.
+
+        Raises:
+            RuntimeError:
+                If the graph has been cleaned, or a cycle (or inconsistent
+                dependency bookkeeping) prevents peeling every node - the
+                same refusal law as `topological_sort`.
+
+        Threading:
+            Runs under the graph's structural lock, like all traversals.
+        """
+        self.check_cleaned()
+        with self._lock:
+            indegree: Dict[DagNode, int] = {
+                node: len(node.dependencies) for node in self._nodes.values()
+            }
+            current_level: List[DagNode] = sorted(
+                (node for node, degree in indegree.items() if degree == 0),
+                key=lambda item: item.id,
+            )
+            levels: List[List[DagNode]] = []
+            peeled_count = 0
+            while current_level:
+                levels.append(current_level)
+                peeled_count += len(current_level)
+                next_level: List[DagNode] = []
+                for node in current_level:
+                    for dependent in node.dependents:
+                        indegree[dependent] -= 1
+                        if indegree[dependent] == 0:
+                            next_level.append(dependent)
+                current_level = sorted(
+                    next_level, key=lambda item: item.id
+                )
+            if peeled_count != len(self._nodes):
+                # Cycle detected or inconsistent dependency bookkeeping -
+                # identical refusal law to topological_sort().
+                raise RuntimeError(
+                    "Cycle detected in DirectedAcyclicWorkGraph or "
+                    "inconsistent dependency state."
+                )
+            return levels
+
     def collect_dependency_ids(self) -> List[str]:
         """
         Convenience helper for SpellCrafter-style usage.

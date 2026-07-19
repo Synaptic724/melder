@@ -1825,3 +1825,198 @@ def test_merge_graft_grows_an_existing_index_and_adopts_selection(
         crystallizer.graft_index(
             record, host_book, adopt_recorded_selection=True
         )
+
+
+def test_restored_link_maps_recorded_contract_ulid_to_fresh_contract(
+        cache_root,
+):
+    """
+    Purpose:
+        Prove the S1 link-identity law: every rebuilt link edge maps its
+        RECORDED contract ULID (the identity the ward minted when the
+        original link was established) onto the FRESH contract ULID the
+        rebuilt ward mints during replay.
+    Contract:
+        - The recorded contract id appears as an identity-map key.
+        - The mapped value is a fresh 26-character ULID that differs from
+          the recorded id (never-rehydrate-ULIDs).
+        - Existing link-lane behavior is untouched: one link built, both
+          conduit endpoints identity-mapped.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If the link identity mapping diverges.
+    """
+    crystallizer = _activate_crystallizer()
+    book_a = _dynamic_book()
+    book_a.bind(
+        spell=RestoreAlpha,
+        existence=Existence.unique,
+        permissions="create",
+    )
+    conduit_a = book_a.conjure(dynamic=True, name="alpha")
+    book_b = _dynamic_book()
+    book_b.bind(
+        spell=RestoreGamma,
+        existence=Existence.unique,
+        permissions="create",
+    )
+    conduit_b = book_b.conjure(dynamic=True, name="beta")
+    assert conduit_a.link(conduit_b) is True
+    # The recorded link identity IS the contract the initiating ward
+    # minted at link time (ward truth: target conduit id -> contract id).
+    recorded_contract_id = (
+        conduit_a._conduit_ward._initiated_index[conduit_b._id]
+    )
+    checkpoint_id = crystallizer.create_checkpoint()
+    crystallizer.flush_checkpoint(checkpoint_id)
+
+    rebooted = _fresh_boot()
+    rebooted.reload_cached_checkpoint(checkpoint_id)
+    report = rebooted.load_checkpoint(checkpoint_id)
+
+    assert report["status"] == "complete"
+    assert report["built_counts"]["link"] == 1
+    assert conduit_a._id in report["identity_map"]
+    assert conduit_b._id in report["identity_map"]
+    # S1 law: recorded contract ULID -> fresh contract ULID.
+    assert recorded_contract_id in report["identity_map"]
+    fresh_contract_id = report["identity_map"][recorded_contract_id]
+    assert fresh_contract_id != recorded_contract_id
+    assert isinstance(fresh_contract_id, str)
+    assert len(fresh_contract_id) == 26
+
+
+def test_legacy_chain_link_without_contract_twin_restores_without_mapping(
+        cache_root,
+):
+    """
+    Purpose:
+        Prove the S1 legacy tolerance: a chain whose conduit twin carries a
+        link edge but whose contract twin is ABSENT (pre-contract-crystal
+        chains / evicted twins) still rebuilds the link cleanly - it simply
+        gains no contract identity mapping and files no shortfall for it.
+    Contract:
+        - One link built; status complete; link lane shortfall-free.
+        - The identity map holds exactly the recorded book/conduit ids
+          (books map first, conduits second); no contract key appears.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If the legacy lane maps, fails, or under-builds.
+    """
+    _activate_crystallizer()
+    window = {
+        "journal": [
+            [1, "spellbook", "book-x"],
+            [2, "spellbook", "book-z"],
+            [3, "spell_crystal", "sha-x"],
+            [4, "spell_crystal", "sha-z"],
+            [5, "conduit", "cond-x"],
+            [6, "conduit", "cond-z"],
+        ],
+        "payloads": {
+            "spellbook": {
+                "book-x": {
+                    "spellbook_id": "book-x",
+                    "frame_name": "default",
+                    "configuration_payload": {
+                        "system_state": "dynamic",
+                        "ai_native_enabled": True,
+                        "rift_enabled": True,
+                        "phase_scheduler_workers_per_spellbook": 1,
+                    },
+                    "hook_names": [],
+                    "bind_order": ["sha-x"],
+                },
+                "book-z": {
+                    "spellbook_id": "book-z",
+                    "frame_name": "default",
+                    "configuration_payload": {
+                        "system_state": "dynamic",
+                        "ai_native_enabled": True,
+                        "rift_enabled": True,
+                        "phase_scheduler_workers_per_spellbook": 1,
+                    },
+                    "hook_names": [],
+                    "bind_order": ["sha-z"],
+                },
+            },
+            "conduit": {
+                "cond-x": {
+                    "conduit_id": "cond-x",
+                    "spellbook_id": "book-x",
+                    "conduit_name": "legacy-alpha",
+                    "policy_name": "default",
+                    "dynamic": True,
+                    # Legacy edge WITHOUT a matching contract twin below.
+                    "link_targets": ["cond-z"],
+                },
+                "cond-z": {
+                    "conduit_id": "cond-z",
+                    "spellbook_id": "book-z",
+                    "conduit_name": "legacy-beta",
+                    "policy_name": "default",
+                    "dynamic": True,
+                    "link_targets": [],
+                },
+            },
+            "spell_crystal": {
+                "sha-x": {
+                    "id": "sha-x",
+                    "spellbook_id": "book-x",
+                    "spell_name": "RestoreAlpha",
+                    "binding_name": None,
+                    "spellframe_name": None,
+                    "existence_name": "unique",
+                    "permissions_name": "create",
+                    "rebindability": "hydratable",
+                    "root_module_kind": "user_source",
+                    "root_module_name": (
+                        "tests.integration.melder.crystallizer."
+                        "test_crystallizer_restore_integration"
+                    ),
+                    "root_target_qualname": "RestoreAlpha",
+                    "root_target_kind": "class",
+                },
+                "sha-z": {
+                    "id": "sha-z",
+                    "spellbook_id": "book-z",
+                    "spell_name": "RestoreGamma",
+                    "binding_name": None,
+                    "spellframe_name": None,
+                    "existence_name": "unique",
+                    "permissions_name": "create",
+                    "rebindability": "hydratable",
+                    "root_module_kind": "user_source",
+                    "root_module_name": (
+                        "tests.integration.melder.crystallizer."
+                        "test_crystallizer_restore_integration"
+                    ),
+                    "root_target_qualname": "RestoreGamma",
+                    "root_target_kind": "class",
+                },
+            },
+        },
+    }
+    engine = RestoreEngine(
+        profile_name="default",
+        checkpoint_ids=["01LEGACYLINKTEST00000000"],
+        chain=[window],
+    )
+    report = engine.restore()
+    payload = report.describe()
+    engine.cleanup()
+
+    assert payload["status"] == "complete"
+    assert payload["built_counts"]["link"] == 1
+    # Link-lane honesty unchanged: no shortfall rows for the legacy edge.
+    assert not [
+        row for row in payload["shortfalls"]
+        if "link" in str(row.get("reason", ""))
+    ]
+    # No contract twin -> no contract mapping; the map holds exactly the
+    # recorded book and conduit identities.
+    assert set(payload["identity_map"].keys()) == {
+        "book-x", "book-z", "cond-x", "cond-z"
+    }

@@ -333,3 +333,191 @@ def test_cleanup_terminates_pool_threads():
     for thread in threads:
         thread.join(timeout=5.0)
     assert not any(thread.is_alive() for thread in threads)
+
+
+def test_explicit_lane_runs_phases_without_configuration():
+    """
+    Purpose:
+        Prove the S2 explicit construction lane: a scheduler built with
+        worker_count/barrier_timeout_ms and NO configuration runs phases
+        with identical execution semantics.
+    Contract:
+        One phase executes on the explicit-lane pool and returns its unit;
+        properties reflect the explicit values.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If the explicit lane diverges from the config lane.
+    """
+    scheduler = PhaseScheduler(
+        spellbook=None,
+        configuration=None,
+        worker_count=1,
+        barrier_timeout_ms=500,
+    )
+    assert scheduler.workers == 1
+    assert scheduler.barrier_timeout_ms == 500
+    executed = []
+    unit = scheduler.create_unit_of_work(lambda: executed.append("ran"))
+    scheduler.register_phase("p1", lambda: [unit])
+    results = scheduler.run_all_phases("cid")
+    assert "p1" in results
+    assert executed == ["ran"]
+    scheduler.cleanup()
+
+
+def test_explicit_lane_rejects_invalid_override_values():
+    """
+    Purpose:
+        Prove explicit overrides carry the configuration readers'
+        strictness: bools, non-ints, and non-positive ints refuse.
+    Contract:
+        Each invalid value raises ValueError naming the override.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If an invalid override is accepted.
+    """
+    for bad_workers in (True, 0, -1, "4", 2.5, None):
+        with pytest.raises(ValueError):
+            PhaseScheduler(
+                spellbook=None,
+                configuration=None,
+                worker_count=bad_workers,
+                barrier_timeout_ms=500,
+            )
+    for bad_timeout in (False, 0, -100, "500", 1.5):
+        with pytest.raises(ValueError):
+            PhaseScheduler(
+                spellbook=None,
+                configuration=None,
+                worker_count=1,
+                barrier_timeout_ms=bad_timeout,
+            )
+
+
+def test_omitted_override_without_configuration_refuses_loudly():
+    """
+    Purpose:
+        Prove the seam refuses half-explicit construction with no
+        configuration to fall back on.
+    Contract:
+        ValueError with remediation guidance; nothing is constructed.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If construction succeeds without a policy source.
+    """
+    with pytest.raises(ValueError, match="configuration"):
+        PhaseScheduler(
+            spellbook=None,
+            configuration=None,
+            worker_count=2,
+        )
+    with pytest.raises(ValueError, match="configuration"):
+        PhaseScheduler(spellbook=None, configuration=None)
+
+
+def test_explicit_values_take_precedence_over_configuration():
+    """
+    Purpose:
+        Prove precedence: explicit values win over configuration keys when
+        both are supplied.
+    Contract:
+        The scheduler reports the explicit values, not the config's.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If configuration values leak through.
+    """
+    cfg = DummyConfig(workers=3, timeout_ms=999)
+    scheduler = PhaseScheduler(
+        spellbook=object(),
+        configuration=cfg,
+        worker_count=1,
+        barrier_timeout_ms=250,
+    )
+    assert scheduler.workers == 1
+    assert scheduler.barrier_timeout_ms == 250
+    scheduler.cleanup()
+
+
+def test_config_lane_unchanged_when_overrides_omitted():
+    """
+    Purpose:
+        Prove the original configuration lane is byte-identical: omitting
+        both overrides reads the SpellbookConfiguration keys exactly as
+        before the seam landed.
+    Contract:
+        Values come from the configuration; a run completes on that pool.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If the config lane drifted.
+    """
+    cfg = DummyConfig(workers=2, timeout_ms=750)
+    scheduler = PhaseScheduler(spellbook=object(), configuration=cfg)
+    assert scheduler.workers == 2
+    assert scheduler.barrier_timeout_ms == 750
+    unit = scheduler.create_unit_of_work(lambda: 7)
+    scheduler.register_phase("p1", lambda: [unit])
+    results = scheduler.run_all_phases("cid")
+    assert results["p1"][0].result() == 7
+    scheduler.cleanup()
+
+
+def test_worker_thread_idents_starts_pool_once_and_detaches():
+    """
+    Purpose:
+        Prove the S4 cohort surface: worker_thread_idents starts the
+        persistent pool (idempotently), returns real live idents, and the
+        returned list is detached scheduler state.
+    Contract:
+        - Length equals the configured worker count; idents are stable
+          across calls; mutation of the returned list changes nothing.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If the ident surface drifts.
+    """
+    scheduler = PhaseScheduler(
+        spellbook=None,
+        configuration=None,
+        worker_count=2,
+        barrier_timeout_ms=500,
+    )
+    first = scheduler.worker_thread_idents()
+    assert len(first) == 2
+    assert all(isinstance(ident, int) and ident > 0 for ident in first)
+    second = scheduler.worker_thread_idents()
+    assert second == first
+    second.append(-1)
+    assert scheduler.worker_thread_idents() == first
+    # The pool still runs phases after the ident probe (start-once law).
+    unit = scheduler.create_unit_of_work(lambda: "ok")
+    scheduler.register_phase("p1", lambda: [unit])
+    results = scheduler.run_all_phases("cid")
+    assert results["p1"][0].result() == "ok"
+    scheduler.cleanup()
+
+
+def test_worker_thread_idents_refuses_after_cleanup():
+    """
+    Purpose:
+        Prove the cleaned scheduler refuses the ident surface.
+    Contract:
+        - RuntimeError after cleanup.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If a cleaned scheduler serves idents.
+    """
+    scheduler = PhaseScheduler(
+        spellbook=None,
+        configuration=None,
+        worker_count=1,
+        barrier_timeout_ms=500,
+    )
+    scheduler.cleanup()
+    with pytest.raises(RuntimeError):
+        scheduler.worker_thread_idents()

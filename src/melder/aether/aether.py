@@ -973,6 +973,76 @@ class Aether(Cleanable):
             raise RuntimeError("Aether LoadGate is unavailable.")
         self._load_gate.release()
 
+    def enroll_load_worker(self, thread_ident: int) -> None:
+        """
+        Public API
+
+        Enroll one worker thread into the current load-authority span.
+
+        Purpose:
+            Parallel restore admission (parallel_restore_ulid_identity S3):
+            the loading thread names its scheduler pool threads so restore
+            units pass the LoadGate for the span while every foreign thread
+            keeps parking exactly as before.
+
+        Contract:
+            - Delegates to `LoadGate.enroll_worker`: HOLDER-ONLY, active-
+              span-only, idempotent set semantics; the cohort never
+              survives the span (release/cleanup clear it).
+
+        Args:
+            thread_ident:
+                The worker thread's identity (`threading.Thread.ident`).
+                Positive int; bools refuse.
+
+        Raises:
+            RuntimeError:
+                If the LoadGate is unavailable or cleaned, no load span is
+                active, or the caller is not the span holder.
+            ValueError:
+                If thread_ident is not a positive int.
+
+        Returns:
+            None.
+        """
+        if self._load_gate is None:
+            raise RuntimeError("Aether LoadGate is unavailable.")
+        self._load_gate.enroll_worker(thread_ident)
+
+    def withdraw_load_worker(self, thread_ident: int) -> None:
+        """
+        Public API
+
+        Withdraw one worker thread from the current load-authority span.
+
+        Purpose:
+            Pairs with `enroll_load_worker` so the span owner can retire a
+            worker mid-span; loaders withdraw their pool in `finally`.
+
+        Contract:
+            - Delegates to `LoadGate.withdraw_worker`: HOLDER-ONLY, active-
+              span-only, idempotent discard; a withdrawn thread parks at
+              its next passage check.
+
+        Args:
+            thread_ident:
+                The worker thread identity to remove. Positive int; bools
+                refuse.
+
+        Raises:
+            RuntimeError:
+                If the LoadGate is unavailable or cleaned, no load span is
+                active, or the caller is not the span holder.
+            ValueError:
+                If thread_ident is not a positive int.
+
+        Returns:
+            None.
+        """
+        if self._load_gate is None:
+            raise RuntimeError("Aether LoadGate is unavailable.")
+        self._load_gate.withdraw_worker(thread_ident)
+
 
     def _bind_configuration(
             self,

@@ -294,3 +294,145 @@ def test_component_dag_node_rejects_non_callable_task() -> None:
     node = DagNode("tasked")
     with pytest.raises(TypeError):
         node.add_task("not-a-callable")  # type: ignore[arg-type]
+
+
+def test_component_dag_topological_levels_diamond_peels_by_dependency_depth() -> None:
+    """
+    Purpose:
+        Validate topological_levels peels a diamond into independent
+        layers (S4 flatten law).
+    Contract:
+        - root alone in level 0; both middles share level 1; sink in 2.
+        - In-level order is ascending node id.
+    Returns:
+        None.
+    """
+    dag = DirectedAcyclicWorkGraph()
+    for key in ("root", "mid_b", "mid_a", "sink"):
+        dag.add_node(key)
+    dag.add_dependency("mid_a", depends_on="root")
+    dag.add_dependency("mid_b", depends_on="root")
+    dag.add_dependency("sink", depends_on="mid_a")
+    dag.add_dependency("sink", depends_on="mid_b")
+    levels = dag.topological_levels()
+    assert [[node.id for node in level] for level in levels] == [
+        ["root"], ["mid_a", "mid_b"], ["sink"]
+    ]
+    dag.cleanup()
+
+
+def test_component_dag_topological_levels_disjoint_components_share_levels() -> None:
+    """
+    Purpose:
+        Validate mutually independent components land in the SAME level
+        (maximum parallel width, not chain order).
+    Contract:
+        - Two independent chains peel level-by-level together.
+    Returns:
+        None.
+    """
+    dag = DirectedAcyclicWorkGraph()
+    for key in ("a1", "a2", "b1", "b2"):
+        dag.add_node(key)
+    dag.add_dependency("a2", depends_on="a1")
+    dag.add_dependency("b2", depends_on="b1")
+    levels = dag.topological_levels()
+    assert [[node.id for node in level] for level in levels] == [
+        ["a1", "b1"], ["a2", "b2"]
+    ]
+    dag.cleanup()
+
+
+def test_component_dag_topological_levels_flatten_matches_sort_law() -> None:
+    """
+    Purpose:
+        Validate levels are a coarsening of topological_sort: flattening
+        them yields a valid topological order over the same nodes.
+    Contract:
+        - Every dependency's level index is strictly below its dependent's.
+        - Flattened node set equals the graph's node set.
+    Returns:
+        None.
+    """
+    dag = DirectedAcyclicWorkGraph()
+    for key in ("f", "e", "d", "c", "b", "a"):
+        dag.add_node(key)
+    dag.add_dependency("b", depends_on="a")
+    dag.add_dependency("c", depends_on="a")
+    dag.add_dependency("d", depends_on="b")
+    dag.add_dependency("d", depends_on="c")
+    dag.add_dependency("e", depends_on="d")
+    levels = dag.topological_levels()
+    level_of = {
+        node.id: index
+        for index, level in enumerate(levels)
+        for node in level
+    }
+    assert set(level_of) == {"a", "b", "c", "d", "e", "f"}
+    for node_id, depends_on in (
+            ("b", "a"), ("c", "a"), ("d", "b"), ("d", "c"), ("e", "d")
+    ):
+        assert level_of[depends_on] < level_of[node_id]
+    dag.cleanup()
+
+
+def test_component_dag_topological_levels_empty_and_singleton() -> None:
+    """
+    Purpose:
+        Validate degenerate shapes: empty graph and one edgeless node.
+    Contract:
+        - Empty graph -> empty level list; singleton -> one one-node level.
+    Returns:
+        None.
+    """
+    empty = DirectedAcyclicWorkGraph()
+    assert empty.topological_levels() == []
+    empty.cleanup()
+
+    single = DirectedAcyclicWorkGraph()
+    single.add_node("only")
+    levels = single.topological_levels()
+    assert [[node.id for node in level] for level in levels] == [["only"]]
+    single.cleanup()
+
+
+def test_component_dag_topological_levels_cycle_refuses_like_sort() -> None:
+    """
+    Purpose:
+        Validate the cycle refusal law is shared with topological_sort.
+    Contract:
+        - RuntimeError from BOTH traversals on the same cyclic graph.
+    Returns:
+        None.
+    """
+    dag = DirectedAcyclicWorkGraph()
+    dag.add_node("x")
+    dag.add_node("y")
+    dag.add_dependency("x", depends_on="y")
+    dag.add_dependency("y", depends_on="x")
+    with pytest.raises(RuntimeError):
+        dag.topological_levels()
+    with pytest.raises(RuntimeError):
+        dag.topological_sort()
+    dag.cleanup()
+
+
+def test_component_dag_topological_levels_is_side_effect_free() -> None:
+    """
+    Purpose:
+        Validate repeat calls return identical levels and sort() is
+        untouched by the new traversal.
+    Contract:
+        - Two levels calls agree; sort still returns all nodes in order.
+    Returns:
+        None.
+    """
+    dag = DirectedAcyclicWorkGraph()
+    for key in ("n1", "n2"):
+        dag.add_node(key)
+    dag.add_dependency("n2", depends_on="n1")
+    first = [[node.id for node in level] for level in dag.topological_levels()]
+    second = [[node.id for node in level] for level in dag.topological_levels()]
+    assert first == second == [["n1"], ["n2"]]
+    assert [node.id for node in dag.topological_sort()] == ["n1", "n2"]
+    dag.cleanup()

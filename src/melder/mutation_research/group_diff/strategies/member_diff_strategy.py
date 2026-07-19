@@ -14,21 +14,24 @@ class MemberDiffStrategy(GroupDiffStrategy):
         two subsystem compositions" at MEMBER grain - who joined, who
         left, and (the semantic win over raw set math) which members are
         the SAME OBJECT at a DIFFERENT VERSION. A member that "left" and a
-        member that "joined" who share a lane are one object whose version
-        moved; the verdict pairs them so the agent can descend that pair
-        into the normal per-spell grains (source / structural / parts).
+        member that "joined" who are the same object at two versions pair
+        as a move; the verdict pairs them so the agent can descend that
+        pair into the normal per-spell grains (source / structural / parts).
 
     Contract:
-        - Version movement is lane-evidenced, never guessed: two identities
-          pair as `version_moved` ONLY when the resolver's members join
-          places them in the SAME lane. Without residence truth in the
-          material, they honestly report as removed + added.
+        - Version movement is evidenced twice, never guessed (BUG-046):
+          two identities pair as `version_moved` ONLY when the resolver's
+          members join places them in the SAME lane AND the pair is
+          ancestry-related in either direction through the members'
+          transitive `ancestor_spell_ids`. A shared catch-all lane alone
+          never fabricates movement; without residence truth or a recorded
+          version relation, identities honestly report as removed + added.
         - Result is detached and value-typed: `identical`,
           `added_members`, `removed_members`, `version_moved`
           (`{"lane_id", "lane_name", "from_spell_id", "to_spell_id"}`
           rows), `unchanged_members`, and `ancestry_related` (whether one
-          composition's parent chain names the other - the walk-vs-jump
-          signal).
+          composition's TRANSITIVE parent chain names the other - the
+          walk-vs-jump signal; BUG-045).
 
     Threading:
         Stateless beyond the base lifecycle flag; safe to share.

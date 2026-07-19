@@ -119,11 +119,12 @@ class CounterSwitch(Cleanable):
             self.fast_state = 0
             self._event.set()
             self._cleaned = True
-
-        del self._event
-        del self._tickets
-        del self._lock
-        del self.fast_state
+        # Retained-terminal-surface contract (see the docstring above): NO
+        # del posture here. A follower parked inside "selector()" may only
+        # be scheduled again after this method has fully returned; every
+        # slot it reads on resume must stay alive as a coherent terminal
+        # surface ("_event" terminally set, "_tickets" empty, "_lock" for
+        # in-flight leader claims, "fast_state" zeroed).
 
     def __len__(self) -> int:
         """

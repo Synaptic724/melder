@@ -232,7 +232,7 @@ def test_link_delegates_to_ward_and_fires_hook(
     target = _build_conduit(
         spellbook=spellbook_stub,
         configuration=configuration_automatic,
-        conduit_state=ConduitState.lesser,
+        conduit_state=ConduitState.normal,
         aetheric_frame="default",
         policy=Policies.default,
     )
@@ -294,48 +294,63 @@ def test_link_publishes_peer_record_when_target_participates_in_nexus(
 
 def test_link_false_does_not_fire_hook(
     conduit_dynamic_normal: Conduit,
-    conduit_lesser: Conduit,
+    configuration_automatic: SpellbookConfiguration,
+    spellbook_stub: MagicMock,
 ) -> None:
     """
     Verify link does not fire hooks when the ward rejects the link.
 
     Contract:
         - Hook list remains empty if link returns False.
+        - The target is a NORMAL-state peer: identity guardrails
+          (self/lesser) fire before admission, so a lesser stand-in
+          would raise instead of reaching the mocked ward.
 
     Args:
         conduit_dynamic_normal (Conduit): Dynamic normal conduit instance.
-        conduit_lesser (Conduit): Target conduit instance.
+        configuration_automatic (SpellbookConfiguration): Automatic configuration.
+        spellbook_stub (MagicMock): Spellbook stub with storage maps.
 
     Raises:
         AssertionError: If hooks fire on a rejected link.
     """
-    conduit_dynamic_normal._conduit_ward = MagicMock()
-    conduit_dynamic_normal._conduit_ward._link.return_value = False
-    events: list[tuple[Conduit, Conduit]] = []
+    target = _build_conduit(
+        spellbook=spellbook_stub,
+        configuration=configuration_automatic,
+        conduit_state=ConduitState.normal,
+        aetheric_frame="default",
+        policy=Policies.default,
+    )
+    try:
+        conduit_dynamic_normal._conduit_ward = MagicMock()
+        conduit_dynamic_normal._conduit_ward._link.return_value = False
+        events: list[tuple[Conduit, Conduit]] = []
 
-    def hook(left: Conduit, right: Conduit) -> None:
-        """
-        Record post-link hook calls.
+        def hook(left: Conduit, right: Conduit) -> None:
+            """
+            Record post-link hook calls.
 
-        Args:
-            left (Conduit): Source conduit.
-            right (Conduit): Target conduit.
+            Args:
+                left (Conduit): Source conduit.
+                right (Conduit): Target conduit.
 
-        Returns:
-            None: Hook does not return a value.
-        """
-        events.append((left, right))
+            Returns:
+                None: Hook does not return a value.
+            """
+            events.append((left, right))
 
-    conduit_dynamic_normal._conduit_hooks = {"on_conduit_post_link": [hook]}
+        conduit_dynamic_normal._conduit_hooks = {"on_conduit_post_link": [hook]}
 
-    with patch.object(
-        Conduit,
-        "_transaction_blocked_for_current_posture",
-        return_value=False,
-    ):
-        conduit_dynamic_normal.link(conduit_lesser)
+        with patch.object(
+            Conduit,
+            "_transaction_blocked_for_current_posture",
+            return_value=False,
+        ):
+            conduit_dynamic_normal.link(target)
 
-    assert events == []
+        assert events == []
+    finally:
+        target.cleanup()
 
 
 def test_sever_link_raises_when_not_dynamic(

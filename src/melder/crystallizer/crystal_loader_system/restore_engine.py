@@ -1591,9 +1591,47 @@ class RestoreEngine(Cleanable):
         """
         Stage 7: re-establish links from each initiator's outbound edges.
 
+        Contract:
+            - Every edge replays through the PUBLIC link verb; the live ward
+              mints a fresh Contract (fresh ULID) for each re-established
+              edge, exactly like a user-initiated link.
+            - Link identity mapping (S1, parallel_restore_ulid_identity
+              lane): the folded contract twins already carry each recorded
+              link's identity - `contract_id` with `conduit_a_id`
+              (initiating side, ward-creation order) and `conduit_b_id`
+              (target side) - so every rebuilt edge maps its recorded
+              contract ULID to the fresh contract ULID the live ward
+              minted. Recorded ids never enter the live world
+              (never-rehydrate-ULIDs); they live only in the identity map.
+            - The fresh contract id is read from the initiator ward's
+              initiated index, the engine's existing identity seam pattern
+              (the same posture as the `map_identity(..., conduit._id)`
+              reads elsewhere in this engine).
+            - Legacy tolerance: an edge with no folded contract twin
+              (chains sealed before contract crystals existed, or an edge
+              whose contract twin was evicted) still rebuilds; it simply
+              gains no mapping entry. Nothing is under-built, so no
+              shortfall is filed for the missing mapping.
+            - A missing live target keeps today's honest behavior: the
+              `link_target_not_rebuilt` shortfall is filed and the edge is
+              skipped.
+
         Returns:
             None.
         """
+        # Folded link identity lookup:
+        # (initiator_recorded_id, target_recorded_id) -> recorded contract
+        # ULID. `conduit_a` is the initiating side by ward-creation order
+        # (ward_a = initiator; see the crystallizer's contract twin
+        # emission, which records contract._ward_a._id as conduit_a_id).
+        recorded_edge_contracts: Dict[Tuple[str, str], str] = {}
+        for recorded_contract_id, contract_payload in self._contracts.items():
+            recorded_edge_contracts[
+                (
+                    str(contract_payload.get("conduit_a_id")),
+                    str(contract_payload.get("conduit_b_id")),
+                )
+            ] = recorded_contract_id
         for conduit_id, payload in self._conduits.items():
             initiator = self._live_conduits.get(conduit_id)
             if initiator is None:
@@ -1610,6 +1648,24 @@ class RestoreEngine(Cleanable):
                     continue
                 initiator.link(target)
                 self._report.record_built("link")
+                # S1 identity surface: translate the recorded contract ULID
+                # onto the fresh contract this link just minted, so links
+                # are locatable through the identity map like every other
+                # identity-bearing unit (and addressable as graph nodes by
+                # the parallel-restore planner).
+                recorded_contract_id = recorded_edge_contracts.get(
+                    (conduit_id, str(target_recorded_id))
+                )
+                if recorded_contract_id is not None:
+                    fresh_contract_id = (
+                        initiator._conduit_ward._initiated_index.get(
+                            target._id
+                        )
+                    )
+                    if fresh_contract_id is not None:
+                        self._report.map_identity(
+                            recorded_contract_id, str(fresh_contract_id)
+                        )
 
     def _replay_clusters(self) -> None:
         """

@@ -1,6 +1,6 @@
 import threading
 import time
-from typing import ClassVar, Dict, Optional, Union
+from typing import ClassVar, Dict, List, Optional, Set, Union
 
 
 from melder.utilities.general_base.cleanable import Cleanable
@@ -22,13 +22,21 @@ class LoadGate(Cleanable):
         - "acquire(label)" claims exclusive authority for the calling thread.
           A second acquire - from any thread, including the holder - refuses:
           exactly one load may run at a time, and a nested acquire is a
-          caller pairing bug, not a wait condition.
+          caller pairing bug, not a wait condition. Every span begins as a
+          cohort of one (the holder) - byte-identical to the pre-cohort law.
+        - Cohort (S3, parallel_restore_ulid_identity): the HOLDER may
+          "enroll_worker(thread_ident)" its restore worker threads into the
+          span; enrolled members pass the gate exactly like the holder while
+          the span lasts. "withdraw_worker(thread_ident)" removes one member;
+          "release()"/"cleanup()" clear the whole cohort unconditionally, so
+          NO membership ever survives a span.
         - "release()" reopens the gate and wakes all waiters. Only the holder
           thread may release.
         - "wait_for_passage(timeout)" is the mediator-side check: it returns
-          immediately when the gate is open OR the caller IS the holder, and
-          otherwise blocks on the internal condition until release, raising
-          RuntimeError at the deadline.
+          immediately when the gate is open, the caller IS the holder, OR the
+          caller is an enrolled cohort member; otherwise it blocks on the
+          internal condition until release, raising RuntimeError at the
+          deadline. Foreign-thread park semantics are unchanged.
 
     Threading:
         - All state transitions are guarded by one "Lock" wrapped in a
@@ -47,6 +55,7 @@ class LoadGate(Cleanable):
         "_condition",
         "_holder_thread_id",
         "_holder_label",
+        "_cohort_thread_ids",
     ]
 
     def __init__(self) -> None:
@@ -69,6 +78,9 @@ class LoadGate(Cleanable):
         self._condition: threading.Condition = threading.Condition()
         self._holder_thread_id: Optional[int] = None
         self._holder_label: Optional[str] = None
+        # Span cohort: worker thread idents the CURRENT holder enrolled.
+        # Always empty while the gate is open; cleared on release/cleanup.
+        self._cohort_thread_ids: Set[int] = set()
 
     def cleanup(self) -> None:
         """
@@ -105,9 +117,12 @@ class LoadGate(Cleanable):
             if self._cleaned:
                 return
             # None tombstones (see Contract): late waiters must be able to
-            # re-check these after waking, so no del posture here.
+            # re-check these after waking, so no del posture here. The
+            # cohort set is cleared IN PLACE for the same late-waiter
+            # safety rationale - membership must never outlive teardown.
             self._holder_thread_id = None
             self._holder_label = None
+            self._cohort_thread_ids.clear()
             self._condition.notify_all()
             self._cleaned = True
 
@@ -153,6 +168,130 @@ class LoadGate(Cleanable):
                 )
             self._holder_thread_id = threading.get_ident()
             self._holder_label = label
+            # Deterministic span start: a fresh span always begins as a
+            # cohort of one (the holder), regardless of prior history.
+            self._cohort_thread_ids.clear()
+
+    def enroll_worker(self, thread_ident: int) -> None:
+        """
+        Public API
+
+        Enroll one worker thread into the CURRENT load span's cohort.
+
+        Purpose:
+            Parallel restore admission (S3): the loading thread names its
+            scheduler pool threads so restore units pass the gate while
+            every foreign thread keeps parking exactly as before.
+
+        Contract:
+            - HOLDER-ONLY: only the thread that acquired the gate may
+              enroll; workers never self-enroll (authority stays with the
+              span owner).
+            - Requires an active span; enrolling with no holder is a
+              pairing bug and refuses loudly.
+            - Set semantics: re-enrolling an ident is an idempotent no-op;
+              enrolling the holder's own ident is a harmless no-op by
+              construction (the holder already passes).
+
+        Args:
+            thread_ident:
+                The worker thread's identity (threading.Thread.ident /
+                threading.get_ident() value). Positive int; bools refuse.
+
+        Raises:
+            RuntimeError:
+                If the gate has been cleaned, no load span is active, or
+                the caller is not the holder thread.
+            ValueError:
+                If thread_ident is not a positive int (bools rejected).
+
+        Threading:
+            Mutates the cohort under the one gate condition lock; no new
+            lock-order surface.
+
+        Returns:
+            None.
+        """
+        self.check_cleaned()
+        if (
+                isinstance(thread_ident, bool)
+                or not isinstance(thread_ident, int)
+                or thread_ident <= 0
+        ):
+            raise ValueError(
+                "LoadGate.enroll_worker requires a positive int thread "
+                f"ident (got {thread_ident!r})."
+            )
+        with self._condition:
+            if self._holder_thread_id is None:
+                raise RuntimeError(
+                    "LoadGate.enroll_worker called with no active load "
+                    "span; acquire the gate before enrolling workers."
+                )
+            if self._holder_thread_id != threading.get_ident():
+                raise RuntimeError(
+                    "LoadGate.enroll_worker must be called by the holder "
+                    f"thread (load '{self._holder_label}'); workers never "
+                    "self-enroll."
+                )
+            self._cohort_thread_ids.add(thread_ident)
+
+    def withdraw_worker(self, thread_ident: int) -> None:
+        """
+        Public API
+
+        Withdraw one worker thread from the CURRENT load span's cohort.
+
+        Purpose:
+            Let the span owner shrink its cohort (worker retirement or
+            error lanes) before release.
+
+        Contract:
+            - HOLDER-ONLY, active-span-only (same refusals as enrollment).
+            - Set-discard semantics: withdrawing a non-member is an
+              idempotent no-op.
+            - A withdrawn thread parks at its NEXT passage check; a parked
+              thread re-checks membership on every condition wake, so
+              withdrawal takes effect at the next wake, never by
+              interruption.
+
+        Args:
+            thread_ident:
+                The worker thread identity to remove. Positive int; bools
+                refuse.
+
+        Raises:
+            RuntimeError:
+                If the gate has been cleaned, no load span is active, or
+                the caller is not the holder thread.
+            ValueError:
+                If thread_ident is not a positive int (bools rejected).
+
+        Returns:
+            None.
+        """
+        self.check_cleaned()
+        if (
+                isinstance(thread_ident, bool)
+                or not isinstance(thread_ident, int)
+                or thread_ident <= 0
+        ):
+            raise ValueError(
+                "LoadGate.withdraw_worker requires a positive int thread "
+                f"ident (got {thread_ident!r})."
+            )
+        with self._condition:
+            if self._holder_thread_id is None:
+                raise RuntimeError(
+                    "LoadGate.withdraw_worker called with no active load "
+                    "span; nothing to withdraw from."
+                )
+            if self._holder_thread_id != threading.get_ident():
+                raise RuntimeError(
+                    "LoadGate.withdraw_worker must be called by the holder "
+                    f"thread (load '{self._holder_label}')."
+                )
+            self._cohort_thread_ids.discard(thread_ident)
 
     def release(self) -> None:
         """
@@ -188,6 +327,9 @@ class LoadGate(Cleanable):
                 )
             self._holder_thread_id = None
             self._holder_label = None
+            # No membership survives a span: the cohort clears with the
+            # holder, restoring the single-thread law exactly as before.
+            self._cohort_thread_ids.clear()
             self._condition.notify_all()
 
     def wait_for_passage(self, timeout: float = 30.0) -> None:
@@ -205,8 +347,13 @@ class LoadGate(Cleanable):
             - Returns immediately when no holder exists.
             - Returns immediately when the CALLER is the holder thread (the
               loader's own per-verb transactions pass free).
+            - Returns immediately when the caller is an enrolled cohort
+              member (S3: the span's restore workers pass like the holder;
+              membership is re-read under the lock on every wake).
             - Otherwise waits on the condition until release/cleanup, raising
-              at the deadline with the holder label in the message.
+              at the deadline with the holder label in the message -
+              foreign-thread semantics are byte-identical to the
+              pre-cohort gate.
 
         Args:
             timeout:
@@ -227,7 +374,10 @@ class LoadGate(Cleanable):
         deadline = time.monotonic() + timeout
         with self._condition:
             while self._holder_thread_id is not None:
-                if self._holder_thread_id == threading.get_ident():
+                caller_ident = threading.get_ident()
+                if self._holder_thread_id == caller_ident:
+                    return
+                if caller_ident in self._cohort_thread_ids:
                     return
                 remaining = deadline - time.monotonic()
                 if remaining <= 0:
@@ -255,7 +405,7 @@ class LoadGate(Cleanable):
         with self._condition:
             return self._holder_thread_id is not None
 
-    def describe(self) -> Dict[str, Union[str, int, None]]:
+    def describe(self) -> Dict[str, Union[str, int, None, List[int]]]:
         """
         Public API
 
@@ -266,12 +416,15 @@ class LoadGate(Cleanable):
             label, without exposing mutation surfaces.
 
         Returns:
-            Dict[str, Union[str, int, None]]:
-                Keys "holder_thread_id" (int or None) and "holder_label"
-                (str or None).
+            Dict[str, Union[str, int, None, List[int]]]:
+                Keys "holder_thread_id" (int or None), "holder_label"
+                (str or None), "cohort_size" (int), and
+                "cohort_thread_ids" (detached sorted list).
         """
         with self._condition:
             return {
                 "holder_thread_id": self._holder_thread_id,
                 "holder_label": self._holder_label,
+                "cohort_size": len(self._cohort_thread_ids),
+                "cohort_thread_ids": sorted(self._cohort_thread_ids),
             }

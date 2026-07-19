@@ -39,11 +39,18 @@ class PhaseScheduler(Cleanable):
     """
     Coordinated, multiphase scheduler for Spellbook resolution.
 
-    This is a **persistent**, per-Spellbook pipeline runner that:
+    This is a **persistent**, per-owner pipeline runner. The Spellbook is
+    the original owner; world-scope owners (the crystallizer restore lane)
+    construct it through the explicit-value lane instead of a
+    SpellbookConfiguration (S2, parallel_restore_ulid_identity). It:
 
-    - Uses configuration to determine:
-        * Worker count (phase_scheduler_workers_per_spellbook)
-        * Barrier timeout in ms (phase_scheduler_barrier_timeout_milliseconds)
+    - Determines its policy from EITHER lane:
+        * Configuration lane: worker count
+          (phase_scheduler_workers_per_spellbook) and barrier timeout in ms
+          (phase_scheduler_barrier_timeout_milliseconds)
+        * Explicit lane: keyword-only worker_count / barrier_timeout_ms
+          construction overrides (both required together when no
+          configuration is supplied)
     - Owns:
         * A fixed pool of worker threads, spawned lazily once and reused
           across ALL runs for the scheduler's lifetime (v2: the pool is no
@@ -128,22 +135,72 @@ class PhaseScheduler(Cleanable):
             *,
             spellbook: Any,
             configuration: Any,
+            worker_count: Optional[int] = None,
+            barrier_timeout_ms: Optional[int] = None,
     ) -> None:
         """
         Initialize a new PhaseScheduler.
 
+        Contract:
+            Two construction lanes, both keyword-only:
+            - Configuration lane (spellbook owners, unchanged behavior):
+              omit the explicit values; worker count and barrier timeout
+              are read from the SpellbookConfiguration keys exactly as
+              before.
+            - Explicit lane (world-scope owners, e.g. the crystallizer
+              restore lane - parallel_restore_ulid_identity S2): supply
+              BOTH `worker_count` and `barrier_timeout_ms`; the
+              configuration readers are skipped and `configuration` may be
+              None. Execution semantics (pool, queue, latch barriers,
+              cancellation) are identical across lanes.
+
         Args:
             spellbook:
-                The owning Spellbook instance. Used for context only; this
-                scheduler does not mutate the Spellbook directly.
+                The owning instance. Used for context only; this scheduler
+                never mutates its owner. May be None for world-scope
+                owners constructing through the explicit lane.
             configuration:
-                The active Configuration instance. Used to pull worker counts
-                and barrier timeout if explicit overrides are not provided.
+                The active SpellbookConfiguration. Required (non-None)
+                when either explicit value is omitted; ignored for a value
+                that was supplied explicitly.
+            worker_count:
+                Optional explicit worker-thread count. Must be a positive
+                int (bools rejected) when supplied.
+            barrier_timeout_ms:
+                Optional explicit per-phase barrier timeout in
+                milliseconds. Must be a positive int (bools rejected)
+                when supplied.
+
+        Raises:
+            ValueError:
+                If an explicit value is invalid, or a value is omitted and
+                `configuration` is None or unreadable.
         """
         Cleanable.__init__(self)
-        self._configuration: SpellbookConfiguration = configuration
-        self._workers: int = self._get_worker_count(configuration)
-        self._barrier_timeout_ms: int = self._get_timeout_ms(configuration)
+        self._configuration: Optional[SpellbookConfiguration] = configuration
+        if worker_count is None or barrier_timeout_ms is None:
+            if configuration is None:
+                raise ValueError(
+                    "PhaseScheduler requires a configuration when "
+                    "worker_count/barrier_timeout_ms are not both supplied "
+                    "explicitly. Fix: pass the owning "
+                    "SpellbookConfiguration, or supply both explicit "
+                    "values (e.g. PhaseScheduler(spellbook=None, "
+                    "configuration=None, worker_count=4, "
+                    "barrier_timeout_ms=60000))."
+                )
+        self._workers: int = (
+            self._require_positive_override("worker_count", worker_count)
+            if worker_count is not None
+            else self._get_worker_count(configuration)
+        )
+        self._barrier_timeout_ms: int = (
+            self._require_positive_override(
+                "barrier_timeout_ms", barrier_timeout_ms
+            )
+            if barrier_timeout_ms is not None
+            else self._get_timeout_ms(configuration)
+        )
 
         # Per-run cancellation scope. A fresh signal is installed at the top
         # of every run_all_phases() call; between runs these hold the most
@@ -166,6 +223,35 @@ class PhaseScheduler(Cleanable):
 
         # Unique sentinel object to signal worker shutdown
         self._sentinel: object = object()
+
+    @staticmethod
+    def _require_positive_override(name: str, value: int) -> int:
+        """
+        Validate one explicit construction override.
+
+        Contract:
+            Mirrors the configuration readers' strictness: ints only
+            (bools rejected), strictly positive.
+
+        Args:
+            name:
+                Override parameter name (for the error message).
+            value:
+                Candidate override value.
+
+        Returns:
+            int: The validated value, unchanged.
+
+        Raises:
+            ValueError:
+                If the value is a bool, not an int, or not positive.
+        """
+        if isinstance(value, bool) or not isinstance(value, int) or value <= 0:
+            raise ValueError(
+                "PhaseScheduler explicit override '{0}' must be a positive "
+                "int (got {1!r}).".format(name, value)
+            )
+        return value
 
     def _get_worker_count(self, configuration: SpellbookConfiguration) -> int:
         """
@@ -380,6 +466,41 @@ class PhaseScheduler(Cleanable):
     # ------------------------------------------------------------------
     # Phase registration API
     # ------------------------------------------------------------------
+
+    def worker_thread_idents(self) -> List[int]:
+        """
+        Return the pool's worker thread identities, starting the pool if
+        needed.
+
+        Purpose:
+            Cohort enrollment surface (parallel_restore_ulid_identity S4):
+            a load-span holder needs the worker idents to enroll them into
+            the LoadGate cohort BEFORE registering restore phases, and
+            idents only exist once the persistent pool has started.
+
+        Contract:
+            - Starts the worker pool on first call (idempotent; the pool
+              is persistent and started at most once per scheduler life).
+            - Returns a DETACHED sorted list; mutating it never touches
+              scheduler state.
+            - Stable across calls for the scheduler's lifetime (workers
+              exit only at cleanup).
+
+        Returns:
+            List[int]: Sorted worker thread identities.
+
+        Raises:
+            RuntimeError:
+                If the scheduler has been cleaned.
+        """
+        self.check_cleaned()
+        self._start_workers_if_needed()
+        with self._lock:
+            return sorted(
+                thread.ident
+                for thread in self._threads
+                if thread.ident is not None
+            )
 
     def register_phase(self, name: str, factory: Callable[[], Sequence[UnitOfWork]]) -> None:
         """

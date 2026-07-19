@@ -97,7 +97,9 @@ class ConduitWard(Cleanable):
     Ownership boundaries
     --------------------
     - Spellbook state is updated only through ward helpers (e.g., `_create_link_contract`,
-      `_sever_link_contract`) so contract teardown stays consistent with spell maps.
+      the two-phase `_detach_link_contract` / `_reattach_link_contract` /
+      `_destroy_detached_link_contract` sever seams) so contract teardown stays
+      consistent with spell maps and a failed sever leaves no asymmetric state.
     - Aether/frames are not touched directly; ward concerns are strictly conduit-scope.
     """
     __melder_internal__: ClassVar[object] = _mrg.sentinel
@@ -940,7 +942,21 @@ class ConduitWard(Cleanable):
         """
         Internal
 
-        Removes the contract and cleans up internal indices and spellbook links.
+        Removes the contract and cleans up internal indices and spellbook links
+        through the two-phase sever protocol (BUG-005).
+
+        Contract:
+            - Phase 1 (reversible detach): both spellbooks' bucket surfaces are
+              popped via `_detach_link_contract`; when the SECOND detach raises,
+              the first side is restored exactly via `_reattach_link_contract`
+              and the error re-raises, so a failed sever leaves ZERO asymmetric
+              state - contract registries and bucket content included.
+            - Phase 2 (commit): past the point of no return, registry and index
+              removal uses residue-tolerant pops that cannot fail.
+            - Phase 3 (destroy): the destructive teardown of both detached
+              payloads (`_destroy_detached_link_contract`) runs LAST as loud
+              best-effort per side; a destroy failure is logged and can no
+              longer resurrect or split the topology truth.
 
         Args:
             target_conduit (Conduit): The conduit whose contract should be removed.
@@ -950,6 +966,8 @@ class ConduitWard(Cleanable):
 
         Raises:
             RuntimeError: If the Conduit is cleaned.
+            Exception: Whatever the failing Phase 1 detach raised, after the
+                already-detached side has been restored.
         """
         self._check_conduit_id_and_conduit(conduit=target_conduit)
         if (contract := self._find_contract(target_conduit)) is not None:
@@ -958,42 +976,45 @@ class ConduitWard(Cleanable):
             with contract._lock:
                 id_a = contract._ward_a._id
                 id_b = contract._ward_b._id
+                book_a = contract._ward_a._conduit._spellbook
+                book_b = contract._ward_b._conduit._spellbook
                 self_detail_map = contract._get_detail_map(self)
                 target_detail_map = contract._get_detail_map(
                     target_conduit._conduit_ward
                 )
                 target_borrows_from_self = bool(self_detail_map)
                 self_borrows_from_target = bool(target_detail_map)
+
+                # Phase 1 - reversible detach (BUG-005): pop side A's bucket
+                # surface, then side B's; when B refuses, restore A exactly
+                # and re-raise so the raised sever leaves both wards' state
+                # fully intact (the old one-shot sever left A destroyed).
+                detached_a = book_a._detach_link_contract(id_b)
                 try:
-                    contract._ward_a._conduit._spellbook._sever_link_contract(id_b)
-                    contract._ward_b._conduit._spellbook._sever_link_contract(id_a)
+                    detached_b = book_b._detach_link_contract(id_a)
                 except Exception as e:
                     self._logger.error(
-                        f"remove_contract spellbook sever failed: {e}",
+                        f"remove_contract spellbook detach failed: {e}",
                         method_name="_remove_contract", exc_info=True,
                         owner_id=self._id, owner_display=self._display_name,
                         mask=True, groups=self._log_groups, system_groups=self._log_sysgroups,
                     )
+                    if detached_a is not None:
+                        book_a._reattach_link_contract(id_b, detached_a)
                     raise
 
-                try:
-                    del self._contracts[contract._id]
-                    del target_conduit._conduit_ward._contracts[contract._id]
-                except Exception as e:
-                    self._logger.error(
-                        f"remove_contract registry delete failed: {e}",
-                        method_name="_remove_contract", exc_info=True,
-                        owner_id=self._id, owner_display=self._display_name,
-                        mask=True, groups=self._log_groups, system_groups=self._log_sysgroups,
-                    )
-                    raise
+                # Phase 2 - commit (point of no return): residue-tolerant
+                # pops, so fault residue on either registry or index map can
+                # never fail the removal after both sides detached.
+                self._contracts.pop(contract._id, None)
+                target_conduit._conduit_ward._contracts.pop(contract._id, None)
 
                 if target_conduit._id in self._initiated_index:
-                    del self._initiated_index[target_conduit._id]
-                    del target_conduit._conduit_ward._received_index[self._id]
+                    self._initiated_index.pop(target_conduit._id, None)
+                    target_conduit._conduit_ward._received_index.pop(self._id, None)
                 elif target_conduit._id in self._received_index:
-                    del self._received_index[target_conduit._id]
-                    del target_conduit._conduit_ward._initiated_index[self._id]
+                    self._received_index.pop(target_conduit._id, None)
+                    target_conduit._conduit_ward._initiated_index.pop(self._id, None)
 
                 if self_borrows_from_target:
                     self._conduit._transaction_identity.unregister_provider_conduit(
@@ -1015,6 +1036,29 @@ class ConduitWard(Cleanable):
                         owner_id=self._id, owner_display=self._display_name,
                         mask=True, groups=self._log_groups, system_groups=self._log_sysgroups,
                     )
+
+                # Phase 3 - destroy the detached payloads LAST, loud
+                # best-effort PER SIDE (one side's destroy failure never
+                # blocks the other side's, and never resurrects topology:
+                # the removal already committed above).
+                for peer_id, book, detached_payload in (
+                    (id_b, book_a, detached_a),
+                    (id_a, book_b, detached_b),
+                ):
+                    if detached_payload is None:
+                        continue
+                    try:
+                        book._destroy_detached_link_contract(
+                            peer_id, detached_payload,
+                        )
+                    except Exception as e:
+                        self._logger.error(
+                            f"remove_contract detached destroy failed for peer {peer_id}: {e}",
+                            method_name="_remove_contract", exc_info=True,
+                            owner_id=self._id, owner_display=self._display_name,
+                            mask=True, groups=self._log_groups, system_groups=self._log_sysgroups,
+                        )
+
                 self._logger.info(
                     f"remove_contract: success target={target_conduit._id}",
                     method_name="_remove_contract",

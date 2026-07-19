@@ -3972,6 +3972,11 @@ class Conduit(Cleanable):
             RuntimeError: If change-control admission is denied by the mediator.
             TypeError: If `target_conduit` is not an `Conduit` instance.
             RuntimeError: If the target conduit does not have a valid creation context.
+            RuntimeError: If linking this conduit to itself (guarded before
+                transaction admission; the link strategy requires two
+                distinct participants).
+            RuntimeError: If the target is a lesser conduit (guarded before
+                transaction admission; lineage attachment is not a peer link).
             RuntimeError: If the target conduit belongs to a different `AethericFrame`.
         """
         self.check_cleaned()
@@ -3994,6 +3999,20 @@ class Conduit(Cleanable):
         if not target_conduit._id:
             self._logger.error("link target has no valid creation context", "link")
             raise RuntimeError("Target conduit does not have a valid creation context.")
+        # Identity guardrails fire BEFORE transaction admission: the link
+        # strategy requires two DISTINCT participant conduits, so a
+        # self-link can never be admitted and would otherwise surface as an
+        # admission-plane error instead of this guardrail; a lesser target
+        # would open a pointless transaction window just to be refused by
+        # the ward. The ward re-checks both at the mutation site.
+        if target_conduit._id == self._id:
+            self._logger.error("link: self-link attempt", "link")
+            raise RuntimeError("Cannot link a conduit to itself.")
+        if target_conduit._conduit_state is ConduitState.lesser:
+            self._logger.error("link: target is lesser conduit", "link")
+            raise RuntimeError(
+                "Cannot link to a lesser conduit. Use _link_lesser_conduit instead."
+            )
 
         with self.transaction(ChangeTransactionType.LINK, conduits=[self, target_conduit]):
             with self._lock:

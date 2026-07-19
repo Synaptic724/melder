@@ -2948,6 +2948,193 @@ and logging.
         # 2) Remove the contract structure itself (three maps in lockstep)
         self._remove_link_contract(conduit_id)
 
+    def _detach_link_contract(
+            self,
+            conduit_id: str,
+    ) -> Optional[Tuple[
+        Dict[SpellIndex, Spell],
+        Dict[tuple, SpellIndex],
+        Set[str],
+        Dict[str, Spell],
+        Optional[Dict[str, Spell]],
+    ]]:
+        """
+        Internal
+
+        Reversibly pop one peer's whole bucket surface (BUG-005 seam).
+
+        Purpose:
+            Phase 1 of the two-phase link sever: pull the peer's five bucket
+            maps off the live surface WITHOUT destroying any content, so a
+            failure severing the other side can restore this side exactly
+            via `_reattach_link_contract`. Destruction is deferred to
+            `_destroy_detached_link_contract` after the sever commits.
+
+        Contract:
+            - Non-destructive and reversible: no id-pool removal, no
+              risk-manager teardown, no staged-key refresh happens here.
+            - Residue-tolerant: returns `None` when the peer has no bucket
+              (already-detached residue must not fail a sever retry).
+            - Lockstep guard: raises when the four active maps disagree
+              about the peer's presence (mirrors `_remove_link_contract`).
+
+        Args:
+            conduit_id (str): The peer conduit id whose buckets to detach.
+
+        Returns:
+            Optional[Tuple[...]]: `(active_map, lookup_map, spell_id_set,
+            by_id_map, inactive_map_or_None)` when a bucket existed,
+            otherwise `None`.
+
+        Raises:
+            RuntimeError: If the bucket maps are in inconsistent lockstep
+                state for this peer.
+
+        Threading:
+            - Acquires the Spellbook lock for the pop group.
+        """
+        a_exists = conduit_id in self._contracted_spells
+        b_exists = conduit_id in self._lookup_contracted_spells
+        c_exists = conduit_id in self._contracted_spell_ids
+        d_exists = conduit_id in self._contracted_spells_by_id
+
+        if not (a_exists == b_exists == c_exists == d_exists):
+            self._logger.error("Inconsistent link contract state", "_detach_link_contract", exc_info=True)
+            raise RuntimeError(
+                f"Inconsistent link contract state for conduit ID {conduit_id}: "
+                f"_contracted_spells={a_exists}, "
+                f"_lookup_contracted_spells={b_exists}, "
+                f"_contracted_spell_ids={c_exists}, "
+                f"_contracted_spells_by_id={d_exists}"
+            )
+        if not a_exists:
+            return None
+        with self._lock:
+            return (
+                self._contracted_spells.pop(conduit_id),
+                self._lookup_contracted_spells.pop(conduit_id),
+                self._contracted_spell_ids.pop(conduit_id),
+                self._contracted_spells_by_id.pop(conduit_id),
+                # The parked (inactive) map is created lazily on the add
+                # side, so it is outside the four-map lockstep guard and
+                # may legitimately be absent.
+                self._inactive_contracted_spells.pop(conduit_id, None),
+            )
+
+    def _reattach_link_contract(
+            self,
+            conduit_id: str,
+            payload: Tuple[
+                Dict[SpellIndex, Spell],
+                Dict[tuple, SpellIndex],
+                Set[str],
+                Dict[str, Spell],
+                Optional[Dict[str, Spell]],
+            ],
+    ) -> None:
+        """
+        Internal
+
+        Restore one detached bucket payload exactly (BUG-005 seam).
+
+        Purpose:
+            The rollback half of the two-phase sever: when the second
+            side's detach fails, the first side's payload is reattached so
+            a raised sever leaves ZERO asymmetric state - bucket content
+            included.
+
+        Contract:
+            - Restores the exact detached objects; nothing is copied or
+              rebuilt, so borrowed-spell content survives verbatim.
+            - Refuses to overwrite: raises when any bucket already exists
+              for the peer (a reattach must never merge two surfaces).
+
+        Args:
+            conduit_id (str): The peer conduit id being restored.
+            payload: The exact tuple returned by `_detach_link_contract`.
+
+        Raises:
+            RuntimeError: If a bucket surface already exists for this peer.
+
+        Threading:
+            - Acquires the Spellbook lock for the restore group.
+        """
+        with self._lock:
+            if (
+                conduit_id in self._contracted_spells
+                or conduit_id in self._lookup_contracted_spells
+                or conduit_id in self._contracted_spell_ids
+                or conduit_id in self._contracted_spells_by_id
+                or conduit_id in self._inactive_contracted_spells
+            ):
+                self._logger.error(
+                    f"Reattach refused: bucket already present for {conduit_id}",
+                    "_reattach_link_contract",
+                )
+                raise RuntimeError(
+                    f"Cannot reattach link contract for {conduit_id}: a bucket surface already exists."
+                )
+            active_map, lookup_map, spell_id_set, by_id_map, inactive_map = payload
+            self._contracted_spells[conduit_id] = active_map
+            self._lookup_contracted_spells[conduit_id] = lookup_map
+            self._contracted_spell_ids[conduit_id] = spell_id_set
+            self._contracted_spells_by_id[conduit_id] = by_id_map
+            if inactive_map is not None:
+                self._inactive_contracted_spells[conduit_id] = inactive_map
+
+    def _destroy_detached_link_contract(
+            self,
+            conduit_id: str,
+            payload: Tuple[
+                Dict[SpellIndex, Spell],
+                Dict[tuple, SpellIndex],
+                Set[str],
+                Dict[str, Spell],
+                Optional[Dict[str, Spell]],
+            ],
+    ) -> None:
+        """
+        Internal
+
+        Destructively tear down one detached bucket payload (BUG-005 seam).
+
+        Purpose:
+            Phase 3 of the two-phase sever, after the removal committed:
+            run the destructive per-spell teardown the old one-shot sever
+            performed inline - warm-pool release, staged-contract-key
+            refresh, and risk-manager unregistration - against the
+            DETACHED payload, where a failure can no longer split the
+            contract topology (the caller treats this phase as loud
+            best-effort).
+
+        Contract:
+            - Mirrors `_clear_contracted_spells_for_conduit` semantics over
+              a detached payload: each active borrowed spell's selected id
+              leaves `_spell_id_pool`; parked copies die with the payload.
+            - Refreshes staged contract keys so an active link transaction
+              observes the shrunken contract scope.
+            - Risk-manager unregistration runs only when this book is
+              conjured (parked copies never registered there).
+
+        Args:
+            conduit_id (str): The peer conduit id the payload belonged to.
+            payload: The exact tuple returned by `_detach_link_contract`.
+
+        Threading:
+            - Acquires the Spellbook lock for the pool-release group; the
+              staged-key and risk-manager calls run outside it, mirroring
+              the clear path.
+        """
+        active_map = payload[0]
+        removed_spells = list(active_map.values())
+        with self._lock:
+            for spell in removed_spells:
+                self._spell_id_pool.pop(spell.spell_index.selected_spell_id, None)
+        self._try_update_staged_contract_keys(conduit_id)
+        if removed_spells and self._conjured and self._conduit is not None:
+            for spell in removed_spells:
+                self._unregister_spell_with_risk_manager(self._conduit._id, spell)
+
     def _refresh_devops_identity_state(self) -> None:
         """
         Internal

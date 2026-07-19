@@ -87,6 +87,12 @@ class CrystallizerConfiguration(Cleanable):
             "checkpoint_interval_minutes": int,
             "max_persistence_crystals": int,
             "auto_flush_checkpoints": bool,
+            # Restore-lane scheduler policy (parallel_restore_ulid_identity
+            # S2): the loader-owned PhaseScheduler's explicit construction
+            # values. Old records backfill both through the reload lane's
+            # defaults floor (reported under "backfilled", never silent).
+            "restore_scheduler_workers": int,
+            "restore_scheduler_barrier_timeout_milliseconds": int,
         }
 
     def cleanup(self) -> None:
@@ -442,7 +448,12 @@ class CrystallizerConfiguration(Cleanable):
             )
         # Defaulted knobs are optional; when set explicitly they must be
         # semantically valid (the getters re-check on every read).
-        for knob in ("checkpoint_interval_minutes", "max_persistence_crystals"):
+        for knob in (
+                "checkpoint_interval_minutes",
+                "max_persistence_crystals",
+                "restore_scheduler_workers",
+                "restore_scheduler_barrier_timeout_milliseconds",
+        ):
             if knob in self._properties:
                 self._require_positive_int(knob, self._properties[knob])
         return True
@@ -515,6 +526,12 @@ class CrystallizerConfiguration(Cleanable):
             - `checkpoint_interval_minutes`: 60 activity-driven minutes.
             - `max_persistence_crystals`: 100-entry rolling ledger/cache cap.
             - `auto_flush_checkpoints`: False (manual durability flush).
+            - `restore_scheduler_workers`: 4 (loader-owned PhaseScheduler
+              pool size for parallel restore phases).
+            - `restore_scheduler_barrier_timeout_milliseconds`: 60000
+              (generous per-level barrier bound: restore units import and
+              bind real code, so short spellbook-style timeouts would abort
+              legitimate large-world loads).
 
         Returns:
             CrystallizerConfiguration: This configuration instance.
@@ -525,6 +542,10 @@ class CrystallizerConfiguration(Cleanable):
         self.set_property("checkpoint_interval_minutes", 60)
         self.set_property("max_persistence_crystals", 100)
         self.set_property("auto_flush_checkpoints", False)
+        self.set_property("restore_scheduler_workers", 4)
+        self.set_property(
+            "restore_scheduler_barrier_timeout_milliseconds", 60000
+        )
         return self
 
     def load_recorded_dictionary(
