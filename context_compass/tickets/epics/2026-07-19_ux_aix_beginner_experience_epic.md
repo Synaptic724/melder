@@ -30,6 +30,87 @@ First-contact UX + the agent first-read: bind/conjure/meld, lifecycles, function
 - DECISION for every init-surface change the tier proposes.
 
 ## Notes
+- DATETIME: 2026-07-19T13:56:00Z
+  TYPE: MEASURE
+  CLAIM: Run 2 processed - 30/40 examples green; every remaining red decoded into
+    verified contracts and fixed. PROVEN: (1) meld address forms are spell object /
+    spell_name / (spellframe, binding_name); binding_name alone -> ValueError - six
+    examples corrected (17/18/20/21/32 gained frames; 26 rewritten as
+    26_meld_address_forms teaching all three + the refusal). (2) Unregistered meld ->
+    stable KeyError (06 corrected). (3) One book = ONE conduit (RuntimeError on
+    second conjure) - 36 rewritten as 36_one_book_one_conduit. (4) bind swallows
+    unknown kwargs SILENTLY (env="production" bound fine, ctor untouched) - probe
+    rewritten to pin acceptance; 37 cheatsheet warns. (5) THE BIG ONE - DIVERGENCE:
+    owner intent (twice stated: SHA256 content matching, potato-vs-potato passes
+    with binding names) vs runtime: DuplicateSpellNameStrategy refuses ANY name
+    collision - different SHAs with binding names REFUSED, same class across frames
+    REFUSED - the strategy ignores the binding_name/spellframe disambiguation its
+    own error message recommends. Two probes pin current behavior with divergence
+    docstrings; 24 rewritten to subclass-per-role, 33 to collection-as-spell (the
+    patterns that work TODAY). AGENTS.md discovered-laws section rewritten to run-2
+    truth. Probe suite 11 rows, all now asserting current behavior.
+  EVIDENCE:
+  - UX_and_AIX_experiences/pytest_examples/test_contract_probes.py:25-45
+  - UX_and_AIX_experiences/01_beginner/26_meld_address_forms.py:1-45
+  - UX_and_AIX_experiences/01_beginner/36_one_book_one_conduit.py:1-35
+  IMPACT: The curriculum now teaches only run-proven truth, and the harness
+    surfaced one runtime bug candidate + one fail-fast design question.
+  NEXT: Owner rerun expected fully green. DECISION_REQUEST below.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-07-19T13:56:30Z
+  TYPE: DECISION_REQUEST
+  CLAIM: Two runtime rulings needed from the owner. (A) DuplicateSpellNameStrategy:
+    align implementation with stated intent - allow same-name spells when content
+    SHAs differ AND (frame, binding_name) resolution paths are unique (the
+    disambiguation its error text already promises), refusing only truly ambiguous
+    spell_name lookups? Patch-gated story on approval; probes flip to pass-
+    assertions. (B) bind(**kwargs) silent swallow of unknown keys: keep (lenient
+    forward-compat channel) or fail fast on unrecognized keys (typo protection)?
+    Fail-fast matches the house fail-fast law; lenient matches the with_kwargs
+    "future parameters" docstring. Owner call.
+  EVIDENCE:
+  - UX_and_AIX_experiences/pytest_examples/test_contract_probes.py:120-160
+  IMPACT: Both change public bind/conjure semantics - patch-gated stories either way.
+  NEXT: Owner rules; I author the patch lane(s).
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-07-19T13:52:00Z
+  TYPE: MEASURE
+  CLAIM: First harness run (owner, 3.14t) = the lane working as designed: 10 rows
+    green, the rest red for THREE distinct causes, all now fixed. (1) ISOLATION:
+    examples shared the process-wide Aether frame ("Conduit with name default
+    already exists") - pytest_examples/conftest.py now applies the component-suite
+    fixture verbatim (Aether._reset_singleton_for_tests + rebind Spellbook/
+    Conduit._aether, before AND after each test). (2) LAW A - callable spells are
+    ALWAYS unique (runtime: "Method and lambda spells must use Existence.unique"):
+    03/20/32 rewritten - function factories teach one-shared-product; fresh-per-meld
+    factories are classes bound many; 32 now contrasts both shapes. (3) LAW B -
+    owner-corrected semantics: spells are SHA256 CONTENT-matched, not name-keyed;
+    same-name different-internals coexists ("potato"/"potato" passes), same-
+    fingerprint rebinds die at conjure unless frame-separated (binding_name alone
+    provably failed) - 24/33 use frame separation, 30's lesson line corrected, and
+    THREE new probes pin the boundaries (same-name-diff-SHA passes; same-SHA
+    frameless fails; same-SHA cross-frame = the open question the probe answers
+    either way). Plus: 36 conjures roots with explicit names (root names are
+    frame-unique). AGENTS.md gains the discovered-laws section. Probe suite now 11
+    rows. compile green across harness + tier.
+  EVIDENCE:
+  - UX_and_AIX_experiences/pytest_examples/conftest.py:1-30
+  - tests/component/melder/aether/conduit/test_conduit_component_cleanup_frame_truth.py:10-30
+  - UX_and_AIX_experiences/pytest_examples/test_contract_probes.py:120-190
+  - UX_and_AIX_experiences/01_beginner/32_factory_functions.py:1-40
+  IMPACT: The harness did its job on run one - two real runtime laws entered the
+    curriculum as verified lessons instead of folklore, and the owner's SHA
+    clarification is now machine-checked.
+  NEXT: OWNER RERUN: pytest UX_and_AIX_experiences/pytest_examples -v. Expected:
+    examples green; probe prints document spell_name/unregistered-meld/disposal/
+    same-SHA-cross-frame; any remaining red = next lesson corrections.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
 - DATETIME: 2026-07-19T13:46:00Z
   TYPE: MEASURE
   CLAIM: Owner caught two GUESSED contracts in the capstone; source probes settled

@@ -1,8 +1,10 @@
 """
 TIER: beginner (03)
-GOAL: Spells are not only classes - functions and ready-made objects bind
-      with the same verb and the same vocabulary.
-SURFACE EXERCISED: md.Spellbook, string vocabulary (existence/permissions)
+GOAL: Spells are not only classes - functions and ready-made objects
+      bind with the same verb. RUNTIME LAW (proven by the harness):
+      callable and pre-built spells are always "unique" - the factory
+      runs once and its product is shared; instances are already built.
+SURFACE EXERCISED: function spells, instance spells, string vocabulary
 """
 import melder as md
 
@@ -18,24 +20,17 @@ class AlreadyBuilt:
 
 def main() -> None:
     book = md.Spellbook()
+    book.bind(spell=make_settings, existence="unique")
 
-    # a factory function: many -> the function RUNS per meld
-    book.bind(spell=make_settings, existence="many")
-
-    # an existing object: unique -> melder hands back what you built,
-    # read permission because nothing should construct over it
     prebuilt = AlreadyBuilt("built-by-hand")
-    book.bind(
-        spell=prebuilt,
-        existence="unique",
-        permissions="read",
-    )
+    book.bind(spell=prebuilt, existence="unique", permissions="read")
 
     conduit = book.conjure()
 
     settings = conduit.meld(spell=make_settings)
-    assert settings["region"] == "us-east"
-    print("function spell melded:", settings)
+    print("function spell melded ->", settings)
+    again = conduit.meld(spell=make_settings)
+    print("unique law: same product back?", settings is again)
 
     held = conduit.meld(spell=prebuilt)
     assert held is prebuilt and held.label == "built-by-hand"

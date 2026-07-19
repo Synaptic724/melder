@@ -1,5 +1,8 @@
 import threading
-from typing import List
+from typing import ClassVar, List
+
+# Melder Imports
+from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 
 class PhaseLatch:
@@ -11,6 +14,28 @@ class PhaseLatch:
         `PhaseScheduler`: the control thread waits on ONE event while worker
         threads report per-unit completion, instead of the control thread
         installing waiters on every unit's Future.
+
+    Responsibilities:
+        - Count down expected unit reports and fire when the phase is done.
+        - Fire EARLY and unconditionally on the first error (fail-fast).
+        - Separately track when every unit has reported, so a fail-fast caller
+          can wait out stragglers before tearing down.
+        - Collect the error set for the control thread to inspect.
+
+    The Two Events (the whole design):
+        This latch owns TWO independent events, and the distinction is the
+        reason it exists rather than a plain `threading.Event`:
+
+        - `_event` - "stop waiting". Set when the count reaches zero OR on the
+          first `record_error(...)`. Answers "should the control thread move on".
+        - `_all_reported_event` - "nothing is still running". Set ONLY when the
+          remaining count reaches zero, regardless of errors. Answers "is it
+          safe to tear down".
+
+        A fail-fast wake returns from `wait()` while straggler unit bodies are
+        still executing on pool workers. Unwinding into teardown at that moment
+        races those bodies. `wait_all_reported()` is the barrier that closes
+        that race.
 
     Contract:
         - Constructed with the exact number of expected unit completions.
@@ -34,15 +59,69 @@ class PhaseLatch:
           in-flight stragglers before unwinding into caller teardown. Late
           reports drive this second event exactly like the first.
 
+    Owned State:
+        - `_lock`: guards the counter and error list. Not held during waits.
+        - `_event`: the fail-fast / all-done wake.
+        - `_all_reported_event`: the quiesce barrier.
+        - `_remaining`: countdown of unreported units. MAY GO NEGATIVE - late
+          stragglers from an aborted phase keep decrementing, and the zero
+          checks are `<= 0` precisely so that is harmless.
+        - `_errors`: accumulated unit failures.
+
     Threading:
         - `complete()` / `record_error()` are called from worker threads;
           both synchronize on one internal lock.
         - `wait()` and `errors` are control-thread operations.
+        - `errors` returns a COPY taken under the lock, so the control thread
+          can iterate it safely while stragglers are still appending.
+        - Neither wait verb holds the lock, so reporting never blocks on a
+          waiter.
 
-    Lifecycle:
-        - Transient per-phase object, like a Future: owns only a lock and an
-          event, holds no external resources, and requires no cleanup call.
+    Lifecycle / Cleanup:
+        - Transient per-phase object, like a Future: owns only a lock and two
+          events, holds no external resources, and requires no cleanup call.
+        - Deliberately NOT `Cleanable`. There is nothing to release, and a
+          teardown contract would imply a lifetime this object does not have.
+        - ONE LATCH PER PHASE RUN, never reused. Each queued unit carries its
+          own latch reference, which is what makes late reports from an
+          abandoned phase safe: they land on the dead latch, not a live one.
+
+    Input Validation:
+        `expected` must be a positive int and `bool` is explicitly rejected.
+        That check is not pedantry - `True` is an `int` in Python, so
+        `PhaseLatch(True)` would otherwise silently build a latch expecting one
+        unit and a phase would appear to complete after its first report.
+
+    Registration:
+        MELDER KERNEL - guarded. The scheduler owns phase barriers; a user has
+        no reason to register one as a spell. Leaf class with no subclasses, so
+        the sentinel cannot propagate through the MRO.
+
+    Subsystem Context:
+        Part of `utilities/synchronization/`, and specifically the barrier half
+        of the phase machinery. `PhaseScheduler` owns the worker pool and phase
+        ordering; this owns the single question "is this phase finished, and is
+        anything still running". `UnitOfWork` is what reports into it. Compare
+        `SafeGuard`, which coordinates locks rather than completions.
+
+    System Context:
+        Every conjure runs phases 1-4 (structural), 5-7 (foundational
+        resolution), and 8-11 (plan resolution) through the scheduler, and each
+        phase is bounded by one of these latches. The quiesce verb exists
+        because a phase that fails fast must still not unwind into caller
+        teardown while unit bodies touch objects the caller is about to destroy
+        - that ordering is what keeps a failed conjure from leaving a half-torn
+        world behind.
     """
+
+    __melder_internal__: ClassVar[object] = _mrg.sentinel
+    _ast_helper_access: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. Phase completion barrier for PhaseScheduler. Two "
+        "events: wait() wakes on all-done OR first error (fail-fast), "
+        "wait_all_reported() wakes only when nothing is still running (quiesce "
+        "before teardown). One latch per phase run; never reused."
+    )
 
     __slots__ = ["_lock", "_event", "_all_reported_event", "_remaining", "_errors"]
 

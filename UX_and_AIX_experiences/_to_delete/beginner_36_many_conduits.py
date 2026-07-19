@@ -20,8 +20,10 @@ def main() -> None:
     book = md.Spellbook()
     book.bind(spell=WorldState, existence="unique")
     book.bind(spell=RootLocal, existence="unique_per_conduit")
-    conduit_one = book.conjure()
-    conduit_two = book.conjure()
+    # root conduits are NAMED and names are frame-unique - so a
+    # second root needs its own name (the harness proved it)
+    conduit_one = book.conjure(name="alpha")
+    conduit_two = book.conjure(name="beta")
 
     assert conduit_one.meld(spell=WorldState) is conduit_two.meld(spell=WorldState)
     assert conduit_one.meld(spell=RootLocal) is not conduit_two.meld(spell=RootLocal)

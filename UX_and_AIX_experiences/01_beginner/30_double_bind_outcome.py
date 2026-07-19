@@ -23,7 +23,8 @@ def main() -> None:
               "- distinct registration" if second_id != first_id else "- same id")
     except Exception as err:
         print("second bind refused:", type(err).__name__, "-", err)
-    print("lesson: name your bindings (binding_name) when one class serves twice")
+    print("lesson: spells are SHA256 content-matched - same-name spells with")
+    print("        different internals coexist; SAME-fingerprint rebinds need frames")
 
 
 if __name__ == "__main__":

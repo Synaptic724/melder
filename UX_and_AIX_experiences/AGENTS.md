@@ -37,3 +37,29 @@ pytest_examples/ runs every example plus contract probes on 3.14t:
 LAW (2026-07-19, after the bind(**kwargs) miss): examples may only assert
 behavior VERIFIED in source or PROVEN by a probe row. Uncertain contracts get
 a probe here first; the probe's printed outcome then hardens the example.
+
+## Discovered runtime laws (harness runs 1-2, 2026-07-19)
+
+- Callable spells (functions, lambdas, methods) are ALWAYS unique; lambdas
+  additionally REQUIRE a binding_name. Fresh-per-meld factories are CLASSES
+  bound "many".
+- Meld has exactly three address forms: the spell object, spell_name (the
+  spell's name string), and (spellframe, binding_name). binding_name alone is
+  refused with ValueError.
+- Spell NAMES are unique per book at conjure - CURRENT behavior refuses any
+  name collision regardless of binding names, frames, or content SHA.
+  DIVERGENCE FLAG: owner design intent (twice stated) is SHA256 content
+  matching with binding-name disambiguation; DuplicateSpellNameStrategy
+  ignores the disambiguators its own error message recommends. Tracked as a
+  runtime bug candidate on the beginner epic. Until fixed: subclass-per-role
+  (24) and collection-as-spell registries (33) are the working patterns.
+- One book conjures ONE conduit ever (RuntimeError on the second); scopes are
+  lesser conduits, extra roots are extra books.
+- Unregistered meld raises one stable KeyError. Same-spell double-bind is
+  refused at BIND time (RuntimeError).
+- bind(**kwargs) is the hook channel and SWALLOWS unknown keys silently
+  (flagged as a fail-fast design question); constructor config rides
+  factories, prebuilt instances, or meld(spell_override={...}).
+- Disposal (disposal_method_names) fires at conduit.cleanup().
+- Harness isolation: reset the Aether singleton + rebind Spellbook/
+  Conduit._aether around every test (component-suite fixture, verbatim).

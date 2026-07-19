@@ -21,14 +21,14 @@ def build_world(env: str) -> tuple[md.Spellbook, md.Conduit]:
     """The one place construction knowledge lives."""
     book = md.Spellbook()
     book.bind(spell=Settings(env), existence="unique", permissions="read",
-              binding_name="settings")
+              spellframe="app", binding_name="settings")
     book.bind(spell=Api, existence="many")
     return book, book.conjure()
 
 
 def main() -> None:
     book, conduit = build_world(env="staging")
-    settings = conduit.meld(binding_name="settings")
+    settings = conduit.meld(spellframe="app", binding_name="settings")
     assert settings.env == "staging"
     print("world bootstrapped for:", settings.env)
     print("app code melds; only build_world() knows how things are made")

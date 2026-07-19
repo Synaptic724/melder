@@ -127,6 +127,31 @@ Every major object gets all five. A class is DONE only when all five hold.
    method touches locks or teardown. Per `synaptic_python_developer` overlay: no fluff,
    precise guarantees only.
 
+## THE COMPREHENSION LAW (owner directive 2026-07-19, non-negotiable)
+Two rules, both aimed at the same failure: documenting a class you do not understand.
+
+1. READ THE IMPLEMENTATION BEFORE YOU DOCUMENT IT.
+   Class signatures, existing docstrings, and the C-docs are NOT sufficient. Open the
+   source file and read the algorithm. Then, after writing, VERIFY each behavioural claim
+   back against the source - if the docstring says "ordering is by id()", grep that it is.
+   A docstring that restates the class name in longer words is a failure, not a pass.
+
+   Worked example of what this yields: reading `safeguard.py` produced four facts no
+   signature could have given - ordering is `sorted(id(lock))` not argument order, timeout
+   is PER LOCK so N locks multiply the wait, `one_time_use` defaults True so `__exit__`
+   self-cleans, and `cleanup()` deliberately does NOT release held locks (calling it
+   directly leaks them). Reading `phase_latch.py` produced two more: it runs TWO events
+   (fail-fast wake vs quiesce barrier) and it explicitly rejects `bool` for `expected`
+   because `True` is an `int` and would silently build a 1-unit latch.
+
+2. AFTER ANY COMPACTION, RE-READ THE SYSTEM DOCS BEFORE RESUMING.
+   Specifically `context_compass/system_docs/src_architecture.md` and
+   `src_components.md`, IN FULL. This program documents objects in terms of their
+   Subsystem Context and System Context; an agent that has lost those docs will write
+   narrow, compartment-local docstrings that describe a class without knowing what it is
+   TO the system. That is precisely the shallow output this program exists to replace.
+   Do not resume documentation work on a compacted context until both are re-read.
+
 ## THE CHUNKING LAW (anti-overflow; this is why the program is split this way)
 An executing agent reads EXACTLY three things and nothing else:
 1. this epic's `THE OBJECT CONTRACT` section (the standard),

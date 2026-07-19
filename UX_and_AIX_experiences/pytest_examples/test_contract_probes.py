@@ -21,12 +21,20 @@ class Disposable:
         Disposable.events.append("closed")
 
 
-def test_probe_bind_kwargs_are_hooks_not_ctor_args():
-    """bind(**kwargs) feeds _add_hooks_to_spell - env= must be REFUSED."""
+def test_probe_bind_swallows_unknown_kwargs_silently():
+    """
+    PROVEN (run 2): bind(**kwargs) is the hook channel, and UNKNOWN keys
+    are accepted silently - env="production" binds without error and the
+    value goes nowhere. FLAGGED as a fail-fast design question: a typo'd
+    kwarg vanishes instead of raising.
+    """
     book = md.Spellbook()
-    with pytest.raises(Exception) as err:
-        book.bind(spell=Probe, existence="unique", env="production")
-    print("bind(env=...) refused with:", err.typename)
+    spell_id = book.bind(spell=Probe, existence="unique", env="production")
+    assert isinstance(spell_id, str)
+    conduit = book.conjure()
+    probe = conduit.meld(spell=Probe)
+    assert probe.tag == "default"  # env= never reached the constructor
+    print("unknown bind kwarg silently ignored; ctor untouched")
 
 
 def test_probe_spell_override_delivers_ctor_kwargs():
@@ -49,11 +57,14 @@ def test_probe_with_book_is_lock_only_not_cleanup():
     assert isinstance(second, str)
 
 
-def test_probe_meld_by_binding_name_alone():
+def test_probe_meld_by_binding_name_alone_is_refused():
+    """PROVEN: binding_name is a sub-key, never an address by itself."""
     book = md.Spellbook()
     book.bind(spell=Probe, existence="unique", binding_name="the-probe")
     conduit = book.conjure()
-    assert conduit.meld(binding_name="the-probe") is not None
+    with pytest.raises(ValueError):
+        conduit.meld(binding_name="the-probe")
+    assert conduit.meld(spell_name="Probe") is not None
 
 
 def test_probe_meld_by_spell_name_form():
@@ -108,3 +119,62 @@ def test_probe_disposal_fires_and_when():
     print("disposal after conduit.cleanup():", after_conduit,
           "| after book.cleanup():", Disposable.events)
     assert Disposable.events, "close() never fired through teardown"
+def _make_potato(marker: str):
+    """Build a distinct class NAMED Potato with differing internals."""
+    class Potato:
+        flavor = marker
+
+        def describe(self) -> str:
+            return "potato:" + marker
+    return Potato
+
+
+def test_probe_same_name_different_internals_currently_refused():
+    """
+    DIVERGENCE FLAG (runs 1-2): owner design intent says spells are
+    SHA256 content-matched and same-name/different-internals passes WITH
+    binding names. The runtime REFUSES it: DuplicateSpellNameStrategy
+    keys on the bare name and ignores the binding_name/spellframe
+    disambiguation its own error message recommends. This probe pins
+    CURRENT behavior; flip it to the pass-assertion when the strategy is
+    fixed (tracked on the UX/AIX beginner epic as a runtime bug).
+    """
+    book = md.Spellbook()
+    book.bind(spell=_make_potato("russet"), existence="unique",
+              binding_name="russet")
+    book.bind(spell=_make_potato("yukon"), existence="many",
+              binding_name="yukon")
+    with pytest.raises(md.SpellbookValidationError):
+        book.conjure()
+    print("same-name diff-SHA with binding names: REFUSED (intent: pass)")
+
+
+def test_probe_same_class_rebind_without_frames_fails_conjure():
+    """
+    The observed run truth: the SAME class (same SHA) bound twice with
+    only binding_names to tell them apart dies at conjure with
+    DUPLICATE_SPELL_NAME.
+    """
+    book = md.Spellbook()
+    book.bind(spell=Probe, existence="unique", binding_name="first")
+    book.bind(spell=Probe, existence="many", binding_name="second")
+    with pytest.raises(md.SpellbookValidationError):
+        book.conjure()
+    print("same-SHA rebind without frames: conjure refused (as observed)")
+
+
+def test_probe_same_class_rebind_with_distinct_frames():
+    """
+    ANSWERED (run 2): frame separation does NOT legalize same-name
+    rebinds - the name strategy ignores frames entirely. Part of the
+    same divergence flag as the potato probe.
+    """
+    book = md.Spellbook()
+    book.bind(spell=Probe, existence="unique",
+              spellframe="pool-a", binding_name="first")
+    book.bind(spell=Probe, existence="many",
+              spellframe="pool-b", binding_name="second")
+    with pytest.raises(md.SpellbookValidationError):
+        book.conjure()
+    print("same-SHA rebind across frames: REFUSED (frames do not "
+          "disambiguate the name strategy either - same divergence flag)")

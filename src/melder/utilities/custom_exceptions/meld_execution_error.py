@@ -4,7 +4,21 @@ from typing import Optional
 
 class MeldExecutionError(RuntimeError):
     """
-    Raised when DAG-based meld execution fails inside the Meld runtime.
+    Purpose:
+        Represent any failure of DAG-based meld execution inside the Meld
+        runtime as ONE stable error type, so the Conduit/Meld boundary has a
+        single "resolution failed" signal instead of leaking a dozen low-level
+        exception types.
+
+    Contract:
+        - Wraps the underlying failure rather than replacing it; `inner` is
+          preserved untouched.
+        - Carries root spell identity always, and node/parameter attribution
+          when the runtime can determine it.
+        - `__str__` renders identity, node, parameter, message, and inner
+          exception into one diagnostic line, degrading gracefully when optional
+          fields are absent.
+        - Subclasses `RuntimeError`.
 
     This is a **high-level wrapper** around any internal exception thrown
     while resolving a spell via the Meld engine.
@@ -30,6 +44,42 @@ class MeldExecutionError(RuntimeError):
     This gives callers and tooling enough context to log, trace, or
     present detailed diagnostics without having to interpret dozens of
     low-level exception types.
+
+    Raised When:
+        - A constructor, override payload, or DAG node fails while the Meld
+          runtime is resolving a spell.
+        - Change control has marked the target root dirty for the active
+          conduit, so execution is gated until revalidation clears it.
+
+    What To Do About It:
+        Start with `inner` - it holds the real cause. `node_id` and `param_name`
+        narrow the failure to a specific DAG node or constructor parameter when
+        the runtime could attribute it. A dirty-root gate is not a defect: it
+        means structure changed under a live conduit and the next resolution
+        revalidates.
+
+    Owned State:
+        - `spell_id` / `spell_name`: the root spell being resolved.
+        - `node_id`: DAG node where the failure occurred, when attributable.
+        - `param_name`: constructor parameter involved, when attributable.
+        - `inner`: the underlying exception.
+
+    Registration:
+        USER-BINDABLE - deliberately unguarded. Exception types are values users
+        catch and may legitimately register.
+
+    Subsystem Context:
+        One of the 11 `utilities/custom_exceptions/` types and the primary error
+        of the Meld resolution runtime. It is the runtime counterpart to
+        `SpellbookValidationError`, which is raised at build time before any
+        Conduit exists.
+
+    System Context:
+        Fires in the resolution layer of the DGR, after conjure has produced a
+        Conduit. Because instances may already be registered in `Creations` when
+        it raises, a failed meld does NOT roll back the conduit - the object
+        world stays live and the caller decides whether to retry, rebind, or
+        tear down.
     """
 
     __slots__ = (

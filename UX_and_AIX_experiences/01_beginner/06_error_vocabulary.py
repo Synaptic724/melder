@@ -21,10 +21,10 @@ def main() -> None:
     conduit = book.conjure()
 
     try:
-        outcome = conduit.meld(spell=NeverRegistered)
-        print("meld of unregistered spell answered:", outcome)
-    except (md.SpellbookValidationError, md.MeldExecutionError) as err:
-        print("caught from root:", type(err).__name__)
+        conduit.meld(spell=NeverRegistered)
+    except KeyError as err:
+        # the documented "not found anywhere" contract is one stable KeyError
+        print("unregistered spell -> KeyError:", err)
 
     # the full catchable family, importable without knowing ANY internal path
     family = [

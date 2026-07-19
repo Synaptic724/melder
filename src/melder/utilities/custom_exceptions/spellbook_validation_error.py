@@ -24,12 +24,49 @@ class SpellbookValidationError(RuntimeError):
     Purpose:
         Surface spellbook-level validation failures in a readable error while
         preserving per-spell context for remediation.
+
+    Raised When:
+        - `conjure(...)` completes phases 1-4 and one or more spells are broken.
+          This is the common case: the pipeline ran, validation rejected the
+          graph, and no Conduit is produced.
+        - `meld(...)` finds a spell whose validity is invalid, gated, or
+          disabled, including after a lazy re-validation attempt under the
+          per-spell lock.
+
+    What To Do About It:
+        The message names the broken spells and, when the artifacts survive,
+        the Phase 4 and Phase 6 diagnostics with strategy attribution - so it
+        usually tells you the actual rule you violated. Common causes are a
+        circular dependency, a single-annotation parameter resolving to zero or
+        several candidates, a `SpellMap` default that is ambiguous, or a
+        `SpellContract` socket with no provider in automatic mode. Fix the
+        binding, not the validator.
+
     Contract:
         - Always includes a broken-spell summary when spells are supplied.
         - Includes Phase 4 issues and Phase 6 diagnostics when available.
         - Preserves the primary failure line for backward compatibility.
         - Remains resilient when spell artifacts are partially unavailable or
-          cleaned while the error is being rendered.
+          cleaned while the error is being rendered. Rendering a diagnostic must
+          never raise a second error on top of the first.
+
+    Registration:
+        USER-BINDABLE - deliberately unguarded. Exception types are values users
+        catch and may legitimately register.
+
+    Subsystem Context:
+        One of the 11 `utilities/custom_exceptions/` types and the primary error
+        of the Spellbook binding surface. Where the scheduler family
+        (`PhaseExecutionError`, `PhaseTimeoutError`) reports mechanical pipeline
+        failure, this reports SEMANTIC failure: the phases ran fine and the
+        graph they produced is not resolvable.
+
+    System Context:
+        The main build-time error of the DGR. It fires after phases 1-4 and
+        before any Conduit is constructed, so nothing has been registered into
+        Aether and there is no partial world to clean up. Its runtime
+        counterpart is `MeldExecutionError`; between them they split "your graph
+        cannot be built" from "your resolution failed while running".
     """
 
     def __init__(self, broken_spells: list[Spell]) -> None:

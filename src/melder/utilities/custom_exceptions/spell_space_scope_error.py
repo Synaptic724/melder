@@ -4,18 +4,48 @@
 
 class SpellSpaceScopeError(RuntimeError):
     """
-    Raised when SpellSpace scoping rules are violated.
+    Purpose:
+        Signal that a SpellSpace scoping rule was violated - a lifetime or
+        ownership failure, not a generic runtime error.
+
+    Raised When:
+        - A spell bound `Existence.unique_per_spell_space` is resolved with no
+          active SpellSpace.
+        - A SpellSpace is used across a different Conduit than the one that
+          created it.
+        - A SpellSpace is used after it has been closed.
+
+    What To Do About It:
+        Enter the scope before resolving: `conduit.enter_spellspace()` creates
+        and activates one, and `SpellSpace.meld(...)` is the only door that can
+        satisfy request-local storage. The conduit front door deliberately
+        REFUSES `unique_per_spell_space` lineages rather than inventing a scope,
+        so this error means you resolved through the wrong door, not that the
+        binding is wrong.
 
     Contract:
         - Indicates a SpellSpace lifecycle or ownership violation rather than a
           generic runtime failure.
-        - Keeps the message payload flexible so callers can describe the exact
-          scope rule that failed.
+        - Message payload stays free-form so callers can name the exact rule
+          that failed.
+        - Subclasses `RuntimeError`, so broad runtime handlers still catch it.
 
-    Examples:
-    - Using a spell that requires an active SpellSpace when none is active.
-    - Attempting to reuse a SpellSpace across different conduits.
-    - Using a SpellSpace after it has been closed.
+    Registration:
+        USER-BINDABLE - deliberately unguarded. Exception types are values users
+        catch and may legitimately register.
+
+    Subsystem Context:
+        One of the 11 `utilities/custom_exceptions/` types, paired with the
+        `Creations`/`SpellSpace` family in `aether/conduit/`. `SpellSpace`
+        enforces active-scope semantics and supports reset/versioning; this is
+        what it raises when that enforcement trips.
+
+    System Context:
+        Fires at meld time, in the resolution layer of the DGR. It is the one
+        Existence mode whose scope the caller must open explicitly - the other
+        five (`unique`, `unique_per_conduit`, `many`,
+        `unique_per_conduit_cluster`, `unique_per_conduit_lineage`) resolve
+        their container from state Melder already owns.
     """
 
     def __init__(self, message: str) -> None:

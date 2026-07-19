@@ -15,6 +15,12 @@ class SafeGuard(Cleanable):
         acquire several external locks in a deterministic order without
         rewriting the same deadlock-avoidance pattern by hand.
 
+    Responsibilities:
+        - Normalize a lock set: drop `None`, de-duplicate by identity, order it.
+        - Acquire every lock in that order, rolling back cleanly on failure.
+        - Release in strict reverse order on exit.
+        - Invalidate itself after a one-time-use context so it cannot be reused.
+
     Contract:
         - Filters out `None` locks, de-duplicates by object identity, and sorts
           by `id(lock)` so all callers converge on the same acquisition order.
@@ -26,8 +32,82 @@ class SafeGuard(Cleanable):
           propagates.
         - Re-entrant usage remains valid when the underlying lock type supports
           it, such as `RLock`.
+
+    How The Ordering Actually Works:
+        Acquisition order is `sorted(id(lock))`, NOT argument order. That is the
+        entire deadlock-avoidance mechanism: two call sites passing the same two
+        locks in opposite argument order still acquire them in the same real
+        order, so they cannot deadlock against each other.
+
+        The guarantee holds over CONCURRENTLY LIVE locks, which is the case that
+        matters - distinct live objects have distinct ids. It is NOT a stable
+        ordering across process runs, and it is not a priority: `id()` is an
+        address, so the order is arbitrary but consistent. Do not depend on
+        which lock is taken first, only on the fact that everyone agrees.
+
+    Timeout Semantics (read before setting one):
+        The timeout is PER LOCK, not for the whole acquisition. Guarding four
+        locks with `timeout=1.0` can block for four seconds before raising.
+        Budget accordingly; there is no overall deadline.
+
+    Owned State:
+        - `_locks`: the normalized, ordered lock list.
+        - `_acquired`: locks currently held by this guard, in acquisition order.
+        - `_timeout`: per-acquisition timeout, or None for untimed blocking.
+        - `_one_time_use`: whether `__exit__` self-cleans.
+        - `_cleanup_lock`: guards this object's own teardown, not the guarded
+          locks.
+
+    Threading:
+        The guard itself is not designed to be shared across threads - it holds
+        per-context acquisition state in `_acquired`. Give each thread its own
+        `SafeGuard`. What IS shared safely is the ordering RULE, which is what
+        makes independent guards in different threads compatible.
+
+        The rollback path in `__enter__` swallows exceptions from release calls
+        deliberately: a failure while unwinding must not mask the acquisition
+        failure that caused the unwind. `__exit__` does NOT swallow, because a
+        failed release on the happy path is a real defect worth surfacing.
+
+    Lifecycle / Cleanup:
+        `one_time_use` defaults to True, so a guard is SINGLE USE: `__exit__`
+        calls `cleanup()` and any second `__enter__` raises through
+        `check_cleaned()`. Construct one per critical section.
+
+        HAZARD: `cleanup()` deliberately does not release external locks - it
+        only clears bookkeeping and invalidates the guard. Calling it directly
+        while locks are held leaks them permanently. Let `__exit__` do the
+        releasing; treat `cleanup()` as invalidation only.
+
+    Registration:
+        MELDER KERNEL - guarded. Melder owns lock-orchestration policy, so this
+        cannot be registered as a spell. It IS intended for direct user import
+        and use: guarding and exporting are orthogonal, and this is a case where
+        a user calls the class directly but must never ask Melder to inject one.
+
+    Subsystem Context:
+        Part of `utilities/synchronization/`, the concurrency primitive family.
+        Where the gates (`LoadGate`, `CreationGate`) answer "may this proceed"
+        and the scheduler answers "run these in phases", `SafeGuard` answers the
+        narrower question "how do I take several locks without deadlocking". It
+        owns no policy about WHICH locks matter; callers decide that.
+
+    System Context:
+        Used wherever the runtime must hold two independent lock domains at
+        once - most visibly `ConduitWard` contract creation, which locks both
+        wards, and ownership transfer, which locks source and target conduits
+        while flipping registries. Those are exactly the paths where two threads
+        could approach the same pair from opposite ends, which is why the
+        ordering rule exists rather than ad-hoc nested `with` statements.
     """
     __melder_internal__: ClassVar[object] = _mrg.sentinel
+    _ast_helper_access: str = "public"
+    __agent_purpose__: str = (
+        "access: public. Deadlock-safe multi-lock acquisition. Use as a context "
+        "manager over several locks: SafeGuard(a, b, c) acquires them in a "
+        "globally consistent order and releases in reverse. Single-use by "
+        "default. Import and call directly; cannot be bound as a spell."
+    )
     __slots__ = Cleanable.__slots__ + ["_locks", "_acquired", "_timeout", "_one_time_use", "_cleanup_lock"]
 
     def __init__(self, *locks: Any, timeout: Optional[float] = None, one_time_use: bool = True):

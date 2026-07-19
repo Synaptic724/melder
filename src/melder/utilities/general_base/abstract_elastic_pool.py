@@ -19,6 +19,13 @@ class AbstractElasticPool(Generic[_T], Cleanable, ABC):
         objects such as lesser conduits and spellspaces without binding the base
         class to one specific object type.
 
+    Responsibilities:
+        - Own the elastic sizing policy: stretch on demand, decay when quiet.
+        - Hand out idle objects on `acquire(...)` or create one on miss.
+        - Retain released objects only while under both `target_idle` and
+          `max_idle`, and destroy the overflow immediately.
+        - Leave object creation and destruction abstract for subclasses.
+
     High-level model:
         - The pool tracks a mutable `target_idle` count.
         - New demand stretches `target_idle` upward by percentage.
@@ -43,6 +50,14 @@ class AbstractElasticPool(Generic[_T], Cleanable, ABC):
           every acquire would cost more than the drift is worth.
         - Cleanup remains serialized through `_lock` because it is the
           destructive lifecycle boundary for retained idle objects.
+
+    Lifecycle / Cleanup:
+        Inherits the `Cleanable` contract. `cleanup()` destroys every retained
+        idle object and permanently retires the pool - it is one-way, and a
+        retired pool does not resume serving. Objects currently in use are NOT
+        reclaimed by pool cleanup; their owners release them, and those releases
+        find a retired pool and destroy rather than retain. Serialized through
+        `_lock` because it is the destructive lifecycle boundary.
 
     Registration:
         BASE CLASS - DELIBERATELY UNGUARDED. Do NOT add `__melder_internal__`

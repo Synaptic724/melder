@@ -1,8 +1,9 @@
 """
 TIER: beginner (20)
-GOAL: Even a lambda is a spell - tiny factories bind inline with a
-      binding_name carrying the meaning the lambda lacks.
-SURFACE EXERCISED: bind(spell=<lambda>), binding_name
+GOAL: Even a lambda is a spell - it MUST carry a binding_name (the law
+      the runtime enforces); melds address it by (frame, name) because
+      binding_name alone is never an address. Callable = unique.
+SURFACE EXERCISED: bind(spell=<lambda>), binding_name, callable-unique law
 """
 import melder as md
 
@@ -11,14 +12,15 @@ def main() -> None:
     book = md.Spellbook()
     book.bind(
         spell=lambda: {"feature_flags": {"dark_mode": True}},
-        existence="many",
+        existence="unique",
+        spellframe="flags",
         binding_name="flag-factory",
     )
     conduit = book.conjure()
-    flags_a = conduit.meld(binding_name="flag-factory")
-    flags_b = conduit.meld(binding_name="flag-factory")
-    print("lambda factory ran twice:", flags_a is not flags_b)
-    print("payload:", flags_a["feature_flags"])
+    flags_a = conduit.meld(spellframe="flags", binding_name="flag-factory")
+    flags_b = conduit.meld(spellframe="flags", binding_name="flag-factory")
+    print("lambda product:", flags_a)
+    print("unique law: shared product?", flags_a is flags_b)
 
 
 if __name__ == "__main__":

@@ -5,12 +5,17 @@ from typing import Any, Callable, ClassVar, Dict, Tuple
 
 class Sync:
     """
-    Abstract helper mix-in for thread-safe sync-value wrappers.
+    Purpose:
+        Abstract helper mix-in for thread-safe sync-value wrappers. Provides the
+        shared coordination helpers used by concrete sync wrappers without
+        defining the storage type itself.
 
-    `Sync` provides the shared coordination helpers used by the concrete sync
-    wrappers. It does not define the storage type itself; instead, it standardizes
-    how sync values identify themselves, unwrap peer operands, coordinate dual-lock
-    binary operations, and survive pickling.
+    Responsibilities:
+        - Publish the fast `_is_sync_value` marker that runtime helpers check.
+        - Normalize peer wrappers or raw values into the concrete subclass's
+          scalar type.
+        - Acquire two wrapper locks in deterministic order for binary operations.
+        - Survive pickling without losing wrapper identity.
 
     Contract:
     - `_is_sync_value` is the fast marker used by runtime helpers.

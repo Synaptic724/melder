@@ -22,16 +22,17 @@ def production_mailer() -> SmtpMailer:
 def main() -> None:
     book = md.Spellbook()
     book.bind(spell=production_mailer, existence="unique",
-              binding_name="mailer")
-    book.bind(spell=SmtpMailer, existence="many", binding_name="raw-mailer")
+              spellframe="mail", binding_name="mailer")
+    book.bind(spell=SmtpMailer, existence="many",
+              spellframe="mail", binding_name="raw-mailer")
     conduit = book.conjure()
 
-    mailer = conduit.meld(binding_name="mailer")
+    mailer = conduit.meld(spellframe="mail", binding_name="mailer")
     assert (mailer.host, mailer.port) == ("smtp.example.com", 2525)
     print("factory-configured:", mailer.host, mailer.port)
 
     overridden = conduit.meld(
-        binding_name="raw-mailer",
+        spellframe="mail", binding_name="raw-mailer",
         spell_override={"host": "smtp.test.local", "port": 1025},
     )
     print("meld-site override:", overridden.host, overridden.port)

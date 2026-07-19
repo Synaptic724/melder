@@ -1,9 +1,9 @@
 """
 TIER: beginner (33)
-GOAL: A registry of ready-made objects - instances you built yourself,
-      classified under one frame, resolved by name. The book as a
-      typed, lifecycle-aware dict of singletons.
-SURFACE EXERCISED: instance spells + spellframe classification
+GOAL: A registry of ready-made same-typed objects. Spell names must be
+      unique per book (probe-proven), so N instances of one class bind
+      as ONE registry spell - the dict is the spell, lookup stays yours.
+SURFACE EXERCISED: collection-as-instance-spell, read permission
 """
 import melder as md
 
@@ -15,16 +15,16 @@ class Palette:
 
 def main() -> None:
     book = md.Spellbook()
-    for palette in (Palette("dark"), Palette("light"), Palette("contrast")):
-        book.bind(spell=palette, existence="unique",
-                  permissions="read",
-                  spellframe="palettes", binding_name=palette.name)
+    palettes = {p.name: p for p in
+                (Palette("dark"), Palette("light"), Palette("contrast"))}
+    book.bind(spell=palettes, existence="unique", permissions="read",
+              spellframe="ui", binding_name="palettes")
     conduit = book.conjure()
 
-    dark = conduit.meld(spellframe="palettes", binding_name="dark")
-    contrast = conduit.meld(spellframe="palettes", binding_name="contrast")
-    assert dark.name == "dark" and contrast.name == "contrast"
-    print("prebuilt registry served:", dark.name, "+", contrast.name)
+    registry = conduit.meld(spellframe="ui", binding_name="palettes")
+    assert registry is palettes
+    assert registry["dark"].name == "dark"
+    print("registry spell served:", sorted(registry))
 
 
 if __name__ == "__main__":

@@ -23,7 +23,7 @@ def main() -> None:
         ("binding_name", "sub-key; (frame, name) is the full address"),
         ("disposal_method_names", "your teardown verbs, called at cleanup"),
         ("profile", "spell profile family (default: general)"),
-        ("**kwargs", "advanced: lifecycle hook lists (pre/activation/post)"),
+        ("**kwargs", "hook lists only; unknown keys silently ignored - beware"),
     ]
     for kwarg, meaning in vocabulary:
         print(f"{kwarg:24s} {meaning}")

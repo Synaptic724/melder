@@ -31,13 +31,13 @@ def notify(notifier: Notifier, message: str) -> str:
 def main() -> None:
     book = md.Spellbook()
     book.bind(spell=ConsoleNotifier, existence="unique",
-              binding_name="loud")
+              spellframe="notifiers", binding_name="loud")
     book.bind(spell=QuietNotifier, existence="unique",
-              binding_name="quiet")
+              spellframe="notifiers", binding_name="quiet")
     conduit = book.conjure()
 
-    loud: Notifier = conduit.meld(binding_name="loud")
-    quiet: Notifier = conduit.meld(binding_name="quiet")
+    loud: Notifier = conduit.meld(spellframe="notifiers", binding_name="loud")
+    quiet: Notifier = conduit.meld(spellframe="notifiers", binding_name="quiet")
     print(notify(loud, "deploy finished"))
     print(notify(quiet, "cache warmed"))
     assert notify(loud, "x").startswith("console")
