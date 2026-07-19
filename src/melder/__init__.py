@@ -41,12 +41,39 @@ from melder.__version__ import __version__
 # ---- core runtime objects ----
 from melder.aether.aether import Aether
 from melder.aether.conduit.conduit import Conduit
-from melder.aether.spellbook.bind.scan import Scan
+from melder.aether.spellbook.bind.scan import Scan, scan_bind
 from melder.aether.spellbook.spellbinder import SpellBinder
 from melder.aether.spellbook.spellbook import Spellbook
 from melder.crystallizer.crystallizer import Crystallizer
 from melder.mutation_research.mutation_research import MutationResearch
 from melder.nexus.nexus import Nexus
+
+# ---- user-held work surfaces (returned by the objects above; exported so
+# ---- user code can type, isinstance, and discover them from the root) ----
+from melder.aether.aetheric_frame.conduit_cloud import ConduitCloud
+from melder.aether.conduit.spell_space.spell_space import SpellSpace
+from melder.aether.spellbook.spell_compiler.spell_examiner.spell_examiner import (
+    SpellExaminer,
+)
+from melder.crystallizer.asset_management.external_persistence_manager import (
+    ExternalPersistenceManager,
+)
+from melder.crystallizer.asset_management.external_persistence_manager_configuration import (
+    ExternalPersistenceManagerConfiguration,
+)
+from melder.crystallizer.crystal_loader_system.bootstrap_loader import (
+    CrystallizerBootstrap,
+)
+from melder.mutation_research.diff.diff_engine import DiffEngine
+from melder.mutation_research.research_set.research_set import ResearchSet
+from melder.nexus.rift.frame_viewer.frame_viewer import FrameViewer
+from melder.nexus.rift.frame_viewer.view_conduit import ViewConduit
+from melder.nexus.rift.frame_viewer.view_frame import ViewFrame
+from melder.nexus.rift.frame_viewer.view_multiframe import ViewMultiFrame
+from melder.nexus.rift.frame_viewer.view_spell import ViewSpell
+from melder.nexus.rift.rift import Rift
+from melder.nexus.rift.rift_space.rift_space import RiftSpace
+from melder.nexus.rift.rift_space.workstation import Workstation
 
 # ---- configuration surfaces ----
 from melder.aether.aether_configuration import AetherConfiguration
@@ -75,7 +102,7 @@ from melder.aether.conduit.conduit_ward.permissions.permissions import Permissio
 from melder.aether.conduit.conduit_ward.policies.policies import Policies
 from melder.aether.spellbook.configuration.system_state import SystemState
 from melder.aether.spellbook.existence.existence import Existence
-from melder.mutation_research.research_set.research_lane import LaneType
+from melder.mutation_research.research_set.research_lane import LaneState, LaneType
 from melder.nexus.configuration.nexus_frame_mode import NexusFrameMode
 from melder.nexus.configuration.rift_space_type import RiftSpaceType
 
@@ -83,8 +110,26 @@ from melder.nexus.configuration.rift_space_type import RiftSpaceType
 from melder.aether.conduit.meld.contracts.spell_contract import SpellContract
 from melder.aether.conduit.meld.contracts.spell_map import SpellMap
 
+# ---- user-catchable error vocabulary (raised through public verbs) ----
+from melder.utilities.custom_exceptions.dead_reference_error import DeadReferenceError
+from melder.utilities.custom_exceptions.hook_execution_error import HookExecutionError
+from melder.utilities.custom_exceptions.internal_registration_error import (
+    InternalRegistrationError,
+)
+from melder.utilities.custom_exceptions.meld_execution_error import MeldExecutionError
+from melder.utilities.custom_exceptions.phase_execution_error import PhaseExecutionError
+from melder.utilities.custom_exceptions.phase_scheduler_error import PhaseSchedulerError
+from melder.utilities.custom_exceptions.phase_timeout_error import PhaseTimeoutError
+from melder.utilities.custom_exceptions.spell_space_scope_error import (
+    SpellSpaceScopeError,
+)
+from melder.utilities.custom_exceptions.spellbook_validation_error import (
+    SpellbookValidationError,
+)
+
 # ---- agent/tooling helpers ----
 from melder.utilities.ai_native_support_tools.protocol_crafter import ProtocolCrafter
+from melder.utilities.helpers.class_wraps import class_wraps
 
 # Eagerly instantiate the registration guard at package import time: the
 # sentinel must exist before ANY internal object can be offered for
@@ -165,4 +210,32 @@ __all__ = [
     "RiftSpaceType",
     "SpellMap",
     "SpellContract",
+    "Rift",
+    "RiftSpace",
+    "FrameViewer",
+    "Workstation",
+    "SpellSpace",
+    "ConduitCloud",
+    "ResearchSet",
+    "SpellExaminer",
+    "CrystallizerBootstrap",
+    "ExternalPersistenceManager",
+    "ExternalPersistenceManagerConfiguration",
+    "scan_bind",
+    "SpellbookValidationError",
+    "MeldExecutionError",
+    "SpellSpaceScopeError",
+    "HookExecutionError",
+    "InternalRegistrationError",
+    "PhaseSchedulerError",
+    "PhaseExecutionError",
+    "PhaseTimeoutError",
+    "DeadReferenceError",
+    "ViewFrame",
+    "ViewConduit",
+    "ViewSpell",
+    "ViewMultiFrame",
+    "DiffEngine",
+    "LaneState",
+    "class_wraps",
 ]

@@ -130,3 +130,182 @@ def test_registration_guard_sentinel_exists_at_import():
     assert isinstance(
         melder.__melder_registration_guard__, MelderRegistrationGuard
     )
+def test_user_held_work_surfaces_are_loaded():
+    """
+    Purpose:
+        Owner ruling 2026-07-19: everything a user HOLDS AND CALLS in
+        normal workflows reaches the root - Rift/room/viewer/workstation,
+        spellspaces, the cloud, research sets, the examiner, and the
+        persistence bootstrap/mesh surfaces.
+    Contract:
+        Identity with the concrete-path classes.
+    """
+    from melder.aether.aetheric_frame.conduit_cloud import ConduitCloud
+    from melder.aether.conduit.spell_space.spell_space import SpellSpace
+    from melder.aether.spellbook.spell_compiler.spell_examiner.spell_examiner import (
+        SpellExaminer,
+    )
+    from melder.crystallizer.asset_management.external_persistence_manager import (
+        ExternalPersistenceManager,
+    )
+    from melder.crystallizer.asset_management.external_persistence_manager_configuration import (
+        ExternalPersistenceManagerConfiguration,
+    )
+    from melder.crystallizer.crystal_loader_system.bootstrap_loader import (
+        CrystallizerBootstrap,
+    )
+    from melder.mutation_research.research_set.research_set import ResearchSet
+    from melder.nexus.rift.frame_viewer.frame_viewer import FrameViewer
+    from melder.nexus.rift.rift import Rift
+    from melder.nexus.rift.rift_space.rift_space import RiftSpace
+    from melder.nexus.rift.rift_space.workstation import Workstation
+
+    import melder
+
+    assert melder.ConduitCloud is ConduitCloud
+    assert melder.SpellSpace is SpellSpace
+    assert melder.SpellExaminer is SpellExaminer
+    assert melder.ExternalPersistenceManager is ExternalPersistenceManager
+    assert (
+        melder.ExternalPersistenceManagerConfiguration
+        is ExternalPersistenceManagerConfiguration
+    )
+    assert melder.CrystallizerBootstrap is CrystallizerBootstrap
+    assert melder.ResearchSet is ResearchSet
+    assert melder.FrameViewer is FrameViewer
+    assert melder.Rift is Rift
+    assert melder.RiftSpace is RiftSpace
+    assert melder.Workstation is Workstation
+
+
+def test_scan_bind_decorator_is_loaded():
+    """
+    Purpose:
+        The deferred-registration lane is a first-class user hand:
+        @md.scan_bind(...) then md.Spellbook().scan(module).
+    Contract:
+        Identity with the scan module's decorator.
+    """
+    from melder.aether.spellbook.bind.scan import scan_bind
+
+    import melder
+
+    assert melder.scan_bind is scan_bind
+
+
+def test_user_catchable_error_vocabulary_is_loaded():
+    """
+    Purpose:
+        Every exception a public verb raises at users is catchable from
+        the root namespace - error handling never digs internal paths.
+    Contract:
+        Identity for the nine curated exception types.
+    """
+    from melder.utilities.custom_exceptions.dead_reference_error import (
+        DeadReferenceError,
+    )
+    from melder.utilities.custom_exceptions.hook_execution_error import (
+        HookExecutionError,
+    )
+    from melder.utilities.custom_exceptions.internal_registration_error import (
+        InternalRegistrationError,
+    )
+    from melder.utilities.custom_exceptions.meld_execution_error import (
+        MeldExecutionError,
+    )
+    from melder.utilities.custom_exceptions.phase_execution_error import (
+        PhaseExecutionError,
+    )
+    from melder.utilities.custom_exceptions.phase_scheduler_error import (
+        PhaseSchedulerError,
+    )
+    from melder.utilities.custom_exceptions.phase_timeout_error import (
+        PhaseTimeoutError,
+    )
+    from melder.utilities.custom_exceptions.spell_space_scope_error import (
+        SpellSpaceScopeError,
+    )
+    from melder.utilities.custom_exceptions.spellbook_validation_error import (
+        SpellbookValidationError,
+    )
+
+    import melder
+
+    assert melder.SpellbookValidationError is SpellbookValidationError
+    assert melder.MeldExecutionError is MeldExecutionError
+    assert melder.SpellSpaceScopeError is SpellSpaceScopeError
+    assert melder.HookExecutionError is HookExecutionError
+    assert melder.InternalRegistrationError is InternalRegistrationError
+    assert melder.PhaseSchedulerError is PhaseSchedulerError
+    assert melder.PhaseExecutionError is PhaseExecutionError
+    assert melder.PhaseTimeoutError is PhaseTimeoutError
+    assert melder.DeadReferenceError is DeadReferenceError
+
+
+def test_internal_depths_stay_off_the_root():
+    """
+    Purpose:
+        The owner's counter-example law: objects that LOOK public but are
+        not user-facing never reach the root - ConduitWard and its kin
+        stay internal.
+    Contract:
+        The curated exclusions are absent from __all__ and the namespace.
+    """
+    import melder
+
+    for name in (
+        "ConduitWard",
+        "Meld",
+        "Creations",
+        "PhaseScheduler",
+        "LoadGate",
+        "RestoreEngine",
+        "TransactionMediator",
+        "ClaimMode",
+        "ConduitCluster",
+        "StaticFrameViewer",
+    ):
+        assert name not in melder.__all__
+        assert name not in vars(melder)
+def test_pass_two_doc_named_surfaces_are_loaded():
+    """
+    Purpose:
+        Second C-doc iteration (External Interfaces section): the viewer
+        family the doc names as user surfaces, the DiffEngine that
+        create_diff_engine() hands users, LaneState (the enum behind the
+        public lane.state property), and the class_wraps decorator helper.
+    Contract:
+        Identity with the concrete-path objects.
+    """
+    from melder.mutation_research.diff.diff_engine import DiffEngine
+    from melder.mutation_research.research_set.research_lane import LaneState
+    from melder.nexus.rift.frame_viewer.view_conduit import ViewConduit
+    from melder.nexus.rift.frame_viewer.view_frame import ViewFrame
+    from melder.nexus.rift.frame_viewer.view_multiframe import ViewMultiFrame
+    from melder.nexus.rift.frame_viewer.view_spell import ViewSpell
+    from melder.utilities.helpers.class_wraps import class_wraps
+
+    import melder
+
+    assert melder.ViewFrame is ViewFrame
+    assert melder.ViewConduit is ViewConduit
+    assert melder.ViewSpell is ViewSpell
+    assert melder.ViewMultiFrame is ViewMultiFrame
+    assert melder.DiffEngine is DiffEngine
+    assert melder.LaneState is LaneState
+    assert melder.class_wraps is class_wraps
+
+
+def test_all_names_are_unique_and_sorted_groups_are_complete():
+    """
+    Purpose:
+        The facade ledger stays exact: no duplicate advertisements, and
+        every name in __all__ is actually present on the module.
+    Contract:
+        len(set) == len(list); vars coverage for all 64 names.
+    """
+    import melder
+
+    assert len(set(melder.__all__)) == len(melder.__all__)
+    for name in melder.__all__:
+        assert name in vars(melder)

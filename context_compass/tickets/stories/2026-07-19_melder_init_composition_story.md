@@ -76,6 +76,83 @@ license-files declared, wheel-ready.
   SCORE_0_TO_10: 9
 
 
+- DATETIME: 2026-07-19T11:58:00Z
+  TYPE: MEASURE
+  CLAIM: Owner ruling landed - 3.14+ is the support floor, 3.13 dropped. Swept every
+    reference: init version gate (3,13,0)->(3,14,0) with honest below-floor wording
+    (the "will still work on older Pythons" claim is gone), nogil-warning text to
+    3.14+, README's two public claims to 3.14+/free-threading, canonical C-doc
+    guardrail lines synced (4 lines across src_architecture/src_components). pyproject
+    needed nothing (requires-python/classifiers already 3.14-only). The one surviving
+    "3.13+" in src is a FACTUAL CPython comment (__firstlineno__ appeared in 3.13) -
+    accurate, not a support claim, left alone. compile() green on the init; grep-clean
+    otherwise. pytest Not run.
+  EVIDENCE:
+  - src/melder/__init__.py:96-128
+  - README.md:1-70
+  - context_compass/system_docs/src_architecture.md:430-434
+  - context_compass/system_docs/src_components.md:179-183
+  IMPACT: The package now states one truth everywhere: 3.14+ free-threading or you
+    are unsupported.
+  NEXT: Rides the same owner runbook (pytest + wheel build).
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-07-19T12:02:00Z
+  TYPE: MEASURE
+  CLAIM: Load-up wave LANDED per the owner's full-surface ruling. Root grows 37 -> 57
+    names: +11 user-held work surfaces (Rift, RiftSpace, FrameViewer, Workstation,
+    SpellSpace, ConduitCloud, ResearchSet, SpellExaminer, CrystallizerBootstrap,
+    ExternalPersistenceManager + Configuration), +scan_bind (the deferred-registration
+    decorator beside Scan), +9 user-catchable exceptions (every error type public verbs
+    raise at users, incl. DeadReferenceError from the weak workstation lane -
+    raise-site verified in the weak data structures). Every class name and module path
+    source-verified before import; bootstrap_loader's import head checked for cycle
+    safety (crystallizer chain already resolved when it loads). Curation law honored:
+    ConduitWard and seven other looks-public depths pinned OFF the root by a negative
+    regression row. Surface suite now 10 rows (identity-not-equality throughout).
+    compile() green x2 (init 57-name __all__, tests); 120-col clean. pytest Not run.
+  EVIDENCE:
+  - src/melder/__init__.py:40-200
+  - tests/unit/melder/test_package_public_surface.py:160-330
+  - src/melder/crystallizer/crystal_loader_system/bootstrap_loader.py:1-17
+  - src/melder/utilities/custom_exceptions/dead_reference_error.py:4-4
+  IMPACT: import melder as md is now the complete user vocabulary - work surfaces,
+    configurations, enums, descriptors, tools, and the whole catchable error family -
+    with the internal depths deliberately fenced out.
+  NEXT: Owner runbook unchanged: pytest tests/unit/melder -q -> python -m build
+    --wheel -> wheelhouse into CommandOps.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-07-19T12:16:00Z
+  TYPE: MEASURE
+  CLAIM: Pass-2 C-doc iteration landed (owner: "iterate over the documents a few
+    times... theres a few decorators"). Re-read the External Interfaces section of
+    src_architecture end-to-end and swept the source for every decorator factory. Root
+    57 -> 64: +ViewFrame/ViewConduit/ViewSpell/ViewMultiFrame (doc names
+    ViewSpell.describe_spell_research as an external interface; the family is what
+    get_frame_viewer hands users), +DiffEngine (create_diff_engine() is a listed
+    public verb - held-and-called), +LaneState (public lane.state property returns it;
+    pairs LaneType), +class_wraps (the ONLY other true user decorator in the runtime -
+    scan_bind was already in; decorate_public_view_actions is internal law machinery
+    and stays out). Evidence-based exclusions: ConduitCluster (create_cluster -> None,
+    users never hold one - verified in conduit_cloud.py:416), StaticFrameViewer
+    (subclass vehicle), both pinned into the negative regression (now 10 exclusions).
+    Surface suite 12 rows incl. a ledger-integrity row (uniqueness + vars coverage for
+    all 64). compile() green x2; 120-col clean. pytest Not run.
+  EVIDENCE:
+  - src/melder/__init__.py:40-230
+  - context_compass/system_docs/src_architecture.md:437-560
+  - src/melder/aether/aetheric_frame/conduit_cloud.py:416-422
+  - src/melder/utilities/helpers/class_wraps.py:5-44
+  - tests/unit/melder/test_package_public_surface.py:330-400
+  IMPACT: The root now carries every surface the canonical docs name as external, the
+    full decorator vocabulary, and machine-checked fences around the depths.
+  NEXT: Owner runbook unchanged (pytest + wheel). Curation vetoes still open.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
 ## Context / Handoff Summary
 Implementation lane for the init/wheel program; rulings live in the parent strategy
 task; hand-off mechanics (wheelhouse --find-links, editable co-dev) documented there.

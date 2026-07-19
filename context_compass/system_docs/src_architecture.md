@@ -429,7 +429,7 @@ the runtime behavior. The live system now also includes:
 - tooling/introspection layers centered on SpellExaminer profile builders
 
 Dependencies include:
-- Python runtime (warns if < 3.13 or if GIL is enabled).
+- Python runtime (warns if < 3.14 or if GIL is enabled; 3.14+ is the supported floor).
 - `ulid` for unique identifiers.
 - Logging via `InitHelpers` + `AetherUtilitySystem` + `SafeLogger`
   (channel resolver first, stdlib fallback second).
@@ -604,7 +604,7 @@ current `_apply_notch`, `_apply_add_to_index`, and `_apply_remove_from_index`
 seams.
 
 ## Entrypoints and Runtime Guardrails
-- `melder/__init__.py` warns on Python < 3.13 and on GIL-enabled builds
+- `melder/__init__.py` warns on Python < 3.14 and on GIL-enabled builds
   via `_detect_nogil_mode()`.
 - `MelderRegistrationGuard` provides a sentinel to tag internal objects
   and block their registration as spells.

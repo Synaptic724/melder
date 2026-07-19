@@ -178,7 +178,7 @@ Purpose:
 - Provide the package entrypoint and import-time guardrails.
 
 Responsibilities:
-- Warn on Python < 3.13 and on GIL-enabled builds.
+- Warn on Python < 3.14 and on GIL-enabled builds (3.14+ is the supported floor).
 - Instantiate the registration guard singleton.
 - Expose package metadata and version string.
 
@@ -3337,7 +3337,7 @@ These flows describe concrete method sequences for core behaviors.
 
 ### Flow: Import -> Runtime Guardrails
 1. `import melder`:
-   - `melder/__init__.py` checks Python version and warns if < 3.13.
+   - `melder/__init__.py` checks Python version and warns if < 3.14.
    - `_detect_nogil_mode()` calls `sys._is_gil_enabled()` and warns if GIL on.
    - `__melder_registration_guard__` singleton is instantiated.
 

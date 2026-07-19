@@ -1,4 +1,4 @@
-Melder is a next-generation, lightweight, high-performance, thread-safe system for Dependency Injection (DI) and Modular Scoped Execution — built for the future of Python 3.13+ and the no-GIL era.
+Melder is a next-generation, lightweight, high-performance, thread-safe system for Dependency Injection (DI) and Modular Scoped Execution — built for Python 3.14+ and the no-GIL era.
 
 Melder doesn’t just inject dependencies.  
 It **builds dynamic, permissioned, scoped execution graphs**, enabling services to resolve, interact, and scale cleanly — without rigid factory bloat, fragile wiring, or hidden coupling.
@@ -64,7 +64,7 @@ Using a Dependency Injection (DI) container like Melder provides deep structural
 - 🛠️ **Lightweight**: Small, surgical core — easy to learn, powerful to extend without pulling in massive frameworks.
 - 🧠 **True Scoping**: Full support for transient, scoped, and singleton services — with real scope boundaries, not faked with globals.
 - 🔍 **Observability** *(Upcoming)*: Built-in diagnostics and dependency graph visualization — making your architecture visible, not invisible.
-- 🌐 **Modern Python**: Designed for Python 3.13+ and fully compatible with the new concurrency era.
+- 🌐 **Modern Python**: Designed for Python 3.14+ (free-threading) and fully compatible with the new concurrency era.
 - 🧬 **No-GIL Ready**: Engineered to thrive in Python’s new free-threading world — no multiprocessing crutches needed.
 - 🛡️ **Thread-Safe by Design**: Safe concurrent resolution across threads — not an afterthought, but a first-class feature.
 - 🧠 **Explicit, Not Magical** *(Maybe...)*: No hidden behavior. No auto-wiring messes. You control what gets built and how.
