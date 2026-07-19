@@ -13,4 +13,4 @@ def test_package_version_reexport_appends_dev_suffix() -> None:
     import melder
     from melder.__version__ import __version__ as base_version
 
-    assert melder.__version__ == base_version + "-dev"
+    assert melder.__version__ == base_version + ".dev0"

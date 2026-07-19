@@ -88,11 +88,14 @@ class CrystallizerConfiguration(Cleanable):
             "max_persistence_crystals": int,
             "auto_flush_checkpoints": bool,
             # Restore-lane scheduler policy (parallel_restore_ulid_identity
-            # S2): the loader-owned PhaseScheduler's explicit construction
-            # values. Old records backfill both through the reload lane's
-            # defaults floor (reported under "backfilled", never silent).
+            # S2/S4): the loader-owned PhaseScheduler's explicit
+            # construction values plus the driver selector (owner ruling
+            # 2026-07-19: parallel IS the driver; False selects the
+            # sequential fallback). Old records backfill all three through
+            # the reload lane's defaults floor (reported, never silent).
             "restore_scheduler_workers": int,
             "restore_scheduler_barrier_timeout_milliseconds": int,
+            "restore_parallel_enabled": bool,
         }
 
     def cleanup(self) -> None:
@@ -376,6 +379,75 @@ class CrystallizerConfiguration(Cleanable):
         self.set_property("auto_flush_checkpoints", bool(enabled))
         return self
 
+    @property
+    def restore_parallel_enabled(self) -> bool:
+        """
+        Return whether checkpoint restore runs the parallel driver.
+
+        Contract:
+            - Default True (owner ruling 2026-07-19: parallel IS the
+              driver): the loader owns a PhaseScheduler pool and the
+              RestoreEngine executes graph-derived levels as phases.
+            - False selects the sequential fallback driver - the canon
+              single-thread stage chain, byte-identical to the
+              pre-parallel engine. The same knob is the rollback lane.
+
+        Returns:
+            bool: The configured driver selector, default True.
+        """
+        self.check_cleaned()
+        value = self._properties.get("restore_parallel_enabled", True)
+        return bool(value)
+
+    @property
+    def restore_scheduler_workers(self) -> int:
+        """
+        Return the restore scheduler's worker-thread count.
+
+        Contract:
+            - Default 4: the loader-owned PhaseScheduler pool width for
+              per-entity replay units inside each plan level.
+            - Must be a positive int when set explicitly.
+
+        Returns:
+            int: The configured worker count, default 4.
+
+        Raises:
+            ValueError:
+                If the stored value is not a positive int.
+        """
+        self.check_cleaned()
+        value = self._properties.get("restore_scheduler_workers", 4)
+        self._require_positive_int("restore_scheduler_workers", value)
+        return int(value)
+
+    @property
+    def restore_scheduler_barrier_timeout_milliseconds(self) -> int:
+        """
+        Return the restore scheduler's per-phase barrier timeout.
+
+        Contract:
+            - Default 60000 (one minute): restore units import and bind
+              real code, so spellbook-scale phase timeouts would abort
+              large-world loads.
+            - Must be a positive int (milliseconds) when set explicitly.
+
+        Returns:
+            int: The configured barrier timeout in ms, default 60000.
+
+        Raises:
+            ValueError:
+                If the stored value is not a positive int.
+        """
+        self.check_cleaned()
+        value = self._properties.get(
+            "restore_scheduler_barrier_timeout_milliseconds", 60000
+        )
+        self._require_positive_int(
+            "restore_scheduler_barrier_timeout_milliseconds", value
+        )
+        return int(value)
+
     @staticmethod
     def _require_positive_int(key: str, value: object) -> None:
         """
@@ -424,9 +496,13 @@ class CrystallizerConfiguration(Cleanable):
             - `retain_user_sources` (False),
               `remove_inactive_synthmodules` (False),
               `checkpoint_interval_minutes` (60),
-              `max_persistence_crystals` (100), and
-              `auto_flush_checkpoints` (False) carry defaults and are only
-              semantically checked when set explicitly.
+              `max_persistence_crystals` (100),
+              `auto_flush_checkpoints` (False),
+              `restore_parallel_enabled` (True),
+              `restore_scheduler_workers` (4), and
+              `restore_scheduler_barrier_timeout_milliseconds` (60000)
+              carry defaults and are only semantically checked when set
+              explicitly.
 
         Returns:
             bool: True when the configuration is valid.
@@ -532,6 +608,9 @@ class CrystallizerConfiguration(Cleanable):
               (generous per-level barrier bound: restore units import and
               bind real code, so short spellbook-style timeouts would abort
               legitimate large-world loads).
+            - `restore_parallel_enabled`: True (owner ruling 2026-07-19:
+              parallel is THE restore driver; False selects the sequential
+              fallback driver).
 
         Returns:
             CrystallizerConfiguration: This configuration instance.
@@ -546,6 +625,7 @@ class CrystallizerConfiguration(Cleanable):
         self.set_property(
             "restore_scheduler_barrier_timeout_milliseconds", 60000
         )
+        self.set_property("restore_parallel_enabled", True)
         return self
 
     def load_recorded_dictionary(

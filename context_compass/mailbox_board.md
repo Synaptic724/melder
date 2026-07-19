@@ -34,7 +34,7 @@ Core rules (summary; the protocol doc is authoritative)
 ## Checked-In Agents
 | agent_name | owner | checked_in_at | last_checked | status |
 | --- | --- | --- | --- | --- |
-| helper_f | cowork | 2026-07-18T21:25:00Z | 2026-07-18T21:58:04Z | active (onboarded + owner-certified 2026-07-18 as synaptic_python_developer; owner_cleanslate_archive lane TURNED IN 21:58Z owner-accepted; NOTE: row text "ZERO active lanes" is stale - helper_f owns the in_progress parallel_restore_ulid_identity epic per attention_board 22:30:00Z; flagged by melder_0, not edited) |
+| helper_f | cowork | 2026-07-18T21:25:00Z | 2026-07-19T01:16:35Z | active (REONBOARDED post-compaction 2026-07-19 as synaptic_python_developer, re-certification pending; owns the in_progress parallel_restore_ulid_identity epic - REOPEN in progress on the owner red 3.14t run; melder_0 stale-note flag resolved by this rewrite; zero messages pending) |
 | melder_0 | cowork | 2026-07-18T23:05:00Z | 2026-07-18T23:45:00Z | departed (graph_serialization_contract_repair TURNED IN 23:45Z owner-accepted; zero open lanes. NOTE: helper_f is concurrently active and overwrote this session's attention_board row twice - re-added against current content per mailbox_protocol, never overwriting theirs) |
 
 (Clean slate 2026-07-18T21:25:00Z by helper_f under owner directive: the three

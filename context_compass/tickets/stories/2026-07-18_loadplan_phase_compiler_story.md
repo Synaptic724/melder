@@ -3,7 +3,7 @@
 ## Metadata
 - Story ID: STORY-2026-07-18-loadplan-phase-compiler
 - Epic: EPIC-2026-07-18-parallel-restore-ulid-identity
-- Status: in_progress (slice 1/3 landed)
+- Status: review (all 3 slices landed; pending owner 3.14t run)
 - Owner: cowork
 - Agent Name: helper_f
 - Priority: p0
@@ -104,6 +104,80 @@ admission.
     surgery + loader wiring + parity/chaos suites.
   NEXT: Slice 2/3 - refactor stage loops into per-entity methods, add the plan-graph
     builder + parallel driver to RestoreEngine, thread-safe report/built-stack.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+- DATETIME: 2026-07-19T00:34:32Z
+  TYPE: MEASURE
+  CLAIM: Slices 2+3 landed; S4 code-complete. Slice 2 (restore_engine.py, +~560 lines):
+    RestoreReport gained an internal RLock (all mutators/readers; describe() +"plan" key);
+    engine gained borrowed scheduler collaborator + _build_lock'd _record_built_unit (all
+    5 append sites routed); _ensure_frame_postured's check-then-act serialized (fresh-frame
+    double-posture race); five per-entity methods extracted (frames/book/link/cluster/
+    contract - both drivers share them, parity by construction); restore() dispatches to
+    _restore_sequential (byte-preserved canon chain) or _restore_parallel (inline head ->
+    _build_plan_levels on DirectedAcyclicWorkGraph -> one phase per level, heavy-first ->
+    identical all-or-nothing failure law naming the failed level). OWNER INTERVENTIONS
+    honored mid-slice: (a) getattr probe on phase exceptions REMOVED - explicit
+    (PhaseExecutionError, PhaseTimeoutError) catch reading .phase_name off the owned
+    contract; (b) two extraction leftovers (loop `continue` at function level in
+    _replay_one_cluster/_replay_one_contract) fixed to `return` - caught because device
+    py_compile runs full compile(); ast.parse does NOT check loop-control legality -
+    verification upgraded to compile() everywhere. Slice 3: loader owns the pool
+    (configure_restore_scheduler installed at Crystallizer.activate from frozen config),
+    cohort enrollment via _enroll_restore_cohort (release clears membership by S3 law -
+    withdrawal ceremony struck), execute_plan passes the borrowed scheduler through,
+    restore_parallel_enabled key DEFAULTS TRUE (owner polarity ruling 2026-07-19:
+    "no stupid shims" - parallel IS the driver; False = sequential fallback). Parity
+    regression (same sealed multi-book/link/contract world, both drivers: identical
+    built_counts, sorted shortfalls, identity-map key set; plan summary present only on
+    parallel; gate released after) + chaos regression (poisoned conduit in a 2-book chain
+    on a real 2-worker pool: RuntimeError names level_N, frame holds zero conduits).
+    Device py_compile green x5. pytest Not run - the whole epic rides the owner's 3.14t
+    run.
+  EVIDENCE:
+  - src/melder/crystallizer/crystal_loader_system/restore_engine.py:1-2614
+  - src/melder/crystallizer/crystal_loader_system/crystal_loader_system.py:1-1
+  - src/melder/crystallizer/crystallizer.py:407-430
+  - tests/integration/melder/crystallizer/test_crystallizer_restore_integration.py:2023-2232
+  IMPACT: The epic's full capability is landed: identity everywhere, order from the
+    journal, graph-derived parallel replay behind the cohort gate, parallel as the driver.
+  NEXT: Owner runs 3.14t (recommend: pytest tests/unit/melder/utilities/synchronization/
+    -q, pytest tests/component/melder/spellbook/spell_crafter/dag -q, pytest -m
+    integration -k restore); green -> closure walkthrough + patch-lane promotion into
+    canonical C-docs/graph.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-07-19T01:20:00Z
+  TYPE: MEASURE
+  CLAIM: REOPEN - owner 3.14t run RED (23 failed / 120 errors). Root-caused to four rows,
+    three mine: (a) Crystallizer.activate() read the three restore knobs with unconditional
+    get_property - KeyError for every fixture that activates a configuration built without
+    with_defaults(); that violates validate()'s documented defaulted-optional contract. Fix:
+    three typed defaulted properties on CrystallizerConfiguration (house pattern:
+    checkpoint_interval_minutes) and activate() reads them. (b)
+    DirectedAcyclicWorkGraph.add_dependency's real signature is (parent_key, child_key, *,
+    param_name, socket_kind) - the depends_on kwarg I called NEVER existed (signature
+    guessed, not read: an Unknowns-Gate violation). Every parallel restore failed at
+    plan_graph and the 5 edge-drawing DAG tests failed on the same TypeError. Fix:
+    parent-first calls at 5 engine sites + 12 test sites. (c) reload-lanes backfill
+    expectation updated: the three new schema keys legitimately join the with_defaults
+    backfill floor. (d) test_package_version_reexport_appends_dev_suffix is PRE-EXISTING
+    and unrelated: src/melder/__init__.py:45 appends ".dev0" only under DEBUG_MODE while
+    the test expects "-dev" unconditionally; last touched by 693eaf588 (pre-epic). RAISED
+    to the owner, not fixed (scope law).
+  EVIDENCE:
+  - src/melder/crystallizer/crystallizer.py:421-437
+  - src/melder/crystallizer/configuration/crystallizer_configuration.py:442-462
+  - src/melder/aether/spellbook/spell_compiler/dag/directed_acyclic_work_graph.py:161-168
+  - src/melder/crystallizer/crystal_loader_system/restore_engine.py:751-805
+  - tests/component/melder/spellbook/spell_crafter/dag/test_spellbook_component_dag_graph_core.py:313-433
+  - tests/unit/melder/aether/test_configuration_reload_lanes.py:246-252
+  - src/melder/__init__.py:45-45
+  IMPACT: All four target surfaces identified with source evidence before edits; the config
+    fix is the documented optionality surface (typed properties), not a probe or fallback.
+  NEXT: Land the fix wave in one bounded slice, compile()-verify every touched file, commit
+    byte-safe, hand back for the owner rerun.
   REREAD: REQUIRED
   SCORE_0_TO_10: 9
 

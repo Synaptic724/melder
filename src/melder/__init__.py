@@ -41,8 +41,8 @@ Aether()
 
 
 DEBUG_MODE = True
-# 🔧 Append "-dev" in DEBUG_MODE without mutating original
-__version__ = base_version + "-dev" if DEBUG_MODE else base_version
+# 🔧 Append a PEP 440 dev segment in DEBUG_MODE without mutating original
+__version__ = base_version + ".dev0" if DEBUG_MODE else base_version
 
 
 # ✅ Soft warning if not optimized Python version

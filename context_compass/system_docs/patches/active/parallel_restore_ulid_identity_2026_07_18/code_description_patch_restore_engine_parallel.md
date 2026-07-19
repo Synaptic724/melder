@@ -11,8 +11,11 @@ Concurrency-sensitive entry-gate artifact required before ANY S4 engine/loader c
    today's sequential body, UNTOUCHED (the parity baseline and the rollback lane);
    scheduler present -> the graph-planned parallel driver. Selection is owned by the
    loader through the new CrystallizerConfiguration key `restore_parallel_enabled`
-   (bool). FIRST LANDING DEFAULTS FALSE: the capability ships dark, the owner flips one
-   config value after the parity suite greens on 3.14t. Rollback = the same flag.
+   (bool). OWNER RULING 2026-07-19 (supersedes the dark-launch draft): PARALLEL IS THE
+   DRIVER - the key defaults TRUE; False selects the sequential fallback. Rollback =
+   the same flag. Cohort withdrawal ceremony was also struck: `release()` clears the
+   whole cohort by S3 gate law, so per-load withdrawal loops are noise; explicit
+   withdrawal is reserved for mid-span worker retirement, which the loader never does.
 2. SEQUENTIAL PROLOGUE (both drivers, unchanged): fold -> preflight -> admission
    refusal on blockers. Then, parallel driver only: sequential HEAD replay INLINE on the
    loading thread - aether_configuration, crystallizer_policy, mutation_research

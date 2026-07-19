@@ -24,6 +24,9 @@ from melder.crystallizer.crystal_loader_system.load_plan import LoadPlan
 
 if TYPE_CHECKING:
     from melder.aether.aether import Aether
+    from melder.utilities.synchronization.phase_scheduler import (
+        PhaseScheduler,
+    )
     from melder.crystallizer.persistence.persistence_system import (
         PersistenceSystem,
     )
@@ -304,7 +307,12 @@ class LoadAdmission(Cleanable):
     # EXECUTE + ADJUDICATE
     # ------------------------------------------------------------------
 
-    def execute_plan(self, plan: LoadPlan) -> Dict[str, object]:
+    def execute_plan(
+            self,
+            plan: LoadPlan,
+            *,
+            scheduler: Optional[PhaseScheduler] = None,
+    ) -> Dict[str, object]:
         """
         Run one planned load through the gated engine and adjudicate.
 
@@ -324,6 +332,13 @@ class LoadAdmission(Cleanable):
         Args:
             plan:
                 The declarative plan to execute (consumed by one engine).
+            scheduler:
+                Optional BORROWED PhaseScheduler (S4,
+                parallel_restore_ulid_identity), passed through to the
+                engine per load: present selects the graph-planned
+                parallel driver; None selects the sequential driver. The
+                loader owns the pool and its cohort span; this plane
+                never stores or cleans it.
 
         Returns:
             Dict[str, object]:
@@ -372,6 +387,7 @@ class LoadAdmission(Cleanable):
             chain=plan.chain,
             refuse_on_blockers=True,
             skip_existing=plan.skip_existing,
+            scheduler=scheduler,
         )
         try:
             report = engine.restore()

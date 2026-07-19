@@ -2,10 +2,22 @@
 
 import importlib
 import sys
+import threading
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Set, Tuple
+from typing import Any, Dict, List, Optional, Set, Tuple, TYPE_CHECKING
 
 from melder.utilities.general_base.cleanable import Cleanable
+from melder.utilities.custom_exceptions.phase_execution_error import (
+    PhaseExecutionError,
+)
+from melder.utilities.custom_exceptions.phase_timeout_error import (
+    PhaseTimeoutError,
+)
+
+if TYPE_CHECKING:
+    from melder.utilities.synchronization.phase_scheduler import (
+        PhaseScheduler,
+    )
 
 
 class RestoreReport(Cleanable):
@@ -34,8 +46,12 @@ class RestoreReport(Cleanable):
           escape into the rebuilt world (never-rehydrate-ULIDs policy).
 
     Threading:
-        Mutated by exactly one RestoreEngine on one thread during one restore
-        call; readers consume `describe()` afterwards. No lock by contract.
+        One internal RLock serializes every mutator and reader (S4,
+        parallel_restore_ulid_identity): the parallel driver's units report
+        built counts, shortfalls, and identity mappings from scheduler
+        worker threads concurrently. The former single-writer "no lock by
+        contract" law is retired with the parallel driver; `describe()`
+        returns fully detached copies as before.
 
     Lifecycle / Cleanup:
         Owned by the engine while the run is live; ownership passes to the
@@ -44,6 +60,7 @@ class RestoreReport(Cleanable):
     """
 
     __slots__ = Cleanable.__slots__ + [
+        "_lock",
         "_profile_name",
         "_checkpoint_ids",
         "_built_counts",
@@ -52,6 +69,7 @@ class RestoreReport(Cleanable):
         "_status",
         "_failed_stage",
         "_preflight",
+        "_plan_summary",
     ]
 
     def __init__(self, profile_name: str, checkpoint_ids: List[str]) -> None:
@@ -78,6 +96,9 @@ class RestoreReport(Cleanable):
             raise ValueError(
                 "RestoreReport requires at least one checkpoint id."
             )
+        # S4: mutators run from scheduler worker threads under the
+        # parallel driver; one RLock serializes all report state.
+        self._lock: threading.RLock = threading.RLock()
         self._profile_name: str = profile_name
         self._checkpoint_ids: List[str] = list(checkpoint_ids)
         self._built_counts: Dict[str, int] = {}
@@ -88,6 +109,9 @@ class RestoreReport(Cleanable):
         # Load-time strategy analysis (owner ruling: strategies run AS
         # we load); attached by the engine after the fold, before replay.
         self._preflight: Dict[str, object] = {}
+        # S4 diagnostics: the parallel driver's level plan summary
+        # (level count + nodes per level); empty for sequential runs.
+        self._plan_summary: Dict[str, object] = {}
 
     def cleanup(self) -> None:
         """
@@ -107,15 +131,21 @@ class RestoreReport(Cleanable):
         """
         if self._cleaned:
             return
-        self._cleaned = True
-        del self._profile_name
-        del self._checkpoint_ids
-        del self._built_counts
-        del self._shortfalls
-        del self._identity_map
-        del self._status
-        del self._failed_stage
-        del self._preflight
+        with self._lock:
+            if self._cleaned:
+                return
+            self._cleaned = True
+            del self._profile_name
+            del self._checkpoint_ids
+            del self._built_counts
+            del self._shortfalls
+            del self._identity_map
+            del self._status
+            del self._failed_stage
+            del self._preflight
+            del self._plan_summary
+        # Lock deleted last (cleanup discipline).
+        del self._lock
 
     def set_preflight(self, preflight_report: Dict[str, object]) -> None:
         """
@@ -139,7 +169,27 @@ class RestoreReport(Cleanable):
             RuntimeError: If the report has been cleaned.
         """
         self.check_cleaned()
-        self._preflight = dict(preflight_report)
+        with self._lock:
+            self._preflight = dict(preflight_report)
+
+    def set_plan_summary(self, plan_summary: Dict[str, object]) -> None:
+        """
+        Attach the parallel driver's level-plan summary (S4 diagnostics).
+
+        Args:
+            plan_summary:
+                Detached {"level_count", "nodes_per_level"} counts built by
+                the plan compiler; never payload bodies.
+
+        Returns:
+            None.
+
+        Raises:
+            RuntimeError: If the report has been cleaned.
+        """
+        self.check_cleaned()
+        with self._lock:
+            self._plan_summary = dict(plan_summary)
 
     def record_built(self, kind: str) -> None:
         """
@@ -158,7 +208,8 @@ class RestoreReport(Cleanable):
                 If the report has been cleaned.
         """
         self.check_cleaned()
-        self._built_counts[kind] = self._built_counts.get(kind, 0) + 1
+        with self._lock:
+            self._built_counts[kind] = self._built_counts.get(kind, 0) + 1
 
     def add_shortfall(self, kind: str, key: str, reason: str) -> None:
         """
@@ -180,9 +231,10 @@ class RestoreReport(Cleanable):
                 If the report has been cleaned.
         """
         self.check_cleaned()
-        self._shortfalls.append(
-            {"kind": kind, "key": key, "reason": reason}
-        )
+        with self._lock:
+            self._shortfalls.append(
+                {"kind": kind, "key": key, "reason": reason}
+            )
 
     def map_identity(self, recorded_id: str, live_id: str) -> None:
         """
@@ -202,7 +254,8 @@ class RestoreReport(Cleanable):
                 If the report has been cleaned.
         """
         self.check_cleaned()
-        self._identity_map[recorded_id] = live_id
+        with self._lock:
+            self._identity_map[recorded_id] = live_id
 
     def translate(self, recorded_id: str) -> Optional[str]:
         """
@@ -221,7 +274,8 @@ class RestoreReport(Cleanable):
                 If the report has been cleaned.
         """
         self.check_cleaned()
-        return self._identity_map.get(recorded_id)
+        with self._lock:
+            return self._identity_map.get(recorded_id)
 
     def mark_complete(self) -> None:
         """
@@ -235,7 +289,8 @@ class RestoreReport(Cleanable):
                 If the report has been cleaned.
         """
         self.check_cleaned()
-        self._status = "complete"
+        with self._lock:
+            self._status = "complete"
 
     def mark_failed(self, stage: str) -> None:
         """
@@ -253,8 +308,9 @@ class RestoreReport(Cleanable):
                 If the report has been cleaned.
         """
         self.check_cleaned()
-        self._status = "failed"
-        self._failed_stage = stage
+        with self._lock:
+            self._status = "failed"
+            self._failed_stage = stage
 
     def describe(self) -> Dict[str, object]:
         """
@@ -275,16 +331,18 @@ class RestoreReport(Cleanable):
                 If the report has been cleaned.
         """
         self.check_cleaned()
-        return {
-            "status": self._status,
-            "failed_stage": self._failed_stage,
-            "profile_name": self._profile_name,
-            "checkpoint_ids": list(self._checkpoint_ids),
-            "built_counts": dict(self._built_counts),
-            "shortfalls": [dict(entry) for entry in self._shortfalls],
-            "identity_map": dict(self._identity_map),
-            "preflight": dict(self._preflight),
-        }
+        with self._lock:
+            return {
+                "status": self._status,
+                "failed_stage": self._failed_stage,
+                "profile_name": self._profile_name,
+                "checkpoint_ids": list(self._checkpoint_ids),
+                "built_counts": dict(self._built_counts),
+                "shortfalls": [dict(entry) for entry in self._shortfalls],
+                "identity_map": dict(self._identity_map),
+                "preflight": dict(self._preflight),
+                "plan": dict(self._plan_summary),
+            }
 
 
 class RestoreEngine(Cleanable):
@@ -343,7 +401,9 @@ class RestoreEngine(Cleanable):
         "_custody_inactive",
         "_live_books",
         "_live_conduits",
+        "_build_lock",
         "_built_stack",
+        "_scheduler",
     ]
 
     def __init__(
@@ -353,6 +413,7 @@ class RestoreEngine(Cleanable):
             chain: List[Dict[str, object]],
             refuse_on_blockers: bool = False,
             skip_existing: bool = False,
+            scheduler: Optional[PhaseScheduler] = None,
     ) -> None:
         """
         Initialize one engine over a detached, ordered checkpoint chain.
@@ -383,6 +444,14 @@ class RestoreEngine(Cleanable):
                 fail-fast behavior (host preflight normally refused these
                 rows already; mid-replay collisions then surface as
                 stage failures).
+            scheduler:
+                Optional BORROWED PhaseScheduler (S4,
+                parallel_restore_ulid_identity). None selects the
+                sequential driver - today's canon stage chain, untouched.
+                Present selects the graph-planned parallel driver: the
+                folded world compiles to dependency levels and per-entity
+                units fan out on this pool (the loader owns the scheduler
+                and its cohort enrollment; the engine never cleans it).
 
         Returns:
             None.
@@ -430,9 +499,18 @@ class RestoreEngine(Cleanable):
         self._custody_active: Dict[str, Dict[str, object]] = {}
         self._custody_inactive: Dict[str, Dict[str, object]] = {}
         # Live handles built during replay (for wiring + rollback).
+        # Parallel-driver law (S4): writes are per-key disjoint across
+        # units and cross-level reads happen only behind a passed level
+        # barrier; under 3.14t the builtin dict's internal lock makes the
+        # single-key operations atomic, so no extra lock guards these.
         self._live_books: Dict[str, Any] = {}
         self._live_conduits: Dict[str, Any] = {}
+        # Build bookkeeping: append order IS teardown order, so the stack
+        # is lock-serialized under the parallel driver.
+        self._build_lock: threading.Lock = threading.Lock()
         self._built_stack: List[Tuple[str, Any]] = []
+        # Borrowed execution pool (None = sequential driver).
+        self._scheduler: Optional[PhaseScheduler] = scheduler
 
     def cleanup(self) -> None:
         """
@@ -483,6 +561,31 @@ class RestoreEngine(Cleanable):
         del self._live_books
         del self._live_conduits
         del self._built_stack
+        # Borrowed collaborator: dereferenced, never cleaned here.
+        del self._scheduler
+        # Lock deleted last of the engine-owned surfaces.
+        del self._build_lock
+
+    def _record_built_unit(self, kind: str, unit: Any) -> None:
+        """
+        Record one built unit for all-or-nothing teardown (lock-ordered).
+
+        Contract:
+            Append order IS the global teardown order (newest first on
+            unwind), so the append is serialized under `_build_lock` -
+            the parallel driver's units record from worker threads.
+
+        Args:
+            kind:
+                Unit kind label carried on the teardown stack.
+            unit:
+                The live built unit (must expose cleaned/cleanup()).
+
+        Returns:
+            None.
+        """
+        with self._build_lock:
+            self._built_stack.append((kind, unit))
 
     def restore(self) -> RestoreReport:
         """
@@ -544,6 +647,25 @@ class RestoreEngine(Cleanable):
                     ),
                 )
             )
+        if self._scheduler is None:
+            return self._restore_sequential()
+        return self._restore_parallel()
+
+    def _restore_sequential(self) -> RestoreReport:
+        """
+        The canon sequential driver (parity baseline + rollback lane).
+
+        Contract:
+            Byte-identical stage chain to the historical `restore()` body;
+            stage methods now loop over the shared per-entity unit methods,
+            so both drivers execute the same entity bodies.
+
+        Returns:
+            RestoreReport: The completed report (ownership to the caller).
+
+        Raises:
+            RuntimeError: On stage failure, after all-or-nothing teardown.
+        """
         stage = "fold"
         try:
             # Canonical configuration order (owner ruling):
@@ -577,6 +699,280 @@ class RestoreEngine(Cleanable):
             ) from error
         self._report.mark_complete()
         return self._report
+
+    def _build_plan_levels(self) -> List[List[Tuple[str, object]]]:
+        """
+        Compile the folded world into dependency LEVELS (S4 plan graph).
+
+        Contract:
+            - Nodes: nexus root (edgeless today - placement becomes
+              graph-derived the moment the record carries nexus-native
+              edges), one per frame, one per BOOK (the whole interior
+              chain is one node), one per link edge, one per cluster, one
+              per contract.
+            - Edges (dependency -> dependent): frame -> its books; both
+              endpoint books -> each link edge; member books -> their
+              clusters; endpoint books (and the matching link node, when
+              one exists) -> each contract.
+            - A dependency on an UNRECORDED entity is simply not drawn:
+              the unit's own honesty lanes (shortfalls / silent-skip laws)
+              handle absence exactly as the sequential driver does.
+            - A cycle in recorded edges refuses the load at plan time (the
+              caller maps it to mark_failed("plan_graph"); nothing built).
+
+        Returns:
+            List[List[Tuple[str, object]]]: Levels of detached
+            (kind, key_data) descriptors, dependency order preserved.
+
+        Raises:
+            RuntimeError: If the recorded edges form a cycle.
+        """
+        # Lazy import mirrors the engine's runtime-surface import law.
+        from melder.aether.spellbook.spell_compiler.dag.directed_acyclic_work_graph import (
+            DirectedAcyclicWorkGraph,
+        )
+
+        graph = DirectedAcyclicWorkGraph()
+        try:
+            if self._nexus_payload is not None:
+                graph.add_node("nexus:root", payload=("nexus", None))
+            for frame_name in self._frames:
+                graph.add_node(
+                    "frame:{0}".format(frame_name),
+                    payload=("frame", frame_name),
+                )
+            book_by_conduit: Dict[str, str] = {}
+            for spellbook_id, book_payload in self._books.items():
+                book_key = "book:{0}".format(spellbook_id)
+                graph.add_node(book_key, payload=("book", spellbook_id))
+                frame_name = str(book_payload.get("frame_name", "default"))
+                frame_key = "frame:{0}".format(frame_name)
+                if frame_name in self._frames:
+                    graph.add_dependency(frame_key, book_key)
+            for conduit_id, conduit_payload in self._conduits.items():
+                owner_book = str(conduit_payload.get("spellbook_id", ""))
+                if owner_book:
+                    book_by_conduit[conduit_id] = owner_book
+            link_keys: Dict[Tuple[str, str], str] = {}
+            for conduit_id, conduit_payload in self._conduits.items():
+                for target_id in list(
+                        conduit_payload.get("link_targets", [])
+                ):
+                    edge = (conduit_id, str(target_id))
+                    link_key = "link:{0}->{1}".format(*edge)
+                    graph.add_node(link_key, payload=("link", edge))
+                    link_keys[edge] = link_key
+                    for endpoint in edge:
+                        owner_book = book_by_conduit.get(endpoint)
+                        if owner_book is not None:
+                            graph.add_dependency(
+                                "book:{0}".format(owner_book),
+                                link_key,
+                            )
+            for cluster_id, cluster_payload in self._clusters.items():
+                cluster_key = "cluster:{0}".format(cluster_id)
+                graph.add_node(
+                    cluster_key, payload=("cluster", cluster_id)
+                )
+                for member_id in list(
+                        cluster_payload.get("member_conduit_ids", [])
+                ):
+                    owner_book = book_by_conduit.get(str(member_id))
+                    if owner_book is not None:
+                        graph.add_dependency(
+                            "book:{0}".format(owner_book),
+                            cluster_key,
+                        )
+            for contract_id, contract_payload in self._contracts.items():
+                contract_key = "contract:{0}".format(contract_id)
+                graph.add_node(
+                    contract_key, payload=("contract", contract_id)
+                )
+                edge = (
+                    str(contract_payload.get("conduit_a_id")),
+                    str(contract_payload.get("conduit_b_id")),
+                )
+                link_key = link_keys.get(edge)
+                if link_key is not None:
+                    # Details re-grant only after the edge exists.
+                    graph.add_dependency(link_key, contract_key)
+                for endpoint in edge:
+                    owner_book = book_by_conduit.get(endpoint)
+                    if owner_book is not None:
+                        graph.add_dependency(
+                            "book:{0}".format(owner_book),
+                            contract_key,
+                        )
+            return [
+                [node.payload for node in level]
+                for level in graph.topological_levels()
+            ]
+        finally:
+            graph.cleanup()
+
+    def _restore_parallel(self) -> RestoreReport:
+        """
+        The graph-planned parallel driver (S4).
+
+        Contract:
+            - Sequential inline HEAD (aether configuration, crystallizer
+              policy, mutation research: process-global single-unit
+              roots), then the plan graph flattens the folded world into
+              levels executed as one scheduler run - one phase per level,
+              per-entity units within, heavy (book) units enqueued first.
+            - Failure law identical to the sequential driver: any unit or
+              barrier failure marks the failed level, tears down every
+              built unit in reverse global build order, and raises with
+              the cause chained (scheduler fail-fast cancels the rest of
+              the run).
+            - The report additionally carries the level-plan summary
+              ("plan" key) for diagnostics.
+
+        Returns:
+            RestoreReport: The completed report (ownership to the caller).
+
+        Raises:
+            RuntimeError: On head-stage, plan, or level failure, after
+                all-or-nothing teardown.
+        """
+        stage = "aether_configuration"
+        try:
+            self._replay_aether_configuration()
+            stage = "crystallizer_policy"
+            self._replay_crystallizer_policy()
+            stage = "mutation_research"
+            self._replay_mutation_research()
+            stage = "plan_graph"
+            levels = self._build_plan_levels()
+            self._report.set_plan_summary(
+                {
+                    "level_count": len(levels),
+                    "nodes_per_level": [
+                        len(level) for level in levels
+                    ],
+                }
+            )
+            recorded_edge_contracts = (
+                self._recorded_edge_contract_lookup()
+            )
+            for index, level in enumerate(levels):
+                self._scheduler.register_phase(
+                    "level_{0}".format(index),
+                    self._level_factory(level, recorded_edge_contracts),
+                )
+            stage = "levels"
+            try:
+                self._scheduler.run_all_phases()
+            except (PhaseExecutionError, PhaseTimeoutError) as level_error:
+                # Owned visible contract: BOTH these types carry
+                # phase_name (the failing level label). No probing.
+                stage = str(level_error.phase_name)
+                raise
+        except Exception as error:
+            self._report.mark_failed(stage)
+            self._teardown_built()
+            raise RuntimeError(
+                "restore failed at stage {0!r}; the partially built world "
+                "was torn down (all-or-nothing). See the chained error for "
+                "the cause.".format(stage)
+            ) from error
+        self._report.mark_complete()
+        return self._report
+
+    def _level_factory(
+            self,
+            level: List[Tuple[str, object]],
+            recorded_edge_contracts: Dict[Tuple[str, str], str],
+    ):
+        """
+        Build one level's UnitOfWork factory for the scheduler.
+
+        Contract:
+            - One unit per node descriptor; units call the SAME per-entity
+              methods the sequential driver loops over.
+            - Heavy-first enqueue: book units lead the level (makespan
+              heuristic; barriers unchanged).
+            - Factories run inside `run_all_phases`, so units bind to the
+              CURRENT run's cancellation scope via create_unit_of_work.
+
+        Args:
+            level:
+                Detached (kind, key_data) descriptors for one level.
+            recorded_edge_contracts:
+                The shared folded link-identity lookup.
+
+        Returns:
+            Callable[[], List[Any]]: The phase factory.
+        """
+        ordered = sorted(
+            level, key=lambda descriptor: 0 if descriptor[0] == "book" else 1
+        )
+
+        def build_units() -> List[Any]:
+            units: List[Any] = []
+            for kind, key_data in ordered:
+                if kind == "nexus":
+                    func = self._replay_nexus
+                    label = "nexus:root"
+                elif kind == "frame":
+                    frame_name = str(key_data)
+                    func = (
+                        lambda name=frame_name:
+                        self._replay_one_frame(name, self._frames[name])
+                    )
+                    label = "frame:{0}".format(frame_name)
+                elif kind == "book":
+                    spellbook_id = str(key_data)
+                    func = (
+                        lambda book_id=spellbook_id:
+                        self._replay_one_book(
+                            book_id, self._books[book_id]
+                        )
+                    )
+                    label = "book:{0}".format(spellbook_id)
+                elif kind == "link":
+                    initiator_id, target_id = key_data
+                    func = (
+                        lambda a=str(initiator_id), b=str(target_id):
+                        self._replay_one_link(
+                            a, b, recorded_edge_contracts
+                        )
+                    )
+                    label = "link:{0}->{1}".format(
+                        initiator_id, target_id
+                    )
+                elif kind == "cluster":
+                    cluster_id = str(key_data)
+                    func = (
+                        lambda cid=cluster_id:
+                        self._replay_one_cluster(
+                            cid, self._clusters[cid]
+                        )
+                    )
+                    label = "cluster:{0}".format(cluster_id)
+                elif kind == "contract":
+                    contract_id = str(key_data)
+                    func = (
+                        lambda ctid=contract_id:
+                        self._replay_one_contract(
+                            ctid, self._contracts[ctid]
+                        )
+                    )
+                    label = "contract:{0}".format(contract_id)
+                else:
+                    raise RuntimeError(
+                        "Unknown plan-graph node kind {0!r}; the plan "
+                        "compiler and the unit factory must stay in "
+                        "lockstep.".format(kind)
+                    )
+                units.append(
+                    self._scheduler.create_unit_of_work(
+                        func, label=label
+                    )
+                )
+            return units
+
+        return build_units
 
     def _run_preflight(self) -> Dict[str, object]:
         """
@@ -1029,7 +1425,7 @@ class RestoreEngine(Cleanable):
             # Recorded history: the world sealed with a deactivated MR -
             # activate-then-deactivate replays both truthful acts.
             root.deactivate()
-        self._built_stack.append(("mutation_research", root))
+        self._record_built_unit("mutation_research", root)
         self._report.record_built("mutation_research")
 
     def _replay_nexus(self) -> None:
@@ -1089,7 +1485,7 @@ class RestoreEngine(Cleanable):
             # Recorded history: the world sealed with a disabled Nexus -
             # enable-then-disable replays both truthful acts.
             nexus.disable()
-        self._built_stack.append(("nexus", nexus))
+        self._record_built_unit("nexus", nexus)
         self._report.record_built("nexus")
 
     def _replay_frames(self) -> None:
@@ -1107,28 +1503,51 @@ class RestoreEngine(Cleanable):
         Returns:
             None.
         """
+        for frame_name, payload in self._frames.items():
+            self._replay_one_frame(frame_name, payload)
+
+    def _replay_one_frame(
+            self,
+            frame_name: str,
+            payload: Dict[str, object],
+    ) -> None:
+        """
+        Posture ONE recorded frame (per-entity unit; both drivers).
+
+        Contract:
+            - RELOAD lane: the sealed twin payload is the posture truth;
+              the verb reports every key that fell back to a schema
+              default so nothing substitutes silently.
+            - S4 unit law: frames are independent of one another, so the
+              parallel driver runs one unit per frame in the frames level.
+
+        Args:
+            frame_name:
+                Canonical frame name (stable identity; no translation).
+            payload:
+                The folded frame twin payload.
+
+        Returns:
+            None.
+        """
         from melder.aether.aetheric_frame.aetheric_frame_configuration import (
             AethericFrameConfiguration,
         )
 
-        for frame_name, payload in self._frames.items():
-            # RELOAD lane: the sealed twin payload is the posture truth;
-            # the verb reports every key that fell back to a schema
-            # default so nothing substitutes silently.
-            posture, backfilled_keys = (
-                AethericFrameConfiguration.from_recorded_posture(
-                    dict(payload)
-                )
+        posture, backfilled_keys = (
+            AethericFrameConfiguration.from_recorded_posture(
+                dict(payload)
             )
-            for backfilled_key in backfilled_keys:
-                self._report.add_shortfall(
-                    "frame", frame_name,
-                    "posture_key_backfilled_schema_default: {0}".format(
-                        backfilled_key
-                    ),
-                )
-            self._posture_frame(frame_name, posture)
-            self._report.record_built("frame")
+        )
+        for backfilled_key in backfilled_keys:
+            self._report.add_shortfall(
+                "frame", frame_name,
+                "posture_key_backfilled_schema_default: {0}".format(
+                    backfilled_key
+                ),
+            )
+        self._posture_frame(frame_name, posture)
+        self._report.record_built("frame")
 
     def _ensure_frame_postured(
             self,
@@ -1155,38 +1574,43 @@ class RestoreEngine(Cleanable):
         Returns:
             None.
         """
-        if frame_name in self._postured_frames:
-            return
-        from melder.aether.aetheric_frame.aetheric_frame_configuration import (
-            AethericFrameConfiguration,
-        )
-        from melder.aether.spellbook.configuration.system_state import (
-            SystemState,
-        )
+        # S4: the check-then-posture pair is serialized under the build
+        # lock - two parallel book units sharing one UNRECORDED frame must
+        # not double-author its fallback posture. Recorded frames never
+        # race here: their frame nodes posture in an earlier level.
+        with self._build_lock:
+            if frame_name in self._postured_frames:
+                return
+            from melder.aether.aetheric_frame.aetheric_frame_configuration import (
+                AethericFrameConfiguration,
+            )
+            from melder.aether.spellbook.configuration.system_state import (
+                SystemState,
+            )
 
-        configuration_payload = dict(
-            book_payload.get("configuration_payload", {})
-        )
-        # AUTHORING lane on purpose (not the reload verb): there is no
-        # recorded posture to reload, so a fresh dynamic posture is built
-        # from the book's recorded hints and the single shortfall below
-        # carries the whole tolerance - per-key backfill noise would drown
-        # the real signal.
-        fallback_posture = AethericFrameConfiguration(
-            origin_spellbook_id=None,
-            system_state=SystemState.dynamic,
-            ai_native_enabled=bool(
-                configuration_payload.get("ai_native_enabled", False)
-            ),
-            rift_enabled=bool(
-                configuration_payload.get("rift_enabled", False)
-            ),
-        )
-        self._posture_frame(frame_name, fallback_posture)
-        self._report.add_shortfall(
-            "frame", frame_name,
-            "frame_twin_missing_postured_dynamic_from_book_hints",
-        )
+            configuration_payload = dict(
+                book_payload.get("configuration_payload", {})
+            )
+            # AUTHORING lane on purpose (not the reload verb): there is no
+            # recorded posture to reload, so a fresh dynamic posture is built
+            # from the book's recorded hints and the single shortfall below
+            # carries the whole tolerance - per-key backfill noise would drown
+            # the real signal.
+            fallback_posture = AethericFrameConfiguration(
+                origin_spellbook_id=None,
+                system_state=SystemState.dynamic,
+                ai_native_enabled=bool(
+                    configuration_payload.get("ai_native_enabled", False)
+                ),
+                rift_enabled=bool(
+                    configuration_payload.get("rift_enabled", False)
+                ),
+            )
+            self._posture_frame(frame_name, fallback_posture)
+            self._report.add_shortfall(
+                "frame", frame_name,
+                "frame_twin_missing_postured_dynamic_from_book_hints",
+            )
 
     def _posture_frame(
             self,
@@ -1249,68 +1673,96 @@ class RestoreEngine(Cleanable):
         Returns:
             None.
         """
+        for spellbook_id, book_payload in self._books.items():
+            self._replay_one_book(spellbook_id, book_payload)
+
+    def _replay_one_book(
+            self,
+            spellbook_id: str,
+            book_payload: Dict[str, object],
+    ) -> None:
+        """
+        Rebuild ONE book's interior chain (per-entity unit; both drivers).
+
+        Contract:
+            The interior sequence is STRICTLY ordered and identical across
+            drivers: frame-posture guarantee -> configuration reload +
+            freeze -> active binds in recorded bind_order -> conjure the
+            recorded root conduit -> staged binds onto live anchors ->
+            selection enforcement. Books are independent of one another;
+            the parallel driver runs one unit per book, and this method IS
+            the sequential loop body verbatim.
+
+        Args:
+            spellbook_id:
+                Recorded book identity.
+            book_payload:
+                The folded book twin payload.
+
+        Returns:
+            None.
+        """
         from melder.aether.spellbook.configuration.spellbook_configuration import (
             SpellbookConfiguration,
         )
         from melder.aether.spellbook.spellbook import Spellbook
 
-        for spellbook_id, book_payload in self._books.items():
-            frame_name = str(book_payload.get("frame_name", "default"))
-            self._ensure_frame_postured(frame_name, book_payload)
-            configuration = SpellbookConfiguration(aether_frame=frame_name)
-            # RELOAD lane, never the defaults lane: recorded values are the
-            # configuration truth; the verb applies them first, backfills
-            # only required keys the window does not carry, and reports
-            # every deviation back so nothing defaults silently.
-            reload_outcome = configuration.load_recorded_dictionary(
-                dict(book_payload.get("configuration_payload", {}))
+        frame_name = str(book_payload.get("frame_name", "default"))
+        self._ensure_frame_postured(frame_name, book_payload)
+        configuration = SpellbookConfiguration(aether_frame=frame_name)
+        # RELOAD lane, never the defaults lane: recorded values are the
+        # configuration truth; the verb applies them first, backfills
+        # only required keys the window does not carry, and reports
+        # every deviation back so nothing defaults silently.
+        reload_outcome = configuration.load_recorded_dictionary(
+            dict(book_payload.get("configuration_payload", {}))
+        )
+        for rejected_entry in reload_outcome["rejected"]:
+            self._report.add_shortfall(
+                "spellbook", spellbook_id,
+                "config_property_not_replayable: {0}".format(
+                    rejected_entry
+                ),
             )
-            for rejected_entry in reload_outcome["rejected"]:
-                self._report.add_shortfall(
-                    "spellbook", spellbook_id,
-                    "config_property_not_replayable: {0}".format(
-                        rejected_entry
-                    ),
-                )
-            for backfilled_key in reload_outcome["backfilled"]:
-                self._report.add_shortfall(
-                    "spellbook", spellbook_id,
-                    "config_property_backfilled_schema_default: "
-                    "{0}".format(backfilled_key),
-                )
-            for hook_name in list(book_payload.get("hook_names", [])):
-                self._report.add_shortfall(
-                    "spellbook", spellbook_id,
-                    "hook_requires_code_participation: {0}".format(
-                        hook_name
-                    ),
-                )
-            # Frozen BEFORE binds: the reload verb loads and freezes in
-            # one motion, so recorded worlds are never born
-            # config-incoherent (the conjure guard enforces exactly this)
-            # and no separate finalize call exists in the reload lane.
-            spellbook = Spellbook(
-                aetheric_frame=frame_name, configuration=configuration
+        for backfilled_key in reload_outcome["backfilled"]:
+            self._report.add_shortfall(
+                "spellbook", spellbook_id,
+                "config_property_backfilled_schema_default: "
+                "{0}".format(backfilled_key),
             )
-            self._built_stack.append(("spellbook", spellbook))
-            self._live_books[spellbook_id] = spellbook
-            self._report.record_built("spellbook")
-            self._report.map_identity(spellbook_id, spellbook._id)
-            bind_order = self._book_bind_order(spellbook_id)
-            for spell_id in bind_order:
-                if spell_id in self._custody_active:
-                    self._bind_one_active(
-                        spellbook, spell_id,
-                        self._custody_active[spell_id],
-                    )
-            conduit = self._conjure_for_book(spellbook_id, spellbook)
-            for spell_id in bind_order:
-                if spell_id in self._custody_inactive:
-                    self._bind_one_staged(
-                        spellbook, conduit, spell_id,
-                        self._custody_inactive[spell_id],
-                    )
-            self._enforce_selections(spellbook_id, spellbook, conduit)
+        for hook_name in list(book_payload.get("hook_names", [])):
+            self._report.add_shortfall(
+                "spellbook", spellbook_id,
+                "hook_requires_code_participation: {0}".format(
+                    hook_name
+                ),
+            )
+        # Frozen BEFORE binds: the reload verb loads and freezes in
+        # one motion, so recorded worlds are never born
+        # config-incoherent (the conjure guard enforces exactly this)
+        # and no separate finalize call exists in the reload lane.
+        spellbook = Spellbook(
+            aetheric_frame=frame_name, configuration=configuration
+        )
+        self._record_built_unit("spellbook", spellbook)
+        self._live_books[spellbook_id] = spellbook
+        self._report.record_built("spellbook")
+        self._report.map_identity(spellbook_id, spellbook._id)
+        bind_order = self._book_bind_order(spellbook_id)
+        for spell_id in bind_order:
+            if spell_id in self._custody_active:
+                self._bind_one_active(
+                    spellbook, spell_id,
+                    self._custody_active[spell_id],
+                )
+        conduit = self._conjure_for_book(spellbook_id, spellbook)
+        for spell_id in bind_order:
+            if spell_id in self._custody_inactive:
+                self._bind_one_staged(
+                    spellbook, conduit, spell_id,
+                    self._custody_inactive[spell_id],
+                )
+        self._enforce_selections(spellbook_id, spellbook, conduit)
 
     def _conjure_for_book(
             self,
@@ -1361,7 +1813,7 @@ class RestoreEngine(Cleanable):
             dynamic=bool(payload.get("dynamic", True)),
             name=recorded_name,
         )
-        self._built_stack.append(("conduit", conduit))
+        self._record_built_unit("conduit", conduit)
         self._live_conduits[conduit_id] = conduit
         self._report.record_built("conduit")
         self._report.map_identity(conduit_id, conduit._id)
@@ -1619,11 +2071,29 @@ class RestoreEngine(Cleanable):
         Returns:
             None.
         """
-        # Folded link identity lookup:
-        # (initiator_recorded_id, target_recorded_id) -> recorded contract
-        # ULID. `conduit_a` is the initiating side by ward-creation order
-        # (ward_a = initiator; see the crystallizer's contract twin
-        # emission, which records contract._ward_a._id as conduit_a_id).
+        recorded_edge_contracts = self._recorded_edge_contract_lookup()
+        for conduit_id, payload in self._conduits.items():
+            for target_recorded_id in list(payload.get("link_targets", [])):
+                self._replay_one_link(
+                    conduit_id,
+                    str(target_recorded_id),
+                    recorded_edge_contracts,
+                )
+
+    def _recorded_edge_contract_lookup(self) -> Dict[Tuple[str, str], str]:
+        """
+        Build the folded link-identity lookup (shared by both drivers).
+
+        Contract:
+            (initiator_recorded_id, target_recorded_id) -> recorded
+            contract ULID. `conduit_a` is the initiating side by
+            ward-creation order (ward_a = initiator; see the
+            crystallizer's contract twin emission, which records
+            contract._ward_a._id as conduit_a_id).
+
+        Returns:
+            Dict[Tuple[str, str], str]: Detached edge -> contract map.
+        """
         recorded_edge_contracts: Dict[Tuple[str, str], str] = {}
         for recorded_contract_id, contract_payload in self._contracts.items():
             recorded_edge_contracts[
@@ -1632,40 +2102,70 @@ class RestoreEngine(Cleanable):
                     str(contract_payload.get("conduit_b_id")),
                 )
             ] = recorded_contract_id
-        for conduit_id, payload in self._conduits.items():
-            initiator = self._live_conduits.get(conduit_id)
-            if initiator is None:
-                continue
-            for target_recorded_id in list(payload.get("link_targets", [])):
-                target = self._live_conduits.get(str(target_recorded_id))
-                if target is None:
-                    self._report.add_shortfall(
-                        "conduit", conduit_id,
-                        "link_target_not_rebuilt: {0}".format(
-                            target_recorded_id
-                        ),
-                    )
-                    continue
-                initiator.link(target)
-                self._report.record_built("link")
-                # S1 identity surface: translate the recorded contract ULID
-                # onto the fresh contract this link just minted, so links
-                # are locatable through the identity map like every other
-                # identity-bearing unit (and addressable as graph nodes by
-                # the parallel-restore planner).
-                recorded_contract_id = recorded_edge_contracts.get(
-                    (conduit_id, str(target_recorded_id))
+        return recorded_edge_contracts
+
+    def _replay_one_link(
+            self,
+            conduit_id: str,
+            target_recorded_id: str,
+            recorded_edge_contracts: Dict[Tuple[str, str], str],
+    ) -> None:
+        """
+        Re-establish ONE outbound link edge (per-entity unit; both drivers).
+
+        Contract:
+            - Missing initiator: silent skip (its book unit already
+              reported the build failure surface); missing target files
+              the honest `link_target_not_rebuilt` shortfall.
+            - S1 identity law: the recorded contract ULID (when the folded
+              contract twin exists for this edge) maps onto the fresh
+              contract the live ward minted; legacy edges rebuild without
+              a mapping entry and without shortfall noise.
+
+        Args:
+            conduit_id:
+                Recorded initiator conduit identity.
+            target_recorded_id:
+                Recorded target conduit identity.
+            recorded_edge_contracts:
+                The folded edge -> contract lookup
+                (`_recorded_edge_contract_lookup`).
+
+        Returns:
+            None.
+        """
+        initiator = self._live_conduits.get(conduit_id)
+        if initiator is None:
+            return
+        target = self._live_conduits.get(target_recorded_id)
+        if target is None:
+            self._report.add_shortfall(
+                "conduit", conduit_id,
+                "link_target_not_rebuilt: {0}".format(
+                    target_recorded_id
+                ),
+            )
+            return
+        initiator.link(target)
+        self._report.record_built("link")
+        # S1 identity surface: translate the recorded contract ULID
+        # onto the fresh contract this link just minted, so links
+        # are locatable through the identity map like every other
+        # identity-bearing unit (and addressable as graph nodes by
+        # the parallel-restore planner).
+        recorded_contract_id = recorded_edge_contracts.get(
+            (conduit_id, target_recorded_id)
+        )
+        if recorded_contract_id is not None:
+            fresh_contract_id = (
+                initiator._conduit_ward._initiated_index.get(
+                    target._id
                 )
-                if recorded_contract_id is not None:
-                    fresh_contract_id = (
-                        initiator._conduit_ward._initiated_index.get(
-                            target._id
-                        )
-                    )
-                    if fresh_contract_id is not None:
-                        self._report.map_identity(
-                            recorded_contract_id, str(fresh_contract_id)
-                        )
+            )
+            if fresh_contract_id is not None:
+                self._report.map_identity(
+                    recorded_contract_id, str(fresh_contract_id)
+                )
 
     def _replay_clusters(self) -> None:
         """
@@ -1680,65 +2180,92 @@ class RestoreEngine(Cleanable):
         Returns:
             None.
         """
+        for cluster_id, payload in self._clusters.items():
+            self._replay_one_cluster(cluster_id, payload)
+
+    def _replay_one_cluster(
+            self,
+            cluster_id: str,
+            payload: Dict[str, object],
+    ) -> None:
+        """
+        Regroup ONE recorded cluster (per-entity unit; both drivers).
+
+        Contract:
+            Identical semantics to the historical stage loop body:
+            existence + membership restore through the frame ConduitCloud,
+            recorded leaders and explicit share entries REPORTED, and the
+            S1 skip lane reuses an existing same-name cluster honestly.
+            Clusters are independent of one another; the parallel driver
+            runs one unit per cluster behind its member books' barriers.
+
+        Args:
+            cluster_id:
+                Recorded cluster identity.
+            payload:
+                The folded cluster twin payload.
+
+        Returns:
+            None.
+        """
         from melder.aether.aether import Aether
 
-        for cluster_id, payload in self._clusters.items():
-            cluster_name = payload.get("cluster_name")
-            frame_name = str(payload.get("frame_name", "default"))
-            if cluster_name is None:
+        cluster_name = payload.get("cluster_name")
+        frame_name = str(payload.get("frame_name", "default"))
+        if cluster_name is None:
+            self._report.add_shortfall(
+                "cluster", cluster_id, "recorded_cluster_has_no_name"
+            )
+            return
+        frame = Aether()._ensure_frame(frame_name)
+        # NOTE (public_cloud_seams 2026-07-12): the documented
+        # private seam here retired - the frame now exposes a public
+        # conduit_cloud accessor and the cloud a has_cluster_name
+        # probe.
+        cloud = frame.conduit_cloud
+        if (
+            self._skip_existing
+            and cloud.has_cluster_name(str(cluster_name))
+        ):
+            # S1 skip lane: the live world already owns this cluster;
+            # REUSE it - recorded members join the existing cluster
+            # below, and the reuse is reported honestly (not counted
+            # as built).
+            self._report.add_shortfall(
+                "cluster", cluster_id, "cluster_existed_members_joined"
+            )
+        else:
+            cloud.create_cluster(str(cluster_name))
+            self._report.record_built("cluster")
+        for member_recorded_id in list(
+                payload.get("member_conduit_ids", [])
+        ):
+            member = self._live_conduits.get(str(member_recorded_id))
+            if member is None:
                 self._report.add_shortfall(
-                    "cluster", cluster_id, "recorded_cluster_has_no_name"
+                    "cluster", cluster_id,
+                    "member_not_rebuilt: {0}".format(
+                        member_recorded_id
+                    ),
                 )
                 continue
-            frame = Aether()._ensure_frame(frame_name)
-            # NOTE (public_cloud_seams 2026-07-12): the documented
-            # private seam here retired - the frame now exposes a public
-            # conduit_cloud accessor and the cloud a has_cluster_name
-            # probe.
-            cloud = frame.conduit_cloud
-            if (
-                self._skip_existing
-                and cloud.has_cluster_name(str(cluster_name))
-            ):
-                # S1 skip lane: the live world already owns this cluster;
-                # REUSE it - recorded members join the existing cluster
-                # below, and the reuse is reported honestly (not counted
-                # as built).
-                self._report.add_shortfall(
-                    "cluster", cluster_id, "cluster_existed_members_joined"
-                )
-            else:
-                cloud.create_cluster(str(cluster_name))
-                self._report.record_built("cluster")
-            for member_recorded_id in list(
-                    payload.get("member_conduit_ids", [])
-            ):
-                member = self._live_conduits.get(str(member_recorded_id))
-                if member is None:
-                    self._report.add_shortfall(
-                        "cluster", cluster_id,
-                        "member_not_rebuilt: {0}".format(
-                            member_recorded_id
-                        ),
-                    )
-                    continue
-                cloud.add_conduit_to_cluster(member, str(cluster_name))
-                self._report.record_built("cluster_member")
-            if payload.get("leader_conduit_id") is not None:
-                self._report.add_shortfall(
-                    "cluster", cluster_id,
-                    "leader_election_is_runtime_act_not_replayed",
-                )
-            shared_entries = list(payload.get("shared_spells", []))
-            if shared_entries:
-                # Auto-share on member join re-grants shareable lineages;
-                # whether it reproduces EVERY recorded entry cannot be
-                # verified at replay time - one honest signal per cluster.
-                self._report.add_shortfall(
-                    "cluster", cluster_id,
-                    "shared_entries_recorded_auto_share_governs: "
-                    "{0}".format(len(shared_entries)),
-                )
+            cloud.add_conduit_to_cluster(member, str(cluster_name))
+            self._report.record_built("cluster_member")
+        if payload.get("leader_conduit_id") is not None:
+            self._report.add_shortfall(
+                "cluster", cluster_id,
+                "leader_election_is_runtime_act_not_replayed",
+            )
+        shared_entries = list(payload.get("shared_spells", []))
+        if shared_entries:
+            # Auto-share on member join re-grants shareable lineages;
+            # whether it reproduces EVERY recorded entry cannot be
+            # verified at replay time - one honest signal per cluster.
+            self._report.add_shortfall(
+                "cluster", cluster_id,
+                "shared_entries_recorded_auto_share_governs: "
+                "{0}".format(len(shared_entries)),
+            )
 
     def _replay_contracts(self) -> None:
         """
@@ -1767,48 +2294,76 @@ class RestoreEngine(Cleanable):
             None.
         """
         for contract_id, payload in self._contracts.items():
-            side_a = self._live_conduits.get(
-                str(payload.get("conduit_a_id"))
+            self._replay_one_contract(contract_id, payload)
+
+    def _replay_one_contract(
+            self,
+            contract_id: str,
+            payload: Dict[str, object],
+    ) -> None:
+        """
+        Re-grant ONE recorded contract's details (per-entity unit; both
+        drivers).
+
+        Contract:
+            Identical semantics to the historical stage loop body: detail
+            re-grants run borrower-called inside link-transaction windows;
+            endpoint absence files the honest shortfall; index
+            subscriptions are reported (first cut). Contracts are
+            independent of one another; the parallel driver runs one unit
+            per contract behind its endpoints' (and link's) barriers.
+
+        Args:
+            contract_id:
+                Recorded contract identity.
+            payload:
+                The folded contract twin payload.
+
+        Returns:
+            None.
+        """
+        side_a = self._live_conduits.get(
+            str(payload.get("conduit_a_id"))
+        )
+        side_b = self._live_conduits.get(
+            str(payload.get("conduit_b_id"))
+        )
+        if side_a is None or side_b is None:
+            self._report.add_shortfall(
+                "contract", contract_id,
+                "endpoint_not_rebuilt",
             )
-            side_b = self._live_conduits.get(
-                str(payload.get("conduit_b_id"))
-            )
-            if side_a is None or side_b is None:
+            return
+        for granter, details_key in (
+                (side_a, "details_a"),
+                (side_b, "details_b"),
+        ):
+            for detail in list(payload.get(details_key, [])):
+                # The map holder OWNS the lineage (both detail labels);
+                # the peer borrowed it. The live verb is borrower-
+                # called naming the owner (the ward eligibility check
+                # demands the `conduit` argument own the spell).
+                borrower = side_b if granter is side_a else side_a
+                with borrower.transaction(
+                        "link", conduits=[borrower, granter]
+                ):
+                    borrower.add_spell_to_contract(
+                        spell_id=str(detail.get("spell_id")),
+                        conduit=granter,
+                        permissions=str(
+                            detail.get("permissions", "create")
+                        ).lower(),
+                    )
+                self._report.record_built("contract_detail")
+        for subscriptions_key in ("index_details_a", "index_details_b"):
+            for subscription in list(
+                    payload.get(subscriptions_key, [])
+            ):
                 self._report.add_shortfall(
                     "contract", contract_id,
-                    "endpoint_not_rebuilt",
+                    "index_subscription_reported_not_replayed: "
+                    "{0}".format(subscription.get("index_id")),
                 )
-                continue
-            for granter, details_key in (
-                    (side_a, "details_a"),
-                    (side_b, "details_b"),
-            ):
-                for detail in list(payload.get(details_key, [])):
-                    # The map holder OWNS the lineage (both detail labels);
-                    # the peer borrowed it. The live verb is borrower-
-                    # called naming the owner (the ward eligibility check
-                    # demands the `conduit` argument own the spell).
-                    borrower = side_b if granter is side_a else side_a
-                    with borrower.transaction(
-                            "link", conduits=[borrower, granter]
-                    ):
-                        borrower.add_spell_to_contract(
-                            spell_id=str(detail.get("spell_id")),
-                            conduit=granter,
-                            permissions=str(
-                                detail.get("permissions", "create")
-                            ).lower(),
-                        )
-                    self._report.record_built("contract_detail")
-            for subscriptions_key in ("index_details_a", "index_details_b"):
-                for subscription in list(
-                        payload.get(subscriptions_key, [])
-                ):
-                    self._report.add_shortfall(
-                        "contract", contract_id,
-                        "index_subscription_reported_not_replayed: "
-                        "{0}".format(subscription.get("index_id")),
-                    )
 
     def _hydrate_target(
             self,
@@ -1972,7 +2527,7 @@ class RestoreEngine(Cleanable):
                     ),
                 )
                 return False
-            self._built_stack.append(("synthetic_module", module))
+            self._record_built_unit("synthetic_module", module)
             self._report.record_built("synthetic_module")
         return True
 
@@ -2024,7 +2579,7 @@ class RestoreEngine(Cleanable):
         )
 
         def _on_built(module: Any) -> None:
-            self._built_stack.append(("synthetic_module", module))
+            self._record_built_unit("synthetic_module", module)
             self._report.record_built("synthetic_module")
 
         def _on_shortfall(reason: str) -> None:

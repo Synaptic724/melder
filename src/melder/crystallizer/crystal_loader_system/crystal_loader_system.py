@@ -23,6 +23,9 @@ if TYPE_CHECKING:
     from melder.crystallizer.persistence.persistence_system import (
         PersistenceSystem,
     )
+    from melder.utilities.synchronization.phase_scheduler import (
+        PhaseScheduler,
+    )
 
 
 class CrystalLoaderSystem(Cleanable):
@@ -61,6 +64,7 @@ class CrystalLoaderSystem(Cleanable):
         "_load_admission",
         "_last_load",
         "_aether",
+        "_restore_scheduler",
     ]
 
     def __init__(
@@ -101,6 +105,12 @@ class CrystalLoaderSystem(Cleanable):
         # Durable load state: the last load's detached payload (report +
         # admission view). None until the first load completes.
         self._last_load: Optional[Dict[str, object]] = None
+        # OWNED restore execution pool (S4, parallel_restore_ulid_identity):
+        # installed by the crystallizer at activate() from the frozen
+        # configuration (parallel is the driver; None = sequential
+        # fallback selected by configuration). Worker threads stay lazy
+        # inside the scheduler until the first load runs.
+        self._restore_scheduler: Optional[PhaseScheduler] = None
 
     def cleanup(self) -> None:
         """
@@ -130,11 +140,107 @@ class CrystalLoaderSystem(Cleanable):
             self._cleaned = True
             if not self._load_admission.cleaned:
                 self._load_admission.cleanup()
+            # Owned pool: sentinel-and-join the workers deterministically
+            # (scheduler cleanup law) before dropping references.
+            if (
+                    self._restore_scheduler is not None
+                    and not self._restore_scheduler.cleaned
+            ):
+                self._restore_scheduler.cleanup()
         del self._load_admission
+        del self._restore_scheduler
         del self._last_load
         del self._persistence_system
         del self._aether
         del self._lock
+
+    def configure_restore_scheduler(
+            self,
+            *,
+            parallel_enabled: bool,
+            worker_count: int,
+            barrier_timeout_ms: int,
+    ) -> None:
+        """
+        Install the restore execution policy from the frozen configuration.
+
+        Purpose:
+            The crystallizer's activate() seat for S4
+            (parallel_restore_ulid_identity): parallel is the driver -
+            when enabled, this loader owns one persistent PhaseScheduler
+            (explicit construction lane) whose levels execute every load;
+            disabled selects the sequential fallback driver.
+
+        Contract:
+            - Reconfiguration replaces the pool: an existing scheduler is
+              cleaned (workers sentinelled + joined) before the new policy
+              installs, so no orphan pool survives a policy change.
+            - Worker threads remain lazy inside the scheduler until the
+              first load needs them.
+
+        Args:
+            parallel_enabled:
+                True installs the parallel pool; False selects the
+                sequential driver (no pool owned).
+            worker_count:
+                Explicit pool size (positive int; scheduler-validated).
+            barrier_timeout_ms:
+                Explicit per-level barrier bound in milliseconds
+                (positive int; scheduler-validated).
+
+        Returns:
+            None.
+
+        Raises:
+            RuntimeError: If the loader has been cleaned.
+            ValueError: If an explicit value is invalid (scheduler law).
+
+        Threading:
+            Serialized by the loader lock; no load may be in flight.
+        """
+        self.check_cleaned()
+        with self._lock:
+            if (
+                    self._restore_scheduler is not None
+                    and not self._restore_scheduler.cleaned
+            ):
+                self._restore_scheduler.cleanup()
+            self._restore_scheduler = None
+            if parallel_enabled:
+                from melder.utilities.synchronization.phase_scheduler import (
+                    PhaseScheduler,
+                )
+
+                self._restore_scheduler = PhaseScheduler(
+                    spellbook=None,
+                    configuration=None,
+                    worker_count=worker_count,
+                    barrier_timeout_ms=barrier_timeout_ms,
+                )
+
+    def _enroll_restore_cohort(self) -> None:
+        """
+        Enroll the owned pool's workers into the CURRENT load span.
+
+        Contract:
+            - NO-OP without a pool or without an Aether host (bare-record
+              posture has no gate to park anyone).
+            - Withdrawal is not performed per-load: `release()` clears the
+              whole cohort unconditionally (the S3 gate law "no membership
+              survives a span"), so explicit withdrawal is reserved for
+              mid-span worker retirement, which this loader never does.
+
+        Returns:
+            None.
+
+        Raises:
+            RuntimeError: If enrollment is attempted outside a held span
+                (gate law; the caller acquires authority first).
+        """
+        if self._restore_scheduler is None or self._aether is None:
+            return
+        for ident in self._restore_scheduler.worker_thread_idents():
+            self._aether.enroll_load_worker(ident)
 
     def load_checkpoint(self, checkpoint_id: str) -> Dict[str, object]:
         """
@@ -172,11 +278,16 @@ class CrystalLoaderSystem(Cleanable):
                     f"checkpoint_load:{checkpoint_id}"
                 )
             try:
+                # S4: the span holder names its pool threads so restore
+                # units pass the gate; release clears the cohort.
+                self._enroll_restore_cohort()
                 plan = self._load_admission.plan_checkpoint_load(
                     checkpoint_id
                 )
                 try:
-                    payload = self._load_admission.execute_plan(plan)
+                    payload = self._load_admission.execute_plan(
+                        plan, scheduler=self._restore_scheduler
+                    )
                 finally:
                     if not plan.cleaned:
                         plan.cleanup()
@@ -237,13 +348,18 @@ class CrystalLoaderSystem(Cleanable):
             if self._aether is not None:
                 self._aether.acquire_load_authority("formation_load")
             try:
+                # S4: the span holder names its pool threads so restore
+                # units pass the gate; release clears the cohort.
+                self._enroll_restore_cohort()
                 plan = self._load_admission.plan_formation_load(
                     formation_record,
                     target_frame_name=target_frame_name,
                     skip_existing=skip_existing,
                 )
                 try:
-                    payload = self._load_admission.execute_plan(plan)
+                    payload = self._load_admission.execute_plan(
+                        plan, scheduler=self._restore_scheduler
+                    )
                 finally:
                     if not plan.cleaned:
                         plan.cleanup()

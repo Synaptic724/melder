@@ -415,6 +415,24 @@ class Crystallizer(Cleanable):
             self._auto_flush_checkpoints = (
                 self._configuration.auto_flush_checkpoints
             )
+            # Restore driver policy (S4, parallel_restore_ulid_identity;
+            # owner ruling 2026-07-19: parallel is the driver): install
+            # the loader's execution pool from the frozen configuration.
+            # The three knobs are defaulted-optional by validate()'s
+            # contract, so activation reads the typed properties (schema
+            # defaults True/4/60000) exactly like checkpoint policy above.
+            self._crystal_loader_system.configure_restore_scheduler(
+                parallel_enabled=(
+                    self._configuration.restore_parallel_enabled
+                ),
+                worker_count=(
+                    self._configuration.restore_scheduler_workers
+                ),
+                barrier_timeout_ms=(
+                    self._configuration
+                    .restore_scheduler_barrier_timeout_milliseconds
+                ),
+            )
             self._last_automatic_checkpoint_monotonic = time.monotonic()
         # Self-emission: the recorder's own policy is recorded truth.
         # Activation is the crystallizer's configured moment, so the twin

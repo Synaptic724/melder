@@ -310,10 +310,10 @@ def test_component_dag_topological_levels_diamond_peels_by_dependency_depth() ->
     dag = DirectedAcyclicWorkGraph()
     for key in ("root", "mid_b", "mid_a", "sink"):
         dag.add_node(key)
-    dag.add_dependency("mid_a", depends_on="root")
-    dag.add_dependency("mid_b", depends_on="root")
-    dag.add_dependency("sink", depends_on="mid_a")
-    dag.add_dependency("sink", depends_on="mid_b")
+    dag.add_dependency(parent_key="root", child_key="mid_a")
+    dag.add_dependency(parent_key="root", child_key="mid_b")
+    dag.add_dependency(parent_key="mid_a", child_key="sink")
+    dag.add_dependency(parent_key="mid_b", child_key="sink")
     levels = dag.topological_levels()
     assert [[node.id for node in level] for level in levels] == [
         ["root"], ["mid_a", "mid_b"], ["sink"]
@@ -334,8 +334,8 @@ def test_component_dag_topological_levels_disjoint_components_share_levels() -> 
     dag = DirectedAcyclicWorkGraph()
     for key in ("a1", "a2", "b1", "b2"):
         dag.add_node(key)
-    dag.add_dependency("a2", depends_on="a1")
-    dag.add_dependency("b2", depends_on="b1")
+    dag.add_dependency(parent_key="a1", child_key="a2")
+    dag.add_dependency(parent_key="b1", child_key="b2")
     levels = dag.topological_levels()
     assert [[node.id for node in level] for level in levels] == [
         ["a1", "b1"], ["a2", "b2"]
@@ -357,11 +357,11 @@ def test_component_dag_topological_levels_flatten_matches_sort_law() -> None:
     dag = DirectedAcyclicWorkGraph()
     for key in ("f", "e", "d", "c", "b", "a"):
         dag.add_node(key)
-    dag.add_dependency("b", depends_on="a")
-    dag.add_dependency("c", depends_on="a")
-    dag.add_dependency("d", depends_on="b")
-    dag.add_dependency("d", depends_on="c")
-    dag.add_dependency("e", depends_on="d")
+    dag.add_dependency(parent_key="a", child_key="b")
+    dag.add_dependency(parent_key="a", child_key="c")
+    dag.add_dependency(parent_key="b", child_key="d")
+    dag.add_dependency(parent_key="c", child_key="d")
+    dag.add_dependency(parent_key="d", child_key="e")
     levels = dag.topological_levels()
     level_of = {
         node.id: index
@@ -369,10 +369,10 @@ def test_component_dag_topological_levels_flatten_matches_sort_law() -> None:
         for node in level
     }
     assert set(level_of) == {"a", "b", "c", "d", "e", "f"}
-    for node_id, depends_on in (
+    for child_id, parent_id in (
             ("b", "a"), ("c", "a"), ("d", "b"), ("d", "c"), ("e", "d")
     ):
-        assert level_of[depends_on] < level_of[node_id]
+        assert level_of[parent_id] < level_of[child_id]
     dag.cleanup()
 
 
@@ -408,8 +408,8 @@ def test_component_dag_topological_levels_cycle_refuses_like_sort() -> None:
     dag = DirectedAcyclicWorkGraph()
     dag.add_node("x")
     dag.add_node("y")
-    dag.add_dependency("x", depends_on="y")
-    dag.add_dependency("y", depends_on="x")
+    dag.add_dependency(parent_key="y", child_key="x")
+    dag.add_dependency(parent_key="x", child_key="y")
     with pytest.raises(RuntimeError):
         dag.topological_levels()
     with pytest.raises(RuntimeError):
@@ -430,7 +430,7 @@ def test_component_dag_topological_levels_is_side_effect_free() -> None:
     dag = DirectedAcyclicWorkGraph()
     for key in ("n1", "n2"):
         dag.add_node(key)
-    dag.add_dependency("n2", depends_on="n1")
+    dag.add_dependency(parent_key="n1", child_key="n2")
     first = [[node.id for node in level] for level in dag.topological_levels()]
     second = [[node.id for node in level] for level in dag.topological_levels()]
     assert first == second == [["n1"], ["n2"]]

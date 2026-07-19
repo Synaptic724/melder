@@ -2020,3 +2020,213 @@ def test_legacy_chain_link_without_contract_twin_restores_without_mapping(
     assert set(payload["identity_map"].keys()) == {
         "book-x", "book-z", "cond-x", "cond-z"
     }
+
+
+def test_parallel_and_sequential_drivers_restore_identical_outcomes(
+        cache_root,
+):
+    """
+    Purpose:
+        The S4 parity law: the graph-planned parallel driver restores the
+        SAME sealed world to the same outcomes as the sequential baseline.
+    Contract:
+        - Identical built_counts, identical sorted shortfalls, identical
+          identity-map KEY set (values are fresh ULIDs by law).
+        - The parallel report carries the plan summary; sequential's is
+          empty. Load authority is fully released after both loads.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If the drivers diverge on any outcome surface.
+    """
+    def build_world_and_seal():
+        crystallizer = _activate_crystallizer()
+        book_a = _dynamic_book()
+        granted_id = book_a.bind(
+            spell=RestoreAlpha,
+            existence=Existence.unique,
+            permissions="create",
+        )
+        conduit_a = book_a.conjure(dynamic=True, name="alpha")
+        book_b = _dynamic_book()
+        book_b.bind(
+            spell=RestoreGamma,
+            existence=Existence.unique,
+            permissions="create",
+        )
+        conduit_b = book_b.conjure(dynamic=True, name="beta")
+        assert conduit_a.link(conduit_b) is True
+        with conduit_b.transaction("link", conduits=[conduit_a, conduit_b]):
+            conduit_b.add_spell_to_contract(
+                spell_id=granted_id,
+                conduit=conduit_a,
+                permissions="create",
+            )
+        checkpoint_id = crystallizer.create_checkpoint()
+        crystallizer.flush_checkpoint(checkpoint_id)
+        return checkpoint_id
+
+    def fresh_boot_with_driver(parallel_enabled):
+        Aether._reset_singleton_for_tests()
+        AetherUtilitySystem._reset_singleton_for_tests()
+        Nexus._reset_singleton_for_tests()
+        Crystallizer._reset_singleton_for_tests()
+        aether = Aether()
+        Spellbook._aether = aether
+        Conduit._aether = aether
+        configuration = CrystallizerConfiguration().with_defaults()
+        configuration.set_property(
+            "restore_parallel_enabled", parallel_enabled
+        )
+        configuration.activate()
+        crystallizer = Crystallizer()
+        crystallizer.activate(configuration)
+        return crystallizer
+
+    checkpoint_id = build_world_and_seal()
+
+    sequential_boot = fresh_boot_with_driver(False)
+    sequential_boot.reload_cached_checkpoint(checkpoint_id)
+    sequential_report = sequential_boot.load_checkpoint(checkpoint_id)
+
+    parallel_boot = fresh_boot_with_driver(True)
+    parallel_boot.reload_cached_checkpoint(checkpoint_id)
+    parallel_report = parallel_boot.load_checkpoint(checkpoint_id)
+
+    assert sequential_report["status"] == "complete"
+    assert parallel_report["status"] == "complete"
+    assert (
+        parallel_report["built_counts"]
+        == sequential_report["built_counts"]
+    )
+    def shortfall_key(row):
+        return (row["kind"], row["key"], row["reason"])
+    assert (
+        sorted(parallel_report["shortfalls"], key=shortfall_key)
+        == sorted(sequential_report["shortfalls"], key=shortfall_key)
+    )
+    assert (
+        set(parallel_report["identity_map"])
+        == set(sequential_report["identity_map"])
+    )
+    assert sequential_report["plan"] == {}
+    assert parallel_report["plan"]["level_count"] >= 2
+    assert sum(parallel_report["plan"]["nodes_per_level"]) >= 4
+    # The load span released: no residual authority bars root transactions.
+    assert Aether()._load_gate.is_held() is False
+
+
+def test_parallel_driver_failure_tears_the_partial_world_down(cache_root):
+    """
+    Purpose:
+        The S4 chaos law: a poisoned unit inside a level fails the run,
+        the failed LEVEL is named, and the all-or-nothing teardown leaves
+        zero leaked units - identical law to the sequential driver.
+    Contract:
+        - RuntimeError names a level_N stage; the frame holds no leftover
+          conduits after teardown; the poisoned world never half-exists.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If a partial world survives the failure.
+    """
+    from melder.utilities.synchronization.phase_scheduler import (
+        PhaseScheduler,
+    )
+
+    _activate_crystallizer()
+    window = {
+        "journal": [
+            [1, "spellbook", "book-p"],
+            [2, "spellbook", "book-q"],
+            [3, "spell_crystal", "sha-p"],
+            [4, "conduit", "cond-p"],
+            [5, "conduit", "cond-q"],
+        ],
+        "payloads": {
+            "spellbook": {
+                "book-p": {
+                    "spellbook_id": "book-p",
+                    "frame_name": "default",
+                    "configuration_payload": {
+                        "system_state": "dynamic",
+                        "ai_native_enabled": True,
+                        "rift_enabled": True,
+                        "phase_scheduler_workers_per_spellbook": 1,
+                    },
+                    "hook_names": [],
+                    "bind_order": ["sha-p"],
+                },
+                "book-q": {
+                    "spellbook_id": "book-q",
+                    "frame_name": "default",
+                    "configuration_payload": {
+                        "system_state": "dynamic",
+                        "ai_native_enabled": True,
+                        "rift_enabled": True,
+                        "phase_scheduler_workers_per_spellbook": 1,
+                    },
+                    "hook_names": [],
+                    "bind_order": [],
+                },
+            },
+            "conduit": {
+                "cond-p": {
+                    "conduit_id": "cond-p",
+                    "spellbook_id": "book-p",
+                    "conduit_name": "healthy",
+                    "policy_name": "default",
+                    "dynamic": True,
+                    "link_targets": [],
+                },
+                "cond-q": {
+                    "conduit_id": "cond-q",
+                    "spellbook_id": "book-q",
+                    "conduit_name": "poisoned",
+                    "policy_name": "no_such_policy_anywhere",
+                    "dynamic": True,
+                    "link_targets": [],
+                },
+            },
+            "spell_crystal": {
+                "sha-p": {
+                    "id": "sha-p",
+                    "spellbook_id": "book-p",
+                    "spell_name": "RestoreAlpha",
+                    "binding_name": None,
+                    "spellframe_name": None,
+                    "existence_name": "unique",
+                    "permissions_name": "create",
+                    "rebindability": "hydratable",
+                    "root_module_kind": "user_source",
+                    "root_module_name": (
+                        "tests.integration.melder.crystallizer."
+                        "test_crystallizer_restore_integration"
+                    ),
+                    "root_target_qualname": "RestoreAlpha",
+                    "root_target_kind": "class",
+                },
+            },
+        },
+    }
+    scheduler = PhaseScheduler(
+        spellbook=None,
+        configuration=None,
+        worker_count=2,
+        barrier_timeout_ms=60000,
+    )
+    engine = RestoreEngine(
+        profile_name="default",
+        checkpoint_ids=["01CHAOSLEVELTEST00000000"],
+        chain=[window],
+        scheduler=scheduler,
+    )
+    try:
+        with pytest.raises(RuntimeError) as raised:
+            engine.restore()
+    finally:
+        engine.cleanup()
+        scheduler.cleanup()
+    assert "level_" in str(raised.value)
+    frame = Aether()._aetheric_frames["default"]
+    assert frame._conduits == {}

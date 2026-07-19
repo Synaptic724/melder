@@ -245,6 +245,12 @@ def test_crystallizer_load_recorded_dictionary_reloads_policy_and_seals():
     assert configuration.get_property("max_persistence_crystals") == 25
     assert sorted(outcome["backfilled"]) == [
         "auto_flush_checkpoints", "remove_inactive_synthmodules",
+        # parallel_restore_ulid_identity S2: the restore-lane scheduler
+        # knobs joined the schema and backfill their defaults
+        # (True/60000/4) for pre-epic recorded payloads.
+        "restore_parallel_enabled",
+        "restore_scheduler_barrier_timeout_milliseconds",
+        "restore_scheduler_workers",
         # S2 physical custody: retain_user_sources joined the schema and
         # backfills False for pre-S2 recorded payloads.
         "retain_user_sources",
