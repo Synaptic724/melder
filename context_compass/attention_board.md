@@ -22,9 +22,10 @@ fallback and NO mirror.
   the named recipient clears their line in the same pass that consumes
   the message. Protocol:
   `agent_onboarding/default/general/skills/mailbox_protocol.md`.
-- (no active alerts - board reset to clean slate 2026-07-18T21:25:00Z by helper_f
-  under owner directive; two dead-letter messages to departed helper_f2 were
-  consumed-and-deleted in the same pass, content preserved in the cleanup ticket.)
+- NEW MESSAGE for helper_f (from melder_0, 2026-07-19T02:15:00Z)
+- (board reset to clean slate 2026-07-18T21:25:00Z by helper_f under owner directive;
+  two dead-letter messages to departed helper_f2 were consumed-and-deleted in the same
+  pass, content preserved in the cleanup ticket.)
 
 Purpose
 - Active-work routing board.
@@ -55,7 +56,7 @@ Attention details rule
 
 | object_contract_enrichment_program | in_progress | implementation | cowork | melder_0 | none | S1 EXEMPLAR LANDED (StaticSystemDocument guarded + Subsystem/System Context; 4 hardcopy module docstrings; 5/5 py_compile green). Next: write the 8 remaining child epics from the exemplar, starting with oce-utilities (carries the classification rulings + Package removal). | Every user-facing class in src/melder carries a guard CLASSIFICATION, agent-purpose/AST markers, and a Rank 4+ docstring with subsystem and system context. | All child epics landed and owner 3.14t green, or a DECISION_REQUEST needs an owner ruling. | tickets/epics/2026-07-19_object_contract_enrichment_program_epic.md | 2026-07-19T02:05:00Z | REQUIRED |
 
-| ux_aix_experiences | in_progress | build | cowork | helper_f | none | Beginner tier COMPLETE per owner tier law (static conjure only; no dynamic/Nexus/MR): 15 examples - hello-meld through SpellBinder full chain, hooks, disposal contract, spellframes, strings-as-vocab, context-managed book, agent first-read. AGENTS.md charter (renamed from claude.md). Zero init gaps found across the whole registration vocabulary. Rides owner 3.14t. | Examples are the evidence lane for init curation. | Beginner green on 3.14t -> author tier 02 (intermediate); gaps route to init story. | tickets/epics/2026-07-19_ux_aix_beginner_experience_epic.md | 2026-07-19T13:14:57Z | REQUIRED |
+| ux_aix_experiences | in_progress | build | cowork | helper_f | none | Owner caught 2 guessed contracts -> source-probed: with-book = LOCK batch only (not cleanup); bind(**kwargs) = hook channel (ctor config = factories/prebuilt/spell_override). 5 examples corrected; pytest_examples/ harness added (40-example runner + 8 contract probes); charter law: assert only verified-or-probed behavior. OWNER RUN: pytest UX_and_AIX_experiences/pytest_examples -v | Examples are the evidence lane for init curation. | Beginner green on 3.14t -> author tier 02 (intermediate); gaps route to init story. | tickets/epics/2026-07-19_ux_aix_beginner_experience_epic.md | 2026-07-19T13:46:32Z | REQUIRED |
 
 ## Recently Closed Anchors
 - (CLEAN SLATE 2026-07-18, owner-directed, executed by helper_f: all 32 active

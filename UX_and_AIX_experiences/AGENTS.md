@@ -8,7 +8,13 @@ by definition, an init-surface gap and must be recorded on the owning epic.
 Layout:
 - 01_beginner/      first-contact + registration: bind, SpellBinder fluent, meld, lifecycles,
                     hooks, disposal, frames, errors, agent first-read.
-                    TIER LAW: static conjure only - no dynamic, no Nexus, no MutationResearch.
+                    TIER LAW: static conjure only - no dynamic, no Nexus, no MutationResearch,
+                    no spellspaces. Existences: unique, many, unique_per_conduit
+                    ONLY (lineage/spellspace -> tier 02; cluster -> tier 03).
+                    DESIGN PRINCIPLE: teach a 4B-model agent with a 64k window
+                    to be USEFUL - shared/fresh/scoped, frames as dicts, typed
+                    melds, Protocols, one bootstrap function. Fun and simple
+                    beats complete.
 - 02_intermediate/  fluent binding, scopes, spellframes, configuration, persistence basics
 - 03_expert/        AR rooms, viewers, workstations, research lanes, diff/impact foresight
 - 04_master/        pod restart, external DB meshes, group composition, campaign evolution, custom decorators
@@ -21,3 +27,13 @@ Laws:
   then flow into the init composition story - examples are the evidence.
 
 Tickets: context_compass/tickets/epics/2026-07-19_ux_aix_{tier}_experience_epic.md
+
+## Verification harness
+
+pytest_examples/ runs every example plus contract probes on 3.14t:
+
+    pytest UX_and_AIX_experiences/pytest_examples -v
+
+LAW (2026-07-19, after the bind(**kwargs) miss): examples may only assert
+behavior VERIFIED in source or PROVEN by a probe row. Uncertain contracts get
+a probe here first; the probe's printed outcome then hardens the example.

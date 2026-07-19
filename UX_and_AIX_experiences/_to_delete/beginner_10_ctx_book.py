@@ -14,14 +14,14 @@ class ScopedService:
 
 def main() -> None:
     with md.Spellbook() as book:
-        book.bind(spell=ScopedService, existence=md.Existence.unique)
+        book.bind(spell=ScopedService, existence="unique")
         conduit = book.conjure()
         service = conduit.meld(spell=ScopedService)
         assert isinstance(service, ScopedService)
         print("inside the with-block: bound, conjured, melded")
 
     try:
-        book.bind(spell=ScopedService, existence=md.Existence.unique)
+        book.bind(spell=ScopedService, existence="unique")
         print("post-exit bind unexpectedly succeeded")
     except Exception as err:
         print("post-exit bind guarded:", type(err).__name__)

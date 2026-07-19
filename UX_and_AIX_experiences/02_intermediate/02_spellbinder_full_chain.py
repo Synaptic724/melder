@@ -13,6 +13,9 @@ class HttpClient:
         self.base_url = base_url
         self.timeout = timeout
 
+    def close(self) -> None:
+        pass
+
 
 class RetryPolicy:
     pass
@@ -28,7 +31,7 @@ def main() -> None:
         .with_permissions("create") \
         .under_spellframe("network") \
         .named("payments-api") \
-        .with_kwargs(base_url="https://pay.example", timeout=30) \
+        .with_kwargs(disposal_method_names=["close"]) \
         .finalize()
 
     # binder resets after finalize - next sentence starts clean
@@ -37,10 +40,13 @@ def main() -> None:
 
     conduit = book.conjure()
     client = conduit.meld(
-        spell=HttpClient, spellframe="network", binding_name="payments-api"
+        spell=HttpClient, spellframe="network", binding_name="payments-api",
+        spell_override={"base_url": "https://pay.example", "timeout": 30},
     )
     assert client.base_url == "https://pay.example" and client.timeout == 30
-    print("kwargs travelled through the chain:", client.base_url)
+    print("ctor config via spell_override:", client.base_url)
+    # NOTE: with_kwargs passes BIND parameters (here: disposal list);
+    # constructor arguments ride spell_override at meld time.
 
     child = conduit.create_lesser_conduit()
     policy_root = conduit.meld(spell=RetryPolicy, spellframe="network")

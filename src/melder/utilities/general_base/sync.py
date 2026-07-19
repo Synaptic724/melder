@@ -21,7 +21,51 @@ class Sync:
     - Concrete subclasses must provide `_value`, `_lock`, `get()`, and a
       `_coerce(...)` classmethod appropriate for their scalar type.
 
+    Owned State:
+        None. This mix-in deliberately owns no storage; `_value` and `_lock` are
+        the concrete subclass's to declare.
+
+    Threading:
+        This class exists BECAUSE of threading. `_perform_binary_op()` is the
+        deadlock-avoidance surface: two wrappers touched in one operation are
+        locked in a deterministic order, so two threads operating on the same
+        pair from opposite directions cannot deadlock. On free-threaded builds
+        that ordering is the difference between correct and hung, not a
+        micro-optimization.
+
+    Lifecycle / Cleanup:
+        No cleanup contract. `Sync` is a behavioral mix-in, not a resource owner,
+        and deliberately does NOT inherit `Cleanable`. Concrete subclasses that
+        own resources compose cleanup themselves.
+
+    Registration:
+        BASE CLASS - DELIBERATELY UNGUARDED. Do NOT add `__melder_internal__`
+        to this class. The guard resolves the sentinel through `getattr`, which
+        walks the MRO, so tagging this mix-in would tag every sync wrapper
+        descended from it, including any a user writes. Concrete Melder-owned
+        wrappers such as `SyncWeakRef` carry the sentinel individually.
+
+    Subsystem Context:
+        One of three `utilities/general_base/` base classes, alongside
+        `Cleanable` (teardown contract) and `AbstractElasticPool` (pooling). The
+        narrowest of the three: no state, no lifecycle, just the coordination
+        protocol shared by sync wrappers. Its concrete in-tree descendant is
+        `SyncWeakRef` under `utilities/synchronization/`.
+
+    System Context:
+        Beneath the DGR entirely and outside the boot order. Nothing in binding
+        or resolution constructs a `Sync`; it exists so that shared scalar state
+        touched from multiple threads has one correct locking discipline instead
+        of each call site inventing its own.
     """
+
+    _ast_helper_access: str = "public"
+    __agent_purpose__: str = (
+        "access: public. Base mix-in for thread-safe value wrappers. Subclass "
+        "this when you need a shared scalar touched from multiple threads; "
+        "supply _value, _lock, get(), and _coerce(). Deliberately not "
+        "registration-guarded so user subclasses stay bindable."
+    )
 
     __slots__ = ()
     _is_sync_value: ClassVar[bool] = True

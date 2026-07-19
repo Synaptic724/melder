@@ -19,12 +19,12 @@ def main() -> None:
     book = md.Spellbook()
     book.bind(
         spell=PostgresStore,
-        existence=md.Existence.unique,
+        existence="unique",
         binding_name="primary",
     )
     book.bind(
         spell=SqliteStore,
-        existence=md.Existence.unique,
+        existence="unique",
         binding_name="local",
     )
     conduit = book.conjure()

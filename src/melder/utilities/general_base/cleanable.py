@@ -9,20 +9,81 @@ from typing import Literal, Optional, Type
 
 class Cleanable(ABC):
     """
-    Abstract base class for objects that own explicit cleanup lifecycle.
+    Purpose:
+        Abstract base class for objects that own an explicit cleanup lifecycle.
+        This is the single teardown contract shared across the entire runtime.
 
-    `Cleanable` is the common contract used across the runtime for objects that
-    own resources, registration state, or other teardown-sensitive runtime
-    surfaces. Subclasses are responsible for implementing deterministic cleanup
-    behavior and for exposing the cleaned-state guard consistently.
+    Responsibilities:
+        - Own the canonical `_cleaned` lifecycle flag.
+        - Provide `check_cleaned()` as the one guard for rejecting
+          use-after-clean.
+        - Provide `using_cleanup()` as a context manager that guarantees exactly
+          one cleanup call on exit.
+        - Require subclasses to implement deterministic teardown.
 
     Contract:
-    - `cleanup()` must be idempotent.
-    - Subclasses must set `_cleaned = True` when cleanup completes.
-    - `check_cleaned()` is the canonical guard for rejecting use-after-clean.
-    - `using_cleanup()` provides a separate helper context that guarantees one
-      cleanup call on exit.
+        - `cleanup()` must be idempotent.
+        - Subclasses must set `_cleaned = True` when cleanup completes.
+        - `check_cleaned()` is the canonical guard for rejecting use-after-clean.
+        - `using_cleanup()` provides a separate helper context that guarantees
+          one cleanup call on exit.
+        - Every `Cleanable` starts live: `_cleaned` is False after `__init__`.
+
+    Owned State:
+        - `_cleaned`: the live/cleaned flag. The only state this base owns.
+
+    Threading:
+        The base itself holds no lock; `_cleaned` is a plain bool. Subclasses
+        that can race cleanup against active work are responsible for their own
+        lock, and the established pattern is to check `_cleaned`, acquire, then
+        re-check inside the lock. On free-threaded builds that double-check is
+        not optional.
+
+    Lifecycle / Cleanup:
+        Live on construction, cleaned exactly once. The repository teardown order
+        for subclasses is: clean children, delete owned field references, then
+        clean the logger last. Post-cleanup, an object is assumed unused; prefer
+        letting `check_cleaned()` raise over silently returning.
+
+    Registration:
+        BASE CLASS - DELIBERATELY UNGUARDED. Do NOT add
+        `__melder_internal__` to this class.
+
+        The registration guard detects internals with
+        `getattr(candidate, "__melder_internal__", None)`, and attribute lookup
+        walks the MRO. Tagging `Cleanable` would therefore tag EVERY subclass,
+        including classes written by users, and `Spellbook.bind(...)` would
+        refuse a user's own service with `InternalRegistrationError`. `Cleanable`
+        is referenced across ~277 files and is explicitly intended for user
+        subclassing, so the blast radius is the entire public surface. Concrete
+        Melder-owned descendants carry the sentinel individually; the base must
+        not. A regression asserting that a user subclass of `Cleanable` still
+        binds successfully guards this rule.
+
+    Subsystem Context:
+        One of three `utilities/general_base/` base classes, alongside `Sync`
+        (synchronization base) and `AbstractElasticPool` (pooling base). This is
+        the most widely inherited type in the codebase: the crystals, the
+        conduit runtime, the spellbook registries, the Nexus/Rift surfaces, and
+        most utilities all descend from it. It hands off to nothing - it is the
+        floor.
+
+    System Context:
+        Beneath every layer of the DGR and outside the boot order entirely.
+        Cleanup ordering across the runtime (Conduit tears down Meld, Ward, then
+        Creations; Aether cleans frames then resets singleton state) is
+        expressed through this one contract, which is why its idempotence
+        guarantee is load-bearing for the whole system rather than a local
+        convenience.
     """
+
+    _ast_helper_access: str = "public"
+    __agent_purpose__: str = (
+        "access: public. Base cleanup contract. Subclass this when your object "
+        "owns resources that need deterministic teardown; implement cleanup() "
+        "idempotently and guard live-only methods with check_cleaned(). "
+        "Deliberately not registration-guarded so user subclasses stay bindable."
+    )
 
     __slots__ = ['_cleaned']
 

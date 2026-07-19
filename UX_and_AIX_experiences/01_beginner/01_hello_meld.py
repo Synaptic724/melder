@@ -17,7 +17,7 @@ class Greeter:
 
 def main() -> None:
     book = md.Spellbook()
-    book.bind(spell=Greeter, existence=md.Existence.unique)
+    book.bind(spell=Greeter, existence="unique")
     conduit = book.conjure()
 
     greeter = conduit.meld(spell=Greeter)

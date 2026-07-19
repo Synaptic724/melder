@@ -18,7 +18,11 @@ class EnumHelpers:
     - Raises immediately on `None`, incompatible types, or unknown values.
     """
     @staticmethod
-    @lru_cache(maxsize=8)
+    # maxsize sized to the CLOSED vocabulary: 6 existences + 3 permissions
+    # + policies/system states, as both string and member-passthrough keys.
+    # 8 caused eviction churn on the exact path the cache exists to serve
+    # (found 2026-07-19 during the strings-first UX ruling).
+    @lru_cache(maxsize=64)
     def convert_enum_and_check(value: str | Enum, enum: Type[T]) -> T:
         """
         Convert one raw value into a concrete enum member of the requested type.

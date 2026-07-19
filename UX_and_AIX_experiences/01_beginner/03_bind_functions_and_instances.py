@@ -2,7 +2,7 @@
 TIER: beginner (03)
 GOAL: Spells are not only classes - functions and ready-made objects bind
       with the same verb and the same vocabulary.
-SURFACE EXERCISED: md.Spellbook, md.Existence, md.Permissions
+SURFACE EXERCISED: md.Spellbook, string vocabulary (existence/permissions)
 """
 import melder as md
 
@@ -20,15 +20,15 @@ def main() -> None:
     book = md.Spellbook()
 
     # a factory function: many -> the function RUNS per meld
-    book.bind(spell=make_settings, existence=md.Existence.many)
+    book.bind(spell=make_settings, existence="many")
 
     # an existing object: unique -> melder hands back what you built,
     # read permission because nothing should construct over it
     prebuilt = AlreadyBuilt("built-by-hand")
     book.bind(
         spell=prebuilt,
-        existence=md.Existence.unique,
-        permissions=md.Permissions.read,
+        existence="unique",
+        permissions="read",
     )
 
     conduit = book.conjure()

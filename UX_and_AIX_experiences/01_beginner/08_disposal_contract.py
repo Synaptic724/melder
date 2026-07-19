@@ -20,7 +20,7 @@ def main() -> None:
     book = md.Spellbook()
     book.bind(
         spell=PooledConnection,
-        existence=md.Existence.unique,
+        existence="unique",
         disposal_method_names=["close"],
     )
     conduit = book.conjure()

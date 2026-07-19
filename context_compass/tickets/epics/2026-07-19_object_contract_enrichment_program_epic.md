@@ -99,8 +99,22 @@ Every major object gets all five. A class is DONE only when all five hold.
    `utilities/helpers/class_surface_ast_describer.py`.
 
 4. RICH CLASS DOCSTRING (Rank 4 minimum, Rank 5 for public API)
-   Sections, in order: Purpose / Responsibilities / Contract / Owned State /
-   Threading / Lifecycle & Cleanup / Subsystem Context / System Context.
+   CANONICAL SECTION HEADERS - use these EXACT strings, in this order. Verification sweeps
+   match on them literally, so a paraphrased header reads as a missing section:
+   ```
+   Purpose:
+   Responsibilities:
+   Contract:
+   Owned State:
+   Threading:
+   Lifecycle / Cleanup:
+   Registration:
+   Subsystem Context:
+   System Context:
+   ```
+   `Registration:` states the guard classification (MELDER KERNEL / USER-BINDABLE /
+   BASE CLASS) and the one-line reason. `Owned State:` may be omitted for stateless
+   classes; every other header is mandatory.
    The last two are the NEW requirement and the reason this program exists:
    - Subsystem Context: what this object is to its own subsystem, and which sibling it
      hands off to.

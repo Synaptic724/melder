@@ -22,11 +22,11 @@ class CacheStore:
 
 def main() -> None:
     book = md.Spellbook()
-    book.bind(spell=PrimaryStore, existence=md.Existence.unique,
+    book.bind(spell=PrimaryStore, existence="unique",
               spellframe="storage", binding_name="primary")
-    book.bind(spell=ReplicaStore, existence=md.Existence.unique,
+    book.bind(spell=ReplicaStore, existence="unique",
               spellframe="storage", binding_name="replica")
-    book.bind(spell=CacheStore, existence=md.Existence.unique,
+    book.bind(spell=CacheStore, existence="unique",
               spellframe="memory", binding_name="cache")
     conduit = book.conjure()
 

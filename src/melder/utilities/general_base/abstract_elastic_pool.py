@@ -38,9 +38,36 @@ class AbstractElasticPool(Generic[_T], Cleanable, ABC):
     Threading:
         - Idle deque operations rely on the deque's own operation safety.
         - Stretch, decay, and in-use counters are advisory runtime state and
-          may race under concurrent traffic.
+          may race under concurrent traffic. This is deliberate: they steer
+          pool sizing, they do not gate correctness, so paying for a lock on
+          every acquire would cost more than the drift is worth.
         - Cleanup remains serialized through `_lock` because it is the
           destructive lifecycle boundary for retained idle objects.
+
+    Registration:
+        BASE CLASS - DELIBERATELY UNGUARDED. Do NOT add `__melder_internal__`
+        to this class. The guard resolves the sentinel through `getattr`, which
+        walks the MRO, so tagging this base would tag every pool descended from
+        it, including any a user writes. Concrete Melder-owned pools carry the
+        sentinel individually. Note this class DOES inherit `Cleanable`, which
+        is itself deliberately unguarded for the same reason - the exclusion has
+        to hold at every level of the chain, not just the leaf.
+
+    Subsystem Context:
+        One of three `utilities/general_base/` base classes, alongside
+        `Cleanable` (teardown contract, which this extends) and `Sync`
+        (synchronization mix-in). This is the pooling policy surface: it owns
+        the stretch/decay/trim algorithm and leaves object creation and
+        destruction abstract. Its in-tree descendants pool the expensive
+        reusable runtime objects - lesser conduits and spellspaces - which the
+        Conduit runtime acquires per request.
+
+    System Context:
+        Beneath the DGR and outside the boot order, but load-bearing for
+        resolution throughput: `Conduit` owns one `SpellSpacePool` and one
+        `ConduitPool`, so every request-local spellspace and every reused lesser
+        conduit passes through this policy. Pool behavior therefore shows up as
+        meld latency, which is why the counters are advisory rather than locked.
     """
 
     _DEFAULT_BASELINE_IDLE: ClassVar[int] = 0
@@ -48,6 +75,14 @@ class AbstractElasticPool(Generic[_T], Cleanable, ABC):
     _DEFAULT_SETTLE_TIME_SECONDS: ClassVar[float] = 1800.0
     _DEFAULT_DECAY_PERCENT_PER_INTERVAL: ClassVar[int] = 10
     _DEFAULT_DECAY_INTERVAL_SECONDS: ClassVar[float] = 600.0
+
+    _ast_helper_access: str = "public"
+    __agent_purpose__: str = (
+        "access: public. Base elastic object pool. Subclass this to pool "
+        "expensive reusable objects; implement create_object/destroy_object and "
+        "the pool handles stretch, decay, and overflow trimming. Deliberately "
+        "not registration-guarded so user subclasses stay bindable."
+    )
 
     __slots__ = Cleanable.__slots__ + [
         "_baseline_idle",

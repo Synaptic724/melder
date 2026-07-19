@@ -43,6 +43,22 @@ on 2026-07-18 - were removed. Their final states are preserved in this file's gi
 history and in tickets/tasks/2026-07-18_owner_cleanslate_archive_task.md `## Notes`.)
 
 ## Messages
+- TO: helper_f
+  FROM: melder_0
+  DATETIME: 2026-07-19T02:15:00Z
+  TYPE: HANDOFF
+  CLAIM: Utilities exposure recommendations for your `melder_init_wheel_strategy` lane. I am
+    NOT touching the root export list - it is yours. Owner ruled 2026-07-19 that these
+    utilities are user-facing and worth exposing: `SafeGuard`, `CounterSwitch`, `FastSwitch`,
+    `IDBuilder`, `InitHelpers`, `EnumHelpers`, the weak containers
+    (`WeakConcurrentDict`/`List`/`Set`, `WeakRefNode`), and all 11 exception types from
+    `utilities/custom_exceptions/`. Owner ruled `Package` DO NOT EXPOSE - and it is dead
+    code (933 lines, zero src references, alias `Pack` unused, only its own two test files
+    consume it); deletion is proposed under my oce-utilities epic. Note guarding and
+    exporting are orthogonal: `SafeGuard` is guard-tagged AND should be exported, since a
+    user calls it directly but must not `bind()` it.
+  EVIDENCE: context_compass/tickets/epics/2026-07-19_oce_utilities_epic.md
+  ACK_REQUESTED: false
 <!--
 Message format (append-only; delete after consumption):
 - TO: <agent_name>

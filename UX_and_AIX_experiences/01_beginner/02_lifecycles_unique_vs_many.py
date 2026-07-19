@@ -3,7 +3,7 @@ TIER: beginner (02)
 GOAL: The one decision every binding makes - where does instance reuse
       stop? unique = one shared instance; many = fresh construction per
       meld. This is Existence, the heart of the bind vocabulary.
-SURFACE EXERCISED: md.Spellbook, md.Existence.unique, md.Existence.many
+SURFACE EXERCISED: md.Spellbook, existence="unique" / "many"
 """
 import melder as md
 
@@ -18,8 +18,8 @@ class RequestScratchpad:
 
 def main() -> None:
     book = md.Spellbook()
-    book.bind(spell=SharedCache, existence=md.Existence.unique)
-    book.bind(spell=RequestScratchpad, existence=md.Existence.many)
+    book.bind(spell=SharedCache, existence="unique")
+    book.bind(spell=RequestScratchpad, existence="many")
     conduit = book.conjure()
 
     cache_a = conduit.meld(spell=SharedCache)

@@ -19,8 +19,8 @@ class PerScopeSession:
 
 def main() -> None:
     book = md.Spellbook()
-    book.bind(spell=AppWideConfig, existence=md.Existence.unique)
-    book.bind(spell=PerScopeSession, existence=md.Existence.unique_per_conduit)
+    book.bind(spell=AppWideConfig, existence="unique")
+    book.bind(spell=PerScopeSession, existence="unique_per_conduit")
     root = book.conjure()
     child = root.create_lesser_conduit()
 
