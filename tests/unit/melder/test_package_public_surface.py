@@ -309,3 +309,23 @@ def test_all_names_are_unique_and_sorted_groups_are_complete():
     assert len(set(melder.__all__)) == len(melder.__all__)
     for name in melder.__all__:
         assert name in vars(melder)
+def test_pass_four_domain_nouns_are_loaded():
+    """
+    Purpose:
+        Workflow iteration (owner: think how a user/agent uses this):
+        the public read surfaces hand out the system's two domain nouns -
+        spells (find_spell_by_id -> Spell) and the index keys of the
+        spells mapping (SpellIndex) - so both types reach the root.
+    Contract:
+        Identity with the concrete-path classes; the init docstring
+        carries the agent workflow map naming the hardcopy doc objects.
+    """
+    from melder.aether.spellbook.bind.spell_index import SpellIndex
+    from melder.aether.spellbook.spell import Spell
+
+    import melder
+
+    assert melder.Spell is Spell
+    assert melder.SpellIndex is SpellIndex
+    assert "Workflow map" in melder.__doc__
+    assert "__architecture__" in melder.__doc__

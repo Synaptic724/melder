@@ -153,6 +153,57 @@ license-files declared, wheel-ready.
   REREAD: REQUIRED
   SCORE_0_TO_10: 9
 
+- DATETIME: 2026-07-19T12:31:00Z
+  TYPE: MEASURE
+  CLAIM: Pass-3 additions landed: PEP 561 py.typed marker + package-data shipping +
+    "Typing :: Typed" classifier + marker regression row (the codebase is exhaustively
+    typed; the wheel now carries that to downstream checkers instead of degrading to
+    Any). SEPARATELY - investigation REVERSAL on the parked Spellbook._aether seam:
+    the class-body ClassVar is NOT a drive-by fix. Evidence: nexus_frame_manager.py:981
+    REBINDS Spellbook._aether at runtime (frame-manager lane), and 500+ component-test
+    sites rebind Spellbook._aether/Conduit._aether to fresh Aether instances per test.
+    Converting to an instance attribute breaks the rebind lane and the component-test
+    infrastructure. The earlier "approved in principle" framing was based on my
+    onboarding flag WITHOUT this evidence; the seam is load-bearing by design.
+  EVIDENCE:
+  - src/melder/py.typed:1-1
+  - pyproject.toml:44-52
+  - src/melder/nexus/nexus_frame_manager.py:981-982
+  - tests/component/melder/aether/conduit/test_conduit_component_cleanup_frame_truth.py:17-29
+  IMPACT: Wheel typing complete. The _aether story needs an owner DESIGN ruling
+    (options: bless the seam in C-docs as the sanctioned rebind lane; or a lazy
+    default + explicit installer keeping class-level rebind), not a silent refactor.
+  NEXT: DECISION_REQUEST to owner on the _aether posture; runbook otherwise unchanged.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-07-19T12:40:00Z
+  TYPE: MEASURE
+  CLAIM: Pass-4 workflow iteration landed (owner: iterate src_components/
+    src_architecture thinking how a user or agent uses the system). Method: walked
+    every workflow (bind -> conjure -> meld; persistence; research; AR) asking what a
+    user HOLDS at each step. Findings: (1) +Spell +SpellIndex (66-name root) - the
+    domain nouns handed out by public read surfaces (spells mapping, find_spell_by_id;
+    verified bind() returns the id STRING, spellbook.py:4616-4627); (2) init docstring
+    rewritten as the agent workflow map (BIND/RESOLVE/AR/PERSIST/EVOLVE/ERRORS/AGENT
+    DOCS/TOOLS) so help(melder) teaches the system and routes agents to the hardcopy
+    doc objects first; (3) builder-symmetry audit: exactly 3 configuration builders
+    exist, all already exported - no gap. Surface suite 13 rows (docstring map pinned).
+    compile() green x2; 120-col clean. pytest Not run.
+  EVIDENCE:
+  - src/melder/__init__.py:1-60
+  - src/melder/aether/spellbook/spellbook.py:4616-4627
+  - src/melder/aether/spellbook/spellbook.py:1741-1851
+  - tests/unit/melder/test_package_public_surface.py:400-430
+  IMPACT: The root now carries the full noun vocabulary of the system, and its
+    docstring is the first-read agent manual.
+  NEXT: Owner runbook unchanged (pytest + wheel + wheelhouse). Saturation assessment:
+    four passes in, the export inventory matches every held-and-called surface named
+    by the C-docs; further additions should now be demand-driven (CommandOps usage),
+    not doc-driven.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
 ## Context / Handoff Summary
 Implementation lane for the init/wheel program; rulings live in the parent strategy
 task; hand-off mechanics (wheelhouse --find-links, editable co-dev) documented there.

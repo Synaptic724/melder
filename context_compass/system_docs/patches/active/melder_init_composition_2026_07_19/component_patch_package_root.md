@@ -71,3 +71,21 @@ Lane: melder_init_composition_2026_07_19.
   user-held) and StaticFrameViewer (subclass vehicle; FrameViewer is the contract)
   pinned into the negative regression. decorate_public_view_actions stays internal
   (viewer-law machinery, not a user hand).
+
+## Delta 2026-07-19 (pass 3): PEP 561 typing marker
+- src/melder/py.typed added; [tool.setuptools.package-data] ships it; classifier
+  "Typing :: Typed" added. Downstream type checkers (CommandOps) now consume melder's
+  inline annotations from the wheel instead of seeing Any. Regression row pins the
+  marker beside the package root.
+
+## Delta 2026-07-19 (pass 4, workflow iteration): domain nouns + agent docstring map
+- 64 -> 66: +Spell and +SpellIndex (public read surfaces hand them out:
+  Spellbook.spells -> Mapping[SpellIndex, Spell], find_spell_by_id -> Optional[Spell];
+  bind() itself returns the spell-id STRING - verified, so ids stay strings and the
+  types serve introspection/typing).
+- Init docstring rewritten as an agent-oriented workflow map: BIND / RESOLVE / AR /
+  PERSIST / EVOLVE / ERRORS / AGENT DOCS / TOOLS groups naming every root export,
+  pointing agents at the hardcopy doc objects first. help(melder) is now the system's
+  own quickstart.
+- Builder symmetry audited: exactly three configuration builders exist in the runtime
+  (aether, crystallizer, mutation_research) - all exported; no gap.

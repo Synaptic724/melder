@@ -1,0 +1,156 @@
+# Epic: OCE - Package Root and Document Surfaces (EXEMPLAR)
+
+## Metadata
+- Epic ID: EPIC-2026-07-19-oce-package-root
+- Parent: EPIC-2026-07-19-object-contract-enrichment-program
+- Status: ready
+- Owner: cowork
+- Agent Name: melder_0
+- Priority: p1
+- Created: 2026-07-19T01:15:00Z
+- Updated: 2026-07-19T01:15:00Z
+- Stories:
+  - STORY-2026-07-19-oce-root-document-surfaces (S1)
+
+## Problem / Opportunity
+The package root is where an agent lands first and it is the thinnest surface in the repo:
+2 classes, 1 of which (`StaticSystemDocument`) is already the exemplar for the whole program
+and the other of which (`MelderRegistrationGuard`) is the guard itself. Three of the four
+packaged hardcopy document modules still carry PLACEHOLDER payloads, so an agent that queries
+`melder.__graph_network__` gets the string
+`"placeholder: packaged Melder graph network hardcopy"` back.
+
+This epic is deliberately smallest-first: it produces the reference diff every other child
+epic copies.
+
+## Subsystem Context Brief (read this, not the C-docs)
+The package root is not a subsystem - it is the FRONT DOOR. Four things live here:
+
+- `system_document.py:StaticSystemDocument` - immutable carrier for one packaged hardcopy
+  document. Validates that the minified JSON contains string key `m`, then exposes
+  `render_json()` and `render_markdown()`. Already Rank 4-5 with `__agent_purpose__` and
+  `_ast_helper_access`. THIS IS THE TEMPLATE.
+- `__architecture__.py`, `__components__.py`, `__graph_network__.py`, `__graph_details__.py` -
+  four module-level `StaticSystemDocument` instances. Their whole purpose is that an agent can
+  query system structure WITHOUT conjuring a conduit (arch:260). They are import-time,
+  immutable, and define no cleanup contract.
+- `__melder_registration_guard__.py:MelderRegistrationGuard` - the eager singleton whose
+  sentinel every other class in this program is about to adopt. Constructed at module import;
+  `__init__.py` re-asserts it at package scope. DO NOT MODIFY the guard's construction or the
+  `__init__.py` line that publishes it - owner ruling 2026-07-19.
+- `__init__.py` - the entrypoint. OUT OF SCOPE for this epic.
+
+Where this sits in the system: before everything. The guard sentinel must be importable
+before any internal class body is evaluated, and the hardcopy documents must answer before
+`Aether()` boots. Nothing here participates in the runtime graph.
+
+## MRP Alignment
+The front door has to be right the first time: it is the one surface an agent touches before
+it knows anything else about the system. A placeholder answer here teaches an agent that the
+document surface is not worth querying.
+
+## Ticket Contract
+- ENTRY_GATE: parent program epic accepted by owner; contract section read.
+- EXECUTION_BOUNDARY: `src/melder/system_document.py`,
+  `src/melder/__architecture__.py`, `src/melder/__components__.py`,
+  `src/melder/__graph_network__.py`, `src/melder/__graph_details__.py`.
+  EXPLICITLY EXCLUDED: `src/melder/__init__.py` and
+  `src/melder/__melder_registration_guard__.py` - the guard and the entrypoint are not
+  touched by this program.
+- DEPENDENCIES: THE OBJECT CONTRACT in the parent program epic.
+- EXIT_GATE: both root classes satisfy all five contract items; owner rules on whether the
+  three placeholder hardcopies get real payloads in this epic or a separate lane.
+- FAILURE_ESCALATION: DECISION_REQUEST if closing a placeholder requires generating real
+  system-document content (that is a content lane, not a contract lane).
+
+## Goals
+- `StaticSystemDocument` and `MelderRegistrationGuard` reach full contract compliance.
+- The four hardcopy modules carry accurate `__agent_purpose__` strings describing what an
+  agent can actually ask them.
+- The resulting diff becomes the reference every other child epic mirrors.
+
+## Non-Goals
+- Populating the placeholder hardcopy payloads with real architecture content.
+- Any change to `__init__.py` export policy or the guard's construction.
+
+## Scope Boundaries
+- In scope: class attributes and docstrings on the two root classes; module docstrings and
+  `agent_purpose` arguments on the four hardcopy modules.
+- Out of scope: the entrypoint, the guard module, hardcopy payload content.
+- Guard exclusions: NONE. Both root classes are Melder internals and both get the sentinel.
+
+## Requirements
+- Functional: `Spellbook.bind(StaticSystemDocument)` raises `InternalRegistrationError`.
+- Non-functional: `StaticSystemDocument` uses `__slots__`; the sentinel is a ClassVar and must
+  not disturb it.
+
+## Acceptance Criteria
+- [ ] `StaticSystemDocument` carries `__melder_internal__` (it currently does NOT) plus its
+      existing `__agent_purpose__` / `_ast_helper_access`, and gains Subsystem Context and
+      System Context sections in its class docstring.
+- [ ] `MelderRegistrationGuard` carries all five contract items. Note the irony to resolve
+      explicitly: the guard defines the sentinel and does not currently tag itself.
+- [ ] All four hardcopy modules have `agent_purpose` strings that state what question the
+      document answers, not what the document is named.
+- [ ] Regression proving both root classes are refused by `bind(...)`.
+
+## Risks / Mitigations
+- Tagging `MelderRegistrationGuard` with its own sentinel could look circular -> it is not:
+  the sentinel is a plain identity object created at class definition; tagging the guard only
+  means the guard itself cannot be bound as a spell, which is correct and desirable.
+- `StaticSystemDocument.__slots__` is a list, not a tuple -> ClassVar assignment is unaffected;
+  verify no instance-level assignment is introduced.
+
+## Validation Plan
+- AST sweep: 2/2 root classes carry all three attributes.
+- Guard regression: `bind(StaticSystemDocument)` and `bind(MelderRegistrationGuard)` both
+  raise `InternalRegistrationError`.
+- Not run by agent. Owner runs on 3.14t.
+
+## State Transition Event
+- from_state: draft
+- to_state: ready
+- transition_reason: scope is 2 classes and 4 modules, well inside one task under the chunking
+  law; exemplar status makes it the correct first execution.
+
+## Milestones
+- [ ] S1 landed and reviewed as the reference diff.
+
+## Applicable Anti-Patterns
+- [ ] No edits to `__init__.py` or the guard module from this epic.
+- [ ] No filling placeholder payloads with invented architecture content.
+- [ ] No claiming DONE with fewer than all five contract items.
+
+## Artifact Links (Optional)
+- ARTIFACTS_REQUIRED: false
+
+## Context Management
+- CONTEXT_MANAGEMENT_REQUIRED: false
+
+## Noting Behavior
+- Epic notes: reference-diff decisions that other child epics must copy.
+
+## Notes
+- DATETIME: 2026-07-19T01:15:00Z
+  TYPE: FACT
+  CLAIM: `StaticSystemDocument` already carries `__agent_purpose__` and `_ast_helper_access`
+    but NOT `__melder_internal__` - so the file held up as the exemplar is itself bindable as
+    a spell today. Three of the four hardcopy modules
+    (`__graph_network__`, `__graph_details__`, and per the components doc
+    `__architecture__`/`__components__`) carry placeholder payloads; comp:261-262 records this
+    honestly as "placeholder markdown/json carriers, not live regenerated architecture
+    snapshots".
+  EVIDENCE:
+  - src/melder/system_document.py:26-35
+  - src/melder/__graph_network__.py:8-15
+  IMPACT: Fixes the exemplar before it is copied 540 times, and separates the contract lane
+    from the hardcopy-content lane so the second does not block the first.
+  NEXT: Owner ruling on whether placeholder payloads are in scope here or a separate lane.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
+## Context / Handoff Summary
+Smallest child epic and the program's reference diff: 2 classes, 4 hardcopy modules, one
+story. Establishes what "all five contract items" looks like in a real file before the
+pattern is replicated across the other nine subsystems. Open question for the owner: whether
+populating the three placeholder hardcopy payloads belongs here or in its own content lane.

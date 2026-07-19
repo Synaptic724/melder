@@ -43,6 +43,7 @@ classifiers = [
     "Topic :: Software Development :: Libraries :: Python Modules",
     "Topic :: Software Development :: Libraries",
     "Environment :: Console",
+    "Typing :: Typed",
 ]
 
 dependencies = []
@@ -61,6 +62,11 @@ package-dir = { "" = "src" }
 # src/melder/__version__.py via static AST (no import at build time).
 [tool.setuptools.dynamic]
 version = { attr = "melder.__version__.__version__" }
+
+# PEP 561: ship the py.typed marker so downstream type checkers consume
+# melder's inline annotations instead of treating the package as Any.
+[tool.setuptools.package-data]
+melder = ["py.typed"]
 
 [tool.setuptools.packages.find]
 where = ["src"]

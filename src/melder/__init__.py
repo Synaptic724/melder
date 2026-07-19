@@ -6,7 +6,7 @@ The Melder Dependency Graph Runtime (DGR): bind classes, functions, and
 instances into Spellbooks, conjure Conduits, and meld live object graphs
 with runtime validation, contracts, persistence, and governed evolution.
 
-Usage:
+Quickstart:
     import melder as md
 
     book = md.Spellbook()
@@ -14,14 +14,36 @@ Usage:
     conduit = book.conjure(dynamic=True, name="root")
     service = conduit.meld(spell=MyService)
 
-The root namespace is deliberately LOADED: every front-facing runtime
-object, configuration surface, enum vocabulary, and DI descriptor is
-importable from here so `md.<name>` reaches the whole public system.
-Internals never import from this facade (concrete-path law), so the root
-can stay flat and eager without cycles.
+Workflow map - every name below is importable from this root:
+- BIND: Spellbook, SpellBinder, Scan, scan_bind (decorator), Spell,
+  SpellIndex; vocabulary Existence, Permissions, Policies, SystemState.
+- RESOLVE: Conduit (meld, lesser conduits, link/sever), SpellSpace,
+  declarative descriptors SpellMap and SpellContract, ConduitCloud.
+- AUGMENTED RUNTIME (AR): Nexus -> Rift -> RiftSpace rooms; Workstation,
+  FrameViewer and its ViewFrame/ViewConduit/ViewSpell/ViewMultiFrame;
+  vocabulary NexusFrameMode, RiftSpaceType.
+- PERSIST: Crystallizer (+Configuration/+Builder), CrystallizerBootstrap
+  (pod restart), ExternalPersistenceManager (+Configuration) for user DB
+  meshes.
+- EVOLVE: MutationResearch (+Configuration/+Builder), ResearchSet,
+  DiffEngine; vocabulary LaneType, LaneState.
+- ERRORS (catchable from this root): SpellbookValidationError,
+  MeldExecutionError, SpellSpaceScopeError, HookExecutionError,
+  InternalRegistrationError, PhaseSchedulerError, PhaseExecutionError,
+  PhaseTimeoutError, DeadReferenceError.
+- AGENT DOCS: __architecture__, __components__, __graph_network__, and
+  __graph_details__ are live hardcopy objects carrying the system's own
+  self-description - agents should read these before deep work.
+- TOOLS: ProtocolCrafter (protocol authoring), class_wraps (decorator
+  metadata preservation).
 
-Requires Python 3.14+ free-threading (no-GIL) for full performance; the
-import-time warnings below call out degraded environments honestly.
+The root is deliberately LOADED and flat; internals never import from
+this facade (concrete-path law), so it stays cycle-free. Objects that
+look public but are internal (wards, mediators, schedulers, engines)
+are deliberately absent - the fences are regression-tested.
+
+Requires Python 3.14+ free-threading (no-GIL); import-time warnings
+call out degraded environments honestly.
 """
 
 import sys
@@ -42,6 +64,8 @@ from melder.__version__ import __version__
 from melder.aether.aether import Aether
 from melder.aether.conduit.conduit import Conduit
 from melder.aether.spellbook.bind.scan import Scan, scan_bind
+from melder.aether.spellbook.bind.spell_index import SpellIndex
+from melder.aether.spellbook.spell import Spell
 from melder.aether.spellbook.spellbinder import SpellBinder
 from melder.aether.spellbook.spellbook import Spellbook
 from melder.crystallizer.crystallizer import Crystallizer
@@ -238,4 +262,6 @@ __all__ = [
     "DiffEngine",
     "LaneState",
     "class_wraps",
+    "Spell",
+    "SpellIndex",
 ]
