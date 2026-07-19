@@ -1,9 +1,10 @@
 import copy
 import enum
 from datetime import datetime, timezone
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, ClassVar
 
 from melder.utilities.general_base.cleanable import Cleanable
+from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 
 class TransitionAct(enum.Enum):
@@ -15,6 +16,24 @@ class TransitionAct(enum.Enum):
         forward-only and additive: history exists for understanding, never for
         time travel, so there are deliberately NO checkout/rollback acts.
         Returning to an old version is a NEW registration, not a rewind.
+
+    Registration:
+        VALUE VOCABULARY - deliberately unguarded. An enum is compared and
+        passed, never injected.
+
+    Subsystem Context:
+        The act vocabulary stamped onto every `TransitionEntry` in a
+        `ResearchJournal`. The vocabulary is drawn from version control but is
+        deliberately NOT git: there is no merge, no rebase, and no checkout,
+        because those verbs all imply rewriting or relocating history that this
+        model treats as permanent.
+
+    System Context:
+        The absent acts say more than the present ones. `promoted` changes what
+        is LIVE without changing which lane holds a version, and `restored`
+        rebuilds organization while itself being journalled - so even a rewind
+        of structure appears in history as a forward event. There is no act in
+        this enum that removes anything.
 
     Contract:
         - `lane_created`: a research lane entered the network (optionally
@@ -84,7 +103,25 @@ class TransitionEntry(Cleanable):
     Lifecycle:
         Owned by exactly one `ResearchJournal`; `cleanup()` deletes owned
         fields; idempotent.
+
+    Registration:
+        MELDER KERNEL - guarded. Journal entries are minted by the record;
+        a user reads them rather than constructing them.
+
+    Subsystem Context:
+        The event value carried by `ResearchJournal`, stamped with a
+        `TransitionAct` from this same module. Its immutability is what lets the
+        journal promise append-only history: an entry that could be edited would
+        make "how did the network come to look like this" a mutable answer.
+
+    System Context:
+        The `campaign` stamp is the cross-cutting dimension here - it is applied
+        ambiently by the root, so every runtime auto-record made while a
+        campaign is active carries it. That is what makes a campaign view a
+        WHERE-by-WHEN join across lanes rather than another container: the
+        grouping lives on the events, not on the structure.
     """
+    __melder_internal__: ClassVar[object] = _mrg.sentinel
 
     __slots__ = Cleanable.__slots__ + [
         "_sequence",

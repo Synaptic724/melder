@@ -1,7 +1,8 @@
 import difflib
-from typing import Dict, List
+from typing import Dict, List, ClassVar
 
 from melder.mutation_research.diff.diff_strategy import DiffStrategy
+from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 
 class SourceDiffStrategy(DiffStrategy):
@@ -32,7 +33,27 @@ class SourceDiffStrategy(DiffStrategy):
 
     Lifecycle:
         Owned by exactly one `DiffEngine`.
+
+    Registration:
+        MELDER KERNEL - guarded. A shipped strategy is Melder's implementation.
+        Note the BASE `DiffStrategy` is deliberately unguarded so user-written
+        strategies stay bindable; the tag belongs on concrete classes only.
+
+    Subsystem Context:
+        The byte-truth grain of the three shipped spell-diff strategies.
+        `structural` answers in AST shapes, `parts` answers in per-class code,
+        and this answers in module text. An agent picks the grain; the engine
+        does not choose for it.
+
+    System Context:
+        The only strategy that can answer when text is missing, and it does so
+        honestly rather than fabricating: fingerprint-only comparison marks
+        `text_unavailable` instead of inventing a diff. That matters because
+        physical-source retention is an opt-in custody lane - synthetic modules
+        always carry text, user modules only when retention is on - so a
+        recorded world can legitimately have fingerprints without source.
     """
+    __melder_internal__: ClassVar[object] = _mrg.sentinel
 
     __slots__ = DiffStrategy.__slots__
 

@@ -31,6 +31,42 @@ class MutationResearchCompositionStrategy(PersistenceAnalysisStrategy):
         - Absent/empty composition produces NO rows (pre-Phase-B worlds
           report through the stage's honest shortfall instead).
         - Read-only over the folded bundle (preflight law).
+
+    Threading:
+        Stateless - no instance state and no locks. One analyzer pass
+        calls `analyze` once and the strategy retains nothing between
+        calls, so a single instance is safe to reuse across bundles.
+
+    Registration:
+        MELDER KERNEL - guarded. Preflight strategies are constructed by
+        `PersistenceAnalyzer`, never bound as spells.
+
+    Subsystem Context:
+        The NINTH default preflight row, added when the MR root joined
+        the engine preflight bundle (mr_restore_build_stage_2026_07_11).
+        Like `FramePostureStrategy` it is scope-blind and adjudicated
+        afterwards: `LoadAdmission` reclassifies its findings as
+        "expected_for_scope" on conduit-scoped and frame-scoped loads,
+        because MutationResearch is a WORLD-scope root and a partial
+        slice is expected not to carry it. Raw findings are never
+        rewritten - the adjudication view is additive.
+
+    System Context:
+        MutationResearch is a BUILD STAGE of restore, not a passive twin:
+        a checkpointed world unfolds WITH its research, and the stage
+        hands the recorded composition to `load_recorded_composition`
+        WHOLESALE rather than merging it key by key. That single
+        handoff is what makes this pass necessary - once the payload is
+        accepted there is no per-key gate downstream to catch a
+        malformed shape, so an unreadable composition would fail
+        mid-stage after other units are already built, forcing the
+        all-or-nothing teardown.
+        The severity split follows exactly from that: a shape the seams
+        cannot PARSE blocks, because the handoff cannot even begin;
+        organization/residence DISAGREEMENT only warns, because the
+        seams will faithfully rebuild whatever the payload asserts - the
+        disagreement is drift evidence for the user to read, not a
+        reason to refuse their world.
     """
 
     __melder_internal__: ClassVar[object] = _mrg.sentinel

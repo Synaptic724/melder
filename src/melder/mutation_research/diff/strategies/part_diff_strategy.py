@@ -1,8 +1,9 @@
 import ast
 import difflib
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple, ClassVar
 
 from melder.mutation_research.diff.diff_strategy import DiffStrategy
+from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 
 class PartDiffStrategy(DiffStrategy):
@@ -40,7 +41,26 @@ class PartDiffStrategy(DiffStrategy):
 
     Lifecycle:
         Owned by exactly one `DiffEngine`.
+
+    Registration:
+        MELDER KERNEL - guarded. Shipped implementation; the base
+        `DiffStrategy` stays unguarded so user strategies remain bindable.
+
+    Subsystem Context:
+        The class-code grain of the three shipped spell-diff strategies, between
+        `source` (whole module text) and `structural` (shape reports). It is the
+        grain a code-writing agent usually wants: enough context to read a part
+        in full, without the surrounding module it did not ask about.
+
+    System Context:
+        Two details make it trustworthy rather than merely convenient. Part
+        spans include DECORATORS, so a part's text is what would actually be
+        executed rather than a stripped body. And module-level code outside any
+        part - imports, constants - is compared as one synthetic
+        `<module_body>` region, so nothing silently escapes the verdict just
+        because it does not live inside a function or class.
     """
+    __melder_internal__: ClassVar[object] = _mrg.sentinel
 
     __slots__ = DiffStrategy.__slots__
 

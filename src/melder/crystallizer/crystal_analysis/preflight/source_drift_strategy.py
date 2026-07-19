@@ -36,6 +36,42 @@ class SourceDriftStrategy(PersistenceAnalysisStrategy):
           across crystals (shared modules report once).
         - Reads use read_text/utf-8 - the SAME read that sealed the
           fingerprints, so CRLF files never false-drift.
+
+    Threading:
+        Stateless - no instance state and no locks. One analyzer pass
+        calls `analyze` once and the strategy retains nothing between
+        calls. The `PhysicalSourceCache` it consults is a process-wide
+        class-level cache with its own internal discipline, not state
+        owned by this strategy.
+
+    Registration:
+        MELDER KERNEL - guarded. Preflight strategies are constructed by
+        `PersistenceAnalyzer`, never bound as spells.
+
+    Subsystem Context:
+        The TENTH and newest row of the DEFAULT preflight set
+        (source_drift_preflight lane, 2026-07-12), carved out of
+        `UserSourceIntegrityStrategy` so drift detection stopped being
+        tied to opt-in retention. It is the only preflight row that
+        touches the live filesystem, and the only one that deduplicates
+        across crystals: shared modules carried by many spells report
+        once per (module, path) pair rather than once per carrier.
+
+    System Context:
+        This row answers a question no other part of a restore can:
+        "has your working tree moved since you sealed this world?" It is
+        deliberately the softest strong signal in the package - drift is
+        NOTICE, never refusal - because the live file legitimately wins
+        at import, so a drifted module is a normal state of affairs for
+        anyone still developing. Blocking would make the record hostile
+        to the workflow it is meant to support; staying silent would let
+        a user restore a world they believe is sealed and get today's
+        code instead.
+        The read discipline is load-bearing rather than incidental: it
+        re-hashes through the SAME read path that sealed the
+        fingerprints, so line-ending differences can never manufacture
+        phantom drift. That matters in this repo specifically, where
+        mixed CRLF and LF endings are present in real source files.
     """
 
     __melder_internal__: ClassVar[object] = _mrg.sentinel

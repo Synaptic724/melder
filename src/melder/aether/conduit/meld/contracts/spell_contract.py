@@ -64,6 +64,46 @@ class SpellContract(Cleanable):
         - Cleanable and invalid after cleanup.
         - Should not be subclassed or used as a substitute for `SpellMap` in
           ordinary in-conduit DI.
+
+    Threading:
+        Value-shaped and effectively immutable after construction: the four
+        slots are set in `__init__` and read thereafter. No lock is taken,
+        because a descriptor written into a constructor default is shared
+        read-only across every resolution that reads it.
+
+    Lifecycle / Cleanup:
+        Cleanable. The descriptor lives as long as the class default that
+        declares it, which in practice is the lifetime of the defining module.
+
+    Registration:
+        MELDER KERNEL - guarded, and USER-INSTANTIATED but NOT user-bindable.
+        A user authors `SpellContract(spellframe=IAuthService)` in their own
+        constructor default; the sentinel only stops anyone `bind()`-ing the
+        SpellContract CLASS as a spell, which would be meaningless because a
+        socket is a declaration of absence, not a service.
+
+    Subsystem Context:
+        The late-binding half of the descriptor pair. `SpellMap` resolves
+        inside the current resolution world; this one declares an edge the
+        graph deliberately CANNOT close yet. Phase 1 classifies it as the
+        `SPELL_CONTRACT` parameter shape, Phase 4 validates the socket, and
+        `ConduitWard` linking is what eventually satisfies it.
+
+    System Context:
+        The severity split in Phase 4 is the whole design in miniature. In
+        AUTOMATIC mode an unsatisfied contract socket is an ERROR, because that
+        mode promises one self-contained graph - a hole there can never be
+        filled and the world is simply wrong. In DYNAMIC mode a missing
+        provider is only a WARNING, because being unsatisfied is the expected
+        intermediate state: the provider conduit may not be linked yet.
+        The same asymmetry explains why linking is not merely a registry write.
+        Satisfying a contract changes what the consumer graph resolves to, so
+        `SpellSystemStates` marks contract dependents dirty and the consumer
+        lineage re-runs its resolution phases against the now-satisfied edge.
+        A contract is therefore a REVALIDATION TRIGGER, not just a lookup key -
+        which is also why `SpellContract` requires at least a `spell` or a
+        `spellframe`: with neither there is no identity for a future linker to
+        match against, and the socket could never be closed.
     """
 
     __melder_internal__: ClassVar[object] = _mrg.sentinel

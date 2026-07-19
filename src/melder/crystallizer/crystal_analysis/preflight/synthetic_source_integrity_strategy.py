@@ -27,6 +27,38 @@ class SyntheticSourceIntegrityStrategy(PersistenceAnalysisStrategy):
           test-authored payloads may carry sentinel fingerprints; the
           SyntheticModule constructor hashes canonically at runtime, so
           absence here is a documentation gap, not proven corruption).
+
+    Threading:
+        Stateless - no instance state and no locks. One analyzer pass
+        calls `analyze` once and the strategy retains nothing between
+        calls, so a single instance is safe to reuse across bundles.
+
+    Registration:
+        MELDER KERNEL - guarded. Preflight strategies are constructed by
+        `PersistenceAnalyzer`, never bound as spells.
+
+    Subsystem Context:
+        One of two integrity rows in the ten-row DEFAULT preflight set,
+        split by WHOSE code is under verification. This pass owns
+        SYNTHETIC sources - code the record itself authored and carries
+        (loader chain M3). `UserSourceIntegrityStrategy` owns retained
+        USER text, and `SourceDriftStrategy` owns all disk-vs-seal
+        comparison. Together with `HydrationStrategy` (can it rebuild?)
+        these answer: is the material we would rebuild from trustworthy?
+
+    System Context:
+        This row carries the strongest severity posture in the package,
+        and the reason is a genuine asymmetry: for synthetic modules the
+        record is not a DESCRIPTION of code that lives elsewhere - it IS
+        the code. There is no live file to fall back to and no other copy
+        to compare against, so a corrupted payload does not fail loudly;
+        it executes wrong code silently inside the user's process. That
+        is why a mismatch blocks at the `RestoreEngine` fold->preflight
+        seam before any replay: not booting is a recoverable outcome,
+        while executing unverified source is not.
+        Contrast `SourceDriftStrategy`, which only warns - there the live
+        file wins at import, so divergence is a notice rather than a
+        danger.
     """
 
     __melder_internal__: ClassVar[object] = _mrg.sentinel

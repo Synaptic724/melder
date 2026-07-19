@@ -10,12 +10,13 @@ Lane: EPIC-2026-07-09-crystallizer-subsystem-decomposition, story S1.
 """
 
 from pathlib import Path
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Dict, Optional, Tuple, ClassVar
 
 from melder.crystallizer.synthetic_module import SyntheticModule
 from melder.crystallizer.crystal_analysis.custody.source_custody_strategy import (
     SourceCustodyStrategy,
 )
+from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 
 class SyntheticCustodyStrategy(SourceCustodyStrategy):
@@ -39,6 +40,8 @@ class SyntheticCustodyStrategy(SourceCustodyStrategy):
     Lifecycle / Cleanup:
         Stateless beyond the Cleanable flag; cleanup is a flag flip.
     """
+
+    __melder_internal__: ClassVar[object] = _mrg.sentinel
 
     __slots__ = ()
 

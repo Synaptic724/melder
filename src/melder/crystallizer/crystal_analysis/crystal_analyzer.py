@@ -64,6 +64,7 @@ from melder.crystallizer.crystal_analysis.strategies.export_surface_strategy imp
 from melder.crystallizer.crystal_analysis.strategies.dependency_view_strategy import (
     DependencyViewStrategy,
 )
+from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 
 MemoizedModuleFactKey = Tuple[int, str]
@@ -127,6 +128,7 @@ class CrystalAnalyzer(Cleanable):
         survives individual analyzer cleanup.
     """
 
+    __melder_internal__ = _mrg.sentinel
     # Process-local memo of immutable syntax facts. Capacity bounds retained
     # value data; LRU eviction releases only tuples/strings and has no effect
     # on imported modules or their sys.modules residency.

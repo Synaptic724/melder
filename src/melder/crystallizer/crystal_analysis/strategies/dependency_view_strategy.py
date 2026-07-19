@@ -17,6 +17,7 @@ from melder.crystallizer.crystal_analysis.crystal_analysis_result import (
 from melder.crystallizer.crystal_analysis.strategies.base_strategy import (
     CrystalFactStrategy,
 )
+from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 
 class DependencyViewStrategy(CrystalFactStrategy):
@@ -48,6 +49,7 @@ class DependencyViewStrategy(CrystalFactStrategy):
         no-op beyond the strategy lifecycle contract.
     """
 
+    __melder_internal__ = _mrg.sentinel
     __slots__ = ()
 
     @property

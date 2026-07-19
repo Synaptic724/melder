@@ -1,9 +1,10 @@
 import hashlib
 import json
 import threading
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, ClassVar
 
 from melder.utilities.general_base.cleanable import Cleanable
+from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 
 class NetworkVersioner(Cleanable):
@@ -35,7 +36,35 @@ class NetworkVersioner(Cleanable):
     Lifecycle:
         Owned by exactly one `ResearchSet`; `cleanup()` deletes owned fields;
         idempotent; lock released last.
+
+    WHAT IT PROTECTS AGAINST:
+        Version records are indestructible - a spell version, once declared,
+        cannot be lost. The thing a mistake CAN damage is the organization
+        around them: a bad `join` collapsing the wrong lane, an `archive` that
+        should not have happened, an anchor pointed at the wrong node. This
+        object exists so that class of mistake is recoverable, and only that
+        class. It restores where things are; it never restores what happened.
+
+    Registration:
+        MELDER KERNEL - guarded. Organization snapshots are the record's own
+        recovery mechanism, reached through `ResearchSet.snapshot_network()` /
+        `restore_network()`.
+
+    Subsystem Context:
+        One of the four bookkeeping structures a `ResearchSet` owns, beside
+        `ResearchJournal` (append-only history, deliberately excluded from these
+        snapshots), `ResidenceRegistry` (the identity partition), and the lanes.
+        It versions the ORGANIZATION using exactly the technique the network
+        uses for spells: full snapshots, content-addressed, never diffs.
+
+    System Context:
+        Content-addressing is what makes the ring cheap - identical organization
+        states dedup to one entry, so an idle network costs nothing to snapshot
+        repeatedly. The undo ring rides the composition payload into the
+        crystallizer twin, so `restore_network` can still reach pre-death
+        organization states after a world has been reloaded from a checkpoint.
     """
+    __melder_internal__: ClassVar[object] = _mrg.sentinel
 
     __slots__ = Cleanable.__slots__ + [
         "_canonical_by_sha",

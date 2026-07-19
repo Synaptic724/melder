@@ -22,6 +22,37 @@ class ConfigurationLossStrategy(PersistenceAnalysisStrategy):
     Contract:
         - Severity "info": these are honest expectations, not failures -
           the restore reports them as shortfalls and continues.
+
+    Threading:
+        Stateless - no instance state and no locks. One analyzer pass
+        calls `analyze` once and the strategy retains nothing between
+        calls, so a single instance is safe to reuse across bundles.
+
+    Registration:
+        MELDER KERNEL - guarded. Preflight strategies are constructed by
+        `PersistenceAnalyzer`, never bound as spells.
+
+    Subsystem Context:
+        One of the ten DEFAULT rows of the preflight set that
+        `PersistenceAnalyzer` iterates polymorphically, emitting the
+        shared finding shape {strategy, severity, kind, key, detail}.
+        Where its siblings check whether the bundle is COMPLETE, this row
+        checks what the bundle can never contain at all - so it is the
+        only default row that emits "info" as its whole output.
+
+    System Context:
+        This row exists because of a foundational record law: records
+        carry PLAIN VALUES ONLY, and callables appear as presence flags,
+        never as code. Spellbook hooks and the aether root's
+        resolver/default-logger flags are therefore recorded as names and
+        booleans, and no restore can rebuild the functions behind them.
+        That is by design, not a gap - but a silent restore would hand
+        the user a world that looks whole and behaves differently at the
+        first hook. This pass converts that invisible loss into a named
+        checklist of the code participation their bootloader must
+        re-supply, which is why every row is "info": nothing failed, and
+        nothing here should refuse a load at the `RestoreEngine`
+        fold->preflight verdict gate.
     """
 
     __melder_internal__: ClassVar[object] = _mrg.sentinel

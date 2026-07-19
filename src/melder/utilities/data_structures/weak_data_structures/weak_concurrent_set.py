@@ -61,7 +61,62 @@ class WeakConcurrentSet(Generic[_T], Cleanable):
       - Idempotent.
       - Fires any node callbacks via `node.fire_callbacks()`.
       - Calls `node.cleanup()` on all nodes.
+
+    MEMBERSHIP IS BY IDENTITY OF A LIVING OBJECT:
+        An object leaves this set by being collected, not by being removed. That
+        makes membership a question about LIFETIME rather than about content:
+        "is this thing still alive and known to me". A member that nothing else
+        references drops out on its own.
+
+        Consequence: `x in s` is a point-in-time answer that can be falsified by
+        the next collection, and `len(s)` is advisory unless you just pruned.
+
+    Responsibilities:
+        - Hold members weakly, without ordering.
+        - Dereference on access, raising rather than yielding a dead entry.
+        - Optionally prune collected members automatically.
+        - Fire node callbacks on GC and at teardown.
+
+    Owned State:
+        - The node collection, the lock, the frozen flag, the auto-prune flag,
+          and an id. The NODES are owned; their referents are not.
+
+    Threading:
+        - A per-instance lock protects structural mutation.
+        - Frozen mode lets reads skip some locking by assuming no user-driven
+          structural change - but NOT no change: collection still removes
+          members while frozen, because GC does not respect the freeze.
+        - GC callbacks arrive on the collecting thread; pruning from there is
+          best-effort.
+
+    Lifecycle / Cleanup:
+        - Idempotent. Fires node callbacks BEFORE cleaning nodes, so registered
+          handlers still run at teardown rather than being dropped.
+
+    Registration:
+        USER-BINDABLE - deliberately unguarded. Owner ruling 2026-07-19: the
+        weak containers are fair to expose.
+
+    Subsystem Context:
+        The membership member of the weak-container trio beside
+        `WeakConcurrentDict` (mapping) and `WeakConcurrentList` (ordered), all
+        three built on `WeakRefNode`. It carries neither keys nor order, so it
+        is the smallest of the three - the shared liveness rules with nothing
+        added on top.
+
+    System Context:
+        Substrate-level, outside the DGR boot order. It suits the
+        "who is currently participating" question - membership registries that
+        must not keep participants alive merely by remembering them.
     """
+
+    _ast_helper_access: str = "public"
+    __agent_purpose__: str = (
+        "access: public. Set holding members WEAKLY - membership is a question "
+        "about lifetime, since a member nothing else references drops out on "
+        "its own. `x in s` is point-in-time and len() is advisory unless you "
+        "just pruned. freeze() speeds reads but does not stop collection."
+    )
 
     __slots__ = (
             Cleanable.__slots__

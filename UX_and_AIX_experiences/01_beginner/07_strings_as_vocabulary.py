@@ -3,7 +3,6 @@ TIER: beginner (07)
 GOAL: The vocabulary enums all accept their string names too - config
       files and CLI flags can drive registration without importing the
       enums. Both spellings resolve to the same lifecycles.
-SURFACE EXERCISED: bind(existence="many", permissions="read"), md.Existence
 """
 import melder as md
 
@@ -18,11 +17,10 @@ class FromEnums:
 
 def main() -> None:
     book = md.Spellbook()
-    book.bind(spell=FromStrings, existence="many", permissions="create")
+    book.bind(spell=FromStrings, existence="many")
     book.bind(
         spell=FromEnums,
         existence=md.Existence.many,
-        permissions=md.Permissions.create,
     )
     conduit = book.conjure()
 

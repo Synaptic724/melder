@@ -5,6 +5,7 @@ from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.custom_exceptions.spell_space_scope_error import (
     SpellSpaceScopeError,
 )
+from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 
 class _SpellSpaceLocal(threading.local):
@@ -21,6 +22,7 @@ class _SpellSpaceLocal(threading.local):
         - The list is initialized eagerly on first access in each thread.
     """
 
+    __melder_internal__ = _mrg.sentinel
     def __init__(self) -> None:
         """
         Initialize the current thread's spellspace stack.
@@ -51,6 +53,7 @@ class SpellSpaceThreadState(Cleanable):
           `check_cleaned()`.
     """
 
+    __melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + ["_local"]
 
     def __init__(self) -> None:

@@ -30,7 +30,8 @@ import hashlib
 import threading
 from collections import OrderedDict
 from pathlib import Path
-from typing import Dict, Optional, Tuple
+from typing import Dict, Optional, Tuple, ClassVar
+from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 
 class PhysicalSourceCache:
@@ -56,6 +57,8 @@ class PhysicalSourceCache:
         Class-hosted state (like the analyzer syntax memo); no instance
         lifecycle. `_clear_for_tests` resets entries and counters.
     """
+
+    __melder_internal__: ClassVar[object] = _mrg.sentinel
 
     _SCHEMA_VERSION = 1
     _MAX_ENTRIES = 4096

@@ -1,7 +1,8 @@
 import threading
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, ClassVar
 
 from melder.utilities.general_base.cleanable import Cleanable
+from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 
 class ResidenceRegistry(Cleanable):
@@ -34,7 +35,37 @@ class ResidenceRegistry(Cleanable):
     Lifecycle:
         Owned by exactly one `ResearchSet`; `cleanup()` deletes owned fields;
         idempotent; lock released last.
+
+    WHY THERE IS NO RELEASE VERB:
+        Residence is permanent, including through archive. That looks like a
+        missing feature and is the opposite: if an identity could leave the
+        partition, rediscovery would start answering "nowhere" for content that
+        genuinely did exist somewhere, and the collision signal would degrade
+        from a fact into a maybe. Keeping archived lanes' identities resident is
+        what makes "this content is already known, and here is where" always
+        true.
+
+    Registration:
+        MELDER KERNEL - guarded. The partition invariant is the record's to
+        enforce; a user never holds one of these directly.
+
+    Subsystem Context:
+        One of the four bookkeeping structures a `ResearchSet` owns, beside
+        `ResearchJournal` (what happened, in order), `NetworkVersioner` (what
+        the organization looked like), and the lanes themselves (where things
+        are now). This one answers the narrowest and hardest question: is this
+        identity already somewhere.
+
+    System Context:
+        The rediscovery mechanism of the whole research model. A spell's
+        identity is the SHA256 of its binding signature, so rebinding identical
+        content reproduces the same identity - and the claim collision is how
+        the system recognizes "you have built this before" without comparing any
+        source. That is also why residence claims are rolled back when a lane
+        refuses a node: a claim that outlived its failed add would make a
+        never-recorded identity permanently unavailable.
     """
+    __melder_internal__: ClassVar[object] = _mrg.sentinel
 
     __slots__ = Cleanable.__slots__ + [
         "_lane_id_by_spell_id",

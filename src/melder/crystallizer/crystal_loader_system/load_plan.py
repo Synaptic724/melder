@@ -12,6 +12,7 @@ Lane: EPIC-2026-07-09-crystallizer-subsystem-decomposition, story S4.
 from typing import Any, Dict, List, Optional
 
 from melder.utilities.general_base.cleanable import Cleanable
+from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 
 class LoadPlan(Cleanable):
@@ -40,6 +41,7 @@ class LoadPlan(Cleanable):
         cleanup() deletes carried fields (del posture); idempotent.
     """
 
+    __melder_internal__ = _mrg.sentinel
     __slots__ = (
         "_scope",
         "_profile_name",

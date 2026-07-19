@@ -13,6 +13,7 @@ from melder.utilities.custom_exceptions.phase_execution_error import (
 from melder.utilities.custom_exceptions.phase_timeout_error import (
     PhaseTimeoutError,
 )
+from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 if TYPE_CHECKING:
     from melder.utilities.synchronization.phase_scheduler import (
@@ -59,6 +60,7 @@ class RestoreReport(Cleanable):
         tears down the rebuilt runtime.
     """
 
+    __melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
         "_lock",
         "_profile_name",
@@ -378,6 +380,7 @@ class RestoreEngine(Cleanable):
         the returned report's ownership passes to the caller; idempotent.
     """
 
+    __melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
         "_chain",
         "_report",

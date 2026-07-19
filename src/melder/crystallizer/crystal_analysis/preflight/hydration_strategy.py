@@ -28,6 +28,43 @@ class HydrationStrategy(PersistenceAnalysisStrategy):
           (replay_required target kinds).
         - Module probing uses importlib.util.find_spec (spec lookup
           only; nothing imports during analysis).
+
+    Threading:
+        Stateless - no instance state and no locks. One analyzer pass
+        calls `analyze` once and the strategy retains nothing between
+        calls, so a single instance is safe to reuse across bundles.
+
+    Registration:
+        MELDER KERNEL - guarded. Preflight strategies are constructed by
+        `PersistenceAnalyzer`, never bound as spells.
+
+    Subsystem Context:
+        The heaviest of the ten DEFAULT preflight rows and the only one
+        that emits blockers for the CUSTODY family. It reads the
+        `SpellCrystal` payload - `rebindability`, `root_module_kind`,
+        `synthetic_module_sources`, `user_module_sources` - which the
+        crystal derives at bind from the shared `crystal_analysis`
+        service. It divides labour with the two integrity rows cleanly:
+        this pass asks "can the anchor rebuild AT ALL", while
+        `SyntheticSourceIntegrityStrategy` and
+        `UserSourceIntegrityStrategy` ask "is the material we would
+        rebuild FROM trustworthy".
+
+    System Context:
+        Hydration failures are the bootloader's hardest failures, which
+        is why this row is allowed to refuse. At the `RestoreEngine`
+        fold->preflight seam a "blocker" verdict raises a teach-grade
+        error naming the offending rows BEFORE any replay begins - and
+        that ordering matters because the restore is ALL-OR-NOTHING: a
+        failure mid-replay tears down every unit built so far in reverse
+        order. Refusing early is therefore strictly cheaper than
+        discovering an unimportable root halfway through.
+        The find_spec probe never imports, honouring the rule that a
+        probe must not cause the effect it is checking for.
+        The S2 downgrade encodes opt-in physical custody: an absent
+        module whose source text was RETAINED drops from blocker to
+        info, because the engine's rebuild lane can reconstruct it
+        through the synthetic-module path with an honest shortfall.
     """
 
     __melder_internal__: ClassVar[object] = _mrg.sentinel

@@ -36,7 +36,62 @@ class WeakRefNode(Cleanable, Generic[_T]):
 
     **Cleanable Contract:**
     * **`cleanup()`:** Clears the weakref and all callbacks, marking the node as dead and cleaned. This operation is idempotent.
+
+    IT OWNS NO LOCK, AND THAT IS DELIBERATE:
+        This node is the shared building block of every weak container, and each
+        container already holds its own lock around structural work. Giving the
+        node a second lock would put a nested acquisition on every element
+        operation and create a lock-ordering surface between container and node
+        for no gain. Synchronization is therefore the OWNING CONTAINER's job -
+        a node used outside a container is unsynchronized by design.
+
+    THE GC PATH IS NOT YOUR THREAD:
+        The weakref callback fires on whatever thread ran the collection, at an
+        arbitrary point in that thread's execution. Anything reached from
+        `on_collect` must be small, best-effort, and reentrancy-tolerant.
+        Grabbing a lock there is possible but is a decision the CONTAINER makes
+        knowingly - a callback that blocks on a lock held by the collecting
+        thread deadlocks the interpreter's cleanup, not just this container.
+
+    TWO CALLBACK KINDS, ONE FIRING:
+        - `on_collect` is the single parent-container notification.
+        - Additional registered callbacks are the caller's own hooks.
+        Both fire exactly once per referent lifetime. `has_fired` records that
+        it happened, so a container can distinguish "never had a referent" from
+        "had one and lost it".
+
+    Owned State:
+        - The `weakref.ref` to the target, the dead/fired flags, an id, and the
+          callback set. The REFERENT is explicitly not owned - not extending its
+          lifetime is the entire purpose.
+
+    Registration:
+        USER-BINDABLE - deliberately unguarded. Owner ruling 2026-07-19: the
+        weak containers are fair to expose, and this is their shared element
+        type.
+
+    Subsystem Context:
+        The element type underneath all three weak containers in
+        `utilities/data_structures/weak_data_structures/` -
+        `WeakConcurrentDict` (as its values), `WeakConcurrentList`, and
+        `WeakConcurrentSet`. Every liveness rule those containers expose is
+        really this node's behaviour surfaced through their APIs, which is why
+        their `auto_prune` and dead-entry semantics all read the same.
+
+    System Context:
+        Substrate-level, outside the DGR boot order. It is the mechanism behind
+        `DeadReferenceError`: a container asks a node for a live referent, the
+        node has none, and the caller learns their object is gone rather than
+        silently receiving None.
     """
+
+    _ast_helper_access: str = "public"
+    __agent_purpose__: str = (
+        "access: public. Weak-reference cell with GC notification - the element "
+        "type inside every weak container. Holds no lock: the owning container "
+        "synchronizes it. Its on_collect callback runs on the GC thread, so "
+        "anything it touches must be small and best-effort."
+    )
 
     __slots__ = (
             Cleanable.__slots__

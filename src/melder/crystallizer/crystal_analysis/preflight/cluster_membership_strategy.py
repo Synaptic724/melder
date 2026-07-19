@@ -22,6 +22,37 @@ class ClusterMembershipStrategy(PersistenceAnalysisStrategy):
         - Severity "warning" per absent member conduit.
         - Severity "info" once per cluster with a recorded leader (the
           election re-runs live; the recorded leader is not replayed).
+
+    Threading:
+        Stateless - no instance state and no locks. One analyzer pass
+        calls `analyze` once and the strategy retains nothing between
+        calls, so a single instance is safe to reuse across bundles.
+
+    Registration:
+        MELDER KERNEL - guarded. Preflight strategies are constructed by
+        `PersistenceAnalyzer`, never bound as spells.
+
+    Subsystem Context:
+        One of the ten DEFAULT rows of the preflight set that
+        `PersistenceAnalyzer` iterates polymorphically, emitting the
+        shared finding shape {strategy, severity, kind, key, detail}.
+        This row is the CLUSTER half of bundle-completeness, alongside
+        `LinkIntegrityStrategy` (link edges) and `ContractPeerStrategy`
+        (contract endpoints). It reads the `ClusterCrystal` twin, which
+        the cluster's own state mutators emit through the
+        configuration-precedent singleton pull because clusters have no
+        crystallizer-bearing parent to push for them.
+
+    System Context:
+        This strategy encodes the distinction between RECORDED STATE and
+        RUNTIME ELECTION. Membership is recorded state and replays: a
+        rebuilt cluster re-adds its recorded members, so an absent member
+        is a real shortfall and warns. Leadership is NOT replayed - the
+        election re-runs live against whoever actually came up - so the
+        recorded leader is reported as "info" context rather than treated
+        as a value to restore. Reporting it as a shortfall would tell the
+        user something was lost when nothing was; staying silent would
+        hide why the live leader may differ from the sealed one.
     """
 
     __melder_internal__: ClassVar[object] = _mrg.sentinel

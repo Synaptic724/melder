@@ -2,9 +2,10 @@ import json
 import os
 import threading
 from pathlib import Path
-from typing import Dict, List
+from typing import Dict, List, ClassVar
 
 from melder.utilities.general_base.cleanable import Cleanable
+from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 
 class CrystallizerCache(Cleanable):
@@ -38,6 +39,8 @@ class CrystallizerCache(Cleanable):
         record. Cleanup releases the in-memory lock only; cached checkpoints
         and formation files deliberately survive for later reload.
     """
+
+    __melder_internal__: ClassVar[object] = _mrg.sentinel
 
     __slots__ = Cleanable.__slots__ + [
         "_lock",

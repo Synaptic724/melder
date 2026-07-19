@@ -21,6 +21,7 @@ from melder.crystallizer.crystal_analysis.strategies.base_strategy import (
     CrystalFactStrategy,
     FactContext,
 )
+from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 
 class FromImportStatementStrategy(CrystalFactStrategy):
@@ -45,14 +46,54 @@ class FromImportStatementStrategy(CrystalFactStrategy):
         - Memo replay consumes that raw event and repeats relative resolution
           plus find_spec probing; only source-stable syntax is reused.
         - Events retain no AST node, alias object, module, or spec reference.
+
+    Threading:
+        Thread-confined to one analyzer pass; no locks and no instance
+        state (`__slots__` is empty). All mutation lands on the caller's
+        `FactContext`, which is itself confined to that pass.
+
+    Registration:
+        MELDER KERNEL - guarded. Fact strategies are constructed by
+        `CrystalAnalyzer` for one analysis, never bound as spells.
+        Note the classification split: this concrete leaf IS guarded,
+        while its base `CrystalFactStrategy` is deliberately NOT - see
+        that class's Registration section for the MRO reasoning.
+
+    Subsystem Context:
+        The richest of the four fact strategies sharing the analyzer's
+        SINGLE `ast.walk` per module, and the only one that probes the
+        import system rather than reading syntax alone. It owns the
+        `from ... import ...` half opposite `ImportStatementStrategy`;
+        `ExportSurfaceStrategy` derives what a module EXPOSES, and
+        `DependencyViewStrategy` converts the collected edges into
+        topological load order once the walk completes.
+
+    System Context:
+        This pass carries the subsystem's honesty posture at its
+        sharpest. A `from X import Y` is genuinely ambiguous in Python -
+        `Y` may be a submodule or merely a name inside `X` - so the
+        strategy PROBES to distinguish them rather than guessing, and
+        records star imports in the member map WITHOUT probing, because
+        their contents cannot be known statically. Unresolvable relative
+        bases are skipped silently into the unknown bucket rather than
+        being invented, matching the historical extractor.
+        The memo split is the load-bearing design decision: the raw event
+        stores only relative level, unresolved module name, and alias
+        names, so replay repeats resolution and `find_spec` probing
+        instead of trusting cached answers. That is deliberate - only
+        SOURCE-STABLE syntax is safe to reuse, while import resolution
+        depends on the live environment and can legitimately differ
+        between the sealing run and the replay.
     """
 
+    __melder_internal__ = _mrg.sentinel
     __slots__ = ()
 
     @property
     def name(self) -> str:
         """
         Return the stable strategy name.
+
 
         Returns:
             str: `from_import_statement`.

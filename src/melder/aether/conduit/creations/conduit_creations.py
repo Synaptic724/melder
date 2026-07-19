@@ -20,6 +20,39 @@ class ConduitCreations(Creations):
           scope id.
         - Extract/restore behavior is limited to conduit/root-only scopes.
         - Does not own any spellspace-local request buckets.
+
+    Owned State:
+        None beyond the base. `__slots__` is empty; the conduit id serves as
+        BOTH the owner-conduit id and the concrete scope id, which is what makes
+        this specialization a behaviour delta rather than a storage delta.
+
+    Threading:
+        Inherits the base `RLock` discipline; adds no locks of its own.
+
+    Lifecycle / Cleanup:
+        Created in `Conduit.__init__` and cleaned during conduit teardown.
+        Inherits the base's idempotent, failure-aggregating disposal.
+
+    Registration:
+        MELDER KERNEL - guarded. Constructed only inside `Conduit.__init__`;
+        never user-instantiated and never bindable.
+
+    Subsystem Context:
+        The conduit/root specialization of the generic `Creations` store, and
+        the store `ConduitMeld` reads for caller-local existences
+        (`unique_per_conduit`, `many`). Its sibling `ClusterCreations` covers
+        cluster scope but extends `Cleanable` directly rather than this class.
+
+    System Context:
+        Extract/restore is the reason this subclass exists at all, and it exists
+        for one flow: `Conduit.upgrade_to_normal(...)`. Upgrading a lesser
+        conduit must PRESERVE the objects already constructed under it - the
+        live instances are handed to the promoted conduit rather than rebuilt,
+        because rebuilding would hand callers new objects while the old ones are
+        still referenced. Restricting extract/restore to conduit/root scopes is
+        the safety boundary: spellspace buckets are request-local and must never
+        survive a scope transition, so they are deliberately outside this
+        class's reach.
     """
 
     __melder_internal__: ClassVar[object] = _mrg.sentinel

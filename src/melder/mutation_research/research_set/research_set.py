@@ -27,6 +27,7 @@ from melder.mutation_research.research_set.transition_entry import (
 )
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
+from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 
 class ResearchSet(Cleanable):
@@ -69,7 +70,40 @@ class ResearchSet(Cleanable):
         Owned by exactly one `MutationResearch` root; `cleanup()` cascades
         into lanes, journal, residence, and versioner; idempotent; lock
         released last.
+
+    Registration:
+        MELDER KERNEL - guarded. Obtained through `MutationResearch.research_set()`
+        or `create_research_set()`; a user drives it rather than registering it.
+
+    WHY LANES ARE READ-ONLY IN PUBLIC HANDS:
+        `ResearchLane` objects are handed out LIVE, but every lane mutator is
+        set-internal. That is not encapsulation for its own sake: residence
+        claims, journal entries, organization snapshots, and persistence
+        emission all hang off THIS object. A public lane mutator would let a
+        caller change the network while bypassing all four, leaving the
+        partition, the history, and the record disagreeing about what happened.
+
+        So the rule is: public callers read lanes, the owning set writes them.
+
+    Subsystem Context:
+        The agent-facing surface of the whole package, composing four
+        bookkeeping structures that each answer one question -
+        `ResidenceRegistry` (is this identity already somewhere),
+        `ResearchJournal` (what happened, in order), `NetworkVersioner` (what
+        the organization used to look like), and the lanes themselves (where
+        things are now). It deliberately never touches the crystallizer: it
+        fires `on_mutation` and the ROOT does the emitting.
+
+    System Context:
+        This is where the model's central conviction lives - full-object records
+        rather than diffs. A version is stored whole, so understanding change is
+        a derived READ through the diff engines rather than a reconstruction.
+        The absence of merge and rebase follows from the same conviction:
+        combining content happens in the codegen workshop and re-enters as a
+        multi-parent `register_spell`, so the record only ever gains facts. It
+        never rewrites them.
     """
+    __melder_internal__: ClassVar[object] = _mrg.sentinel
 
     DEFAULT_LANE_NAME: ClassVar[str] = "default"
 

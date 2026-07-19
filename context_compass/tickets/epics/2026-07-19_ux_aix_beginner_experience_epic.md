@@ -2,7 +2,7 @@
 
 ## Metadata
 - Epic ID: EPIC-2026-07-19-ux-aix-beginner
-- Status: in_progress
+- Status: done_pending_owner_walkthrough
 - Owner: cowork
 - Agent Name: helper_f
 - Priority: p2
@@ -30,6 +30,102 @@ First-contact UX + the agent first-read: bind/conjure/meld, lifecycles, function
 - DECISION for every init-surface change the tier proposes.
 
 ## Notes
+- DATETIME: 2026-07-19T16:24:00Z
+  TYPE: DECISION
+  CLAIM: Owner cleanup ruling ("this is for noobs and garbo agents"): KILLED
+    21_optional_melds (clever-dev try/except pattern + a bind(spell=object) anchor
+    hack - novices melding speculatively against their own worlds is backwards) and
+    27_meld_by_spell_name (probe-flavored, redundant with 26's address law).
+    REWRITTEN 30_double_bind_outcome from exploratory printed-contract voice to a
+    declarative lesson (refusal + the subclass fix, cross-linked to 24). BACKFILLED
+    with the two simplest lessons the tier lacked: 21_the_basic_rhythm (bind
+    everything -> conjure once -> meld everywhere - the program shape itself) and
+    27_pass_the_conduit_around (main owns the conduit, functions receive it - no
+    re-conjuring, no globals). Tier voice rule reaffirmed: beginner examples are
+    DECLARATIVE lessons, never exploratory probes; probe voice lives in
+    pytest_examples only. Beginner holds 40, compile green.
+  EVIDENCE:
+  - UX_and_AIX_experiences/01_beginner/21_the_basic_rhythm.py:1-35
+  - UX_and_AIX_experiences/01_beginner/27_pass_the_conduit_around.py:1-30
+  IMPACT: Hour one is now uniformly plain: three verbs, one order, real objects,
+    simple structure habits.
+  NEXT: Owner harness rerun covers the 4 changed files.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-07-19T15:44:00Z
+  TYPE: DECISION
+  CLAIM: (1) DECISION A RULED (owner convinced after the "why would you name
+    something the same twice" chat): the DuplicateSpellNameStrategy REFUSAL IS
+    CORRECT DESIGN - spell names are world-unique; the only fix is the LYING ERROR
+    MESSAGE (currently promises binding_name/spellframe disambiguation that does
+    not work) -> reword to "rename or subclass; spell names are world-unique by
+    design", and flip the two divergence probes into intended-behavior pins. Small
+    follow-up story when convenient. (2) TIER RE-REVIEW (owner-directed final
+    pass): moved to intermediate - 10 lock-batching (concurrency), 21
+    spell_override construction (the MUTATION lane's per-call door does not belong
+    in hour one), 29 permissions block (points at sharing flows that live in tier
+    02). Backfilled with true-beginner lessons: 10_explicit_cleanup (teardown
+    verbs + guards), 21_optional_melds (KeyError contract as a feature -
+    try/except optional dependencies), 29_many_state_isolation (fresh instances
+    share nothing). Beginner holds at 40; intermediate now 9 seeded. Moved files
+    re-tiered in headers; compile green x3 new.
+  EVIDENCE:
+  - UX_and_AIX_experiences/01_beginner/21_optional_melds.py:1-30
+  - UX_and_AIX_experiences/02_intermediate/08_spell_override_construction.py:1-10
+  IMPACT: Hour one now contains zero advanced lanes (no override door, no lock
+    semantics, no sharing vocabulary); every open design question of the day is
+    ruled.
+  NEXT: Owner rerun of the beginner harness (3 new + address-law regression);
+    name-strategy message fix as a small story; tier-02 authoring wave.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-07-19T15:28:00Z
+  TYPE: DECISION
+  CLAIM: Owner ruling on the core tension: SHA256 content-fingerprint uniqueness is
+    ABSOLUTE AND INTENTIONAL - the same fingerprint never registers twice; users
+    wanting near-twin classes differentiate them (subclass, added attribute -
+    anything that shifts the fingerprint). Curriculum already aligned (24
+    subclass-per-role = the minimal differentiation, and a subclass's own name
+    sidesteps the name strategy entirely). DECISION A NARROWED accordingly: the SHA
+    law is settled; the only open question is DuplicateSpellNameStrategy refusing
+    DIFFERENT-SHA name-twins despite its own error text promising binding_name/
+    spellframe disambiguation (probe-proven). Fix scope when ruled: strategy honors
+    the disambiguators for different-SHA spells; same-SHA refusal untouched forever.
+  EVIDENCE:
+  - UX_and_AIX_experiences/pytest_examples/test_contract_probes.py:120-160
+  IMPACT: Decision A is now a small, well-bounded strategy fix instead of an
+    identity-model question.
+  NEXT: Owner rules the narrowed decision A whenever ready.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-07-19T15:14:00Z
+  TYPE: DECISION
+  CLAIM: Owner correction: ENVIRONMENT framing removed from the curriculum (18
+    rewritten, 40 de-environmented). Melder has no environment-switching pattern -
+    an aetheric_frame can carry an environment-like name, but the same objects
+    cannot register twice (content-fingerprint law), so per-env rebinding does not
+    exist; the user's MODULE decides what to build. Bootstraps exist via
+    crystallizer only; owner deliberately has no user-registered cached bootstraps
+    ("a user would just make a module and decide what path to take"). DECIDED
+    (owner + helper aligned, 2026-07-19): NO env/config holder in
+    aetheric_utility_system - a user-bound config object (unique + read, framed)
+    IS the process-wide configuration item; the library eats its own dog food.
+    Ambient env holders = service-locator smell (untyped lookups, hidden
+    coupling, invisible to the dependency graph); os.environ + the composition
+    root covers literal env vars (beginner 18 teaches the pattern). Revisit only
+    if INTERNAL subsystems ever need shared runtime settings (internal plumbing,
+    not user API).
+  EVIDENCE:
+  - UX_and_AIX_experiences/01_beginner/18_bootstrap_pattern.py:1-15
+  IMPACT: Curriculum stops implying a pattern the runtime forbids.
+  NEXT: If the utility-system env-vars idea firms up, it gets its own strategy
+    ticket.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 8
+
 - DATETIME: 2026-07-19T14:12:00Z
   TYPE: MEASURE
   CLAIM: Run 4 (owner): 51/51 GREEN - the beginner tier is VALIDATED end to end. 40

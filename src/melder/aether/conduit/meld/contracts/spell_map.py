@@ -66,6 +66,48 @@ class SpellMap(Cleanable):
         - Carries spell/frame/binding identity plus optional override payload.
         - Cleanable and invalid after cleanup.
         - Should not be subclassed or treated like a runtime-resolved object.
+
+    Threading:
+        Value-shaped and effectively immutable after construction: the four
+        slots are set in `__init__` and read thereafter. No lock is taken,
+        because a descriptor written into a constructor default is shared
+        read-only across every resolution that reads it.
+
+    Lifecycle / Cleanup:
+        Cleanable. The descriptor lives as long as the class default that
+        declares it, which in practice is the lifetime of the defining module.
+
+    Registration:
+        MELDER KERNEL - guarded, and this is the subtle case worth naming:
+        the class is USER-INSTANTIATED but NOT user-bindable. A user writes
+        `SpellMap(MyRepo)` in their own constructor default constantly, so
+        instances are authored outside melder - but the sentinel stops anyone
+        `bind()`-ing the SpellMap CLASS itself as a spell, which would be
+        meaningless because a descriptor is a statement of intent, not a
+        service to resolve.
+
+    Subsystem Context:
+        One of the two declarative DI descriptors, paired with `SpellContract`.
+        The division is scope: `SpellMap` stays INSIDE the current resolution
+        world and resolves through the ordinary Spellbook / SpellIndex /
+        Existence machinery, while `SpellContract` declares a hole a future
+        linked conduit may fill. Phase 1 classifies each parameter into a
+        `ParameterDIShape`; a SpellMap default lands as `SPELLMAP_DEFAULT`, and
+        Phase 3 performs the actual candidate resolution.
+
+    System Context:
+        The four supported shapes exist because DI identity in Melder is a
+        (spell, frame, binding) triple rather than a single type key, and
+        different call sites know different parts of it. Passing a concrete
+        class supplies the whole identity; passing a Protocol supplies a frame
+        and asks the graph to find the implementation; the frame-only form
+        (`spell=None`) exists for the case where the caller deliberately knows
+        NOTHING but the contract and the binding name.
+        Ambiguity is a build-time failure, not a runtime one: a SpellMap
+        default that resolves to zero or to multiple candidates raises rather
+        than silently picking. That is the whole reason the explicit
+        `binding_name` form exists - it is the documented way to disambiguate
+        when several spells legitimately satisfy the same frame.
     """
 
     __melder_internal__: ClassVar[object] = _mrg.sentinel

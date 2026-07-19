@@ -22,6 +22,36 @@ class LinkIntegrityStrategy(PersistenceAnalysisStrategy):
     Contract:
         - Severity "warning": the restore completes; the link is
           reported, not rebuilt.
+
+    Threading:
+        Stateless - no instance state and no locks. One analyzer pass
+        calls `analyze` once and the strategy retains nothing between
+        calls, so a single instance is safe to reuse across bundles.
+
+    Registration:
+        MELDER KERNEL - guarded. Preflight strategies are constructed by
+        `PersistenceAnalyzer`, never bound as spells.
+
+    Subsystem Context:
+        One of the ten DEFAULT rows of the preflight set that
+        `PersistenceAnalyzer` iterates polymorphically over a detached
+        payload bundle. It emits the shared finding shape every strategy
+        in this package returns: {strategy, severity, kind, key, detail}.
+        This row is the CONDUIT-EDGE half of bundle-completeness; its
+        siblings cover the other edges - `ContractPeerStrategy` (contract
+        endpoints) and `ClusterMembershipStrategy` (cluster members).
+
+    System Context:
+        Severity here is a LOAD-CONTROL DECISION, not a label. Every
+        mediated load runs plan -> map -> verdict -> execute -> remember,
+        and the verdict gate sits inside `RestoreEngine` at the
+        fold->preflight seam - the only place holding authoritative
+        FOLDED truth. Rows marked "blocker" refuse the load with a
+        teach-grade error BEFORE any replay; "warning" rows like this one
+        proceed and ride the report. That is why a dangling link is a
+        warning: the conduit still rebuilds, only the edge shortfalls,
+        so refusing the whole world would cost the user more than the
+        missing link does.
     """
 
     __melder_internal__: ClassVar[object] = _mrg.sentinel

@@ -31,6 +31,34 @@ class ProtocolCrafter(Cleanable):
         Generate protocol code from a target class or object and maintain
         protocol blocks inside interface files.
 
+    IT WRITES TO DISK - the unusual part:
+        Most of this codebase reads source; this one MODIFIES it. The
+        `write_protocol_module_from_source_file(...)` and bounded block-update
+        paths edit interface files in place. That makes it the sharpest tool in
+        `utilities/`, and the reason its updates are BOUNDED: it rewrites a
+        delimited region rather than a whole file, so hand-written code around
+        the generated block survives regeneration.
+
+    Registration:
+        MELDER KERNEL - guarded. Melder owns code-generation policy. It is
+        nonetheless exported for direct use: guarding and exposure are
+        orthogonal, and this is a tool a user calls rather than one Melder
+        injects.
+
+    Subsystem Context:
+        The only member of `utilities/ai_native_support_tools/`, and one of the
+        two AI-native surfaces in `utilities/` alongside
+        `ClassSurfaceAstDescriber`. The pairing is natural: the describer READS
+        a class surface into a structured answer, this one WRITES a class
+        surface out as a Protocol. Same reflection, opposite direction.
+
+    System Context:
+        Exported from the package root, so an agent that has `import melder` can
+        reach it directly. It serves the interface discipline the repository
+        follows - concrete types plus `TYPE_CHECKING` imports by default, with
+        Protocols written only where structure genuinely is the contract - by
+        making the Protocol half mechanical instead of hand-maintained.
+
     Contract:
         - Accepts either a class object or a concrete instance as the target.
         - Produces one `@runtime_checkable` protocol block whose name is the

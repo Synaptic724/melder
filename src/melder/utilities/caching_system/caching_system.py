@@ -17,6 +17,26 @@ class CachingSystem(Cleanable):
     """
     Conduit-scoped cache persistence utility.
 
+    Registration:
+        MELDER KERNEL - guarded. The runtime owns cache-file lifecycle; a user
+        does not register one, they get the behaviour through the conduit that
+        owns it.
+
+    Subsystem Context:
+        The only member of `utilities/caching_system/`, and the one utility here
+        that touches DISK. Everything else in `utilities/` is in-memory
+        machinery - locks, counters, weak containers, helpers - which makes this
+        the odd one out and worth knowing about before you assume a utility is
+        side-effect free.
+
+    System Context:
+        Scoped to one rooted conduit. It keeps the decoded cache dictionary in
+        memory after first load, so repeated reads do not re-hit the file, and
+        the Spellbook drives its storage operations. Distinct from the
+        crystallizer's persistence record: that captures a recorded WORLD for
+        restore, this is a per-conduit payload cache. Confusing the two would be
+        a category error - one is durability, the other is speed.
+
     Purpose:
         Own one rooted-conduit cache file, keep the decoded cache dictionary in
         memory after first load, and provide the small storage operations the

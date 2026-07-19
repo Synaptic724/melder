@@ -34,6 +34,51 @@ class Contract(Cleanable):
         _ward_a / _ward_b: The two participating wards.
         _details_a / _details_b: Per-ward maps of spell_id -> Detail.
         _id: Unique identifier for this contract instance.
+
+    Owned State:
+        One `RLock`, a stable `IDBuilder` id, the two ward references, and FOUR
+        maps - not two. Each side owns both a `Detail` map keyed by spell_id
+        and an `IndexDetail` map keyed by index_id.
+
+    Contract:
+        - Symmetric at the pair level, but never a shared table: each ward's
+          view is stored separately and either side may grant or revoke
+          independently.
+        - The `_details_a` / `_details_b` naming is BORROW-DIRECTIONAL and
+          reads backwards at first glance: `_details_a` holds what ward A
+          borrowed FROM ward B.
+        - Cleanup is idempotent; it clears both detail maps, nulls the ward
+          references, and marks the contract unusable.
+
+    Threading:
+        One instance `RLock` guards mutation of the four maps. Lock order runs
+        ward -> contract; a contract never reaches back up to lock a ward.
+
+    Registration:
+        MELDER KERNEL - guarded. Contracts are created by `ConduitWard` during
+        `Conduit.link(...)`; a user never constructs one directly.
+
+    Subsystem Context:
+        The storage object beneath the four ward vocabularies: `Policies`
+        decides whether a contract may form, `Permissions` bounds what each
+        entry grants, and `ContractTypes` / `DetailReason` annotate each stored
+        `Detail`. This class holds those entries; `ConduitWard` owns the verbs
+        that write them.
+
+    System Context:
+        The two detail families exist because a contract must survive VERSION
+        MOVEMENT. A `Detail` captures the spell_id visible at contract time,
+        which is a point-in-time answer; an `IndexDetail` instead subscribes to
+        a `SpellIndex`, so the borrower follows the lineage HEAD rather than a
+        frozen version. That is what lets a notch repoint the active member of
+        an index without silently stranding every peer that borrowed it.
+        Keeping both is deliberate: the captured id preserves what was actually
+        agreed, while the subscription tracks what is currently live.
+        This split is durable, not just runtime - `ContractCrystal` records both
+        endpoints with per-side `Detail` / `IndexDetail` projections, which is
+        why a formation captured around only one conduit raises the
+        crystallizer's `contract_peer` warning rather than restoring a
+        half-contract silently.
     """
     __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
@@ -76,7 +121,7 @@ class Contract(Cleanable):
         """
         Idempotently tear down this contract and all contained Details.
 
-        Clears both wardsÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ detail maps, nulls ward references, and marks the
+        Clears both wards’ detail maps, nulls ward references, and marks the
         contract cleaned so it can no longer be used.
         """
         if self._cleaned:

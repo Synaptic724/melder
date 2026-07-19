@@ -1,6 +1,7 @@
-from typing import Dict, List
+from typing import Dict, List, ClassVar
 
 from melder.crystallizer.persistence.record_version import RecordVersion
+from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 
 class MeshInterfaceContract:
@@ -46,6 +47,8 @@ class MeshInterfaceContract:
     Lifecycle / Cleanup:
         None. Static authority classes carry no state to clean.
     """
+
+    __melder_internal__: ClassVar[object] = _mrg.sentinel
 
     # The four first-class unit kinds the asset layer ships today.
     UNIT_KIND_CHECKPOINT: str = "checkpoint"

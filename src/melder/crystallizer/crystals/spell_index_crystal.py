@@ -1,6 +1,7 @@
 from typing import List, Optional
 
 from melder.utilities.general_base.cleanable import Cleanable
+from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 
 class SpellIndexCrystal(Cleanable):
@@ -38,7 +39,7 @@ class SpellIndexCrystal(Cleanable):
         data only and never mutates a live `SpellIndex` or its selection.
     """
 
-    __melder_internal__ = True
+    __melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
         "_index_id",
         "_spellbook_id",

@@ -1,6 +1,7 @@
 from typing import Dict, List
 
 from melder.utilities.general_base.cleanable import Cleanable
+from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 
 class ContractCrystal(Cleanable):
@@ -41,7 +42,7 @@ class ContractCrystal(Cleanable):
         rows only and never severs a live contract.
     """
 
-    __melder_internal__ = True
+    __melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
         "_contract_id",
         "_conduit_a_id",

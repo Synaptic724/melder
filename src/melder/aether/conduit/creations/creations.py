@@ -28,6 +28,48 @@ class Creations(Cleanable):
           - many: `spell_id -> list[(object, disposal_methods)]`
         - Cleanup and reusable clearing are explicit, idempotent, and aggregate
           disposal failures.
+
+    Owned State:
+        `_owner_conduit_id`, a stable `_id`, one `RLock`, and the two registries
+        (`_creations`, `_disposable_creations`).
+
+    Threading:
+        One instance `RLock` guards both registries. Reads and writes race
+        freely under free-threaded 3.14t, so the lock is not optional.
+
+    Lifecycle / Cleanup:
+        Idempotent. Cleanup runs the declared disposal methods and AGGREGATES
+        failures rather than stopping at the first one - a single badly behaved
+        object must not strand the rest of the scope's teardown, so callers may
+        see an ExceptionGroup.
+
+    Registration:
+        MELDER KERNEL - guarded. NOTE for MRO auditors: this is a guarded BASE
+        (`ConduitCreations` extends it) and that is deliberate and safe. The one
+        subclass is melder-internal and constructed only inside
+        `Conduit.__init__`; there is no injection seam, so the inherited
+        sentinel cannot reach a user class. `ClusterCreations` does NOT extend
+        this class - it extends `Cleanable` directly.
+
+    Subsystem Context:
+        The storage layer beneath `Meld`. Meld decides WHICH store an
+        `Existence` routes to; this class is what one such store actually is.
+        `ConduitCreations` specializes it for conduit/root scope, and the two
+        meld doors read these stores rather than owning object lifetime
+        themselves.
+
+    System Context:
+        The two-registry split is the important design choice and it is easy to
+        misread as duplication. `_creations` is the AUTHORITATIVE live-object
+        registry and is the only thing consulted during resolution;
+        `_disposable_creations` is cleanup-only metadata that mirrors just those
+        entries which declared disposal methods. Keeping them apart means the
+        resolution hot path never pays for disposal bookkeeping, and it means
+        an object without disposal methods costs nothing extra to track.
+        This is also why the store is generic over scope rather than
+        conduit-specific: the same structure serves conduit, root, cluster,
+        lineage, and spellspace scopes, so a lifetime is expressed by WHICH
+        instance holds the object, not by a different storage shape per mode.
     """
 
     __melder_internal__: ClassVar[object] = _mrg.sentinel

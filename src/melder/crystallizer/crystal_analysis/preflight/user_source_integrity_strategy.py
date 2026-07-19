@@ -28,6 +28,38 @@ class UserSourceIntegrityStrategy(PersistenceAnalysisStrategy):
           executing unverified source is worse than not booting.
         - Scope: modules carried in user_module_sources (retention-on
           payloads); retention-off worlds have no rows here.
+
+    Threading:
+        Stateless - no instance state and no locks. One analyzer pass
+        calls `analyze` once and the strategy retains nothing between
+        calls, so a single instance is safe to reuse across bundles.
+
+    Registration:
+        MELDER KERNEL - guarded. Preflight strategies are constructed by
+        `PersistenceAnalyzer`, never bound as spells.
+
+    Subsystem Context:
+        The second of two integrity rows in the ten-row DEFAULT preflight
+        set: this pass owns retained USER text, its sibling
+        `SyntheticSourceIntegrityStrategy` owns record-authored SYNTHETIC
+        text. Its scope is gated by opt-in physical custody
+        (`CrystallizerConfiguration.retain_user_sources`, default False),
+        so a retention-off world produces zero rows here and is
+        byte-identical to the pre-S2 record.
+
+    System Context:
+        The narrowing recorded in Purpose is the important fact, because
+        this row used to do two jobs and now does one. Disk-vs-seal
+        comparison moved wholesale to `SourceDriftStrategy` in the
+        source_drift_preflight lane (2026-07-12), for a concrete reason:
+        drift detection tied to retention meant retention-OFF worlds
+        restored blind. Splitting it made drift RETENTION-AGNOSTIC and
+        left this pass with the half only it can perform - checking the
+        record against ITSELF.
+        That split also explains the severity gap between the two. Drift
+        is a warning because the live file wins at import; tamper is a
+        blocker because retained text is used precisely when no live file
+        exists, so altered material would rebuild unchallenged.
     """
 
     __melder_internal__: ClassVar[object] = _mrg.sentinel

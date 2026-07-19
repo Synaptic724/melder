@@ -22,6 +22,36 @@ class ContractPeerStrategy(PersistenceAnalysisStrategy):
     Contract:
         - Severity "warning": restore completes; the contract's details
           shortfall until the peer exists.
+
+    Threading:
+        Stateless - no instance state and no locks. One analyzer pass
+        calls `analyze` once and the strategy retains nothing between
+        calls, so a single instance is safe to reuse across bundles.
+
+    Registration:
+        MELDER KERNEL - guarded. Preflight strategies are constructed by
+        `PersistenceAnalyzer`, never bound as spells.
+
+    Subsystem Context:
+        One of the ten DEFAULT rows of the preflight set that
+        `PersistenceAnalyzer` iterates polymorphically, emitting the
+        shared finding shape {strategy, severity, kind, key, detail}.
+        This row is the RELATIONSHIP half of bundle-completeness, paired
+        with `LinkIntegrityStrategy` (conduit link edges) and
+        `ClusterMembershipStrategy` (cluster members). It reads the
+        `ContractCrystal` endpoints the record emits at link and
+        re-snapshots through the eight public contract verbs.
+
+    System Context:
+        A contract is a TWO-SIDED runtime relationship: ConduitWard
+        re-grants its per-side detail projections only once both conduit
+        endpoints are live. A formation captured around one side is
+        therefore not corrupt - it is partial - so this row warns rather
+        than blocks, and the restore reports an `endpoint_not_rebuilt`
+        shortfall instead of refusing. Severity is a load-control
+        decision made at the `RestoreEngine` fold->preflight seam:
+        blockers refuse before any replay, warnings proceed and ride the
+        report.
     """
 
     __melder_internal__: ClassVar[object] = _mrg.sentinel

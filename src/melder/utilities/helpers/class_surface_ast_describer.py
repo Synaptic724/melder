@@ -16,6 +16,22 @@ FunctionNode = Union[ast.FunctionDef, ast.AsyncFunctionDef]
 class InheritedAgentPurposeDescription(TypedDict):
     """
     Typed inherited-purpose payload for one parent class in the MRO.
+
+    Registration:
+        TYPED PAYLOAD - unguarded. A `TypedDict` is a shape, not a runtime
+        object; there is nothing to bind and nothing to tag.
+
+    Subsystem Context:
+        One of three payload types emitted by `ClassSurfaceAstDescriber` in this
+        module. This one carries what a PARENT contributes, so an agent reading
+        a subclass can see which purpose statements it inherited and from where
+        rather than seeing a flattened surface with no provenance.
+
+    System Context:
+        Part of the agent-facing description surface. Because `__agent_purpose__`
+        is a plain class attribute it resolves through the MRO, so a subclass
+        silently reports its parent's purpose - this payload is what makes that
+        inheritance visible instead of misleading.
     """
 
     class_name: str
@@ -25,6 +41,20 @@ class InheritedAgentPurposeDescription(TypedDict):
 class ClassMemberDescription(TypedDict):
     """
     Typed method/property payload emitted from one AST-described class member.
+
+    Registration:
+        TYPED PAYLOAD - unguarded. A shape, not a runtime object.
+
+    Subsystem Context:
+        One of three payload types emitted by `ClassSurfaceAstDescriber`. This
+        is the per-member row: one method or property, described from source
+        rather than from a live object.
+
+    System Context:
+        Part of the agent-facing description surface. Because the description is
+        AST-derived, a member appears here exactly as WRITTEN - decorators and
+        signature included - without the class ever being imported or its
+        module-level effects run.
     """
 
     method_name: str
@@ -41,6 +71,21 @@ class ClassMemberDescription(TypedDict):
 class ClassSurfaceDescription(TypedDict):
     """
     Typed top-level AST class-surface payload returned by the describer.
+
+    Registration:
+        TYPED PAYLOAD - unguarded. A shape, not a runtime object.
+
+    Subsystem Context:
+        The outermost of the three payload types emitted by
+        `ClassSurfaceAstDescriber`, composing `ClassMemberDescription` rows and
+        `InheritedAgentPurposeDescription` entries into one answer about a
+        single class.
+
+    System Context:
+        This is what an agent actually receives when it asks what an object
+        offers - the machine-readable counterpart to the package-root hardcopy
+        documents. Those describe the SYSTEM; this describes one CLASS, and
+        neither requires conjuring a conduit to answer.
     """
 
     class_name: str
@@ -60,6 +105,39 @@ class ClassSurfaceAstDescriber:
     Purpose:
         Provide one shared AST-backed class-surface description utility for
         Melder objects.
+
+    THIS IS THE CONSUMER OF `_ast_helper_access`:
+        Melder classes publish two agent-facing markers - `__agent_purpose__`
+        (what an agent can do with the object) and `_ast_helper_access`
+        (whether that surface is public or internal). This describer is what
+        reads them and turns a class into a structured description an agent can
+        consume without importing or instantiating anything.
+
+        That is why the markers are worth carrying: they are not decoration,
+        they are input to this.
+
+    WHY AST AND NOT `inspect`:
+        Describing by AST means a class can be described WITHOUT being imported
+        and without any of its module-level side effects running. For a runtime
+        whose package import boots a substrate, that distinction matters - an
+        agent can ask what an object offers before deciding to pay for it.
+
+    Registration:
+        MELDER KERNEL, but unguarded in practice as a static namespace with no
+        instances - there is nothing to bind. Introspection tooling is called
+        directly.
+
+    Subsystem Context:
+        Sits in `utilities/helpers/` beside the other static namespaces, but
+        serves a different audience: `IDBuilder` and `SpellInputUtils` serve the
+        runtime, this one serves AGENTS. Its three companion TypedDicts in this
+        module define the payload shape it emits.
+
+    System Context:
+        Part of the AI-native surface, alongside the package-root hardcopy
+        documents and `ProtocolCrafter`. The documents answer "how is this
+        system shaped"; this answers "what does this specific object expose".
+        Both are queryable without conjuring a conduit.
 
     Contract:
         - This class is intentionally static-method only.

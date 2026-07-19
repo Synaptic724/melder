@@ -12,8 +12,8 @@ TEARDOWN: list[str] = []
 
 
 class AppConfig:
-    def __init__(self, env: str) -> None:
-        self.env = env
+    def __init__(self, app_name: str) -> None:
+        self.app_name = app_name
 
 
 class DbPool:
@@ -32,8 +32,8 @@ class RequestHandler:
 def main() -> None:
     book = md.Spellbook()
     with book:  # atomic registration batch under the book lock
-        book.bind(spell=AppConfig("production"), existence="unique",
-                  permissions="read", spellframe="app", binding_name="config")
+        book.bind(spell=AppConfig("orders-service"), existence="unique",
+                  spellframe="app", binding_name="config")
         book.bind(spell=DbPool, existence="unique",
                   spellframe="app", binding_name="db",
                   disposal_method_names=["close"])
@@ -43,7 +43,7 @@ def main() -> None:
     conduit = book.conjure()
     config = conduit.meld(spellframe="app", binding_name="config")
     pool = conduit.meld(spellframe="app", binding_name="db")
-    assert config.env == "production" and isinstance(pool, DbPool)
+    assert config.app_name == "orders-service" and isinstance(pool, DbPool)
 
     for _ in range(3):
         handler = conduit.meld(spellframe="web", binding_name="handler")

@@ -12,6 +12,7 @@ lanes (per-key backfill, honest shortfalls).
 """
 
 from typing import ClassVar, Dict, Tuple
+from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 
 class RecordVersion:
@@ -49,6 +50,7 @@ class RecordVersion:
         None. This class owns no runtime state or external resource.
     """
 
+    __melder_internal__ = _mrg.sentinel
     CURRENT: ClassVar[str] = "1.0.0"
     KEY: ClassVar[str] = "record_version"
 

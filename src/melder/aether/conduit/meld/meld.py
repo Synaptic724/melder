@@ -87,6 +87,48 @@ class Meld(Cleanable, ABC):
     4. Reuse an existing creation or build through `CreationContext`.
     5. Fire activation and meld-level hooks when the route requires them.
     6. Return the final resolved instance.
+
+    Threading:
+        Concurrency-sensitive by nature: this is the hot path, and under
+        free-threaded 3.14t the fast-door registry is read by many threads at
+        once. The epoch design above is the concurrency answer - a warm hit
+        costs one int compare plus an identity pin rather than re-reading each
+        guard flag, because shared-object traffic was measured at 2.6x/4.2x
+        pure-door inflation at 3 and 5 threads. Lazy revalidation takes the
+        per-spell lock before re-running structural phases.
+
+    Registration:
+        MELDER KERNEL - guarded. NOTE for anyone auditing the MRO law: this is
+        a guarded BASE class, which is normally the dangerous pattern. It is
+        safe here and must stay guarded, because both subclasses (`ConduitMeld`,
+        `SpellSpaceMeld`) are melder-internal and are constructed only inside
+        `Conduit.__init__`. There is no injection seam - no `meld=` kwarg, no
+        factory hook - so the inherited sentinel can never reach a class a USER
+        wrote. Do not "fix" this by removing the sentinel.
+
+    Subsystem Context:
+        The abstract core beneath two concrete front doors. `ConduitMeld` is
+        the conduit-caller door; `SpellSpaceMeld` is the spellspace door. The
+        split exists purely to own DIFFERENT STORAGE - all lookup, validation,
+        gating, and compiler logic lives here so the two doors cannot drift
+        apart on resolution semantics. `Conduit.meld(...)` delegates here;
+        `CreationContext` executes the construction lanes this class dispatches.
+
+    System Context:
+        This class is where the six `Existence` modes stop being an enum and
+        become storage routing. `unique_per_conduit` and `many` land in the
+        caller's own `ConduitCreations`; `unique`, `unique_per_conduit_cluster`,
+        and `unique_per_conduit_lineage` resolve against broader spell-owned or
+        cluster-owned stores; `unique_per_spell_space` is reachable only through
+        the spellspace door. That is why `ConduitMeld` REFUSES a
+        `requires_spellspace_request` spell rather than improvising a scope -
+        fabricating request-local scope from the conduit door would silently
+        produce an instance with the wrong lifetime, which is far worse than a
+        refusal.
+        Meld is also the gate, not just the resolver: it enforces structural
+        validity, contract validity, per-conduit resolution validity, and
+        change-control dirty-root state BEFORE any instance is handed back, and
+        re-runs the lazy phases when a lineage's validity is UNKNOWN or GATED.
     """
     __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = [
@@ -772,7 +814,7 @@ class Meld(Cleanable, ABC):
         if validity is SpellValidity.unknown or validity is SpellValidity.gated:
             return True
 
-        # invalid / disabled / cleaned Ã¢â€ â€™ hard block, no attempt to resolve
+        # invalid / disabled / cleaned -> hard block, no attempt to resolve
         if (
                 validity is SpellValidity.invalid
                 or validity is SpellValidity.disabled
@@ -782,7 +824,7 @@ class Meld(Cleanable, ABC):
                 raise SpellbookValidationError([spell])
             raise SpellbookValidationError([spell])
 
-        # Extremely defensive: any future enum value Ã¢â€ â€™ treat as not resolvable.
+        # Extremely defensive: any future enum value -> treat as not resolvable.
         raise SpellbookValidationError([spell])
 
 
@@ -1230,7 +1272,7 @@ class Meld(Cleanable, ABC):
                 logical frame key for resolution.
             spellframe:
                 Optional spellframe / Protocol / interface used as part of
-                the DI identity. If None, the spellÃ¢â‚¬â„¢s own type/name is
+                the DI identity. If None, the spell’s own type/name is
                 used by the normalization helper.
             binding_name:
                 Optional binding name to discriminate multiple spells

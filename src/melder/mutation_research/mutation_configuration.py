@@ -21,6 +21,24 @@ class MutationResearchConfiguration(Cleanable):
         - validates required properties before freeze/activation
         - activation is explicit and implies successful validation/freeze
         - thread-safe mutations are serialized with the instance lock
+
+    Registration:
+        MELDER KERNEL - guarded. Obtained through
+        `MutationResearch.create_configuration()`, not registered.
+
+    Subsystem Context:
+        The policy surface of the mutation-research root, paired with
+        `MutationResearchConfigurationBuilder` for fluent assembly. It follows
+        the same mutable-then-frozen shape as the Aether, Spellbook, and
+        crystallizer configurations, so all four read alike.
+
+    System Context:
+        Activation is this object's EMISSION MOMENT, which makes ordering
+        load-bearing: config activation necessarily precedes root activation, so
+        it must carry the recorded composition forward into its twin. Without
+        that, replace-on-emit would wipe the record moments before hydration
+        reads it. `lane_type_enforcement` also lives here, propagating to every
+        research set at activation, hydration, and set creation.
     """
 
     __melder_internal__ = _mrg.sentinel

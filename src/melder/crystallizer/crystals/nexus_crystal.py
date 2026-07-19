@@ -3,6 +3,7 @@
 from typing import Dict, Optional
 
 from melder.utilities.general_base.cleanable import Cleanable
+from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 
 class NexusCrystal(Cleanable):
@@ -37,6 +38,7 @@ class NexusCrystal(Cleanable):
         flags/configuration only and does not disable or clean the live Nexus.
     """
 
+    __melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
         "_configured",
         "_enabled",

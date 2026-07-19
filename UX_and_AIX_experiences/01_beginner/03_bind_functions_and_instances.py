@@ -23,7 +23,7 @@ def main() -> None:
     book.bind(spell=make_settings, existence="unique")
 
     prebuilt = AlreadyBuilt("built-by-hand")
-    book.bind(spell=prebuilt, existence="unique", permissions="read")
+    book.bind(spell=prebuilt, existence="unique")
 
     conduit = book.conjure()
 

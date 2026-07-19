@@ -73,6 +73,42 @@ class MutationResearch(Cleanable):
         `cleanup()` cascades into owned sets and configuration, emits the
         cleaned state while the record outlives the root, and resets
         singleton bookkeeping; idempotent.
+
+    Registration:
+        MELDER KERNEL - guarded. Reached through `Aether.mutation_research`;
+        constructing or registering a second root would break the singleton
+        contract the emission model depends on.
+
+    IT IS THE ONLY CRYSTALLIZER TOUCHPOINT IN THE PACKAGE:
+        Sets do not emit. They fire an injected `on_mutation` callback and this
+        root does the recording. That single-writer rule is what keeps the
+        dependency acyclic - the record layer never has to know about research
+        internals, and research never has to know about persistence mechanics.
+
+        It is also why the emission lock exists and why lock order is
+        emission -> root -> set -> crystallizer, strictly one-way. Set
+        constructors fire `on_mutation` while the root lock is held, so any path
+        that can emit while holding the root - set creation, hydration - must
+        take the emission lock FIRST. Without that, a paused emitter could
+        publish a stale composition over a newer one, since emission is
+        replace-on-emit.
+
+    Subsystem Context:
+        The package root, hosting `ResearchSet` networks by name with a
+        guaranteed `default`. Sets own the record; the root owns the sets, the
+        configuration lifecycle, and the emission seam. The diff engines and the
+        synthesizer are also root-owned, which is why they receive injected
+        resolvers rather than reaching for custody themselves.
+
+    System Context:
+        Hosted by `Aether`, not by a frame - deliberately. Frames carry NO
+        mutation dimension, so research is a WORLD-scope concern that outlives
+        any individual frame or conduit. Spellbook and Conduit reach it through
+        borrowed read-only accessor properties rather than owning it. In the
+        boot order it sits after the crystallizer and before Nexus, which is
+        exactly why configuration activation must carry the recorded composition
+        forward: the config's emission moment necessarily precedes the root's.
+
     """
 
     DEFAULT_RESEARCH_SET_NAME: ClassVar[str] = "default"

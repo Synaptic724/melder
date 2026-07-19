@@ -6,6 +6,7 @@ from melder.aether.conduit.meld.creation_context.creation_context import (
 from melder.utilities.custom_exceptions.meld_execution_error import (
     MeldExecutionError,
 )
+from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 if TYPE_CHECKING:
     from melder.aether.spellbook.spell import Spell
@@ -24,6 +25,7 @@ class CreationContextBuilder:
           executors.
     """
 
+    __melder_internal__ = _mrg.sentinel
     __slots__ = ()
 
     @staticmethod

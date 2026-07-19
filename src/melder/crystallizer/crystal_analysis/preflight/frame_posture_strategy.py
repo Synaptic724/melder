@@ -23,6 +23,39 @@ class FramePostureStrategy(PersistenceAnalysisStrategy):
     Contract:
         - Severity "warning" once per (frame_name, spellbook) pair
           whose frame twin is absent.
+
+    Threading:
+        Stateless - no instance state and no locks. One analyzer pass
+        calls `analyze` once and the strategy retains nothing between
+        calls, so a single instance is safe to reuse across bundles.
+
+    Registration:
+        MELDER KERNEL - guarded. Preflight strategies are constructed by
+        `PersistenceAnalyzer`, never bound as spells.
+
+    Subsystem Context:
+        One of the ten DEFAULT rows of the preflight set that
+        `PersistenceAnalyzer` iterates polymorphically, emitting the
+        shared finding shape {strategy, severity, kind, key, detail}.
+        This row is SCOPE-BLIND by design, and it is the one row
+        `LoadAdmission` adjudicates afterwards: on conduit-scoped and
+        frame-scoped loads its warnings are reclassified as
+        "expected_for_scope" in the additive "admission" view, because a
+        partial-scope load is EXPECTED to omit frame twins. The raw
+        finding is never rewritten - adjudication is additive, so the
+        strategy stays honest and the reader still sees what it found.
+
+    System Context:
+        Frame posture is load-bearing because of boot order:
+        Aether|AetherUtilitySystem -> Crystallizer -> MutationResearch ->
+        Nexus -> AethericFrame -> Spellbook -> Conduit|Ward. Frames come
+        BEFORE books because the frame owns the dynamic gate that
+        conjure's `check_system_state` reads. So the engine postures a
+        book's frame from its recorded twin before the book builds; with
+        no twin it guesses dynamic from the book's config hints. The
+        world boots either way - which is why this warns rather than
+        blocks - but the user is running on a fallback posture rather
+        than recorded truth, and only this row tells them so.
     """
 
     __melder_internal__: ClassVar[object] = _mrg.sentinel

@@ -17,7 +17,7 @@ def main() -> None:
     book = md.Spellbook()
     palettes = {p.name: p for p in
                 (Palette("dark"), Palette("light"), Palette("contrast"))}
-    book.bind(spell=palettes, existence="unique", permissions="read",
+    book.bind(spell=palettes, existence="unique",
               spellframe="ui", binding_name="palettes")
     conduit = book.conjure()
 

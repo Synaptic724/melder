@@ -3,6 +3,7 @@
 from typing import Dict, Optional
 
 from melder.utilities.general_base.cleanable import Cleanable
+from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 
 class AethericFrameCrystal(Cleanable):
@@ -40,6 +41,7 @@ class AethericFrameCrystal(Cleanable):
         its spellbooks.
     """
 
+    __melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
         "_frame_name",
         "_system_state_name",

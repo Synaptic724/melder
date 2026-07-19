@@ -34,6 +34,7 @@ class _SyntheticModuleImportLoader(importlib.abc.Loader):
         One process-wide loader is created lazily by `SyntheticModule`. It owns
         no module and has no independent cleanup surface.
     """
+
     __melder_internal__ = _mrg.sentinel
     def create_module(self, spec: ModuleSpec) -> ModuleType:
         """
@@ -148,6 +149,7 @@ class _SyntheticModuleMetaPathFinder(importlib.abc.MetaPathFinder):
         The singleton finder may be installed or removed repeatedly. Removing
         it does not unregister, unpublish, execute, or clean a module.
     """
+
     __melder_internal__ = _mrg.sentinel
     def find_spec(
             self,

@@ -1,8 +1,9 @@
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple, ClassVar
 
 from melder.mutation_research.group_diff.group_diff_strategy import (
     GroupDiffStrategy,
 )
+from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 
 class MemberDiffStrategy(GroupDiffStrategy):
@@ -38,7 +39,28 @@ class MemberDiffStrategy(GroupDiffStrategy):
 
     Lifecycle:
         Owned by exactly one `GroupDiffEngine`.
+
+    Registration:
+        MELDER KERNEL - guarded. Shipped implementation; the base
+        `GroupDiffStrategy` stays unguarded so user strategies remain bindable.
+
+    Subsystem Context:
+        The only shipped composition-grain strategy, mirroring the three
+        spell-grain strategies in `diff/strategies/`. Its verdict is the bridge
+        between grains: a `version_moved` pair names two spell identities, which
+        an agent can then descend into `source` / `structural` / `parts` to see
+        what actually changed inside the member.
+
+    System Context:
+        The evidence discipline is the whole design. Set math alone would report
+        every version bump as a removal plus an addition, which reads as
+        churn rather than evolution. Pairing them as a MOVE requires two
+        independent facts - same lane in the residence join, and an ancestry
+        relation through the transitive parent chain - and absent either one the
+        strategy reports removed-plus-added honestly rather than guessing. A
+        shared catch-all lane can never manufacture a move on its own.
     """
+    __melder_internal__: ClassVar[object] = _mrg.sentinel
 
     __slots__ = GroupDiffStrategy.__slots__
 

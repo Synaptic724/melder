@@ -1,8 +1,9 @@
 import ast
 import hashlib
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple, ClassVar
 
 from melder.mutation_research.diff.diff_strategy import DiffStrategy
+from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 
 class StructuralDiffStrategy(DiffStrategy):
@@ -35,7 +36,27 @@ class StructuralDiffStrategy(DiffStrategy):
 
     Lifecycle:
         Owned by exactly one `DiffEngine`.
+
+    Registration:
+        MELDER KERNEL - guarded. Shipped implementation; the base
+        `DiffStrategy` stays unguarded so user strategies remain bindable.
+
+    Subsystem Context:
+        The reasoning grain of the three shipped spell-diff strategies, between
+        `source` (module text) and `parts` (per-class code). It is the one that
+        answers in CONCEPTS rather than characters - which functions and classes
+        moved, and in what aspect.
+
+    System Context:
+        The aspect split is what makes it useful to an agent deciding whether a
+        change is risky: `signature_changed` implies callers may break,
+        `body_changed` implies behaviour may differ, `docstring_changed` implies
+        neither. Body comparison strips docstrings before fingerprinting, so a
+        pure documentation edit reports as docstring-only rather than as a body
+        change - which is precisely the distinction a reviewer needs and a text
+        diff cannot make.
     """
+    __melder_internal__: ClassVar[object] = _mrg.sentinel
 
     __slots__ = DiffStrategy.__slots__
 

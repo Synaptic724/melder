@@ -19,6 +19,35 @@ class ConduitState(Enum):
           not currently attached to an active parent lineage.
         - `cleaned` means teardown has completed and the conduit should be
           treated as unusable.
+
+    Threading:
+        Enum members are immutable and safe to read from any thread. `resolve`
+        is a pure static normalizer holding no state.
+
+    Registration:
+        MELDER KERNEL - guarded, but readable by value. Users observe conduit
+        state; the sentinel only prevents binding the enum CLASS as a spell.
+
+    Subsystem Context:
+        The lifecycle vocabulary for `Conduit`, sitting alongside the ward
+        vocabularies (`Policies`, `Permissions`) that govern contracting rather
+        than lifecycle. `resolve(...)` accepts either a string or an enum member
+        so external and recorded inputs normalize through one path and a bad
+        value raises instead of silently defaulting.
+
+    System Context:
+        These four values are a state MACHINE, not a set of labels, and the
+        transitions are one-way. `lesser` may be promoted to `normal` through
+        `Conduit.upgrade_to_normal(...)` (dynamic mode only); `pooled_lesser` is
+        the idle shell the `ConduitPool` retains for reuse, deliberately
+        detached from any active parent lineage so a reused shell cannot inherit
+        stale ancestry; and `cleaned` is terminal - nothing transitions out of
+        it, which is what makes post-cleanup use a contract violation rather
+        than a recoverable state.
+        The `normal` / `lesser` distinction is what the rest of the runtime
+        branches on: only a normal conduit registers into frame-level surfaces
+        and owns the Spellbook lifecycle, so a lesser conduit's teardown can
+        never unregister state the root still depends on.
     """
     __melder_internal__ = _mrg.sentinel
     normal = auto()

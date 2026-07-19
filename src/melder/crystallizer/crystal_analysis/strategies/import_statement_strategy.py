@@ -14,6 +14,7 @@ from melder.crystallizer.crystal_analysis.strategies.base_strategy import (
     CrystalFactStrategy,
     FactContext,
 )
+from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 
 class ImportStatementStrategy(CrystalFactStrategy):
@@ -34,8 +35,46 @@ class ImportStatementStrategy(CrystalFactStrategy):
         - Each matching node also appends one value-only memo event with kind
           `import`, relative level zero, no raw module name, and the alias
           names as a tuple. No AST node or alias object enters that event.
+
+    Threading:
+        Thread-confined to one analyzer pass; no locks and no instance
+        state (`__slots__` is empty). All mutation lands on the caller's
+        `FactContext`, which is itself confined to that pass.
+
+    Registration:
+        MELDER KERNEL - guarded. Fact strategies are constructed by
+        `CrystalAnalyzer` for one analysis, never bound as spells.
+        Note the classification split: this concrete leaf IS guarded,
+        while its base `CrystalFactStrategy` is deliberately NOT - see
+        that class's Registration section for the MRO reasoning.
+
+    Subsystem Context:
+        The simplest of the four fact strategies that share the
+        analyzer's SINGLE `ast.walk` per module. The analyzer dispatches
+        every node to every strategy in registration order; this one acts
+        only on `ast.Import`. Its sibling `FromImportStatementStrategy`
+        owns the `from ... import ...` half (with relative resolution and
+        submodule probing), `ExportSurfaceStrategy` derives what a module
+        EXPOSES, and `DependencyViewStrategy` turns the collected edges
+        into topological load order after the walk.
+
+    System Context:
+        Two properties here are contracts rather than implementation
+        details. First, ORDER IS OUTPUT: aliases stay in visit order and
+        deduplication is deferred to the analyzer's merge (first-seen
+        wins), because that is what keeps manifest ordering
+        byte-compatible with the pre-decomposition single-pass extractor.
+        A strategy that sorted or deduplicated locally would silently
+        change recorded manifests. Second, nested imports inside
+        functions and classes ARE captured - not by choice here but
+        because the analyzer walks the full tree - which deliberately
+        mirrors the historical extractor.
+        The dependency edges this pass contributes are what later become
+        the `ImpactEngine`'s reverse-import index, so a missed import
+        would understate a change's blast radius.
     """
 
+    __melder_internal__ = _mrg.sentinel
     __slots__ = ()
 
     @property

@@ -29,6 +29,45 @@ class SpellSpaceMeld(Meld):
         - Routes `unique_per_spell_space` work into spellspace-local storage.
         - Routes conduit-owned or broader-lived existences through owner
           conduit or spell-owned shared storage as appropriate.
+
+    Owned State:
+        Only the spellspace object and two cached ids (`_spellspace`,
+        `_spellspace_id`, `_owner_conduit_id`). Every creation store, including
+        the spellspace scope store, is constructed and cleaned on the base
+        `Meld`.
+
+    Threading:
+        Inherits the base door's concurrency posture, including the
+        epoch-guarded fast-door registry.
+
+    Lifecycle / Cleanup:
+        Bound to one `SpellSpace`; it becomes unusable when that spellspace is
+        reset or cleaned. Its stores are torn down by the base.
+
+    Registration:
+        MELDER KERNEL - guarded. Constructed by the owning `SpellSpace`; never
+        user-instantiated and never bindable.
+
+    Subsystem Context:
+        The second of the two concrete doors over abstract `Meld`, paired with
+        `ConduitMeld`. This is the ONLY door that can serve
+        `unique_per_spell_space`, which is exactly why `ConduitMeld` refuses
+        those spells instead of improvising a scope.
+
+    System Context:
+        This door exists because spellspace scope is the one Melder lifetime
+        that is narrower than a conduit and is entered and exited explicitly.
+        It holds BOTH the spellspace-local store and a reference to the owner
+        conduit's store, and that dual grip is the point: a request-scoped
+        instance must die with the spellspace, while a `unique_per_conduit`
+        dependency resolved during that same request must NOT - it belongs to
+        the conduit and has to outlive the request that happened to construct
+        it. Routing every existence through one store would collapse that
+        distinction and turn conduit-lived services into per-request garbage.
+        Scope is enforced upstream too: `SpellSpace` may only meld while it is
+        the ACTIVE spellspace for its conduit, and `reset()` clears
+        spellspace-scoped instances and bumps the version rather than reusing
+        stale ones.
     """
 
     __melder_internal__: ClassVar[object] = _mrg.sentinel

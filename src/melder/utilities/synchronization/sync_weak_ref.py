@@ -17,6 +17,25 @@ _OnCollect = Callable[["SyncWeakRef[T]"], None]
 
 class SyncWeakRef(Sync, Generic[T]):
     """
+    Registration:
+        MELDER KERNEL - guarded. A synchronized reference cell is runtime
+        machinery.
+
+    Subsystem Context:
+        Lives in `utilities/synchronization/` rather than with the weak
+        containers, and the placement is the point: `WeakRefNode` is a passive
+        ELEMENT whose owning container synchronizes it, while this is a
+        self-synchronizing standalone CELL with compare-and-swap. Same weak
+        semantics, opposite responsibility for locking. It is the one member of
+        the `Sync` mix-in family, so it also inherits the deterministic
+        two-wrapper lock ordering that prevents deadlock between cells.
+
+    System Context:
+        Substrate-level, outside the DGR boot order. It suits the "one slot that
+        several threads may swap, without keeping the referent alive" shape -
+        where the weak containers answer "many things I do not own", this
+        answers "one thing I do not own, safely replaceable".
+
     SyncWeakRef(target)
     ===================
 

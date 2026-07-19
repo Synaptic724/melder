@@ -17,6 +17,7 @@ from melder.utilities.general_base.cleanable import Cleanable
 from melder.crystallizer.crystal_loader_system.load_admission import (
     LoadAdmission,
 )
+from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 if TYPE_CHECKING:
     from melder.aether.aether import Aether
@@ -58,6 +59,7 @@ class CrystalLoaderSystem(Cleanable):
         state, borrowed deref, lock last; idempotent.
     """
 
+    __melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
         "_lock",
         "_persistence_system",

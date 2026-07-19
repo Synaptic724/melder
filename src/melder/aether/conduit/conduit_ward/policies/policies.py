@@ -35,6 +35,33 @@ class Policies(Enum):
         - `outbound_only`:
           allow this ward to grant outward, but reject inbound borrowing
           requests initiated by peers.
+
+    Registration:
+        MELDER KERNEL - guarded, but USER-FACING as a value. Guarding and using
+        are orthogonal here: a user passes `Policies.default` into
+        `Spellbook.conjure(...)` by value all the time; the sentinel only stops
+        someone binding the enum CLASS itself as a spell, which is never a
+        meaningful thing to do.
+
+    Subsystem Context:
+        One of the four ward vocabularies. This one is the WARD-LEVEL gate
+        (may a contract form at all, and in which direction), while
+        `Permissions` is the PER-LINEAGE ceiling (what a peer may do with a
+        spell once a contract exists). `ContractTypes` then labels each stored
+        `Detail` by perspective and `DetailReason` records why it exists. A
+        contract only grants when the ward policy admits the direction AND the
+        lineage's own permission allows the capability.
+
+    System Context:
+        Policy is only half-live: these modes "primarily matter in dynamic
+        mode" because contracting itself is gated on it. A `dynamic=False`
+        conjure admits ONLY `Policies.default`, and `Conduit.link(...)` /
+        `sever_link(...)` raise outside dynamic mode - so in an automatic-mode
+        world the other four values are unreachable rather than merely unused.
+        `whitelist_all` is the one mode that can OVERRIDE a per-spell decision:
+        it lets a lineage marked `Permissions.block` pass the ward gate. That
+        makes it the widest authority in the conduit layer and the value to
+        reach for last, not first.
     """
     __melder_internal__ = _mrg.sentinel
     default = auto()

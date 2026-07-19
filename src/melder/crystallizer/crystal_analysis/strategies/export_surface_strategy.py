@@ -20,6 +20,7 @@ from melder.crystallizer.crystal_analysis.strategies.base_strategy import (
     CrystalFactStrategy,
     FactContext,
 )
+from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 
 class ExportSurfaceStrategy(CrystalFactStrategy):
@@ -48,8 +49,48 @@ class ExportSurfaceStrategy(CrystalFactStrategy):
           complete.
         - Memo replay records fresh lists into a fresh result; neither the AST
           nor the cold-path result is retained by the memo.
+
+    Threading:
+        Thread-confined to one analyzer pass; no locks and no instance
+        state (`__slots__` is empty). Output lands on the caller's
+        `FactContext` and `CrystalAnalysisResult`, both confined to that
+        pass.
+
+    Registration:
+        MELDER KERNEL - guarded. Fact strategies are constructed by
+        `CrystalAnalyzer` for one analysis, never bound as spells.
+        Note the classification split: this concrete leaf IS guarded,
+        while its base `CrystalFactStrategy` is deliberately NOT - see
+        that class's Registration section for the MRO reasoning.
+
+    Subsystem Context:
+        One of the four fact strategies sharing the analyzer's SINGLE
+        `ast.walk` per module, and NEW at the S1 decomposition rather
+        than inherited from the historical extractor. It is also the one
+        that records in `analyze_module` (the post-dispatch, module-scoped
+        hook) instead of `visit_node`, because an export surface is a
+        fact about the whole module body rather than any single node.
+        Its siblings cover imports (`ImportStatementStrategy`,
+        `FromImportStatementStrategy`) and post-walk load order
+        (`DependencyViewStrategy`).
+
+    System Context:
+        This pass answers "what does this module expose?" for a RETAINED
+        version - one that may have no importable form in the current
+        environment at all. That constraint is the whole design: the
+        answer must come from syntax, because importing to ask is exactly
+        what the caller cannot do.
+        Hence the static-only `__all__` rule. A dynamic `__all__` (built
+        by comprehension, concatenation, or conditional) yields an EMPTY
+        `all_declared` rather than a partial or inferred list. That is an
+        honest under-claim by design: a reader who sees nothing knows to
+        look, whereas a reader handed a guessed surface has no signal
+        that it might be wrong. The same principle governs the public-name
+        fallback, which reports only what is plainly visible at the
+        module's top level.
     """
 
+    __melder_internal__ = _mrg.sentinel
     __slots__ = ()
 
     @property

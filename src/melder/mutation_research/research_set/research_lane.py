@@ -2,7 +2,7 @@ import copy
 import enum
 import threading
 from datetime import datetime, timezone
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, ClassVar
 
 from melder.mutation_research.research_set.grouped_research_node import (
     GroupedResearchNode,
@@ -10,6 +10,7 @@ from melder.mutation_research.research_set.grouped_research_node import (
 from melder.mutation_research.research_set.research_node import ResearchNode
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
+from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 
 def node_identity(node: object) -> str:
@@ -50,6 +51,28 @@ class LaneState(enum.Enum):
     """
     Lifecycle states for one research lane.
 
+    Registration:
+        VALUE VOCABULARY - deliberately unguarded. An enum is a value a caller
+        passes and compares, never an object Melder injects, so there is nothing
+        to refuse at bind time.
+
+    Subsystem Context:
+        The lifecycle half of the lane vocabulary, beside `LaneType` (the policy
+        half). State says whether a lane still accepts work; type says what kind
+        of work it was for. They are deliberately orthogonal - an archived
+        production lane and an open production lane differ in state, not type.
+
+    Subsystem Context Note - both exits are terminal:
+        `joined` and `archived` both end a lane's writable life, and neither is
+        undone in place. Recovery runs through `NetworkVersioner`, which rebuilds
+        containers wholesale rather than reopening them.
+
+    System Context:
+        Lane state is organization, not runtime. A lane changing state has ZERO
+        effect on what is live - runtime residency is an orthogonal question
+        answered by the frame, which is why archiving a lane never disturbs a
+        running world.
+
     Contract:
         - `open`: the lane accepts registrations and organization.
         - `joined`: the lane finished into its parent; archived-equivalent,
@@ -68,6 +91,24 @@ class LaneState(enum.Enum):
 class LaneType(enum.Enum):
     """
     Policy vocabulary for one research lane (salvaged May classification).
+
+    Registration:
+        VALUE VOCABULARY - deliberately unguarded. Users pass this in directly
+        (`research_create_lane(lane_type=...)`), so it is a value, not an
+        injectable object.
+
+    Subsystem Context:
+        The policy half of the lane vocabulary, beside `LaneState` (the
+        lifecycle half). Deliberately decoupled from lane NAMES: names stay
+        freeform for humans, the type is the word policy reads.
+
+    System Context:
+        Note how little this gates. The type never restricts registration or
+        reads - its ONLY hook is the join gate, and only when the set's
+        `lane_type_enforcement` posture is on (off by default). That restraint
+        is the point: this is a research tool, so classification exists to
+        inform an agent rather than to block it, and even the one gate it does
+        have yields to the same `force=True` supersede the divergence law uses.
 
     Contract:
         - The type is the POLICY word; lane names stay freeform.
@@ -116,6 +157,27 @@ class ResearchLane(Cleanable):
         - State machine: open -> joined | archived; both exits are terminal
           for this container (recovery happens via network restore, which
           rebuilds containers wholesale).
+
+    Registration:
+        MELDER KERNEL - guarded. Lanes are handed out live as READ surfaces and
+        written only by their owning set; a user never constructs or registers
+        one.
+
+    Subsystem Context:
+        The container tier of the ResearchSet package: `ResearchSet` owns lanes,
+        lanes hold nodes, and nodes reference custody. It accepts BOTH node
+        families - `ResearchNode` (one object's versions) and
+        `GroupedResearchNode` (one subsystem's compositions) - dispatching
+        through the module-level identity helper, so a lane of group nodes is a
+        subsystem's timeline exactly as a lane of spell nodes is an object's.
+
+    System Context:
+        A lane is a graph container with ZERO runtime footprint. Membership does
+        not make anything live, and promotion does not move anything between
+        lanes - "which lane holds this version" and "which version is currently
+        selected" are deliberately independent questions. That separation is
+        what lets research organization be reorganized freely without ever
+        disturbing a running world.
         - Mutating verbs require the open state and raise otherwise.
         - `describe()` / `from_payload()` are exact inverses (nodes ride
           nested payloads).
@@ -127,6 +189,7 @@ class ResearchLane(Cleanable):
         Owned by exactly one `ResearchSet`; `cleanup()` cleans owned nodes
         then deletes owned fields; idempotent; lock released last.
     """
+    __melder_internal__: ClassVar[object] = _mrg.sentinel
 
     __slots__ = Cleanable.__slots__ + [
         "_lane_id",

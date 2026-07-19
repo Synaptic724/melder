@@ -16,6 +16,31 @@ class MutationResearchConfigurationBuilder(Cleanable):
     Purpose:
         Mirror the repo's mutable-then-finalize configuration style while
         making ownership explicit.
+
+    Registration:
+        MELDER KERNEL - guarded. Obtained through
+        `MutationResearch.create_configuration_builder()`.
+
+    ONE-SHOT MEANS OWNERSHIP TRANSFERS:
+        The builder owns one mutable configuration during assembly and hands it
+        off exactly once. After `build()` / `finalize()` / `activate()`, the
+        builder has surrendered its configuration - it is not a factory that can
+        be reused to stamp out more. That is what makes ownership unambiguous:
+        at any moment exactly one object is responsible for the configuration,
+        and there is never a window where both the builder and the caller could
+        mutate it.
+
+    Subsystem Context:
+        The fluent front for `MutationResearchConfiguration`, matching the
+        builder pairing used by the Aether and crystallizer configurations. The
+        symmetry is deliberate - an agent that has learned one configuration
+        lane can drive all of them.
+
+    System Context:
+        Sits at the very start of the mutation-research lifecycle: configure,
+        then activate the root, then declare research. Because configuration
+        activation is an emission moment, the assembly this builder performs is
+        also what determines the first recorded twin of the research subsystem.
     """
 
     __melder_internal__ = _mrg.sentinel

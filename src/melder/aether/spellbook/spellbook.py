@@ -273,17 +273,17 @@ and logging.
         # Logger setup
         self._initialize_logging(logger)
 
-        # ACTIVE resolution surface â€” a spell is PULLED from all of these on inactivate
+        # ACTIVE resolution surface — a spell is PULLED from all of these on inactivate
         self._spells: Dict[SpellIndex, Spell] = {}          # ACTIVE: index -> active spell (cold meld resolves here)
         self._lookup_spells: Dict[tuple, SpellIndex] = {}   # ACTIVE: spell._key (frame_key,bind_key) -> index (binding lookup)
         self._spells_by_id: Dict[str, Spell] = {}           # ACTIVE: spell_id -> active spell (meld-by-id)
         self._spell_id_pool: Dict[str, Spell] = {}          # ACTIVE: spell_id -> active spell (warm pool)
 
-        # EXISTENCE â€” all owned ids (active âˆª inactive); KEPT on inactivate, dropped only on full unregister
+        # EXISTENCE — all owned ids (active ∪ inactive); KEPT on inactivate, dropped only on full unregister
         self._spell_ids: Set[str] = set()                   # ALL owned ids (Nexus snapshot reads this; the frame will reference it)
         self._inactive_spells: Dict[str, Spell] = {}  # INACTIVE owned: spell_id -> parked spell (off resolution; repopulates the 7 active maps on notch-back)
 
-        # Contracted (borrowed, keyed by peer conduit id) â€” same split
+        # Contracted (borrowed, keyed by peer conduit id) — same split
         self._contracted_spells: Dict[str, Dict[SpellIndex, Spell]] = {}        # ACTIVE: conduit -> {index -> active borrowed spell}
         self._lookup_contracted_spells: Dict[str, Dict[tuple, SpellIndex]] = {} # ACTIVE: conduit -> {signature -> index}
         self._contracted_spells_by_id: Dict[str, Dict[str, Spell]] = {}         # ACTIVE: conduit -> {spell_id -> active borrowed spell}
@@ -723,7 +723,7 @@ and logging.
         After this runs:
             - Each conduit_id in `_contracted_spells` will have a corresponding
               ConcurrentSet[str] in `_contracted_spell_ids` containing all
-              version IDs (SHA256) for that conduitÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¾Ãƒâ€šÃ‚Â¢s spells.
+              version IDs (SHA256) for that conduit’s spells.
         """
         with self._lock:
             if self._contracted_spells is None or self._contracted_spell_ids is None:

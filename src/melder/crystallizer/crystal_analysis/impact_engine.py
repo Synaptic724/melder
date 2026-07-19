@@ -13,12 +13,13 @@ Lane: EPIC-2026-07-11-crystallizer-v3-horizon-iteration, story S3.
 """
 
 from pathlib import Path
-from typing import Dict, List, Optional, Set
+from typing import Dict, List, Optional, Set, ClassVar
 
 from melder.crystallizer.crystal_analysis.physical_source_cache import (
     PhysicalSourceCache,
 )
 from melder.utilities.general_base.cleanable import Cleanable
+from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 
 class ImpactEngine(Cleanable):
@@ -49,6 +50,8 @@ class ImpactEngine(Cleanable):
     Lifecycle / Cleanup:
         cleanup() deletes the carried indexes (del posture); idempotent.
     """
+
+    __melder_internal__: ClassVar[object] = _mrg.sentinel
 
     __slots__ = Cleanable.__slots__ + [
         "_custody_by_spell",

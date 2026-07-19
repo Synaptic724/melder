@@ -18,7 +18,7 @@ def main() -> None:
     vocabulary = [
         ("spell", "the class/function/instance being registered"),
         ("existence", "where reuse stops (unique / many / per-conduit)"),
-        ("permissions", "read / create / block"),
+        ("permissions", "linking policy for shared worlds (tier 02)"),
         ("spellframe", "top-level classification key (dict-style)"),
         ("binding_name", "sub-key; (frame, name) is the full address"),
         ("disposal_method_names", "your teardown verbs, called at cleanup"),
@@ -32,7 +32,6 @@ def main() -> None:
     book.bind(
         spell=FullyDressed,
         existence=md.Existence.unique,
-        permissions=md.Permissions.create,
         spellframe="demo",
         binding_name="fully-dressed",
         disposal_method_names=["close"],

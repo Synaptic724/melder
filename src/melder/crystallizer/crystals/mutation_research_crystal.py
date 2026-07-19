@@ -3,6 +3,7 @@
 from typing import Dict, List, Optional
 
 from melder.utilities.general_base.cleanable import Cleanable
+from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 
 class MutationResearchCrystal(Cleanable):
@@ -54,6 +55,7 @@ class MutationResearchCrystal(Cleanable):
         MutationResearch root or research sets.
     """
 
+    __melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
         "_activated",
         "_configuration_payload",

@@ -21,6 +21,7 @@ from typing import Dict, List, Optional, TYPE_CHECKING
 
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.crystallizer.crystal_loader_system.load_plan import LoadPlan
+from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 if TYPE_CHECKING:
     from melder.aether.aether import Aether
@@ -64,8 +65,10 @@ class LoadAdmission(Cleanable):
         borrowed record (del posture); idempotent.
     """
 
+    __melder_internal__ = _mrg.sentinel
     # Canonical formation kind order: mirrors the engine's stage order so
     # folds see parents first (class-level constant per module-scope law).
+
     FORMATION_KIND_ORDER = (
         "frame", "spellbook", "conduit", "spell_index",
         "spell_crystal", "cluster", "contract",

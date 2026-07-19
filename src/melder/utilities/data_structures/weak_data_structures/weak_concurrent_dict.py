@@ -73,6 +73,22 @@ class _WeakDictKeysView(Collection[_K]):
     This mirrors the role of `dict_keys`, but iteration snapshots keys through
     the parent weak dict so dead values can be excluded by the parent's current
     liveness rules.
+
+    Registration:
+        INTERNAL VIEW - not guarded and not reachable as a bind target. It is
+        constructed only by `WeakConcurrentDict.keys()` and never handed out as
+        a standalone type.
+
+    Subsystem Context:
+        One of three private view classes in this module, mirroring
+        `dict_keys` / `dict_values` / `dict_items`. All three resolve liveness
+        through the parent on EVERY iteration rather than snapshotting once, so
+        a view reflects collections that happen while it is being consumed.
+
+    System Context:
+        Substrate-level, outside the DGR entirely. Views exist so callers can
+        iterate a weak container without materializing a strong list of its
+        contents - which would defeat the weakness the container is for.
     """
 
     def __init__(self, parent: "WeakConcurrentDict[_K, _V]") -> None:
@@ -126,6 +142,20 @@ class _WeakDictItemsView(Collection[Tuple[_K, _V]]):
     Values are dereferenced lazily through the parent dict's snapshot logic, so
     dead entries are filtered or raised according to the parent container's
     current semantics.
+
+    Registration:
+        INTERNAL VIEW - not guarded and not reachable as a bind target.
+        Constructed only by `WeakConcurrentDict.items()`.
+
+    Subsystem Context:
+        The pairs view of the three private views in this module. It is the one
+        that dereferences on iteration, so it is where a caller is most likely
+        to meet a value that died mid-loop.
+
+    System Context:
+        Substrate-level, outside the DGR. Lazy dereference is deliberate:
+        materializing pairs eagerly would hold every value strongly for the
+        duration of the loop and defeat the container's purpose.
     """
 
     def __init__(self, parent: "WeakConcurrentDict[_K, _V]") -> None:
@@ -185,6 +215,20 @@ class _WeakDictValuesView(Collection[_V]):
 
     This mirrors the role of `dict_values`, but iteration dereferences weak
     nodes through the parent container's liveness rules.
+
+    Registration:
+        INTERNAL VIEW - not guarded and not reachable as a bind target.
+        Constructed only by `WeakConcurrentDict.values()`.
+
+    Subsystem Context:
+        The values view of the three private views in this module. Unlike the
+        keys view it must dereference every node, so it shares the items view's
+        exposure to entries dying mid-iteration.
+
+    System Context:
+        Substrate-level, outside the DGR. Iterating values is the operation most
+        at odds with weakness - it touches every referent - which is why it goes
+        through the parent's liveness rules rather than reading nodes directly.
     """
 
     def __init__(self, parent: "WeakConcurrentDict[_K, _V]") -> None:
@@ -262,7 +306,89 @@ class WeakConcurrentDict(Generic[_K, _V], Cleanable):
       - Idempotent.
       - Calls `node.fire_callbacks()` and then `node.cleanup()` for all nodes.
       - Clears the internal dict and releases the lock.
+
+    Responsibilities:
+        - Hold values weakly while holding keys strongly.
+        - Detect collection through per-value `WeakRefNode` callbacks.
+        - Optionally prune dead entries automatically.
+        - Offer a frozen mode that trades mutability for lock-free reads.
+
+    THE ASYMMETRY IS THE POINT - keys strong, values weak:
+        A key is an identity you look things up BY, so it must stay addressable.
+        A value is the thing whose lifetime you do not want to extend. That is
+        what makes this a cache rather than a store: putting an object in here
+        never keeps it alive, so entries evaporate when the rest of the system
+        stops caring about them.
+
+        Consequence a caller must plan for: an entry can die between two
+        statements. `key in d` followed by `d[key]` is NOT safe - the value can
+        be collected in between and the read raises `DeadReferenceError`.
+
+    DEAD ENTRIES ARE VISIBLE UNTIL PRUNED:
+        Collection marks a node dead; it does not immediately remove the entry.
+        With `auto_prune=True` removal happens on the GC callback and on the
+        read paths that call `_prune_dead_locked()` - `__len__`, `keys`,
+        `values`, `items`, `__iter__`, `to_dict`, `map`, `filter`, `reduce`.
+        With `auto_prune=False`, dead entries persist until `prune()` is called
+        explicitly.
+
+        So `len(d)` can differ before and after a prune, and a dereferencing
+        accessor may raise on an entry that still appears present. Treat length
+        as advisory unless you just pruned.
+
+    FROZEN MODE IS A READ OPTIMIZATION, NOT A SNAPSHOT:
+        `freeze()` forbids mutation (raising `TypeError`) and lets reads skip
+        the lock on the hot path. It does NOT stop values from being collected -
+        the contents can still change underneath a frozen dict, because GC does
+        not respect the freeze. Freeze buys read speed, not stability.
+
+    Owned State:
+        - The internal key -> `WeakRefNode` mapping.
+        - The instance `RLock`, the frozen flag, and the auto-prune flag.
+        - The NODES are owned; the referents behind them explicitly are not.
+
+    Threading:
+        - A per-instance `RLock` protects structural mutation and, in non-frozen
+          mode, the read paths that snapshot internal state.
+        - GC callbacks arrive on whatever thread ran the collection, so pruning
+          is best-effort from that path rather than synchronous with any reader.
+        - Frozen reads skip the lock, but may still take it internally for
+          best-effort pruning when auto-prune is on.
+
+    Lifecycle / Cleanup:
+        - Idempotent. Fires each node's callbacks BEFORE cleaning it, so any
+          registered on-collect handler still runs during teardown rather than
+          being silently dropped.
+        - Clears the mapping and releases the lock.
+
+    Registration:
+        USER-BINDABLE - deliberately unguarded. Owner ruling 2026-07-19: the
+        weak containers are fair to expose. A user may legitimately ask Melder
+        to inject one as their own cache.
+
+    Subsystem Context:
+        The mapping member of `utilities/data_structures/weak_data_structures/`
+        beside `WeakConcurrentList` and `WeakConcurrentSet`, all three built on
+        `WeakRefNode`. Its three private view classes mirror `dict_keys` /
+        `dict_values` / `dict_items` but resolve liveness through the parent on
+        every iteration rather than snapshotting once.
+
+    System Context:
+        A substrate container outside the DGR boot order. It exists for the
+        registry-and-cache shape that recurs throughout the runtime: something
+        needs to remember objects it does not own, and must not be the reason
+        those objects stay alive. `DeadReferenceError` is the failure it raises
+        when a caller asks for a referent that is already gone.
     """
+
+    _ast_helper_access: str = "public"
+    __agent_purpose__: str = (
+        "access: public. Dict with STRONG keys and WEAK values - putting an "
+        "object in never keeps it alive, so use it as a cache, not a store. An "
+        "entry can die between two statements, so `k in d` then `d[k]` may "
+        "raise DeadReferenceError. Dead entries stay visible until pruned; "
+        "freeze() speeds reads but does not stop collection."
+    )
 
     __slots__ = (
             Cleanable.__slots__

@@ -21,6 +21,30 @@ class ContractTypes(Enum):
     - `received`:
       the owning ward is the borrower. This detail records a lineage that came
       from the peer and is now visible locally through the contract.
+
+    Registration:
+        MELDER KERNEL - guarded. This label is written by `ConduitWard` when it
+        stores a `Detail`; callers read contract state through ward verbs
+        rather than constructing these entries themselves.
+
+    Subsystem Context:
+        The PERSPECTIVE half of the detail vocabulary, paired with
+        `DetailReason` (which records WHY an entry exists rather than which
+        side wrote it). Both annotate a `Detail` living in one ward's own map;
+        `Policies` and `Permissions` govern whether that entry could be created
+        at all.
+
+    System Context:
+        The asymmetry documented above is the point: the contract is symmetric
+        at the PAIR level but each ward keeps its OWN detail map, so a single
+        lineage appears as `initiated` on the granting side and `received` on
+        the borrowing side. Two rows, one relationship. Reconciliation and
+        rollback depend on that - unwinding a contract means each ward retiring
+        its own view, and a ward must never assume its label matches its peer's.
+        The same split survives into the record: `ContractCrystal` stores both
+        endpoints with per-side `Detail` / `IndexDetail` projections rather than
+        one shared table, which is why the crystallizer's `contract_peer`
+        preflight row warns when only one side of a pair is present in a bundle.
     """
     __melder_internal__ = _mrg.sentinel
     initiated = auto()

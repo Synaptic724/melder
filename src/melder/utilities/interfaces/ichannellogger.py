@@ -5,6 +5,31 @@ from typing import Any, Callable, Dict, Iterable, List, Optional, Protocol, Unio
 @runtime_checkable
 class IChannelLogger(Protocol):
     """
+    Purpose:
+        Describe the channel-logger shape structurally, so the runtime can
+        accept any conforming implementation without importing one or requiring
+        inheritance.
+
+    Registration:
+        BASE-LIKE - deliberately unguarded, for the same reason `Cleanable` is.
+        The sentinel resolves through `getattr`, so tagging a type that user
+        classes structurally satisfy risks marking user objects internal.
+        Protocols must stay untagged.
+
+    Subsystem Context:
+        One of two Protocols in `utilities/interfaces/`, beside `ICleanable`. It
+        is the contract `SafeLogger` checks for when deciding between its
+        channel path and its stdlib path, and the type
+        `InitHelpers.resolve_channel_logger(...)` is ultimately resolving.
+
+    System Context:
+        Melder logs through providers rather than through `logging` directly, so
+        this shape is the seam where a HOST application plugs its own logging
+        stack in. An implementation registered with `AetherUtilitySystem`
+        becomes the channel logger every runtime object receives - which is why
+        the shape is a Protocol rather than a Melder base class: the
+        implementation is expected to come from outside.
+
     ChannelLogger
     -------------
     Concurrency-safe facade over one or more Python `logging.Logger` instances,

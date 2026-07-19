@@ -32,6 +32,35 @@ class DiffStrategy(Cleanable):
     Lifecycle:
         Owned by exactly one `DiffEngine`; `cleanup()` marks the strategy
         cleaned; idempotent.
+
+    Registration:
+        BASE CLASS - DELIBERATELY UNGUARDED. Do NOT add `__melder_internal__`
+        to this class.
+
+        The registration guard resolves its sentinel through `getattr`, which
+        walks the MRO, so tagging this base would tag every strategy derived
+        from it - including one a USER writes. That matters more here than
+        almost anywhere else in the codebase: this family is explicitly
+        open/closed, and `DiffEngine.register_strategy()` exists so callers can
+        add their own comparison. Guarding the base would make user strategies
+        unbindable in the user's own spellbook. The three Melder-owned concrete
+        strategies carry the sentinel individually.
+
+    Subsystem Context:
+        The extension point of the spell-grain diff family in
+        `mutation_research/diff/`. `DiffEngine` dispatches; the three shipped
+        implementations - `SourceDiffStrategy` (whole-module text),
+        `StructuralDiffStrategy` (AST shape), `PartDiffStrategy` (per-part code)
+        - are the grain choices an agent picks between. `GroupDiffStrategy` in
+        `group_diff/` is the deliberate MIRROR of this contract for composition
+        material rather than spell material.
+
+    System Context:
+        Diffs are a READ over the research record and are never stored: version
+        records are full objects, and "what changed" is derived on demand from
+        crystallizer custody material. That is why a strategy must never retain
+        or mutate what it is handed - retaining material would quietly turn a
+        derived answer into a second, divergent copy of the record.
     """
 
     __slots__ = Cleanable.__slots__

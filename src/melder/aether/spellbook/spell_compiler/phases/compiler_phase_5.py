@@ -561,7 +561,7 @@ class CompilerPhase5:
 
             Contract:
                 - Resolves each root spell from the live spellbook `_spell_id_pool`.
-                - Reuses the compiler-system front faÃ§ade for each root.
+                - Reuses the compiler-system front façade for each root.
                 - Re-runs foundational phases via `run_all_phases(...)` using
                   explicit `spellbook` and `spell` inputs instead of reaching
                   back through the spell-owned `SpellCrafter`.

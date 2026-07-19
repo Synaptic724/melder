@@ -21,6 +21,7 @@ from melder.utilities.general_base.cleanable import Cleanable
 from melder.crystallizer.crystal_analysis.crystal_analysis_result import (
     CrystalAnalysisResult,
 )
+from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 
 ImportEvent = Tuple[str, int, Optional[str], Tuple[str, ...]]
@@ -63,6 +64,7 @@ class FactContext(Cleanable):
         source, AST, and accumulator reference.
     """
 
+    __melder_internal__ = _mrg.sentinel
     __slots__ = (
         "_module_name",
         "_current_package",

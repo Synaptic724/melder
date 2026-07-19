@@ -35,7 +35,61 @@ class WeakConcurrentList(Generic[_T], Cleanable):
     Weak Semantics and Callbacks:
     * **GC Path:** When a referenced object is collected, the weakref callback fires, marks the node dead, and invokes the list's `_on_node_collected` method.
     * **Per-Node Callbacks:** Can be attached (e.g., via `append_with_callback`) and are fired both on GC and during explicit removal/cleanup.
+
+    INDICES ARE NOT STABLE - the property that makes this unlike a list:
+        Entries disappear on collection, not on your call. With `auto_prune` on,
+        a prune can shift every index after the removed one, and it can happen
+        between two of your statements because collection is not scheduled by
+        you. So `for i in range(len(lst))` then `lst[i]` is unsound, and an
+        index held across any suspension point may address a different element
+        or raise `DeadReferenceError`.
+
+        Iterate directly rather than by index, and treat `len()` as advisory
+        unless you just pruned.
+
+    Responsibilities:
+        - Hold elements weakly in insertion order.
+        - Dereference on access, raising rather than yielding a dead entry.
+        - Optionally prune collected entries automatically.
+        - Fire per-node callbacks on GC and on explicit removal.
+
+    Owned State:
+        - The ordered `WeakRefNode` sequence, the lock, the auto-prune flag, and
+          an id. The NODES are owned; their referents explicitly are not.
+
+    Threading:
+        - Synchronized by a per-instance `RLock`.
+        - GC callbacks arrive on the collecting thread, so pruning from that
+          path is best-effort rather than synchronous with any reader.
+
+    Lifecycle / Cleanup:
+        - Fires node callbacks before cleaning nodes, so registered handlers
+          still run at teardown instead of being dropped.
+
+    Registration:
+        USER-BINDABLE - deliberately unguarded. Owner ruling 2026-07-19: the
+        weak containers are fair to expose.
+
+    Subsystem Context:
+        The ordered member of the weak-container trio beside
+        `WeakConcurrentDict` (mapping) and `WeakConcurrentSet` (membership), all
+        three built on `WeakRefNode`. Order is the only thing it adds - and the
+        only thing collection can disturb, which is why index stability is its
+        distinguishing caveat rather than a shared one.
+
+    System Context:
+        Substrate-level, outside the DGR boot order. Fits the "track these
+        without owning them" shape - observers, registries, and pools that must
+        not be the reason their contents stay alive.
     """
+
+    _ast_helper_access: str = "public"
+    __agent_purpose__: str = (
+        "access: public. Ordered container holding elements WEAKLY - it never "
+        "keeps its contents alive. Indices are NOT stable: entries vanish on "
+        "collection, so iterate directly rather than by index, and expect "
+        "DeadReferenceError from a stale one."
+    )
 
     __slots__ = (
             Cleanable.__slots__

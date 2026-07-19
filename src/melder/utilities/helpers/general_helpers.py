@@ -9,7 +9,40 @@ T = TypeVar("T", bound=Enum)
 
 class EnumHelpers:
     """
-    Small helper surface for enum normalization and validation.
+    Purpose:
+        Small helper surface for enum normalization and validation, so callers
+        can accept a raw string at an API boundary and still hold a real enum
+        member internally.
+
+    Responsibilities:
+        - Convert raw string inputs into concrete enum members.
+        - Reject values that do not name a member, loudly.
+
+    Owned State:
+        None. Static namespace, not an object with a lifetime.
+
+    Threading:
+        Stateless and therefore thread-safe.
+
+    Lifecycle / Cleanup:
+        No instances, no cleanup contract. Deliberately not `Cleanable`.
+
+    Registration:
+        MELDER KERNEL - guarded. A coercion namespace is called directly, never
+        registered.
+
+    Subsystem Context:
+        One of the `utilities/helpers/` static namespaces beside `IDBuilder`
+        (identity format), `SpellInputUtils` (lookup-key format), and
+        `InitHelpers` (logger resolution). This one exists so the string ->
+        enum boundary is enforced in one place rather than re-implemented at
+        every public entry point that accepts a friendly string.
+
+    System Context:
+        `Spellbook.bind(...)` accepts permissions and existence as either enum
+        members or strings and converts them here before anything downstream
+        sees them. That is why the rest of the runtime can treat `Existence` and
+        `Permissions` as genuinely typed: the coercion happened at the edge.
 
     Contract:
     - Converts raw string inputs into concrete enum members.
@@ -17,6 +50,15 @@ class EnumHelpers:
       requested enum type.
     - Raises immediately on `None`, incompatible types, or unknown values.
     """
+
+    _ast_helper_access: str = "public"
+    __agent_purpose__: str = (
+        "access: public. Static namespace for coercing raw strings into enum "
+        "members at API boundaries. Call convert_enum_and_check(...) to accept "
+        "a friendly string and hold a real member internally; unknown values "
+        "refuse loudly rather than passing through."
+    )
+
     @staticmethod
     # maxsize sized to the CLOSED vocabulary: 6 existences + 3 permissions
     # + policies/system states, as both string and member-passthrough keys.
@@ -120,7 +162,58 @@ class SpellInputUtils:
 
     After we wire this up, *all* spell key usage (bind + lookup) should
     flow through these helpers.
+
+    Responsibilities:
+        - Normalize the three parts of a spell address: frame key, spell name,
+          binding name.
+        - Compose those parts into the canonical `(frame_key, bind_key)` pair
+          that bind and lookup both key on.
+        - Supply the default binding name so nobody hardcodes it.
+
+    WHY NORMALIZATION IS THE WHOLE POINT:
+        Bind and lookup must agree EXACTLY or a spell becomes unfindable by the
+        name it was registered under. Every address therefore passes through
+        here rather than being assembled at each call site. `DEFAULT_BINDING_NAME`
+        is public for the same reason: an unnamed binding has one spelling
+        (`__default__`), and a call site inventing its own would silently miss.
+
+    Owned State:
+        None beyond the public `DEFAULT_BINDING_NAME` constant. Static
+        namespace, not an object with a lifetime.
+
+    Threading:
+        Stateless and therefore thread-safe.
+
+    Lifecycle / Cleanup:
+        No instances, no cleanup contract. Deliberately not `Cleanable`.
+
+    Registration:
+        MELDER KERNEL - guarded. Address normalization is a runtime concern
+        called directly, never registered.
+
+    Subsystem Context:
+        One of the `utilities/helpers/` static namespaces beside `IDBuilder`,
+        `EnumHelpers`, and `InitHelpers`. The split from `IDBuilder` is
+        deliberate and worth keeping straight: an ID NAMES one object; a KEY
+        ADDRESSES a binding that may be satisfied by different objects over
+        time. Conflating them would make renaming impossible.
+
+    System Context:
+        These keys are the resolution vocabulary of the DGR. `Bind` composes
+        them at registration; `Meld` composes them again at resolve time
+        through `_resolve_spell`; `SpellMap` and `SpellContract` express user
+        intent in the same terms. Phase 4's duplicate-spell-name strategy exists
+        precisely because two bindings normalizing to one key would make
+        name-based resolution ambiguous.
     """
+
+    _ast_helper_access: str = "public"
+    __agent_purpose__: str = (
+        "access: public. Static namespace for spell address normalization. "
+        "Compose (frame_key, bind_key) via normalize_spell_key(...) so bind and "
+        "lookup agree exactly. Use DEFAULT_BINDING_NAME rather than hardcoding "
+        "'__default__' - a call site inventing its own spelling silently misses."
+    )
 
     # Public constant so everyone uses the same default
     DEFAULT_BINDING_NAME: ClassVar[str] = "__default__"

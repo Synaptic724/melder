@@ -1,8 +1,9 @@
 import copy
 from datetime import datetime, timezone
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple, ClassVar
 
 from melder.utilities.general_base.cleanable import Cleanable
+from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 
 class ResearchNode(Cleanable):
@@ -36,7 +37,29 @@ class ResearchNode(Cleanable):
     Lifecycle:
         Owned by exactly one `ResearchLane` at a time (single-residence
         invariant); `cleanup()` deletes owned fields; idempotent.
+
+    Registration:
+        MELDER KERNEL - guarded. A version record is the record's own bookkeeping;
+        users declare research through `ResearchSet` verbs rather than
+        constructing nodes.
+
+    Subsystem Context:
+        The spell-grain node type of the ResearchSet package, and the sibling of
+        `GroupedResearchNode` - which is a deliberately SEPARATE node type for
+        compositions rather than an optional field on this one. A lane holds
+        either kind, dispatching through the module-level identity helper. This
+        one records "a spell version entered the world"; the other records "a
+        set of spells was pinned together".
+
+    System Context:
+        The join point between research and custody. Because a spell's
+        binding-signature SHA256 IS its `SpellCrystal` id, `spell_id` alone
+        reaches the crystallizer's recorded material - which is why a node can
+        stay purely referential and still support source, diff, and impact
+        reads. Nodes are minted from the Spellbook's bind and notch confirmation
+        points while the research root is active.
     """
+    __melder_internal__: ClassVar[object] = _mrg.sentinel
 
     __slots__ = Cleanable.__slots__ + [
         "_spell_id",

@@ -80,7 +80,6 @@ class SpellCrystal(Cleanable):
     """
 
     __melder_internal__ = _mrg.sentinel
-
     __slots__ = Cleanable.__slots__ + [
         "_lock",
         "_id",

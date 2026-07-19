@@ -1,5 +1,5 @@
 import threading
-from typing import Callable, Dict, List, Optional
+from typing import Callable, Dict, List, Optional, ClassVar
 
 from melder.mutation_research.diff.diff_strategy import DiffStrategy
 from melder.mutation_research.diff.strategies.part_diff_strategy import (
@@ -12,6 +12,7 @@ from melder.mutation_research.diff.strategies.structural_diff_strategy import (
     StructuralDiffStrategy,
 )
 from melder.utilities.general_base.cleanable import Cleanable
+from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 
 class DiffEngine(Cleanable):
@@ -49,7 +50,34 @@ class DiffEngine(Cleanable):
         Owned by its creator (the MutationResearch root or a test);
         `cleanup()` cascades into registered strategies; idempotent; lock
         released last.
+
+    Registration:
+        MELDER KERNEL - guarded. The engine is constructed by the research root;
+        the extension point for callers is `register_strategy()`, not binding
+        an engine.
+
+    THE RESOLVER IS INJECTED, AND THAT IS WHY THIS IS TESTABLE:
+        The engine never reaches into the crystallizer itself. It receives a
+        `material_resolver(spell_id)` callable - the research root supplies one
+        backed by custody, tests supply fakes - so the diff family can be
+        exercised with synthetic material and no recorded world at all. It also
+        means resolver errors propagate UNTOUCHED: an unknown identity stays
+        loud rather than being softened into an empty diff.
+
+    Subsystem Context:
+        The dispatcher of the spell-grain diff family in
+        `mutation_research/diff/`, holding the registry that `DiffStrategy`
+        implementations join. `GroupDiffEngine` in `group_diff/` is its
+        deliberate mirror for composition material.
+
+    System Context:
+        Diffs are DERIVED, never stored: version records are full objects, and
+        "what changed" is computed on demand. That is why the engine is
+        open/closed - adding a grain means registering a strategy, never editing
+        this class - and why nothing it produces is written back into the
+        record. A verdict is an answer, not a fact the system remembers.
     """
+    __melder_internal__: ClassVar[object] = _mrg.sentinel
 
     __slots__ = Cleanable.__slots__ + [
         "_material_resolver",

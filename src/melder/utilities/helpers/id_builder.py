@@ -4,7 +4,15 @@ from melder.utilities.helpers.ulid_factory import new_ulid
 
 class IDBuilder:
     """
-    Build stable lineage-style identifiers for runtime-owned objects.
+    Purpose:
+        Build stable lineage-style identifiers for runtime-owned objects, so
+        every id in the system is composed one way instead of each call site
+        inventing its own string format.
+
+    Responsibilities:
+        - Mint fresh ULID segments for new object identities.
+        - Compose dotted lineage ids from an object chain.
+        - Provide the named conduit / ward id shapes the runtime relies on.
 
     Contract:
         - IDs are always joined with dots ('.').
@@ -12,7 +20,53 @@ class IDBuilder:
         - `compose()` reads `_id` first and falls back to `id`.
         - Convenience helpers are thin aliases over `compose()` and preserve its
           error behavior.
+
+    Why ULIDs, and what that costs:
+        `create_id()` returns a ULID, which is lexicographically sortable by
+        creation time. That sortability is used elsewhere in the system as a
+        cheap chronological ordering. It is NOT monotonic within a single
+        millisecond, so two ids minted in the same tick can sort in either
+        order - anywhere true ordering matters, use a recorded sequence rather
+        than comparing ids.
+
+    Owned State:
+        None. Every method is a static helper; the class is a namespace, not an
+        object with a lifetime.
+
+    Threading:
+        Stateless and therefore thread-safe. ULID minting carries no shared
+        counter that could contend.
+
+    Lifecycle / Cleanup:
+        No instances and no cleanup contract. Deliberately not `Cleanable` -
+        there is nothing to release.
+
+    Registration:
+        MELDER KERNEL - guarded. Identity composition is a runtime concern; a
+        user calls these helpers directly rather than registering the namespace.
+
+    Subsystem Context:
+        One of the `utilities/helpers/` static namespaces alongside
+        `SpellInputUtils` (key normalization), `EnumHelpers` (enum coercion),
+        and `InitHelpers` (logger resolution). This one owns identity FORMAT;
+        `SpellInputUtils` owns lookup-key format. They are deliberately separate
+        because an id names one object while a key addresses a binding.
+
+    System Context:
+        Identity flows from here into essentially every runtime object -
+        conduits, wards, and the lineage strings the control plane keys its
+        registries on. Because those ids appear in change-control scope keys and
+        transaction claims, the dotted format is effectively part of the
+        system's wire contract even though it is only a string.
     """
+
+    _ast_helper_access: str = "public"
+    __agent_purpose__: str = (
+        "access: public. Static namespace for building dotted lineage ids. "
+        "create_id() mints a fresh ULID segment; compose() and the conduit/ward "
+        "helpers join an object chain into the canonical dotted form. Stateless "
+        "- call the methods directly, never instantiate."
+    )
 
     @staticmethod
     def create_id() -> str:

@@ -1,9 +1,10 @@
 import copy
 import hashlib
 from datetime import datetime, timezone
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple, ClassVar
 
 from melder.utilities.general_base.cleanable import Cleanable
+from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 
 class GroupedResearchNode(Cleanable):
@@ -32,6 +33,28 @@ class GroupedResearchNode(Cleanable):
           a new fact.
         - `member_spell_ids` are references: members keep their own
           lanes, residence, and custody untouched.
+
+    Registration:
+        MELDER KERNEL - guarded. Compositions are declared through
+        `ResearchSet.register_group()` / `recompose_group()`, never by
+        constructing a node.
+
+    Subsystem Context:
+        The composition-grain node type, and a deliberate SIBLING of
+        `ResearchNode` rather than a subclass or an optional field on it. Both
+        families stay first-class and the duplication is accepted by ruling. A
+        lane holds either kind. The practical difference: a spell node has
+        custody behind it, a group node has none - which is why code-grain verbs
+        refuse a composition id teach-grade rather than pretending.
+
+    System Context:
+        Content-addressing is what makes recomposition meaningful. The identity
+        is a SHA256 over the canonical member list, so recomposing an unchanged
+        roster reproduces the SAME identity and registers as a rediscovery
+        rather than a new fact - the same discipline `NetworkVersioner` applies
+        to organization snapshots, one rung up. Being purely informational is
+        the counterpart: a composition can be declared freely because it gates
+        nothing and cannot execute.
         - `parent_group_ids` is composition ancestry only (the previous
           composition(s) this one evolved from) - a namespace deliberately
           separate from spell ancestry.
@@ -50,6 +73,7 @@ class GroupedResearchNode(Cleanable):
         invariant applies to group identities exactly as to spell
         identities); `cleanup()` deletes owned fields; idempotent.
     """
+    __melder_internal__: ClassVar[object] = _mrg.sentinel
 
     NODE_TYPE = "group"
 

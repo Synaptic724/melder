@@ -29,6 +29,45 @@ class ConduitMeld(Meld):
           is not allowed to fabricate request-local spellspace scope.
         - Never owns spellspace-local `Creations`; that boundary belongs to
           `SpellSpaceMeld`.
+
+    Owned State:
+        None of its own. `__slots__` is deliberately empty - the creation-store
+        surface (`_conduit_creations`, `_root_creations`, `_cluster_creations`,
+        `_spellspace_creations`) is constructed and cleaned on the base `Meld`.
+        This door adds behaviour, not storage.
+
+    Threading:
+        Inherits the base door's concurrency posture, including the
+        epoch-guarded fast-door registry. Hot path under free-threaded 3.14t.
+
+    Lifecycle / Cleanup:
+        Constructed by `Conduit.__init__` and cleaned as part of conduit
+        teardown; the stores it reads are torn down by the base.
+
+    Registration:
+        MELDER KERNEL - guarded. Constructed only inside `Conduit.__init__`;
+        never user-instantiated and never bindable.
+
+    Subsystem Context:
+        One of the two concrete doors over the abstract `Meld` core, paired
+        with `SpellSpaceMeld`. This is the door `Conduit.meld(...)` reaches.
+        All shared lookup, validation, and compiler logic stays on the base, so
+        the two doors differ ONLY in which creation stores they route to.
+
+    System Context:
+        The refusal in the contract above is the load-bearing behaviour. A
+        `requires_spellspace_request` spell asks for request-local scope, and
+        this door has no spellspace to give it. It could invent one - and that
+        is precisely what must not happen, because the caller would receive an
+        instance whose lifetime silently disagrees with its declared
+        `Existence`. Refusing keeps the scoping model honest: a spellspace-scoped
+        instance is reachable only through `SpellSpace`, which enforces that it
+        is the ACTIVE spellspace for the conduit before melding at all.
+        The store split it does own is the ordinary case: caller-local
+        existences (`unique_per_conduit`, `many`) use the conduit's own store,
+        while broader-lived ones (`unique`, `unique_per_conduit_cluster`,
+        `unique_per_conduit_lineage`) resolve against shared owner storage so
+        peers in a cluster or lineage genuinely observe the same instance.
     """
 
     __melder_internal__: ClassVar[object] = _mrg.sentinel

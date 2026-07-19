@@ -25,8 +25,77 @@ class SafeLogger(Cleanable):
       channel logger.
     - Ignores channel-only masking semantics on stdlib logger paths.
     - Falls back to a no-op surface when no logger is configured.
+
+    Responsibilities:
+        - Present one logging surface (debug/info/warning/error/critical)
+          regardless of what is underneath.
+        - Dispatch to the channel path or the stdlib path per wrapped type.
+        - Degrade to a silent no-op when nothing is attached.
+        - Own level state by name and by numeric value.
+
+    NULL-SAFE BY DESIGN - the load-bearing property:
+        A `SafeLogger` wrapping `None` is legal and silent; construction never
+        raises for a missing logger. That is what lets every runtime object take
+        a logger unconditionally during boot without branching on whether
+        logging is configured yet, and it is why `Aether` can start with a null
+        logger and have a real one attached later via `attach_logger(...)`.
+
+        The consequence to know: a never-attached logger swallows everything.
+        Calls succeed and go nowhere.
+
+    TWO WRAPPED SHAPES, ONE SURFACE:
+        - `IChannelLogger` - channel path. Channel-specific stack metadata is
+          preserved, so the channel logger still reports the true call site
+          rather than this adapter.
+        - `logging.Logger` - stdlib path. Channel-only masking semantics do not
+          apply and are ignored rather than emulated.
+
+        Callers never branch on which they hold; that is the point of the
+        adapter.
+
+    Owned State:
+        - `_logger`: the wrapped logger, or None.
+        - `_id`, `_level`, `_level_name`, `_is_channel`.
+
+    Threading:
+        No internal lock. Thread-safety is inherited from the wrapped logger -
+        stdlib handlers are already synchronized and channel implementations own
+        their own contract. The adapter adds no shared mutable state on the emit
+        path.
+
+    Lifecycle / Cleanup:
+        Releases the wrapped logger reference. Per repository teardown
+        discipline, logger cleanup runs LAST in an owner's sequence, after
+        children are torn down, so a child's teardown can still log while it
+        happens.
+
+    Registration:
+        MELDER KERNEL - guarded. The runtime builds these through
+        `InitHelpers`; a user attaches a logger rather than registering an
+        adapter.
+
+    Subsystem Context:
+        The adapter member of the logging trio: `AetherUtilitySystem` hosts the
+        providers, `InitHelpers` is the construction-time resolution seam, and
+        this is the object every runtime component holds and calls.
+
+    System Context:
+        `Aether`, `Spellbook`, `Conduit`, `Nexus`, and `Rift` all log through
+        one of these. Because the provider path returns a null adapter by
+        default, a Melder process is SILENT until logger policy is installed
+        through `AetherConfiguration` - quiet-by-default is a deliberate library
+        posture, not a missing feature. Teardown paths log best-effort so a
+        failure during cleanup never cascades into a second failure.
     """
     __melder_internal__: ClassVar[object] = _mrg.sentinel
+    _ast_helper_access: str = "public"
+    __agent_purpose__: str = (
+        "access: public. One logging surface over channel loggers, stdlib "
+        "loggers, or nothing at all. Wrapping None is legal and silent, which "
+        "is why every runtime object can take a logger during boot without "
+        "checking whether logging is configured. Cleaned LAST in an owner's "
+        "teardown so children can still log while being torn down."
+    )
     __slots__ = Cleanable.__slots__ + ["_logger", "_id", "_level", "_level_name", "_is_channel"]
     _LEVELS: ClassVar[Dict[str, int]] = {
         "notset": logging.NOTSET,

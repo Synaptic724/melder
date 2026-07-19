@@ -1,5 +1,5 @@
 import threading
-from typing import Callable, Dict, List
+from typing import Callable, Dict, List, ClassVar
 
 from melder.mutation_research.group_diff.group_diff_strategy import (
     GroupDiffStrategy,
@@ -8,6 +8,7 @@ from melder.mutation_research.group_diff.strategies.member_diff_strategy import 
     MemberDiffStrategy,
 )
 from melder.utilities.general_base.cleanable import Cleanable
+from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 
 class GroupDiffEngine(Cleanable):
@@ -45,7 +46,26 @@ class GroupDiffEngine(Cleanable):
         Owned by its creator (the MutationResearch root or a test);
         `cleanup()` cascades into registered strategies; idempotent; lock
         released last.
+
+    Registration:
+        MELDER KERNEL - guarded. Constructed by the research root; the caller's
+        extension point is `register_strategy()`, not binding an engine.
+
+    Subsystem Context:
+        The composition-grain dispatcher, structurally identical to `DiffEngine`
+        and deliberately kept separate rather than generalized. The two families
+        differ in what their material IS - module sources versus member rosters
+        - and forcing one engine to serve both would make its resolver contract
+        a union type that neither side fully satisfies.
+
+    System Context:
+        The members join in its material payload can legitimately be EMPTY when
+        residence truth is unavailable to the resolver. That is why
+        `MemberDiffStrategy` requires evidence before pairing a removal with an
+        addition as a version move: the engine cannot promise the join is
+        populated, so the strategy must degrade honestly rather than infer.
     """
+    __melder_internal__: ClassVar[object] = _mrg.sentinel
 
     __slots__ = Cleanable.__slots__ + [
         "_material_resolver",

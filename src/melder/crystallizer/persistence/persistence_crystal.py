@@ -5,6 +5,7 @@ from typing import Dict, List, Optional, Tuple
 
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.crystallizer.persistence.record_version import RecordVersion
+from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 
 class PersistenceCrystal(Cleanable):
@@ -39,6 +40,7 @@ class PersistenceCrystal(Cleanable):
         `from_cached_item()`.
     """
 
+    __melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
         "_id",
         "_profile_name",

@@ -37,6 +37,33 @@ class GroupDiffStrategy(Cleanable):
     Lifecycle:
         Owned by exactly one `GroupDiffEngine`; `cleanup()` marks the
         strategy cleaned; idempotent.
+
+    Registration:
+        BASE CLASS - DELIBERATELY UNGUARDED. Do NOT add `__melder_internal__`
+        to this class, for the same reason as `DiffStrategy`: the sentinel
+        resolves through `getattr` and walks the MRO, so tagging this base would
+        tag every derived strategy including a user's own. The family is
+        open/closed by design - `GroupDiffEngine.register_strategy()` exists
+        precisely so callers can add comparisons. `MemberDiffStrategy`, the
+        shipped implementation, carries the sentinel individually.
+
+    Subsystem Context:
+        The extension point of the COMPOSITION-grain diff family in
+        `mutation_research/group_diff/`, deliberately mirroring
+        `diff/DiffStrategy` rather than sharing with it. The duplication between
+        the two families is an accepted owner ruling: compositions are their own
+        node kind, so they get their own strategy system and both stay
+        first-class. `MemberDiffStrategy` ("members") is the default, pairing
+        added and removed members with lane-EVIDENCED version moves rather than
+        guessing at them.
+
+    System Context:
+        Composition diffs are READS over the record, same as spell diffs -
+        `GroupedResearchNode` records are full compositions and "what changed"
+        is derived on demand. The grain distinction is what makes two families
+        worth having: a spell diff compares module text, a composition diff
+        compares ROSTERS, and collapsing them would force one grain to pretend
+        to be the other.
     """
 
     __slots__ = Cleanable.__slots__

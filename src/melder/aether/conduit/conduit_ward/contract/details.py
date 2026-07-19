@@ -31,6 +31,45 @@ class Detail(Cleanable):
             or received from the owning ward's perspective.
         reason (DetailReason): Why this detail exists in the contract.
         sources (Set[str]): Root spell ids that currently justify this detail.
+
+    Owned State:
+        One `RLock`, a stable `IDBuilder` id, and the six fields above.
+        `sources` is the only mutable collection.
+
+    Contract:
+        - `spell_index` is the DURABLE anchor; `spell_id` is a point-in-time
+          capture. Where they disagree, the index resolves the current head and
+          the captured id records what was actually agreed at grant time.
+        - `sources` is justification reference-counting: the detail survives
+          exactly as long as at least one root still justifies it.
+        - Constructor arguments are type-checked and raise `TypeError` rather
+          than coercing.
+
+    Threading:
+        One instance `RLock`. Details are mutated through the owning
+        `ConduitWard`, so lock order runs ward -> contract -> detail.
+
+    Registration:
+        MELDER KERNEL - guarded. Details are authored by `ConduitWard` when a
+        lineage is granted or borrowed; users read contract state through ward
+        verbs rather than constructing entries.
+
+    Subsystem Context:
+        The VERSION-SNAPSHOT row of the ward contract model, paired with
+        `IndexDetail`, which subscribes to a whole lineage instead. Its three
+        enum fields are the vocabulary defined alongside it: `permissions`
+        bounds capability, `contract_type` records whose perspective wrote the
+        row, and `reason` records why it exists.
+
+    System Context:
+        `sources` is what makes dependency-linked rollback correct. One lineage
+        can be pulled into a contract by several roots at once, so removal
+        cannot be a plain delete - the ward discards the departing root's id and
+        retires the detail only when the set empties. Without it, unlinking one
+        root would revoke a lineage another root still depends on.
+        This pairs directly with `DetailReason`: `dependency` rows are the ones
+        carrying justifying sources, while a `manual` grant was never owned by
+        any root and therefore survives root removal entirely.
     """
     __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
@@ -209,6 +248,43 @@ class IndexDetail(Cleanable):
             ward's perspective.
         reason (DetailReason): Why this detail exists in the contract.
         sources (Set[str]): Root spell ids that currently justify this detail.
+
+    Owned State:
+        One `RLock`, a stable `IDBuilder` id, and the six fields above.
+        `selected_spell_id` and `sources` are both mutable.
+
+    Contract:
+        - `index_id` is the durable SUBSCRIPTION KEY; `selected_spell_id` is a
+          moving pointer refreshed as the owner notches.
+        - A version change updates that pointer in place - the contract surface
+          is never rewritten and no re-grant is required.
+        - `sources` reference-counts justification exactly as `Detail` does.
+
+    Threading:
+        One instance `RLock`. Mutated through the owning `ConduitWard`, so lock
+        order runs ward -> contract -> detail.
+
+    Registration:
+        MELDER KERNEL - guarded. Authored by `ConduitWard` on index-link grants;
+        users read contract state through ward verbs.
+
+    Subsystem Context:
+        The SUBSCRIPTION row of the ward contract model, paired with `Detail`
+        (the version snapshot). A contract holds separate maps for the two: one
+        keyed by spell_id, one by index_id.
+
+    System Context:
+        This row is what decouples cross-conduit sharing from version churn.
+        Because the borrower follows the INDEX rather than a captured member,
+        an owner can notch a lineage - repointing its active spell - and every
+        peer sees the new head without any contract being renegotiated. The
+        alternative, re-granting each borrowed lineage on every notch, would
+        make version movement O(peers) and would race with in-flight
+        resolution.
+        `SpellIndex` identity is a ULID and immutable, which is precisely what
+        makes it a safe durable key while the member it targets keeps moving;
+        the record mirrors that split by snapshotting index MEMBERSHIP as its
+        own twin (`SpellIndexCrystal`) rather than folding it into the spell.
     """
     __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [

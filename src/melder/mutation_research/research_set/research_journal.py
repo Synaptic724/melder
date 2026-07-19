@@ -1,11 +1,12 @@
 import threading
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, ClassVar
 
 from melder.mutation_research.research_set.transition_entry import (
     TransitionAct,
     TransitionEntry,
 )
 from melder.utilities.general_base.cleanable import Cleanable
+from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 
 class ResearchJournal(Cleanable):
@@ -34,7 +35,38 @@ class ResearchJournal(Cleanable):
     Lifecycle:
         Owned by exactly one `ResearchSet`; `cleanup()` cleans owned entries
         then deletes owned fields; idempotent; lock released last.
+
+    THE JOURNAL IS NOT SNAPSHOTTED, AND THAT IS THE POINT:
+        `NetworkVersioner` snapshots the ORGANIZATION - which lane holds what,
+        what is anchored, what is archived - and deliberately excludes this log.
+        So `restore_network` rewinds where things are, and never rewinds what
+        happened.
+
+        The result is a system where organization is recoverable but history is
+        not editable. A restore is itself journalled, carrying the snapshot
+        address it restored from, so the record shows the rewind rather than
+        hiding it.
+
+    Registration:
+        MELDER KERNEL - guarded. The event stream belongs to the record; users
+        read it through `ResearchSet` and room commands.
+
+    Subsystem Context:
+        One of the four bookkeeping structures a `ResearchSet` owns, beside
+        `ResidenceRegistry` (where identities live), `NetworkVersioner` (past
+        organization states), and the lanes. Journal entries are
+        `TransitionEntry` values carrying a `TransitionAct` - and notably there
+        are no rollback acts in that vocabulary, which is the same
+        forward-only conviction expressed in the enum.
+
+    System Context:
+        Answers "how did the network come to look like this" without replaying
+        lane internals. The twin that ships to the crystallizer carries a
+        BOUNDED window of this journal rather than all of it - full history
+        rides the checkpoint sequence instead - so a durable snapshot never
+        grows without limit while the live log stays complete.
     """
+    __melder_internal__: ClassVar[object] = _mrg.sentinel
 
     __slots__ = Cleanable.__slots__ + [
         "_entries",

@@ -585,7 +585,7 @@ class SpellbookConfiguration(Cleanable):
         return {"rejected": rejected, "backfilled": backfilled}
 
     # ------------------------------------------------------------------
-    # System hook API (Meld / Conduit / Link / Contract) Ã¢â‚¬â€œ normal style
+    # System hook API (Meld / Conduit / Link / Contract) – normal style
     # ------------------------------------------------------------------
 
     def add_hook(self, spellbook_id: str, hook_name: str, hook: Callable[..., Any]) -> None:
@@ -892,7 +892,7 @@ class SpellbookConfiguration(Cleanable):
         """
         Fluent
 
-        Load MelderÃ¢â‚¬â„¢s standard defaults into this configuration and return `self`
+        Load Melder’s standard defaults into this configuration and return `self`
         so you can keep chaining.
 
         Behaviour:

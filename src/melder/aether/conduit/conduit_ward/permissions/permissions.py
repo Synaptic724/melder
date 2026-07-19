@@ -29,6 +29,31 @@ class Permissions(Enum):
       the lineage should not be contractable in normal flows. The ward treats
       this as a hard stop unless a broader override policy such as
       `Policies.whitelist_all` explicitly allows exposure.
+
+    Registration:
+        MELDER KERNEL - guarded, but USER-FACING as a value. A user passes
+        `Permissions.create` into `Spellbook.bind(...)` by value; the sentinel
+        only prevents binding the enum CLASS itself as a spell.
+
+    Subsystem Context:
+        The PER-LINEAGE half of the ward vocabulary, paired with `Policies`
+        (the ward-level directional gate). The non-escalation rule stated above
+        is the load-bearing invariant: a contracted lineage is never granted
+        MORE than the spell's own local permission, so a peer can only ever
+        receive a capability the owner already holds. `ContractTypes` labels
+        which side of the relationship a `Detail` was written from, and
+        `DetailReason` records whether the entry was a root grant or a
+        transitive dependency pull.
+
+    System Context:
+        The `read` / `create` split is not about inspection versus mutation -
+        it is about DEPENDENCY PROPAGATION. `read` resolves and inspects, but
+        the lineage cannot act as a creation-capable dependency when work
+        propagates into another conduit; `create` admits it into that
+        resolution path and implies read. That is why cluster auto-sharing
+        defaults to the spell's own `permissions` with a `create` fallback:
+        a cluster exists precisely so members can construct from each other's
+        lineages, and a `read`-only default would make the cluster inert.
     """
     __melder_internal__ = _mrg.sentinel
     read = auto()   # Allows read/resolve access only.

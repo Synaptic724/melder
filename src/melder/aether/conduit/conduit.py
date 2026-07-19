@@ -118,6 +118,40 @@ class Conduit(Cleanable):
           owned registries and logger state.
         - Logger cleanup is intentionally last.
 
+    Registration:
+        MELDER KERNEL - guarded. A conduit is obtained from
+        `Spellbook.conjure(...)` or `Conduit.create_lesser_conduit(...)`, never
+        constructed directly and never bound as a spell. Guarding does not
+        restrict USE: the conduit is the primary object a user holds and calls
+        `meld(...)` on.
+
+    Subsystem Context:
+        The owner of the whole conduit subsystem. It composes one `ConduitMeld`
+        (resolution), one `ConduitCreations` (live-object storage), one
+        `ConduitWard` (contracts, policies, lineage), one `CreationGate`
+        (admission), one `SpellSpacePool`, and one `ConduitPool`. Everything
+        else in this package is reached THROUGH a conduit - which is why the
+        vocabulary classes (`Policies`, `Permissions`, `ConduitState`) are the
+        values a user hands to conduit verbs.
+
+    System Context:
+        A conduit is the boundary at which Melder's promises become concrete.
+        Layer 4 of the runtime (Aether -> AethericFrame -> Spellbook -> CONDUIT
+        -> Meld -> Creations): a `Spellbook` conjures exactly ONE conduit, and
+        from that point the conduit is what the user actually holds.
+        Two invariants explain most of its surface. First, DYNAMIC MODE GATES
+        STRUCTURE: linking, severing, ownership transfer, and lesser-to-normal
+        upgrade all require dynamic mode, because each rewires the resolution
+        graph after conjure and an automatic-mode world promises a fixed,
+        self-contained graph. Second, DRAIN BEFORE MUTATE: the `CreationGate`
+        exists so in-flight melds can finish before shutdown or reconfiguration
+        rather than being torn out mid-resolution - which is why the gate tracks
+        tickets rather than just holding a boolean.
+        The normal/lesser split is a lifetime story, not a capability one. A
+        lesser conduit shares its parent's Spellbook and does not unregister
+        frame-level state, so tearing one down cannot damage the root; upgrading
+        one to normal PRESERVES its already-constructed objects rather than
+        rebuilding them, because callers may already hold those instances.
     """
     __slots__ = Cleanable.__slots__ + [
        "_id",
@@ -5634,7 +5668,7 @@ class Conduit(Cleanable):
         Produces a detailed diagnostic summary of a contract established with a specific conduit.
 
         This method inspects the contract associated with the provided `conduit_id` and returns metadata
-        including the peer conduitÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¡ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¾ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢s name, the number of active spells involved, and permission levels.
+        including the peer conduit's name, the number of active spells involved, and permission levels.
         Primarily used for debugging, introspection, and UI inspection tools.
 
         Args:

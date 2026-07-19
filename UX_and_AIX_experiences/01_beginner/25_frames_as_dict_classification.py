@@ -1,9 +1,10 @@
 """
 TIER: beginner (25)
-GOAL: THE dict-style classifier - spellframes are top-level keys,
-      binding names are sub-keys, and (frame, name) is a full address.
-      Registering a world feels like populating a two-level dict;
-      melding feels like indexing it.
+GOAL: Dict-STYLE classification - the ADDRESSING feels like a
+      two-level dict ((frame, name) is a full address), but frames are
+      NOT dicts: they are grouping and contract keys. A string frame
+      groups; a Protocol frame also VALIDATES what binds under it
+      (intermediate tier). The dict is the feel, not the structure.
 SURFACE EXERCISED: spellframe + binding_name as a dict-shaped address space
 """
 import melder as md

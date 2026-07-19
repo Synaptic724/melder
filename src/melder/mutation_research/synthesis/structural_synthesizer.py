@@ -1,9 +1,10 @@
 import ast
 import hashlib
 import threading
-from typing import Dict, List, Optional, Set, Tuple
+from typing import Dict, List, Optional, Set, Tuple, ClassVar
 
 from melder.utilities.general_base.cleanable import Cleanable
+from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 
 class StructuralSynthesizer(Cleanable):
@@ -44,7 +45,39 @@ class StructuralSynthesizer(Cleanable):
     Lifecycle:
         Owned by its creator (the MutationResearch root or a test);
         `cleanup()` is idempotent; lock released last.
+
+    Registration:
+        MELDER KERNEL - guarded. Reached through
+        `MutationResearch.synthesize_candidate(...)`; a user does not construct
+        or register a synthesizer.
+
+    IT IS THE ONLY WRITER IN A FAMILY OF READERS:
+        Everything else in `mutation_research/` observes - diffs report, impact
+        views join, foresight reads recall. This one PRODUCES new source text.
+        That is why its contract is unusually strict: explicit selections,
+        unique selections, loud refusals, and honest parse errors. A read that
+        guesses returns a wrong answer; a writer that guesses produces code.
+
+        It still records nothing and executes nothing. The output is a candidate
+        text handed back for preview - the agent decides whether it ever becomes
+        real.
+
+    Subsystem Context:
+        The synthesis half of the surgical-mutation flow whose reporting half is
+        the diff family. Diffs answer "what differs between these two"; this
+        answers "compose me a third from parts of both". It pairs with
+        `preview_candidate`, which runs the composed text through the same
+        would-be diff and radius machinery without binding it.
+
+    System Context:
+        Its output feeds the codegen preview lane and, if the agent proceeds,
+        the staged-ancestry mint - which is how a synthesized candidate becomes
+        a multi-parent `ResearchNode` recording that it descended from BOTH
+        contributors. The line-splice details exist to protect that provenance:
+        decorators travel with their definition, and replacements splice in
+        descending line order so earlier spans stay valid as later ones change.
     """
+    __melder_internal__: ClassVar[object] = _mrg.sentinel
 
     __slots__ = Cleanable.__slots__ + [
         "_lock",
