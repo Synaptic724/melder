@@ -59,6 +59,37 @@ job").
    signature-rejection rows).
 
 ## Notes
+- DATETIME: 2026-07-19T14:22:00Z
+  TYPE: MEASURE
+  CLAIM: Owner said SEND IT + refined once more: kwargs must NOT unfold into bind -
+    bind pops its three reserved hook keys and PUSHES the untouched remainder into
+    the Spell; the Spell carries it; the spell object's signature judges. Design
+    locked. Implementation investigation went one seam deeper and STOPPED at the
+    honest line: build_package (spell_codegen_creation_cache.py:99) confirms
+    constructor assembly is PHASE-11 COMPILER OUTPUT - spell_codegen_plan/model
+    objects emitted as code objects + IR rows with a marshal-safe cache above them.
+    Consumption therefore lands in the phase-11 plan/model builders (both lanes:
+    no_overrides fast lane must stay byte-identical for payload-free spells;
+    overrides lane merges payload under socket overrides), NOT in the cache layer
+    and NOT at meld entry (root-only = broken for dependency construction, the
+    acceptance bar). This is multi-file compiler surgery requiring full context
+    headroom; session f is at its working-room tail after five landed waves.
+    DECISION: no code landed this wave - a half-understood compiler edit is the
+    exact failure mode the probe-vs-guess lesson of today exists to prevent.
+  EVIDENCE:
+  - src/melder/aether/spellbook/spell_compiler/codegen_creation_system/codegen_creation/spell_codegen_creation_cache.py:99-150
+  IMPACT: The story now carries the COMPLETE seam map down to the phase-11
+    boundary; the next session opens here and lands capture + carriage +
+    compiler consumption + record + tests + the tier-02 example in one wave.
+  NEXT: Fresh-context wave: (1) Spell payload slot + receive verb (spell.py:61
+    class); (2) bind split at spellbook.py:4737 region (hooks -> _add_hooks_to_spell
+    unchanged; remainder -> spell verb; instance profile rejects non-empty); (3)
+    phase-11 plan/model payload inlining (read strategies/generalized compilers
+    FIRST); (4) SpellCrystal record field + restore parity; (5) tests incl.
+    dependency-position delivery; (6) intermediate example + probe flips.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
 
 ## Context / Handoff Summary
 Beginner harness is 51/51 green and pinned the current silent-swallow behavior -

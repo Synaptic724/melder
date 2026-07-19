@@ -47,7 +47,7 @@ class CounterSwitch(Cleanable):
         - Elect exactly one leader out of the idle state, under the one lock.
         - Park followers on the event while a leader is pending.
         - Publish a lock-free `fast_state` mirror for hot readers.
-        - Release parked followers into a coherent terminal state on cleanup.
+        - Terminate cleanly once its threads are done, releasing owned slots.
 
     Design intent:
         - Minimal API surface for hot paths.
@@ -56,11 +56,8 @@ class CounterSwitch(Cleanable):
     Threading:
         - `advance()` and the `>=2` fast path in `selector()` are LOCKLESS.
         - The lock is taken in exactly two places: the idle-state leader claim
-          and `cleanup()`. They share the lock deliberately, so a racing claim
-          can never clear the terminally-set event after cleanup has set it.
-        - `selector()` re-checks `_cleaned` INSIDE the lock before claiming.
-          Without that check a late claimer would clear the terminal event and
-          park every subsequent follower forever.
+          and `cleanup()`. They share the lock deliberately, so a leader claim
+          cannot interleave with the terminal transition.
         - Mirror ordering is the publication guarantee: `fast_state` is written
           only AFTER the deque mutation, so a hot reader can never observe a
           state the deque has not already reached. It can be stale; it cannot be
@@ -88,25 +85,26 @@ class CounterSwitch(Cleanable):
         because releasing parked waiters correctly is the whole point.
 
     System Context:
-        A substrate primitive outside the DGR boot order, but its terminal
-        contract is the same one `LoadGate` follows - the tombstone law below
-        is named after it. Anywhere the runtime parks threads on a shared
-        condition, teardown has to leave a coherent surface for the sleeper to
-        wake into, and that requirement shapes cleanup across the whole
-        synchronization family.
+        A substrate primitive outside the DGR boot order. Worth contrasting with
+        `LoadGate`, which parks threads on the same kind of shared condition but
+        keeps `None` tombstones through teardown so a late waiter can re-check
+        and exit. This switch does NOT - it deletes its slots, because its owner
+        quiesces it before cleanup rather than cleaning up underneath live
+        selectors. Two different answers to the same question, chosen by who is
+        expected to be parked at teardown time.
 
     Lifecycle / Cleanup:
-        - "cleanup()" terminally opens and idles the switch: tickets clear to
-          the terminal "0" state and the event is set so parked selectors are
-          released. All four slots are RETAINED ALIVE as documented terminal
-          surfaces (LoadGate tombstone law; not del): a parked selector may
-          still be inside "selector()" when cleanup runs, wakes on the event,
-          re-checks cleaned state, and exits with the terminal "0". Deleting
-          the slots (normal del posture) would raise AttributeError inside
-          that waiter, so "_event" stays alive terminally set as the
-          terminal-open surface, "_tickets" stays alive empty, and
-          "_lock"/"fast_state" stay alive for in-flight leader claims and
-          hot readers.
+        - "cleanup()" idles the switch inside the guarded section - tickets
+          clear, mirror zeroes, event sets - then releases all four owned slots
+          under normal del posture.
+        - Idempotent and double-checked under the lock, so concurrent TEARDOWN
+          is safe even though concurrent USE during teardown is not.
+        - PRECONDITION: the owner cleans up a switch once its threads are DONE,
+          never while selectors are in flight. The primitive cannot enforce this
+          - ticket cardinality is the state VALUE, not a count of callers, so it
+          has no way to observe or drain in-flight selectors. Using a cleaned
+          switch raises AttributeError, which is the intended loud failure for
+          out-of-contract use.
     """
 
     _ast_helper_access: str = "public"
@@ -114,8 +112,8 @@ class CounterSwitch(Cleanable):
         "access: public. Three-state coordination latch: 0=idle, 1=pending "
         "(a leader claimed it), >=2=open. Call selector() to either pass "
         "through, become the leader, or park until the leader finishes. Read "
-        "fast_state for a lock-free hot-path view. Cleanup releases parked "
-        "waiters into terminal 0 rather than deleting its slots."
+        "fast_state for a lock-free hot-path view. Cleanup is terminal - clean "
+        "up only once your threads are done, never underneath live selectors."
     )
 
     __slots__ = ("_lock", "_event", "_tickets", "fast_state")
@@ -146,27 +144,33 @@ class CounterSwitch(Cleanable):
         """
         Public API
 
-        Tear down this primitive and release any waiting selectors.
+        Terminally tear down this primitive.
+
+        PRECONDITION - the caller must have quiesced this switch:
+            Cleanup is only valid once no thread is inside "selector()". The
+            owner of a CounterSwitch cleans it up when its threads are DONE, not
+            while they are still coordinating on it.
+
+            This is a call-site invariant that the primitive cannot enforce:
+            ticket cardinality is the STATE value, not a count of callers, so
+            the switch has no way to observe in-flight selectors. It therefore
+            cannot drain and does not try. Ignoring the precondition means a
+            parked selector wakes into released slots and raises
+            AttributeError - out-of-contract use, failing loudly on purpose.
 
         Contract:
             - Idempotent; safe under concurrent double-cleanup.
-            - Clears all tickets and the fast-state mirror to the terminal
-              "0" state, then sets the event so parked followers are released
-              into that terminal state.
-            - RETAINED TERMINAL SURFACES (LoadGate tombstone law; not del):
-              a parked follower may still be inside "selector()" when cleanup
-              runs; it wakes on the event, re-checks cleaned state, and exits
-              with the terminal "0". Deleting the slots (normal del posture)
-              would raise AttributeError inside that waiter, so all four
-              slots stay alive: "_event" terminally set as the terminal-open
-              surface, "_tickets" alive and empty, "_lock" alive for
-              in-flight leader claims, "fast_state" zeroed for hot readers.
+            - Inside the guarded section: clears all tickets, zeroes the
+              fast-state mirror, and sets the event, so the switch reaches a
+              coherent idle-and-open terminal state before anything is released.
+            - Then releases all four owned slots under NORMAL DEL POSTURE. The
+              switch is terminal; nothing is expected to read it again.
 
         Threading:
             - Teardown serializes with "selector()" leader claims on the
-              existing claim lock so a racing claim can never clear the
-              terminally set event after cleanup. Hot paths ("advance",
-              the ">=2" selector fast path) remain lockless and untouched.
+              existing claim lock, so a leader claim cannot interleave with the
+              terminal transition. Hot paths ("advance", the ">=2" selector
+              fast path) remain lockless and untouched.
         """
         if self._cleaned:
             return

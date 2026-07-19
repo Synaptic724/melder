@@ -179,62 +179,53 @@ def test_counter_switch_repeated_cycles_with_selector_and_advance() -> None:
         assert switch.advance(-2) == 0
 
 
-def test_counter_switch_cleanup_wakes_pending_selector_waiter() -> None:
+def test_counter_switch_cleanup_is_idempotent() -> None:
     """
     Purpose:
-        Verify cleanup releases waiters blocked in selector.
+        Verify cleanup is safe to call more than once.
     Contract:
-        - Pending follower selector exits after cleanup with the terminal
-          ``0`` and never raises.
-        - All slots stay alive as retained terminal surfaces (LoadGate
-          tombstone law): ``_event`` terminally set, ``_tickets`` empty,
-          ``_lock`` alive for in-flight claims.
+        - The first call tears the switch down and marks it cleaned.
+        - A second call is a no-op and does not raise, even though the first
+          call already released every slot.
     """
-    switch = CounterSwitch(0)
-    assert switch.selector() == 1
-
-    done = threading.Event()
-    result_holder: dict[str, object] = {}
-
-    def _follower() -> None:
-        try:
-            result_holder["state"] = switch.selector(timeout_seconds=1.0)
-        except Exception as exc:
-            result_holder["error"] = exc
-        finally:
-            done.set()
-
-    thread = threading.Thread(target=_follower, daemon=True)
-    thread.start()
-    assert done.wait(timeout=0.05) is False
+    switch = CounterSwitch(2)
     switch.cleanup()
-    assert done.wait(timeout=1.0) is True
-    thread.join(timeout=1.0)
-    assert switch._event.is_set() is True
-    assert len(switch._tickets) == 0
-    assert switch._lock is not None
-    assert "error" not in result_holder, (
-        f"follower crashed: {result_holder.get('error')!r}"
-    )
-    assert result_holder["state"] == 0
+    assert switch.cleaned is True
+
+    switch.cleanup()
+    assert switch.cleaned is True
 
 
-def test_counter_switch_post_cleanup_reads_serve_terminal_idle_state() -> None:
+def test_counter_switch_post_cleanup_use_is_out_of_contract() -> None:
     """
     Purpose:
-        Verify post-cleanup reads observe one coherent terminal idle state
-        instead of raising on torn internals (retained-terminal-surface
-        contract; the old del posture raised AttributeError here).
+        Pin the terminal teardown posture: cleanup releases every owned slot
+        under normal ``del`` posture, so the switch is not usable afterwards.
+
     Contract:
-        - ``selector()`` returns the terminal ``0`` without claiming.
-        - ``len`` / ``bool`` / ``state`` all read the terminal ``0``.
+        - Cleanup is TERMINAL. Post-cleanup access raises ``AttributeError``
+          rather than serving a synthetic idle state.
+        - This is deliberate. A ``CounterSwitch`` is cleaned up by its owner
+          once its threads are DONE; using one afterwards is out of contract in
+          exactly the same way as any other use-after-clean, and failing loudly
+          beats quietly answering ``0`` and hiding the misuse.
+        - The switch cannot defend this itself: ticket cardinality is the STATE
+          value, not a count of callers, so it has no way to observe or drain
+          in-flight selectors.
     """
     switch = CounterSwitch()
     switch.cleanup()
-    assert switch.selector() == 0
-    assert len(switch) == 0
-    assert bool(switch) is False
-    assert switch.state == 0
+
+    for probe in (
+        lambda: switch.selector(timeout_seconds=0.1),
+        lambda: len(switch),
+        lambda: bool(switch),
+        lambda: switch.state,
+        lambda: switch.advance(1),
+        lambda: switch.fast_state,
+    ):
+        with pytest.raises(AttributeError):
+            probe()
 
 
 def test_counter_switch_fast_state_mirrors_construction_states() -> None:
@@ -284,17 +275,22 @@ def test_counter_switch_fast_state_tracks_selector_leader_claim() -> None:
     assert switch.fast_state == switch.state
 
 
-def test_counter_switch_cleanup_zeroes_fast_state_mirror() -> None:
+def test_counter_switch_cleanup_releases_the_mirror_slot() -> None:
     """
     Purpose:
-        Verify cleanup retains the fast-state mirror as a terminal surface
-        (retained-terminal-surface contract) instead of deleting it.
+        Verify the fast-state mirror is released with the rest of the owned
+        slots under normal ``del`` posture.
+
     Contract:
-        - Post-cleanup ``fast_state`` reads the terminal ``0``, so a hot
-          reader can never observe a stale open state or crash on a torn
-          slot.
+        - ``fast_state`` is owned state, not a retained tombstone, so it goes
+          away with the deque, event, and lock.
+        - Live mirror correctness is covered by the ``advance`` and leader-claim
+          mirror tests above; this one pins only the teardown posture.
     """
-    switch = CounterSwitch()
+    switch = CounterSwitch(5)
+    assert switch.fast_state == 5
+
     switch.cleanup()
-    assert switch.fast_state == 0
-    assert switch.fast_state == switch.state
+
+    with pytest.raises(AttributeError):
+        _ = switch.fast_state
