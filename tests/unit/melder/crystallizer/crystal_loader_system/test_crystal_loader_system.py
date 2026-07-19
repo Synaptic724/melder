@@ -6,6 +6,8 @@ before any replay), and the loader's durable load state.
 
 Runs only on 3.14t (melder package root import chain).
 """
+import pytest
+
 from melder.crystallizer.crystal_loader_system.load_admission import (
     LoadAdmission,
 )
@@ -561,4 +563,161 @@ def test_host_blockers_refuse_before_any_replay_unless_skipping():
             armed.cleanup()
     finally:
         admission_plane.cleanup()
+        record_system.cleanup()
+
+
+def test_configure_restore_scheduler_installs_a_parallel_pool():
+    """
+    Purpose:
+        Verify the crystallizer's activation seat installs a loader-owned
+        PhaseScheduler when the parallel driver is selected (S4 wiring;
+        REOPEN 2026-07-19 regression lane).
+    Contract:
+        parallel_enabled=True leaves the loader owning one live scheduler
+        built through the explicit construction lane; the pool slot is the
+        lifecycle surface (no public read exists by design).
+    Returns:
+        None.
+    Raises:
+        AssertionError: If no live pool is owned after configuration.
+    """
+    record_system = PersistenceSystem()
+    loader = CrystalLoaderSystem(record_system)
+    try:
+        loader.configure_restore_scheduler(
+            parallel_enabled=True,
+            worker_count=2,
+            barrier_timeout_ms=5000,
+        )
+        assert loader._restore_scheduler is not None
+        assert loader._restore_scheduler.cleaned is False
+    finally:
+        loader.cleanup()
+        record_system.cleanup()
+
+
+def test_configure_restore_scheduler_disabled_owns_no_pool():
+    """
+    Purpose:
+        Verify the sequential fallback selection (parallel_enabled=False)
+        owns no pool, and that flipping OFF cleans a previously installed
+        pool (no orphan workers survive a policy change).
+    Contract:
+        False -> slot None; a prior enabled pool is cleaned before the
+        policy lands.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If a pool survives the sequential selection.
+    """
+    record_system = PersistenceSystem()
+    loader = CrystalLoaderSystem(record_system)
+    try:
+        loader.configure_restore_scheduler(
+            parallel_enabled=True,
+            worker_count=2,
+            barrier_timeout_ms=5000,
+        )
+        prior = loader._restore_scheduler
+        loader.configure_restore_scheduler(
+            parallel_enabled=False,
+            worker_count=4,
+            barrier_timeout_ms=60000,
+        )
+        assert loader._restore_scheduler is None
+        assert prior.cleaned is True
+    finally:
+        loader.cleanup()
+        record_system.cleanup()
+
+
+def test_configure_restore_scheduler_replaces_and_cleans_prior_pool():
+    """
+    Purpose:
+        Verify reconfiguration replaces the pool: the old scheduler is
+        cleaned (workers sentinelled + joined) and a distinct new pool
+        installs under the new policy.
+    Contract:
+        Second enabled configuration -> prior pool cleaned, new pool is a
+        different live object.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If the prior pool leaks or is reused.
+    """
+    record_system = PersistenceSystem()
+    loader = CrystalLoaderSystem(record_system)
+    try:
+        loader.configure_restore_scheduler(
+            parallel_enabled=True,
+            worker_count=2,
+            barrier_timeout_ms=5000,
+        )
+        first = loader._restore_scheduler
+        loader.configure_restore_scheduler(
+            parallel_enabled=True,
+            worker_count=3,
+            barrier_timeout_ms=7000,
+        )
+        second = loader._restore_scheduler
+        assert first.cleaned is True
+        assert second is not first
+        assert second.cleaned is False
+    finally:
+        loader.cleanup()
+        record_system.cleanup()
+
+
+def test_configure_restore_scheduler_rejects_invalid_explicit_values():
+    """
+    Purpose:
+        Verify the scheduler's explicit-lane validation guards the loader
+        seat: non-positive worker counts refuse and no pool installs.
+    Contract:
+        worker_count=0 raises ValueError (scheduler law); the loader owns
+        no pool afterwards (the slot cleared before construction).
+    Returns:
+        None.
+    Raises:
+        AssertionError: If an invalid policy leaves a pool behind.
+    """
+    record_system = PersistenceSystem()
+    loader = CrystalLoaderSystem(record_system)
+    try:
+        with pytest.raises(ValueError):
+            loader.configure_restore_scheduler(
+                parallel_enabled=True,
+                worker_count=0,
+                barrier_timeout_ms=5000,
+            )
+        assert loader._restore_scheduler is None
+    finally:
+        loader.cleanup()
+        record_system.cleanup()
+
+
+def test_loader_cleanup_cleans_the_owned_restore_pool():
+    """
+    Purpose:
+        Verify loader teardown cleans the owned pool (cleanup order law:
+        the scheduler is cleaned with the loader, before borrowed derefs).
+    Contract:
+        After loader.cleanup(), the previously owned pool reports cleaned.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If loader cleanup leaks a live pool.
+    """
+    record_system = PersistenceSystem()
+    loader = CrystalLoaderSystem(record_system)
+    loader.configure_restore_scheduler(
+        parallel_enabled=True,
+        worker_count=2,
+        barrier_timeout_ms=5000,
+    )
+    pool = loader._restore_scheduler
+    loader.cleanup()
+    try:
+        assert pool.cleaned is True
+    finally:
         record_system.cleanup()

@@ -181,5 +181,85 @@ admission.
   REREAD: REQUIRED
   SCORE_0_TO_10: 9
 
+- DATETIME: 2026-07-19T08:58:03Z
+  TYPE: MEASURE
+  CLAIM: REOPEN fix wave applied AND a dedicated regression wave added (29 new tests, 3
+    files, all compile()-green on the 3.14t import chain; pytest Not run - device VM is
+    CPython 3.11 and the melder package root uses 3.14 deferred annotations, so the owner's
+    3.14t run executes them). (1) test_crystallizer_configuration_restore_knobs.py (12):
+    the three restore getters default True/4/60000; roots-only config validates with the
+    knobs ABSENT from _properties (the exact KeyError-shaped fixture); with_defaults installs
+    all three; explicit values + both bool polarities read back; positive-int getter/validate
+    discipline on the two int knobs; reload-lane backfills all three AND keeps recorded values
+    over defaults; freeze rejection; and an end-to-end bare-activated-config read of the three
+    properties the loader now uses (the fix's read path). (2)
+    crystal_loader_system/test_restore_plan_levels.py (10): drives _build_plan_levels over
+    seeded folded stores and asserts the exact 4-level canon structure plus per-edge parent-
+    before-child placement (frame->book, book->link[both endpoints], book->cluster[all
+    members], link->contract), unrecorded-frame-edge-not-drawn, edgeless nexus in level 0,
+    empty world -> [], and determinism - the compiler path the phantom depends_on kwarg died
+    on. (3) dag/test_dag_add_dependency_signature.py (7): pins add_dependency's real
+    (parent_key, child_key, *, param_name, socket_kind) contract, parent-first ordering in
+    both sort and levels, on-demand node creation, empty-key refusal, AND a direct lock that
+    the retired depends_on= kwarg raises TypeError (routed via dict-unpack so no type:ignore
+    is needed - synaptic ban honored; zero banned patterns across all three files).
+  EVIDENCE:
+  - tests/unit/melder/crystallizer/test_crystallizer_configuration_restore_knobs.py:1-1
+  - tests/unit/melder/crystallizer/crystal_loader_system/test_restore_plan_levels.py:1-1
+  - tests/component/melder/spellbook/spell_crafter/dag/test_dag_add_dependency_signature.py:1-1
+  IMPACT: Every REOPEN root cause now has a symptom-named regression that would fail on the
+    exact broken code (KeyError on bare activate; TypeError on depends_on=; wrong backfill
+    list); the plan-graph shape is pinned so future edge-direction drift is caught at the
+    unit layer, not only in the expensive integration parity suite.
+  NEXT: Owner reruns 3.14t (the four fixes + these 29 regressions + the existing parity/chaos
+    suites); green -> closure walkthrough + patch-lane promotion.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-07-19T09:11:06Z
+  TYPE: MEASURE
+  CLAIM: REOPEN fix wave LANDED + full test build-out across all three lanes. Fixes: (a)
+    three typed defaulted properties on CrystallizerConfiguration (True/4/60000; house
+    checkpoint_interval_minutes pattern) + Crystallizer.activate() reads them - the KeyError
+    site is gone; validate() docstring names the new defaults. (b) All 5 engine plan-graph
+    edges + 14 DAG-test call sites flipped to the real parent-first add_dependency
+    signature; the flatten-law loop unpack renamed child_id/parent_id. (c) reload-lanes
+    backfill expectation carries the 3 new schema keys (sorted-order machine-verified).
+    Found on re-entry: two owner-side unit suites already landed against the fix
+    (test_crystallizer_configuration_restore_knobs.py, 12 rows;
+    test_restore_plan_levels.py, 10 rows) - every API contact in both verified against
+    source (engine ctor kwargs, empty-fold-at-init seeding, cleanup law, error texts,
+    in-level id ordering): SOUND. My additions: 5 loader unit rows
+    (configure_restore_scheduler install/disable/replace/invalid/cleanup), a new component
+    file (4 rows: roots-only activation wires the default parallel pool - the red-run
+    fixture shape at the failing site; polarity False = no pool; explicit knobs reach
+    pool.workers/barrier_timeout_ms; deactivate keeps + reactivate replaces), and 1
+    integration arc (roots-only config end-to-end parallel restore of a sealed linked
+    world: plan summary populated, spellbook=2/link=1 built, gate released). Two of my own
+    mid-wave guesses were caught by the verify loop before landing: a phantom
+    PhaseScheduler.describe() (real surface: workers/barrier_timeout_ms properties) and a
+    wrong "book" built-count kind (real: "spellbook") - both corrected from source reads.
+    compile() green x8 across every touched file; line cap clean. pytest Not run - the
+    device VM is CPython 3.10 and cannot import the 3.14 deferred-annotation runtime
+    (proven: NameError on a TYPE_CHECKING name at import); the whole wave rides the
+    owner's 3.14t rerun. Version dev-suffix failure remains RAISED as pre-existing.
+  EVIDENCE:
+  - src/melder/crystallizer/configuration/crystallizer_configuration.py:365-460
+  - src/melder/crystallizer/crystallizer.py:415-435
+  - src/melder/crystallizer/crystal_loader_system/restore_engine.py:745-810
+  - tests/unit/melder/crystallizer/test_crystallizer_configuration_restore_knobs.py:1-321
+  - tests/unit/melder/crystallizer/crystal_loader_system/test_restore_plan_levels.py:1-353
+  - tests/unit/melder/crystallizer/crystal_loader_system/test_crystal_loader_system.py:565-720
+  - tests/component/melder/crystallizer/test_crystallizer_restore_policy_component.py:1-180
+  - tests/integration/melder/crystallizer/test_crystallizer_restore_integration.py:2233-2306
+  IMPACT: The REOPEN is code-complete with unit + component + integration coverage on
+    every fixed surface; the phantom-kwarg and optional-knob regressions can no longer
+    land silently.
+  NEXT: Owner reruns 3.14t (recommend: pytest tests/unit/melder/crystallizer -q; pytest
+    tests/component/melder/spellbook/spell_crafter/dag tests/component/melder/crystallizer
+    -q; pytest -m integration -k restore). Green -> closure walkthrough + patch promotion.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
 ## Context / Handoff Summary
 Final assembly: compiles the canon partial order onto the scheduler inside the cohort span.

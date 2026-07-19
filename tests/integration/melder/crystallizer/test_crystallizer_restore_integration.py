@@ -2230,3 +2230,75 @@ def test_parallel_driver_failure_tears_the_partial_world_down(cache_root):
     assert "level_" in str(raised.value)
     frame = Aether()._aetheric_frames["default"]
     assert frame._conduits == {}
+
+
+def test_roots_only_configuration_parallel_restores_a_sealed_world(
+        cache_root,
+):
+    """
+    Purpose:
+        End-to-end REOPEN regression (2026-07-19): the red run's fixture
+        shape - a configuration that never set the restore knobs - must
+        boot, activate, and PARALLEL-restore a sealed multi-entity world
+        purely on the schema defaults (True/4/60000). The old activate()
+        KeyError'd before any load could start.
+    Contract:
+        - Roots-only configuration activates the crystallizer.
+        - load_checkpoint completes under the default parallel driver:
+          status complete, plan summary present (level_count >= 2), books
+          and the link edge rebuilt, load authority fully released.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If the defaults-only lane fails anywhere between
+            activation and the restored world.
+    """
+    def build_world_and_seal():
+        crystallizer = _activate_crystallizer()
+        book_a = _dynamic_book()
+        book_a.bind(
+            spell=RestoreAlpha,
+            existence=Existence.unique,
+            permissions="create",
+        )
+        conduit_a = book_a.conjure(dynamic=True, name="alpha")
+        book_b = _dynamic_book()
+        book_b.bind(
+            spell=RestoreGamma,
+            existence=Existence.unique,
+            permissions="create",
+        )
+        conduit_b = book_b.conjure(dynamic=True, name="beta")
+        assert conduit_a.link(conduit_b) is True
+        checkpoint_id = crystallizer.create_checkpoint()
+        crystallizer.flush_checkpoint(checkpoint_id)
+        return checkpoint_id
+
+    checkpoint_id = build_world_and_seal()
+
+    Aether._reset_singleton_for_tests()
+    AetherUtilitySystem._reset_singleton_for_tests()
+    Nexus._reset_singleton_for_tests()
+    Crystallizer._reset_singleton_for_tests()
+    aether = Aether()
+    Spellbook._aether = aether
+    Conduit._aether = aether
+    # The red-run shape: roots only, no with_defaults(), no restore knobs.
+    configuration = CrystallizerConfiguration().with_user_source_root_paths(
+        (".",)
+    ).activate()
+    crystallizer = Crystallizer()
+    crystallizer.activate(configuration)
+
+    crystallizer.reload_cached_checkpoint(checkpoint_id)
+    report = crystallizer.load_checkpoint(checkpoint_id)
+
+    assert report["status"] == "complete"
+    # Schema-default driver selection: parallel ran, so the plan summary
+    # is populated (sequential runs carry an empty plan by contract).
+    assert report["plan"]["level_count"] >= 2
+    assert sum(report["plan"]["nodes_per_level"]) >= 4
+    assert report["built_counts"].get("spellbook", 0) == 2
+    assert report["built_counts"].get("link", 0) == 1
+    # The load span released: no residual authority bars root work.
+    assert Aether()._load_gate.is_held() is False
