@@ -795,6 +795,47 @@ NOTE (ITEM 5 phase opened - real public-method contracts, Spell complete):
   REREAD: REQUIRED
   SCORE_0_TO_10: 8
 
+NOTE (ITEM 5 chunk 2 - AethericFrameConfiguration posture surface, 2 SHIPPED DOC LIES FOUND):
+  CHUNK 2: 17 of 42 public methods now carry real contracts (0 -> 50 canonical sections).
+  TWO DOCSTRINGS WERE FACTUALLY WRONG about what they gate. Verified against
+    `Conduit._transaction_blocked_for_current_posture` (conduit.py:1273-1315), which is the
+    only place these flags are consumed as a gate:
+    1. `with_disable_linking` claimed it refuses "link AND SEVER". It blocks
+       `ChangeTransactionType.LINK` only. `UNLINK` carries NO posture gate anywhere in src -
+       a conduit can always detach from a frame that refuses new links.
+    2. `with_disable_conduit_cluster` claimed it refuses "cluster join, LEAVE, and share". It
+       blocks `CLUSTER_LINK` only. `CLUSTER_LEAVE` carries NO posture gate - a conduit can
+       never be trapped in a cluster by posture.
+    Both corrected. This is the SAME asymmetry already recorded as the elect/unelect law in
+    the aetheric_frame epic: the system restricts ENTRY and always leaves EXIT open. Two
+    independent subsystems now confirm it, so treat exit-is-never-gated as a frame-wide law.
+  THE SUBTRACTIVE-POSTURE FACT (undocumented before, now on every toggle): each per-family
+    flag is OR'd with `system_state is not dynamic`, so LINK / TRANSFER / CLUSTER / MUTATION
+    are ALREADY refused on an automatic frame. The per-family toggles only SUBTRACT from a
+    dynamic world; setting them on an automatic frame changes nothing.
+    `disable_all_transactions_after_conjure` is the exception - it is checked BEFORE every
+    per-family flag and is the only disable that meaningfully restricts a dynamic world.
+  OTHER REAL FACTS RECORDED:
+    - `freeze()` is IDEMPOTENT AND SILENT: a second call discards a later `origin_spellbook_id`
+      entirely. It validates INSIDE the lock but emits the crystal OUTSIDE it, and emission
+      needs origin_frame_name + dynamic + crystallizer initialized AND activated - so an
+      AUTOMATIC frame never records a posture crystal.
+    - `validate()` NEVER returns False; it has exactly one rule (ai_native requires dynamic)
+      and raises. The `-> bool` is convention, not a verdict channel.
+    - `with_defaults()` silently DISCARDS a custom `system_cache_root_path` (recomputed), and
+      resets `disable_mutations` to True - mutation is the one opt-IN capability.
+    - The whole `with_*` family MUTATES self and returns self. It looks like a builder but
+      yields no variants; `base.with_x()` changes `base`.
+  VALIDATION: ast.parse OK; stripped-AST diff vs HEAD = 0 lines on both files touched this
+    chunk, proving docstring-only. Not run: pytest (needs 3.14t; sandbox is 3.10).
+  EVIDENCE:
+  - src/melder/aether/conduit/conduit.py:1273-1315 (the only consuming gate)
+  - src/melder/aether/aetheric_frame/aetheric_frame_configuration.py:347 (freeze)
+  NEXT: finish AethericFrameConfiguration (25 thin left, mostly property getters), then
+    NexusConfiguration 35, then the FrameViewer/View* AR surface.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
 ## Context / Handoff Summary
 Program epic for a correctness-plus-enrichment pass over all 542 classes in `src/melder`.
 Carries THE OBJECT CONTRACT (five items per class) and THE CHUNKING LAW (task <=10 classes,

@@ -2254,43 +2254,40 @@ def test_refresh_all_spell_ids_calls_both(monkeypatch):
     assert calls == ["local", "contracted"]
 
 
-def test_check_system_state_allows_default_in_automatic():
+def test_check_system_state_trusts_effective_dynamic_default_policy():
     """
     Purpose:
-        Ensure default policy is rejected when automatic flag is False.
+        Confirm the gate no longer polices flag-vs-posture mismatch
+        (settle-then-inherit law, owner ruling 2026-07-20).
     Contract:
-        SpellbookCreationSystem.check_system_state raises for default policy in automatic state when not allowed.
+        SpellbookCreationSystem.check_system_state receives the EFFECTIVE mode from
+        Spellbook._settle_or_inherit_conjure_mode; dynamic=True with the default
+        policy passes regardless of the recorded posture.
     Returns:
         None.
     Raises:
-        AssertionError: If the expected error is not raised.
+        AssertionError: If the removed mismatch police reappears.
     """
     sb = Spellbook(configuration=DummyConfig(system_state=SystemState.automatic))
     sb._logger = DummySafeLogger()
-    with pytest.raises(RuntimeError):
-        SpellbookCreationSystem.check_system_state(sb, Policies.default, dynamic=True)
+    SpellbookCreationSystem.check_system_state(sb, Policies.default, dynamic=True)
 
 
-def test_check_system_state_dynamic_in_automatic_raises():
+def test_check_system_state_dynamic_mode_admits_dynamic_policies():
     """
     Purpose:
-        Verify dynamic policy is rejected in automatic mode when not allowed.
+        Verify dynamic-only policies are admitted when the effective mode is dynamic.
     Contract:
-        SpellbookCreationSystem.check_system_state raises when automatic is False and policy is dynamic,
-        and the error message includes policy and system_state context.
+        SpellbookCreationSystem.check_system_state does not raise for whitelist_all with
+        dynamic=True; the policy gate only guards non-dynamic mode (the retained branch).
     Returns:
         None.
     Raises:
-        AssertionError: If the expected error is not raised.
+        AssertionError: If a dynamic policy is rejected in effective dynamic mode.
     """
     sb = Spellbook(configuration=DummyConfig(system_state=SystemState.automatic))
     sb._logger = DummySafeLogger()
-    with pytest.raises(RuntimeError) as excinfo:
-        SpellbookCreationSystem.check_system_state(sb, Policies.whitelist_all, dynamic=True)
-    message = str(excinfo.value)
-    assert "policy=Policies.whitelist_all" in message
-    assert "dynamic=True" in message
-    assert "system_state=SystemState.automatic" in message
+    SpellbookCreationSystem.check_system_state(sb, Policies.whitelist_all, dynamic=True)
 
 
 def test_check_system_state_dynamic_policy_rejected_when_dynamic_disabled():
@@ -3024,11 +3021,11 @@ def test_run_resolution_phases_scheduler_release_failure_logged(monkeypatch):
 @pytest.mark.parametrize(
     "policy,automatic,expect_raises",
     [
-        (Policies.default, False, True),
+        (Policies.default, False, False),
         (Policies.default, True, False),
-        (Policies.whitelist_all, False, True),
+        (Policies.whitelist_all, False, False),
         (Policies.whitelist_all, True, True),
-        (Policies.block_all, False, True),
+        (Policies.block_all, False, False),
         (Policies.block_all, True, True),
     ],
 )
@@ -3038,6 +3035,8 @@ def test_check_system_state_matrix(policy, automatic, expect_raises):
         Validate policy/state combinations against automatic mode rules.
     Contract:
         SpellbookCreationSystem.check_system_state raises only when expect_raises is True.
+        automatic=False models an EFFECTIVE dynamic conjure (settle-then-inherit law):
+        dynamic mode admits every policy; only non-dynamic mode polices non-default policies.
     Args:
         policy: Policy value under test.
         automatic: Whether automatic mode is enabled.

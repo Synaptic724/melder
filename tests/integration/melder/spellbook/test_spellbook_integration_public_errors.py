@@ -10,8 +10,10 @@ from melder.aether.spellbook.spellbook import Spellbook
 from tests.mocks.spellbook.core_classes import BasicService
 
 
+from melder.aether.aetheric_frame.aetheric_frame_configuration import AethericFrameConfiguration
+from melder.aether.spellbook.configuration.system_state import SystemState
 from tests._frame_posture_test_support import (
-    apply_dynamic_defaults_for_spellbook_configuration,
+    apply_automatic_defaults_for_spellbook_configuration,
 )
 @pytest.fixture(autouse=True)
 def reset_aether_singleton_for_integration() -> None:
@@ -63,13 +65,14 @@ def test_spellbook_conjure_rejects_invalid_policy_string() -> None:
 def test_spellbook_conjure_rejects_dynamic_policy_when_non_dynamic() -> None:
     """
     Purpose:
-        Validate conjure rejects dynamic-only policies in non-dynamic mode.
+        - Non-dynamic conjure on an automatic world rejects non-default policies
+          (settle-then-inherit: the world's automatic posture is the effective mode).
     Contract:
         - dynamic=False rejects non-default policies.
     Returns:
         None.
     Raises:
-        AssertionError: If dynamic policies are accepted in non-dynamic mode.
+    apply_automatic_defaults_for_spellbook_configuration(configuration)
     """
     configuration = SpellbookConfiguration()
     apply_dynamic_defaults_for_spellbook_configuration(configuration)
@@ -84,19 +87,27 @@ def test_spellbook_conjure_rejects_dynamic_policy_when_non_dynamic() -> None:
 
     with pytest.raises(RuntimeError, match="Dynamic-only policies"):
         spellbook.conjure(policy="whitelist_all", dynamic=False, name="root")
-
-
-def test_spellbook_conjure_rejects_dynamic_mode_in_automatic_system_state() -> None:
+def test_spellbook_conjure_dynamic_flag_cannot_override_settled_automatic_world() -> None:
     """
     Purpose:
-        Validate conjure rejects dynamic mode when system_state is automatic.
+        Validate the dynamic flag is ignored on a SETTLED automatic world
+        (settle-then-inherit law, owner ruling 2026-07-20). On a FRESH world
+        conjure(dynamic=True) SETTLES the world dynamic instead - the old
+        refusal is the settlement case now.
     Contract:
-        - dynamic=True raises when system_state is automatic.
+        - On a frozen automatic posture, conjure(dynamic=True) INHERITS
+          automatic; a dynamic-only policy therefore still raises the
+          policy refusal.
     Returns:
         None.
     Raises:
-        AssertionError: If dynamic mode is allowed in automatic system_state.
+        AssertionError: If the flag overrides a settled automatic world.
     """
+    frame = Aether()._ensure_frame("default")
+    frame.bind_frame_configuration(AethericFrameConfiguration(
+        origin_spellbook_id=None, system_state=SystemState.automatic,
+        ai_native_enabled=False, rift_enabled=False,
+    ))
     spellbook = Spellbook()
     config = spellbook.get_configuration()
     config.set_property("phase_scheduler_workers_per_spellbook", 1)
@@ -105,6 +116,9 @@ def test_spellbook_conjure_rejects_dynamic_mode_in_automatic_system_state() -> N
         existence=Existence.unique,
         permissions="create",
     )
+
+    with pytest.raises(RuntimeError, match="Dynamic-only policies"):
+        spellbook.conjure(policy="whitelist_all", dynamic=True, name="root")
 
     with pytest.raises(RuntimeError, match="automatic system_state"):
         spellbook.conjure(policy="default", dynamic=True, name="root")
