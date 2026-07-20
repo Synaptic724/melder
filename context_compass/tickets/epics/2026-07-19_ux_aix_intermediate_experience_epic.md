@@ -30,6 +30,70 @@ The working developer's tier: SpellBinder fluent binding, spellframes and contra
 - DECISION for every init-surface change the tier proposes.
 
 ## Notes
+- DATETIME: 2026-07-20T01:19:00Z
+  TYPE: MEASURE
+  CLAIM: SETTLE-THEN-INHERIT LANDED (owner-ruled; patch lane
+    conjure_settle_then_inherit_2026_07_20). Code: Spellbook.
+    _settle_or_inherit_conjure_mode (settlement via canonical
+    bind_frame_configuration on unfrozen posture; inheritance otherwise;
+    effective mode threaded to the entire conjure chain); check_system_state's
+    mismatch throw DELETED (policy gate + missing-posture refusal retained). 4
+    unit rows (settle/static-own-gate/frozen-automatic-ignores-flag/
+    frozen-dynamic-inherits). UX payoff: _dynamic_world helper is now a PLAIN
+    BOOK - zero private seams anywhere in intermediate; refusal probe flipped to
+    settlement probe. compile green x5. pytest Not run - owner 3.14t:
+    pytest tests/unit/melder/aether/spellbook/test_conjure_settle_or_inherit.py -q
+    then the full suite + the UX harness.
+  EVIDENCE:
+  - context_compass/system_docs/patches/active/conjure_settle_then_inherit_2026_07_20/architecture_patch.md:1-40
+  - src/melder/aether/spellbook/spellbook.py:5786-5800
+  - tests/unit/melder/aether/spellbook/test_conjure_settle_or_inherit.py:1-80
+  IMPACT: One declaration flows downhill; conjure(dynamic=True) finally does
+    what everyone assumed; intermediate needs no substrate access at all.
+  NEXT: Owner full-suite run (component tests that pre-posture frames land in
+    the inherit case and should stay green; any red = the map missed a consumer).
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-07-20T01:22:00Z
+  TYPE: MEASURE
+  CLAIM: OWNER-ORDERED INVESTIGATION: remove conjure's dynamic policing; conduits
+    inherit the world's (frame's) posture; dynamic-only operations keep failing
+    at THEIR OWN gates. Full impact map (source-verified): (1) PRECEDENT EXISTS -
+    Spellbook._is_dynamic_posture() (spellbook.py:3191) already reads frame
+    posture and bind_inactive (:4500) already gates on it: conjure is the odd one
+    out. (2) THE CHECK - check_system_state (spellbook_creation_system.py:1104)
+    does two jobs: [a] dynamic-flag vs posture mismatch throw = DELETE; [b]
+    non-dynamic + non-default policy throw = RETAIN, keyed off POSTURE (that
+    failure is on purpose - the policy cannot work). (3) FLAG CONSUMERS to switch
+    to posture-derived: SpellbookCreationSystem._dynamic (:129, threaded :197/
+    :218/:239), blueprint metadata dynamic_mode/automatic_mode (:436-437 - where
+    the CONDUIT's mode is born), Spellbook._conjure_dynamic_hint (-> origin_
+    dynamic :5299, config emission), the dynamic-crystallizer config-discipline
+    guard in _conjure_within_transaction_window, ConduitCloud registration
+    (dynamic-and-named -> postured-and-named). Downstream link/sever/transfer/
+    upgrade gates UNCHANGED (they read conduit state, which is now born from
+    posture). (4) EXTERNAL CALLSITES passing dynamic=: only THREE in src -
+    __init__ docstring text, nexus_frame_manager.py:1028 (frames postured by
+    builder; drop arg), restore_engine.py:1825 (replays recorded flag; frames
+    stage binds posture BEFORE books in the canonical order, so posture already
+    carries the truth; drop arg, twin field stays for history). (5) PARAM
+    DISPOSITION - owner decision: remove outright (breaks the many test
+    callsites; sweep needed) vs accept-and-ignore for one iteration with the
+    test sweep separate. RECOMMENDATION: accept-and-ignore + deprecation note,
+    sweep tests in the same wave the aetheric-frame introduction lands.
+  EVIDENCE:
+  - src/melder/aether/spellbook/spellbook.py:3191-3205
+  - src/melder/aether/spellbook/spellbook_creation_system.py:1099-1156
+  - src/melder/crystallizer/crystal_loader_system/restore_engine.py:1823-1830
+  - src/melder/nexus/nexus_frame_manager.py:1026-1031
+  IMPACT: Small, well-bounded change; one truth (frame posture) flows downhill;
+    purposeful failures stay at the verbs that own them.
+  NEXT: Owner reviews this map + rules param disposition -> patch-gated story
+    (conjure_inherits_world_posture) implements with tests.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
 - DATETIME: 2026-07-20T00:58:00Z
   TYPE: DECISION
   CLAIM: Two owner semantic corrections applied. (1) POSTURE-ONCE LAW: the world

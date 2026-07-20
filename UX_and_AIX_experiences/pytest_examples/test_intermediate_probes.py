@@ -31,16 +31,14 @@ class Payload:
     pass
 
 
-def test_probe_plain_dynamic_conjure_always_refuses():
+def test_probe_dynamic_flag_settles_fresh_world():
     """
-    THE LAW (source-proven, spellbook_creation_system.py:1099): frames are
-    born automatic and nothing on Spellbook/SpellbookConfiguration flips
-    them - so plain-book conjure(dynamic=True) ALWAYS raises. Owner ruling
-    2026-07-20: stands for now; the posture door arrives with the
-    aetheric-frame introduction next iteration.
+    SETTLE-THEN-INHERIT (landed 2026-07-20): on a fresh world the
+    dynamic flag SETTLES the posture and conjure proceeds - the old
+    always-refuse law is repealed by design.
     """
-    with pytest.raises(RuntimeError):
-        _dyn_book().conjure(dynamic=True, name="refused")
+    conduit = _dyn_book().conjure(dynamic=True, name="settled")
+    assert conduit is not None
 
 
 def test_probe_helper_postured_dynamic_world_links():

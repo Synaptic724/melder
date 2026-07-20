@@ -1737,11 +1737,39 @@ and logging.
         """
         Public API
 
-        Return the unique identifier of this Spellbook instance.
+        Return this spellbook's generated ownership id.
+
+        Purpose:
+            The id is the stamp the rest of the system uses to say "this
+            spellbook owns that thing". Spell indexes record it as their
+            `owner_spellbook_id`, transaction scope keys and the
+            `spellbook:<id>` initiator string are derived from it, and
+            crystallizer removal events carry it.
+
+        Contract:
+            - Generated once by `IDBuilder` during `__init__` and never
+              reassigned; stable for the object's whole life.
+            - Not derived from the frame name. Two spellbooks on the same
+              aetheric frame have different ids, and a book produced by
+              `create_new_preset_spellbook()` does NOT inherit its source's id.
+            - Identifies the BOOK, not its contents. It does not change when
+              spells are bound, removed, or grafted.
+
+        Threading:
+            Unsynchronized read of a write-once slot; safe from any thread
+            while the spellbook is live.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`, so this raises after cleanup rather
+            than returning a stale id - the slot itself is deleted during core
+            teardown.
 
         Returns:
             str:
                 This Spellbook's unique identifier.
+
+        Raises:
+            RuntimeError: If the spellbook has already been cleaned.
         """
         self.check_cleaned()
         return self._id
@@ -1859,13 +1887,48 @@ and logging.
     #region General Methods
     def find_spell_by_id(self, spell_id: str) -> Optional[Spell]:
         """
-        Finds a spell by its unique identifier within the spellbook.
+        Public API
+
+        Return the local spell whose index owns `spell_id`, or None.
+
+        Purpose:
+            Resolve any id in a spell's version lineage back to the live
+            `Spell` object that currently represents it.
+
+        Contract:
+            - Searches THIS spellbook's registry only. Spells reachable through
+              contracted conduits or through other books in the frame are not
+              consulted; `inspect_spell` is the frame-wide search.
+            - Ownership is decided by `SpellIndex.has_spell`, which tests
+              MEMBERSHIP of the index's version lineage rather than equality
+              with the currently selected id. A superseded or parked version id
+              therefore still resolves - and it resolves to the spell as it
+              exists NOW, not to the state that version described.
+            - Returns None on a miss. This is deliberately unlike the
+              `find_spell_index` / `find_spell_key` siblings, which raise on a
+              miss; a None here means "no local index claims this id", not
+              "lookup failed".
+            - Pure lookup: creates, registers, and mutates nothing.
+
+        Threading:
+            Does not acquire `self._lock`. The returned object is a live
+            reference, so a concurrent removal or graft can invalidate it after
+            this returns. Callers that need the result to stay valid must hold
+            the lock across their own use of it.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
 
         Args:
-            spell_id: The identifier of the spell to find.
+            spell_id:
+                Any id belonging to the target spell's version lineage.
 
         Returns:
-            Optional[Spell]: The spell if found, otherwise None.
+            Optional[Spell]:
+                The owning spell, or None when no local index claims the id.
+
+        Raises:
+            RuntimeError: If the spellbook has already been cleaned.
         """
         self.check_cleaned()
         for spell_index, spell in self._spells.items():
@@ -1879,21 +1942,39 @@ and logging.
         """
         Public API
 
-        Retrieves the access permissions for a **locally** registered spell.
+        Read the capability ceiling recorded for one LOCAL spell lineage.
+
+        Purpose:
+            Report what this Spellbook is willing to expose for a lineage it OWNS, which is
+            the upper bound any contract can grant a peer.
+
+        Contract:
+            - LOCAL ONLY. Contracted (borrowed) lineages are not searched, so a lineage
+              this book borrows raises rather than reporting the lender's permission. That
+              is deliberate: the ceiling belongs to the owner, not the borrower.
+            - Returns the enum's NAME as a string, not the `Permissions` member. Compare
+              against `Permissions.create.name`, or convert with
+              `EnumHelpers.convert_enum_and_check(...)`, rather than comparing to the enum
+              directly.
+            - NEVER RETURNS None. Despite the `Optional[str]` annotation, the outcomes are
+              a name or a raised `RuntimeError`.
+            - This is the SPELL-side ceiling. A contract may grant less, never more - see
+              `Permissions` for how the ward applies it.
 
         Args:
             spell_index:
-                The SpellIndex of the spell.
+                Lineage handle whose owning spell should be read.
 
         Returns:
-            Optional[str]:
-                The permissions name (``"read"``, ""create"", or
-                ""block"") for this spell.
+            str:
+                One of `"read"`, `"create"`, or `"block"`.
 
         Raises:
             RuntimeError:
-                If the spell with the given index is not found in the
-                local spellbook.
+                If no LOCAL spell is registered for the given index.
+
+        Threading:
+            Takes no lock of its own; it delegates to the internal spell lookup.
         """
         spell = self._find_spell(spell_index)
         if spell:
@@ -2062,20 +2143,42 @@ and logging.
         """
         Public API
 
-        Finds a spell's SpellIndex using its logical identifiers.
+        Resolve the lineage (`SpellIndex`) behind one logical spell address.
 
-        The search checks local spells first, then contracted spells.
+        Purpose:
+            Turn the human-facing `(spellframe, spell_name, binding_name)` address into the
+            durable lineage handle, so callers can follow the lineage rather than pinning
+            whichever version happens to be selected right now.
+
+        Contract:
+            - Searches LOCAL spells first, then every contracted (borrowed) spellbook map.
+              A borrowed lineage is therefore resolvable through the borrower's own book.
+            - The three inputs are normalized into one lookup key before matching, so
+              casing differences in the binding name do not change the result.
+            - NEVER RETURNS None. Despite the `Optional[SpellIndex]` annotation, the only
+              outcomes are a `SpellIndex` or a raised `RuntimeError`. Do not write a
+              `is None` branch against this method - it is unreachable.
 
         Args:
-            spellframe (str): The logical namespace or grouping label.
-            spell_name (str): The name of the spell class or function.
-            binding_name (str): The secondary key to distinguish the spell.
+            spellframe:
+                Logical namespace or grouping label the spell was bound under.
+            spell_name:
+                Name of the bound class or function.
+            binding_name:
+                Secondary key distinguishing several providers of the same frame.
 
         Returns:
-            Optional[SpellIndex]: The SpellIndex associated with this spell.
+            SpellIndex:
+                The lineage handle for the addressed spell. The returned index is the
+                stable identity - its `selected_spell_id` may move underneath you when the
+                owner notches, which is the intended way to follow a lineage.
 
         Raises:
-            RuntimeError: If the spell is not found in the spellbook (local or contracted).
+            RuntimeError: If the address matches neither a local nor a contracted spell.
+
+        Threading:
+            Takes the Spellbook lock for the lookup and RELEASES it before raising, so the
+            failure path does not hold the lock while unwinding.
         """
         self.check_cleaned()
         with self._lock:
@@ -2174,20 +2277,41 @@ and logging.
         """
         Public API
 
-        Finds a spell's primary lookup key using its logical identifiers.
+        Confirm that one logical spell address is resolvable, returning its lookup key.
 
-        The search checks local spells first, then contracted spells.
+        Purpose:
+            An EXISTENCE PROBE, not a derivation. The key is built from the three inputs
+            before any lookup, so the returned value is fully determined by the arguments -
+            what the call actually tells you is that a spell is registered under it.
+
+        Contract:
+            - Searches LOCAL spells first, then every contracted (borrowed) map.
+            - The returned key is the SAME key constructed from the arguments; nothing is
+              read out of the registry into it. Call this to answer "is this address
+              bound?", not to discover an address you did not already have.
+            - NEVER RETURNS None. Despite the `Optional[tuple]` annotation, the outcomes
+              are a key or a raised `RuntimeError`.
+            - Use `find_spell_index(...)` instead when you want the lineage itself; that is
+              the call that returns information you did not already hold.
 
         Args:
-            spellframe (str): The logical namespace or grouping label.
-            spell_name (str): The name of the spell class or function.
-            binding_name (str): The secondary key to distinguish the spell.
+            spellframe:
+                Logical namespace or grouping label the spell was bound under.
+            spell_name:
+                Name of the bound class or function.
+            binding_name:
+                Secondary key distinguishing several providers of the same frame.
 
         Returns:
-            Optional[tuple]: The spell's lookup key (`(frame_or_name, binding_name_or_default)`).
+            tuple:
+                The normalized lookup key, shaped `(frame_or_name, binding_name_or_default)`.
 
         Raises:
-            RuntimeError: If the spell key is not found (local or contracted).
+            RuntimeError: If the address matches neither a local nor a contracted spell.
+
+        Threading:
+            Takes the Spellbook lock for the lookup and, unlike `find_spell_index`, raises
+            while still HOLDING it.
         """
         self.check_cleaned()
         with self._lock:
@@ -2209,15 +2333,51 @@ and logging.
         """
         Public API
 
-        Inspects an object instance to determine its unique SHA256 ID, then checks if that ID
-        is registered anywhere in the Aether Registry (globally).
+        Resolve a live object back to its registered spell id, if the Aether knows it.
+
+        Purpose:
+            Answer "is this object bound, and under what id?" starting from the object
+            itself rather than from an id or a lookup key.
+
+        Contract:
+            - Resolution is a THREE-STAGE search, in this order:
+              1. IDENTITY against this Spellbook's own spells - each candidate is compared
+                 with `is` on both `spell` and `user_created_object`, so an
+                 existing-creation binding is findable by the very instance the caller
+                 handed to `bind(...)`.
+              2. IDENTITY frame-wide - every other conduit's Spellbook in the named frame
+                 is walked, which is what keeps foreign spells (cluster shares, dynamic-link
+                 providers) inspectable by object.
+              3. FINGERPRINT fallback - only if identity found nothing, the id is
+                 re-derived from the object alone.
+            - Stage 3 is a LEGACY path and rarely matches a registered binding. The spell
+              fingerprint composes BIND-TIME facts (existence, disposal methods, binding
+              name, spell name) that a bare class, function, or instance cannot supply, so
+              an id re-derived from the object generally cannot equal the id recorded at
+              bind. Identity matching exists precisely because of that.
+            - Every stage confirms the candidate id against the Aether registry before
+              returning it; a spell known locally but absent from the registry returns None.
+            - THIS METHOD NEVER RAISES. Every exception is caught, logged, and converted to
+              None - including a `KeyError` for an unknown `aetheric_frame` name. A None
+              result is therefore ambiguous: not registered, OR inspection failed. Check the
+              log when the distinction matters.
 
         Args:
-            spell (Any): The object to inspect (class, function, or instance).
-            aetheric_frame (str): The Aetheric Frame to check the global registry against.
+            spell:
+                The object to resolve - a class, function, or live instance.
+            aetheric_frame:
+                Frame whose registry is consulted and whose conduits are walked in stage 2.
+                Defaults to the lazily created "default" frame.
 
         Returns:
-            Optional[str]: The unique SHA256 ID of the spell if it is registered in the Aether, else None.
+            Optional[str]:
+                The registered spell id (SHA256) when the object resolves AND the Aether
+                confirms it, otherwise None. See the contract above - None does not prove
+                the object is unbound.
+
+        Threading:
+            Holds the Spellbook lock for the entire search, including the frame-wide walk
+            across other conduits' spellbooks.
         """
         with self._lock:
             try:
@@ -4912,9 +5072,35 @@ and logging.
         submodules. Any object marked with `scan_bind` must originate from the
         scanned module, otherwise the scan fails.
 
-        Direct spellbook-level `scan()` opens a bind-family transaction
-        automatically when none is active. If a bind-family transaction is
-        already active, scan reuses that window.
+        Contract:
+            - Posture gate first. The scan is refused outright when the frame
+              configuration sets `disable_bind`, and additionally - once this
+              book has conjured - when the frame sets
+              `disable_all_transactions_after_conjure` or when the frame's
+              system state is anything other than `dynamic`. In practice:
+              POST-CONJURE SCANNING REQUIRES A DYNAMIC FRAME. The refusal is a
+              `RuntimeError` raised here, before any binding is attempted.
+            - Transaction window is chosen, not always opened. When a
+              bind-capable transaction is already active, scan runs inside the
+              caller's window and opens nothing, so the whole scan commits or
+              rolls back with that outer window. Only when no such window
+              exists does scan open its own `"bind"` transaction, which makes
+              the scan atomic in isolation.
+            - Pre-conjure books always take the "already active" branch, so a
+              pre-conjure scan never opens a transaction of its own.
+            - Post-conjure, "already active" means a live BIND session on this
+              spellbook's transaction identity, or - failing that - on its
+              conduit's identity, and that session must advertise the `bind`
+              capability.
+            - Binding is delegated to `Scan.scan_module`, which walks the
+              module dict in definition order.
+
+        Threading:
+            Takes no lock itself; serialization comes from the bind lane and
+            from the transaction window in effect.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
 
         Args:
             module (ModuleType): The module to scan for decorated spell targets.
@@ -4923,7 +5109,9 @@ and logging.
         Raises:
             TypeError: If `module` is not a module or metadata is invalid.
             ValueError: If the module does not own a decorated object.
-            RuntimeError: Propagated from Spellbook.bind on binding errors.
+            RuntimeError: If the current frame posture disables the bind family
+                (see the posture gate above), or propagated from Spellbook.bind
+                on binding errors.
         """
         self.check_cleaned()
         if self._bind_family_disabled_for_current_posture():
@@ -5252,10 +5440,40 @@ and logging.
         """
         Public API
 
-        Checks whether the spellbook's configuration is currently locked (frozen) or not.
+        Report whether this spellbook's configuration is frozen.
+
+        Purpose:
+            Answer "can configuration still change?" before attempting a
+            configuration-mutating call, so callers can branch instead of
+            provoking a refusal.
+
+        Contract:
+            - Starts `False` on a newly constructed book.
+            - Becomes `True` on the paths that commit this book to a
+              configuration - conjure, and adoption of a frame-shared
+              configuration - and returns to `False` on the paths that replace
+              or reset the configuration outright.
+            - Reports the LOCK FLAG only. It says nothing about whether a
+              configuration object is actually present; an unlocked book may
+              still have no configuration at all (see `get_configuration`).
+
+        Threading:
+            Unsynchronized read of a plain bool. It is a snapshot, not a
+            reservation - a concurrent conjure can flip it immediately after
+            this returns, so a `False` here does not guarantee a subsequent
+            configuration write will be accepted.
+
+        Lifecycle / Cleanup:
+            NOT guarded by `check_cleaned()`, and the backing slot is deleted
+            during core teardown. Calling this on a cleaned spellbook therefore
+            raises `AttributeError` rather than the `RuntimeError` the guarded
+            methods raise. Do not use it as a liveness probe.
 
         Returns:
             bool: True if the configuration is locked, False otherwise.
+
+        Raises:
+            AttributeError: If the spellbook has already been cleaned.
         """
         return self._configuration_locked
 
@@ -5555,10 +5773,34 @@ and logging.
         """
         Public API
 
-        Returns the active configuration object for this Spellbook.
+        Return the active configuration object for this Spellbook.
+
+        Contract:
+            - Returns the LIVE configuration object, not a copy or a snapshot.
+              Configuration objects are deliberately shared between spellbooks
+              on the same frame, so mutating the returned object is visible to
+              every book sharing it. Treat the result as read-only unless you
+              intend that reach.
+            - Raises rather than returning None. A spellbook constructed
+              without an explicit configuration holds none until one is adopted
+              or created, and calling this in that window is an error, not an
+              empty result.
+
+        Threading:
+            Unsynchronized read. The reference is stable once adopted, but the
+            object it points at is shared mutable state.
+
+        Lifecycle / Cleanup:
+            NOT guarded by `check_cleaned()`, and the backing slot is deleted
+            during teardown, so a call on a cleaned spellbook raises
+            `AttributeError` rather than the documented `RuntimeError`.
 
         Returns:
             SpellbookConfiguration: The active configuration instance.
+
+        Raises:
+            RuntimeError: If this spellbook has no configuration yet.
+            AttributeError: If the spellbook has already been cleaned.
         """
         return self._get_required_configuration()
 
@@ -5627,9 +5869,34 @@ and logging.
         """
         Internal
 
-        Creates a new `Spellbook` instance that shares the configuration and Aether frame of the current Spellbook.
+        Create a new `Spellbook` on this book's frame, sharing its configuration.
 
-        This is used internally when upgrading a lesser conduit's spellbook to a normal conduit spellbook.
+        Used when upgrading a lesser conduit's spellbook to a normal conduit
+        spellbook.
+
+        Contract:
+            - Shares the configuration OBJECT by reference; it is not copied.
+              The new book and this one therefore observe each other's
+              configuration mutations. That sharing is the point of the call -
+              the upgraded conduit must land on the same frame policy - so
+              callers must not treat the new book's configuration as private.
+            - Carries over the aetheric frame name, so both books resolve to
+              the same frame.
+            - Carries over NOTHING else. The new book gets a fresh generated
+              `id`, its own logger, and an empty spell registry; bindings,
+              spell indexes, and conduit attachment do not transfer. Migrating
+              spells is the caller's job.
+            - Constructs only. It does not register the new book with this one,
+              conjure it, or attach it to any conduit.
+
+        Threading:
+            Takes no lock. The new book is unpublished and reachable only by
+            the caller until the caller shares it.
+
+        Lifecycle / Cleanup:
+            The returned book is independently owned - cleaning this spellbook
+            does not clean it. Because the configuration is shared, however,
+            the new book keeps that object alive.
 
         Returns:
             Spellbook: A new Spellbook instance ready for use by a normal conduit.
@@ -5646,6 +5913,25 @@ and logging.
             the crystallizer's graft runner first among them - previously
             had no public read for the conjured conduit and would have
             needed the `_conduit` slot as a documented seam.
+
+        Contract:
+            - `None` is a normal answer, not a failure. It means the book has
+              not conjured, and it is how borrowers detect an unconjured host
+              rather than by catching an exception.
+            - Returns the ROOT conduit only. Lesser conduits and contracted
+              conduits are not reachable through this accessor.
+            - Returns a live reference, not a handle or proxy. Reading it does
+              not keep the conduit alive or prevent its teardown.
+
+        Threading:
+            Unsynchronized read. Because the value transitions from `None` to
+            the root conduit at conjure, a caller racing conjure can observe
+            either; re-read rather than caching the `None`.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`. Distinguish the two negative
+            outcomes: `None` means "not conjured yet", while `RuntimeError`
+            means "this spellbook is gone".
 
         Returns:
             Optional[Conduit]: The live root conduit, or None when this
@@ -5685,6 +5971,46 @@ and logging.
         """
         self.check_cleaned()
         return self._mutation_research
+
+    def _settle_or_inherit_conjure_mode(self, dynamic: bool) -> bool:
+        """
+        Internal
+
+        Resolve the EFFECTIVE conjure mode under the settle-then-inherit
+        law (owner ruling 2026-07-20):
+
+        Contract:
+            - UNSETTLED world (frame posture still the unfrozen birth
+              default): dynamic=True SETTLES the world dynamic through the
+              canonical bind_frame_configuration lifecycle (first bind
+              freezes); plain conjure leaves settlement to the existing
+              derive-and-bind step (automatic).
+            - SETTLED world (posture frozen/explicit): every conjure
+              INHERITS the world's mode; the flag never polices - dynamic-
+              only operations fail later at their own gates, on purpose.
+        Args:
+            dynamic (bool): The caller's requested mode (settlement input
+                on unsettled worlds; ignored in favor of the world's truth
+                on settled worlds).
+        Returns:
+            bool: The effective conjure mode.
+        """
+        frame_configuration = self._aetheric_frame_configuration
+        if frame_configuration is None:
+            # check_system_state keeps its honest missing-posture refusal.
+            return dynamic
+        if dynamic and not frame_configuration._frozen:
+            # Settlement: conjure is the settlement point for unset
+            # configuration - the flag is a legitimate input here.
+            self._aetheric_frame.bind_frame_configuration(
+                AethericFrameConfiguration(
+                    origin_spellbook_id=self._id,
+                    system_state=SystemState.dynamic,
+                    ai_native_enabled=frame_configuration.ai_native_enabled,
+                    rift_enabled=frame_configuration.rift_enabled,
+                )
+            )
+        return frame_configuration.system_state is SystemState.dynamic
 
     def conjure(
             self,
@@ -5770,7 +6096,7 @@ and logging.
         try:
             return self._conjure_within_transaction_window(
                 policy=policy,
-                dynamic=dynamic,
+                dynamic=self._settle_or_inherit_conjure_mode(dynamic),
                 name=name,
                 conduit_logger=conduit_logger,
             )

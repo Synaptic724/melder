@@ -1142,19 +1142,13 @@ class SpellbookCreationSystem(Cleanable):
                 )
             return
 
-        if system_state == SystemState.automatic:
-            spellbook._logger.error(
-                "Dynamic policy requested while system_state is automatic "
-                f"(policy={policy_enum}, dynamic={dynamic}, "
-                f"system_state={system_state}).",
-                "_check_system_state",
-                exc_info=True,
-            )
-            raise RuntimeError(
-                "Cannot enable dynamic conduit mode in automatic system_state. "
-                f"(policy={policy_enum}, dynamic={dynamic}, system_state={system_state}). "
-                "Set system_state to 'dynamic' in the configuration or call conjure(dynamic=False)."
-            )
+        # Settle-then-inherit law (owner ruling 2026-07-20): the dynamic
+        # argument reaching this gate is the EFFECTIVE mode resolved from
+        # the frame posture by Spellbook._settle_or_inherit_conjure_mode,
+        # so a flag-vs-posture mismatch is structurally impossible here.
+        # Conjure no longer polices mode; dynamic-only operations fail at
+        # their own gates. The policy check above remains the one real
+        # constraint this gate owns.
 
     @staticmethod
     def define_conduit_into_spells(spellbook: Spellbook, conduit: Conduit) -> None:
