@@ -836,6 +836,51 @@ NOTE (ITEM 5 chunk 2 - AethericFrameConfiguration posture surface, 2 SHIPPED DOC
   REREAD: REQUIRED
   SCORE_0_TO_10: 9
 
+NOTE (ITEM 5 chunk 3 - configuration surfaces complete; 109 public methods, 313 sections):
+  COMPLETE AT 100%: Spell 27/27 (54 sections), AethericFrameConfiguration 42/42 (134),
+    NexusConfiguration 40/40 (125). All three: stripped-AST diff vs HEAD = 0 lines, 0 trapped
+    lines. Docstring-only, proven not asserted.
+  THE TWO CONFIGURATION MODELS ARE DIFFERENT AND THAT MATTERS FOR USERS:
+    - `AethericFrameConfiguration` is SLOT-BASED. Every field has a default, so a fresh object
+      is already freezable, and `validate()` enforces exactly ONE rule (ai_native requires
+      dynamic).
+    - `NexusConfiguration` is a PROPERTY BAG with a declared type table
+      (`available_properties`, 25 keys). It STARTS EMPTY and `validate()` raises on the FIRST
+      MISSING KEY, so a freshly constructed one CANNOT be frozen. `with_defaults()` is
+      mandatory, not convenience. This asymmetry is the single most likely user trap in the
+      configuration surface and was undocumented on every setter.
+  NEXUS CROSS-FIELD RULES (undocumented on the setters that violate them; now on both sides):
+    - `nexus_frame_mode == single` REQUIRES `max_nexus_frame_count == 1`.
+    - `allow_multiple_target_frames == False` REQUIRES `max_target_frame_count == 1`.
+    Both raise at freeze, not at set time, so the failure surfaces far from the call that
+    caused it - which is exactly why it needed documenting at the setter.
+  OTHER REAL FACTS RECORDED THIS CHUNK:
+    - `max_active_rift_count == 0` means UNLIMITED, not zero-allowed. There is no way to
+      express a hard zero cap through that setter; `with_rift_creation_enabled(False)` is it.
+    - `default_nexus_frame_name` accepts "" at set time (satisfies `str`) and is only rejected
+      at freeze. Same late-failure shape as the cross-field rules.
+    - Nothing enforces poll_interval < timeout, so a larger interval yields a single poll.
+    - `creation_token_value` / `rift_access_token_value` are the only two properties declaring
+      `(str, NoneType)`. Flagged in-docstring as CREDENTIAL MATERIAL - not to be logged or
+      copied into tickets, per security_and_secrets.md. No values recorded anywhere.
+    - `with_system_cache_root_path` MUST be relative; it resolves against the melder PACKAGE
+      root (site-packages, or src/melder in a checkout), NOT the working directory. Absolute
+      paths raise. That constraint was documented only on the private normalizer.
+    - `with_max_transaction_wait_time_in_seconds` rejects bools explicitly despite bool being
+      an int subclass, so `with_...(True)` raises rather than silently meaning one second.
+    - `dynamic_defaults()` / `automatic_defaults()` are DESTRUCTIVE - they call
+      `with_defaults()` first, so they must be called FIRST when building a posture, never
+      last. Neither is atomic; each is two separately locked steps.
+  VALIDATION: ast.parse OK on all three; stripped-AST diff 0/0/0; trapped-line scan 0/0/0.
+    Not run: pytest (needs 3.14t; sandbox is 3.10).
+  EVIDENCE:
+  - src/melder/nexus/configuration/nexus_configuration.py:440-528 (validate, all rules)
+  - src/melder/aether/aetheric_frame/aetheric_frame_configuration.py:266-289 (path normalizer)
+  NEXT: the FrameViewer/View* AR surface - FrameViewer 153, ViewMultiFrame 52, ViewSpell 40,
+    ViewFrame 34, ViewConduit 29. Largest remaining cluster and the one 6.1 sells.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
 ## Context / Handoff Summary
 Program epic for a correctness-plus-enrichment pass over all 542 classes in `src/melder`.
 Carries THE OBJECT CONTRACT (five items per class) and THE CHUNKING LAW (task <=10 classes,

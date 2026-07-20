@@ -521,12 +521,34 @@ class AethericFrameConfiguration(Cleanable):
         """
         Set AI-native frame posture before freeze and return `self`.
 
+        Contract:
+            - REQUIRES DYNAMIC STATE, and the requirement is enforced at
+              FREEZE, not here. Setting this on an automatic frame succeeds
+              silently and then makes `freeze()` raise `ValueError` - it is the
+              single rule `validate()` checks. Pair it with
+              `with_system_state(SystemState.dynamic)`.
+            - Order does not matter: the two setters can be called in either
+              sequence because the consistency check happens at freeze time.
+            - MUTATES THIS OBJECT and returns `self`; not a copy. Reset to
+              False by `with_defaults()`.
+            - Refused after freeze.
+
+        Threading:
+            Assignment under `self._lock`; type-checked before the lock.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
         Returns:
             AethericFrameConfiguration: This posture object, for fluent chaining.
 
         Args:
             enabled:
                 Whether the frame permits AI-native runtime behaviour.
+
+        Raises:
+            TypeError: If `enabled` is not a bool.
+            RuntimeError: If the configuration is frozen, or already cleaned.
         """
         self.check_cleaned()
         if not isinstance(enabled, bool):
@@ -544,6 +566,24 @@ class AethericFrameConfiguration(Cleanable):
         """
         Set Rift-visible frame posture before freeze and return `self`.
 
+        Contract:
+            - This is the frame's OPT-IN to being observable. A rift cannot
+              attach to a frame that has not enabled it, so leaving this False
+              keeps the frame invisible to the AR/viewer surface entirely.
+            - Unlike AI-native, this carries NO dynamic requirement - an
+              automatic frame may be rift-visible, and `validate()` does not
+              check it.
+            - MUTATES THIS OBJECT and returns `self`; not a copy. Reset to
+              False by `with_defaults()`.
+            - Refused after freeze, so a frame's observability is fixed for its
+              whole life once it settles.
+
+        Threading:
+            Assignment under `self._lock`; type-checked before the lock.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
         Returns:
             AethericFrameConfiguration: This posture object, for fluent chaining.
 
@@ -551,6 +591,10 @@ class AethericFrameConfiguration(Cleanable):
             enabled:
                 Whether Rifts may attach to this frame. Static AR attachment
                 requires this to be True.
+
+        Raises:
+            TypeError: If `enabled` is not a bool.
+            RuntimeError: If the configuration is frozen, or already cleaned.
         """
         self.check_cleaned()
         if not isinstance(enabled, bool):
@@ -569,6 +613,27 @@ class AethericFrameConfiguration(Cleanable):
         Set whether the frame permits explicit shared rich Spellbook config and
         return `self`.
 
+        Contract:
+            - Turns spellbook configuration from PER-BOOK into PER-FRAME. With
+              this set, the frame owns one rich `SpellbookConfiguration` and
+              later books ADOPT that object by reference rather than building
+              their own - so a change made through one book is visible to every
+              other book on the frame.
+            - Consistent with `Spellbook.create_new_preset_spellbook()`, which
+              already shares the configuration object rather than copying it;
+              this flag is what makes that sharing frame-wide policy instead of
+              a per-upgrade detail.
+            - Carries no dynamic requirement.
+            - MUTATES THIS OBJECT and returns `self`; not a copy. Reset to
+              False by `with_defaults()`.
+            - Refused after freeze.
+
+        Threading:
+            Assignment under `self._lock`; type-checked before the lock.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
         Returns:
             AethericFrameConfiguration: This posture object, for fluent chaining.
 
@@ -576,6 +641,10 @@ class AethericFrameConfiguration(Cleanable):
             enabled:
                 Whether the frame may own one shared rich SpellbookConfiguration
                 that later books adopt instead of creating their own.
+
+        Raises:
+            TypeError: If `enabled` is not a bool.
+            RuntimeError: If the configuration is frozen, or already cleaned.
         """
         self.check_cleaned()
         if not isinstance(enabled, bool):
@@ -596,12 +665,34 @@ class AethericFrameConfiguration(Cleanable):
         Set whether spell runtime caching is enabled for the frame and return
         `self`.
 
+        Contract:
+            - DEFAULTS ON, and stays on across resets. `with_defaults()`
+              deliberately returns this to True rather than clearing it, so a
+              posture reset can never silently disable the system cache. If you
+              want caching off you must set it off AFTER any reset.
+            - Disabling affects cache use for this frame only; it does not
+              disable the crystallizer itself, which still records posture and
+              lifecycle crystals.
+            - Carries no dynamic requirement.
+            - MUTATES THIS OBJECT and returns `self`; not a copy.
+            - Refused after freeze.
+
+        Threading:
+            Assignment under `self._lock`; type-checked before the lock.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
         Returns:
             AethericFrameConfiguration: This posture object, for fluent chaining.
 
         Args:
             enabled:
                 Whether the crystallizer cache is active for this frame.
+
+        Raises:
+            TypeError: If `enabled` is not a bool.
+            RuntimeError: If the configuration is frozen, or already cleaned.
         """
         self.check_cleaned()
         if not isinstance(enabled, bool):
@@ -619,13 +710,41 @@ class AethericFrameConfiguration(Cleanable):
         """
         Set the relative cache-root fragment for the frame and return `self`.
 
+        Contract:
+            - MUST BE RELATIVE. An absolute path raises `ValueError`. The
+              fragment is resolved later against the MELDER PACKAGE ROOT -
+              site-packages when installed, `src/melder` in a source checkout -
+              so the cache lives with the package, NOT under the working
+              directory. You cannot redirect it outside the package with this
+              setter.
+            - Passing `None` restores the default `__melder_cache__` fragment,
+              even though the annotation reads `Union[str, Path]`. The None
+              path is supported by the normalizer.
+            - Normalization and validation run BEFORE the lock is taken, so a
+              rejected path never touches posture state.
+            - MUTATES THIS OBJECT and returns `self`; not a copy. Note that a
+              later `with_defaults()` silently RECOMPUTES this back to the
+              default and discards whatever was set here.
+            - Refused after freeze.
+
+        Threading:
+            Assignment under `self._lock`; validation outside it.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
         Returns:
             AethericFrameConfiguration: This posture object, for fluent chaining.
 
         Args:
-            path:
-                Directory under which `__crystallizer_cache__` profile folders are
-                written. None restores the default location.
+            root_path:
+                Relative directory fragment under which cache profile folders
+                are written. None restores the default location.
+
+        Raises:
+            TypeError: If `root_path` is not a str or Path.
+            ValueError: If `root_path` is absolute.
+            RuntimeError: If the configuration is frozen, or already cleaned.
         """
         self.check_cleaned()
         normalized_root_path = self._normalize_cache_root_path(root_path)
@@ -915,12 +1034,36 @@ class AethericFrameConfiguration(Cleanable):
         """
         Set whether direct contract mutation is disabled and return `self`.
 
+        Contract:
+            - Gates DIRECT contract add/remove. Unlike the link, transfer,
+              cluster and mutation toggles, this flag is NOT consulted by
+              `Conduit._transaction_blocked_for_current_posture` - contract
+              mutation is refused on the contract path itself, so the refusal
+              surfaces from the contract call rather than from transaction
+              admission.
+            - Independent of `disable_mutations`: that one gates the MUTATION
+              transaction family (spell mutation), this one gates changes to
+              conduit contracts. Setting one does not imply the other.
+            - MUTATES THIS OBJECT and returns `self`; not a copy. Reset to
+              False by `with_defaults()`.
+            - Refused after freeze.
+
+        Threading:
+            Assignment under `self._lock`; type-checked before the lock.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
         Returns:
             AethericFrameConfiguration: This posture object, for fluent chaining.
 
         Args:
             enabled:
                 True to refuse direct contract add/remove transactions.
+
+        Raises:
+            TypeError: If `enabled` is not a bool.
+            RuntimeError: If the configuration is frozen, or already cleaned.
         """
         self.check_cleaned()
         if not isinstance(enabled, bool):
@@ -938,14 +1081,43 @@ class AethericFrameConfiguration(Cleanable):
         """
         Set the maximum scope-acquisition wait time and return `self`.
 
+        Contract:
+            - MUST BE STRICTLY POSITIVE. Zero and negatives raise `ValueError`,
+              so there is no "fail immediately" setting and no "wait forever"
+              setting; every transaction has a bounded, non-zero admission
+              window by construction.
+            - BOOLS ARE REJECTED even though `bool` is a subclass of `int`.
+              `with_...(True)` raises `TypeError` rather than silently meaning
+              one second.
+            - Stored as `float` regardless of whether an int was passed.
+            - READ LIVE by the transaction mediator rather than captured at
+              conjure, so restoring a posture changes the timeout of the
+              already-running system.
+            - Validation runs BEFORE the lock; a rejected value never touches
+              posture state.
+            - MUTATES THIS OBJECT and returns `self`; not a copy. Reset to 30.0
+              by `with_defaults()`.
+            - Refused after freeze.
+
+        Threading:
+            Assignment under `self._lock`; validation outside it.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
         Returns:
             AethericFrameConfiguration: This posture object, for fluent chaining.
 
         Args:
-            seconds:
+            timeout:
                 How long a root transaction may wait for conflicting scope claims
                 before admission times out. Read LIVE by the mediator, so a restored
                 posture governs the running system.
+
+        Raises:
+            TypeError: If `timeout` is not an int or float, or is a bool.
+            ValueError: If `timeout` is not greater than 0.
+            RuntimeError: If the configuration is frozen, or already cleaned.
         """
         self.check_cleaned()
         if not isinstance(timeout, (int, float)) or isinstance(timeout, bool):
@@ -1159,8 +1331,34 @@ class AethericFrameConfiguration(Cleanable):
         """
         Set the default dynamic frame posture and return `self`.
 
+        Contract:
+            - DESTRUCTIVE. This is `with_defaults()` followed by
+              `with_system_state(dynamic)`, so it RESETS EVERY posture field
+              first. Any earlier `with_*` call on this object is discarded,
+              including a custom cache root. Call it FIRST when building a
+              posture, never last.
+            - Leaves mutations DISABLED, because the reset restores
+              `disable_mutations=True`. "Dynamic" here means the transaction
+              families are available, not that mutation is on - enable that
+              explicitly with `with_disable_mutations(False)`.
+            - Dynamic is what allows linking, severing, transfer,
+              lesser-to-normal upgrade, and post-conjure bind/scan.
+            - MUTATES THIS OBJECT and returns `self`; not a copy.
+            - Refused after freeze, via the calls it delegates to.
+
+        Threading:
+            Not atomic as a whole - it performs two separately locked steps, so
+            a concurrent reader can observe the reset defaults before the
+            dynamic state lands. Build postures before publishing them.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()` via its delegates.
+
         Returns:
             AethericFrameConfiguration: This posture object, for fluent chaining.
+
+        Raises:
+            RuntimeError: If the configuration is frozen, or already cleaned.
         """
         return self.with_defaults().with_system_state(SystemState.dynamic)
 
@@ -1168,8 +1366,34 @@ class AethericFrameConfiguration(Cleanable):
         """
         Set the default automatic frame posture and return `self`.
 
+        Contract:
+            - DESTRUCTIVE. This is `with_defaults()` followed by
+              `with_system_state(automatic)`, so it RESETS EVERY posture field
+              first. Any earlier `with_*` call on this object is discarded.
+              Call it FIRST when building a posture, never last.
+            - Equivalent to `with_defaults()` alone, since automatic is already
+              the reset state. It exists to state the intent explicitly rather
+              than to add behaviour.
+            - Automatic already refuses link, transfer, cluster and mutation
+              regardless of their individual flags, and refuses bind/scan after
+              conjure. Setting the per-family `disable_*` toggles on top of it
+              changes nothing.
+            - Incompatible with AI-native: enabling that and freezing an
+              automatic frame raises from `validate()`.
+            - MUTATES THIS OBJECT and returns `self`; not a copy.
+            - Refused after freeze, via the calls it delegates to.
+
+        Threading:
+            Not atomic as a whole - two separately locked steps.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()` via its delegates.
+
         Returns:
             AethericFrameConfiguration: This posture object, for fluent chaining.
+
+        Raises:
+            RuntimeError: If the configuration is frozen, or already cleaned.
         """
         return self.with_defaults().with_system_state(SystemState.automatic)
 
@@ -1177,6 +1401,23 @@ class AethericFrameConfiguration(Cleanable):
     def id(self) -> str:
         """
         Return the stable posture-object id.
+
+        Contract:
+            - Identifies THIS POSTURE OBJECT, not the frame. A frame whose
+              posture is rebuilt or restored carries a different id.
+            - Assigned at construction and stable for the object's life;
+              freezing does not change it.
+            - Reflects the settled posture once the frame is frozen; posture cannot
+              change after freeze, so a post-freeze read is stable for the frame's
+              life.
+
+        Threading:
+            Reads under `self._lock`, so the value is a coherent snapshot rather
+            than a torn read against a concurrent builder call.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`; raises after the posture is cleaned
+            rather than returning a stale value.
 
         Returns:
             str: Stable configuration id.
@@ -1190,6 +1431,25 @@ class AethericFrameConfiguration(Cleanable):
         """
         Return the Spellbook id that first produced this frame posture.
 
+        Contract:
+            - Stamped by the FIRST `freeze()` only. Because freeze is idempotent
+              and silent, an `origin_spellbook_id` passed to any later freeze is
+              discarded, so this value records who SETTLED the world - not who
+              last touched it.
+            - `None` means the posture was frozen without an origin, or has not
+              been frozen at all.
+            - Reflects the settled posture once the frame is frozen; posture cannot
+              change after freeze, so a post-freeze read is stable for the frame's
+              life.
+
+        Threading:
+            Reads under `self._lock`, so the value is a coherent snapshot rather
+            than a torn read against a concurrent builder call.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`; raises after the posture is cleaned
+            rather than returning a stale value.
+
         Returns:
             Optional[str]: Originating Spellbook id, if known.
         """
@@ -1201,6 +1461,25 @@ class AethericFrameConfiguration(Cleanable):
     def system_state(self) -> SystemState:
         """
         Return the frame system state.
+
+        Contract:
+            - The master capability switch. On `automatic`, the LINK, TRANSFER,
+              CLUSTER and MUTATION transaction families are refused regardless of
+              their individual `disable_*` flags, and bind/scan are refused once
+              the frame has conjured.
+            - On `dynamic`, those families are available and the per-family
+              `disable_*` flags become the thing that actually decides.
+            - Reflects the settled posture once the frame is frozen; posture cannot
+              change after freeze, so a post-freeze read is stable for the frame's
+              life.
+
+        Threading:
+            Reads under `self._lock`, so the value is a coherent snapshot rather
+            than a torn read against a concurrent builder call.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`; raises after the posture is cleaned
+            rather than returning a stale value.
 
         Returns:
             SystemState: Bound frame system state.
@@ -1214,6 +1493,23 @@ class AethericFrameConfiguration(Cleanable):
         """
         Return whether AI-native behavior is enabled for the frame.
 
+        Contract:
+            - Only ever True together with `dynamic` state: the pairing is
+              enforced at FREEZE by `validate()`, not when the flag is set, so an
+              inconsistent combination is observable here right up until freeze
+              raises.
+            - Reflects the settled posture once the frame is frozen; posture cannot
+              change after freeze, so a post-freeze read is stable for the frame's
+              life.
+
+        Threading:
+            Reads under `self._lock`, so the value is a coherent snapshot rather
+            than a torn read against a concurrent builder call.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`; raises after the posture is cleaned
+            rather than returning a stale value.
+
         Returns:
             bool: True when AI-native posture is enabled.
         """
@@ -1225,6 +1521,24 @@ class AethericFrameConfiguration(Cleanable):
     def rift_enabled(self) -> bool:
         """
         Return whether AI-profile publication is enabled for the frame.
+
+        Contract:
+            - The frame's opt-in to being OBSERVABLE. A rift cannot attach to a
+              frame with this False, which keeps the frame invisible to the
+              AR/viewer surface entirely.
+            - Carries no dynamic requirement; an automatic frame may be
+              rift-visible.
+            - Reflects the settled posture once the frame is frozen; posture cannot
+              change after freeze, so a post-freeze read is stable for the frame's
+              life.
+
+        Threading:
+            Reads under `self._lock`, so the value is a coherent snapshot rather
+            than a torn read against a concurrent builder call.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`; raises after the posture is cleaned
+            rather than returning a stale value.
 
         Returns:
             bool: True when AI-profile posture is enabled.
@@ -1239,6 +1553,23 @@ class AethericFrameConfiguration(Cleanable):
         Return whether the frame posture permits one explicit frame-owned
         shared rich `SpellbookConfiguration`.
 
+        Contract:
+            - True means spellbook configuration is PER-FRAME rather than
+              per-book: the frame owns one rich configuration and later books
+              adopt that object BY REFERENCE, so a change through one book is
+              visible to every other book on the frame.
+            - Reflects the settled posture once the frame is frozen; posture cannot
+              change after freeze, so a post-freeze read is stable for the frame's
+              life.
+
+        Threading:
+            Reads under `self._lock`, so the value is a coherent snapshot rather
+            than a torn read against a concurrent builder call.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`; raises after the posture is cleaned
+            rather than returning a stale value.
+
         Returns:
             bool: True when frame-wide rich-config sharing is permitted.
         """
@@ -1251,6 +1582,24 @@ class AethericFrameConfiguration(Cleanable):
         """
         Return whether spell runtime caching is enabled for the frame.
 
+        Contract:
+            - Defaults True and SURVIVES `with_defaults()`, which deliberately
+              restores it rather than clearing it - a posture reset must never
+              silently disable the system cache.
+            - False disables cache use for this frame only; the crystallizer
+              still records posture and lifecycle crystals.
+            - Reflects the settled posture once the frame is frozen; posture cannot
+              change after freeze, so a post-freeze read is stable for the frame's
+              life.
+
+        Threading:
+            Reads under `self._lock`, so the value is a coherent snapshot rather
+            than a torn read against a concurrent builder call.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`; raises after the posture is cleaned
+            rather than returning a stale value.
+
         Returns:
             bool: True when frame-level caching is enabled.
         """
@@ -1262,6 +1611,25 @@ class AethericFrameConfiguration(Cleanable):
     def system_cache_root_path(self) -> Path:
         """
         Return the configured relative cache-root fragment for the frame.
+
+        Contract:
+            - A RELATIVE fragment, resolved against the melder PACKAGE root -
+              site-packages when installed, `src/melder` in a source checkout.
+              It is not relative to the working directory, and absolute paths
+              are rejected by the setter.
+            - Defaults to `__melder_cache__`, and `with_defaults()` recomputes
+              that default rather than preserving a custom fragment.
+            - Reflects the settled posture once the frame is frozen; posture cannot
+              change after freeze, so a post-freeze read is stable for the frame's
+              life.
+
+        Threading:
+            Reads under `self._lock`, so the value is a coherent snapshot rather
+            than a torn read against a concurrent builder call.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`; raises after the posture is cleaned
+            rather than returning a stale value.
 
         Returns:
             Path: Package-relative cache root fragment.
@@ -1314,6 +1682,25 @@ class AethericFrameConfiguration(Cleanable):
         """
         Return whether new transactions are disabled after conjure.
 
+        Contract:
+            - The master disable, checked BEFORE every per-family flag: when True
+              no narrower flag is consulted at all.
+            - INERT BEFORE CONJURE. A frame carrying this can still be fully
+              configured and bound; it seals only once the frame goes live.
+            - The only disable that meaningfully restricts a fully dynamic
+              world.
+            - Reflects the settled posture once the frame is frozen; posture cannot
+              change after freeze, so a post-freeze read is stable for the frame's
+              life.
+
+        Threading:
+            Reads under `self._lock`, so the value is a coherent snapshot rather
+            than a torn read against a concurrent builder call.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`; raises after the posture is cleaned
+            rather than returning a stale value.
+
         Returns:
             bool: True when post-conjure transactions are disabled.
         """
@@ -1325,6 +1712,24 @@ class AethericFrameConfiguration(Cleanable):
     def disable_mutations(self) -> bool:
         """
         Return whether mutation entrypoints are disabled.
+
+        Contract:
+            - Gates the MUTATION transaction family (spell mutation), NOT contract
+              mutation - that is `disable_contract_mutation`.
+            - DEFAULTS TRUE. It is the one capability that is opt-IN, so this
+              reads True on a freshly defaulted posture.
+            - Redundant on an automatic frame, which refuses mutation anyway.
+            - Reflects the settled posture once the frame is frozen; posture cannot
+              change after freeze, so a post-freeze read is stable for the frame's
+              life.
+
+        Threading:
+            Reads under `self._lock`, so the value is a coherent snapshot rather
+            than a torn read against a concurrent builder call.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`; raises after the posture is cleaned
+            rather than returning a stale value.
 
         Returns:
             bool: True when mutation entrypoints are disabled.
@@ -1338,6 +1743,23 @@ class AethericFrameConfiguration(Cleanable):
         """
         Return whether linking entrypoints are disabled.
 
+        Contract:
+            - Gates the LINK transaction ONLY. Sever is never posture-gated -
+              `UNLINK` has no gate anywhere - so a conduit can always detach from
+              a frame that refuses new links.
+            - Redundant on an automatic frame, which refuses linking anyway.
+            - Reflects the settled posture once the frame is frozen; posture cannot
+              change after freeze, so a post-freeze read is stable for the frame's
+              life.
+
+        Threading:
+            Reads under `self._lock`, so the value is a coherent snapshot rather
+            than a torn read against a concurrent builder call.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`; raises after the posture is cleaned
+            rather than returning a stale value.
+
         Returns:
             bool: True when linking entrypoints are disabled.
         """
@@ -1349,6 +1771,23 @@ class AethericFrameConfiguration(Cleanable):
     def disable_bind(self) -> bool:
         """
         Return whether bind/scan entrypoints are disabled.
+
+        Contract:
+            - Gates bind AND scan, at EVERY point in the frame's life. Unlike the
+              post-conjure restrictions, this one bites before conjure too.
+            - Checked ahead of the post-conjure and dynamic checks, so it is the
+              earliest bind-family refusal.
+            - Reflects the settled posture once the frame is frozen; posture cannot
+              change after freeze, so a post-freeze read is stable for the frame's
+              life.
+
+        Threading:
+            Reads under `self._lock`, so the value is a coherent snapshot rather
+            than a torn read against a concurrent builder call.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`; raises after the posture is cleaned
+            rather than returning a stale value.
 
         Returns:
             bool: True when bind/scan entrypoints are disabled.
@@ -1362,6 +1801,23 @@ class AethericFrameConfiguration(Cleanable):
         """
         Return whether conduit-cluster entrypoints are disabled.
 
+        Contract:
+            - Gates the CLUSTER_LINK transaction ONLY. Leaving is never
+              posture-gated - `CLUSTER_LEAVE` has no gate - so a member can always
+              exit and can never be trapped in a cluster by posture.
+            - Redundant on an automatic frame, which refuses clustering anyway.
+            - Reflects the settled posture once the frame is frozen; posture cannot
+              change after freeze, so a post-freeze read is stable for the frame's
+              life.
+
+        Threading:
+            Reads under `self._lock`, so the value is a coherent snapshot rather
+            than a torn read against a concurrent builder call.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`; raises after the posture is cleaned
+            rather than returning a stale value.
+
         Returns:
             bool: True when conduit-cluster entrypoints are disabled.
         """
@@ -1373,6 +1829,23 @@ class AethericFrameConfiguration(Cleanable):
     def disable_transfer_of_ownership(self) -> bool:
         """
         Return whether ownership-transfer entrypoints are disabled.
+
+        Contract:
+            - Gates the TRANSFER_OWNERSHIP transaction family, which moves a
+              spell's owning conduit. Binding, linking and clustering are
+              unaffected.
+            - Redundant on an automatic frame, which refuses transfer anyway.
+            - Reflects the settled posture once the frame is frozen; posture cannot
+              change after freeze, so a post-freeze read is stable for the frame's
+              life.
+
+        Threading:
+            Reads under `self._lock`, so the value is a coherent snapshot rather
+            than a torn read against a concurrent builder call.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`; raises after the posture is cleaned
+            rather than returning a stale value.
 
         Returns:
             bool: True when ownership-transfer entrypoints are disabled.
@@ -1386,6 +1859,25 @@ class AethericFrameConfiguration(Cleanable):
         """
         Return whether direct contract mutation is disabled.
 
+        Contract:
+            - NOT consulted by the conduit transaction gate, unlike the other
+              `disable_*` flags. Contract mutation is refused on the contract path
+              itself, so the refusal surfaces from the contract call rather than
+              from transaction admission.
+            - Independent of `disable_mutations`; setting one does not imply the
+              other.
+            - Reflects the settled posture once the frame is frozen; posture cannot
+              change after freeze, so a post-freeze read is stable for the frame's
+              life.
+
+        Threading:
+            Reads under `self._lock`, so the value is a coherent snapshot rather
+            than a torn read against a concurrent builder call.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`; raises after the posture is cleaned
+            rather than returning a stale value.
+
         Returns:
             bool: True when contract mutation is disabled.
         """
@@ -1397,6 +1889,23 @@ class AethericFrameConfiguration(Cleanable):
     def max_transaction_wait_time_in_seconds(self) -> float:
         """
         Return the maximum scope-acquisition wait time in seconds.
+
+        Contract:
+            - Always strictly positive - the setter rejects zero and negatives - so
+              there is no immediate-fail and no wait-forever setting.
+            - Read LIVE by the transaction mediator rather than captured at
+              conjure, so a restored posture governs the running system.
+            - Reflects the settled posture once the frame is frozen; posture cannot
+              change after freeze, so a post-freeze read is stable for the frame's
+              life.
+
+        Threading:
+            Reads under `self._lock`, so the value is a coherent snapshot rather
+            than a torn read against a concurrent builder call.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`; raises after the posture is cleaned
+            rather than returning a stale value.
 
         Returns:
             float: Seconds a root transaction may wait for conflicting scope claims

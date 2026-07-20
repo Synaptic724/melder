@@ -85,6 +85,35 @@ class NexusConfiguration(Cleanable):
 
         Initialize an empty Nexus configuration.
 
+        Contract:
+            - STARTS GENUINELY EMPTY. `_properties` holds nothing, so a freshly
+              constructed configuration CANNOT be frozen - `validate()` raises on
+              the first missing key. `with_defaults()` (or
+              `load_default_dictionary()`) is the intended first call.
+            - Establishes `available_properties`, the declared TYPE TABLE for all
+              25 settable properties. That table is the whole schema: it decides
+              which keys `set_property` accepts and what type each demands, so a
+              key absent from it can never be set.
+            - Two properties declare `(str, NoneType)` - the creation and access
+              token values - so `None` is a legal stored value for those and only
+              those.
+            - This is a PROPERTY BAG, not a slot-based configuration. Values live
+              in a dict keyed by name rather than as attributes, which is why the
+              `with_*` methods all funnel through `set_property`.
+
+        Owned State:
+            Owns `_id`, `_lock`, `_frozen`, the `_properties` bag, and the
+            `available_properties` type table. Borrows nothing.
+
+        Threading:
+            Creates the reentrant lock that serializes every later property
+            write; construction itself needs no synchronization because the
+            object is not yet shared.
+
+        Lifecycle / Cleanup:
+            Born mutable and unfrozen. It becomes immutable at `freeze()`, which
+            validates first and is idempotent afterwards.
+
         Returns:
             None.
         """
@@ -677,6 +706,30 @@ class NexusConfiguration(Cleanable):
                 True to permit Rift creation/programming under the remaining
                 policy gates.
 
+        Contract:
+            - The master gate for creating or programming Rifts. Every other
+              creation policy below only narrows this; with it False no token or
+              nesting setting can permit creation.
+            - Writes the `allow_rift_creation` property, declared as `bool`. ALL enforcement
+              lives in `set_property`: it rejects unknown keys, enforces the
+              declared type, normalizes enum and frame-list values, and refuses
+              any write once the configuration is frozen. This method adds no
+              validation of its own.
+            - MUTATES THIS OBJECT and returns `self`; it is not a copying builder.
+            - EVERY declared property is REQUIRED at freeze - `validate()` raises
+              on the first missing key. Start from `with_defaults()` and override,
+              rather than setting properties individually.
+
+        Threading:
+            Serialized by `set_property` under the configuration lock.
+
+        Lifecycle / Cleanup:
+            Guarded via `set_property`; refused after freeze.
+
+        Raises:
+            RuntimeError: If the configuration is already frozen.
+            TypeError: If the value does not satisfy the declared type.
+
         Returns:
             NexusConfiguration: This configuration instance.
         """
@@ -696,6 +749,30 @@ class NexusConfiguration(Cleanable):
             enabled:
                 True to require `creation_token_value` during creation.
 
+        Contract:
+            - Demands a creation token. Setting this True without also setting a
+              token value leaves creation unreachable rather than open - the
+              requirement is checked, the value is not defaulted.
+            - Writes the `creation_token_required` property, declared as `bool`. ALL enforcement
+              lives in `set_property`: it rejects unknown keys, enforces the
+              declared type, normalizes enum and frame-list values, and refuses
+              any write once the configuration is frozen. This method adds no
+              validation of its own.
+            - MUTATES THIS OBJECT and returns `self`; it is not a copying builder.
+            - EVERY declared property is REQUIRED at freeze - `validate()` raises
+              on the first missing key. Start from `with_defaults()` and override,
+              rather than setting properties individually.
+
+        Threading:
+            Serialized by `set_property` under the configuration lock.
+
+        Lifecycle / Cleanup:
+            Guarded via `set_property`; refused after freeze.
+
+        Raises:
+            RuntimeError: If the configuration is already frozen.
+            TypeError: If the value does not satisfy the declared type.
+
         Returns:
             NexusConfiguration: This configuration instance.
         """
@@ -714,6 +791,30 @@ class NexusConfiguration(Cleanable):
         Args:
             token_value:
                 Optional creation token string. `None` clears the token value.
+
+        Contract:
+            - CREDENTIAL MATERIAL. Accepts `None` explicitly to clear it. Treat the
+              stored value as a secret: do not log it, print it, or copy it into
+              tickets or documentation.
+            - Writes the `creation_token_value` property, declared as `str or None`. ALL enforcement
+              lives in `set_property`: it rejects unknown keys, enforces the
+              declared type, normalizes enum and frame-list values, and refuses
+              any write once the configuration is frozen. This method adds no
+              validation of its own.
+            - MUTATES THIS OBJECT and returns `self`; it is not a copying builder.
+            - EVERY declared property is REQUIRED at freeze - `validate()` raises
+              on the first missing key. Start from `with_defaults()` and override,
+              rather than setting properties individually.
+
+        Threading:
+            Serialized by `set_property` under the configuration lock.
+
+        Lifecycle / Cleanup:
+            Guarded via `set_property`; refused after freeze.
+
+        Raises:
+            RuntimeError: If the configuration is already frozen.
+            TypeError: If the value does not satisfy the declared type.
 
         Returns:
             NexusConfiguration: This configuration instance.
@@ -735,6 +836,30 @@ class NexusConfiguration(Cleanable):
                 True to allow direct live-Rift access under the remaining
                 policy gates.
 
+        Contract:
+            - Whether callers may reach a Rift directly rather than through Nexus
+              routing. Independent of the creation gates - a frame can permit
+              access while refusing creation.
+            - Writes the `allow_direct_rift_access` property, declared as `bool`. ALL enforcement
+              lives in `set_property`: it rejects unknown keys, enforces the
+              declared type, normalizes enum and frame-list values, and refuses
+              any write once the configuration is frozen. This method adds no
+              validation of its own.
+            - MUTATES THIS OBJECT and returns `self`; it is not a copying builder.
+            - EVERY declared property is REQUIRED at freeze - `validate()` raises
+              on the first missing key. Start from `with_defaults()` and override,
+              rather than setting properties individually.
+
+        Threading:
+            Serialized by `set_property` under the configuration lock.
+
+        Lifecycle / Cleanup:
+            Guarded via `set_property`; refused after freeze.
+
+        Raises:
+            RuntimeError: If the configuration is already frozen.
+            TypeError: If the value does not satisfy the declared type.
+
         Returns:
             NexusConfiguration: This configuration instance.
         """
@@ -755,6 +880,30 @@ class NexusConfiguration(Cleanable):
                 True to require `rift_access_token_value` for direct Rift
                 retrieval.
 
+        Contract:
+            - Demands an access token on the read path. Independent of
+              `creation_token_required`; the two protect different operations and
+              neither implies the other.
+            - Writes the `rift_access_token_required` property, declared as `bool`. ALL enforcement
+              lives in `set_property`: it rejects unknown keys, enforces the
+              declared type, normalizes enum and frame-list values, and refuses
+              any write once the configuration is frozen. This method adds no
+              validation of its own.
+            - MUTATES THIS OBJECT and returns `self`; it is not a copying builder.
+            - EVERY declared property is REQUIRED at freeze - `validate()` raises
+              on the first missing key. Start from `with_defaults()` and override,
+              rather than setting properties individually.
+
+        Threading:
+            Serialized by `set_property` under the configuration lock.
+
+        Lifecycle / Cleanup:
+            Guarded via `set_property`; refused after freeze.
+
+        Raises:
+            RuntimeError: If the configuration is already frozen.
+            TypeError: If the value does not satisfy the declared type.
+
         Returns:
             NexusConfiguration: This configuration instance.
         """
@@ -773,6 +922,30 @@ class NexusConfiguration(Cleanable):
         Args:
             token_value:
                 Optional Rift-access token string. `None` clears the token.
+
+        Contract:
+            - CREDENTIAL MATERIAL. Accepts `None` explicitly to clear it. Treat the
+              stored value as a secret: do not log it, print it, or copy it into
+              tickets or documentation.
+            - Writes the `rift_access_token_value` property, declared as `str or None`. ALL enforcement
+              lives in `set_property`: it rejects unknown keys, enforces the
+              declared type, normalizes enum and frame-list values, and refuses
+              any write once the configuration is frozen. This method adds no
+              validation of its own.
+            - MUTATES THIS OBJECT and returns `self`; it is not a copying builder.
+            - EVERY declared property is REQUIRED at freeze - `validate()` raises
+              on the first missing key. Start from `with_defaults()` and override,
+              rather than setting properties individually.
+
+        Threading:
+            Serialized by `set_property` under the configuration lock.
+
+        Lifecycle / Cleanup:
+            Guarded via `set_property`; refused after freeze.
+
+        Raises:
+            RuntimeError: If the configuration is already frozen.
+            TypeError: If the value does not satisfy the declared type.
 
         Returns:
             NexusConfiguration: This configuration instance.
@@ -793,6 +966,30 @@ class NexusConfiguration(Cleanable):
             enabled:
                 True to permit external Rift registration/programming.
 
+        Contract:
+            - Whether Rifts constructed outside this Nexus may register into it.
+              This is the trust boundary for foreign objects entering the
+              registry.
+            - Writes the `allow_external_rift_registration` property, declared as `bool`. ALL enforcement
+              lives in `set_property`: it rejects unknown keys, enforces the
+              declared type, normalizes enum and frame-list values, and refuses
+              any write once the configuration is frozen. This method adds no
+              validation of its own.
+            - MUTATES THIS OBJECT and returns `self`; it is not a copying builder.
+            - EVERY declared property is REQUIRED at freeze - `validate()` raises
+              on the first missing key. Start from `with_defaults()` and override,
+              rather than setting properties individually.
+
+        Threading:
+            Serialized by `set_property` under the configuration lock.
+
+        Lifecycle / Cleanup:
+            Guarded via `set_property`; refused after freeze.
+
+        Raises:
+            RuntimeError: If the configuration is already frozen.
+            TypeError: If the value does not satisfy the declared type.
+
         Returns:
             NexusConfiguration: This configuration instance.
         """
@@ -811,6 +1008,29 @@ class NexusConfiguration(Cleanable):
         Args:
             enabled:
                 True to permit nested Rift creation flows.
+
+        Contract:
+            - Whether a Rift may itself create further Rifts. Leaving this False
+              keeps the Rift topology one level deep and bounds fan-out.
+            - Writes the `allow_nested_rift_creation` property, declared as `bool`. ALL enforcement
+              lives in `set_property`: it rejects unknown keys, enforces the
+              declared type, normalizes enum and frame-list values, and refuses
+              any write once the configuration is frozen. This method adds no
+              validation of its own.
+            - MUTATES THIS OBJECT and returns `self`; it is not a copying builder.
+            - EVERY declared property is REQUIRED at freeze - `validate()` raises
+              on the first missing key. Start from `with_defaults()` and override,
+              rather than setting properties individually.
+
+        Threading:
+            Serialized by `set_property` under the configuration lock.
+
+        Lifecycle / Cleanup:
+            Guarded via `set_property`; refused after freeze.
+
+        Raises:
+            RuntimeError: If the configuration is already frozen.
+            TypeError: If the value does not satisfy the declared type.
 
         Returns:
             NexusConfiguration: This configuration instance.
@@ -831,6 +1051,30 @@ class NexusConfiguration(Cleanable):
             count:
                 Maximum number of active Rifts. `0` means unlimited.
 
+        Contract:
+            - `0` MEANS UNLIMITED, not "none allowed". Validation requires `>= 0`,
+              so there is no way to express a hard zero cap through this setter -
+              use `with_rift_creation_enabled(False)` for that.
+            - Writes the `max_active_rift_count` property, declared as `int`. ALL enforcement
+              lives in `set_property`: it rejects unknown keys, enforces the
+              declared type, normalizes enum and frame-list values, and refuses
+              any write once the configuration is frozen. This method adds no
+              validation of its own.
+            - MUTATES THIS OBJECT and returns `self`; it is not a copying builder.
+            - EVERY declared property is REQUIRED at freeze - `validate()` raises
+              on the first missing key. Start from `with_defaults()` and override,
+              rather than setting properties individually.
+
+        Threading:
+            Serialized by `set_property` under the configuration lock.
+
+        Lifecycle / Cleanup:
+            Guarded via `set_property`; refused after freeze.
+
+        Raises:
+            RuntimeError: If the configuration is already frozen.
+            TypeError: If the value does not satisfy the declared type.
+
         Returns:
             NexusConfiguration: This configuration instance.
         """
@@ -849,6 +1093,30 @@ class NexusConfiguration(Cleanable):
         Args:
             mode:
                 Frame-topology mode enum or string.
+
+        Contract:
+            - CROSS-FIELD RULE: `single` requires `max_nexus_frame_count == 1`.
+              Selecting `single` without also setting that count to 1 makes
+              `validate()` and therefore `freeze()` raise.
+            - Writes the `nexus_frame_mode` property, declared as `NexusFrameMode`. ALL enforcement
+              lives in `set_property`: it rejects unknown keys, enforces the
+              declared type, normalizes enum and frame-list values, and refuses
+              any write once the configuration is frozen. This method adds no
+              validation of its own.
+            - MUTATES THIS OBJECT and returns `self`; it is not a copying builder.
+            - EVERY declared property is REQUIRED at freeze - `validate()` raises
+              on the first missing key. Start from `with_defaults()` and override,
+              rather than setting properties individually.
+
+        Threading:
+            Serialized by `set_property` under the configuration lock.
+
+        Lifecycle / Cleanup:
+            Guarded via `set_property`; refused after freeze.
+
+        Raises:
+            RuntimeError: If the configuration is already frozen.
+            TypeError: If the value does not satisfy the declared type.
 
         Returns:
             NexusConfiguration: This configuration instance.
@@ -869,6 +1137,30 @@ class NexusConfiguration(Cleanable):
             frame_name:
                 Frame name used in `single` mode and as the base name
                 in other modes.
+
+        Contract:
+            - MUST BE NON-EMPTY at validation. An empty string is accepted by
+              `set_property` (it satisfies the declared `str` type) and only
+              rejected later at freeze.
+            - Writes the `default_nexus_frame_name` property, declared as `str`. ALL enforcement
+              lives in `set_property`: it rejects unknown keys, enforces the
+              declared type, normalizes enum and frame-list values, and refuses
+              any write once the configuration is frozen. This method adds no
+              validation of its own.
+            - MUTATES THIS OBJECT and returns `self`; it is not a copying builder.
+            - EVERY declared property is REQUIRED at freeze - `validate()` raises
+              on the first missing key. Start from `with_defaults()` and override,
+              rather than setting properties individually.
+
+        Threading:
+            Serialized by `set_property` under the configuration lock.
+
+        Lifecycle / Cleanup:
+            Guarded via `set_property`; refused after freeze.
+
+        Raises:
+            RuntimeError: If the configuration is already frozen.
+            TypeError: If the value does not satisfy the declared type.
 
         Returns:
             NexusConfiguration: This configuration instance.
@@ -891,6 +1183,30 @@ class NexusConfiguration(Cleanable):
                 True to auto-create required Nexus frames on engagement or
                 state creation.
 
+        Contract:
+            - Whether a missing target frame is created on demand rather than
+              refused. With it False, routing to an unknown frame is an error
+              instead of a side effect.
+            - Writes the `auto_create_nexus_frames` property, declared as `bool`. ALL enforcement
+              lives in `set_property`: it rejects unknown keys, enforces the
+              declared type, normalizes enum and frame-list values, and refuses
+              any write once the configuration is frozen. This method adds no
+              validation of its own.
+            - MUTATES THIS OBJECT and returns `self`; it is not a copying builder.
+            - EVERY declared property is REQUIRED at freeze - `validate()` raises
+              on the first missing key. Start from `with_defaults()` and override,
+              rather than setting properties individually.
+
+        Threading:
+            Serialized by `set_property` under the configuration lock.
+
+        Lifecycle / Cleanup:
+            Guarded via `set_property`; refused after freeze.
+
+        Raises:
+            RuntimeError: If the configuration is already frozen.
+            TypeError: If the value does not satisfy the declared type.
+
         Returns:
             NexusConfiguration: This configuration instance.
         """
@@ -909,6 +1225,29 @@ class NexusConfiguration(Cleanable):
         Args:
             count:
                 Maximum number of internal Nexus frames allowed.
+
+        Contract:
+            - MUST BE >= 1; zero is rejected at validation. CROSS-FIELD RULE: it
+              must be exactly 1 when `nexus_frame_mode` is `single`.
+            - Writes the `max_nexus_frame_count` property, declared as `int`. ALL enforcement
+              lives in `set_property`: it rejects unknown keys, enforces the
+              declared type, normalizes enum and frame-list values, and refuses
+              any write once the configuration is frozen. This method adds no
+              validation of its own.
+            - MUTATES THIS OBJECT and returns `self`; it is not a copying builder.
+            - EVERY declared property is REQUIRED at freeze - `validate()` raises
+              on the first missing key. Start from `with_defaults()` and override,
+              rather than setting properties individually.
+
+        Threading:
+            Serialized by `set_property` under the configuration lock.
+
+        Lifecycle / Cleanup:
+            Guarded via `set_property`; refused after freeze.
+
+        Raises:
+            RuntimeError: If the configuration is already frozen.
+            TypeError: If the value does not satisfy the declared type.
 
         Returns:
             NexusConfiguration: This configuration instance.
@@ -929,6 +1268,29 @@ class NexusConfiguration(Cleanable):
             frame_names:
                 Sequence of permitted target frame names.
 
+        Contract:
+            - Stored as a TUPLE. A list is normalized on the way in, and every
+              element must be a str or validation rejects the whole collection.
+            - Writes the `allowed_target_frame_names` property, declared as `tuple[str, ...]`. ALL enforcement
+              lives in `set_property`: it rejects unknown keys, enforces the
+              declared type, normalizes enum and frame-list values, and refuses
+              any write once the configuration is frozen. This method adds no
+              validation of its own.
+            - MUTATES THIS OBJECT and returns `self`; it is not a copying builder.
+            - EVERY declared property is REQUIRED at freeze - `validate()` raises
+              on the first missing key. Start from `with_defaults()` and override,
+              rather than setting properties individually.
+
+        Threading:
+            Serialized by `set_property` under the configuration lock.
+
+        Lifecycle / Cleanup:
+            Guarded via `set_property`; refused after freeze.
+
+        Raises:
+            RuntimeError: If the configuration is already frozen.
+            TypeError: If the value does not satisfy the declared type.
+
         Returns:
             NexusConfiguration: This configuration instance.
         """
@@ -947,6 +1309,30 @@ class NexusConfiguration(Cleanable):
         Args:
             frame_names:
                 Sequence of denied target frame names.
+
+        Contract:
+            - Stored as a TUPLE, normalized like the allow-list. Deny is evaluated
+              as its own collection; this setter does not reconcile it against
+              `allowed_target_frame_names`.
+            - Writes the `denied_target_frame_names` property, declared as `tuple[str, ...]`. ALL enforcement
+              lives in `set_property`: it rejects unknown keys, enforces the
+              declared type, normalizes enum and frame-list values, and refuses
+              any write once the configuration is frozen. This method adds no
+              validation of its own.
+            - MUTATES THIS OBJECT and returns `self`; it is not a copying builder.
+            - EVERY declared property is REQUIRED at freeze - `validate()` raises
+              on the first missing key. Start from `with_defaults()` and override,
+              rather than setting properties individually.
+
+        Threading:
+            Serialized by `set_property` under the configuration lock.
+
+        Lifecycle / Cleanup:
+            Guarded via `set_property`; refused after freeze.
+
+        Raises:
+            RuntimeError: If the configuration is already frozen.
+            TypeError: If the value does not satisfy the declared type.
 
         Returns:
             NexusConfiguration: This configuration instance.
@@ -967,6 +1353,29 @@ class NexusConfiguration(Cleanable):
             enabled:
                 True to allow per-Rift target-frame override requests.
 
+        Contract:
+            - Whether a caller may name a target frame that differs from the
+              configured default.
+            - Writes the `allow_target_frame_override` property, declared as `bool`. ALL enforcement
+              lives in `set_property`: it rejects unknown keys, enforces the
+              declared type, normalizes enum and frame-list values, and refuses
+              any write once the configuration is frozen. This method adds no
+              validation of its own.
+            - MUTATES THIS OBJECT and returns `self`; it is not a copying builder.
+            - EVERY declared property is REQUIRED at freeze - `validate()` raises
+              on the first missing key. Start from `with_defaults()` and override,
+              rather than setting properties individually.
+
+        Threading:
+            Serialized by `set_property` under the configuration lock.
+
+        Lifecycle / Cleanup:
+            Guarded via `set_property`; refused after freeze.
+
+        Raises:
+            RuntimeError: If the configuration is already frozen.
+            TypeError: If the value does not satisfy the declared type.
+
         Returns:
             NexusConfiguration: This configuration instance.
         """
@@ -986,6 +1395,30 @@ class NexusConfiguration(Cleanable):
             enabled:
                 True to permit more than one distinct target frame.
 
+        Contract:
+            - CROSS-FIELD RULE: when False, `max_target_frame_count` MUST be 1.
+              Turning this off without resetting that count to 1 makes
+              `validate()` and therefore `freeze()` raise.
+            - Writes the `allow_multiple_target_frames` property, declared as `bool`. ALL enforcement
+              lives in `set_property`: it rejects unknown keys, enforces the
+              declared type, normalizes enum and frame-list values, and refuses
+              any write once the configuration is frozen. This method adds no
+              validation of its own.
+            - MUTATES THIS OBJECT and returns `self`; it is not a copying builder.
+            - EVERY declared property is REQUIRED at freeze - `validate()` raises
+              on the first missing key. Start from `with_defaults()` and override,
+              rather than setting properties individually.
+
+        Threading:
+            Serialized by `set_property` under the configuration lock.
+
+        Lifecycle / Cleanup:
+            Guarded via `set_property`; refused after freeze.
+
+        Raises:
+            RuntimeError: If the configuration is already frozen.
+            TypeError: If the value does not satisfy the declared type.
+
         Returns:
             NexusConfiguration: This configuration instance.
         """
@@ -1004,6 +1437,29 @@ class NexusConfiguration(Cleanable):
         Args:
             count:
                 Maximum number of distinct target frames.
+
+        Contract:
+            - MUST BE >= 1; zero is rejected at validation. CROSS-FIELD RULE: it
+              must be exactly 1 when `allow_multiple_target_frames` is False.
+            - Writes the `max_target_frame_count` property, declared as `int`. ALL enforcement
+              lives in `set_property`: it rejects unknown keys, enforces the
+              declared type, normalizes enum and frame-list values, and refuses
+              any write once the configuration is frozen. This method adds no
+              validation of its own.
+            - MUTATES THIS OBJECT and returns `self`; it is not a copying builder.
+            - EVERY declared property is REQUIRED at freeze - `validate()` raises
+              on the first missing key. Start from `with_defaults()` and override,
+              rather than setting properties individually.
+
+        Threading:
+            Serialized by `set_property` under the configuration lock.
+
+        Lifecycle / Cleanup:
+            Guarded via `set_property`; refused after freeze.
+
+        Raises:
+            RuntimeError: If the configuration is already frozen.
+            TypeError: If the value does not satisfy the declared type.
 
         Returns:
             NexusConfiguration: This configuration instance.
@@ -1026,6 +1482,30 @@ class NexusConfiguration(Cleanable):
                 True to block new entrants, wait for in-flight work to drain,
                 refresh projections/viewers, then reopen gates.
 
+        Contract:
+            - Whether projection reads wait for a refresh to settle rather than
+              returning immediately. The timeout and poll interval below only
+              matter when this is enabled.
+            - Writes the `projection_refresh_gate_enabled` property, declared as `bool`. ALL enforcement
+              lives in `set_property`: it rejects unknown keys, enforces the
+              declared type, normalizes enum and frame-list values, and refuses
+              any write once the configuration is frozen. This method adds no
+              validation of its own.
+            - MUTATES THIS OBJECT and returns `self`; it is not a copying builder.
+            - EVERY declared property is REQUIRED at freeze - `validate()` raises
+              on the first missing key. Start from `with_defaults()` and override,
+              rather than setting properties individually.
+
+        Threading:
+            Serialized by `set_property` under the configuration lock.
+
+        Lifecycle / Cleanup:
+            Guarded via `set_property`; refused after freeze.
+
+        Raises:
+            RuntimeError: If the configuration is already frozen.
+            TypeError: If the value does not satisfy the declared type.
+
         Returns:
             NexusConfiguration: This configuration instance.
         """
@@ -1044,6 +1524,29 @@ class NexusConfiguration(Cleanable):
         Args:
             timeout_seconds:
                 Positive timeout in seconds.
+
+        Contract:
+            - MUST BE > 0; zero and negatives are rejected at validation, so the
+              gate can never be configured to give up instantly or wait forever.
+            - Writes the `projection_refresh_gate_timeout_seconds` property, declared as `int or float`. ALL enforcement
+              lives in `set_property`: it rejects unknown keys, enforces the
+              declared type, normalizes enum and frame-list values, and refuses
+              any write once the configuration is frozen. This method adds no
+              validation of its own.
+            - MUTATES THIS OBJECT and returns `self`; it is not a copying builder.
+            - EVERY declared property is REQUIRED at freeze - `validate()` raises
+              on the first missing key. Start from `with_defaults()` and override,
+              rather than setting properties individually.
+
+        Threading:
+            Serialized by `set_property` under the configuration lock.
+
+        Lifecycle / Cleanup:
+            Guarded via `set_property`; refused after freeze.
+
+        Raises:
+            RuntimeError: If the configuration is already frozen.
+            TypeError: If the value does not satisfy the declared type.
 
         Returns:
             NexusConfiguration: This configuration instance.
@@ -1068,6 +1571,30 @@ class NexusConfiguration(Cleanable):
             interval_seconds:
                 Positive poll interval in seconds.
 
+        Contract:
+            - MUST BE > 0. Nothing enforces that it is smaller than the timeout, so
+              an interval larger than the timeout is accepted and yields a single
+              poll attempt.
+            - Writes the `projection_refresh_gate_poll_interval_seconds` property, declared as `int or float`. ALL enforcement
+              lives in `set_property`: it rejects unknown keys, enforces the
+              declared type, normalizes enum and frame-list values, and refuses
+              any write once the configuration is frozen. This method adds no
+              validation of its own.
+            - MUTATES THIS OBJECT and returns `self`; it is not a copying builder.
+            - EVERY declared property is REQUIRED at freeze - `validate()` raises
+              on the first missing key. Start from `with_defaults()` and override,
+              rather than setting properties individually.
+
+        Threading:
+            Serialized by `set_property` under the configuration lock.
+
+        Lifecycle / Cleanup:
+            Guarded via `set_property`; refused after freeze.
+
+        Raises:
+            RuntimeError: If the configuration is already frozen.
+            TypeError: If the value does not satisfy the declared type.
+
         Returns:
             NexusConfiguration: This configuration instance.
         """
@@ -1090,6 +1617,29 @@ class NexusConfiguration(Cleanable):
             space_type:
                 Default room-kind enum or string.
 
+        Contract:
+            - The space type new Rift spaces take when the caller does not name one.
+              Accepts the enum or its string name; conversion is checked.
+            - Writes the `default_space_type` property, declared as `RiftSpaceType`. ALL enforcement
+              lives in `set_property`: it rejects unknown keys, enforces the
+              declared type, normalizes enum and frame-list values, and refuses
+              any write once the configuration is frozen. This method adds no
+              validation of its own.
+            - MUTATES THIS OBJECT and returns `self`; it is not a copying builder.
+            - EVERY declared property is REQUIRED at freeze - `validate()` raises
+              on the first missing key. Start from `with_defaults()` and override,
+              rather than setting properties individually.
+
+        Threading:
+            Serialized by `set_property` under the configuration lock.
+
+        Lifecycle / Cleanup:
+            Guarded via `set_property`; refused after freeze.
+
+        Raises:
+            RuntimeError: If the configuration is already frozen.
+            TypeError: If the value does not satisfy the declared type.
+
         Returns:
             NexusConfiguration: This configuration instance.
         """
@@ -1108,6 +1658,29 @@ class NexusConfiguration(Cleanable):
         Args:
             enabled:
                 True to mark new Rifts active during programming.
+
+        Contract:
+            - Whether a programmed Rift activates immediately rather than waiting
+              for an explicit activation.
+            - Writes the `default_auto_activate_on_program` property, declared as `bool`. ALL enforcement
+              lives in `set_property`: it rejects unknown keys, enforces the
+              declared type, normalizes enum and frame-list values, and refuses
+              any write once the configuration is frozen. This method adds no
+              validation of its own.
+            - MUTATES THIS OBJECT and returns `self`; it is not a copying builder.
+            - EVERY declared property is REQUIRED at freeze - `validate()` raises
+              on the first missing key. Start from `with_defaults()` and override,
+              rather than setting properties individually.
+
+        Threading:
+            Serialized by `set_property` under the configuration lock.
+
+        Lifecycle / Cleanup:
+            Guarded via `set_property`; refused after freeze.
+
+        Raises:
+            RuntimeError: If the configuration is already frozen.
+            TypeError: If the value does not satisfy the declared type.
 
         Returns:
             NexusConfiguration: This configuration instance.
@@ -1128,6 +1701,28 @@ class NexusConfiguration(Cleanable):
             enabled:
                 True to create the initial room automatically.
 
+        Contract:
+            - Whether a missing space is created on demand rather than refused.
+            - Writes the `default_auto_create_space` property, declared as `bool`. ALL enforcement
+              lives in `set_property`: it rejects unknown keys, enforces the
+              declared type, normalizes enum and frame-list values, and refuses
+              any write once the configuration is frozen. This method adds no
+              validation of its own.
+            - MUTATES THIS OBJECT and returns `self`; it is not a copying builder.
+            - EVERY declared property is REQUIRED at freeze - `validate()` raises
+              on the first missing key. Start from `with_defaults()` and override,
+              rather than setting properties individually.
+
+        Threading:
+            Serialized by `set_property` under the configuration lock.
+
+        Lifecycle / Cleanup:
+            Guarded via `set_property`; refused after freeze.
+
+        Raises:
+            RuntimeError: If the configuration is already frozen.
+            TypeError: If the value does not satisfy the declared type.
+
         Returns:
             NexusConfiguration: This configuration instance.
         """
@@ -1146,6 +1741,29 @@ class NexusConfiguration(Cleanable):
         Args:
             mode:
                 Validation mode enum or string.
+
+        Contract:
+            - The default strictness applied to Rift contents. Accepts the enum or
+              its string name; conversion is checked.
+            - Writes the `default_validation_mode` property, declared as `RiftValidationMode`. ALL enforcement
+              lives in `set_property`: it rejects unknown keys, enforces the
+              declared type, normalizes enum and frame-list values, and refuses
+              any write once the configuration is frozen. This method adds no
+              validation of its own.
+            - MUTATES THIS OBJECT and returns `self`; it is not a copying builder.
+            - EVERY declared property is REQUIRED at freeze - `validate()` raises
+              on the first missing key. Start from `with_defaults()` and override,
+              rather than setting properties individually.
+
+        Threading:
+            Serialized by `set_property` under the configuration lock.
+
+        Lifecycle / Cleanup:
+            Guarded via `set_property`; refused after freeze.
+
+        Raises:
+            RuntimeError: If the configuration is already frozen.
+            TypeError: If the value does not satisfy the declared type.
 
         Returns:
             NexusConfiguration: This configuration instance.

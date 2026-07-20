@@ -22,6 +22,7 @@ from melder.aether.spellbook.existence.existence import Existence
 from melder.aether.spellbook.spellbook import Spellbook
 
 from tests._frame_posture_test_support import (
+    apply_automatic_defaults_for_spellbook_configuration,
     apply_dynamic_defaults_for_spellbook_configuration,
 )
 
@@ -56,10 +57,21 @@ def _make_spellbook() -> Spellbook:
     return Spellbook(configuration=config)
 
 
+def _make_automatic_spellbook() -> Spellbook:
+    # A8 guard tests need a NON-dynamic conduit. Settle-then-inherit law
+    # (owner ruling 2026-07-20): conduits inherit the WORLD's mode, so the
+    # world itself must be automatic - conjure(dynamic=False) on a dynamic
+    # world births a dynamic conduit now.
+    config = SpellbookConfiguration()
+    apply_automatic_defaults_for_spellbook_configuration(config)
+    config.set_property("phase_scheduler_workers_per_spellbook", 1)
+    return Spellbook(configuration=config)
+
+
 # --- A8 dynamic-mode gating ------------------------------------------------
 
 def test_notch_raises_in_non_dynamic_mode():
-    book = _make_spellbook()
+    book = _make_automatic_spellbook()
     spell_id = book.bind(spell=_ServiceA, existence=Existence.unique, permissions="create", binding_name="a")
     conduit = book.conjure(dynamic=False, name="static")
     try:
@@ -71,7 +83,7 @@ def test_notch_raises_in_non_dynamic_mode():
 
 
 def test_add_to_spell_index_raises_in_non_dynamic_mode():
-    book = _make_spellbook()
+    book = _make_automatic_spellbook()
     spell_id = book.bind(spell=_ServiceA, existence=Existence.unique, permissions="create", binding_name="a")
     conduit = book.conjure(dynamic=False, name="static")
     try:
@@ -83,7 +95,7 @@ def test_add_to_spell_index_raises_in_non_dynamic_mode():
 
 
 def test_remove_from_spell_index_raises_in_non_dynamic_mode():
-    book = _make_spellbook()
+    book = _make_automatic_spellbook()
     spell_id = book.bind(spell=_ServiceA, existence=Existence.unique, permissions="create", binding_name="a")
     conduit = book.conjure(dynamic=False, name="static")
     try:

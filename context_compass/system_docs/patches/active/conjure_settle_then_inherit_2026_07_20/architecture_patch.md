@@ -68,3 +68,29 @@ the frozen posture lands in the idempotent matches branch - no double-freeze haz
 compile green, CRLF preserved. LESSON: settlement must never mint a parallel posture object;
 the canonical object is the only safe carrier of pre-conjure staged state.
 Status: awaiting owner rerun (the 15 reds + test_conjure_settle_or_inherit.py + full suite).
+
+## MEASURE - 2026-07-20 01:59 UTC - stale old-law tests updated to the settled law (8 rows, 3 files)
+Owner full-suite run after both fixes left exactly 8 reds - none regressions; ALL assert the
+OLD law (the deleted mismatch police, or flag-forces-static on a dynamic world).
+Updates, all law-faithful:
+1. tests/unit/melder/spellbook/test_spellbook.py: the two direct mismatch-throw tests are now
+   test_check_system_state_trusts_effective_dynamic_default_policy and
+   test_check_system_state_dynamic_mode_admits_dynamic_policies (no-raise: the gate receives
+   the EFFECTIVE mode); check_system_state matrix rows with automatic=False (= effective
+   dynamic) flip expect_raises True->False - dynamic mode admits every policy.
+2. tests/integration/.../test_spellbook_integration_public_errors.py: dynamic-only-policy
+   refusal now runs on an AUTOMATIC world (on a dynamic world the conduit inherits dynamic
+   and the policy is legal); the old dynamic-in-automatic refusal test was the SETTLEMENT
+   case - rewritten as test_spellbook_conjure_dynamic_flag_cannot_override_settled_automatic_world
+   (frozen automatic posture + dynamic=True + whitelist_all -> policy refusal proves inherit).
+3. tests/integration/.../test_spell_index_op_guards.py: new _make_automatic_spellbook helper;
+   the three A8 non-dynamic guard tests build on it (on the old dynamic world they either
+   went red or passed for the WRONG reason - dynamic conduit, different guard firing).
+INCIDENT, owned: my first edit pass on the public-errors file used a broken line matcher
+(searched the pristine list while mutating a copy - matches landed shifted) and mangled the
+file; the owner caught it mid-repair and the mangle got committed in 2fac50956. Worktree
+repaired by full-region rewrite; sanity sweep (ast parse + stray/dup counts) now clean.
+LESSON: edit scripts must search and mutate the SAME buffer; always ast-parse test files
+post-edit, not just py_compile the happy path.
+Status: awaiting owner rerun (the 8 + full suite). HEAD carries the mangled copy - next
+commit of the repaired worktree supersedes it.

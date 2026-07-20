@@ -65,17 +65,17 @@ def test_spellbook_conjure_rejects_invalid_policy_string() -> None:
 def test_spellbook_conjure_rejects_dynamic_policy_when_non_dynamic() -> None:
     """
     Purpose:
+        Validate conjure rejects dynamic-only policies in non-dynamic mode.
+    Contract:
         - Non-dynamic conjure on an automatic world rejects non-default policies
           (settle-then-inherit: the world's automatic posture is the effective mode).
-    Contract:
-        - dynamic=False rejects non-default policies.
     Returns:
         None.
     Raises:
-    apply_automatic_defaults_for_spellbook_configuration(configuration)
+        AssertionError: If dynamic policies are accepted in non-dynamic mode.
     """
     configuration = SpellbookConfiguration()
-    apply_dynamic_defaults_for_spellbook_configuration(configuration)
+    apply_automatic_defaults_for_spellbook_configuration(configuration)
     configuration.set_property("phase_scheduler_workers_per_spellbook", 1)
 
     spellbook = Spellbook(configuration=configuration)
@@ -87,6 +87,8 @@ def test_spellbook_conjure_rejects_dynamic_policy_when_non_dynamic() -> None:
 
     with pytest.raises(RuntimeError, match="Dynamic-only policies"):
         spellbook.conjure(policy="whitelist_all", dynamic=False, name="root")
+
+
 def test_spellbook_conjure_dynamic_flag_cannot_override_settled_automatic_world() -> None:
     """
     Purpose:
@@ -119,9 +121,6 @@ def test_spellbook_conjure_dynamic_flag_cannot_override_settled_automatic_world(
 
     with pytest.raises(RuntimeError, match="Dynamic-only policies"):
         spellbook.conjure(policy="whitelist_all", dynamic=True, name="root")
-
-    with pytest.raises(RuntimeError, match="automatic system_state"):
-        spellbook.conjure(policy="default", dynamic=True, name="root")
 
 
 def test_spellbook_bind_rejects_invalid_permissions() -> None:
