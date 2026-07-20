@@ -98,6 +98,9 @@ class IChannelLogger(Protocol):
         Creates/attaches the child logger under the channel's parent logger name
         (e.g., "Iris.<console>.<{registrant}>") and records the routing in
         self._channels / self._loggers.
+
+        Returns:
+            None.
         """
         ...
 
@@ -122,6 +125,9 @@ class IChannelLogger(Protocol):
         Notes:
             - If `override_enabled` is set (not None), it *overrides* this local flag.
             - Use `get_effective_enabled()` to read the computed effective state.
+
+        Returns:
+            None.
         """
         ...
 
@@ -143,12 +149,18 @@ class IChannelLogger(Protocol):
 
         Notes:
             - When not None, `override_enabled` takes precedence over the local `enabled`.
+
+        Returns:
+            None.
         """
         ...
 
     def clear_override_enabled(self) -> None:
         """
         Clear the enabled override, reverting to the local `enabled` flag.
+
+        Returns:
+            None.
         """
         ...
 
@@ -208,6 +220,9 @@ class IChannelLogger(Protocol):
         Notes:
             - Records with a level *below* the effective min level are dropped.
             - If `override_min_level` is set, it takes precedence.
+
+        Returns:
+            None.
         """
         ...
 
@@ -237,12 +252,18 @@ class IChannelLogger(Protocol):
 
         Notes:
             - When not None, `override_min_level` takes precedence over local `min_level`.
+
+        Returns:
+            None.
         """
         ...
 
     def clear_override_min_level(self) -> None:
         """
         Clear the min-level override, reverting to the local `min_level`.
+
+        Returns:
+            None.
         """
         ...
 
@@ -292,6 +313,9 @@ class IChannelLogger(Protocol):
         Behaviour:
             - No-op if `name` is falsy.
             - Safe under concurrent calls.
+
+        Returns:
+            None.
         """
         ...
 
@@ -304,12 +328,18 @@ class IChannelLogger(Protocol):
 
         Behaviour:
             - No error if not present (discard semantics).
+
+        Returns:
+            None.
         """
         ...
 
     def clear_groups(self) -> None:
         """
         Remove all group tokens from this ChannelLogger.
+
+        Returns:
+            None.
         """
         ...
 
@@ -334,6 +364,9 @@ class IChannelLogger(Protocol):
         Notes:
             - No serialization is performed here; downstream formatters/archivers decide.
             - Oversized or complex values may increase log overhead.
+
+        Returns:
+            None.
         """
         ...
 
@@ -346,6 +379,9 @@ class IChannelLogger(Protocol):
 
         Notes:
             - Each entry is applied atomically under the internal lock.
+
+        Returns:
+            None.
         """
         ...
 
@@ -358,12 +394,18 @@ class IChannelLogger(Protocol):
 
         Behaviour:
             - Silent no-op when the key is absent.
+
+        Returns:
+            None.
         """
         ...
 
     def clear_properties(self) -> None:
         """
         Remove all properties from this ChannelLogger.
+
+        Returns:
+            None.
         """
         ...
 
@@ -392,6 +434,9 @@ class IChannelLogger(Protocol):
         """
         Log once with masking enabled, using the owner's display identity
         ('<ULID>.<ClassName>'), and optionally overriding groups/system_groups/properties.
+
+        Returns:
+            None.
         """
         ...
 
@@ -515,6 +560,9 @@ class IChannelLogger(Protocol):
 
         Notes:
             - Subject to effective enablement and min-level filtering.
+
+        Returns:
+            None.
         """
         ...
 
@@ -529,6 +577,9 @@ class IChannelLogger(Protocol):
 
         Notes:
             - Subject to effective enablement and min-level filtering.
+
+        Returns:
+            None.
         """
         ...
 
@@ -545,6 +596,9 @@ class IChannelLogger(Protocol):
 
         Notes:
             - Subject to effective enablement and min-level filtering.
+
+        Returns:
+            None.
         """
         ...
 
@@ -559,6 +613,9 @@ class IChannelLogger(Protocol):
 
         Notes:
             - Subject to effective enablement and min-level filtering.
+
+        Returns:
+            None.
         """
         ...
 
@@ -574,12 +631,18 @@ class IChannelLogger(Protocol):
         Notes:
             - Equivalent to `error(..., exc_info=True)`.
             - Subject to effective enablement and min-level filtering.
+
+        Returns:
+            None.
         """
         ...
 
     def critical(self, msg: str, *args: Any, **kwargs: Any) -> None:
         """
         Log a message with the ` CRITICAL ` level.
+
+        Returns:
+            None.
         """
         ...
 

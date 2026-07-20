@@ -76,6 +76,9 @@ class ICleanable(Protocol):
 
         Raises:
             RuntimeError: If the object has already been cleaned.
+
+        Returns:
+            None.
         """
         ...
 
@@ -88,6 +91,9 @@ class ICleanable(Protocol):
         - Release all resources.
         - Deregister or finalize any allocations.
         - Be idempotent (safe to call multiple times).
+
+        Returns:
+            None.
         """
         ...
 
@@ -100,6 +106,9 @@ class ICleanable(Protocol):
         - Release all resources.
         - Deregister or finalize any allocations.
         - Be idempotent (safe to call multiple times).
+
+        Returns:
+            None.
         """
         ...
 

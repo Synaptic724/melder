@@ -182,7 +182,12 @@ class RiftMemorySystem(Cleanable):
             return self._step_counter
 
     def reset_step(self) -> None:
-        """Reset the step counter to zero."""
+        """
+        Reset the step counter to zero.
+
+        Returns:
+            None.
+        """
         self.check_cleaned()
         with self._lock:
             self._step_counter = 0
@@ -197,7 +202,12 @@ class RiftMemorySystem(Cleanable):
             return self._epoch_counter
 
     def reset_epoch(self) -> None:
-        """Reset the epoch counter to zero."""
+        """
+        Reset the epoch counter to zero.
+
+        Returns:
+            None.
+        """
         self.check_cleaned()
         with self._lock:
             self._epoch_counter = 0
@@ -234,7 +244,12 @@ class RiftMemorySystem(Cleanable):
                 self._metadata.update(metadata)
 
     def clear_context(self) -> None:
-        """Clear optional CommandOps-facing context and shared metadata."""
+        """
+        Clear optional CommandOps-facing context and shared metadata.
+
+        Returns:
+            None.
+        """
         self.check_cleaned()
         with self._lock:
             self._task_name = None

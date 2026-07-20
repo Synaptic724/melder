@@ -114,6 +114,9 @@ class Package(Cleanable, Generic[P, R]):
 
         Raises:
             TypeError: If func is not a callable or is a coroutine/generator function.
+
+        Returns:
+            None.
         """
         super().__init__()
         if isinstance(func, Package):
@@ -148,6 +151,9 @@ class Package(Cleanable, Generic[P, R]):
               cleanup begins.
             - Performs reference nulling after the lock is released so core
               teardown does not occur inside the locked section.
+
+        Returns:
+            None.
         """
         if self._cleaned:
             return
@@ -821,6 +827,9 @@ class Package(Cleanable, Generic[P, R]):
     def freeze(self) -> None:
         """
         Prevent future argument mutation on this package instance.
+
+        Returns:
+            None.
         """
         with self._lock:
             self._frozen = True

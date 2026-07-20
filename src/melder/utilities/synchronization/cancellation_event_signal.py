@@ -118,6 +118,9 @@ class CancellationEvent(Cleanable):
 
         Raises:
             ValueError: If `flag` is `None`.
+
+        Returns:
+            None.
         """
         Cleanable.__init__(self)
         if flag is None:
@@ -136,6 +139,9 @@ class CancellationEvent(Cleanable):
             * Idempotent via `Cleanable._cleaned`.
             * Drops the shared event reference owned by the parent signal.
             * After cleanup, any access raises `RuntimeError`.
+
+        Returns:
+            None.
         """
         if self._cleaned:
             return
@@ -165,6 +171,9 @@ class CancellationEvent(Cleanable):
         Raises:
             OperationCancelledError: If cancellation has been signalled.
             RuntimeError: If this event view has already been cleaned.
+
+        Returns:
+            None.
         """
         self.check_cleaned()
         if self._flag.is_set():
@@ -277,6 +286,9 @@ class CancellationEventSignal(Cleanable):
             - Owns one mutable :class:`threading.Event`.
             - Owns one reusable :class:`CancellationEvent` wrapper that all
               consumers share.
+
+        Returns:
+            None.
         """
         Cleanable.__init__(self)
         self._lock: threading.Lock = threading.Lock()
@@ -298,6 +310,9 @@ class CancellationEventSignal(Cleanable):
             * Cleans the child CancellationEvent.
             * Nulls out the underlying threading event and event view.
             * Marks cleaned via Cleanable.
+
+        Returns:
+            None.
         """
         if self._cleaned:
             return
@@ -348,6 +363,9 @@ class CancellationEventSignal(Cleanable):
 
         Raises:
             RuntimeError: If this signal has already been cleaned.
+
+        Returns:
+            None.
         """
         self.check_cleaned()
         with self._lock:

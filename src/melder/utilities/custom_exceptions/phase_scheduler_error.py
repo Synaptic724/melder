@@ -54,5 +54,8 @@ class PhaseSchedulerError(RuntimeError):
         Args:
             message (str): Human-readable diagnostic message describing the
                 scheduler failure.
+
+        Returns:
+            None.
         """
         super().__init__(message)

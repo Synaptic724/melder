@@ -124,6 +124,9 @@ class MeldExecutionError(RuntimeError):
               downstream logging and tooling.
             - Uses `message` as the base `RuntimeError` payload while keeping
               the richer metadata separate.
+
+        Returns:
+            None.
         """
         super().__init__(message)
         self.spell_id: str = spell_id

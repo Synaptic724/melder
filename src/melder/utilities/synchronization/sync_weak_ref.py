@@ -124,6 +124,9 @@ class SyncWeakRef(Sync, Generic[T]):
             If True, `cleanup()` is automatically invoked when the
             referent is collected. This effectively prunes the wrapper
             once the target dies.
+
+        Returns:
+            None.
         """
         self._cleaned: bool = False
         self._id = new_ulid()
@@ -170,6 +173,9 @@ class SyncWeakRef(Sync, Generic[T]):
         - Wrapper is marked cleaned.
         - Underlying weak reference and callback are removed.
         - All operations raise RuntimeError via check_cleaned().
+
+        Returns:
+            None.
         """
         if self._cleaned:
             return
@@ -267,6 +273,9 @@ class SyncWeakRef(Sync, Generic[T]):
         Contract:
         - Overrides the base guard to provide a `SyncWeakRef`-specific error
           message.
+
+        Returns:
+            None.
         """
         if self._cleaned:
             raise RuntimeError("SyncWeakRef has been cleaned and cannot be used.")
@@ -296,6 +305,9 @@ class SyncWeakRef(Sync, Generic[T]):
         -------
         RuntimeError:
             If this SyncWeakRef has already been cleaned.
+
+        Returns:
+            None.
         """
         self.check_cleaned()
         with self._lock:
@@ -308,6 +320,9 @@ class SyncWeakRef(Sync, Generic[T]):
 
         When the referent is collected, this SyncWeakRef will call
         `cleanup()` automatically (in the weakener callback).
+
+        Returns:
+            None.
         """
         self.check_cleaned()
         with self._lock:
@@ -317,6 +332,9 @@ class SyncWeakRef(Sync, Generic[T]):
     def disable_auto_cleanup(self) -> None:
         """
         Disable wrapper auto-cleanup when the referent is collected.
+
+        Returns:
+            None.
         """
         self.check_cleaned()
         with self._lock:
@@ -403,6 +421,9 @@ class SyncWeakRef(Sync, Generic[T]):
 
         Args:
             obj: New referent to track weakly.
+
+        Returns:
+            None.
         """
         self.check_cleaned()
         with self._lock:

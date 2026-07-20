@@ -56,5 +56,8 @@ class SpellSpaceScopeError(RuntimeError):
         Args:
             message (str): Human-readable description of the violated scoping
                 rule.
+
+        Returns:
+            None.
         """
         super().__init__(message)

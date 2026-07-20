@@ -187,6 +187,9 @@ class UnitOfWork(Cleanable, Future):
             metadata:
                 Optional arbitrary metadata describing this unit of work
                 (spell ID, stage name, ResolutionContext, etc.).
+
+        Returns:
+            None.
         """
         # Explicitly init both bases – we don't rely on cooperative supper().
         Future.__init__(self)
@@ -229,6 +232,9 @@ class UnitOfWork(Cleanable, Future):
               "RuntimeError("UnitOfWork has been cleaned.")".
             * The underlying Future's internal state (result/exception) is left
               as-is so any awaiting code can still observe the outcome.
+
+        Returns:
+            None.
         """
         if self._cleaned:
             return

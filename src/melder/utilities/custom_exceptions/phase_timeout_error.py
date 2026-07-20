@@ -57,6 +57,9 @@ class PhaseTimeoutError(PhaseSchedulerError):
             phase_name (str): Name of the scheduler phase that exceeded its
                 timeout budget.
             timeout_ms (int): Configured timeout in milliseconds.
+
+        Returns:
+            None.
         """
         msg = (
             f"Phase '{phase_name}' exceeded barrier timeout "

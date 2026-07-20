@@ -56,6 +56,9 @@ class HookExecutionError(Exception):
             hook_name (str): Name or representation of the hook that failed.
             original_exception (Exception): Original exception raised by the
                 hook body.
+
+        Returns:
+            None.
         """
         self.phase = phase
         self.hook_name = hook_name

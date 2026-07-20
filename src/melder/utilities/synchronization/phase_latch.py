@@ -136,6 +136,9 @@ class PhaseLatch:
 
         Raises:
             ValueError: If `expected` is not a positive integer.
+
+        Returns:
+            None.
         """
         if not isinstance(expected, int) or isinstance(expected, bool) or expected < 1:
             raise ValueError("PhaseLatch expected count must be a positive int.")

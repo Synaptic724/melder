@@ -265,6 +265,9 @@ class PhaseScheduler(Cleanable):
             ValueError:
                 If an explicit value is invalid, or a value is omitted and
                 `configuration` is None or unreadable.
+
+        Returns:
+            None.
         """
         Cleanable.__init__(self)
         self._configuration: Optional[SpellbookConfiguration] = configuration
@@ -410,6 +413,9 @@ class PhaseScheduler(Cleanable):
             This is the ONLY place pool threads are joined. Owners (the
             Spellbook) call this once at their own teardown, which is where
             per-conjure thread churn moved in the persistent-pool design.
+
+        Returns:
+            None.
         """
         if self._cleaned:
             return
@@ -615,6 +621,9 @@ class PhaseScheduler(Cleanable):
             RuntimeError: If the scheduler has been cleaned.
             ValueError: If the name is empty or already registered.
             TypeError: If `factory` is not callable.
+
+        Returns:
+            None.
         """
         self.check_cleaned()
 
@@ -955,5 +964,8 @@ class PhaseScheduler(Cleanable):
         join workers or clean the scheduler; it only trips the current run's
         cancellation signal. Workers themselves are unaffected (they exit on
         sentinel only); in-flight units observe the event cooperatively.
+
+        Returns:
+            None.
         """
         self._cancel_signal.cancel()
