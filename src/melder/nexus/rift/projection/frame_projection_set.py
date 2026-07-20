@@ -24,6 +24,30 @@ class FrameProjectionSet(Cleanable):
         - Owns exactly one projection of each family for one frame.
         - Owns one generation token that changes whenever the set is rebuilt.
         - Cleanup cascades into the owned projections.
+
+    Threading:
+        Swapped as ONE unit during refresh, which is what makes the triple
+        coherent for concurrent readers.
+
+    Registration:
+        MELDER KERNEL - guarded. Compiled by the ACL layer and held as Rift
+        projection state.
+
+    Subsystem Context:
+        The bundle of view, command, and codegen projections for one frame,
+        plus one generation marker.
+
+    System Context:
+        Bundling with a GENERATION MARKER is what allows `RiftSpace` to swap
+        projections as one coherent unit. Swapping the three independently would
+        create windows where a room's view answers came from one ACL revision
+        while its command answers came from another - an inconsistency no
+        consumer could detect and none of the three projections is wrong enough
+        to reveal.
+        This is the object the Nexus refresh fan-out actually replaces: block
+        entrants at the Rift gate, drain in-flight tickets, swap the set,
+        reopen. The generation marker makes it possible to tell whether a room
+        is running current policy without comparing the projections themselves.
     """
 
     __melder_internal__ = _mrg.sentinel

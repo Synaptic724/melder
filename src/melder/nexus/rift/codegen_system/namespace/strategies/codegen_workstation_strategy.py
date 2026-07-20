@@ -20,6 +20,28 @@ class CodegenWorkstationStrategy(Cleanable):
     Purpose:
         Expose the existing workstation object into the codegen namespace when
         enabled by configuration.
+
+    Threading:
+        Stateless exposure strategy; it contributes names to a namespace under
+        construction and retains nothing.
+
+    Registration:
+        MELDER KERNEL - guarded. Consumed by `CodegenNamespaceBuilder`; never
+        user-constructed.
+
+    Subsystem Context:
+        One member of the namespace-exposure strategy family. The builder
+        composes them instead of hand-building one large globals dict, so each
+        exposure decision has exactly one owner.
+
+    System Context:
+        It exposes the room-local workstation when configuration enables it. Every strategy exposes ONLY what the namespace configuration
+        enables, which is what keeps the exposed surface a declared policy
+        rather than an emergent consequence of construction order.
+        Exposing the workstation lets generated code persist results the same way a human would - through explicit binds - rather than inventing a private store, which keeps room state single-sourced.
+        The strategy split is what makes the namespace auditable: reading which
+        strategies ran, and what configuration enabled, answers "what could this
+        code reach" without tracing builder code.
     """
 
     __melder_internal__ = _mrg.sentinel

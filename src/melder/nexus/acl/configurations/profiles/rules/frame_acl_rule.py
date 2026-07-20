@@ -8,6 +8,7 @@ from melder.utilities.helpers.id_builder import IDBuilder
 
 class FrameACLRule(Cleanable):
     """
+
     Purpose:
         Represent one typed ACL rule used by reusable view/codegen profiles.
 
@@ -19,6 +20,29 @@ class FrameACLRule(Cleanable):
 
     Lifecycle:
         Cleanup is idempotent and clears all owned rule metadata.
+
+    Registration:
+        MELDER KERNEL - guarded. Authored inside profile rulesets; users select
+        profiles rather than writing rules directly.
+
+    Subsystem Context:
+        The atom of the ACL model. Rules compose into rulesets, rulesets into
+        profiles, profiles into applied configurations, and configurations into
+        the compiled access surface.
+
+    System Context:
+        Requiring `rule_name`, `operation`, and `effect` to be present and
+        non-empty, with `effect` constrained to `allow` or `deny`, is what keeps
+        the compiled answer decidable. A rule with a missing operation or an
+        unrecognized effect would have to be interpreted at compile time, and
+        any default chosen there would be a silent policy decision made by the
+        compiler rather than by the author.
+        Storing `conditions` as a DETACHED mapping matters for the same reason
+        applied configurations detach their rulesets: a rule is a stable
+        statement, and a shared mutable condition map would let one profile's
+        edit silently rewrite another's meaning.
+        Stable identity for the object's lifetime lets diagnostics name the
+        exact rule behind a verdict rather than describing it.
     """
 
     __melder_internal__ = _mrg.sentinel

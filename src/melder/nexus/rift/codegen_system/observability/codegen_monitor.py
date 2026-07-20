@@ -35,6 +35,22 @@ class CodegenMonitor(Cleanable):
         - Does not own caches, history, or workflow state.
         - Exists only to keep codegen lifecycle publication explicit and
           bounded.
+
+    Registration:
+        MELDER KERNEL - guarded. Owned by `CodegenSystem`.
+
+    Subsystem Context:
+        The lifecycle observability seam, owning one `CodegenEventPublisher`
+        and normalizing engine events into the room's `RiftEventSystem`.
+
+    System Context:
+        Owning NO retained state is the deliberate choice here. A monitor with
+        its own history store would become a second source of truth about what
+        happened, competing with the room's `RiftMemorySystem`, and would keep
+        request state alive past the request.
+        Normalizing into the ROOM's event system keeps one event ordering per
+        room, so codegen lifecycle signals interleave coherently with everything
+        else the room publishes rather than forming a private timeline.
     """
 
     __melder_internal__ = _mrg.sentinel

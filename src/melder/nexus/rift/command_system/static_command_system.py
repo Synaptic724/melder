@@ -29,6 +29,31 @@ class StaticCommandSystem(CommandSystem):
           methods now live on the capability surface instead of being denied
           after inheritance.
         - Leaves already-bound workstation objects outside post-bind policing.
+
+    Registration:
+        MELDER KERNEL - guarded. Built by `StaticRiftSpace` through the room's
+        command-system factory seam.
+
+    Subsystem Context:
+        The static posture of the command family, beside
+        `CapabilityCommandSystem` and `CodegenCommandSystem`. All three inherit
+        shared infrastructure from `CommandSystem` and differ only in the
+        vocabulary they own.
+
+    System Context:
+        The third contract line records a genuine architectural correction and
+        is worth reading closely: topology mutation and direct `meld(...)` are
+        not DENIED here after inheritance - they simply LIVE ON the capability
+        surface instead. That difference matters. Inheriting a dangerous method
+        and then refusing it means the method exists on the object, appears in
+        introspection, and must be defended at every call site. Never inheriting
+        it means the static surface is honestly narrow, and agents enumerating
+        the room's commands see the truth rather than a list of things that will
+        reject them.
+        "Leaves already-bound workstation objects outside post-bind policing" is
+        the matching honesty: once an object is in the canvas it is the caller's,
+        and pretending to police it afterwards would promise a containment this
+        room cannot actually enforce.
     """
     __melder_internal__ = _mrg.sentinel
     _STATIC_COMMAND_METHOD_NAMES: tuple[str, ...] = (

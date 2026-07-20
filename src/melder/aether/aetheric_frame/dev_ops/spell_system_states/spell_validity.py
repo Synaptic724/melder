@@ -39,6 +39,38 @@ class SpellValidity(Enum):
         - The same enum is reused for frame-level structural validity and
           conduit-local resolution validity, so callers must interpret the
           value in the context of the state object that owns it.
+
+    Threading:
+        Immutable enum members; safe to read from any thread. It is read on the
+        meld hot path, which is why the gate is coarse.
+
+    Registration:
+        MELDER KERNEL - guarded, readable by value. Control-plane vocabulary.
+
+    Subsystem Context:
+        The GATE axis of the three-axis validity model: `SpellValidity` answers
+        "may this participate", `SpellState` flags explain the condition, and
+        `SpellStateChangeReason` records the triggering event. Reusing one enum
+        across `SpellSystemState` (structural, frame-global) and
+        `ConduitResolutionState` (resolution, per-conduit) is deliberate - the
+        QUESTION is identical, only the scope differs.
+
+    System Context:
+        Coarseness is the design, not a shortcut. Meld reads this value on
+        every resolution, so the gate must be answerable with one comparison;
+        anything richer would push parsing onto the hot path. The detail lives
+        on the two companion axes for the diagnostic path, which is cold.
+        The `unknown` semantics carry the load-bearing subtlety: it means
+        "never validated", not "invalid", and how it is treated is MODE
+        DEPENDENT - implicitly valid in basic mode, gated in advanced modes.
+        That is what makes lazy validation possible at all. A newly registered
+        lineage starts `unknown`, and `Meld._ensure_lineage_resolvable` reruns
+        the structural phases on first resolution rather than requiring an
+        eager frame-wide validation pass at bind time.
+        `disabled` and `cleaned` are both hard refusals but for different
+        reasons - policy versus lifecycle - and keeping them distinct is what
+        lets diagnostics tell "someone turned this off" apart from "this was
+        torn down", which are very different operator problems.
     """
     __melder_internal__ = _mrg.sentinel
     unknown = auto()

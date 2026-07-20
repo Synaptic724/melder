@@ -16,6 +16,7 @@ from melder.nexus.acl.configurations.profiles.rules.frame_acl_ruleset import Fra
 
 class FrameACLCommandConfiguration(Cleanable):
     """
+
     Purpose:
         Represent one applied command-side ACL configuration revision.
 
@@ -27,6 +28,41 @@ class FrameACLCommandConfiguration(Cleanable):
         - Remains serializable for persistence and detached cloning.
         - Uses an instance lock because cleanup and grouped metadata/ruleset
           mutation touch multiple owned fields in a nogil runtime.
+
+    Threading:
+        One instance lock. The docstring's justification is exact and worth
+        keeping: cleanup and grouped metadata/ruleset mutation touch several
+        owned fields together, and under free-threaded 3.14t there is no GIL
+        making that grouping incidentally atomic.
+
+    Lifecycle / Cleanup:
+        One applied revision inside a container-owned command chain. Cleanup is
+        idempotent and releases the detached rulesets it owns.
+
+    Registration:
+        MELDER KERNEL - guarded. Produced by the ACL authoring path
+        (`FrameACLBuilder` -> `FrameACLContainer`); never user-constructed.
+
+    Subsystem Context:
+        The applied-revision object of the command family - one of three
+        independent chains a `FrameACLContainer` owns (view, command, codegen).
+        It governs what may be DONE, and its answers are consumed through `CommandSystem` and its three room postures.
+
+    System Context:
+        Carrying revision metadata ON the configuration is what lets a
+        container version these objects DIRECTLY rather than wrapping them in a
+        separate history record. A chain is therefore a list of self-describing
+        revisions, which is why a chain bump can fan a projection refresh out
+        through `Nexus` carrying enough identity for each Rift to know what
+        changed.
+        Rulesets are DETACHED rather than shared with the profile they came
+        from: a revision must remain a stable historical answer, so later edits
+        to a reusable profile cannot retroactively rewrite what a committed
+        revision granted. Staying serializable is the same property viewed from
+        persistence - a revision has to survive round-tripping to be auditable.
+        This family governs member read/invoke/write posture; the other two chains answer their own
+        questions independently, which is what makes least privilege
+        expressible per frame.
     """
 
     __melder_internal__ = _mrg.sentinel

@@ -61,6 +61,33 @@ class Aether(Cleanable):
     - Cleans registered frames before dropping singleton-level references.
     - Resets `_instance` and `_initialized` so tests or later runtime flows can
       create a fresh singleton after teardown.
+
+    Registration:
+        MELDER KERNEL - guarded. `Aether()` returns the process singleton;
+        users construct it (that IS the norm), but it is never bound as a spell.
+
+    Subsystem Context:
+        Layer 1 - the substrate everything else hangs from. It owns the named
+        frame registry and hosts the singleton subsystems: `AetherUtilitySystem`,
+        `Crystallizer`, `Nexus`, the lazily-constructed `MutationResearch` root,
+        and the `LoadGate`.
+
+    System Context:
+        Under V3 Horizon LAZY FRAMES, `import melder` and the first `Aether()`
+        create ZERO frames - the eager default-frame construction is gone. The
+        first `Spellbook` births the frame it names via `_ensure_frame`
+        (get-or-create is the intended semantic), and a collapsed configuration
+        falls back to a lazily created "default".
+        The boot ORDER is load-bearing: Aether|AetherUtilitySystem ->
+        Crystallizer -> MutationResearch -> Nexus -> AethericFrame -> Spellbook
+        -> Conduit|Ward. The `LoadGate` is constructed BEFORE any frame can
+        exist, which is precisely why a mid-load-born frame still inherits gate
+        coverage - a crystallizer load acquires exclusive system authority and
+        every new-root transaction waits at `wait_for_passage`.
+        Hosting Nexus, Crystallizer, and MutationResearch PRIVATELY rather than
+        exposing them on the public surface is what keeps the substrate hidden:
+        `Nexus` is the public AR root, and reaching AR or mutation control
+        through `Aether` is deliberately not a supported path.
     """
     __melder_internal__: ClassVar[object] = _mrg.sentinel
     _instance: ClassVar[Optional["Aether"]] = None

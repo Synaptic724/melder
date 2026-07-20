@@ -28,6 +28,36 @@ class SpellSpacePool(AbstractElasticPool[SpellSpace]):
         - Pool ownership is conduit-local in this slice.
         - Reused spellspaces stay attached to the configured conduit runtime.
         - Destruction uses the spellspace permanent cleanup lane.
+
+    Threading:
+        Concurrency is inherited from `AbstractElasticPool`; this subclass adds
+        no locking of its own.
+
+    Lifecycle / Cleanup:
+        Owned by one conduit and torn down with it. Recycling a spellspace is
+        NOT destruction - `reset()` clears spellspace-scoped instances and bumps
+        the version, while the permanent cleanup lane is what actually destroys
+        one.
+
+    Registration:
+        MELDER KERNEL - guarded. Constructed by the owning conduit; users reach
+        spellspaces through `conduit.enter_spellspace()`, never through the pool.
+
+    Subsystem Context:
+        The reuse layer under `SpellSpace`, and the sibling of `ConduitPool`
+        (which does the same for lesser conduit shells). Both exist because the
+        objects they pool are request-frequency objects whose construction cost
+        would otherwise be paid on every scope entry.
+
+    System Context:
+        Pooling a scope object is only safe because scope identity is VERSIONED
+        rather than object-identity based. A recycled spellspace bumps its
+        version on reset, so any stale handle held across the recycle boundary
+        fails its active-scope check instead of silently melding into a reused
+        shell that now belongs to a different request. Without that versioning
+        this pool would be a correctness hazard rather than an optimization -
+        which is the same reasoning that makes `pooled_lesser` a distinct
+        `ConduitState` rather than just an idle `lesser`.
     """
 
     __melder_internal__: ClassVar[object] = _mrg.sentinel

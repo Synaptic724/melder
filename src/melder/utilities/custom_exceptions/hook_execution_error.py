@@ -1,5 +1,6 @@
 class HookExecutionError(Exception):
     """
+
     Purpose:
         Signal that a user-supplied lifecycle hook raised during spell melding,
         while preserving enough context to identify WHICH hook failed and WHY.

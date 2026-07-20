@@ -10,6 +10,7 @@ from melder.nexus.acl.configurations.profiles.rules.frame_acl_ruleset import Fra
 
 class FrameACLCodegenProfile(Cleanable):
     """
+
     Purpose:
         Hold one reusable typed codegen-profile ruleset bundle.
 
@@ -20,6 +21,33 @@ class FrameACLCodegenProfile(Cleanable):
 
     Lifecycle:
         Cleanup is idempotent and cascades into all owned rulesets.
+
+    Threading:
+        One instance lock guarding cleanup and ruleset-ownership transitions -
+        grouped state under a nogil runtime.
+
+    Registration:
+        MELDER KERNEL - guarded. Built by the codegen profile builder from a
+        registered strategy; never user-constructed.
+
+    Subsystem Context:
+        A REUSABLE codegen-family ruleset bundle, distinct from the applied
+        revision that references it. Profiles are library objects shared across
+        frames; configurations are per-frame applied state.
+
+    System Context:
+        The reusable-versus-applied split is the core of the ACL model. A
+        profile is a named posture (`safe`, `hybrid`, `permissive`,
+        `precision`, `full_access` where the family offers it) authored once and
+        referenced by many frames, while local override rulesets on the applied
+        configuration express per-frame deviation. Without that split every
+        frame would restate an entire policy, and a fleet-wide posture change
+        would mean editing every frame.
+        This family governs what may be GENERATED AND RUN - specifically import allowlists, builtin/meta posture, recursive codegen - and is consumed
+        through `CodegenSystem` beneath `CodegenCommandSystem`. Its cleanup cascades into the owned rulesets
+        because those ARE the profile's content; the composed
+        `FrameACLProfile` behaves differently and deliberately does NOT clean
+        the family profiles it merely references.
     """
 
     __melder_internal__ = _mrg.sentinel

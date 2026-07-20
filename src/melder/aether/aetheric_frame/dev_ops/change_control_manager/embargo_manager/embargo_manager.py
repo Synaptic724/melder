@@ -58,6 +58,31 @@ class ChangeControlEmbargoRecord:
           with the claim, such as the admitted transaction type.
         - Records are immutable and may be copied freely across threads or
           tooling boundaries.
+
+    Threading:
+        Immutable after construction; safe to copy across threads and tooling
+        boundaries without synchronization.
+
+    Registration:
+        MELDER KERNEL - guarded. Written by `ChangeControlEmbargoManager` on
+        acquisition; never user-constructed.
+
+    Subsystem Context:
+        One row of the moded lock table. `ClaimMode` supplies its strength,
+        `AcquisitionDecision` reports the outcome of acquiring a set of them,
+        and transaction strategies decide which keys and modes to request.
+
+    System Context:
+        Claims are owned by REQUEST ID rather than by a lifecycle object, and
+        that indirection is deliberate. A transaction spans multiple stages -
+        plan, admit, in-window effect, commit, finalize - potentially crossing
+        call frames and helper objects, so tying a claim to any one object
+        would make release depend on that object surviving the whole span. Keyed
+        by request id, release is a lookup, and commit/abort can both drain the
+        owner's claims through one path.
+        `reason_tag` is what makes the lock table self-describing: an operator
+        or agent inspecting a stuck acquisition sees WHAT kind of transaction
+        holds each key, not just an opaque id.
     """
     __melder_internal__: ClassVar[object] = _mrg.sentinel
     scope_key: str
@@ -81,6 +106,31 @@ class AcquisitionDecision:
         - `blocking` holds `(scope_key, holder_request_id, holder_mode)`
           tuples and is empty on success.
         - Instances are immutable and safe to share across threads.
+
+    Threading:
+        Immutable after construction; safe to share across threads.
+
+    Registration:
+        MELDER KERNEL - guarded. Produced by
+        `ChangeControlEmbargoManager`; never user-constructed.
+
+    Subsystem Context:
+        The result type of the admission gate, alongside `ClaimMode` (how
+        strongly a claim is held) and `ChangeControlEmbargoRecord` (one held
+        claim). Transaction strategies produce claim sets; this reports whether
+        the set was granted.
+
+    System Context:
+        Carrying the BLOCKING EVIDENCE rather than just a boolean is what makes
+        admission failures diagnosable. A denied acquisition names each
+        offending scope key, the request holding it, and the mode it is held in
+        - so a timeout can say which transaction is in the way instead of
+        merely that something was.
+        That matters most in the failure modes this subsystem is prone to: the
+        cluster join/leave self-conflict, where an in-window `cluster_link`
+        contends with the seal already covering it, presents as a hang. With
+        holder identity in hand the cause is immediately visible; without it,
+        the symptom is indistinguishable from ordinary contention.
     """
     __melder_internal__: ClassVar[object] = _mrg.sentinel
     acquired: bool

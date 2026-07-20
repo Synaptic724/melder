@@ -24,6 +24,35 @@ class ChangeControlConflictManager(Cleanable):
     - Derives hashes from raw scope keys when hashes are missing.
     - Also checks direct raw-key overlap when both sides provide keys.
     - Returns request ids for the in-flight requests that conflict.
+
+    Threading:
+        Detection is a pure comparison over supplied request data; it holds no
+        mutable state of its own and adds no lock.
+
+    Registration:
+        MELDER KERNEL - guarded. Internal admission component reached through
+        `ChangeControlManager`.
+
+    Subsystem Context:
+        The ADVISORY half of admission, distinct from the authoritative half.
+        `ChangeControlEmbargoManager` owns the moded lock table and decides
+        atomically what may proceed; this manager answers the softer overlap
+        question against the in-flight registry.
+
+    System Context:
+        The dual detection path - hashes when available, derived hashes when
+        not, plus direct raw-key comparison when both sides supply keys - is a
+        robustness choice rather than redundancy. Requests arrive from several
+        strategy families with differing metadata completeness, and a detector
+        that understood only one representation would silently report NO
+        conflict for a request that merely described its scope differently.
+        False negatives are the dangerous direction: missing an overlap lets
+        two structurally conflicting transactions run together, while a false
+        positive merely delays one. Checking every available representation
+        biases the detector toward the safe error.
+        Returning request IDS rather than a boolean keeps it consistent with
+        `AcquisitionDecision` - callers can name who they are waiting on, which
+        is the difference between a diagnosable stall and a mysterious one.
     """
     __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [

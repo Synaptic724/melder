@@ -36,6 +36,31 @@ class AddToIndexTransactionStrategy(TransactionStrategy):
           other index ops on those surfaces, isolated to them.
         - The owned-spell move + source-index cleanup run inside the held window via the
           Spellbook-owned `_apply_add_to_index` seam (SpellIndex-model lane).
+
+    Threading:
+        Stateless class-level strategy; concurrency is owned by the mediator
+        and the scope claims this plan requests.
+
+    Registration:
+        MELDER KERNEL - guarded. Registered as a CLASS in the transaction
+        family; never instantiated and never bindable.
+
+    Subsystem Context:
+        One of the three SpellIndex mutation flows with
+        `RemoveFromIndexTransactionStrategy` (move-out) and
+        `NotchTransactionStrategy` (active-member repoint). Only notch needs
+        the runtime gate freeze; the two move flows are structural only.
+
+    System Context:
+        The invariant driving this design is that a spell lives in EXACTLY ONE
+        index, always. So a move-in is never just an addition - the spell must
+        leave its current index in the same breath, and if that source index
+        empties it is garbage-collected inside this same transaction. NO EMPTY
+        INDEX EVER RESTS.
+        That is why the seal spans BOTH sides: two spellbooks and two conduits,
+        deduped when they coincide. A narrower claim covering only the target
+        would leave the source index mutable mid-move, and an observer could
+        catch the spell in two indexes at once or in none.
     """
 
     @classmethod

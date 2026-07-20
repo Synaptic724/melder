@@ -16,6 +16,7 @@ if TYPE_CHECKING:
 
 class FrameACLCodegenBuilder(Cleanable):
     """
+
     Purpose:
         Provide a fluent authoring surface for one active codegen ACL draft.
 

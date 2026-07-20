@@ -18,6 +18,24 @@ class RiftValidationMode(Enum):
         unsafe:
             Minimize validation barriers for trusted/internal flows that need
             maximum freedom over safety checks.
+
+    Threading:
+        Immutable enum members; safe to read from any thread.
+
+    Registration:
+        MELDER KERNEL - guarded, readable by value. Nexus configuration
+        vocabulary.
+
+    Subsystem Context:
+        One of the process-wide policy vocabularies stored in
+        `NexusConfiguration`, alongside the other validation-posture controls.
+
+    System Context:
+        `strict` fails on contract violations while `relaxed` tolerates non-fatal issues and still checks the rest. That choice belongs to process-wide policy rather than to a room, because a relaxed posture selectable per Rift would let a caller opt out of the validation the deployment intended.
+        Because this is PROCESS-WIDE policy frozen at configuration time, the
+        choice applies uniformly to every Rift - which is the point. A gate that
+        varied per Rift could be escaped by creating a differently configured
+        one, so the governance that matters lives here rather than on the Rift.
     """
 
     __melder_internal__ = _mrg.sentinel

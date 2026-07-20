@@ -4,6 +4,7 @@ from melder.utilities.custom_exceptions.phase_scheduler_error import PhaseSchedu
 
 class PhaseTimeoutError(PhaseSchedulerError):
     """
+
     Purpose:
         Signal that one scheduled phase exceeded its configured barrier timeout
         and the resolution pipeline was aborted.

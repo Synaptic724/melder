@@ -17,6 +17,24 @@ class RiftAccessMode(Enum):
             configured access token.
         system_only:
             Direct Rift lookup is reserved for trusted internal/system flows.
+
+    Threading:
+        Immutable enum members; safe to read from any thread.
+
+    Registration:
+        MELDER KERNEL - guarded, readable by value. Nexus configuration
+        vocabulary.
+
+    Subsystem Context:
+        One of the process-wide policy vocabularies stored in
+        `NexusConfiguration`, alongside the other access-control controls.
+
+    System Context:
+        Direct Rift retrieval is gated because holding a Rift is holding live AR access. `open` permits lookup freely, `token_required` demands the configured token, and `system_only` restricts retrieval to the system itself - a ladder from convenience to containment.
+        Because this is PROCESS-WIDE policy frozen at configuration time, the
+        choice applies uniformly to every Rift - which is the point. A gate that
+        varied per Rift could be escaped by creating a differently configured
+        one, so the governance that matters lives here rather than on the Rift.
     """
 
     __melder_internal__ = _mrg.sentinel

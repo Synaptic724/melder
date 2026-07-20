@@ -40,6 +40,27 @@ class SpellBinder(Cleanable):
     - Uses an internal `RLock` to serialize binder mutation and cleanup.
     - `cleanup()` is idempotent but permanently invalidates the binder for further use.
 
+    Registration:
+        MELDER KERNEL - guarded. Obtained from a `Spellbook`; a fluent adapter
+        over `bind(...)`.
+
+    Subsystem Context:
+        The fluent alternative to calling `Spellbook.bind(...)` with a long
+        argument list. It accumulates bind-time choices and forwards them only
+        at `finalize()`.
+
+    System Context:
+        The WEAK REFERENCE to the target Spellbook is the design decision worth
+        noticing: a binder is a transient authoring helper, and holding a strong
+        reference would let a forgotten binder keep an entire spellbook - and
+        through it a frame's worth of runtime - alive. Every fluent method
+        therefore resolves the live spellbook and raises if it is gone, rather
+        than operating against a book the runtime has already released.
+        ONE registration at a time, with `bind(...)` RESETTING any unfinished
+        state, is the second guardrail. A binder that accumulated across targets
+        could silently carry one spell's permissions onto the next; resetting
+        makes each registration independent, and the reset-after-finalize keeps
+        the object safely reusable.
     """
     __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [

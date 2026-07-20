@@ -129,6 +129,41 @@ class ConduitCluster(Cleanable):
             root. When False, only the root spell is linked.
         master_conduit_id:
             Elected leader conduit id, or None when no leader is elected (inert).
+
+    Registration:
+        MELDER KERNEL - guarded. Clusters are created and joined through
+        conduit/frame verbs, not constructed by users.
+
+    Subsystem Context:
+        The third inter-conduit relationship, alongside links and contracts.
+        `ConduitWard` handles pairwise relationships; a cluster is the N-way
+        one, and it is built ON TOP of ward contracting rather than beside it -
+        each share is an ordinary `cluster_link` transaction producing ordinary
+        contracts. Its storage sibling `ClusterCreations` extends `Cleanable`
+        directly rather than `Creations`, because cluster scope is not a
+        conduit scope.
+
+    System Context:
+        The two-layer split documented above is the thing to internalize,
+        because conflating the layers produces wrong conclusions about
+        clusters. Layer 1 - spell sharing - is the actual purpose and needs NO
+        leader; a cluster can share roots forever with `master_conduit_id` as
+        None. Layer 2 exists ONLY to give `unique_per_conduit_cluster` spells a
+        single owning store, which is a question that simply does not arise
+        unless such a spell exists.
+        Sharing uses a cluster-scoped `root_spell_id` of the form
+        `cluster:{name}:{owner_id}:{spell_id}` precisely so cluster teardown
+        removes only cluster-created contracts and cannot disturb links a
+        member formed independently. Permissions default to the spell's own
+        `permissions` with a `create` fallback, because a cluster whose members
+        could only READ each other's roots would be inert.
+        The CURRENT GAP above is a real, documented limitation, not an
+        oversight: membership mutation and the share fan-out are not yet one
+        atomic transaction, so a concurrent join, leave, or ownership transfer
+        can interleave mid-entry. Leadership is likewise a runtime election and
+        is never replayed from a record - the crystallizer's
+        `cluster_membership` preflight row reports a recorded leader as INFO
+        rather than restoring it, for exactly this reason.
     """
     __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [

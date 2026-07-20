@@ -17,6 +17,7 @@ if TYPE_CHECKING:
 
 class FrameDescriptor(Cleanable):
     """
+
     Purpose:
         Aggregate the Nexus-owned metadata and indexes for one frame-scoped
         state surface.

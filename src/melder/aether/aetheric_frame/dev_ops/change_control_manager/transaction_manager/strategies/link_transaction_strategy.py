@@ -48,6 +48,36 @@ class LinkTransactionStrategy(TransactionStrategy):
           (such as a transfer's EXCLUSIVE spellbook claim) is excluded while a
           link is in flight, without serializing unrelated piece-work on those
           spellbooks.
+
+    Threading:
+        Stateless class-level strategy; concurrency is owned by the mediator
+        and the scope claims this plan requests.
+
+    Registration:
+        MELDER KERNEL - guarded. Registered as a CLASS in the transaction
+        family; never instantiated and never bindable.
+
+    Subsystem Context:
+        The `link` member of the transaction family and the exact inverse of
+        `UnlinkTransactionStrategy`, which mirrors these claim modes because a
+        sever mutates the same surfaces. Both sit above `ConduitWard`, which
+        performs the actual contract creation under sorted ward lock ordering.
+
+    System Context:
+        The mixed claim modes are the interesting engineering here, and they
+        encode a precise statement about what a link actually mutates.
+        Participant conduits and their wards go EXCLUSIVE because a link
+        rewrites BOTH wards' contract indices - each side must be frozen from
+        other structural work for the duration. Owning spellbooks go INTENT
+        because a link touches only a contract bucket on each book, not the
+        book as a whole.
+        `INTENT` is what makes concurrency tolerable at frame scale: it
+        excludes a whole-spellbook EXCLUSIVE claim (a transfer, say) so those
+        two operations cannot interleave destructively, while still permitting
+        unrelated piece-work on the same books to proceed. Claiming the
+        spellbooks EXCLUSIVE instead would be correct but would serialize
+        every book that participates in any link, which in a densely linked
+        frame is close to serializing the frame.
     """
 
     @classmethod

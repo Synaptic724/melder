@@ -47,6 +47,35 @@ class BindTransactionStrategy(TransactionStrategy):
           conduit-side lock scopes when conjured.
         - Uses cluster identities, when present, for cluster-side
           transaction-owner lock scopes.
+
+    Threading:
+        Stateless class-level strategy; concurrency is owned by the mediator
+        and the scope claims this plan requests.
+
+    Registration:
+        MELDER KERNEL - guarded. Registered as a CLASS in the transaction
+        family; never instantiated and never bindable.
+
+    Subsystem Context:
+        The `bind`/`scan` member of the transaction family, alongside `link`,
+        `unlink`, `cluster_*`, `transfer_ownership`, `conjure`, `notch`,
+        `add_to_index`, and `remove_from_index`. `TransactionStrategyBuilder`
+        resolves it, the mediator admits the plan, and the embargo table plus
+        root session hold the claim window.
+
+    System Context:
+        The pre/post-conjure split is the entire point of this strategy, and it
+        is a scoping decision with real cost implications. Before conjure a
+        Spellbook has no paired conduit, so a bind genuinely touches one
+        surface. After conjure the same operation reaches the root conduit, its
+        ward, and any cluster the root belongs to - because a newly bound spell
+        becomes resolvable through that conduit and shareable through those
+        clusters.
+        The explicit refusal to model bind as a "multi-conduit Spellbook
+        fanout" is what keeps claims proportional. A generic topology expansion
+        would claim every conduit associated with the book and serialize
+        unrelated work across the whole frame for what is, in the common case,
+        a single-surface operation.
     """
 
     @classmethod

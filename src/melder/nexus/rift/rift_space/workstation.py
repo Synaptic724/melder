@@ -43,6 +43,32 @@ class Workstation(Cleanable):
     Lifecycle:
         Owned by one `RiftSpace`. Cleanup is idempotent and clears binding
         stores plus active-target state.
+
+    Registration:
+        MELDER KERNEL - guarded. Created by the owning `RiftSpace`; users reach
+        it through `space.workstation`.
+
+    Subsystem Context:
+        The BINDING CANVAS of a room, third beside `FrameViewer` (reads) and
+        `CommandSystem` (mediated actions). Commands deliberately do not store
+        results, so this is where anything worth keeping lands.
+
+    System Context:
+        The weak/strong storage model is the core of this class and it is where
+        room posture becomes concrete. `weak_ref=None` resolves through the
+        ROOM-LOCAL DEFAULT captured at construction - weak in static rooms,
+        strong in capability rooms - so the same call in different rooms
+        correctly produces different lifetime semantics without the caller
+        restating policy.
+        Explicit weak binding RAISES when a value cannot be weak-referenced and
+        never silently degrades to strong. That refusal is the important one: a
+        silent downgrade would hand back a binding whose lifetime contract is
+        the opposite of what was requested, and the caller would have no way to
+        detect it.
+        Separating object, attribute, and method stores keeps those namespaces
+        from colliding, and the single active target reflects that a room is one
+        person's workspace - a canvas with several simultaneous "current" things
+        would make every target-relative command ambiguous.
     """
 
     __melder_internal__ = _mrg.sentinel

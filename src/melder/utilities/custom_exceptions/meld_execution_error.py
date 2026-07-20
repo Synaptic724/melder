@@ -4,6 +4,7 @@ from typing import Optional
 
 class MeldExecutionError(RuntimeError):
     """
+
     Purpose:
         Represent any failure of DAG-based meld execution inside the Meld
         runtime as ONE stable error type, so the Conduit/Meld boundary has a

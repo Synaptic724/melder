@@ -19,6 +19,23 @@ class AetherConfigurationBuilder(Cleanable):
     Purpose:
         Mirror the repo's mutable-then-finalize configuration style while
         making ownership explicit for the wrapped `AetherConfiguration`.
+
+    Registration:
+        MELDER KERNEL - guarded. Obtained through
+        `Aether.create_configuration_builder()`.
+
+    Subsystem Context:
+        The fluent front for `AetherConfiguration`, matching the builder pairing
+        used by every other configuration lane in the system.
+
+    System Context:
+        ONE-SHOT MEANS OWNERSHIP TRANSFERS. The builder owns one mutable
+        configuration during assembly and hands it off exactly once; after
+        `build()` / `finalize()` / `activate()` it has surrendered it and is not
+        a factory that stamps out more.
+        That is what makes ownership unambiguous - at every moment exactly one
+        object is responsible for the configuration, and there is never a window
+        where both the builder and the caller could mutate it.
     """
 
     __melder_internal__: ClassVar[object] = _mrg.sentinel

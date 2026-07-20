@@ -34,6 +34,31 @@ class ClusterFanoutStrategy(DevopsInformationStrategy):
         - Sibling computation for a conduit unions the members of every
           cluster the conduit belongs to, excluding the conduit itself.
         - Returns ids only; honors optional `max_age_in_seconds`.
+
+    Threading:
+        Stateless static strategy; reads mirrored cluster membership only.
+
+    Registration:
+        MELDER KERNEL - guarded. Registered as a CLASS in the information
+        family; resolved by name through `DevopsInformationStrategyBuilder`.
+
+    Subsystem Context:
+        The membership read behind cluster operations, feeding the same
+        decisions `ClusterJoinTransactionStrategy` and
+        `ClusterLeaveTransactionStrategy` must plan for.
+
+    System Context:
+        Cluster changes are N-way rather than pairwise: a join fans shares out
+        to every existing member, and a leave tears them down across the whole
+        membership. So the claim footprint is the entire involved set, and a
+        caller that has not seen the roster cannot anticipate how wide its
+        transaction will reach.
+        Unioning the members of every cluster a conduit belongs to - excluding
+        the conduit itself - answers the question that actually matters before
+        claiming: not "which clusters am I in" but "who feels it if I change".
+        Requiring exactly one of `conduit_id` or `cluster_id` keeps the two
+        directions of that question distinct rather than silently merging a
+        participant-centric and a cluster-centric answer.
     """
 
     @staticmethod

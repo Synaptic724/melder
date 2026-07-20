@@ -45,6 +45,45 @@ class SpellSystemState(Cleanable):
         True if impacted indirectly by upstream changes (dependency_changed closure).
     - `last_validated_at`:
         Optional timestamp (float seconds) of last *successful* structural validation.
+
+    Contract:
+        - Validity is STRUCTURAL only (Phases 1-4) and frame-global; it says
+          nothing about whether any particular conduit can resolve the spell.
+        - `validity` is the gate, `flags` are the explanation, and
+          `change_reason` is the last cause - three separate axes, deliberately
+          not collapsed into one status value.
+        - `transitively_dirty` marks indirect impact via the
+          `dependency_changed` closure rather than a direct edit.
+
+    Threading:
+        Mutated through the owning `SpellSystemStates` registry, which
+        serializes access; this object adds no lock of its own.
+
+    Lifecycle / Cleanup:
+        One per spell index, created at `register_index(...)` and retired when
+        the lineage is unregistered.
+
+    Registration:
+        MELDER KERNEL - guarded. Frame-owned control-plane state.
+
+    Subsystem Context:
+        The per-lineage row of the control tower. Its per-conduit counterpart
+        is `ConduitResolutionState`; the split is the structural-versus-
+        resolution axis and is the single most important distinction in this
+        package.
+
+    System Context:
+        Keeping validity, flags, and reason as THREE fields rather than one
+        status is what makes the control plane debuggable. `validity` answers
+        the only question meld needs at speed - may this resolve, yes or no.
+        `flags` carry the fine-grained SpellState markers explaining the
+        condition, and `change_reason` records what moved it there. Collapsing
+        them would force meld to parse a rich status on the hot path, or force
+        diagnostics to guess causes from a coarse verdict.
+        `direct_dependents` exists for one purpose: answering "what breaks if
+        this changes" without walking the whole graph. Storing reverse edges at
+        write time is what lets `compute_impact_closure` dirty a bounded set at
+        change time instead of revalidating every lineage in the frame.
     """
     __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [

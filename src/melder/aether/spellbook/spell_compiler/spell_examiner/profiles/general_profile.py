@@ -28,6 +28,7 @@ GeneralProfileT = TypeVar("GeneralProfileT", bound="SpellGeneralProfile")
 
 class SpellGeneralProfile(Cleanable):
     """
+
     Purpose:
         Represent the normal combined spell profile in a lifecycle-aware form.
 

@@ -35,6 +35,30 @@ class TransactionActivityViewStrategy(DevopsInformationStrategy):
         - Returns transaction ids only (no live objects) plus a freshness
           block for the touched region when the axis names one.
         - Honors optional `max_age_in_seconds` staleness tolerance.
+
+    Threading:
+        Stateless static strategy; reads the registry's reverse indexes through
+        its public API.
+
+    Registration:
+        MELDER KERNEL - guarded. Registered as a CLASS in the information
+        family; resolved by name through `DevopsInformationStrategyBuilder`.
+
+    Subsystem Context:
+        The live-activity read of the catalog. It deliberately never touches
+        the mediator - the registry's reverse indexes already carry every
+        in-flight transaction, so this view needs no admission-plane access.
+
+    System Context:
+        This strategy exists for a specific decision: whether to START risky
+        work. An agent about to transfer ownership or run a mutation wants to
+        know what is already in flight against its target BEFORE claiming
+        scopes, because discovering the conflict at acquisition time means a
+        blocked or timed-out transaction rather than a deferred one.
+        First-match axis selection (identity, else scope key, else transaction
+        type) keeps that query cheap and unambiguous - each axis is a direct
+        index lookup rather than a scan, and requiring at least one axis
+        prevents an accidental whole-registry dump.
     """
 
     @staticmethod

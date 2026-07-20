@@ -52,6 +52,7 @@ def _parse_json_configuration_string(
 
 class FrameACLConfiguration(Cleanable):
     """
+
     Purpose:
         Represent one frame-scoped typed ACL configuration node owned by a
         `FrameACLConfigurationChain`.
@@ -74,6 +75,28 @@ class FrameACLConfiguration(Cleanable):
         - Owns one instance lock for grouped cleanup and lifecycle mutation.
         - Still relies on owning container/builder lifecycle rules for higher-
           level serialized draft/chain mutation.
+
+    Registration:
+        MELDER KERNEL - guarded. Authored through `FrameACLBuilder` and
+        committed into a chain; never user-constructed.
+
+    Subsystem Context:
+        One frame-scoped typed ACL node owned by a
+        `FrameACLConfigurationChain`, carrying the typed view, command, and
+        codegen child configurations that form one selected bundle.
+
+    System Context:
+        The draft/locked distinction is this class's central state machine. A
+        node may exist UNLOCKED while a builder or chain-copy prepares it, and
+        it MUST be locked before a chain will commit and own it. That boundary
+        separates authoring-in-progress from committed policy.
+        Because downstream selection binds to this node as the named ACL bundle
+        for a frame, an unlocked node reaching a chain would mean a Rift's
+        effective permissions could shift underneath it with no chain bump and
+        no refresh - permissions changing silently, which is the one failure
+        this subsystem exists to prevent.
+        Carrying linked-history metadata on the node keeps the chain
+        self-describing, so provenance is walkable without a side table.
     """
 
     __melder_internal__ = _mrg.sentinel

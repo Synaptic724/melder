@@ -514,6 +514,33 @@ Execution order (correctness first, then the biggest gap):
   REREAD: REQUIRED
   SCORE_0_TO_10: 8
 
+- TYPE: FACT
+  DATETIME: 2026-07-19T20:10:00Z
+  AGENT: melder_0
+  CLAIM: SHIPPED BREAKAGE - four files raised `NameError: name '_mrg' is not defined` at
+    import, killing the owner's gauntlet run at `melder/__init__.py:64`. Cause: my
+    duplicate-guard-import dedup pass. Its rule was "when a file carries BOTH a
+    parenthesized and a single-line import from `__melder_registration_guard__`, drop the
+    single-line one as the duplicate" - but in these four files the single-line form was
+    the one BINDING `_mrg`, so the binding was deleted while the class body kept using it.
+    Affected: `crystal_analyzer.py`, `cluster_crystal.py`, `contract_crystal.py`,
+    `spell_index_crystal.py`. All four repaired; sweep confirms 323 files use `_mrg` in
+    class-body assignments with 0 unbound.
+  WHY IT ESCAPED: `py_compile` compiles a class body WITHOUT executing it, so an unbound
+    name is invisible until import. All four files reported compile-clean through every
+    validation pass I ran. The static-import check I did have ran the wrong direction: it
+    verified names I IMPORT exist in their targets, never that names I USE are bound.
+  EVIDENCE:
+  - src/melder/crystallizer/crystals/cluster_crystal.py:1-40
+  - src/melder/crystallizer/crystal_analysis/crystal_analyzer.py:67-131
+  IMPACT: The owner ran a test against a broken tree. Any dedup/removal codemod is
+    strictly more dangerous than an additive one and must prove nothing it deleted was
+    load-bearing - deletion passes need the name-binding check BEFORE write, not after.
+  NEXT: Check 5 is now in the mandatory validation set above; run all five after EVERY
+    codemod, additive or subtractive.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
 ## Context / Handoff Summary
 Program epic for a correctness-plus-enrichment pass over all 542 classes in `src/melder`.
 Carries THE OBJECT CONTRACT (five items per class) and THE CHUNKING LAW (task <=10 classes,

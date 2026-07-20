@@ -27,6 +27,25 @@ class CodegenControlSurface:
           caller omits `frame_name`.
         - Returns public payload dictionaries instead of internal result
           objects.
+
+    Registration:
+        MELDER KERNEL - guarded. Exposed into the namespace by
+        `CodegenControlStrategy` when configuration enables it.
+
+    Subsystem Context:
+        The wrapper that appears as the `codegen` object inside generated code,
+        standing in for the room-owned `CodegenSystem`.
+
+    System Context:
+        This class exists so the raw internal `CodegenSystem` NEVER leaks into
+        an execution namespace. Handing generated code the real engine would
+        give it the validator, compiler, executor, and monitor as attributes -
+        an escape hatch around every gate the engine implements.
+        Applying the recursive-codegen permission AT RUNTIME is the second
+        protection, and it complements the static
+        `CodegenRecursiveControlStrategy`: static analysis rejects obvious
+        direct recursion, while this wrapper enforces the posture even when the
+        call is reached indirectly.
     """
 
     __melder_internal__ = _mrg.sentinel

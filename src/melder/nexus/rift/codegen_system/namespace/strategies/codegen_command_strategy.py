@@ -20,6 +20,28 @@ class CodegenCommandStrategy(Cleanable):
     Purpose:
         Expose the existing room-local command object into the codegen
         namespace when enabled by configuration.
+
+    Threading:
+        Stateless exposure strategy; it contributes names to a namespace under
+        construction and retains nothing.
+
+    Registration:
+        MELDER KERNEL - guarded. Consumed by `CodegenNamespaceBuilder`; never
+        user-constructed.
+
+    Subsystem Context:
+        One member of the namespace-exposure strategy family. The builder
+        composes them instead of hand-building one large globals dict, so each
+        exposure decision has exactly one owner.
+
+    System Context:
+        It exposes the room-local command object when configuration enables it. Every strategy exposes ONLY what the namespace configuration
+        enables, which is what keeps the exposed surface a declared policy
+        rather than an emergent consequence of construction order.
+        Exposing the room's own command surface means generated code acts through the SAME mediated path a human uses, so ACL enforcement and memory emission apply identically rather than being bypassed by a private route.
+        The strategy split is what makes the namespace auditable: reading which
+        strategies ran, and what configuration enabled, answers "what could this
+        code reach" without tracing builder code.
     """
 
     __melder_internal__ = _mrg.sentinel

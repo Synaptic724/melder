@@ -60,6 +60,37 @@ class DevopsFactRecord:
         - `generation` increments once per report for the same
           `(fact_family, region)` key.
         - Records are immutable and safe to share across threads.
+
+    Threading:
+        Immutable after construction, so sharing needs no lock. Only the
+        registry's baseline MAP is mutable.
+
+    Registration:
+        MELDER KERNEL - guarded. Stamped by the registry during reporting;
+        never user-constructed.
+
+    Subsystem Context:
+        The freshness primitive under `DevopsInformationRegistry`, consumed by
+        `InformationFreshnessInspector` and the information-strategy family
+        (`FrameOperationalViewStrategy`, `TransactionActivityViewStrategy`,
+        `RegistryConsistencyAuditStrategy`, `TransferBlastRadiusStrategy`,
+        `ClusterFanoutStrategy`).
+
+    System Context:
+        This record is what turns expensive derivation into a cheap staleness
+        comparison. An information strategy can skip re-deriving a view when
+        every change since the baseline flowed through the transaction plane -
+        so `generation` is not decoration, it IS the skip signal.
+        That optimization is only sound because of a system-wide invariant:
+        structural mutation is admitted exclusively through change control, and
+        commit deltas are applied while the transaction still holds its scope
+        claims. If any path could mutate topology outside the transaction
+        plane, a baseline could look fresh while the underlying truth had moved,
+        and every strategy trusting it would serve a stale view.
+        `last_reporter` exists so a baseline is never anonymous: every fact
+        traces to the request or strategy execution that established it, which
+        is what makes a disagreement between two views diagnosable rather than
+        merely visible.
     """
     __melder_internal__: ClassVar[object] = _mrg.sentinel
     fact_family: str
@@ -99,6 +130,44 @@ class DevopsInformationRegistry(Cleanable):
     - "cleanup()" permanently retires the registry and deletes internal fields.
     - Every mutation and read method gets "self._lock" where index consistency
       is required.
+
+    Threading:
+        One `self._lock` guards every mutation and every read where index
+        consistency matters. Bidirectional mirrors mean a single logical
+        change touches two maps, so partial visibility would corrupt traversal.
+
+    Lifecycle / Cleanup:
+        Owned by the `AethericFrame`, NOT by `DevOpsManager` - the manager only
+        borrows it. `cleanup()` permanently retires the registry and deletes
+        internal fields.
+
+    Registration:
+        MELDER KERNEL - guarded. Frame-owned topology mirror; users never
+        construct or mutate it directly.
+
+    Subsystem Context:
+        The frame-local mirror both DevOps families read: transaction
+        strategies call `get_identity` on it to add transaction-owner scopes,
+        and the information family derives every view from it. It is topology
+        TRUTH for the control plane, distinct from the runtime registries the
+        frame itself owns.
+
+    System Context:
+        Bidirectional mirroring is a deliberate space-for-time trade: both
+        traversal directions are O(1) reads because every relation is stored
+        twice. That matters because the control plane asks reverse questions
+        constantly - who owns this, who borrows from that, which conduits
+        participate in this transfer - and a one-directional model would turn
+        each into a scan at exactly the moment a transaction is holding claims.
+        The eager-mirror law is what keeps this affordable: link and
+        cluster-membership mirrors are maintained AT THE MUTATION SITE under
+        held claims, race-safe by construction, so strategies need no
+        relational commit deltas and can trust what they read.
+        Being owned by the FRAME rather than by `DevOpsManager` is the
+        ordering guarantee that makes it usable during teardown: runtime
+        objects unregister themselves as they die, and if the manager owned
+        this mirror, manager cleanup would invalidate it while conduits were
+        still writing to it.
     """
 
     __melder_internal__: ClassVar[object] = _mrg.sentinel

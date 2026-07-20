@@ -55,6 +55,32 @@ class UnelectConduitClusterLeaderTransactionStrategy(TransactionStrategy):
           every member root lineage. A failed drain leaves the leader still
           bound and the lineages reopened (fail-closed), never permanently
           gated.
+
+    Threading:
+        Stateless class-level strategy, but it owns a real runtime freeze: it
+        drains every member root lineage to zero before the domain effect and
+        reopens them afterwards.
+
+    Registration:
+        MELDER KERNEL - guarded. Registered as a CLASS in the transaction
+        family; never instantiated and never bindable.
+
+    Subsystem Context:
+        The deactivation half of the cluster's optional leader layer, and the
+        heavier twin of `ElectConduitClusterLeaderTransactionStrategy`.
+
+    System Context:
+        This strategy needs the freeze for precisely the reason notch does, and
+        the two are worth reading together: SCOPE CLAIMS EXCLUDE OTHER
+        TRANSACTIONS ONLY. A meld holds no claim, yet it holds its gate ticket
+        across the entire executor - so a reader can be mid-create against the
+        leader store while every transactional surface is properly sealed.
+        Re-targeting the team store underneath that reader would hand it a
+        store that no longer belongs to the cluster it resolved against.
+        Draining every member root lineage to zero before the unbind is the
+        only mechanism that reaches a non-transactional reader, and reopening
+        afterwards on every exit path is mandatory - a gate left closed wedges
+        the conduit permanently.
     """
 
     @classmethod

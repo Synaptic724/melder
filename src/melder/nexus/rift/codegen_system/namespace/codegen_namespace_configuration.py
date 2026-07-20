@@ -21,6 +21,24 @@ class CodegenNamespaceConfiguration(Cleanable):
         - Keeps stable namespace-name exposure explicit.
         - Separates policy/configuration from the live namespace object.
         - Returns exposed names in stable first-class order.
+
+    Registration:
+        MELDER KERNEL - guarded. Built by `CodegenSystem` per request.
+
+    Subsystem Context:
+        The POLICY view of the namespace, built before any live namespace
+        object exists. `CodegenNamespaceBuilder` consumes it; the exposure
+        strategies read it to decide what they may contribute.
+
+    System Context:
+        Separating the policy view from the live namespace is what allows
+        `CodegenNameResolutionStrategy` to validate `ast.Name` usage against the
+        CONTRACT rather than against a constructed namespace. Validation
+        therefore never needs the environment to exist, which preserves the
+        validate-before-build ordering.
+        Keeping exposure explicit also makes the reachable surface reviewable
+        as a declaration - a reader can see what a posture intends to expose
+        without executing anything.
     """
 
     __melder_internal__ = _mrg.sentinel

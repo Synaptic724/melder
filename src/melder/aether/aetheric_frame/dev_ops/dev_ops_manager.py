@@ -50,6 +50,43 @@ class DevOpsManager(Cleanable):
       that need to inspect or manipulate frame health.
     - Cleanup is responsible for tearing down the owned manager graph in a
       deterministic order and then dropping the borrowed registry reference.
+
+    Threading:
+        Each owned manager guards its own state; this hub adds no lock of its
+        own and never reaches into a child's internals, keeping the lock order
+        strictly downward.
+
+    Lifecycle / Cleanup:
+        One instance per `AethericFrame`, constructed in the frame's `__init__`.
+        Cleanup tears down the OWNED manager graph in deterministic order and
+        only then drops the BORROWED registry reference - owned children die
+        first, borrowed references are released last.
+
+    Registration:
+        MELDER KERNEL - guarded. Frame-owned; obtained through the frame, never
+        constructed by users.
+
+    Subsystem Context:
+        The control-plane hub of the frame, sitting beside the runtime side
+        (`ConduitCloud`, conduit registries). It composes the four operational
+        managers and surfaces `SpellSystemStates` through one boundary so
+        tooling has a single place to ask about frame health.
+
+    System Context:
+        The owned-versus-borrowed split is the deliberate part. Every manager
+        in the list is OWNED except `DevOpsInformationRegistry`, which is
+        borrowed from the frame - and the docstring states the reason plainly:
+        runtime-object unregister flows must not be coupled to manager cleanup
+        order. If this hub owned the registry, tearing down DevOps would
+        invalidate the mirror that unregistering conduits still write to, and
+        teardown ordering would become load-bearing in a way nothing could
+        reasonably guarantee.
+        Being explicitly "the intended boundary for higher-level tools or AI
+        agents" is also a real design constraint rather than a courtesy: it is
+        why frame health is reachable through one composed surface instead of
+        requiring a caller to know that dirty roots live in change control,
+        risk posture lives in the risk manager, and validity lives in the state
+        registry.
     """
     __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [

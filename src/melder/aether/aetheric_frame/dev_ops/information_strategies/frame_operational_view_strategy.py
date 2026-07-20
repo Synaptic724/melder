@@ -34,6 +34,33 @@ class FrameOperationalViewStrategy(DevopsInformationStrategy):
           baseline-coverage section into a staleness verdict over every
           region that has ever been reported.
         - Counts and ids only; never returns live object references.
+
+    Threading:
+        Stateless static strategy; reads the registry through its public API
+        under the registry's own lock.
+
+    Registration:
+        MELDER KERNEL - guarded. Registered as a CLASS in the information
+        family; resolved by name through `DevopsInformationStrategyBuilder`.
+
+    Subsystem Context:
+        The whole-frame rollup of the information catalog. Its siblings answer
+        narrower questions: `TransactionActivityViewStrategy` (one axis of live
+        activity), `TransferBlastRadiusStrategy` (one transfer's reach),
+        `ClusterFanoutStrategy` (one cluster's members),
+        `RegistryConsistencyAuditStrategy` (internal symmetry).
+
+    System Context:
+        "Deep views are one of the few justified strategy runs in the
+        control-plane economy" is the governing rule, and it explains the whole
+        catalog's shape. Current truth is defined as LAST REPORT PLUS COMMITTED
+        DELTAS, so re-deriving a view that has not changed is pure waste. This
+        strategy is the sanctioned single-shot: an operator or agent joining a
+        frame takes the whole-station picture once, then lives off deltas.
+        Returning COUNTS AND IDS ONLY, never live object references, is what
+        makes that safe to hand to tooling and agents. A view carrying live
+        objects would let a consumer mutate runtime state through a diagnostic
+        read, and would keep those objects alive past their owner's teardown.
     """
 
     @staticmethod

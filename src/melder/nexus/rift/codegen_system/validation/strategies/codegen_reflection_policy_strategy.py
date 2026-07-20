@@ -23,6 +23,31 @@ class CodegenReflectionPolicyStrategy(Cleanable):
     Purpose:
         Reject obvious reflection/introspection helper usage when the selected
         codegen posture denies unsafe reflection.
+
+    Threading:
+        Stateless validation strategy; it inspects the parsed AST and holds no
+        state between calls.
+
+    Registration:
+        MELDER KERNEL - guarded. Registered in the `CodegenValidator` strategy
+        set; never user-constructed.
+
+    Subsystem Context:
+        One rung of the codegen validation chain, which runs BEFORE compilation
+        and before any namespace is built. Its verdict feeds a
+        `CodegenValidationResult`, which `CodegenValidationReporter` formats for
+        the room-facing command.
+
+    System Context:
+        This strategy is a STATIC gate: it rejects reflection and introspection helpers when the posture denies unsafe reflection. It reads the AST rather than the
+        live namespace, which is the whole point of validating first - the
+        execution environment does not exist yet, and building it to find out
+        would be exactly the escape the gate exists to prevent.
+        Reflection defeats every name-based control at once - it turns a string into an object - so a posture that denies dangerous builtins while permitting reflection would not actually be denying anything.
+        Its checks are deliberately described as rejecting OBVIOUS violations.
+        That honesty matters: static analysis of Python cannot be exhaustive, so
+        the validation chain is defence in depth alongside the namespace
+        denylists and the ACL posture, not a proof of safety on its own.
     """
 
     __melder_internal__ = _mrg.sentinel

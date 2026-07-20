@@ -29,6 +29,30 @@ class InformationFreshnessInspector:
         - Stateless; all helpers are static.
         - Reads fact records through the registry's public API only.
         - Returns detached plain payloads (dicts/tuples of scalars).
+
+    Threading:
+        Stateless; all helpers are static and read fact records through the
+        registry's public API.
+
+    Registration:
+        MELDER KERNEL - guarded. Shared support for the information family, not
+        itself a registered strategy.
+
+    Subsystem Context:
+        The common freshness layer every information strategy delegates to, and
+        the consumer of `DevopsFactRecord` baselines.
+
+    System Context:
+        The economy this enforces is "LAST REPORT PLUS COMMITTED DELTAS EQUALS
+        CURRENT TRUTH", which means a strategy run is warranted in exactly two
+        cases: a region has no baseline at all (cold start), or its baseline is
+        older than the caller's stated tolerance. Everything else can be served
+        from what the transaction plane already committed.
+        Centralizing that arithmetic is not merely tidy - it keeps the staleness
+        VOCABULARY identical across the catalog. If each strategy invented its
+        own notion of stale, two views of the same frame could disagree about
+        whether the data behind them was current, and a caller comparing them
+        would have no way to reconcile the difference.
     """
 
     @staticmethod

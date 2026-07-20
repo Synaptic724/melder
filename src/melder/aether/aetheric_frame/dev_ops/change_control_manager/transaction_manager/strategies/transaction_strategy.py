@@ -44,6 +44,40 @@ class TransactionStrategy(ABC):
           The base class provides a fact-record-stamping default; families
           override it when they own relational registry truth.
         - Registered strategies must implement the three abstract methods.
+
+    Threading:
+        Stateless: strategies are registered as CLASSES and every hook is a
+        static/class-level call, so there is no per-strategy instance state to
+        guard. Concurrency lives in the mediator and the scope claims it holds.
+
+    Registration:
+        MELDER KERNEL - guarded. NOTE for MRO auditors: this is a guarded base
+        with many subclasses, which is safe here because every registered
+        strategy family ships with melder and the registry is closed - there is
+        no seam through which a user supplies their own strategy class.
+
+    Subsystem Context:
+        The dispatch contract for the transaction family
+        (`bind`, `link`, `unlink`, `cluster_link`, `cluster_join`,
+        `cluster_leave`, `transfer_ownership`, `conjure`, `notch`,
+        `add_to_index`, `remove_from_index`, and the cluster-leader pair).
+        `TransactionStrategyBuilder` resolves the family, the mediator admits
+        it, and the embargo table plus root session govern the claim window.
+
+    System Context:
+        The four-hook shape maps onto the transaction lifecycle deliberately,
+        and `apply_commit_delta` is the one that carries the real invariant: it
+        runs at commit WHILE THE TRANSACTION STILL HOLDS ITS SCOPE CLAIMS. That
+        is what makes the link and cluster-membership mirrors maintainable
+        eagerly at the mutation site and race-safe - so downstream information
+        strategies need no relational commit deltas of their own and can trust
+        the mirror they read.
+        The ABC-over-Protocol choice stated above is applying the repo's own
+        interface rule rather than a style preference: use `ABC` when there is
+        an explicit runtime inheritance contract with multiple concrete
+        implementations, and `Protocol` only for genuine structural typing.
+        This family is registered, closed, and dispatched polymorphically -
+        precisely the sanctioned ABC case.
     """
 
     @staticmethod

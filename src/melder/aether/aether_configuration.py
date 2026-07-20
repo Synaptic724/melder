@@ -27,6 +27,29 @@ class AetherConfiguration(Cleanable):
     Note:
         System caching policy is owned by `AethericFrameConfiguration`
         (frame-level toggle plus the cache root path), not by this root config.
+
+    Registration:
+        MELDER KERNEL - guarded. Obtained through
+        `Aether.create_configuration()`.
+
+    Subsystem Context:
+        The root policy surface, following the same mutable-then-frozen shape as
+        the Spellbook, crystallizer, mutation-research, and Nexus configurations
+        - so an agent that has learned one configuration lane can drive all of
+        them.
+
+    System Context:
+        Its scope is deliberately NARROW: process-wide logger activation policy
+        for `AetherUtilitySystem`, and the docstring's Note draws the boundary
+        explicitly by pointing system caching policy at
+        `AethericFrameConfiguration` instead. Root configuration answers only
+        what must be true for the whole process.
+        Automatic channel-logger activation being DISABLED BY DEFAULT is the
+        conservative posture that matters: a library that silently activated
+        logging on import would emit into a host application's logging
+        configuration uninvited. Explicit attachment via `attach_logger(...)`
+        stays outside this surface for the same reason - handing over a live
+        logger object is an act, not a policy.
     """
 
     __melder_internal__: ClassVar[object] = _mrg.sentinel

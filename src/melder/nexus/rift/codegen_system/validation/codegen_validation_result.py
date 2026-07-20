@@ -21,6 +21,24 @@ class CodegenValidationResult(Cleanable):
           optional validation issue strings.
         - May also carry the internal transaction id for logging/history use.
         - Serializes to the public payload shape expected by current room tests.
+
+    Registration:
+        MELDER KERNEL - guarded. Produced by `CodegenValidator`.
+
+    Subsystem Context:
+        The validator-owned outcome type, deliberately distinct from
+        `CodegenExecutionResult`. `CodegenValidationReporter` formats it for the
+        room-facing command.
+
+    System Context:
+        Keeping validation and execution results as SEPARATE types is what
+        makes `validate_codegen` a first-class operation. A caller may validate
+        without executing, and a shared result type would either carry empty
+        runtime fields or tempt callers into reading execution state that never
+        happened.
+        Carrying acceptance state alongside reason and issues means a rejection
+        explains itself. A bare boolean would force the caller to re-run
+        validation with different instrumentation to learn why.
     """
 
     __melder_internal__ = _mrg.sentinel

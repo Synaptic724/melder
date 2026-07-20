@@ -60,6 +60,37 @@ class ChangeControlTransactionManager(Cleanable):
     - Shared state mutation is guarded by an internal `RLock`.
     - Pure formatting/hash helpers do not require the lock because they do not
       mutate manager state.
+    - The audit callback runs OUTSIDE the lock, so user-supplied logging can
+      never extend the critical section or deadlock against it.
+
+    Lifecycle / Cleanup:
+        Idempotent; cleanup invalidates the manager for future use. Owned by
+        `ChangeControlManager` within the frame's DevOps graph.
+
+    Registration:
+        MELDER KERNEL - guarded. Internal admission bookkeeping; not reachable
+        or constructible by users.
+
+    Subsystem Context:
+        The bookkeeping half of change control, deliberately separated from the
+        DECISION half. `TransactionMediator` decides admission; this manager
+        turns an accepted request into durable in-flight state, scope keys, and
+        mirrors. `TransactionStrategy` families supply the per-family behaviour
+        around it.
+
+    System Context:
+        The separation stated in the opening line is the design: admission
+        policy and admission bookkeeping change for different reasons and at
+        different rates, so entangling them would mean every new transaction
+        family risks perturbing the decision path.
+        Two consequences worth knowing. The in-flight registry reflects
+        ADMITTED requests only, which makes it a truthful drain signal - the
+        Aether `LoadGate` counts mediator sessions when draining for a
+        crystallizer load, and a registry containing unadmitted attempts would
+        make that count meaningless. And the link mirror is explicitly
+        support/diagnostic state today, NOT admission input; it is maintained
+        eagerly at the mutation site under held claims so that promoting it into
+        policy later is a decision rather than a rewrite.
     """
     __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [

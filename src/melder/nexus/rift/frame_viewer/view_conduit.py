@@ -27,6 +27,7 @@ if TYPE_CHECKING:
 @decorate_public_view_actions
 class ViewConduit(Cleanable):
     """
+
     Purpose:
         Hold conduit-scoped viewer helper methods for one selected frame.
 
@@ -37,6 +38,30 @@ class ViewConduit(Cleanable):
 
     Lifecycle:
         Cleanup is idempotent and clears the helper reference.
+
+    Threading:
+        Created on demand per use rather than cached on the viewer, so it always
+        reads current projection truth.
+
+    Registration:
+        MELDER KERNEL - guarded. Produced by `FrameViewer`; users reach it
+        through the viewer surface.
+
+    Subsystem Context:
+        The conduit-scoped helper of the viewer family
+        (`ViewMultiFrame`, `ViewFrame`, `ViewConduit`, `ViewSpell`), which
+        together form the read surface of a room.
+
+    System Context:
+        Every helper returns ACL-FILTERED results and never raw runtime
+        objects. That is the viewer's security boundary: a read can surface what
+        policy permits to be described, and cannot become a handle on the thing
+        described.
+        It returns conduit links and descriptions only - never the conduit itself - so discovering topology through a viewer can never hand back a live runtime object to act through.
+        Creating helpers on demand rather than caching bound state is what keeps
+        them honest across an ACL refresh - a cached helper would answer from
+        the projection it was born with, after that projection had been
+        replaced.
     """
 
     __melder_internal__ = _mrg.sentinel

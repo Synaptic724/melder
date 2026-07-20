@@ -23,6 +23,25 @@ class CodegenValidationReporter(Cleanable):
     Contract:
         - Does not perform validation itself.
         - Delegates payload formatting to the result object.
+
+    Threading:
+        Stateless formatter.
+
+    Registration:
+        MELDER KERNEL - guarded. Used by the codegen command surface.
+
+    Subsystem Context:
+        The presentation layer between validator-owned results and the public
+        payload the room command returns.
+
+    System Context:
+        "Does not perform validation itself" is the boundary that keeps the
+        verdict single-sourced. A reporter that could reinterpret or re-derive
+        would create a second place where acceptance is decided, and the two
+        could disagree.
+        Separating formatting from judgement also lets the public payload shape
+        evolve for agents and tooling without touching the validator that
+        decides what is safe.
     """
 
     __melder_internal__ = _mrg.sentinel

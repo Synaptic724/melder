@@ -52,6 +52,51 @@ class AethericFrame(Cleanable):
       - Uses one frame-local `RLock` to guard cleanup and frame-owned registry
         mutation.
       - Relies on child objects to guard their own internal state.
+
+    Threading:
+        One frame-local `RLock` guards cleanup and frame-owned registry
+        mutation; children guard their own state. The frame does NOT take a
+        child's lock, which keeps the lock order strictly downward:
+        frame -> child, never child -> frame.
+
+    Lifecycle / Cleanup:
+        Under V3 Horizon lazy frames, `import melder` creates ZERO frames - the
+        first `Spellbook` births the frame it names via `_ensure_frame`
+        (get-or-create is the intended semantic), and a collapsed configuration
+        falls back to a lazily created "default". Teardown detaches from
+        `Aether` only AFTER frame-owned cleanup completes, so a half-torn frame
+        is never reachable from the global registry.
+
+    Registration:
+        MELDER KERNEL - guarded. Frames are created through Spellbook conjure
+        or Nexus-managed creation, never constructed directly.
+
+    Subsystem Context:
+        Layer 2 of the runtime, between the `Aether` singleton and `Spellbook`.
+        It owns three distinct families: RUNTIME (root conduits, spell/index
+        registries, `ConduitCloud`), CONTROL PLANE (`SpellSystemStates`,
+        `DevOpsManager` and through it `ChangeControlManager` + `RiskManager`),
+        and POSTURE (the narrow `AethericFrameConfiguration`). Conduits live
+        inside a frame; they never reach across to another.
+
+    System Context:
+        The frame is the ISOLATION BOUNDARY that makes multi-tenant runtime
+        work possible in one process. Two frames can hold identically named
+        conduits, clusters, and spell lineages without collision, which is why
+        Nexus can offer `single`, `indexed`, and `one_per_workspace` topologies
+        as pure frame policy rather than as runtime special-cases.
+        Frames also come BEFORE books in the canonical boot order
+        (Aether|AetherUtilitySystem -> Crystallizer -> MutationResearch ->
+        Nexus -> AETHERIC_FRAME -> Spellbook -> Conduit|Ward), and the reason is
+        concrete: the frame owns the dynamic gate that conjure's
+        `check_system_state` reads. A book cannot decide whether it may conjure
+        dynamically until its frame's posture exists - which is exactly why the
+        crystallizer's `frame_posture` preflight row warns when a restore finds
+        a book whose frame twin is missing.
+        Posture is bound ONCE per frame: a later same-frame conjure does not
+        overwrite it, so the first book to land defines the frame's contract and
+        subsequent books join it rather than silently redefining it underneath
+        the conduits already running there.
     """
     __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [

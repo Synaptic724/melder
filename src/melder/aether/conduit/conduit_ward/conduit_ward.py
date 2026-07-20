@@ -101,6 +101,39 @@ class ConduitWard(Cleanable):
       `_destroy_detached_link_contract` sever seams) so contract teardown stays
       consistent with spell maps and a failed sever leaves no asymmetric state.
     - Aether/frames are not touched directly; ward concerns are strictly conduit-scope.
+
+    Registration:
+        MELDER KERNEL - guarded. One ward is constructed per conduit inside
+        `Conduit.__init__`; it is reached through conduit verbs
+        (`link`, `sever_link`, `transfer_spell_ownership`), never directly.
+
+    Subsystem Context:
+        The relationship half of a conduit, opposite `ConduitMeld` (resolution)
+        and `ConduitCreations` (storage). It owns the four ward vocabularies in
+        practice: `Policies` decides whether a link may form at all,
+        `Permissions` bounds what each granted lineage allows, and
+        `ContractTypes` / `DetailReason` annotate the `Detail` rows it writes
+        into each `Contract`. `TransferOfOwnership` sits above it for the one
+        operation wards cannot express - changing who OWNS a lineage rather
+        than who may borrow it.
+
+    System Context:
+        Two design choices here carry most of the correctness weight.
+        First, SYMMETRY WITHOUT SHARED STATE: a contract is one relationship but
+        two views, so each ward keeps its own `Detail` map and the dual indices
+        (`_initiated_index` / `_received_index`) let either side answer "who do I
+        grant to" and "who grants to me" without consulting its peer. That is
+        also why contract creation uses SORTED LOCK ORDERING between the two
+        wards - two conduits linking each other simultaneously would otherwise
+        deadlock, and sorting by identity gives both threads the same order.
+        Second, TWO-PHASE SEVER: teardown runs
+        `_detach_link_contract` -> `_destroy_detached_link_contract` with a
+        `_reattach_link_contract` undo, precisely so a failure mid-sever cannot
+        leave one ward believing the contract is gone while its peer still
+        holds it. Asymmetric contract state is the worst failure mode available
+        to this class, and the phase split exists to make it unreachable.
+        Everything the ward does is dynamic-mode gated at the conduit surface;
+        in automatic mode the graph is fixed at conjure and no contract forms.
     """
     __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [

@@ -21,6 +21,31 @@ class CapabilityCommandSystem(CommandSystem):
           `meld_existing_spell(...)` command methods explicitly.
         - Represents the broad manual-runtime posture between static and later
           slimmer codegen command surfaces.
+
+    Registration:
+        MELDER KERNEL - guarded. Built by `CapabilityRiftSpace` through the
+        room's command-system factory seam.
+
+    Subsystem Context:
+        The broad manual posture of the command family. It owns the commands
+        that deliberately do not exist on the static surface: conduit
+        discovery, link and contract topology helpers, topology mutation, and
+        both direct `meld(...)` and reuse-only `meld_existing_spell(...)`.
+
+    System Context:
+        Owning `meld(...)` is the line that separates this posture from static,
+        because direct meld CONSTRUCTS. Static keeps only the reuse form, which
+        observes an instance that already exists; capability adds the form that
+        brings one into being, and with it the responsibility for lifetime and
+        existence semantics.
+        Topology mutation is the second half of the same widening: this room can
+        link, unlink, and rewire relationships that other conduits are actively
+        resolving through. Lower Melder frame truth still adjudicates - a
+        capability room cannot mutate topology on an automatic-mode frame, and
+        the frame's refusal is final regardless of what the room advertises.
+        It carries the twenty-one research READS but none of the preview,
+        synthesis, or group-organization verbs, because those take or produce
+        code and belong to the codegen posture.
     """
 
     __melder_internal__ = _mrg.sentinel

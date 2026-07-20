@@ -6,6 +6,7 @@ from melder.utilities.custom_exceptions.phase_scheduler_error import PhaseSchedu
 
 class PhaseExecutionError(PhaseSchedulerError):
     """
+
     Purpose:
         Signal that one or more units of work inside a scheduled phase raised,
         aborting the resolution pipeline. Aggregates the whole failure set

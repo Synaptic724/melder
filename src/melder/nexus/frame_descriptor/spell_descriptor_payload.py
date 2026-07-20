@@ -99,6 +99,29 @@ class SpellDescriptorPayload(Cleanable):
         - `binding_payload` is sanitized and contains no `original_object`.
         - Rich spell-facing detail fields are preserved when available.
         - Cleanup is idempotent and clears all owned payload references.
+
+    Threading:
+        Detached value payload; immutable in practice and safe to share.
+
+    Registration:
+        MELDER KERNEL - guarded. Attached to its record during passive
+        publication; never user-constructed.
+
+    Subsystem Context:
+        The descriptive payload half of the spell record pair. The RECORD holds
+        directly targetable identity; the PAYLOAD holds description.
+
+    System Context:
+        Keeping payload separate from record - rather than flattening it back
+        onto the record surface - is what lets description evolve without
+        destabilizing identity. `payload_version` makes that explicit: a
+        consumer can reason about the payload contract it received rather than
+        assuming the current shape.
+        Spell payloads carry the richest detail of the three, and `payload_type` records which detail tier was published - which is what lets a view profile demand a minimum payload floor before richer spell and member rules can apply.
+        Payloads carry no live runtime object references, which is what makes a
+        descriptor safe to publish, hold, and project. A payload holding live
+        objects would extend their lifetime and let a viewer reach the runtime
+        it is only meant to describe.
     """
 
     __melder_internal__ = _mrg.sentinel

@@ -39,6 +39,38 @@ class NexusFrameManager(Cleanable):
           `one_per_workspace`.
         - Does not own a persistent attachment registry; it derives removal and
           access safety from current Nexus/Rift state when needed.
+
+    Threading:
+        Registry mutation is serialized internally; it derives access safety
+        from current Nexus and Rift state rather than from a persistent
+        attachment registry.
+
+    Registration:
+        MELDER KERNEL - guarded. Owned by `Nexus` and exposed as the sole
+        managed-frame authoring facade.
+
+    Subsystem Context:
+        The authoring and topology facade above `Aether`, the descriptor
+        manager, and the ACL manager. `NexusFrameBuilder` is its fluent front,
+        created by `begin(frame_name)`.
+
+    System Context:
+        Every managed frame is dynamic, AI-NATIVE, AND RIFT-ENABLED - there is
+        no other valid Nexus-managed posture, which is why the builder defaults
+        to exactly that rather than offering it as a choice. A Nexus frame that
+        was not Rift-enabled could not be attached to the Rift that authored it.
+        STRICT-CREATE is the second rule: authoring raises when the frame
+        already exists, rather than silently adopting it. Adoption would let a
+        caller believe it authored a posture it did not, and inherit whatever
+        configuration the existing frame actually carries.
+        Topology mode constrains raw authoring in ways worth knowing: under
+        `single` only the canonical shared default frame may be created
+        directly, `indexed` permits explicit named creation, and
+        `one_per_workspace` REJECTS raw manager creation entirely - that path
+        has no Rift owner identity, so callers must use the Rift-scoped Nexus
+        creation path instead.
+        Owning no persistent attachment registry is deliberate: derived safety
+        from live state cannot go stale, while a mirror of attachments could.
     """
 
     __melder_internal__ = _mrg.sentinel

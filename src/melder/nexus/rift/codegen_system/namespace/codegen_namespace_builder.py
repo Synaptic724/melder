@@ -48,6 +48,23 @@ class CodegenNamespaceBuilder(Cleanable):
           globals dict.
         - Keeps policy/configuration separate from the built namespace object.
         - Uses only the current stable namespace contract for this slice.
+
+    Registration:
+        MELDER KERNEL - guarded. Owned by `CodegenSystem`.
+
+    Subsystem Context:
+        The assembler of `CodegenNamespace` from configuration plus the current
+        room and runtime objects, composing the exposure strategy family.
+
+    System Context:
+        Consuming STRATEGIES instead of hand-building one giant globals dict is
+        the design decision that makes namespace exposure reviewable. Each name
+        that reaches generated code has exactly one strategy responsible for it,
+        so a question like "how could this code see the workstation" has a
+        single answer rather than requiring a read of one long constructor.
+        Keeping policy and configuration separate from assembly is the matching
+        rule: the builder decides HOW to expose, never WHETHER, so widening
+        reach requires a configuration change rather than a builder edit.
     """
 
     __melder_internal__ = _mrg.sentinel

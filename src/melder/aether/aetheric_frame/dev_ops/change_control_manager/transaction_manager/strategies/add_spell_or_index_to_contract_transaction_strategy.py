@@ -40,6 +40,33 @@ class AddSpellOrIndexToContractTransactionStrategy(TransactionStrategy):
         - The actual contract write runs inside the held window via the
           Conduit-owned `_conduit_ward._add_spell_to_contract` seam.
         - Envelope-only: this strategy never reaches into the runtime.
+
+    Threading:
+        Stateless class-level strategy; concurrency is owned by the mediator
+        and the scope claims this plan requests.
+
+    Registration:
+        MELDER KERNEL - guarded. Registered as a CLASS in the transaction
+        family; never instantiated and never bindable.
+
+    Subsystem Context:
+        The grant half of the standalone contract-mutation pair, inverse of
+        `RemoveSpellOrIndexFromContractTransactionStrategy`. Both are
+        SELF-ADMITTING envelopes for work that would otherwise ride inside a
+        link or cluster transaction.
+
+    System Context:
+        "Self-admitting" is the distinction that matters. The same contract
+        mutation performed INSIDE a held link or cluster transaction must not
+        open its own envelope - that is the self-conflict trap the cluster
+        strategies warn about, where an inner transaction contends with the
+        seal already covering it and times out. This strategy exists for the
+        standalone case only.
+        The asymmetric claim shape follows the actual work: both conduits and
+        wards go EXCLUSIVE because the mutation WRITES the borrower ward and
+        READS the provider surface, while spellbooks go INTENT because a single
+        spell or index moving into a contract is piece-work rather than a
+        whole-book rewrite.
     """
 
     @classmethod

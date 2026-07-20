@@ -15,6 +15,7 @@ from melder.utilities.helpers.id_builder import IDBuilder
 
 class SpellExaminer(Cleanable):
     """
+
     Purpose:
         Act as the registry-backed front door for spell-examination profiles.
 

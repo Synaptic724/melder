@@ -46,6 +46,37 @@ class TransferOwnershipTransactionStrategy(TransactionStrategy):
         - Uses only `transaction_manager.make_scope_key_*` and registry
           `get_identity` (a topology read used by every strategy to add
           transaction-owner scopes). No live-object reach.
+
+    Threading:
+        Stateless class-level strategy; concurrency is owned by the mediator
+        and the scope claims this plan requests.
+
+    Registration:
+        MELDER KERNEL - guarded. Registered as a CLASS in the transaction
+        family; never instantiated and never bindable.
+
+    Subsystem Context:
+        The `transfer_ownership` member of the transaction family. It is the
+        one strategy whose footprint is discovered ELSEWHERE - by
+        `Conduit._build_transfer_transaction_metadata` running the read-only
+        `TransferOfOwnership.preflight()` - and merely translated here.
+
+    System Context:
+        The three-way split in "Design split" is the important architecture and
+        it exists because of a layering constraint, not taste. Footprint
+        discovery requires the LIVE runtime: the source conduit, the live spell,
+        its borrowers and creations. DevOps strategies are forbidden live-object
+        reach, so discovery cannot happen here. But the plan must cover the full
+        blast radius or the seal is too small and something mutates underneath
+        the transfer.
+        The resolution is to let the runtime discover (it legitimately holds
+        those objects, because it IS the runtime), stamp the footprint into
+        metadata, and leave this strategy a pure metadata-to-scope-keys
+        translation. Execution then happens in-window by the ward.
+        That is why `participant_conduit_ids` is REQUIRED and raises when
+        absent: a missing footprint would silently produce a plan that claims
+        almost nothing, and a transfer admitted under an under-scoped seal is
+        exactly the failure this whole layer exists to prevent.
     """
 
     @classmethod

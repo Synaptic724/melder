@@ -28,6 +28,43 @@ class SpellIndex(Cleanable):
       one currently active. The index organizes its member ids; the spell_id
       resolves. Lookup-map propagation to owning/contracted Spellbooks is the
       Spellbook's responsibility (the notch seam), not the index's.
+
+    Contract:
+        - Hash and equality derive ONLY from the immutable ULID.
+        - `selected_spell_id` is mutable and thread-safe to update.
+        - The index owns its member spell ids; it does NOT own lookup-map
+          propagation to owning or contracted Spellbooks - that is the
+          Spellbook's notch seam.
+
+    Threading:
+        The selected-spell pointer is updated under lock, so a repoint is safe
+        while the index sits in a dictionary.
+
+    Registration:
+        MELDER KERNEL - guarded. Created by `Bind`; users receive indexes rather
+        than constructing them.
+
+    Subsystem Context:
+        The stable identity spells are organized under. `Spell` is one version;
+        the index is the lineage. Version HISTORY belongs to MutationResearch,
+        not here.
+
+    System Context:
+        The design note names the real problem this solves: the MUTABLE
+        DICTIONARY KEY. Identity must stay stable so the object keeps its place
+        in every map that holds it, while the thing it POINTS AT must be free to
+        change. Hashing on the immutable ULID and mutating only the pointer is
+        what makes a notch possible at all - repointing an index cannot corrupt
+        the maps it lives in.
+        That split ripples outward. Contracts carry BOTH a `Detail` (a captured
+        spell_id, the answer at grant time) and an `IndexDetail` (a subscription
+        to this index, following the head), so a notch updates every borrower
+        without renegotiating a single contract. The crystallizer records index
+        MEMBERSHIP as its own twin (`SpellIndexCrystal`) for the same reason -
+        membership is lineage truth, distinct from any one spell's custody.
+        The explicit non-ownership of lookup-map propagation is the boundary
+        that keeps this class small: the index organizes ids, the spell_id
+        resolves, and the Spellbook is what republishes lookups on a notch.
     """
     __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = (

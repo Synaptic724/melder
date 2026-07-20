@@ -63,6 +63,44 @@ class NotchTransactionStrategy(TransactionStrategy):
         - "quiesce_root_conduit_ids" is PLAN-DERIVED: `build_start_plan`
           stashes the sealed conduit set into normalized metadata so
           `on_start`/`on_end` freeze exactly the surfaces the seal claims.
+
+    Threading:
+        Stateless class-level strategy, but it owns the most intricate
+        concurrency behaviour in the family: it drains conduit lineage gates in
+        `on_start` and reopens them in `on_end` on EVERY exit path, including
+        the drain-timeout abort.
+
+    Registration:
+        MELDER KERNEL - guarded. Registered as a CLASS in the transaction
+        family; never instantiated and never bindable.
+
+    Subsystem Context:
+        The `notch` member of the transaction family, paired with
+        `add_to_index` and `remove_from_index` as the three SpellIndex mutation
+        flows. All three run through the same admission path, but only notch
+        needs the runtime freeze.
+
+    System Context:
+        This strategy documents the single most important limitation of the
+        change-control model, and it is worth internalizing beyond this class:
+        EMBARGO CLAIMS EXCLUDE OTHER TRANSACTIONS ONLY. A meld-side validator
+        holds no claim at all, so scope claims alone cannot make it wait.
+        That gap is not theoretical - it was probe-proven. A validator
+        straddling the repoint writes its verdict keyed by the LIVE
+        `selected_spell_id`, so if the swap lands mid-validation the verdict
+        attaches to the newly promoted member and poisons it. No amount of
+        additional claiming fixes this, because the racing party is not a
+        transaction.
+        The answer is therefore a different mechanism entirely: quiesce the
+        RUNTIME. `on_start` parks new melds at each sealed conduit's
+        `CreationGate` and drains in-flight melds to zero - the conduit ticket
+        spans the whole meld, so the validator drains with them - and only then
+        does the swap proceed. `on_end` reopens on every exit path because a
+        gate left closed would silently wedge the conduit; that is why the
+        abort path reopens too rather than relying on the happy path.
+        The lesson generalizes: transaction claims serialize STRUCTURE, gates
+        serialize RUNTIME, and an operation that races runtime readers needs
+        both.
     """
 
     @classmethod

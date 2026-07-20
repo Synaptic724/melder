@@ -1,5 +1,6 @@
 class Empty(Exception):
     """
+
     Purpose:
         Signal that an operation required at least one item and the container
         was empty. Intentionally broad and lightweight.

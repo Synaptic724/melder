@@ -40,6 +40,33 @@ class SpellType(Enum):
         - Method/lambda families remain valid spell registrations, but they
           behave differently from class/existing-object families during Phase 3+
           planning and in the resolution-style matrix.
+
+    Threading:
+        Immutable enum members; safe to read from any thread.
+
+    Registration:
+        MELDER KERNEL - guarded, readable by value. Produced by the binding
+        layer; users read it rather than choosing it.
+
+    Subsystem Context:
+        The runtime classification produced by `Bind` plus the spell-examiner
+        profile machinery. It pairs with `Existence` (lifetime) and is the input
+        `ResolutionStyleMatrix` maps to a support policy.
+
+    System Context:
+        This enum is DERIVED, not declared - the binding layer inspects what was
+        actually registered and normalizes it. That is why a user never passes a
+        `SpellType`: claiming a family the object does not match would put the
+        runtime's assumptions at odds with the object it holds.
+        The family split drives real pipeline divergence. `EXISTING_CREATION*`
+        spells BYPASS the live phase 8-11 group entirely - they have no
+        occurrence graph, no analyzer-derived model, and no codegen-creation
+        payload, because the object already exists - and
+        `CreationContextBuilder` synthesizes their runtime doors locally instead
+        of demanding a compiler artifact that will never be produced.
+        `METHOD*` and `LAMBDA_METHOD*` carry callable semantics and are
+        unique-only for the same reason: there is no per-scope construction to
+        vary.
     """
     __melder_internal__ = _mrg.sentinel
     # Class-based construction spell families.

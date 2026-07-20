@@ -25,6 +25,30 @@ class RiftMemorySystem(Cleanable):
           optional CommandOps context fields.
         - Produces immutable `RiftMemory` snapshots.
         - Cleanup is idempotent and clears all owned mutable state.
+
+    Registration:
+        MELDER KERNEL - guarded. Owned by one `RiftSpace`; reached through the
+        room.
+
+    Subsystem Context:
+        The room's memory sequencing hub, paired with the room-local
+        `RiftEventSystem` (outbound publication). Commands, views, and the
+        workstation all emit through this one object.
+
+    System Context:
+        Centralizing the counters is what makes room memory COHERENT rather than
+        merely present. `step_counter` and `epoch_counter` live in exactly one
+        place, so records emitted from a command, a view, and the workstation
+        share one ordering - if each emitter kept its own counter, the room's
+        history could not be linearized and "what happened before what" would be
+        unanswerable.
+        Producing IMMUTABLE `RiftMemory` snapshots is the second half: a record
+        that could change after emission would make the history a live view of
+        the present rather than an account of the past.
+        This is the system codegen rooms emit FULL-SOURCE records through, which
+        is why the shared metadata carries `rift_id`, `space_type`, and the
+        optional CommandOps context fields - a record has to identify where and
+        under what posture it happened to be worth keeping.
     """
 
     __melder_internal__ = _mrg.sentinel

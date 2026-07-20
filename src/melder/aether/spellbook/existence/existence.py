@@ -19,6 +19,36 @@ class Existence(Enum):
       for each mode.
     - The same spell may behave very differently under different `Existence`
       values even when every other binding detail is unchanged.
+
+    Threading:
+        Immutable enum members; safe to read from any thread.
+
+    Registration:
+        MELDER KERNEL - guarded, readable by value. Users pass it into
+        `Spellbook.bind(...)`.
+
+    Subsystem Context:
+        The lifecycle vocabulary of binding, interpreted by `Meld` at resolution
+        and realized by the `Creations` store family. `SpellType` classifies
+        WHAT was bound; `Existence` declares HOW LONG its instances live.
+
+    System Context:
+        The six modes are storage ROUTING, not just labels, and the routing is
+        what makes them real. `unique` is per-frame; `unique_per_conduit` and
+        `many` land in the caller's own `ConduitCreations`;
+        `unique_per_conduit_cluster` resolves against a cluster-owned store;
+        `unique_per_conduit_lineage` spans the lineage tree; and
+        `unique_per_spell_space` is reachable ONLY through `SpellSpaceMeld`,
+        which is exactly why `ConduitMeld` refuses those spells instead of
+        fabricating a scope.
+        The declarative framing in the contract matters: the enum caches
+        nothing itself. A wrong `Existence` therefore produces no error - it
+        produces an instance with the wrong lifetime, shared more or less widely
+        than intended, which is why the member docstrings describe reuse
+        BOUNDARIES rather than implementation.
+        Constraints exist where a mode would be incoherent: method, lambda, and
+        existing-object bindings must use `unique`, because there is nothing
+        meaningful to construct per scope.
     """
     __melder_internal__ = _mrg.sentinel
     unique = auto()

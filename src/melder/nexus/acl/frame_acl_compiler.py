@@ -17,6 +17,7 @@ from melder.nexus.frame_descriptor.spell_record import SpellRecord
 
 class FrameACLCompiler(Cleanable):
     """
+
     Purpose:
         Compile typed ACL configuration over payload-backed descriptor records
         into a downstream consumer-facing access surface.
@@ -28,6 +29,34 @@ class FrameACLCompiler(Cleanable):
           builder/library.
         - Produces derived access answers suitable for downstream frame-link
           contract shaping.
+
+    Threading:
+        Compilation is a pure derivation over descriptor truth and ACL
+        configuration; it holds no mutable cross-call state.
+
+    Registration:
+        MELDER KERNEL - guarded. Invoked by the ACL layer during projection
+        compilation.
+
+    Subsystem Context:
+        The step between POLICY and ANSWERS. `FrameACLContainer` holds typed
+        configuration, `FrameDescriptorManager` holds descriptor truth, and this
+        compiler joins them into a `CompiledFrameACLAccessSurface` the viewer,
+        command, and codegen layers consume.
+
+    System Context:
+        "Never mutates descriptor state" is the load-bearing rule. Descriptors
+        are published passively by frames, conduits, and spells at their own
+        confirmation points; a compiler that wrote back would make reading
+        permissions a mutation of the world being described, and two
+        compilations could then disagree because the first changed the input to
+        the second.
+        Resolving effective REUSABLE PROFILES rather than only local overrides
+        is what makes the compiled answer truthful - a frame's real posture is
+        its referenced profile plus its overrides, so compiling overrides alone
+        would report a policy far narrower than what actually applies.
+        Its output feeds `FrameLinkContract` selection, which is why a Rift
+        attaches to compiled answers and never to raw ACL objects.
     """
 
     __melder_internal__ = _mrg.sentinel

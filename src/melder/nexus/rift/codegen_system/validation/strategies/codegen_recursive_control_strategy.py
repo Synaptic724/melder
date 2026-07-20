@@ -23,6 +23,31 @@ class CodegenRecursiveControlStrategy(Cleanable):
     Purpose:
         Reject obvious direct recursive-codegen calls when the selected
         codegen posture denies recursive execution.
+
+    Threading:
+        Stateless validation strategy; it inspects the parsed AST and holds no
+        state between calls.
+
+    Registration:
+        MELDER KERNEL - guarded. Registered in the `CodegenValidator` strategy
+        set; never user-constructed.
+
+    Subsystem Context:
+        One rung of the codegen validation chain, which runs BEFORE compilation
+        and before any namespace is built. Its verdict feeds a
+        `CodegenValidationResult`, which `CodegenValidationReporter` formats for
+        the room-facing command.
+
+    System Context:
+        This strategy is a STATIC gate: it rejects direct recursive-codegen calls when the posture denies them. It reads the AST rather than the
+        live namespace, which is the whole point of validating first - the
+        execution environment does not exist yet, and building it to find out
+        would be exactly the escape the gate exists to prevent.
+        It is the static half of a two-part control; `CodegenControlSurface` applies the same permission at runtime, so indirect reachings are still refused even when static analysis cannot see the call.
+        Its checks are deliberately described as rejecting OBVIOUS violations.
+        That honesty matters: static analysis of Python cannot be exhaustive, so
+        the validation chain is defence in depth alongside the namespace
+        denylists and the ACL posture, not a proof of safety on its own.
     """
 
     __melder_internal__ = _mrg.sentinel

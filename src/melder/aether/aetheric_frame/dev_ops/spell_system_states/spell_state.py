@@ -17,6 +17,38 @@ class SpellState(Enum):
     - Flag lifecycle is owned by the subsystem that set the flag. Validation
       clears only topology-driven dirt flags; contract, mutation, and ops flags
       must be flipped by their own control-plane logic.
+
+    Threading:
+        Immutable enum members; safe to read from any thread. Flags are held as
+        a set on `SpellSystemState` and mutated through the owning registry.
+
+    Registration:
+        MELDER KERNEL - guarded, readable by value. Control-plane vocabulary.
+
+    Subsystem Context:
+        The EXPLANATION axis of the three-axis validity model, between
+        `SpellValidity` (the coarse gate meld reads) and
+        `SpellStateChangeReason` (the single latest triggering event). Flags are
+        the only one of the three that accumulates.
+
+    System Context:
+        Multiple simultaneous flags are the normal case, not an edge case, and
+        that is why this is a flag SET rather than a status field: topology,
+        contract, mutation, and ops concerns genuinely overlap on one lineage.
+        A spell can be dependency-dirty AND awaiting a contract provider at the
+        same time, and collapsing that into one value would force the control
+        plane to pick which truth to discard.
+        The lifecycle rule is the operational trap worth reading twice.
+        Validation clears ONLY topology-driven dirt flags - it deliberately does
+        not touch contract, mutation, or ops flags, because it has no authority
+        over those conditions and clearing them would silently forge a verdict
+        the owning subsystem never gave. Whoever sets a flag owns clearing it.
+        Some advanced flags (`contract_violation`, `mutation_candidate`,
+        `mutation_quarantined`, `mutation_failed`) currently have NO producers
+        in `src/melder`: they belong to the MutationResearch runtime-seam slice
+        that deliberately defers select/staged/promoted acts until the
+        notch/bind_inactive seams are real. They are vocabulary awaiting a
+        producer, not dead values.
     """
     __melder_internal__ = _mrg.sentinel
     # Topology / graph-level

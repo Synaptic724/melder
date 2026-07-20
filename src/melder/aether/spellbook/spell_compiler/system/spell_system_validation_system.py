@@ -55,6 +55,7 @@ class SpellSystemValidationSystem(Cleanable):
     Purpose:
         Aggregate system-level validation diagnostics and update lineage validity
         for all spells in the current frame.
+
     Contract:
         - Strategies are executed in the order provided at construction.
         - Diagnostics are collected and returned via SpellSystemValidationState.
@@ -62,6 +63,7 @@ class SpellSystemValidationSystem(Cleanable):
           to VALID when no error diagnostics exist, and to INVALID when any
           error diagnostics are present.
         - Global structural validity is not modified by this class.
+
     Threading:
         Callers are responsible for external synchronization when sharing inputs
         across threads. This class does not introduce additional locking.

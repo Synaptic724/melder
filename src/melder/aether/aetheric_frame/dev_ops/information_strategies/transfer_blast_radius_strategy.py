@@ -36,6 +36,32 @@ class TransferBlastRadiusStrategy(DevopsInformationStrategy):
         - The freshness block covers the target conduit, the owning
           spellbook, and every related conduit in the radius.
         - Honors optional `max_age_in_seconds`.
+
+    Threading:
+        Stateless static strategy; reads mirrored registry truth only.
+
+    Registration:
+        MELDER KERNEL - guarded. Registered as a CLASS in the information
+        family; resolved by name through `DevopsInformationStrategyBuilder`.
+
+    Subsystem Context:
+        The pre-flight read for the heaviest transaction in the system. It
+        pairs with `TransferOwnershipTransactionStrategy` (which plans the
+        scopes) and `TransferOfOwnership` (which executes), but unlike those it
+        touches nothing and claims nothing.
+
+    System Context:
+        Transfer is called out here as "the highest-leverage post-conjure
+        transaction" for a concrete reason: it rewires WHO ANSWERS for a conduit
+        while borrowers and clusters keep pointing at it. Every link partner in
+        both directions, every cluster co-member, and every sibling under the
+        owning spellbook is affected without any of them initiating anything.
+        Surfacing that radius BEFORE scopes are claimed is what turns transfer
+        from a leap into a decision. Pairing it with per-region freshness is the
+        other half: a blast radius derived from a stale mirror would understate
+        the reach, so the caller is told not just what is affected but how
+        current that picture is - and can refresh first rather than proceed on
+        an old view.
     """
 
     @staticmethod

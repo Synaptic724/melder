@@ -23,6 +23,7 @@ ACLFamilyConfiguration = Union[
 
 class FrameACLConfigurationChain(Cleanable):
     """
+
     Purpose:
         Own one named revision chain for one ACL configuration family.
 

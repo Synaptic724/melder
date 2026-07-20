@@ -3,6 +3,7 @@
 
 class DeadReferenceError(ReferenceError):
     """
+
     Purpose:
         Signal that a weak-reference target was requested after the referent was
         already collected. Turns a silent `None` into an explicit failure at the

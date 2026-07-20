@@ -61,6 +61,7 @@ from melder.nexus.acl.configurations.frame_acl_view_configuration import (
 
 class FrameACLValidator(Cleanable):
     """
+
     Purpose:
         Validate that frame-local ACL configuration nodes are structurally
         compatible with one owning frame.
@@ -76,6 +77,28 @@ class FrameACLValidator(Cleanable):
     Lifecycle:
         Cleanup is idempotent and clears the last-validation marker plus the
         owning frame reference.
+
+    Registration:
+        MELDER KERNEL - guarded. A container-owned validator service.
+
+    Subsystem Context:
+        The STRUCTURAL validator of the ACL layer, paired with
+        `FrameACLSetCompatibilityValidator`, which checks semantic coherence
+        ACROSS the three families.
+
+    System Context:
+        The two validators answer genuinely different questions and both are
+        needed. This one asks "does this node belong here and are its typed
+        children well-formed" - ownership plus structure. The compatibility
+        validator asks "do view, command, and codegen agree with each other". A
+        bundle can be perfectly structured and still incoherent, granting a
+        command the view family will not surface.
+        Recording the last validated configuration id is a diagnostic
+        affordance: when a frame misbehaves, knowing WHICH revision last passed
+        validation separates a policy problem from a validation gap.
+        The docstring is honest that the full rule engine is not implemented in
+        this slice, which is the correct posture - an under-claiming validator
+        is safe; one implying coverage it lacks is not.
     """
 
     __melder_internal__ = _mrg.sentinel

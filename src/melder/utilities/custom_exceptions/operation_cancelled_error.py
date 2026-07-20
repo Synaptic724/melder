@@ -3,6 +3,7 @@
 
 class OperationCancelledError(RuntimeError):
     """
+
     Purpose:
         Signal that work stopped because cooperative cancellation was observed -
         an abort, not a failure. Distinguishes "we were told to stop" from

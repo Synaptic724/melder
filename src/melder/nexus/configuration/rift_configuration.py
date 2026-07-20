@@ -26,6 +26,26 @@ class RiftConfiguration(Cleanable):
           configuration style.
         - Captures per-Rift runtime defaults only; process-wide governance lives
           in `NexusConfiguration`.
+
+    Registration:
+        MELDER KERNEL - guarded. Built through `Nexus.create_rift_configuration`
+        and consumed at Rift creation.
+
+    Subsystem Context:
+        The per-Rift configuration object, sitting below process-wide
+        `NexusConfiguration`. Its `space_type` is what programs the Rift's one
+        primary room.
+
+    System Context:
+        The opening line states the design rule plainly: the live public `Rift`
+        is NOT the configuration root. Keeping configuration in a separate
+        mutable-then-frozen object means a Rift's runtime surface stays about
+        live behaviour, and configuration cannot be mutated through the object
+        callers hold.
+        This is also where the process-wide/per-Rift boundary lands. Creation
+        and access gates, frame topology, and budgets are governance and belong
+        to `NexusConfiguration`; room posture and per-Rift defaults legitimately
+        differ between Rifts and belong here.
     """
 
     __melder_internal__ = _mrg.sentinel

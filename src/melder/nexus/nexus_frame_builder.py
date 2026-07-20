@@ -29,6 +29,30 @@ class NexusFrameBuilder(Cleanable):
         Builders are lightweight, short-lived authoring helpers created by
         `NexusFrameManager.begin(...)` and typically consumed immediately by
         `build()` or `create()`.
+
+    Threading:
+        Short-lived and caller-confined; not intended for sharing across
+        threads.
+
+    Registration:
+        MELDER KERNEL - guarded. Created by `NexusFrameManager.begin(...)`;
+        never constructed directly.
+
+    Subsystem Context:
+        The fluent authoring front for `NexusFrameManager`, mirroring the
+        builder pairing used by the Aether, Spellbook, crystallizer, and
+        mutation-research configurations.
+
+    System Context:
+        Defaulting to the only valid managed posture - dynamic, AI-native,
+        Rift-enabled - is what makes this builder honest rather than merely
+        convenient. Offering those as configurable options would imply
+        combinations that `NexusFrameManager` will refuse, so the builder
+        presents the one shape that can actually be created.
+        `create()` delegating to the manager keeps authoring and realization
+        separate: the builder stages intent, the manager applies strict-create
+        semantics and topology rules. That is why `build()` and `create()` are
+        distinct - a caller may want the configuration without realizing it.
     """
 
     __melder_internal__ = _mrg.sentinel

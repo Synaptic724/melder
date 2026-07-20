@@ -28,6 +28,7 @@ class ContractProviderPresenceStrategy(SpellValidationStrategy):
         Surface missing or ambiguous providers for SpellContract
         sockets at Phase 4 so users understand why a
         contracted spell cannot resolve.
+
     Contract:
         - Emits errors when contract descriptors are malformed.
         - Emits errors when more than one provider matches a contract key.

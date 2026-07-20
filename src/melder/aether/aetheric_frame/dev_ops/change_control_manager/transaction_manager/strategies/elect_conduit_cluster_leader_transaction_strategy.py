@@ -40,6 +40,34 @@ class ElectConduitClusterLeaderTransactionStrategy(TransactionStrategy):
         - Seals the cluster member conduits EXCLUSIVE for the duration, isolated
           to them; no drain (inert invariant).
         - Commit runs only the base fact-baseline stamp (no domain effect here).
+
+    Threading:
+        Stateless class-level strategy. Notably it needs NO lineage drain -
+        see System Context for why the light envelope is sufficient here.
+
+    Registration:
+        MELDER KERNEL - guarded. Registered as a CLASS in the transaction
+        family; never instantiated and never bindable.
+
+    Subsystem Context:
+        The activation half of the cluster's OPTIONAL second layer, paired with
+        `UnelectConduitClusterLeaderTransactionStrategy`. Membership and
+        sharing - the always-on first layer - are handled separately by
+        cluster join and leave.
+
+    System Context:
+        The asymmetry between elect and unelect is the instructive part, and it
+        turns on one fact: WHICH DIRECTION THE TRANSITION RUNS.
+        Election goes inert -> active. While inert the cluster door
+        hard-errors, so no meld can be mid-create against the team store, and
+        an atomic envelope with no lineage drain is provably sufficient.
+        Unelection goes active -> inert, where a meld may be holding its gate
+        ticket across an executor right now - so that direction requires the
+        full freeze.
+        The domain effect is deliberately NOT performed here. This strategy
+        seals the footprint and `ConduitCluster` binds the team store inside
+        the held window, exactly as Spellbook runs `_apply_notch` between start
+        and end. Strategies own isolation; call sites own effect.
     """
 
     @classmethod

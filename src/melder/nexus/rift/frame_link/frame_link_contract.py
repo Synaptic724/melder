@@ -32,6 +32,31 @@ class FrameLinkContract(Cleanable):
     Lifecycle:
         Created for one Rift/frame pair and cleaned with the owning Rift unless
         explicitly cloned into another local hosting object.
+
+    Registration:
+        MELDER KERNEL - guarded. Created per Rift/frame pair during
+        `Rift.create_frame_link(...)`.
+
+    Subsystem Context:
+        The per-frame ACL SELECTION for one Rift, distinct from the ACL
+        containers themselves. `FrameACLManager` owns each frame's named
+        revision chains for view, command, and codegen; this object records
+        which contract name this Rift selected in each family for one frame.
+
+    System Context:
+        The storage layer allows the three families to hold DIVERGENT named
+        contracts - same-name selection is convenience there, not law. The Rift
+        frame-link path deliberately does not use that freedom: it pins a fixed
+        same-name selection resolving view, command, and codegen to the attached
+        `frame_name`, materializing from `default` when absent.
+        That restriction is what keeps attachment predictable. Allowing a Rift
+        to mix families - view from one contract, command from another - would
+        make its effective permissions a cross-product no operator could reason
+        about, and would make an ACL bump's blast radius depend on which
+        combination each Rift happened to select.
+        One contract per frame also means a Rift's total surface is the union of
+        its per-frame contracts, so revoking one frame cannot silently widen or
+        narrow another.
     """
 
     __melder_internal__ = _mrg.sentinel

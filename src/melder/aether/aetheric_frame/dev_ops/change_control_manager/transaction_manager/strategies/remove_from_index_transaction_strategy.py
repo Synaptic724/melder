@@ -34,6 +34,28 @@ class RemoveFromIndexTransactionStrategy(TransactionStrategy):
           index ops on that spellbook+conduit, isolated to them.
         - The owned-spell move into a fresh index runs inside the held window via
           the Spellbook-owned `_apply_remove_from_index` seam.
+
+    Threading:
+        Stateless class-level strategy; concurrency is owned by the mediator
+        and the scope claims this plan requests.
+
+    Registration:
+        MELDER KERNEL - guarded. Registered as a CLASS in the transaction
+        family; never instantiated and never bindable.
+
+    Subsystem Context:
+        The move-out counterpart to `AddToIndexTransactionStrategy`, sharing
+        the same one-index-per-spell invariant.
+
+    System Context:
+        Removal is a MOVE, not a deletion, and that follows directly from the
+        invariant: since a spell is always in exactly one index, taking it out
+        of its current index requires somewhere for it to land. A fresh index
+        is established inside this same transaction - the split.
+        This is why the seal is narrower than the move-in's: only one spellbook
+        and one conduit are involved, because the destination index is created
+        here rather than being an existing surface some other transaction might
+        be holding.
     """
 
     @classmethod

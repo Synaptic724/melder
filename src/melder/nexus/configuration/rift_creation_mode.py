@@ -18,6 +18,24 @@ class RiftCreationMode(Enum):
         prebuilt_only:
             New Rift creation is blocked; only prebuilt/external Rift shells may
             be programmed into the system.
+
+    Threading:
+        Immutable enum members; safe to read from any thread.
+
+    Registration:
+        MELDER KERNEL - guarded, readable by value. Nexus configuration
+        vocabulary.
+
+    Subsystem Context:
+        One of the process-wide policy vocabularies stored in
+        `NexusConfiguration`, alongside the other creation-control controls.
+
+    System Context:
+        Creation is gated separately from access because creating a Rift and retrieving one are different privileges: a caller allowed to use an existing Rift is not necessarily allowed to mint new ones with a posture of its choosing.
+        Because this is PROCESS-WIDE policy frozen at configuration time, the
+        choice applies uniformly to every Rift - which is the point. A gate that
+        varied per Rift could be escaped by creating a differently configured
+        one, so the governance that matters lives here rather than on the Rift.
     """
 
     __melder_internal__ = _mrg.sentinel

@@ -42,6 +42,41 @@ class CommandSystem(Cleanable):
     Lifecycle:
         Owned by one `RiftSpace`. Cleanup drops references to the owning room
         and workstation but does not clean those children itself.
+
+    Threading:
+        Room-confined. It holds no cross-room state and takes no lock of its
+        own; the ACL projections it enforces against are refreshed by the owning
+        Rift.
+
+    Registration:
+        MELDER KERNEL - guarded. NOTE for MRO auditors: a guarded BASE with
+        three subclasses, and safe for the same reason as `RiftSpace` - the
+        three postures are melder-internal and constructed by their owning room
+        (for example `CapabilityRiftSpace` builds `CapabilityCommandSystem`),
+        with no user injection seam anywhere.
+
+    Subsystem Context:
+        The MEDIATED command layer above the viewer/workstation split.
+        `FrameViewer` answers read questions, `Workstation` holds bindings and
+        the active target, and this class is the controlled surface through
+        which getters and executes actually run. Room-specific subclasses add
+        the vocabulary that does not belong to every room.
+
+    System Context:
+        Two rules define this class and both are about refusing convenience.
+        First, ACL IS ENFORCED ON THE DIRECT FETCH PATH - compiled command ACL
+        state is checked BEFORE any frame, conduit, or spell runtime object is
+        exposed. Checking after would mean the object had already escaped.
+        Second, IT DOES NOT STORE RESULTS. A caller that wants persistence must
+        bind the returned value into the workstation explicitly. Auto-storing
+        would make every read silently extend object lifetime and quietly
+        populate a room's canvas with things nobody chose to keep.
+        The subclass split exists because pretending every room owns the same
+        broad public surface is exactly the lie the room modes exist to prevent:
+        `CapabilityCommandSystem` owns topology mutation and direct activation,
+        `StaticCommandSystem` owns live-only retrieval and reuse-only
+        activation, and `CodegenCommandSystem` owns the validate/execute seams
+        plus the full research command family.
     """
 
     __melder_internal__ = _mrg.sentinel

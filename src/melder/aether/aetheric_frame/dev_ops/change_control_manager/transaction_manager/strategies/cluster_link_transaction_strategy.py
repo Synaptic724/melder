@@ -45,6 +45,33 @@ class ClusterLinkTransactionStrategy(TransactionStrategy):
           operation blocks a whole-spellbook claim (transfer) without
           serializing unrelated piece-work (links, binds) on those
           spellbooks.
+
+    Threading:
+        Stateless class-level strategy; concurrency is owned by the mediator
+        and the scope claims this plan requests.
+
+    Registration:
+        MELDER KERNEL - guarded. Registered as a CLASS in the transaction
+        family; never instantiated and never bindable.
+
+    Subsystem Context:
+        The PER-PAIR share/unshare transaction beneath cluster membership. It
+        is subsumed by `ClusterJoinTransactionStrategy` and
+        `ClusterLeaveTransactionStrategy` when a whole entry or exit is
+        sealed - a fact those strategies call out explicitly.
+
+    System Context:
+        This strategy runs under a CONDUIT identity while join and leave run
+        under a CLUSTER identity, and that difference is the mechanism behind
+        the documented self-conflict hazard: an in-window share opening its own
+        `cluster_link` presents to the embargo as a DIFFERENT owner, so it
+        blocks on scopes the enclosing seal already holds and times out rather
+        than failing loudly. Standalone share/unshare is the legitimate use;
+        inside a join or leave window it is a hang waiting to happen.
+        Granting contract-mutation capability alongside cluster-link is not
+        privilege creep - the runtime work genuinely mutates cross-conduit
+        contract surfaces, since a cluster share IS a contract between two
+        members.
     """
 
     @classmethod

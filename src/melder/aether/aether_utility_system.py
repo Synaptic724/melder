@@ -34,6 +34,27 @@ class AetherUtilitySystem(Cleanable):
     Lifecycle:
         Created eagerly by `Aether` at boot. Cleanup clears the registered
         resolver and resets the singleton state for tests.
+
+    Registration:
+        MELDER KERNEL - guarded. Singleton created eagerly by `Aether` at boot.
+
+    Subsystem Context:
+        The process-wide provider host, and the layer that replaced the old
+        logger-factory model. `InitHelpers.resolve_channel_logger(...)` is the
+        primary path for runtime objects; `resolve_safe_logger(...)` handles
+        explicit logger objects.
+
+    System Context:
+        This class exists to solve a specific ordering problem: logging is
+        needed by objects constructed long before a host application has
+        configured its logger. Starting UNCONFIGURED and returning a NULL
+        `SafeLogger` by default is what avoids constructor logger spam, and
+        LATE REGISTRATION of a channel resolver is what lets a real
+        (for example Iris-backed) provider arrive after Melder has already
+        booted and retroactively serve every subsequent resolution.
+        Resetting singleton state during cleanup is a deliberate testability
+        affordance rather than an accident - a process-wide singleton that could
+        not be reset would make test isolation impossible.
     """
 
     __melder_internal__: ClassVar[object] = _mrg.sentinel

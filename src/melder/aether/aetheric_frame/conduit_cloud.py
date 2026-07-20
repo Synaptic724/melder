@@ -38,6 +38,45 @@ class ConduitCloud(Cleanable):
     - Does not own conduit lifecycle; `AethericFrame` remains the owner of the
       borrowed conduit stores.
     - Thread-safe access is serialized with the instance `RLock`.
+
+    Owned State:
+        The frame-local cluster registry and its lifecycle. Everything
+        conduit-shaped is BORROWED BY REFERENCE from the owning frame.
+
+    Threading:
+        One instance `RLock` serializes access. Because the conduit stores are
+        borrowed rather than copied, reads see live frame state rather than a
+        snapshot.
+
+    Lifecycle / Cleanup:
+        Owned by one `AethericFrame` and cleaned with it. Cleaning the cloud
+        destroys clusters (which it owns) but never conduits (which it does
+        not).
+
+    Registration:
+        MELDER KERNEL - guarded. Reached through
+        `AethericFrame.conduit_cloud`; users do not construct one.
+
+    Subsystem Context:
+        The discovery and cluster facade over frame-owned registries. It exists
+        so that lookup-by-name and cluster mechanics do not have to live on
+        `Conduit` itself - a conduit knows its own lineage and peers, but "which
+        conduits exist in this frame" is a frame-scoped question.
+
+    System Context:
+        The borrow-versus-own split is the load-bearing distinction and it
+        decides teardown correctness. Clusters are OWNED, so cloud cleanup
+        destroys them; conduits are BORROWED, so cloud cleanup must leave them
+        completely alone - the frame will tear them down on its own schedule.
+        Getting this backwards would either strand cluster state or destroy
+        live conduits out from under their owner.
+        `has_conduit_name` and `has_cluster_name` are the sanctioned public
+        probes. That matters beyond convenience: cross-package cloud access is
+        public-verb-only by law, and the crystallizer's load-admission host
+        preflight uses exactly these two to detect name collisions before a
+        formation is composed into a live world. A probe must also never BIRTH
+        what it checks for, which is why admission reads the frame registry
+        directly rather than going through `_ensure_frame`.
     """
     __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [

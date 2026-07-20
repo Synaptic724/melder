@@ -33,6 +33,7 @@ class BindingResolutionCycleStrategy(SpellValidationStrategy):
     Purpose:
         Catch dependency loops that are not obvious from spell IDs but are
         visible when modeling resolution by binding keys.
+
     Contract:
         - Builds a binding-key graph from available requirements.
         - Reports cycles reachable from the spell under validation.

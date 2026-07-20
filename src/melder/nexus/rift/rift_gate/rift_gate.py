@@ -36,6 +36,30 @@ class RiftGate(Cleanable):
         - State transitions for enabled / _closed and the event are
           protected by an internal RLock.
         - enabled is intentionally readable without lock on hot paths.
+
+    Registration:
+        MELDER KERNEL - guarded. One gate per Rift, owned by that Rift and
+        coordinated through `RiftGateController`.
+
+    Subsystem Context:
+        The admission primitive of the AR layer, the same role `CreationGate`
+        plays for conduits and `LoadGate` plays for crystallizer loads. All
+        three exist because some operations must wait for READERS rather than
+        for other writers.
+
+    System Context:
+        The two control modes answer different questions and must not be
+        conflated. Blocking mode is REVERSIBLE - `enabled=False` parks new
+        callers and `open()` releases them, which is what an ACL-driven
+        projection refresh needs: block entrants, drain, refresh once, reopen.
+        Terminal close is ONE-WAY and exists for shutdown, where reopening
+        would be wrong.
+        Ticket bookkeeping is what makes draining truthful. Counting active
+        work rather than holding a boolean lets `close_and_wait_until_free()`
+        wait for real in-flight operations to finish instead of guessing, which
+        is the same reason the conduit `CreationGate` tracks tickets: a meld
+        holds its ticket across the whole executor, so ticket-zero genuinely
+        means no reader is inside.
     """
 
     __melder_internal__ = _mrg.sentinel

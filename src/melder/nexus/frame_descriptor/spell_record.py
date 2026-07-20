@@ -25,6 +25,25 @@ class SpellRecord(Cleanable):
         - Carries one deterministic Nexus publication contract.
         - Mutable through explicit Nexus upsert/remove paths only.
         - Cleanup is idempotent and clears all owned references.
+
+    Registration:
+        MELDER KERNEL - guarded. Published passively by the spell lifecycle;
+        never user-constructed.
+
+    Subsystem Context:
+        The canonical Nexus record for one published spell, paired with
+        `SpellDescriptorPayload`.
+
+    System Context:
+        Keying by `(origin_spellbook_id, spell_id)` rather than by spell id
+        alone is what keeps records unambiguous across books. The same spell
+        content can legitimately be bound in two spellbooks, and a single-key
+        registry would silently merge them into one record whose owner is
+        whichever published last.
+        Existing so the viewer model does not RE-READ THE OWNING SPELLBOOK is
+        the point of the whole descriptor layer: AR reads answer from published
+        truth rather than reaching into runtime state, which is what makes a
+        viewer safe to hand a static room.
     """
 
     __melder_internal__ = _mrg.sentinel

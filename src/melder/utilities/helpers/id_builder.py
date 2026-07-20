@@ -4,6 +4,7 @@ from melder.utilities.helpers.ulid_factory import new_ulid
 
 class IDBuilder:
     """
+
     Purpose:
         Build stable lineage-style identifiers for runtime-owned objects, so
         every id in the system is composed one way instead of each call site

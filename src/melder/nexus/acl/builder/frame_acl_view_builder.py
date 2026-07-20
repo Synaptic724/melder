@@ -16,6 +16,7 @@ from melder.nexus.acl.configurations.frame_acl_view_configuration import FrameAC
 
 class FrameACLViewBuilder(Cleanable):
     """
+
     Purpose:
         Provide fluent authoring for one active view-family ACL draft.
 

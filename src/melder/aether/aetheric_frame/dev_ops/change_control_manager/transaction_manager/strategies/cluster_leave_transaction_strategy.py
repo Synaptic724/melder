@@ -55,6 +55,36 @@ class ClusterLeaveTransactionStrategy(TransactionStrategy):
           this cluster identity, so the embargo would block and time out).
         - This transaction concerns membership and sharing only; the elected-leader
           team store (if any) is the separate elect/unelect concern.
+
+    Threading:
+        Stateless class-level strategy; concurrency is owned by the mediator
+        and the scope claims this plan requests.
+
+    Registration:
+        MELDER KERNEL - guarded. Registered as a CLASS in the transaction
+        family; never instantiated and never bindable.
+
+    Subsystem Context:
+        The `cluster_leave` member of the transaction family and the exact
+        inverse of `ClusterJoinTransactionStrategy`, with matching claim modes
+        because an exit mutates the same surfaces an entry does.
+
+    System Context:
+        The final contract line draws the boundary that keeps this strategy
+        tractable: leave handles MEMBERSHIP AND SHARING ONLY, while the elected
+        leader is the separate elect/unelect concern. That separation reflects
+        the cluster's own two-layer design - spell sharing is the always-on core
+        that needs no leader, and the team store exists solely for
+        `unique_per_conduit_cluster` spells. Folding leadership into leave would
+        couple the common path to a mechanism most clusters never use.
+        The same self-conflict rule as join applies in reverse: the in-window
+        unshare must NOT open its own `cluster_link` transactions, because they
+        would contend with the scopes this seal holds under a different owner
+        identity and time out rather than fail loudly.
+        Sealing every remaining member - not just the departing conduit - is
+        what makes exit safe. The departing member's shares are torn down in
+        both directions across the whole membership, so a narrower seal would
+        let a peer observe a half-removed member.
     """
 
     @classmethod

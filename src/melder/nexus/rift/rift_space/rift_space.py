@@ -78,6 +78,48 @@ class RiftSpace(Cleanable):
     Lifecycle:
         Owned by a `Rift`. Cleanup clears room-local fields and the owned
         viewer, workstation, memory system, and event system.
+
+    Threading:
+        Room-local state is confined to the room; the viewer reads current
+        projection truth from the owning Rift on demand rather than holding a
+        second registry that could drift.
+
+    Lifecycle / Cleanup:
+        Created during Rift creation from `space_type` and cleaned with its
+        Rift. It owns its workstation, command system, viewer asset, memory
+        system, and event system, and tears them down as its children.
+
+    Registration:
+        MELDER KERNEL - guarded. NOTE for MRO auditors: this is a guarded BASE
+        with three subclasses, and that is SAFE. `StaticRiftSpace`,
+        `CapabilityRiftSpace`, and `CodegenRiftSpace` are all melder-internal
+        and constructed only inside `Rift` (rift.py:917-933) from `space_type`.
+        There is no injection seam - no room class kwarg, no factory hook - so
+        the inherited sentinel can never reach a user-written class. Do not
+        remove the sentinel to "fix" the MRO law.
+
+    Subsystem Context:
+        The room a user works in, hosted by `Rift`. It is an ASSET HOST rather
+        than a projection manager: it creates the viewer during room init and
+        the viewer then reads current Rift projection state on demand. The
+        command-system factory seam is what lets each room compose a
+        mode-specific command surface while `space.command_system` stays one
+        stable access pattern.
+
+    System Context:
+        The three room modes are a CAPABILITY LADDER, not three unrelated
+        features, and each rung trades reach for safety.
+        `static` is live-only and read-shaped: no topology mutation, no
+        create-path activation, weak-by-default workstation binds - so a static
+        room cannot change the world it observes. `capability` is broad manual
+        access with strong-by-default binds and real topology mutation, but no
+        codegen. `codegen` deliberately does NOT have capability parity; it
+        keeps a slimmer runtime-helper subset and instead owns an internal
+        `CodegenSystem`, because a room that can generate and execute code needs
+        a narrower manual surface, not a wider one.
+        The weak-versus-strong workstation default follows the same logic: a
+        static room observing the world should not extend the lifetime of what
+        it looks at, while a capability room actively working on objects should.
     """
 
     __melder_internal__ = _mrg.sentinel

@@ -23,6 +23,38 @@ class CreationContextBuilder:
           without a compiler artifact.
         - `CreationContext` receives only the final 2 tuple-return runtime
           executors.
+
+    Owned State:
+        None. `__slots__` is empty and every method is a `@staticmethod` - this
+        is a namespaced pure builder, not an object with lifecycle.
+
+    Threading:
+        Stateless, therefore thread-safe by construction.
+
+    Registration:
+        MELDER KERNEL - guarded. Reached through `CreationContextFactory`;
+        never user-instantiated and never bindable.
+
+    Subsystem Context:
+        The shape-decision layer between phase 11 and `CreationContext`.
+        `CreationContextFactory` owns WHEN a context is built and the gate
+        wiring; this class owns WHAT shape it takes. Keeping them apart is why
+        the factory can stay lock-free - it never needs to know the difference
+        between a constructed spell and an existing-creation spell.
+
+    System Context:
+        The existing-creation branch is the reason this class exists at all.
+        A constructed spell has a phase 8-11 pipeline behind it and therefore a
+        `spell_codegen_creation` to execute; an EXISTING-creation spell has no
+        occurrence graph, no analyzer model, and no codegen payload, because
+        the object already exists and was merely handed to Melder. It still
+        needs a context, so this builder SYNTHESIZES its runtime doors locally
+        instead of demanding a compiler artifact that will never exist.
+        The refusal on the other branch is equally deliberate: a constructed
+        spell with no `spell_codegen_creation` means the phases were skipped,
+        and raising with the analyzer -> processor -> planner -> codegen
+        ordering named is far more useful than letting a `None` executor
+        surface as an obscure failure deep inside meld.
     """
 
     __melder_internal__ = _mrg.sentinel

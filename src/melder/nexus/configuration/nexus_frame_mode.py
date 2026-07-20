@@ -22,6 +22,24 @@ class NexusFrameMode(Enum):
         one_per_workspace:
             Each workspace receives its own dedicated Nexus-assigned internal
             frame.
+
+    Threading:
+        Immutable enum members; safe to read from any thread.
+
+    Registration:
+        MELDER KERNEL - guarded, readable by value. Nexus configuration
+        vocabulary.
+
+    Subsystem Context:
+        One of the process-wide policy vocabularies stored in
+        `NexusConfiguration`, alongside the other frame topology controls.
+
+    System Context:
+        The three modes answer how many internal frames exist and how workspaces obtain them: `single` shares one, `indexed` allows named frames shared by name, and `one_per_workspace` gives each Rift a private frame. The mode also constrains raw authoring - under `one_per_workspace` direct manager creation is REJECTED because that path has no Rift owner identity to attribute the frame to.
+        Because this is PROCESS-WIDE policy frozen at configuration time, the
+        choice applies uniformly to every Rift - which is the point. A gate that
+        varied per Rift could be escaped by creating a differently configured
+        one, so the governance that matters lives here rather than on the Rift.
     """
 
     __melder_internal__ = _mrg.sentinel

@@ -21,6 +21,27 @@ class _Specificity(IntEnum):
 
     Contract:
         Higher values win when multiple override specs target the same socket.
+
+    Threading:
+        Immutable enum members; safe to read from any thread.
+
+    Registration:
+        MELDER KERNEL - guarded. Private precedence vocabulary for
+        `SpellOverrider`; not part of any public surface.
+
+    Subsystem Context:
+        The tie-breaker behind `SpellOverrider`'s three targeting forms. It is
+        an `IntEnum` rather than a plain `Enum` specifically so precedence is a
+        numeric comparison rather than a lookup table.
+
+    System Context:
+        Precedence has to exist because the targeting forms deliberately
+        OVERLAP: a `**param` broadcast and an exact `a>b>c` path can both name
+        the same socket, and that overlap is a legitimate way to express
+        "set all of these, except this one". Ordering the tiers so the more
+        specific spec wins makes the general-plus-exception idiom work without
+        the caller having to order their own dict, which would be fragile and
+        silently order-dependent.
     """
     __melder_internal__ = _mrg.sentinel
     PATH = 3
@@ -37,6 +58,44 @@ class SpellOverrider(Cleanable):
       * PATH: a>b>c
       * UNIQUE: *param (exactly one match required)
       * BROADCAST: **param (one or more matches required)
+
+    Contract:
+        - Translates a raw override dict into a socket-aware `OverrideMap`
+          bound to one specific root blueprint.
+        - Match-count rules are ENFORCED, not advisory: `*param` requires
+          exactly one match and `**param` requires at least one.
+        - Precedence between competing specs is resolved by `_Specificity`.
+
+    Owned State:
+        `_blueprint` and `_engine`.
+
+    Threading:
+        Bound to one resolution call; not shared across threads.
+
+    Lifecycle / Cleanup:
+        Cleanable and single-use against the blueprint it was built for.
+
+    Registration:
+        MELDER KERNEL - guarded. Constructed inside the meld override lane;
+        users supply the override PAYLOAD, never this object.
+
+    Subsystem Context:
+        The override half of resolution. `CreationContext` exposes a separate
+        `overrides_executor` precisely because overrides cannot use the warm
+        no-overrides fast lane, and this class is what makes that second lane
+        necessary: the payload must be mapped onto real sockets before any
+        executor can consume it.
+
+    System Context:
+        The three targeting forms exist because an override has to name a
+        socket that may sit anywhere in a dependency graph the caller did not
+        build. A PATH names it exactly; `*param` says "there is exactly one of
+        these, find it"; `**param` says "hit every one". Enforcing the match
+        counts is what keeps overrides honest - a `*param` that silently
+        matched three sockets, or zero, would apply the caller's intent to the
+        wrong object or to nothing at all, and both fail invisibly at runtime
+        rather than at resolution. Failing loudly at map time is the whole
+        point of resolving specs up front instead of during construction.
     """
     __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + ["_blueprint", "_engine"]

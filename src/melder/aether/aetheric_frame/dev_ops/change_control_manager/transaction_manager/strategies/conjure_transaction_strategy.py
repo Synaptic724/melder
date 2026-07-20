@@ -43,6 +43,36 @@ class ConjureTransactionStrategy(TransactionStrategy):
         - Envelope-only: the conduit build itself runs inside the held window via
           `SpellbookCreationSystem.conjure()`; this strategy never reaches into
           the Spellbook runtime.
+
+    Threading:
+        Stateless class-level strategy; concurrency is owned by the mediator
+        and the scope claims this plan requests.
+
+    Registration:
+        MELDER KERNEL - guarded. Registered as a CLASS in the transaction
+        family; never instantiated and never bindable.
+
+    Subsystem Context:
+        The `conjure` member of the transaction family - the genesis event that
+        every other conduit-scoped strategy presupposes. Bind's own plan has a
+        pre-conjure and post-conjure shape for exactly this reason: before this
+        transaction completes, there is no conduit to claim.
+
+    System Context:
+        The deliberate ABSENCE of conduit, ward, and cluster scope is the
+        subtle part, and it follows from a chicken-and-egg constraint: the root
+        conduit id is minted mid-pipeline, so at plan time there is no id to
+        claim. That would be dangerous if anything could target the conduit
+        concurrently - but nothing can, because a conduit is unreachable until
+        activation registers it. The scope plan is therefore complete despite
+        naming only the spellbook.
+        The same reasoning explains the pseudo-owner initiator id: the plan
+        needs an owner identity and no root conduit exists yet, so it mirrors
+        the pre-conjure bind plan rather than inventing an identity.
+        Claiming the spellbook EXCLUSIVE for the WHOLE creation pipeline is
+        what moves conjure from "riding the Spellbook lock" to being properly
+        admitted - and because scope keys are per-spellbook, different books
+        still conjure in parallel.
     """
 
     @classmethod

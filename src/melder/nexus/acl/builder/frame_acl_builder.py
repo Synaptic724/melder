@@ -49,6 +49,7 @@ FrameACLCommittedConfiguration = Union[
 
 class FrameACLBuilder(Cleanable):
     """
+
     Purpose:
         Provide the frame-local mutable ACL authoring surface for one
         `FrameACLContainer`.
@@ -71,6 +72,31 @@ class FrameACLBuilder(Cleanable):
     Lifecycle:
         Cleanup is idempotent, cleans any still-open draft configuration, and
         then drops the borrowed container reference.
+
+    Registration:
+        MELDER KERNEL - guarded. One builder per `FrameACLContainer`; obtained
+        through the container, not constructed directly.
+
+    Subsystem Context:
+        The mutable authoring surface over one frame's ACL container.
+        Family-specific fluent builders layer on top of it, and the container
+        itself owns persistence and chain installation.
+
+    System Context:
+        AT MOST ONE DRAFT AT A TIME, targeting one family and one contract name,
+        is the invariant that makes ACL authoring safe to reason about.
+        Concurrent drafts against the same container could interleave into a
+        contract nobody authored, and because a chain bump fans out a projection
+        refresh across every impacted Rift, a half-authored contract would
+        propagate before it was coherent.
+        Delegating final installation and validation to the OWNING CONTAINER is
+        the matching rule: the builder stages, the container commits. That keeps
+        one writer for chain state even though several fluent surfaces layer
+        above it.
+        The instance lock is explicitly justified by the free-threaded runtime -
+        draft lifecycle transitions mutate several builder-owned fields
+        together, and under 3.14t there is no GIL making that grouping
+        incidentally atomic.
     """
 
     __melder_internal__ = _mrg.sentinel

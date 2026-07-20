@@ -8,6 +8,7 @@ from melder.utilities.helpers.id_builder import IDBuilder
 
 class CompiledFrameACLAccessSurface(Cleanable):
     """
+
     Purpose:
         Hold one derived consumer-facing ACL access surface for a frame.
 
@@ -19,6 +20,27 @@ class CompiledFrameACLAccessSurface(Cleanable):
 
     Lifecycle:
         Cleanup is idempotent and clears all owned derived data.
+
+    Registration:
+        MELDER KERNEL - guarded. Produced by `FrameACLCompiler`; never
+        user-constructed.
+
+    Subsystem Context:
+        The consumer-facing output of ACL compilation and the object the
+        viewer, command, and codegen layers actually consult. A Rift stores it
+        as projection state.
+
+    System Context:
+        "Contains only DERIVED ACCESS ANSWERS, never raw ACL config objects" is
+        the boundary that makes this safe downstream. A consumer holding raw
+        configuration could inspect or mutate policy while answering an
+        authorization question; holding only answers means the worst it can do
+        is read a verdict.
+        Immutable-by-convention is the other half. Projection state is replaced
+        WHOLESALE on refresh rather than edited in place, so a consumer
+        mid-operation continues against a coherent surface instead of watching
+        permissions shift under it. That is exactly why the Nexus refresh path
+        blocks entrants and drains before applying new projections.
     """
 
     __melder_internal__ = _mrg.sentinel

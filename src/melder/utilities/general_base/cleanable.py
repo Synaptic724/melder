@@ -9,6 +9,7 @@ from typing import Literal, Optional, Type
 
 class Cleanable(ABC):
     """
+
     Purpose:
         Abstract base class for objects that own an explicit cleanup lifecycle.
         This is the single teardown contract shared across the entire runtime.

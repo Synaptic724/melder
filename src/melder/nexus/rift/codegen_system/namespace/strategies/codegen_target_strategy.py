@@ -20,6 +20,28 @@ class CodegenTargetStrategy(Cleanable):
     Purpose:
         Expose the currently selected workstation target into the namespace
         while keeping missing-target behavior non-fatal.
+
+    Threading:
+        Stateless exposure strategy; it contributes names to a namespace under
+        construction and retains nothing.
+
+    Registration:
+        MELDER KERNEL - guarded. Consumed by `CodegenNamespaceBuilder`; never
+        user-constructed.
+
+    Subsystem Context:
+        One member of the namespace-exposure strategy family. The builder
+        composes them instead of hand-building one large globals dict, so each
+        exposure decision has exactly one owner.
+
+    System Context:
+        It exposes the currently selected workstation target, keeping a missing target non-fatal. Every strategy exposes ONLY what the namespace configuration
+        enables, which is what keeps the exposed surface a declared policy
+        rather than an emergent consequence of construction order.
+        Non-fatal absence is correct because a room legitimately has no active target much of the time; raising would make the presence of a target a precondition for running any generated code at all.
+        The strategy split is what makes the namespace auditable: reading which
+        strategies ran, and what configuration enabled, answers "what could this
+        code reach" without tracing builder code.
     """
 
     __melder_internal__ = _mrg.sentinel

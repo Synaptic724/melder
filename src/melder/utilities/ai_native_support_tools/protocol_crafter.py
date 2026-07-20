@@ -27,6 +27,7 @@ FunctionNode = Union[ast.FunctionDef, ast.AsyncFunctionDef]
 
 class ProtocolCrafter(Cleanable):
     """
+
     Purpose:
         Generate protocol code from a target class or object and maintain
         protocol blocks inside interface files.

@@ -21,6 +21,25 @@ class RiftMemory:
           never mutated afterward.
         - Metadata is copied on construction so later context updates do not
           retroactively change previously emitted memories.
+
+    Registration:
+        MELDER KERNEL - guarded. Produced by `RiftMemorySystem`.
+
+    Subsystem Context:
+        The immutable executed-step record of a room, paired with `RiftEvent`
+        (outbound notification). Events say something happened; memory is the
+        account of what did.
+
+    System Context:
+        Taking sequencing and shared metadata FROM `RiftMemorySystem` rather
+        than self-assigning is what makes a room's history linearizable.
+        Commands, views, and the workstation all emit through the same counters,
+        so records from different emitters share one ordering - if each assigned
+        its own, 'what happened before what' would be unanswerable.
+        Immutability is the other half: a record that could change after
+        emission would make the history a live view of the present rather than
+        an account of the past. This is the record type codegen rooms emit
+        FULL-SOURCE through, so what actually ran stays recoverable.
     """
 
     __melder_internal__ = _mrg.sentinel

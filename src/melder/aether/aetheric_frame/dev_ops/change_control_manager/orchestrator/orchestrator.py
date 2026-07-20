@@ -43,6 +43,7 @@ class ChangeControlOrchestrator(Cleanable):
         Centralize admission, staging, and commit/abort cleanup under one lock
         so concurrent mutation requests cannot observe inconsistent in-flight or
         embargo state.
+
     Contract:
         - Admission decisions are serialized under the orchestrator lock.
         - Accepted requests are staged and registered as in-flight before the
@@ -51,6 +52,7 @@ class ChangeControlOrchestrator(Cleanable):
           not mutate in-flight state.
         - Commit and abort both unwind the same admission-state resources, with
           optional hooks running outside the lock.
+
     Threading:
         Uses an internal RLock to serialize admission/commit/abort paths.
     Lifecycle:

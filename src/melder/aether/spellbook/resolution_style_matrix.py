@@ -70,6 +70,32 @@ class ResolutionStyleMatrix:
         - Callable (method/lambda) families are unique-only.
         - Existing-object families are unique-only.
         - Enum row count does not imply "most binding kinds" are unique-only.
+
+    Threading:
+        Class-level constant data; read-only at runtime.
+
+    Registration:
+        MELDER KERNEL - guarded. An owner-maintained policy artifact, not a
+        runtime participant.
+
+    Subsystem Context:
+        The canonical SpellType x Existence support policy, sitting above both
+        enums. `BINDING_FAMILY_POLICY` is the truth; `MATRIX_BY_SPELL_TYPE` is
+        an expanded projection for lookup.
+
+    System Context:
+        This class exists so architecture, documentation, and tests do not have
+        to INFER support policy from scattered code paths. Policy that lives
+        only in validation branches drifts silently; policy stated once in a
+        maintained artifact can be drift-tested, which is exactly what the
+        documented update process (edit family policy -> update expected enum
+        counts -> re-run matrix drift tests) enforces.
+        The family-level interpretation note guards against a specific
+        misreading worth preserving: because unique-only families have more enum
+        ROWS than class families, a reader counting rows would wrongly conclude
+        most binding kinds are unique-only. Row count is an artifact of enum
+        shape, not a statement about policy - which is precisely why
+        `BINDING_FAMILY_POLICY` and not the projection is canonical.
     """
 
     __melder_internal__: ClassVar[object] = _mrg.sentinel

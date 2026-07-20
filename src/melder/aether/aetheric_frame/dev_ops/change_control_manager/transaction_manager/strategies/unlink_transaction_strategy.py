@@ -50,6 +50,33 @@ class UnlinkTransactionStrategy(TransactionStrategy):
           spellbook (a piece, not a whole-spellbook rewrite). The INTENT
           spellbook claim still blocks a whole-spellbook EXCLUSIVE claim (such
           as a transfer) without serializing unrelated piece-work.
+
+    Threading:
+        Stateless class-level strategy; concurrency is owned by the mediator
+        and the scope claims this plan requests.
+
+    Registration:
+        MELDER KERNEL - guarded. Registered as a CLASS in the transaction
+        family; never instantiated and never bindable.
+
+    Subsystem Context:
+        The `unlink` member of the transaction family and the inverse of
+        `LinkTransactionStrategy`. Beneath it, `ConduitWard._remove_contract` is
+        the single choke point through which every sever passes, which is also
+        where the crystallizer's contract eviction hooks in.
+
+    System Context:
+        Claim symmetry with the link strategy is deliberate rather than
+        copy-paste: an unlink mutates exactly the surfaces a link does, in
+        reverse, so anything the link needed frozen must also be frozen here.
+        Asymmetric claims between an operation and its inverse are a classic
+        source of races that only appear under concurrent link/sever traffic.
+        What this claim window protects is the two-phase sever underneath it.
+        `ConduitWard` detaches then destroys, with reattach as the undo path,
+        so that a failure mid-sever cannot leave one ward believing the
+        contract is gone while its peer still holds it. Holding both
+        participants EXCLUSIVE for the duration is what guarantees no third
+        party observes that intermediate state.
     """
 
     @classmethod

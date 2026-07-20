@@ -21,6 +21,28 @@ class CodegenBuiltinsStrategy(Cleanable):
         Build the runtime `__builtins__` mapping from the current namespace
         configuration so codegen execution respects the compiled builtin
         denylist.
+
+    Threading:
+        Stateless exposure strategy; it contributes names to a namespace under
+        construction and retains nothing.
+
+    Registration:
+        MELDER KERNEL - guarded. Consumed by `CodegenNamespaceBuilder`; never
+        user-constructed.
+
+    Subsystem Context:
+        One member of the namespace-exposure strategy family. The builder
+        composes them instead of hand-building one large globals dict, so each
+        exposure decision has exactly one owner.
+
+    System Context:
+        It builds the runtime `__builtins__` mapping from the current configuration so execution respects the compiled builtin denylist. Every strategy exposes ONLY what the namespace configuration
+        enables, which is what keeps the exposed surface a declared policy
+        rather than an emergent consequence of construction order.
+        This is the runtime half of builtin control, paired with the static `CodegenBuiltinPolicyStrategy`. Withholding the name is what makes the denial real even where static analysis missed the call.
+        The strategy split is what makes the namespace auditable: reading which
+        strategies ran, and what configuration enabled, answers "what could this
+        code reach" without tracing builder code.
     """
 
     __melder_internal__ = _mrg.sentinel

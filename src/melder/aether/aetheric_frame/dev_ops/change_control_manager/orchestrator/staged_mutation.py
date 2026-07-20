@@ -20,6 +20,7 @@ class ChangeControlStagedMutation:
         Capture the post-admission state that commit, abort, dirty-marking, and
         structural-validation hooks reason about after the original request has
         already passed admission.
+
     Contract:
         - Instances are immutable.
         - Preserves the admitted request identity plus the normalized scope,
@@ -52,6 +53,7 @@ class ChangeControlStagedMutation:
         None.
     Raises:
         None.
+
     Threading:
         Safe to share across threads because instances are immutable.
     Lifecycle:

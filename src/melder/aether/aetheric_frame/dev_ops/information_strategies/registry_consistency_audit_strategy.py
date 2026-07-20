@@ -36,6 +36,33 @@ class RegistryConsistencyAuditStrategy(DevopsInformationStrategy):
           transaction scope/type/identity reverse indexes.
         - Returns `consistent` plus one detached finding per asymmetry;
           never mutates the registry.
+
+    Threading:
+        Stateless static strategy; the audit is a read-only comparison over the
+        registry's mirrored maps.
+
+    Registration:
+        MELDER KERNEL - guarded. Registered as a CLASS in the information
+        family; resolved by name through `DevopsInformationStrategyBuilder`.
+
+    Subsystem Context:
+        The self-check of the control plane, distinct from every other
+        information strategy: the others report what the registry SAYS, this
+        one tests whether the registry is internally COHERENT.
+
+    System Context:
+        The reasoning here is the sharpest in the package and worth restating.
+        The correctness story is "transactions write the registry through
+        commit deltas while scopes are held". If that story is true, forward
+        and reverse maps CANNOT disagree - the eager mirrors are written
+        together under the same claim. Therefore any asymmetry is not a
+        cosmetic drift to reconcile; it is direct evidence that a write bypassed
+        the transaction plane or that a delta applied partially.
+        That makes this audit a falsification test for the plane's core
+        invariant, and a cheap one - it needs no live-object probes, only the
+        mirrors themselves. Live-truth probing would require probe contracts on
+        the runtime classes and is the catalog's recorded next extension, not a
+        gap.
     """
 
     @staticmethod

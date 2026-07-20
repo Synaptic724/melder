@@ -29,6 +29,7 @@ CommandProfileStrategy = Union[
 
 class FrameACLCommandProfileBuilder(Cleanable):
     """
+
     Purpose:
         Own the reusable command-profile construction strategies and build
         command profile instances from them.
@@ -40,6 +41,29 @@ class FrameACLCommandProfileBuilder(Cleanable):
           the selected strategy.
         - Uses an instance lock because strategy registry mutation is grouped
           state in a nogil runtime.
+
+    Threading:
+        One instance lock; strategy-registry mutation is grouped state under a
+        nogil runtime.
+
+    Registration:
+        MELDER KERNEL - guarded. Manager-owned; reached through the ACL layer.
+
+    Subsystem Context:
+        The strategy registry for the command family only. Its two siblings own
+        the other families, and the deliberate separation means a family can
+        gain a preset without touching the others.
+
+    System Context:
+        `build_profile(name)` returns a FRESH profile per call rather than a
+        shared instance, and that matters because the applied configuration
+        that references a profile owns detached rulesets - handing out one
+        shared mutable profile would let one frame's authoring perturb another's
+        effective policy.
+        Registering presets through `load_defaults()` rather than hardcoding
+        them keeps the catalog extensible: a deployment can add a posture
+        without forking the builder, which is the same registered-strategy
+        pattern the transaction and information families use.
     """
 
     __melder_internal__ = _mrg.sentinel

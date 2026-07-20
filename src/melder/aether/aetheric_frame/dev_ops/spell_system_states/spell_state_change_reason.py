@@ -18,6 +18,35 @@ class SpellStateChangeReason(Enum):
       a full audit history.
     - The subsystem that performs the transition owns choosing the most truthful
       reason value.
+
+    Threading:
+        Immutable enum members; safe to read from any thread.
+
+    Registration:
+        MELDER KERNEL - guarded, readable by value. Control-plane vocabulary.
+
+    Subsystem Context:
+        The EVENT axis of the three-axis validity model, completing
+        `SpellValidity` (the gate) and `SpellState` (the accumulating flags).
+        It is the axis designed for human and agent consumption - logs, TOON
+        snapshots, incidents - rather than for runtime branching.
+
+    System Context:
+        This enum is deliberately LOSSY, and knowing that prevents misuse. It
+        holds one value at a time and is overwritten by each transition, so it
+        is a summary of the latest event, NOT an audit trail. Anything needing
+        history must read the journal or the incident record; treating this
+        field as a log would silently lose every prior transition.
+        That lossiness is affordable precisely because the other two axes are
+        not. Flags persist until their owning subsystem clears them and validity
+        reflects current truth, so the durable state is intact even though the
+        reason is not. The reason exists to answer "what just happened" cheaply
+        at a glance, which is the question an operator or agent asks first.
+        Mutation overlays are the live producers worth knowing about:
+        `Spell.apply_mutation_override` and `clear_mutation_override` emit
+        `mutation_contract_set` / `mutation_contract_cleared` even though the
+        runtime `MutationContract` descriptor itself is gone and Phase 4 blocks
+        that socket family.
     """
     __melder_internal__ = _mrg.sentinel
     # Registrations / bindings

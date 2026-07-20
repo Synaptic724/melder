@@ -23,6 +23,31 @@ class CodegenAttributeAccessStrategy(Cleanable):
     Purpose:
         Reject obviously unsafe attribute-access patterns in the current
         governed codegen mode.
+
+    Threading:
+        Stateless validation strategy; it inspects the parsed AST and holds no
+        state between calls.
+
+    Registration:
+        MELDER KERNEL - guarded. Registered in the `CodegenValidator` strategy
+        set; never user-constructed.
+
+    Subsystem Context:
+        One rung of the codegen validation chain, which runs BEFORE compilation
+        and before any namespace is built. Its verdict feeds a
+        `CodegenValidationResult`, which `CodegenValidationReporter` formats for
+        the room-facing command.
+
+    System Context:
+        This strategy is a STATIC gate: it rejects unsafe attribute-access patterns. It reads the AST rather than the
+        live namespace, which is the whole point of validating first - the
+        execution environment does not exist yet, and building it to find out
+        would be exactly the escape the gate exists to prevent.
+        Attribute access is how sanctioned objects become unsanctioned reach - dunder traversal from any exposed object can walk to types, frames, and globals - so restricting the objects exposed is not enough without restricting how they may be traversed.
+        Its checks are deliberately described as rejecting OBVIOUS violations.
+        That honesty matters: static analysis of Python cannot be exhaustive, so
+        the validation chain is defence in depth alongside the namespace
+        denylists and the ACL posture, not a proof of safety on its own.
     """
 
     __melder_internal__ = _mrg.sentinel

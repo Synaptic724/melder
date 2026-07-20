@@ -5,6 +5,7 @@ from typing import Any, Callable, Dict, Iterable, List, Optional, Protocol, Unio
 @runtime_checkable
 class IChannelLogger(Protocol):
     """
+
     Purpose:
         Describe the channel-logger shape structurally, so the runtime can
         accept any conforming implementation without importing one or requiring

@@ -68,6 +68,7 @@ class ChangeControlManager(Cleanable):
         change-control admission helpers. This is the frame-level control-plane
         owner for admission, embargo, conflict, staging, and targeted
         revalidation bookkeeping; it is not the hot-path resolver itself.
+
     Contract:
         - Tracks pending change metadata by SpellIndex id.
         - Tracks per-conduit component-of and dirty root state for targeted revalidation.
@@ -85,6 +86,7 @@ class ChangeControlManager(Cleanable):
         ValueError: If spell_system_states is None.
     Ownership:
         Owns internal registries and the change-control manager instances.
+
     Threading:
         All state mutations are guarded by an internal RLock.
     Lifecycle:

@@ -35,6 +35,7 @@ from melder.utilities.helpers.id_builder import IDBuilder
 
 class FrameDescriptorManager(Cleanable):
     """
+
     Purpose:
         Own the Nexus frame-scoped descriptor and canonical-record subsystem.
 
@@ -55,6 +56,30 @@ class FrameDescriptorManager(Cleanable):
     Lifecycle:
         Cleanup is idempotent and cascades into every owned descriptor before
         the manager drops its registry and substrate reference.
+
+    Registration:
+        MELDER KERNEL - guarded. Owned by `Nexus`; reached through it.
+
+    Subsystem Context:
+        The descriptor and canonical-record owner, one of the three managers
+        beneath `Nexus` alongside `NexusFrameManager` (authoring/topology) and
+        `FrameACLManager` (permissions). Descriptors are what make a frame
+        VISIBLE to the AR layer.
+
+    System Context:
+        Publication here is PASSIVE, and that word carries the design. The
+        manager does not reach into frames to discover state; frames, conduits,
+        and spells publish their canonical records into it at their own
+        confirmation points - the same push-not-pull posture the crystallizer
+        uses as a passive emission sink.
+        Descriptor truth is a hard PRECONDITION for attachment, not a
+        convenience: `Rift.create_frame_link(...)` fails when descriptor truth
+        does not yet exist for the requested frame. That ordering prevents a
+        Rift from attaching to a frame the AR layer cannot actually describe,
+        which would produce a link whose projections have nothing to project.
+        The contract's final line draws the boundary: process-wide Rift registry
+        and configuration policy stay on `Nexus`. This manager owns what frames
+        LOOK like, never who may reach them.
     """
 
     __melder_internal__ = _mrg.sentinel

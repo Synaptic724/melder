@@ -41,6 +41,7 @@ from melder.nexus.acl.configurations.frame_acl_view_configuration import (
 
 class FrameACLContainer(Cleanable):
     """
+
     Purpose:
         Hold all frame-local ACL subsystem objects for one frame in one place.
 
@@ -53,6 +54,32 @@ class FrameACLContainer(Cleanable):
         - The builder is a stable object-singleton inside the container.
         - The container owns validator services used to validate assembled
           snapshots against descriptor truth and cross-child compatibility.
+
+    Registration:
+        MELDER KERNEL - guarded. One container per frame ACL registration,
+        owned by `FrameACLManager`.
+
+    Subsystem Context:
+        The frame-local ACL root. It owns three independent named version
+        chains (view, command, codegen), one stable `FrameACLBuilder`
+        object-singleton, and the validator services used on assembled
+        snapshots.
+
+    System Context:
+        The contract's third line records the model correction that matters
+        most here: SAME-NAME BUNDLE ASSEMBLY IS CONVENIENCE ONLY - the real
+        storage is separate family chains. The three families may legitimately
+        hold divergent named contracts, and treating same-name selection as the
+        storage model would collapse that freedom.
+        The Rift frame-link path chooses NOT to use it, pinning a fixed
+        same-name selection per attached frame. Both facts hold at once: storage
+        permits divergence, and the Rift attachment path deliberately forgoes it
+        so a Rift's effective permissions stay comprehensible.
+        Keeping the builder as a stable object-singleton inside the container is
+        what enforces the one-draft-at-a-time rule. If callers could construct
+        builders freely, concurrent drafts could interleave into a contract
+        nobody authored - and because a chain bump fans a refresh out across
+        every impacted Rift, that incoherence would propagate.
     """
 
     __melder_internal__ = _mrg.sentinel

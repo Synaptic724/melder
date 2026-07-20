@@ -53,6 +53,38 @@ class ClusterJoinTransactionStrategy(TransactionStrategy):
           transactions -- they would self-conflict on the scopes this seal holds
           (a `cluster_link` runs on a conduit identity, a different owner than
           this cluster identity, so the embargo would block and time out).
+
+    Threading:
+        Stateless class-level strategy; concurrency is owned by the mediator
+        and the scope claims this plan requests.
+
+    Registration:
+        MELDER KERNEL - guarded. Registered as a CLASS in the transaction
+        family; never instantiated and never bindable.
+
+    Subsystem Context:
+        The `cluster_join` member of the transaction family, mirrored by
+        `ClusterLeaveTransactionStrategy` for exit. Both sit above
+        `ConduitCluster`, whose documented CURRENT GAP is precisely that
+        membership mutation and share fan-out are not yet one atomic unit -
+        this seal is the layer that makes the whole entry isolated even so.
+
+    System Context:
+        The self-conflict warning is the load-bearing operational fact and it
+        is easy to trip over. A join SUBSUMES the per-pair `cluster_link`
+        shares, so if the in-window effect opened its own `cluster_link`
+        transactions they would contend with the very scopes this seal already
+        holds - and because a `cluster_link` runs under a CONDUIT identity while
+        this seal runs under a CLUSTER identity, the embargo sees a different
+        owner, blocks, and times out. The failure mode is a hang, not an error,
+        which is exactly why it is spelled out here.
+        The N-way seal also explains why join is expensive by nature: a joining
+        conduit shares with EVERY existing member, so the footprint is the whole
+        membership rather than a pair. Treating that as one link over all
+        involved conduits is what prevents a partial entry - a member that
+        shared to some peers but not others would leave the cluster's core
+        promise (every member resolves every other's shared roots) quietly
+        false.
     """
 
     @classmethod

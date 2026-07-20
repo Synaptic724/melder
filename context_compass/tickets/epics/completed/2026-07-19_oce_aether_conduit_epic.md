@@ -1,6 +1,12 @@
 # EPIC-2026-07-19-oce-aether-conduit
 
-- Status: in_progress
+- Completed: 2026-07-19T21:40:00Z
+- Summary: All 30 classes under `src/melder/aether/conduit/**` raised to 3+ canonical
+  docstring headers with subsystem and system context; guards 30/30 with both MRO cases
+  (`Meld`, `Creations`) adjudicated as redundant-not-defective. No behaviour changes.
+  Owner 3.14t pytest OUTSTANDING.
+
+- Status: done_pending_owner_run
 - Created: 2026-07-19T17:45:00Z
 - Updated: 2026-07-19T17:45:00Z
 - Owner: cowork
@@ -96,11 +102,10 @@ the sandbox is 3.10 and cannot execute this package.
 - [x] M1 survey (30 classes measured for guard + docstring rank)
 - [x] M2 MRO adjudication for `Meld` and `Creations`
 - [x] M3 guard the 4 unguarded kernel classes (30/30 guarded)
-- [~] M4 docstring enrichment, ward/contract tranche (7 of 9: 4 enums + Contract, Detail,
-      IndexDetail; remaining: ConduitWard 3702L, TransferOfOwnership 1942L)
-- [ ] M5 docstring enrichment, meld/creations tranche (10 classes)
-- [ ] M6 docstring enrichment, conduit/spellspace tranche (11 classes)
-- [ ] M7 validation + owner pytest
+- [x] M4 docstring enrichment, ward/contract tranche (9/9)
+- [x] M5 docstring enrichment, meld/creations tranche (10/10)
+- [x] M6 docstring enrichment, conduit/spellspace tranche (11/11)
+- [~] M7 validation: 5-check set PASSES; owner 3.14t pytest OUTSTANDING
 
 ## Applicable Anti-Patterns
 - Documenting from naming rather than implementation (Unknowns Gate).
@@ -351,6 +356,45 @@ Epic-level: cross-tranche direction, classification rulings, and tranche order.
     a public library, so this was user-visible.
   REREAD: HELPFUL
   SCORE_0_TO_10: 7
+
+- TYPE: MEASURE
+  DATETIME: 2026-07-19T20:55:00Z
+  AGENT: melder_0
+  CLAIM: oce-aether-conduit DOCSTRING WORK COMPLETE. 30/30 classes at 3+ canonical headers
+    (3 at epic open); average class docstring 57 lines; guards 30/30. Final tranche:
+    `ConduitWard`, `TransferOfOwnership`, `ConduitCluster`, `CreationContext`,
+    `CreationContextBuilder`, `CreationContextFactory`, `SpellOverrider`, `_Specificity`,
+    `SpellSpacePool`, `SpellSpaceThreadState`, `_SpellSpaceLocal`.
+    Highest-value contract facts recovered by reading implementation:
+    - `ConduitWard` uses SORTED LOCK ORDERING between wards on contract creation; without
+      it two conduits linking each other simultaneously deadlock. Its two-phase sever
+      (detach -> destroy, with reattach as undo) exists so a mid-sever failure cannot leave
+      one ward believing a contract is gone while its peer still holds it - asymmetric
+      contract state is the worst failure available to that class.
+    - `TransferOfOwnership` deliberately leaves impacted state DIRTY rather than repairing
+      the graph, because it cannot know which consumers are mid-resolution; meld-time lazy
+      revalidation rebuilds under the per-spell lock.
+    - `CreationContext` executor slots are SELF-REPLACING (cold door hot-swapped in place
+      on first execution), which is precisely why `Meld`'s fast-door registry stores the
+      CONTEXT and re-reads the executor per hit instead of caching the executor.
+    - `CreationContextFactory` is lock-free ON PURPOSE: context construction is idempotent,
+      the spell's slot is the single point of truth, and locking would serialize every
+      distinct spell's cold path across all cores under 3.14t.
+    - `_SpellSpaceLocal` initializes eagerly so the owner can use direct attribute access,
+      because `banned_patterns.md:8-18` forbids defensive getattr on owned attributes.
+  VALIDATION: full 5-check set PASSES - compile ALL CLEAN, 0 trapped lines, 0 unbound
+    `_mrg`, 0 duplicate sentinels, 0 comment/docstring loss.
+    Not run: pytest (needs 3.14t; sandbox is 3.10). OWNER RERUN REQUIRED before closure,
+    especially the gauntlet that caught the `_mrg` regression.
+  EVIDENCE:
+  - src/melder/aether/conduit/conduit_ward/conduit_ward.py:55-138
+  - src/melder/aether/conduit/meld/creation_context/creation_context.py:1-120
+  IMPACT: The resolution runtime is now self-explaining end to end - a reader can follow
+    conjure -> conduit -> meld door -> creation context -> creations store and find the
+    reasoning, not just the mechanics, at each hop.
+  NEXT: Owner 3.14t run. Then oce-aether-aetheric-frame (60) or oce-nexus-rift (53).
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
 
 ## Context / Handoff Summary
 Child epic of the OCE program covering `src/melder/aether/conduit/**` (30 classes).

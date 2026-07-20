@@ -67,6 +67,51 @@ class SpellSystemStates(Cleanable):
     - DevOps / validation flows call:
         * `consume_dirty_indexes(...)` to get a worklist
         * `compute_impact_closure(...)` to fan out impacted spell indexes
+
+    Owned State:
+        The primary index (spell-index id -> `SpellSystemState`), the auxiliary
+        current-spell-id index, the dirty set, per-Spellbook collection
+        dependency indices, per-Spellbook SpellContract consumer indices, and
+        per-conduit `ConduitResolutionState` keyed by conduit_id.
+
+    Threading:
+        Read on the meld hot path and written from binding, validation, and
+        change-control flows, so mutation is serialized internally. Dirty
+        consumption is drain-shaped rather than read-only: taking a worklist
+        clears it.
+
+    Lifecycle / Cleanup:
+        One instance per `AethericFrame`, initialized alongside DevOpsManager.
+        Unregistering a lineage notifies `RiskManager` to force validation
+        gating, so a removed spell cannot leave a stale "valid" verdict behind.
+
+    Registration:
+        MELDER KERNEL - guarded. Frame-owned control-plane state; users never
+        touch it directly.
+
+    Subsystem Context:
+        The control tower of the frame. It holds STRUCTURAL validity (global,
+        Phases 1-4) in `SpellSystemState`, while per-conduit RESOLUTION validity
+        (Phases 5-11) lives in `ConduitResolutionState` keyed by conduit id.
+        Those two axes are deliberately separate registries rather than one
+        merged verdict.
+
+    System Context:
+        This registry is what makes LAZY revalidation possible instead of
+        eager rebuild-the-world. `Meld._ensure_lineage_resolvable` reads
+        validity at resolution time: UNKNOWN or GATED triggers a structural
+        rerun under the per-spell lock, and an UNKNOWN/GATED per-conduit
+        verdict triggers phases 5-11 for that conduit alone. Work is therefore
+        paid at the first meld that actually needs it, by exactly the conduit
+        that needs it.
+        The reverse edges are the reason the dirty set can stay small.
+        `direct_dependents` answers "what breaks if this changes", so a
+        structural change fans out through `compute_impact_closure` to only the
+        genuinely impacted lineages. The separate collection-dependency and
+        contract-consumer indices narrow it further: rebinding a frame type
+        dirties only local `list[Frame]` consumers, and satisfying a
+        `SpellContract` dirties only that contract's consumers - not every
+        spell in the book.
     """
     __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [

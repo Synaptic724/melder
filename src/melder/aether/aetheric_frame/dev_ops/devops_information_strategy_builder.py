@@ -43,6 +43,39 @@ class DevopsInformationStrategyBuilder:
         - Counts successful executions per normalized strategy name so the
           control plane can see which information checks actually run.
         - Does not mutate the registry by itself outside strategy execution.
+
+    Owned State:
+        The name-to-class strategy map and the per-name success counters.
+        Strategy CLASSES, never instances.
+
+    Threading:
+        Registration and execution counting are serialized internally; the
+        strategies themselves are stateless, so concurrent execution of the
+        same named strategy is safe.
+
+    Registration:
+        MELDER KERNEL - guarded. Frame-owned resolver reached through the
+        DevOps surface.
+
+    Subsystem Context:
+        The resolver for the information (READ) family, mirroring what
+        `TransactionStrategyBuilder` does for the transaction (WRITE) family.
+        Both exist so callers name a capability instead of importing and
+        wiring strategy classes themselves.
+
+    System Context:
+        Registering a DEFAULT CATALOG at construction while still allowing
+        additional registrations is what makes this an extension point rather
+        than a fixed switch: the shipped information tools are available
+        immediately, and a caller can add one without forking the resolver.
+        The execution counters are the non-obvious feature and they answer an
+        operational question that is otherwise invisible - WHICH information
+        checks actually run. A strategy registered but never executed is dead
+        weight, and one executing far more than expected is usually a caller
+        re-deriving a view it could have cached against a
+        `DevopsFactRecord` baseline. Counting only SUCCESSFUL executions keeps
+        that signal honest, since failed attempts say nothing about which
+        checks the system genuinely relies on.
     """
 
     __slots__ = [

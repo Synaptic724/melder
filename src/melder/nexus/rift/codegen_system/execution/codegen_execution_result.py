@@ -22,6 +22,23 @@ class CodegenExecutionResult(Cleanable):
           `result` payload.
         - Serializes to the current public payload shape expected by the room
           placeholder tests.
+
+    Registration:
+        MELDER KERNEL - guarded. Produced by `CodegenExecutor`.
+
+    Subsystem Context:
+        The executor-owned outcome type, paired with and deliberately separate
+        from `CodegenValidationResult`.
+
+    System Context:
+        Carrying validation issues ALONGSIDE execution state is what makes a
+        single execute call self-describing: a request rejected at the
+        validation gate and a request that failed during execution are
+        different outcomes, and a caller must be able to tell them apart from
+        one result.
+        Keeping the type executor-owned rather than shared preserves the same
+        separation `validate_codegen` relies on - validation-only callers never
+        receive runtime fields that could not have been populated.
     """
 
     __melder_internal__ = _mrg.sentinel

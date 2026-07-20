@@ -15,6 +15,28 @@ class FullAccessCodegenProfileStrategy:
         posture open, and allows the broadest conduit, spell, and capability
         operations including recursive codegen.
 
+    Threading:
+        Stateless preset construction; holds no state between builds.
+
+    Registration:
+        MELDER KERNEL - guarded. Registered as a preset strategy in the codegen
+        profile builder and selected by name.
+
+    Subsystem Context:
+        The unconstrained top end of the codegen posture ladder, above
+        `permissive`. It exists only in the codegen family - view and command
+        stop at `permissive`.
+
+    System Context:
+        This posture removes the gates the others keep: imports without an
+        allowlist, open builtin and meta posture, and recursive codegen. That
+        combination means generated code can import arbitrarily, reach
+        interpreter internals, and generate further code - so a room carrying
+        it has effectively unbounded reach into the process.
+        It is named `full_access` rather than something softer for exactly that
+        reason. Naming it honestly is a safety feature: an operator selecting it
+        cannot mistake it for a merely-generous posture, and an audit reading a
+        frame's chain sees the widest grant spelled out.
     """
     __melder_internal__ = _mrg.sentinel
     _NAME = "full_access"

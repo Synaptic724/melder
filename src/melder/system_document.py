@@ -11,6 +11,7 @@ from melder.__melder_registration_guard__ import __melder_registration_guard__ a
 
 class StaticSystemDocument:
     """
+
     Purpose:
         Represent one packaged hardcopy system document object that can be
         queried directly by agents at the package root.

@@ -18,6 +18,29 @@ class FrameDescriptorPayload(Cleanable):
         - `payload_version` preserves the descriptor payload contract version.
         - Payload fields are descriptor-safe and value-oriented.
         - Cleanup is idempotent and clears all owned payload references.
+
+    Threading:
+        Detached value payload; immutable in practice and safe to share.
+
+    Registration:
+        MELDER KERNEL - guarded. Attached to its record during passive
+        publication; never user-constructed.
+
+    Subsystem Context:
+        The descriptive payload half of the frame record pair. The RECORD holds
+        directly targetable identity; the PAYLOAD holds description.
+
+    System Context:
+        Keeping payload separate from record - rather than flattening it back
+        onto the record surface - is what lets description evolve without
+        destabilizing identity. `payload_version` makes that explicit: a
+        consumer can reason about the payload contract it received rather than
+        assuming the current shape.
+        For frames the split also keeps posture and topology data off the record surface, so a consumer asking 'does this frame exist and may I attach' does not have to parse everything known about it.
+        Payloads carry no live runtime object references, which is what makes a
+        descriptor safe to publish, hold, and project. A payload holding live
+        objects would extend their lifetime and let a viewer reach the runtime
+        it is only meant to describe.
     """
 
     __melder_internal__ = _mrg.sentinel

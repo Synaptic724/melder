@@ -14,6 +14,7 @@ class ChangeTransactionType(StrEnum):
     Purpose:
         Enumerate the supported mutation transaction kinds used by the
         change-control admission system.
+
     Contract:
         - Values must remain stable because they become part of transaction
           request payloads and logs.
@@ -26,6 +27,7 @@ class ChangeTransactionType(StrEnum):
         None.
     Raises:
         None.
+
     Threading:
         Stateless; safe to share across threads.
     Lifecycle:
@@ -59,6 +61,7 @@ class ChangeControlTransactionRequest:
         Provide a stable, immutable record of a mutation request so admission,
         conflict, embargo, and staging checks can be performed deterministically
         before any request becomes in-flight.
+
     Contract:
         - Instances are immutable.
         - `request_id` and `initiator_conduit_id` must be non-empty strings.
@@ -97,6 +100,7 @@ class ChangeControlTransactionRequest:
         None.
     Raises:
         None.
+
     Threading:
         Safe to share across threads because instances are immutable.
     Lifecycle:
@@ -125,6 +129,7 @@ class ChangeControlAdmissionResult:
     Purpose:
         Capture the orchestrator's admission outcome together with the concrete
         conflict and embargo evidence that explains a rejection.
+
     Contract:
         - `admitted=True` implies the request was accepted for execution.
         - `conflicts` and `embargoes` contain identifiers explaining rejection.
@@ -143,6 +148,7 @@ class ChangeControlAdmissionResult:
         None.
     Raises:
         None.
+
     Threading:
         Safe to share across threads because instances are immutable.
     Lifecycle:

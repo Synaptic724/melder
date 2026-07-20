@@ -25,6 +25,7 @@ def _normalize_hooks(
     Purpose:
         Convert user-facing hook inputs into the stable shape stored inside
         `ScanBindMetadata`.
+
     Contract:
         - Accepts None, list, or tuple values.
         - Ensures each element is callable before metadata is attached.
@@ -59,6 +60,7 @@ class ScanBindMetadata:
         Capture the exact bind-time policy, lifecycle, spellframe, and hook
         configuration declared by `scan_bind(...)` without performing
         registration immediately.
+
     Contract:
         - Carries all inputs required to call `Spellbook.bind` during a later
           module scan.
@@ -69,6 +71,32 @@ class ScanBindMetadata:
           fresh lists only when handed to `Spellbook.bind`.
         - Metadata is immutable once created so decorated objects carry a
           stable registration contract.
+
+    Threading:
+        Immutable once created; safe to share across threads.
+
+    Registration:
+        MELDER KERNEL - guarded. Attached to decorated objects by
+        `scan_bind(...)`.
+
+    Subsystem Context:
+        The frozen payload a `scan_bind` decoration leaves behind, consumed by
+        `Scan` and replayed into `Spellbook.bind`.
+
+    System Context:
+        Preserving `Existence | str` and `Permissions | str` AS PROVIDED rather
+        than normalizing at decoration time is the subtle correctness decision.
+        Normalizing early would run enum conversion at import time, before the
+        spellbook that will interpret the values exists - and would bake in a
+        normalization the direct-bind path might later change. Deferring means
+        the deferred and direct paths share exactly one normalization.
+        Immutability is what makes a decorated object carry a STABLE
+        registration contract: the metadata is read at scan time, potentially
+        long after decoration, and something mutable in between would let a
+        module's declared bindings drift from what its source says.
+        Hooks stored as tuples at rest and materialized into FRESH lists only
+        when handed to `bind` is the same discipline applied to collections -
+        the frozen payload cannot be mutated through a list a caller kept.
     """
     existence: Existence | str
     permissions: Permissions | str
@@ -210,10 +238,34 @@ class Scan(Cleanable):
     Purpose:
         Provide an explicit execution step that reads scan_bind metadata and
         delegates binding to an owning Spellbook instance.
+
     Contract:
         - Only scans a single, user-supplied module (no package traversal).
         - Rejects re-exports: the object's __module__`` must match the module name.
         - Delegates all validation to `Spellbook.bind`.
+
+    Registration:
+        MELDER KERNEL - guarded. Driven through `Spellbook.scan(...)`.
+
+    Subsystem Context:
+        The deferred-registration lane, paired with `ScanBindMetadata` (what a
+        decorator recorded) and delegating every actual registration to
+        `Spellbook.bind`.
+
+    System Context:
+        MODULE-ONLY, NO PACKAGE TRAVERSAL is a deliberate refusal of
+        convenience. Recursive discovery would make what gets bound depend on
+        filesystem layout and import side effects, so a refactor that moved a
+        file could silently change a running system's spell set. Requiring an
+        explicit module keeps registration a decision.
+        REJECTING RE-EXPORTS via the `__module__` check closes the matching
+        hole: without it, a module that imported a decorated class would bind it
+        a second time under a different scan, producing duplicate registrations
+        of one object. The test is ownership - a module binds only what it
+        actually defines.
+        Delegating ALL validation to `Spellbook.bind` means the deferred path
+        and the direct path cannot diverge; there is one set of rules about what
+        may become a spell, regardless of how it arrived.
     """
     __slots__ = tuple(Cleanable.__slots__) + ("_spellbook",)
 

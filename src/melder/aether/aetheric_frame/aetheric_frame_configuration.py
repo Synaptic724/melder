@@ -47,6 +47,38 @@ class AethericFrameConfiguration(Cleanable):
     Lifecycle:
         Created from one Spellbook `Configuration` during conjure and then
         bound into the owning `AethericFrame`.
+
+    Threading:
+        Immutable by convention after construction, so reads need no lock. The
+        binding step is what is serialized, not the object.
+
+    Registration:
+        MELDER KERNEL - guarded. Derived during conjure from the Spellbook
+        configuration; users configure the Spellbook, never this object.
+
+    Subsystem Context:
+        The NARROW posture object, deliberately separate from the much richer
+        shared `SpellbookConfiguration`. It carries only what AR-facing and
+        change-control systems need, which is why `AethericFrame` can hand it
+        out freely without exposing the full book configuration surface.
+
+    System Context:
+        Two properties make this class do real work rather than just hold
+        fields.
+        First, POSTURE EQUALITY IS BY VALUE, not identity - equality is defined
+        by the frame-posture fields and explicitly ignores object id and
+        `origin_spellbook_id`. That is what lets a second book conjure into an
+        existing frame and be accepted when its posture MATCHES, instead of
+        being rejected merely for being a different object. Provenance is
+        carried for diagnostics, never for comparison.
+        Second, the `disable_*` fields are LIVE READS by the transaction
+        mediator, not values captured once at construction. Under lazy frames
+        every restore rebinds posture onto a default-postured frame, so
+        `bind_frame_configuration` propagates the canonical
+        `max_transaction_wait_time_in_seconds` through `mediator.configure()`
+        at both landing branches - closing the captured-once-at-ctor gap. A
+        recorded frame posture therefore governs the live mediator after a
+        restore, rather than being decoration on a twin.
     """
 
     __melder_internal__: ClassVar[object] = _mrg.sentinel

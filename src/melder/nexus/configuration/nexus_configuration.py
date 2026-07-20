@@ -36,6 +36,32 @@ class NexusConfiguration(Cleanable):
         Owned by `Nexus` once a user explicitly engages it and installs a
         configuration. Cleanup clears all stored properties and freezes the
         object permanently.
+
+    Threading:
+        Mutable until frozen; after finalization the property bag is read-only,
+        so concurrent reads need no coordination.
+
+    Registration:
+        MELDER KERNEL - guarded. Installed into `Nexus` by the user through
+        `Nexus.configure(...)`.
+
+    Subsystem Context:
+        The process-wide policy object for the AR layer, deliberately distinct
+        from per-Rift configuration snapshots and from
+        `NexusFrameConfiguration` (authored per managed frame).
+
+    System Context:
+        The mutable-then-frozen shape is the same lifecycle Melder uses for
+        `SpellbookConfiguration`, `AetherConfiguration`, and the crystallizer
+        and mutation-research configurations. That consistency is deliberate:
+        an agent that has learned one configuration lane can drive all of them.
+        What belongs here versus on a Rift is the real boundary this class
+        draws. Process-wide governance - creation and access gates, frame
+        topology mode, target-frame restrictions, Rift budgets, and the
+        projection refresh barrier - lives here because it must be answered
+        identically for every Rift. Per-Rift room and history semantics stay
+        down on the Rift, because they legitimately differ between Rifts and
+        pushing them up would force one Rift's choice onto all of them.
     """
 
     __melder_internal__ = _mrg.sentinel

@@ -33,6 +33,31 @@ class CapabilityRiftSpace(RiftSpace):
         - Workstation defaults strong when binds omit `weak_ref`.
         - Keeps deeper conduit APIs object-oriented once callers obtain the
           conduit object instead of mirroring every lower method into command.
+
+    Registration:
+        MELDER KERNEL - guarded. Programmed by `Rift` from
+        `RiftSpaceType.capability`; never constructed directly.
+
+    Subsystem Context:
+        The middle rung of the room ladder, between `StaticRiftSpace`
+        (observation) and `CodegenRiftSpace` (generation). It composes
+        `CapabilityCommandSystem` and keeps the generic `FrameViewer`.
+
+    System Context:
+        This room is broad manual access WITHOUT codegen, and the pairing is
+        intentional rather than an unfinished step toward codegen. Manual work
+        on live objects and generated-code execution are different risk
+        surfaces, so widening one does not imply widening the other.
+        Strong-by-default binds are the inverse of static's weak default: a
+        room actively working on objects SHOULD hold them, because a binding
+        that vanished mid-workflow would be a worse surprise than a retained
+        reference.
+        The last contract line records a real API-design boundary worth
+        keeping: once a caller has obtained a conduit object, deeper work stays
+        OBJECT-ORIENTED on that conduit rather than being mirrored method by
+        method into the command surface. Mirroring would make the command layer
+        an ever-growing duplicate of the runtime API and force every conduit
+        change to be re-implemented here.
     """
 
     __melder_internal__ = _mrg.sentinel

@@ -102,6 +102,7 @@ class ClassSurfaceDescription(TypedDict):
 
 class ClassSurfaceAstDescriber:
     """
+
     Purpose:
         Provide one shared AST-backed class-surface description utility for
         Melder objects.

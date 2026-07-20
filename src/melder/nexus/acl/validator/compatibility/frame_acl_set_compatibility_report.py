@@ -8,6 +8,7 @@ from melder.utilities.helpers.id_builder import IDBuilder
 
 class FrameACLSetCompatibilityReport(Cleanable):
     """
+
     Purpose:
         Hold one detached compatibility-validation result for a frame ACL
         bundle.
@@ -20,6 +21,25 @@ class FrameACLSetCompatibilityReport(Cleanable):
 
     Lifecycle:
         Cleanup is idempotent and clears the recorded diagnostics.
+
+    Registration:
+        MELDER KERNEL - guarded. Produced by
+        `FrameACLSetCompatibilityValidator`.
+
+    Subsystem Context:
+        The detached result of cross-family ACL validation, consumed for
+        diagnostics rather than for control flow.
+
+    System Context:
+        Holding ONLY DETACHED PRIMITIVE DATA and no live ACL objects is what
+        makes this report safe to keep, log, or ship past the validation that
+        produced it. A report retaining live configuration would extend those
+        objects' lifetimes and could describe policy that has since been
+        superseded.
+        Separating warnings from errors mirrors the validator's severity split:
+        errors block a commit, warnings are for an operator to read and
+        possibly accept. Collapsing them would force the validator to choose
+        between blocking on suspicion and staying silent about it.
     """
 
     __melder_internal__ = _mrg.sentinel

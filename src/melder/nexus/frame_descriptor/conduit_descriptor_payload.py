@@ -21,6 +21,29 @@ class ConduitDescriptorPayload(Cleanable):
         - Carries enough lineage metadata to distinguish root/normal conduits
           from lesser conduits without introducing a second record family.
         - Cleanup is idempotent and clears all owned payload references.
+
+    Threading:
+        Detached value payload; immutable in practice and safe to share.
+
+    Registration:
+        MELDER KERNEL - guarded. Attached to its record during passive
+        publication; never user-constructed.
+
+    Subsystem Context:
+        The descriptive payload half of the conduit record pair. The RECORD holds
+        directly targetable identity; the PAYLOAD holds description.
+
+    System Context:
+        Keeping payload separate from record - rather than flattening it back
+        onto the record surface - is what lets description evolve without
+        destabilizing identity. `payload_version` makes that explicit: a
+        consumer can reason about the payload contract it received rather than
+        assuming the current shape.
+        Conduit payloads matter because root conduits publish by default while lesser conduits stay derived - the payload describes what was published without implying every conduit is independently targetable.
+        Payloads carry no live runtime object references, which is what makes a
+        descriptor safe to publish, hold, and project. A payload holding live
+        objects would extend their lifetime and let a viewer reach the runtime
+        it is only meant to describe.
     """
 
     __melder_internal__ = _mrg.sentinel

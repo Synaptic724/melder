@@ -66,6 +66,31 @@ class CodegenSystem(Cleanable):
           room event system instead of owning a local event queue or cache.
         - Returns validator-owned and executor-owned result types without
           owning room-memory emission itself.
+
+    Registration:
+        MELDER KERNEL - guarded. Owned by one `CodegenRiftSpace` and attached to
+        its `CodegenCommandSystem` during room init.
+
+    Subsystem Context:
+        The real engine beneath the codegen command facade. It owns per-call
+        `CodegenTransactionContext`, `CodegenValidator`,
+        `CodegenNamespaceBuilder`, `CodegenCompiler`, `CodegenExecutor`, and
+        `CodegenMonitor`.
+
+    System Context:
+        The ordering invariant is the safety property: VALIDATE BEFORE EXECUTE,
+        and build the live namespace ONLY AFTER validation is accepted. Building
+        the namespace first would materialize the execution environment for code
+        that was about to be rejected, and any side effect of that construction
+        would have escaped the validation gate.
+        Publishing lifecycle events through the OWNING ROOM's event system
+        rather than owning a local queue or cache keeps a single event ordering
+        per room - a private queue would let codegen events interleave
+        inconsistently with the room's other events.
+        Returning validator-owned and executor-owned result types WITHOUT owning
+        room-memory emission is the same layering discipline: this engine
+        produces results, and `CodegenCommandSystem` decides what gets recorded,
+        so the accountability record has one author.
     """
 
     __melder_internal__ = _mrg.sentinel

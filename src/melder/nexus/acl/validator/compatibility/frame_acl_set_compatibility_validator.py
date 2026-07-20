@@ -20,6 +20,7 @@ from melder.nexus.acl.configurations.frame_acl_view_configuration import (
 
 class FrameACLSetCompatibilityValidator(Cleanable):
     """
+
     Purpose:
         Validate whether one selected frame ACL bundle is internally coherent
         across view, command, and codegen policy layers.
@@ -36,6 +37,29 @@ class FrameACLSetCompatibilityValidator(Cleanable):
     Lifecycle:
         Cleanup is idempotent and clears the last report plus the profile
         builder reference.
+
+    Registration:
+        MELDER KERNEL - guarded. A container-owned validator service.
+
+    Subsystem Context:
+        The CROSS-FAMILY coherence check, paired with the structural
+        `FrameACLValidator`. It produces a detached
+        `FrameACLSetCompatibilityReport`.
+
+    System Context:
+        This validator exists because the three ACL families are independently
+        versioned, and independence permits incoherence. A command chain may
+        grant an operation whose results the view chain will not surface, or a
+        codegen posture may assume reach the command posture denies. Neither
+        chain is wrong alone; the BUNDLE is.
+        Resolving reusable profiles rather than reading local overrides alone is
+        essential to that judgement, since effective policy is profile plus
+        override.
+        The severity split is deliberate: it RAISES on errors while preserving
+        warnings for the caller. An incoherent bundle must not commit, but a
+        merely suspicious one should be reported and allowed - ACL authoring
+        legitimately passes through intermediate shapes an operator understands
+        better than the validator does.
     """
 
     __melder_internal__ = _mrg.sentinel

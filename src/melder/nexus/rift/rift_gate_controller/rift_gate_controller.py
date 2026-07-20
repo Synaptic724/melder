@@ -27,6 +27,28 @@ class RiftGateController(Cleanable):
         - Uses one internal RLock so cleanup and registry mutation are
           deterministic under concurrent access.
         - Callers should still serialize higher-level lifecycle transitions.
+
+    Registration:
+        MELDER KERNEL - guarded. Owned by `Nexus`; users never construct or
+        address it directly.
+
+    Subsystem Context:
+        The Nexus-owned control plane over per-Rift `RiftGate` instances. It is
+        what makes a projection refresh a COORDINATED operation across many
+        Rifts rather than a per-Rift concern.
+
+    System Context:
+        Centralizing the gates is what allows the ACL fan-out to work at all.
+        When a frame's ACL chain bumps, `Nexus` computes the union of impacted
+        Rifts by checking which ones carry that frame in their contract set,
+        blocks each through its gate, drains in-flight tickets, refreshes each
+        Rift once for its changed-frame subset, and reopens. Without one
+        controller owning every gate, that sequence would have to be
+        reimplemented per call site and could not be made atomic across Rifts.
+        The tolerant lookup contract - missing keys return None, missing-key
+        counts and drains are no-ops - is deliberate for fan-out code: a Rift
+        may be torn down concurrently with a refresh, and raising on a
+        disappeared id would turn a normal race into an error.
     """
 
     __melder_internal__ = _mrg.sentinel

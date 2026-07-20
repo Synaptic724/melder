@@ -43,6 +43,32 @@ class CodegenCommandSystem(CommandSystem):
         - Emits full-source top-level codegen memory records through the
           owning room's `RiftMemorySystem` instead of using the generic
           command-memory metadata shape.
+
+    Registration:
+        MELDER KERNEL - guarded. Built by `CodegenRiftSpace` during room init
+        and attached to that room's `CodegenSystem`.
+
+    Subsystem Context:
+        The codegen posture of the command family and the facade over the
+        room-owned `CodegenSystem`. It owns the FULL research command family -
+        record, organization, campaign, foresight, crystal-well, synthesis, and
+        composition - where capability rooms carry reads only.
+
+    System Context:
+        This class is a FACADE, not an engine, and the split is deliberate:
+        `validate_codegen(...)` and `execute_codegen(...)` are public seams that
+        route into the attached `CodegenSystem`, which owns transaction context,
+        validation, namespace building, compilation, execution, and monitoring.
+        Keeping the command layer thin means the dangerous machinery has one
+        owner rather than being spread across a command surface.
+        The memory emission is the accountability half. Codegen rooms emit
+        FULL-SOURCE records through the room's `RiftMemorySystem` rather than
+        the generic command-memory metadata shape, because for generated code
+        the source IS the record - metadata alone would leave what actually ran
+        unrecoverable.
+        `research_preview` is codegen-only for the same reason: it produces a
+        read-only candidate mock, which is code-shaped output that capability
+        rooms deliberately do not take.
     """
 
     __melder_internal__ = _mrg.sentinel

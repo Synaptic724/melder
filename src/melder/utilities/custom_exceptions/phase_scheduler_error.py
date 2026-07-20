@@ -3,6 +3,7 @@
 
 class PhaseSchedulerError(RuntimeError):
     """
+
     Purpose:
         Base exception for PhaseScheduler failures. One stable parent type so a
         caller can catch "the phase pipeline failed" without enumerating every

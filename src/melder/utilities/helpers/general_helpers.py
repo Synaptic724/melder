@@ -9,6 +9,7 @@ T = TypeVar("T", bound=Enum)
 
 class EnumHelpers:
     """
+
     Purpose:
         Small helper surface for enum normalization and validation, so callers
         can accept a raw string at an API boundary and still hold a real enum

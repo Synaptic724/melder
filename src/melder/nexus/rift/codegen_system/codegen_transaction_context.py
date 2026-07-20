@@ -34,6 +34,24 @@ class CodegenTransactionContext(Cleanable):
         - May reference one `CodegenProjection`, one
           `CodegenNamespaceConfiguration`, and one `CodegenNamespace`.
         - Does not own or cleanup the referenced projection.
+
+    Registration:
+        MELDER KERNEL - guarded. Created per call by `CodegenSystem`.
+
+    Subsystem Context:
+        The shared spine of one codegen call. Validation, execution, history,
+        and monitoring all read the same context, which is what keeps them
+        talking about the same request.
+
+    System Context:
+        A per-call context rather than per-room state is what makes concurrent
+        codegen calls safe: two requests in one room share no mutable
+        validation or namespace state, so neither can observe the other's
+        half-built environment.
+        Carrying one shared identity is also what lets the monitor correlate
+        lifecycle events across stages. Without it, an event stream would show
+        validation and execution as unrelated occurrences and a failed request
+        could not be reconstructed end to end.
     """
 
     __melder_internal__ = _mrg.sentinel

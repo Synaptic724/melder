@@ -75,6 +75,48 @@ class TransferOfOwnership(Cleanable):
         The registry/spellbook ownership flip is protected by `SafeGuard`.
         Broader cleanup and post-flip repair flows rely on the locks and
         invariants provided by the subsystems they call into.
+
+    Threading:
+        The canonical flip runs under `SafeGuard` so no resolver can observe a
+        half-moved registry. Everything outside that window delegates to the
+        locks of the subsystems it calls; this class adds no second lock order
+        of its own, which is what keeps it free of deadlock risk against
+        `ConduitWard` and the change-control plane.
+
+    Lifecycle / Cleanup:
+        Single-use and Cleanable: one instance drives one transfer. It owns
+        rollback bookkeeping for the duration, so it must not be reused across
+        transfers - a second run would inherit the first run's undo state.
+
+    Registration:
+        MELDER KERNEL - guarded. Constructed by `Conduit.transfer_spell_ownership(...)`;
+        never user-instantiated and never bindable.
+
+    Subsystem Context:
+        The heaviest control-plane operation in the conduit package and the
+        only one that rewrites OWNERSHIP rather than relationships.
+        `ConduitWard` grants and revokes access to a lineage someone else owns;
+        this class changes who the owner IS. That is why it reconciles wards,
+        clusters, and creations rather than living inside any one of them.
+
+    System Context:
+        The two-phase shape is the whole safety argument. `preflight()` is
+        strictly read-only, so the full blast radius - borrowers, dependent
+        spell ids, affected creations - is known BEFORE anything mutates. Only
+        then does `execute()` disable the lineage, flip ownership under guard,
+        and leave the impacted state gated/dirty so later validation phases
+        rebuild a truthful view rather than trusting a mid-move snapshot.
+        Leaving state DIRTY on purpose is the counterintuitive part: the
+        transfer deliberately does not repair the resolution graph itself,
+        because it cannot know which consumers are mid-resolution. It marks and
+        defers, and meld-time lazy revalidation does the rebuild under the
+        per-spell lock.
+        The spellspace exclusion documented above follows the same honesty
+        rule as `ConduitMeld`'s refusal: a live request-local object CANNOT be
+        rehomed correctly, so the contract says plainly that it goes stale and
+        must be cleaned as request state, rather than pretending to move it.
+        Transfer is dynamic-mode only - like linking, severing, and upgrade, it
+        rewires the graph after conjure, which an automatic-mode world forbids.
     """
     __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [

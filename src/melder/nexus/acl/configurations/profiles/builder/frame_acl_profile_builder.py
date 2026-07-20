@@ -28,7 +28,33 @@ from melder.utilities.helpers.id_builder import IDBuilder
 
 
 class _NamedCleanableProfile(Protocol):
-    """Minimal profile surface needed by the generic registry helpers."""
+    """
+    Minimal profile surface needed by the generic registry helpers.
+
+    Contract:
+        - The minimal surface the generic registry helpers require: a name and
+          a cleanup entry point.
+
+    Threading:
+        Structural typing only; carries no state and no lock.
+
+    Registration:
+        Private helper of the profile builder layer; not part of any public
+        surface.
+
+    Subsystem Context:
+        The shared shape the view, command, and codegen profile registries
+        program against, so one set of generic helpers serves all three
+        families.
+
+    System Context:
+        This is a genuine structural-contract case rather than a convenience
+        alias. The registry helpers need exactly two things from a profile -
+        identify it, clean it - and the three family profiles are otherwise
+        unrelated types. Narrowing to the smallest surface that supports the
+        helpers lets the families stay independent while sharing registry code,
+        instead of forcing an inheritance relationship the domain does not have.
+    """
 
     @property
     def name(self) -> str:

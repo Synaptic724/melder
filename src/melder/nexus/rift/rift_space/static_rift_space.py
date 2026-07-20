@@ -32,6 +32,31 @@ class StaticRiftSpace(RiftSpace):
           - no direct create-path spell activation
           - `meld_existing_spell(...)` remains allowed
         - Workstation defaults weak when binds omit `weak_ref`.
+
+    Registration:
+        MELDER KERNEL - guarded. Programmed by `Rift` from
+        `RiftSpaceType.static`; never constructed directly.
+
+    Subsystem Context:
+        The lowest rung of the three-room capability ladder, beside
+        `CapabilityRiftSpace` and `CodegenRiftSpace`. It is the only room that
+        swaps the viewer asset itself, owning a `StaticFrameViewer` rather than
+        the generic `FrameViewer`.
+
+    System Context:
+        Every restriction here composes into one property: a static room CANNOT
+        CHANGE THE WORLD IT OBSERVES. Live-only retrieval means it sees what is
+        already real rather than causing anything to become real; no topology
+        mutation means it cannot rewire the graph; no create-path activation
+        means a read can never construct.
+        `meld_existing_spell(...)` surviving is the deliberate exception and it
+        proves the rule - REUSING an existing instance observes without
+        creating, so it stays inside the room's contract while
+        `meld(...)` does not.
+        Weak-by-default workstation binds complete the posture: a room that
+        merely watches should not extend the lifetime of what it watches, or a
+        long-lived static room would quietly pin objects the runtime is trying
+        to release.
     """
 
     __melder_internal__ = _mrg.sentinel

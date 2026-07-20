@@ -34,6 +34,22 @@ class CodegenEventPublisher(Cleanable):
         - Does not persist codegen history or own a retained event buffer.
         - Never emits the full code body into room events; full source belongs
           in room memory records instead.
+
+    Registration:
+        MELDER KERNEL - guarded. Owned by `CodegenMonitor`.
+
+    Subsystem Context:
+        The thin publication adapter between the codegen engine and the room's
+        `RiftEventSystem`.
+
+    System Context:
+        BORROWING the owning room only to reach its event system - rather than
+        owning a codegen-local queue, cache, or retained history - is what keeps
+        event delivery consistent with the room's own ordering and lifecycle.
+        A private queue would introduce a second delivery path with its own
+        buffering semantics, and callbacks registered on the room would silently
+        miss codegen events or receive them out of order relative to everything
+        else.
     """
 
     __melder_internal__ = _mrg.sentinel

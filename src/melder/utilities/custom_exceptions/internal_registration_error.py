@@ -3,6 +3,7 @@
 
 class InternalRegistrationError(RuntimeError):
     """
+
     Purpose:
         Signal that code tried to register a Melder-owned object that is
         intentionally protected. One stable runtime error meaning "this object

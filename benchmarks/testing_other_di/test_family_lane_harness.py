@@ -8,8 +8,8 @@ Why this exists
 The discovery rules (phase 10) route a spell graph to one of three creation
 families by its *visible spell set*:
 
-  - solo        : exactly 1 visible spell                (any existence)
-  - many_only   : >1 visible spell AND every one is many
+  - solo        : exactly 1 visible spell (any existence)
+  - many_only: >1 visible spell AND everyone is many
   - generalized : everything else (mixed existences, singletons, etc.)
 
 Each family emits a DIFFERENT executor source, and we must benchmark the real
@@ -18,21 +18,21 @@ one -- not assume. This harness captures every emitted source via a
 module triggers it) and prints each `source_name`, so routing is proven, not
 guessed. Expected source_names:
 
-  solo                       -> <solo_no_overrides_codegen_creation:...>
-  many_only, no disposal     -> <melder_no_overrides_codegen_creation_transient_executor>
-  many_only, WITH disposal   -> <melder_no_overrides_codegen_creation_step_executor_disposal_aware>
-  generalized (mixed)        -> <melder_generalized_no_overrides_step_factory>
+  solo                       -> <solo_no_overrides_codegen_creation: ...>
+  many_only, no disposal -> <melder_no_overrides_codegen_creation_transient_executor>
+  many_only, WITH disposal -> <melder_no_overrides_codegen_creation_step_executor_disposal_aware>
+  generalized (mixed) -> <melder_generalized_no_overrides_step_factory>
 
 The many_only WITH-disposal lane is the one that matters for porting the
 generalized create-path optimizations (locals mode, alias trim, caller-guard
-hoist): a many graph drops out of the fast transient-unrolled path the moment
-ANY step carries disposal methods, and lands on the dict-based step-plan
+hoist): many graphs drop out of the fast transient-unrolled path the moment
+ANY step carries disposal methods, and land on the dict-based step-plan
 emitter. The deep_layers mocks have no disposal methods, so this file defines a
 small disposal-bearing all-many graph locally to reach that lane.
 
 Run (fresh process so nothing is pre-cached), from repo root:
-  pytest -s -k test_family_lane_routing_proof  benchmarks/testing_other_di/test_family_lane_harness.py
-  pytest -s -k test_family_lane_warm_timing     benchmarks/testing_other_di/test_family_lane_harness.py
+  pytest -s -k test_family_lane_routing_proof benchmarks/testing_other_di/test_family_lane_harness.py
+  pytest -s -k test_family_lane_warm_timing benchmarks/testing_other_di/test_family_lane_harness.py
 
 Iteration counts can be overridden:
   DI_LANE_ITERS=200000 DI_DISP_ITERS=20000 pytest -s -k test_family_lane_warm_timing ...
@@ -243,7 +243,7 @@ def _bind_many_stepplan(spellbook: Spellbook) -> str:
 
 
 def _bind_many_mixed_disposal(spellbook: Spellbook) -> str:
-    """ALL many, MIXED disposal -> step-plan. Every bind passes ["cleanup"] so the
+    """ALL many, MIXED disposal -> step-plans. Every bind passes ["cleanup"], so the
     spellbook's configured disposal set is {"cleanup"} (same as the all-disposal
     lane); per-class disposal is then decided by whether the class actually
     defines cleanup -- only MixMidA + MixRoot do, the rest are non-disposal."""

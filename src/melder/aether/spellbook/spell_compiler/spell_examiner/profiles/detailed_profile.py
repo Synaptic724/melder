@@ -38,6 +38,7 @@ if TYPE_CHECKING:
 
 class SpellDetailedProfile(SpellGeneralProfile):
     """
+
     Purpose:
         Represent the richer detailed spell profile as a superset of general.
 

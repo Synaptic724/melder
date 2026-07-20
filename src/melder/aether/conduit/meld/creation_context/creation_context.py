@@ -48,6 +48,51 @@ class CreationContext(Cleanable):
           place on first execution. Any reader that retains an executor
           reference across calls pins the cold door and defeats the swap;
           readers must re-read the slot per call.
+
+    Owned State:
+        The four executor slots plus `_dynamic_environment` and the creation
+        gate handles. The executor slots are MUTABLE by design - see the
+        self-replacing contract above.
+
+    Threading:
+        Hot path under free-threaded 3.14t. The self-replacing slots are
+        written in place on first execution, so concurrent callers may race to
+        install the hydrated door; the swap is idempotent because both threads
+        compute the same executor. Gate admission is enforced per call rather
+        than cached.
+
+    Lifecycle / Cleanup:
+        Owned by the `Spell` (`spell._creation_context`), not by a meld door.
+        Cleanup bumps the spell's door epoch, which is what invalidates the
+        meld doors' warm fast-lane entries.
+
+    Registration:
+        MELDER KERNEL - guarded. Built by `CreationContextBuilder` through
+        `CreationContextFactory`; never user-instantiated and never bindable.
+
+    Subsystem Context:
+        The last object between `Meld` and a real instance. Meld resolves the
+        spell and decides reuse-vs-construct; this class executes the phase-11
+        doors that actually build it and register it into `Creations`. The two
+        meld doors read its slots directly on their fast lane, which is why the
+        docstring names those slots as an internal contract rather than an
+        implementation detail.
+
+    System Context:
+        The self-replacing executor design is a cold-start optimization with a
+        sharp edge, and the edge is the reason it is documented so loudly.
+        Phase 11 installs a COLD delegating door first so the context is usable
+        immediately; on first execution the hydrated executor replaces it in
+        place. That means the slot IS the indirection - anything that caches an
+        executor reference across calls pins the cold door forever and silently
+        loses the optimization, which is exactly why `Meld`'s fast-door registry
+        stores the CONTEXT and re-reads `_no_overrides_executor` per hit rather
+        than storing the executor itself.
+        The instance-only twin exists for the same reason at a smaller scale:
+        warm no-hooks melds are the common case, and returning `(instance,
+        created)` there would allocate and immediately discard a tuple on every
+        resolution. The hooks lane keeps the tuple door because it genuinely
+        needs the `created` flag to decide whether activation hooks fire.
     """
 
     __melder_internal__: ClassVar[object] = _mrg.sentinel

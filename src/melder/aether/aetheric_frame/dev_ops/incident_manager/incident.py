@@ -40,6 +40,41 @@ class Incident(Cleanable):
     - Status transitions are explicit methods rather than direct field writes.
     - Cleanup releases internal references and invalidates the record for
       future use.
+
+    Threading:
+        Read-only properties expose snapshots or scalars UNDER THE LOCK, so a
+        reader never observes a partially applied transition.
+
+    Lifecycle / Cleanup:
+        Created and owned by `IncidentManager`, and cleaned by it before the
+        registry clears.
+
+    Registration:
+        MELDER KERNEL - guarded. Allocated by `IncidentManager`; users read
+        incidents, they do not construct them.
+
+    Subsystem Context:
+        The record type behind `IncidentManager`, using `IncidentSeverity` and
+        `IncidentStatus` as its vocabulary. It is the descriptive counterpart
+        to the control-plane state objects (`SpellSystemState`,
+        `ConduitResolutionState`), which describe CURRENT truth rather than
+        historical events.
+
+    System Context:
+        This class is mutable where almost everything adjacent is not, and the
+        reason is that an incident has a LIFE: it is raised, then acknowledged,
+        then resolved or suppressed, by different actors at different times.
+        Immutability would force a new record per transition and turn one
+        operational problem into a scatter of rows nobody can correlate.
+        Mutation is deliberately constrained to explicit status-transition
+        METHODS rather than field writes, which keeps the legal transitions in
+        one place and prevents tooling from writing an incoherent status
+        directly.
+        The `summary` / `details` split serves the two audiences named
+        throughout this subsystem: `summary` is the short human- or
+        agent-readable line for a board or log, while `details` carries the
+        structured payload tooling actually parses. Collapsing them would make
+        one of those two consumers do string surgery.
     """
 
     __melder_internal__: ClassVar[object] = _mrg.sentinel

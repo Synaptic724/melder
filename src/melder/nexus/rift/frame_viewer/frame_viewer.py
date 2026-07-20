@@ -48,6 +48,7 @@ if TYPE_CHECKING:
 @decorate_public_view_actions
 class FrameViewer(Cleanable):
     """
+
     Purpose:
         Hold one durable viewer asset that reads current frame truth from the
         Rift-owned projection bundle plus the viewer helper surfaces used to
@@ -78,6 +79,35 @@ class FrameViewer(Cleanable):
         Cleanup clears only viewer-owned references. It does not cleanup the
         owning `Rift` or any Rift-owned projection objects because those are
         borrowed runtime inputs.
+
+    Registration:
+        MELDER KERNEL - guarded. NOTE for MRO auditors: a guarded BASE with one
+        subclass (`StaticFrameViewer`), which is melder-internal and created by
+        static rooms during room init. No injection seam exists, so the
+        inherited sentinel cannot reach user code.
+
+    Subsystem Context:
+        The READ surface of a room, opposite `CommandSystem` (the mediated
+        action surface) and `Workstation` (the binding canvas). It creates
+        view/frame/conduit/spell helper objects ON DEMAND rather than caching
+        bound helper state, which is what keeps it truthful when projections
+        refresh underneath it.
+
+    System Context:
+        This class is a VIEW, not a cache, and that is the whole design. It
+        holds a borrowed `Rift` reference and reads current projections from it
+        on demand; descriptor, config, and surface state are Rift-owned. A
+        viewer that cached projections would answer confidently with stale truth
+        after an ACL change, which is precisely the failure the Nexus refresh
+        fan-out exists to prevent.
+        The final contract line is the security boundary: it exposes NO raw
+        runtime objects and NO direct code execution. Everything reachable
+        through a viewer is a projection, so a read can never become a write.
+        That is what makes the viewer safe to hand to a static room and to
+        agents.
+        Cleanup mirrors the borrow: it clears viewer-owned references ONLY and
+        never touches the owning Rift or its projection objects, because those
+        are borrowed inputs whose lifetime belongs to someone else.
     """
 
     __melder_internal__ = _mrg.sentinel

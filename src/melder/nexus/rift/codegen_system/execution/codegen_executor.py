@@ -23,6 +23,23 @@ class CodegenExecutor(Cleanable):
     Purpose:
         Execute one compiled code object against one built codegen namespace and
         return the execution-layer result.
+
+    Registration:
+        MELDER KERNEL - guarded. Owned by `CodegenSystem`.
+
+    Subsystem Context:
+        The final stage of the engine: it runs one compiled code object against
+        one built `CodegenNamespace` and returns a `CodegenExecutionResult`.
+
+    System Context:
+        Execution is GOVERNED by construction rather than by policy checks at
+        run time. By the moment this stage runs, the validator has accepted the
+        source, the compiler has produced the code object, and the namespace
+        builder has exposed only what configuration allowed - so the executor's
+        safety comes from what the code can REACH, not from watching what it
+        does.
+        That is why the namespace is built only after accepted validation: the
+        executor has no way to retract reach once execution begins.
     """
 
     __melder_internal__ = _mrg.sentinel

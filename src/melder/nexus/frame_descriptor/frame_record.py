@@ -25,6 +25,26 @@ class FrameRecord(Cleanable):
           passive-ingest slice.
         - Mutable through explicit Nexus upsert paths only.
         - Cleanup is idempotent and clears all owned references.
+
+    Registration:
+        MELDER KERNEL - guarded. Published passively by frames; never
+        user-constructed.
+
+    Subsystem Context:
+        The canonical Nexus record for one AR-publishable frame, owned by
+        `FrameDescriptorManager` and paired with `FrameDescriptorPayload`.
+
+    System Context:
+        Holding frame posture WITHOUT depending on the richer shared
+        `SpellbookConfiguration` is the important independence. The AR layer
+        needs to reason about a frame as a publishable source; coupling that to
+        the full book configuration would drag Spellbook concerns into Nexus and
+        make AR visibility depend on binding-time state it has no business
+        reading.
+        Records are the precondition for attachment: `Rift.create_frame_link`
+        REQUIRES descriptor truth to already exist, so a frame that has not
+        published cannot be linked. That ordering is what prevents a Rift from
+        attaching to something the AR layer cannot describe.
     """
 
     __melder_internal__ = _mrg.sentinel

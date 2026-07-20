@@ -31,6 +31,25 @@ class NexusFrameConfiguration(Cleanable):
     Lifecycle:
         Built by `NexusFrameBuilder` or direct helper constructors and consumed
         by `NexusFrameManager`.
+
+    Registration:
+        MELDER KERNEL - guarded. Authored through `NexusFrameBuilder` and held
+        by `NexusFrameManager`.
+
+    Subsystem Context:
+        The authored intent for one Nexus-managed frame, distinct from
+        `AethericFrameConfiguration` (the live frame's posture) and from
+        `NexusConfiguration` (process-wide policy).
+
+    System Context:
+        Storing only AUTHORING INPUTS and no live objects is what lets intent
+        outlive realization. The manager keeps this configuration alongside the
+        realized frame, so a reader can compare what was authored against what
+        exists rather than inferring intent from current state.
+        Carrying the required root-conduit bootstrap intent is what makes
+        Nexus-managed creation ROOTED by default - the public result of managed
+        creation is a rooted conduit, not a bare frame, and that expectation is
+        recorded here rather than assumed by the creation path.
     """
 
     __melder_internal__ = _mrg.sentinel

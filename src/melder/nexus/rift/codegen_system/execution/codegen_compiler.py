@@ -20,6 +20,23 @@ class CodegenCompiler(Cleanable):
     Purpose:
         Compile generated Python source into one executable code object for the
         executor without absorbing execution or validation responsibilities.
+
+    Registration:
+        MELDER KERNEL - guarded. Owned by `CodegenSystem`.
+
+    Subsystem Context:
+        The compile stage between accepted validation and execution. It turns
+        validated source into one executable code object for
+        `CodegenExecutor`.
+
+    System Context:
+        Compilation sits AFTER validation and BEFORE namespace construction,
+        and that position is the safety ordering the whole engine is built on:
+        source is judged, then compiled, and only then does an environment get
+        built for it to run in.
+        Not absorbing execution or validation keeps the stage single-purpose, so
+        the one place that turns text into executable code is small enough to
+        audit.
     """
 
     __melder_internal__ = _mrg.sentinel

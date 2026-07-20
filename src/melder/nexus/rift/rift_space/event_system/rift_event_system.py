@@ -31,6 +31,32 @@ class RiftEventSystem(Cleanable):
 
     Lifecycle:
         Owned by one `RiftSpace`. Cleanup happens as part of room teardown.
+
+    Registration:
+        MELDER KERNEL - guarded. Owned by one `RiftSpace`; created during room
+        initialization.
+
+    Subsystem Context:
+        The room-local outbound publication surface, paired with
+        `RiftMemorySystem` (inbound sequencing and history). It owns the
+        callback registry and the room identity needed to build `RiftEvent`
+        objects.
+
+    System Context:
+        Emission is SYNCHRONOUS to currently registered callbacks, which makes
+        ordering trivially correct - an event is delivered before the emitting
+        operation continues - at the cost of letting a slow callback extend that
+        operation. That trade is the honest one for a room-local surface where
+        callbacks are registered by the room's own owner rather than by
+        arbitrary parties.
+        This is deliberately NOT a Rift-level event orchestrator. `RiftSpace`
+        has real room-local `IRiftEvent` publication, but
+        `Rift.on_nexus_frame_disposed(...)` remains only a logging seam, and
+        conflating the two would overstate what the AR layer currently
+        guarantees about cross-room event delivery.
+        Owning the registry here rather than scattering it across `RiftSpace`
+        and a separate configuration bag is what keeps one lifecycle for
+        callbacks - they are cleared exactly once, during room teardown.
     """
 
     __melder_internal__ = _mrg.sentinel

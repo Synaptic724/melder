@@ -17,6 +17,28 @@ class PermissiveCodegenProfileStrategy:
         broadest set of conduit and spell operations while still denying the
         highest-risk capability gates such as mutation and unsafe reflection.
 
+    Threading:
+        Stateless preset construction; holds no state between builds.
+
+    Registration:
+        MELDER KERNEL - guarded. Registered as a preset strategy in the codegen
+        profile builder and selected by name.
+
+    Subsystem Context:
+        One rung of the codegen-family posture ladder. The standard ladder runs
+        `safe` -> `hybrid` -> `permissive`, with `precision` as the
+        explicitly-enumerated posture and `full_access` as the unconstrained top end.
+
+    System Context:
+        These presets exist so ACL authoring starts from a REVIEWED posture
+        rather than from an empty ruleset. An operator choosing `safe` gets a
+        deliberately restrictive policy someone reasoned about; building the
+        same thing rule by rule invites a permissive gap nobody notices.
+        The ladder is monotonic by intent - each rung allows a superset of the
+        previous one's operations - so moving a frame up or down is a
+        comprehensible change rather than an unrelated policy swap. `precision`
+        sits outside that ordering deliberately: it is the posture for
+        enumerating exactly what is permitted instead of picking a tier.
     """
     __melder_internal__ = _mrg.sentinel
     _NAME = "permissive"

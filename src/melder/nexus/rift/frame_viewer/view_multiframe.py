@@ -25,6 +25,7 @@ if TYPE_CHECKING:
 @decorate_public_view_actions
 class ViewMultiFrame(Cleanable):
     """
+
     Purpose:
         Hold descriptor-oriented multi-frame and record-level viewer methods.
 
@@ -38,6 +39,30 @@ class ViewMultiFrame(Cleanable):
     Lifecycle:
         Cleanup is idempotent and clears only the borrowed viewer reference.
         `ViewMultiFrame` is cheap to create and may be materialized on demand.
+
+    Threading:
+        Created on demand per use rather than cached on the viewer, so it always
+        reads current projection truth.
+
+    Registration:
+        MELDER KERNEL - guarded. Produced by `FrameViewer`; users reach it
+        through the viewer surface.
+
+    Subsystem Context:
+        The multi-frame-scoped helper of the viewer family
+        (`ViewMultiFrame`, `ViewFrame`, `ViewConduit`, `ViewSpell`), which
+        together form the read surface of a room.
+
+    System Context:
+        Every helper returns ACL-FILTERED results and never raw runtime
+        objects. That is the viewer's security boundary: a read can surface what
+        policy permits to be described, and cannot become a handle on the thing
+        described.
+        It is DESCRIPTOR-ORIENTED specifically because cross-frame questions must be answerable without reaching into any one frame's runtime - the widest scope is deliberately the shallowest surface.
+        Creating helpers on demand rather than caching bound state is what keeps
+        them honest across an ACL refresh - a cached helper would answer from
+        the projection it was born with, after that projection had been
+        replaced.
     """
 
     __melder_internal__ = _mrg.sentinel

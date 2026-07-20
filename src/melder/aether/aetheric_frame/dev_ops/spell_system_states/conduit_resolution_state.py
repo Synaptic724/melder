@@ -77,6 +77,44 @@ class ConduitResolutionState(Cleanable):
         completed for this conduit.
     - last_change_reason:
         Optional SpellStateChangeReason describing the last change.
+
+    Contract:
+        - Scope is exactly ONE conduit; it never speaks for the frame.
+        - Verdicts are keyed by VERSION id (spell_id / root_id), not by index
+          id - resolution is decided against the concrete version a conduit
+          actually resolved.
+        - Structural validity is NOT duplicated here; that stays global on
+          `SpellSystemState`.
+
+    Threading:
+        Owned and serialized by the `SpellSystemStates` registry that holds it.
+
+    Lifecycle / Cleanup:
+        Created on demand via `get_or_create_conduit_resolution_state` and
+        retired with its conduit.
+
+    Registration:
+        MELDER KERNEL - guarded. Frame-owned control-plane state.
+
+    Subsystem Context:
+        The per-conduit half of the validity model, paired with the frame-global
+        `SpellSystemState`. Phases 1-4 land there; Phases 5-11 land here.
+
+    System Context:
+        This class exists because resolution validity is genuinely NOT a
+        property of a spell - it is a property of a (spell, conduit) pair. The
+        same lineage can be perfectly resolvable in one conduit and gated in
+        another, because the conduits differ in linked contracts, cluster
+        membership, and change-control dirty roots. A single global verdict
+        would have to be the pessimistic intersection, which would gate healthy
+        conduits because some unrelated conduit is mid-transfer.
+        The keying follows from that: verdicts are per version id because a
+        conduit resolves a concrete version, so a notch that repoints an index
+        legitimately invalidates the old verdict rather than silently carrying
+        it forward to different code.
+        `Meld` reads this on the resolution path and reruns phases 5-11 for
+        THIS conduit alone when the verdict is UNKNOWN or GATED - which is what
+        keeps revalidation proportional to the conduit that needs it.
     """
     __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [

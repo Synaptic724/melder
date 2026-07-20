@@ -27,6 +27,31 @@ class CodegenNameResolutionStrategy(Cleanable):
     Purpose:
         Validate `ast.Name` usage against the namespace configuration contract
         rather than the live namespace object.
+
+    Threading:
+        Stateless validation strategy; it inspects the parsed AST and holds no
+        state between calls.
+
+    Registration:
+        MELDER KERNEL - guarded. Registered in the `CodegenValidator` strategy
+        set; never user-constructed.
+
+    Subsystem Context:
+        One rung of the codegen validation chain, which runs BEFORE compilation
+        and before any namespace is built. Its verdict feeds a
+        `CodegenValidationResult`, which `CodegenValidationReporter` formats for
+        the room-facing command.
+
+    System Context:
+        This strategy is a STATIC gate: it validates `ast.Name` usage against the namespace CONFIGURATION. It reads the AST rather than the
+        live namespace, which is the whole point of validating first - the
+        execution environment does not exist yet, and building it to find out
+        would be exactly the escape the gate exists to prevent.
+        Checking the configuration rather than a live namespace is what preserves validate-before-build: the environment does not exist yet at validation time, and constructing one to resolve names would invert the engine's central ordering.
+        Its checks are deliberately described as rejecting OBVIOUS violations.
+        That honesty matters: static analysis of Python cannot be exhaustive, so
+        the validation chain is defence in depth alongside the namespace
+        denylists and the ACL posture, not a proof of safety on its own.
     """
 
     __melder_internal__ = _mrg.sentinel

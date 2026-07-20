@@ -28,6 +28,27 @@ class StaticFrameViewer(FrameViewer):
           already-live spells only.
         - Uses the existing no-create live probe/runtime truth and never
           mutates descriptor publication.
+
+    Registration:
+        MELDER KERNEL - guarded. Created by `StaticRiftSpace` during room init;
+        never constructed directly.
+
+    Subsystem Context:
+        The static overlay over `FrameViewer`, and the only viewer swap in the
+        room ladder. It keeps the same Rift-backed projection ownership model -
+        it narrows WHAT is visible, not WHERE truth comes from.
+
+    System Context:
+        The filtering is asymmetric on purpose: frame and conduit visibility
+        stay STRUCTURAL, while spell-facing visibility narrows to already-live
+        spells. Structure is safe to observe because seeing that a conduit
+        exists causes nothing; a spell record is different, because resolving
+        one is exactly the create-path a static room must not take.
+        This is why it uses the existing NO-CREATE live probe rather than
+        attempting resolution and discarding failures. A probe that resolved to
+        find out would defeat the room's entire posture, constructing instances
+        as a side effect of looking. It also never mutates descriptor
+        publication, so a static room cannot change what other Rifts see.
     """
 
     __melder_internal__ = _mrg.sentinel

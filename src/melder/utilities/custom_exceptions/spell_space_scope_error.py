@@ -4,6 +4,7 @@
 
 class SpellSpaceScopeError(RuntimeError):
     """
+
     Purpose:
         Signal that a SpellSpace scoping rule was violated - a lifetime or
         ownership failure, not a generic runtime error.

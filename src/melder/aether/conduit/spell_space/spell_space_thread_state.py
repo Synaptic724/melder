@@ -20,6 +20,31 @@ class _SpellSpaceLocal(threading.local):
     Contract:
         - Every thread gets its own independent `spellspace_stack` list.
         - The list is initialized eagerly on first access in each thread.
+
+    Threading:
+        Extends `threading.local`, so attribute storage is per-thread by
+        construction. No lock is needed or taken.
+
+    Lifecycle / Cleanup:
+        Owned by one `SpellSpaceThreadState` and released with it.
+
+    Registration:
+        MELDER KERNEL - guarded, matching the existing private-class precedent
+        (`_Specificity`). Private and unreachable from user code.
+
+    Subsystem Context:
+        The storage primitive under `SpellSpaceThreadState`; it holds the
+        per-thread list, while the holder owns the contract and cleanup.
+
+    System Context:
+        The eager `__init__` is the point of this class existing at all, and
+        the reason is a policy rule rather than convenience: `threading.local`
+        subclasses normally force callers into `getattr(local, "stack", None)`
+        probes to discover whether the current thread has been initialized, and
+        `banned_patterns.md:8-18` forbids defensive `getattr`/`hasattr` on
+        owned attributes. Initializing the stack eagerly per thread makes the
+        attribute unconditionally present, so the owner can use direct access
+        and keep the owned-code contract strict.
     """
 
     __melder_internal__ = _mrg.sentinel
@@ -51,6 +76,42 @@ class SpellSpaceThreadState(Cleanable):
           a detached copy of the provided list.
         - `cleanup()` retires the holder and prevents future access through
           `check_cleaned()`.
+
+    Owned State:
+        One `_local` (`_SpellSpaceLocal`), which itself owns the per-thread
+        `spellspace_stack` lists.
+
+    Threading:
+        Isolation IS the design: each thread sees only its own stack, so no
+        lock is required or taken. This is a deliberate alternative to
+        dynamically-created `ContextVar` objects.
+
+    Lifecycle / Cleanup:
+        Owned by one conduit. `cleanup()` retires the holder and subsequent
+        access raises through `check_cleaned()`.
+
+    Registration:
+        MELDER KERNEL - guarded. Internal conduit state; users interact with
+        spellspaces through `conduit.enter_spellspace()`.
+
+    Subsystem Context:
+        The per-thread half of spellspace scoping, beneath `SpellSpace` and
+        `SpellSpacePool`. It answers "which spellspace is active for THIS
+        thread right now" - the question `SpellSpaceMeld` must resolve before it
+        may serve `unique_per_spell_space`.
+
+    System Context:
+        A STACK rather than a single slot, because spellspace entry nests: a
+        request may enter an inner scope and must restore the outer one on
+        exit, so push/pop order is the representation of recursion. A single
+        pointer would make nested entry silently destroy the parent scope.
+        Thread-local rather than shared is what makes concurrent requests safe
+        without contention - two threads in the same conduit genuinely have
+        different active spellspaces, and any shared structure would need a
+        lock on the hottest possible path.
+        `set(...)` replaces the whole stack with a detached copy, which exists
+        for tests and experiments that must force or clear state explicitly;
+        it is deliberately not part of the normal enter/exit flow.
     """
 
     __melder_internal__ = _mrg.sentinel

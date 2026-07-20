@@ -32,6 +32,47 @@ class CreationContextFactory(Cleanable):
         - Factory delegates all shape rules to `CreationContextBuilder`.
         - In dynamic mode, the factory resolves /creates one spell-index gate
           and injects it into built contexts for runtime execution admission.
+
+    Owned State:
+        `_dynamic_environment`, `_creation_gate_controller`, and
+        `_created_spell_index_ids` (the set of index ids this factory has
+        already provisioned a gate for).
+
+    Threading:
+        Deliberately LOCK-FREE and race-tolerant. Two threads may build a
+        context for the same spell concurrently; both builds are equivalent and
+        the spell owns whichever lands, so the loser is simply discarded rather
+        than being an error worth locking against.
+
+    Lifecycle / Cleanup:
+        Cleanable. It does NOT own the contexts it produces - `Spell` owns them
+        through `spell._creation_context`, which is why factory cleanup cannot
+        strand a live context.
+
+    Registration:
+        MELDER KERNEL - guarded. Constructed by the conduit runtime; never
+        user-instantiated and never bindable.
+
+    Subsystem Context:
+        The WHEN half of context construction, paired with
+        `CreationContextBuilder` (the WHAT). It sits between the meld doors and
+        the builder, and it is the seam where dynamic-mode admission gets wired
+        in - the builder itself stays policy-free.
+
+    System Context:
+        The lock-free choice is worth understanding rather than copying
+        blindly. Context construction is IDEMPOTENT and side-effect-free with
+        respect to shared state: two racing builds produce equivalent objects,
+        and the spell's slot is the single point of truth for which one wins.
+        Taking a lock here would serialize the cold path of every distinct
+        spell for no correctness gain - and under free-threaded 3.14t that
+        contention would be paid on every core.
+        The gate injection is why this class is dynamic-aware at all. In
+        dynamic mode, execution admission is per-spell-index rather than
+        per-conduit, so the factory resolves or creates ONE gate per index and
+        threads it into the contexts it builds; `_created_spell_index_ids`
+        exists so that provisioning happens once per index rather than once per
+        context.
     """
 
     __melder_internal__ = _mrg.sentinel

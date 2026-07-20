@@ -27,6 +27,26 @@ class FrameLink(Cleanable):
     Lifecycle:
         Built by `FrameViewer` as part of the available-target surface for one
         assigned frame.
+
+    Registration:
+        MELDER KERNEL - guarded. Produced by viewer helpers as ACL-filtered
+        output.
+
+    Subsystem Context:
+        The stable identity object for one frame-scoped available target,
+        returned by `ViewFrame` and its siblings. Distinct from
+        `FrameLinkContract`, which records a Rift's ACL SELECTION for a frame.
+
+    System Context:
+        Holding only stable ids, names, and derived metadata - and explicitly
+        NOT raw frame or runtime objects - is what makes viewer output safe to
+        hand anywhere. A link is a coordinate, not a handle: a caller can name
+        what it wants and go through the mediated command path to act, which is
+        the separation that keeps reads from becoming writes.
+        The minimum-identity design also means links survive being held across
+        an ACL refresh. They describe what to ask for rather than caching an
+        answer, so a stale link produces a fresh refusal rather than stale
+        access.
     """
 
     __melder_internal__ = _mrg.sentinel

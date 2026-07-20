@@ -26,6 +26,27 @@ class CommandProjection(Cleanable):
         - References one live frame descriptor without owning descriptor
           cleanup.
         - Cleanup only tears down owned projection state.
+
+    Threading:
+        Replaced wholesale on refresh rather than mutated in place, so a
+        consumer mid-operation continues against a coherent snapshot.
+
+    Registration:
+        MELDER KERNEL - guarded. Compiled by the ACL layer and stored as Rift
+        projection state.
+
+    Subsystem Context:
+        The command member of the projection triple, bundled with its siblings in
+        a `FrameProjectionSet`. It carries descriptor truth, the assembled ACL
+        snapshot, and the compiled access surface for `CommandSystem`.
+
+    System Context:
+        Three consumer-shaped projections rather than one shared object is the
+        design, and the reason is coupling: the command surface needs its compiled access answers without routing through the viewer, so a command check never depends on view-layer state.
+        Owning a DETACHED ACL configuration snapshot is what makes the
+        projection a stable answer. Reading live ACL state per question would
+        let permissions shift mid-operation, which is exactly what the refresh
+        barrier - block, drain, swap, reopen - exists to prevent.
     """
 
     __melder_internal__ = _mrg.sentinel

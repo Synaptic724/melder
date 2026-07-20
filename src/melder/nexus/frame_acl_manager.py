@@ -35,6 +35,7 @@ from melder.nexus.frame_descriptor.frame_descriptor import FrameDescriptor
 
 class FrameACLManager(Cleanable):
     """
+
     Purpose:
         Coordinate all frame-scoped ACL containers owned by one `Nexus`
         instance.
@@ -58,6 +59,31 @@ class FrameACLManager(Cleanable):
     Lifecycle:
         Cleanup is idempotent. Cleanup cascades into all owned containers
         before the manager drops its registry and lock references.
+
+    Registration:
+        MELDER KERNEL - guarded. Owned by `Nexus`; callers must not construct
+        or share it independently.
+
+    Subsystem Context:
+        The permissions owner beneath `Nexus`, beside `FrameDescriptorManager`
+        (visibility) and `NexusFrameManager` (authoring). It owns one
+        `FrameACLContainer` per frame, and each container owns separate named
+        revision chains for `view`, `command`, and `codegen`.
+
+    System Context:
+        Three SEPARATE family chains per frame - rather than one global bundle -
+        is the model that replaced the old frame-global chain, and the
+        separation is what makes least privilege expressible. A frame can grant
+        broad view while keeping command narrow and codegen closed, because
+        those are independent revisions rather than facets of one bundle.
+        At most one live container per frame name is the invariant that keeps
+        permissions unambiguous: two containers for one frame would mean two
+        answers to the same authorization question.
+        Chain bumps are what trigger the projection refresh fan-out through
+        `Nexus`, so this manager is the SOURCE of the most concurrency-sensitive
+        flow in the AR layer - which is why `_on_frame_acl_changed(...)` is a
+        thin delegate into the same batch refresh primitive used for explicit
+        multi-frame refresh rather than a second independent path.
     """
 
     __melder_internal__ = _mrg.sentinel

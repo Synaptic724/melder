@@ -75,6 +75,48 @@ class Rift(Cleanable):
         bind them in the most permissive AR posture by default:
         `rift_enabled=True`, `ai_native_enabled=True`, and
         `system_state=dynamic`.
+
+    Threading:
+        Refresh orchestration is the concurrency-sensitive path: on an ACL
+        change the Rift is asked for fresh projections and applies them to its
+        hosted assets. The config-backed refresh barrier
+        (`projection_refresh_gate_enabled` and its timeout/poll settings) blocks
+        new entrants at the Rift gate, drains in-flight tickets, refreshes once,
+        then reopens.
+
+    Lifecycle / Cleanup:
+        Cleanup cleans the one owned space, the owned config snapshot, the owned
+        `RiftGate`, and every engaged `FrameLinkContract`, then clears Rift-local
+        metadata and cleans the logger LAST.
+
+    Registration:
+        MELDER KERNEL - guarded. Rifts are created and registered by `Nexus`
+        (`Nexus.create_rift`), never constructed directly.
+
+    Subsystem Context:
+        The live AR runtime object: `Nexus` is the process-wide root, `Rift` is
+        one live connection into Melder's object world, and `RiftSpace` is the
+        room a user actually works in. A Rift owns exactly ONE primary room,
+        programmed from `space_type` at creation - there is no room registry and
+        no active-space switching.
+
+    System Context:
+        Rift creation and frame attachment are deliberately SEPARATE STEPS, and
+        that staging is the important design fact. `create_rift` builds a bare
+        live Rift with a programmed room and no target frame;
+        `create_frame_link(frame_name)` is the later explicit attachment that
+        validates target-frame policy, REQUIRES descriptor truth to already
+        exist, delegates Nexus-managed authorization back through `Nexus`,
+        ensures the frame-name ACL contract, and refreshes the viewer.
+        Splitting them means a Rift can exist and be configured before any frame
+        is chosen, and that attachment failures never leave a half-built Rift.
+        Rift does NOT own Melder's object world - it is where an agent gains
+        mediated access to it. Lower Melder frame and runtime truth always wins:
+        a room may advertise a capability the underlying frame refuses, and the
+        frame's answer is final.
+        Known limitation, stated honestly: `on_nexus_frame_disposed(...)` is
+        still only a logging seam. Rooms have a real room-local event system,
+        but there is no Rift-level event orchestration layer yet.
     """
 
     __melder_internal__ = _mrg.sentinel

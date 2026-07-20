@@ -39,6 +39,25 @@ class RiftEvent:
             Optional explicit event id.
         emitted_at:
             Optional explicit emitted timestamp.
+
+    Registration:
+        MELDER KERNEL - guarded. Built by `RiftEventSystem` from room identity.
+
+    Subsystem Context:
+        The immutable event object of the room-local event system, paired with
+        `RiftMemory` (the history record).
+
+    System Context:
+        Fixing identity and timestamp AT CREATION is what makes an event a
+        factual account rather than a mutable notice. Subscribers may hold
+        events indefinitely, and one that could change afterwards would let the
+        record of what happened drift from what happened.
+        Requiring no local queue or event thread follows from synchronous
+        emission: the event is delivered before the emitting operation
+        continues, so there is nothing to buffer. That keeps ordering trivially
+        correct at the cost of letting a slow callback extend the operation -
+        the honest trade for a room-local surface whose callbacks are registered
+        by the room's own owner.
     """
 
     __melder_internal__ = _mrg.sentinel

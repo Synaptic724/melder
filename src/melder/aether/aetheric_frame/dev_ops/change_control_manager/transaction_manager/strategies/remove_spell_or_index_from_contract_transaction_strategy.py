@@ -42,6 +42,30 @@ class RemoveSpellOrIndexFromContractTransactionStrategy(TransactionStrategy):
           `_conduit_ward._remove_spell_from_contract` / `_remove_index_from_contract`
           seam.
         - Envelope-only: this strategy never reaches into the runtime.
+
+    Threading:
+        Stateless class-level strategy; concurrency is owned by the mediator
+        and the scope claims this plan requests.
+
+    Registration:
+        MELDER KERNEL - guarded. Registered as a CLASS in the transaction
+        family; never instantiated and never bindable.
+
+    Subsystem Context:
+        The release half of the standalone contract-mutation pair, inverse of
+        `AddSpellOrIndexToContractTransactionStrategy`, with matching claim
+        modes because a release mutates the surfaces a grant does.
+
+    System Context:
+        Claim symmetry with its inverse is deliberate: an operation and its
+        undo must freeze the same surfaces, or concurrent grant/release traffic
+        races on whatever only one of them claimed.
+        Beneath this envelope the borrower's ward untracks the contracted
+        spell or index while the provider surface is touched - which is exactly
+        the state a peer must never observe half-applied. Holding both
+        participants EXCLUSIVE for the duration is what guarantees no third
+        party sees a contract that has lost an entry on one side but not the
+        other.
     """
 
     @classmethod

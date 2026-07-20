@@ -19,6 +19,30 @@ class SystemState(Enum):
     States:
     - automatic: managed/default runtime posture
     - dynamic: advanced dynamic runtime posture
+
+    Threading:
+        Immutable enum members; safe to read from any thread.
+
+    Registration:
+        MELDER KERNEL - guarded, readable by value. Users pass it into
+        `SpellbookConfiguration`.
+
+    Subsystem Context:
+        The runtime-posture selector for a spellbook, propagated onto the frame
+        through `AethericFrameConfiguration` at conjure.
+
+    System Context:
+        This two-value enum gates more behaviour than any other flag in the
+        system. Under `automatic`, `conjure` admits ONLY `Policies.default`,
+        and linking, severing, ownership transfer, and lesser-to-normal upgrade
+        all raise - because an automatic world promises one self-contained graph
+        fixed at conjure. Under `dynamic`, the graph may be rewired afterwards,
+        which is what AI-native workflows require.
+        The frame is the enforcement point rather than the book: frames come
+        BEFORE books in the boot order precisely because the frame owns the
+        dynamic gate that conjure's `check_system_state` reads. That is also why
+        a restore must posture a frame before building its books, and why the
+        crystallizer warns when a book's frame twin is missing from a bundle.
     """
     __melder_internal__ = _mrg.sentinel
     automatic = auto()

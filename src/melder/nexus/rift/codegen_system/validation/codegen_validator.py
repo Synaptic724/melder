@@ -50,6 +50,25 @@ class CodegenValidator(Cleanable):
         - Returns syntax failure when parsing fails.
         - Returns the current not-implemented result when syntax is valid but
           the deeper strategy family is not yet implemented.
+
+    Registration:
+        MELDER KERNEL - guarded. Owned by `CodegenSystem`.
+
+    Subsystem Context:
+        The validation boundary of the codegen engine, running the strategy
+        chain over one `CodegenTransactionContext` and producing a
+        `CodegenValidationResult`.
+
+    System Context:
+        AST PARSE IS THE FIRST LIVE CHECK, and the ordering is deliberate:
+        unparseable source is rejected before any policy strategy runs, so
+        every later strategy can assume a valid tree rather than defending
+        against malformed input.
+        The validator deliberately does NOT absorb execution or reporting. That
+        boundary is what allows validation to be run alone - `validate_codegen`
+        is a real user-facing operation, not merely an internal step - and it is
+        why an accepted verdict is required before `CodegenSystem` will build a
+        live namespace at all.
     """
 
     __melder_internal__ = _mrg.sentinel

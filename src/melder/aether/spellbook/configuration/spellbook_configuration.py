@@ -31,6 +31,32 @@ class SpellbookConfiguration(Cleanable):
       freeze.
     - Validation is explicit and freeze/finalize enforce it.
     - Thread-safe operations are serialized with the instance `RLock`.
+
+    Registration:
+        MELDER KERNEL - guarded. Created or adopted during `Spellbook.__init__`;
+        users configure it directly, which is its whole purpose.
+
+    Subsystem Context:
+        The rich per-spellbook configuration, distinct from the NARROW
+        `AethericFrameConfiguration` derived from it at conjure. It owns the
+        typed property map, idempotent keys, and the system hook registry for
+        Meld / Conduit / Link / Contract events.
+
+    System Context:
+        IDEMPOTENT KEYS are the unusual and important mechanism here: they may
+        be set ONCE and then become immutable EVEN BEFORE FREEZE. That exists
+        because some properties are adopted from a frame-shared configuration
+        or established at first bind, and letting them be rewritten later would
+        silently change the contract that earlier binds already committed to.
+        Freeze is the second gate: configuration must be frozen before a Conduit
+        can be created, so the conjure pipeline plans against values that cannot
+        move underneath it. The crystallizer enforces the same discipline from
+        the record side - a dynamic conjure over binds that ran while the
+        configuration was still mutable is REFUSED, because a recorded world
+        must never be born config-incoherent.
+        Hooks living here rather than on the Spellbook is what makes them
+        adoptable: a frame-shared configuration carries one hook registry for
+        every book that adopts it.
     """
     __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [

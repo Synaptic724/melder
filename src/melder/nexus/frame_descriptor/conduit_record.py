@@ -24,6 +24,24 @@ class ConduitRecord(Cleanable):
         - Carries one deterministic Nexus publication contract.
         - Mutable through explicit Nexus upsert/remove paths only.
         - Cleanup is idempotent and clears all owned references.
+
+    Registration:
+        MELDER KERNEL - guarded. Published passively by conduits; never
+        user-constructed.
+
+    Subsystem Context:
+        The canonical Nexus record for one published conduit, paired with
+        `ConduitDescriptorPayload` and owned by `FrameDescriptorManager`.
+
+    System Context:
+        "Root conduits publish by default; lesser conduits remain derived" is
+        the rule that keeps the AR surface proportional. A lineage can spawn
+        many lesser conduits, and publishing each as an independently targetable
+        record would flood the descriptor registry with objects no agent means
+        to address directly.
+        Holding only DIRECTLY TARGETABLE information is the matching
+        restraint - the record answers "can I aim at this", not "what is
+        everything about it", which is the payload's job.
     """
 
     __melder_internal__ = _mrg.sentinel

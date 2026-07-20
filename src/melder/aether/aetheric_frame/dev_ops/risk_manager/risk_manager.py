@@ -25,6 +25,37 @@ class _ConduitRiskState:
     - which of those lineages are structurally risky
     - which are resolution-risky for that specific conduit
     - which spellbook should have its validation-required flag updated
+
+    Contract:
+        - One bucket per registered conduit; buckets never span conduits.
+        - Structural and resolution risk are tracked SEPARATELY because they
+          have different scopes (frame-global versus conduit-local).
+
+    Threading:
+        Mutated only under the owning `RiskManager`'s `RLock`; it holds no lock
+        of its own.
+
+    Registration:
+        Private helper of `RiskManager`; not part of any public surface.
+
+    Subsystem Context:
+        The per-conduit storage behind `RiskManager`'s distillation. The
+        manager folds these buckets into one validation-required flag per
+        spellbook.
+
+    System Context:
+        The four tracked facts map exactly onto the two-axis validity model
+        this package is built around. Which lineages a conduit KNOWS ABOUT
+        bounds the question; structural risk mirrors frame-global
+        `SpellSystemState`; resolution risk mirrors per-conduit
+        `ConduitResolutionState`; and the spellbook pointer is where the
+        distilled answer lands.
+        Keeping structural and resolution risk in separate sets - rather than
+        one merged risky-lineage set - is what preserves the distinction at the
+        aggregation layer. Merging them would make it impossible to tell
+        whether a conduit is risky because the spell itself is broken
+        everywhere or because THIS conduit cannot currently resolve it, which
+        are different problems with different fixes.
     """
     __slots__ = [
         "spellbook",
@@ -84,6 +115,37 @@ class RiskManager(Cleanable):
     Lifecycle:
     - Owned by `DevOpsManager` and cleaned from that ownership boundary.
     - After cleanup, public methods fail through `check_cleaned()`.
+
+    Registration:
+        MELDER KERNEL - guarded. Frame-owned control-plane service reached
+        through `DevOpsManager`; never constructed by users.
+
+    Subsystem Context:
+        The AGGREGATOR of the control plane. `SpellSystemStates` holds the
+        per-lineage and per-conduit verdicts; this class folds many verdicts
+        into ONE boolean per spellbook. It explicitly does not validate
+        anything - it only watches and distils.
+
+    System Context:
+        The distillation exists because meld needs a cheap "should I even
+        check?" signal. Asking `SpellSystemStates` per resolution whether ANY
+        relevant lineage is risky would be a scan; a single spellbook-level
+        validation-required flag is one read. This is the same
+        cheap-gate/rich-detail split as `SpellValidity` versus `SpellState`,
+        applied one layer up.
+        Treating any non-`valid` state as risky - including `unknown` - is
+        deliberately conservative, and it is what makes the flag SAFE rather
+        than merely fast. A never-validated lineage is indistinguishable from a
+        broken one until a pass runs, so optimism here would let meld trust
+        something nobody has checked.
+        Risk is bucketed PER CONDUIT for the same reason
+        `ConduitResolutionState` exists: resolution risk is a property of a
+        (lineage, conduit) pair, so one conduit's gated lineage must not mark a
+        sibling conduit risky. Structural risk, being global, is tracked by
+        lineage id instead.
+        `SpellSystemStates.unregister_lineage` notifies this manager to FORCE
+        validation gating - removing a lineage must never leave a stale "valid"
+        verdict behind that meld could still act on.
     """
     __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [

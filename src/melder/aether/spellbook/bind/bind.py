@@ -56,6 +56,33 @@ class Bind(Cleanable):
     - Successful registration always flows through canonical profile
       examination and deterministic fingerprinting rather than ad hoc ids.
     - Decorator-style and direct-call usage share the same binding pipeline.
+
+    Registration:
+        MELDER KERNEL - guarded. Invoked through `Spellbook.bind(...)`; users
+        call the spellbook, not this class.
+
+    Subsystem Context:
+        The registration gateway where lifecycle (`Existence`), access policy
+        (`Permissions`), spellframe grouping, and structural fingerprinting
+        first converge. It produces the `SpellIndex` + `Spell` pair the rest of
+        the runtime resolves against.
+
+    System Context:
+        DETERMINISTIC FINGERPRINTING is the property everything downstream
+        depends on. The `spell_id` is a SHA256 over the examined profile, so it
+        is CONTENT-DERIVED and stable across processes and sessions - which is
+        why the crystallizer can replay custody by recorded spell id while
+        refusing to rehydrate ULIDs, and why the same object bound in two
+        processes carries the same identity.
+        The refusals are as load-bearing as the successes. Modules and Protocols
+        are rejected as concrete spells because neither has a construction
+        contract; method and lambda bindings are forced to `Existence.unique`
+        because per-scope construction is meaningless for them. Rejecting at
+        bind time is what keeps those errors adjacent to the mistake rather than
+        surfacing deep inside a later meld.
+        Bind is also a RECORDING moment: it is the structural emission point for
+        the crystallizer, so custody is born here (gated on
+        `activated AND dynamic posture`) rather than being swept up later.
     """
     __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [

@@ -16,7 +16,10 @@ Layout:
                     grouping/contract keys, not dicts), typed
                     melds, Protocols, one bootstrap function. Fun and simple
                     beats complete.
-- 02_intermediate/  fluent binding, scopes, spellframes, configuration, persistence basics
+- 02_intermediate/  linking + dynamic mode + configurations (owner fence:
+                    NO Nexus, NO MutationResearch, NO crystallizer, and NO
+                    AethericFrame objects - substrate stays invisible; the
+                    _dynamic_world helper is a black box by design)
 - 03_expert/        AR rooms, viewers, workstations, research lanes, diff/impact foresight
 - 04_master/        pod restart, external DB meshes, group composition, campaign evolution, custom decorators
 

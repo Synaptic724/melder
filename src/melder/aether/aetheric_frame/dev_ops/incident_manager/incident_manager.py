@@ -34,6 +34,38 @@ class IncidentManager(Cleanable):
       made here.
     - Cleanup is idempotent and tears down child incidents before clearing the
       registry itself.
+
+    Threading:
+        Registry mutation and id allocation are serialized internally.
+        Sequential id allocation means ids are frame-local and monotonic, not
+        globally unique across frames.
+
+    Lifecycle / Cleanup:
+        Owned by `DevOpsManager`. Cleanup cleans child incidents FIRST and only
+        then clears the registry - children before container, matching the
+        repo-wide teardown posture.
+
+    Registration:
+        MELDER KERNEL - guarded. Frame-owned; reached through `DevOpsManager`.
+
+    Subsystem Context:
+        The DESCRIPTIVE side of DevOps, deliberately opposite the decisive
+        side. `RiskManager` and `ChangeControlManager` change what the runtime
+        DOES; this manager only records what happened. Its records are read by
+        tooling and agents, never by meld.
+
+    System Context:
+        "No policy decisions are made here" is the whole contract and it is
+        worth respecting strictly. An incident registry that also gated
+        behaviour would make recording a problem indistinguishable from
+        reacting to one, and every diagnostic write would become a runtime
+        risk. Keeping description inert means tooling can record freely -
+        including speculative or noisy conditions - without any chance of
+        perturbing resolution.
+        This is also why the manager exposes filtering and lookup rather than
+        subscriptions or hooks: consumers pull the current state when they want
+        it, so an operator query can never inject latency into the runtime that
+        produced the record.
     """
 
     __melder_internal__: ClassVar[object] = _mrg.sentinel

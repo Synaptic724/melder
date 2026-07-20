@@ -20,6 +20,7 @@ from melder.utilities.helpers.id_builder import IDBuilder
 
 class FrameACLProfile(Cleanable):
     """
+
     Purpose:
         Represent one composed ACL profile that pairs reusable view, command,
         and codegen base profiles with local override rulesets.
@@ -34,6 +35,26 @@ class FrameACLProfile(Cleanable):
     Lifecycle:
         Cleanup is idempotent and clears owned override rulesets plus shared
         profile references.
+
+    Registration:
+        MELDER KERNEL - guarded. Composed from library profiles plus local
+        overrides.
+
+    Subsystem Context:
+        The COMPOSED profile, pairing reusable view, command, and codegen base
+        profiles with local override rulesets. It sits above the three
+        single-family profiles.
+
+    System Context:
+        Its ownership split is the detail to get right, and the docstring states
+        it precisely: family profile references are SHARED LIBRARY OBJECTS and
+        are NOT cleaned by this composed profile, while the local override
+        rulesets ARE owned and cleaned. Cleaning a shared library profile from
+        here would tear it out from under every other frame referencing it.
+        That asymmetry is the reusable-versus-applied model made concrete -
+        shared postures are borrowed, per-frame deviation is owned - and it is
+        why the single-family profiles cascade cleanup into their rulesets while
+        this one deliberately does not cascade into its family references.
     """
 
     __melder_internal__ = _mrg.sentinel

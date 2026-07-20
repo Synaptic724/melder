@@ -12,6 +12,7 @@ class SpellValidationIssue(Cleanable):
 
     Purpose:
         Represent one validation finding with optional attribution and context.
+
     Contract:
         - "severity" must be ""error"" or ""warning"".
         - "code" and "message" must be non-empty strings.

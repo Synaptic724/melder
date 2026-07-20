@@ -26,6 +26,24 @@ class CodegenNamespace(Cleanable):
         - Stores one namespace configuration.
         - Stores one globals dict and one locals dict.
         - Keeps metadata separate from the raw globals/locals mappings.
+
+    Registration:
+        MELDER KERNEL - guarded. Produced by `CodegenNamespaceBuilder` after
+        accepted validation.
+
+    Subsystem Context:
+        The live execution environment for one request - the actual
+        globals/locals the executor runs against - paired with the
+        configuration that produced it.
+
+    System Context:
+        Retaining the producing CONFIGURATION alongside the live dictionaries is
+        what keeps an executed request auditable. The dictionaries alone would
+        show what was present without recording what policy intended, and the
+        two can differ where a strategy declined to contribute.
+        This object exists only after validation is accepted, which is the
+        engine's central invariant: no environment is built for code that has
+        not passed the gate.
     """
 
     __melder_internal__ = _mrg.sentinel

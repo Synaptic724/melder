@@ -61,6 +61,7 @@ from melder.utilities.helpers.init_helpers import InitHelpers
 
 class Nexus(Cleanable):
     """
+
     Purpose:
         Provide the public singleton root for Rift-domain registry,
         configuration, ACL-container access, and Nexus-managed frame policy.
@@ -86,6 +87,38 @@ class Nexus(Cleanable):
     Threading:
         Uses one class-level singleton lock for instance creation and one
         instance `threading.RLock` for multi-step mutable state transitions.
+
+    Threading:
+        Registry mutation and ACL-change fan-out are serialized internally. The
+        refresh barrier is config-backed through `NexusConfiguration`
+        (`projection_refresh_gate_enabled` plus timeout and poll interval).
+
+    Registration:
+        MELDER KERNEL - guarded. Process-wide singleton created eagerly by
+        `Aether` at boot; users engage it, they never construct it.
+
+    Subsystem Context:
+        The PUBLIC AR root - and the one to hold onto: `Nexus` is public,
+        `Aether` is hidden substrate. It owns process-wide policy, the Rift
+        registry, `FrameDescriptorManager`, `NexusFrameManager`,
+        `FrameACLManager`, and `RiftGateController`.
+
+    System Context:
+        Nexus exists so the AR surface can be public WITHOUT exposing the
+        substrate. It holds a hidden `Aether` reference for Nexus-managed frame
+        realization and disposal, but `Aether` never appears in its public
+        contract - which is what lets frame ownership stay with the substrate
+        while authoring and topology policy live up here.
+        It starts UNCONFIGURED AND DISABLED even though it is constructed
+        eagerly at boot. That two-step engagement means merely importing melder
+        never opens an AR surface; a user must configure and enable before any
+        Rift can be created, so the AR layer is opt-in rather than ambient.
+        Its most load-bearing runtime behaviour is the ACL fan-out: on a chain
+        bump it computes the UNION of impacted Rifts by testing each Rift's
+        assigned frame-contract set, then refreshes each impacted Rift once for
+        its changed-frame SUBSET rather than wholesale. Single-frame callbacks
+        delegate into that same batch primitive, so there is exactly one refresh
+        path rather than two that could diverge.
     """
 
     __melder_internal__ = _mrg.sentinel
