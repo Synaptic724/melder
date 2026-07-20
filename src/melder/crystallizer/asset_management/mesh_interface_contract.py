@@ -47,6 +47,11 @@ class MeshInterfaceContract:
     Lifecycle / Cleanup:
         None. Static authority classes carry no state to clean.
     """
+    _ast_helper_access: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. Static authority describing the external persistence mesh interface. "
+        "Melder kernel machinery: read it to understand the runtime, do not drive it directly."
+    )
 
     __melder_internal__: ClassVar[object] = _mrg.sentinel
 

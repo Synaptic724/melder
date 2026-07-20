@@ -65,12 +65,21 @@ class GroupDiffStrategy(Cleanable):
         compares ROSTERS, and collapsing them would force one grain to pretend
         to be the other.
     """
+    _ast_helper_access: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. Base contract for one derived-diff computation over COMPOSITION "
+        "material. Melder kernel machinery: read it to understand the runtime, do not drive it "
+        "directly."
+    )
 
     __slots__ = Cleanable.__slots__
 
     def __init__(self) -> None:
         """
         Initialize the strategy lifecycle flag.
+
+        Returns:
+            None.
         """
         super().__init__()
 
@@ -80,6 +89,9 @@ class GroupDiffStrategy(Cleanable):
 
         Contract:
             - Idempotent; strategies own no releasable state by default.
+
+        Returns:
+            None.
         """
         if self._cleaned:
             return

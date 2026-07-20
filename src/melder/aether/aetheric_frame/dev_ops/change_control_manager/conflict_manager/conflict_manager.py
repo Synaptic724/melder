@@ -54,6 +54,11 @@ class ChangeControlConflictManager(Cleanable):
         `AcquisitionDecision` - callers can name who they are waiting on, which
         is the difference between a diagnosable stall and a mysterious one.
     """
+    _ast_helper_access: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. Conflict detector for scope overlap between change-control requests. "
+        "Melder kernel machinery: read it to understand the runtime, do not drive it directly."
+    )
     __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
         "_lock",
@@ -65,6 +70,9 @@ class ChangeControlConflictManager(Cleanable):
 
         Contract:
         - Owns no mutable state beyond the internal lock.
+
+        Returns:
+            None.
         """
         super().__init__()
         self._lock: RLock = RLock()
@@ -76,6 +84,9 @@ class ChangeControlConflictManager(Cleanable):
         Contract:
         - Idempotent cleanup.
         - Drops the lock reference after the cleaned flag is set.
+
+        Returns:
+            None.
         """
         if self._cleaned:
             return

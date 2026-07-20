@@ -76,6 +76,11 @@ class Incident(Cleanable):
         structured payload tooling actually parses. Collapsing them would make
         one of those two consumers do string surgery.
     """
+    _ast_helper_access: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. Mutable incident record with controlled status transitions. Melder "
+        "kernel machinery: read it to understand the runtime, do not drive it directly."
+    )
 
     __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
@@ -126,6 +131,9 @@ class Incident(Cleanable):
 
         Raises:
             ValueError: If `incident_id`, `kind`, or `summary` is empty.
+
+        Returns:
+            None.
         """
         if not incident_id:
             raise ValueError("incident_id cannot be empty")
@@ -156,6 +164,9 @@ class Incident(Cleanable):
         - Clears root-id and details containers before dropping scalar fields.
         - After cleanup, public properties and state-transition methods fail
           through `check_cleaned()`.
+
+        Returns:
+            None.
         """
         if self._cleaned:
             return
@@ -269,6 +280,9 @@ class Incident(Cleanable):
         - Transitions the record to `IncidentStatus.acknowledged`.
         - Records triage/visibility only; it does not imply the underlying
           condition has been resolved or suppressed.
+
+        Returns:
+            None.
         """
         
         with self._lock:
@@ -283,6 +297,9 @@ class Incident(Cleanable):
         - Higher-level tooling remains responsible for deciding what
           "resolved" means operationally; this method only updates the status
           field.
+
+        Returns:
+            None.
         """
         
         with self._lock:
@@ -296,6 +313,9 @@ class Incident(Cleanable):
         - Transitions the record to `IncidentStatus.suppressed`.
         - Uses the "accepted / intentionally muted" lifecycle state rather than
           claiming the underlying condition disappeared.
+
+        Returns:
+            None.
         """
         
         with self._lock:

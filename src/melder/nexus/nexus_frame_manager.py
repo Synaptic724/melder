@@ -72,6 +72,11 @@ class NexusFrameManager(Cleanable):
         Owning no persistent attachment registry is deliberate: derived safety
         from live state cannot go stale, while a mirror of attachments could.
     """
+    _ast_helper_access: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. Authoring and topology facade for Nexus-managed frames. Melder kernel "
+        "machinery: read it to understand the runtime, do not drive it directly."
+    )
 
     __melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [

@@ -103,6 +103,12 @@ class ResearchSet(Cleanable):
         multi-parent `register_spell`, so the record only ever gains facts. It
         never rewrites them.
     """
+    _ast_helper_access: str = "public"
+    __agent_purpose__: str = (
+        "access: public. One research network - lanes, journal, residence partition. Use "
+        "register_spell/register_group, create_lane, attach/detach, join, archive, "
+        "walk/history/heads, campaign_view, snapshot_network/restore_network."
+    )
     __melder_internal__: ClassVar[object] = _mrg.sentinel
 
     DEFAULT_LANE_NAME: ClassVar[str] = "default"
@@ -144,6 +150,9 @@ class ResearchSet(Cleanable):
         Raises:
             ValueError:
                 If name is empty.
+
+        Returns:
+            None.
         """
         super().__init__()
         if not isinstance(name, str) or not name:
@@ -175,6 +184,9 @@ class ResearchSet(Cleanable):
 
         Contract:
             - Idempotent; del posture (no tombstones); lock last.
+
+        Returns:
+            None.
         """
         if self._cleaned:
             return
@@ -1434,6 +1446,9 @@ class ResearchSet(Cleanable):
                 If the subject lane is not open, or anchoring onto itself.
             KeyError:
                 If lanes or the anchor node do not resolve.
+
+        Returns:
+            None.
         """
         self.check_cleaned()
         self._validate_campaign(campaign)
@@ -1489,6 +1504,9 @@ class ResearchSet(Cleanable):
         Raises:
             RuntimeError:
                 If the lane is not open or holds no anchor.
+
+        Returns:
+            None.
         """
         self.check_cleaned()
         self._validate_campaign(campaign)
@@ -1740,6 +1758,9 @@ class ResearchSet(Cleanable):
         Raises:
             RuntimeError:
                 If targeting the default lane or a non-open lane.
+
+        Returns:
+            None.
         """
         self.check_cleaned()
         self._validate_campaign(campaign)
@@ -1831,6 +1852,9 @@ class ResearchSet(Cleanable):
             ValueError:
                 If the snapshot's organization payload is invalid or lacks
                 the guaranteed default lane (live state stays untouched).
+
+        Returns:
+            None.
         """
         self.check_cleaned()
         with self._lock:

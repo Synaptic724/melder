@@ -85,6 +85,12 @@ class SpellSystemState(Cleanable):
         write time is what lets `compute_impact_closure` dirty a bounded set at
         change time instead of revalidating every lineage in the frame.
     """
+    _ast_helper_access: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. System-level state for a single spell index: topology, validity, and "
+        "flags. Melder kernel machinery: read it to understand the runtime, do not drive it "
+        "directly."
+    )
     __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
         "_lock",
@@ -119,6 +125,9 @@ class SpellSystemState(Cleanable):
         Raises:
             ValueError:
                 If either identifier is empty.
+
+        Returns:
+            None.
         """
         super().__init__()
 
@@ -163,6 +172,9 @@ class SpellSystemState(Cleanable):
             - Detaches the `RiskManager` reference so no later validity changes
               can be published accidentally.
             - Leaves future callers to fail through `check_cleaned()`.
+
+        Returns:
+            None.
         """
         if self._cleaned:
             return
@@ -362,6 +374,9 @@ class SpellSystemState(Cleanable):
             - Publishes to `RiskManager` only when the structural validity value
               itself changes; flag-only updates stay local.
             - Ignores None entries in add/remove flag iterables.
+
+        Returns:
+            None.
         """
         
         callback = None
@@ -420,6 +435,9 @@ class SpellSystemState(Cleanable):
         Raises:
             ValueError: If spell_id is empty.
             RuntimeError: If this state object has been cleaned.
+
+        Returns:
+            None.
         """
         
         if not spell_id:
@@ -444,6 +462,9 @@ class SpellSystemState(Cleanable):
               reverse-edge maintenance separately.
         Raises:
             RuntimeError: If this state object has been cleaned.
+
+        Returns:
+            None.
         """
         
 
@@ -462,6 +483,9 @@ class SpellSystemState(Cleanable):
             - Adds one reverse-edge entry if the id is non-empty.
             - Does not dirty or revalidate the index; this is topology
               bookkeeping only.
+
+        Returns:
+            None.
         """
         
         if not index_id:
@@ -480,6 +504,9 @@ class SpellSystemState(Cleanable):
             - Best-effort removes the reverse-edge entry if present.
             - Missing or empty ids are ignored so caller cleanup can stay
               idempotent.
+
+        Returns:
+            None.
         """
         
         if not index_id:
@@ -507,6 +534,9 @@ class SpellSystemState(Cleanable):
             - Adds the `structure_changed` flag.
             - Forces `transitively_dirty` to False because this helper models a
               direct change to the index itself, not downstream impact.
+
+        Returns:
+            None.
         """
         
         if change_reason is None:
@@ -536,6 +566,9 @@ class SpellSystemState(Cleanable):
             - Adds the `dependencies_changed` flag.
             - Leaves `transitively_dirty` unchanged unless a higher-level
               closure pass decides this index is only indirectly impacted.
+
+        Returns:
+            None.
         """
         
         if change_reason is None:
@@ -563,6 +596,9 @@ class SpellSystemState(Cleanable):
             - Adds the `impacted_by_dependency` flag.
             - Sets `transitively_dirty` to True so callers can distinguish
               downstream fallout from direct structural changes.
+
+        Returns:
+            None.
         """
         
         if change_reason is None:
@@ -598,6 +634,9 @@ class SpellSystemState(Cleanable):
               subsystems own their own cleanup semantics.
             - Publishes `SpellValidity.valid` to `RiskManager` only when this
               call actually changes the stored validity.
+
+        Returns:
+            None.
         """
         
         callback = None

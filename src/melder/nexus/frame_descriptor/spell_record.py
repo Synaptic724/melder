@@ -45,6 +45,11 @@ class SpellRecord(Cleanable):
         truth rather than reaching into runtime state, which is what makes a
         viewer safe to hand a static room.
     """
+    _ast_helper_access: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. Canonical Nexus record for one published spell. Melder kernel "
+        "machinery: read it to understand the runtime, do not drive it directly."
+    )
 
     __melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
@@ -125,6 +130,9 @@ class SpellRecord(Cleanable):
                 If `nexus_label`, `nexus_version`, or `payload` is missing.
             TypeError:
                 If `payload` does not satisfy `SpellDescriptorPayload`.
+
+        Returns:
+            None.
         """
         super().__init__()
         if not nexus_label:
@@ -177,6 +185,9 @@ class SpellRecord(Cleanable):
               reference.
             - Leaves future callers to fail through `check_cleaned()`.
             - Runs grouped teardown under the record-owned instance lock.
+
+        Returns:
+            None.
         """
         if self._cleaned:
             return

@@ -120,6 +120,13 @@ class Nexus(Cleanable):
         delegate into that same batch primitive, so there is exactly one refresh
         path rather than two that could diverge.
     """
+    _ast_helper_access: str = "public"
+    __agent_purpose__: str = (
+        "access: public. The PUBLIC AR root over the hidden Aether substrate. Starts unconfigured and "
+        "disabled - call configure(...) then enable() before "
+        "create_rift_configuration()/create_rift(...). Owns frame descriptors, ACL, and managed-frame "
+        "authoring."
+    )
 
     __melder_internal__ = _mrg.sentinel
     _instance: ClassVar[Optional["Nexus"]] = None
@@ -1540,6 +1547,10 @@ class Nexus(Cleanable):
 
         Returns:
             FrameACLViewConfiguration: Current view configuration.
+
+        Args:
+            frame_name:
+                Frame whose currently selected VIEW ACL revision should be read.
         """
         self.check_cleaned()
         self._ensure_frame_acl_container(frame_name)
@@ -1559,6 +1570,10 @@ class Nexus(Cleanable):
 
         Returns:
             FrameACLCommandConfiguration: Current command configuration.
+
+        Args:
+            frame_name:
+                Frame whose currently selected COMMAND ACL revision should be read.
         """
         self.check_cleaned()
         self._ensure_frame_acl_container(frame_name)
@@ -1578,6 +1593,10 @@ class Nexus(Cleanable):
 
         Returns:
             FrameACLCodegenConfiguration: Current codegen configuration.
+
+        Args:
+            frame_name:
+                Frame whose currently selected CODEGEN ACL revision should be read.
         """
         self.check_cleaned()
         self._ensure_frame_acl_container(frame_name)

@@ -81,6 +81,11 @@ class FrameDescriptorManager(Cleanable):
         and configuration policy stay on `Nexus`. This manager owns what frames
         LOOK like, never who may reach them.
     """
+    _ast_helper_access: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. FrameDescriptorManager runtime object. Melder kernel machinery: read "
+        "it to understand the runtime, do not drive it directly."
+    )
 
     __melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [

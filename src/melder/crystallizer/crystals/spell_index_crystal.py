@@ -38,6 +38,11 @@ class SpellIndexCrystal(Cleanable):
         Owned by one `PersistenceProfile`. Cleanup releases copied membership
         data only and never mutates a live `SpellIndex` or its selection.
     """
+    _ast_helper_access: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. Digital twin of one live SpellIndex: the record's membership map. "
+        "Melder kernel machinery: read it to understand the runtime, do not drive it directly."
+    )
 
     __melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [

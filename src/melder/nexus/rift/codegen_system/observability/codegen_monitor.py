@@ -52,6 +52,11 @@ class CodegenMonitor(Cleanable):
         room, so codegen lifecycle signals interleave coherently with everything
         else the room publishes rather than forming a private timeline.
     """
+    _ast_helper_access: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. Thin room-event monitor for codegen lifecycle publication. Melder "
+        "kernel machinery: read it to understand the runtime, do not drive it directly."
+    )
 
     __melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [

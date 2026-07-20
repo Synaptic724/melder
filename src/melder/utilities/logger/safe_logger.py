@@ -116,6 +116,14 @@ class SafeLogger(Cleanable):
         - Normalizes the configured level name immediately.
         - Pushes the resolved level onto the wrapped logger when a concrete
           logger is present.
+
+        Returns:
+            None.
+
+        Args:
+            logger:
+                Channel logger, stdlib logger, or None. Wrapping None is legal and
+                yields a null logger that silently discards every call.
         """
         super().__init__()
         self._id = IDBuilder.create_id()
@@ -147,6 +155,9 @@ class SafeLogger(Cleanable):
           reads True and `check_cleaned()` refuses use-after-clean, while the
           emit surface stays a safe no-op through the null-logger path.
         - Does not assume stdlib loggers own a cleanup lifecycle.
+
+        Returns:
+            None.
         """
         if self._cleaned:
             return
@@ -194,6 +205,13 @@ class SafeLogger(Cleanable):
         - Normalizes the supplied level name to lowercase.
         - Updates the wrapped logger immediately when one exists.
         - Rejects unsupported symbolic names instead of silently coercing them.
+
+        Returns:
+            None.
+
+        Args:
+            level_name:
+                Level name such as "DEBUG" or "INFO".
         """
         normalized = level_name.lower()
         if normalized not in self._LEVELS:
@@ -212,6 +230,13 @@ class SafeLogger(Cleanable):
         - Updates the wrapped logger immediately when one exists.
         - Keeps `_level_name` as the last symbolic value set; numeric updates
           only adjust the active threshold.
+
+        Returns:
+            None.
+
+        Args:
+            level:
+                Numeric logging level.
         """
         if level not in self._LEVELS.values():
             raise ValueError(f"Invalid numeric log level: {level}")
@@ -388,6 +413,15 @@ class SafeLogger(Cleanable):
         - Delegates to `_emit(...)` with `logging.DEBUG`.
         - Supports optional masking and channel metadata when the wrapped
           logger is a channel logger.
+
+        Returns:
+            None.
+
+        Args:
+            message:
+                Text to emit.
+            method_name:
+                Optional originating method, recorded for channel loggers.
         """
         self._emit(
             logging.DEBUG, msg, method_name,
@@ -416,6 +450,15 @@ class SafeLogger(Cleanable):
         - Delegates to `_emit(...)` with `logging.INFO`.
         - Supports optional masking and channel metadata when the wrapped
           logger is a channel logger.
+
+        Returns:
+            None.
+
+        Args:
+            message:
+                Text to emit.
+            method_name:
+                Optional originating method, recorded for channel loggers.
         """
         self._emit(
             logging.INFO, msg, method_name,
@@ -444,6 +487,15 @@ class SafeLogger(Cleanable):
         - Delegates to `_emit(...)` with `logging.WARNING`.
         - Supports optional masking and channel metadata when the wrapped
           logger is a channel logger.
+
+        Returns:
+            None.
+
+        Args:
+            message:
+                Text to emit.
+            method_name:
+                Optional originating method, recorded for channel loggers.
         """
         self._emit(
             logging.WARNING, msg, method_name,
@@ -472,6 +524,15 @@ class SafeLogger(Cleanable):
             - Preserves the historical `warn` surface without relying on a
               class-body alias assignment.
             - Delegates all behavior and metadata handling to `warning()`.
+
+        Returns:
+            None.
+
+        Args:
+            message:
+                Text to emit.
+            method_name:
+                Optional originating method, recorded for channel loggers.
         """
         self.warning(
             msg,
@@ -506,6 +567,15 @@ class SafeLogger(Cleanable):
         - Delegates to `_emit(...)` with `logging.ERROR`.
         - Passes through `exc_info` so channel and stdlib paths can preserve
           error context.
+
+        Returns:
+            None.
+
+        Args:
+            message:
+                Text to emit.
+            method_name:
+                Optional originating method, recorded for channel loggers.
         """
         self._emit(
             logging.ERROR, msg, method_name,
@@ -533,6 +603,15 @@ class SafeLogger(Cleanable):
 
         Contract:
         - Delegates to `_emit(...)` with `logging.ERROR` and `exc_info=True`.
+
+        Returns:
+            None.
+
+        Args:
+            message:
+                Text to emit alongside the active exception traceback.
+            method_name:
+                Optional originating method, recorded for channel loggers.
         """
         self._emit(
             logging.ERROR, msg, method_name,
@@ -562,6 +641,15 @@ class SafeLogger(Cleanable):
         - Delegates to `_emit(...)` with `logging.CRITICAL`.
         - Supports optional masking and channel metadata when the wrapped
           logger is a channel logger.
+
+        Returns:
+            None.
+
+        Args:
+            message:
+                Text to emit.
+            method_name:
+                Optional originating method, recorded for channel loggers.
         """
         self._emit(
             logging.CRITICAL, msg, method_name,
@@ -590,6 +678,15 @@ class SafeLogger(Cleanable):
             - Preserves the historical `fatal` surface without relying on a
               class-body alias assignment.
             - Delegates all behavior and metadata handling to `critical()`.
+
+        Returns:
+            None.
+
+        Args:
+            message:
+                Text to emit.
+            method_name:
+                Optional originating method, recorded for channel loggers.
         """
         self.critical(
             msg,

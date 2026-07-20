@@ -86,6 +86,11 @@ class ClusterJoinTransactionStrategy(TransactionStrategy):
         promise (every member resolves every other's shared roots) quietly
         false.
     """
+    _ast_helper_access: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. Cluster-join transaction resolver (DevOps scope isolation only). "
+        "Melder kernel machinery: read it to understand the runtime, do not drive it directly."
+    )
 
     @classmethod
     def build_start_plan(
@@ -230,7 +235,12 @@ class ClusterJoinTransactionStrategy(TransactionStrategy):
             identity: DevopsIdentity,
             metadata: Dict[str, object],
     ) -> None:
-        """Cluster-join needs no DevOps start-side coordination."""
+        """
+        Cluster-join needs no DevOps start-side coordination.
+
+        Returns:
+            None.
+        """
         return None
 
     @staticmethod
@@ -240,5 +250,10 @@ class ClusterJoinTransactionStrategy(TransactionStrategy):
             identity: DevopsIdentity,
             metadata: Dict[str, object],
     ) -> None:
-        """Cluster-join needs no DevOps end-side coordination."""
+        """
+        Cluster-join needs no DevOps end-side coordination.
+
+        Returns:
+            None.
+        """
         return None

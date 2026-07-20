@@ -92,6 +92,11 @@ class ChangeControlManager(Cleanable):
     Lifecycle:
         cleanup() is idempotent and nulls internal references.
     """
+    _ast_helper_access: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. Change-control registry for an Aetheric Frame. Melder kernel "
+        "machinery: read it to understand the runtime, do not drive it directly."
+    )
     __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
         "_lock",
@@ -142,6 +147,9 @@ class ChangeControlManager(Cleanable):
             ValueError: If spell_system_states is None.
         Threading:
             Safe to publish after initialization; internal lock guards state.
+
+        Returns:
+            None.
         """
         if spell_system_states is None:
             raise ValueError("spell_system_states cannot be None")
@@ -382,6 +390,9 @@ class ChangeControlManager(Cleanable):
         Args:
             fn: Callable that receives admitted requests, or `None` to disable
                 audit logging.
+
+        Returns:
+            None.
         """
         
         with self._lock:
@@ -406,6 +417,9 @@ class ChangeControlManager(Cleanable):
         Args:
             fn: Callable that validates a staged mutation, or `None` to disable
                 this hook.
+
+        Returns:
+            None.
         """
         
         with self._lock:
@@ -430,6 +444,9 @@ class ChangeControlManager(Cleanable):
         Args:
             fn: Callable that validates a staged mutation, or `None` to disable
                 this hook.
+
+        Returns:
+            None.
         """
         
         with self._lock:
@@ -453,6 +470,9 @@ class ChangeControlManager(Cleanable):
         Args:
             fn: Callable invoked with a staged mutation, or `None` to disable
                 this hook.
+
+        Returns:
+            None.
         """
         
         with self._lock:
@@ -477,6 +497,9 @@ class ChangeControlManager(Cleanable):
         Args:
             fn: Callable invoked with a staged mutation, or `None` to disable
                 dirty marking.
+
+        Returns:
+            None.
         """
         
         with self._lock:
@@ -502,6 +525,9 @@ class ChangeControlManager(Cleanable):
         Args:
             fn: Callable invoked when an admitted staged mutation aborts, or
                 `None` to disable the hook.
+
+        Returns:
+            None.
         """
         
         with self._lock:

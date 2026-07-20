@@ -36,6 +36,11 @@ class RiftAccessMode(Enum):
         varied per Rift could be escaped by creating a differently configured
         one, so the governance that matters lives here rather than on the Rift.
     """
+    _ast_helper_access: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. System-level policy for direct Rift retrieval. Melder kernel "
+        "machinery: read it to understand the runtime, do not drive it directly."
+    )
 
     __melder_internal__ = _mrg.sentinel
     open = "open"

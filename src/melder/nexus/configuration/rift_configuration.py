@@ -47,6 +47,11 @@ class RiftConfiguration(Cleanable):
         to `NexusConfiguration`; room posture and per-Rift defaults legitimately
         differ between Rifts and belong here.
     """
+    _ast_helper_access: str = "public"
+    __agent_purpose__: str = (
+        "access: public. Per-Rift settings, chiefly space_type which fixes the room posture for the "
+        "Rift's life. Mutable until frozen. Build via Nexus.create_rift_configuration()."
+    )
 
     __melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [

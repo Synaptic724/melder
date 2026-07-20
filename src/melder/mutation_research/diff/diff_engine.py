@@ -77,6 +77,12 @@ class DiffEngine(Cleanable):
         this class - and why nothing it produces is written back into the
         record. A verdict is an answer, not a fact the system remembers.
     """
+    _ast_helper_access: str = "public"
+    __agent_purpose__: str = (
+        "access: public. Computes derived diffs over RECORDED custody material - never the live disk. "
+        "Choose grain by strategy: source, structural, or parts. Obtain via "
+        "MutationResearch.create_diff_engine()."
+    )
     __melder_internal__: ClassVar[object] = _mrg.sentinel
 
     __slots__ = Cleanable.__slots__ + [
@@ -104,6 +110,9 @@ class DiffEngine(Cleanable):
         Raises:
             ValueError:
                 If material_resolver is None.
+
+        Returns:
+            None.
         """
         super().__init__()
         if material_resolver is None:
@@ -124,6 +133,9 @@ class DiffEngine(Cleanable):
 
         Contract:
             - Idempotent; del posture (no tombstones); lock last.
+
+        Returns:
+            None.
         """
         if self._cleaned:
             return
@@ -154,6 +166,9 @@ class DiffEngine(Cleanable):
                 If the object is not a DiffStrategy.
             ValueError:
                 If the name is already registered.
+
+        Returns:
+            None.
         """
         self.check_cleaned()
         if not isinstance(strategy, DiffStrategy):

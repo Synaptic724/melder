@@ -31,10 +31,29 @@ class Payload:
     pass
 
 
-def test_probe_dynamic_named_roots_and_link():
-    """The canonical dynamic pattern must hold outside the component suite."""
-    owner = _dyn_book().conjure(dynamic=True, name="owner")
-    borrower = _dyn_book().conjure(dynamic=True, name="borrower")
+def test_probe_plain_dynamic_conjure_always_refuses():
+    """
+    THE LAW (source-proven, spellbook_creation_system.py:1099): frames are
+    born automatic and nothing on Spellbook/SpellbookConfiguration flips
+    them - so plain-book conjure(dynamic=True) ALWAYS raises. Owner ruling
+    2026-07-20: stands for now; the posture door arrives with the
+    aetheric-frame introduction next iteration.
+    """
+    with pytest.raises(RuntimeError):
+        _dyn_book().conjure(dynamic=True, name="refused")
+
+
+def test_probe_helper_postured_dynamic_world_links():
+    """The lesson-21 ritual (frame postured dynamic first) works end to end."""
+    import sys
+    from pathlib import Path as _P
+    sys.path.insert(0, str(_P(__file__).parent.parent / "02_intermediate"))
+    from _dynamic_world import dynamic_spellbook
+
+    owner_book = dynamic_spellbook()
+    owner_book.bind(spell=Payload, existence="unique")
+    owner = owner_book.conjure(dynamic=True, name="owner")
+    borrower = dynamic_spellbook().conjure(dynamic=True, name="borrower")
     assert owner.link(borrower) is True
 
 
@@ -71,3 +90,16 @@ def test_probe_dynamic_config_before_bind_law():
     conduit = book.conjure(dynamic=True, name="exempt-world")
     assert conduit is not None
     print("crystallizer-off dynamic world: bind-before-config exempt (as documented)")
+def test_probe_world_postures_once_then_locks():
+    """Owner semantic: posture once; repeat setup must not rebind."""
+    import sys
+    from pathlib import Path as _P
+    sys.path.insert(0, str(_P(__file__).parent.parent / "02_intermediate"))
+    from _dynamic_world import ensure_dynamic_world, dynamic_spellbook
+
+    ensure_dynamic_world()
+    ensure_dynamic_world()  # second call must be a clean no-op
+    book_one = dynamic_spellbook()
+    book_two = dynamic_spellbook()  # multiple books, one world posture
+    assert book_one is not book_two
+    print("posture-once law held across repeated setup calls")

@@ -50,6 +50,11 @@ class SpellState(Enum):
         notch/bind_inactive seams are real. They are vocabulary awaiting a
         producer, not dead values.
     """
+    _ast_helper_access: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. Fine-grained state flags for a spell index. Melder kernel machinery: "
+        "read it to understand the runtime, do not drive it directly."
+    )
     __melder_internal__ = _mrg.sentinel
     # Topology / graph-level
     new_index = auto()             # first time we see this index

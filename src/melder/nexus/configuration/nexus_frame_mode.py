@@ -41,6 +41,12 @@ class NexusFrameMode(Enum):
         varied per Rift could be escaped by creating a differently configured
         one, so the governance that matters lives here rather than on the Rift.
     """
+    _ast_helper_access: str = "public"
+    __agent_purpose__: str = (
+        "access: public. Frame topology: single (one shared), indexed (named, shared by name), "
+        "one_per_workspace (private per Rift). Note one_per_workspace REJECTS raw manager creation - "
+        "use the Rift-scoped path."
+    )
 
     __melder_internal__ = _mrg.sentinel
     single = "single"

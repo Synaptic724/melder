@@ -60,6 +60,11 @@ class MemberDiffStrategy(GroupDiffStrategy):
         strategy reports removed-plus-added honestly rather than guessing. A
         shared catch-all lane can never manufacture a move on its own.
     """
+    _ast_helper_access: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. Roster comparison between two composition materials. Melder kernel "
+        "machinery: read it to understand the runtime, do not drive it directly."
+    )
     __melder_internal__: ClassVar[object] = _mrg.sentinel
 
     __slots__ = GroupDiffStrategy.__slots__

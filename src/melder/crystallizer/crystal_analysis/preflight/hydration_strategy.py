@@ -66,6 +66,11 @@ class HydrationStrategy(PersistenceAnalysisStrategy):
         info, because the engine's rebuild lane can reconstruct it
         through the synthetic-module path with an honest shortfall.
     """
+    _ast_helper_access: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. Detect custody that cannot rebuild its bind target. Melder kernel "
+        "machinery: read it to understand the runtime, do not drive it directly."
+    )
 
     __melder_internal__: ClassVar[object] = _mrg.sentinel
 

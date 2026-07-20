@@ -69,6 +69,11 @@ class ConduitMeld(Meld):
         `unique_per_conduit_lineage`) resolve against shared owner storage so
         peers in a cluster or lineage genuinely observe the same instance.
     """
+    _ast_helper_access: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. Concrete conduit-facing meld front door. Melder kernel machinery: read "
+        "it to understand the runtime, do not drive it directly."
+    )
 
     __melder_internal__: ClassVar[object] = _mrg.sentinel
     # The creation-store surface (`_conduit_creations` / `_root_creations` /
@@ -111,6 +116,9 @@ class ConduitMeld(Meld):
                 True when the owning conduit runs in dynamic mode.
             meld_hooks:
                 Optional conduit-owned meld hook mapping.
+
+        Returns:
+            None.
         """
         super().__init__(
             spellbook=spellbook,
@@ -127,6 +135,9 @@ class ConduitMeld(Meld):
 
         The creation-store references now live on the base `Meld`, which drops
         them (and the rest of the shared core) under its own lock.
+
+        Returns:
+            None.
         """
         super().cleanup()
 

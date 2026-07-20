@@ -65,6 +65,12 @@ class GroupDiffEngine(Cleanable):
         addition as a version move: the engine cannot promise the join is
         populated, so the strategy must degrade honestly rather than infer.
     """
+    _ast_helper_access: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. Strategy-dispatched derived-diff computation over composition "
+        "material. Melder kernel machinery: read it to understand the runtime, do not drive it "
+        "directly."
+    )
     __melder_internal__: ClassVar[object] = _mrg.sentinel
 
     __slots__ = Cleanable.__slots__ + [
@@ -93,6 +99,9 @@ class GroupDiffEngine(Cleanable):
         Raises:
             ValueError:
                 If material_resolver is None.
+
+        Returns:
+            None.
         """
         super().__init__()
         if material_resolver is None:
@@ -111,6 +120,9 @@ class GroupDiffEngine(Cleanable):
 
         Contract:
             - Idempotent; del posture (no tombstones); lock last.
+
+        Returns:
+            None.
         """
         if self._cleaned:
             return
@@ -141,6 +153,9 @@ class GroupDiffEngine(Cleanable):
                 If the object is not a GroupDiffStrategy.
             ValueError:
                 If the name is already registered.
+
+        Returns:
+            None.
         """
         self.check_cleaned()
         if not isinstance(strategy, GroupDiffStrategy):

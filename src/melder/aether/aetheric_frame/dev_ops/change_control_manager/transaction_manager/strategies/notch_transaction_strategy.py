@@ -102,6 +102,11 @@ class NotchTransactionStrategy(TransactionStrategy):
         serialize RUNTIME, and an operation that races runtime readers needs
         both.
     """
+    _ast_helper_access: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. Notch transaction resolver (intra-index active-spell repoint). Melder "
+        "kernel machinery: read it to understand the runtime, do not drive it directly."
+    )
 
     @classmethod
     def build_start_plan(
@@ -254,6 +259,9 @@ class NotchTransactionStrategy(TransactionStrategy):
 
         Raises:
             RuntimeError: Propagated from a gate drain timeout.
+
+        Returns:
+            None.
         """
         del devops_information_registry, identity
         gate_ops = metadata.get("conduit_lineage_gate_ops")
@@ -272,6 +280,9 @@ class NotchTransactionStrategy(TransactionStrategy):
             - Mirrors `on_start`'s footprint exactly; absent facade = no-op.
             - Dispatched by the mediator from root-session finalize, so the
               reopen fires once per root end - commit, abort, or error.
+
+        Returns:
+            None.
         """
         del devops_information_registry, identity
         gate_ops = metadata.get("conduit_lineage_gate_ops")

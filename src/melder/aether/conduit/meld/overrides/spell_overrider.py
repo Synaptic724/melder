@@ -43,6 +43,11 @@ class _Specificity(IntEnum):
         the caller having to order their own dict, which would be fragile and
         silently order-dependent.
     """
+    _ast_helper_access: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. Precedence tiers for spell-override target specs. Melder kernel "
+        "machinery: read it to understand the runtime, do not drive it directly."
+    )
     __melder_internal__ = _mrg.sentinel
     PATH = 3
     UNIQUE = 2
@@ -97,6 +102,12 @@ class SpellOverrider(Cleanable):
         rather than at resolution. Failing loudly at map time is the whole
         point of resolving specs up front instead of during construction.
     """
+    _ast_helper_access: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. Runtime helper that turns a raw spell_override dict into a "
+        "socket-aware OverrideMap for a specific root blueprint. Melder kernel machinery: read it "
+        "to understand the runtime, do not drive it directly."
+    )
     __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + ["_blueprint", "_engine"]
 
@@ -111,6 +122,9 @@ class SpellOverrider(Cleanable):
             - Requires a prebuilt root blueprint.
             - Builds one targeting engine over the blueprint's DAG index.
             - Does not mutate the source blueprint during construction.
+
+        Returns:
+            None.
         """
         super().__init__()
         if blueprint is None:
@@ -128,6 +142,9 @@ class SpellOverrider(Cleanable):
             - Best-effort cleans the owned targeting engine.
             - Drops only overrider-owned references; it does not clean the
               source blueprint.
+
+        Returns:
+            None.
         """
         if self._cleaned:
             return

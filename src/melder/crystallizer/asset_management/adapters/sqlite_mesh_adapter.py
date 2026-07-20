@@ -67,6 +67,11 @@ class SqliteMeshAdapter(Cleanable):
         verbs refuse through `check_cleaned()`. The database file itself
         is the user's asset and is never deleted by cleanup.
     """
+    _ast_helper_access: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. First-party SQLite provider for the external persistence mesh. Melder "
+        "kernel machinery: read it to understand the runtime, do not drive it directly."
+    )
 
     __melder_internal__: ClassVar[object] = _mrg.sentinel
 

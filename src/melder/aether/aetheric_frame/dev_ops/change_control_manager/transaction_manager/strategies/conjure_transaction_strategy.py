@@ -74,6 +74,11 @@ class ConjureTransactionStrategy(TransactionStrategy):
         admitted - and because scope keys are per-spellbook, different books
         still conjure in parallel.
     """
+    _ast_helper_access: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. Conjure transaction resolver (spellbook -> root conduit genesis). "
+        "Melder kernel machinery: read it to understand the runtime, do not drive it directly."
+    )
 
     @classmethod
     def build_start_plan(
@@ -133,10 +138,20 @@ class ConjureTransactionStrategy(TransactionStrategy):
 
     @staticmethod
     def on_start(*, devops_information_registry: DevopsInformationRegistry, identity: DevopsIdentity, metadata: Dict[str, object]) -> None:
-        """Conjure transactions need no extra local start-side effects right now."""
+        """
+        Conjure transactions need no extra local start-side effects right now.
+
+        Returns:
+            None.
+        """
         return None
 
     @staticmethod
     def on_end(*, devops_information_registry: DevopsInformationRegistry, identity: DevopsIdentity, metadata: Dict[str, object]) -> None:
-        """Conjure transactions need no extra local end-side effects right now."""
+        """
+        Conjure transactions need no extra local end-side effects right now.
+
+        Returns:
+            None.
+        """
         return None

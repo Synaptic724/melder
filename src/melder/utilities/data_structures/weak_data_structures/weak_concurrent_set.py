@@ -149,6 +149,9 @@ class WeakConcurrentSet(Generic[_T], Cleanable):
                 If `initial` is a string/bytes-like object, or any element:
                   - cannot be weak-referenced, or
                   - is not hashable (once you make WeakRefNode enforce that).
+
+        Returns:
+            None.
         """
         super().__init__()
 
@@ -256,6 +259,9 @@ class WeakConcurrentSet(Generic[_T], Cleanable):
           * If using AgenticRLock, its `cleanup()` is invoked best-effort.
 
         This method is **idempotent** and thread-safe.
+
+        Returns:
+            None.
         """
         if self._cleaned:
             return
@@ -314,6 +320,9 @@ class WeakConcurrentSet(Generic[_T], Cleanable):
         Raises:
             RuntimeError:
                 If this set has already been cleaned.
+
+        Returns:
+            None.
         """
         self.check_cleaned()
         with self._lock:
@@ -334,6 +343,9 @@ class WeakConcurrentSet(Generic[_T], Cleanable):
             GC may still mark nodes dead in the background. This does not
             violate the "frozen" contract; it only affects *liveness* of
             entries, not the structure of `_set` from user perspective.
+
+        Returns:
+            None.
         """
         self.check_cleaned()
         with self._lock:
@@ -348,6 +360,9 @@ class WeakConcurrentSet(Generic[_T], Cleanable):
         Raises:
             RuntimeError:
                 If the set has been cleaned.
+
+        Returns:
+            None.
         """
         self.check_cleaned()
         with self._lock:
@@ -404,6 +419,9 @@ class WeakConcurrentSet(Generic[_T], Cleanable):
 
         This can be used even if `auto_prune` is False to clean the set of
         nodes whose referents have already been collected.
+
+        Returns:
+            None.
         """
         self.check_cleaned()
         with self._lock:
@@ -479,6 +497,9 @@ class WeakConcurrentSet(Generic[_T], Cleanable):
             TypeError:
                 If the set is frozen, or if the item is not compatible with
                 WeakRefNode (e.g., cannot be weak-referenced).
+
+        Returns:
+            None.
         """
         self.check_cleaned()
         self._ensure_mutable()
@@ -499,6 +520,9 @@ class WeakConcurrentSet(Generic[_T], Cleanable):
         Raises:
             KeyError:
                 If no live node with a value equal to `item` is found.
+
+        Returns:
+            None.
         """
         self.check_cleaned()
         self._ensure_mutable()
@@ -531,6 +555,9 @@ class WeakConcurrentSet(Generic[_T], Cleanable):
         Args:
             item:
                 The value to remove (if present).
+
+        Returns:
+            None.
         """
         self.check_cleaned()
         self._ensure_mutable()
@@ -557,6 +584,9 @@ class WeakConcurrentSet(Generic[_T], Cleanable):
         All nodes:
           * Have their callbacks fired.
           * Are then cleaned and discarded.
+
+        Returns:
+            None.
         """
         self.check_cleaned()
         self._ensure_mutable()
@@ -692,45 +722,108 @@ class WeakConcurrentSet(Generic[_T], Cleanable):
         return set(other if not isinstance(other, WeakConcurrentSet) else other.to_set())
 
     def isdisjoint(self, other: Iterable[Any]) -> bool:
-        """Return whether this set and `other` share no live values."""
+        """
+        Return whether this set and `other` share no live values.
+
+        Args:
+            other:
+                Iterable compared against this set's live values.
+
+        Returns:
+            bool: True when this set's LIVE values share nothing with `other`. Values
+                already collected are not considered.
+        """
         return self.to_set().isdisjoint(self._materialize_other(other))
 
     def issubset(self, other: Iterable[Any]) -> bool:
-        """Return whether all live values in this set also appear in `other`."""
+        """
+        Return whether all live values in this set also appear in `other`.
+
+        Args:
+            other:
+                Iterable this set's live values must be contained by.
+
+        Returns:
+            bool: True when every LIVE value here also appears in `other`.
+        """
         return self.to_set().issubset(self._materialize_other(other))
 
     def issuperset(self, other: Iterable[Any]) -> bool:
-        """Return whether all values in `other` appear among this set's live values."""
+        """
+        Return whether all values in `other` appear among this set's live values.
+
+        Args:
+            other:
+                Iterable whose values must all appear among the live values.
+
+        Returns:
+            bool: True when every value in `other` appears among this set's LIVE values.
+        """
         return self.to_set().issuperset(self._materialize_other(other))
 
     def union(self, *others: Iterable[Any]) -> "WeakConcurrentSet[_T]":
-        """Return a new weak set containing the union of this set and `others`."""
+        """
+        Return a new weak set containing the union of this set and `others`.
+
+        Returns:
+            WeakConcurrentSet[_T]: A new weak set over the union. Membership is still
+                weak, so the result does not keep any member alive.
+        """
         result = self.to_set()
         for o in others:
             result |= self._materialize_other(o)
         return WeakConcurrentSet(result, auto_prune=self._auto_prune)
 
     def intersection(self, *others: Iterable[Any]) -> "WeakConcurrentSet[_T]":
-        """Return a new weak set containing the live intersection with `others`."""
+        """
+        Return a new weak set containing the live intersection with `others`.
+
+        Returns:
+            WeakConcurrentSet[_T]: A new weak set over the live intersection.
+        """
         result = self.to_set()
         for o in others:
             result &= self._materialize_other(o)
         return WeakConcurrentSet(result, auto_prune=self._auto_prune)
 
     def difference(self, *others: Iterable[Any]) -> "WeakConcurrentSet[_T]":
-        """Return a new weak set containing live values not present in `others`."""
+        """
+        Return a new weak set containing live values not present in `others`.
+
+        Returns:
+            WeakConcurrentSet[_T]: A new weak set of live values absent from `others`.
+        """
         result = self.to_set()
         for o in others:
             result -= self._materialize_other(o)
         return WeakConcurrentSet(result, auto_prune=self._auto_prune)
 
     def symmetric_difference(self, other: Iterable[Any]) -> "WeakConcurrentSet[_T]":
-        """Return a new weak set containing values present in exactly one operand."""
+        """
+        Return a new weak set containing values present in exactly one operand.
+
+        Args:
+            other:
+                Iterable to compare against.
+
+        Returns:
+            WeakConcurrentSet[_T]: A new weak set of values present in exactly one
+                operand.
+        """
         result = self.to_set() ^ self._materialize_other(other)
         return WeakConcurrentSet(result, auto_prune=self._auto_prune)
 
     def update(self, *others: Iterable[Any]) -> None:
-        """Mutate this set to include the union of its current live values and `others`."""
+        """
+        Mutate this set to include the union of its current live values and `others`.
+
+        Args:
+            others:
+                Iterables whose values are added. Added values are held WEAKLY.
+
+        Returns:
+            None.
+        """
         self._ensure_mutable()
         with self._lock:
             base = self._values_from_nodes(self._set)
@@ -741,7 +834,16 @@ class WeakConcurrentSet(Generic[_T], Cleanable):
                 self._set.add(self._make_node(v))
 
     def intersection_update(self, *others: Iterable[Any]) -> None:
-        """Mutate this set to keep only live values shared with `others`."""
+        """
+        Mutate this set to keep only live values shared with `others`.
+
+        Args:
+            others:
+                Iterables to intersect against; this set is mutated in place.
+
+        Returns:
+            None.
+        """
         self._ensure_mutable()
         with self._lock:
             base = self._values_from_nodes(self._set)
@@ -752,7 +854,16 @@ class WeakConcurrentSet(Generic[_T], Cleanable):
                 self._set.add(self._make_node(v))
 
     def difference_update(self, *others: Iterable[Any]) -> None:
-        """Mutate this set to remove live values found in `others`."""
+        """
+        Mutate this set to remove live values found in `others`.
+
+        Args:
+            others:
+                Iterables whose values are removed from this set in place.
+
+        Returns:
+            None.
+        """
         self._ensure_mutable()
         with self._lock:
             base = self._values_from_nodes(self._set)
@@ -763,7 +874,16 @@ class WeakConcurrentSet(Generic[_T], Cleanable):
                 self._set.add(self._make_node(v))
 
     def symmetric_difference_update(self, other: Iterable[Any]) -> None:
-        """Mutate this set to the symmetric difference of its live values and `other`."""
+        """
+        Mutate this set to the symmetric difference of its live values and `other`.
+
+        Args:
+            other:
+                Iterable to compare against; this set is mutated in place.
+
+        Returns:
+            None.
+        """
         self._ensure_mutable()
         with self._lock:
             base = self._values_from_nodes(self._set)
@@ -946,6 +1066,9 @@ class WeakConcurrentSet(Generic[_T], Cleanable):
             KeyError: If the set is empty.
             TypeError: If the set is frozen.
             DeadReferenceError: If a dead node is encountered before pruning.
+
+        Returns:
+            _T: An arbitrary live element, removed from the set.
         """
         self.check_cleaned()
         self._ensure_mutable()
@@ -984,6 +1107,9 @@ class WeakConcurrentSet(Generic[_T], Cleanable):
             DeadReferenceError:
                 If a dead node is encountered while materializing current
                 values before the batch update.
+
+        Returns:
+            None.
         """
         self.check_cleaned()
         self._ensure_mutable()

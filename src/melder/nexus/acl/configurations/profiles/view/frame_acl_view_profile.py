@@ -53,6 +53,11 @@ class FrameACLViewProfile(Cleanable):
         `FrameACLProfile` behaves differently and deliberately does NOT clean
         the family profiles it merely references.
     """
+    _ast_helper_access: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. FrameACLViewProfile runtime object. Melder kernel machinery: read it "
+        "to understand the runtime, do not drive it directly."
+    )
 
     __melder_internal__ = _mrg.sentinel
     _DEFAULT_SPELL_PAYLOAD_PROFILE_NAME = "general"

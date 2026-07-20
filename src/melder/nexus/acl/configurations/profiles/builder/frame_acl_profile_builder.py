@@ -55,6 +55,11 @@ class _NamedCleanableProfile(Protocol):
         helpers lets the families stay independent while sharing registry code,
         instead of forcing an inheritance relationship the domain does not have.
     """
+    _ast_helper_access: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. Minimal profile surface needed by the generic registry helpers. Melder "
+        "kernel machinery: read it to understand the runtime, do not drive it directly."
+    )
 
     @property
     def name(self) -> str:
@@ -62,7 +67,12 @@ class _NamedCleanableProfile(Protocol):
         ...
 
     def cleanup(self) -> None:
-        """Release any resources owned by this reusable profile."""
+        """
+        Release any resources owned by this reusable profile.
+
+        Returns:
+            None.
+        """
         ...
 
 
@@ -98,6 +108,11 @@ class FrameACLProfileBuilder(Cleanable):
         After `cleanup()`, all registries and family builders are gone and the
         builder must be treated as unusable.
     """
+    _ast_helper_access: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. Registry and composition root for reusable frame ACL profiles. Melder "
+        "kernel machinery: read it to understand the runtime, do not drive it directly."
+    )
 
     __melder_internal__ = _mrg.sentinel
     _DEFAULT_PROFILE_NAME = "safe"

@@ -57,6 +57,12 @@ class RemoveFromIndexTransactionStrategy(TransactionStrategy):
         here rather than being an existing surface some other transaction might
         be holding.
     """
+    _ast_helper_access: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. Remove-from-index transaction resolver (move a spell out to a fresh "
+        "index). Melder kernel machinery: read it to understand the runtime, do not drive it "
+        "directly."
+    )
 
     @classmethod
     def build_start_plan(
@@ -191,6 +197,9 @@ class RemoveFromIndexTransactionStrategy(TransactionStrategy):
 
         Raises:
             RuntimeError: Propagated from a gate drain timeout.
+
+        Returns:
+            None.
         """
         del devops_information_registry, identity
         gate_ops = metadata.get("conduit_lineage_gate_ops")
@@ -208,6 +217,9 @@ class RemoveFromIndexTransactionStrategy(TransactionStrategy):
         Contract:
             - Mirrors `on_start`'s footprint exactly; absent facade = no-op.
             - Dispatched by the mediator from root-session finalize.
+
+        Returns:
+            None.
         """
         del devops_information_registry, identity
         gate_ops = metadata.get("conduit_lineage_gate_ops")

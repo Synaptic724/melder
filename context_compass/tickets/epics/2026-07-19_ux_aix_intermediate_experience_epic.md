@@ -30,6 +30,58 @@ The working developer's tier: SpellBinder fluent binding, spellframes and contra
 - DECISION for every init-surface change the tier proposes.
 
 ## Notes
+- DATETIME: 2026-07-20T00:58:00Z
+  TYPE: DECISION
+  CLAIM: Two owner semantic corrections applied. (1) POSTURE-ONCE LAW: the world
+    is postured dynamic ONCE and locks - never rebind. My helper was rebinding a
+    fresh posture object per book build (would hit the frozen frame on call two
+    in one process); now ensure_dynamic_world() checks current posture and
+    no-ops when already dynamic. (2) THE FLAG'S REAL MEANING taught explicitly:
+    conjure(dynamic=True) is the PER-CONDUIT opt-in (cloud registration +
+    link/sever arming) inside a world that permits it - world permission once,
+    conduit opt-in each; a dynamic world can still host static roots. Lesson 21
+    restructured to the three-step story (posture once -> book config per book ->
+    conduit opt-in at conjure). New probe pins the posture-once idempotence
+    (repeat ensure calls + multiple books, one world). Probe suite 16 rows.
+  EVIDENCE:
+  - UX_and_AIX_experiences/02_intermediate/_dynamic_world.py:1-30
+  - UX_and_AIX_experiences/02_intermediate/21_dynamic_linking_basics.py:1-70
+  IMPACT: The dynamic arc now teaches the lifecycle truthfully: one world
+    decision, many conduit decisions.
+  NEXT: Owner run: pytest UX_and_AIX_experiences/pytest_examples -v (80 lesson
+    rows + 16 probes).
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-07-20T00:56:00Z
+  TYPE: DECISION
+  CLAIM: Owner ruling after the dynamic-door investigation: RUN WITH CURRENT SHAPE
+    for now - no runtime change; lesson 21 keeps the open two-layer ritual, the
+    _dynamic_world helper serves 22-25; AethericFrameConfiguration and aetheric
+    frames get their FORMAL introduction next iteration (the A-vs-B posture-door
+    decision defers to that lane). Settled facts feeding that next iteration:
+    frames are born automatic; conjure(dynamic=True) is a pure READER of frame
+    posture and always refuses on plain books; SpellbookConfiguration has no
+    posture surface (full verb table read); two runtime messages reference doors
+    that do not exist (check_system_state's "set system_state in the
+    configuration" + DuplicateSpellNameStrategy's disambiguation advice). TESTS
+    (owner: "make sure tests exist for the intermediate"): runner covers all 25
+    lessons as pytest rows; intermediate probes corrected - the old dynamic probe
+    would have errored (plain-book dynamic conjure) and now ASSERTS the refusal
+    law, plus a new helper-path probe proves the lesson-21 ritual links end to
+    end. Probe suite: 4 intermediate rows + 11 beginner rows.
+  EVIDENCE:
+  - UX_and_AIX_experiences/pytest_examples/test_intermediate_probes.py:1-90
+  - src/melder/aether/spellbook/spellbook_creation_system.py:1099-1155
+  IMPACT: The tier is fully test-backed; the next iteration inherits settled
+    facts instead of open questions.
+  NEXT: Owner run: pytest UX_and_AIX_experiences/pytest_examples -v (25 beginner
+    regressions... 40 beginner + 25 intermediate rows + 15 probes). Next
+    iteration: aetheric-frame introduction + posture door A/B + the two
+    lying-message fixes.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
 - DATETIME: 2026-07-20T00:12:00Z
   TYPE: DECISION
   CLAIM: Owner correction: do NOT black-box everything - learners must see the

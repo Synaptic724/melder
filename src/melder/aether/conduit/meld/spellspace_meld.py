@@ -69,6 +69,11 @@ class SpellSpaceMeld(Meld):
         spellspace-scoped instances and bumps the version rather than reusing
         stale ones.
     """
+    _ast_helper_access: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. Concrete spellspace-facing meld front door. Melder kernel machinery: "
+        "read it to understand the runtime, do not drive it directly."
+    )
 
     __melder_internal__: ClassVar[object] = _mrg.sentinel
     # The shared stores (`_conduit_creations` / `_root_creations` /
@@ -120,6 +125,9 @@ class SpellSpaceMeld(Meld):
             - Caches the owning spellspace id and owner conduit id for later
               live-creation diagnostics.
             - Reuses the shared spellbook/lookup surfaces owned by `Meld`.
+
+        Returns:
+            None.
         """
         super().__init__(
             spellbook=spellbook,
@@ -143,6 +151,9 @@ class SpellSpaceMeld(Meld):
         The shared stores and the spellspace scope store live on the base
         `Meld`, which drops them under its own lock; this door only releases the
         spellspace object and the cached ids it added.
+
+        Returns:
+            None.
         """
         if self._cleaned:
             return

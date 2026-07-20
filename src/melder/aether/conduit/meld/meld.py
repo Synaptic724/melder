@@ -130,6 +130,11 @@ class Meld(Cleanable, ABC):
         change-control dirty-root state BEFORE any instance is handed back, and
         re-runs the lazy phases when a lineage's validity is UNKNOWN or GATED.
     """
+    _ast_helper_access: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. ## Meld: Spell Activation and Dependency Resolution. Melder kernel "
+        "machinery: read it to understand the runtime, do not drive it directly."
+    )
     __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = [
         "_lock",
@@ -216,6 +221,9 @@ class Meld(Cleanable, ABC):
               helper creation.
             - Assumes the spellbook maps themselves are already protected by the
               owning runtime's synchronization rules.
+
+        Returns:
+            None.
         """
         super().__init__()
 
@@ -1121,6 +1129,9 @@ class Meld(Cleanable, ABC):
             - overwrite=False (default): incoming hooks are merged into the
               current effective hook map.
             - overwrite=True: incoming hooks replace the local map.
+
+        Returns:
+            None.
         """
         if not create_local_hooks:
             self._meld_hooks = hooks

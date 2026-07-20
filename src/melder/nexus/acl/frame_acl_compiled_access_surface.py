@@ -42,6 +42,11 @@ class CompiledFrameACLAccessSurface(Cleanable):
         permissions shift under it. That is exactly why the Nexus refresh path
         blocks entrants and drains before applying new projections.
     """
+    _ast_helper_access: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. CompiledFrameACLAccessSurface runtime object. Melder kernel machinery: "
+        "read it to understand the runtime, do not drive it directly."
+    )
 
     __melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
@@ -151,6 +156,9 @@ class CompiledFrameACLAccessSurface(Cleanable):
               so the surface remains value-oriented after compilation.
             - Captures the exact profile/config identity used to produce the
               compiled answers.
+
+        Returns:
+            None.
         """
         super().__init__()
         self._id: str = IDBuilder.create_id()
@@ -216,6 +224,9 @@ class CompiledFrameACLAccessSurface(Cleanable):
             - Safe to call more than once.
             - Clears owned derived dictionaries before dropping references.
             - Leaves future callers to fail through `check_cleaned()`.
+
+        Returns:
+            None.
         """
         if self._cleaned:
             return

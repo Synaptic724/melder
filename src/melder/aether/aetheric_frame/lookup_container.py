@@ -41,6 +41,11 @@ class LookupContainer:
         - `cleanup` clears both maps and drops the lock. It is idempotent;
           after cleanup the container exposes no live surface.
     """
+    _ast_helper_access: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. Frame-wide, thread-safe registry of ACTIVE binding-signature lookups. "
+        "Melder kernel machinery: read it to understand the runtime, do not drive it directly."
+    )
 
     __slots__ = ("_lookup", "_reverse", "_lock", "_cleaned")
 
@@ -52,6 +57,9 @@ class LookupContainer:
             - Starts empty and uncleaned; owns its `threading.Lock`.
             - Forward (`signature -> spell_id`) and reverse (`spell_id ->
               signature`) maps both start empty.
+
+        Returns:
+            None.
         """
         self._lookup: Dict[Tuple[str, str], str] = {}
         self._reverse: Dict[str, Tuple[str, str]] = {}
@@ -77,6 +85,9 @@ class LookupContainer:
         Raises:
             RuntimeError: If `key` is already active for a different spell_id
                 in this frame.
+
+        Returns:
+            None.
         """
         with self._lock:
             existing = self._lookup.get(key)
@@ -106,6 +117,9 @@ class LookupContainer:
         Args:
             key: The binding signature `(frame_key, bind_key)`.
             spell_id: The new active spell_id for `key`.
+
+        Returns:
+            None.
         """
         with self._lock:
             previous = self._lookup.get(key)
@@ -125,6 +139,9 @@ class LookupContainer:
 
         Args:
             key: The binding signature `(frame_key, bind_key)` to release.
+
+        Returns:
+            None.
         """
         with self._lock:
             spell_id = self._lookup.pop(key, None)
@@ -143,6 +160,9 @@ class LookupContainer:
 
         Args:
             spell_id: The active spell_id whose signature should be released.
+
+        Returns:
+            None.
         """
         with self._lock:
             key = self._reverse.pop(spell_id, None)
@@ -214,6 +234,9 @@ class LookupContainer:
         Contract:
             - Idempotent. Teardown-only: not intended to race active lookup
               operations. After cleanup the container holds no live surface.
+
+        Returns:
+            None.
         """
         if self._cleaned:
             return

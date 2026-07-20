@@ -59,6 +59,11 @@ class DevopsInformationStrategy(ABC):
         therefore not a contradiction: the strategy reads current truth at
         execution time precisely so the snapshot it produces is current.
     """
+    _ast_helper_access: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. Abstract base for DevOps information strategies. Melder kernel "
+        "machinery: read it to understand the runtime, do not drive it directly."
+    )
 
     @staticmethod
     @abstractmethod

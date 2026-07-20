@@ -115,6 +115,12 @@ and logging.
           occurs when the frame posture permits it and a shared rich config
           object already exists on the frame.
     """
+    _ast_helper_access: str = "public"
+    __agent_purpose__: str = (
+        "access: public. The binding authority. Call bind(...)/scan(...) to register, then "
+        "conjure(...) exactly once to build the root Conduit. Also owns the transaction-backed "
+        "SpellIndex verbs: notch_spell, add_spell_into_spellindex, remove_spell_from_spellindex."
+    )
     __melder_internal__: ClassVar[object] = _mrg.sentinel
     _aether: ClassVar[Aether] = Aether()
     __slots__ = Cleanable.__slots__ + [
@@ -195,6 +201,9 @@ and logging.
 
         Lifecycle:
             - Owned registries are cleared and nulled during cleanup.
+
+        Returns:
+            None.
         """
         super().__init__()
 
@@ -3763,6 +3772,9 @@ and logging.
         Raises:
             RuntimeError: If the spell is not owned here, or it is the active
                 member of a multi-member index.
+
+        Returns:
+            None.
         """
         self.check_cleaned()
         spell_id = spell.spell_id
@@ -4101,6 +4113,10 @@ and logging.
             RuntimeError: If change-control admission is denied.
             ValueError: If transaction_type is invalid.
             TypeError: If transaction_type has an invalid type.
+
+        Returns:
+            Generator[Spellbook, None, None]: A context manager yielding this spellbook
+                inside a held change-control transaction window.
         """
         self.begin_transaction(
             transaction_type,
@@ -5577,6 +5593,9 @@ and logging.
                 Optional replacement disposal-method list.
             system_caching_enabled:
                 Optional replacement system-caching-enabled toggle.
+
+        Returns:
+            None.
         """
         self.check_cleaned()
         frame_configuration = self._aetheric_frame_configuration

@@ -45,6 +45,11 @@ class SourceCustodyStrategy(Cleanable, ABC):
         `cleanup()` on subclasses deletes owned policy references and is
         idempotent.
     """
+    _ast_helper_access: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. Contract for one authority class's custody behavior during analysis. "
+        "Melder kernel machinery: read it to understand the runtime, do not drive it directly."
+    )
 
     @property
     @abstractmethod

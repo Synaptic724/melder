@@ -68,6 +68,12 @@ class AddSpellOrIndexToContractTransactionStrategy(TransactionStrategy):
         spell or index moving into a contract is piece-work rather than a
         whole-book rewrite.
     """
+    _ast_helper_access: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. Add-spell-or-index-to-contract transaction resolver (grant/borrow "
+        "across a link). Melder kernel machinery: read it to understand the runtime, do not drive "
+        "it directly."
+    )
 
     @classmethod
     def build_start_plan(
@@ -166,10 +172,20 @@ class AddSpellOrIndexToContractTransactionStrategy(TransactionStrategy):
 
     @staticmethod
     def on_start(*, devops_information_registry: DevopsInformationRegistry, identity: DevopsIdentity, metadata: Dict[str, object]) -> None:
-        """Add-spell-or-index-to-contract transactions need no extra local start-side effects right now."""
+        """
+        Add-spell-or-index-to-contract transactions need no extra local start-side effects right now.
+
+        Returns:
+            None.
+        """
         return None
 
     @staticmethod
     def on_end(*, devops_information_registry: DevopsInformationRegistry, identity: DevopsIdentity, metadata: Dict[str, object]) -> None:
-        """Add-spell-or-index-to-contract transactions need no extra local end-side effects right now."""
+        """
+        Add-spell-or-index-to-contract transactions need no extra local end-side effects right now.
+
+        Returns:
+            None.
+        """
         return None

@@ -39,6 +39,11 @@ class PersistenceCrystal(Cleanable):
         cached item can construct an equivalent new instance through
         `from_cached_item()`.
     """
+    _ast_helper_access: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. One sealed checkpoint: the snapshot artifact of a profile's segment. "
+        "Melder kernel machinery: read it to understand the runtime, do not drive it directly."
+    )
 
     __melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
@@ -178,6 +183,9 @@ class PersistenceCrystal(Cleanable):
         Lifecycle / Cleanup:
             Normally called by ledger retention, profile-system teardown, or
             replacement of an inserted cached checkpoint.
+
+        Returns:
+            None.
         """
         if self._cleaned:
             return

@@ -37,6 +37,11 @@ class IncidentSeverity(Enum):
         with consequences, and components would rationally under-report to
         avoid triggering something. An inert vocabulary can be used honestly.
     """
+    _ast_helper_access: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. Severity classification for incidents recorded by `IncidentManager`. "
+        "Melder kernel machinery: read it to understand the runtime, do not drive it directly."
+    )
     __melder_internal__ = _mrg.sentinel
     info = auto()
     warning = auto()

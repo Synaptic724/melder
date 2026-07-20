@@ -29,6 +29,11 @@ class PrecisionViewProfileStrategy:
         sits outside that ordering deliberately: it is the posture for
         enumerating exactly what is permitted instead of picking a tier.
     """
+    _ast_helper_access: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. Build the reusable `precision` view profile. Melder kernel machinery: "
+        "read it to understand the runtime, do not drive it directly."
+    )
 
     __melder_internal__ = _mrg.sentinel
     _NAME = "precision"

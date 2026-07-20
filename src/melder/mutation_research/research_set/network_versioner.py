@@ -64,6 +64,11 @@ class NetworkVersioner(Cleanable):
         crystallizer twin, so `restore_network` can still reach pre-death
         organization states after a world has been reloaded from a checkpoint.
     """
+    _ast_helper_access: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. Content-addressed version control for the graph network itself. Melder "
+        "kernel machinery: read it to understand the runtime, do not drive it directly."
+    )
     __melder_internal__: ClassVar[object] = _mrg.sentinel
 
     __slots__ = Cleanable.__slots__ + [
@@ -84,6 +89,9 @@ class NetworkVersioner(Cleanable):
         Raises:
             ValueError:
                 If max_snapshots < 1.
+
+        Returns:
+            None.
         """
         super().__init__()
         if not isinstance(max_snapshots, int) or max_snapshots < 1:
@@ -99,6 +107,9 @@ class NetworkVersioner(Cleanable):
 
         Contract:
             - Idempotent; del posture (no tombstones); lock last.
+
+        Returns:
+            None.
         """
         if self._cleaned:
             return

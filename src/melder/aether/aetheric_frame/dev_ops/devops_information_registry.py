@@ -92,6 +92,12 @@ class DevopsFactRecord:
         is what makes a disagreement between two views diagnosable rather than
         merely visible.
     """
+    _ast_helper_access: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. Immutable last-reported fact baseline for one fact family in one "
+        "region. Melder kernel machinery: read it to understand the runtime, do not drive it "
+        "directly."
+    )
     __melder_internal__: ClassVar[object] = _mrg.sentinel
     fact_family: str
     region: str
@@ -169,6 +175,12 @@ class DevopsInformationRegistry(Cleanable):
         this mirror, manager cleanup would invalidate it while conduits were
         still writing to it.
     """
+    _ast_helper_access: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. Frame-local registry of dev-ops identities, relationships, and "
+        "transaction metadata. Melder kernel machinery: read it to understand the runtime, do not "
+        "drive it directly."
+    )
 
     __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
@@ -219,6 +231,9 @@ class DevopsInformationRegistry(Cleanable):
         -----
         Construction has no side effects outside the registry instance and does not
         touch global registries.
+
+        Returns:
+            None.
         """
         super().__init__()
         if not isinstance(aetheric_frame_name, str):
@@ -270,6 +285,9 @@ class DevopsInformationRegistry(Cleanable):
         -----------
         - Drops all internal references to prevent accidental use after cleanup.
         - Subsequent public methods that call "check_cleaned()" will fail fast.
+
+        Returns:
+            None.
         """
         if self._cleaned:
             return
@@ -525,6 +543,9 @@ class DevopsInformationRegistry(Cleanable):
         updated so callers can list all identities of a given kind.
         Spellbook<->conduit ownership is not derived here; it is maintained by
         explicit ownership-edge methods.
+
+        Returns:
+            None.
         """
         
         if identity is None:
@@ -584,6 +605,9 @@ class DevopsInformationRegistry(Cleanable):
         ------
         RuntimeError
             none; this method is intentionally idempotent for missing keys.
+
+        Returns:
+            None.
         """
         
         if identity is not None:
@@ -719,6 +743,9 @@ class DevopsInformationRegistry(Cleanable):
         ------
         ValueError
             If either identifier is empty.
+
+        Returns:
+            None.
         """
         if not spellbook_id or not conduit_id:
             raise ValueError("spellbook_id and conduit_id are required.")
@@ -752,6 +779,9 @@ class DevopsInformationRegistry(Cleanable):
         Returns
         -------
         None
+
+        Returns:
+            None.
         """
         if not spellbook_id or not conduit_id:
             return
@@ -984,6 +1014,9 @@ class DevopsInformationRegistry(Cleanable):
         Maintains both:
         - "_provider_to_borrowers[provider]"
         - "_borrower_to_providers[borrower]"
+
+        Returns:
+            None.
         """
         
         if not provider_conduit_id or not borrower_conduit_id:
@@ -1021,6 +1054,9 @@ class DevopsInformationRegistry(Cleanable):
         Notes
         -----
         This is an idempotent operation and performs cleanup of empty edge buckets.
+
+        Returns:
+            None.
         """
         
         if not provider_conduit_id or not borrower_conduit_id:
@@ -1163,6 +1199,9 @@ class DevopsInformationRegistry(Cleanable):
         Notes
         -----
         Updates both cluster->conduit and conduit->cluster indexes.
+
+        Returns:
+            None.
         """
         
         if not cluster_id or not conduit_id:
@@ -1190,6 +1229,9 @@ class DevopsInformationRegistry(Cleanable):
         Returns
         -------
         None
+
+        Returns:
+            None.
         """
         
         if not cluster_id or not conduit_id:
@@ -1312,6 +1354,9 @@ class DevopsInformationRegistry(Cleanable):
         Normalizes transaction type and identity keys before storing:
         - type is lower-cased
         - identity kinds are lower-cased and stripped
+
+        Returns:
+            None.
         """
         
         if not transaction_id:
@@ -1374,6 +1419,9 @@ class DevopsInformationRegistry(Cleanable):
         -----
         Safe when transaction id is missing. It is removed from identity and type
         indexes as well as direct storage.
+
+        Returns:
+            None.
         """
         
         if not transaction_id:

@@ -80,6 +80,12 @@ class AethericFrameConfiguration(Cleanable):
         recorded frame posture therefore governs the live mediator after a
         restore, rather than being decoration on a twin.
     """
+    _ast_helper_access: str = "public"
+    __agent_purpose__: str = (
+        "access: public. Narrow frame posture (system_state, ai_native_enabled, rift_enabled, and the "
+        "disable_* change-control gates). Derived at conjure from your SpellbookConfiguration - "
+        "configure the Spellbook, not this. Read it to learn what a frame will allow."
+    )
 
     __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
@@ -349,6 +355,9 @@ class AethericFrameConfiguration(Cleanable):
         Args:
             origin_spellbook_id: Optional spellbook id to stamp as the posture
                 origin if one should be recorded at freeze time.
+
+        Returns:
+            None.
         """
         self.check_cleaned()
         with self._lock:
@@ -398,6 +407,14 @@ class AethericFrameConfiguration(Cleanable):
     ) -> "AethericFrameConfiguration":
         """
         Set the frame system state before freeze and return `self`.
+
+        Returns:
+            AethericFrameConfiguration: This posture object, for fluent chaining.
+
+        Args:
+            system_state:
+                `SystemState.automatic` or `SystemState.dynamic`. Dynamic is
+                required for linking, severing, transfer, and lesser-to-normal upgrade.
         """
         self.check_cleaned()
         with self._lock:
@@ -415,6 +432,13 @@ class AethericFrameConfiguration(Cleanable):
     ) -> "AethericFrameConfiguration":
         """
         Set AI-native frame posture before freeze and return `self`.
+
+        Returns:
+            AethericFrameConfiguration: This posture object, for fluent chaining.
+
+        Args:
+            enabled:
+                Whether the frame permits AI-native runtime behaviour.
         """
         self.check_cleaned()
         if not isinstance(enabled, bool):
@@ -431,6 +455,14 @@ class AethericFrameConfiguration(Cleanable):
     ) -> "AethericFrameConfiguration":
         """
         Set Rift-visible frame posture before freeze and return `self`.
+
+        Returns:
+            AethericFrameConfiguration: This posture object, for fluent chaining.
+
+        Args:
+            enabled:
+                Whether Rifts may attach to this frame. Static AR attachment
+                requires this to be True.
         """
         self.check_cleaned()
         if not isinstance(enabled, bool):
@@ -448,6 +480,14 @@ class AethericFrameConfiguration(Cleanable):
         """
         Set whether the frame permits explicit shared rich Spellbook config and
         return `self`.
+
+        Returns:
+            AethericFrameConfiguration: This posture object, for fluent chaining.
+
+        Args:
+            enabled:
+                Whether the frame may own one shared rich SpellbookConfiguration
+                that later books adopt instead of creating their own.
         """
         self.check_cleaned()
         if not isinstance(enabled, bool):
@@ -467,6 +507,13 @@ class AethericFrameConfiguration(Cleanable):
         """
         Set whether spell runtime caching is enabled for the frame and return
         `self`.
+
+        Returns:
+            AethericFrameConfiguration: This posture object, for fluent chaining.
+
+        Args:
+            enabled:
+                Whether the crystallizer cache is active for this frame.
         """
         self.check_cleaned()
         if not isinstance(enabled, bool):
@@ -483,6 +530,14 @@ class AethericFrameConfiguration(Cleanable):
     ) -> "AethericFrameConfiguration":
         """
         Set the relative cache-root fragment for the frame and return `self`.
+
+        Returns:
+            AethericFrameConfiguration: This posture object, for fluent chaining.
+
+        Args:
+            path:
+                Directory under which `__crystallizer_cache__` profile folders are
+                written. None restores the default location.
         """
         self.check_cleaned()
         normalized_root_path = self._normalize_cache_root_path(root_path)
@@ -498,6 +553,14 @@ class AethericFrameConfiguration(Cleanable):
     ) -> "AethericFrameConfiguration":
         """
         Set whether new transactions are disabled after conjure and return `self`.
+
+        Returns:
+            AethericFrameConfiguration: This posture object, for fluent chaining.
+
+        Args:
+            enabled:
+                True to refuse every new change-control transaction once the
+                frame is live. The hardest of the disable_* gates.
         """
         self.check_cleaned()
         if not isinstance(enabled, bool):
@@ -514,6 +577,13 @@ class AethericFrameConfiguration(Cleanable):
     ) -> "AethericFrameConfiguration":
         """
         Set whether mutation entrypoints are disabled and return `self`.
+
+        Returns:
+            AethericFrameConfiguration: This posture object, for fluent chaining.
+
+        Args:
+            enabled:
+                True to refuse mutation entrypoints on this frame.
         """
         self.check_cleaned()
         if not isinstance(enabled, bool):
@@ -530,6 +600,13 @@ class AethericFrameConfiguration(Cleanable):
     ) -> "AethericFrameConfiguration":
         """
         Set whether linking entrypoints are disabled and return `self`.
+
+        Returns:
+            AethericFrameConfiguration: This posture object, for fluent chaining.
+
+        Args:
+            enabled:
+                True to refuse link and sever transactions on this frame.
         """
         self.check_cleaned()
         if not isinstance(enabled, bool):
@@ -546,6 +623,13 @@ class AethericFrameConfiguration(Cleanable):
     ) -> "AethericFrameConfiguration":
         """
         Set whether bind/scan entrypoints are disabled and return `self`.
+
+        Returns:
+            AethericFrameConfiguration: This posture object, for fluent chaining.
+
+        Args:
+            enabled:
+                True to refuse bind and scan transactions on this frame.
         """
         self.check_cleaned()
         if not isinstance(enabled, bool):
@@ -562,6 +646,13 @@ class AethericFrameConfiguration(Cleanable):
     ) -> "AethericFrameConfiguration":
         """
         Set whether conduit-cluster entrypoints are disabled and return `self`.
+
+        Returns:
+            AethericFrameConfiguration: This posture object, for fluent chaining.
+
+        Args:
+            enabled:
+                True to refuse cluster join, leave, and share transactions.
         """
         self.check_cleaned()
         if not isinstance(enabled, bool):
@@ -578,6 +669,13 @@ class AethericFrameConfiguration(Cleanable):
     ) -> "AethericFrameConfiguration":
         """
         Set whether ownership-transfer entrypoints are disabled and return `self`.
+
+        Returns:
+            AethericFrameConfiguration: This posture object, for fluent chaining.
+
+        Args:
+            enabled:
+                True to refuse ownership-transfer transactions on this frame.
         """
         self.check_cleaned()
         if not isinstance(enabled, bool):
@@ -594,6 +692,13 @@ class AethericFrameConfiguration(Cleanable):
     ) -> "AethericFrameConfiguration":
         """
         Set whether direct contract mutation is disabled and return `self`.
+
+        Returns:
+            AethericFrameConfiguration: This posture object, for fluent chaining.
+
+        Args:
+            enabled:
+                True to refuse direct contract add/remove transactions.
         """
         self.check_cleaned()
         if not isinstance(enabled, bool):
@@ -610,6 +715,15 @@ class AethericFrameConfiguration(Cleanable):
     ) -> "AethericFrameConfiguration":
         """
         Set the maximum scope-acquisition wait time and return `self`.
+
+        Returns:
+            AethericFrameConfiguration: This posture object, for fluent chaining.
+
+        Args:
+            seconds:
+                How long a root transaction may wait for conflicting scope claims
+                before admission times out. Read LIVE by the mediator, so a restored
+                posture governs the running system.
         """
         self.check_cleaned()
         if not isinstance(timeout, (int, float)) or isinstance(timeout, bool):
@@ -629,6 +743,9 @@ class AethericFrameConfiguration(Cleanable):
     def with_defaults(self) -> "AethericFrameConfiguration":
         """
         Reset frame posture to the default automatic/non-AR posture.
+
+        Returns:
+            AethericFrameConfiguration: This posture object, for fluent chaining.
         """
         self.check_cleaned()
         with self._lock:
@@ -792,12 +909,18 @@ class AethericFrameConfiguration(Cleanable):
     def dynamic_defaults(self) -> "AethericFrameConfiguration":
         """
         Set the default dynamic frame posture and return `self`.
+
+        Returns:
+            AethericFrameConfiguration: This posture object, for fluent chaining.
         """
         return self.with_defaults().with_system_state(SystemState.dynamic)
 
     def automatic_defaults(self) -> "AethericFrameConfiguration":
         """
         Set the default automatic frame posture and return `self`.
+
+        Returns:
+            AethericFrameConfiguration: This posture object, for fluent chaining.
         """
         return self.with_defaults().with_system_state(SystemState.automatic)
 
@@ -1025,6 +1148,10 @@ class AethericFrameConfiguration(Cleanable):
     def max_transaction_wait_time_in_seconds(self) -> float:
         """
         Return the maximum scope-acquisition wait time in seconds.
+
+        Returns:
+            float: Seconds a root transaction may wait for conflicting scope claims
+                before admission times out. Read live by the transaction mediator.
         """
         self.check_cleaned()
         with self._lock:

@@ -41,6 +41,12 @@ class ConduitLineageGateOps(Cleanable):
         - `cleanup()` is idempotent and lock-guarded; it drops the borrowed
           controller reference and retires the facade.
     """
+    _ast_helper_access: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. Narrow conduit-lineage creation-gate facade for coordinated "
+        "strategies. Melder kernel machinery: read it to understand the runtime, do not drive it "
+        "directly."
+    )
 
     __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [

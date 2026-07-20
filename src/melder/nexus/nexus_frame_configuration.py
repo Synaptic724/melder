@@ -51,6 +51,11 @@ class NexusFrameConfiguration(Cleanable):
         creation is a rooted conduit, not a bare frame, and that expectation is
         recorded here rather than assumed by the creation path.
     """
+    _ast_helper_access: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. Authored frame configuration for one Nexus-managed frame. Melder "
+        "kernel machinery: read it to understand the runtime, do not drive it directly."
+    )
 
     __melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [

@@ -98,6 +98,9 @@ class Cleanable(ABC):
         - Every `Cleanable` starts live with `_cleaned=False`.
         - Subclasses may extend initialization, but they inherit this one
           canonical cleaned-state flag.
+
+        Returns:
+            None.
         """
         self._cleaned: bool = False
 
@@ -133,6 +136,9 @@ class Cleanable(ABC):
 
         Raises:
             RuntimeError: If the object has already been cleaned.
+
+        Returns:
+            None.
         """
         if self._cleaned:
             raise RuntimeError(f"{self.__class__.__name__} has already been cleaned. ")
@@ -146,6 +152,9 @@ class Cleanable(ABC):
         - Release all resources.
         - Deregister or finalize any allocations.
         - Be idempotent (safe to call multiple times).
+
+        Returns:
+            None.
         """
         raise NotImplementedError("Subclasses must implement cleanup().")
 
@@ -159,6 +168,9 @@ class Cleanable(ABC):
         - Be idempotent (safe to call multiple times).
         - Preserve the same lifecycle semantics as `cleanup()` once async
           teardown completes.
+
+        Returns:
+            None.
         """
         raise NotImplementedError("Subclasses must implement async_cleanup().")
 

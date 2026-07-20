@@ -69,6 +69,11 @@ class ElectConduitClusterLeaderTransactionStrategy(TransactionStrategy):
         the held window, exactly as Spellbook runs `_apply_notch` between start
         and end. Strategies own isolation; call sites own effect.
     """
+    _ast_helper_access: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. Elect-cluster-leader transaction resolver (concurrency envelope only). "
+        "Melder kernel machinery: read it to understand the runtime, do not drive it directly."
+    )
 
     @classmethod
     def build_start_plan(
@@ -126,10 +131,20 @@ class ElectConduitClusterLeaderTransactionStrategy(TransactionStrategy):
 
     @staticmethod
     def on_start(*, devops_information_registry: DevopsInformationRegistry, identity: DevopsIdentity, metadata: Dict[str, object]) -> None:
-        """Elect needs no start-side coordination (inert -> active)."""
+        """
+        Elect needs no start-side coordination (inert -> active).
+
+        Returns:
+            None.
+        """
         return None
 
     @staticmethod
     def on_end(*, devops_information_registry: DevopsInformationRegistry, identity: DevopsIdentity, metadata: Dict[str, object]) -> None:
-        """Elect needs no end-side coordination."""
+        """
+        Elect needs no end-side coordination.
+
+        Returns:
+            None.
+        """
         return None

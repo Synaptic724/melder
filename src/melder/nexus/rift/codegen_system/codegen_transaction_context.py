@@ -53,6 +53,11 @@ class CodegenTransactionContext(Cleanable):
         validation and execution as unrelated occurrences and a failed request
         could not be reconstructed end to end.
     """
+    _ast_helper_access: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. Per-call codegen transaction context. Melder kernel machinery: read it "
+        "to understand the runtime, do not drive it directly."
+    )
 
     __melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [

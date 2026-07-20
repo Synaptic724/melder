@@ -201,6 +201,11 @@ class Spell(Cleanable):
           by the Resolution / Meld layer; `Spell` itself does not execute resolution.
 
     """
+    _ast_helper_access: str = "public"
+    __agent_purpose__: str = (
+        "access: public. One registered binding: identity, existence, permissions, spellframe, hooks. "
+        "You receive spells from bind and from viewer surfaces; you do not construct them."
+    )
     __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
         "_active",
@@ -297,6 +302,9 @@ class Spell(Cleanable):
             - Thread-safe configuration/cleanup is guarded by an internal RLock.
             - The canonical lookup key is normalized immediately via `SpellInputUtils`.
             - Validation of inputs (existence, permissions, profile shape) is expected to be enforced upstream by the Bind pipeline.
+
+        Returns:
+            None.
         """
         super().__init__()
         self._lock = RLock()
@@ -926,6 +934,10 @@ class Spell(Cleanable):
 
         This is populated by the compiler artifact during structural phase
         execution.
+
+        Returns:
+            Optional[SpellRequirements]: Phase 1 requirements, or None before the
+                structural phases have run for this spell.
         """
         return self._compiler_artifact._requirements
 
@@ -936,6 +948,10 @@ class Spell(Cleanable):
 
         This is populated by the compiler artifact during structural phase
         execution.
+
+        Returns:
+            Optional[SpellSymbolicGraph]: The Phase 2 symbolic graph, or None before
+                Phase 2 has run.
         """
         return self._compiler_artifact._symbolic_graph
 
@@ -948,6 +964,9 @@ class Spell(Cleanable):
         execution.
         Concrete type is intentionally opaque here; callers should treat it as
         an internal resolution artifact.
+
+        Returns:
+            Any: The Phase 3 resolution frame, or None before Phase 3 has run.
         """
         return self._compiler_artifact._resolution_frame
 
@@ -958,6 +977,10 @@ class Spell(Cleanable):
 
         This is populated by the compiler artifact during structural phase
         execution.
+
+        Returns:
+            Optional[SpellValidationResult]: The structural (Phase 4) verdict, or None
+                if Phase 4 has not run for this spell.
         """
         return self._compiler_artifact._validation_result_phase4
 
@@ -968,6 +991,10 @@ class Spell(Cleanable):
 
         This is populated by the compiler artifact during conduit-scoped
         validation.
+
+        Returns:
+            Optional[SpellSystemValidationState]: The system (Phase 6) verdict, or None
+                if Phase 6 has not run for this conduit.
         """
         return self._compiler_artifact._validation_result_phase6
 

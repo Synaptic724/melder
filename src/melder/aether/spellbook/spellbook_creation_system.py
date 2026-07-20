@@ -63,6 +63,11 @@ class SpellbookCreationSystem(Cleanable):
         This class uses an internal lock only to make "cleanup()" idempotent
         under concurrent teardown calls.
     """
+    _ast_helper_access: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. Internal conjure orchestration system for Spellbook. Melder kernel "
+        "machinery: read it to understand the runtime, do not drive it directly."
+    )
 
     __melder_internal__: ClassVar[object] = _mrg.sentinel
     _DEFAULT_ROOT_CONDUIT_NAME: ClassVar[str] = "default"

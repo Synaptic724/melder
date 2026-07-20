@@ -59,6 +59,11 @@ class SpellSpacePool(AbstractElasticPool[SpellSpace]):
         which is the same reasoning that makes `pooled_lesser` a distinct
         `ConduitState` rather than just an idle `lesser`.
     """
+    _ast_helper_access: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. Elastic pool for reusable `SpellSpace` objects. Melder kernel "
+        "machinery: read it to understand the runtime, do not drive it directly."
+    )
 
     __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = AbstractElasticPool.__slots__ + [
@@ -100,6 +105,9 @@ class SpellSpacePool(AbstractElasticPool[SpellSpace]):
                 pool and its spellspaces.
             **kwargs:
                 Elastic pool policy arguments forwarded to the base pool.
+
+        Returns:
+            None.
         """
         super().__init__(**kwargs)
         self._owner_conduit_id: str = owner_conduit_id
@@ -198,6 +206,9 @@ class SpellSpacePool(AbstractElasticPool[SpellSpace]):
     def destroy_object(self, obj: SpellSpace) -> None:
         """
         Permanently destroy one spellspace that should not be retained.
+
+        Returns:
+            None.
         """
         obj.permanent_cleanup()
 
@@ -214,6 +225,9 @@ class SpellSpacePool(AbstractElasticPool[SpellSpace]):
               below the current target.
             - Evicts one cold idle spellspace with `popleft()` when retained
               capacity is exceeded.
+
+        Returns:
+            None.
         """
         self._idle.append(obj)
         if len(self._idle) <= self._target_idle:

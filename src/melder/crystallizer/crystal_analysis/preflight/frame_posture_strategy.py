@@ -57,6 +57,11 @@ class FramePostureStrategy(PersistenceAnalysisStrategy):
         blocks - but the user is running on a fallback posture rather
         than recorded truth, and only this row tells them so.
     """
+    _ast_helper_access: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. Detect books whose frame posture is missing from the bundle. Melder "
+        "kernel machinery: read it to understand the runtime, do not drive it directly."
+    )
 
     __melder_internal__: ClassVar[object] = _mrg.sentinel
 

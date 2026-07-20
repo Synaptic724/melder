@@ -75,6 +75,16 @@ class EnumHelpers:
         - Returns the input unchanged when it is already an instance of the
           requested enum type.
         - Interprets string inputs by lowercased enum member name.
+
+        Returns:
+            T: The resolved enum member. Accepts a member or its string name and raises
+                rather than guessing when the value does not map.
+
+        Args:
+            value:
+                An enum member or its string name.
+            enum:
+                The enum class the value must resolve within.
         """
         if value is None:
             raise ValueError("Enum value cannot be None.")
@@ -241,6 +251,10 @@ class SpellInputUtils:
             ICache        -> "icache"
             "ICache"      -> "icache"
             MyService     -> "myservice"
+
+        Args:
+            value:
+                Frame identity - a type, Protocol, or string - to normalize.
         """
         if inspect.isclass(frame):
             raw = frame.__name__
@@ -264,6 +278,10 @@ class SpellInputUtils:
 
         Returns:
             str: The spell name (NOT lowercased; this is a display name).
+
+        Args:
+            value:
+                Spell name to normalize for case-insensitive lookup.
         """
         # This is for display/metadata; we don't lowercase here so that
         # spell.spell_name can remain pretty. The key path lowercases later.
@@ -288,6 +306,10 @@ class SpellInputUtils:
             None           -> "__default__"
             "Redis"        -> "redis"
             "MyVariant_01" -> "myvariant_01"
+
+        Args:
+            value:
+                Binding name to normalize, or None for default-binding semantics.
         """
         if not binding_name:
             return SpellInputUtils.DEFAULT_BINDING_NAME

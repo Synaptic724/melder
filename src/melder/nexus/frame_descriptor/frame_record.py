@@ -46,6 +46,11 @@ class FrameRecord(Cleanable):
         published cannot be linked. That ordering is what prevents a Rift from
         attaching to something the AR layer cannot describe.
     """
+    _ast_helper_access: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. Canonical Nexus record for one AR-publishable frame. Melder kernel "
+        "machinery: read it to understand the runtime, do not drive it directly."
+    )
 
     __melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
@@ -98,6 +103,9 @@ class FrameRecord(Cleanable):
                 If `nexus_label`, `nexus_version`, or `payload` is missing.
             TypeError:
                 If `payload` does not satisfy `FrameDescriptorPayload`.
+
+        Returns:
+            None.
         """
         super().__init__()
         if not nexus_label:
@@ -128,6 +136,9 @@ class FrameRecord(Cleanable):
               reference.
             - Leaves future callers to fail through `check_cleaned()`.
             - Runs grouped teardown under the record-owned instance lock.
+
+        Returns:
+            None.
         """
         if self._cleaned:
             return

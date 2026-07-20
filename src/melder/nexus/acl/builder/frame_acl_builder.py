@@ -98,6 +98,11 @@ class FrameACLBuilder(Cleanable):
         together, and under 3.14t there is no GIL making that grouping
         incidentally atomic.
     """
+    _ast_helper_access: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. FrameACLBuilder runtime object. Melder kernel machinery: read it to "
+        "understand the runtime, do not drive it directly."
+    )
 
     __melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [

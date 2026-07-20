@@ -77,6 +77,11 @@ class BindTransactionStrategy(TransactionStrategy):
         unrelated work across the whole frame for what is, in the common case,
         a single-surface operation.
     """
+    _ast_helper_access: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. Bind-family transaction resolver. Melder kernel machinery: read it to "
+        "understand the runtime, do not drive it directly."
+    )
 
     @classmethod
     def build_start_plan(
@@ -363,6 +368,9 @@ class BindTransactionStrategy(TransactionStrategy):
               (Spellbook.begin_transaction), not by this DevOps strategy. The
               mediator owns only the change-control envelope (admission/scopes),
               so this strategy never reaches into the Spellbook runtime.
+
+        Returns:
+            None.
         """
         del devops_information_registry, identity, metadata
         return None
@@ -380,6 +388,9 @@ class BindTransactionStrategy(TransactionStrategy):
         Contract:
             - Spellbook-local bind state is cleared by the Spellbook itself
               (Spellbook.end_transaction), not by this DevOps strategy.
+
+        Returns:
+            None.
         """
         del devops_information_registry, identity, metadata
         return None

@@ -47,6 +47,11 @@ class CapabilityCommandSystem(CommandSystem):
         synthesis, or group-organization verbs, because those take or produce
         code and belong to the codegen posture.
     """
+    _ast_helper_access: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. Capability-room command surface. Melder kernel machinery: read it to "
+        "understand the runtime, do not drive it directly."
+    )
 
     __melder_internal__ = _mrg.sentinel
     _CAPABILITY_COMMAND_METHOD_NAMES: Tuple[str, ...] = (

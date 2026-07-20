@@ -48,6 +48,11 @@ class FrameLink(Cleanable):
         answer, so a stale link produces a fresh refusal rather than stale
         access.
     """
+    _ast_helper_access: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. FrameLink runtime object. Melder kernel machinery: read it to "
+        "understand the runtime, do not drive it directly."
+    )
 
     __melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [

@@ -38,6 +38,11 @@ class DetailReason(Enum):
         dependency linking; `manual` marks the deliberate ad-hoc path; `other`
         is the honest fallback rather than a guess.
     """
+    _ast_helper_access: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. Why one `Detail` entry exists inside a contract. Melder kernel "
+        "machinery: read it to understand the runtime, do not drive it directly."
+    )
     __melder_internal__ = _mrg.sentinel
     root = auto()
     dependency = auto()

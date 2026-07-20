@@ -40,6 +40,11 @@ class FrameDescriptor(Cleanable):
         Cleanup cascades into all owned record objects before dropping indexes
         and references.
     """
+    _ast_helper_access: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. FrameDescriptor runtime object. Melder kernel machinery: read it to "
+        "understand the runtime, do not drive it directly."
+    )
 
     __melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
@@ -285,6 +290,9 @@ class FrameDescriptor(Cleanable):
             frame_handle:
                 Live runtime frame handle or None when clearing the cached
                 reference.
+
+        Returns:
+            None.
         """
         self.check_cleaned()
         with self._lock:
@@ -309,6 +317,9 @@ class FrameDescriptor(Cleanable):
             frame_configuration:
                 Bound frame configuration reference or None when clearing the
                 cached posture.
+
+        Returns:
+            None.
         """
         self.check_cleaned()
         with self._lock:
@@ -328,6 +339,9 @@ class FrameDescriptor(Cleanable):
         Args:
             frame_overview:
                 New frame overview record to own.
+
+        Returns:
+            None.
         """
         self.check_cleaned()
         with self._lock:
@@ -393,6 +407,9 @@ class FrameDescriptor(Cleanable):
         Args:
             conduit_record:
                 Conduit record to store and own.
+
+        Returns:
+            None.
         """
         self.check_cleaned()
         with self._lock:
@@ -416,6 +433,9 @@ class FrameDescriptor(Cleanable):
             - Missing conduit ids are treated as a no-op.
             - Existing records are removed from the primary registry before
               being cleaned.
+
+        Returns:
+            None.
         """
         self.check_cleaned()
         with self._lock:
@@ -440,6 +460,9 @@ class FrameDescriptor(Cleanable):
         Args:
             spell_record:
                 Spell record to store and own.
+
+        Returns:
+            None.
         """
         self.check_cleaned()
         with self._lock:
@@ -475,6 +498,9 @@ class FrameDescriptor(Cleanable):
             - Existing records are removed from the primary registry before
               their secondary-index memberships are discarded.
             - Owned records are cleaned after index teardown.
+
+        Returns:
+            None.
         """
         self.check_cleaned()
         with self._lock:

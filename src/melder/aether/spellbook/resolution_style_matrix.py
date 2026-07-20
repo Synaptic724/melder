@@ -97,6 +97,11 @@ class ResolutionStyleMatrix:
         shape, not a statement about policy - which is precisely why
         `BINDING_FAMILY_POLICY` and not the projection is canonical.
     """
+    _ast_helper_access: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. Canonical resolution-style support matrix for Melder. Melder kernel "
+        "machinery: read it to understand the runtime, do not drive it directly."
+    )
 
     __melder_internal__: ClassVar[object] = _mrg.sentinel
 

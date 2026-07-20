@@ -67,6 +67,12 @@ class RemoveSpellOrIndexFromContractTransactionStrategy(TransactionStrategy):
         party sees a contract that has lost an entry on one side but not the
         other.
     """
+    _ast_helper_access: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. Remove-spell-or-index-from-contract transaction resolver (release "
+        "across a link). Melder kernel machinery: read it to understand the runtime, do not drive "
+        "it directly."
+    )
 
     @classmethod
     def build_start_plan(
@@ -165,10 +171,20 @@ class RemoveSpellOrIndexFromContractTransactionStrategy(TransactionStrategy):
 
     @staticmethod
     def on_start(*, devops_information_registry: DevopsInformationRegistry, identity: DevopsIdentity, metadata: Dict[str, object]) -> None:
-        """Remove-spell-or-index-from-contract transactions need no extra local start-side effects right now."""
+        """
+        Remove-spell-or-index-from-contract transactions need no extra local start-side effects right now.
+
+        Returns:
+            None.
+        """
         return None
 
     @staticmethod
     def on_end(*, devops_information_registry: DevopsInformationRegistry, identity: DevopsIdentity, metadata: Dict[str, object]) -> None:
-        """Remove-spell-or-index-from-contract transactions need no extra local end-side effects right now."""
+        """
+        Remove-spell-or-index-from-contract transactions need no extra local end-side effects right now.
+
+        Returns:
+            None.
+        """
         return None

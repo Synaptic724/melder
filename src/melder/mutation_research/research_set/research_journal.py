@@ -66,6 +66,11 @@ class ResearchJournal(Cleanable):
         rides the checkpoint sequence instead - so a durable snapshot never
         grows without limit while the live log stays complete.
     """
+    _ast_helper_access: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. Set-level monotonic append-only log of world-entry events. Melder "
+        "kernel machinery: read it to understand the runtime, do not drive it directly."
+    )
     __melder_internal__: ClassVar[object] = _mrg.sentinel
 
     __slots__ = Cleanable.__slots__ + [
@@ -77,6 +82,9 @@ class ResearchJournal(Cleanable):
     def __init__(self) -> None:
         """
         Initialize one empty journal with sequence minting at 1.
+
+        Returns:
+            None.
         """
         super().__init__()
         self._entries: List[TransitionEntry] = []
@@ -89,6 +97,9 @@ class ResearchJournal(Cleanable):
 
         Contract:
             - Idempotent; del posture (no tombstones); lock last.
+
+        Returns:
+            None.
         """
         if self._cleaned:
             return

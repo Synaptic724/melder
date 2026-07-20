@@ -92,7 +92,12 @@ class _WeakDictKeysView(Collection[_K]):
     """
 
     def __init__(self, parent: "WeakConcurrentDict[_K, _V]") -> None:
-        """Bind this keys view to its parent weak dictionary."""
+        """
+        Bind this keys view to its parent weak dictionary.
+
+        Returns:
+            None.
+        """
         self._parent = parent
 
     def __iter__(self) -> Iterator[_K]:
@@ -159,7 +164,12 @@ class _WeakDictItemsView(Collection[Tuple[_K, _V]]):
     """
 
     def __init__(self, parent: "WeakConcurrentDict[_K, _V]") -> None:
-        """Bind this items view to its parent weak dictionary."""
+        """
+        Bind this items view to its parent weak dictionary.
+
+        Returns:
+            None.
+        """
         self._parent = parent
 
     def __iter__(self) -> Iterator[Tuple[_K, _V]]:
@@ -232,7 +242,12 @@ class _WeakDictValuesView(Collection[_V]):
     """
 
     def __init__(self, parent: "WeakConcurrentDict[_K, _V]") -> None:
-        """Bind this values view to its parent weak dictionary."""
+        """
+        Bind this values view to its parent weak dictionary.
+
+        Returns:
+            None.
+        """
         self._parent = parent
 
     def __iter__(self) -> Iterator[_V]:
@@ -420,6 +435,9 @@ class WeakConcurrentDict(Generic[_K, _V], Cleanable):
             TypeError:
                 If any value in `initial` cannot be weak-referenced (raised
                 by `WeakRefNode`).
+
+        Returns:
+            None.
         """
         super().__init__()
 
@@ -558,6 +576,10 @@ class WeakConcurrentDict(Generic[_K, _V], Cleanable):
         Raises:
             TypeError:
                 If `value` is None or cannot be weak-referenced.
+
+        Returns:
+            WeakConcurrentDict[_K, _V]: A new weak dict with the given keys. Values are
+                held WEAKLY, so entries vanish as their values are collected.
         """
         if value is None:
             raise TypeError(
@@ -654,6 +676,9 @@ class WeakConcurrentDict(Generic[_K, _V], Cleanable):
           * If using AgenticRLock, its `cleanup()` is invoked best-effort.
 
         This method is **idempotent** and thread-safe.
+
+        Returns:
+            None.
         """
         if self._cleaned:
             return
@@ -712,6 +737,9 @@ class WeakConcurrentDict(Generic[_K, _V], Cleanable):
         Raises:
             RuntimeError:
                 If this dict has already been cleaned.
+
+        Returns:
+            None.
         """
         self.check_cleaned()
         with self._lock:
@@ -732,6 +760,9 @@ class WeakConcurrentDict(Generic[_K, _V], Cleanable):
             GC may still mark nodes dead in the background. This does not
             violate the "frozen" contract; it only affects liveness of values,
             not explicit user-driven structural changes.
+
+        Returns:
+            None.
         """
         self.check_cleaned()
         with self._lock:
@@ -746,6 +777,9 @@ class WeakConcurrentDict(Generic[_K, _V], Cleanable):
         Raises:
             RuntimeError:
                 If the dict has been cleaned.
+
+        Returns:
+            None.
         """
         self.check_cleaned()
         with self._lock:
@@ -799,6 +833,9 @@ class WeakConcurrentDict(Generic[_K, _V], Cleanable):
 
         This can be used even if `auto_prune` is False to clean the dict of
         keys whose values have already been collected.
+
+        Returns:
+            None.
         """
         self.check_cleaned()
         with self._lock:
@@ -966,6 +1003,9 @@ class WeakConcurrentDict(Generic[_K, _V], Cleanable):
         Raises:
             TypeError:
                 If the dict is frozen.
+
+        Returns:
+            None.
         """
         self.check_cleaned()
         self._ensure_mutable()
@@ -1175,6 +1215,9 @@ class WeakConcurrentDict(Generic[_K, _V], Cleanable):
             TypeError:
                 If keyword arguments are supplied to a weak dict whose current
                 key surface is not string-keyed.
+
+        Returns:
+            None.
         """
         self.check_cleaned()
         self._ensure_mutable()
@@ -1266,18 +1309,28 @@ class WeakConcurrentDict(Generic[_K, _V], Cleanable):
     def keys(self) -> Collection[_K]:
         """
         Return a dynamic keys view (similar to ``dict.keys()``).
+
+        Returns:
+            Collection[_K]: A detached snapshot of keys whose values are still live.
         """
         return _WeakDictKeysView(self)
 
     def values(self) -> Collection[_V]:
         """
         Return a dynamic values view (similar to ``dict.values()``).
+
+        Returns:
+            Collection[_V]: A detached snapshot of live values. Holding the result keeps
+                those values alive for as long as you keep it.
         """
         return _WeakDictValuesView(self)
 
     def items(self) -> Collection[Tuple[_K, _V]]:
         """
         Return a dynamic items view (similar to ``dict.items()``).
+
+        Returns:
+            Collection[Tuple[_K, _V]]: A detached snapshot of live key/value pairs.
         """
         return _WeakDictItemsView(self)
 
@@ -1414,6 +1467,9 @@ class WeakConcurrentDict(Generic[_K, _V], Cleanable):
             DeadReferenceError:
                 If a dead node is encountered while materializing current
                 items before the batch update.
+
+        Returns:
+            None.
         """
         self.check_cleaned()
         self._ensure_mutable()

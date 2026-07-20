@@ -77,6 +77,11 @@ class DevopsInformationStrategyBuilder:
         that signal honest, since failed attempts say nothing about which
         checks the system genuinely relies on.
     """
+    _ast_helper_access: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. Registry-backed resolver for DevOps information strategies. Melder "
+        "kernel machinery: read it to understand the runtime, do not drive it directly."
+    )
 
     __slots__ = [
         "_devops_information_registry",
@@ -99,6 +104,9 @@ class DevopsInformationStrategyBuilder:
         Raises:
             ValueError:
                 If the registry is None.
+
+        Returns:
+            None.
         """
         if devops_information_registry is None:
             raise ValueError("devops_information_registry must not be None.")

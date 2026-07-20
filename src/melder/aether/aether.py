@@ -89,6 +89,14 @@ class Aether(Cleanable):
         `Nexus` is the public AR root, and reaching AR or mutation control
         through `Aether` is deliberately not a supported path.
     """
+    _ast_helper_access: str = "public"
+    __agent_purpose__: str = (
+        "access: public. The global singleton root. `Aether()` returns the process-wide instance and "
+        "boots the hidden substrate (utility system, Crystallizer, Nexus, LoadGate). Creates ZERO "
+        "frames - the first Spellbook births the frame it names. Use "
+        "create_configuration()/configure()/activate() for root logger policy, attach_logger(...) to "
+        "install one directly."
+    )
     __melder_internal__: ClassVar[object] = _mrg.sentinel
     _instance: ClassVar[Optional["Aether"]] = None
     _lock: ClassVar[RLock] = RLock()
@@ -403,6 +411,9 @@ class Aether(Cleanable):
             - Attempts every frame cleanup even if one frame raises.
             - Logs cleanup failures instead of stopping the full singleton
               teardown on the first frame error.
+
+        Returns:
+            None.
         """
         if self._aetheric_frames is None:
             return
@@ -483,6 +494,9 @@ class Aether(Cleanable):
 
         Args:
             value: The IChannelLogger, Logger, Handler, or None to use.
+
+        Returns:
+            None.
         """
         self.attach_logger(value)
 

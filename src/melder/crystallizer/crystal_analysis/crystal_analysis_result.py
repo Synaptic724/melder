@@ -50,6 +50,11 @@ class CrystalAnalysisResult(Cleanable):
         `cleanup()` is idempotent, deletes owned field surfaces (del
         posture), and deletes the lock last.
     """
+    _ast_helper_access: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. Detached, serialization-friendly result of one module-world analysis. "
+        "Melder kernel machinery: read it to understand the runtime, do not drive it directly."
+    )
 
     __melder_internal__: ClassVar[object] = _mrg.sentinel
 

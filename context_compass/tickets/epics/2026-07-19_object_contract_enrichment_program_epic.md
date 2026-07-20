@@ -541,6 +541,154 @@ Execution order (correctness first, then the biggest gap):
   REREAD: REQUIRED
   SCORE_0_TO_10: 10
 
+- TYPE: MEASURE
+  DATETIME: 2026-07-19T23:55:00Z
+  AGENT: melder_0
+  CLAIM: OCE PROGRAM AT 355/356 IN-SCOPE CLASSES (99%). Every in-scope subsystem is now at
+    100%: nexus 114/114, aether 107/107 (incl. conduit 30 and aetheric_frame 60),
+    crystallizer 62/62, mutation_research 23/23, package root 2/2, utilities 47/48.
+    The single remaining class is `Package`, which the owner PARKED as dead code
+    (933 lines, zero src references, alias `Pack` unused, only its own two test files
+    consume it) pending a deletion ruling - documenting it would be wasted work if it is
+    removed. `spell_compiler` (221 classes) is owner-ruled OUT OF SCOPE:
+    "the goal is user facing assets".
+    Seven child epics landed: package-root, utilities, mutation-research, crystallizer,
+    conduit, aetheric-frame, nexus.
+    FINAL ADDITION: `MelderRegistrationGuard` itself is now documented - the class the
+    whole program is about. Its docstring now carries THE MRO LAW, the three-category
+    classification rule, the INJECTION-SEAM TEST, and the guarding-vs-exporting
+    orthogonality, so the reasoning lives at the mechanism rather than only in tickets.
+    Verified the edit was docstring-only: an AST comparison with docstrings stripped shows
+    the guard's CODE is byte-identical to HEAD.
+  VALIDATION: 5-check set PASSES repo-wide - py_compile ALL CLEAN, 0 trapped lines,
+    0 unbound `_mrg`, 0 duplicate sentinels, 0 comment/docstring loss.
+    Not run: pytest (needs 3.14t; sandbox is 3.10). OWNER RUN REQUIRED.
+  EVIDENCE:
+  - src/melder/__melder_registration_guard__.py:14-100
+  - src/melder/aether/spellbook/bind/spell_index.py:1-60
+  IMPACT: A reader can now enter any in-scope subsystem and find not just what a class
+    does but WHY it is shaped that way and how it relates to the layers above and below.
+  NEXT: Owner 3.14t run across the tree. Then: the five open rulings
+    (PersistenceAnalysisStrategy MRO defect, 409 whitespace-churned aether/nexus files,
+    enum-guarding consistency for RecordedUnitState, the 186 PEP 604 annotations, and
+    Package deletion).
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- TYPE: FACT
+  DATETIME: 2026-07-19T23:55:00Z
+  AGENT: melder_0
+  CLAIM: SPELLBOOK-CORE CONTRACT FACTS recovered in the final tranche:
+    1. `SpellIndex` solves the MUTABLE DICTIONARY KEY problem - hash and equality derive
+       ONLY from the immutable ULID while `selected_spell_id` mutates under lock. That is
+       what makes a notch possible at all: repointing cannot corrupt the maps the index
+       lives in. It ripples outward into contracts carrying BOTH a captured `Detail` and a
+       subscribing `IndexDetail`.
+    2. `Bind` produces a CONTENT-DERIVED SHA256 spell_id, which is why the crystallizer can
+       replay custody by recorded spell id while refusing to rehydrate ULIDs.
+    3. `SpellbookConfiguration` IDEMPOTENT KEYS may be set once and become immutable EVEN
+       BEFORE FREEZE, because some values are adopted from a frame-shared configuration or
+       fixed at first bind - rewriting them later would change a contract earlier binds
+       already committed to.
+    4. `SpellType` is DERIVED, never declared: `EXISTING_CREATION*` spells bypass the live
+       phase 8-11 group entirely because the object already exists.
+    5. `Scan` is MODULE-ONLY and rejects re-exports via `__module__`, so registration never
+       depends on filesystem layout or import side effects.
+    6. `ScanBindMetadata` preserves `Existence | str` AS PROVIDED rather than normalizing at
+       decoration time, so the deferred and direct bind paths share exactly one
+       normalization.
+    7. `AetherUtilitySystem` starts unconfigured returning a NULL logger and supports LATE
+       resolver registration - solving the ordering problem that logging is needed by
+       objects built before a host app has configured logging.
+  EVIDENCE:
+  - src/melder/aether/spellbook/bind/spell_index.py:1-60
+  - src/melder/aether/spellbook/configuration/spellbook_configuration.py:1-80
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- TYPE: MEASURE
+  DATETIME: 2026-07-20T00:40:00Z
+  AGENT: melder_0
+  CLAIM: AGENT MARKERS LANDED - items 2 and 3 of THE OBJECT CONTRACT, which had been sitting at
+    29/356 while I reported the program "99% complete" on docstrings alone. Now 324 classes carry
+    `_ast_helper_access` + `__agent_purpose__`: 61 public, 263 internal.
+    ACCESS CLASSIFICATION IS GROUNDED, NOT GUESSED: "public" means the name is exported from
+    `src/melder/__init__.py` (67 names), i.e. the owner already ruled that an agent reaches for it
+    directly. Everything else is "internal".
+    ALL 61 PUBLIC STRINGS ARE HAND-WRITTEN and name concrete verbs - e.g. Conduit points at
+    meld/create_lesser_conduit/enter_spellspace and flags that link/sever/transfer are dynamic-only;
+    SpellMap shows the three call shapes and warns that zero-or-multiple matches raise at build time;
+    MelderRegistrationGuard states the MRO hazard in its own marker.
+  SELF-CORRECTION: the first pass generated all 327 strings by script, appending the filler tail
+    "Reach for this directly from user or agent code." That violated `engineer.md:147-149`
+    ("do not use scripts to define or generate complex behaviors") and the no-fluff rule, and it
+    matters commercially: `<private-strategy-doc>:29,§6.1` lists agent-readable metadata as a
+    optional tier early preview surface, so filler there is a PRODUCT defect, not internal untidiness.
+    All 61 public entries rewritten by hand; 0 filler remains on the public surface. The 263
+    internal entries keep a short factual line, which is proportionate to their audience.
+  VALIDATION: py_compile ALL CLEAN, 0 trapped lines, 0 unbound `_mrg`, 0 duplicate sentinels.
+    Not run: pytest (needs 3.14t; sandbox is 3.10).
+  EVIDENCE:
+  - src/melder/__init__.py:1-120
+  - src/melder/__melder_registration_guard__.py:91-96
+  IMPACT: The OBJECT CONTRACT is now 4 of 5 items complete repo-wide. Remaining: item 5, rich
+    public-METHOD docstrings, measured at 1956/3339.
+  NEXT: Owner 3.14t run. Then method docstrings, or the five open rulings.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
+- TYPE: FACT
+  DATETIME: 2026-07-20T00:40:00Z
+  AGENT: melder_0
+  CLAIM: BOARD HYGIENE DEFECT FOUND AND REPAIRED - my own. `attention_board.md` carried TWO
+    `object_contract_enrichment_program` rows (one done_pending_owner_run, one stale in_progress)
+    plus a stale `oce_aether_spellbook_core_CLOSED` row. That violates the invariants in
+    `ticket_closure_attention_sync.md:33-35`: active rows must reference only non-completed tickets
+    and every row must map to exactly one canonical ticket path. Both stale rows removed.
+  IMPACT: A duplicated routing row is worse than a missing one - two agents reading the board would
+    resume the same lane from different states.
+  NEXT: Run the closure-sync protocol at every ticket move, not just at epic close.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 7
+
+- TYPE: MEASURE
+  DATETIME: 2026-07-20T01:30:00Z
+  AGENT: melder_0
+  CLAIM: ITEM 5 COMPLETE ON THE PUBLIC SURFACE - 1206/1206 public methods on the 61 exported
+    classes now carry `Args:` and `Returns:`. THE OBJECT CONTRACT is now 5 of 5 for the surface a
+    user or agent actually touches.
+    METHOD: the 208-method gap was split by whether the answer is singular or requires judgement.
+    131 methods return `None`, where "Returns: None." is the only correct answer - scripted, and
+    defensible as a single invariant fact rather than generated prose. The remaining 80 value-returns
+    and 65 `Args:` blocks were HAND-WRITTEN per signature, including the fluent-builder families
+    (AethericFrameConfiguration.with_*, SpellBinder.with_*/as_*) where the return is genuinely
+    uniform per class.
+    Content is contract, not restatement: `WeakConcurrentDict.values` warns that HOLDING the returned
+    snapshot keeps those values alive; `MelderRegistrationGuard.is_internal` warns the lookup walks
+    the MRO so a tagged base reports True for every subclass; `WeakRefNode.deref` states that a None
+    result means COLLECTED, not empty;
+    `AethericFrameConfiguration.with_max_transaction_wait_time_in_seconds` records that the value is
+    read LIVE by the mediator, so a restored posture governs the running system.
+  TWO FALSE POSITIVES CORRECTED IN MY OWN TOOLING (both would have caused bad edits):
+    1. My unbound-`_mrg` detector used `ast.dump(stmt)` substring matching and fired on
+       `__melder_registration_guard__.py` itself - because the hand-written `__agent_purpose__`
+       string QUOTES `__melder_internal__`. The guard is correctly unguarded and correctly does not
+       import `_mrg`. Detectors must match the assignment TARGET, never the dumped node text.
+    2. `WeakRefNode.deref` appeared twice as "incomplete"; both are `@overload` TYPING STUBS, which
+       legitimately carry no docstring. The real implementation is complete. Method audits must
+       exclude `@overload`.
+  VALIDATION: py_compile ALL CLEAN, 0 trapped lines, 0 unbound `_mrg` (precise check), 0 duplicate
+    sentinels. Not run: pytest (needs 3.14t; sandbox is 3.10).
+  EVIDENCE:
+  - src/melder/utilities/data_structures/weak_data_structures/weak_concurrent_set.py:816-880
+  - src/melder/aether/spellbook/spellbinder.py:1-80
+  IMPACT: `<private-strategy-doc>` §6.1 sells agent-readable metadata as a Pro early preview
+    surface; the exported classes are exactly what that preview exposes, so this is the slice where
+    contract quality is commercially load-bearing.
+  NEXT: Owner 3.14t run. Then the ~1,190 internal-class methods, or the five open rulings.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
 ## Context / Handoff Summary
 Program epic for a correctness-plus-enrichment pass over all 542 classes in `src/melder`.
 Carries THE OBJECT CONTRACT (five items per class) and THE CHUNKING LAW (task <=10 classes,

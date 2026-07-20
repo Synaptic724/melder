@@ -64,6 +64,11 @@ class ViewMultiFrame(Cleanable):
         the projection it was born with, after that projection had been
         replaced.
     """
+    _ast_helper_access: str = "public"
+    __agent_purpose__: str = (
+        "access: public. Descriptor-oriented cross-frame viewer helper. Use it to compare frames and "
+        "read descriptor records without touching any frame's runtime. Obtained from FrameViewer."
+    )
 
     __melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [

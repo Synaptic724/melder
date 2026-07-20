@@ -105,6 +105,12 @@ class SpellContract(Cleanable):
         `spellframe`: with neither there is no identity for a future linker to
         match against, and the socket could never be closed.
     """
+    _ast_helper_access: str = "public"
+    __agent_purpose__: str = (
+        "access: public. Declares a LATE-BOUND dependency hole for dynamic conduit linking. Write it "
+        "as a constructor default when the provider will arrive from another conduit. Requires at "
+        "least spell or spellframe. Unsatisfied is an ERROR in automatic mode, a warning in dynamic."
+    )
 
     __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
@@ -171,6 +177,9 @@ class SpellContract(Cleanable):
         Raises:
             ValueError: If both `spell` and `spellframe` are omitted, because
                 the contract would have no identity to match against.
+
+        Returns:
+            None.
         """
         if spell is None and spellframe is None:
             raise ValueError(
@@ -198,6 +207,9 @@ class SpellContract(Cleanable):
             - Clears any mutable override payload before dropping references.
             - After cleanup the descriptor should be treated as unusable and
               callers should rely on `check_cleaned()` before reading it.
+
+        Returns:
+            None.
         """
         if self._cleaned:
             return

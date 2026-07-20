@@ -54,6 +54,11 @@ class InformationFreshnessInspector:
         whether the data behind them was current, and a caller comparing them
         would have no way to reconcile the difference.
     """
+    _ast_helper_access: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. Shared freshness math for DevOps information strategies. Melder kernel "
+        "machinery: read it to understand the runtime, do not drive it directly."
+    )
 
     @staticmethod
     def normalize_region(candidate: str) -> str:

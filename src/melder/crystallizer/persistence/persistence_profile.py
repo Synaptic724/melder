@@ -69,6 +69,12 @@ class PersistenceProfile(Cleanable):
         twin held by this profile, clears journal/state surfaces, and deletes
         the profile lock last.
     """
+    _ast_helper_access: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. One recorded world: the flat, level-mapped twin store for a single "
+        "profile. Melder kernel machinery: read it to understand the runtime, do not drive it "
+        "directly."
+    )
 
     __melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
@@ -160,6 +166,9 @@ class PersistenceProfile(Cleanable):
             Invoked by profile deletion, system cleanup, or profile replacement
             ownership paths; displaced twins have already followed the same
             child-cleanup rule individually.
+
+        Returns:
+            None.
         """
         if self._cleaned:
             return

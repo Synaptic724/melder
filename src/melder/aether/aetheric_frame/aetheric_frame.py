@@ -98,6 +98,11 @@ class AethericFrame(Cleanable):
         subsequent books join it rather than silently redefining it underneath
         the conduits already running there.
     """
+    _ast_helper_access: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. Manage one isolated runtime frame within `Aether`. Melder kernel "
+        "machinery: read it to understand the runtime, do not drive it directly."
+    )
     __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
         "_aether",
@@ -136,6 +141,9 @@ class AethericFrame(Cleanable):
               during construction.
             - Keeps frame-local ownership centralized here so runtime objects
               can unregister against the frame boundary during cleanup.
+
+        Returns:
+            None.
         """
         super().__init__()
 
@@ -850,6 +858,9 @@ class AethericFrame(Cleanable):
         Raises:
             RuntimeError: If the signature is already active for a different
                 spell_id in this frame.
+
+        Returns:
+            None.
         """
         self._lookup_container.claim(key, spell_id)
 
@@ -862,6 +873,9 @@ class AethericFrame(Cleanable):
 
         Args:
             key: The binding signature `(frame_key, bind_key)` to release.
+
+        Returns:
+            None.
         """
         self._lookup_container.release(key)
 
@@ -874,6 +888,9 @@ class AethericFrame(Cleanable):
 
         Args:
             spell_id: The active spell_id whose signature should be released.
+
+        Returns:
+            None.
         """
         self._lookup_container.release_by_spell_id(spell_id)
 
@@ -884,6 +901,9 @@ class AethericFrame(Cleanable):
         Args:
             key: The binding signature `(frame_key, bind_key)`.
             spell_id: The new active spell_id for that signature.
+
+        Returns:
+            None.
         """
         self._lookup_container.update(key, spell_id)
 
@@ -959,6 +979,9 @@ class AethericFrame(Cleanable):
 
         Raises:
             ValueError: If `conduit_id` is already registered.
+
+        Returns:
+            None.
         """
         self.check_cleaned()
         with self._lock:
@@ -980,6 +1003,9 @@ class AethericFrame(Cleanable):
         """
         Remove a set of SpellIndexes from one conduit and refresh the version
         cache, atomically under the frame lock. No-op when the conduit is absent.
+
+        Returns:
+            None.
         """
         self.check_cleaned()
         with self._lock:
@@ -1003,6 +1029,9 @@ class AethericFrame(Cleanable):
         """
         Add a single SpellIndex under a conduit and refresh the version cache,
         atomically under the frame lock.
+
+        Returns:
+            None.
         """
         self.check_cleaned()
         with self._lock:
@@ -1024,6 +1053,9 @@ class AethericFrame(Cleanable):
         """
         Remove a single SpellIndex from a conduit and refresh the version cache,
         atomically under the frame lock. No-op when the conduit is absent.
+
+        Returns:
+            None.
         """
         self.check_cleaned()
         with self._lock:

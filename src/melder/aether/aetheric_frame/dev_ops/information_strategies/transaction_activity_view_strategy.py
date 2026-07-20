@@ -60,6 +60,11 @@ class TransactionActivityViewStrategy(DevopsInformationStrategy):
         index lookup rather than a scan, and requiring at least one axis
         prevents an accidental whole-registry dump.
     """
+    _ast_helper_access: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. Registry-backed view of live transaction activity along one axis. "
+        "Melder kernel machinery: read it to understand the runtime, do not drive it directly."
+    )
 
     @staticmethod
     def execute(

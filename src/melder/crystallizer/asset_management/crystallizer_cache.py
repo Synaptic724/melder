@@ -39,6 +39,11 @@ class CrystallizerCache(Cleanable):
         record. Cleanup releases the in-memory lock only; cached checkpoints
         and formation files deliberately survive for later reload.
     """
+    _ast_helper_access: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. Local filesystem custody for checkpoint cached-items and formations. "
+        "Melder kernel machinery: read it to understand the runtime, do not drive it directly."
+    )
 
     __melder_internal__: ClassVar[object] = _mrg.sentinel
 
@@ -76,6 +81,9 @@ class CrystallizerCache(Cleanable):
         Lifecycle / Cleanup:
             Invoked by the owning asset system before that system releases its
             borrowed persistence-record reference.
+
+        Returns:
+            None.
         """
         if self._cleaned:
             return

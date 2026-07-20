@@ -66,6 +66,12 @@ class SpellIndex(Cleanable):
         that keeps this class small: the index organizes ids, the spell_id
         resolves, and the Spellbook is what republishes lookups on a notch.
     """
+    _ast_helper_access: str = "public"
+    __agent_purpose__: str = (
+        "access: public. The stable lineage identity (immutable ULID) pointing at a mutable selected "
+        "spell. Hash/equality use only the ULID, so a notch can repoint the active member without "
+        "breaking any map. Version history belongs to MutationResearch."
+    )
     __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = (
         "_id",          # The immutable ULID. Used for hashing and equality.
@@ -94,6 +100,9 @@ class SpellIndex(Cleanable):
 
         Threading:
             - Initializes the internal RLock used for all mutations.
+
+        Returns:
+            None.
         """
         super().__init__()
         # The permanent, hashable identity for this key.
@@ -115,6 +124,9 @@ class SpellIndex(Cleanable):
             - Idempotent and lock-guarded.
             - Clears and drops the member set and the selected-spell pointer.
             - Leaves future callers to fail through `check_cleaned()`.
+
+        Returns:
+            None.
         """
         if self._cleaned:
             return
@@ -164,6 +176,9 @@ class SpellIndex(Cleanable):
 
         Args:
             new_id (str): The new SHA256 spell id to select and add as a member.
+
+        Returns:
+            None.
         """
         self.check_cleaned()
         with self._lock:
@@ -181,6 +196,9 @@ class SpellIndex(Cleanable):
 
         Args:
             spell_id (str): The candidate member spell id to record.
+
+        Returns:
+            None.
         """
         self.check_cleaned()
         with self._lock:
@@ -195,6 +213,9 @@ class SpellIndex(Cleanable):
 
         Args:
             spell_id (str): The member spell id to remove.
+
+        Returns:
+            None.
         """
         self.check_cleaned()
         with self._lock:
@@ -268,6 +289,10 @@ class SpellIndex(Cleanable):
             - This value never changes for the lifetime of the index.
             - Hashing and equality are derived from this id, not from the
               mutable selected-spell pointer.
+
+        Returns:
+            str: The immutable ULID. Hash and equality derive from this alone, which
+                is what lets the selected spell move without breaking dictionary placement.
         """
         return self._id
 

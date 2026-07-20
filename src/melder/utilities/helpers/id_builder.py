@@ -77,6 +77,9 @@ class IDBuilder:
         Contract:
         - Produces a fresh globally sortable ULID string on each call.
         - Used for object identity, not for human-readable names.
+
+        Returns:
+            str: A fresh ULID segment. Lexicographic order matches creation order.
         """
         return new_ulid()
 
@@ -136,6 +139,13 @@ class IDBuilder:
 
         Example:
             '01ABC...Spellbook.01DEF...Conduit'
+
+        Returns:
+            str: A dotted conduit lineage id built from the supplied parts.
+
+        Args:
+            parts:
+                Lineage segments joined into a dotted conduit id.
         """
         return IDBuilder.compose(spellbook, conduit)
 
@@ -151,5 +161,12 @@ class IDBuilder:
 
         Example:
             '01ABC...Conduit.01XYZ...ConduitWard'
+
+        Returns:
+            str: A dotted ward lineage id built from the supplied parts.
+
+        Args:
+            parts:
+                Lineage segments joined into a dotted ward id.
         """
         return IDBuilder.compose(conduit, ward)

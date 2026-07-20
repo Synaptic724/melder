@@ -74,6 +74,11 @@ class CreationContextFactory(Cleanable):
         exists so that provisioning happens once per index rather than once per
         context.
     """
+    _ast_helper_access: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. Produce spell-shaped `CreationContext` instances. Melder kernel "
+        "machinery: read it to understand the runtime, do not drive it directly."
+    )
 
     __melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
@@ -102,6 +107,9 @@ class CreationContextFactory(Cleanable):
         Raises:
             ValueError:
                 If `creation_gate_controller` is None.
+
+        Returns:
+            None.
         """
         super().__init__()
         if creation_gate_controller is None:
@@ -121,6 +129,9 @@ class CreationContextFactory(Cleanable):
             - Best-effort cleanup of builder-owned resources is unnecessary
               because the builder is stateless.
             - Clears builder-free reference usage to prevent post-clean confusion.
+
+        Returns:
+            None.
         """
         if self._cleaned:
             return

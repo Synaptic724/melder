@@ -61,6 +61,11 @@ class UserSourceIntegrityStrategy(PersistenceAnalysisStrategy):
         blocker because retained text is used precisely when no live file
         exists, so altered material would rebuild unchallenged.
     """
+    _ast_helper_access: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. Verify retained user-module sources and detect on-disk drift (S2). "
+        "Melder kernel machinery: read it to understand the runtime, do not drive it directly."
+    )
 
     __melder_internal__: ClassVar[object] = _mrg.sentinel
 

@@ -49,6 +49,12 @@ class SpellbookCrystal(Cleanable):
         hook markers, and bind-order values only; it never cleans the live
         spellbook, conduit, or bound spells.
     """
+    _ast_helper_access: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. Pure-data digital twin of one Spellbook's configured + binding "
+        "surface. Melder kernel machinery: read it to understand the runtime, do not drive it "
+        "directly."
+    )
 
     __melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
@@ -116,6 +122,9 @@ class SpellbookCrystal(Cleanable):
 
         Contract:
             - Idempotent; del posture (no tombstones).
+
+        Returns:
+            None.
         """
         if self._cleaned:
             return

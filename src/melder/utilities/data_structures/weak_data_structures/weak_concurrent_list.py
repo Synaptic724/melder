@@ -109,6 +109,9 @@ class WeakConcurrentList(Generic[_T], Cleanable):
                 Initial iterable of objects to weak-reference and store. Defaults to None.
             auto_prune (bool, optional):
                 If True, enables GC callbacks to attempt to prune dead nodes immediately. Defaults to False.
+
+        Returns:
+            None.
         """
         super().__init__()
         self._id: str = new_ulid()
@@ -194,6 +197,9 @@ class WeakConcurrentList(Generic[_T], Cleanable):
 
         Raises:
             RuntimeError: If called while the lock is held externally.
+
+        Returns:
+            None.
         """
         if self._cleaned:
             return
@@ -250,6 +256,9 @@ class WeakConcurrentList(Generic[_T], Cleanable):
 
         Raises:
             RuntimeError: If the list has been cleaned.
+
+        Returns:
+            None.
         """
         self.check_cleaned()
         with self._lock:
@@ -261,6 +270,9 @@ class WeakConcurrentList(Generic[_T], Cleanable):
 
         Raises:
             RuntimeError: If the list has been cleaned.
+
+        Returns:
+            None.
         """
         self.check_cleaned()
         with self._lock:
@@ -286,6 +298,9 @@ class WeakConcurrentList(Generic[_T], Cleanable):
 
         Raises:
             RuntimeError: If the list has been cleaned.
+
+        Returns:
+            None.
         """
         self.check_cleaned()
         with self._lock:
@@ -331,6 +346,9 @@ class WeakConcurrentList(Generic[_T], Cleanable):
 
         Raises:
             RuntimeError: If the list has been cleaned.
+
+        Returns:
+            None.
         """
         self.check_cleaned()
         with self._lock:
@@ -469,6 +487,9 @@ class WeakConcurrentList(Generic[_T], Cleanable):
         Raises:
             RuntimeError: If the list has been cleaned.
             TypeError: If the list is frozen.
+
+        Returns:
+            None.
         """
         self.check_cleaned()
         self._ensure_not_frozen()
@@ -492,6 +513,9 @@ class WeakConcurrentList(Generic[_T], Cleanable):
         Raises:
             RuntimeError: If the list has been cleaned.
             TypeError: If the list is frozen.
+
+        Returns:
+            None.
         """
         self.check_cleaned()
         self._ensure_not_frozen()
@@ -510,6 +534,9 @@ class WeakConcurrentList(Generic[_T], Cleanable):
         Raises:
             RuntimeError: If the list has been cleaned.
             TypeError: If the list is frozen.
+
+        Returns:
+            None.
         """
         self.check_cleaned()
         self._ensure_not_frozen()
@@ -528,6 +555,9 @@ class WeakConcurrentList(Generic[_T], Cleanable):
         Raises:
             RuntimeError: If the list has been cleaned.
             TypeError: If the list is frozen.
+
+        Returns:
+            None.
         """
         self.check_cleaned()
         self._ensure_not_frozen()
@@ -547,6 +577,9 @@ class WeakConcurrentList(Generic[_T], Cleanable):
             RuntimeError: If the list has been cleaned.
             TypeError: If the list is frozen.
             ValueError: If the item is not found in the live entries of the list.
+
+        Returns:
+            None.
         """
         self.check_cleaned()
         self._ensure_not_frozen()
@@ -610,6 +643,9 @@ class WeakConcurrentList(Generic[_T], Cleanable):
         Raises:
             RuntimeError: If the list has been cleaned.
             TypeError: If the list is frozen.
+
+        Returns:
+            None.
         """
         self.check_cleaned()
         self._ensure_not_frozen()
@@ -658,6 +694,9 @@ class WeakConcurrentList(Generic[_T], Cleanable):
     def reverse(self) -> None:
         """
         Reverse the list in place (order of nodes), preserving weak semantics.
+
+        Returns:
+            None.
         """
         self.check_cleaned()
         self._ensure_not_frozen()
@@ -690,6 +729,10 @@ class WeakConcurrentList(Generic[_T], Cleanable):
 
         Returns:
             int: Number of live entries equal to `item`.
+
+        Args:
+            value:
+                Value to count. Only LIVE elements are compared.
         """
         self.check_cleaned()
         with self._lock:
@@ -712,6 +755,10 @@ class WeakConcurrentList(Generic[_T], Cleanable):
 
         Returns:
             int: Index of the first matching live value.
+
+        Args:
+            value:
+                Value to locate among the live elements.
         """
         self.check_cleaned()
         with self._lock:
@@ -732,6 +779,10 @@ class WeakConcurrentList(Generic[_T], Cleanable):
     def copy(self) -> "WeakConcurrentList[_T]":
         """
         Return a shallow copy containing only current live values.
+
+        Returns:
+            WeakConcurrentList[_T]: A new weak list over the currently live elements.
+                The copy holds them weakly too, so it does not extend their lifetime.
         """
         return WeakConcurrentList(self.to_list(), auto_prune=self._auto_prune)
 
@@ -901,6 +952,14 @@ class WeakConcurrentList(Generic[_T], Cleanable):
     def map(self, func: Callable[[_T], _T]) -> "WeakConcurrentList[_T]":
         """
         Apply ``func`` to each live element and return a new weak list of results.
+
+        Returns:
+            WeakConcurrentList[_T]: A new weak list of the mapped results. Results that
+                nothing else references may be collected immediately.
+
+        Args:
+            func:
+                Callable applied to each live element.
         """
         mapped_values = [func(value) for value in self.to_list()]
         return WeakConcurrentList(mapped_values, auto_prune=self._auto_prune)
@@ -908,6 +967,14 @@ class WeakConcurrentList(Generic[_T], Cleanable):
     def filter(self, func: Callable[[_T], bool]) -> "WeakConcurrentList[_T]":
         """
         Keep only live elements where ``func(value)`` returns True.
+
+        Returns:
+            WeakConcurrentList[_T]: A new weak list of the live elements that satisfied
+                the predicate.
+
+        Args:
+            func:
+                Predicate applied to each live element.
         """
         filtered_values = [
             value
@@ -922,6 +989,12 @@ class WeakConcurrentList(Generic[_T], Cleanable):
 
         Returns:
             Any: Reduced accumulator value.
+
+        Args:
+            func:
+                Two-argument reducer applied across live elements.
+            initial:
+                Seed value for the reduction.
         """
         return _reduce(func, self.to_list(), initial)
 

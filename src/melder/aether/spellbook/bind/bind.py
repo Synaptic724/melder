@@ -84,6 +84,12 @@ class Bind(Cleanable):
         the crystallizer, so custody is born here (gated on
         `activated AND dynamic posture`) rather than being swept up later.
     """
+    _ast_helper_access: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. Spellbook registration gateway for classes, callables, and concrete "
+        "objects. Melder kernel machinery: read it to understand the runtime, do not drive it "
+        "directly."
+    )
     __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
         "_id",
@@ -104,6 +110,9 @@ class Bind(Cleanable):
             - Serializes registration work behind an internal lock.
             - Treats the supplied spellbook as the destination authority for
               all created spell bindings.
+
+        Returns:
+            None.
         """
         super().__init__()
         self._id: str = IDBuilder.create_id()
@@ -123,6 +132,9 @@ class Bind(Cleanable):
         - Idempotent and lock-guarded.
         - Cleans the owned `SpellExaminer` before dropping references.
         - Leaves future callers to fail through `check_cleaned()`.
+
+        Returns:
+            None.
         """
         if self._cleaned:
             return

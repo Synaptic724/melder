@@ -42,6 +42,11 @@ class FrameDescriptorPayload(Cleanable):
         objects would extend their lifetime and let a viewer reach the runtime
         it is only meant to describe.
     """
+    _ast_helper_access: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. Descriptor-safe published frame payload. Melder kernel machinery: read "
+        "it to understand the runtime, do not drive it directly."
+    )
 
     __melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
@@ -110,6 +115,9 @@ class FrameDescriptorPayload(Cleanable):
         Raises:
             ValueError:
                 If `payload_version` is empty.
+
+        Returns:
+            None.
         """
         super().__init__()
         if not payload_version:
@@ -136,6 +144,9 @@ class FrameDescriptorPayload(Cleanable):
             - Clears all stored descriptor-facing posture fields.
             - Leaves future callers to fail through `check_cleaned()`.
             - Runs grouped teardown under the payload-owned instance lock.
+
+        Returns:
+            None.
         """
         if self._cleaned:
             return

@@ -62,6 +62,12 @@ class SpellBinder(Cleanable):
         makes each registration independent, and the reset-after-finalize keeps
         the object safely reusable.
     """
+    _ast_helper_access: str = "public"
+    __agent_purpose__: str = (
+        "access: public. Fluent alternative to Spellbook.bind(...). Chain the bind-time choices then "
+        "finalize() to submit. Holds one pending registration at a time; bind(...) resets in-flight "
+        "state. Holds the Spellbook weakly."
+    )
     __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
         "_weak_spellbook",
@@ -107,6 +113,9 @@ class SpellBinder(Cleanable):
 
         Raises:
             ValueError: If `spellbook` is None.
+
+        Returns:
+            None.
         """
         # 1. Initialize Base (Sets self._cleaned = False)
         Cleanable.__init__(self)
@@ -140,6 +149,9 @@ class SpellBinder(Cleanable):
         states. After cleanup, this instance cannot be used; subsequent API calls
         will fail via `check_cleaned()` / live Spellbook resolution. The method
         is idempotent.
+
+        Returns:
+            None.
         """
         if self._cleaned:
             return
@@ -350,6 +362,14 @@ class SpellBinder(Cleanable):
 
         Raises:
             RuntimeError: If the binder has been cleaned or its Spellbook weakener is dead.
+
+        Returns:
+            SpellBinder: This binder, for fluent chaining. Call finalize() to submit the
+                assembled registration to the Spellbook.
+
+        Args:
+            existence:
+                `Existence` member or its string name setting instance lifetime.
         """
         self.check_cleaned()
         with self._lock:
@@ -372,6 +392,10 @@ class SpellBinder(Cleanable):
 
         Raises:
             RuntimeError: If the binder has been cleaned or its Spellbook weakener is dead.
+
+        Returns:
+            SpellBinder: This binder, for fluent chaining. Call finalize() to submit the
+                assembled registration to the Spellbook.
         """
         self.check_cleaned()
         with self._lock:
@@ -394,6 +418,10 @@ class SpellBinder(Cleanable):
 
         Raises:
             RuntimeError: If the binder has been cleaned or its Spellbook weakener is dead.
+
+        Returns:
+            SpellBinder: This binder, for fluent chaining. Call finalize() to submit the
+                assembled registration to the Spellbook.
         """
         self.check_cleaned()
         with self._lock:
@@ -416,6 +444,10 @@ class SpellBinder(Cleanable):
 
         Raises:
             RuntimeError: If the binder has been cleaned or its Spellbook weakener is dead.
+
+        Returns:
+            SpellBinder: This binder, for fluent chaining. Call finalize() to submit the
+                assembled registration to the Spellbook.
         """
         self.check_cleaned()
         with self._lock:
@@ -437,6 +469,10 @@ class SpellBinder(Cleanable):
 
         Raises:
             RuntimeError: If the binder has been cleaned or its Spellbook weakener is dead.
+
+        Returns:
+            SpellBinder: This binder, for fluent chaining. Call finalize() to submit the
+                assembled registration to the Spellbook.
         """
         self.check_cleaned()
         with self._lock:
@@ -458,6 +494,10 @@ class SpellBinder(Cleanable):
 
         Raises:
             RuntimeError: If the binder has been cleaned or its Spellbook weakener is dead.
+
+        Returns:
+            SpellBinder: This binder, for fluent chaining. Call finalize() to submit the
+                assembled registration to the Spellbook.
         """
         self.check_cleaned()
         with self._lock:
@@ -480,6 +520,10 @@ class SpellBinder(Cleanable):
 
         Raises:
             RuntimeError: If the binder has been cleaned or its Spellbook weakref is dead.
+
+        Returns:
+            SpellBinder: This binder, for fluent chaining. Call finalize() to submit the
+                assembled registration to the Spellbook.
         """
         self.check_cleaned()
         with self._lock:
@@ -510,6 +554,15 @@ class SpellBinder(Cleanable):
             RuntimeError:
                 If the binder has been cleaned or its Spellbook weak reference is dead.
 
+
+        Returns:
+            SpellBinder: This binder, for fluent chaining. Call finalize() to submit the
+                assembled registration to the Spellbook.
+
+        Args:
+            permissions:
+                `Permissions` member or its string name setting the capability
+                ceiling for this lineage.
         """
         self.check_cleaned()
         with self._lock:
@@ -535,6 +588,10 @@ class SpellBinder(Cleanable):
             RuntimeError:
                 If the binder has been cleaned or its Spellbook weak reference is dead.
 
+
+        Returns:
+            SpellBinder: This binder, for fluent chaining. Call finalize() to submit the
+                assembled registration to the Spellbook.
         """
         self.check_cleaned()
         with self._lock:
@@ -558,6 +615,10 @@ class SpellBinder(Cleanable):
             RuntimeError:
                 If the binder has been cleaned or its Spellbook weak reference is dead.
 
+
+        Returns:
+            SpellBinder: This binder, for fluent chaining. Call finalize() to submit the
+                assembled registration to the Spellbook.
         """
         self.check_cleaned()
         with self._lock:
@@ -576,6 +637,10 @@ class SpellBinder(Cleanable):
 
         Raises:
             RuntimeError: If the binder has been cleaned or its Spellbook weakener is dead.
+
+        Returns:
+            SpellBinder: This binder, for fluent chaining. Call finalize() to submit the
+                assembled registration to the Spellbook.
         """
         self.check_cleaned()
         with self._lock:
@@ -600,6 +665,14 @@ class SpellBinder(Cleanable):
 
         Raises:
             RuntimeError: If the binder has been cleaned or its Spellbook weakener is dead.
+
+        Returns:
+            SpellBinder: This binder, for fluent chaining. Call finalize() to submit the
+                assembled registration to the Spellbook.
+
+        Args:
+            hook:
+                Callable invoked before the spell is constructed.
         """
         self.check_cleaned()
         with self._lock:
@@ -617,6 +690,10 @@ class SpellBinder(Cleanable):
 
         Raises:
             RuntimeError: If the binder has been cleaned or its Spellbook weakener is dead.
+
+        Returns:
+            SpellBinder: This binder, for fluent chaining. Call finalize() to submit the
+                assembled registration to the Spellbook.
         """
         self.check_cleaned()
         with self._lock:
@@ -640,6 +717,14 @@ class SpellBinder(Cleanable):
 
         Raises:
             RuntimeError: If the binder has been cleaned or its Spellbook weakener is dead.
+
+        Returns:
+            SpellBinder: This binder, for fluent chaining. Call finalize() to submit the
+                assembled registration to the Spellbook.
+
+        Args:
+            hook:
+                Callable invoked when the spell is activated.
         """
         self.check_cleaned()
         with self._lock:
@@ -657,6 +742,10 @@ class SpellBinder(Cleanable):
 
         Raises:
             RuntimeError: If the binder has been cleaned or its Spellbook weakener is dead.
+
+        Returns:
+            SpellBinder: This binder, for fluent chaining. Call finalize() to submit the
+                assembled registration to the Spellbook.
         """
         self.check_cleaned()
         with self._lock:
@@ -679,6 +768,14 @@ class SpellBinder(Cleanable):
 
         Raises:
             RuntimeError: If the binder has been cleaned or its Spellbook weakener is dead.
+
+        Returns:
+            SpellBinder: This binder, for fluent chaining. Call finalize() to submit the
+                assembled registration to the Spellbook.
+
+        Args:
+            hook:
+                Callable invoked after construction completes.
         """
         self.check_cleaned()
         with self._lock:
@@ -696,6 +793,10 @@ class SpellBinder(Cleanable):
 
         Raises:
             RuntimeError: If the binder has been cleaned or its Spellbook weakener is dead.
+
+        Returns:
+            SpellBinder: This binder, for fluent chaining. Call finalize() to submit the
+                assembled registration to the Spellbook.
         """
         self.check_cleaned()
         with self._lock:

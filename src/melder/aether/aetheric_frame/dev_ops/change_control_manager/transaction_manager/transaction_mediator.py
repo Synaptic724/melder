@@ -84,6 +84,11 @@ class TransactionMediator(Cleanable):
         - Scope waiting blocks on the embargo manager's condition, never while
           holding the mediator lock.
     """
+    _ast_helper_access: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. Frame-local live transaction session mediator. Melder kernel "
+        "machinery: read it to understand the runtime, do not drive it directly."
+    )
 
     __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
@@ -145,6 +150,9 @@ class TransactionMediator(Cleanable):
 
         Raises:
             ValueError: If required collaborators are missing.
+
+        Returns:
+            None.
         """
         super().__init__()
         if transaction_manager is None:
@@ -197,6 +205,9 @@ class TransactionMediator(Cleanable):
         Contract:
             - Does not commit or abort in-flight requests implicitly.
             - Drops local session references and thread-local stacks only.
+
+        Returns:
+            None.
         """
         if self._cleaned:
             return
@@ -238,6 +249,9 @@ class TransactionMediator(Cleanable):
             max_transaction_wait_time_in_seconds:
                 Maximum seconds a scope-blocked root start may wait for its
                 claims before admission times out.
+
+        Returns:
+            None.
         """
         if (
             not isinstance(max_transaction_wait_time_in_seconds, (int, float))
@@ -785,6 +799,9 @@ class TransactionMediator(Cleanable):
     ) -> None:
         """
         Mark the current active session abort-only on the current thread.
+
+        Returns:
+            None.
         """
         
         session = self.get_active_session()

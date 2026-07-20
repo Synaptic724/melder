@@ -77,6 +77,11 @@ class StructuralSynthesizer(Cleanable):
         decorators travel with their definition, and replacements splice in
         descending line order so earlier spans stay valid as later ones change.
     """
+    _ast_helper_access: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. AST-guided source composition over two recorded version texts. Melder "
+        "kernel machinery: read it to understand the runtime, do not drive it directly."
+    )
     __melder_internal__: ClassVar[object] = _mrg.sentinel
 
     __slots__ = Cleanable.__slots__ + [
@@ -99,6 +104,9 @@ class StructuralSynthesizer(Cleanable):
 
         Contract:
             - Idempotent; del posture; lock last.
+
+        Returns:
+            None.
         """
         if self._cleaned:
             return

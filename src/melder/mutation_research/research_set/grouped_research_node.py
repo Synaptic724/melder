@@ -73,6 +73,11 @@ class GroupedResearchNode(Cleanable):
         invariant applies to group identities exactly as to spell
         identities); `cleanup()` deletes owned fields; idempotent.
     """
+    _ast_helper_access: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. One immutable COMPOSITION record inside a research lane. Melder kernel "
+        "machinery: read it to understand the runtime, do not drive it directly."
+    )
     __melder_internal__: ClassVar[object] = _mrg.sentinel
 
     NODE_TYPE = "group"
@@ -124,6 +129,9 @@ class GroupedResearchNode(Cleanable):
             ValueError:
                 If the member list is empty, any member is empty, or any
                 parent group id is empty.
+
+        Returns:
+            None.
         """
         super().__init__()
         if not isinstance(member_spell_ids, list) or not member_spell_ids:
@@ -179,6 +187,9 @@ class GroupedResearchNode(Cleanable):
 
         Contract:
             - Idempotent; del posture (no tombstones).
+
+        Returns:
+            None.
         """
         if self._cleaned:
             return

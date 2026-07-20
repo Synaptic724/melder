@@ -49,6 +49,11 @@ class ConduitState(Enum):
         and owns the Spellbook lifecycle, so a lesser conduit's teardown can
         never unregister state the root still depends on.
     """
+    _ast_helper_access: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. Lifecycle classification for a conduit instance. Melder kernel "
+        "machinery: read it to understand the runtime, do not drive it directly."
+    )
     __melder_internal__ = _mrg.sentinel
     normal = auto()
     lesser = auto()

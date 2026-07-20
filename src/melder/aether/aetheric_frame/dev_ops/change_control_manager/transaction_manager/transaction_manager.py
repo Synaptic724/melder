@@ -92,6 +92,11 @@ class ChangeControlTransactionManager(Cleanable):
         eagerly at the mutation site under held claims so that promoting it into
         policy later is a decision rather than a rewrite.
     """
+    _ast_helper_access: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. Transaction-bookkeeping root for change-control admission. Melder "
+        "kernel machinery: read it to understand the runtime, do not drive it directly."
+    )
     __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
         "_lock",
@@ -112,6 +117,9 @@ class ChangeControlTransactionManager(Cleanable):
         The manager intentionally starts with no ambient state beyond those
         registries; all request and link information is learned through explicit
         admission / link-tracking calls.
+
+        Returns:
+            None.
         """
         super().__init__()
         self._lock: RLock = RLock()
@@ -133,6 +141,9 @@ class ChangeControlTransactionManager(Cleanable):
         Cleanup does not attempt any external side effects. Its job is only to
         tear down this manager's owned bookkeeping so stale transaction state
         cannot survive past the lifetime of the owning DevOps surface.
+
+        Returns:
+            None.
         """
         if self._cleaned:
             return
@@ -168,6 +179,9 @@ class ChangeControlTransactionManager(Cleanable):
 
         Args:
             fn: Callable that receives admitted requests, or `None`.
+
+        Returns:
+            None.
         """
         
         with self._lock:
@@ -457,6 +471,9 @@ class ChangeControlTransactionManager(Cleanable):
         This is the handoff point between admission and lifecycle tracking:
         once a request is added here, the rest of the change-control system may
         treat it as active until commit or abort removes it again.
+
+        Returns:
+            None.
         """
         
         audit_fn: Optional[Callable[[ChangeControlTransactionRequest], None]] = None
@@ -475,6 +492,9 @@ class ChangeControlTransactionManager(Cleanable):
           method without pre-checking for presence.
         - Removal only affects the in-flight registry; it does not touch the
           link mirror or any external embargo state.
+
+        Returns:
+            None.
         """
         
         with self._lock:
@@ -524,6 +544,9 @@ class ChangeControlTransactionManager(Cleanable):
         This mirror is descriptive state today, but it is shaped so future
         admission policy could reason about borrower/provider fan-out without
         redesigning the registry.
+
+        Returns:
+            None.
         """
         
         if not borrower_conduit_id or not provider_conduit_id:
@@ -540,6 +563,9 @@ class ChangeControlTransactionManager(Cleanable):
           pre-checking membership.
         - If a provider no longer has any tracked borrowers after removal, its
           mirror entry is removed entirely.
+
+        Returns:
+            None.
         """
         
         if not borrower_conduit_id or not provider_conduit_id:

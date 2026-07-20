@@ -125,6 +125,9 @@ class WeakRefNode(Cleanable, Generic[_T]):
 
         Raises:
             TypeError: If the `target` object does not support weak references.
+
+        Returns:
+            None.
         """
         super().__init__()
         self._id: str = new_ulid()
@@ -197,6 +200,9 @@ class WeakRefNode(Cleanable, Generic[_T]):
             - Marks the node dead and cleaned.
             - Does not fire callbacks implicitly; explicit removal paths remain
               responsible for `fire_callbacks()` when that behavior is needed.
+
+        Returns:
+            None.
         """
         if self._cleaned:
             return
@@ -319,6 +325,9 @@ class WeakRefNode(Cleanable, Generic[_T]):
         Raises:
             RuntimeError: If attempting to set the target on a cleaned node.
             TypeError: If the new object does not support weak references.
+
+        Returns:
+            None.
         """
         if self._cleaned:
             raise RuntimeError("Cannot set target on a cleaned WeakRefNode.")
@@ -453,6 +462,9 @@ class WeakRefNode(Cleanable, Generic[_T]):
 
         Raises:
             RuntimeError: If attempting to add a callback to a cleaned node.
+
+        Returns:
+            None.
         """
         if self._cleaned:
             raise RuntimeError("Cannot add callback to a cleaned WeakRefNode.")
@@ -465,6 +477,9 @@ class WeakRefNode(Cleanable, Generic[_T]):
 
         This allows a container to force firing callbacks in a controlled
         context instead of waiting for GC.
+
+        Returns:
+            None.
         """
         if not self._callbacks and self._on_collect is None:
             return

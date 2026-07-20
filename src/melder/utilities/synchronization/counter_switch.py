@@ -126,6 +126,9 @@ class CounterSwitch(Cleanable):
         Args:
             state:
                 Initial ticket count. Default "2" starts open.
+
+        Returns:
+            None.
         """
         super().__init__()
         self._lock: threading.Lock = threading.Lock()
@@ -171,6 +174,9 @@ class CounterSwitch(Cleanable):
               existing claim lock, so a leader claim cannot interleave with the
               terminal transition. Hot paths ("advance", the ">=2" selector
               fast path) remain lockless and untouched.
+
+        Returns:
+            None.
         """
         if self._cleaned:
             return
@@ -208,6 +214,10 @@ class CounterSwitch(Cleanable):
         Public API
 
         Return the raw deque-backed state value.
+
+        Returns:
+            int: 0 when idle, 1 when a leader has claimed it and is pending, and >=2
+                once open.
         """
         return len(self._tickets)
 

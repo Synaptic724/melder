@@ -37,6 +37,12 @@ class AetherConfigurationBuilder(Cleanable):
         object is responsible for the configuration, and there is never a window
         where both the builder and the caller could mutate it.
     """
+    _ast_helper_access: str = "public"
+    __agent_purpose__: str = (
+        "access: public. Fluent one-shot builder for AetherConfiguration. Assemble, then "
+        "build()/finalize()/activate() - ownership transfers on that call and the builder is spent. "
+        "Obtain via Aether.create_configuration_builder()."
+    )
 
     __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
@@ -97,6 +103,11 @@ class AetherConfigurationBuilder(Cleanable):
 
         Returns:
             AetherConfigurationBuilder: This builder.
+
+        Args:
+            enabled:
+                True to let the utility system activate provider-backed channel
+                loggers. Disabled by default so importing melder never activates logging.
         """
         self.check_cleaned()
         self._configuration.with_channel_logger_activation_enabled(enabled)
@@ -111,6 +122,11 @@ class AetherConfigurationBuilder(Cleanable):
 
         Returns:
             AetherConfigurationBuilder: This builder.
+
+        Args:
+            resolver:
+                Callable the utility system will use to obtain channel loggers.
+                Recorded as a presence flag only - the record never carries code.
         """
         self.check_cleaned()
         self._configuration.with_channel_logger_resolver(resolver)
@@ -125,6 +141,10 @@ class AetherConfigurationBuilder(Cleanable):
 
         Returns:
             AetherConfigurationBuilder: This builder.
+
+        Args:
+            logger:
+                Fallback logger object used when no channel resolver answers.
         """
         self.check_cleaned()
         self._configuration.with_default_logger(logger)

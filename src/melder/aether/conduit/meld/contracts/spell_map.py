@@ -109,6 +109,12 @@ class SpellMap(Cleanable):
         `binding_name` form exists - it is the documented way to disambiguate
         when several spells legitimately satisfy the same frame.
     """
+    _ast_helper_access: str = "public"
+    __agent_purpose__: str = (
+        "access: public. Declarative DI descriptor for normal in-graph resolution. Write it as a "
+        "constructor default: SpellMap(MyRepo), SpellMap(ILogic, binding_name='primary'), or "
+        "frame-only with spell=None. Zero or multiple matches raise at build time."
+    )
 
     __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
@@ -173,6 +179,9 @@ class SpellMap(Cleanable):
         Raises:
             ValueError: If both `spell` and `spellframe` are omitted, because
                 the descriptor would have no DI identity.
+
+        Returns:
+            None.
         """
         if spell is None and spellframe is None:
             raise ValueError(
@@ -199,6 +208,9 @@ class SpellMap(Cleanable):
             - Clears mutable override payloads before dropping references.
             - After cleanup the descriptor should be treated as unusable and
               callers should rely on `check_cleaned()` before reading it.
+
+        Returns:
+            None.
         """
         if self._cleaned:
             return

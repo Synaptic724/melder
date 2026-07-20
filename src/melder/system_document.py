@@ -78,8 +78,9 @@ class StaticSystemDocument:
     __melder_internal__: ClassVar[object] = _mrg.sentinel
     _ast_helper_access: str = "public"
     __agent_purpose__: str = (
-        "access: public. Top-level hardcopy system document object for Melder "
-        "agent onboarding and architecture querying."
+        "access: public. Immutable packaged hardcopy of a system document. Read "
+        "`melder.__architecture__`, `__components__`, `__graph_network__`, `__graph_details__` to "
+        "orient inside the runtime without leaving the process."
     )
     __slots__ = [
         "_document_name",

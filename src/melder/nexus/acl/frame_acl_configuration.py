@@ -98,6 +98,11 @@ class FrameACLConfiguration(Cleanable):
         Carrying linked-history metadata on the node keeps the chain
         self-describing, so provenance is walkable without a side table.
     """
+    _ast_helper_access: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. FrameACLConfiguration runtime object. Melder kernel machinery: read it "
+        "to understand the runtime, do not drive it directly."
+    )
 
     __melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
@@ -436,6 +441,9 @@ class FrameACLConfiguration(Cleanable):
               configurations before dropping references.
             - Clears node identity/history metadata so future callers fail
               through `check_cleaned()`.
+
+        Returns:
+            None.
         """
         if self._cleaned:
             return
@@ -613,6 +621,9 @@ class FrameACLConfiguration(Cleanable):
         Raises:
             RuntimeError:
                 If the configuration node is already locked.
+
+        Returns:
+            None.
         """
         self.check_cleaned()
         if self._locked:
@@ -628,6 +639,9 @@ class FrameACLConfiguration(Cleanable):
         Contract:
             - Finalization is one-way for this node.
             - Does not rebuild child configs; it only flips the mutability gate.
+
+        Returns:
+            None.
         """
         self.check_cleaned()
         self._locked = True
@@ -654,6 +668,9 @@ class FrameACLConfiguration(Cleanable):
                 If the configuration node is already locked.
             TypeError:
                 If `view_configuration` is not a `FrameACLViewConfiguration`.
+
+        Returns:
+            None.
         """
         self.check_cleaned()
         if self._locked:
@@ -729,6 +746,9 @@ class FrameACLConfiguration(Cleanable):
             TypeError:
                 If `codegen_configuration` is not a
                 `FrameACLCodegenConfiguration`.
+
+        Returns:
+            None.
         """
         self.check_cleaned()
         if self._locked:
@@ -767,6 +787,9 @@ class FrameACLConfiguration(Cleanable):
                 If the payload input is not a string.
             ValueError:
                 If the payload is malformed or does not decode to an object.
+
+        Returns:
+            None.
         """
         self.check_cleaned()
         if self._locked:

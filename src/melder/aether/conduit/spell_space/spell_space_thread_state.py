@@ -46,6 +46,11 @@ class _SpellSpaceLocal(threading.local):
         attribute unconditionally present, so the owner can use direct access
         and keep the owned-code contract strict.
     """
+    _ast_helper_access: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. Per-thread spellspace storage for one `SpellSpaceThreadState`. Melder "
+        "kernel machinery: read it to understand the runtime, do not drive it directly."
+    )
 
     __melder_internal__ = _mrg.sentinel
     def __init__(self) -> None:
@@ -113,6 +118,11 @@ class SpellSpaceThreadState(Cleanable):
         for tests and experiments that must force or clear state explicitly;
         it is deliberately not part of the normal enter/exit flow.
     """
+    _ast_helper_access: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. Thread-local spellspace stack holder for one conduit. Melder kernel "
+        "machinery: read it to understand the runtime, do not drive it directly."
+    )
 
     __melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + ["_local"]

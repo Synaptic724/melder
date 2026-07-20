@@ -29,6 +29,11 @@ class ConduitPool(AbstractElasticPool[Any]):
           policy.
         - Adds no extra shared mutable state beyond the root-conduit reference.
     """
+    _ast_helper_access: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. Root-conduit-owned elastic pool scaffold for reusable lesser conduits. "
+        "Melder kernel machinery: read it to understand the runtime, do not drive it directly."
+    )
 
     __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = AbstractElasticPool.__slots__ + [
@@ -104,6 +109,9 @@ class ConduitPool(AbstractElasticPool[Any]):
         Contract:
             - Uses the conduit hard-destroy lane.
             - Assumes the pooled conduit implements `permanent_cleanup()`.
+
+        Returns:
+            None.
         """
         obj.permanent_cleanup()
 
@@ -121,6 +129,9 @@ class ConduitPool(AbstractElasticPool[Any]):
               current target.
             - Evicts one cold idle conduit with `popleft()` when retained
               capacity is exceeded.
+
+        Returns:
+            None.
         """
         self._idle.append(conduit)
         if len(self._idle) <= self._target_idle:

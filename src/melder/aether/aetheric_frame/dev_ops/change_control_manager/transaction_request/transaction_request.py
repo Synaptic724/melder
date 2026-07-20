@@ -33,6 +33,11 @@ class ChangeTransactionType(StrEnum):
     Lifecycle:
         No cleanup required.
     """
+    _ast_helper_access: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. Change-control transaction types. Melder kernel machinery: read it to "
+        "understand the runtime, do not drive it directly."
+    )
     __melder_internal__ = _mrg.sentinel
     BIND = "bind"
     CONJURE = "conjure"
@@ -106,6 +111,11 @@ class ChangeControlTransactionRequest:
     Lifecycle:
         Immutable; no cleanup required.
     """
+    _ast_helper_access: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. Immutable transaction request payload for admission and tracking. "
+        "Melder kernel machinery: read it to understand the runtime, do not drive it directly."
+    )
     __melder_internal__: ClassVar[object] = _mrg.sentinel
     request_id: str
     request_type: ChangeTransactionType
@@ -154,6 +164,11 @@ class ChangeControlAdmissionResult:
     Lifecycle:
         Immutable; no cleanup required.
     """
+    _ast_helper_access: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. Admission decision for a change-control transaction request. Melder "
+        "kernel machinery: read it to understand the runtime, do not drive it directly."
+    )
     __melder_internal__: ClassVar[object] = _mrg.sentinel
     admitted: bool
     reasons: Tuple[str, ...] = ()

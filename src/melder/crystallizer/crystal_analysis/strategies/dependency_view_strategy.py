@@ -48,6 +48,11 @@ class DependencyViewStrategy(CrystalFactStrategy):
         Holds no resources or references between calls; inherited cleanup is a
         no-op beyond the strategy lifecycle contract.
     """
+    _ast_helper_access: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. Derive the topological unfold order over walked modules. Melder kernel "
+        "machinery: read it to understand the runtime, do not drive it directly."
+    )
 
     __melder_internal__ = _mrg.sentinel
     __slots__ = ()

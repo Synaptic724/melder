@@ -56,6 +56,11 @@ class StructuralDiffStrategy(DiffStrategy):
         change - which is precisely the distinction a reviewer needs and a text
         diff cannot make.
     """
+    _ast_helper_access: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. AST-level structural comparison between two version materials. Melder "
+        "kernel machinery: read it to understand the runtime, do not drive it directly."
+    )
     __melder_internal__: ClassVar[object] = _mrg.sentinel
 
     __slots__ = DiffStrategy.__slots__

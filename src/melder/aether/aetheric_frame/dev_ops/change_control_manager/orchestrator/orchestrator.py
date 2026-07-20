@@ -59,6 +59,11 @@ class ChangeControlOrchestrator(Cleanable):
         cleanup() is idempotent and clears only orchestrator-owned staged state
         and hook references.
     """
+    _ast_helper_access: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. Serialized control-plane coordinator for change-control requests. "
+        "Melder kernel machinery: read it to understand the runtime, do not drive it directly."
+    )
     __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
         "_lock",
@@ -78,6 +83,9 @@ class ChangeControlOrchestrator(Cleanable):
         Contract:
             - Starts with no staged requests and no hooks.
             - Safe to publish immediately after construction.
+
+        Returns:
+            None.
         """
         super().__init__()
         self._lock: RLock = RLock()
@@ -98,6 +106,9 @@ class ChangeControlOrchestrator(Cleanable):
             - Does not attempt to finalize external transaction or embargo
               state; callers must not use cleanup as a lifecycle substitute for
               `commit_request(...)` or `abort_request(...)`.
+
+        Returns:
+            None.
         """
         if self._cleaned:
             return

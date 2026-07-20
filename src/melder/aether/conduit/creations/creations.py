@@ -71,6 +71,11 @@ class Creations(Cleanable):
         lineage, and spellspace scopes, so a lifetime is expressed by WHICH
         instance holds the object, not by a different storage shape per mode.
     """
+    _ast_helper_access: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. Scoped live creation registry. Melder kernel machinery: read it to "
+        "understand the runtime, do not drive it directly."
+    )
 
     __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
@@ -112,6 +117,9 @@ class Creations(Cleanable):
         Raises:
             ValueError:
                 If either identifier is empty.
+
+        Returns:
+            None.
         """
         super().__init__()
         if not owner_conduit_id:
@@ -149,6 +157,9 @@ class Creations(Cleanable):
             - Performs the detach step under `_lock`.
             - Disposal work happens after detach so callers cannot keep racing
               the live registries while cleanup is executing.
+
+        Returns:
+            None.
         """
         if self._cleaned:
             return
@@ -250,6 +261,9 @@ class Creations(Cleanable):
             - Rejects duplicate keys across both registries.
             - Treats the stored object itself as the authoritative runtime
               payload; there is no `Creation.value` wrapper in the live store.
+
+        Returns:
+            None.
         """
         if key in self._creations or key in self._disposable_creations:
             raise ValueError(f"Key {key} already exists in creations.")
@@ -290,6 +304,9 @@ class Creations(Cleanable):
             - Runs under `_lock` (re-entrant, shared with extract/restore/
               clear); every successfully returned managed creation is
               represented in both registries once this method returns.
+
+        Returns:
+            None.
         """
         with self._lock:
             live_value = self._creations.get(key)
@@ -404,6 +421,9 @@ class Creations(Cleanable):
             - Raises when the payload does not match the local slot shape.
             - Restores the same raw object references that were extracted; it
               does not clone or rehydrate them.
+
+        Returns:
+            None.
         """
         if not creations:
             return
@@ -475,6 +495,9 @@ class Creations(Cleanable):
             - Raises `ExceptionGroup` after best-effort disposal attempts.
             - Leaves this `Creations` instance reusable after the clear
               completes.
+
+        Returns:
+            None.
         """
         with self._lock:
             if not self._creations and not self._disposable_creations:
@@ -501,6 +524,9 @@ class Creations(Cleanable):
               clear only the live registry under lock and return.
             - Falls back to the full detachable disposal flow when disposable
               cleanup work is required.
+
+        Returns:
+            None.
         """
         with self._lock:
             if not self._creations and not self._disposable_creations:

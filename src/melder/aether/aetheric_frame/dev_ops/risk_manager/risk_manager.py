@@ -57,6 +57,11 @@ class _ConduitRiskState:
         everywhere or because THIS conduit cannot currently resolve it, which
         are different problems with different fixes.
     """
+    _ast_helper_access: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. Per-conduit bucket of risk-tracking state. Melder kernel machinery: "
+        "read it to understand the runtime, do not drive it directly."
+    )
     __slots__ = [
         "spellbook",
         "lineages",
@@ -75,6 +80,9 @@ class _ConduitRiskState:
         - Starts with empty lineage and risk sets.
         - Retains the live spellbook reference so later risk refreshes can push
           validation-required state back onto the conduit owner.
+
+        Returns:
+            None.
         """
         self.spellbook: Spellbook = spellbook
         self.lineages: Set[str] = set()
@@ -147,6 +155,11 @@ class RiskManager(Cleanable):
         validation gating - removing a lineage must never leave a stale "valid"
         verdict behind that meld could still act on.
     """
+    _ast_helper_access: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. DevOps risk tracking for meld validation gating. Melder kernel "
+        "machinery: read it to understand the runtime, do not drive it directly."
+    )
     __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
         "_lock",
@@ -179,6 +192,9 @@ class RiskManager(Cleanable):
           risk/reporting consumers.
         - Does not snapshot spell state; all risk evaluation stays live against
           the supplied `SpellSystemStates` registry.
+
+        Returns:
+            None.
         """
         super().__init__()
         if spell_system_states is None:
@@ -202,6 +218,9 @@ class RiskManager(Cleanable):
         - Clears conduit and lineage indexes before dropping the
           `SpellSystemStates` reference.
         - Leaves future callers to fail through `check_cleaned()`.
+
+        Returns:
+            None.
         """
         if self._cleaned:
             return
@@ -245,6 +264,9 @@ class RiskManager(Cleanable):
             spellbook: Spellbook whose spells should be registered.
         Raises:
             RuntimeError: If this RiskManager has been cleaned.
+
+        Returns:
+            None.
         """
         
         if not conduit_id or spellbook is None:
@@ -274,6 +296,9 @@ class RiskManager(Cleanable):
             conduit_id: Conduit identifier to remove.
         Raises:
             RuntimeError: If this RiskManager has been cleaned.
+
+        Returns:
+            None.
         """
         
         if not conduit_id:
@@ -309,6 +334,9 @@ class RiskManager(Cleanable):
             spell: Spell instance to register.
         Raises:
             RuntimeError: If this RiskManager has been cleaned.
+
+        Returns:
+            None.
         """
         
         if not conduit_id or spell is None:
@@ -352,6 +380,9 @@ class RiskManager(Cleanable):
             spell: Spell instance to unregister.
         Raises:
             RuntimeError: If this RiskManager has been cleaned.
+
+        Returns:
+            None.
         """
         
         if not conduit_id or spell is None:
@@ -392,6 +423,9 @@ class RiskManager(Cleanable):
             validity: New structural validity (None treated as risky).
         Raises:
             RuntimeError: If this RiskManager has been cleaned.
+
+        Returns:
+            None.
         """
         
         if not lineage_id:
@@ -424,6 +458,9 @@ class RiskManager(Cleanable):
             validity: New resolution validity (None treated as risky).
         Raises:
             RuntimeError: If this RiskManager has been cleaned.
+
+        Returns:
+            None.
         """
         
         if not conduit_id or not spell_id:

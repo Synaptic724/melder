@@ -79,6 +79,11 @@ class LinkTransactionStrategy(TransactionStrategy):
         every book that participates in any link, which in a densely linked
         frame is close to serializing the frame.
     """
+    _ast_helper_access: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. Link transaction resolver. Melder kernel machinery: read it to "
+        "understand the runtime, do not drive it directly."
+    )
 
     @classmethod
     def build_start_plan(
@@ -245,6 +250,9 @@ class LinkTransactionStrategy(TransactionStrategy):
     ) -> None:
         """
         Link transactions do not need extra local start-side effects right now.
+
+        Returns:
+            None.
         """
         return None
 
@@ -257,5 +265,8 @@ class LinkTransactionStrategy(TransactionStrategy):
     ) -> None:
         """
         Link transactions do not need extra local end-side effects right now.
+
+        Returns:
+            None.
         """
         return None

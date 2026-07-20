@@ -50,6 +50,12 @@ class Existence(Enum):
         existing-object bindings must use `unique`, because there is nothing
         meaningful to construct per scope.
     """
+    _ast_helper_access: str = "public"
+    __agent_purpose__: str = (
+        "access: public. Declares instance lifetime at bind: unique (per frame), unique_per_conduit, "
+        "many, unique_per_conduit_cluster, unique_per_conduit_lineage, unique_per_spell_space. Pass "
+        "it to Spellbook.bind(...). Method/lambda/existing-object bindings must use unique."
+    )
     __melder_internal__ = _mrg.sentinel
     unique = auto()
     """

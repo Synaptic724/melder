@@ -54,6 +54,11 @@ class NexusFrameBuilder(Cleanable):
         semantics and topology rules. That is why `build()` and `create()` are
         distinct - a caller may want the configuration without realizing it.
     """
+    _ast_helper_access: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. Fluent authored-frame builder for Nexus-managed frames. Melder kernel "
+        "machinery: read it to understand the runtime, do not drive it directly."
+    )
 
     __melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [

@@ -127,6 +127,11 @@ class CrystalAnalyzer(Cleanable):
         bounded memo is not owned by an analyzer instance and therefore
         survives individual analyzer cleanup.
     """
+    _ast_helper_access: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. Compose custody and fact strategies into one analysis pass. Melder "
+        "kernel machinery: read it to understand the runtime, do not drive it directly."
+    )
 
     __melder_internal__ = _mrg.sentinel
     # Process-local memo of immutable syntax facts. Capacity bounds retained

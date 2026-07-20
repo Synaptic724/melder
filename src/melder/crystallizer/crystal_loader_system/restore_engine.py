@@ -59,6 +59,11 @@ class RestoreReport(Cleanable):
         caller with the return. Cleanup deletes reporting fields only and never
         tears down the rebuilt runtime.
     """
+    _ast_helper_access: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. Detached outcome record for one restore run. Melder kernel machinery: "
+        "read it to understand the runtime, do not drive it directly."
+    )
 
     __melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
@@ -130,6 +135,9 @@ class RestoreReport(Cleanable):
         Lifecycle / Cleanup:
             After a successful restore, the caller owns this report and decides
             when its detached result is no longer needed.
+
+        Returns:
+            None.
         """
         if self._cleaned:
             return
@@ -379,6 +387,12 @@ class RestoreEngine(Cleanable):
         Constructed per restore call. `cleanup()` deletes owned fold state;
         the returned report's ownership passes to the caller; idempotent.
     """
+    _ast_helper_access: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. Single-use driver that unfolds one folded checkpoint chain into the "
+        "live runtime through the PUBLIC verbs (boot lane). Melder kernel machinery: read it to "
+        "understand the runtime, do not drive it directly."
+    )
 
     __melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
@@ -535,6 +549,9 @@ class RestoreEngine(Cleanable):
         Lifecycle / Cleanup:
             `CrystalLoaderSystem` cleans every engine in `finally`, regardless
             of success, admission refusal, or replay failure.
+
+        Returns:
+            None.
         """
         if self._cleaned:
             return

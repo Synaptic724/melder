@@ -41,6 +41,11 @@ class ContractCrystal(Cleanable):
         Owned by one `PersistenceProfile`. Cleanup deletes copied relationship
         rows only and never severs a live contract.
     """
+    _ast_helper_access: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. Digital twin of one ward Contract: the record's relationship map. "
+        "Melder kernel machinery: read it to understand the runtime, do not drive it directly."
+    )
 
     __melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [

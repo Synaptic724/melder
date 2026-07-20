@@ -82,6 +82,12 @@ class UnelectConduitClusterLeaderTransactionStrategy(TransactionStrategy):
         afterwards on every exit path is mandatory - a gate left closed wedges
         the conduit permanently.
     """
+    _ast_helper_access: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. Unelect-cluster-leader transaction resolver (freeze envelope; no "
+        "domain effect). Melder kernel machinery: read it to understand the runtime, do not drive "
+        "it directly."
+    )
 
     @classmethod
     def build_start_plan(
@@ -141,6 +147,9 @@ class UnelectConduitClusterLeaderTransactionStrategy(TransactionStrategy):
             - PARK mode (`quiesce_conduit_lineage`): concurrent melds wait at
               their gate and resume when `on_end` reopens - they are never
               turned into errors and the gates are never terminally closed.
+
+        Returns:
+            None.
         """
         del devops_information_registry, identity
         gate_ops = metadata.get("conduit_lineage_gate_ops")
@@ -159,6 +168,9 @@ class UnelectConduitClusterLeaderTransactionStrategy(TransactionStrategy):
     ) -> None:
         """
         Reopen every member root lineage on every exit path (fail-closed).
+
+        Returns:
+            None.
         """
         del devops_information_registry, identity
         gate_ops = metadata.get("conduit_lineage_gate_ops")

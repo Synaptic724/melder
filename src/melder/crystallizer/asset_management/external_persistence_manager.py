@@ -50,6 +50,12 @@ class ExternalPersistenceManager(Cleanable):
         owned configuration and counters but never calls a remote handler to
         close, delete, or otherwise mutate user storage.
     """
+    _ast_helper_access: str = "public"
+    __agent_purpose__: str = (
+        "access: public. Your DB seam. Supply store/fetch/list/delete callables and melder ships "
+        "recorded units to them. Uploads are lenient and counted; deletes are strict. Entirely opt-in "
+        "and your operational responsibility."
+    )
 
     __melder_internal__: ClassVar[object] = _mrg.sentinel
 
@@ -120,6 +126,9 @@ class ExternalPersistenceManager(Cleanable):
 
         Lifecycle / Cleanup:
             The owning asset system cleans the manager before its local cache.
+
+        Returns:
+            None.
         """
         if self._cleaned:
             return

@@ -72,6 +72,11 @@ class SpellValidity(Enum):
         lets diagnostics tell "someone turned this off" apart from "this was
         torn down", which are very different operator problems.
     """
+    _ast_helper_access: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. Coarse validity gate used for both structural and resolution state. "
+        "Melder kernel machinery: read it to understand the runtime, do not drive it directly."
+    )
     __melder_internal__ = _mrg.sentinel
     unknown = auto()
     valid = auto()

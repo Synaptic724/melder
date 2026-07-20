@@ -32,6 +32,11 @@ class DevopsIdentity(Cleanable):
     Threading:
         - Internal mutation is guarded by an `RLock`.
     """
+    _ast_helper_access: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. Frame-local dev-ops identity surface for runtime objects. Melder "
+        "kernel machinery: read it to understand the runtime, do not drive it directly."
+    )
 
     __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
@@ -75,6 +80,9 @@ class DevopsIdentity(Cleanable):
                 If any required identity field is not a string.
             ValueError:
                 If any required identity field is empty.
+
+        Returns:
+            None.
         """
         super().__init__()
         for field_name, value in (

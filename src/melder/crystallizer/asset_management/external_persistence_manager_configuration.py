@@ -48,6 +48,12 @@ class ExternalPersistenceManagerConfiguration(Cleanable):
         the asset-owned manager owns and eventually cleans it. Cleanup drops
         callable references but never invokes them or deletes remote data.
     """
+    _ast_helper_access: str = "public"
+    __agent_purpose__: str = (
+        "access: public. Registers the mesh callables: with_store_handler / with_fetch_handler / "
+        "with_list_units_handler / with_delete_handler / with_stream_emissions. Read-only configs "
+        "must disable upload_on_flush explicitly."
+    )
 
     __melder_internal__: ClassVar[object] = _mrg.sentinel
 
@@ -117,6 +123,9 @@ class ExternalPersistenceManagerConfiguration(Cleanable):
         Lifecycle / Cleanup:
             Performed by the current owner: caller before attachment or the
             external manager after ownership transfer.
+
+        Returns:
+            None.
         """
         if self._cleaned:
             return

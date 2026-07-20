@@ -78,6 +78,12 @@ class ConduitCloud(Cleanable):
         what it checks for, which is why admission reads the frame registry
         directly rather than going through `_ensure_frame`.
     """
+    _ast_helper_access: str = "public"
+    __agent_purpose__: str = (
+        "access: public. Frame-scoped discovery and cluster facade. Use "
+        "has_conduit_name(...)/has_cluster_name(...) to probe without creating, and the cluster verbs "
+        "to form member groups. Reached via AethericFrame.conduit_cloud."
+    )
     __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
         "_lock",
@@ -124,6 +130,9 @@ class ConduitCloud(Cleanable):
             - Stores the owning frame name for later diagnostics/identity.
             - Retains borrowed references to the frame-owned root-conduit
               stores instead of copying them.
+
+        Returns:
+            None.
         """
         super().__init__()
         self._lock: threading.RLock = threading.RLock()
@@ -163,6 +172,9 @@ class ConduitCloud(Cleanable):
             - Cleans cloud-owned cluster state before dropping owned refs.
             - Does not clean the conduit objects or clear the borrowed
               frame-owned root-conduit stores.
+
+        Returns:
+            None.
         """
         if self._cleaned:
             return
@@ -461,6 +473,9 @@ class ConduitCloud(Cleanable):
 
         Raises:
             ValueError: If the cluster already exists.
+
+        Returns:
+            None.
         """
         self.check_cleaned()
         self._assert_cluster_operations_allowed()
@@ -485,6 +500,9 @@ class ConduitCloud(Cleanable):
 
         Raises:
             ValueError: If the cluster does not exist.
+
+        Returns:
+            None.
         """
         self.check_cleaned()
         self._assert_cluster_operations_allowed()
@@ -509,6 +527,9 @@ class ConduitCloud(Cleanable):
         Args:
             conduit (Conduit): Conduit to add.
             cluster_name (str): Target cluster.
+
+        Returns:
+            None.
         """
         self.check_cleaned()
         self._assert_cluster_operations_allowed()
@@ -536,6 +557,9 @@ class ConduitCloud(Cleanable):
         Args:
             conduit (Conduit): Conduit to remove.
             cluster_name (str): Target cluster.
+
+        Returns:
+            None.
         """
         self.check_cleaned()
         self._assert_cluster_operations_allowed()
@@ -568,6 +592,9 @@ class ConduitCloud(Cleanable):
 
         Args:
             conduit (Conduit): Target conduit.
+
+        Returns:
+            None.
         """
         self.check_cleaned()
         self._assert_cluster_operations_allowed()

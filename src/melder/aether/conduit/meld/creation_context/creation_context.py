@@ -94,6 +94,11 @@ class CreationContext(Cleanable):
         resolution. The hooks lane keeps the tuple door because it genuinely
         needs the `created` flag to decide whether activation hooks fire.
     """
+    _ast_helper_access: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. Spell-bound runtime executor context. Melder kernel machinery: read it "
+        "to understand the runtime, do not drive it directly."
+    )
 
     __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
@@ -144,6 +149,9 @@ class CreationContext(Cleanable):
             ValueError:
                 If `dynamic_environment` is true and `creation_gate` is not
                 supplied.
+
+        Returns:
+            None.
         """
         super().__init__()
         self._spell = spell
@@ -162,6 +170,9 @@ class CreationContext(Cleanable):
     def cleanup(self) -> None:
         """
         Deterministically release runtime references.
+
+        Returns:
+            None.
         """
         if self._cleaned:
             return

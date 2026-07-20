@@ -49,6 +49,11 @@ class FrameProjectionSet(Cleanable):
         reopen. The generation marker makes it possible to tell whether a room
         is running current policy without comparing the projections themselves.
     """
+    _ast_helper_access: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. Owned set of consumer-shaped projections for one targeted frame. "
+        "Melder kernel machinery: read it to understand the runtime, do not drive it directly."
+    )
 
     __melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
@@ -81,7 +86,12 @@ class FrameProjectionSet(Cleanable):
         self._metadata: Dict[str, object] = dict(metadata) if metadata else {}
 
     def cleanup(self) -> None:
-        """Idempotently cleanup the owned projections."""
+        """
+        Idempotently cleanup the owned projections.
+
+        Returns:
+            None.
+        """
         if self._cleaned:
             return
         self._cleaned = True

@@ -82,6 +82,11 @@ class LaneState(enum.Enum):
           organization snapshot machinery can restore views that contained
           it, and residence stays permanent so rediscovery still points here.
     """
+    _ast_helper_access: str = "public"
+    __agent_purpose__: str = (
+        "access: public. Lifecycle state of one research lane. Read it from lane views; "
+        "MutationResearch verbs move it."
+    )
 
     open = "open"
     joined = "joined"
@@ -122,6 +127,12 @@ class LaneType(enum.Enum):
           off) - a type-mixing join then requires the same force=True
           supersede the divergence law already uses.
     """
+    _ast_helper_access: str = "public"
+    __agent_purpose__: str = (
+        "access: public. Lane classification - development, experiment, production, test. Pass to "
+        "create_lane(...). Cross-type joins require force=True when configuration "
+        "lane_type_enforcement is on."
+    )
 
     development = "development"
     experiment = "experiment"
@@ -189,6 +200,14 @@ class ResearchLane(Cleanable):
         Owned by exactly one `ResearchSet`; `cleanup()` cleans owned nodes
         then deletes owned fields; idempotent; lock released last.
     """
+    _ast_helper_access: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. Governance (single-residence law, BUG-048): Lanes are handed out LIVE "
+        "as read surfaces. Every mutator on this class is set-internal (underscore-prefixed): "
+        "residence claims, the journal, snapshots, and persistence emission all live on the "
+        "owning `ResearchSet`, so public state change flows through set verbs ONLY. Melder kernel "
+        "machinery: read it to understand the runtime, do not drive it directly."
+    )
     __melder_internal__: ClassVar[object] = _mrg.sentinel
 
     __slots__ = Cleanable.__slots__ + [
@@ -239,6 +258,9 @@ class ResearchLane(Cleanable):
             ValueError:
                 If name is empty, or lane_type is not a `LaneType` value
                 (the error names the vocabulary).
+
+        Returns:
+            None.
         """
         super().__init__()
         if not isinstance(name, str) or not name:
@@ -277,6 +299,9 @@ class ResearchLane(Cleanable):
 
         Contract:
             - Idempotent; del posture (no tombstones); lock last.
+
+        Returns:
+            None.
         """
         if self._cleaned:
             return
@@ -619,6 +644,9 @@ class ResearchLane(Cleanable):
         Raises:
             RuntimeError:
                 If the lane is not open, or when no anchor exists.
+
+        Returns:
+            None.
         """
         self.check_cleaned()
         with self._lock:

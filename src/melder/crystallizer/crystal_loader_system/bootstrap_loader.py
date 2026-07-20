@@ -57,6 +57,12 @@ class CrystallizerBootstrap(Cleanable):
         `bootstrap()` begins, configuration ownership transfers downstream and
         cleanup never tears down the resulting crystallizer world.
     """
+    _ast_helper_access: str = "public"
+    __agent_purpose__: str = (
+        "access: public. Fluent single-use pod-boot chain: activate, attach the external manager, "
+        "reload cache, pull remote, verify the chain, restore the newest checkpoint. Use this to "
+        "bring a fresh process back to a recorded world in one expression."
+    )
 
     __melder_internal__: ClassVar[object] = _mrg.sentinel
 
@@ -127,6 +133,9 @@ class CrystallizerBootstrap(Cleanable):
         Lifecycle / Cleanup:
             Safe in `finally` on both successful and failed boot chains; the
             consumed flag determines whether configuration ownership moved.
+
+        Returns:
+            None.
         """
         if self._cleaned:
             return

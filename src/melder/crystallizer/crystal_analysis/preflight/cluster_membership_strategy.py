@@ -54,6 +54,11 @@ class ClusterMembershipStrategy(PersistenceAnalysisStrategy):
         user something was lost when nothing was; staying silent would
         hide why the live leader may differ from the sealed one.
     """
+    _ast_helper_access: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. Detect cluster members missing from the bundle. Melder kernel "
+        "machinery: read it to understand the runtime, do not drive it directly."
+    )
 
     __melder_internal__: ClassVar[object] = _mrg.sentinel
 

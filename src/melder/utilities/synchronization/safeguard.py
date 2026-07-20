@@ -119,6 +119,14 @@ class SafeGuard(Cleanable):
             - Stores timeout and one-time-use policy as part of the guard's own
               lifecycle.
             - Does not acquire any external locks during construction.
+
+        Returns:
+            None.
+
+        Args:
+            locks:
+                Locks to acquire together. SafeGuard orders them deterministically
+                so two SafeGuards over the same locks cannot deadlock against each other.
         """
         super().__init__()
         self._cleanup_lock: threading.RLock = threading.RLock()
@@ -140,6 +148,9 @@ class SafeGuard(Cleanable):
               responsible for releasing locks acquired during context use.
             - Exists to invalidate the guard object, not to substitute for a
               normal context-manager exit path.
+
+        Returns:
+            None.
         """
         if self._cleaned:
             return

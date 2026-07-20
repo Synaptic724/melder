@@ -56,6 +56,12 @@ class TransactionSession(Cleanable):
         - Same-thread ownership checks are explicit; cross-thread join is
           rejected.
     """
+    _ast_helper_access: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. Live transaction session rooted at one admitted change-control "
+        "request. Melder kernel machinery: read it to understand the runtime, do not drive it "
+        "directly."
+    )
 
     __melder_internal__: ClassVar[object] = _mrg.sentinel
     STATUS_OPEN: ClassVar[str] = "open"
@@ -108,6 +114,9 @@ class TransactionSession(Cleanable):
 
         Raises:
             ValueError: If request or staged is missing, or thread id is invalid.
+
+        Returns:
+            None.
         """
         super().__init__()
         if request is None:
@@ -141,6 +150,9 @@ class TransactionSession(Cleanable):
             - Does not commit or abort the root request by itself.
             - Drops local callback lists and references after the session is
               already finished or discarded by the caller.
+
+        Returns:
+            None.
         """
         if self._cleaned:
             return
@@ -234,6 +246,9 @@ class TransactionSession(Cleanable):
         Args:
             capabilities:
                 Capability names to add.
+
+        Returns:
+            None.
         """
         
         with self._lock:
@@ -273,6 +288,9 @@ class TransactionSession(Cleanable):
         Raises:
             RuntimeError: If another thread attempts to join or status is closed.
             RuntimeError: If the session lacks required capabilities.
+
+        Returns:
+            None.
         """
         
         with self._lock:
@@ -322,6 +340,9 @@ class TransactionSession(Cleanable):
                 Human-readable reason for the abort-only transition.
             error:
                 Optional triggering exception to retain for diagnostics.
+
+        Returns:
+            None.
         """
         
         with self._lock:
@@ -332,6 +353,9 @@ class TransactionSession(Cleanable):
     def mark_committing(self) -> None:
         """
         Mark the session as entering the root commit path.
+
+        Returns:
+            None.
         """
         
         with self._lock:
@@ -340,6 +364,9 @@ class TransactionSession(Cleanable):
     def mark_committed(self) -> None:
         """
         Mark the session as successfully committed.
+
+        Returns:
+            None.
         """
         
         with self._lock:
@@ -348,6 +375,9 @@ class TransactionSession(Cleanable):
     def mark_aborted(self) -> None:
         """
         Mark the session as fully aborted.
+
+        Returns:
+            None.
         """
         
         with self._lock:
@@ -363,6 +393,9 @@ class TransactionSession(Cleanable):
         Args:
             fn:
                 Callable invoked before commit hooks.
+
+        Returns:
+            None.
         """
         
         with self._lock:
@@ -378,6 +411,9 @@ class TransactionSession(Cleanable):
         Args:
             fn:
                 Callable invoked after successful validators.
+
+        Returns:
+            None.
         """
         
         with self._lock:
@@ -393,6 +429,9 @@ class TransactionSession(Cleanable):
         Args:
             fn:
                 Callable invoked during abort finalization.
+
+        Returns:
+            None.
         """
         
         with self._lock:
@@ -408,6 +447,9 @@ class TransactionSession(Cleanable):
         Args:
             fn:
                 Callable invoked in reverse order during abort cleanup.
+
+        Returns:
+            None.
         """
         
         with self._lock:
@@ -419,6 +461,9 @@ class TransactionSession(Cleanable):
 
         Raises:
             Exception: Propagates the first validator/hook failure.
+
+        Returns:
+            None.
         """
         
         validators: List[Callable[[ChangeControlStagedMutation], None]]

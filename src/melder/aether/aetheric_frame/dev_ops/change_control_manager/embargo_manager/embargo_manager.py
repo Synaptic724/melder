@@ -36,6 +36,11 @@ class ClaimMode(StrEnum):
     Threading:
         Stateless enum; safe to share across threads.
     """
+    _ast_helper_access: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. Claim modes for scope-key acquisition. Melder kernel machinery: read "
+        "it to understand the runtime, do not drive it directly."
+    )
     __melder_internal__ = _mrg.sentinel
     EXCLUSIVE = "x"
     SHARED = "s"
@@ -84,6 +89,11 @@ class ChangeControlEmbargoRecord:
         or agent inspecting a stuck acquisition sees WHAT kind of transaction
         holds each key, not just an opaque id.
     """
+    _ast_helper_access: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. Immutable record describing one claimed scope key. Melder kernel "
+        "machinery: read it to understand the runtime, do not drive it directly."
+    )
     __melder_internal__: ClassVar[object] = _mrg.sentinel
     scope_key: str
     reason_tag: str
@@ -132,6 +142,11 @@ class AcquisitionDecision:
         holder identity in hand the cause is immediately visible; without it,
         the symptom is indistinguishable from ordinary contention.
     """
+    _ast_helper_access: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. Immutable outcome of one all-or-nothing scope acquisition attempt. "
+        "Melder kernel machinery: read it to understand the runtime, do not drive it directly."
+    )
     __melder_internal__: ClassVar[object] = _mrg.sentinel
     acquired: bool
     blocking: Tuple[Tuple[str, str, str], ...] = ()
@@ -169,6 +184,11 @@ class ChangeControlEmbargoManager(Cleanable):
         `cleanup()` marks the manager cleaned and notifies all waiters before
         dropping state so blocked threads fail fast instead of hanging.
     """
+    _ast_helper_access: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. Moded scope-key lock table for transaction admission. Melder kernel "
+        "machinery: read it to understand the runtime, do not drive it directly."
+    )
     __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
         "_lock",
@@ -185,6 +205,9 @@ class ChangeControlEmbargoManager(Cleanable):
         - Starts with empty scope and owner indexes.
         - The wait condition shares the manager lock so release notifications
           and acquisition checks serialize correctly.
+
+        Returns:
+            None.
         """
         super().__init__()
         self._lock: RLock = RLock()
@@ -201,6 +224,9 @@ class ChangeControlEmbargoManager(Cleanable):
         - Notifies all waiters after marking cleaned so blocked acquirers
           observe the cleaned state and raise instead of hanging.
         - Clears both claim indexes before dropping owned references.
+
+        Returns:
+            None.
         """
         if self._cleaned:
             return
@@ -424,6 +450,9 @@ class ChangeControlEmbargoManager(Cleanable):
 
         Args:
             owner_request_id: Request id whose claims should be released.
+
+        Returns:
+            None.
         """
         if not owner_request_id:
             return
@@ -475,6 +504,9 @@ class ChangeControlEmbargoManager(Cleanable):
 
         Raises:
             ValueError: If `owner_request_id` or `reason_tag` is empty.
+
+        Returns:
+            None.
         """
         if not owner_request_id or not reason_tag:
             raise ValueError("owner_request_id and reason_tag are required")
@@ -517,6 +549,9 @@ class ChangeControlEmbargoManager(Cleanable):
 
         Raises:
             ValueError: If `owner_request_id` or `reason_tag` is empty.
+
+        Returns:
+            None.
         """
         if not owner_request_id or not reason_tag:
             raise ValueError("owner_request_id and reason_tag are required")
@@ -546,6 +581,9 @@ class ChangeControlEmbargoManager(Cleanable):
 
         Args:
             owner_request_id: Request id whose claims should be released.
+
+        Returns:
+            None.
         """
         self.release_owner(owner_request_id)
 

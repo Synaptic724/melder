@@ -135,6 +135,11 @@ class ConduitWard(Cleanable):
         Everything the ward does is dynamic-mode gated at the conduit surface;
         in automatic mode the graph is fixed at conjure and no contract forms.
     """
+    _ast_helper_access: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. Control-plane for a single Conduit: contracts, index, and policy. "
+        "Melder kernel machinery: read it to understand the runtime, do not drive it directly."
+    )
     __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
         "_lock",
@@ -194,6 +199,9 @@ class ConduitWard(Cleanable):
             aetheric_frame:
                 Live frame object used to derive the same-frame cloud lookup
                 surface for this ward.
+
+        Returns:
+            None.
         """
         super().__init__()
         self._lock: threading.RLock  = threading.RLock()
@@ -347,6 +355,9 @@ class ConduitWard(Cleanable):
 
         Raises:
             RuntimeError: If the Conduit is cleaned.
+
+        Returns:
+            None.
         """
         self.check_cleaned()
         with self._lock:

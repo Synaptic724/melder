@@ -113,6 +113,11 @@ class SpellSystemStates(Cleanable):
         `SpellContract` dirties only that contract's consumers - not every
         spell in the book.
     """
+    _ast_helper_access: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. Per-frame registry for all SpellSystemState instances. Melder kernel "
+        "machinery: read it to understand the runtime, do not drive it directly."
+    )
     __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
         "_lock",
@@ -142,6 +147,9 @@ class SpellSystemStates(Cleanable):
         The frame is only stored as an opaque handle so higher layers can
         associate this registry with its owning frame; this class does not
         call back into the frame.
+
+        Returns:
+            None.
         """
         super().__init__()
 
@@ -189,6 +197,9 @@ class SpellSystemStates(Cleanable):
         - Drops the frame reference and lock to assist GC.
 
         After cleanup(), all public methods will raise via check_cleaned().
+
+        Returns:
+            None.
         """
         if self._cleaned:
             return
@@ -472,6 +483,9 @@ class SpellSystemStates(Cleanable):
         - Add reverse edges for new dependencies.
         - Mark this spell index as gated due to dependency change and add to
           `_dirty_indexes`.
+
+        Returns:
+            None.
         """
         index_id = spell_index.id
         new_deps = {d for d in (dependency_ids or []) if d}
@@ -533,6 +547,9 @@ class SpellSystemStates(Cleanable):
         - Ensure a SpellSystemState exists for the spell index.
         - Mark it structurally gated with the provided reason.
         - Add the spell-index id to `_dirty_indexes`.
+
+        Returns:
+            None.
         """
         index_id = spell_index.id
         with self._lock:
@@ -822,6 +839,9 @@ class SpellSystemStates(Cleanable):
         This is the propagation point that keeps newly attached risk tracking
         coherent across both frame-level spell-index state and per-conduit
         resolution state.
+
+        Returns:
+            None.
         """
         with self._lock:
             self._risk_manager = risk_manager
@@ -851,6 +871,9 @@ class SpellSystemStates(Cleanable):
         - Removes the conduit bucket from the registry before cleanup so no
           later lookup can observe half-cleaned state.
         - Best-effort cleans the removed state object before discarding it.
+
+        Returns:
+            None.
         """
         if not conduit_id:
             return
@@ -902,6 +925,9 @@ class SpellSystemStates(Cleanable):
             - Overwrites the previous verdict for this conduit/spell pair.
             - Lets `ConduitResolutionState` mark the conduit bucket dirty and
               notify `RiskManager` when the verdict changes.
+
+        Returns:
+            None.
         """
         state = self.get_or_create_conduit_resolution_state(conduit_id)
         state.set_spell_validity(spell_id, validity, change_reason=change_reason)
@@ -927,6 +953,9 @@ class SpellSystemStates(Cleanable):
             - Dirty tracking and risk notifications are delegated to the
               conduit-state object so batched writes stay consistent with
               scalar writes.
+
+        Returns:
+            None.
         """
         
         state = self.get_or_create_conduit_resolution_state(conduit_id)
@@ -954,6 +983,9 @@ class SpellSystemStates(Cleanable):
               frame-level spell-index registry.
             - Delegates dirty tracking and risk propagation to the owned
               `ConduitResolutionState`.
+
+        Returns:
+            None.
         """
         state = self.get_or_create_conduit_resolution_state(conduit_id)
         state.set_root_validity(root_id, validity, change_reason=change_reason)
@@ -978,6 +1010,9 @@ class SpellSystemStates(Cleanable):
               `ConduitResolutionState`.
             - Keeps batched root updates consistent with the scalar root write
               path for dirty tracking and risk propagation.
+
+        Returns:
+            None.
         """
         state = self.get_or_create_conduit_resolution_state(conduit_id)
         state.bulk_set_root_validity(validity_map, change_reason=change_reason)
@@ -1000,6 +1035,9 @@ class SpellSystemStates(Cleanable):
             - Replaces the prior diagnostic list; it does not append.
             - Leaves global spell-index validity unchanged because diagnostics here
               are scoped to conduit-local resolution state.
+
+        Returns:
+            None.
         """
         state = self.get_or_create_conduit_resolution_state(conduit_id)
         state.record_diagnostics(diagnostics)
@@ -1015,6 +1053,9 @@ class SpellSystemStates(Cleanable):
             - Does not create a conduit bucket just to clear it.
             - Clears only conduit-local diagnostics; spell/root verdicts remain
               untouched.
+
+        Returns:
+            None.
         """
         state = self.get_conduit_resolution_state(conduit_id)
         if state is None:
@@ -1038,6 +1079,9 @@ class SpellSystemStates(Cleanable):
             - Creates the conduit bucket on first use.
             - Marks only conduit-local resolution state dirty; it does not add
               spell-index ids to the frame-level dirty registry.
+
+        Returns:
+            None.
         """
         state = self.get_or_create_conduit_resolution_state(conduit_id)
         state.mark_dirty(change_reason=change_reason)
@@ -1053,6 +1097,9 @@ class SpellSystemStates(Cleanable):
             - Does not create a conduit bucket just to clear it.
             - Records the supplied validation timestamp on the existing
               conduit-state object.
+
+        Returns:
+            None.
         """
         state = self.get_conduit_resolution_state(conduit_id)
         if state is None:
@@ -1231,6 +1278,9 @@ class SpellSystemStates(Cleanable):
               indexes for the spell index when owner information is available.
             - Does not synthesize an owner spellbook id if the spell index has not
               yet been associated with a spellbook.
+
+        Returns:
+            None.
         """
         with self._lock:
             spell_id = spell_index.selected_spell_id

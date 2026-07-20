@@ -69,6 +69,11 @@ class FrameACLCodegenProfileBuilder(Cleanable):
         without forking the builder, which is the same registered-strategy
         pattern the transaction and information families use.
     """
+    _ast_helper_access: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. FrameACLCodegenProfileBuilder runtime object. Melder kernel machinery: "
+        "read it to understand the runtime, do not drive it directly."
+    )
 
     __melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
@@ -136,6 +141,9 @@ class FrameACLCodegenProfileBuilder(Cleanable):
     ) -> None:
         """
         Register or replace one codegen-profile construction strategy.
+
+        Returns:
+            None.
         """
         self.check_cleaned()
         if strategy is None:

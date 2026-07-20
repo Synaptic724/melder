@@ -73,6 +73,11 @@ class ImportStatementStrategy(CrystalFactStrategy):
         the `ImpactEngine`'s reverse-import index, so a missed import
         would understate a change's blast radius.
     """
+    _ast_helper_access: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. Extract flat import targets from `import ...` statements. Melder "
+        "kernel machinery: read it to understand the runtime, do not drive it directly."
+    )
 
     __melder_internal__ = _mrg.sentinel
     __slots__ = ()

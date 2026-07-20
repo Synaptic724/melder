@@ -38,6 +38,11 @@ class UserSourceCustodyStrategy(SourceCustodyStrategy):
     Lifecycle / Cleanup:
         Owns the user-root tuple; cleanup deletes it (del posture).
     """
+    _ast_helper_access: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. Authority-class custody for policy-rooted user source modules. Melder "
+        "kernel machinery: read it to understand the runtime, do not drive it directly."
+    )
 
     __melder_internal__: ClassVar[object] = _mrg.sentinel
 

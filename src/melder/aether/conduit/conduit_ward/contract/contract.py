@@ -80,6 +80,11 @@ class Contract(Cleanable):
         crystallizer's `contract_peer` warning rather than restoring a
         half-contract silently.
     """
+    _ast_helper_access: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. Bidirectional contract between two conduit wards. Melder kernel "
+        "machinery: read it to understand the runtime, do not drive it directly."
+    )
     __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
         "_lock",
@@ -99,6 +104,9 @@ class Contract(Cleanable):
         Args:
             ward_a: First participating ward.
             ward_b: Second participating ward.
+
+        Returns:
+            None.
         """
         super().__init__()
         self._lock = RLock()
@@ -123,6 +131,9 @@ class Contract(Cleanable):
 
         Clears both wards’ detail maps, nulls ward references, and marks the
         contract cleaned so it can no longer be used.
+
+        Returns:
+            None.
         """
         if self._cleaned:
             return

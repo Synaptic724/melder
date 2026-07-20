@@ -74,6 +74,11 @@ class PersistenceAnalyzer(Cleanable):
         cleanup() drops the strategy list (strategies are stateless and
         need no teardown of their own); idempotent.
     """
+    _ast_helper_access: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. Strategy-driven bootload pre-flight for persistence payload bundles. "
+        "Melder kernel machinery: read it to understand the runtime, do not drive it directly."
+    )
 
     __melder_internal__: ClassVar[object] = _mrg.sentinel
 
@@ -133,6 +138,9 @@ class PersistenceAnalyzer(Cleanable):
         Lifecycle / Cleanup:
             A facade or restore engine owns the analyzer for one preflight
             span and cleans it in `finally`.
+
+        Returns:
+            None.
         """
         if self._cleaned:
             return

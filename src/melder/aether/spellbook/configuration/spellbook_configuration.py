@@ -58,6 +58,12 @@ class SpellbookConfiguration(Cleanable):
         adoptable: a frame-shared configuration carries one hook registry for
         every book that adopts it.
     """
+    _ast_helper_access: str = "public"
+    __agent_purpose__: str = (
+        "access: public. Rich per-book configuration: typed properties, idempotent keys, and the "
+        "Meld/Conduit/Link/Contract hook registry. Must be frozen before conjure. Idempotent keys "
+        "lock after first set, even before freeze."
+    )
     __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
         "_id",
@@ -115,6 +121,9 @@ class SpellbookConfiguration(Cleanable):
             - Starts unfrozen and empty.
             - Seeds the allowed property/type map and idempotent-key set.
             - Starts with an empty per-spellbook hook registry.
+
+        Returns:
+            None.
         """
         # Thread-safe lock for concurrent access
         super().__init__()
@@ -164,6 +173,9 @@ class SpellbookConfiguration(Cleanable):
 
         Raises:
             RuntimeError: If the configuration is already cleaned.
+
+        Returns:
+            None.
         """
         if self._cleaned:
             return
@@ -204,6 +216,9 @@ class SpellbookConfiguration(Cleanable):
             RuntimeError: If attempting to modify an idempotent property that is already set.
             TypeError: If `key` is not a string.
             ValueError: If local value validation fails.
+
+        Returns:
+            None.
         """
         self.check_cleaned()
         if self._frozen:
@@ -231,6 +246,9 @@ class SpellbookConfiguration(Cleanable):
 
         Raises:
             RuntimeError: If the configuration is cleaned or frozen.
+
+        Returns:
+            None.
         """
         self.check_cleaned()
         with self._lock:
@@ -274,6 +292,9 @@ class SpellbookConfiguration(Cleanable):
         Raises:
             RuntimeError: If the configuration is cleaned.
             ValueError: If configuration validation fails prior to freezing (e.g., missing required properties).
+
+        Returns:
+            None.
         """
         self.check_cleaned()
         if self._frozen:
@@ -382,6 +403,10 @@ class SpellbookConfiguration(Cleanable):
 
         The validation pipeline is intentionally decomposed into small, focused
         helper methods to avoid an overly long and unmaintainable validate() method.
+
+        Returns:
+            bool: True when every required property is present and coherent. Raises
+                rather than returning False for a missing required property.
         """
         self.check_cleaned()
 
@@ -529,6 +554,9 @@ class SpellbookConfiguration(Cleanable):
 
         Raises:
             RuntimeError: If the configuration is cleaned.
+
+        Returns:
+            None.
         """
         self.check_cleaned()
         defaults = {
@@ -653,6 +681,9 @@ class SpellbookConfiguration(Cleanable):
             RuntimeError: If the configuration is cleaned or frozen.
             ValueError: If `hook_name` is unknown.
             TypeError: If `hook` is not callable.
+
+        Returns:
+            None.
         """
         self.check_cleaned()
         if self._frozen:
@@ -712,6 +743,9 @@ class SpellbookConfiguration(Cleanable):
             RuntimeError: If the configuration is cleaned or frozen.
             ValueError: If any hook name is unknown.
             TypeError: If any value is not a callable or an iterable of callables.
+
+        Returns:
+            None.
         """
         self.check_cleaned()
         if self._frozen:
@@ -805,6 +839,11 @@ class SpellbookConfiguration(Cleanable):
         Returns:
             Dict[str, list[Callable[..., Any]]]:
                 Detached merged view of conduit and meld hooks.
+
+        Args:
+            hook_name:
+                Registered hook name to look up, for example a Meld or Conduit
+                lifecycle event.
         """
         self.check_cleaned()
         merged: Dict[str, list[Callable[..., Any]]] = {}
@@ -886,6 +925,16 @@ class SpellbookConfiguration(Cleanable):
                 .with_hook("spellbook-123", "on_meld_pre_resolve", trace_meld_enter)
                 .with_hook("spellbook-123", "on_conduit_cleanup_complete", cleanup_fn)
                 .finalize())
+
+        Returns:
+            SpellbookConfiguration: This configuration, for fluent chaining.
+
+        Args:
+            hook_name:
+                The lifecycle event to attach to.
+            hook:
+                The callable to invoke. Recorded by NAME only - the crystallizer
+                cannot restore the function itself.
         """
         self.add_hook(spellbook_id, hook_name, hook)
         return self
@@ -910,6 +959,15 @@ class SpellbookConfiguration(Cleanable):
                     on_contract_created=[observer_1, observer_2],
                 )
                 .finalize())
+
+        Returns:
+            SpellbookConfiguration: This configuration, for fluent chaining.
+
+        Args:
+            hook_name:
+                The lifecycle event to attach to.
+            hooks:
+                One or more callables to invoke, in registration order.
         """
         self.add_hooks(spellbook_id, **hooks)
         return self
@@ -1026,6 +1084,10 @@ class SpellbookConfiguration(Cleanable):
         Contract:
             - Performs the same validation-and-freeze behaviour as `finalize()`.
             - Returns `self` for chaining.
+
+        Returns:
+            SpellbookConfiguration: This configuration, validated and frozen. Must be
+                frozen before a Conduit can be conjured.
         """
         return self.finalize()
 

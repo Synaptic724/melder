@@ -135,6 +135,9 @@ class FrameViewer(Cleanable):
         Args:
             rift:
                 Owning `Rift` that exposes the current view projections.
+
+        Returns:
+            None.
         """
         super().__init__()
         if rift is None:
@@ -155,6 +158,9 @@ class FrameViewer(Cleanable):
             - Clears only viewer-owned references.
             - Does not cleanup the owning `Rift` because the viewer borrows
               that runtime object.
+
+        Returns:
+            None.
         """
         if self._cleaned:
             return

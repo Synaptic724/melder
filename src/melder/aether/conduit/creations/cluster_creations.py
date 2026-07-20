@@ -38,6 +38,11 @@ class ClusterCreations(Cleanable):
         - `cleanup()` is idempotent: it disables the facade and drops the target
           reference (without cleaning the referenced store), then retires it.
     """
+    _ast_helper_access: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. Facade over a cluster's elected-leader live creation store. Melder "
+        "kernel machinery: read it to understand the runtime, do not drive it directly."
+    )
 
     __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + ["_store", "_active"]

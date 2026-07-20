@@ -42,6 +42,11 @@ class FrameACLConfigurationChain(Cleanable):
         Uses one instance `threading.RLock` to serialize head/current/history
         mutation and ordered traversal.
     """
+    _ast_helper_access: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. FrameACLConfigurationChain runtime object. Melder kernel machinery: "
+        "read it to understand the runtime, do not drive it directly."
+    )
 
     __melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [

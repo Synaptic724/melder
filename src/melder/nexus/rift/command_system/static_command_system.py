@@ -55,6 +55,11 @@ class StaticCommandSystem(CommandSystem):
         and pretending to police it afterwards would promise a containment this
         room cannot actually enforce.
     """
+    _ast_helper_access: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. Static-room command surface. Melder kernel machinery: read it to "
+        "understand the runtime, do not drive it directly."
+    )
     __melder_internal__ = _mrg.sentinel
     _STATIC_COMMAND_METHOD_NAMES: tuple[str, ...] = (
         "meld_existing_spell",

@@ -123,6 +123,11 @@ class SpellDescriptorPayload(Cleanable):
         objects would extend their lifetime and let a viewer reach the runtime
         it is only meant to describe.
     """
+    _ast_helper_access: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. Descriptor-safe published spell payload. Melder kernel machinery: read "
+        "it to understand the runtime, do not drive it directly."
+    )
 
     __melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
@@ -192,6 +197,9 @@ class SpellDescriptorPayload(Cleanable):
                 If `payload_type` or `payload_version` is empty, or if
                 `source_profile_version` is provided without
                 `source_profile_name`.
+
+        Returns:
+            None.
         """
         super().__init__()
         if not payload_type:
@@ -286,6 +294,9 @@ class SpellDescriptorPayload(Cleanable):
             - Clears owned mapping payloads before dropping field references.
             - Leaves future callers to fail through `check_cleaned()`.
             - Runs grouped teardown under the payload-owned instance lock.
+
+        Returns:
+            None.
         """
         if self._cleaned:
             return

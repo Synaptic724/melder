@@ -78,6 +78,11 @@ class TransferOwnershipTransactionStrategy(TransactionStrategy):
         almost nothing, and a transfer admitted under an under-scoped seal is
         exactly the failure this whole layer exists to prevent.
     """
+    _ast_helper_access: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. Ownership-transfer transaction resolver (DevOps scope isolation only). "
+        "Melder kernel machinery: read it to understand the runtime, do not drive it directly."
+    )
 
     @classmethod
     def build_start_plan(
@@ -285,6 +290,9 @@ class TransferOwnershipTransactionStrategy(TransactionStrategy):
 
         Raises:
             RuntimeError: Propagated from a gate drain timeout.
+
+        Returns:
+            None.
         """
         del devops_information_registry, identity
         gate_ops = metadata.get("conduit_lineage_gate_ops")
@@ -308,6 +316,9 @@ class TransferOwnershipTransactionStrategy(TransactionStrategy):
             - Mirrors `on_start`'s freeze footprint exactly; absent facade
               = no-op.
             - Dispatched by the mediator from root-session finalize.
+
+        Returns:
+            None.
         """
         del devops_information_registry, identity
         gate_ops = metadata.get("conduit_lineage_gate_ops")

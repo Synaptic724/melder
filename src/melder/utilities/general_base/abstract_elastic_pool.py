@@ -152,6 +152,9 @@ class AbstractElasticPool(Generic[_T], Cleanable, ABC):
         Raises:
             ValueError:
                 If any numeric pool parameter is invalid.
+
+        Returns:
+            None.
         """
         super().__init__()
         if baseline_idle < 0:
@@ -199,6 +202,9 @@ class AbstractElasticPool(Generic[_T], Cleanable, ABC):
             - Idempotent.
             - Destroys only retained idle objects still owned by the pool.
             - Drops all idle references and prevents further acquire/release use.
+
+        Returns:
+            None.
         """
         if self._cleaned:
             return
@@ -215,6 +221,9 @@ class AbstractElasticPool(Generic[_T], Cleanable, ABC):
     def idle_count(self) -> int:
         """
         Return the current retained idle object count.
+
+        Returns:
+            int: Objects currently pooled and available for reuse.
         """
         
         return len(self._idle)
@@ -223,6 +232,9 @@ class AbstractElasticPool(Generic[_T], Cleanable, ABC):
     def in_use_count(self) -> int:
         """
         Return the number of objects currently checked out of the pool.
+
+        Returns:
+            int: Objects currently checked out.
         """
         
         return self._in_use_count
@@ -231,6 +243,9 @@ class AbstractElasticPool(Generic[_T], Cleanable, ABC):
     def target_idle(self) -> int:
         """
         Return the current elastic idle-retention target.
+
+        Returns:
+            int: The idle count the pool is currently steering toward.
         """
         
         return self._target_idle
@@ -239,6 +254,9 @@ class AbstractElasticPool(Generic[_T], Cleanable, ABC):
     def baseline_idle(self) -> int:
         """
         Return the baseline idle-retention floor.
+
+        Returns:
+            int: The floor the pool will not shrink below.
         """
         
         return self._baseline_idle
@@ -247,6 +265,9 @@ class AbstractElasticPool(Generic[_T], Cleanable, ABC):
     def max_idle(self) -> int:
         """
         Return the hard idle-retention ceiling.
+
+        Returns:
+            int: The ceiling above which idle objects are destroyed rather than kept.
         """
         
         return self._max_idle
@@ -291,6 +312,9 @@ class AbstractElasticPool(Generic[_T], Cleanable, ABC):
         Args:
             obj: Object being returned.
 
+
+        Returns:
+            None.
         """
         
         if self._in_use_count > 0:
@@ -334,6 +358,10 @@ class AbstractElasticPool(Generic[_T], Cleanable, ABC):
 
         Returns:
             _T: Prepared object. Default implementation returns `obj` unchanged.
+
+        Args:
+            obj:
+                Pooled object being handed out. Reset per-use state here.
         """
         return obj
 
@@ -341,6 +369,10 @@ class AbstractElasticPool(Generic[_T], Cleanable, ABC):
     def create_object(self, *args: Any, **kwargs: Any) -> _T:
         """
         Create one new object for this pool.
+
+        Returns:
+            _T: A newly constructed pooled object. Subclasses implement this; the pool
+                calls it only when no idle object is available.
         """
         raise NotImplementedError
 
@@ -348,6 +380,13 @@ class AbstractElasticPool(Generic[_T], Cleanable, ABC):
     def destroy_object(self, obj: _T) -> None:
         """
         Permanently destroy one object that should not be retained.
+
+        Returns:
+            None.
+
+        Args:
+            obj:
+                Object being permanently discarded. Release its resources here.
         """
         raise NotImplementedError
 

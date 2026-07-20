@@ -64,6 +64,12 @@ class RegistryConsistencyAuditStrategy(DevopsInformationStrategy):
         the runtime classes and is the catalog's recorded next extension, not a
         gap.
     """
+    _ast_helper_access: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. Internal symmetry audit over the registry's mirrored relationship "
+        "maps. Melder kernel machinery: read it to understand the runtime, do not drive it "
+        "directly."
+    )
 
     @staticmethod
     def execute(

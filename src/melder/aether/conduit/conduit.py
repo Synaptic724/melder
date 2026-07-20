@@ -153,6 +153,12 @@ class Conduit(Cleanable):
         one to normal PRESERVES its already-constructed objects rather than
         rebuilding them, because callers may already hold those instances.
     """
+    _ast_helper_access: str = "public"
+    __agent_purpose__: str = (
+        "access: public. The runtime scope you hold after conjure. Call meld(...) to resolve "
+        "instances, create_lesser_conduit(...) for child scopes, enter_spellspace() for request "
+        "scope, and link(...)/sever_link(...)/transfer_spell_ownership(...) in dynamic mode only."
+    )
     __slots__ = Cleanable.__slots__ + [
        "_id",
        "_lock",
@@ -254,6 +260,9 @@ class Conduit(Cleanable):
             ValueError:
                 If conduit_id is provided but empty, or root_conduit_id is invalid
                 for the requested conduit_state.
+
+        Returns:
+            None.
         """
         super().__init__()
         # General Init
@@ -611,6 +620,9 @@ class Conduit(Cleanable):
             - Flips the permanent cleanup flag immediately.
             - Reuses the normal cleanup entrypoint so all public teardown still
               flows through one surface.
+
+        Returns:
+            None.
         """
         self._permanent_cleanup_requested = True
         self.cleanup()
@@ -1504,6 +1516,9 @@ class Conduit(Cleanable):
             RuntimeError:
                 If the conduit name is already set.
 
+
+        Returns:
+            None.
         """
         self.check_cleaned()
         if self._name is not None:
@@ -1548,6 +1563,9 @@ class Conduit(Cleanable):
         Raises:
             RuntimeError: If the conduit is cleaned.
             ValueError / TypeError: If hook names or values are invalid.
+
+        Returns:
+            None.
         """
         self.check_cleaned()
         if not hooks:
@@ -1880,6 +1898,9 @@ class Conduit(Cleanable):
             - Rewires Meld/CreationContext execution to use the current creations manager.
             - Seeds per-conduit resolution state from the prior root conduit when available.
             - Rebinds lineage gates to the frame DevOps CreationGateController.
+
+        Returns:
+            None.
         """
         self.check_cleaned()
         with self._lock:
@@ -2014,6 +2035,9 @@ class Conduit(Cleanable):
 
         Raises:
             RuntimeError: If dynamic environment is not enabled.
+
+        Returns:
+            None.
         """
         self.check_cleaned()
         if not self.__dynamic_environment__:
@@ -2075,6 +2099,12 @@ class Conduit(Cleanable):
 
         Raises:
             RuntimeError: If the parent Conduit is cleaned.
+
+        Args:
+            name:
+                Optional name for the child scope.
+            hooks:
+                Optional per-conduit hook overlay applied to the child only.
         """
         self.check_cleaned()
 
@@ -2773,6 +2803,10 @@ class Conduit(Cleanable):
             RuntimeError: If a link transaction omits required conduit objects.
             ValueError: If transaction_type is invalid.
             TypeError: If transaction_type has an invalid type.
+
+        Returns:
+            Generator[Conduit, None, None]: A context manager yielding this conduit
+                inside a held change-control transaction window.
         """
         self.check_cleaned()
         self.begin_transaction(
@@ -3602,6 +3636,9 @@ class Conduit(Cleanable):
 
         Raises:
             RuntimeError: If the Conduit has been cleaned.
+
+        Returns:
+            None.
         """
         self.check_cleaned()
         self._creation_gate.open()
@@ -3621,6 +3658,9 @@ class Conduit(Cleanable):
 
         Raises:
             RuntimeError: If the Conduit has been cleaned.
+
+        Returns:
+            None.
         """
         self.check_cleaned()
         self._creation_gate.close()
@@ -4312,6 +4352,9 @@ class Conduit(Cleanable):
 
         Raises:
             RuntimeError: If the Conduit is cleaned or has no owning Spellbook.
+
+        Returns:
+            None.
         """
         self.check_cleaned()
         if self._spellbook is None:
@@ -4555,6 +4598,9 @@ class Conduit(Cleanable):
 
         Raises:
             RuntimeError: If the Conduit is cleaned.
+
+        Returns:
+            None.
         """
         self.check_cleaned()
         self._conduit_ward.cleanup_all_lesser_conduits()
@@ -5101,6 +5147,9 @@ class Conduit(Cleanable):
             The transaction embargo is acquired before the ward lock, matching the
             add-side ordering, so a concurrent bind/link cannot deadlock the
             removal.
+
+        Returns:
+            None.
         """
         self._qualify_contracts()
         mediator = self._get_required_transaction_mediator()
@@ -5386,6 +5435,15 @@ class Conduit(Cleanable):
 
         Contract mutations require an active link transaction that includes the
         borrower and the peer conduits involved in the contract cleanup.
+
+        Returns:
+            dict: Per-peer removal outcome keyed by contract, describing what was
+                untracked on each side.
+
+        Args:
+            root_spell_id:
+                Lineage root whose contracted details should be untracked across
+                every peer contract this conduit participates in.
         """
         self._qualify_contracts()
         self._require_link_transaction_for_contract(
@@ -5422,6 +5480,16 @@ class Conduit(Cleanable):
 
         Adds a spell to a contract and automatically links its dependencies
         (recursively) using the same permission level (downgraded to read when needed).
+
+        Returns:
+            Optional[bool]: True when the spell and its dependency closure were added,
+                False when refused, None when there was no contract to act on.
+
+        Args:
+            spell:
+                The spell or lineage to grant across the existing contract.
+            peer_conduit:
+                The borrowing peer that should gain access.
         """
         return self.add_spell_to_contract(
             spell=spell,

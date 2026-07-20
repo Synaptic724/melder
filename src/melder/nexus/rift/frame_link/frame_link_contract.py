@@ -58,6 +58,11 @@ class FrameLinkContract(Cleanable):
         its per-frame contracts, so revoking one frame cannot silently widen or
         narrow another.
     """
+    _ast_helper_access: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. FrameLinkContract runtime object. Melder kernel machinery: read it to "
+        "understand the runtime, do not drive it directly."
+    )
 
     __melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [

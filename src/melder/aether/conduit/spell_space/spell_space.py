@@ -64,6 +64,12 @@ class SpellSpace(Cleanable):
         - Normal cleanup returns the spellspace to its conduit-local pool.
         - Permanent cleanup drops all injected collaborators.
     """
+    _ast_helper_access: str = "public"
+    __agent_purpose__: str = (
+        "access: public. Explicit request scope for Existence.unique_per_spell_space. Enter via "
+        "conduit.enter_spellspace(); meld only while it is the ACTIVE spellspace; reset() clears "
+        "spellspace-scoped instances and bumps the version."
+    )
 
     __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
@@ -115,6 +121,9 @@ class SpellSpace(Cleanable):
                 managed exit without a per-cycle wrapper object. The conduit
                 owns its lifecycle; this spellspace only references it.
 
+
+        Returns:
+            None.
         """
         super().__init__()
         self._lock: threading.RLock = threading.RLock()
@@ -218,6 +227,9 @@ class SpellSpace(Cleanable):
               after reusable cleanup.
             - `permanent_cleanup()` forces the destructive lane even when a
               pool is attached.
+
+        Returns:
+            None.
         """
         if self._cleaned:
             return
@@ -238,6 +250,9 @@ class SpellSpace(Cleanable):
             - Flips the permanent cleanup flag immediately.
             - Reuses the normal cleanup entrypoint so all public teardown still
               flows through one surface.
+
+        Returns:
+            None.
         """
         self._permanent_cleanup_requested = True
         self.cleanup()
@@ -281,6 +296,9 @@ class SpellSpace(Cleanable):
               (the object is not idle in the pool and not registry-tracked),
               matching the trusted-private-caller posture documented on
               `SpellSpacePool.release(...)`.
+
+        Returns:
+            None.
         """
         if self._cleaned:
             return
@@ -384,6 +402,12 @@ class SpellSpace(Cleanable):
 
         Returns:
             object: The resolved runtime object returned by the shared meld runtime.
+
+        Args:
+            spell_input:
+                Spell id, spell object, spellframe, or spell name to resolve.
+            spell_override:
+                Optional positional or keyword override payload.
         """
         # Hot path: `spell` rides positionally end to end so the dominant
         # id-string call never pays keyword marshaling.

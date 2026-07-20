@@ -40,6 +40,11 @@ class CodegenNamespaceConfiguration(Cleanable):
         as a declaration - a reader can see what a posture intends to expose
         without executing anything.
     """
+    _ast_helper_access: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. Namespace exposure policy for one codegen request. Melder kernel "
+        "machinery: read it to understand the runtime, do not drive it directly."
+    )
 
     __melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [

@@ -99,6 +99,9 @@ class Sync:
         - Concrete sync wrappers expose their stored scalar through this
           method.
         - The shared mix-in uses this for pickling and peer-value unwrapping.
+
+        Returns:
+            Any: The current value, read under the instance lock.
         """
         raise NotImplementedError("Sync subclasses must implement get().")
 

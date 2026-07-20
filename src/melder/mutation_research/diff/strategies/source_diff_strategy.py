@@ -53,6 +53,11 @@ class SourceDiffStrategy(DiffStrategy):
         always carry text, user modules only when retention is on - so a
         recorded world can legitimately have fingerprints without source.
     """
+    _ast_helper_access: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. Per-module source comparison between two version materials. Melder "
+        "kernel machinery: read it to understand the runtime, do not drive it directly."
+    )
     __melder_internal__: ClassVar[object] = _mrg.sentinel
 
     __slots__ = DiffStrategy.__slots__

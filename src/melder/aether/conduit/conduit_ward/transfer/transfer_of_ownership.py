@@ -118,6 +118,12 @@ class TransferOfOwnership(Cleanable):
         Transfer is dynamic-mode only - like linking, severing, and upgrade, it
         rewires the graph after conjure, which an automatic-mode world forbids.
     """
+    _ast_helper_access: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. Control-plane helper that migrates a spell lineage between conduit "
+        "owners. Melder kernel machinery: read it to understand the runtime, do not drive it "
+        "directly."
+    )
     __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
         "_lock",
@@ -180,6 +186,9 @@ class TransferOfOwnership(Cleanable):
                 before reuse.
             mark_dependencies_dirty: If dependencies are not moved, mark their
                 lineages dirty so stale downstream state is not reused.
+
+        Returns:
+            None.
         """
         super().__init__()
         self.source_conduit: Conduit = source_conduit
@@ -220,6 +229,9 @@ class TransferOfOwnership(Cleanable):
               lock first, then drops high-level references afterward.
             - Does not cleanup source/target conduits or managers because this
               helper only borrows them.
+
+        Returns:
+            None.
         """
         if self.is_cleaned:
             return
@@ -374,6 +386,9 @@ class TransferOfOwnership(Cleanable):
         Raises:
             Exception: Re-raises the underlying transfer failure after rollback
                 and incident recording have been attempted.
+
+        Returns:
+            None.
         """
         self.check_cleaned()
         summary = self._preflight_summary or self.preflight()

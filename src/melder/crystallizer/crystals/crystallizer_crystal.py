@@ -44,6 +44,11 @@ class CrystallizerCrystal(Cleanable):
         policy document only; it neither reconfigures nor deactivates the live
         crystallizer.
     """
+    _ast_helper_access: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. Pure-data digital twin of the crystallizer's own configured surface. "
+        "Melder kernel machinery: read it to understand the runtime, do not drive it directly."
+    )
 
     __melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
@@ -80,6 +85,9 @@ class CrystallizerCrystal(Cleanable):
         Contract:
             - Idempotent; safe to call multiple times.
             - Deletes owned fields (del posture; no tombstones needed).
+
+        Returns:
+            None.
         """
         if self._cleaned:
             return

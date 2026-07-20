@@ -78,6 +78,11 @@ class UnlinkTransactionStrategy(TransactionStrategy):
         participants EXCLUSIVE for the duration is what guarantees no third
         party observes that intermediate state.
     """
+    _ast_helper_access: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. Unlink (sever-link) transaction resolver. Melder kernel machinery: "
+        "read it to understand the runtime, do not drive it directly."
+    )
 
     @classmethod
     def build_start_plan(
@@ -244,6 +249,9 @@ class UnlinkTransactionStrategy(TransactionStrategy):
     ) -> None:
         """
         Unlink transactions do not need extra local start-side effects right now.
+
+        Returns:
+            None.
         """
         return None
 
@@ -256,5 +264,8 @@ class UnlinkTransactionStrategy(TransactionStrategy):
     ) -> None:
         """
         Unlink transactions do not need extra local end-side effects right now.
+
+        Returns:
+            None.
         """
         return None

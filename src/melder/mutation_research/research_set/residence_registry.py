@@ -65,6 +65,11 @@ class ResidenceRegistry(Cleanable):
         refuses a node: a claim that outlived its failed add would make a
         never-recorded identity permanently unavailable.
     """
+    _ast_helper_access: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. Single-residence partition map for one research set. Melder kernel "
+        "machinery: read it to understand the runtime, do not drive it directly."
+    )
     __melder_internal__: ClassVar[object] = _mrg.sentinel
 
     __slots__ = Cleanable.__slots__ + [
@@ -75,6 +80,9 @@ class ResidenceRegistry(Cleanable):
     def __init__(self) -> None:
         """
         Initialize one empty residence partition.
+
+        Returns:
+            None.
         """
         super().__init__()
         self._lane_id_by_spell_id: Dict[str, str] = {}
@@ -86,6 +94,9 @@ class ResidenceRegistry(Cleanable):
 
         Contract:
             - Idempotent; del posture (no tombstones); lock last.
+
+        Returns:
+            None.
         """
         if self._cleaned:
             return
@@ -113,6 +124,9 @@ class ResidenceRegistry(Cleanable):
             RuntimeError:
                 If the identity is already resident anywhere - the
                 rediscovery signal, naming the holding lane.
+
+        Returns:
+            None.
         """
         self.check_cleaned()
         if not isinstance(spell_id, str) or not spell_id:
@@ -150,6 +164,9 @@ class ResidenceRegistry(Cleanable):
             KeyError:
                 If any identity is not currently resident (nothing is
                 repointed in that case).
+
+        Returns:
+            None.
         """
         self.check_cleaned()
         if not isinstance(to_lane_id, str) or not to_lane_id:

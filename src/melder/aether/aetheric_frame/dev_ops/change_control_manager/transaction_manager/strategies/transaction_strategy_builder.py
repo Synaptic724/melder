@@ -130,6 +130,11 @@ class TransactionStrategyBuilder:
         - It is read-only during normal runtime use and does not require its
           own lock.
     """
+    _ast_helper_access: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. Registry-backed resolver for transaction strategies. Melder kernel "
+        "machinery: read it to understand the runtime, do not drive it directly."
+    )
 
     __slots__ = [
         "_transaction_manager",
@@ -159,6 +164,9 @@ class TransactionStrategyBuilder:
               `_register_default_strategies()`.
             - Does not instantiate strategy objects; the registry stores
               strategy classes directly.
+
+        Returns:
+            None.
         """
         self._transaction_manager: ChangeControlTransactionManager = (
             transaction_manager
@@ -189,6 +197,9 @@ class TransactionStrategyBuilder:
               replace earlier ones.
             - Registration stores the class directly; no instance lifecycle is
               introduced here.
+
+        Returns:
+            None.
         """
         transaction_name = self._normalize_transaction_name(transaction_type)
         self._strategies_by_transaction_name[transaction_name] = strategy_class
@@ -271,6 +282,9 @@ class TransactionStrategyBuilder:
         Purpose:
             Keep the mediator from needing to know which concrete strategy
             class owns the transaction's start-side local consequences.
+
+        Returns:
+            None.
         """
         strategy_class = self.resolve(transaction_type)
         strategy_class.on_start(
@@ -292,6 +306,9 @@ class TransactionStrategyBuilder:
         Purpose:
             Keep the mediator from needing to know which concrete strategy
             class owns the transaction's end-side local consequences.
+
+        Returns:
+            None.
         """
         strategy_class = self.resolve(transaction_type)
         strategy_class.on_end(

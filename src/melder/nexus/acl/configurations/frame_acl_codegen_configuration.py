@@ -61,6 +61,11 @@ class FrameACLCodegenConfiguration(Cleanable):
         questions independently, which is what makes least privilege
         expressible per frame.
     """
+    _ast_helper_access: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. FrameACLCodegenConfiguration runtime object. Melder kernel machinery: "
+        "read it to understand the runtime, do not drive it directly."
+    )
 
     __melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
@@ -125,6 +130,9 @@ class FrameACLCodegenConfiguration(Cleanable):
                 Human-readable creation reason.
             locked:
                 True when this revision starts finalized for chain ownership.
+
+        Returns:
+            None.
         """
         super().__init__()
         if not profile_name:

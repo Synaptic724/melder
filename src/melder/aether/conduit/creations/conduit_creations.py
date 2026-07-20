@@ -54,6 +54,11 @@ class ConduitCreations(Creations):
         survive a scope transition, so they are deliberately outside this
         class's reach.
     """
+    _ast_helper_access: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. Conduit-owned live creation registry. Melder kernel machinery: read it "
+        "to understand the runtime, do not drive it directly."
+    )
 
     __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = ()
@@ -83,6 +88,9 @@ class ConduitCreations(Creations):
         Raises:
             ValueError:
                 If `conduit_id` is empty.
+
+        Returns:
+            None.
         """
         super().__init__(
             owner_conduit_id=conduit_id,
@@ -119,5 +127,8 @@ class ConduitCreations(Creations):
               restore policy can diverge later without moving callers again.
             - Restores only conduit/root-owned state; it is not a spellspace
               replay surface.
+
+        Returns:
+            None.
         """
         super().restore_spell_creations(spell_id, creations)

@@ -58,6 +58,11 @@ class CrystalLoaderSystem(Cleanable):
         (borrower-before-owner). cleanup(): mediator first, then owned
         state, borrowed deref, lock last; idempotent.
     """
+    _ast_helper_access: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. Own the crystallizer's load lanes and their durable state. Melder "
+        "kernel machinery: read it to understand the runtime, do not drive it directly."
+    )
 
     __melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
@@ -133,6 +138,9 @@ class CrystalLoaderSystem(Cleanable):
         Lifecycle / Cleanup:
             Called by the crystallizer before the asset system and persistence
             record, preserving borrower-before-record order.
+
+        Returns:
+            None.
         """
         if self._cleaned:
             return

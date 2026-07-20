@@ -79,6 +79,11 @@ class TransactionStrategy(ABC):
         This family is registered, closed, and dispatched polymorphically -
         precisely the sanctioned ABC case.
     """
+    _ast_helper_access: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. Abstract base for transaction strategy classes. Melder kernel "
+        "machinery: read it to understand the runtime, do not drive it directly."
+    )
 
     @staticmethod
     @abstractmethod
@@ -129,6 +134,9 @@ class TransactionStrategy(ABC):
                 Submitter identity that originated the transaction.
             metadata:
                 Metadata associated with the resolved transaction start.
+
+        Returns:
+            None.
         """
         raise NotImplementedError
 
@@ -151,6 +159,9 @@ class TransactionStrategy(ABC):
                 Submitter identity that originated the transaction.
             metadata:
                 Metadata associated with the resolved transaction start.
+
+        Returns:
+            None.
         """
         raise NotImplementedError
 

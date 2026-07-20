@@ -165,6 +165,13 @@ class ConduitCluster(Cleanable):
         `cluster_membership` preflight row reports a recorded leader as INFO
         rather than restoring it, for exactly this reason.
     """
+    _ast_helper_access: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. A membership group of conduits with TWO INDEPENDENT LAYERS: leaderless "
+        "spell-sharing (the core, always on) and an OPTIONAL elected-leader team store (only ever "
+        "needed for `unique_per_conduit_cluster` spells). Melder kernel machinery: read it to "
+        "understand the runtime, do not drive it directly."
+    )
     __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
         "_lock",
@@ -200,6 +207,9 @@ class ConduitCluster(Cleanable):
                 Frame-owned dev-ops registry used for cluster identity and
                 membership tracking.
             auto_link_dependencies: If True, sharing pulls dependency closure.
+
+        Returns:
+            None.
         """
         super().__init__()
         self._lock: threading.RLock = threading.RLock()
@@ -249,6 +259,9 @@ class ConduitCluster(Cleanable):
             - Clears member and shared-root registries before dropping owned
               references.
             - Leaves the instance permanently cleaned.
+
+        Returns:
+            None.
         """
         if self._cleaned:
             return
@@ -355,6 +368,9 @@ class ConduitCluster(Cleanable):
 
         Args:
             conduit_id: Conduit identifier.
+
+        Returns:
+            None.
         """
         self.check_cleaned()
         with self._lock:
@@ -368,6 +384,9 @@ class ConduitCluster(Cleanable):
 
         Args:
             conduit_id: Conduit identifier.
+
+        Returns:
+            None.
         """
         self.check_cleaned()
         with self._lock:
@@ -383,6 +402,9 @@ class ConduitCluster(Cleanable):
         Args:
             owner_id: Conduit id that owns the spell.
             spell_index: Root SpellIndex to share.
+
+        Returns:
+            None.
         """
         self.check_cleaned()
         with self._lock:
@@ -397,6 +419,9 @@ class ConduitCluster(Cleanable):
         Args:
             owner_id: Conduit id that owns the spell.
             spell_index: Root SpellIndex to remove.
+
+        Returns:
+            None.
         """
         self.check_cleaned()
         with self._lock:
@@ -983,6 +1008,9 @@ class ConduitCluster(Cleanable):
             owner: Conduit that owns the spell.
             spell: Spell object to share.
             link_dependencies: Override auto_link_dependencies if provided.
+
+        Returns:
+            None.
         """
         self.check_cleaned()
         self._assert_normal_conduit(owner)
@@ -1031,6 +1059,9 @@ class ConduitCluster(Cleanable):
         Args:
             owner: Conduit that owns the spell.
             spell: Spell object to remove.
+
+        Returns:
+            None.
         """
         self.check_cleaned()
         self._assert_normal_conduit(owner)
@@ -1264,6 +1295,9 @@ class ConduitCluster(Cleanable):
 
         Args:
             enabled: True to include deps, False for roots only.
+
+        Returns:
+            None.
         """
         self.check_cleaned()
         with self._lock:

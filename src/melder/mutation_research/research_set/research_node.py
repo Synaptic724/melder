@@ -59,6 +59,11 @@ class ResearchNode(Cleanable):
         reads. Nodes are minted from the Spellbook's bind and notch confirmation
         points while the research root is active.
     """
+    _ast_helper_access: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. One immutable version record inside a research lane. Melder kernel "
+        "machinery: read it to understand the runtime, do not drive it directly."
+    )
     __melder_internal__: ClassVar[object] = _mrg.sentinel
 
     __slots__ = Cleanable.__slots__ + [
@@ -109,6 +114,9 @@ class ResearchNode(Cleanable):
         Raises:
             ValueError:
                 If spell_id is empty or any parent sha is empty.
+
+        Returns:
+            None.
         """
         super().__init__()
         if not isinstance(spell_id, str) or not spell_id:
@@ -136,6 +144,9 @@ class ResearchNode(Cleanable):
 
         Contract:
             - Idempotent; del posture (no tombstones).
+
+        Returns:
+            None.
         """
         if self._cleaned:
             return

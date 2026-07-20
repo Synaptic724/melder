@@ -49,6 +49,11 @@ class RecordVersion:
     Lifecycle / Cleanup:
         None. This class owns no runtime state or external resource.
     """
+    _ast_helper_access: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. The persistence record's schema version authority. Melder kernel "
+        "machinery: read it to understand the runtime, do not drive it directly."
+    )
 
     __melder_internal__ = _mrg.sentinel
     CURRENT: ClassVar[str] = "1.0.0"

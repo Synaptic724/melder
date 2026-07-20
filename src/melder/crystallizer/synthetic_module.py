@@ -34,6 +34,11 @@ class _SyntheticModuleImportLoader(importlib.abc.Loader):
         One process-wide loader is created lazily by `SyntheticModule`. It owns
         no module and has no independent cleanup surface.
     """
+    _ast_helper_access: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. Loader bridge from importlib into the `SyntheticModule` registry. "
+        "Melder kernel machinery: read it to understand the runtime, do not drive it directly."
+    )
 
     __melder_internal__ = _mrg.sentinel
     def create_module(self, spec: ModuleSpec) -> ModuleType:
@@ -149,6 +154,11 @@ class _SyntheticModuleMetaPathFinder(importlib.abc.MetaPathFinder):
         The singleton finder may be installed or removed repeatedly. Removing
         it does not unregister, unpublish, execute, or clean a module.
     """
+    _ast_helper_access: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. Finder exposing registered synthetic modules to importlib. Melder "
+        "kernel machinery: read it to understand the runtime, do not drive it directly."
+    )
 
     __melder_internal__ = _mrg.sentinel
     def find_spec(
@@ -238,6 +248,11 @@ class SyntheticModule(ModuleType):
         - still expose the crystallizer-owned metadata that ties the live
           module back to durable truth
     """
+    _ast_helper_access: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. Live in-memory module embodiment for crystallized source. Melder "
+        "kernel machinery: read it to understand the runtime, do not drive it directly."
+    )
 
     __melder_internal__ = _mrg.sentinel
     _registry_lock = threading.RLock()
@@ -323,6 +338,9 @@ class SyntheticModule(ModuleType):
         Raises:
             ValueError:
                 If required identity or source values are empty.
+
+        Returns:
+            None.
         """
         if not module_name:
             raise ValueError("module_name must not be empty.")
@@ -477,6 +495,9 @@ class SyntheticModule(ModuleType):
         Raises:
             RuntimeError:
                 If the module has already been cleaned.
+
+        Returns:
+            None.
         """
         if self._cleaned:
             raise RuntimeError("SyntheticModule has already been cleaned.")
@@ -670,6 +691,9 @@ class SyntheticModule(ModuleType):
                 If either value is empty.
             RuntimeError:
                 If the module has already been cleaned.
+
+        Returns:
+            None.
         """
         self.check_cleaned()
         with self._lock:
@@ -706,6 +730,9 @@ class SyntheticModule(ModuleType):
         Raises:
             RuntimeError:
                 If the module has already been cleaned.
+
+        Returns:
+            None.
         """
         self.check_cleaned()
         with self._lock:
@@ -758,6 +785,9 @@ class SyntheticModule(ModuleType):
         Raises:
             RuntimeError:
                 If the module has already been cleaned.
+
+        Returns:
+            None.
         """
         self.check_cleaned()
         with self._lock:
@@ -845,6 +875,9 @@ class SyntheticModule(ModuleType):
         Raises:
             RuntimeError:
                 If the module has already been cleaned.
+
+        Returns:
+            None.
         """
         self.check_cleaned()
         with self._lock:
@@ -863,6 +896,9 @@ class SyntheticModule(ModuleType):
         Raises:
             RuntimeError:
                 If the module has already been cleaned.
+
+        Returns:
+            None.
         """
         self.check_cleaned()
         with self._lock:

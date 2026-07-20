@@ -61,6 +61,11 @@ class TransitionAct(enum.Enum):
           `to_spell_id` (the same sha namespace as spell identities); the
           member roster and composition ancestry ride `metadata`.
     """
+    _ast_helper_access: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. World-entry act vocabulary for the mutation-research journal. Melder "
+        "kernel machinery: read it to understand the runtime, do not drive it directly."
+    )
 
     lane_created = "lane_created"
     registered = "registered"
@@ -121,6 +126,11 @@ class TransitionEntry(Cleanable):
         WHERE-by-WHEN join across lanes rather than another container: the
         grouping lives on the events, not on the structure.
     """
+    _ast_helper_access: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. One immutable forward-only journal event in a research set. Melder "
+        "kernel machinery: read it to understand the runtime, do not drive it directly."
+    )
     __melder_internal__: ClassVar[object] = _mrg.sentinel
 
     __slots__ = Cleanable.__slots__ + [
@@ -181,6 +191,9 @@ class TransitionEntry(Cleanable):
             ValueError:
                 If sequence < 1, lane_id is empty, or act is not a
                 `TransitionAct`.
+
+        Returns:
+            None.
         """
         super().__init__()
         if not isinstance(act, TransitionAct):
@@ -210,6 +223,9 @@ class TransitionEntry(Cleanable):
 
         Contract:
             - Idempotent; del posture (no tombstones).
+
+        Returns:
+            None.
         """
         if self._cleaned:
             return

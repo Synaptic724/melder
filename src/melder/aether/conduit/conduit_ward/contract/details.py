@@ -71,6 +71,11 @@ class Detail(Cleanable):
         carrying justifying sources, while a `manual` grant was never owned by
         any root and therefore survives root removal entirely.
     """
+    _ast_helper_access: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. Spell-level permission entry stored inside a Contract. Melder kernel "
+        "machinery: read it to understand the runtime, do not drive it directly."
+    )
     __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
         "_lock",
@@ -111,6 +116,9 @@ class Detail(Cleanable):
             `spell_id` records the spell id visible at creation time, while
             `spell_index` remains the durable lineage anchor used for later
             current-head resolution.
+
+        Returns:
+            None.
         """
         super().__init__()
         self._lock: RLock = RLock()
@@ -155,6 +163,9 @@ class Detail(Cleanable):
 
         Drops references to the lineage, version, permissions, and contract
         direction so the object cannot be reused after cleanup.
+
+        Returns:
+            None.
         """
         if self._cleaned:
             return
@@ -203,6 +214,9 @@ class Detail(Cleanable):
         Contract:
             Source tagging is additive. Multiple roots may point at the same
             detail when they transitively require the same contracted lineage.
+
+        Returns:
+            None.
         """
         self.check_cleaned()
         if root_spell_id is None:
@@ -286,6 +300,11 @@ class IndexDetail(Cleanable):
         the record mirrors that split by snapshotting index MEMBERSHIP as its
         own twin (`SpellIndexCrystal`) rather than folding it into the spell.
     """
+    _ast_helper_access: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. Index-level contract entry stored inside a Contract. Melder kernel "
+        "machinery: read it to understand the runtime, do not drive it directly."
+    )
     __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
         "_lock",
@@ -320,6 +339,9 @@ class IndexDetail(Cleanable):
 
         Raises:
             TypeError: If any argument is not the expected type.
+
+        Returns:
+            None.
         """
         super().__init__()
         self._lock: RLock = RLock()
@@ -370,6 +392,9 @@ class IndexDetail(Cleanable):
 
         Args:
             spell_id: The lineage's new active member id.
+
+        Returns:
+            None.
         """
         self.check_cleaned()
         with self._lock:
@@ -378,6 +403,9 @@ class IndexDetail(Cleanable):
     def cleanup(self) -> None:
         """
         Idempotently clear index-contract metadata and mark this detail cleaned.
+
+        Returns:
+            None.
         """
         if self._cleaned:
             return
@@ -414,6 +442,9 @@ class IndexDetail(Cleanable):
     def add_source(self, root_spell_id: str) -> None:
         """
         Record that one root spell id currently justifies this index detail.
+
+        Returns:
+            None.
         """
         self.check_cleaned()
         if root_spell_id is None:

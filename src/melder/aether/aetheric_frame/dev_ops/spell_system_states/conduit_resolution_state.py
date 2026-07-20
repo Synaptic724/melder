@@ -116,6 +116,11 @@ class ConduitResolutionState(Cleanable):
         THIS conduit alone when the verdict is UNKNOWN or GATED - which is what
         keeps revalidation proportional to the conduit that needs it.
     """
+    _ast_helper_access: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. Per-conduit resolution validity container. Melder kernel machinery: "
+        "read it to understand the runtime, do not drive it directly."
+    )
     __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
         "_conduit_id",
@@ -156,6 +161,9 @@ class ConduitResolutionState(Cleanable):
         Raises:
             ValueError:
                 If conduit_id is empty or initial_validity is None.
+
+        Returns:
+            None.
         """
         super().__init__()
 
@@ -189,6 +197,9 @@ class ConduitResolutionState(Cleanable):
               markers.
             - Nulls owned references so later callers fail through
               `check_cleaned()`.
+
+        Returns:
+            None.
         """
         if self._cleaned:
             return
@@ -287,6 +298,9 @@ class ConduitResolutionState(Cleanable):
         Raises:
             ValueError:
                 If spell_id is empty or validity is None.
+
+        Returns:
+            None.
         """
         self.check_cleaned()
         if not spell_id:
@@ -336,6 +350,9 @@ class ConduitResolutionState(Cleanable):
         Raises:
             ValueError:
                 If validity_map is None.
+
+        Returns:
+            None.
         """
         self.check_cleaned()
         if validity_map is None:
@@ -439,6 +456,9 @@ class ConduitResolutionState(Cleanable):
         Raises:
             ValueError:
                 If root_id is empty or validity is None.
+
+        Returns:
+            None.
         """
         self.check_cleaned()
         if not root_id:
@@ -488,6 +508,9 @@ class ConduitResolutionState(Cleanable):
         Raises:
             ValueError:
                 If validity_map is None.
+
+        Returns:
+            None.
         """
         self.check_cleaned()
         if validity_map is None:
@@ -545,6 +568,9 @@ class ConduitResolutionState(Cleanable):
         Raises:
             ValueError:
                 If diagnostics is None.
+
+        Returns:
+            None.
         """
         self.check_cleaned()
         if diagnostics is None:
@@ -568,6 +594,9 @@ class ConduitResolutionState(Cleanable):
             - Leaves the conduit state alive and reusable; only the diagnostic
               snapshot is reset.
             - Safe to call repeatedly when no diagnostics are stored.
+
+        Returns:
+            None.
         """
         self.check_cleaned()
         with self._lock:
@@ -654,6 +683,9 @@ class ConduitResolutionState(Cleanable):
               can still see when the last successful validation happened.
             - Updates `last_change_reason` only when an explicit reason is
               supplied.
+
+        Returns:
+            None.
         """
         self.check_cleaned()
         self._dirty = True
@@ -673,6 +705,9 @@ class ConduitResolutionState(Cleanable):
               `last_validated_at` value.
             - Resets `last_change_reason` because the current state is now the
               validated baseline.
+
+        Returns:
+            None.
         """
         self.check_cleaned()
         self._dirty = False

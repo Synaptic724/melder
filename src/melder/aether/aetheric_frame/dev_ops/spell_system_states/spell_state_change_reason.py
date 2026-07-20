@@ -48,6 +48,11 @@ class SpellStateChangeReason(Enum):
         runtime `MutationContract` descriptor itself is gone and Phase 4 blocks
         that socket family.
     """
+    _ast_helper_access: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. Last event that *changed* the state of an index. Melder kernel "
+        "machinery: read it to understand the runtime, do not drive it directly."
+    )
     __melder_internal__ = _mrg.sentinel
     # Registrations / bindings
     new_index = auto()            # first time this index was registered

@@ -118,6 +118,12 @@ class Rift(Cleanable):
         still only a logging seam. Rooms have a real room-local event system,
         but there is no Rift-level event orchestration layer yet.
     """
+    _ast_helper_access: str = "public"
+    __agent_purpose__: str = (
+        "access: public. One live AR connection. Created bare by Nexus with a single primary room "
+        "from space_type; attach targets afterwards with create_frame_link(frame_name), which "
+        "REQUIRES descriptor truth to exist. Reach the room via .space."
+    )
 
     __melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [

@@ -51,6 +51,11 @@ class PersistenceSystem(Cleanable):
         every ledger crystal, and deletes its lock last. It never cleans the
         asset or loader systems that borrowed it.
     """
+    _ast_helper_access: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. The crystallizer's RECORD: profiles and the checkpoint ledger. Melder "
+        "kernel machinery: read it to understand the runtime, do not drive it directly."
+    )
 
     __melder_internal__ = _mrg.sentinel
     DEFAULT_PROFILE_NAME: str = "default"
@@ -117,6 +122,9 @@ class PersistenceSystem(Cleanable):
 
         Lifecycle / Cleanup:
             Called by `Crystallizer.cleanup()` after loader and asset teardown.
+
+        Returns:
+            None.
         """
         if self._cleaned:
             return

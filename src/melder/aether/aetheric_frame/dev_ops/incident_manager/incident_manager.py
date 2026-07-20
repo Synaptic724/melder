@@ -67,6 +67,11 @@ class IncidentManager(Cleanable):
         it, so an operator query can never inject latency into the runtime that
         produced the record.
     """
+    _ast_helper_access: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. Frame-local registry of `Incident` records. Melder kernel machinery: "
+        "read it to understand the runtime, do not drive it directly."
+    )
 
     __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
@@ -88,6 +93,9 @@ class IncidentManager(Cleanable):
         - Numeric incident ids begin at `inc-1` for a fresh manager lifetime.
         - Borrows the frame-owned dev-ops information registry for future
           reporting/enrichment consumers.
+
+        Returns:
+            None.
         """
         super().__init__()
         if devops_information_registry is None:
@@ -108,6 +116,9 @@ class IncidentManager(Cleanable):
         - Idempotent cleanup.
         - Cleans child `Incident` objects before clearing the registry.
         - Drops registry references and zeroes the numeric id counter.
+
+        Returns:
+            None.
         """
         if self._cleaned:
             return

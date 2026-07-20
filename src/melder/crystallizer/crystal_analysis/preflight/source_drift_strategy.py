@@ -73,6 +73,11 @@ class SourceDriftStrategy(PersistenceAnalysisStrategy):
         phantom drift. That matters in this repo specifically, where
         mixed CRLF and LF endings are present in real source files.
     """
+    _ast_helper_access: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. Compare every bind-time fingerprint against the live disk at load. "
+        "Melder kernel machinery: read it to understand the runtime, do not drive it directly."
+    )
 
     __melder_internal__: ClassVar[object] = _mrg.sentinel
 

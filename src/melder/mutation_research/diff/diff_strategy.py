@@ -62,12 +62,20 @@ class DiffStrategy(Cleanable):
         or mutate what it is handed - retaining material would quietly turn a
         derived answer into a second, divergent copy of the record.
     """
+    _ast_helper_access: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. Base contract for one derived-diff computation over version material. "
+        "Melder kernel machinery: read it to understand the runtime, do not drive it directly."
+    )
 
     __slots__ = Cleanable.__slots__
 
     def __init__(self) -> None:
         """
         Initialize the strategy lifecycle flag.
+
+        Returns:
+            None.
         """
         super().__init__()
 
@@ -77,6 +85,9 @@ class DiffStrategy(Cleanable):
 
         Contract:
             - Idempotent; strategies own no releasable state by default.
+
+        Returns:
+            None.
         """
         if self._cleaned:
             return

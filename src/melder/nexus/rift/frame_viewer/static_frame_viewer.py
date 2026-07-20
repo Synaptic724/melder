@@ -50,6 +50,12 @@ class StaticFrameViewer(FrameViewer):
         as a side effect of looking. It also never mutates descriptor
         publication, so a static room cannot change what other Rifts see.
     """
+    _ast_helper_access: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. Static-room viewer overlay that filters spell-facing surfaces to "
+        "live-only. Melder kernel machinery: read it to understand the runtime, do not drive it "
+        "directly."
+    )
 
     __melder_internal__ = _mrg.sentinel
     __slots__: tuple[()] = ()

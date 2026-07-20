@@ -48,6 +48,11 @@ class ViewProjection(Cleanable):
         let permissions shift mid-operation, which is exactly what the refresh
         barrier - block, drain, swap, reopen - exists to prevent.
     """
+    _ast_helper_access: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. Consumer-shaped view projection for one targeted frame. Melder kernel "
+        "machinery: read it to understand the runtime, do not drive it directly."
+    )
 
     __melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
@@ -95,7 +100,12 @@ class ViewProjection(Cleanable):
         self._metadata: Dict[str, object] = dict(metadata) if metadata else {}
 
     def cleanup(self) -> None:
-        """Idempotently cleanup owned projection state."""
+        """
+        Idempotently cleanup owned projection state.
+
+        Returns:
+            None.
+        """
         if self._cleaned:
             return
         self._cleaned = True

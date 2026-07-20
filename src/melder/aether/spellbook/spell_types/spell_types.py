@@ -68,6 +68,11 @@ class SpellType(Enum):
         unique-only for the same reason: there is no per-scope construction to
         vary.
     """
+    _ast_helper_access: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. Canonical runtime binding-family classification for bound spells. "
+        "Melder kernel machinery: read it to understand the runtime, do not drive it directly."
+    )
     __melder_internal__ = _mrg.sentinel
     # Class-based construction spell families.
     SPELL = auto()
