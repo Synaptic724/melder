@@ -40,7 +40,7 @@ class AetherCrystal(Cleanable):
         teardown cleans the displaced twin's value fields only; no live Aether
         root, logger, frame, or hosted subsystem is affected.
     """
-    _ast_helper_access: str = "internal"
+    __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (
         "access: internal. Pure-data digital twin of the Aether root's configured surface. Melder "
         "kernel machinery: read it to understand the runtime, do not drive it directly."

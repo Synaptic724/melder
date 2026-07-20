@@ -31,7 +31,7 @@ Three gaps across the same 542 classes, measured 2026-07-19:
    `aether/spellbook` is 87/208 and every one of `utilities/custom_exceptions`,
    `utilities/helpers`, `utilities/data_structures`, `mutation_research/research_set`,
    `crystallizer/persistence` sits at zero.
-2. AGENT SURFACE: 5 of 542 classes carry `__agent_purpose__` / `_ast_helper_access`. An agent
+2. AGENT SURFACE: 5 of 542 classes carry `__agent_purpose__` / `__ast_helper_access__`. An agent
    that imports melder cannot ask an arbitrary object what it is for or whether it may touch
    it. For an AI-native runtime this is the wrong default.
 3. DOCSTRING DEPTH: every class has a docstring (542/542), but 212 are Rank 1-2 on the
@@ -43,12 +43,12 @@ Three gaps across the same 542 classes, measured 2026-07-19:
   `InternalRegistrationError` when a candidate carries the sentinel. Untagged internals pass
   silently.
 - `system_document.py:StaticSystemDocument` is the EXEMPLAR for the target shape: rich
-  Purpose/Contract/Lifecycle class docstring, `__agent_purpose__`, `_ast_helper_access`, and
+  Purpose/Contract/Lifecycle class docstring, `__agent_purpose__`, `__ast_helper_access__`, and
   per-method Contract/Args/Returns/Raises blocks.
 - `crystallizer` and `mutation_research` were already docstring-finished to Rank 4/5 (0 weak
   classes) but carry almost no guard and no agent metadata - proof these are independent
   workstreams that must be tracked separately.
-- `utilities/helpers/class_surface_ast_describer.py` consumes `_ast_helper_access`, so the
+- `utilities/helpers/class_surface_ast_describer.py` consumes `__ast_helper_access__`, so the
   marker is functional, not decorative.
 
 ## MRP Alignment
@@ -95,7 +95,7 @@ Every major object gets all five. A class is DONE only when all five hold.
    One sentence, action-shaped. Not a restatement of the class name.
 
 3. AST ACCESS MARKER
-   `_ast_helper_access: str = "<public|internal>"` - consumed by
+   `__ast_helper_access__: str = "<public|internal>"` - consumed by
    `utilities/helpers/class_surface_ast_describer.py`.
 
 4. RICH CLASS DOCSTRING (Rank 4 minimum, Rank 5 for public API)
@@ -168,7 +168,7 @@ subsystem brief exists precisely so it does not have to.
 ## Goals
 - Every class in scope is CLASSIFIED guard/no-guard per the three categories above, and the
   classification is recorded in the class docstring. Binding any Melder kernel object raises.
-- `__agent_purpose__` and `_ast_helper_access` on every class in scope.
+- `__agent_purpose__` and `__ast_helper_access__` on every class in scope.
 - Zero Rank 1-2 class docstrings; every class carries Subsystem + System Context.
 
 ## Non-Goals
@@ -211,7 +211,7 @@ export decisions):
       base-class), recorded in its docstring. No class is left unclassified.
 - [ ] No base class in the `Cleanable` / `Sync` / `AbstractElasticPool` family carries the
       sentinel (MRO law).
-- [ ] `__agent_purpose__` + `_ast_helper_access` on 100% of in-scope classes.
+- [ ] `__agent_purpose__` + `__ast_helper_access__` on 100% of in-scope classes.
 - [ ] Rank 1-2 class docstring count is 0 in scope; every class has Subsystem + System
       Context.
 - [ ] Guard regression suite proving BOTH directions: representative kernel objects from
@@ -299,7 +299,7 @@ Execution order (correctness first, then the biggest gap):
 - DATETIME: 2026-07-19T01:10:00Z
   TYPE: FACT
   CLAIM: Baseline AST sweep over `src/melder/**` (542 classes, excluding tests and caches):
-    guard present on 296 (MISSING 246); `__agent_purpose__` and `_ast_helper_access` present
+    guard present on 296 (MISSING 246); `__agent_purpose__` and `__ast_helper_access__` present
     on 5 each (MISSING 537); class docstrings present on 542/542 but ranked R1=16, R2=196,
     R3=203, R4=112, R5=15 - so 212 sit below the Rank 3 floor. Guard coverage is bimodal by
     subsystem: nexus is effectively complete (rift 53/53, acl 38/39) while
@@ -611,7 +611,7 @@ Execution order (correctness first, then the biggest gap):
   AGENT: melder_0
   CLAIM: AGENT MARKERS LANDED - items 2 and 3 of THE OBJECT CONTRACT, which had been sitting at
     29/356 while I reported the program "99% complete" on docstrings alone. Now 324 classes carry
-    `_ast_helper_access` + `__agent_purpose__`: 61 public, 263 internal.
+    `__ast_helper_access__` + `__agent_purpose__`: 61 public, 263 internal.
     ACCESS CLASSIFICATION IS GROUNDED, NOT GUESSED: "public" means the name is exported from
     `src/melder/__init__.py` (67 names), i.e. the owner already ruled that an agent reaches for it
     directly. Everything else is "internal".
@@ -688,6 +688,112 @@ Execution order (correctness first, then the biggest gap):
   NEXT: Owner 3.14t run. Then the ~1,190 internal-class methods, or the five open rulings.
   REREAD: REQUIRED
   SCORE_0_TO_10: 9
+
+NOTE (marker name broke every Enum and dataclass it touched - SHIPPED, owner red run):
+  ROOT CAUSE: `_ast_helper_access` is a SINGLE-underscore name. `enum._EnumDict.__setitem__`
+    skips only dunder and sunder names, so in an Enum body the marker was not an attribute -
+    it became a MEMBER. On 3.14t the next `auto()` then raises
+    `TypeError: unable to increment 'public'` (owner traceback, existence.py:60). On 3.10 it
+    does NOT raise; it silently adds a bogus member, corrupting `len()`, iteration and value
+    lookup. Same defect, two very different symptoms by version. 25 enums affected.
+  WORSE IN FIELD-DERIVING CLASSES: `@dataclass` iterates ALL annotations with no dunder
+    exclusion, so BOTH `_ast_helper_access: str` AND `__agent_purpose__: str` became fields
+    WITH DEFAULTS sitting ahead of non-default fields -> `TypeError: non-default argument
+    follows default argument` at import. 7 frozen dataclasses + 1 Protocol affected. These
+    would have failed the moment the enum failure was cleared.
+  THE MARKER-SAFETY LAW (new, non-negotiable):
+    A class-body marker must be DUNDER, and in any field-deriving class (dataclass,
+    NamedTuple, TypedDict, Protocol) it must ALSO be annotated `ClassVar[...]`.
+    DUNDER ALONE DOES NOT SAVE A DATACLASS - proved by execution, not by reading.
+  OWNER RULING (2026-07-19): rename rather than delete. `_ast_helper_access` ->
+    `__ast_helper_access__` repo-wide: 327 sites in src, 3 in tests, consumer
+    `class_surface_ast_describer.py:638` (`type(obj).__dict__.get(...)`) and its docstring,
+    plus the active OCE epics. Count parity HEAD 327 -> work 327, tests 3 -> 3.
+  CHECK 6 - CLASS-SEMANTICS CHECK (added to THE MANDATORY CODEMOD VALIDATION SET):
+    For every Enum / dataclass / NamedTuple / TypedDict / Protocol touched, the member list
+    or field list must equal HEAD's minus the intended change, AND the class must be
+    EXECUTED, not merely parsed. `ast.parse` and `py_compile` pass cleanly on 100% of the
+    defects above. Checks 1-5 would all have gone green on shipped-broken code.
+  ALSO: my first repair pass silently did NOTHING - `range(hi-1, lo-1, -1)` is empty when
+    `hi == lo`, so every single-line deletion was a no-op. Only the parity check caught it.
+    Deletion codemods remain the dangerous class; a repair codemod is still a codemod.
+  VALIDATION: enum member parity 25/25 vs HEAD, dataclass field parity 7/7, 0 non-default-
+    after-default, 0 risky classes missing the marker, 0 parse failures repo-wide, 0
+    `__slots__`/metaclass collisions across 886 marker sites. EXECUTED: `Existence` builds
+    with exactly its 6 members and the describer reads 'public'; `ScanBindMetadata` builds
+    with exactly its 8 real fields and the describer reads 'internal'.
+    Not run: pytest (needs 3.14t; sandbox is 3.10).
+  EVIDENCE:
+  - src/melder/aether/spellbook/existence/existence.py:53
+  - src/melder/aether/spellbook/bind/scan.py:101
+  - src/melder/utilities/helpers/class_surface_ast_describer.py:638
+  IMPACT: this is the agent-metadata surface `<private-strategy-doc>` 6.1 sells as a Pro
+    early preview feature. It was import-fatal on the target runtime.
+  NEXT: Owner 3.14t run to confirm the import chain clears.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+NOTE (adjacent red NOT caused by the OCE program - conjure NameError):
+  `spellbook.py:6006` constructs `AethericFrameConfiguration(...)` at RUNTIME, but the only
+  import of that name is at `spellbook.py:48`, INSIDE the `if TYPE_CHECKING:` block
+  (lines 39-51). The name is therefore never bound at runtime and any
+  `conjure(dynamic=True)` against an unfrozen frame raises `NameError`.
+  PROVENANCE: `git log -S 'AethericFrameConfiguration('` returns exactly one commit -
+    7cf8c3674 "Implement settle-then-inherit lifecycle for AethericFrame configuration",
+    which is HEAD. Working tree and HEAD are byte-identical at lines 48 and 6006, so no
+    OCE pass touched either line. This is a latent defect in that feature commit.
+  PROPOSED FIX (needs owner confirmation - this is feature code, not docstrings):
+    function-local import inside `_settle_or_inherit_conjure_mode`, NOT promotion of line 48
+    to top level: `aetheric_frame_configuration` imports
+    `melder.aether.spellbook.configuration.system_state`, so a top-level runtime import
+    risks a spellbook-package cycle. The file currently has no function-local import idiom.
+  VALIDATION: static only. Not run: pytest.
+  EVIDENCE:
+  - src/melder/aether/spellbook/spellbook.py:39-51 (TYPE_CHECKING block)
+  - src/melder/aether/spellbook/spellbook.py:6006 (runtime use)
+  NEXT: Owner ruling on the local-import fix.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+NOTE (ITEM 5 phase opened - real public-method contracts, Spell complete):
+  SCOPE MEASURED: 1,110 public methods on the 66 exported classes; 962 carried <=1 canonical
+    section. That is the honest remaining item-5 surface. My earlier scripted `Returns: None.`
+    pass is NOT counted toward any of it - the signature already said `-> None`.
+  CHUNK 1 - `Spell` (27 public methods, 0 -> 54 canonical sections, 16 docstrings rewritten):
+  DEFECTS FOUND BY READING, not by pattern:
+    1. `validated` / `is_broken` ARE BOTH AMBIGUOUS. Both initialize False and RESET to False
+       on invalidation, so an unvalidated spell and a healthy spell are indistinguishable, and
+       `is_broken` is NOT the negation of `validated` - a never-validated spell reports
+       `validated=False` AND `is_broken=False`. The only discriminator is
+       `validation_result_phase4 is None`. Documented on all three.
+    2. `mutation_override` docstring was FACTUALLY WRONG: it claimed "an empty dict means no
+       active payload". `_normalize_mutation_override_payload` maps BOTH `None` and `{}` to
+       `None`, so `{}` is never stored and an `== {}` test can never match. Corrected.
+    3. EMPTY-POSITIONAL ASYMMETRY: `[]` normalizes to `{"__args__": []}`, a NON-empty dict, so
+       `apply_mutation_override([])` leaves `has_mutation_override == True` while
+       `apply_mutation_override({})` leaves it False. Undocumented before; now stated on both.
+    4. `mutation_override` is annotated `-> dict` but returns `Optional[dict]`. Signature lie
+       recorded in the docstring (annotation left alone - not a docstring change).
+    5. `owner_conduit_info` reads two attributes WITHOUT the lock, so the pair is not atomic;
+       a read racing an ownership stamp can see (new id, stale name).
+    6. `__init__` accepts UNRECOGNIZED KEYWORDS SILENTLY - `**kwargs` is a metadata bag, so a
+       misspelled parameter lands in `metadata` instead of raising TypeError.
+    7. `_dynamic_environment` defaults False, so `apply_mutation_override` /
+       `clear_mutation_override` RAISE until a dynamic conduit stamps the spell.
+  INVARIANT PROVEN (not assumed): the four `is_*` family flags partition `SpellType` EXACTLY -
+    all 14 members covered, zero overlap, zero gaps - so exactly one is True for any spell and
+    a four-way branch is total. Verified programmatically against spell_types.py.
+  VALIDATION: ast.parse OK; stripped-AST diff vs HEAD is EXACTLY 2 lines, both the
+    `__ast_helper_access__` rename - proving the 16 docstring edits changed no code.
+    Not run: pytest (needs 3.14t; sandbox is 3.10).
+  EVIDENCE:
+  - src/melder/aether/spellbook/spell.py:1002 (validated), :1015 (is_broken)
+  - src/melder/aether/spellbook/spell.py:1222 (mutation_override)
+  - src/melder/aether/spellbook/spell.py:1335 (_normalize_mutation_override_payload)
+  NEXT: configuration cluster (AethericFrameConfiguration 41, NexusConfiguration 35), then the
+    FrameViewer/View* AR surface (153 + 52 + 40 + 34 + 29).
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
 
 ## Context / Handoff Summary
 Program epic for a correctness-plus-enrichment pass over all 542 classes in `src/melder`.

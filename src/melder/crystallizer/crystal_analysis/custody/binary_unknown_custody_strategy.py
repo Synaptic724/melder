@@ -40,7 +40,7 @@ class BinaryUnknownCustodyStrategy(SourceCustodyStrategy):
     Lifecycle / Cleanup:
         Stateless beyond the Cleanable flag; cleanup is a flag flip.
     """
-    _ast_helper_access: str = "internal"
+    __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (
         "access: internal. Terminal fallback custody for the `unknown` authority class. Melder "
         "kernel machinery: read it to understand the runtime, do not drive it directly."

@@ -78,7 +78,7 @@ class Cleanable(ABC):
         convenience.
     """
 
-    _ast_helper_access: str = "public"
+    __ast_helper_access__: str = "public"
     __agent_purpose__: str = (
         "access: public. Base cleanup contract. Subclass this when your object "
         "owns resources that need deterministic teardown; implement cleanup() "

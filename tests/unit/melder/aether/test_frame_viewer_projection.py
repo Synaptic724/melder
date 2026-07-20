@@ -2461,7 +2461,7 @@ def test_ast_describer_onboarding_and_agent_purpose_json_are_minified() -> None:
 
 
 class _PrivateAstTarget:
-    _ast_helper_access = "private"
+    __ast_helper_access__ = "private"
     __agent_purpose__ = "access: private. Private target used for AST helper tests."
 
     def visible(self) -> None:
@@ -2480,7 +2480,7 @@ class _AstPurposeBase:
 
 
 class _ExplicitAstChild(_AstPurposeBase):
-    _ast_helper_access = "public"
+    __ast_helper_access__ = "public"
     __agent_purpose__ = "access: public. Child AST purpose."
 
     def visible(self) -> None:
@@ -2488,7 +2488,7 @@ class _ExplicitAstChild(_AstPurposeBase):
 
 
 class _InheritedOnlyAstChild(_AstPurposeBase):
-    _ast_helper_access = "public"
+    __ast_helper_access__ = "public"
 
     def visible(self) -> None:
         raise AssertionError("Only class-surface metadata should be described.")

@@ -73,7 +73,7 @@ class GroupedResearchNode(Cleanable):
         invariant applies to group identities exactly as to spell
         identities); `cleanup()` deletes owned fields; idempotent.
     """
-    _ast_helper_access: str = "internal"
+    __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (
         "access: internal. One immutable COMPOSITION record inside a research lane. Melder kernel "
         "machinery: read it to understand the runtime, do not drive it directly."

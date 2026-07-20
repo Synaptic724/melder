@@ -78,7 +78,7 @@ class TransferOwnershipTransactionStrategy(TransactionStrategy):
         almost nothing, and a transfer admitted under an under-scoped seal is
         exactly the failure this whole layer exists to prevent.
     """
-    _ast_helper_access: str = "internal"
+    __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (
         "access: internal. Ownership-transfer transaction resolver (DevOps scope isolation only). "
         "Melder kernel machinery: read it to understand the runtime, do not drive it directly."

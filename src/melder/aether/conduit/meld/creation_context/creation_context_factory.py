@@ -74,7 +74,7 @@ class CreationContextFactory(Cleanable):
         exists so that provisioning happens once per index rather than once per
         context.
     """
-    _ast_helper_access: str = "internal"
+    __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (
         "access: internal. Produce spell-shaped `CreationContext` instances. Melder kernel "
         "machinery: read it to understand the runtime, do not drive it directly."

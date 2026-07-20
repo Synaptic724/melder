@@ -54,7 +54,7 @@ class ConduitCreations(Creations):
         survive a scope transition, so they are deliberately outside this
         class's reach.
     """
-    _ast_helper_access: str = "internal"
+    __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (
         "access: internal. Conduit-owned live creation registry. Melder kernel machinery: read it "
         "to understand the runtime, do not drive it directly."

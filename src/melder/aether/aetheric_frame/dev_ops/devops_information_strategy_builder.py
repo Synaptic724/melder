@@ -77,7 +77,7 @@ class DevopsInformationStrategyBuilder:
         that signal honest, since failed attempts say nothing about which
         checks the system genuinely relies on.
     """
-    _ast_helper_access: str = "internal"
+    __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (
         "access: internal. Registry-backed resolver for DevOps information strategies. Melder "
         "kernel machinery: read it to understand the runtime, do not drive it directly."

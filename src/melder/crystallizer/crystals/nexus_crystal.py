@@ -37,7 +37,7 @@ class NexusCrystal(Cleanable):
         Owned by exactly one `PersistenceProfile`. Cleanup releases the recorded
         flags/configuration only and does not disable or clean the live Nexus.
     """
-    _ast_helper_access: str = "internal"
+    __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (
         "access: internal. Pure-data digital twin of the Nexus root's configured surface. Melder "
         "kernel machinery: read it to understand the runtime, do not drive it directly."

@@ -36,7 +36,7 @@ class ClaimMode(StrEnum):
     Threading:
         Stateless enum; safe to share across threads.
     """
-    _ast_helper_access: str = "internal"
+    __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (
         "access: internal. Claim modes for scope-key acquisition. Melder kernel machinery: read "
         "it to understand the runtime, do not drive it directly."
@@ -89,8 +89,8 @@ class ChangeControlEmbargoRecord:
         or agent inspecting a stuck acquisition sees WHAT kind of transaction
         holds each key, not just an opaque id.
     """
-    _ast_helper_access: str = "internal"
-    __agent_purpose__: str = (
+    __ast_helper_access__: ClassVar[str] = "internal"
+    __agent_purpose__: ClassVar[str] = (
         "access: internal. Immutable record describing one claimed scope key. Melder kernel "
         "machinery: read it to understand the runtime, do not drive it directly."
     )
@@ -142,8 +142,8 @@ class AcquisitionDecision:
         holder identity in hand the cause is immediately visible; without it,
         the symptom is indistinguishable from ordinary contention.
     """
-    _ast_helper_access: str = "internal"
-    __agent_purpose__: str = (
+    __ast_helper_access__: ClassVar[str] = "internal"
+    __agent_purpose__: ClassVar[str] = (
         "access: internal. Immutable outcome of one all-or-nothing scope acquisition attempt. "
         "Melder kernel machinery: read it to understand the runtime, do not drive it directly."
     )
@@ -184,7 +184,7 @@ class ChangeControlEmbargoManager(Cleanable):
         `cleanup()` marks the manager cleaned and notifies all waiters before
         dropping state so blocked threads fail fast instead of hanging.
     """
-    _ast_helper_access: str = "internal"
+    __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (
         "access: internal. Moded scope-key lock table for transaction admission. Melder kernel "
         "machinery: read it to understand the runtime, do not drive it directly."

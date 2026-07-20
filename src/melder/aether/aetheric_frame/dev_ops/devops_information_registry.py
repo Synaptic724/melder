@@ -92,8 +92,8 @@ class DevopsFactRecord:
         is what makes a disagreement between two views diagnosable rather than
         merely visible.
     """
-    _ast_helper_access: str = "internal"
-    __agent_purpose__: str = (
+    __ast_helper_access__: ClassVar[str] = "internal"
+    __agent_purpose__: ClassVar[str] = (
         "access: internal. Immutable last-reported fact baseline for one fact family in one "
         "region. Melder kernel machinery: read it to understand the runtime, do not drive it "
         "directly."
@@ -175,7 +175,7 @@ class DevopsInformationRegistry(Cleanable):
         this mirror, manager cleanup would invalidate it while conduits were
         still writing to it.
     """
-    _ast_helper_access: str = "internal"
+    __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (
         "access: internal. Frame-local registry of dev-ops identities, relationships, and "
         "transaction metadata. Melder kernel machinery: read it to understand the runtime, do not "

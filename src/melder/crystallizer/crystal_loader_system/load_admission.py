@@ -64,7 +64,7 @@ class LoadAdmission(Cleanable):
         Owned by exactly one CrystalLoaderSystem; cleanup dereferences the
         borrowed record (del posture); idempotent.
     """
-    _ast_helper_access: str = "internal"
+    __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (
         "access: internal. Plan, execute, and adjudicate admission-gated load transactions. "
         "Melder kernel machinery: read it to understand the runtime, do not drive it directly."

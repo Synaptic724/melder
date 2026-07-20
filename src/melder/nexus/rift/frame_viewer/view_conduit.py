@@ -65,7 +65,7 @@ class ViewConduit(Cleanable):
     """
 
     __melder_internal__ = _mrg.sentinel
-    _ast_helper_access: str = "public"
+    __ast_helper_access__: str = "public"
     __agent_purpose__: str = (
         "access: public. Conduit-local helper surface for conduit identity, "
         "inventory, relationships, crosswalks, and conduit-to-spell views "

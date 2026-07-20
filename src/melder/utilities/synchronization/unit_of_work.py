@@ -136,7 +136,7 @@ class UnitOfWork(Cleanable, Future):
         unit that is already dead.
     """
 
-    _ast_helper_access: str = "internal"
+    __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (
         "access: internal. One runnable unit bound to a callable, exposed as a "
         "Future. Two lanes: run_synchronously() locks and re-raises for normal "

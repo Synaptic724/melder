@@ -51,7 +51,7 @@ class CrystallizerConfiguration(Cleanable):
         Callers must not independently clean an installed configuration because
         the live root continues to read policy from it.
     """
-    _ast_helper_access: str = "public"
+    __ast_helper_access__: str = "public"
     __agent_purpose__: str = (
         "access: public. Capture and durability policy. with_defaults() is complete easy mode; only "
         "user_source_root_paths is hard-required. Set retain_user_sources for opt-in physical custody "

@@ -63,7 +63,7 @@ class Policies(Enum):
         makes it the widest authority in the conduit layer and the value to
         reach for last, not first.
     """
-    _ast_helper_access: str = "public"
+    __ast_helper_access__: str = "public"
     __agent_purpose__: str = (
         "access: public. Ward contracting mode: default, whitelist_all, block_all, inbound_only, "
         "outbound_only. Pass to conjure(...). Only default is legal when dynamic=False. whitelist_all "

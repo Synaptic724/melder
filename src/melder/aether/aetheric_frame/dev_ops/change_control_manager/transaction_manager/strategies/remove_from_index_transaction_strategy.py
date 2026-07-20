@@ -57,7 +57,7 @@ class RemoveFromIndexTransactionStrategy(TransactionStrategy):
         here rather than being an existing surface some other transaction might
         be holding.
     """
-    _ast_helper_access: str = "internal"
+    __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (
         "access: internal. Remove-from-index transaction resolver (move a spell out to a fresh "
         "index). Melder kernel machinery: read it to understand the runtime, do not drive it "

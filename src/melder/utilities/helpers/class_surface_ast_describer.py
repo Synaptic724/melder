@@ -107,9 +107,9 @@ class ClassSurfaceAstDescriber:
         Provide one shared AST-backed class-surface description utility for
         Melder objects.
 
-    THIS IS THE CONSUMER OF `_ast_helper_access`:
+    THIS IS THE CONSUMER OF `__ast_helper_access__`:
         Melder classes publish two agent-facing markers - `__agent_purpose__`
-        (what an agent can do with the object) and `_ast_helper_access`
+        (what an agent can do with the object) and `__ast_helper_access__`
         (whether that surface is public or internal). This describer is what
         reads them and turns a class into a structured description an agent can
         consume without importing or instantiating anything.
@@ -635,7 +635,7 @@ class ClassSurfaceAstDescriber:
         Returns:
             str: Required AST helper access level (`public` or `private`).
         """
-        access_level = type(target_object).__dict__.get("_ast_helper_access")
+        access_level = type(target_object).__dict__.get("__ast_helper_access__")
         if access_level is None:
             raise ValueError(
                 "AST helper access is missing for class '{0}'.".format(

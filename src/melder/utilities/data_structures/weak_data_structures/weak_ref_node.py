@@ -85,7 +85,7 @@ class WeakRefNode(Cleanable, Generic[_T]):
         silently receiving None.
     """
 
-    _ast_helper_access: str = "public"
+    __ast_helper_access__: str = "public"
     __agent_purpose__: str = (
         "access: public. Weak-reference cell with GC notification - the element "
         "type inside every weak container. Holds no lock: the owning container "

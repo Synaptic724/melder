@@ -71,7 +71,7 @@ class Detail(Cleanable):
         carrying justifying sources, while a `manual` grant was never owned by
         any root and therefore survives root removal entirely.
     """
-    _ast_helper_access: str = "internal"
+    __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (
         "access: internal. Spell-level permission entry stored inside a Contract. Melder kernel "
         "machinery: read it to understand the runtime, do not drive it directly."
@@ -300,7 +300,7 @@ class IndexDetail(Cleanable):
         the record mirrors that split by snapshotting index MEMBERSHIP as its
         own twin (`SpellIndexCrystal`) rather than folding it into the spell.
     """
-    _ast_helper_access: str = "internal"
+    __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (
         "access: internal. Index-level contract entry stored inside a Contract. Melder kernel "
         "machinery: read it to understand the runtime, do not drive it directly."

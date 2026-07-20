@@ -111,7 +111,7 @@ class FrameViewer(Cleanable):
     """
 
     __melder_internal__ = _mrg.sentinel
-    _ast_helper_access: str = "public"
+    __ast_helper_access__: str = "public"
     __agent_purpose__: str = (
         "access: public. Multi-frame descriptor host for the Rift viewer path. Use this object to inspect hosted "
         "frames, compare descriptor records, and call the explicit viewer methods for frame-local behavior."

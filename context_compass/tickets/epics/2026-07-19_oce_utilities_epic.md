@@ -109,7 +109,7 @@ to the active `melder_init_wheel_strategy` lane, not to this program.
       "BASE CLASS - deliberately unguarded, tagging propagates through the MRO to user
       subclasses" note.
 - [ ] The 7 NEEDS-TAG classes carry the sentinel.
-- [ ] `__agent_purpose__` + `_ast_helper_access` on all utilities classes.
+- [ ] `__agent_purpose__` + `__ast_helper_access__` on all utilities classes.
 - [ ] MRO-law regression: a test-defined `class UserThing(Cleanable)` binds successfully.
 - [ ] `Package` deleted (or retention ruled) with its two test files.
 

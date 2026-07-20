@@ -54,7 +54,7 @@ class ConfigurationLossStrategy(PersistenceAnalysisStrategy):
         nothing here should refuse a load at the `RestoreEngine`
         fold->preflight verdict gate.
     """
-    _ast_helper_access: str = "internal"
+    __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (
         "access: internal. Surface configuration facts a record can never fully rebuild. Melder "
         "kernel machinery: read it to understand the runtime, do not drive it directly."

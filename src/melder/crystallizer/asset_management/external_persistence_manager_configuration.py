@@ -48,7 +48,7 @@ class ExternalPersistenceManagerConfiguration(Cleanable):
         the asset-owned manager owns and eventually cleans it. Cleanup drops
         callable references but never invokes them or deletes remote data.
     """
-    _ast_helper_access: str = "public"
+    __ast_helper_access__: str = "public"
     __agent_purpose__: str = (
         "access: public. Registers the mesh callables: with_store_handler / with_fetch_handler / "
         "with_list_units_handler / with_delete_handler / with_stream_emissions. Read-only configs "

@@ -56,7 +56,7 @@ class TransactionSession(Cleanable):
         - Same-thread ownership checks are explicit; cross-thread join is
           rejected.
     """
-    _ast_helper_access: str = "internal"
+    __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (
         "access: internal. Live transaction session rooted at one admitted change-control "
         "request. Melder kernel machinery: read it to understand the runtime, do not drive it "

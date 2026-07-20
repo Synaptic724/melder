@@ -73,7 +73,7 @@ class ClusterLinkTransactionStrategy(TransactionStrategy):
         contract surfaces, since a cluster share IS a contract between two
         members.
     """
-    _ast_helper_access: str = "internal"
+    __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (
         "access: internal. Cluster-owned share/unshare transaction resolver. Melder kernel "
         "machinery: read it to understand the runtime, do not drive it directly."

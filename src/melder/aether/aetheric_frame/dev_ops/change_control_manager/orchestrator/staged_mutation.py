@@ -59,8 +59,8 @@ class ChangeControlStagedMutation:
     Lifecycle:
         Immutable; no cleanup required.
     """
-    _ast_helper_access: str = "internal"
-    __agent_purpose__: str = (
+    __ast_helper_access__: ClassVar[str] = "internal"
+    __agent_purpose__: ClassVar[str] = (
         "access: internal. Immutable record describing a staged change-control mutation. Melder "
         "kernel machinery: read it to understand the runtime, do not drive it directly."
     )

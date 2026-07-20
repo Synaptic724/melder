@@ -46,7 +46,7 @@ class ConduitCrystal(Cleanable):
         and edge payload only; conduit disposal remains a live-runtime owner
         responsibility.
     """
-    _ast_helper_access: str = "internal"
+    __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (
         "access: internal. Pure-data digital twin of one ROOT conduit's structural surface. "
         "Melder kernel machinery: read it to understand the runtime, do not drive it directly."

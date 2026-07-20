@@ -153,7 +153,7 @@ class Conduit(Cleanable):
         one to normal PRESERVES its already-constructed objects rather than
         rebuilding them, because callers may already hold those instances.
     """
-    _ast_helper_access: str = "public"
+    __ast_helper_access__: str = "public"
     __agent_purpose__: str = (
         "access: public. The runtime scope you hold after conjure. Call meld(...) to resolve "
         "instances, create_lesser_conduit(...) for child scopes, enter_spellspace() for request "

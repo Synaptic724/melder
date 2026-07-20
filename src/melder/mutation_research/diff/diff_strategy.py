@@ -62,7 +62,7 @@ class DiffStrategy(Cleanable):
         or mutate what it is handed - retaining material would quietly turn a
         derived answer into a second, divergent copy of the record.
     """
-    _ast_helper_access: str = "internal"
+    __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (
         "access: internal. Base contract for one derived-diff computation over version material. "
         "Melder kernel machinery: read it to understand the runtime, do not drive it directly."

@@ -88,7 +88,7 @@ class SafeLogger(Cleanable):
         failure during cleanup never cascades into a second failure.
     """
     __melder_internal__: ClassVar[object] = _mrg.sentinel
-    _ast_helper_access: str = "public"
+    __ast_helper_access__: str = "public"
     __agent_purpose__: str = (
         "access: public. One logging surface over channel loggers, stdlib "
         "loggers, or nothing at all. Wrapping None is legal and silent, which "

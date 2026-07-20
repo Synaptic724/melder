@@ -1,4 +1,4 @@
-﻿from typing import TYPE_CHECKING, Dict, Optional
+from typing import TYPE_CHECKING, Dict, Optional
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 from melder.aether.spellbook.configuration.system_state import SystemState
@@ -54,7 +54,7 @@ class NexusFrameBuilder(Cleanable):
         semantics and topology rules. That is why `build()` and `create()` are
         distinct - a caller may want the configuration without realizing it.
     """
-    _ast_helper_access: str = "internal"
+    __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (
         "access: internal. Fluent authored-frame builder for Nexus-managed frames. Melder kernel "
         "machinery: read it to understand the runtime, do not drive it directly."

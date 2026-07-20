@@ -61,7 +61,7 @@ class TransitionAct(enum.Enum):
           `to_spell_id` (the same sha namespace as spell identities); the
           member roster and composition ancestry ride `metadata`.
     """
-    _ast_helper_access: str = "internal"
+    __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (
         "access: internal. World-entry act vocabulary for the mutation-research journal. Melder "
         "kernel machinery: read it to understand the runtime, do not drive it directly."
@@ -126,7 +126,7 @@ class TransitionEntry(Cleanable):
         WHERE-by-WHEN join across lanes rather than another container: the
         grouping lives on the events, not on the structure.
     """
-    _ast_helper_access: str = "internal"
+    __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (
         "access: internal. One immutable forward-only journal event in a research set. Melder "
         "kernel machinery: read it to understand the runtime, do not drive it directly."

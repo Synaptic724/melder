@@ -70,7 +70,7 @@ class CodegenValidator(Cleanable):
         why an accepted verdict is required before `CodegenSystem` will build a
         live namespace at all.
     """
-    _ast_helper_access: str = "internal"
+    __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (
         "access: internal. Root validation orchestrator for one codegen request. Melder kernel "
         "machinery: read it to understand the runtime, do not drive it directly."

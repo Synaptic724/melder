@@ -50,7 +50,7 @@ class RiftGateController(Cleanable):
         may be torn down concurrently with a refresh, and raising on a
         disappeared id would turn a normal race into an error.
     """
-    _ast_helper_access: str = "internal"
+    __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (
         "access: internal. Central registry and control plane for `RiftGate` instances. Melder "
         "kernel machinery: read it to understand the runtime, do not drive it directly."

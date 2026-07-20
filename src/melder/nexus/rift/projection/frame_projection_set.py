@@ -49,7 +49,7 @@ class FrameProjectionSet(Cleanable):
         reopen. The generation marker makes it possible to tell whether a room
         is running current policy without comparing the projections themselves.
     """
-    _ast_helper_access: str = "internal"
+    __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (
         "access: internal. Owned set of consumer-shaped projections for one targeted frame. "
         "Melder kernel machinery: read it to understand the runtime, do not drive it directly."

@@ -76,7 +76,7 @@ class Incident(Cleanable):
         structured payload tooling actually parses. Collapsing them would make
         one of those two consumers do string surgery.
     """
-    _ast_helper_access: str = "internal"
+    __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (
         "access: internal. Mutable incident record with controlled status transitions. Melder "
         "kernel machinery: read it to understand the runtime, do not drive it directly."

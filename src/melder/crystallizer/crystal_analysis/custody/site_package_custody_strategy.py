@@ -40,7 +40,7 @@ class SitePackageCustodyStrategy(SourceCustodyStrategy):
     Lifecycle / Cleanup:
         Owns the site-root tuple; cleanup deletes it (del posture).
     """
-    _ast_helper_access: str = "internal"
+    __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (
         "access: internal. Authority-class custody for installed site-package modules. Melder "
         "kernel machinery: read it to understand the runtime, do not drive it directly."

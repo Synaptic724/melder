@@ -41,7 +41,7 @@ class CrystallizerConfigurationBuilder(Cleanable):
         Short-lived by design. After handoff, the caller owns the returned
         configuration and the builder is terminal.
     """
-    _ast_helper_access: str = "public"
+    __ast_helper_access__: str = "public"
     __agent_purpose__: str = (
         "access: public. Fluent one-shot builder for CrystallizerConfiguration. Assemble then "
         "build()/finalize()/activate(); ownership transfers and the builder is spent."

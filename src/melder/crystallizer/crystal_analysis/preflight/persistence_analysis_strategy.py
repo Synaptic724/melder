@@ -35,7 +35,7 @@ class PersistenceAnalysisStrategy(ABC):
     Threading:
         Stateless by contract; safe to share.
     """
-    _ast_helper_access: str = "internal"
+    __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (
         "access: internal. One analysis pass over a persistence payload bundle. Melder kernel "
         "machinery: read it to understand the runtime, do not drive it directly."

@@ -94,7 +94,7 @@ class CreationContext(Cleanable):
         resolution. The hooks lane keeps the tuple door because it genuinely
         needs the `created` flag to decide whether activation hooks fire.
     """
-    _ast_helper_access: str = "internal"
+    __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (
         "access: internal. Spell-bound runtime executor context. Melder kernel machinery: read it "
         "to understand the runtime, do not drive it directly."

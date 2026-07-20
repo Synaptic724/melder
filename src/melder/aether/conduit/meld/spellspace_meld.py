@@ -69,7 +69,7 @@ class SpellSpaceMeld(Meld):
         spellspace-scoped instances and bumps the version rather than reusing
         stale ones.
     """
-    _ast_helper_access: str = "internal"
+    __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (
         "access: internal. Concrete spellspace-facing meld front door. Melder kernel machinery: "
         "read it to understand the runtime, do not drive it directly."

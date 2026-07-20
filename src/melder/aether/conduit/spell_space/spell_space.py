@@ -64,7 +64,7 @@ class SpellSpace(Cleanable):
         - Normal cleanup returns the spellspace to its conduit-local pool.
         - Permanent cleanup drops all injected collaborators.
     """
-    _ast_helper_access: str = "public"
+    __ast_helper_access__: str = "public"
     __agent_purpose__: str = (
         "access: public. Explicit request scope for Existence.unique_per_spell_space. Enter via "
         "conduit.enter_spellspace(); meld only while it is the ACTIVE spellspace; reset() clears "

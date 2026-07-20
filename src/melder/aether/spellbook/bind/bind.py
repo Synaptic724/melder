@@ -84,7 +84,7 @@ class Bind(Cleanable):
         the crystallizer, so custody is born here (gated on
         `activated AND dynamic posture`) rather than being swept up later.
     """
-    _ast_helper_access: str = "internal"
+    __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (
         "access: internal. Spellbook registration gateway for classes, callables, and concrete "
         "objects. Melder kernel machinery: read it to understand the runtime, do not drive it "

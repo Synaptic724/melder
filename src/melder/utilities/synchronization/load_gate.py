@@ -132,7 +132,7 @@ class LoadGate(Cleanable):
         parking exactly as before.
     """
     __melder_internal__: ClassVar[object] = _mrg.sentinel
-    _ast_helper_access: str = "internal"
+    __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (
         "access: internal. Process-wide exclusive load authority. acquire(label) "
         "claims the system for one loading thread; enroll_worker() adds that "

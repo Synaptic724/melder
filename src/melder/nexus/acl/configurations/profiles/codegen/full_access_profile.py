@@ -38,7 +38,7 @@ class FullAccessCodegenProfileStrategy:
         cannot mistake it for a merely-generous posture, and an audit reading a
         frame's chain sees the widest grant spelled out.
     """
-    _ast_helper_access: str = "internal"
+    __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (
         "access: internal. Build the reusable `full_access` codegen profile. Melder kernel "
         "machinery: read it to understand the runtime, do not drive it directly."

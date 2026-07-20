@@ -55,7 +55,7 @@ class Permissions(Enum):
         a cluster exists precisely so members can construct from each other's
         lineages, and a `read`-only default would make the cluster inert.
     """
-    _ast_helper_access: str = "public"
+    __ast_helper_access__: str = "public"
     __agent_purpose__: str = (
         "access: public. Capability ceiling for a lineage: read (resolve/inspect only), create "
         "(creation-capable, implies read), block (hard stop). Pass to Spellbook.bind(...). A contract "

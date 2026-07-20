@@ -98,7 +98,7 @@ class AethericFrame(Cleanable):
         subsequent books join it rather than silently redefining it underneath
         the conduits already running there.
     """
-    _ast_helper_access: str = "internal"
+    __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (
         "access: internal. Manage one isolated runtime frame within `Aether`. Melder kernel "
         "machinery: read it to understand the runtime, do not drive it directly."

@@ -64,7 +64,7 @@ class NetworkVersioner(Cleanable):
         crystallizer twin, so `restore_network` can still reach pre-death
         organization states after a world has been reloaded from a checkpoint.
     """
-    _ast_helper_access: str = "internal"
+    __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (
         "access: internal. Content-addressed version control for the graph network itself. Melder "
         "kernel machinery: read it to understand the runtime, do not drive it directly."

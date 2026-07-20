@@ -85,7 +85,7 @@ class SpellSystemState(Cleanable):
         write time is what lets `compute_impact_closure` dirty a bounded set at
         change time instead of revalidating every lineage in the frame.
     """
-    _ast_helper_access: str = "internal"
+    __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (
         "access: internal. System-level state for a single spell index: topology, validity, and "
         "flags. Melder kernel machinery: read it to understand the runtime, do not drive it "

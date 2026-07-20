@@ -45,7 +45,7 @@ class SpellRecord(Cleanable):
         truth rather than reaching into runtime state, which is what makes a
         viewer safe to hand a static room.
     """
-    _ast_helper_access: str = "internal"
+    __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (
         "access: internal. Canonical Nexus record for one published spell. Melder kernel "
         "machinery: read it to understand the runtime, do not drive it directly."

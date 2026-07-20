@@ -85,7 +85,7 @@ class Crystallizer(Cleanable):
         before the record: loader, assets, persistence, then configuration.
         Singleton bookkeeping is reset only after child teardown completes.
     """
-    _ast_helper_access: str = "public"
+    __ast_helper_access__: str = "public"
     __agent_purpose__: str = (
         "access: public. The persistence facade. Configure and activate it, then use the profile and "
         "checkpoint verbs (create_checkpoint, load_checkpoint, describe_profile, list_checkpoint_ids) "

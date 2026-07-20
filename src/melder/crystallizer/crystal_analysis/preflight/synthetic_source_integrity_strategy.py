@@ -60,7 +60,7 @@ class SyntheticSourceIntegrityStrategy(PersistenceAnalysisStrategy):
         file wins at import, so divergence is a notice rather than a
         danger.
     """
-    _ast_helper_access: str = "internal"
+    __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (
         "access: internal. Verify recorded synthetic module sources against their SHA256. Melder "
         "kernel machinery: read it to understand the runtime, do not drive it directly."

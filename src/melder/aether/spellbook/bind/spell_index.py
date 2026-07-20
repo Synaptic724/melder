@@ -66,7 +66,7 @@ class SpellIndex(Cleanable):
         that keeps this class small: the index organizes ids, the spell_id
         resolves, and the Spellbook is what republishes lookups on a notch.
     """
-    _ast_helper_access: str = "public"
+    __ast_helper_access__: str = "public"
     __agent_purpose__: str = (
         "access: public. The stable lineage identity (immutable ULID) pointing at a mutable selected "
         "spell. Hash/equality use only the ULID, so a notch can repoint the active member without "

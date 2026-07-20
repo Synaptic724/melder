@@ -88,7 +88,7 @@ class MelderRegistrationGuard:
         choice: prefix matching would guess at intent from naming, and this
         guard is built to be deterministic rather than clever.
     """
-    _ast_helper_access: str = "public"
+    __ast_helper_access__: str = "public"
     __agent_purpose__: str = (
         "access: public. The registration gatekeeper. Tag internals with `__melder_internal__ = "
         "guard.sentinel`; bind paths call assert_allowed(...). CRITICAL: the sentinel resolves "

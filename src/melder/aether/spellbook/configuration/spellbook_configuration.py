@@ -58,7 +58,7 @@ class SpellbookConfiguration(Cleanable):
         adoptable: a frame-shared configuration carries one hook registry for
         every book that adopts it.
     """
-    _ast_helper_access: str = "public"
+    __ast_helper_access__: str = "public"
     __agent_purpose__: str = (
         "access: public. Rich per-book configuration: typed properties, idempotent keys, and the "
         "Meld/Conduit/Link/Contract hook registry. Must be frozen before conjure. Idempotent keys "

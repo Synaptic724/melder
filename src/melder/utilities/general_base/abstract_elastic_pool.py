@@ -91,7 +91,7 @@ class AbstractElasticPool(Generic[_T], Cleanable, ABC):
     _DEFAULT_DECAY_PERCENT_PER_INTERVAL: ClassVar[int] = 10
     _DEFAULT_DECAY_INTERVAL_SECONDS: ClassVar[float] = 600.0
 
-    _ast_helper_access: str = "public"
+    __ast_helper_access__: str = "public"
     __agent_purpose__: str = (
         "access: public. Base elastic object pool. Subclass this to pool "
         "expensive reusable objects; implement create_object/destroy_object and "

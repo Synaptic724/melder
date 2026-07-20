@@ -118,7 +118,7 @@ class TransferOfOwnership(Cleanable):
         Transfer is dynamic-mode only - like linking, severing, and upgrade, it
         rewires the graph after conjure, which an automatic-mode world forbids.
     """
-    _ast_helper_access: str = "internal"
+    __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (
         "access: internal. Control-plane helper that migrates a spell lineage between conduit "
         "owners. Melder kernel machinery: read it to understand the runtime, do not drive it "

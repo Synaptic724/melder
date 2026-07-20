@@ -165,7 +165,7 @@ class ConduitCluster(Cleanable):
         `cluster_membership` preflight row reports a recorded leader as INFO
         rather than restoring it, for exactly this reason.
     """
-    _ast_helper_access: str = "internal"
+    __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (
         "access: internal. A membership group of conduits with TWO INDEPENDENT LAYERS: leaderless "
         "spell-sharing (the core, always on) and an OPTIONAL elected-leader team store (only ever "

@@ -69,7 +69,7 @@ class ConduitMeld(Meld):
         `unique_per_conduit_lineage`) resolve against shared owner storage so
         peers in a cluster or lineage genuinely observe the same instance.
     """
-    _ast_helper_access: str = "internal"
+    __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (
         "access: internal. Concrete conduit-facing meld front door. Melder kernel machinery: read "
         "it to understand the runtime, do not drive it directly."

@@ -40,7 +40,7 @@ class AethericFrameCrystal(Cleanable):
         posture/configuration values only and never disposes the live frame or
         its spellbooks.
     """
-    _ast_helper_access: str = "internal"
+    __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (
         "access: internal. Pure-data digital twin of one AethericFrame's configured surface. "
         "Melder kernel machinery: read it to understand the runtime, do not drive it directly."

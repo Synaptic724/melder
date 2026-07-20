@@ -92,7 +92,7 @@ class ChangeControlManager(Cleanable):
     Lifecycle:
         cleanup() is idempotent and nulls internal references.
     """
-    _ast_helper_access: str = "internal"
+    __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (
         "access: internal. Change-control registry for an Aetheric Frame. Melder kernel "
         "machinery: read it to understand the runtime, do not drive it directly."

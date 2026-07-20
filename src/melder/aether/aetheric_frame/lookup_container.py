@@ -41,7 +41,7 @@ class LookupContainer:
         - `cleanup` clears both maps and drops the lock. It is idempotent;
           after cleanup the container exposes no live surface.
     """
-    _ast_helper_access: str = "internal"
+    __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (
         "access: internal. Frame-wide, thread-safe registry of ACTIVE binding-signature lookups. "
         "Melder kernel machinery: read it to understand the runtime, do not drive it directly."

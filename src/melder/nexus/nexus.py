@@ -120,7 +120,7 @@ class Nexus(Cleanable):
         delegate into that same batch primitive, so there is exactly one refresh
         path rather than two that could diverge.
     """
-    _ast_helper_access: str = "public"
+    __ast_helper_access__: str = "public"
     __agent_purpose__: str = (
         "access: public. The PUBLIC AR root over the hidden Aether substrate. Starts unconfigured and "
         "disabled - call configure(...) then enable() before "

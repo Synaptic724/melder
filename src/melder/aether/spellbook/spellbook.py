@@ -16,6 +16,9 @@ from melder.aether.aetheric_frame.dev_ops.devops_identity import (
 )
 from melder.aether.spellbook.bind.scan import Scan
 from melder.aether.spellbook.spellbook_creation_system import SpellbookCreationSystem
+from melder.aether.aetheric_frame.aetheric_frame_configuration import (
+    AethericFrameConfiguration,
+)
 from melder.aether.spellbook.configuration.system_state import SystemState
 from melder.utilities.caching_system.caching_system import CachingSystem
 from melder.utilities.general_base.cleanable import Cleanable
@@ -45,7 +48,6 @@ if TYPE_CHECKING:
         TransactionMediator,
     )
     from melder.utilities.synchronization.unit_of_work import UnitOfWork
-    from melder.aether.aetheric_frame.aetheric_frame_configuration import AethericFrameConfiguration
     from melder.utilities.logger.safe_logger import SafeLogger
     from melder.crystallizer.crystallizer import Crystallizer
     from melder.mutation_research.mutation_research import MutationResearch
@@ -115,7 +117,7 @@ and logging.
           occurs when the frame posture permits it and a shared rich config
           object already exists on the frame.
     """
-    _ast_helper_access: str = "public"
+    __ast_helper_access__: str = "public"
     __agent_purpose__: str = (
         "access: public. The binding authority. Call bind(...)/scan(...) to register, then "
         "conjure(...) exactly once to build the root Conduit. Also owns the transaction-backed "
@@ -6002,14 +6004,16 @@ and logging.
         if dynamic and not frame_configuration._frozen:
             # Settlement: conjure is the settlement point for unset
             # configuration - the flag is a legitimate input here.
-            self._aetheric_frame.bind_frame_configuration(
-                AethericFrameConfiguration(
-                    origin_spellbook_id=self._id,
-                    system_state=SystemState.dynamic,
-                    ai_native_enabled=frame_configuration.ai_native_enabled,
-                    rift_enabled=frame_configuration.rift_enabled,
-                )
-            )
+            # Settle the RETAINED frame-owned posture object ITSELF
+            # (with_system_state + rebind of the SAME object):
+            # bind_frame_configuration's unfrozen branch copies attempted
+            # values over the canonical posture only for a DIFFERENT
+            # object, so binding a fresh posture here would bulldoze
+            # every flag staged pre-conjure (with_disable_*, ai_native,
+            # rift, wait bound) back to defaults.
+            if frame_configuration.system_state is not SystemState.dynamic:
+                frame_configuration.with_system_state(SystemState.dynamic)
+            self._aetheric_frame.bind_frame_configuration(frame_configuration)
         return frame_configuration.system_state is SystemState.dynamic
 
     def conjure(

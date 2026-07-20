@@ -59,7 +59,7 @@ class ResearchNode(Cleanable):
         reads. Nodes are minted from the Spellbook's bind and notch confirmation
         points while the research root is active.
     """
-    _ast_helper_access: str = "internal"
+    __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (
         "access: internal. One immutable version record inside a research lane. Melder kernel "
         "machinery: read it to understand the runtime, do not drive it directly."

@@ -86,7 +86,7 @@ class ClusterLeaveTransactionStrategy(TransactionStrategy):
         both directions across the whole membership, so a narrower seal would
         let a peer observe a half-removed member.
     """
-    _ast_helper_access: str = "internal"
+    __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (
         "access: internal. Cluster-leave transaction resolver (DevOps scope isolation only). "
         "Melder kernel machinery: read it to understand the runtime, do not drive it directly."

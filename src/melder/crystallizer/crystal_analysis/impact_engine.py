@@ -50,7 +50,7 @@ class ImpactEngine(Cleanable):
     Lifecycle / Cleanup:
         cleanup() deletes the carried indexes (del posture); idempotent.
     """
-    _ast_helper_access: str = "internal"
+    __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (
         "access: internal. Index custody manifests and answer blast-radius questions. Melder "
         "kernel machinery: read it to understand the runtime, do not drive it directly."

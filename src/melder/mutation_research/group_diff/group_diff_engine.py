@@ -65,7 +65,7 @@ class GroupDiffEngine(Cleanable):
         addition as a version move: the engine cannot promise the join is
         populated, so the strategy must degrade honestly rather than infer.
     """
-    _ast_helper_access: str = "internal"
+    __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (
         "access: internal. Strategy-dispatched derived-diff computation over composition "
         "material. Melder kernel machinery: read it to understand the runtime, do not drive it "

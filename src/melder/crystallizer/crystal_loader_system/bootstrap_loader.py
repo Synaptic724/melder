@@ -57,7 +57,7 @@ class CrystallizerBootstrap(Cleanable):
         `bootstrap()` begins, configuration ownership transfers downstream and
         cleanup never tears down the resulting crystallizer world.
     """
-    _ast_helper_access: str = "public"
+    __ast_helper_access__: str = "public"
     __agent_purpose__: str = (
         "access: public. Fluent single-use pod-boot chain: activate, attach the external manager, "
         "reload cache, pull remote, verify the chain, restore the newest checkpoint. Use this to "

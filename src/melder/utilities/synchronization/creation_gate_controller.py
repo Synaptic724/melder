@@ -105,7 +105,7 @@ class CreationGateController(Cleanable):
         creation-context rebuilds per index.
     """
     __melder_internal__: ClassVar[object] = _mrg.sentinel
-    _ast_helper_access: str = "internal"
+    __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (
         "access: internal. Frame-owned registry of CreationGates across two "
         "scopes: conduit gates (indexed root->conduit, with a reverse lookup so "

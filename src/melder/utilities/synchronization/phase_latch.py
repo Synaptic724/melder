@@ -115,7 +115,7 @@ class PhaseLatch:
     """
 
     __melder_internal__: ClassVar[object] = _mrg.sentinel
-    _ast_helper_access: str = "internal"
+    __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (
         "access: internal. Phase completion barrier for PhaseScheduler. Two "
         "events: wait() wakes on all-done OR first error (fail-fast), "

@@ -1,4 +1,4 @@
-﻿import hashlib
+import hashlib
 import importlib
 import importlib.abc
 import importlib.util
@@ -34,7 +34,7 @@ class _SyntheticModuleImportLoader(importlib.abc.Loader):
         One process-wide loader is created lazily by `SyntheticModule`. It owns
         no module and has no independent cleanup surface.
     """
-    _ast_helper_access: str = "internal"
+    __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (
         "access: internal. Loader bridge from importlib into the `SyntheticModule` registry. "
         "Melder kernel machinery: read it to understand the runtime, do not drive it directly."
@@ -154,7 +154,7 @@ class _SyntheticModuleMetaPathFinder(importlib.abc.MetaPathFinder):
         The singleton finder may be installed or removed repeatedly. Removing
         it does not unregister, unpublish, execute, or clean a module.
     """
-    _ast_helper_access: str = "internal"
+    __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (
         "access: internal. Finder exposing registered synthetic modules to importlib. Melder "
         "kernel machinery: read it to understand the runtime, do not drive it directly."
@@ -248,7 +248,7 @@ class SyntheticModule(ModuleType):
         - still expose the crystallizer-owned metadata that ties the live
           module back to durable truth
     """
-    _ast_helper_access: str = "internal"
+    __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (
         "access: internal. Live in-memory module embodiment for crystallized source. Melder "
         "kernel machinery: read it to understand the runtime, do not drive it directly."

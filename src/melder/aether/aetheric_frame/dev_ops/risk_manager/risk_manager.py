@@ -57,7 +57,7 @@ class _ConduitRiskState:
         everywhere or because THIS conduit cannot currently resolve it, which
         are different problems with different fixes.
     """
-    _ast_helper_access: str = "internal"
+    __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (
         "access: internal. Per-conduit bucket of risk-tracking state. Melder kernel machinery: "
         "read it to understand the runtime, do not drive it directly."
@@ -155,7 +155,7 @@ class RiskManager(Cleanable):
         validation gating - removing a lineage must never leave a stale "valid"
         verdict behind that meld could still act on.
     """
-    _ast_helper_access: str = "internal"
+    __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (
         "access: internal. DevOps risk tracking for meld validation gating. Melder kernel "
         "machinery: read it to understand the runtime, do not drive it directly."

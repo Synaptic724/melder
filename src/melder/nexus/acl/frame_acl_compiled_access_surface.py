@@ -42,7 +42,7 @@ class CompiledFrameACLAccessSurface(Cleanable):
         permissions shift under it. That is exactly why the Nexus refresh path
         blocks entrants and drains before applying new projections.
     """
-    _ast_helper_access: str = "internal"
+    __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (
         "access: internal. CompiledFrameACLAccessSurface runtime object. Melder kernel machinery: "
         "read it to understand the runtime, do not drive it directly."

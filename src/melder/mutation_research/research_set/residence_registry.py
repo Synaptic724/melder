@@ -65,7 +65,7 @@ class ResidenceRegistry(Cleanable):
         refuses a node: a claim that outlived its failed add would make a
         never-recorded identity permanently unavailable.
     """
-    _ast_helper_access: str = "internal"
+    __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (
         "access: internal. Single-residence partition map for one research set. Melder kernel "
         "machinery: read it to understand the runtime, do not drive it directly."

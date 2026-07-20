@@ -42,7 +42,7 @@ class FrameDescriptorPayload(Cleanable):
         objects would extend their lifetime and let a viewer reach the runtime
         it is only meant to describe.
     """
-    _ast_helper_access: str = "internal"
+    __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (
         "access: internal. Descriptor-safe published frame payload. Melder kernel machinery: read "
         "it to understand the runtime, do not drive it directly."

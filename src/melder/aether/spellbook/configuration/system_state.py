@@ -44,7 +44,7 @@ class SystemState(Enum):
         a restore must posture a frame before building its books, and why the
         crystallizer warns when a book's frame twin is missing from a bundle.
     """
-    _ast_helper_access: str = "public"
+    __ast_helper_access__: str = "public"
     __agent_purpose__: str = (
         "access: public. Runtime posture: automatic (fixed graph, safer) or dynamic (rewiring "
         "allowed). Dynamic is REQUIRED for linking, severing, ownership transfer, and "

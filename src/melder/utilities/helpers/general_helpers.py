@@ -52,7 +52,7 @@ class EnumHelpers:
     - Raises immediately on `None`, incompatible types, or unknown values.
     """
 
-    _ast_helper_access: str = "public"
+    __ast_helper_access__: str = "public"
     __agent_purpose__: str = (
         "access: public. Static namespace for coercing raw strings into enum "
         "members at API boundaries. Call convert_enum_and_check(...) to accept "
@@ -218,7 +218,7 @@ class SpellInputUtils:
         name-based resolution ambiguous.
     """
 
-    _ast_helper_access: str = "public"
+    __ast_helper_access__: str = "public"
     __agent_purpose__: str = (
         "access: public. Static namespace for spell address normalization. "
         "Compose (frame_key, bind_key) via normalize_spell_key(...) so bind and "

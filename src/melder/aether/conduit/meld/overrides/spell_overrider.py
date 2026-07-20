@@ -43,7 +43,7 @@ class _Specificity(IntEnum):
         the caller having to order their own dict, which would be fragile and
         silently order-dependent.
     """
-    _ast_helper_access: str = "internal"
+    __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (
         "access: internal. Precedence tiers for spell-override target specs. Melder kernel "
         "machinery: read it to understand the runtime, do not drive it directly."
@@ -102,7 +102,7 @@ class SpellOverrider(Cleanable):
         rather than at resolution. Failing loudly at map time is the whole
         point of resolving specs up front instead of during construction.
     """
-    _ast_helper_access: str = "internal"
+    __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (
         "access: internal. Runtime helper that turns a raw spell_override dict into a "
         "socket-aware OverrideMap for a specific root blueprint. Melder kernel machinery: read it "

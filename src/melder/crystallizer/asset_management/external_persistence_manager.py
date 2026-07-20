@@ -50,7 +50,7 @@ class ExternalPersistenceManager(Cleanable):
         owned configuration and counters but never calls a remote handler to
         close, delete, or otherwise mutate user storage.
     """
-    _ast_helper_access: str = "public"
+    __ast_helper_access__: str = "public"
     __agent_purpose__: str = (
         "access: public. Your DB seam. Supply store/fetch/list/delete callables and melder ships "
         "recorded units to them. Uploads are lenient and counted; deletes are strict. Entirely opt-in "

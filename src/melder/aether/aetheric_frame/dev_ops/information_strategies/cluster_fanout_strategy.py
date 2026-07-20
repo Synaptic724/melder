@@ -60,7 +60,7 @@ class ClusterFanoutStrategy(DevopsInformationStrategy):
         directions of that question distinct rather than silently merging a
         participant-centric and a cluster-centric answer.
     """
-    _ast_helper_access: str = "internal"
+    __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (
         "access: internal. Registry-backed cluster fan-out view for one conduit or one cluster. "
         "Melder kernel machinery: read it to understand the runtime, do not drive it directly."

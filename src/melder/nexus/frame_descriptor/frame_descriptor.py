@@ -40,7 +40,7 @@ class FrameDescriptor(Cleanable):
         Cleanup cascades into all owned record objects before dropping indexes
         and references.
     """
-    _ast_helper_access: str = "internal"
+    __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (
         "access: internal. FrameDescriptor runtime object. Melder kernel machinery: read it to "
         "understand the runtime, do not drive it directly."

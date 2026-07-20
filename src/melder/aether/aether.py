@@ -1,4 +1,4 @@
-﻿import logging
+import logging
 import time
 from threading import RLock
 from types import TracebackType
@@ -89,7 +89,7 @@ class Aether(Cleanable):
         `Nexus` is the public AR root, and reaching AR or mutation control
         through `Aether` is deliberately not a supported path.
     """
-    _ast_helper_access: str = "public"
+    __ast_helper_access__: str = "public"
     __agent_purpose__: str = (
         "access: public. The global singleton root. `Aether()` returns the process-wide instance and "
         "boots the hidden substrate (utility system, Crystallizer, Nexus, LoadGate). Creates ZERO "

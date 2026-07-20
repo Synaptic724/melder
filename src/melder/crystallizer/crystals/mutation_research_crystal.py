@@ -54,7 +54,7 @@ class MutationResearchCrystal(Cleanable):
         configuration/composition/node rows only and does not alter the hosted
         MutationResearch root or research sets.
     """
-    _ast_helper_access: str = "internal"
+    __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (
         "access: internal. Pure-data digital twin of the MutationResearch root's configured "
         "surface. Melder kernel machinery: read it to understand the runtime, do not drive it "

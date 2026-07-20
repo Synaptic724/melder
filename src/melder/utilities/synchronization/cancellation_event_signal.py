@@ -91,7 +91,7 @@ class CancellationEvent(Cleanable):
         than a failure.
     """
 
-    _ast_helper_access: str = "internal"
+    __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (
         "access: internal. Read-only view of a shared cancellation flag. Poll "
         "is_set (lock-free) or call throw_if_set() to abort cooperatively. You "
@@ -266,7 +266,7 @@ class CancellationEventSignal(Cleanable):
         conjure ends without a Conduit but is not a defect.
     """
 
-    _ast_helper_access: str = "internal"
+    __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (
         "access: internal. Coordinator side of cooperative cancellation. Call "
         "cancel() to stop every observer; hand workers the .event view so they "

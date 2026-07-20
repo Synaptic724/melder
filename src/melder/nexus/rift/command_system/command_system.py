@@ -1,4 +1,4 @@
-﻿import threading
+import threading
 from contextlib import contextmanager
 from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Tuple
 if TYPE_CHECKING:
@@ -78,7 +78,7 @@ class CommandSystem(Cleanable):
         activation, and `CodegenCommandSystem` owns the validate/execute seams
         plus the full research command family.
     """
-    _ast_helper_access: str = "internal"
+    __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (
         "access: internal. Room-local shared command infrastructure plus common read/target "
         "helpers. Melder kernel machinery: read it to understand the runtime, do not drive it "

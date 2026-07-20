@@ -34,7 +34,7 @@ class RecordedUnitState(enum.Enum):
     Lifecycle / Cleanup:
         None. Enum members are process-lifetime constants.
     """
-    _ast_helper_access: str = "internal"
+    __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (
         "access: internal. Recorded lifecycle state for singleton units the record tracks by "
         "state-switch instead of eviction (MutationResearch, Nexus). Melder kernel machinery: "

@@ -92,7 +92,7 @@ class CodegenSystem(Cleanable):
         produces results, and `CodegenCommandSystem` decides what gets recorded,
         so the accountability record has one author.
     """
-    _ast_helper_access: str = "internal"
+    __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (
         "access: internal. Root codegen orchestration object. Melder kernel machinery: read it to "
         "understand the runtime, do not drive it directly."

@@ -76,7 +76,7 @@ class StaticSystemDocument:
     """
 
     __melder_internal__: ClassVar[object] = _mrg.sentinel
-    _ast_helper_access: str = "public"
+    __ast_helper_access__: str = "public"
     __agent_purpose__: str = (
         "access: public. Immutable packaged hardcopy of a system document. Read "
         "`melder.__architecture__`, `__components__`, `__graph_network__`, `__graph_details__` to "

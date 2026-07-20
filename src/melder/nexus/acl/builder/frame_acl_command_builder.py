@@ -36,7 +36,7 @@ class FrameACLCommandBuilder(Cleanable):
         Cleanup is idempotent. It only drops borrowed references and does not
         clean or commit the underlying draft automatically.
     """
-    _ast_helper_access: str = "internal"
+    __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (
         "access: internal. FrameACLCommandBuilder runtime object. Melder kernel machinery: read "
         "it to understand the runtime, do not drive it directly."

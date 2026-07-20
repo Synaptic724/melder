@@ -58,7 +58,7 @@ class FrameACLCompiler(Cleanable):
         Its output feeds `FrameLinkContract` selection, which is why a Rift
         attaches to compiled answers and never to raw ACL objects.
     """
-    _ast_helper_access: str = "internal"
+    __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (
         "access: internal. FrameACLCompiler runtime object. Melder kernel machinery: read it to "
         "understand the runtime, do not drive it directly."

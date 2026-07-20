@@ -57,7 +57,7 @@ class PhysicalSourceCache:
         Class-hosted state (like the analyzer syntax memo); no instance
         lifecycle. `_clear_for_tests` resets entries and counters.
     """
-    _ast_helper_access: str = "internal"
+    __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (
         "access: internal. Shared stat-guarded fingerprint cache over physical source files. "
         "Melder kernel machinery: read it to understand the runtime, do not drive it directly."

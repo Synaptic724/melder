@@ -110,7 +110,7 @@ class MutationResearch(Cleanable):
         forward: the config's emission moment necessarily precedes the root's.
 
     """
-    _ast_helper_access: str = "public"
+    __ast_helper_access__: str = "public"
     __agent_purpose__: str = (
         "access: public. The research root, reached through Aether. Configure and activate, then "
         "create_research_set(...) and use the read verbs: source_view, impact_view, module_view, "

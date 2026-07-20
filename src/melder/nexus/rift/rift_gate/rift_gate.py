@@ -61,7 +61,7 @@ class RiftGate(Cleanable):
         holds its ticket across the whole executor, so ticket-zero genuinely
         means no reader is inside.
     """
-    _ast_helper_access: str = "internal"
+    __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (
         "access: internal. Generic gate primitive for coordinating Rift-scoped operations. Melder "
         "kernel machinery: read it to understand the runtime, do not drive it directly."

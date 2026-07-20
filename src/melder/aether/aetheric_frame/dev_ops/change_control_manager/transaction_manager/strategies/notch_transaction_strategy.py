@@ -102,7 +102,7 @@ class NotchTransactionStrategy(TransactionStrategy):
         serialize RUNTIME, and an operation that races runtime readers needs
         both.
     """
-    _ast_helper_access: str = "internal"
+    __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (
         "access: internal. Notch transaction resolver (intra-index active-spell repoint). Melder "
         "kernel machinery: read it to understand the runtime, do not drive it directly."

@@ -101,7 +101,7 @@ class SafeGuard(Cleanable):
         ordering rule exists rather than ad-hoc nested `with` statements.
     """
     __melder_internal__: ClassVar[object] = _mrg.sentinel
-    _ast_helper_access: str = "public"
+    __ast_helper_access__: str = "public"
     __agent_purpose__: str = (
         "access: public. Deadlock-safe multi-lock acquisition. Use as a context "
         "manager over several locks: SafeGuard(a, b, c) acquires them in a "

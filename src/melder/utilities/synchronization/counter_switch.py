@@ -107,7 +107,7 @@ class CounterSwitch(Cleanable):
           out-of-contract use.
     """
 
-    _ast_helper_access: str = "public"
+    __ast_helper_access__: str = "public"
     __agent_purpose__: str = (
         "access: public. Three-state coordination latch: 0=idle, 1=pending "
         "(a leader claimed it), >=2=open. Call selector() to either pass "

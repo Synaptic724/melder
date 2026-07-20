@@ -54,7 +54,7 @@ class InformationFreshnessInspector:
         whether the data behind them was current, and a caller comparing them
         would have no way to reconcile the difference.
     """
-    _ast_helper_access: str = "internal"
+    __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (
         "access: internal. Shared freshness math for DevOps information strategies. Melder kernel "
         "machinery: read it to understand the runtime, do not drive it directly."

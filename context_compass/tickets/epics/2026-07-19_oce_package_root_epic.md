@@ -29,7 +29,7 @@ The package root is not a subsystem - it is the FRONT DOOR. Four things live her
 - `system_document.py:StaticSystemDocument` - immutable carrier for one packaged hardcopy
   document. Validates that the minified JSON contains string key `m`, then exposes
   `render_json()` and `render_markdown()`. Already Rank 4-5 with `__agent_purpose__` and
-  `_ast_helper_access`. THIS IS THE TEMPLATE.
+  `__ast_helper_access__`. THIS IS THE TEMPLATE.
 - `__architecture__.py`, `__components__.py`, `__graph_network__.py`, `__graph_details__.py` -
   four module-level `StaticSystemDocument` instances. Their whole purpose is that an agent can
   query system structure WITHOUT conjuring a conduit (arch:260). They are import-time,
@@ -86,7 +86,7 @@ document surface is not worth querying.
 
 ## Acceptance Criteria
 - [ ] `StaticSystemDocument` carries `__melder_internal__` (it currently does NOT) plus its
-      existing `__agent_purpose__` / `_ast_helper_access`, and gains Subsystem Context and
+      existing `__agent_purpose__` / `__ast_helper_access__`, and gains Subsystem Context and
       System Context sections in its class docstring.
 - [ ] `MelderRegistrationGuard` carries all five contract items. Note the irony to resolve
       explicitly: the guard defines the sentinel and does not currently tag itself.
@@ -133,7 +133,7 @@ document surface is not worth querying.
 ## Notes
 - DATETIME: 2026-07-19T01:15:00Z
   TYPE: FACT
-  CLAIM: `StaticSystemDocument` already carries `__agent_purpose__` and `_ast_helper_access`
+  CLAIM: `StaticSystemDocument` already carries `__agent_purpose__` and `__ast_helper_access__`
     but NOT `__melder_internal__` - so the file held up as the exemplar is itself bindable as
     a spell today. Three of the four hardcopy modules
     (`__graph_network__`, `__graph_details__`, and per the components doc

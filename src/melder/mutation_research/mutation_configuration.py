@@ -40,7 +40,7 @@ class MutationResearchConfiguration(Cleanable):
         reads it. `lane_type_enforcement` also lives here, propagating to every
         research set at activation, hydration, and set creation.
     """
-    _ast_helper_access: str = "public"
+    __ast_helper_access__: str = "public"
     __agent_purpose__: str = (
         "access: public. Research-root policy. with_defaults() covers it; set lane_type_enforcement "
         "to gate cross-type lane joins. activate() is its emission moment."

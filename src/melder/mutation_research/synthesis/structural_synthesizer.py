@@ -77,7 +77,7 @@ class StructuralSynthesizer(Cleanable):
         decorators travel with their definition, and replacements splice in
         descending line order so earlier spans stay valid as later ones change.
     """
-    _ast_helper_access: str = "internal"
+    __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (
         "access: internal. AST-guided source composition over two recorded version texts. Melder "
         "kernel machinery: read it to understand the runtime, do not drive it directly."

@@ -105,7 +105,7 @@ class SpellContract(Cleanable):
         `spellframe`: with neither there is no identity for a future linker to
         match against, and the socket could never be closed.
     """
-    _ast_helper_access: str = "public"
+    __ast_helper_access__: str = "public"
     __agent_purpose__: str = (
         "access: public. Declares a LATE-BOUND dependency hole for dynamic conduit linking. Write it "
         "as a constructor default when the provider will arrive from another conduit. Requires at "

@@ -70,7 +70,7 @@ class CodegenCommandSystem(CommandSystem):
         read-only candidate mock, which is code-shaped output that capability
         rooms deliberately do not take.
     """
-    _ast_helper_access: str = "internal"
+    __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (
         "access: internal. Codegen-room command surface. Melder kernel machinery: read it to "
         "understand the runtime, do not drive it directly."

@@ -43,7 +43,7 @@ class ConduitRecord(Cleanable):
         restraint - the record answers "can I aim at this", not "what is
         everything about it", which is the payload's job.
     """
-    _ast_helper_access: str = "internal"
+    __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (
         "access: internal. Canonical Nexus record for one published conduit. Melder kernel "
         "machinery: read it to understand the runtime, do not drive it directly."

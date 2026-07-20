@@ -66,7 +66,7 @@ class CodegenNamespaceBuilder(Cleanable):
         rule: the builder decides HOW to expose, never WHETHER, so widening
         reach requires a configuration change rather than a builder edit.
     """
-    _ast_helper_access: str = "internal"
+    __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (
         "access: internal. Builder for live codegen namespaces. Melder kernel machinery: read it "
         "to understand the runtime, do not drive it directly."

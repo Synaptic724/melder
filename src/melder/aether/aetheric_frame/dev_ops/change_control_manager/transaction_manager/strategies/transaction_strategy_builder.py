@@ -130,7 +130,7 @@ class TransactionStrategyBuilder:
         - It is read-only during normal runtime use and does not require its
           own lock.
     """
-    _ast_helper_access: str = "internal"
+    __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (
         "access: internal. Registry-backed resolver for transaction strategies. Melder kernel "
         "machinery: read it to understand the runtime, do not drive it directly."

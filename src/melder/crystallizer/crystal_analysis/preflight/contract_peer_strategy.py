@@ -53,7 +53,7 @@ class ContractPeerStrategy(PersistenceAnalysisStrategy):
         blockers refuse before any replay, warnings proceed and ride the
         report.
     """
-    _ast_helper_access: str = "internal"
+    __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (
         "access: internal. Detect contracts whose endpoints are not both in the bundle. Melder "
         "kernel machinery: read it to understand the runtime, do not drive it directly."

@@ -103,7 +103,7 @@ class ResearchSet(Cleanable):
         multi-parent `register_spell`, so the record only ever gains facts. It
         never rewrites them.
     """
-    _ast_helper_access: str = "public"
+    __ast_helper_access__: str = "public"
     __agent_purpose__: str = (
         "access: public. One research network - lanes, journal, residence partition. Use "
         "register_spell/register_group, create_lane, attach/detach, join, archive, "

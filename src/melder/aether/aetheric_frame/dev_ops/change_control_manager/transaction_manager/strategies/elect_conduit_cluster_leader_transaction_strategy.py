@@ -69,7 +69,7 @@ class ElectConduitClusterLeaderTransactionStrategy(TransactionStrategy):
         the held window, exactly as Spellbook runs `_apply_notch` between start
         and end. Strategies own isolation; call sites own effect.
     """
-    _ast_helper_access: str = "internal"
+    __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (
         "access: internal. Elect-cluster-leader transaction resolver (concurrency envelope only). "
         "Melder kernel machinery: read it to understand the runtime, do not drive it directly."

@@ -47,7 +47,7 @@ class CodegenControlSurface:
         direct recursion, while this wrapper enforces the posture even when the
         call is reached indirectly.
     """
-    _ast_helper_access: str = "internal"
+    __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (
         "access: internal. Runtime wrapper for the `codegen` namespace object. Melder kernel "
         "machinery: read it to understand the runtime, do not drive it directly."

@@ -33,7 +33,7 @@ class ChangeTransactionType(StrEnum):
     Lifecycle:
         No cleanup required.
     """
-    _ast_helper_access: str = "internal"
+    __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (
         "access: internal. Change-control transaction types. Melder kernel machinery: read it to "
         "understand the runtime, do not drive it directly."
@@ -111,8 +111,8 @@ class ChangeControlTransactionRequest:
     Lifecycle:
         Immutable; no cleanup required.
     """
-    _ast_helper_access: str = "internal"
-    __agent_purpose__: str = (
+    __ast_helper_access__: ClassVar[str] = "internal"
+    __agent_purpose__: ClassVar[str] = (
         "access: internal. Immutable transaction request payload for admission and tracking. "
         "Melder kernel machinery: read it to understand the runtime, do not drive it directly."
     )
@@ -164,8 +164,8 @@ class ChangeControlAdmissionResult:
     Lifecycle:
         Immutable; no cleanup required.
     """
-    _ast_helper_access: str = "internal"
-    __agent_purpose__: str = (
+    __ast_helper_access__: ClassVar[str] = "internal"
+    __agent_purpose__: ClassVar[str] = (
         "access: internal. Admission decision for a change-control transaction request. Melder "
         "kernel machinery: read it to understand the runtime, do not drive it directly."
     )

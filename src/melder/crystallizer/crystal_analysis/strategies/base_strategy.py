@@ -63,7 +63,7 @@ class FactContext(Cleanable):
         event/export values into tuples, then cleanup deletes every transient
         source, AST, and accumulator reference.
     """
-    _ast_helper_access: str = "internal"
+    __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (
         "access: internal. Mutable per-module accumulator shared by one AST dispatch pass. Melder "
         "kernel machinery: read it to understand the runtime, do not drive it directly."
@@ -246,7 +246,7 @@ class CrystalFactStrategy(Cleanable, ABC):
         Default cleanup is a flag flip; stateful subclasses override with
         del posture for owned fields.
     """
-    _ast_helper_access: str = "internal"
+    __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (
         "access: internal. Contract for one fact-extraction pass over analyzed modules. Melder "
         "kernel machinery: read it to understand the runtime, do not drive it directly."

@@ -56,7 +56,7 @@ class CreationContextBuilder:
         ordering named is far more useful than letting a `None` executor
         surface as an obscure failure deep inside meld.
     """
-    _ast_helper_access: str = "internal"
+    __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (
         "access: internal. Build spell-bound `CreationContext` objects from phase-11 creation "
         "inputs. Melder kernel machinery: read it to understand the runtime, do not drive it "

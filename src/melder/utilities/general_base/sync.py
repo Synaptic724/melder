@@ -65,7 +65,7 @@ class Sync:
         of each call site inventing its own.
     """
 
-    _ast_helper_access: str = "public"
+    __ast_helper_access__: str = "public"
     __agent_purpose__: str = (
         "access: public. Base mix-in for thread-safe value wrappers. Subclass "
         "this when you need a shared scalar touched from multiple threads; "

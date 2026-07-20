@@ -29,7 +29,7 @@ class ConduitPool(AbstractElasticPool[Any]):
           policy.
         - Adds no extra shared mutable state beyond the root-conduit reference.
     """
-    _ast_helper_access: str = "internal"
+    __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (
         "access: internal. Root-conduit-owned elastic pool scaffold for reusable lesser conduits. "
         "Melder kernel machinery: read it to understand the runtime, do not drive it directly."

@@ -110,7 +110,7 @@ class WeakConcurrentSet(Generic[_T], Cleanable):
         must not keep participants alive merely by remembering them.
     """
 
-    _ast_helper_access: str = "public"
+    __ast_helper_access__: str = "public"
     __agent_purpose__: str = (
         "access: public. Set holding members WEAKLY - membership is a question "
         "about lifetime, since a member nothing else references drops out on "

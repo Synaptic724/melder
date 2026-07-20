@@ -63,7 +63,7 @@ class NexusConfiguration(Cleanable):
         down on the Rift, because they legitimately differ between Rifts and
         pushing them up would force one Rift's choice onto all of them.
     """
-    _ast_helper_access: str = "public"
+    __ast_helper_access__: str = "public"
     __agent_purpose__: str = (
         "access: public. Process-wide AR policy: creation/access gates, frame topology mode, "
         "target-frame restrictions, Rift budgets, and the projection refresh barrier. Mutable until "

@@ -83,7 +83,7 @@ class WeakConcurrentList(Generic[_T], Cleanable):
         not be the reason their contents stay alive.
     """
 
-    _ast_helper_access: str = "public"
+    __ast_helper_access__: str = "public"
     __agent_purpose__: str = (
         "access: public. Ordered container holding elements WEAKLY - it never "
         "keeps its contents alive. Indices are NOT stable: entries vanish on "

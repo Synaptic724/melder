@@ -25,7 +25,7 @@ class FrameACLRuleSet(Cleanable):
     Lifecycle:
         Cleanup is idempotent and cascades into all owned rules.
     """
-    _ast_helper_access: str = "internal"
+    __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (
         "access: internal. FrameACLRuleSet runtime object. Melder kernel machinery: read it to "
         "understand the runtime, do not drive it directly."

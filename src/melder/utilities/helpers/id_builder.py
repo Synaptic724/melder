@@ -61,7 +61,7 @@ class IDBuilder:
         system's wire contract even though it is only a string.
     """
 
-    _ast_helper_access: str = "public"
+    __ast_helper_access__: str = "public"
     __agent_purpose__: str = (
         "access: public. Static namespace for building dotted lineage ids. "
         "create_id() mints a fresh ULID segment; compose() and the conduit/ward "

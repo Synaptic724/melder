@@ -130,7 +130,7 @@ class Meld(Cleanable, ABC):
         change-control dirty-root state BEFORE any instance is handed back, and
         re-runs the lazy phases when a lineage's validity is UNKNOWN or GATED.
     """
-    _ast_helper_access: str = "internal"
+    __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (
         "access: internal. ## Meld: Spell Activation and Dependency Resolution. Melder kernel "
         "machinery: read it to understand the runtime, do not drive it directly."

@@ -69,7 +69,7 @@ class PersistenceProfile(Cleanable):
         twin held by this profile, clears journal/state surfaces, and deletes
         the profile lock last.
     """
-    _ast_helper_access: str = "internal"
+    __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (
         "access: internal. One recorded world: the flat, level-mapped twin store for a single "
         "profile. Melder kernel machinery: read it to understand the runtime, do not drive it "

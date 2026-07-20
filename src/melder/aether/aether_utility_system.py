@@ -56,7 +56,7 @@ class AetherUtilitySystem(Cleanable):
         affordance rather than an accident - a process-wide singleton that could
         not be reset would make test isolation impossible.
     """
-    _ast_helper_access: str = "internal"
+    __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (
         "access: internal. Process-wide utility host for Aether-owned helper systems. Melder "
         "kernel machinery: read it to understand the runtime, do not drive it directly."

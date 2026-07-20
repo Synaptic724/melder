@@ -82,7 +82,7 @@ class UnelectConduitClusterLeaderTransactionStrategy(TransactionStrategy):
         afterwards on every exit path is mandatory - a gate left closed wedges
         the conduit permanently.
     """
-    _ast_helper_access: str = "internal"
+    __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (
         "access: internal. Unelect-cluster-leader transaction resolver (freeze envelope; no "
         "domain effect). Melder kernel machinery: read it to understand the runtime, do not drive "

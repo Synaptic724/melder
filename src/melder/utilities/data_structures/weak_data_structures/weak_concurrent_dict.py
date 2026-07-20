@@ -396,7 +396,7 @@ class WeakConcurrentDict(Generic[_K, _V], Cleanable):
         when a caller asks for a referent that is already gone.
     """
 
-    _ast_helper_access: str = "public"
+    __ast_helper_access__: str = "public"
     __agent_purpose__: str = (
         "access: public. Dict with STRONG keys and WEAK values - putting an "
         "object in never keeps it alive, so use it as a cache, not a store. An "

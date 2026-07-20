@@ -66,7 +66,7 @@ class ResearchJournal(Cleanable):
         rides the checkpoint sequence instead - so a durable snapshot never
         grows without limit while the live log stays complete.
     """
-    _ast_helper_access: str = "internal"
+    __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (
         "access: internal. Set-level monotonic append-only log of world-entry events. Melder "
         "kernel machinery: read it to understand the runtime, do not drive it directly."

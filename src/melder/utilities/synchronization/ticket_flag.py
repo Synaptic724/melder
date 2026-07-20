@@ -104,7 +104,7 @@ class TicketFlag(Cleanable):
         for a lock.
     """
 
-    _ast_helper_access: str = "public"
+    __ast_helper_access__: str = "public"
     __agent_purpose__: str = (
         "access: public. Depth-counting flag: truthy while at least one ticket "
         "is held, and truthy writes STACK. Use `with flag:` to track whether "

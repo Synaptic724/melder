@@ -201,7 +201,7 @@ class Spell(Cleanable):
           by the Resolution / Meld layer; `Spell` itself does not execute resolution.
 
     """
-    _ast_helper_access: str = "public"
+    __ast_helper_access__: str = "public"
     __agent_purpose__: str = (
         "access: public. One registered binding: identity, existence, permissions, spellframe, hooks. "
         "You receive spells from bind and from viewer surfaces; you do not construct them."
@@ -291,17 +291,58 @@ class Spell(Cleanable):
             spell_id (str): SHA256 fingerprint for this spell's structural identity.
             permissions (Permissions): Access policy for other conduits.
             aetheric_frame (str): Aether frame identifier this spell belongs to.
+            spellbook (Spellbook): Back-reference to the owning spellbook for coordination.
             profile (Optional[Any]): Binding/introspection profile attached by the examiner.
             existing_object (Optional[object]): Pre-created instance for EXISTING_CREATION* spell types.
-            disposal_method_names (Sequence[str]): Resolved disposal methods for this spell.
-            spellbook (Spellbook): Back-reference to the owning spellbook for coordination.
-            *args: Optional positional metadata tags.
-            **kwargs: Optional keyword metadata map attached to this spell.
+                Stored on the spell under the DIFFERENT name `user_created_object`.
+            disposal_method_names (FrozenSet[str]): Resolved disposal methods for this spell.
+                Re-frozen on assignment, so a caller-held collection cannot mutate the
+                spell afterwards.
+            *args: Optional positional metadata tags, collected into `tags`.
+            **kwargs: Optional keyword metadata map, collected into `metadata`.
 
-        Notes:
-            - Thread-safe configuration/cleanup is guarded by an internal RLock.
-            - The canonical lookup key is normalized immediately via `SpellInputUtils`.
-            - Validation of inputs (existence, permissions, profile shape) is expected to be enforced upstream by the Bind pipeline.
+        Contract:
+            - INTERNAL CONSTRUCTOR. Spells are produced by `Spellbook.bind(...)`
+              through the Bind pipeline; user code receives them, it does not
+              build them. Input validation (existence, permissions, profile
+              shape) is enforced upstream and is NOT repeated here.
+            - UNRECOGNIZED KEYWORDS ARE ACCEPTED SILENTLY. `**kwargs` is a
+              metadata bag, so a misspelled parameter name lands in `metadata`
+              rather than raising `TypeError`.
+            - TWO DISTINCT IDENTITIES are established. `spell_id` is the
+              caller-supplied structural fingerprint; `_id` is a fresh ULID
+              minted here that identifies THIS record. They are not
+              interchangeable - the fingerprint describes what the spell IS,
+              the ULID describes which object you are holding.
+            - The four `is_*` family flags are computed ONCE from `spell_type`
+              and cover all 14 `SpellType` members with no overlap, so exactly
+              one is True for the object's whole life.
+            - The canonical `(frame_key, bind_key)` lookup key is normalized
+              immediately via `SpellInputUtils.make_spell_key_from_parts(...)`
+              and fixed at construction; key identity never drifts afterwards.
+
+        Owned State:
+            Owns `_lock`, `_compiler_artifact` (created eagerly against
+            `spell_id`), `_creation_context_switch`, the hook lists, and the
+            metadata bags. BORROWS `_spellbook` and `_spell_system_states` -
+            the latter is read straight off the owning spellbook, so spell
+            cleanup must never tear it down.
+
+        Threading:
+            Creates the reentrant `_lock` that guards later configuration and
+            cleanup; construction itself is unsynchronized because the object
+            is not yet reachable by other threads. `_door_epoch` starts at 0 and
+            its bump sites assume per-spell serialization.
+
+        Lifecycle / Cleanup:
+            Born unowned and uncompiled. Ownership fields, the creation-context
+            factory, and every phase artifact stay `None`/False until conjure
+            stamps ownership and the compiler runs.
+            NOTE `_dynamic_environment` defaults to False, so
+            `apply_mutation_override` / `clear_mutation_override` raise
+            `RuntimeError` until a dynamic conduit stamps this spell.
+            `_caching_enabled` defaults True and may be overridden by the
+            owning Spellbook/Aether posture at that same stamping point.
 
         Returns:
             None.
@@ -801,6 +842,19 @@ class Spell(Cleanable):
         """
         Release the spell's internal lock after a context-manager's block.
 
+        Contract:
+            - Releases unconditionally, including when the block raised. The
+                exception arguments are accepted and IGNORED - returning `None`
+                is falsy, so no exception is ever suppressed here.
+            - Exactly one release per `__enter__`. The lock is an `RLock`, so
+                nested `with spell:` blocks are legal and each level must exit.
+            - Performs no cleaned-state guard and no state mutation; it is
+                purely the unlock half of the pair.
+
+        Raises:
+            RuntimeError: If called without a matching `__enter__` on this
+                thread, propagated from the underlying lock release.
+
         Returns:
             None.
 
@@ -858,6 +912,21 @@ class Spell(Cleanable):
         """
         Whether this spell represents an existing, pre-created object.
 
+        Contract:
+            - Derived ONCE from `spell_type` during `__init__` and never
+              recomputed; it is a bind-time fact, not runtime state.
+            - Part of a strict four-way partition with `is_class_spell`,
+              `is_method_spell` and `is_lambda_spell`: the four families cover
+              all 14 `SpellType` members with no overlap, so for any spell
+              EXACTLY ONE of them is True. Branching on all four without a
+              fallback is safe and total.
+            - Answers "did the user hand us the object?", which is distinct
+              from `has_existing_object` - that one asks whether the object is
+              still attached right now.
+
+        Threading:
+            Unsynchronized read of an immutable bool; safe from any thread.
+
         Returns:
             bool:
                 True only for `EXISTING_CREATION*` spell types.
@@ -868,6 +937,18 @@ class Spell(Cleanable):
     def is_class_spell(self) -> bool:
         """
         Whether this spell represents a class-backed factory registration.
+
+        Contract:
+            - Derived ONCE from `spell_type` during `__init__`; bind-time fact.
+            - Covers the four `SPELL*` members. This is the FACTORY family:
+              melding constructs an instance per the spell's `Existence`
+              policy, as opposed to `is_existing_creation` where the instance
+              already exists.
+            - Exactly one of the four family flags is True for any spell (see
+              `is_existing_creation` for the full partition).
+
+        Threading:
+            Unsynchronized read of an immutable bool; safe from any thread.
 
         Returns:
             bool:
@@ -880,6 +961,19 @@ class Spell(Cleanable):
         """
         Whether this spell represents a non-lambda method or function registration.
 
+        Contract:
+            - Derived ONCE from `spell_type` during `__init__`; bind-time fact.
+            - Covers the four named `METHOD*` members and EXCLUDES the three
+              `LAMBDA_METHOD*` members, which report through `is_lambda_spell`.
+              The split exists because a lambda has no stable qualname to bind
+              against, so lambda variants always carry a binding name or
+              spellframe.
+            - Exactly one of the four family flags is True for any spell (see
+              `is_existing_creation` for the full partition).
+
+        Threading:
+            Unsynchronized read of an immutable bool; safe from any thread.
+
         Returns:
             bool:
                 True only for non-lambda `METHOD*` spell types.
@@ -890,6 +984,18 @@ class Spell(Cleanable):
     def is_lambda_spell(self) -> bool:
         """
         Whether this spell represents one of the lambda-backed method spell variants.
+
+        Contract:
+            - Derived ONCE from `spell_type` during `__init__`; bind-time fact.
+            - Covers the three `LAMBDA_METHOD*` members. Every one of them
+              carries a binding name, a spellframe, or both - there is no bare
+              `LAMBDA_METHOD` member, because an anonymous function supplies no
+              usable identity of its own to bind against.
+            - Exactly one of the four family flags is True for any spell (see
+              `is_existing_creation` for the full partition).
+
+        Threading:
+            Unsynchronized read of an immutable bool; safe from any thread.
 
         Returns:
             bool:
@@ -919,6 +1025,21 @@ class Spell(Cleanable):
         """
         Return the current conduit ownership tuple for this spell.
 
+        Contract:
+            - Both halves start `None` and are populated together when the
+              owning conduit stamps ownership, which happens after conjure -
+              never at bind time. `(None, None)` therefore means "not yet
+              owned", not "error".
+            - The name half is a convenience label and may be `None` even once
+              the id is set, for conduits created without an explicit name.
+
+        Threading:
+            Reads the two attributes separately WITHOUT holding `self._lock`,
+            so the pair is not snapshotted atomically. A read racing an
+            ownership stamp can observe a mixed tuple (new id, stale name).
+            Callers that need a coherent pair must hold the spell lock via the
+            `with spell:` context manager.
+
         Returns:
             tuple[Optional[str], Optional[str]]:
                 `(owner_conduit_id, owner_conduit_name)` when ownership has been
@@ -935,6 +1056,21 @@ class Spell(Cleanable):
         This is populated by the compiler artifact during structural phase
         execution.
 
+        Contract:
+            - PHASE-GATED PROBE. `None` means Phase 1 has not produced this
+              artifact yet - either the structural phases have not run, or the
+              artifact was invalidated and reset. It is never an error value,
+              so this property does not raise for an un-run phase.
+            - A read-through onto the spell-owned `SpellCompilerArtifact`. The
+              Spell is the public face of that artifact; the artifact itself is
+              internal.
+            - The returned object is live, not a copy. A subsequent
+              recompilation can replace or mutate it underneath the caller.
+
+        Threading:
+            Unsynchronized read-through; a snapshot of a reference that
+            compilation can swap concurrently.
+
         Returns:
             Optional[SpellRequirements]: Phase 1 requirements, or None before the
                 structural phases have run for this spell.
@@ -948,6 +1084,19 @@ class Spell(Cleanable):
 
         This is populated by the compiler artifact during structural phase
         execution.
+
+        Contract:
+            - PHASE-GATED PROBE; `None` means Phase 2 has not produced this
+              artifact yet, or it was reset by an invalidation. Not an error.
+            - Phase 2 consumes Phase 1, so a non-None graph implies
+              `requirements` was populated at the time the graph was built -
+              but not that it is still populated now, since invalidation can
+              clear artifacts independently.
+            - Read-through onto the spell-owned `SpellCompilerArtifact`;
+              returns the live object, not a copy.
+
+        Threading:
+            Unsynchronized read-through; snapshot only.
 
         Returns:
             Optional[SpellSymbolicGraph]: The Phase 2 symbolic graph, or None before
@@ -965,6 +1114,19 @@ class Spell(Cleanable):
         Concrete type is intentionally opaque here; callers should treat it as
         an internal resolution artifact.
 
+        Contract:
+            - PHASE-GATED PROBE; `None` means Phase 3 has not produced this
+              artifact yet, or it was reset. Not an error.
+            - The `Any` return type is DELIBERATE, not missing typing. The
+              concrete resolution/DAG type is internal and free to change;
+              treat the value as an opaque handle to pass back into melder,
+              and do not branch on its structure.
+            - Read-through onto the spell-owned `SpellCompilerArtifact`;
+              returns the live object, not a copy.
+
+        Threading:
+            Unsynchronized read-through; snapshot only.
+
         Returns:
             Any: The Phase 3 resolution frame, or None before Phase 3 has run.
         """
@@ -977,6 +1139,21 @@ class Spell(Cleanable):
 
         This is populated by the compiler artifact during structural phase
         execution.
+
+        Contract:
+            - THIS IS THE DISCRIMINATOR for the `validated` / `is_broken`
+              booleans. Those two are `False` both before Phase 4 runs and
+              after a failing verdict; this property is `None` in the first
+              case and non-None in the second, so it is the only way to tell
+              "not checked" from "checked".
+            - STRUCTURAL verdict only - it judges the spell in isolation.
+              Conduit-scoped judgement lives in `validation_result_phase6`,
+              and a spell can pass Phase 4 and still fail Phase 6.
+            - Read-through onto the spell-owned `SpellCompilerArtifact`;
+              returns the live object, not a copy.
+
+        Threading:
+            Unsynchronized read-through; snapshot only.
 
         Returns:
             Optional[SpellValidationResult]: The structural (Phase 4) verdict, or None
@@ -992,6 +1169,21 @@ class Spell(Cleanable):
         This is populated by the compiler artifact during conduit-scoped
         validation.
 
+        Contract:
+            - CONDUIT-SCOPED verdict, unlike the structural Phase 4 result.
+              `None` here is expected for a bound-but-never-conjured spell,
+              because Phase 6 runs as part of conduit-scoped validation rather
+              than at bind time.
+            - Passing Phase 4 does not imply Phase 6 will pass: a spell can be
+              structurally sound and still be unsatisfiable in the conduit it
+              is asked to live in (missing dependency, permission refusal).
+            - `None` is not an error and this property does not raise.
+            - Read-through onto the spell-owned `SpellCompilerArtifact`;
+              returns the live object, not a copy.
+
+        Threading:
+            Unsynchronized read-through; snapshot only.
+
         Returns:
             Optional[SpellSystemValidationState]: The system (Phase 6) verdict, or None
                 if Phase 6 has not run for this conduit.
@@ -1002,6 +1194,22 @@ class Spell(Cleanable):
     def validated(self) -> bool:
         """
         Whether Phase 4 validation currently considers this spell valid.
+
+        Contract:
+            - `False` IS AMBIGUOUS. It means either "Phase 4 has not run" or
+              "Phase 4 ran and the spell did not pass". The flag alone cannot
+              distinguish them, because it is initialized `False` and is reset
+              to `False` whenever the artifact is invalidated.
+            - To tell the two apart, read `validation_result_phase4`: `None`
+              means the phase has not produced a verdict; a non-None result
+              means the verdict is real and `validated` reflects it.
+            - Never raises for an un-run phase; absence is reported as `False`,
+              not as an error.
+
+        Threading:
+            Unsynchronized read of the compiler artifact's flag. It is a
+            snapshot; a concurrent revalidation can flip it immediately after
+            this returns.
 
         Returns:
             bool:
@@ -1015,6 +1223,21 @@ class Spell(Cleanable):
     def is_broken(self) -> bool:
         """
         Whether validation currently classifies this spell as broken or unsafe.
+
+        Contract:
+            - `False` IS AMBIGUOUS in the same way as `validated`: it is the
+              initial value AND the reset value, so an unvalidated spell and a
+              validated-healthy spell both report `False`.
+            - `is_broken` is NOT the negation of `validated`. A spell that has
+              never been validated reports `validated=False` AND
+              `is_broken=False` simultaneously. Do not treat
+              `not is_broken` as "safe to use".
+            - The honest health check is: `validation_result_phase4 is not None`
+              (a verdict exists) AND `validated` (the verdict passed).
+
+        Threading:
+            Unsynchronized read of the compiler artifact's flag; a snapshot
+            only.
 
         Returns:
             bool:
@@ -1231,11 +1454,24 @@ class Spell(Cleanable):
         - `Spell.mutation_override` -> persistent default override payload
           stored on the spell itself
 
-        Semantics:
-            - An empty dict (`{}`) means no active default payload.
+        Contract:
+            - `None` is the ONLY inactive sentinel. An empty dict is never
+              stored: `apply_mutation_override({})` normalizes to `None`, so a
+              caller testing `== {}` will never match. Test `is None`, or use
+              `has_mutation_override`.
             - Positional payloads are normalized into `{"__args__": [...]}`.
+            - EMPTY POSITIONAL IS NOT EMPTY. `apply_mutation_override([])`
+              stores `{"__args__": []}`, which is a non-empty dict and
+              therefore reports `has_mutation_override == True`. Empty dict and
+              empty list are deliberately NOT symmetric: `{}` clears, `[]`
+              installs a positional override of zero arguments.
             - Keyword payloads are copied into a fresh dict so later meld calls
               do not depend on caller-owned containers.
+
+        Note:
+            The declared return annotation is `dict`, but this property returns
+            `Optional[dict[str, Any]]` - `None` is the normal inactive value.
+            Trust the Returns block below over the signature.
 
         Returns:
             Optional[dict[str, Any]]:
@@ -1253,6 +1489,20 @@ class Spell(Cleanable):
 
         This is a convenience for Dynamic or AI-native flows that want a quick
         check before doing more expensive revalidation or graph rebuilds.
+
+        Contract:
+            - Truthiness test over the stored payload, so it is `False` exactly
+              when the payload is `None`.
+            - Reports `True` for a zero-argument POSITIONAL override, because
+              `[]` normalizes to `{"__args__": []}` which is a non-empty dict.
+              `apply_mutation_override([])` therefore leaves this `True` while
+              `apply_mutation_override({})` leaves it `False`.
+            - Unlike `apply_mutation_override` / `clear_mutation_override`,
+              this does NOT require a dynamic environment and does not raise;
+              it is safe to probe on any live spell.
+
+        Threading:
+            Unsynchronized single-attribute read.
 
         Returns:
             bool:

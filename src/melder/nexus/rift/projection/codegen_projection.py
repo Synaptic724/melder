@@ -48,7 +48,7 @@ class CodegenProjection(Cleanable):
         let permissions shift mid-operation, which is exactly what the refresh
         barrier - block, drain, swap, reopen - exists to prevent.
     """
-    _ast_helper_access: str = "internal"
+    __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (
         "access: internal. Consumer-shaped codegen projection for one targeted frame. Melder "
         "kernel machinery: read it to understand the runtime, do not drive it directly."

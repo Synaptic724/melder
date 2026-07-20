@@ -195,7 +195,7 @@ class PhaseScheduler(Cleanable):
         while units are still writing into it.
     """
     __melder_internal__: ClassVar[object] = _mrg.sentinel
-    _ast_helper_access: str = "internal"
+    __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (
         "access: internal. Persistent multi-phase runner. register_phase() in "
         "order, then run_all_phases(): each phase is a barrier, units run on a "

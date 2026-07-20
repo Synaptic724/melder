@@ -62,7 +62,7 @@ class SpellBinder(Cleanable):
         makes each registration independent, and the reset-after-finalize keeps
         the object safely reusable.
     """
-    _ast_helper_access: str = "public"
+    __ast_helper_access__: str = "public"
     __agent_purpose__: str = (
         "access: public. Fluent alternative to Spellbook.bind(...). Chain the bind-time choices then "
         "finalize() to submit. Holds one pending registration at a time; bind(...) resets in-flight "

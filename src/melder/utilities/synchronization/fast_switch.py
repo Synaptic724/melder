@@ -88,7 +88,7 @@ class FastSwitch(Cleanable):
         the caller rather than absorbing it.
     """
 
-    _ast_helper_access: str = "public"
+    __ast_helper_access__: str = "public"
     __agent_purpose__: str = (
         "access: public. Cheapest possible boolean/counter primitive, backed by "
         "deque ticket count. Truthy when at least one ticket exists. No lock, no "

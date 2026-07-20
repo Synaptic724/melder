@@ -109,7 +109,7 @@ class SpellMap(Cleanable):
         `binding_name` form exists - it is the documented way to disambiguate
         when several spells legitimately satisfy the same frame.
     """
-    _ast_helper_access: str = "public"
+    __ast_helper_access__: str = "public"
     __agent_purpose__: str = (
         "access: public. Declarative DI descriptor for normal in-graph resolution. Write it as a "
         "constructor default: SpellMap(MyRepo), SpellMap(ILogic, binding_name='primary'), or "

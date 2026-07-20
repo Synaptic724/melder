@@ -116,7 +116,7 @@ class ConduitResolutionState(Cleanable):
         THIS conduit alone when the verdict is UNKNOWN or GATED - which is what
         keeps revalidation proportional to the conduit that needs it.
     """
-    _ast_helper_access: str = "internal"
+    __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (
         "access: internal. Per-conduit resolution validity container. Melder kernel machinery: "
         "read it to understand the runtime, do not drive it directly."

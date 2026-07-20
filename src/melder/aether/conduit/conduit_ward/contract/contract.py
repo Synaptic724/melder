@@ -80,7 +80,7 @@ class Contract(Cleanable):
         crystallizer's `contract_peer` warning rather than restoring a
         half-contract silently.
     """
-    _ast_helper_access: str = "internal"
+    __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (
         "access: internal. Bidirectional contract between two conduit wards. Melder kernel "
         "machinery: read it to understand the runtime, do not drive it directly."

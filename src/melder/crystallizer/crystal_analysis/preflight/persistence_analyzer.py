@@ -74,7 +74,7 @@ class PersistenceAnalyzer(Cleanable):
         cleanup() drops the strategy list (strategies are stateless and
         need no teardown of their own); idempotent.
     """
-    _ast_helper_access: str = "internal"
+    __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (
         "access: internal. Strategy-driven bootload pre-flight for persistence payload bundles. "
         "Melder kernel machinery: read it to understand the runtime, do not drive it directly."

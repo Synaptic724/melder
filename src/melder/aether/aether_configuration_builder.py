@@ -37,7 +37,7 @@ class AetherConfigurationBuilder(Cleanable):
         object is responsible for the configuration, and there is never a window
         where both the builder and the caller could mutate it.
     """
-    _ast_helper_access: str = "public"
+    __ast_helper_access__: str = "public"
     __agent_purpose__: str = (
         "access: public. Fluent one-shot builder for AetherConfiguration. Assemble, then "
         "build()/finalize()/activate() - ownership transfers on that call and the builder is spent. "

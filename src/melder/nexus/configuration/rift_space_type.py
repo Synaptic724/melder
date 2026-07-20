@@ -48,7 +48,7 @@ class RiftSpaceType(Enum):
         the repo prefers, and its docstring says plainly that it is temporary -
         which is what makes eventual removal a decision rather than a surprise.
     """
-    _ast_helper_access: str = "public"
+    __ast_helper_access__: str = "public"
     __agent_purpose__: str = (
         "access: public. Room posture, chosen ONCE at Rift creation: static (live-only, no mutation), "
         "capability (broad manual, no codegen), codegen (slim manual surface plus the codegen "

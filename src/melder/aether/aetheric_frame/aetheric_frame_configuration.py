@@ -80,7 +80,7 @@ class AethericFrameConfiguration(Cleanable):
         recorded frame posture therefore governs the live mediator after a
         restore, rather than being decoration on a twin.
     """
-    _ast_helper_access: str = "public"
+    __ast_helper_access__: str = "public"
     __agent_purpose__: str = (
         "access: public. Narrow frame posture (system_state, ai_native_enabled, rift_enabled, and the "
         "disable_* change-control gates). Derived at conjure from your SpellbookConfiguration - "

@@ -77,7 +77,7 @@ class BindTransactionStrategy(TransactionStrategy):
         unrelated work across the whole frame for what is, in the common case,
         a single-surface operation.
     """
-    _ast_helper_access: str = "internal"
+    __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (
         "access: internal. Bind-family transaction resolver. Melder kernel machinery: read it to "
         "understand the runtime, do not drive it directly."

@@ -74,7 +74,7 @@ class AssetManagementSystem(Cleanable):
         cache, then owned references (del posture, lock last); the
         borrowed record is dereferenced, never cleaned.
     """
-    _ast_helper_access: str = "internal"
+    __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (
         "access: internal. Own the crystallizer's bytes at rest: cache files, formations, DB "
         "seam. Melder kernel machinery: read it to understand the runtime, do not drive it "

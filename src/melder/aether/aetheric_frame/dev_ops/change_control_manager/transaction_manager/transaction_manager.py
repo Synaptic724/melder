@@ -92,7 +92,7 @@ class ChangeControlTransactionManager(Cleanable):
         eagerly at the mutation site under held claims so that promoting it into
         policy later is a decision rather than a rewrite.
     """
-    _ast_helper_access: str = "internal"
+    __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (
         "access: internal. Transaction-bookkeeping root for change-control admission. Melder "
         "kernel machinery: read it to understand the runtime, do not drive it directly."

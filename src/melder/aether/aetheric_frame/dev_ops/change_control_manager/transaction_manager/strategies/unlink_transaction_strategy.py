@@ -78,7 +78,7 @@ class UnlinkTransactionStrategy(TransactionStrategy):
         participants EXCLUSIVE for the duration is what guarantees no third
         party observes that intermediate state.
     """
-    _ast_helper_access: str = "internal"
+    __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (
         "access: internal. Unlink (sever-link) transaction resolver. Melder kernel machinery: "
         "read it to understand the runtime, do not drive it directly."

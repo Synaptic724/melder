@@ -81,7 +81,7 @@ class FrameACLContainer(Cleanable):
         nobody authored - and because a chain bump fans a refresh out across
         every impacted Rift, that incoherence would propagate.
     """
-    _ast_helper_access: str = "internal"
+    __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (
         "access: internal. FrameACLContainer runtime object. Melder kernel machinery: read it to "
         "understand the runtime, do not drive it directly."

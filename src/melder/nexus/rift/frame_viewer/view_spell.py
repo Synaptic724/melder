@@ -71,7 +71,7 @@ class ViewSpell(Cleanable):
     """
 
     __melder_internal__ = _mrg.sentinel
-    _ast_helper_access: str = "public"
+    __ast_helper_access__: str = "public"
     __agent_purpose__: str = (
         "access: public. Spell-local helper surface for spell identity, "
         "origin, spell-index grouping, filtering, detailed payload access, dunder-member "

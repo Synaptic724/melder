@@ -77,7 +77,7 @@ class DiffEngine(Cleanable):
         this class - and why nothing it produces is written back into the
         record. A verdict is an answer, not a fact the system remembers.
     """
-    _ast_helper_access: str = "public"
+    __ast_helper_access__: str = "public"
     __agent_purpose__: str = (
         "access: public. Computes derived diffs over RECORDED custody material - never the live disk. "
         "Choose grain by strategy: source, structural, or parts. Obtain via "

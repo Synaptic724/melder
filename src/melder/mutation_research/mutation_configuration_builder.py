@@ -42,7 +42,7 @@ class MutationResearchConfigurationBuilder(Cleanable):
         activation is an emission moment, the assembly this builder performs is
         also what determines the first recorded twin of the research subsystem.
     """
-    _ast_helper_access: str = "public"
+    __ast_helper_access__: str = "public"
     __agent_purpose__: str = (
         "access: public. Fluent one-shot builder for MutationResearchConfiguration; ownership "
         "transfers at build()/finalize()/activate()."

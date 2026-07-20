@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from types import ModuleType
-from typing import TYPE_CHECKING, Any, Callable, Optional, Sequence
+from typing import TYPE_CHECKING, Any, Callable, Optional, Sequence, ClassVar
 
 if TYPE_CHECKING:
     from melder.aether.spellbook.spellbook import Spellbook
@@ -98,8 +98,8 @@ class ScanBindMetadata:
         when handed to `bind` is the same discipline applied to collections -
         the frozen payload cannot be mutated through a list a caller kept.
     """
-    _ast_helper_access: str = "internal"
-    __agent_purpose__: str = (
+    __ast_helper_access__: ClassVar[str] = "internal"
+    __agent_purpose__: ClassVar[str] = (
         "access: internal. Frozen payload describing how a decorated object should be bound "
         "later. Melder kernel machinery: read it to understand the runtime, do not drive it "
         "directly."
@@ -273,7 +273,7 @@ class Scan(Cleanable):
         and the direct path cannot diverge; there is one set of rules about what
         may become a spell, regardless of how it arrived.
     """
-    _ast_helper_access: str = "public"
+    __ast_helper_access__: str = "public"
     __agent_purpose__: str = (
         "access: public. Deferred registration. Pass ONE module to Spellbook.scan(...) and it binds "
         "objects decorated with scan_bind. Module-only - no package traversal - and re-exports are "

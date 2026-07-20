@@ -37,7 +37,7 @@ class ClusterCrystal(Cleanable):
         Owned by one `PersistenceProfile`. Cleanup releases copied membership,
         leadership, and share rows; it does not mutate a live cluster.
     """
-    _ast_helper_access: str = "internal"
+    __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (
         "access: internal. Digital twin of one frame-local ConduitCluster. Melder kernel "
         "machinery: read it to understand the runtime, do not drive it directly."

@@ -71,7 +71,7 @@ class InitHelpers:
     - Does not hold runtime state of its own.
     """
 
-    _ast_helper_access: str = "public"
+    __ast_helper_access__: str = "public"
     __agent_purpose__: str = (
         "access: public. Static seam every runtime constructor uses to obtain a "
         "logger. resolve_channel_logger(...) asks the hosted provider (returns "

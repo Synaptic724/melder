@@ -1,5 +1,5 @@
 import threading
-from typing import Dict, List, Optional, Protocol, TypeVar
+from typing import Dict, List, Optional, Protocol, TypeVar, ClassVar
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 from melder.nexus.acl.configurations.profiles.codegen.frame_acl_codegen_profile import (
@@ -55,8 +55,8 @@ class _NamedCleanableProfile(Protocol):
         helpers lets the families stay independent while sharing registry code,
         instead of forcing an inheritance relationship the domain does not have.
     """
-    _ast_helper_access: str = "internal"
-    __agent_purpose__: str = (
+    __ast_helper_access__: ClassVar[str] = "internal"
+    __agent_purpose__: ClassVar[str] = (
         "access: internal. Minimal profile surface needed by the generic registry helpers. Melder "
         "kernel machinery: read it to understand the runtime, do not drive it directly."
     )
@@ -108,7 +108,7 @@ class FrameACLProfileBuilder(Cleanable):
         After `cleanup()`, all registries and family builders are gone and the
         builder must be treated as unusable.
     """
-    _ast_helper_access: str = "internal"
+    __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (
         "access: internal. Registry and composition root for reusable frame ACL profiles. Melder "
         "kernel machinery: read it to understand the runtime, do not drive it directly."

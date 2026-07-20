@@ -51,7 +51,7 @@ class AetherConfiguration(Cleanable):
         stays outside this surface for the same reason - handing over a live
         logger object is an act, not a policy.
     """
-    _ast_helper_access: str = "public"
+    __ast_helper_access__: str = "public"
     __agent_purpose__: str = (
         "access: public. Root logger-activation policy for AetherUtilitySystem. Mutable until frozen; "
         "activation implies validation. Automatic channel logging is OFF by default. Obtain via "
