@@ -12,6 +12,23 @@
 - Stories:
   - STORY-2026-07-19-oce-root-document-surfaces (S1)
 
+## LAW: NO CODEGEN FOR DOCUMENTATION (owner ruling 2026-07-20, non-negotiable)
+
+Inherited from the program epic and binding on every story and task under this
+epic.
+
+- Docstrings and comments are AUTHORED CONTENT. Write them BY HAND, one method
+  at a time, after reading that method's body.
+- FORBIDDEN: scripts, codemods, loops, or generated passes that insert or
+  bulk-apply docstring text across multiple methods or files - including
+  hand-written strings applied by a script, because the application step is what
+  removes the read-before-write discipline.
+- FORBIDDEN: mass edits to move a completion counter.
+- REQUIRED: targeted single-file edits; on tool failure, fall back to a
+  single-file targeted write against THAT ONE FILE only.
+- Scripts stay allowed for READ-ONLY verification afterwards (stripped-AST diff,
+  trapped-line scan, counting). Never for producing the text.
+
 ## Problem / Opportunity
 The package root is where an agent lands first and it is the thinnest surface in the repo:
 2 classes, 1 of which (`StaticSystemDocument`) is already the exemplar for the whole program

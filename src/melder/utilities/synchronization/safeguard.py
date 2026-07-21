@@ -223,6 +223,25 @@ class SafeGuard(Cleanable):
             - Does not suppress exceptions from the with-body.
             - Auto-cleans the guard after one-time-use contexts so it cannot be
               reused accidentally.
+            - Unlike the rollback path in `__enter__`, a failed `release()`
+              here is NOT swallowed: a bad release on the happy path is a real
+              defect worth surfacing.
+
+        Args:
+            exc_type:
+                Exception type raised in the with-body, or None.
+            exc:
+                Exception instance raised in the with-body, or None.
+            tb:
+                Traceback for the with-body exception, or None.
+
+        Returns:
+            Literal[False]:
+                Always False, so any exception from the with-body propagates.
+
+        Raises:
+            Exception:
+                Propagates any lock `release()` failure (not suppressed).
         """
         # Release in strict reverse order
         for lk in reversed(self._acquired):

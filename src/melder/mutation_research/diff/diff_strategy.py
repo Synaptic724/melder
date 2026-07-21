@@ -74,6 +74,12 @@ class DiffStrategy(Cleanable):
         """
         Initialize the strategy lifecycle flag.
 
+        Contract:
+            - Owns no releasable state beyond the inherited `Cleanable`
+              flag; concrete strategies are stateless comparison functions
+              and add no fields of their own, which is why instances are
+              safe to share once registered.
+
         Returns:
             None.
         """
@@ -99,9 +105,20 @@ class DiffStrategy(Cleanable):
         """
         Return the stable registry name of this strategy.
 
+        Contract:
+            - Abstract; every concrete strategy returns a fixed lowercase
+              key (for example "source"). This exact string is what
+              `DiffEngine` registers the strategy under and resolves it by,
+              so it must be stable for the strategy's life and unique within
+              one engine.
+
         Returns:
             str:
                 Registry key (e.g. "source").
+
+        Raises:
+            NotImplementedError:
+                Always on the base; concrete strategies override it.
         """
         raise NotImplementedError("Subclasses must implement name.")
 
@@ -114,14 +131,28 @@ class DiffStrategy(Cleanable):
         """
         Compute one detached diff verdict between two material payloads.
 
+        Contract:
+            - READ-ONLY: an implementation must return a fresh, value-typed
+              verdict and must NEVER retain or mutate either material.
+              Retaining custody material would fork the record into a
+              second, drifting copy of a version.
+            - Orientation is preserved left -> right, so the verdict is
+              directional: it describes what changed going FROM the left
+              version TO the right one.
+
         Args:
             left_material:
-                Resolver material for the left version.
+                Resolver material for the left version
+                (`{"spell_id", "sources", "fingerprints"}`).
             right_material:
-                Resolver material for the right version.
+                Resolver material for the right version, same shape.
 
         Returns:
             Dict[str, object]:
                 Detached, value-typed verdict payload.
+
+        Raises:
+            NotImplementedError:
+                Always on the base; concrete strategies override it.
         """
         raise NotImplementedError("Subclasses must implement diff().")

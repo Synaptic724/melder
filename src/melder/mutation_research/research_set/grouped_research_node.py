@@ -107,6 +107,27 @@ class GroupedResearchNode(Cleanable):
         """
         Initialize one immutable composition record.
 
+        Contract:
+            - IMMUTABLE AFTER THIS RETURNS: no setters, no lock.
+            - IDENTITY IS THE CONTENT, NOT MINTED. `group_id` is derived from the
+              sorted-deduped member set, so two compositions with the same
+              members ARE the same identity (rediscovery). Members are stored as
+              a canonical sorted tuple; order and duplicates in the input do not
+              affect identity.
+            - REQUIRES AT LEAST ONE MEMBER; an empty list raises. Every member
+              and every parent group id must be non-empty, validated up front.
+            - `group_id` IS NOT A CUSTODY ID. A composition is informational -
+              no `SpellCrystal` exists or is expected for it, so this id reaches
+              no crystallizer material (unlike a spell node's `spell_id`).
+            - `parent_group_ids` is COMPOSITION ancestry in its own namespace
+              (previous group ids), distinct from a spell node's spell ancestry.
+            - `metadata` is deep-copied in; `created_at` is minted now only when
+              omitted, so a rebuild preserves the original time.
+
+        Threading:
+            Construction is unsynchronized; the node is immutable once the lane
+            holds it.
+
         Args:
             member_spell_ids:
                 Non-empty member identities (binding-signature SHA256s).
@@ -170,6 +191,15 @@ class GroupedResearchNode(Cleanable):
         """
         Return the content address for one member set.
 
+        Contract:
+            - PURE AND DETERMINISTIC: the same member set always yields the same
+              digest, regardless of input order or duplicates, because it hashes
+              the newline-joined SORTED, DEDUPED members. This is the identity
+              function the whole grouped model rests on.
+            - Static - it takes a raw member list and needs no instance, so it
+              can predict a composition's identity before construction (e.g. to
+              detect a would-be rediscovery).
+
         Args:
             member_spell_ids:
                 Member identities (deduped/sorted internally).
@@ -186,7 +216,12 @@ class GroupedResearchNode(Cleanable):
         Release owned fields and mark the node cleaned.
 
         Contract:
-            - Idempotent; del posture (no tombstones).
+            - IDEMPOTENT on the `_cleaned` flag; no lock, since the node is
+              immutable and single-owned by its lane.
+            - DELETE-NOT-NULL, no tombstones; post-cleanup access raises
+              `AttributeError` via `check_cleaned()`.
+            - Owns no children (members are referenced by id, not held), so there
+              is no cascade - it drops its own value fields only.
 
         Returns:
             None.
@@ -209,6 +244,14 @@ class GroupedResearchNode(Cleanable):
         Return the composition identity (content-addressed; NOT a custody
         id - no crystal exists or is expected for a group identity).
 
+        Contract:
+            - CONTENT-ADDRESSED over the member set, so it is stable for the
+              node's life and equal for any composition with the same members.
+            - LIVES IN THE SAME sha NAMESPACE as spell ids (both hex sha256), so
+              a group act's `to_spell_id` can carry it - but it reaches NO
+              custody material, which is why the spell-grain custody reads refuse
+              teach-grade when handed a composition id.
+
         Returns:
             str:
                 sha256 hex digest over the canonical member list.
@@ -220,6 +263,12 @@ class GroupedResearchNode(Cleanable):
     def member_spell_ids(self) -> List[str]:
         """
         Return a detached copy of the pinned member identities.
+
+        Contract:
+            - A FRESH list in CANONICAL order (sorted, deduped) - the same order
+              that seals `group_id`, so re-hashing it reproduces the identity.
+            - Members are pinned BY REFERENCE (sha ids), not held: the
+              composition points at spell versions, it does not own or copy them.
 
         Returns:
             List[str]:
@@ -233,6 +282,10 @@ class GroupedResearchNode(Cleanable):
         """
         Return the number of pinned members.
 
+        Contract:
+            - Counts DISTINCT members (the stored set is already deduped), so it
+              equals `len(member_spell_ids)` and is always >= 1.
+
         Returns:
             int:
                 Member count.
@@ -244,6 +297,12 @@ class GroupedResearchNode(Cleanable):
     def parent_group_ids(self) -> List[str]:
         """
         Return a detached copy of the composition ancestry.
+
+        Contract:
+            - A FRESH list of GROUP ids (its OWN namespace), not spell ids -
+              composition ancestry references previous compositions.
+            - Empty means a FIRST composition; a single parent means an
+              evolution (a `recompose_group` result). Declaration order preserved.
 
         Returns:
             List[str]:
@@ -257,6 +316,10 @@ class GroupedResearchNode(Cleanable):
         """
         Return the registering agent name, when recorded.
 
+        Contract:
+            - `None` means none was supplied; optional annotation, never
+              inferred.
+
         Returns:
             Optional[str]:
                 Author name or None.
@@ -268,6 +331,9 @@ class GroupedResearchNode(Cleanable):
     def reason(self) -> Optional[str]:
         """
         Return the recorded reason line, when one exists.
+
+        Contract:
+            - `None` when none was supplied; free-text annotation, never parsed.
 
         Returns:
             Optional[str]:
@@ -281,6 +347,11 @@ class GroupedResearchNode(Cleanable):
         """
         Return the research-campaign stamp, when recorded.
 
+        Contract:
+            - `None` when unstamped. Composition registration through the ROOT
+              applies the ambient campaign (parity with runtime auto-records), so
+              a stamped value here reflects that ambient stamp or an explicit one.
+
         Returns:
             Optional[str]:
                 Campaign stamp or None.
@@ -292,6 +363,10 @@ class GroupedResearchNode(Cleanable):
     def created_at(self) -> str:
         """
         Return the ISO-8601 UTC creation stamp.
+
+        Contract:
+            - Always present. On a rebuilt node it is the ORIGINAL recorded time,
+              since `from_payload` passes the stored stamp through.
 
         Returns:
             str:
@@ -305,6 +380,11 @@ class GroupedResearchNode(Cleanable):
         """
         Return a detached copy of the value-typed annotations.
 
+        Contract:
+            - DEEP-COPIED out, mirroring the deep copy in, so neither side can
+              mutate the node's stored metadata. Empty dict (never None) when
+              none was supplied.
+
         Returns:
             Dict[str, object]:
                 Detached metadata mapping.
@@ -315,6 +395,13 @@ class GroupedResearchNode(Cleanable):
     def describe(self) -> Dict[str, object]:
         """
         Return a detached, serialization-ready snapshot of this node.
+
+        Contract:
+            - CARRIES `node_type: "group"`, which is the tag lane hydration
+              dispatches on: tagged payloads rebuild as compositions, untagged
+              ones as spell nodes (back-compat by absence). Never drop the tag.
+            - THE EXACT INVERSE of `from_payload()`, fully detached (member and
+              parent lists copied, metadata deep-copied), plain-value throughout.
 
         Returns:
             Dict[str, object]:
@@ -339,6 +426,17 @@ class GroupedResearchNode(Cleanable):
     def from_payload(cls, payload: Dict[str, object]) -> "GroupedResearchNode":
         """
         Rebuild one composition node from a `describe()` payload.
+
+        Contract:
+            - REQUIRES the `node_type` group tag; a payload without it is not a
+              composition and is refused, which is the guard that stops a spell
+              payload rehydrating as a group.
+            - RE-VERIFIES IDENTITY. The recorded `group_id` is recomputed from the
+              members and a mismatch raises - a tampered composition (members
+              edited to disagree with the sealed id) cannot enter the record.
+            - Runs the constructor's validation, so an empty member list or empty
+              member/parent is rejected on rebuild exactly as on construction.
+            - PRESERVES recorded `created_at`.
 
         Args:
             payload:

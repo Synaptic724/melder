@@ -81,6 +81,15 @@ class ResidenceRegistry(Cleanable):
         """
         Initialize one empty residence partition.
 
+        Contract:
+            - Starts EMPTY: no identity is resident until `claim`ed. A fresh
+              registry answers `is_resident` False for everything.
+            - Owns a single sha -> lane map and its lock; nothing else.
+
+        Threading:
+            Creates the `RLock` that serializes every later claim, transfer and
+            read.
+
         Returns:
             None.
         """
@@ -93,7 +102,11 @@ class ResidenceRegistry(Cleanable):
         Release owned fields and mark the registry cleaned.
 
         Contract:
-            - Idempotent; del posture (no tombstones); lock last.
+            - IDEMPOTENT under double-checked locking.
+            - DELETE-NOT-NULL, no tombstones; the lock is deleted last, outside
+              the guarded block.
+            - Clears the partition map only - it holds sha strings, not owned
+              objects, so there is no child cascade.
 
         Returns:
             None.
@@ -111,6 +124,25 @@ class ResidenceRegistry(Cleanable):
     def claim(self, spell_id: str, lane_id: str) -> None:
         """
         Claim residence of one identity for one lane.
+
+        Contract:
+            - ALL-OR-NOTHING against the single-residence invariant: an identity
+              already resident ANYWHERE raises `RuntimeError` naming the holding
+              lane. That raise is the REDISCOVERY SIGNAL, not a failure to route
+              around - identical content rebinds to the same SHA, and the
+              collision is how the system says "you built this before, here."
+            - COLLIDES EVEN AGAINST THE SAME LANE. Re-claiming an identity for
+              the lane that already holds it still raises; node-level dedup is
+              handled one layer up, not here.
+            - Empty `spell_id` or `lane_id` raises `ValueError` before the map is
+              touched.
+            - Success installs exactly one entry; there is no public verb to undo
+              it (residence is permanent). The only removal path is the private
+              failure-compensation `_rollback_claim`.
+
+        Threading:
+            The presence check and the insert happen together under `self._lock`,
+            so two threads cannot both claim the same identity.
 
         Args:
             spell_id:
@@ -151,6 +183,23 @@ class ResidenceRegistry(Cleanable):
         Purpose:
             The `join` mechanic: member identities move to the receiving lane
             in one all-or-nothing motion.
+
+        Contract:
+            - TWO-PHASE ALL-OR-NOTHING: every identity is checked for residence
+              FIRST, and only if all are resident are any repointed. A single
+              non-resident identity raises `KeyError` with NOTHING moved, so a
+              partial transfer cannot corrupt the partition.
+            - REPOINTS, does not add. Each identity must already be resident;
+              this changes which lane holds it, never introduces a new residence
+              (that is `claim`).
+            - Idempotent per identity: repointing to the lane it already resides
+              in is a harmless overwrite.
+            - Does not change the resident COUNT - identities move between lanes,
+              the partition size is unchanged.
+
+        Threading:
+            The full check-then-repoint runs under `self._lock`, so no reader
+            observes a half-transferred set.
 
         Args:
             spell_ids:
@@ -215,6 +264,17 @@ class ResidenceRegistry(Cleanable):
         """
         Return the lane holding one identity, when resident.
 
+        Contract:
+            - `None` means NOT RESIDENT in this set - a normal answer, never an
+              error. This is the raw partition lookup the set's own
+              `residence_of` delegates to.
+            - Answers residence only: it does not confirm the holding lane still
+              carries the node, nor that the lane is open. Residence is permanent
+              through archive, so a resident answer can point at an archived lane.
+
+        Threading:
+            Read under `self._lock`; a point-in-time answer.
+
         Args:
             spell_id:
                 Identity to look up.
@@ -229,7 +289,18 @@ class ResidenceRegistry(Cleanable):
 
     def is_resident(self, spell_id: str) -> bool:
         """
-        Return whether one identity is resident anywhere.
+        Return whether one identity is resident ANYWHERE in this set.
+
+        Contract:
+            - Network-wide test, not lane-scoped: True means the identity resides
+              in SOME lane of this set. It is the rediscovery probe the runtime
+              seam uses before a `record_world_entry` to decide "already known,
+              quiet no-op" versus "fresh, register".
+            - Equivalent to `residence_of(spell_id) is not None`, without
+              returning the lane.
+
+        Threading:
+            Read under `self._lock`.
 
         Args:
             spell_id:
@@ -248,6 +319,16 @@ class ResidenceRegistry(Cleanable):
         """
         Return the number of resident identities.
 
+        Contract:
+            - Counts DISTINCT identities in the partition, which equals the total
+              node count across all lanes since residence is one-per-identity.
+            - Only ever grows through `claim`; `transfer` moves identities
+              between lanes without changing this, and there is no release verb,
+              so it does not shrink except by rollback of a failed claim.
+
+        Threading:
+            Read under `self._lock`.
+
         Returns:
             int:
                 Current residence count.
@@ -259,6 +340,16 @@ class ResidenceRegistry(Cleanable):
     def describe(self) -> Dict[str, object]:
         """
         Return a detached, serialization-ready residence payload.
+
+        Contract:
+            - THE EXACT INVERSE of `from_payload()`: one key,
+              `lane_id_by_spell_id`, holding a COPY of the partition map so
+              mutating the result cannot alter the registry.
+            - Plain sha -> lane strings throughout, so it crosses a JSON boundary
+              losslessly.
+
+        Threading:
+            The map copy is taken under `self._lock`.
 
         Returns:
             Dict[str, object]:
@@ -274,6 +365,22 @@ class ResidenceRegistry(Cleanable):
     def from_payload(cls, payload: Dict[str, object]) -> "ResidenceRegistry":
         """
         Rebuild one registry from a `describe()` payload.
+
+        Contract:
+            - Requires a dict payload carrying a dict `lane_id_by_spell_id`;
+              either being absent or wrong-typed raises `ValueError`.
+            - REBUILDS WHOLESALE into a fresh registry - it never edits an
+              existing one in place. This is the network-restore path.
+            - COERCES keys and values to `str` on the way in, so a payload that
+              round-tripped through JSON (which may have stringified nothing, but
+              the coercion makes it defensive) rebuilds cleanly.
+            - Does NOT re-run `claim`, so it does not raise on the entries it
+              loads - a snapshot is trusted to already satisfy single-residence;
+              restore installs it rather than re-validating each claim.
+
+        Threading:
+            Entries are loaded under the new registry's own lock; the rebuilt
+            object is not shared until this returns.
 
         Args:
             payload:

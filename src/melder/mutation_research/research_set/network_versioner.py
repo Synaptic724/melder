@@ -82,6 +82,18 @@ class NetworkVersioner(Cleanable):
         """
         Initialize one empty snapshot ring.
 
+        Contract:
+            - `max_snapshots` is the FIFO retention bound and must be >= 1; a
+              smaller value raises `ValueError`. There is no unbounded mode - the
+              ring always has a finite ceiling, so old organization snapshots age
+              out by design.
+            - Starts EMPTY: `latest_sha` is None and `snapshot_count` is 0 until
+              the first `snapshot`.
+
+        Threading:
+            Creates the `RLock` that serializes every later mint, retention pass
+            and read.
+
         Args:
             max_snapshots:
                 FIFO retention bound (>= 1).
@@ -106,7 +118,11 @@ class NetworkVersioner(Cleanable):
         Release owned fields and mark the versioner cleaned.
 
         Contract:
-            - Idempotent; del posture (no tombstones); lock last.
+            - IDEMPOTENT under double-checked locking.
+            - DELETE-NOT-NULL, no tombstones; the lock is deleted last, outside
+              the guarded block.
+            - Holds only canonical text and address strings, no owned objects, so
+              there is no child cascade.
 
         Returns:
             None.
@@ -127,6 +143,25 @@ class NetworkVersioner(Cleanable):
     def snapshot(self, payload: Dict[str, object]) -> str:
         """
         Store one organization snapshot and return its content address.
+
+        Contract:
+            - CONTENT-ADDRESSED: the address is the SHA256 of the CANONICAL form
+              (sorted keys, compact separators), so two structurally identical
+              organizations produce the same address and are stored ONCE.
+            - RECENCY FOLLOWS THE OPERATION, not first insertion. Re-snapshotting
+              an already-stored state does not duplicate it - it MOVES the
+              address to the newest retention position. This is why a restore's
+              closing snapshot makes `latest_sha` name the restored organization
+              and keeps it as the next mutation's immediate predecessor (the undo
+              ring holds).
+            - FIFO EVICTION on insert: when the ring exceeds `max_snapshots` the
+              OLDEST address is dropped and its canonical text deleted. A
+              snapshot just added is never the one evicted by its own insert.
+            - Payload must be JSON-serializable; canonicalization goes through
+              `json.dumps`, so a non-serializable value raises there.
+
+        Threading:
+            The dedup/insert/evict sequence runs under `self._lock`.
 
         Args:
             payload:
@@ -168,6 +203,21 @@ class NetworkVersioner(Cleanable):
         """
         Return a fresh value copy of one stored snapshot.
 
+        Contract:
+            - DECODES FROM CANONICAL TEXT each call, so every result is a brand
+              new object graph - callers can never reach into the store, and two
+              gets of the same address return independent copies.
+            - An unknown or AGED-OUT address raises `KeyError`. Because retention
+              is bounded, an address observed earlier can legitimately be gone;
+              the raise is the honest "no longer retained" signal, not
+              corruption.
+            - The decoded shape is whatever was snapshotted (an organization
+              payload); this object does not interpret it.
+
+        Threading:
+            The canonical text is read under `self._lock`; JSON decoding happens
+            outside the lock, on the local copy.
+
         Args:
             snapshot_sha:
                 Content address to fetch.
@@ -194,6 +244,15 @@ class NetworkVersioner(Cleanable):
         """
         Return whether one content address is currently retained.
 
+        Contract:
+            - Tests CURRENT retention, not whether the address was ever minted -
+              a snapshot evicted by the FIFO ring returns False here even though
+              it once existed. Pair it with `snapshot_shas()` when you need the
+              retained set rather than a single probe.
+
+        Threading:
+            Read under `self._lock`.
+
         Args:
             snapshot_sha:
                 Content address to test.
@@ -210,6 +269,17 @@ class NetworkVersioner(Cleanable):
         """
         Return the retained content addresses, oldest first.
 
+        Contract:
+            - A FRESH list in retention order, oldest first, so the tail is the
+              newest and `[-1]` equals `latest_sha`.
+            - REFLECTS THE OPERATION ORDER, not mint order: a re-snapshot moves
+              its address to the tail, so the position of an address tracks when
+              it was last touched, not when it first appeared.
+            - Detached; mutating it cannot affect the ring.
+
+        Threading:
+            Materialized under `self._lock`.
+
         Returns:
             List[str]:
                 Detached ordered address list.
@@ -222,6 +292,19 @@ class NetworkVersioner(Cleanable):
     def latest_sha(self) -> Optional[str]:
         """
         Return the newest retained content address, when any.
+
+        Contract:
+            - The tail of the retention order; `None` only while the ring is
+              empty. Equals the last element of `snapshot_shas()`.
+            - After a restore's closing snapshot this identifies the RESTORED
+              organization, because a re-snapshot moves to the newest position -
+              which is what lets `restore_network` chain correctly.
+            - Content-addressed, so an organization that changes and reverts to a
+              prior shape reports the SAME address again: this tracks the current
+              SHAPE, not a monotonic operation count.
+
+        Threading:
+            Read under `self._lock`.
 
         Returns:
             Optional[str]:
@@ -236,6 +319,14 @@ class NetworkVersioner(Cleanable):
         """
         Return the number of retained snapshots.
 
+        Contract:
+            - Counts CURRENTLY retained addresses, so it is capped at
+              `max_snapshots` and never exceeds it. Dedup means it counts
+              DISTINCT organization shapes, not the number of snapshot calls.
+
+        Threading:
+            Read under `self._lock`.
+
         Returns:
             int:
                 Retained snapshot count.
@@ -249,6 +340,11 @@ class NetworkVersioner(Cleanable):
         """
         Return the FIFO retention bound.
 
+        Contract:
+            - Fixed at construction and never changes; it is the ceiling
+              `snapshot_count` can reach before FIFO eviction begins. Read
+              WITHOUT the lock because the value is immutable.
+
         Returns:
             int:
                 Maximum retained snapshots.
@@ -259,6 +355,20 @@ class NetworkVersioner(Cleanable):
     def describe(self) -> Dict[str, object]:
         """
         Return a detached, serialization-ready versioner payload.
+
+        Contract:
+            - THE EXACT INVERSE of `from_payload()`: three keys - the
+              sha -> canonical map, the retention order, and the bound - copied
+              so mutating the result cannot alter the ring.
+            - Carries the CANONICAL TEXT of each snapshot, not decoded objects,
+              which is what lets `from_payload` re-verify each content address on
+              hydration.
+            - This is the undo ring that rides the composition payload into the
+              crystallizer twin, so a restored world can still reach pre-death
+              organization states.
+
+        Threading:
+            The three copies are taken together under `self._lock`.
 
         Returns:
             Dict[str, object]:
@@ -277,6 +387,24 @@ class NetworkVersioner(Cleanable):
     def from_payload(cls, payload: Dict[str, object]) -> "NetworkVersioner":
         """
         Rebuild one versioner from a `describe()` payload.
+
+        Contract:
+            - RE-VERIFIES EVERY CONTENT ADDRESS. The map key IS the SHA256 of its
+              canonical text, so hydration recomputes each digest and raises
+              `ValueError` if a claimed address does not match. A corrupt or
+              forged payload cannot install a false content address - the
+              integrity guarantee survives the persistence round trip.
+            - REBUILDS IN RETENTION ORDER, following `order`, so the restored ring
+              keeps the same recency (and therefore the same `latest_sha`). An
+              order entry with no matching canonical text is skipped rather than
+              raising.
+            - `max_snapshots` falls back to 64 when absent or invalid; a missing
+              or wrong-typed `canonical_by_sha`/`order` raises `ValueError`.
+            - Builds a fresh versioner; it never edits an existing one in place.
+
+        Threading:
+            Entries are loaded under the new versioner's own lock; the object is
+            not shared until this returns.
 
         Args:
             payload:

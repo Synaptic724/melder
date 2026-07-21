@@ -163,6 +163,27 @@ class TransitionEntry(Cleanable):
         """
         Initialize one immutable journal event.
 
+        Contract:
+            - IMMUTABLE AFTER THIS RETURNS: no setters, no lock. An event that
+              could be edited would make the journal's append-only history a
+              mutable answer, so immutability is the whole point of the type.
+            - THREE HARD REQUIREMENTS validated up front: `act` must be a real
+              `TransitionAct` member, `sequence` an int >= 1, and `lane_id`
+              non-empty. Everything else is optional annotation.
+            - THE ENDPOINTS ARE ACT-DEPENDENT, not fixed columns. `from_spell_id`
+              / `to_spell_id` carry spell SHAs for spell-scope acts, the anchor
+              node for organization acts, and for `restored` the `to_spell_id`
+              carries a NETWORK SNAPSHOT sha rather than a spell identity. The
+              constructor does not police which act uses which endpoint - the
+              minting verb owns that.
+            - `metadata` is deep-copied in, so a caller's dict cannot mutate the
+              entry. `created_at` is minted now only when omitted, so a rebuilt
+              entry keeps its original time.
+
+        Threading:
+            Construction is unsynchronized; the entry is immutable and safe to
+            share once the journal holds it.
+
         Args:
             sequence:
                 Monotonic position minted by the owning journal (>= 1).
@@ -222,7 +243,12 @@ class TransitionEntry(Cleanable):
         Release owned fields and mark the entry cleaned.
 
         Contract:
-            - Idempotent; del posture (no tombstones).
+            - IDEMPOTENT on the `_cleaned` flag. No lock - the entry is immutable
+              and single-owned by its journal, so cleanup is never concurrent.
+            - DELETE-NOT-NULL, no tombstones; post-cleanup access raises
+              `AttributeError` via `check_cleaned()`.
+            - Owns no children and no external resources; it drops its own value
+              fields only.
 
         Returns:
             None.
@@ -246,6 +272,12 @@ class TransitionEntry(Cleanable):
         """
         Return the monotonic journal position of this event.
 
+        Contract:
+            - Journal-minted, strictly increasing, starts at 1. Ordering by
+              sequence IS chronological order within one journal, and it never
+              repeats even across a rebuild - `from_payload` continues minting
+              beyond the recorded high-water mark.
+
         Returns:
             int:
                 Journal sequence (>= 1).
@@ -257,6 +289,12 @@ class TransitionEntry(Cleanable):
     def act(self) -> TransitionAct:
         """
         Return the recorded world-entry act.
+
+        Contract:
+            - The act determines how the other fields read - especially which
+              endpoint carries a spell sha versus a snapshot sha (see
+              `to_spell_id`). Every act in the vocabulary is additive; none
+              removes anything.
 
         Returns:
             TransitionAct:
@@ -270,6 +308,12 @@ class TransitionEntry(Cleanable):
         """
         Return the subject lane id (or set id for network-scope acts).
 
+        Contract:
+            - USUALLY A LANE ID, but for the network-scope `restored` act it is
+              the owning SET id instead, because a restore has no single subject
+              lane. Always non-empty. Read it together with `act` before
+              assuming it names a lane.
+
         Returns:
             str:
                 Subject identity this event belongs to.
@@ -281,6 +325,11 @@ class TransitionEntry(Cleanable):
     def from_spell_id(self) -> Optional[str]:
         """
         Return the origin identity of this event, when one exists.
+
+        Contract:
+            - MEANING IS ACT-DEPENDENT: a previous tip on a join, the vacated
+              anchor node on a detach, or pre-restore context - not a fixed
+              "source spell". `None` when the act has no origin end.
 
         Returns:
             Optional[str]:
@@ -294,6 +343,14 @@ class TransitionEntry(Cleanable):
         """
         Return the destination identity of this event, when one exists.
 
+        Contract:
+            - MEANING IS ACT-DEPENDENT and this is the endpoint that carries the
+              cross-scope values: a registered/staged version sha, a composition
+              content-sha for the group acts, or - for `restored` - a NETWORK
+              SNAPSHOT sha rather than a spell identity. `campaign_view` and
+              `group_history` key off this field, so read `act` before treating
+              the value as a spell id.
+
         Returns:
             Optional[str]:
                 Destination SHA256 (spell or snapshot scope) or None.
@@ -305,6 +362,10 @@ class TransitionEntry(Cleanable):
     def actor(self) -> Optional[str]:
         """
         Return the acting agent name, when recorded.
+
+        Contract:
+            - `None` means the minting verb supplied no actor; optional
+              annotation, never inferred.
 
         Returns:
             Optional[str]:
@@ -318,6 +379,11 @@ class TransitionEntry(Cleanable):
         """
         Return the research-campaign stamp, when recorded.
 
+        Contract:
+            - `None` means the event was recorded outside any campaign. This is
+              the field `campaign_view` filters on to gather one effort's story
+              across lanes.
+
         Returns:
             Optional[str]:
                 Campaign stamp or None.
@@ -329,6 +395,10 @@ class TransitionEntry(Cleanable):
     def reason(self) -> Optional[str]:
         """
         Return the recorded reason line, when one exists.
+
+        Contract:
+            - `None` when no reason was supplied; free-text annotation only,
+              never parsed.
 
         Returns:
             Optional[str]:
@@ -342,6 +412,11 @@ class TransitionEntry(Cleanable):
         """
         Return the ISO-8601 UTC creation stamp.
 
+        Contract:
+            - Always present. On a rebuilt entry it is the ORIGINAL recorded
+              time, since `from_payload` passes the stored stamp through - the
+              journal's timeline survives a round trip.
+
         Returns:
             str:
                 Creation timestamp.
@@ -354,6 +429,14 @@ class TransitionEntry(Cleanable):
         """
         Return a detached copy of the value-typed annotations.
 
+        Contract:
+            - DEEP-COPIED out, mirroring the deep copy in, so neither the
+              caller's original nor the returned dict can mutate the entry.
+            - This is where act-specific structured detail rides - a group act's
+              member roster and composition ancestry, a restore's snapshot
+              address - so the payload varies by act.
+            - Empty dict (never None) when no annotations were recorded.
+
         Returns:
             Dict[str, object]:
                 Detached metadata mapping.
@@ -364,6 +447,15 @@ class TransitionEntry(Cleanable):
     def touches_spell_id(self, spell_id: str) -> bool:
         """
         Return whether this event references the given identity on either end.
+
+        Contract:
+            - Tests BOTH endpoints (`from_spell_id` and `to_spell_id`), so it
+              catches an identity whether it was the origin or the destination of
+              the act. This is what `history(...)` and `group_history(...)` use to
+              gather every event touching an identity.
+            - Endpoint-only. It does NOT look inside `metadata`, so an identity
+              that appears only in a group act's member roster is not matched
+              here - the group-history reads widen the search deliberately.
 
         Args:
             spell_id:
@@ -379,6 +471,13 @@ class TransitionEntry(Cleanable):
     def describe(self) -> Dict[str, object]:
         """
         Return a detached, serialization-ready snapshot of this event.
+
+        Contract:
+            - THE EXACT INVERSE of `from_payload()`: the ten keys it emits are
+              precisely the ones `from_payload` reads, so an entry round-trips
+              losslessly including its sequence and original time.
+            - `act` is emitted as its `.value` string and `metadata` is
+              deep-copied, so the payload is JSON-safe and fully detached.
 
         Returns:
             Dict[str, object]:
@@ -402,6 +501,19 @@ class TransitionEntry(Cleanable):
     def from_payload(cls, payload: Dict[str, object]) -> "TransitionEntry":
         """
         Rebuild one entry from a `describe()` payload.
+
+        Contract:
+            - HARD REQUIREMENTS: a string `act` that names a real `TransitionAct`
+              value, an int `sequence`, and a string `lane_id`. Missing or
+              wrong-typed values among these raise `ValueError`; an unknown act
+              string raises from the `TransitionAct(...)` lookup.
+            - TOLERANT OF WRONG-TYPED OPTIONALS: a non-dict `metadata` is treated
+              as absent rather than raising, so a partially-corrupt payload still
+              yields a valid entry.
+            - PRESERVES sequence and `created_at`, so a rebuilt entry keeps its
+              journal position and original time - the timeline is faithful.
+            - Runs the constructor's full validation, so it cannot produce an
+              entry the constructor would refuse.
 
         Args:
             payload:

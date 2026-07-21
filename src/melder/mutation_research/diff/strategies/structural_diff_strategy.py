@@ -70,9 +70,17 @@ class StructuralDiffStrategy(DiffStrategy):
         """
         Return the stable registry name of this strategy.
 
+        Contract:
+            - Fixed key "structural" - the name `DiffEngine` registers this
+              AST-shape strategy under and resolves it by.
+
         Returns:
             str:
                 "structural".
+
+        Raises:
+            RuntimeError:
+                If the strategy has been cleaned.
         """
         self.check_cleaned()
         return "structural"
@@ -84,6 +92,23 @@ class StructuralDiffStrategy(DiffStrategy):
     ) -> Dict[str, object]:
         """
         Compare two version materials structurally, module by module.
+
+        Contract:
+            - Compares only modules carrying source TEXT on BOTH sides
+              (synthetic modules always do); modules known only through
+              fingerprints are reported under `text_unavailable_modules`,
+              never as fabricated structural verdicts.
+            - Per shared module: module-docstring change plus added, removed,
+              and changed top-level functions and classes. A changed callable
+              splits into `signature_changed` / `docstring_changed` /
+              `body_changed`, where the body comparison is over a
+              DOCSTRING-STRIPPED AST fingerprint - so a pure documentation
+              edit reports as docstring-only, never as a body change.
+            - Unparseable source on either side becomes a per-module
+              `parse_error` verdict naming the failing side, never a crash.
+            - READ-ONLY: neither material is retained or mutated; `identical`
+              rolls up the STRUCTURAL verdict only (use the `source` strategy
+              for byte truth).
 
         Args:
             left_material:
@@ -97,6 +122,10 @@ class StructuralDiffStrategy(DiffStrategy):
                 `removed_modules`, `changed_modules`, `identical_modules`,
                 `text_unavailable_modules`, and per-module structural detail
                 under `module_reports`.
+
+        Raises:
+            RuntimeError:
+                If the strategy has been cleaned.
         """
         self.check_cleaned()
         left_sources = self._string_sources(left_material)

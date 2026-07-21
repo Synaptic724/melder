@@ -92,6 +92,11 @@ class StructuralSynthesizer(Cleanable):
         """
         Initialize one stateless synthesizer.
 
+        Contract:
+            - Owns only its `RLock`; the synthesis verb is stateless between
+              calls, so no version text, selection, or composed output is
+              retained on the instance after a call returns.
+
         Returns:
             None.
         """

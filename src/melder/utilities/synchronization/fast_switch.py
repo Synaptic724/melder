@@ -104,6 +104,12 @@ class FastSwitch(Cleanable):
 
         Initialize the switch with an optional truthy state.
 
+        Contract:
+            - Ticket COUNT is the entire state: `value=True` seeds exactly one
+              ticket (truthy), `value=False` starts empty (falsey).
+            - Owns only `_tickets` and takes no lock, matching the class's
+              lock-free hot-path design.
+
         Args:
             value:
                 When True, starts with one ticket (truthy).
@@ -227,8 +233,18 @@ class FastSwitch(Cleanable):
 
         Append one ticket to make/keep the switch truthy.
 
+        Contract:
+            - Appends exactly one ticket. Truth is count > 0, so repeated
+              calls raise the count above 1 - harmless but real, and
+              `set_false()` only removes one at a time.
+            - Guards with `check_cleaned()` first, so a cleaned switch raises.
+
         Returns:
             None.
+
+        Raises:
+            RuntimeError:
+                If the switch has already been cleaned.
         """
         self.check_cleaned()
         self._tickets.append(None)
@@ -255,8 +271,18 @@ class FastSwitch(Cleanable):
 
         Remove all tickets and force falsey state.
 
+        Contract:
+            - Empties the deque in one operation, so the switch is falsey
+              afterward regardless of prior count; unlike `set_false()` it
+              cannot underflow.
+            - Guards with `check_cleaned()` first.
+
         Returns:
             None.
+
+        Raises:
+            RuntimeError:
+                If the switch has already been cleaned.
 
         Notes:
             This is a force-clear operation; unlike `set_false()`, it does not

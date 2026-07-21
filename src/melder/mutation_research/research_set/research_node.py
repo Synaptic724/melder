@@ -92,6 +92,28 @@ class ResearchNode(Cleanable):
         """
         Initialize one immutable version record.
 
+        Contract:
+            - IMMUTABLE AFTER THIS RETURNS. There are no setters and no lock; the
+              node's state is fixed at construction, which is what makes it safe
+              to share across threads and hand out as a live read surface.
+            - DEFENSIVE-COPIES ITS COLLECTIONS. `parent_spell_ids` is stored as a
+              private tuple and `metadata` is `deepcopy`-ed on the way in, so a
+              caller mutating the objects it passed cannot reach into the node
+              afterwards.
+            - `spell_id` is REQUIRED and does double duty: it is the version
+              identity AND the custody-crystal reference, so an empty value is
+              rejected up front.
+            - EVERY parent sha is validated non-empty; a single empty entry
+              raises rather than being silently dropped, because ancestry that
+              silently loses a parent would corrupt the graph.
+            - `created_at` is minted NOW only when omitted; a supplied stamp is
+              kept verbatim, which is what lets `from_payload` round-trip the
+              original creation time rather than stamping the rebuild.
+
+        Threading:
+            Construction is unsynchronized; the object is not shared until the
+            owning lane publishes it, and it is immutable thereafter.
+
         Args:
             spell_id:
                 Binding-signature SHA256 of the registered version; doubles as
@@ -143,7 +165,15 @@ class ResearchNode(Cleanable):
         Release owned fields and mark the node cleaned.
 
         Contract:
-            - Idempotent; del posture (no tombstones).
+            - IDEMPOTENT: a second call returns immediately on the `_cleaned`
+              flag. Unlike the lane and set, there is NO lock here - the node is
+              immutable and single-residence, so cleanup is only ever driven by
+              its one owning lane, never concurrently.
+            - DELETE-NOT-NULL: owned fields are removed with `del`, leaving no
+              tombstones, so any post-cleanup access raises `AttributeError`
+              through `check_cleaned()` rather than returning stale data.
+            - Owns no children and no external resources, so there is no cascade
+              and no ordering concern - it drops its own value fields only.
 
         Returns:
             None.
@@ -165,6 +195,12 @@ class ResearchNode(Cleanable):
         """
         Return the version identity (and custody-crystal id).
 
+        Contract:
+            - ONE VALUE, TWO ROLES: this is both the research identity and the
+              custody `SpellCrystal` id, so it is the single key that reaches the
+              crystallizer's recorded material for this version.
+            - Always present and non-empty; the constructor guarantees it.
+
         Returns:
             str:
                 Binding-signature SHA256.
@@ -176,6 +212,12 @@ class ResearchNode(Cleanable):
     def module_source_sha256(self) -> Optional[str]:
         """
         Return the module-version SHA256 this version binds against.
+
+        Contract:
+            - `None` means UNRECORDED, not "no module" - the version may still
+              have a module world; its source SHA simply was not captured.
+            - When present, this is what prevents recall from resurrecting the
+              spell into the wrong module version.
 
         Returns:
             Optional[str]:
@@ -189,6 +231,14 @@ class ResearchNode(Cleanable):
         """
         Return a detached copy of the ancestry identities.
 
+        Contract:
+            - A FRESH LIST each call, built from the private tuple, so mutating
+              the result cannot alter the node's ancestry.
+            - Declaration order is preserved. An empty list means a ROOT version
+              (no ancestry); more than one entry means a composition performed in
+              the codegen workshop - there is no merge/rebase machinery, so
+              multi-parent is always a deliberate composition record.
+
         Returns:
             List[str]:
                 Parent SHA256 identities in declaration order.
@@ -200,6 +250,10 @@ class ResearchNode(Cleanable):
     def author(self) -> Optional[str]:
         """
         Return the registering agent name, when recorded.
+
+        Contract:
+            - `None` means the registering verb supplied no author; it is an
+              optional annotation, never inferred.
 
         Returns:
             Optional[str]:
@@ -213,6 +267,10 @@ class ResearchNode(Cleanable):
         """
         Return the recorded reason line, when one exists.
 
+        Contract:
+            - `None` means no reason was supplied at registration; free-text
+              annotation only, never parsed or acted on.
+
         Returns:
             Optional[str]:
                 Reason text or None.
@@ -224,6 +282,12 @@ class ResearchNode(Cleanable):
     def campaign(self) -> Optional[str]:
         """
         Return the research-campaign stamp, when recorded.
+
+        Contract:
+            - `None` means the version was declared outside any campaign, or the
+              ambient campaign was clear at registration. Campaign is intent
+              stamped ACROSS lanes; a node carries at most the one it was
+              registered under.
 
         Returns:
             Optional[str]:
@@ -237,6 +301,12 @@ class ResearchNode(Cleanable):
         """
         Return the ISO-8601 UTC creation stamp.
 
+        Contract:
+            - ALWAYS present (never None): minted at construction when not
+              supplied. On a rebuilt node it is the ORIGINAL recorded time, not
+              the rebuild time, because `from_payload` passes the stored stamp
+              straight through.
+
         Returns:
             str:
                 Creation timestamp.
@@ -249,6 +319,12 @@ class ResearchNode(Cleanable):
         """
         Return a detached copy of the value-typed annotations.
 
+        Contract:
+            - DEEP-COPIED on the way out, mirroring the deep copy on the way in,
+              so neither the caller's original nor the returned dict can mutate
+              the node's stored metadata. Nested containers are safe to modify.
+            - Empty dict (never None) when no annotations were supplied.
+
         Returns:
             Dict[str, object]:
                 Detached metadata mapping.
@@ -259,6 +335,17 @@ class ResearchNode(Cleanable):
     def describe(self) -> Dict[str, object]:
         """
         Return a detached, serialization-ready snapshot of this node.
+
+        Contract:
+            - THE EXACT INVERSE of `from_payload()`: the eight keys it emits are
+              precisely the ones `from_payload` reads, so a node round-trips
+              losslessly through describe -> from_payload, including its original
+              `created_at`.
+            - Fully DETACHED: `parent_spell_ids` is copied to a list and
+              `metadata` is deep-copied, so mutating the returned payload cannot
+              reach back into the node.
+            - PLAIN-VALUE THROUGHOUT (str/None/list/dict), so it crosses a JSON
+              persistence boundary without custom encoding.
 
         Returns:
             Dict[str, object]:
@@ -280,6 +367,20 @@ class ResearchNode(Cleanable):
     def from_payload(cls, payload: Dict[str, object]) -> "ResearchNode":
         """
         Rebuild one node from a `describe()` payload.
+
+        Contract:
+            - `spell_id` IS THE ONLY HARD REQUIREMENT. A missing or empty
+              `spell_id` raises `ValueError`; every other field is optional and
+              defaults exactly as the constructor does when absent.
+            - TOLERANT OF WRONG-TYPED OPTIONALS. A `parent_spell_ids` or
+              `metadata` value that is not a list/dict is treated as absent
+              rather than raising, so a partially-corrupt payload still yields a
+              valid node instead of failing the whole rebuild.
+            - PRESERVES the recorded `created_at`, so the rebuilt node reports
+              its original creation time, not the rebuild time.
+            - Runs the constructor's full validation, so an empty parent sha in
+              the payload is still rejected - `from_payload` cannot smuggle in a
+              node the constructor would refuse.
 
         Args:
             payload:

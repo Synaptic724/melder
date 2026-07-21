@@ -137,6 +137,33 @@ class ResearchSet(Cleanable):
         """
         Initialize one research set with its guaranteed default lane.
 
+        Contract:
+            - CREATES THE DEFAULT LANE EAGERLY and snapshots once, so the
+              guaranteed-default-lane invariant holds from construction - every
+              other verb can assume the default lane exists.
+            - The default lane is typed `development`; freeform lanes created
+              later default to `experiment`. The difference is deliberate.
+            - CONFIGURATION-FREE BY DESIGN. The set owns no configuration object;
+              `on_mutation` and `lane_type_enforcement` are pushed in from
+              outside (the root installs its persistence-emission closure as
+              `on_mutation`). This is what makes a `ResearchSet` constructible
+              and testable without a live crystallizer or configuration.
+            - `on_mutation` FIRES ONCE DURING CONSTRUCTION, after the default
+              lane and its snapshot land. A callback installed here must tolerate
+              being called before the caller finishes wiring the set up.
+            - Name UNIQUENESS is NOT enforced here - that is the owning root
+              registry's job. This constructor only rejects an empty name.
+
+        Owned State:
+            Owns its id, name, lane maps, journal, residence registry, network
+            versioner, lock, and the `on_mutation` reference. Every one is torn
+            down in `cleanup`.
+
+        Threading:
+            The default-lane creation and first snapshot run under the freshly
+            created `self._lock`; construction is otherwise unsynchronized
+            because the object is not yet shared.
+
         Args:
             name:
                 Set name (uniqueness enforced by the owning root registry).
@@ -183,7 +210,24 @@ class ResearchSet(Cleanable):
         Cascade cleanup into owned structures and mark the set cleaned.
 
         Contract:
-            - Idempotent; del posture (no tombstones); lock last.
+            - IDEMPOTENT under double-checked locking: the `_cleaned` flag is
+              tested before AND after taking the lock, so concurrent callers
+              cannot both run teardown.
+            - CHILDREN FIRST, in dependency order: every lane, then the journal,
+              residence registry and versioner, each under its own best-effort
+              `try/except` so one failing child cannot strand the rest.
+            - DELETE-NOT-NULL posture. Owned fields are removed with `del`, not
+              set to None - there are no retained tombstones, so any use after
+              cleanup raises `AttributeError` rather than reading a stale value.
+            - THE LOCK IS DELETED LAST, outside the guarded block, after every
+              owned reference is gone. That ordering means the object is fully
+              stripped before the lock that protected the teardown disappears.
+            - Does NOT fire `on_mutation`. Cleanup is a teardown, not a mutating
+              verb, so no persistence emission is triggered.
+
+        Threading:
+            The teardown body runs under `self._lock`; the final `del self._lock`
+            is the one step outside it.
 
         Returns:
             None.
@@ -403,6 +447,22 @@ class ResearchSet(Cleanable):
             posture here at activation (and onto sets created afterwards);
             the set itself stays configuration-free and standalone-testable.
 
+        Contract:
+            - GATES ONLY `join`. Arming this does not retroactively touch lanes
+              or members already placed; it changes what a FUTURE type-mixing
+              join requires (force=True). Existing mixed content stays.
+            - COERCES to bool with `bool(enabled)` rather than type-checking, so
+              any truthy value arms the gate. It never raises on argument type.
+            - The set holds this flag itself and owns no configuration object -
+              the root pushes the posture in, which is what keeps a `ResearchSet`
+              constructible and testable without a live configuration. Two sets
+              can therefore carry different enforcement postures.
+            - Idempotent: setting the same value again is a harmless re-write.
+
+        Threading:
+            The assignment happens under `self._lock`, so a concurrent `join`
+            reads a fully-written flag rather than a torn value.
+
         Args:
             enabled:
                 Whether type-mixing joins require force=True.
@@ -559,6 +619,23 @@ class ResearchSet(Cleanable):
         """
         Return one lane by name or id.
 
+        Contract:
+            - Returns the LIVE lane object, not a copy or snapshot. Its contents
+              change as the set changes.
+            - THE LANE IS A READ SURFACE ONLY. Every mutator on `ResearchLane`
+              is set-internal (`_add_node`, `_detach_nodes`, `_set_anchor`,
+              `_mark_joined`, `_mark_archived`), so holding this object does not
+              let a caller move nodes, re-anchor, or terminate the lane behind
+              the set's back. Residence claims, the journal, snapshots and
+              persistence emission cannot be bypassed through it. All state
+              change goes through set verbs.
+            - Resolves by NAME or ID; a miss raises `KeyError` rather than
+              returning None, so the return value never needs a null check.
+
+        Threading:
+            Resolution happens under `self._lock`, but the returned object is
+            live - subsequent reads of it are not covered by that lock.
+
         Args:
             lane_ref:
                 Lane name or lane id.
@@ -610,15 +687,26 @@ class ResearchSet(Cleanable):
                 Identity to look up.
 
         Contract:
-            - Returns the lane a spell currently RESIDES in, delegating to the
-              residence index. None means the spell has no residence in this set,
-              which is a normal answer rather than an error.
+            - Returns the lane an identity currently RESIDES in. `None` means it
+              has no residence in this set - a normal answer, not an error, and
+              the reason this returns `Optional[str]` while `history(...)` raises
+              for the same condition.
+            - SINGLE-RESIDENCE INVARIANT: an identity lives in exactly ONE lane
+              network-wide, permanently. There is no release verb, so a non-None
+              answer here never becomes None again for that identity; it can only
+              change lane through a set verb that transfers residence.
+            - Answers residence only. It does not assert the holding lane still
+              carries the node, nor that the lane is open - pair it with
+              `history(...)` when lane state matters.
 
         Threading:
-            Unsynchronized read of a slot fixed at construction.
+            Does NOT take the set lock. It delegates to `ResidenceRegistry`,
+            which serializes the lookup under its own lock, so the answer is a
+            point-in-time read of the residence partition rather than a snapshot
+            consistent with the set's lanes.
 
         Lifecycle / Cleanup:
-            Guarded by `check_cleaned()`.
+            Guarded by `check_cleaned()` here, and again inside the registry.
 
         Raises:
             RuntimeError: If the research set has been cleaned.
@@ -672,6 +760,27 @@ class ResearchSet(Cleanable):
             full-object records plus the anchor pointer that lets the caller
             hop into the transitive network.
 
+        Contract:
+            - ONE LANE ONLY. This does not traverse ancestry. Every returned row
+              carries `anchor_lane_id` / `anchor_spell_id` so the caller can make
+              the next hop deliberately, but walking the transitive network is
+              the caller's loop, not this verb's.
+            - Rows are DETACHED payloads built from `node.describe()`, then
+              stamped with the four lane/anchor fields. Mutating a row cannot
+              affect the record.
+            - Order is the lane's own node order - declaration order, oldest
+              first.
+            - An UNANCHORED lane still returns rows; its `anchor_lane_id` and
+              `anchor_spell_id` are simply empty, so absence of an anchor is
+              data rather than an error.
+            - Accepts either a lane NAME or a lane ID; resolution failure raises
+              rather than returning an empty list, so `[]` unambiguously means
+              "this lane exists and holds no versions".
+
+        Threading:
+            Resolves and materializes the whole list under `self._lock`, so the
+            returned sequence is a coherent snapshot rather than a live view.
+
         Args:
             lane_ref:
                 Lane name or lane id.
@@ -697,6 +806,25 @@ class ResearchSet(Cleanable):
     def history(self, spell_id: str) -> Dict[str, object]:
         """
         Return everything the record knows about one identity.
+
+        Contract:
+            - RESIDENCE-KEYED. The identity must be resident in THIS set; a
+              non-resident id raises `KeyError` naming the set rather than
+              returning an empty payload, so there is no ambiguity between
+              "unknown here" and "known but empty".
+            - Joins three sources into one detached payload: the holding lane's
+              identity/state/type, the node record itself, and EVERY journal
+              entry touching the identity - including events recorded while the
+              identity sat in a different lane, because the journal is queried by
+              spell id rather than by lane.
+            - `lane_state` and `lane_type` are emitted as their enum `.value`
+              strings, not enum members, so the payload stays JSON-safe.
+            - Read-only: it resolves, materializes and returns; nothing is
+              claimed, journalled or snapshotted.
+
+        Threading:
+            Residence lookup, lane read, node describe and journal scan all run
+            under `self._lock`, so the returned payload is internally consistent.
 
         Args:
             spell_id:
@@ -741,6 +869,33 @@ class ResearchSet(Cleanable):
             Campaigns stamp work ACROSS lanes (multi-agent research); this
             read gathers the stamped version records and journal events into
             one detached payload without any organizational side effects.
+
+        Contract:
+            - JOURNAL ORDER IS THE CAMPAIGN'S STORY, and that is deliberate, not
+              incidental. Nodes are sequenced by walking journal entries rather
+              than by iterating lanes, because lane iteration tie-breaks
+              same-millisecond ULIDs on their RANDOM component - that produced a
+              non-deterministic full-tree flake. Do not "optimize" this into a
+              lane walk.
+            - TRANSITIONS AND NODES ARE NOT THE SAME SET. Every stamped journal
+              entry becomes a transition, but only four acts contribute a node:
+              `registered`, `staged`, `group_registered`, `group_recomposed`.
+              A campaign of pure organizational moves yields transitions with an
+              empty node list, which is correct rather than a gap.
+            - MISSING IDENTITIES ARE REPORTED, NOT HIDDEN. An identity that was
+              journalled but is absent from the CURRENT organization - a network
+              restore rewound past its declaration, for instance - still emits a
+              node entry carrying `missing_from_current_organization: True` with
+              null lane fields. The read never silently drops a stamped event.
+            - `lane_names` unions lanes seen from BOTH sides: the lane each
+              journal entry was recorded against, and the lane currently holding
+              each resolved node. Those can differ after a move.
+            - Read-only. No claim, journal write, or snapshot occurs.
+            - An empty or non-string campaign raises `ValueError` up front.
+
+        Threading:
+            The whole gather runs under `self._lock`, so transitions and nodes
+            cannot disagree about the organization mid-read.
 
         Args:
             campaign:
@@ -831,6 +986,34 @@ class ResearchSet(Cleanable):
     ) -> ResearchLane:
         """
         Create one open lane, optionally anchored onto an existing node.
+
+        Contract:
+            - ANCHORING IS ALL-OR-NOTHING. `attach_to` and `attach_at_spell_id`
+              must be supplied together; exactly one of them raises `ValueError`
+              before the lock is taken. There is no "anchor to the lane's tip"
+              shorthand - the anchor node is always named explicitly.
+            - The anchor node must be held by the named lane. A lane that exists
+              but does not hold that identity raises `KeyError` naming both, so a
+              wrong-lane anchor cannot silently produce an unanchored lane.
+            - Anchoring records ANCESTRY ONLY. The new lane starts EMPTY; no node
+              is copied or moved from the anchor, and the anchor lane is
+              untouched.
+            - Lane NAMES are freeform and unique per set; lane TYPE is the policy
+              word. Omitting `lane_type` yields `experiment`, not the default
+              lane's `development` - a freshly created lane is an experiment
+              until stated otherwise.
+            - The journal entry records the anchor identity as `from_spell_id`
+              and carries `lane_type` plus the anchor lane's id and name in
+              metadata, so the lane's origin survives in history even if the
+              anchor lane is later archived.
+            - Ordering is validate -> resolve anchor -> create -> set anchor ->
+              journal -> snapshot. A failure at any step leaves no lane, no
+              journal entry and no snapshot.
+
+        Threading:
+            Campaign and anchor-argument validation run outside the lock; lane
+            creation, anchoring, journalling and snapshotting run under
+            `self._lock`. `_notify_mutation()` fires after release.
 
         Args:
             name:
@@ -924,6 +1107,35 @@ class ResearchSet(Cleanable):
             The world-entry verb: the version already exists (it was bound;
             its SHA is minted; custody rides the crystal that shares the same
             id). This records that the version is part of a research stream.
+
+        Contract:
+            - DECLARES, never creates. The version must already have been bound;
+              this writes the research record for it and mints no runtime state.
+            - Omitting `lane` targets the guaranteed default lane rather than
+              failing, so the common call needs no lane vocabulary at all.
+            - ANCESTRY IS VALIDATED IN TWO STAGES, both `ValueError`. A parent
+              that is not resident in this set is rejected outright. A parent
+              that IS resident but names a COMPOSITION rather than a spell
+              version is rejected separately: compositions are informational and
+              carry no source or custody state, so there is nothing for a spell
+              version to inherit from one.
+            - CLAIM-THEN-ADD WITH COMPENSATION. Residence is claimed before the
+              node is added to the lane, and a failed add rolls that claim back
+              before re-raising. Lanes are handed out live, so a direct
+              terminal-state call can race between the two steps under real
+              threads; without the rollback a refused add would strand the claim
+              and corrupt the residence partition.
+            - Journals `TransitionAct.registered` and snapshots the organization
+              only after the add succeeds - a refused registration leaves no
+              journal entry and no snapshot.
+            - Mutation subscribers are notified AFTER the set lock is released,
+              which is what keeps the one-way lock order intact.
+
+        Threading:
+            The campaign check runs outside the lock; lane resolution, ancestry
+            validation, the claim/add pair, journalling and snapshotting all run
+            under `self._lock`. The `_notify_mutation()` fan-out is deliberately
+            outside it.
 
         Args:
             spell_id:
@@ -1185,6 +1397,35 @@ class ResearchSet(Cleanable):
             with `parent_group_ids=[previous]` - forward-only; nothing is
             edited.
 
+        Contract:
+            - FORWARD-ONLY. The previous composition is never mutated; a NEW
+              GroupedResearchNode is registered with the previous as its single
+              parent. History is append; there is no in-place edit.
+            - CONTENT-ADDRESSED IDENTITY MAKES A NO-OP AN ERROR. A roster that
+              resolves back to the previous member set is the SAME identity
+              (content-addressed), so it raises rather than recording a
+              duplicate. Removing then re-adding the same members is a no-op and
+              is rejected.
+            - REMOVE IS STRICT, ADD IS PERMISSIVE-BUT-VALIDATED. A `remove` of a
+              member not in the previous roster raises; an `add` of a member not
+              resident in the set raises (via the delegated `register_group`).
+              Removes are applied before adds.
+            - The result must pin at least one member; an empty roster raises.
+            - Lands in the SAME lane the previous composition resides in - a
+              recompose stays on its subsystem timeline rather than starting a
+              new one.
+            - RELEASES THE SET LOCK BEFORE DELEGATING. Validation runs under the
+              lock; the actual registration re-enters through the public
+              `register_group`, which takes the lock again. The operation is
+              therefore two locked sections, not one - a concurrent mutation can
+              interleave between the roster computation and the registration, and
+              `register_group` re-validates residence at that point.
+
+        Threading:
+            Roster validation runs under `self._lock`; the lock is released and
+            `register_group` re-acquires it for the write. Not a single atomic
+            critical section.
+
         Args:
             previous_group_id:
                 The composition being evolved (must be resident).
@@ -1285,6 +1526,28 @@ class ResearchSet(Cleanable):
             (the WHERE x WHEN join: groups are structure, campaigns are
             intent; neither owns the other, so the record joins them).
 
+        Contract:
+            - THREE-SOURCE WATCH SET. An event is included if it touches the
+              composition's OWN lane, any member identity it pins, OR any lane a
+              pinned member currently resides in. The returned `watched_lane_ids`
+              names exactly the lanes that widened the search, so the scope is
+              inspectable rather than implicit.
+            - The subject must be a COMPOSITION. A resident id that is a spell
+              version raises `RuntimeError`; an unknown id raises too. It never
+              returns an empty payload for a wrong-kind subject.
+            - `campaign` is an AND filter, not a selector: it narrows the already
+              composition-scoped events to one campaign. Omitting it returns the
+              full area story; supplying an unstamped campaign yields entries
+              empty rather than raising.
+            - Events are in JOURNAL ORDER (declaration order), and the payload is
+              fully detached - describing entries, not live journal objects.
+            - Read-only: no claim, journal write or snapshot.
+
+        Threading:
+            Resolves the composition, computes the watch set and scans the
+            journal under `self._lock`, so the member roster and the events
+            cannot disagree mid-read.
+
         Args:
             group_id:
                 Composition identity to gather around.
@@ -1368,6 +1631,31 @@ class ResearchSet(Cleanable):
             must never fail on research bookkeeping), while a fresh identity
             registers exactly like `register_spell` - with the `staged` act
             when the entry was parked.
+
+        Contract:
+            - IDEMPOTENT BY DESIGN, and this is the ONLY difference in spirit
+              from `register_spell`: an already-resident identity returns `None`
+              instead of raising. Rediscovery is the expected steady state on a
+              runtime seam - identical content rebinds to the same SHA - and the
+              runtime must never fail because bookkeeping already happened.
+            - THE RESIDENCE CHECK IS FIRST, before lane resolution and before
+              ancestry validation. A rediscovery therefore costs one lookup and
+              validates nothing; it will NOT raise on a bad lane or a bad parent
+              that a fresh registration would have rejected.
+            - `staged` selects the journal act only: `staged` for
+              `bind_inactive` parks, `registered` for active binds. It does not
+              change residence, lane placement, or node shape.
+            - Ancestry rules mirror `register_spell` exactly - unknown parent
+              raises, composition-as-parent raises - and this is the path the
+              root's staged-ancestry stamp travels for synthesis mints.
+            - Carries the same CLAIM-THEN-ADD compensation: residence is claimed
+              before the add and rolled back if the add is refused, so a race
+              cannot strand a claim and corrupt the residence partition.
+
+        Threading:
+            The residence probe, lane resolution, ancestry validation, claim/add
+            pair, journalling and snapshotting all run under `self._lock`;
+            `_notify_mutation()` fires after release.
 
         Args:
             spell_id:
@@ -1539,6 +1827,25 @@ class ResearchSet(Cleanable):
         Contract:
             - Organization only: content never moves; `onto`/`at_spell_id` are
               mandatory so the act is never scope-blind.
+            - REPOINTS RATHER THAN APPENDS. A lane holds at most ONE anchor, so
+              attaching a lane that is already anchored silently replaces the
+              previous anchor. Ancestry here is a single pointer, not a list;
+              use the journal to recover where a lane used to hang.
+            - SELF-ANCHORING IS REFUSED by lane id, not by name, so two names
+              resolving to the same lane are still caught.
+            - The anchor node must be held by `onto`. A lane that resolves but
+              does not hold the identity raises `KeyError` naming both.
+            - The journal records the anchor identity as `to_spell_id` (the
+              direction that distinguishes it from `detach`, which records the
+              vacated anchor as `from_spell_id`) plus the anchor lane's id and
+              name in metadata.
+            - Snapshots the organization on success, so an anchor change is
+              recoverable through `restore_network`.
+
+        Threading:
+            Both lane resolutions, the self-anchor check, the anchor write,
+            journalling and snapshotting run under `self._lock`;
+            `_notify_mutation()` fires after release.
 
         Args:
             lane_ref:
@@ -1603,6 +1910,22 @@ class ResearchSet(Cleanable):
     ) -> None:
         """
         Remove one lane's ancestry anchor.
+
+        Contract:
+            - Organization only. The lane keeps every node it holds; only the
+              ancestry pointer is cleared, so a detached lane becomes a root of
+              its own line rather than losing content.
+            - NOT IDEMPOTENT. Detaching a lane that holds no anchor raises
+              `RuntimeError` rather than returning quietly, so a redundant
+              detach is a caller error rather than a silent no-op.
+            - The vacated anchor is captured BEFORE the clear and journalled as
+              `from_spell_id`, which is what makes the detach reversible from
+              history - the pointer would otherwise be unrecoverable.
+            - Snapshots the organization on success.
+
+        Threading:
+            Resolution, anchor capture, clear, journalling and snapshotting run
+            under `self._lock`; `_notify_mutation()` fires after release.
 
         Args:
             lane_ref:
@@ -1934,14 +2257,24 @@ class ResearchSet(Cleanable):
 
         Contract:
             - Returns the versioner's recorded snapshot digests, which identify
-              snapshots WITHOUT materializing them - use it to detect change cheaply
-              instead of calling `snapshot_network()` repeatedly.
+              snapshots WITHOUT materializing them - use it to detect change
+              cheaply instead of calling `snapshot_network()` repeatedly.
+            - Ordered OLDEST FIRST, matching the FIFO retention ring, so the
+              tail is the newest and `[-1]` equals `latest_network_snapshot`.
+            - A DETACHED copy of the address list; mutating it cannot affect the
+              retention ring.
+            - Lists only RETAINED addresses. The ring is bounded, so an address
+              observed earlier can age out and later return `KeyError` from
+              `restore_network` - presence here is the honest liveness test.
 
         Threading:
-            Unsynchronized read of a slot fixed at construction.
+            Does NOT take the set lock. It delegates to `NetworkVersioner`, which
+            serializes the read under its own lock, so the result is a
+            point-in-time view of the retention ring rather than a snapshot
+            consistent with the set's live lanes.
 
         Lifecycle / Cleanup:
-            Guarded by `check_cleaned()`.
+            Guarded by `check_cleaned()` here; the versioner guards its own read.
 
         Raises:
             RuntimeError: If the research set has been cleaned.
@@ -1959,15 +2292,24 @@ class ResearchSet(Cleanable):
         Return the newest retained organization snapshot address.
 
         Contract:
-            - The most recent snapshot digest. Comparing it against a previously held
-              value is the cheap way to ask "has the network changed since I looked",
-              with no snapshot build required.
+            - The most recent snapshot digest. Comparing it against a previously
+              held value is the cheap way to ask "has the network changed since I
+              looked", with no snapshot build required.
+            - `None` means NO snapshot has ever been taken - a fresh set before
+              its first organizing verb - not an error.
+            - Equals the last element of `network_snapshot_shas()`.
+            - Content-addressed, so an organization that changes and then reverts
+              to a previous shape reports the SAME digest again: this detects
+              SHAPE change, not event count. Two structurally identical
+              organizations are indistinguishable here by design.
 
         Threading:
-            Unsynchronized read of a slot fixed at construction.
+            Does NOT take the set lock. It delegates to `NetworkVersioner`, which
+            serializes the read under its own lock; the answer is a point-in-time
+            read of the retention ring.
 
         Lifecycle / Cleanup:
-            Guarded by `check_cleaned()`.
+            Guarded by `check_cleaned()` here; the versioner guards its own read.
 
         Raises:
             RuntimeError: If the research set has been cleaned.
@@ -1994,6 +2336,32 @@ class ResearchSet(Cleanable):
               residence rebuild wholesale from the snapshot; the journal is
               untouched (history is never rewound) and the restore itself is
               journaled forward as a `restored` event.
+            - VALIDATE-THEN-DESTROY. The incoming payload is parsed, every lane
+              rebuilt, and the guaranteed default lane confirmed present BEFORE
+              a single live lane is torn down. A malformed payload, or one
+              lacking the default lane, raises with LIVE ORGANIZATION UNTOUCHED.
+              A restore therefore never half-lands.
+            - The default-lane gate exists because `default_lane` resolves by
+              well-known name: installing a network without it would leave the
+              set unable to serve its own default, so the invariant is checked
+              at the door rather than discovered later.
+            - WHOLESALE REPLACEMENT, not a merge. Lanes, the name index and the
+              residence partition are all swapped for the rebuilt objects; any
+              lane or residence claim created after the snapshot is discarded.
+            - Old lanes and the old residence registry are cleaned best-effort
+              during the swap - a failure to clean one does not abort the
+              restore, because the replacement is already validated.
+            - The restore target is a NETWORK SNAPSHOT ADDRESS, not a spell
+              identity, so it rides `metadata["snapshot_address"]` rather than a
+              typed endpoint field. The typed fields never carry something that
+              is not an identity.
+            - Snapshots again on success, so the pre-restore organization is
+              itself addressable afterwards.
+
+        Threading:
+            The entire validate-teardown-swap-journal sequence runs under
+            `self._lock`, so no reader observes a half-swapped organization.
+            `_notify_mutation()` fires after release.
 
         Args:
             snapshot_sha:
@@ -2087,6 +2455,27 @@ class ResearchSet(Cleanable):
             window (checkpoints capture the deltas over time, so the twin
             never needs the unbounded stream).
 
+        Contract:
+            - The ORGANIZATION is captured in full, but the JOURNAL is a bounded
+              WINDOW (default 200 recent entries). This is deliberate: the twin
+              carries current structure completely, while journal HISTORY is left
+              to the checkpoint sequence, which records deltas over time. Passing
+              `recent_transitions=None` includes the full stream when a complete
+              history is genuinely needed.
+            - Carries the NETWORK VERSIONER's own state (`network_versioner`), so
+              a set rebuilt from this payload can still `restore_network` to
+              pre-death organization shapes - the undo ring survives the round
+              trip, bounded by its retention.
+            - PLAIN-VALUE THROUGHOUT. Every nested value is JSON-safe, so the
+              payload crosses the persistence boundary losslessly and rebuilds
+              via `from_payload`.
+            - A detached copy: mutating the returned dict cannot affect the set.
+            - Read-only; no snapshot or journal write occurs.
+
+        Threading:
+            The whole payload is assembled under `self._lock`, so organization,
+            journal window and versioner state are mutually consistent.
+
         Args:
             recent_transitions:
                 Journal window bound; None includes the full stream.
@@ -2147,6 +2536,33 @@ class ResearchSet(Cleanable):
             MutationResearchCrystal twin) rebuilds into a live set. The
             journal rebuilds from the recorded window and continues minting
             beyond the recorded `next_sequence`.
+
+        Contract:
+            - BUILDS FRESH, THEN REPLACES. It constructs a normal set (which
+              eagerly makes a default lane), then tears that scaffolding down and
+              swaps in the rebuilt lanes, residence, journal and versioner. The
+              transient default lane exists only to satisfy the constructor and
+              does not survive.
+            - `on_mutation` IS SUPPRESSED DURING REBUILD. The set is constructed
+              with `on_mutation=None` so hydration emits nothing, and the
+              caller's callback is installed only at the very end. A rebuild is
+              therefore silent - it does not re-fire persistence for every
+              recorded node.
+            - RECORDED IDENTITY IS PRESERVED. The rebuilt set restores the
+              recorded `set_id` and `created_at` rather than minting new ones, so
+              a hydrated set is the SAME identity it was sealed as.
+            - PARTIAL PAYLOADS DEGRADE, they do not crash: a missing residence
+              payload rebuilds an empty registry, a missing versioner payload
+              keeps the fresh one. Only `organization` and `journal` are hard
+              requirements; their absence or wrong type raises `ValueError`.
+            - The journal continues minting BEYOND the recorded window's
+              `next_sequence`, so sequence numbers never collide across a rebuild.
+            - Snapshots once at the end, so the rebuilt organization is
+              immediately addressable.
+
+        Threading:
+            The rebuilt set is not shared until this returns; the swap runs under
+            the new set's own lock.
 
         Args:
             payload:

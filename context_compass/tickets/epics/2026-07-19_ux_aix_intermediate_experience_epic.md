@@ -494,7 +494,7 @@ The working developer's tier: SpellBinder fluent binding, spellframes and contra
   REREAD: OPTIONAL
   SCORE_0_TO_10: -
 
-## MEASURE - 2026-07-20 22:47 UTC - owner assessment: tier in a good spot
+## MEASURE - 2026-07-21 09:56 UTC - owner assessment: tier in a good spot
   WHAT: Owner call (end of 2026-07-20 session): "beginner and intermediate are
     in a good spot." Two rows still await one green run: 25_clusters (now with
     the owner.link(member) fix - contracts ride links) and the replacement
@@ -502,6 +502,40 @@ The working developer's tier: SpellBinder fluent binding, spellframes and contra
     run-proven at 26 lessons. Boot-melds epic parked ACTIVE/unassigned for the
     owner's weekend design pass; the sophisticated follow-ons land in the
     advanced/expert tiers (names TBD).
+  REREAD: OPTIONAL
+  SCORE_0_TO_10: -
+
+## MEASURE - 2026-07-21 10:04 UTC - lesson 08 corrected: spell_override overrides spells INSIDE the graph
+  WHAT: Owner flagged 08_spell_override_construction as "basically wrong". He
+    is right on two counts: (1) the lesson only showed the FLAT form (root
+    ctor kwargs) and never asserted it; the real power - proven by the
+    component deep-override suite (test_conduit_component_meld_overrides_deep:
+    ">"-path keys target dependency sockets, replace the actual object,
+    whitespace-tolerant, missing path raises, untargeted sockets keep DI
+    defaults) - was absent. (2) the lesson's NOTE claimed bind(**kwargs)
+    "feeds lifecycle hooks" - stale since the metadata-kwargs feature (kwargs
+    land on spell.metadata; lesson 06).
+    FIXED: lesson 08 now teaches BOTH forms with hard asserts (flat dict ->
+    root ctor kwargs; "transport>credentials" path -> replaces the object at
+    that socket inside the graph). NEW PROBE
+    test_probe_spell_override_targets_spells_inside_the_graph pins both forms
+    plus untargeted-socket preservation, mirrored from the component idiom.
+  EVIDENCE:
+  - tests/component/melder/aether/conduit/test_conduit_component_meld_overrides_deep.py:392-427
+  - UX_and_AIX_experiences/02_intermediate/08_spell_override_construction.py
+  - UX_and_AIX_experiences/pytest_examples/test_intermediate_probes.py (tail probe)
+  NEXT: rides the owner's next harness run with 25 and 07.
+  REREAD: OPTIONAL
+  SCORE_0_TO_10: -
+
+## DECISION - 2026-07-21 10:38 UTC - owner ruling: override tiers split
+  RULING: the top-level override stays SIMPLE at intermediate; the targeted
+    deep form is an advanced teach. Lesson 08 back to the flat dict -> root
+    ctor kwargs only (asserts kept, stale bind-kwargs NOTE stays corrected);
+    the ">"-path socket-replacement form moved to the expert tier as
+    03_expert/02_deep_spell_override_paths.py. The probe pinning BOTH forms
+    stays in the intermediate mirror (runtime truth is tier-independent),
+    docstring re-pointed at each form's tier.
   REREAD: OPTIONAL
   SCORE_0_TO_10: -
 

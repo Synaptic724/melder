@@ -238,6 +238,30 @@ class ResearchLane(Cleanable):
         """
         Initialize one open, empty research lane.
 
+        Contract:
+            - BORN OPEN AND EMPTY, with no tip and no anchor. State advances
+              open -> joined | archived one-way and never returns to open.
+            - `lane_type` defaults to `experiment`, NOT to the owning set's
+              default-lane type of `development`. A freshly created lane is an
+              experiment until the caller says otherwise; the set passes
+              `development` explicitly only for its guaranteed default lane.
+            - An UNKNOWN `lane_type` raises `ValueError` naming the valid
+              vocabulary, so a typo cannot silently create an untyped lane.
+            - `lane_id` is minted as a fresh ULID unless one is supplied. A
+              supplied id is the RESTORE path - `from_payload` passes the
+              recorded id so a rebuilt lane keeps its identity - and is trusted
+              without a uniqueness check here, because uniqueness is the owning
+              set's responsibility.
+            - `metadata` is deep-copied in, so the caller's dict cannot mutate
+              the lane afterwards. `created_at` is minted now only when omitted.
+            - Name UNIQUENESS is not enforced here; the owning set indexes lanes
+              by name and owns that guarantee. This constructor only rejects an
+              empty name.
+
+        Threading:
+            Creates the lane's own `RLock`; construction is otherwise
+            unsynchronized because the object is not yet shared.
+
         Args:
             name:
                 Human-facing lane name (uniqueness is enforced by the owning
@@ -298,7 +322,15 @@ class ResearchLane(Cleanable):
         Clean owned nodes, release fields, and mark the lane cleaned.
 
         Contract:
-            - Idempotent; del posture (no tombstones); lock last.
+            - IDEMPOTENT under double-checked locking: `_cleaned` is tested
+              before and inside the lock.
+            - OWNS ITS NODES: every held `ResearchNode` is cleaned (best-effort,
+              so one failing node cannot strand the rest) before the lane's own
+              fields are dropped. A node's single-residence lane is the thing
+              that cleans it.
+            - DELETE-NOT-NULL posture, no tombstones; post-cleanup access raises
+              `AttributeError` via `check_cleaned()`.
+            - The lock is deleted LAST, outside the guarded block.
 
         Returns:
             None.
@@ -350,6 +382,11 @@ class ResearchLane(Cleanable):
         """
         Return the stable lane id (ULID).
 
+        Contract:
+            - Machine identity, fixed at construction and unchanged for the
+              lane's life; distinct from `name`, which is the human-facing key.
+              Survives a describe/from_payload round trip.
+
         Returns:
             str:
                 Lane id.
@@ -361,6 +398,10 @@ class ResearchLane(Cleanable):
     def name(self) -> str:
         """
         Return the human-facing lane name.
+
+        Contract:
+            - The lookup key the owning set indexes by; unique within that set.
+              Distinct from `lane_id`, which is the stable machine identity.
 
         Returns:
             str:
@@ -374,6 +415,12 @@ class ResearchLane(Cleanable):
         """
         Return the policy vocabulary word for this lane.
 
+        Contract:
+            - The TYPE is the policy word; the name is freeform. The only place
+              type is enforced is the set's join gate (`lane_type_enforcement`),
+              where a type-mixing join needs `force=True`. Reading it here is
+              always allowed and never gated.
+
         Returns:
             LaneType:
                 development, experiment, production, or test.
@@ -385,6 +432,15 @@ class ResearchLane(Cleanable):
     def state(self) -> LaneState:
         """
         Return the current lifecycle state.
+
+        Contract:
+            - ONE-WAY STATE MACHINE: `open -> joined` or `open -> archived`, and
+              never back. Only an `open` lane accepts new work; `joined` and
+              `archived` are terminal read-only containers.
+            - `joined` and `archived` are distinct terminals: `joined` means the
+              lane's line was folded into a receiver (see `joined_into_lane_id`);
+              `archived` means it was retired in place. Neither loses its held
+              nodes - the records stay readable.
 
         Returns:
             LaneState:
@@ -399,6 +455,13 @@ class ResearchLane(Cleanable):
         """
         Return the newest registered identity in this lane, when any.
 
+        Contract:
+            - The tip is the LAST entry in registration order, so it tracks the
+              node line, not ancestry. It is `None` only while the lane is empty.
+            - It MOVES BACKWARD on detach: when a join transfers the tail nodes
+              out, the tip becomes the last remaining node (or `None` if all
+              were taken), so it is not a monotonic high-water mark.
+
         Returns:
             Optional[str]:
                 Tip SHA256 or None while empty.
@@ -411,6 +474,14 @@ class ResearchLane(Cleanable):
     def anchor_lane_id(self) -> Optional[str]:
         """
         Return the lane this lane anchors onto, when attached.
+
+        Contract:
+            - Ancestry is a SINGLE pointer, not a list: a lane anchors onto at
+              most one node in one other lane. `None` means this lane is a root
+              of its own line.
+            - Always moves in lockstep with `anchor_spell_id` - they are set
+              together and cleared together, so one being `None` implies the
+              other is too.
 
         Returns:
             Optional[str]:
@@ -425,6 +496,13 @@ class ResearchLane(Cleanable):
         """
         Return the node identity this lane anchors at, when attached.
 
+        Contract:
+            - The specific node within `anchor_lane_id` this lane hangs from.
+              `None` exactly when `anchor_lane_id` is `None`; the pair is set and
+              cleared atomically.
+            - Names a node in the OTHER lane, not in this one - it is the
+              ancestry attach point, not one of this lane's own members.
+
         Returns:
             Optional[str]:
                 Anchor SHA256 or None.
@@ -437,6 +515,14 @@ class ResearchLane(Cleanable):
     def joined_into_lane_id(self) -> Optional[str]:
         """
         Return the receiving lane id after a join, when joined.
+
+        Contract:
+            - `None` UNTIL A JOIN, and set exactly once when the lane transitions
+              to `joined`. It is the forwarding pointer that says where this
+              lane's line went.
+            - Independent of the ANCHOR pointer: anchoring is ancestry
+              organization on an open lane, joining is a terminal handoff. A lane
+              can be anchored without being joined and vice versa.
 
         Returns:
             Optional[str]:
@@ -451,6 +537,11 @@ class ResearchLane(Cleanable):
         """
         Return the number of version records held by this lane.
 
+        Contract:
+            - Counts nodes CURRENTLY held, so it drops when a join detaches the
+              tail out. It is not a lifetime total of everything ever registered
+              here - the journal holds that history.
+
         Returns:
             int:
                 Node count.
@@ -463,6 +554,11 @@ class ResearchLane(Cleanable):
     def created_at(self) -> str:
         """
         Return the ISO-8601 UTC creation stamp.
+
+        Contract:
+            - Always present. On a rebuilt lane it is the ORIGINAL recorded time,
+              not the rebuild time, because `from_payload` passes the stored
+              stamp through.
 
         Returns:
             str:
@@ -507,6 +603,16 @@ class ResearchLane(Cleanable):
         """
         Return the version record for one held identity.
 
+        Contract:
+            - Returns the LIVE node object, not a copy. The node is immutable, so
+              sharing it is safe, but it is the same object the lane holds.
+            - A non-held identity raises `KeyError` naming the lane, so the
+              return is never `None` and needs no null check. Use `has_node` to
+              test membership without catching.
+
+        Threading:
+            Lookup runs under `self._lock`.
+
         Args:
             spell_id:
                 Identity to fetch.
@@ -532,6 +638,15 @@ class ResearchLane(Cleanable):
         """
         Return whether this lane holds one identity.
 
+        Contract:
+            - Tests CURRENT membership of THIS lane only. It says nothing about
+              whether the identity resides elsewhere in the network - that is the
+              set's residence registry. False here plus a residence answer
+              elsewhere is normal after a join moved the node.
+
+        Threading:
+            Membership test runs under `self._lock`.
+
         Args:
             spell_id:
                 Identity to test.
@@ -548,6 +663,15 @@ class ResearchLane(Cleanable):
         """
         Return the held identities in registration order.
 
+        Contract:
+            - A FRESH list, so mutating it cannot alter the lane's order.
+            - REGISTRATION ORDER, oldest first; the last element is the tip.
+            - Ids only. Use `nodes()` when the records are needed - it reads the
+              same order without a second lookup.
+
+        Threading:
+            Materialized under `self._lock`; a coherent snapshot.
+
         Returns:
             List[str]:
                 Detached ordered identity list.
@@ -559,6 +683,16 @@ class ResearchLane(Cleanable):
     def nodes(self) -> List[ResearchNode]:
         """
         Return the held version records in registration order.
+
+        Contract:
+            - A FRESH list of the LIVE node objects, registration order, oldest
+              first. The list is detached (safe to mutate); the nodes inside it
+              are immutable and shared.
+            - Positionally aligned with `node_spell_ids()` for the same lane
+              state, since both walk the same order.
+
+        Threading:
+            Built under `self._lock`; a coherent snapshot of the current line.
 
         Returns:
             List[ResearchNode]:
@@ -641,6 +775,21 @@ class ResearchLane(Cleanable):
         """
         Detach this lane's ancestry anchor.
 
+        Contract:
+            - OPEN LANES ONLY. A joined or archived lane raises, because ancestry
+              is not reorganized on a terminal container.
+            - NOT IDEMPOTENT: clearing a lane that holds no anchor raises rather
+              than returning quietly, so a redundant clear is a caller error.
+            - Clears BOTH anchor fields together, restoring the lane to a root of
+              its own line. Content is untouched - only the ancestry pointer
+              goes.
+            - This is a set-internal effect at the lane level; the public
+              `ResearchSet.detach` verb is the journalled path. Clearing here
+              alone does not write a journal entry.
+
+        Threading:
+            The open-check and the clear run under `self._lock`.
+
         Raises:
             RuntimeError:
                 If the lane is not open, or when no anchor exists.
@@ -697,6 +846,21 @@ class ResearchLane(Cleanable):
         """
         Return a detached, serialization-ready snapshot of this lane.
 
+        Contract:
+            - THE EXACT INVERSE of `from_payload()`, capturing the FULL lifecycle
+              state - state, both anchor fields, tip, joined-into pointer - not
+              just contents, so a joined or archived lane round-trips as joined
+              or archived rather than reviving open.
+            - NODES RIDE NESTED describe() PAYLOADS in registration order, so the
+              whole node line is embedded; the lane's order and tip are
+              reconstructible from `nodes` alone.
+            - Enum fields are emitted as their `.value` strings and `metadata` is
+              deep-copied, so the payload is JSON-safe and fully detached.
+
+        Threading:
+            Assembled under `self._lock`, so lifecycle fields and the node line
+            are mutually consistent.
+
         Returns:
             Dict[str, object]:
                 Plain-value payload (exact `from_payload()` inverse; nodes
@@ -725,6 +889,31 @@ class ResearchLane(Cleanable):
     def from_payload(cls, payload: Dict[str, object]) -> "ResearchLane":
         """
         Rebuild one lane from a `describe()` payload.
+
+        Contract:
+            - `name`, `lane_id`, and a `nodes` LIST are the hard requirements;
+              their absence or wrong type raises `ValueError`. Everything else
+              degrades to a default.
+            - NODE-FAMILY DISPATCH per entry: a payload tagged with the grouped
+              node type hydrates as a `GroupedResearchNode`, an untagged one as a
+              `ResearchNode`. Back-compat is by ABSENCE - pre-grouping payloads
+              have no tag and correctly rebuild as spell nodes.
+            - LANE-TYPE BACK-COMPAT: a payload sealed before the type vocabulary
+              carries no `lane_type`, and hydrates as `development` when its name
+              is `default`, `experiment` otherwise - mirroring how a fresh lane
+              of each kind is typed.
+            - PRESERVES recorded identity and time: the stored `lane_id` and
+              `created_at` are passed through, so a rebuilt lane is the same
+              identity it was sealed as.
+            - The tip is recomputed as the last node in the rebuilt order rather
+              than trusted from the payload, so order and tip cannot disagree.
+            - Runs each node's own `from_payload`, so a corrupt node payload is
+              rejected by that node's constructor - the lane cannot rebuild a
+              node its own type would refuse.
+
+        Threading:
+            The rebuilt lane is not shared until this returns; nodes are loaded
+            under the new lane's lock.
 
         Args:
             payload:

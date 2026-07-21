@@ -599,9 +599,12 @@ ConduitWard and contracts govern cross-conduit sharing.
 SpellSystemStates and ChangeControl track structural/resolution validity and dirty roots
 used by Meld to gate execution and trigger revalidation.
 SpellIndex member mutation is transaction-backed at the public Spellbook
-surface even though the member-store implementation still lives behind the
-current `_apply_notch`, `_apply_add_to_index`, and `_apply_remove_from_index`
-seams.
+surface and the member-store work is IMPLEMENTED behind the `_apply_notch`,
+`_apply_add_to_index`, and `_apply_remove_from_index` seams, which execute
+inside the held transaction window. Notch is currently OWNER-SIDE ONLY:
+contracted borrowers are not fanned out, so a notch on a shared index does not
+yet update borrowers' contracted maps.
+EVIDENCE: src/melder/aether/spellbook/spellbook.py:3480-3520.
 
 ## Entrypoints and Runtime Guardrails
 - `melder/__init__.py` warns on Python < 3.14 and on GIL-enabled builds
@@ -639,6 +642,17 @@ seams.
    - Initializes spell registries and SpellValidationSystem.
    - Pulls SpellSystemStates from the frame.
 4) `Spellbook.conjure(...)`:
+   - Opens a `ChangeTransactionType.CONJURE` transaction on the spellbook
+     identity, then resolves the EFFECTIVE conjure mode via
+     `_settle_or_inherit_conjure_mode(dynamic)` as it enters the transaction
+     window (settle-then-inherit law, 2026-07-20): settle an unfrozen world
+     when `dynamic=True` was asked, otherwise inherit the settled world's mode.
+     A missing posture returns the caller's flag unchanged and defers to the
+     honest refusal in `SpellbookCreationSystem.check_system_state`. The
+     EFFECTIVE mode is then threaded down the whole chain - creation system,
+     blueprint dynamic/automatic mode where the conduit's state is born, the
+     conjure dynamic hint, the crystallizer config-discipline guard, and cloud
+     registration. The transaction is ended in a `finally`.
    - Validates and freezes `SpellbookConfiguration`.
    - Binds `SpellbookConfiguration` into Aether for the frame.
    - Derives and binds `AethericFrameConfiguration` for narrow frame posture.
@@ -865,7 +879,7 @@ Each frame owns:
     organize the record); static rooms carry none. Both rooms ADVERTISE
     their research family in `list_supported_command_methods`.
   When room-local memory callbacks are registered, one top-level successful
-  public command call emits one `IRiftMemory` record through the room-owned
+  public command call emits one `RiftMemory` record through the room-owned
   `RiftMemorySystem`.
 - `CodegenSystem` is the internal engine beneath that command facade. It owns:
   - per-call `CodegenTransactionContext` creation
@@ -1254,7 +1268,46 @@ SpellSpace enforces active-scope semantics and supports reset/versioning.
 - SpellIndex identity (ULID) is immutable; the active selected spell it targets
   can change. Versions are owned by MutationResearch.
 - `dynamic=False` conjure only allows `Policies.default`.
-- `dynamic=True` conjure requires `system_state=dynamic`.
+- SETTLE-THEN-INHERIT: THE CONDUIT INHERITS THE WORLD'S MODE. Conjure does not
+  police the `dynamic` flag against the frame posture.
+  - UNSETTLED world (frame posture still the unfrozen birth default):
+    `conjure(dynamic=True)` SETTLES the world dynamic through the canonical
+    `bind_frame_configuration` lifecycle, where the first bind freezes.
+  - SETTLED world (posture frozen/explicit): every conjure INHERITS the world's
+    mode and the flag is ignored. Dynamic-only operations (link, sever,
+    transfer, upgrade, clusters) then fail at their OWN gates with their own
+    errors, on purpose - that is where the constraint properly lives.
+  - Settlement mutates the RETAINED frame-owned posture object in place
+    (`with_system_state(dynamic)`) and rebinds the SAME object. It must never
+    mint a parallel posture object: when `bind_frame_configuration` is handed a
+    DIFFERENT object while the existing posture is unfrozen, it copies TWELVE
+    attempted values onto the canonical posture - system_state, ai_native,
+    rift_enabled, shared_framewide_spellbook_configuration, all six `disable_*`
+    flags, and max_transaction_wait_time_in_seconds - and then calls
+    `cleanup()` on the object it was handed. A fresh posture's default-`False`
+    disable flags would therefore bulldoze every flag staged before conjure,
+    and the donor object would be destroyed. Binding the SAME object skips that
+    copy block entirely and goes straight to `freeze(..., origin_frame_name)`.
+  - The gate is `SpellbookCreationSystem.check_system_state(spellbook, policy,
+    dynamic)` - a STATIC method on the creation system, not on `Spellbook`. It
+    still refuses when the frame posture is missing (RuntimeError naming policy
+    and dynamic), and it still enforces that a NON-dynamic effective mode
+    admits only `Policies.default`. Only the flag-vs-posture mismatch throw is
+    gone, because the `dynamic` argument reaching it is now the EFFECTIVE mode
+    resolved from the posture, which makes a mismatch structurally impossible.
+  EVIDENCE:
+  - src/melder/aether/spellbook/spellbook.py:5992-6032
+    (`Spellbook._settle_or_inherit_conjure_mode`; in-place settle :6019-6031,
+    effective-mode return :6032)
+  - src/melder/aether/spellbook/spellbook.py:6115-6121
+    (`conjure` resolves the effective mode as it enters the transaction window)
+  - src/melder/aether/aetheric_frame/aetheric_frame.py:645-694
+    (`bind_frame_configuration` unfrozen branch: the twelve-value copy plus
+    `frame_configuration.cleanup()` on the donor, then freeze with
+    `origin_frame_name`)
+  - src/melder/aether/spellbook/spellbook_creation_system.py:1104-1150
+    (`SpellbookCreationSystem.check_system_state`: missing-posture refusal and
+    the non-dynamic default-policy-only rule)
 - SpellSpace can only meld when it is the active spellspace for a Conduit.
 - Linking/severing conduits is only allowed in dynamic mode.
 - Method/lambda spells must use `Existence.unique`.
@@ -1268,7 +1321,7 @@ SpellSpace enforces active-scope semantics and supports reset/versioning.
   `system_state=dynamic`.
 - `RiftSpaceType.capability` is a real broad-manual room posture now; it is
   no longer placeholder-only.
-- `RiftSpace.event_system` is the room-local `IRiftEvent` publication surface,
+- `RiftSpace.event_system` is the room-local `RiftEvent` publication surface,
   not the same thing as a Rift-level event orchestrator.
 
 ## Failure Modes and Error Paths
@@ -1409,8 +1462,20 @@ SpellSpace enforces active-scope semantics and supports reset/versioning.
 4. Inside the held transaction window, Spellbook delegates the member-store
    work to `_apply_notch(...)`, `_apply_add_to_index(...)`, or
    `_apply_remove_from_index(...)`.
-5. Those seams are still intentionally unimplemented, but the admission,
-   scope-claim, and transaction-finalization path already exists around them.
+5. The seams execute the member-store work inside that held window:
+   - notch parks the outgoing active member, promotes the incoming parked
+     member, repoints the index pointer and the framewide binding signature,
+     and re-registers the index gated + dirty for lazy meld-time recompile;
+   - add/remove are membership-only moves that leave the spell owned and
+     inactive with its id-keyed state untouched; add destroys an emptied source
+     index, remove mints a fresh inactive index instead of destroying anything.
+6. KNOWN LIMITATION: notch fan-out to contracted borrowers is not implemented,
+   so borrowers of a SHARED index keep stale contracted maps until the
+   cross-conduit slice lands.
+   EVIDENCE:
+   - src/melder/aether/spellbook/spellbook.py:3480-3520
+   - src/melder/aether/spellbook/spellbook.py:3653-3676
+   - src/melder/aether/spellbook/spellbook.py:3828-3856
 
 ### Sequence: Change-Control Revalidation
 1. `ChangeControlManager.revalidate_dirty_roots(conduit_id, ...)`:
@@ -1663,6 +1728,33 @@ sequenceDiagram
   LC->>CC: register conduit (if named/dynamic)
 ```
 
+
+## Runtime Type Names (Concrete, No Interface Layer)
+
+The runtime uses CONCRETE types on these surfaces. There is no `I*` interface
+layer for them; agents should type against the concrete classes:
+
+- `RiftEvent`                  - room-local event record
+- `RiftMemory`                 - room-local memory record
+- `CodegenValidationResult`    - codegen validation verdict
+- `CodegenExecutionResult`     - codegen execution outcome
+- `CodegenTransactionContext`  - per-call codegen transaction context
+- `Conduit`                    - conduit; link targets and rooted-creation returns
+
+`Conduit.link(...)` performs a CONCRETE `isinstance(target_conduit, Conduit)`
+check. A conduit-shaped object that is not a `Conduit` subclass is rejected with
+"Expected Conduit-compatible object, got {type}". This is not a structural
+contract and cannot be satisfied by duck typing.
+
+EVIDENCE:
+- src/melder/aether/conduit/conduit.py:4342-4344
+- src/melder/nexus/nexus_frame_builder.py:255 (`create(...) -> Conduit`)
+- src/melder/nexus/rift/rift_space/event_system/rift_event.py
+- src/melder/nexus/rift/rift_space/memory_system/rift_memory.py
+- src/melder/nexus/rift/codegen_system/validation/codegen_validation_result.py
+- src/melder/nexus/rift/codegen_system/execution/codegen_execution_result.py
+- src/melder/nexus/rift/codegen_system/codegen_transaction_context.py
+
 ## Information Sources
 - `README.md`
 - `src/melder/__init__.py`
@@ -1799,7 +1891,7 @@ sequenceDiagram
   profile-builder surface (`general` / `detailed`) instead of the removed
   AI-profile and structure-profile subsystems.
 - Documented the current AR limitation honestly: `RiftSpace` now has a
-  room-local event system for `IRiftEvent` publication, but
+  room-local event system for `RiftEvent` publication, but
   `Rift.on_nexus_frame_disposed(...)` is still only a logging hook and there
   is still no Rift-level event orchestration layer.
 - Added DevOps scoping notes: DevOpsManager and ChangeControlManager are per-frame, per-conduit resolution state lives in SpellSystemStates, and RiskManager drives per-conduit gating.

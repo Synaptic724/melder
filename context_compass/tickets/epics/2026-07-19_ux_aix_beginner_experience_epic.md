@@ -488,7 +488,7 @@ First-contact UX + the agent first-read: bind/conjure/meld, lifecycles, function
   REREAD: OPTIONAL
   SCORE_0_TO_10: -
 
-## MEASURE - 2026-07-20 22:47 UTC - owner assessment: tier in a good spot
+## MEASURE - 2026-07-21 09:56 UTC - owner assessment: tier in a good spot
   WHAT: Owner call (end of 2026-07-20 session): "beginner and intermediate are
     in a good spot." Beginner stands validated (40 lessons + probes green) with
     the categories arc seeded at lesson 25. Exit-gate walkthrough remains the

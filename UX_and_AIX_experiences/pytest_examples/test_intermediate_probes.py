@@ -212,3 +212,56 @@ def test_probe_two_hop_chain_canonical_order():
     assert flow.svc is service  # the edge handed over the finished product
     assert flow.run() == "w->r(region-v)"
     print("two-hop category chain resolved in canonical order")
+
+
+def test_probe_spell_override_targets_spells_inside_the_graph():
+    """spell_override, both forms pinned. Flat dict = keyword overrides
+    for the ROOT spell's own constructor (intermediate lesson 08 - kept
+    simple on purpose). ">"-path key = walks dependency parameter names
+    and REPLACES the actual object at that socket inside the graph
+    (expert lesson 02; mirrors the component deep-override suite)."""
+    class Leaf:
+        def __init__(self) -> None:
+            self.marker = "default"
+
+    class OtherLeaf:
+        def __init__(self) -> None:
+            self.marker = "other-default"
+
+    class Branch:
+        def __init__(self, left: Leaf, right: OtherLeaf) -> None:
+            self.left, self.right = left, right
+
+    class OtherBranch:
+        def __init__(self, left: Leaf, right: OtherLeaf) -> None:
+            self.left, self.right = left, right
+
+    class Root:
+        def __init__(self, left: Branch, right: OtherBranch) -> None:
+            self.left, self.right = left, right
+
+    class Mailer:
+        def __init__(self, host: str = "localhost", port: int = 25) -> None:
+            self.host, self.port = host, port
+
+    book = Spellbook()
+    for cls in (Leaf, OtherLeaf, Branch, OtherBranch, Root):
+        book.bind(spell=cls, existence="unique")
+    book.bind(spell=Mailer, existence="many")
+    conduit = book.conjure(name="override-probe")
+
+    # FORM 1: flat dict -> root ctor kwargs.
+    mailer = conduit.meld(spell=Mailer,
+                          spell_override={"host": "h", "port": 9})
+    assert (mailer.host, mailer.port) == ("h", 9)
+
+    # FORM 2: ">"-path -> replace the object at a socket in the graph.
+    replacement = OtherLeaf()
+    replacement.marker = "replaced"
+    root = conduit.meld(spell=Root,
+                        spell_override={"left>right": replacement})
+    assert root.left.right is replacement
+    assert root.left.right.marker == "replaced"
+    assert root.right.right is not replacement  # untargeted socket kept
+    assert root.right.right.marker == "other-default"
+    print("spell_override proven: root kwargs + inside-the-graph path swap")

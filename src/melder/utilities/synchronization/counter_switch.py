@@ -123,6 +123,14 @@ class CounterSwitch(Cleanable):
 
         Initialize counter state from ticket cardinality.
 
+        Contract:
+            - Ticket cardinality IS the state: `state` tickets are enqueued,
+              so 0 starts idle, 1 starts pending, and >=2 starts open.
+            - The event mirrors that state at construction: cleared at state
+              1 (pending), set otherwise, so "event set" means "not pending".
+            - `fast_state` is seeded from the deque length as the lock-free
+              hot-read mirror.
+
         Args:
             state:
                 Initial ticket count. Default "2" starts open.
@@ -196,7 +204,17 @@ class CounterSwitch(Cleanable):
         """
         Public API
 
-        Return the current raw ticket count.
+        Return the current raw ticket count (the state value).
+
+        Contract:
+            - LOCKLESS and UNGUARDED: reads deque length directly as a
+              hot-path read that never takes the lock. On a cleaned switch it
+              raises `AttributeError` (the deque is deleted) rather than
+              returning 0 - use-after-clean fails loudly by design.
+
+        Returns:
+            int:
+                Raw ticket cardinality: 0 idle, 1 pending, >=2 open.
         """
         return len(self._tickets)
 
@@ -205,6 +223,15 @@ class CounterSwitch(Cleanable):
         Public API
 
         Return whether the switch is currently open (`state >= 2`).
+
+        Contract:
+            - LOCKLESS and UNGUARDED hot read (no `check_cleaned()`),
+              mirroring `__len__`. Raises `AttributeError` on a cleaned
+              switch rather than returning False.
+
+        Returns:
+            bool:
+                True when the deque holds >= 2 tickets (open).
         """
         return len(self._tickets) >= 2
 
@@ -214,6 +241,12 @@ class CounterSwitch(Cleanable):
         Public API
 
         Return the raw deque-backed state value.
+
+        Contract:
+            - LOCKLESS and UNGUARDED read of deque cardinality (the
+              authoritative state); raises `AttributeError` after cleanup.
+            - Distinct from `fast_state`, the plain-int mirror for readers
+              that want to avoid even the `len()` call.
 
         Returns:
             int: 0 when idle, 1 when a leader has claimed it and is pending, and >=2
@@ -226,6 +259,18 @@ class CounterSwitch(Cleanable):
         Public API
 
         Apply signed state delta.
+
+        Contract:
+            - LOCKLESS by design: positive deltas append tickets, negative
+              deltas pop that many, and a zero delta is a no-op returning the
+              current count.
+            - PUBLICATION ORDERING: `fast_state` is written AFTER the deque
+              mutation, so a hot reader can only observe a state the deque has
+              already reached (stale, never ahead).
+            - Re-derives the event from the new count: cleared at exactly
+              state 1 (pending), set for every other state.
+            - UNGUARDED (no `check_cleaned()`); a negative delta larger than
+              the ticket count raises `IndexError` on the empty pop.
 
         Args:
             delta:

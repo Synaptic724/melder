@@ -337,9 +337,16 @@ Invariants/Guarantees:
 Failure Modes:
 - `SpellbookValidationError` when Phase 1-4 produces broken spells.
 - RuntimeError for duplicate spell ids or lookup key collisions.
-- `NotImplementedError` from the current SpellIndex multi-member seam methods
-  (`_apply_notch`, `_apply_add_to_index`, `_apply_remove_from_index`) until
-  that model lands.
+- RuntimeError from the SpellIndex multi-member seams when their ownership /
+  activity preconditions are violated: notching a spell that is not parked in
+  `_inactive_spells`; adding onto an index this spellbook does not own; moving
+  or separating a spell that is still ACTIVE (it must be notched away first);
+  separating a spell that is the SOLE member of its source index (use
+  `cleanup_spell` to dispose it instead).
+  EVIDENCE:
+  - src/melder/aether/spellbook/spellbook.py:3480-3520 (`_apply_notch`)
+  - src/melder/aether/spellbook/spellbook.py:3653-3676 (`_apply_add_to_index`)
+  - src/melder/aether/spellbook/spellbook.py:3828-3856 (`_apply_remove_from_index`)
 
 Observability:
 - Logs via SafeLogger in Spellbook and related components.
@@ -973,7 +980,7 @@ Invariants/Guarantees:
 - `CodegenSystem` owns the internal transaction, validation, namespace,
   compile/exec, and monitor collaborators beneath the room command facade.
 - When the room-local memory system has registered callbacks, one top-level
-  successful public command call emits one `IRiftMemory` record through that
+  successful public command call emits one `RiftMemory` record through that
   system.
 - ACL-driven projection refresh is config-backed:
   - `projection_refresh_gate_enabled`
@@ -1068,9 +1075,15 @@ Inputs:
 - room-owned `Rift` and `CodegenRiftSpace`
 
 Outputs:
-- `ICodegenValidationResult`
-- `ICodegenExecutionResult`
-- shared `ICodegenTransactionContext`
+- `CodegenValidationResult` (returned as the second element of a
+  `Tuple[CodegenTransactionContext, CodegenValidationResult]` from
+  `validate_codegen_request(...)`)
+- `CodegenExecutionResult` (returned as the second element of a
+  `Tuple[CodegenTransactionContext, CodegenExecutionResult]` from
+  `execute_codegen_request(...)`)
+- shared `CodegenTransactionContext` (the FIRST element of both tuples - the
+  context is returned alongside the verdict, not separately)
+  EVIDENCE: src/melder/nexus/rift/codegen_system/codegen_system.py:261,:296
 - public validation payloads through the reporter
 
 Owned State:
@@ -1206,7 +1219,7 @@ Responsibilities:
   and delegates real validation/execution work into the attached
   `CodegenSystem`.
 - Bind command results back into the workstation when requested.
-- Emit one `IRiftMemory` record for one successful top-level public command
+- Emit one `RiftMemory` record for one successful top-level public command
   call when the room-local memory system has registered callbacks.
 - Emit full-source codegen memory metadata for top-level codegen validation and
   execution actions.
@@ -1397,7 +1410,10 @@ Failure Modes:
 - RuntimeError for invalid policies, missing root conduits, or illegal operations.
 - RuntimeError if `upgrade_to_normal` is called in non-dynamic mode or on a non-lesser conduit.
 - RuntimeError if `link`/`sever_link` is called in non-dynamic mode.
-- TypeError if `link` target is not an `IConduit`.
+- TypeError if `link` target is not a `Conduit`. This is a CONCRETE isinstance
+  check, not a structural one: a conduit-shaped object that is not a `Conduit`
+  subclass is rejected with "Expected Conduit-compatible object, got {type}".
+  EVIDENCE: src/melder/aether/conduit/conduit.py:4342-4344.
 - RuntimeError if `link` target lacks a valid creation context.
 - RuntimeError if `transfer_spell_ownership` is called in non-dynamic mode.
 - Meld calls block while the local `CreationGate` is disabled.
@@ -1445,12 +1461,43 @@ Concurrency/Threading:
 Invariants/Guarantees:
 - Ward owns and cleans all lesser conduits it links.
 - Peer links require dynamic mode and normal conduits.
-- `_convert_to_normal_conduit` requires a parent link and no children.
+- LINKS ARE SAME-FRAME ONLY. `_link` refuses when
+  `self._conduit._aetheric_frame_name != target_conduit._aetheric_frame_name`.
+  EVIDENCE: src/melder/aether/conduit/conduit_ward/conduit_ward.py:708-721.
+- `_link` IS IDEMPOTENT: when a contract with the target already exists it
+  returns True without creating a second one.
+- `_convert_to_normal_conduit` requires ALL of: the conduit is `lesser`, the
+  environment is DYNAMIC, a parent link exists, and it has NO lesser children.
+  On success it repoints `_root_conduit` to itself and resets `_policy` to
+  `Policies.default`.
+  EVIDENCE: src/melder/aether/conduit/conduit_ward/conduit_ward.py:527-580.
 
 Failure Modes:
 - RuntimeError for invalid policy or state transitions.
 - RuntimeError for self-linking, linking lesser conduits, or policy-gated links.
+- RuntimeError for cross-frame link attempts.
 - RuntimeError if `_sever_link` finds no contract to remove.
+- `_link` GUARD ORDER is lesser -> self -> cross-frame -> dynamic -> policy, so
+  the FIRST violated guard is the one that reports. Linking to a lesser conduit
+  in an automatic world raises the lesser-conduit error, NOT the dynamic-mode
+  error - relevant when asserting on messages in tests.
+- `_link` HAS A NON-RAISING FAILURE PATH: a target that is neither `normal` nor
+  `lesser` (for example `pooled_lesser` or `cleaned`) is logged and returns
+  FALSE rather than raising. Callers that only guard against exceptions will
+  read that as a successful no-op.
+- `_convert_to_normal_conduit` serves its two remaining failure conditions -
+  no parent link, and lesser children still attached - from ONE `else` branch,
+  and both raise the same message: "No parent conduit link found. Cannot
+  convert to normal conduit. Unknown error". The preceding log line
+  ("missing parent link or children present") distinguishes them; the raised
+  message does not.
+  EVIDENCE: src/melder/aether/conduit/conduit_ward/conduit_ward.py:572-579.
+
+Concurrency detail:
+- Ordered two-ward locking covers BOTH creation and severing. `_sever_link`
+  takes `SafeGuard(self._lock, target_conduit._conduit_ward._lock)` before it
+  looks for the contract.
+  EVIDENCE: src/melder/aether/conduit/conduit_ward/conduit_ward.py:974.
 
 Observability:
 - Logs via SafeLogger.
@@ -2247,9 +2294,30 @@ Contract/Interface:
 Data Structures:
 - Transaction metadata carrying spellbook/conduit ids, binding key, member id,
   and source/target SpellIndex ids.
+Behavior:
+- `_apply_notch(...)` swaps which member is ACTIVE using the active/inactive park
+  machinery: park the outgoing active spell off the four active owned maps
+  (`_deactivate_owned_spell`) and tear down its creation context so the door
+  epoch bumps and the warm fast-door cannot serve the stale spell; promote the
+  incoming spell out of `_inactive_spells` (`_reactivate_owned_spell`); repoint
+  the index pointer (`SpellIndex.update`); repoint the framewide binding
+  signature old -> new active id; re-register the index structurally gated +
+  dirty so meld-time revalidation recompiles lazily on next resolve.
+- `_apply_add_to_index(...)` and `_apply_remove_from_index(...)` are
+  MEMBERSHIP-ONLY moves: the spell stays owned and inactive, so its id-keyed
+  state (`_inactive_spells`, `_spell_ids`, id pools, Nexus record, fast-door,
+  Creations) travels untouched. Add destroys the source index when it empties;
+  remove never destroys - it mints a fresh inactive index for the separated
+  spell and leaves the source with its remaining members.
+- KNOWN LIMITATION (current slice boundary, not a defect): notch is OWNER-SIDE
+  ONLY. Contracted borrowers are not fanned out, so a notch on a SHARED index
+  does not yet update borrowers' contracted maps. Cross-conduit fan-out under
+  the same seal is the next slice.
 Concurrency/Threading:
-- Public entrypoints use the Spellbook lock and the transaction mediator;
-  the actual member-store seam is still unimplemented.
+- Public entrypoints use the Spellbook lock and the transaction mediator; the
+  seams then run INSIDE the held transaction window (owning spellbook INTENT +
+  binding key EXCLUSIVE for notch; source and target surfaces EXCLUSIVE for the
+  membership moves), which is what makes the choreography race-safe.
 Key Files (C1):
 - `src/melder/aether/spellbook/spellbook.py`
 - `src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/add_to_index_transaction_strategy.py`
@@ -3144,7 +3212,9 @@ Purpose:
 Contract/Interface:
 - `NexusFrameManager.begin(frame_name)` returns `NexusFrameBuilder`
 - `build()` returns one detached `NexusFrameConfiguration`
-- `create()` delegates manager-owned rooted realization and returns `IConduit`
+- `create()` delegates manager-owned rooted realization and returns `Conduit`
+  (concrete; annotated `-> Conduit`).
+  EVIDENCE: src/melder/nexus/nexus_frame_builder.py:255.
 Invariants/Guarantees:
 - defaults to `dynamic + ai_native_enabled + rift_enabled`
 - root conduit defaults to `"root"` unless explicitly overridden

@@ -74,9 +74,17 @@ class PartDiffStrategy(DiffStrategy):
         """
         Return the stable registry name of this strategy.
 
+        Contract:
+            - Fixed key "parts" - the name `DiffEngine` registers this
+              per-part code strategy under and resolves it by.
+
         Returns:
             str:
                 "parts".
+
+        Raises:
+            RuntimeError:
+                If the strategy has been cleaned.
         """
         self.check_cleaned()
         return "parts"
@@ -88,6 +96,26 @@ class PartDiffStrategy(DiffStrategy):
     ) -> Dict[str, object]:
         """
         Compare two version materials part by part, module by module.
+
+        Contract:
+            - Structural presence rides EVERYTHING a side knows - text
+              custody OR fingerprint - so custody absence is a
+              text-availability fact, never a structural deletion (BUG-043):
+              a module present by fingerprint on one side and by text on the
+              other is `text_unavailable`, not removed.
+            - Only modules carrying source TEXT on BOTH sides are compared
+              part by part. Each shared module splits into top-level parts
+              (functions and classes, decorators included) plus the residue
+              outside every part as one synthetic `<module_body>` region, so
+              imports and constants never escape the verdict.
+            - Per module: `added_parts` / `removed_parts` carry FULL part
+              text, `changed_parts` carry a unified text diff, and identical
+              parts are listed by name. Methods are not separate parts - a
+              class IS the part and its methods ride its text.
+            - Unparseable source on either side becomes a per-module
+              `parse_error` verdict naming the failing side, never a crash.
+            - READ-ONLY: neither material is retained or mutated; `identical`
+              is the whole-verdict rollup.
 
         Args:
             left_material:
@@ -102,6 +130,10 @@ class PartDiffStrategy(DiffStrategy):
                 `text_unavailable_modules` (modules known on both sides where at
                 least one side lacks text custody), and per-module part detail
                 under `module_reports`.
+
+        Raises:
+            RuntimeError:
+                If the strategy has been cleaned.
         """
         self.check_cleaned()
         left_sources = self._string_sources(left_material)

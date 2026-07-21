@@ -218,6 +218,12 @@ class WeakRefNode(Cleanable, Generic[_T]):
         """
         Returns the unique identifier for this node, useful for debugging or telemetry.
 
+        Contract:
+            - Stable ULID assigned at construction, independent of referent
+              liveness and never reassigned. It is the SOLE basis of `__eq__`
+              and `__hash__`, so a node stays hashable and comparable even
+              after its referent is collected.
+
         Returns:
             str: The ULID identifier.
         """
@@ -230,6 +236,13 @@ class WeakRefNode(Cleanable, Generic[_T]):
     def dead(self) -> bool:
         """
         Returns True if the underlying object has been collected, the weakref is cleared, or the node has been explicitly cleaned.
+
+        Contract:
+            - LATCHING side effect: this is a property read, but the first
+              time it observes the referent gone (weakref cleared or
+              returning None) it sets `_dead=True` permanently. Deadness is
+              therefore one-way and memoized - a node never reports alive
+              again once it has reported dead.
 
         Returns:
             bool: True if the referent is dead, False otherwise.
@@ -249,6 +262,12 @@ class WeakRefNode(Cleanable, Generic[_T]):
         """
         Returns True if the GC/phantom callback has fired at least once (i.e., the referent was collected).
 
+        Contract:
+            - Records that a firing happened (the GC path or an explicit
+              `fire_callbacks()`), so a container can distinguish "never had a
+              referent" from "had one and lost it". Set once; only `set()`
+              re-seeding a fresh referent clears it back to False.
+
         Returns:
             bool: True if the GC callback fired.
         """
@@ -257,6 +276,11 @@ class WeakRefNode(Cleanable, Generic[_T]):
     def is_alive(self) -> bool:
         """
         Returns whether the underlying object is still alive.
+
+        Contract:
+            - Exact negation of `dead`, so it inherits the same LATCHING side
+              effect: calling it can permanently mark the node dead the first
+              time it observes a collected referent.
 
         Returns:
             bool: True if the referent exists and the node has not been marked
@@ -267,6 +291,11 @@ class WeakRefNode(Cleanable, Generic[_T]):
     def try_get(self) -> Optional[_T]:
         """
         Returns the underlying object if it is still alive.
+
+        Contract:
+            - Non-raising counterpart to `get()`: returns None when the node
+              is dead instead of raising `DeadReferenceError`.
+            - Reads `dead`, so it shares that read's latching side effect.
 
         Returns:
             Optional[_T]: The live object, or None when the node has already
@@ -346,12 +375,22 @@ class WeakRefNode(Cleanable, Generic[_T]):
         """
         Replaces the target and returns the previous live value (if any).
 
+        Contract:
+            - Reads the old live value via `try_get()` (None if already dead),
+              then installs `new` via `set()`, which clears the dead/fired
+              flags. Not atomic against concurrent access - the owning
+              container must serialize.
+
         Args:
             new (_T): The new object to weakly reference.
 
         Returns:
             Optional[_T]: The previous live object, or None if it was already
             dead.
+
+        Raises:
+            RuntimeError: If the node has been cleaned (propagated from `set()`).
+            TypeError: If `new` does not support weak references (from `set()`).
         """
         old = self.try_get()
         self.set(new)
@@ -478,6 +517,15 @@ class WeakRefNode(Cleanable, Generic[_T]):
         This allows a container to force firing callbacks in a controlled
         context instead of waiting for GC.
 
+        Contract:
+            - ONCE-ONLY: snapshots and clears `on_collect` plus the extra
+              callbacks BEFORE invoking, so a later GC firing cannot run them
+              a second time. A no-op when nothing is registered.
+            - BEST-EFFORT: each callback's exceptions are swallowed, matching
+              the GC-path firing, so one bad hook cannot abort the rest.
+            - Does NOT mark the node dead; this is the explicit-removal firing
+              path, distinct from the GC `_weakref_callback`.
+
         Returns:
             None.
         """
@@ -511,6 +559,11 @@ class WeakRefNode(Cleanable, Generic[_T]):
     def __repr__(self) -> str:
         """
         Return a debug-oriented representation of this node.
+
+        Contract:
+            - Reads `self.dead` to show state, so calling `repr()` can LATCH
+              the node dead as a side effect (see `dead`). Intended for
+              debugging and telemetry only.
 
         Returns:
             str: Representation showing node id, liveness state, and phantom

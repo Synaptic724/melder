@@ -83,6 +83,14 @@ class ResearchJournal(Cleanable):
         """
         Initialize one empty journal with sequence minting at 1.
 
+        Contract:
+            - Starts EMPTY with the sequence counter at 1, so the first recorded
+              event is sequence 1 and `latest_sequence` reads 0 until then.
+            - Owns its entry list, the monotonic counter, and its lock.
+
+        Threading:
+            Creates the `RLock` that serializes every record and read.
+
         Returns:
             None.
         """
@@ -96,7 +104,10 @@ class ResearchJournal(Cleanable):
         Clean owned entries, release fields, and mark the journal cleaned.
 
         Contract:
-            - Idempotent; del posture (no tombstones); lock last.
+            - IDEMPOTENT under double-checked locking.
+            - OWNS ITS ENTRIES: every `TransitionEntry` is cleaned (best-effort,
+              so one failure cannot strand the rest) before the list is dropped.
+            - DELETE-NOT-NULL, no tombstones; the lock is deleted last.
 
         Returns:
             None.
@@ -131,6 +142,23 @@ class ResearchJournal(Cleanable):
     ) -> TransitionEntry:
         """
         Mint and append one forward-only journal event.
+
+        Contract:
+            - MINTS THE SEQUENCE, callers never supply it: the next monotonic
+              number is assigned and the counter advanced under the lock, so
+              sequences are gap-free and unique within the journal.
+            - APPEND-ONLY. There is no edit or delete verb; every call adds one
+              entry and the returned entry is immutable. This is what lets the
+              journal promise a faithful forward history.
+            - The mint-and-append is ATOMIC under `self._lock`, so concurrent
+              records cannot collide on a sequence or interleave out of order.
+            - Endpoint and metadata semantics are the entry's, not the journal's
+              (see `TransitionEntry`): `lane_id` may be a set id for the
+              network-scope `restored` act, and `to_spell_id` carries a snapshot
+              sha for that act.
+
+        Threading:
+            The full mint-advance-append runs under `self._lock`.
 
         Args:
             act:
@@ -176,6 +204,15 @@ class ResearchJournal(Cleanable):
         """
         Return the number of recorded events.
 
+        Contract:
+            - Counts entries CURRENTLY HELD. On a live journal this equals
+              `latest_sequence`, but on a journal rebuilt from a bounded
+              (recent-window) payload it is SMALLER than `latest_sequence` -
+              older entries were trimmed while the counter continued past them.
+
+        Threading:
+            Read under `self._lock`.
+
         Returns:
             int:
                 Current entry count.
@@ -189,6 +226,18 @@ class ResearchJournal(Cleanable):
         """
         Return the highest minted sequence (0 when empty).
 
+        Contract:
+            - The HIGH-WATER MARK of minting, `next_sequence - 1`, so it only ever
+              grows and never repeats - even across a rebuild, which continues
+              minting from the recorded `next_sequence`.
+            - Can EXCEED `entry_count` on a journal rebuilt from a bounded
+              window, because trimmed history advanced the counter without
+              leaving entries behind. Use this, not `entry_count`, to reason about
+              journal position.
+
+        Threading:
+            Read under `self._lock`.
+
         Returns:
             int:
                 Last minted sequence or 0.
@@ -201,6 +250,15 @@ class ResearchJournal(Cleanable):
         """
         Return a detached list of every recorded event in order.
 
+        Contract:
+            - A FRESH list in sequence order, oldest first. The list is detached
+              (safe to mutate); the entries inside are immutable and shared.
+            - Returns the entries CURRENTLY HELD, which on a bounded-rebuild
+              journal is the recent window, not all history ever minted.
+
+        Threading:
+            Materialized under `self._lock`; a coherent snapshot.
+
         Returns:
             List[TransitionEntry]:
                 Detached entry list (entries themselves are immutable).
@@ -212,6 +270,16 @@ class ResearchJournal(Cleanable):
     def entries_for_lane(self, lane_id: str) -> List[TransitionEntry]:
         """
         Return every event whose subject is the given lane, in order.
+
+        Contract:
+            - Filters on `lane_id` (the entry's SUBJECT), so it returns events
+              recorded AGAINST this lane - not events that merely reference one of
+              its nodes as an endpoint. Use `entries_for_spell_id` for endpoint
+              matches.
+            - Preserves sequence order; a fresh detached list.
+
+        Threading:
+            Filtered under `self._lock`.
 
         Args:
             lane_id:
@@ -230,6 +298,17 @@ class ResearchJournal(Cleanable):
     def entries_for_spell_id(self, spell_id: str) -> List[TransitionEntry]:
         """
         Return every event touching the given identity on either end.
+
+        Contract:
+            - Matches on EITHER endpoint via `TransitionEntry.touches_spell_id`,
+              so it catches the identity whether it was origin or destination.
+            - ENDPOINT-ONLY: it does not look inside entry metadata, so an
+              identity that appears only in a group act's member roster is not
+              matched here - `group_history` widens that search deliberately.
+            - Preserves sequence order; a fresh detached list.
+
+        Threading:
+            Filtered under `self._lock`.
 
         Args:
             spell_id:
@@ -254,6 +333,21 @@ class ResearchJournal(Cleanable):
     ) -> Dict[str, object]:
         """
         Return a detached, serialization-ready journal payload.
+
+        Contract:
+            - THE WINDOW IS BOUNDED BY `recent` BUT THE COUNTS ARE NOT. `entries`
+              carries only the newest `recent` events, while `entry_count` and
+              `next_sequence` reflect the FULL journal. This is deliberate: the
+              twin ships a small window, but a rebuild must still continue minting
+              past the true high-water mark, so `next_sequence` cannot be
+              windowed.
+            - `recent=None` includes the full stream; `recent` >= the length
+              includes everything; a negative `recent` is ignored (full stream).
+            - Entries ride nested `describe()` payloads in order; the whole thing
+              is JSON-safe and detached.
+
+        Threading:
+            Assembled under `self._lock`.
 
         Args:
             recent:

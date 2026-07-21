@@ -78,6 +78,12 @@ class GroupDiffStrategy(Cleanable):
         """
         Initialize the strategy lifecycle flag.
 
+        Contract:
+            - Owns no releasable state beyond the inherited `Cleanable`
+              flag; concrete strategies are stateless comparison functions
+              and add no fields of their own, which is why instances are
+              safe to share once registered.
+
         Returns:
             None.
         """
@@ -103,9 +109,20 @@ class GroupDiffStrategy(Cleanable):
         """
         Return the stable registry name of this strategy.
 
+        Contract:
+            - Abstract; every concrete strategy returns a fixed lowercase
+              key (for example "members"). This exact string is what
+              `GroupDiffEngine` registers the strategy under and resolves it
+              by, so it must be stable for the strategy's life and unique
+              within one engine.
+
         Returns:
             str:
                 Registry key (e.g. "members").
+
+        Raises:
+            NotImplementedError:
+                Always on the base; concrete strategies override it.
         """
         raise NotImplementedError("Subclasses must implement name.")
 
@@ -118,6 +135,15 @@ class GroupDiffStrategy(Cleanable):
         """
         Compute one detached diff verdict between two composition materials.
 
+        Contract:
+            - READ-ONLY: an implementation must return a fresh, value-typed
+              verdict and must NEVER retain or mutate either composition
+              material (retaining it would fork the record into a second,
+              drifting copy of a composition).
+            - Orientation is preserved left -> right, so the verdict is
+              directional: it describes what changed going FROM the left
+              composition TO the right one.
+
         Args:
             left_material:
                 Resolver material for the left composition.
@@ -127,5 +153,9 @@ class GroupDiffStrategy(Cleanable):
         Returns:
             Dict[str, object]:
                 Detached, value-typed verdict payload.
+
+        Raises:
+            NotImplementedError:
+                Always on the base; concrete strategies override it.
         """
         raise NotImplementedError("Subclasses must implement diff().")

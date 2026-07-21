@@ -67,9 +67,19 @@ class SourceDiffStrategy(DiffStrategy):
         """
         Return the stable registry name of this strategy.
 
+        Contract:
+            - Fixed key "source" - the name `DiffEngine` registers this
+              whole-module-text strategy under and resolves it by. It is
+              also the engine's default strategy, so an unqualified diff
+              lands here.
+
         Returns:
             str:
                 "source".
+
+        Raises:
+            RuntimeError:
+                If the strategy has been cleaned.
         """
         self.check_cleaned()
         return "source"
@@ -82,6 +92,24 @@ class SourceDiffStrategy(DiffStrategy):
         """
         Compare two version materials module by module.
 
+        Contract:
+            - The module universe is the UNION of both sides' `sources` and
+              `fingerprints` keys, so an added or removed module is never
+              missed by only iterating one side.
+            - Text present on BOTH sides -> a `difflib` unified diff; an
+              empty diff means identical. A terminal-newline-only delta that
+              `splitlines()` would otherwise erase is surfaced explicitly
+              (BUG-042), because the whole-module contract compares COMPLETE
+              recorded text.
+            - Text missing but fingerprints present on both sides -> changed
+              or identical decided by SHA256, tagged `text_unavailable: True`;
+              a diff is never fabricated where source was not retained.
+            - One-sided presence -> `added_modules` / `removed_modules` in
+              left -> right orientation.
+            - READ-ONLY: neither material is retained or mutated; the verdict
+              is a fresh value-typed payload and `identical` is the
+              whole-verdict rollup (no adds, removes, or changes anywhere).
+
         Args:
             left_material:
                 Resolver material for the left version.
@@ -93,6 +121,10 @@ class SourceDiffStrategy(DiffStrategy):
                 Verdict payload with `identical`, `added_modules`,
                 `removed_modules`, `changed_modules`, `identical_modules`,
                 and per-module detail under `module_diffs`.
+
+        Raises:
+            RuntimeError:
+                If the strategy has been cleaned.
         """
         self.check_cleaned()
         left_sources = self._string_map(left_material, "sources")

@@ -74,9 +74,18 @@ class MemberDiffStrategy(GroupDiffStrategy):
         """
         Return the stable registry name of this strategy.
 
+        Contract:
+            - Fixed key "members" - the name `GroupDiffEngine` registers this
+              roster strategy under and resolves it by. It is also the
+              engine's default, so an unqualified composition diff lands here.
+
         Returns:
             str:
                 "members".
+
+        Raises:
+            RuntimeError:
+                If the strategy has been cleaned.
         """
         self.check_cleaned()
         return "members"
@@ -89,6 +98,23 @@ class MemberDiffStrategy(GroupDiffStrategy):
         """
         Compare two composition rosters, pairing lane-evidenced moves.
 
+        Contract:
+            - Members present on both sides are `unchanged_members`; the set
+              differences seed the raw removed and added pools.
+            - A removal and an addition pair as `version_moved` ONLY on
+              twofold evidence (BUG-046): the resolver's members join places
+              both in the SAME lane AND the two identities are ancestry-
+              related in either direction through the members' transitive
+              `ancestor_spell_ids`. Each identity is consumed at most once; a
+              shared catch-all lane alone never fabricates a move, and absent
+              either fact the identities stay honest added/removed.
+            - `ancestry_related` reports whether one composition's TRANSITIVE
+              parent chain names the other (BUG-045: any recorded ancestor
+              hop, with direct parents as the fallback for older detached
+              payloads) - the walk-vs-jump signal.
+            - READ-ONLY: neither material is retained or mutated; `identical`
+              is the exact-roster rollup (equal member sets).
+
         Args:
             left_material:
                 Resolver material for the left composition.
@@ -98,6 +124,10 @@ class MemberDiffStrategy(GroupDiffStrategy):
         Returns:
             Dict[str, object]:
                 Detached verdict (see class contract).
+
+        Raises:
+            RuntimeError:
+                If the strategy has been cleaned.
         """
         self.check_cleaned()
         left_members = self._member_set(left_material)
