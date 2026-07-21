@@ -14,7 +14,7 @@ class ScopedService:
 
 def main() -> None:
     book = md.Spellbook()
-    with book:  # every bind in this block happens under the book lock
+    with book:  # every action in this block happens under the book lock
         book.bind(spell=ScopedService, existence="unique")
     conduit = book.conjure()
     service = conduit.meld(spell=ScopedService)

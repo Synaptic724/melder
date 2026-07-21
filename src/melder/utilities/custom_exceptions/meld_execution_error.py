@@ -140,6 +140,19 @@ class MeldExecutionError(RuntimeError):
         """
         Render a diagnostic string from the stored spell and node metadata.
 
+        Contract:
+            - Composes the message from the spell name and id, and APPENDS THE NODE ID
+              only when one is present - so a node-less failure reads cleanly rather
+              than showing `None`.
+            - Identifies the spell by BOTH name and id, because names are not unique
+              and the id alone is not human-readable.
+
+        Threading:
+            Pure formatting over instance fields.
+
+        Lifecycle / Cleanup:
+            None - it is an exception value.
+
         Returns:
             str: Stable human-readable summary including the root spell id/name
             plus any available node, parameter, message, and inner-exception

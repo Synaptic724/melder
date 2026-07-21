@@ -55,6 +55,17 @@ class PhaseSchedulerError(RuntimeError):
             message (str): Human-readable diagnostic message describing the
                 scheduler failure.
 
+        Contract:
+            - PASS-THROUGH constructor: it forwards the message unchanged and adds no
+              fields of its own. The type IS the information - it marks a failure as
+              originating in phase scheduling rather than in a phase's own work.
+
+        Threading:
+            Plain construction; no shared state.
+
+        Lifecycle / Cleanup:
+            None - it is an exception value.
+
         Returns:
             None.
         """

@@ -35,7 +35,7 @@ Core rules (summary; the protocol doc is authoritative)
 | agent_name | owner | checked_in_at | last_checked | status |
 | --- | --- | --- | --- | --- |
 | helper_f | cowork | 2026-07-18T21:25:00Z | 2026-07-19T13:10:00Z | active (REONBOARDED again post-compaction 2026-07-19T10:17Z as synaptic_python_developer via synaptic_python_developer_onboarding, re-certification pending; owns the in_progress parallel_restore_ulid_identity epic [two wave-3 integration failures to fix per owner paste] and the melder_init_wheel_strategy task; zero messages pending) |
-| melder_0 | cowork | 2026-07-19T17:30:00Z | 2026-07-19T17:30:00Z | active (REONBOARDED post-compaction 2026-07-19T17:30Z as synaptic_python_developer; owner certified on a PARTIAL attestation - 31 of ~85 baseline docs read, with the synaptic `skills/python/` set read after as on-demand trigger-met for docstring work. Owns the in_progress object_contract_enrichment_program epic; oce-package-root / oce-utilities / oce-mutation-research / oce-crystallizer landed, oce-aether-conduit next. Zero messages pending. TWO OWNER RULINGS OPEN: PersistenceAnalysisStrategy MRO defect, and 409 whitespace-churned aether/nexus files) |
+| melder_0 | cowork | 2026-07-19T17:30:00Z | 2026-07-20T00:20:00Z | active (synaptic_python_developer; certified. Owns object_contract_enrichment_program. Zero messages pending. Detail in that epic's Notes.) |
 
 (Clean slate 2026-07-18T21:25:00Z by helper_f under owner directive: the three
 departed rows - helper_0, helper_1, helper_f2, all owner-declared departed earlier

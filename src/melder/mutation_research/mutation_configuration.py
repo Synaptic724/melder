@@ -60,6 +60,27 @@ class MutationResearchConfiguration(Cleanable):
         """
         Initialize one empty mutation-research configuration.
 
+        Contract:
+            - STARTS EMPTY, like the other property-bag configurations. `validate()`
+              requires BOTH declared keys, so a bare object cannot be frozen until
+              both are set - there are no implicit defaults here.
+            - The schema is deliberately TINY: exactly two boolean properties,
+              `unrestricted_module_mutations` and `lane_type_enforcement`. A key
+              absent from that table can never be set.
+            - Part of the three-stage lifecycle: MUTABLE -> FROZEN -> ACTIVATED.
+
+        Owned State:
+            Owns its lock, id, the property bag and the declared type table.
+
+        Threading:
+            State transitions are applied under the configuration lock.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If the configuration has been cleaned.
+
         Returns:
             None.
         """
@@ -77,6 +98,22 @@ class MutationResearchConfiguration(Cleanable):
     def cleanup(self) -> None:
         """
         Idempotently clear configuration state.
+
+        Contract:
+            - IDEMPOTENT under double-checked locking.
+            - MARKS THE CONFIGURATION FROZEN AND DEACTIVATED as it tears down, so a
+              cleaned configuration can never be observed as live mid-teardown.
+            - Clears and then deletes the property bag and type table; the object is
+              unusable afterwards.
+
+        Threading:
+            State transitions are applied under the configuration lock.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If the configuration has been cleaned.
 
         Returns:
             None.
@@ -102,6 +139,19 @@ class MutationResearchConfiguration(Cleanable):
         """
         Return the stable configuration id.
 
+        Contract:
+            - Identifies THIS CONFIGURATION OBJECT, not the mutation-research system
+              it configures. Assigned at construction and stable for its life.
+
+        Threading:
+            State transitions are applied under the configuration lock.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If the configuration has been cleaned.
+
         Returns:
             str: Stable configuration id.
         """
@@ -113,6 +163,20 @@ class MutationResearchConfiguration(Cleanable):
         """
         Return whether the configuration is frozen.
 
+        Contract:
+            - True once `freeze()` has sealed the values, meaning SETTERS ARE REFUSED.
+              It does NOT mean the configuration is in use - that is `activated`.
+            - Also set True by `cleanup()`, so a cleaned configuration reads frozen.
+
+        Threading:
+            State transitions are applied under the configuration lock.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If the configuration has been cleaned.
+
         Returns:
             bool: True when property mutation is closed.
         """
@@ -123,6 +187,20 @@ class MutationResearchConfiguration(Cleanable):
     def activated(self) -> bool:
         """
         Return whether the configuration has been activated.
+
+        Contract:
+            - True only after `activate()`. Activation implies frozen, but FROZEN DOES
+              NOT IMPLY ACTIVATED - `finalize()` freezes without activating.
+            - Reset to False by `cleanup()`.
+
+        Threading:
+            State transitions are applied under the configuration lock.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If the configuration has been cleaned.
 
         Returns:
             bool: True when the config is validated, frozen, and marked ready.
@@ -139,6 +217,23 @@ class MutationResearchConfiguration(Cleanable):
                 Property name.
             value:
                 Candidate property value.
+
+        Contract:
+            - Refuses after freeze, checked TWICE - once before taking the lock and
+              again inside it - so a concurrent freeze cannot slip a write through.
+            - Rejects unknown keys with `ValueError` and wrong types with
+              `TypeError`, both validated against the declared type table.
+            - The only two accepted keys are `unrestricted_module_mutations` and
+              `lane_type_enforcement`, both bools.
+
+        Threading:
+            State transitions are applied under the configuration lock.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If the configuration has been cleaned.
 
         Returns:
             None.
@@ -179,6 +274,21 @@ class MutationResearchConfiguration(Cleanable):
             key:
                 Property name.
 
+        Contract:
+            - RAISES `KeyError` for a property that was never set - it is a raw bag
+              lookup, not a defaulted getter. Use `has_property(...)` first, or seed
+              the configuration before reading.
+            - Returns the stored value BY REFERENCE without re-validating its type.
+
+        Threading:
+            State transitions are applied under the configuration lock.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If the configuration has been cleaned.
+
         Returns:
             object: Stored property value.
         """
@@ -193,6 +303,20 @@ class MutationResearchConfiguration(Cleanable):
             key:
                 Property name.
 
+        Contract:
+            - Tests whether the key has been SET, not whether it is a legal key. An
+              unknown key returns False rather than raising, so this cannot be used
+              to validate a property name against the schema.
+
+        Threading:
+            State transitions are applied under the configuration lock.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If the configuration has been cleaned.
+
         Returns:
             bool: True when the property has been set.
         """
@@ -202,6 +326,23 @@ class MutationResearchConfiguration(Cleanable):
     def validate(self) -> bool:
         """
         Validate that the mutation-research policy bag is complete and coherent.
+
+        Contract:
+            - COMPLETENESS ONLY: it requires every declared key to be present and
+              applies no cross-field rules, because the two properties are
+              independent.
+            - NEVER RETURNS False - a missing key raises `ValueError`. The `bool`
+              return is convention, which makes freeze's `if not self.validate()`
+              branch unreachable.
+
+        Threading:
+            State transitions are applied under the configuration lock.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If the configuration has been cleaned.
 
         Returns:
             bool: True when the configuration is valid.
@@ -220,6 +361,21 @@ class MutationResearchConfiguration(Cleanable):
         """
         Validate and freeze the configuration.
 
+        Contract:
+            - IDEMPOTENT: a second call returns immediately without re-validating.
+            - VALIDATES BEFORE SEALING, so an incomplete configuration raises and
+              stays MUTABLE. Freeze is all-or-nothing.
+            - Seals values only; it does NOT activate and records nothing.
+
+        Threading:
+            State transitions are applied under the configuration lock.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If the configuration has been cleaned.
+
         Returns:
             None.
         """
@@ -235,6 +391,20 @@ class MutationResearchConfiguration(Cleanable):
         """
         Validate and freeze the configuration, then return it.
 
+        Contract:
+            - `freeze()` plus `return self` - nothing more. Seals WITHOUT activating
+              and WITHOUT recording.
+            - Idempotent, inheriting freeze's early return.
+
+        Threading:
+            State transitions are applied under the configuration lock.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If the configuration has been cleaned.
+
         Returns:
             MutationResearchConfiguration: This configuration instance.
         """
@@ -244,6 +414,25 @@ class MutationResearchConfiguration(Cleanable):
     def activate(self) -> "MutationResearchConfiguration":
         """
         Validate, freeze, and mark the configuration as activated.
+
+        Contract:
+            - Freezes, marks ACTIVE, then EMITS a crystallizer record when recording is
+              on. That emission is the side effect `finalize()` does not have.
+            - NOT FULLY IDEMPOTENT: the freeze and the flag are, but the emission is
+              NOT guarded by the activated flag, so calling `activate()` twice
+              RECORDS TWICE. Call it once.
+            - Emission is skipped entirely pre-boot, when the crystallizer singleton
+              is not yet initialized, and when it is not activated - so a missing
+              record does not imply a failed activation.
+
+        Threading:
+            State transitions are applied under the configuration lock.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If the configuration has been cleaned.
 
         Returns:
             MutationResearchConfiguration: This configuration instance.
@@ -424,6 +613,21 @@ class MutationResearchConfiguration(Cleanable):
         Args:
             enabled:
                 Whether unrestricted module mutation mode is enabled.
+
+        Contract:
+            - FLUENT WRAPPER over `set_property("unrestricted_module_mutations", ...)`;
+              it delegates and returns `self`, adding no validation of its own.
+            - MUTATES THIS OBJECT rather than producing a variant.
+            - Refused once frozen.
+
+        Threading:
+            State transitions are applied under the configuration lock.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If the configuration has been cleaned.
 
         Returns:
             MutationResearchConfiguration: This configuration instance.

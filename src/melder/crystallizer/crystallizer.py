@@ -118,6 +118,18 @@ class Crystallizer(Cleanable):
         """
         Ensure `Crystallizer` behaves as a singleton.
 
+        Contract:
+            - PROCESS-WIDE SINGLETON via double-checked locking: every construction
+              returns THE SAME instance.
+            - Allocation only; whether the instance is usable is decided by
+              `__init__`.
+
+        Threading:
+            Double-checked under the class lock; safe to call concurrently.
+
+        Lifecycle / Cleanup:
+            Allocation only.
+
         Returns:
             Crystallizer: The one process-wide crystallizer instance.
         """
@@ -145,6 +157,25 @@ class Crystallizer(Cleanable):
             configuration:
                 Optional initial crystallizer configuration. When omitted, the
                 root starts unconfigured and inactive.
+
+        Contract:
+            - RUNS ITS BODY ONCE. After the first successful initialization, later
+              constructions return early, so CONSTRUCTOR ARGUMENTS ARE SILENTLY
+              IGNORED - a second call is a lookup, not a reconfiguration.
+            - ROLLS BACK ITS OWN ALLOCATION when constructed without an Aether before
+              the singleton is initialized: it clears `_instance` and the initialized
+              flag so the half-built object is NOT left installed. That is what makes
+              a pre-boot `Crystallizer()` probe safe - a later proper construction
+              still gets a clean singleton.
+            - Consequently `Crystallizer._initialized` is the honest test for "is
+              there a usable crystallizer", which is exactly why the emission seams
+              check it before pulling the singleton.
+
+        Threading:
+            Initialization and rollback are performed under the class lock.
+
+        Lifecycle / Cleanup:
+            One-time; a failed pre-boot construction leaves no residue.
 
         Returns:
             None.
@@ -281,6 +312,19 @@ class Crystallizer(Cleanable):
         """
         Return the stable crystallizer root id.
 
+        Contract:
+            - Identifies the singleton instance, assigned once at first successful
+              initialization and stable for the process.
+
+        Threading:
+            Unsynchronized read; a snapshot only.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If the object has been cleaned.
+
         Returns:
             str: Stable root id.
         """
@@ -291,6 +335,19 @@ class Crystallizer(Cleanable):
     def configured(self) -> bool:
         """
         Return whether a configuration is installed.
+
+        Contract:
+            - Reports that a configuration has been INSTALLED, not that recording is
+              happening - that is `activated`.
+
+        Threading:
+            Unsynchronized read; a snapshot only.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If the object has been cleaned.
 
         Returns:
             bool: True when crystallizer has an installed configuration.
@@ -303,6 +360,19 @@ class Crystallizer(Cleanable):
         """
         Alias for the configured-state flag.
 
+        Contract:
+            - ALIAS for the `configured` property, kept for call-site readability.
+              Identical behaviour and identical guard.
+
+        Threading:
+            Unsynchronized read; a snapshot only.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If the object has been cleaned.
+
         Returns:
             bool: True when a configuration is installed.
         """
@@ -312,6 +382,20 @@ class Crystallizer(Cleanable):
     def activated(self) -> bool:
         """
         Return whether the crystallizer root is active.
+
+        Contract:
+            - Reports that the crystallizer is LIVE and recording. Every emission seam
+              in the codebase checks this before emitting, which is why a missing
+              record never implies a failed operation.
+
+        Threading:
+            Unsynchronized read; a snapshot only.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If the object has been cleaned.
 
         Returns:
             bool: True when configuration is installed and activated.
@@ -324,6 +408,19 @@ class Crystallizer(Cleanable):
         """
         Alias for the activated-state flag.
 
+        Contract:
+            - ALIAS for the `activated` property, kept for call-site readability.
+              Identical behaviour and identical guard.
+
+        Threading:
+            Unsynchronized read; a snapshot only.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If the object has been cleaned.
+
         Returns:
             bool: True when the crystallizer root is active.
         """
@@ -333,6 +430,19 @@ class Crystallizer(Cleanable):
     def configuration(self) -> Optional[CrystallizerConfiguration]:
         """
         Return the installed configuration, if any.
+
+        Contract:
+            - Returns the INSTALLED configuration by reference, not a copy. None means
+              nothing has been installed yet.
+
+        Threading:
+            Unsynchronized read; a snapshot only.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If the object has been cleaned.
 
         Returns:
             Optional[CrystallizerConfiguration]: Installed configuration.
@@ -344,6 +454,20 @@ class Crystallizer(Cleanable):
         """
         Create a fresh crystallizer configuration object.
 
+        Contract:
+            - FACTORY ONLY: returns a FRESH, unattached `CrystallizerConfiguration`
+              and does NOT install it. Note that activating that configuration marks
+              only the policy object ready - installing it here is a separate step.
+
+        Threading:
+            Unsynchronized read; a snapshot only.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If the object has been cleaned.
+
         Returns:
             CrystallizerConfiguration: New mutable config object.
         """
@@ -353,6 +477,13 @@ class Crystallizer(Cleanable):
     def configure(self, configuration: CrystallizerConfiguration) -> None:
         """
         Install one configuration on the crystallizer root.
+
+        Contract:
+            - INSTALLS ONLY - it does not validate, freeze or activate, and it accepts a
+              configuration that is still mutable. Passing an unactivated one succeeds
+              here and fails later at `activate()`.
+            - Type-checked: a non-`CrystallizerConfiguration` raises `TypeError`.
+            - Replaces any previously installed configuration outright.
 
         Args:
             configuration:
@@ -386,6 +517,17 @@ class Crystallizer(Cleanable):
     ) -> None:
         """
         Activate the crystallizer root using one activated configuration.
+
+        Contract:
+            - ORDERING RULE: THE CONFIGURATION MUST BE ACTIVATED FIRST. Activating with
+              a merely-frozen configuration raises, so `configuration.activate()`
+              precedes this call.
+            - Passing a configuration is a convenience that configures first; omitting
+              it uses whatever is installed.
+            - Two distinct failure modes: "not configured" and "configuration not
+              activated".
+            - This is the switch every emission seam in the codebase checks, which is
+              why a missing record never implies a failed operation upstream.
 
         Args:
             configuration:
@@ -604,6 +746,15 @@ class Crystallizer(Cleanable):
             use; the record cleans displaced crystals on re-emission, so
             long-lived references go stale by design.
 
+        Contract:
+            - REQUIRES AN ACTIVATED CRYSTALLIZER: it calls the activation guard before
+              doing anything, so a configured-but-not-activated crystallizer raises
+              rather than silently no-opping. Recording is opt-in and this is where
+              that shows up.
+            - RECORD SIDE: delegates to the persistence system, which owns the ledger.
+            - Returns the SEALED crystal for one spell id, which is a point-in-time
+              record and not a live view of the spell.
+
         Args:
             spell_id:
                 The spell's SHA256 identity.
@@ -631,6 +782,15 @@ class Crystallizer(Cleanable):
             the recorded composition to rebuild its research registry from
             the record. Detached dict only - the persistence model stays
             in the depths.
+
+        Contract:
+            - REQUIRES AN ACTIVATED CRYSTALLIZER: it calls the activation guard before
+              doing anything, so a configured-but-not-activated crystallizer raises
+              rather than silently no-opping. Recording is opt-in and this is where
+              that shows up.
+            - RECORD SIDE: delegates to the persistence system, which owns the ledger.
+            - Describes the recorded mutation-research state, not the live singleton -
+              the two can disagree if recording was off for part of the run.
 
         Returns:
             Optional[Dict[str, object]]:
@@ -720,6 +880,15 @@ class Crystallizer(Cleanable):
             (mesh handlers, formations, plain files) and hand it to
             graft_index against any live conjured book.
 
+        Contract:
+            - REQUIRES AN ACTIVATED CRYSTALLIZER: it calls the activation guard before
+              doing anything, so a configured-but-not-activated crystallizer raises
+              rather than silently no-opping. Recording is opt-in and this is where
+              that shows up.
+            - RECORD SIDE: delegates to the persistence system, which owns the ledger.
+            - CAPTURES a graft for one index without applying it anywhere; capture and
+              application are deliberately separate steps.
+
         Args:
             index_id:
                 The recorded index identity.
@@ -753,6 +922,17 @@ class Crystallizer(Cleanable):
             existing indexes never mutated. Blast-radius due diligence
             is one call away: analyze_impact BEFORE grafting into a
             world you care about.
+
+        Contract:
+            - REQUIRES AN ACTIVATED CRYSTALLIZER: it calls the activation guard before
+              doing anything, so a configured-but-not-activated crystallizer raises
+              rather than silently no-opping. Recording is opt-in and this is where
+              that shows up.
+            - APPLIES a captured graft through the graft runner, so unlike
+              `capture_index_graft` this one MUTATES live state.
+            - The runner is imported lazily inside the call, following the loader's
+              runtime-surface import law - so an import cost lands on first use rather
+              than at module load.
 
         Args:
             graft_record:
@@ -1036,6 +1216,14 @@ class Crystallizer(Cleanable):
             Snapshot the index's grouping truth (owner edge, selection,
             full member set) for the record; callers emit the result so
             replace-on-emit keeps exactly one snapshot per index.
+
+        Contract:
+            - REQUIRES AN ACTIVATED CRYSTALLIZER: it calls the activation guard before
+              doing anything, so a configured-but-not-activated crystallizer raises
+              rather than silently no-opping. Recording is opt-in and this is where
+              that shows up.
+            - Builds a crystal from a live `SpellIndex` and a spellbook id. It CONSTRUCTS
+              the record only; it does not seal, store or emit it.
 
         Args:
             spell_index:
@@ -1347,6 +1535,14 @@ class Crystallizer(Cleanable):
         """
         Return the name of the persistence profile emissions currently target.
 
+        Contract:
+            - REQUIRES AN ACTIVATED CRYSTALLIZER: it calls the activation guard before
+              doing anything, so a configured-but-not-activated crystallizer raises
+              rather than silently no-opping. Recording is opt-in and this is where
+              that shows up.
+            - RECORD SIDE: delegates to the persistence system, which owns the ledger.
+            - Names the profile every unqualified profile operation resolves to.
+
         Returns:
             str:
                 Active profile name ("default" unless switched).
@@ -1367,6 +1563,15 @@ class Crystallizer(Cleanable):
             Facade over the buried persistence model: users and agents create
             worlds by name only; PersistenceProfile objects never escape the
             depths.
+
+        Contract:
+            - REQUIRES AN ACTIVATED CRYSTALLIZER: it calls the activation guard before
+              doing anything, so a configured-but-not-activated crystallizer raises
+              rather than silently no-opping. Recording is opt-in and this is where
+              that shows up.
+            - RECORD SIDE: delegates to the persistence system, which owns the ledger.
+            - `activate` decides whether the new profile also becomes ACTIVE; creating
+              without activating leaves the current active profile in place.
 
         Args:
             profile_name:
@@ -1392,6 +1597,15 @@ class Crystallizer(Cleanable):
         """
         Switch the emission target to one existing persistence profile.
 
+        Contract:
+            - REQUIRES AN ACTIVATED CRYSTALLIZER: it calls the activation guard before
+              doing anything, so a configured-but-not-activated crystallizer raises
+              rather than silently no-opping. Recording is opt-in and this is where
+              that shows up.
+            - RECORD SIDE: delegates to the persistence system, which owns the ledger.
+            - Repoints which profile unqualified operations resolve to. It moves the
+              pointer only - no data is copied or migrated between profiles.
+
         Args:
             profile_name:
                 Name of an existing profile to activate.
@@ -1412,6 +1626,17 @@ class Crystallizer(Cleanable):
     def describe_profile(self, profile_name: Optional[str] = None) -> Dict[str, object]:
         """
         Return a detached structural summary of one persistence profile.
+
+        Contract:
+            - REQUIRES AN ACTIVATED CRYSTALLIZER: it calls the activation guard before
+              doing anything, so a configured-but-not-activated crystallizer raises
+              rather than silently no-opping. Recording is opt-in and this is where
+              that shows up.
+            - RECORD SIDE: delegates to the persistence system, which owns the ledger.
+            - `profile_name=None` resolves to the ACTIVE profile rather than meaning
+              "all profiles".
+            - Read-only description; it neither creates a missing profile nor activates
+              the one it describes.
 
         Args:
             profile_name:
@@ -1438,6 +1663,14 @@ class Crystallizer(Cleanable):
         """
         Return the names of all persistence profiles.
 
+        Contract:
+            - REQUIRES AN ACTIVATED CRYSTALLIZER: it calls the activation guard before
+              doing anything, so a configured-but-not-activated crystallizer raises
+              rather than silently no-opping. Recording is opt-in and this is where
+              that shows up.
+            - RECORD SIDE: delegates to the persistence system, which owns the ledger.
+            - Lists profiles that EXIST, including empty ones and the active one.
+
         Returns:
             List[str]:
                 Sorted, detached profile-name list.
@@ -1457,6 +1690,16 @@ class Crystallizer(Cleanable):
         Purpose:
             The generalized clear_bootstrap: clearing "default" resets the
             default bootstrap record.
+
+        Contract:
+            - REQUIRES AN ACTIVATED CRYSTALLIZER: it calls the activation guard before
+              doing anything, so a configured-but-not-activated crystallizer raises
+              rather than silently no-opping. Recording is opt-in and this is where
+              that shows up.
+            - RECORD SIDE: delegates to the persistence system, which owns the ledger.
+            - EMPTIES a profile but KEEPS IT. This is the non-destructive reset - the
+              profile remains listed and can still be activated afterwards. Use
+              `delete_profile` to remove it entirely.
 
         Args:
             profile_name:
@@ -1478,6 +1721,15 @@ class Crystallizer(Cleanable):
     def delete_profile(self, profile_name: str) -> None:
         """
         Delete one NAMED persistence profile ("default" is never deletable).
+
+        Contract:
+            - REQUIRES AN ACTIVATED CRYSTALLIZER: it calls the activation guard before
+              doing anything, so a configured-but-not-activated crystallizer raises
+              rather than silently no-opping. Recording is opt-in and this is where
+              that shows up.
+            - RECORD SIDE: delegates to the persistence system, which owns the ledger.
+            - REMOVES the profile entirely, unlike `clear_profile` which only empties it.
+              After this the name no longer appears in `list_profile_names()`.
 
         Args:
             profile_name:
@@ -1548,6 +1800,14 @@ class Crystallizer(Cleanable):
         """
         Return a detached copy of one checkpoint's metadata record.
 
+        Contract:
+            - REQUIRES AN ACTIVATED CRYSTALLIZER: it calls the activation guard before
+              doing anything, so a configured-but-not-activated crystallizer raises
+              rather than silently no-opping. Recording is opt-in and this is where
+              that shows up.
+            - RECORD SIDE: delegates to the persistence system, which owns the ledger.
+            - Describes one checkpoint by id without replaying or loading it.
+
         Args:
             checkpoint_id:
                 ULID identity returned by `create_checkpoint`.
@@ -1570,6 +1830,15 @@ class Crystallizer(Cleanable):
         """
         Return all checkpoint ids in exact ledger creation order.
 
+        Contract:
+            - REQUIRES AN ACTIVATED CRYSTALLIZER: it calls the activation guard before
+              doing anything, so a configured-but-not-activated crystallizer raises
+              rather than silently no-opping. Recording is opt-in and this is where
+              that shows up.
+            - RECORD SIDE: delegates to the persistence system, which owns the ledger.
+            - Lists RECORDED checkpoint ids, which is a different set from
+              `list_cached_checkpoint_ids()` - recorded does not imply cached to disk.
+
         Returns:
             List[str]:
                 Chronologically sorted, detached checkpoint-id list.
@@ -1586,6 +1855,16 @@ class Crystallizer(Cleanable):
         """
         Return the whole record's one-shot operational summary
         (profiles + twin counts + ledger + cache, in one call).
+
+        Contract:
+            - REQUIRES AN ACTIVATED CRYSTALLIZER: it calls the activation guard before
+              doing anything, so a configured-but-not-activated crystallizer raises
+              rather than silently no-opping. Recording is opt-in and this is where
+              that shows up.
+            - RECORD SIDE: delegates to the persistence system, which owns the ledger.
+            - Merges a RECORD-side description with an ASSET-side count: the
+              `cached_checkpoint_count` key is computed from the asset system, so this
+              is the one description that spans both halves.
 
         Returns:
             Dict[str, object]:
@@ -1611,6 +1890,15 @@ class Crystallizer(Cleanable):
         Return one checkpoint's detached replay inputs (journal window +
         captured payloads) - the restore engine's read surface.
 
+        Contract:
+            - REQUIRES AN ACTIVATED CRYSTALLIZER: it calls the activation guard before
+              doing anything, so a configured-but-not-activated crystallizer raises
+              rather than silently no-opping. Recording is opt-in and this is where
+              that shows up.
+            - RECORD SIDE: delegates to the persistence system, which owns the ledger.
+            - Returns the data needed to replay a checkpoint; it does NOT perform the
+              replay.
+
         Args:
             checkpoint_id:
                 ULID identity returned by `create_checkpoint`.
@@ -1633,6 +1921,21 @@ class Crystallizer(Cleanable):
     def flush_checkpoint(self, checkpoint_id: Optional[str] = None) -> List[str]:
         """
         Flush sealed checkpoint(s) into the local crystallizer cache.
+
+        Contract:
+            - REQUIRES AN ACTIVATED CRYSTALLIZER: it calls the activation guard before
+              doing anything, so a configured-but-not-activated crystallizer raises
+              rather than silently no-opping. Recording is opt-in and this is where
+              that shows up.
+            - SEAL-THEN-SHIP, one verb covering both halves: the asset system pulls
+              feedstock from the record, writes the cache, FIFO-caps it, and then runs
+              the remote upload leg when a manager is attached.
+            - THE REMOTE LEG IS LENIENT BY DEFAULT. Under the default posture an
+              upload failure is logged and counted rather than raised, so a successful
+              return does NOT prove the remote received anything - the local seal is
+              what is guaranteed. Set `strict_uploads` if that must be an error.
+            - The FIFO cap means an old cached checkpoint can be evicted as a side
+              effect of this call.
 
         Args:
             checkpoint_id:
@@ -1661,6 +1964,16 @@ class Crystallizer(Cleanable):
         Reload one cached checkpoint back into the ledger (history
         recovery; world restore remains `load_checkpoint`).
 
+        Contract:
+            - REQUIRES AN ACTIVATED CRYSTALLIZER: it calls the activation guard before
+              doing anything, so a configured-but-not-activated crystallizer raises
+              rather than silently no-opping. Recording is opt-in and this is where
+              that shows up.
+            - ASSET SIDE: delegates to the asset system, which owns cache files and
+              any attached remote.
+            - Reads from the LOCAL CACHE only; it does not consult any remote. A
+              checkpoint that was recorded but never flushed is not reloadable here.
+
         Args:
             checkpoint_id:
                 ULID of a previously flushed checkpoint.
@@ -1685,6 +1998,16 @@ class Crystallizer(Cleanable):
         """
         Return every checkpoint id present in the local cache.
 
+        Contract:
+            - REQUIRES AN ACTIVATED CRYSTALLIZER: it calls the activation guard before
+              doing anything, so a configured-but-not-activated crystallizer raises
+              rather than silently no-opping. Recording is opt-in and this is where
+              that shows up.
+            - ASSET SIDE: delegates to the asset system, which owns cache files and
+              any attached remote.
+            - Lists what is ON DISK, which is a subset of `list_checkpoint_ids()` -
+              anything never flushed, or evicted by the FIFO cap, is absent.
+
         Returns:
             List[str]:
                 Sorted cached checkpoint ids.
@@ -1708,6 +2031,16 @@ class Crystallizer(Cleanable):
             Answer BEFORE a restore whether the retained chain is safe to
             fold: "intact", "truncated_prefix" (head history dropped), or
             "broken" (number/window damage with evidence rows).
+
+        Contract:
+            - REQUIRES AN ACTIVATED CRYSTALLIZER: it calls the activation guard before
+              doing anything, so a configured-but-not-activated crystallizer raises
+              rather than silently no-opping. Recording is opt-in and this is where
+              that shows up.
+            - RECORD SIDE: delegates to the persistence system, which owns the ledger.
+            - `profile_name=None` resolves to the ACTIVE profile rather than meaning
+              "all profiles".
+            - Verifies chain integrity and REPORTS; it does not repair anything.
 
         Args:
             profile_name:
@@ -1739,6 +2072,16 @@ class Crystallizer(Cleanable):
             profile's cache folder IS its portable form - copy the
             folder, reload it here, then load_checkpoint unfolds the
             chain.
+
+        Contract:
+            - REQUIRES AN ACTIVATED CRYSTALLIZER: it calls the activation guard before
+              doing anything, so a configured-but-not-activated crystallizer raises
+              rather than silently no-opping. Recording is opt-in and this is where
+              that shows up.
+            - ASSET SIDE: delegates to the asset system, which owns cache files and
+              any attached remote.
+            - Local cache only - the external counterpart is
+              `reload_profile_from_external`.
 
         Args:
             profile_name:
@@ -1773,6 +2116,15 @@ class Crystallizer(Cleanable):
             Facade over PersistenceSystem.save_formation: keep a conduit
             formation you like (its spellbook rides along) or a whole
             frame subtree, under your own name, durable in the cache.
+
+        Contract:
+            - REQUIRES AN ACTIVATED CRYSTALLIZER: it calls the activation guard before
+              doing anything, so a configured-but-not-activated crystallizer raises
+              rather than silently no-opping. Recording is opt-in and this is where
+              that shows up.
+            - SPANS BOTH HALVES: the record side captures and assembles the formation
+              record, then the asset side persists it to a file. A failure can
+              therefore leave a captured record with no file.
 
         Args:
             formation_name:
@@ -1823,6 +2175,18 @@ class Crystallizer(Cleanable):
             retargeted onto another frame, optionally skipping host name
             collisions instead of refusing on them.
 
+        Contract:
+            - REQUIRES AN ACTIVATED CRYSTALLIZER: it calls the activation guard before
+              doing anything, so a configured-but-not-activated crystallizer raises
+              rather than silently no-opping. Recording is opt-in and this is where
+              that shows up.
+            - THREE-STAGE: the asset side loads the stored record, the loader mints a
+              SCOPED PLAN, and a gated engine runs it. The ledger deliberately no
+              longer replays anything itself.
+            - Restoration is PLANNED AND GATED rather than a blind replay, so it can
+              legitimately refuse or partially apply - read the result rather than
+              assuming a full restore.
+
         Args:
             formation_name:
                 The stored formation's name.
@@ -1872,6 +2236,16 @@ class Crystallizer(Cleanable):
     ) -> List[str]:
         """
         Return the targeted profile's stored formation names.
+
+        Contract:
+            - REQUIRES AN ACTIVATED CRYSTALLIZER: it calls the activation guard before
+              doing anything, so a configured-but-not-activated crystallizer raises
+              rather than silently no-opping. Recording is opt-in and this is where
+              that shows up.
+            - ASSET SIDE: delegates to the asset system, which owns cache files and
+              any attached remote.
+            - `profile_name=None` resolves to the ACTIVE profile rather than meaning
+              "all profiles".
 
         Args:
             profile_name:
@@ -2033,6 +2407,13 @@ class Crystallizer(Cleanable):
         """
         Return the attached manager's record-safe presence description.
 
+        Contract:
+            - DOES NOT REQUIRE ACTIVATION - one of the few crystallizer surfaces that
+              only checks the cleaned state. You can inspect whether a remote is
+              attached before the crystallizer is live.
+            - Describes ATTACHMENT AND POSTURE, not remote health; it performs no
+              network call.
+
         Returns:
             Dict[str, object]:
                 Presence flags + knobs + failure diagnostics; an
@@ -2059,6 +2440,16 @@ class Crystallizer(Cleanable):
             stored cached items (list + per-id download through the
             user's callables) and the persistence system inserts them
             insert-if-absent - then load_checkpoint unfolds as usual.
+
+        Contract:
+            - REQUIRES AN ACTIVATED CRYSTALLIZER: it calls the activation guard before
+              doing anything, so a configured-but-not-activated crystallizer raises
+              rather than silently no-opping. Recording is opt-in and this is where
+              that shows up.
+            - ASSET SIDE: delegates to the asset system, which owns cache files and
+              any attached remote.
+            - Reads from the REMOTE, so it requires an attached manager with a working
+              download or fetch lane; a missing lane means unavailable, not empty.
 
         Args:
             profile_name:
@@ -2091,6 +2482,17 @@ class Crystallizer(Cleanable):
             2026-07-12): the manager lists + fetches through the user's
             generic callables, the local formation store inserts-if-
             absent, and restore_formation reads them as usual afterwards.
+
+        Contract:
+            - REQUIRES AN ACTIVATED CRYSTALLIZER: it calls the activation guard before
+              doing anything, so a configured-but-not-activated crystallizer raises
+              rather than silently no-opping. Recording is opt-in and this is where
+              that shows up.
+            - ASSET SIDE: delegates to the asset system, which owns cache files and
+              any attached remote.
+            - `profile_name=None` resolves to the ACTIVE profile rather than meaning
+              "all profiles".
+            - Pulls formations from the remote rather than the local cache.
 
         Args:
             profile_name:
@@ -2129,6 +2531,18 @@ class Crystallizer(Cleanable):
             opt-in via the delete handler): mirrors the local FIFO - the
             newest `max_checkpoints` survive, everything older deletes
             through the user's callable.
+
+        Contract:
+            - REQUIRES AN ACTIVATED CRYSTALLIZER: it calls the activation guard before
+              doing anything, so a configured-but-not-activated crystallizer raises
+              rather than silently no-opping. Recording is opt-in and this is where
+              that shows up.
+            - ASSET SIDE: delegates to the asset system, which owns cache files and
+              any attached remote.
+            - `profile_name=None` resolves to the ACTIVE profile rather than meaning
+              "all profiles".
+            - APPLIES A RETENTION POLICY REMOTELY, which can DELETE remote artifacts.
+              This is a destructive maintenance operation, not a query.
 
         Args:
             profile_name:
@@ -2171,6 +2585,16 @@ class Crystallizer(Cleanable):
             completion, 2026-07-11): the FIFO cap trims by age; this
             removes one specific cached snapshot.
 
+        Contract:
+            - REQUIRES AN ACTIVATED CRYSTALLIZER: it calls the activation guard before
+              doing anything, so a configured-but-not-activated crystallizer raises
+              rather than silently no-opping. Recording is opt-in and this is where
+              that shows up.
+            - ASSET SIDE: delegates to the asset system, which owns cache files and
+              any attached remote.
+            - Deletes the LOCAL cached copy only. The recorded checkpoint and any remote
+              copy are untouched, so this narrows disk use without losing the record.
+
         Args:
             checkpoint_id:
                 ULID identity of a previously flushed checkpoint.
@@ -2196,6 +2620,18 @@ class Crystallizer(Cleanable):
     ) -> Dict[str, object]:
         """
         Delete one stored formation locally and, optionally, remotely.
+
+        Contract:
+            - REQUIRES AN ACTIVATED CRYSTALLIZER: it calls the activation guard before
+              doing anything, so a configured-but-not-activated crystallizer raises
+              rather than silently no-opping. Recording is opt-in and this is where
+              that shows up.
+            - ASSET SIDE: delegates to the asset system, which owns cache files and
+              any attached remote.
+            - `profile_name=None` resolves to the ACTIVE profile rather than meaning
+              "all profiles".
+            - Deletes the stored formation file; the operation is destructive and not
+              undone by a later save under the same name.
 
         Args:
             formation_name:
@@ -2239,6 +2675,18 @@ class Crystallizer(Cleanable):
             capture -> store -> fetch -> graft_index round-trips without
             the user naming a kind.
 
+        Contract:
+            - REQUIRES AN ACTIVATED CRYSTALLIZER: it calls the activation guard before
+              doing anything, so a configured-but-not-activated crystallizer raises
+              rather than silently no-opping. Recording is opt-in and this is where
+              that shows up.
+            - ASSET SIDE: delegates to the asset system, which owns cache files and
+              any attached remote.
+            - `profile_name=None` resolves to the ACTIVE profile rather than meaning
+              "all profiles".
+            - Pushes a captured graft to the remote. Subject to the same lenient-upload
+              posture as other remote writes unless `strict_uploads` is set.
+
         Args:
             graft_record:
                 The dict from capture_index_graft(...), unmodified.
@@ -2270,6 +2718,16 @@ class Crystallizer(Cleanable):
         """
         Fetch one graft record back from the user's store, version-gated.
 
+        Contract:
+            - REQUIRES AN ACTIVATED CRYSTALLIZER: it calls the activation guard before
+              doing anything, so a configured-but-not-activated crystallizer raises
+              rather than silently no-opping. Recording is opt-in and this is where
+              that shows up.
+            - ASSET SIDE: delegates to the asset system, which owns cache files and
+              any attached remote.
+            - Fetches one graft from the remote by index id; it does not apply it.
+              Application is `graft_index`.
+
         Args:
             index_id:
                 The captured index id the graft shipped under.
@@ -2293,6 +2751,18 @@ class Crystallizer(Cleanable):
     ) -> List[str]:
         """
         List one profile's stored graft ids through the generic lane.
+
+        Contract:
+            - REQUIRES AN ACTIVATED CRYSTALLIZER: it calls the activation guard before
+              doing anything, so a configured-but-not-activated crystallizer raises
+              rather than silently no-opping. Recording is opt-in and this is where
+              that shows up.
+            - ASSET SIDE: delegates to the asset system, which owns cache files and
+              any attached remote.
+            - `profile_name=None` resolves to the ACTIVE profile rather than meaning
+              "all profiles".
+            - Lists what the REMOTE holds, which need not match anything captured
+              locally.
 
         Args:
             profile_name:
@@ -2324,6 +2794,17 @@ class Crystallizer(Cleanable):
             kind/shape/signature table (MeshInterfaceContract) plus this
             world's live handler presence, so users build storage and
             register callables from the emitted contract alone.
+
+        Contract:
+            - REQUIRES AN ACTIVATED CRYSTALLIZER: it calls the activation guard before
+              doing anything, so a configured-but-not-activated crystallizer raises
+              rather than silently no-opping. Recording is opt-in and this is where
+              that shows up.
+            - ASSET SIDE: delegates to the asset system, which owns cache files and
+              any attached remote.
+            - Describes the SHAPE of the external interface - which lanes are attached -
+              rather than performing any remote call, so it is safe to call when the
+              remote is unreachable.
 
         Returns:
             Dict[str, object]: The stamped contract dict plus

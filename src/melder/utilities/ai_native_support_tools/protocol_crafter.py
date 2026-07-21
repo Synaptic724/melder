@@ -131,6 +131,20 @@ class ProtocolCrafter(Cleanable):
         """
         Initialize one protocol crafter utility.
 
+        Contract:
+            - STATELESS BEYOND ITS IDENTITY: it holds only an id and a lock. Protocol
+              crafting reads source and writes modules without accumulating state, so
+              one crafter can serve many unrelated targets.
+
+        Owned State:
+            Owns its id and lock; borrows nothing.
+
+        Threading:
+            Creates the lock that serializes crafting operations.
+
+        Lifecycle / Cleanup:
+            Ready immediately; no configuration step.
+
         Returns:
             None.
         """
@@ -141,6 +155,17 @@ class ProtocolCrafter(Cleanable):
     def cleanup(self) -> None:
         """
         Idempotently clear the protocol crafter state.
+
+        Contract:
+            - IDEMPOTENT under double-checked locking.
+            - Owns no external resources, so cleanup releases identity only - it does
+              not touch any module it previously wrote.
+
+        Threading:
+            Double-checked around the crafter lock.
+
+        Lifecycle / Cleanup:
+            Safe to call more than once and from more than one thread.
 
         Returns:
             None.
@@ -158,6 +183,18 @@ class ProtocolCrafter(Cleanable):
     def id(self) -> str:
         """
         Return the stable identifier for this protocol crafter instance.
+
+        Contract:
+            - Identifies this crafter instance; stable for its life.
+
+        Threading:
+            Reads under `self._lock`, so the result is a coherent snapshot.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If the object has been cleaned.
 
         Returns:
             str: Stable protocol crafter identifier.
@@ -307,6 +344,23 @@ class ProtocolCrafter(Cleanable):
             protocol_name:
                 Optional explicit protocol class name. Defaults to `I<class>`.
 
+        Contract:
+            - DEFAULTS THE PROTOCOL NAME to `I` + the class name when none is supplied,
+              so `Foo` becomes `IFoo` unless you override it.
+            - WRITES TO DISK: it crafts the module text and then persists it, so this
+              is not a pure computation. Use the `craft_...` method when you want the
+              text without a file.
+            - Overwrites an existing file at the resolved output path.
+
+        Threading:
+            Reads under `self._lock`, so the result is a coherent snapshot.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If the object has been cleaned.
+
         Returns:
             Path: Written protocol-module path.
         """
@@ -390,6 +444,22 @@ class ProtocolCrafter(Cleanable):
                 Protocol class name to emit for the shared surface.
             output_directory:
                 Directory that will receive the generated protocol module.
+
+        Contract:
+            - Crafts ONE protocol module covering SEVERAL targets, so the protocol name
+              is required rather than derived - there is no single class to derive it
+              from.
+            - WRITES TO DISK, like its single-source counterpart, and overwrites an
+              existing file at the resolved output path.
+
+        Threading:
+            Reads under `self._lock`, so the result is a coherent snapshot.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If the object has been cleaned.
 
         Returns:
             Path: Written protocol-module path.

@@ -264,6 +264,25 @@ class ViewConduit(Cleanable):
             Give the viewer operator a direct conduit-to-spell traversal path
             instead of forcing a full spell scan and manual filtering.
 
+        Contract:
+            - Spells owned by ONE conduit and visible to this rift - a double filter, so a
+              short list can mean restricted visibility rather than few spells.
+            - VISIBILITY-FILTERED PROJECTION: absence means "not visible to this rift"
+              OR "not present", indistinguishable from outside.
+            - `frame_name` is an ASSERTION, not a selector - when supplied it must
+              match the bound frame or the call raises.
+
+        Threading:
+            Reads a descriptor snapshot; concurrent frame changes are not reflected in
+            an already-returned result.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If the viewer is unbound or cleaned, or `frame_name` does not
+                match the bound frame.
+
         Args:
             conduit_id:
                 Published conduit id.
@@ -303,6 +322,25 @@ class ViewConduit(Cleanable):
         Purpose:
             Show the conduit's peer links plus the visible spells currently
             owned by that conduit in one compact description.
+
+        Contract:
+            - Places the conduit in the tree. Like all projection topology, it can appear
+              truncated when intermediate conduits are invisible here.
+            - VISIBILITY-FILTERED PROJECTION: absence means "not visible to this rift"
+              OR "not present", indistinguishable from outside.
+            - `frame_name` is an ASSERTION, not a selector - when supplied it must
+              match the bound frame or the call raises.
+
+        Threading:
+            Reads a descriptor snapshot; concurrent frame changes are not reflected in
+            an already-returned result.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If the viewer is unbound or cleaned, or `frame_name` does not
+                match the bound frame.
 
         Args:
             conduit_id:
@@ -349,6 +387,24 @@ class ViewConduit(Cleanable):
         Purpose:
             Give the operator a smaller "start here" conduit summary than the
             richer inventory and relationship methods.
+
+        Contract:
+            - Summary rather than inventory; cheap enough for polling.
+            - VISIBILITY-FILTERED PROJECTION: absence means "not visible to this rift"
+              OR "not present", indistinguishable from outside.
+            - `frame_name` is an ASSERTION, not a selector - when supplied it must
+              match the bound frame or the call raises.
+
+        Threading:
+            Reads a descriptor snapshot; concurrent frame changes are not reflected in
+            an already-returned result.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If the viewer is unbound or cleaned, or `frame_name` does not
+                match the bound frame.
 
         Args:
             conduit_id:
@@ -397,6 +453,25 @@ class ViewConduit(Cleanable):
         Purpose:
             Make the conduit-local "what is hidden?" answer explicit instead of
             forcing the operator to infer it from missing payload keys.
+
+        Contract:
+            - THE WITHHELD-SECTION PROBE for conduits: reports the NAMES of payload
+              sections you cannot read, which is how you tell "hidden" from "empty".
+            - VISIBILITY-FILTERED PROJECTION: absence means "not visible to this rift"
+              OR "not present", indistinguishable from outside.
+            - `frame_name` is an ASSERTION, not a selector - when supplied it must
+              match the bound frame or the call raises.
+
+        Threading:
+            Reads a descriptor snapshot; concurrent frame changes are not reflected in
+            an already-returned result.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If the viewer is unbound or cleaned, or `frame_name` does not
+                match the bound frame.
 
         Args:
             conduit_id:
@@ -447,6 +522,25 @@ class ViewConduit(Cleanable):
         Purpose:
             Give the operator one direct conduit crosswalk from the conduit to
             its root, peers, owned spells, and frame context.
+
+        Contract:
+            - Cross-references the conduit against its root and peers, so it answers
+              placement rather than contents.
+            - VISIBILITY-FILTERED PROJECTION: absence means "not visible to this rift"
+              OR "not present", indistinguishable from outside.
+            - `frame_name` is an ASSERTION, not a selector - when supplied it must
+              match the bound frame or the call raises.
+
+        Threading:
+            Reads a descriptor snapshot; concurrent frame changes are not reflected in
+            an already-returned result.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If the viewer is unbound or cleaned, or `frame_name` does not
+                match the bound frame.
 
         Args:
             conduit_id:
@@ -505,6 +599,24 @@ class ViewConduit(Cleanable):
             Give the operator one quick conduit-local inventory view covering
             owned spells, peer links, and visible payload sections.
 
+        Contract:
+            - Counts and lists what the conduit holds, all of it visibility-filtered.
+            - VISIBILITY-FILTERED PROJECTION: absence means "not visible to this rift"
+              OR "not present", indistinguishable from outside.
+            - `frame_name` is an ASSERTION, not a selector - when supplied it must
+              match the bound frame or the call raises.
+
+        Threading:
+            Reads a descriptor snapshot; concurrent frame changes are not reflected in
+            an already-returned result.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If the viewer is unbound or cleaned, or `frame_name` does not
+                match the bound frame.
+
         Args:
             conduit_id:
                 Published conduit id.
@@ -562,6 +674,25 @@ class ViewConduit(Cleanable):
             Make the conduit's root grouping, peer links, and owned visible
             spells explicit in one relationship-oriented view.
 
+        Contract:
+            - Reports links and peers as this rift can see them; an invisible peer is
+              simply absent, so this is not a reliable peer count.
+            - VISIBILITY-FILTERED PROJECTION: absence means "not visible to this rift"
+              OR "not present", indistinguishable from outside.
+            - `frame_name` is an ASSERTION, not a selector - when supplied it must
+              match the bound frame or the call raises.
+
+        Threading:
+            Reads a descriptor snapshot; concurrent frame changes are not reflected in
+            an already-returned result.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If the viewer is unbound or cleaned, or `frame_name` does not
+                match the bound frame.
+
         Args:
             conduit_id:
                 Published conduit id.
@@ -611,6 +742,33 @@ class ViewConduit(Cleanable):
         """
         Compare two visible conduits inside the bound frame.
 
+        Contract:
+            - BOTH conduits must be visible; an invisible operand raises rather
+              than producing a partial comparison.
+            - THE RESULT MIXES TWO FILTERING REGIMES, and this matters when
+              interpreting it:
+                * `visible_spell_source_ids` compares the VISIBILITY-FILTERED
+                  spell lists, so it describes what this rift can see.
+                * `peer_conduit_ids` compares the RAW RECORDED peer lists
+                  straight off each payload, WITHOUT the visibility intersection
+                  that `list_peer_conduit_ids` applies.
+              A peer difference reported here can therefore involve conduits this
+              rift cannot otherwise see, and will not match what
+              `list_peer_conduit_ids` returns for the same conduits.
+            - `same_policy` normalizes policy names before comparing, so it is
+              case-insensitive; `same_conduit_state` compares state `.name`
+              values directly.
+            - `same_root_conduit_id` compares recorded root ids, which may name
+              a conduit that is not visible here.
+            - Pure comparison: it reports differences and never reconciles them.
+
+        Threading:
+            Reads a descriptor snapshot through the borrowed frame view; the two
+            operands are not read atomically with respect to each other.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`. The frame view is BORROWED, not owned.
+
         Args:
             left_conduit_id:
                 Left visible conduit id.
@@ -622,6 +780,11 @@ class ViewConduit(Cleanable):
 
         Returns:
             Dict[str, object]: Visible conduit comparison summary.
+
+        Raises:
+            RuntimeError: If either conduit is not visible, the viewer is
+                unbound or cleaned, or `frame_name` does not match the bound
+                frame.
         """
         self.check_cleaned()
         left_conduit_record = self._get_required_conduit_record(
@@ -678,6 +841,31 @@ class ViewConduit(Cleanable):
                 Optional frame-name assertion passed through to the selected-
                 frame helper.
 
+        Contract:
+            - Roots as seen THROUGH THIS RIFT. A conduit can appear to be a root
+              purely because its real parent is not visible here, so root-ness in a
+              projection is a visibility statement, not frame topology.
+            - VISIBILITY-FILTERED PROJECTION over the bound frame view. Absence
+              means "not visible to this rift" OR "not present" - indistinguishable
+              from outside. Never use an empty result as proof of non-existence.
+            - `frame_name` is an ASSERTION passed through to the frame helper, not
+              a selector. When supplied it must match the bound frame or the call
+              raises; it cannot be used to look at another frame.
+            - Read-only snapshot taken at call time; it does not mutate frame state
+              and does not stay live as the frame changes.
+
+        Threading:
+            Reads a descriptor snapshot through the borrowed frame view;
+            concurrent frame changes are not reflected in a returned result.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`. The frame view is BORROWED, not owned -
+            cleaning this viewer does not clean it.
+
+        Raises:
+            RuntimeError: If the viewer is unbound or cleaned, or `frame_name`
+                does not match the bound frame.
+
         Returns:
             List[FrameLink]: Visible root conduit links.
         """
@@ -700,6 +888,33 @@ class ViewConduit(Cleanable):
             frame_name:
                 Optional frame-name assertion passed through to the selected-
                 frame helper.
+
+        Contract:
+            - Compares the record's `root_conduit_id` against its own id, so it
+              answers "is this its own root" rather than "is this the top of the
+              tree you can see".
+            - RAISES when the conduit is not visible, rather than returning False.
+              A False answer therefore always means "visible and not a root".
+            - VISIBILITY-FILTERED PROJECTION over the bound frame view. Absence
+              means "not visible to this rift" OR "not present" - indistinguishable
+              from outside. Never use an empty result as proof of non-existence.
+            - `frame_name` is an ASSERTION passed through to the frame helper, not
+              a selector. When supplied it must match the bound frame or the call
+              raises; it cannot be used to look at another frame.
+            - Read-only snapshot taken at call time; it does not mutate frame state
+              and does not stay live as the frame changes.
+
+        Threading:
+            Reads a descriptor snapshot through the borrowed frame view;
+            concurrent frame changes are not reflected in a returned result.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`. The frame view is BORROWED, not owned -
+            cleaning this viewer does not clean it.
+
+        Raises:
+            RuntimeError: If the viewer is unbound or cleaned, or `frame_name`
+                does not match the bound frame.
 
         Returns:
             bool: True when the conduit is a root conduit.
@@ -727,6 +942,31 @@ class ViewConduit(Cleanable):
                 Optional frame-name assertion passed through to the selected-
                 frame helper.
 
+        Contract:
+            - Returns the root id recorded on the conduit, which may name a conduit
+              that is NOT VISIBLE to this rift. The returned id is not guaranteed
+              to be resolvable through this viewer.
+            - VISIBILITY-FILTERED PROJECTION over the bound frame view. Absence
+              means "not visible to this rift" OR "not present" - indistinguishable
+              from outside. Never use an empty result as proof of non-existence.
+            - `frame_name` is an ASSERTION passed through to the frame helper, not
+              a selector. When supplied it must match the bound frame or the call
+              raises; it cannot be used to look at another frame.
+            - Read-only snapshot taken at call time; it does not mutate frame state
+              and does not stay live as the frame changes.
+
+        Threading:
+            Reads a descriptor snapshot through the borrowed frame view;
+            concurrent frame changes are not reflected in a returned result.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`. The frame view is BORROWED, not owned -
+            cleaning this viewer does not clean it.
+
+        Raises:
+            RuntimeError: If the viewer is unbound or cleaned, or `frame_name`
+                does not match the bound frame.
+
         Returns:
             str: Root conduit id for the conduit.
         """
@@ -752,6 +992,32 @@ class ViewConduit(Cleanable):
             frame_name:
                 Optional frame-name assertion passed through to the selected-
                 frame helper.
+
+        Contract:
+            - A root matches its OWN id, so passing a root's id returns the whole
+              tree INCLUDING that root, not just its descendants.
+            - Empty `root_conduit_id` is rejected up front.
+            - Matching is exact; no normalization is applied to the id.
+            - VISIBILITY-FILTERED PROJECTION over the bound frame view. Absence
+              means "not visible to this rift" OR "not present" - indistinguishable
+              from outside. Never use an empty result as proof of non-existence.
+            - `frame_name` is an ASSERTION passed through to the frame helper, not
+              a selector. When supplied it must match the bound frame or the call
+              raises; it cannot be used to look at another frame.
+            - Read-only snapshot taken at call time; it does not mutate frame state
+              and does not stay live as the frame changes.
+
+        Threading:
+            Reads a descriptor snapshot through the borrowed frame view;
+            concurrent frame changes are not reflected in a returned result.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`. The frame view is BORROWED, not owned -
+            cleaning this viewer does not clean it.
+
+        Raises:
+            RuntimeError: If the viewer is unbound or cleaned, or `frame_name`
+                does not match the bound frame.
 
         Returns:
             List[FrameLink]: Visible conduits whose root lineage matches.
@@ -784,6 +1050,32 @@ class ViewConduit(Cleanable):
             frame_name:
                 Optional frame-name assertion passed through to the selected-
                 frame helper.
+
+        Contract:
+            - CASE-INSENSITIVE. The supplied name and the record's policy are both
+              normalized before comparison, so "BLOCK_ALL" and "block_all" match.
+            - Empty `policy_name` is rejected up front.
+            - An unknown policy name is not an error - it simply matches nothing.
+            - VISIBILITY-FILTERED PROJECTION over the bound frame view. Absence
+              means "not visible to this rift" OR "not present" - indistinguishable
+              from outside. Never use an empty result as proof of non-existence.
+            - `frame_name` is an ASSERTION passed through to the frame helper, not
+              a selector. When supplied it must match the bound frame or the call
+              raises; it cannot be used to look at another frame.
+            - Read-only snapshot taken at call time; it does not mutate frame state
+              and does not stay live as the frame changes.
+
+        Threading:
+            Reads a descriptor snapshot through the borrowed frame view;
+            concurrent frame changes are not reflected in a returned result.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`. The frame view is BORROWED, not owned -
+            cleaning this viewer does not clean it.
+
+        Raises:
+            RuntimeError: If the viewer is unbound or cleaned, or `frame_name`
+                does not match the bound frame.
 
         Returns:
             List[FrameLink]: Visible conduits whose payload policy matches.
@@ -823,6 +1115,32 @@ class ViewConduit(Cleanable):
                 Optional frame-name assertion passed through to the selected-
                 frame helper.
 
+        Contract:
+            - CASE-INSENSITIVE against the conduit state's `.name`, so "CLEANED" and
+              "cleaned" match.
+            - Empty `state_name` is rejected up front.
+            - An unknown state name is not an error - it simply matches nothing.
+            - VISIBILITY-FILTERED PROJECTION over the bound frame view. Absence
+              means "not visible to this rift" OR "not present" - indistinguishable
+              from outside. Never use an empty result as proof of non-existence.
+            - `frame_name` is an ASSERTION passed through to the frame helper, not
+              a selector. When supplied it must match the bound frame or the call
+              raises; it cannot be used to look at another frame.
+            - Read-only snapshot taken at call time; it does not mutate frame state
+              and does not stay live as the frame changes.
+
+        Threading:
+            Reads a descriptor snapshot through the borrowed frame view;
+            concurrent frame changes are not reflected in a returned result.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`. The frame view is BORROWED, not owned -
+            cleaning this viewer does not clean it.
+
+        Raises:
+            RuntimeError: If the viewer is unbound or cleaned, or `frame_name`
+                does not match the bound frame.
+
         Returns:
             List[FrameLink]: Visible conduits whose payload state matches.
         """
@@ -857,6 +1175,31 @@ class ViewConduit(Cleanable):
                 Optional frame-name assertion passed through to the selected-
                 frame helper.
 
+        Contract:
+            - Built from `list_peer_conduit_ids`, so it inherits that method's
+              visibility intersection: peers invisible to this rift are absent
+              from the result.
+            - VISIBILITY-FILTERED PROJECTION over the bound frame view. Absence
+              means "not visible to this rift" OR "not present" - indistinguishable
+              from outside. Never use an empty result as proof of non-existence.
+            - `frame_name` is an ASSERTION passed through to the frame helper, not
+              a selector. When supplied it must match the bound frame or the call
+              raises; it cannot be used to look at another frame.
+            - Read-only snapshot taken at call time; it does not mutate frame state
+              and does not stay live as the frame changes.
+
+        Threading:
+            Reads a descriptor snapshot through the borrowed frame view;
+            concurrent frame changes are not reflected in a returned result.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`. The frame view is BORROWED, not owned -
+            cleaning this viewer does not clean it.
+
+        Raises:
+            RuntimeError: If the viewer is unbound or cleaned, or `frame_name`
+                does not match the bound frame.
+
         Returns:
             List[FrameLink]: Visible peer conduit links.
         """
@@ -888,6 +1231,33 @@ class ViewConduit(Cleanable):
             frame_name:
                 Optional frame-name assertion passed through to the selected-
                 frame helper.
+
+        Contract:
+            - INTERSECTED WITH VISIBILITY. The conduit's recorded peer list is
+              filtered down to peers this rift can see, so the result can be
+              SHORTER than the conduit's real peer count and an empty tuple does
+              not mean the conduit is unpaired.
+            - Never use the length of this tuple as a peer count.
+            - VISIBILITY-FILTERED PROJECTION over the bound frame view. Absence
+              means "not visible to this rift" OR "not present" - indistinguishable
+              from outside. Never use an empty result as proof of non-existence.
+            - `frame_name` is an ASSERTION passed through to the frame helper, not
+              a selector. When supplied it must match the bound frame or the call
+              raises; it cannot be used to look at another frame.
+            - Read-only snapshot taken at call time; it does not mutate frame state
+              and does not stay live as the frame changes.
+
+        Threading:
+            Reads a descriptor snapshot through the borrowed frame view;
+            concurrent frame changes are not reflected in a returned result.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`. The frame view is BORROWED, not owned -
+            cleaning this viewer does not clean it.
+
+        Raises:
+            RuntimeError: If the viewer is unbound or cleaned, or `frame_name`
+                does not match the bound frame.
 
         Returns:
             Tuple[str, ...]: Visible peer conduit ids in deterministic order.
@@ -923,6 +1293,30 @@ class ViewConduit(Cleanable):
                 Optional frame-name assertion passed through to the selected-
                 frame helper.
 
+        Contract:
+            - Covers only spells this rift can see AND that this conduit owns, so it
+              is a double filter - ownership and visibility both narrow it.
+            - VISIBILITY-FILTERED PROJECTION over the bound frame view. Absence
+              means "not visible to this rift" OR "not present" - indistinguishable
+              from outside. Never use an empty result as proof of non-existence.
+            - `frame_name` is an ASSERTION passed through to the frame helper, not
+              a selector. When supplied it must match the bound frame or the call
+              raises; it cannot be used to look at another frame.
+            - Read-only snapshot taken at call time; it does not mutate frame state
+              and does not stay live as the frame changes.
+
+        Threading:
+            Reads a descriptor snapshot through the borrowed frame view;
+            concurrent frame changes are not reflected in a returned result.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`. The frame view is BORROWED, not owned -
+            cleaning this viewer does not clean it.
+
+        Raises:
+            RuntimeError: If the viewer is unbound or cleaned, or `frame_name`
+                does not match the bound frame.
+
         Returns:
             Tuple[str, ...]: Visible spell source ids owned by the conduit.
         """
@@ -950,6 +1344,31 @@ class ViewConduit(Cleanable):
             frame_name:
                 Optional frame-name assertion passed through to the selected-
                 frame helper.
+
+        Contract:
+            - SKIPS spells with no binding name, so the result is SHORTER than the
+              conduit's visible spell list and is NOT positionally aligned with
+              `list_spell_names_for_conduit`. Do not zip the two.
+            - VISIBILITY-FILTERED PROJECTION over the bound frame view. Absence
+              means "not visible to this rift" OR "not present" - indistinguishable
+              from outside. Never use an empty result as proof of non-existence.
+            - `frame_name` is an ASSERTION passed through to the frame helper, not
+              a selector. When supplied it must match the bound frame or the call
+              raises; it cannot be used to look at another frame.
+            - Read-only snapshot taken at call time; it does not mutate frame state
+              and does not stay live as the frame changes.
+
+        Threading:
+            Reads a descriptor snapshot through the borrowed frame view;
+            concurrent frame changes are not reflected in a returned result.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`. The frame view is BORROWED, not owned -
+            cleaning this viewer does not clean it.
+
+        Raises:
+            RuntimeError: If the viewer is unbound or cleaned, or `frame_name`
+                does not match the bound frame.
 
         Returns:
             Tuple[str, ...]: Visible binding names owned by the conduit.
@@ -987,6 +1406,31 @@ class ViewConduit(Cleanable):
                 Optional frame-name assertion passed through to the selected-
                 frame helper.
 
+        Contract:
+            - NOT deduplicated and positionally aligned with the conduit's visible
+              spell links, unlike `list_binding_names_for_conduit` which skips
+              entries.
+            - VISIBILITY-FILTERED PROJECTION over the bound frame view. Absence
+              means "not visible to this rift" OR "not present" - indistinguishable
+              from outside. Never use an empty result as proof of non-existence.
+            - `frame_name` is an ASSERTION passed through to the frame helper, not
+              a selector. When supplied it must match the bound frame or the call
+              raises; it cannot be used to look at another frame.
+            - Read-only snapshot taken at call time; it does not mutate frame state
+              and does not stay live as the frame changes.
+
+        Threading:
+            Reads a descriptor snapshot through the borrowed frame view;
+            concurrent frame changes are not reflected in a returned result.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`. The frame view is BORROWED, not owned -
+            cleaning this viewer does not clean it.
+
+        Raises:
+            RuntimeError: If the viewer is unbound or cleaned, or `frame_name`
+                does not match the bound frame.
+
         Returns:
             Tuple[str, ...]: Visible spell names owned by the conduit.
         """
@@ -1018,6 +1462,25 @@ class ViewConduit(Cleanable):
             Combine the conduit access explanation, relationship view, and
             compact inventory so the operator can decide quickly whether to go
             deeper on that conduit.
+
+        Contract:
+            - COMPOSITE of identity and access posture in one call; costs more than any
+              single component because it fans out.
+            - VISIBILITY-FILTERED PROJECTION: absence means "not visible to this rift"
+              OR "not present", indistinguishable from outside.
+            - `frame_name` is an ASSERTION, not a selector - when supplied it must
+              match the bound frame or the call raises.
+
+        Threading:
+            Reads a descriptor snapshot; concurrent frame changes are not reflected in
+            an already-returned result.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If the viewer is unbound or cleaned, or `frame_name` does not
+                match the bound frame.
 
         Args:
             conduit_id:
@@ -1062,6 +1525,33 @@ class ViewConduit(Cleanable):
                 Optional frame-name assertion passed through to the selected-
                 frame helper.
 
+        Contract:
+            - EXACT, case-sensitive match on display name - unlike the policy and
+              state listers, which normalize case.
+            - Returns a LIST because display names are not unique; more than one
+              visible conduit may carry the same name.
+            - Empty `conduit_name` is rejected up front.
+            - VISIBILITY-FILTERED PROJECTION over the bound frame view. Absence
+              means "not visible to this rift" OR "not present" - indistinguishable
+              from outside. Never use an empty result as proof of non-existence.
+            - `frame_name` is an ASSERTION passed through to the frame helper, not
+              a selector. When supplied it must match the bound frame or the call
+              raises; it cannot be used to look at another frame.
+            - Read-only snapshot taken at call time; it does not mutate frame state
+              and does not stay live as the frame changes.
+
+        Threading:
+            Reads a descriptor snapshot through the borrowed frame view;
+            concurrent frame changes are not reflected in a returned result.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`. The frame view is BORROWED, not owned -
+            cleaning this viewer does not clean it.
+
+        Raises:
+            RuntimeError: If the viewer is unbound or cleaned, or `frame_name`
+                does not match the bound frame.
+
         Returns:
             List[FrameLink]: Matching visible conduit links.
         """
@@ -1089,6 +1579,33 @@ class ViewConduit(Cleanable):
             frame_name:
                 Optional frame-name assertion passed through to the selected-
                 frame helper.
+
+        Contract:
+            - Explains the ACL posture for a conduit and augments the frame-level
+              explanation with a `payload_visible` verdict derived from the
+              returned visible sections.
+            - This is the honest way to distinguish "absent" from "hidden", which
+              the plain listers cannot express.
+            - VISIBILITY-FILTERED PROJECTION over the bound frame view. Absence
+              means "not visible to this rift" OR "not present" - indistinguishable
+              from outside. Never use an empty result as proof of non-existence.
+            - `frame_name` is an ASSERTION passed through to the frame helper, not
+              a selector. When supplied it must match the bound frame or the call
+              raises; it cannot be used to look at another frame.
+            - Read-only snapshot taken at call time; it does not mutate frame state
+              and does not stay live as the frame changes.
+
+        Threading:
+            Reads a descriptor snapshot through the borrowed frame view;
+            concurrent frame changes are not reflected in a returned result.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`. The frame view is BORROWED, not owned -
+            cleaning this viewer does not clean it.
+
+        Raises:
+            RuntimeError: If the viewer is unbound or cleaned, or `frame_name`
+                does not match the bound frame.
 
         Returns:
             Dict[str, object]: Conduit visibility and section explanation.
@@ -1132,6 +1649,32 @@ class ViewConduit(Cleanable):
                 Optional frame-name assertion passed through to the selected-
                 frame helper.
 
+        Contract:
+            - ACL-GATED FIELD READ. The field is returned only when its section is
+              in the conduit's visible sections; an invisible section raises rather
+              than returning None, so a value of None always means a real None.
+            - Empty `field_name` is rejected up front.
+            - VISIBILITY-FILTERED PROJECTION over the bound frame view. Absence
+              means "not visible to this rift" OR "not present" - indistinguishable
+              from outside. Never use an empty result as proof of non-existence.
+            - `frame_name` is an ASSERTION passed through to the frame helper, not
+              a selector. When supplied it must match the bound frame or the call
+              raises; it cannot be used to look at another frame.
+            - Read-only snapshot taken at call time; it does not mutate frame state
+              and does not stay live as the frame changes.
+
+        Threading:
+            Reads a descriptor snapshot through the borrowed frame view;
+            concurrent frame changes are not reflected in a returned result.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`. The frame view is BORROWED, not owned -
+            cleaning this viewer does not clean it.
+
+        Raises:
+            RuntimeError: If the viewer is unbound or cleaned, or `frame_name`
+                does not match the bound frame.
+
         Returns:
             object: ACL-visible conduit payload field value.
         """
@@ -1171,6 +1714,33 @@ class ViewConduit(Cleanable):
             frame_name:
                 Optional frame-name assertion passed through to the selected-
                 frame helper.
+
+        Contract:
+            - RAISES rather than returning None, which is the distinction from the
+              find/list siblings.
+            - The raise is AMBIGUOUS between "no such conduit" and "exists but not
+              visible to this rift"; do not treat it as proof of non-existence.
+            - Empty `conduit_id` is rejected up front.
+            - VISIBILITY-FILTERED PROJECTION over the bound frame view. Absence
+              means "not visible to this rift" OR "not present" - indistinguishable
+              from outside. Never use an empty result as proof of non-existence.
+            - `frame_name` is an ASSERTION passed through to the frame helper, not
+              a selector. When supplied it must match the bound frame or the call
+              raises; it cannot be used to look at another frame.
+            - Read-only snapshot taken at call time; it does not mutate frame state
+              and does not stay live as the frame changes.
+
+        Threading:
+            Reads a descriptor snapshot through the borrowed frame view;
+            concurrent frame changes are not reflected in a returned result.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`. The frame view is BORROWED, not owned -
+            cleaning this viewer does not clean it.
+
+        Raises:
+            RuntimeError: If the viewer is unbound or cleaned, or `frame_name`
+                does not match the bound frame.
 
         Returns:
             FrameLink: Matching conduit link.

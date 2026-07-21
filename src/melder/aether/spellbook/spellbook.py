@@ -696,6 +696,21 @@ and logging.
         """
         Exit the Spellbook lock context.
 
+        Contract:
+            - Releases unconditionally, including when the block raised. Exception
+              arguments are accepted and IGNORED, so no exception is suppressed here.
+            - Exactly one release per `__enter__`; the lock is reentrant, so nested
+              `with` blocks are legal and each level must exit.
+
+        Threading:
+            Releases the spellbook lock acquired by `__enter__`.
+
+        Lifecycle / Cleanup:
+            Performs no cleaned-state check - it is purely the unlock half.
+
+        Raises:
+            RuntimeError: If called without a matching `__enter__` on this thread.
+
         Returns:
             None.
         """

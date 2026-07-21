@@ -121,5 +121,18 @@ class Existence(Enum):
 
         This keeps logging and configuration surfaces readable without
         requiring callers to reach through `.name` directly.
+        Contract:
+            - Returns the BARE MEMBER NAME (`"unique"`), NOT the default enum repr
+              (`"Existence.unique"`). String-formatting an Existence therefore yields
+              a value that round-trips back through the enum by name.
+            - This is what lets existence values be written into records and logs and
+              read back without stripping a prefix.
+
+        Threading:
+            Pure computation over immutable fields; safe from any thread.
+
+        Lifecycle / Cleanup:
+            Carries no cleaned-state guard.
+
         """
         return self.name

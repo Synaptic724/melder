@@ -5,6 +5,7 @@ beginner runner). Run on 3.14t:
     pytest UX_and_AIX_experiences/pytest_examples -v
 """
 import importlib.util
+import sys
 from pathlib import Path
 
 import pytest
@@ -19,6 +20,10 @@ def _load(path: Path):
         "ux_int_example_" + path.stem, path
     )
     module = importlib.util.module_from_spec(spec)
+    # Import law (run 3): a module must be registered in sys.modules
+    # BEFORE exec - lessons that look themselves up (scan lessons use
+    # sys.modules[__name__]) are broken by an unregistered exec.
+    sys.modules[spec.name] = module
     spec.loader.exec_module(module)
     return module
 

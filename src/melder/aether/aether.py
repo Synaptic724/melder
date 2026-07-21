@@ -652,6 +652,19 @@ class Aether(Cleanable):
         """
         Return the installed Aether root configuration, if any.
 
+        Contract:
+            - Returns the INSTALLED configuration by reference, not a copy. None means
+              nothing has been installed yet.
+
+        Threading:
+            Unsynchronized read; a snapshot only.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If the object has been cleaned.
+
         Returns:
             Optional[AetherConfiguration]: Installed root config.
         """
@@ -662,6 +675,21 @@ class Aether(Cleanable):
     def configured(self) -> bool:
         """
         Return whether an Aether root configuration is installed.
+
+        Contract:
+            - Reports that a configuration has been INSTALLED, which is weaker than
+              being usable: `configure()` accepts a configuration that has not been
+              activated, so `configured` can be True while `activate()` would still
+              refuse.
+
+        Threading:
+            Unsynchronized read; a snapshot only.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If the object has been cleaned.
 
         Returns:
             bool: True when a config is installed.
@@ -674,6 +702,21 @@ class Aether(Cleanable):
         """
         Return the Aether-owned MutationResearch root.
 
+        Contract:
+            - LAZY ACCESSOR: it resolves the mutation-research singleton on demand
+              rather than returning a stored reference, so the first call may
+              construct it.
+            - Returns the process-wide singleton, not an Aether-private instance.
+
+        Threading:
+            Unsynchronized read; a snapshot only.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If the object has been cleaned.
+
         Returns:
             MutationResearch: Hosted mutation-research singleton.
         """
@@ -685,6 +728,20 @@ class Aether(Cleanable):
         """
         Return whether the Aether root configuration has been applied.
 
+        Contract:
+            - Reports that Aether itself is live. It implies the installed
+              configuration was activated first, because `activate()` refuses
+              otherwise.
+
+        Threading:
+            Unsynchronized read; a snapshot only.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If the object has been cleaned.
+
         Returns:
             bool: True when root config has been activated.
         """
@@ -694,6 +751,20 @@ class Aether(Cleanable):
     def create_configuration(self) -> AetherConfiguration:
         """
         Create a fresh Aether root configuration object.
+
+        Contract:
+            - FACTORY ONLY: returns a FRESH, unattached `AetherConfiguration` and does
+              NOT install it. Installation is `configure(...)`, and activation of the
+              configuration is a further separate step.
+
+        Threading:
+            Unsynchronized read; a snapshot only.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If the object has been cleaned.
 
         Returns:
             AetherConfiguration: New mutable config object.
@@ -725,6 +796,22 @@ class Aether(Cleanable):
             configuration:
                 Root configuration object to install.
 
+        Contract:
+            - INSTALLS ONLY - it does not validate, freeze or activate the
+              configuration, and it accepts one that is still mutable. Passing an
+              unactivated configuration succeeds here and fails later at `activate()`.
+            - Type-checked: a non-`AetherConfiguration` raises `TypeError`.
+            - Replaces any previously installed configuration outright.
+
+        Threading:
+            Unsynchronized read; a snapshot only.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If the object has been cleaned.
+
         Returns:
             None.
         """
@@ -744,6 +831,26 @@ class Aether(Cleanable):
         Args:
             configuration:
                 Optional configuration to install before activation.
+
+        Contract:
+            - ORDERING RULE: THE CONFIGURATION MUST BE ACTIVATED BEFORE AETHER CAN BE.
+              Activating Aether with a merely-frozen configuration raises
+              `RuntimeError`, so `configuration.activate()` comes first.
+            - Passing a configuration here is a convenience that calls `configure()`
+              first; omitting it uses whatever is already installed.
+            - Refuses when nothing is configured, so the two failure modes are
+              distinct: "not configured" and "configuration not activated".
+
+        Threading:
+            State transition applied under the Aether lock.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If Aether is not configured, or the installed
+                configuration has not been activated.
+            TypeError: If a supplied configuration is not an `AetherConfiguration`.
 
         Returns:
             None.
@@ -1309,6 +1416,20 @@ class Aether(Cleanable):
             aetheric_frame_name:
                 Name of the target frame.
 
+        Contract:
+            - Derived from `list_conduit_ids(...)`, so it BUILDS THE WHOLE ID LIST just
+              to take its length. Prefer it for clarity, not for hot paths.
+            - Scoped to one aetheric frame.
+
+        Threading:
+            Inherits the listing call's synchronization; a point-in-time count.
+
+        Lifecycle / Cleanup:
+            Guarded indirectly, via the listing call it delegates to.
+
+        Raises:
+            RuntimeError: If Aether has been cleaned.
+
         Returns:
             int: Number of registered root conduits.
         """
@@ -1328,6 +1449,21 @@ class Aether(Cleanable):
             aetheric_frame_name:
                 Name of the target frame.
 
+        Contract:
+            - A LINEAR SCAN, not a dict lookup: it materializes the full id list and
+              tests membership in it. Fine for occasional checks, wasteful in a loop.
+            - Scoped to one aetheric frame, so False can mean "exists, but in a
+              different frame".
+
+        Threading:
+            Inherits the listing call's synchronization; a point-in-time answer.
+
+        Lifecycle / Cleanup:
+            Guarded indirectly, via the listing call it delegates to.
+
+        Raises:
+            RuntimeError: If Aether has been cleaned.
+
         Returns:
             bool: True when the conduit id exists in the target frame.
         """
@@ -1346,6 +1482,20 @@ class Aether(Cleanable):
                 Root conduit name to check.
             aetheric_frame_name:
                 Name of the target frame.
+
+        Contract:
+            - A LINEAR SCAN over the name list, like the id variant.
+            - Only NAMED conduits can match, so False also covers "registered but
+              unnamed". Scoped to one aetheric frame.
+
+        Threading:
+            Inherits the listing call's synchronization; a point-in-time answer.
+
+        Lifecycle / Cleanup:
+            Guarded indirectly, via the listing call it delegates to.
+
+        Raises:
+            RuntimeError: If Aether has been cleaned.
 
         Returns:
             bool: True when the conduit name exists in the target frame.

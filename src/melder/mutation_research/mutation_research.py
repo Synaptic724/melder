@@ -147,6 +147,18 @@ class MutationResearch(Cleanable):
         """
         Return the singleton MutationResearch instance.
 
+        Contract:
+            - PROCESS-WIDE SINGLETON via double-checked locking: every construction
+              returns THE SAME instance. There is no way to get a second one.
+            - The fast path reads the cached instance without the lock and only
+              locks on the miss, so steady-state construction is uncontended.
+
+        Threading:
+            Double-checked under the class lock; safe to call concurrently.
+
+        Lifecycle / Cleanup:
+            Allocation only - initialization state is handled by `__init__`.
+
         Returns:
             MutationResearch: Process-wide mutation-research root.
         """
@@ -174,6 +186,27 @@ class MutationResearch(Cleanable):
                 this host.
             configuration:
                 Optional initial mutation-research configuration.
+
+        Contract:
+            - RUNS ITS BODY ONCE. Because the class is a singleton, a second
+              construction returns early, which means CONSTRUCTOR ARGUMENTS ARE
+              SILENTLY IGNORED after the first call - passing a different `aether`
+              does NOT rebind the existing instance. Treat later calls as lookups,
+              not configuration.
+            - Establishes a dedicated emission lock that must exist before the first
+              `ResearchSet` fires `on_mutation`, so snapshot build and publication in
+              the emission seam are serialized from the very first event.
+
+        Owned State:
+            Owns its id, the emission lock, and the research-set registry. BORROWS
+            the hosting Aether.
+
+        Threading:
+            Initialization is guarded by the singleton flag; the emission lock it
+            creates serializes the publication seam thereafter.
+
+        Lifecycle / Cleanup:
+            One-time. Later constructions are no-ops that return the live instance.
 
         Returns:
             None.
@@ -218,6 +251,10 @@ class MutationResearch(Cleanable):
         Idempotently clear mutation-research root state and reset singleton bookkeeping.
 
         Contract:
+            - IDEMPOTENT under double-checked locking: it returns immediately if already
+              cleaned, then re-checks inside the lock.
+            - Tears down research-set state; the hosting Aether is BORROWED and is not
+              cleaned here.
             - The teardown state emission is BEST-EFFORT: a raising sink is
               swallowed so the cascade (sets, engines, configuration) and
               the singleton reset always complete.
@@ -311,6 +348,22 @@ class MutationResearch(Cleanable):
         """
         Return the stable root id.
 
+        Contract:
+            - Identifies the singleton instance; assigned once at first construction and
+              stable for the process.
+            - Distinct from any research-set or lane id.
+            - Identifies the singleton instance, assigned once at first construction
+              and stable for the process.
+
+        Threading:
+            Unsynchronized read of a plain flag; a snapshot only.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If mutation research has been cleaned.
+
         Returns:
             str: Stable root id.
         """
@@ -321,6 +374,22 @@ class MutationResearch(Cleanable):
     def configured(self) -> bool:
         """
         Return whether a configuration is installed.
+
+        Contract:
+            - Reports that a configuration has been INSTALLED, not that mutation
+              research is running - that is `activated`.
+            - `deactivate()` does NOT clear this: the configuration stays installed
+              and only the activation flag flips. So `configured and not activated`
+              is the normal deactivated state, not an inconsistency.
+
+        Threading:
+            Unsynchronized read of a plain flag; a snapshot only.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If mutation research has been cleaned.
 
         Returns:
             bool: True when the root has an installed configuration.
@@ -333,6 +402,23 @@ class MutationResearch(Cleanable):
         """
         Alias for the configured-state flag.
 
+        Contract:
+            - ALIAS for the `configured` property, kept for call-site readability.
+            - Identical behaviour and identical guard - there is no difference to choose
+              between.
+            - ALIAS for the `configured` property, kept for call-site readability.
+              Identical behaviour and identical guard - there is no difference to
+              choose between.
+
+        Threading:
+            Unsynchronized read of a plain flag; a snapshot only.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If mutation research has been cleaned.
+
         Returns:
             bool: True when a configuration is installed.
         """
@@ -342,6 +428,20 @@ class MutationResearch(Cleanable):
     def activated(self) -> bool:
         """
         Return whether the mutation-research root is active.
+
+        Contract:
+            - Reports that mutation research is LIVE. Activation implies a
+              configuration is installed; the converse does not hold.
+            - Flipped back to False by `deactivate()` without losing configuration.
+
+        Threading:
+            Unsynchronized read of a plain flag; a snapshot only.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If mutation research has been cleaned.
 
         Returns:
             bool: True when configuration is installed and activated.
@@ -354,6 +454,21 @@ class MutationResearch(Cleanable):
         """
         Alias for the activated-state flag.
 
+        Contract:
+            - ALIAS for the `activated` property, kept for call-site readability.
+            - Identical behaviour and identical guard.
+            - ALIAS for the `activated` property, kept for call-site readability.
+              Identical behaviour and identical guard.
+
+        Threading:
+            Unsynchronized read of a plain flag; a snapshot only.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If mutation research has been cleaned.
+
         Returns:
             bool: True when the root is active.
         """
@@ -363,6 +478,20 @@ class MutationResearch(Cleanable):
     def configuration(self) -> Optional[MutationResearchConfiguration]:
         """
         Return the installed configuration, if any.
+
+        Contract:
+            - Returns the INSTALLED configuration by reference, not a copy. It stays
+              non-None after `deactivate()`, because deactivation keeps the install.
+            - None means nothing has been installed yet.
+
+        Threading:
+            Unsynchronized read of a plain flag; a snapshot only.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If mutation research has been cleaned.
 
         Returns:
             Optional[MutationResearchConfiguration]: Installed configuration.
@@ -374,6 +503,21 @@ class MutationResearch(Cleanable):
         """
         Create a fresh mutation-research configuration object.
 
+        Contract:
+            - FACTORY ONLY. It returns a FRESH, EMPTY, UNATTACHED configuration and
+              does NOT install it on this singleton - installation is a separate
+              step. Calling it twice yields two unrelated objects.
+            - The returned configuration starts empty, so seed it before freezing.
+
+        Threading:
+            Unsynchronized read of a plain flag; a snapshot only.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If mutation research has been cleaned.
+
         Returns:
             MutationResearchConfiguration: New mutable config object.
         """
@@ -384,6 +528,21 @@ class MutationResearch(Cleanable):
         """
         Create a fresh fluent builder for mutation-research configuration assembly.
 
+        Contract:
+            - FACTORY ONLY. Returns a fresh builder wrapping a new configuration and
+              does NOT install anything here.
+            - Remember the builder's exits are one-shot: `build()` yields a MUTABLE
+              configuration, `finalize()` a frozen one, `activate()` an activated one.
+
+        Threading:
+            Unsynchronized read of a plain flag; a snapshot only.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If mutation research has been cleaned.
+
         Returns:
             MutationResearchConfigurationBuilder: New builder instance.
         """
@@ -393,6 +552,11 @@ class MutationResearch(Cleanable):
     def configure(self, configuration: MutationResearchConfiguration) -> None:
         """
         Install one configuration on the mutation-research root.
+
+        Contract:
+            - INSTALLS ONLY - it does not validate, freeze or activate, and it accepts a
+              configuration that is still mutable.
+            - Type-checked: a non-`MutationResearchConfiguration` raises `TypeError`.
 
         Args:
             configuration:
@@ -429,6 +593,12 @@ class MutationResearch(Cleanable):
     ) -> None:
         """
         Activate the mutation-research root using one activated configuration.
+
+        Contract:
+            - ORDERING RULE: THE CONFIGURATION MUST BE ACTIVATED FIRST. Activating with a
+              merely-frozen configuration raises.
+            - Two distinct failure modes: "not configured" and "configuration not
+              activated".
 
         Args:
             configuration:
@@ -563,6 +733,24 @@ class MutationResearch(Cleanable):
         """
         Deactivate the mutation-research root without dropping configuration.
 
+        Contract:
+            - KEEPS THE INSTALLED CONFIGURATION. It flips the activation switch only,
+              so `configured` stays True and the recorded twin is not evicted - the
+              state record flips to `disabled` instead of being removed.
+            - That makes deactivate REVERSIBLE without re-supplying configuration,
+              which is the whole point of separating the two flags.
+            - Emits a state record only when the crystallizer is activated, so a
+              missing record does not imply the deactivation failed.
+
+        Threading:
+            Reads under `self._lock`, so the result is a coherent snapshot.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If mutation research has been cleaned.
+
         Returns:
             None.
         """
@@ -586,6 +774,11 @@ class MutationResearch(Cleanable):
     ) -> ResearchSet:
         """
         Return one owned research set by name.
+
+        Contract:
+            - REQUIRED lookup: an unknown name RAISES, and the error LISTS THE KNOWN NAMES
+              so a typo is self-diagnosing.
+            - Omitting the name resolves the default set rather than returning all sets.
 
         Args:
             name:
@@ -612,6 +805,12 @@ class MutationResearch(Cleanable):
     def create_research_set(self, name: str) -> ResearchSet:
         """
         Create one additional named research set.
+
+        Contract:
+            - LOCK ORDER LAW: THE EMISSION LOCK IS TAKEN BEFORE THE ROOT LOCK. The set
+              constructor fires `on_mutation` while the root lock is held, so the one-way
+              order is emission -> root. Reversing it deadlocks.
+            - Rejects a non-string or empty name up front.
 
         Args:
             name:
@@ -651,6 +850,20 @@ class MutationResearch(Cleanable):
         """
         Return every owned research-set name, sorted.
 
+        Contract:
+            - SORTED, so iteration order is deterministic across calls and processes.
+            - Snapshot taken under the lock; it goes stale as sets are registered or
+              removed.
+
+        Threading:
+            Reads under `self._lock`, so the result is a coherent snapshot.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If mutation research has been cleaned.
+
         Returns:
             List[str]: Sorted set names.
         """
@@ -661,6 +874,22 @@ class MutationResearch(Cleanable):
     def describe_research_composition(self) -> Dict[str, object]:
         """
         Return the detached composition payload across every owned set.
+
+        Contract:
+            - FANS OUT across EVERY registered research set, so cost scales with the
+              number of sets - this is a whole-world description, not a targeted
+              query.
+            - Keys are set names; each value is that set's own composition
+              description.
+
+        Threading:
+            Reads under `self._lock`, so the result is a coherent snapshot.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If mutation research has been cleaned.
 
         Returns:
             Dict[str, object]:
@@ -686,6 +915,12 @@ class MutationResearch(Cleanable):
             composition payload replaces the current registry wholesale (the
             record is the truth being loaded, never merged). The guaranteed
             `default` set is recreated when the recording lacks one.
+
+        Contract:
+            - Expects a DICT OF SET PAYLOADS keyed by set name; any other shape raises
+              `ValueError` before anything is loaded.
+            - Restores recorded composition rather than recomputing it, so it reflects
+              what was captured, not current truth.
 
         Args:
             composition_payload:
@@ -746,6 +981,22 @@ class MutationResearch(Cleanable):
         """
         Return the ambient campaign stamp, when one is set.
 
+        Contract:
+            - AMBIENT DEFAULT. Group operations that take a `campaign=None` fall back
+              to this value, so setting it changes the attribution of later calls
+              that did not name a campaign explicitly.
+            - None means no ambient campaign, and calls without an explicit campaign
+              are then unattributed rather than failing.
+
+        Threading:
+            Reads under `self._lock`, so the result is a coherent snapshot.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If mutation research has been cleaned.
+
         Returns:
             Optional[str]:
                 Active campaign name or None.
@@ -764,6 +1015,11 @@ class MutationResearch(Cleanable):
             (`record_world_entry` / `record_promotion` - i.e. every dynamic
             bind, staged bind, and notch) carries this stamp until cleared,
             so campaign membership never depends on remembering to pass it.
+
+        Contract:
+            - Sets the AMBIENT DEFAULT that later group operations inherit when they pass
+              `campaign=None`. It does not retroactively attribute earlier operations.
+            - Rejects a non-string or empty campaign.
 
         Args:
             campaign:
@@ -786,6 +1042,21 @@ class MutationResearch(Cleanable):
         """
         Clear the ambient research-campaign stamp.
 
+        Contract:
+            - Removes the ambient default so later group operations are unattributed
+              unless they name a campaign explicitly. It does NOT rewrite attribution
+              already recorded on earlier operations.
+            - Idempotent: clearing when nothing is set is a no-op.
+
+        Threading:
+            Reads under `self._lock`, so the result is a coherent snapshot.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If mutation research has been cleaned.
+
         Returns:
             None.
         """
@@ -801,6 +1072,21 @@ class MutationResearch(Cleanable):
     def staged_ancestry(self) -> Optional[List[str]]:
         """
         Return the staged parent identities, when any.
+
+        Contract:
+            - Returns a COPY of the staged ancestry list, so mutating the result does
+              NOT change staged state.
+            - None and empty list mean different things: None is "nothing staged",
+              an empty list is "staged, with no ancestors".
+
+        Threading:
+            Reads under `self._lock`, so the result is a coherent snapshot.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If mutation research has been cleaned.
 
         Returns:
             Optional[List[str]]:
@@ -828,6 +1114,12 @@ class MutationResearch(Cleanable):
             multi-parent node. Consumed ONE-SHOT by the first NEW
             declaration (rediscoveries do not consume it); restage for
             another synthesis.
+
+        Contract:
+            - Requires a NON-EMPTY LIST of parent identities; an empty list raises rather
+              than being treated as "no ancestry".
+            - Staging is ambient state consumed by a later operation; clearing it is a
+              separate explicit step.
 
         Args:
             parent_spell_ids:
@@ -859,6 +1151,20 @@ class MutationResearch(Cleanable):
         """
         Clear the staged parent ancestry without consuming it.
 
+        Contract:
+            - Resets staged ancestry to None - the "nothing staged" state, not an
+              empty list.
+            - Idempotent: clearing when nothing is staged is a no-op.
+
+        Threading:
+            Reads under `self._lock`, so the result is a coherent snapshot.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If mutation research has been cleaned.
+
         Returns:
             None.
         """
@@ -888,6 +1194,11 @@ class MutationResearch(Cleanable):
             once the root is active. Rediscovery (identical content, same
             SHA) is a quiet no-op - the runtime never fails on research
             bookkeeping.
+
+        Contract:
+            - CAMPAIGN DEFAULTS TO THE AMBIENT ONE: `campaign=None` inherits
+              `active_campaign` rather than meaning "no campaign".
+            - Records against the DEFAULT research set, not a named one.
 
         Args:
             spell_id:
@@ -954,6 +1265,8 @@ class MutationResearch(Cleanable):
         Record one runtime selection change (notch) into the default set.
 
         Contract:
+            - CAMPAIGN DEFAULTS TO THE AMBIENT ONE, exactly as in `record_world_entry`.
+            - Records against the DEFAULT research set.
             - An undeclared `to_spell_id` is declared first (world-entry
               catch-up: a promotion proves the version exists) THROUGH the
               root world-entry verb, so staged ancestry is consumed by the
@@ -1191,6 +1504,12 @@ class MutationResearch(Cleanable):
             polymorphic verbs pick kind-aware strategy defaults with it)
             without exposing node internals.
 
+        Contract:
+            - Tests whether an identity names a GROUP NODE (a composition) rather than a
+              single spell - the discriminator the diff verbs dispatch on.
+            - False for an unknown identity as well as for a plain spell, so it is not an
+              existence check.
+
         Args:
             identity:
                 Spell or composition identity to classify.
@@ -1218,6 +1537,12 @@ class MutationResearch(Cleanable):
             derived": material resolves through crystallizer custody (the
             SHA is the SpellCrystal id) and the comparison runs in the
             registered strategy - nothing is stored.
+
+        Contract:
+            - KIND DISPATCH (parity law): two COMPOSITIONS diff through the grouped engine,
+              two SPELLS through the spell engine.
+            - A MIXED PAIR REFUSES, teach-grade, because a spell and a subsystem share no
+              common grain to diff at. That refusal is deliberate, not a gap.
 
         Args:
             left_spell_id:
@@ -1276,6 +1601,21 @@ class MutationResearch(Cleanable):
     def create_diff_engine(self) -> DiffEngine:
         """
         Create one standalone diff engine over crystallizer custody.
+
+        Contract:
+            - FACTORY: returns a FRESH engine on every call, bound to this singleton's
+              material resolver. It is not cached and not owned by the singleton.
+            - The engine resolves material LAZILY through that callback, so it
+              reflects state at diff time rather than at construction time.
+
+        Threading:
+            Unsynchronized read of a plain flag; a snapshot only.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If mutation research has been cleaned.
 
         Returns:
             DiffEngine:
@@ -1802,6 +2142,11 @@ class MutationResearch(Cleanable):
             sealed fingerprints, recorded paths, and the topological load
             order. Cross-record radius stays `impact_view`'s job.
 
+        Contract:
+            - Dispatches on kind: a group identity is analyzed as a composition, a plain
+              spell as a single unit.
+            - Rejects a non-string or empty `spell_id` up front.
+
         Args:
             spell_id:
                 Binding-signature SHA256 whose world to walk.
@@ -1875,6 +2220,11 @@ class MutationResearch(Cleanable):
             fingerprint re-hashed against the live disk, with a blast
             radius attached to every module that is not unchanged.
 
+        Contract:
+            - REQUIRES LIVE CUSTODY: it reaches through the crystallizer, so it raises when
+              recording custody is unavailable rather than returning an empty report.
+            - Reports drift between recorded sources and current ones; it changes nothing.
+
         Returns:
             Dict[str, object]:
                 The crystallizer's full impact describe (custody counts +
@@ -1902,6 +2252,11 @@ class MutationResearch(Cleanable):
             dependency edges both ways, export surface, and drift - the
             single call behind "give me the module data from synthetic or
             physical modules".
+
+        Contract:
+            - Rejects a non-string or empty `spell_id` AND `module_name` up front, so both
+              arguments fail fast rather than producing an empty view.
+            - Scoped to ONE module of one spell.
 
         Args:
             spell_id:
@@ -1993,6 +2348,10 @@ class MutationResearch(Cleanable):
             the version's resolvable module texts (recorded-first,
             live-disk fallback - present-tense rules, like source_view)
             and return its text, span, and carrying module.
+
+        Contract:
+            - Rejects a non-string or empty `spell_id` AND `part_name` up front.
+            - Scoped to ONE part, the finest grain of the research views.
 
         Args:
             spell_id:
@@ -2113,6 +2472,11 @@ class MutationResearch(Cleanable):
             functions/classes per module, each with its full text and
             span, without the agent knowing any names up front.
 
+        Contract:
+            - Dispatches on kind: a group identity enumerates parts across the composition,
+              a plain spell across itself.
+            - Rejects a non-string or empty `spell_id` up front.
+
         Args:
             spell_id:
                 Binding-signature SHA256 whose world to inventory.
@@ -2202,6 +2566,12 @@ class MutationResearch(Cleanable):
             section is the carrying module's current blast radius joined
             with research residency (impact stays module-grain per the
             grain laws - a part's honest radius IS its module's radius).
+
+        Contract:
+            - Rejects a non-string or empty id on BOTH sides before any work, so a
+              half-specified diff fails immediately.
+            - Compares one part across two identities and reports differences without
+              reconciling them.
 
         Args:
             left_spell_id:
@@ -2842,6 +3212,12 @@ class MutationResearch(Cleanable):
             moved pair descends into `diff_research` grains
             (source/structural/parts) on the agent's next call.
 
+        Contract:
+            - LAZILY CONSTRUCTS AND CACHES the group diff engine on first use, so the first
+              call pays construction and later calls do not.
+            - Construction happens under the root lock, so concurrent first calls cannot
+              produce two engines.
+
         Args:
             left_group_id:
                 Left composition identity.
@@ -2885,6 +3261,21 @@ class MutationResearch(Cleanable):
                 Composition identity to gather.
             set_name:
                 Research set to resolve within.
+
+        Contract:
+            - Reports each member's LANE RESIDENCE, and a member with no residence is
+              still reported rather than skipped - absence of a lane is data here,
+              not an omission.
+            - Read-only projection; it does not stage, promote or move anything.
+
+        Threading:
+            Unsynchronized read of a plain flag; a snapshot only.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If mutation research has been cleaned.
 
         Returns:
             Dict[str, object]:
@@ -2967,6 +3358,22 @@ class MutationResearch(Cleanable):
             set_name:
                 Research set to register into.
 
+        Contract:
+            - CAMPAIGN DEFAULTS TO THE AMBIENT ONE. Passing `campaign=None` does not
+              mean "no campaign" - it falls back to `active_campaign`. To record a
+              group with no campaign you must clear the ambient one first.
+            - Delegates the actual registration to the named research set, so that
+              set's rules on lanes and parents apply.
+
+        Threading:
+            Unsynchronized read of a plain flag; a snapshot only.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If mutation research has been cleaned.
+
         Returns:
             GroupedResearchNode:
                 The recorded composition node.
@@ -3013,6 +3420,22 @@ class MutationResearch(Cleanable):
                 Optional reason line.
             set_name:
                 Research set to evolve within.
+
+        Contract:
+            - CAMPAIGN DEFAULTS TO THE AMBIENT ONE, exactly as in `register_group` -
+              `campaign=None` inherits `active_campaign` rather than meaning none.
+            - Recomposition is expressed as ADD and REMOVE against a previous group
+              rather than as a full replacement, so unlisted members are retained.
+            - Delegates to the named research set.
+
+        Threading:
+            Unsynchronized read of a plain flag; a snapshot only.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If mutation research has been cleaned.
 
         Returns:
             GroupedResearchNode:
@@ -3084,6 +3507,23 @@ class MutationResearch(Cleanable):
             set_name:
                 Research set to scan.
 
+        Contract:
+            - Rejects a non-string or empty `spell_id` up front with `ValueError`.
+            - Searches only CURRENT composition tips, so a spell that appears solely
+              in superseded compositions returns nothing. An empty result means "not
+              in any current composition", not "unknown spell".
+            - Resolves each hit's lane residence, so the result carries placement as
+              well as membership.
+
+        Threading:
+            Unsynchronized read of a plain flag; a snapshot only.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If mutation research has been cleaned.
+
         Returns:
             List[Dict[str, object]]:
                 `{"group_id", "lane_name"}` rows for every lane-tip
@@ -3119,6 +3559,12 @@ class MutationResearch(Cleanable):
             rot as compositions evolve). The per-module member map exposes
             SHARED matter: modules carried by more than one member are
             where the subsystem physically couples to itself.
+
+        Contract:
+            - REQUIRES LIVE CUSTODY through the crystallizer; without it this raises rather
+              than returning a partial footprint.
+            - Reports UNKNOWN MEMBERS separately from resolved ones, so an incomplete
+              footprint is visible in the result rather than silently short.
 
         Args:
             group_id:
@@ -3182,6 +3628,12 @@ class MutationResearch(Cleanable):
             narrowed to the composition's module footprint, with counts
             recomputed over the narrowed set so the numbers describe the
             subsystem, not the world.
+
+        Contract:
+            - BUILT ON `group_footprint_view`, so it inherits the live-custody requirement
+              and the unknown-member reporting.
+            - Intersects the footprint's modules with the custody drift report, so a module
+              absent from either side simply does not appear.
 
         Args:
             group_id:
@@ -3248,6 +3700,22 @@ class MutationResearch(Cleanable):
             set_name:
                 Research set to resolve within.
 
+        Contract:
+            - Straight delegation to the named research set's group history; it adds no
+              filtering or ordering of its own.
+            - `campaign` is passed through AS GIVEN here - unlike `register_group`
+              and `recompose_group`, this one does NOT fall back to the ambient
+              campaign, so None means "unfiltered".
+
+        Threading:
+            Unsynchronized read of a plain flag; a snapshot only.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If mutation research has been cleaned.
+
         Returns:
             Dict[str, object]:
                 The set's `group_history` payload (subsystem-lane,
@@ -3271,6 +3739,12 @@ class MutationResearch(Cleanable):
             The cold-landing read: an agent arriving in a room asks "what
             happened here lately" before choosing where to work - one
             call, newest-first context, campaign stamps intact.
+
+        Contract:
+            - CLAMPS `limit` to a non-negative integer, so a negative value becomes 0 rather
+              than raising or reading backwards.
+            - Reads the set's journal, which is append-only history rather than current
+              state.
 
         Args:
             limit:
@@ -3313,6 +3787,11 @@ class MutationResearch(Cleanable):
             fraction of affected spells that are members; ~1.0 = a safe
             workspace) and the ADJACENCY lift (which OTHER current
             compositions the radius touches).
+
+        Contract:
+            - REQUIRES LIVE CUSTODY through the crystallizer.
+            - Computes affected modules from the group's MEMBER SET, so a member that
+              resolves to no module contributes nothing rather than failing the call.
 
         Args:
             group_id:

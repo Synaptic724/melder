@@ -475,6 +475,27 @@ First-contact UX + the agent first-read: bind/conjure/meld, lifecycles, function
   SCORE_0_TO_10: 8
 
 
+## MEASURE - 2026-07-20 11:26 UTC - lesson 25 reframed: spellframes as CATEGORIES (owner-directed arc)
+  WHAT: Owner directive - the category idea threads the tiers. Beginner 25
+    now teaches spellframes AS categories explicitly (organize one world's
+    spells by the app's resolution ideas; (category, name) is the full
+    address) and SEEDS the graduation: when a category needs its own OWNER
+    and resolution conditions, it becomes a whole conduit (intermediate 26).
+    Prose/prints only - every proven call untouched (tier stays validated).
+  EVIDENCE:
+  - UX_and_AIX_experiences/01_beginner/25_frames_as_dict_classification.py:1-14
+  - UX_and_AIX_experiences/AGENTS.md (Curriculum arc: categories)
+  REREAD: OPTIONAL
+  SCORE_0_TO_10: -
+
+## MEASURE - 2026-07-20 22:47 UTC - owner assessment: tier in a good spot
+  WHAT: Owner call (end of 2026-07-20 session): "beginner and intermediate are
+    in a good spot." Beginner stands validated (40 lessons + probes green) with
+    the categories arc seeded at lesson 25. Exit-gate walkthrough remains the
+    only open formality.
+  REREAD: OPTIONAL
+  SCORE_0_TO_10: -
+
 ## Context / Handoff Summary
 Method: every example imports melder as md ONLY - a deep-path import in an example
 IS the finding. Examples are runnable scripts with honest asserts; they ride the

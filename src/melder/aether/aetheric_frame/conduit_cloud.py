@@ -265,6 +265,20 @@ class ConduitCloud(Cleanable):
     ) -> None:
         """
         Release the registry lock acquired by `__enter__`.
+        Contract:
+            - Releases unconditionally, including when the block raised. Exception
+              arguments are accepted and IGNORED, so no exception is suppressed.
+            - Exactly one release per `__enter__`; the lock is reentrant.
+
+        Threading:
+            Releases the cloud lock acquired by `__enter__`.
+
+        Lifecycle / Cleanup:
+            Performs no cleaned-state check - it is purely the unlock half.
+
+        Raises:
+            RuntimeError: If called without a matching `__enter__` on this thread.
+
         """
         self._lock.release()
 
@@ -274,6 +288,21 @@ class ConduitCloud(Cleanable):
     def frame_name(self) -> str:
         """
         Return the owning frame name served by this cloud.
+
+        Contract:
+            - The frame this cloud belongs to, fixed at construction and never
+              reassigned.
+            - Read WITHOUT the lock, unlike the collection accessors, because the
+              value is immutable.
+
+        Threading:
+            Unsynchronized read of an immutable slot; safe from any thread.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If the cloud has been cleaned.
 
         Returns:
             str: The current frame name.
@@ -357,6 +386,22 @@ class ConduitCloud(Cleanable):
         """
         Return the registered root-conduit ids in this frame.
 
+        Contract:
+            - Returns a TUPLE SNAPSHOT taken under the lock, so it cannot mutate
+              underneath the caller - but it goes stale the moment a conduit is
+              registered or removed.
+            - Covers REGISTERED conduits only; one still being constructed is absent.
+
+        Threading:
+            Reads and writes under `self._lock`, so the result is a coherent
+            snapshot rather than a torn read.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If the cloud has been cleaned.
+
         Returns:
             Tuple[str, ...]: Snapshot of conduit ids.
         """
@@ -367,6 +412,21 @@ class ConduitCloud(Cleanable):
     def list_conduit_names(self) -> Tuple[str, ...]:
         """
         Return the registered root-conduit names in this frame.
+
+        Contract:
+            - Returns only NAMED conduits, so unnamed registered conduits are absent.
+              This list can therefore be SHORTER than `list_conduit_ids()` and the
+              two are NOT positionally aligned - do not zip them.
+
+        Threading:
+            Reads and writes under `self._lock`, so the result is a coherent
+            snapshot rather than a torn read.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If the cloud has been cleaned.
 
         Returns:
             Tuple[str, ...]: Snapshot of conduit names.
@@ -379,6 +439,21 @@ class ConduitCloud(Cleanable):
         """
         Return the derived named dynamic root-conduit view for this frame.
 
+        Contract:
+            - CURRENTLY IDENTICAL to `list_conduit_names()` - both return the keys of
+              the same name map, so they are interchangeable today. Prefer
+              `list_conduit_names()`, which describes what is actually returned.
+
+        Threading:
+            Reads and writes under `self._lock`, so the result is a coherent
+            snapshot rather than a torn read.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If the cloud has been cleaned.
+
         Returns:
             Tuple[str, ...]: Snapshot of dynamic cloud-entry names.
         """
@@ -389,6 +464,21 @@ class ConduitCloud(Cleanable):
     def count_conduits(self) -> int:
         """
         Return the number of registered root conduits in this frame.
+
+        Contract:
+            - Counts REGISTERED CONDUITS, so it matches `len(list_conduit_ids())` and
+              NOT `len(list_conduit_names())` - unnamed conduits are counted here but
+              absent from the name list.
+
+        Threading:
+            Reads and writes under `self._lock`, so the result is a coherent
+            snapshot rather than a torn read.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If the cloud has been cleaned.
 
         Returns:
             int: Number of registered conduits.
@@ -405,6 +495,20 @@ class ConduitCloud(Cleanable):
             conduit_id:
                 Conduit id to check.
 
+        Contract:
+            - Membership test against registered ids. False means "not registered",
+              which includes a conduit that was cleaned and removed.
+
+        Threading:
+            Reads and writes under `self._lock`, so the result is a coherent
+            snapshot rather than a torn read.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If the cloud has been cleaned.
+
         Returns:
             bool: True when the conduit id is registered.
         """
@@ -419,6 +523,20 @@ class ConduitCloud(Cleanable):
         Args:
             name:
                 Conduit name to check.
+
+        Contract:
+            - Tests the NAME map, so it returns False for a registered but UNNAMED
+              conduit. A False here does not mean the conduit is absent.
+
+        Threading:
+            Reads and writes under `self._lock`, so the result is a coherent
+            snapshot rather than a torn read.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If the cloud has been cleaned.
 
         Returns:
             bool: True when the conduit name is registered.
@@ -456,6 +574,21 @@ class ConduitCloud(Cleanable):
         Args:
             name:
                 Conduit name to resolve.
+
+        Contract:
+            - Returns None on a miss rather than raising, so None means "no conduit
+              registered under that name" - it is not an error channel.
+            - Names are unique in the map, so this resolves to at most one id.
+
+        Threading:
+            Reads and writes under `self._lock`, so the result is a coherent
+            snapshot rather than a torn read.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If the cloud has been cleaned.
 
         Returns:
             Optional[str]: Matching conduit id, or None when missing.
@@ -528,6 +661,27 @@ class ConduitCloud(Cleanable):
             conduit (Conduit): Conduit to add.
             cluster_name (str): Target cluster.
 
+        Contract:
+            - MEMBERSHIP IS EXCLUSIVE: a conduit may belong to AT MOST ONE cluster, and
+              joining a second raises `ValueError`. That exclusivity is load bearing -
+              it keeps `unique_per_conduit_cluster` resolution unambiguous, because
+              one conduit maps to exactly one team store.
+            - To move a conduit between clusters you must REMOVE IT FIRST; there is
+              no reassignment path.
+            - Refused by frame posture when cluster operations are disabled, and
+              refused for any conduit that is not NORMAL - lesser and pooled conduits
+              cannot join.
+
+        Threading:
+            Reads and writes under `self._lock`, so the result is a coherent
+            snapshot rather than a torn read.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If the cloud has been cleaned.
+
         Returns:
             None.
         """
@@ -558,6 +712,25 @@ class ConduitCloud(Cleanable):
             conduit (Conduit): Conduit to remove.
             cluster_name (str): Target cluster.
 
+        Contract:
+            - Removes membership and then runs the cluster's leave handling, so shares
+              held for the member are released as part of this call rather than
+              lazily.
+            - Refused by frame posture when cluster operations are disabled, and
+              refused for non-NORMAL conduits. Note this is the DIRECT-API path: the
+              transaction layer does not posture-gate cluster LEAVE, so the two
+              routes differ.
+
+        Threading:
+            Reads and writes under `self._lock`, so the result is a coherent
+            snapshot rather than a torn read.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If the cloud has been cleaned.
+
         Returns:
             None.
         """
@@ -574,6 +747,24 @@ class ConduitCloud(Cleanable):
 
         Args:
             conduit_id (str): Conduit identifier to query.
+
+        Contract:
+            - Returns a LIST, but because membership is EXCLUSIVE it holds AT MOST ONE
+              name. A length above one means a corrupted invariant, not a supported
+              case.
+            - An empty list means the conduit is in no cluster - not an error.
+            - Snapshots the cluster map under the lock and then inspects members
+              OUTSIDE it, so a concurrent join or leave can be missed.
+
+        Threading:
+            Reads and writes under `self._lock`, so the result is a coherent
+            snapshot rather than a torn read.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If the cloud has been cleaned.
 
         Returns:
             List[str]: Cluster names containing the conduit.
@@ -592,6 +783,25 @@ class ConduitCloud(Cleanable):
 
         Args:
             conduit (Conduit): Target conduit.
+
+        Contract:
+            - Re-synchronizes the conduit's shares in whatever cluster it belongs to.
+              Because membership is exclusive this touches at most one cluster, and
+              it is a NO-OP for a conduit in none.
+            - Refused by frame posture when cluster operations are disabled, and
+              refused for non-NORMAL conduits.
+            - Resolves membership and then refreshes WITHOUT holding the cloud lock
+              across the whole sequence, so a concurrent leave can race it.
+
+        Threading:
+            Reads and writes under `self._lock`, so the result is a coherent
+            snapshot rather than a torn read.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If the cloud has been cleaned.
 
         Returns:
             None.
@@ -622,6 +832,20 @@ class ConduitCloud(Cleanable):
     def list_cluster_names(self) -> Tuple[str, ...]:
         """
         Return the current frame-local cluster names.
+
+        Contract:
+            - Tuple snapshot of registered cluster names, taken under the lock.
+            - Lists clusters that EXIST, including any with no current members.
+
+        Threading:
+            Reads and writes under `self._lock`, so the result is a coherent
+            snapshot rather than a torn read.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If the cloud has been cleaned.
 
         Returns:
             Tuple[str, ...]: Snapshot of cluster names.

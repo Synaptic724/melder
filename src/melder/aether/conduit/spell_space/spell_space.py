@@ -122,6 +122,25 @@ class SpellSpace(Cleanable):
                 owns its lifecycle; this spellspace only references it.
 
 
+        Contract:
+            - Builds a POOLED, REUSABLE scope object. Its identity is versioned rather
+              than object-based precisely so the pool can recycle it: a handle held
+              across a recycle boundary fails its active-scope check instead of
+              silently attaching to a different request.
+            - Constructs its own `Creations` store keyed to this space, so
+              spellspace-scoped instances are isolated from conduit-scoped ones.
+
+        Owned State:
+            Owns its lock, id and creations store. Borrows the owning conduit's
+            registry, meld runtime and thread-state holder.
+
+        Threading:
+            Creates the lock guarding later scope operations.
+
+        Lifecycle / Cleanup:
+            Reset returns it to the pool and bumps its version; permanent cleanup is
+            what actually destroys it.
+
         Returns:
             None.
         """
@@ -361,6 +380,17 @@ class SpellSpace(Cleanable):
         """
         Return the stable identifier for this spellspace.
 
+        Contract:
+            - The space's versioned identity, assigned at construction.
+            - NOT `check_cleaned()` guarded, so it stays readable on a recycled or
+              cleaned space - useful for logging a space you no longer hold.
+
+        Threading:
+            Unsynchronized read; safe from any thread.
+
+        Lifecycle / Cleanup:
+            Readable after cleanup, by design.
+
         Returns:
             str: Unique id assigned at construction.
         """
@@ -370,6 +400,17 @@ class SpellSpace(Cleanable):
     def owner_conduit_id(self) -> str:
         """
         Return the stable owner conduit id for this spellspace.
+
+        Contract:
+            - The conduit this space belongs to, fixed at construction - a pooled space
+              is never re-homed to a different conduit.
+            - NOT `check_cleaned()` guarded, matching `id`.
+
+        Threading:
+            Unsynchronized read; safe from any thread.
+
+        Lifecycle / Cleanup:
+            Readable after cleanup, by design.
 
         Returns:
             str: Owner conduit id injected at construction time.

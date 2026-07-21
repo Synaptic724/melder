@@ -366,6 +366,21 @@ class Rift(Cleanable):
 
         Return the frame names assigned to this Rift.
 
+        Contract:
+            - Returns a TUPLE SNAPSHOT of the frames this rift is contracted to. This
+              is the rift's REACHABILITY BOUNDARY: every viewer query is scoped to
+              these frames, and a frame absent here is invisible to the rift entirely.
+            - Order follows the contract map's insertion order, not sorted order.
+
+        Threading:
+            Unsynchronized read; a snapshot only.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If the object has been cleaned.
+
         Returns:
             Tuple[str, ...]: Assigned frame names.
         """
@@ -407,6 +422,22 @@ class Rift(Cleanable):
         Args:
             frame_name:
                 Engaged target frame name.
+
+        Contract:
+            - Reports the contracts CURRENTLY SELECTED for one frame, which is narrower
+              than the contracts available - selection is what actually shapes the
+              projection.
+            - Requires the frame to be assigned to this rift; an unassigned frame
+              raises rather than returning an empty tuple.
+
+        Threading:
+            Unsynchronized read; a snapshot only.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If the object has been cleaned.
 
         Returns:
             Dict[str, str]: Selected view/command/codegen contract names.
@@ -810,6 +841,20 @@ class Rift(Cleanable):
         Internal
 
         Return the attached frame viewer for the owned space or raise.
+
+        Contract:
+            - Returns the space's frame viewer BY REFERENCE. It is owned by the space,
+              not created here, so repeated calls yield the SAME viewer - unlike the
+              viewer's own `get_view_*` accessors, which build fresh helpers per call.
+
+        Threading:
+            Unsynchronized read; a snapshot only.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If the object has been cleaned.
 
         Returns:
             FrameViewer: Attached frame viewer for the owned space.

@@ -235,6 +235,19 @@ class SpellMap(Cleanable):
         This is the shape SpellCrafter and the runtime planning path consume
         before they derive the normalized key or resolve the underlying spell.
 
+        Contract:
+            - Returns the RAW, AS-SUPPLIED triplet - the spell, spellframe and binding
+              name exactly as the caller gave them, WITHOUT normalization.
+            - This is NOT the registry key. Use `canonical_key` when you need the
+              normalized identity the spellbook actually indexes by; the two can
+              differ for the same SpellMap.
+
+        Threading:
+            Pure computation over immutable fields; safe from any thread.
+
+        Lifecycle / Cleanup:
+            Carries no cleaned-state guard.
+
         Returns:
             tuple[Any, Optional[Any], Optional[str]]: `(spell, spellframe,
             binding_name)` exactly as stored on the descriptor.
@@ -264,6 +277,19 @@ class SpellMap(Cleanable):
         - when `spellframe` is absent, the frame key is derived from `spell`
         - binding defaults normalize to `"__default__"` inside the helper path
 
+        Contract:
+            - NORMALIZED identity: it runs the raw triplet through the shared key
+              normalizer, so equivalent-but-differently-spelled inputs collapse to
+              the same key. This is what the spellbook indexes by.
+            - Recomputed on every access rather than cached, so it always reflects
+              the current field values.
+
+        Threading:
+            Pure computation over immutable fields; safe from any thread.
+
+        Lifecycle / Cleanup:
+            Carries no cleaned-state guard.
+
         Returns:
             Tuple[str, str]: Normalized `(frame_key, binding_key)` pair.
         """
@@ -279,6 +305,16 @@ class SpellMap(Cleanable):
         """
         Compatibility alias for `canonical_key`.
 
+        Contract:
+            - ALIAS for `canonical_key`, kept for call-site readability. Identical
+              behaviour - it is the NORMALIZED key, not the raw triplet.
+
+        Threading:
+            Pure computation over immutable fields; safe from any thread.
+
+        Lifecycle / Cleanup:
+            Carries no cleaned-state guard.
+
         Returns:
             Tuple[str, str]: The same normalized key pair returned by
             `canonical_key`.
@@ -288,6 +324,18 @@ class SpellMap(Cleanable):
     def __repr__(self) -> str:
         """
         Return a debug-oriented representation of the SpellMap descriptor.
+
+        Contract:
+            - Includes the override payload alongside the identity fields, so a `SpellMap`
+              repr shows what it will DO as well as what it names.
+            - Unguarded, unlike some other repr implementations in the codebase, so
+              it stays safe to log.
+
+        Threading:
+            Pure computation over immutable fields; safe from any thread.
+
+        Lifecycle / Cleanup:
+            Carries no cleaned-state guard.
 
         Returns:
             str: Representation showing stored spell/frame/binding/override

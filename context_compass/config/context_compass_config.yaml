@@ -1,7 +1,7 @@
 version: 1
 
 profiles:
-  active_profile: design_engineer
+  active_profile: synaptic_python_developer
   available_profiles:
     - new
     - general

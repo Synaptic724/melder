@@ -31,10 +31,12 @@ def main() -> None:
     borrower = dynamic_spellbook().conjure(dynamic=True, name="perm-borrower")
     owner.link(borrower)
 
-    owner.add_spell_to_contract(spell_id=open_id, conduit=borrower,
-                                permissions="create")
-    owner.add_spell_to_contract(spell_id=guarded_id, conduit=borrower,
-                                permissions="read")
+    # The borrower PULLS from the owner (the named conduit must OWN
+    # the spell); permissions set what the borrower may DO with it.
+    borrower.add_spell_to_contract(spell_id=open_id, conduit=owner,
+                                   permissions="create")
+    borrower.add_spell_to_contract(spell_id=guarded_id, conduit=owner,
+                                   permissions="read")
 
     print("create-shared meld:", type(borrower.meld(spell=OpenService)).__name__)
     try:

@@ -279,6 +279,26 @@ class ViewSpell(Cleanable):
             Give the main viewer operator a stable, payload-focused spell read
             surface without the wider record wrapper.
 
+        Contract:
+            - Returns the ACL-FILTERED payload, so hidden sections are simply absent
+              rather than present-and-empty. Pair it with `describe_spell_missing_sections`
+              to learn what was withheld.
+            - VISIBILITY-FILTERED PROJECTION: absence means "not visible to this rift"
+              OR "not present", indistinguishable from outside.
+            - `frame_name` is an ASSERTION, not a selector - when supplied it must
+              match the bound frame or the call raises.
+
+        Threading:
+            Reads a descriptor snapshot; concurrent frame changes are not reflected in
+            an already-returned result.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If the viewer is unbound or cleaned, or `frame_name` does not
+                match the bound frame.
+
         Args:
             spell_source_id:
                 Published spell source id.
@@ -396,6 +416,25 @@ class ViewSpell(Cleanable):
             Give the operator a smaller spell summary than the richer identity,
             access, and detail methods when they just need the essentials.
 
+        Contract:
+            - A SUMMARY, not a payload: identity plus a COUNT of visible sections. The
+              count tells you HOW MUCH is visible without revealing what is hidden.
+            - VISIBILITY-FILTERED PROJECTION: absence means "not visible to this rift"
+              OR "not present", indistinguishable from outside.
+            - `frame_name` is an ASSERTION, not a selector - when supplied it must
+              match the bound frame or the call raises.
+
+        Threading:
+            Reads a descriptor snapshot; concurrent frame changes are not reflected in
+            an already-returned result.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If the viewer is unbound or cleaned, or `frame_name` does not
+                match the bound frame.
+
         Args:
             spell_source_id:
                 Published spell source id.
@@ -439,6 +478,26 @@ class ViewSpell(Cleanable):
             Make the spell-local "what is missing and why?" answer explicit
             instead of forcing the operator to infer it from absent detail
             fields.
+
+        Contract:
+            - THE WITHHELD-SECTION PROBE: it computes every payload field name and
+              subtracts the visible ones, so it reports the NAMES of sections you cannot
+              read. This is how you tell "hidden" from "empty" without the contents.
+            - VISIBILITY-FILTERED PROJECTION: absence means "not visible to this rift"
+              OR "not present", indistinguishable from outside.
+            - `frame_name` is an ASSERTION, not a selector - when supplied it must
+              match the bound frame or the call raises.
+
+        Threading:
+            Reads a descriptor snapshot; concurrent frame changes are not reflected in
+            an already-returned result.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If the viewer is unbound or cleaned, or `frame_name` does not
+                match the bound frame.
 
         Args:
             spell_source_id:
@@ -501,6 +560,25 @@ class ViewSpell(Cleanable):
         Purpose:
             Give the operator a narrow identity view over one spell record
             without forcing a wider payload or access-contract dump first.
+
+        Contract:
+            - Identity fields only - the stable naming of the spell, not its payload or
+              its placement.
+            - VISIBILITY-FILTERED PROJECTION: absence means "not visible to this rift"
+              OR "not present", indistinguishable from outside.
+            - `frame_name` is an ASSERTION, not a selector - when supplied it must
+              match the bound frame or the call raises.
+
+        Threading:
+            Reads a descriptor snapshot; concurrent frame changes are not reflected in
+            an already-returned result.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If the viewer is unbound or cleaned, or `frame_name` does not
+                match the bound frame.
 
         Args:
             spell_source_id:
@@ -663,6 +741,25 @@ class ViewSpell(Cleanable):
             so the operator can reason about provenance before reading payload
             sections.
 
+        Contract:
+            - Reports where the spell CAME FROM (its origin spellbook), which is not
+              necessarily where it lives now after a graft or transfer.
+            - VISIBILITY-FILTERED PROJECTION: absence means "not visible to this rift"
+              OR "not present", indistinguishable from outside.
+            - `frame_name` is an ASSERTION, not a selector - when supplied it must
+              match the bound frame or the call raises.
+
+        Threading:
+            Reads a descriptor snapshot; concurrent frame changes are not reflected in
+            an already-returned result.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If the viewer is unbound or cleaned, or `frame_name` does not
+                match the bound frame.
+
         Args:
             spell_source_id:
                 Published spell source id.
@@ -701,6 +798,25 @@ class ViewSpell(Cleanable):
             Expose all visible and descriptor-local siblings that share the
             same spell-index id so the operator can understand the spell's
             index context inside the current frame.
+
+        Contract:
+            - Describes the spell's INDEX, i.e. its version lineage, so it answers
+              "what other versions exist" rather than "what is this version".
+            - VISIBILITY-FILTERED PROJECTION: absence means "not visible to this rift"
+              OR "not present", indistinguishable from outside.
+            - `frame_name` is an ASSERTION, not a selector - when supplied it must
+              match the bound frame or the call raises.
+
+        Threading:
+            Reads a descriptor snapshot; concurrent frame changes are not reflected in
+            an already-returned result.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If the viewer is unbound or cleaned, or `frame_name` does not
+                match the bound frame.
 
         Args:
             spell_source_id:
@@ -751,6 +867,25 @@ class ViewSpell(Cleanable):
             Keep the spell's binding identity and optional binding payload
             together in one focused summary.
 
+        Contract:
+            - Binding-time facts - how the spell was registered - as opposed to runtime
+              state.
+            - VISIBILITY-FILTERED PROJECTION: absence means "not visible to this rift"
+              OR "not present", indistinguishable from outside.
+            - `frame_name` is an ASSERTION, not a selector - when supplied it must
+              match the bound frame or the call raises.
+
+        Threading:
+            Reads a descriptor snapshot; concurrent frame changes are not reflected in
+            an already-returned result.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If the viewer is unbound or cleaned, or `frame_name` does not
+                match the bound frame.
+
         Args:
             spell_source_id:
                 Published spell source id.
@@ -800,6 +935,40 @@ class ViewSpell(Cleanable):
                 Optional frame-name assertion passed through to the selected-
                 frame helper.
 
+        Contract:
+            - ACL SECTION PROBE. The result carries BOTH an availability flag and
+              the section value, and it does NOT raise when the section is hidden.
+            - CHECK THE FLAG BEFORE TRUSTING THE VALUE: an empty value means
+              "hidden" or "genuinely empty" and the flag is the only way to tell
+              them apart. Contrast `get_spell_payload_section`, which raises
+              instead of reporting.
+            - Delegates to the shared detail-section helper, so every
+              `describe_spell_*` section behaves identically.
+            - Additionally derives `requirement_count`, which stays None when the
+              resolution payload is absent or is not shaped as expected. None means
+              "could not count", NOT "zero requirements".
+            - VISIBILITY-FILTERED PROJECTION. Absence means "not visible to this
+              rift" OR "not present" - indistinguishable from outside. Never use an
+              empty result as proof that a spell does not exist.
+            - `frame_name` is an ASSERTION passed through to the frame helper, not
+              a selector. When supplied it must match the bound frame or the call
+              raises.
+            - Read-only snapshot taken at call time; it does not mutate frame state
+              and does not stay live as the frame changes.
+
+        Threading:
+            Reads a descriptor snapshot through the borrowed frame view;
+            concurrent frame changes are not reflected in a returned result.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`. The frame view is BORROWED, not owned -
+            cleaning this viewer does not clean it.
+
+        Raises:
+            ValueError: If a required argument is empty.
+            RuntimeError: If the viewer is unbound or cleaned, or `frame_name`
+                does not match the bound frame.
+
         Returns:
             Dict[str, object]: Resolution-facing spell summary.
         """
@@ -844,6 +1013,37 @@ class ViewSpell(Cleanable):
                 Optional frame-name assertion passed through to the selected-
                 frame helper.
 
+        Contract:
+            - ACL SECTION PROBE. The result carries BOTH an availability flag and
+              the section value, and it does NOT raise when the section is hidden.
+            - CHECK THE FLAG BEFORE TRUSTING THE VALUE: an empty value means
+              "hidden" or "genuinely empty" and the flag is the only way to tell
+              them apart. Contrast `get_spell_payload_section`, which raises
+              instead of reporting.
+            - Delegates to the shared detail-section helper, so every
+              `describe_spell_*` section behaves identically.
+            - VISIBILITY-FILTERED PROJECTION. Absence means "not visible to this
+              rift" OR "not present" - indistinguishable from outside. Never use an
+              empty result as proof that a spell does not exist.
+            - `frame_name` is an ASSERTION passed through to the frame helper, not
+              a selector. When supplied it must match the bound frame or the call
+              raises.
+            - Read-only snapshot taken at call time; it does not mutate frame state
+              and does not stay live as the frame changes.
+
+        Threading:
+            Reads a descriptor snapshot through the borrowed frame view;
+            concurrent frame changes are not reflected in a returned result.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`. The frame view is BORROWED, not owned -
+            cleaning this viewer does not clean it.
+
+        Raises:
+            ValueError: If a required argument is empty.
+            RuntimeError: If the viewer is unbound or cleaned, or `frame_name`
+                does not match the bound frame.
+
         Returns:
             Dict[str, object]: Metadata visibility summary for the spell.
         """
@@ -879,6 +1079,37 @@ class ViewSpell(Cleanable):
                 Optional frame-name assertion passed through to the selected-
                 frame helper.
 
+        Contract:
+            - ACL SECTION PROBE. The result carries BOTH an availability flag and
+              the section value, and it does NOT raise when the section is hidden.
+            - CHECK THE FLAG BEFORE TRUSTING THE VALUE: an empty value means
+              "hidden" or "genuinely empty" and the flag is the only way to tell
+              them apart. Contrast `get_spell_payload_section`, which raises
+              instead of reporting.
+            - Delegates to the shared detail-section helper, so every
+              `describe_spell_*` section behaves identically.
+            - VISIBILITY-FILTERED PROJECTION. Absence means "not visible to this
+              rift" OR "not present" - indistinguishable from outside. Never use an
+              empty result as proof that a spell does not exist.
+            - `frame_name` is an ASSERTION passed through to the frame helper, not
+              a selector. When supplied it must match the bound frame or the call
+              raises.
+            - Read-only snapshot taken at call time; it does not mutate frame state
+              and does not stay live as the frame changes.
+
+        Threading:
+            Reads a descriptor snapshot through the borrowed frame view;
+            concurrent frame changes are not reflected in a returned result.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`. The frame view is BORROWED, not owned -
+            cleaning this viewer does not clean it.
+
+        Raises:
+            ValueError: If a required argument is empty.
+            RuntimeError: If the viewer is unbound or cleaned, or `frame_name`
+                does not match the bound frame.
+
         Returns:
             Dict[str, object]: Class-profile availability and normalized data.
         """
@@ -905,6 +1136,37 @@ class ViewSpell(Cleanable):
                 Optional frame-name assertion passed through to the selected-
                 frame helper.
 
+        Contract:
+            - ACL SECTION PROBE. The result carries BOTH an availability flag and
+              the section value, and it does NOT raise when the section is hidden.
+            - CHECK THE FLAG BEFORE TRUSTING THE VALUE: an empty value means
+              "hidden" or "genuinely empty" and the flag is the only way to tell
+              them apart. Contrast `get_spell_payload_section`, which raises
+              instead of reporting.
+            - Delegates to the shared detail-section helper, so every
+              `describe_spell_*` section behaves identically.
+            - VISIBILITY-FILTERED PROJECTION. Absence means "not visible to this
+              rift" OR "not present" - indistinguishable from outside. Never use an
+              empty result as proof that a spell does not exist.
+            - `frame_name` is an ASSERTION passed through to the frame helper, not
+              a selector. When supplied it must match the bound frame or the call
+              raises.
+            - Read-only snapshot taken at call time; it does not mutate frame state
+              and does not stay live as the frame changes.
+
+        Threading:
+            Reads a descriptor snapshot through the borrowed frame view;
+            concurrent frame changes are not reflected in a returned result.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`. The frame view is BORROWED, not owned -
+            cleaning this viewer does not clean it.
+
+        Raises:
+            ValueError: If a required argument is empty.
+            RuntimeError: If the viewer is unbound or cleaned, or `frame_name`
+                does not match the bound frame.
+
         Returns:
             Dict[str, object]: Callable-profile availability and normalized
             data.
@@ -928,6 +1190,25 @@ class ViewSpell(Cleanable):
         Contract:
             Dunder members are preserved when the published detailed payload
             included them; this method does not hide or strip them.
+
+        Contract:
+            - Reports member NAMES from the recorded surface, not live attribute values;
+              nothing is executed or introspected on a live object here.
+            - VISIBILITY-FILTERED PROJECTION: absence means "not visible to this rift"
+              OR "not present", indistinguishable from outside.
+            - `frame_name` is an ASSERTION, not a selector - when supplied it must
+              match the bound frame or the call raises.
+
+        Threading:
+            Reads a descriptor snapshot; concurrent frame changes are not reflected in
+            an already-returned result.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If the viewer is unbound or cleaned, or `frame_name` does not
+                match the bound frame.
 
         Args:
             spell_source_id:
@@ -963,6 +1244,37 @@ class ViewSpell(Cleanable):
                 Optional frame-name assertion passed through to the selected-
                 frame helper.
 
+        Contract:
+            - ACL SECTION PROBE. The result carries BOTH an availability flag and
+              the section value, and it does NOT raise when the section is hidden.
+            - CHECK THE FLAG BEFORE TRUSTING THE VALUE: an empty value means
+              "hidden" or "genuinely empty" and the flag is the only way to tell
+              them apart. Contrast `get_spell_payload_section`, which raises
+              instead of reporting.
+            - Delegates to the shared detail-section helper, so every
+              `describe_spell_*` section behaves identically.
+            - VISIBILITY-FILTERED PROJECTION. Absence means "not visible to this
+              rift" OR "not present" - indistinguishable from outside. Never use an
+              empty result as proof that a spell does not exist.
+            - `frame_name` is an ASSERTION passed through to the frame helper, not
+              a selector. When supplied it must match the bound frame or the call
+              raises.
+            - Read-only snapshot taken at call time; it does not mutate frame state
+              and does not stay live as the frame changes.
+
+        Threading:
+            Reads a descriptor snapshot through the borrowed frame view;
+            concurrent frame changes are not reflected in a returned result.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`. The frame view is BORROWED, not owned -
+            cleaning this viewer does not clean it.
+
+        Raises:
+            ValueError: If a required argument is empty.
+            RuntimeError: If the viewer is unbound or cleaned, or `frame_name`
+                does not match the bound frame.
+
         Returns:
             Dict[str, object]: Dynamic-access availability and normalized data.
         """
@@ -985,6 +1297,26 @@ class ViewSpell(Cleanable):
         Purpose:
             Make dunder visibility explicit in detailed mode instead of leaving
             it implicit inside larger payload maps.
+
+        Contract:
+            - UNIONS class-level and instance-level dunder names into a SET, so the
+              result is DEDUPLICATED and a name appearing in both origins appears once.
+              It does not tell you which origin a name came from.
+            - VISIBILITY-FILTERED PROJECTION: absence means "not visible to this rift"
+              OR "not present", indistinguishable from outside.
+            - `frame_name` is an ASSERTION, not a selector - when supplied it must
+              match the bound frame or the call raises.
+
+        Threading:
+            Reads a descriptor snapshot; concurrent frame changes are not reflected in
+            an already-returned result.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If the viewer is unbound or cleaned, or `frame_name` does not
+                match the bound frame.
 
         Args:
             spell_source_id:
@@ -1031,6 +1363,25 @@ class ViewSpell(Cleanable):
         Purpose:
             Give the operator one explicit place to inspect the dunder-facing
             portion of the published detailed spell data.
+
+        Contract:
+            - Keeps class-level and instance-level dunder members SEPARATE, unlike
+              `list_spell_dunder_member_names` which unions them.
+            - VISIBILITY-FILTERED PROJECTION: absence means "not visible to this rift"
+              OR "not present", indistinguishable from outside.
+            - `frame_name` is an ASSERTION, not a selector - when supplied it must
+              match the bound frame or the call raises.
+
+        Threading:
+            Reads a descriptor snapshot; concurrent frame changes are not reflected in
+            an already-returned result.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If the viewer is unbound or cleaned, or `frame_name` does not
+                match the bound frame.
 
         Args:
             spell_source_id:
@@ -1092,6 +1443,33 @@ class ViewSpell(Cleanable):
                 Optional frame-name assertion passed through to the selected-
                 frame helper.
 
+        Contract:
+            - EXACT, CASE-SENSITIVE match. Unlike the permission and existence
+              listers, no normalization is applied, so casing must match exactly.
+            - A non-matching id is not an error - it simply matches nothing.
+            - Empty input is rejected up front.
+            - VISIBILITY-FILTERED PROJECTION. Absence means "not visible to this
+              rift" OR "not present" - indistinguishable from outside. Never use an
+              empty result as proof that a spell does not exist.
+            - `frame_name` is an ASSERTION passed through to the frame helper, not
+              a selector. When supplied it must match the bound frame or the call
+              raises.
+            - Read-only snapshot taken at call time; it does not mutate frame state
+              and does not stay live as the frame changes.
+
+        Threading:
+            Reads a descriptor snapshot through the borrowed frame view;
+            concurrent frame changes are not reflected in a returned result.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`. The frame view is BORROWED, not owned -
+            cleaning this viewer does not clean it.
+
+        Raises:
+            ValueError: If a required argument is empty.
+            RuntimeError: If the viewer is unbound or cleaned, or `frame_name`
+                does not match the bound frame.
+
         Returns:
             List[FrameLink]: Matching visible spell links.
         """
@@ -1126,6 +1504,34 @@ class ViewSpell(Cleanable):
                 Optional frame-name assertion passed through to the selected-
                 frame helper.
 
+        Contract:
+            - Matches the link's DISPLAY NAME, which is the published binding name
+              for spells. Exact and case-sensitive.
+            - Returns a LIST, not a single link: binding names are not guaranteed
+              unique across the visible set.
+            - Empty `binding_name` is rejected up front.
+            - VISIBILITY-FILTERED PROJECTION. Absence means "not visible to this
+              rift" OR "not present" - indistinguishable from outside. Never use an
+              empty result as proof that a spell does not exist.
+            - `frame_name` is an ASSERTION passed through to the frame helper, not
+              a selector. When supplied it must match the bound frame or the call
+              raises.
+            - Read-only snapshot taken at call time; it does not mutate frame state
+              and does not stay live as the frame changes.
+
+        Threading:
+            Reads a descriptor snapshot through the borrowed frame view;
+            concurrent frame changes are not reflected in a returned result.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`. The frame view is BORROWED, not owned -
+            cleaning this viewer does not clean it.
+
+        Raises:
+            ValueError: If a required argument is empty.
+            RuntimeError: If the viewer is unbound or cleaned, or `frame_name`
+                does not match the bound frame.
+
         Returns:
             List[FrameLink]: Matching visible spell links.
         """
@@ -1153,6 +1559,34 @@ class ViewSpell(Cleanable):
             frame_name:
                 Optional frame-name assertion passed through to the selected-
                 frame helper.
+
+        Contract:
+            - EXACT, CASE-SENSITIVE match on the recorded owner conduit id.
+            - Spells that are bound but NOT YET OWNED (no conjure stamp) have no
+              owner id and therefore match nothing here - they are absent from
+              every owner query rather than grouped under a null owner.
+            - Empty `conduit_id` is rejected up front.
+            - VISIBILITY-FILTERED PROJECTION. Absence means "not visible to this
+              rift" OR "not present" - indistinguishable from outside. Never use an
+              empty result as proof that a spell does not exist.
+            - `frame_name` is an ASSERTION passed through to the frame helper, not
+              a selector. When supplied it must match the bound frame or the call
+              raises.
+            - Read-only snapshot taken at call time; it does not mutate frame state
+              and does not stay live as the frame changes.
+
+        Threading:
+            Reads a descriptor snapshot through the borrowed frame view;
+            concurrent frame changes are not reflected in a returned result.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`. The frame view is BORROWED, not owned -
+            cleaning this viewer does not clean it.
+
+        Raises:
+            ValueError: If a required argument is empty.
+            RuntimeError: If the viewer is unbound or cleaned, or `frame_name`
+                does not match the bound frame.
 
         Returns:
             List[FrameLink]: Matching visible spell links.
@@ -1184,6 +1618,33 @@ class ViewSpell(Cleanable):
                 Optional frame-name assertion passed through to the selected-
                 frame helper.
 
+        Contract:
+            - EXACT, CASE-SENSITIVE match on the ORIGIN spellbook id - the book that
+              first bound the spell, which is not necessarily the book that owns it
+              now after a graft or transfer.
+            - Empty `spellbook_id` is rejected up front.
+            - VISIBILITY-FILTERED PROJECTION. Absence means "not visible to this
+              rift" OR "not present" - indistinguishable from outside. Never use an
+              empty result as proof that a spell does not exist.
+            - `frame_name` is an ASSERTION passed through to the frame helper, not
+              a selector. When supplied it must match the bound frame or the call
+              raises.
+            - Read-only snapshot taken at call time; it does not mutate frame state
+              and does not stay live as the frame changes.
+
+        Threading:
+            Reads a descriptor snapshot through the borrowed frame view;
+            concurrent frame changes are not reflected in a returned result.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`. The frame view is BORROWED, not owned -
+            cleaning this viewer does not clean it.
+
+        Raises:
+            ValueError: If a required argument is empty.
+            RuntimeError: If the viewer is unbound or cleaned, or `frame_name`
+                does not match the bound frame.
+
         Returns:
             List[FrameLink]: Matching visible spell links.
         """
@@ -1214,6 +1675,33 @@ class ViewSpell(Cleanable):
                 Optional frame-name assertion passed through to the selected-
                 frame helper.
 
+        Contract:
+            - EXACT, CASE-SENSITIVE match on spell index id. Because an index tracks
+              a whole version lineage, this returns EVERY visible spell sharing that
+              lineage, not one spell.
+            - Empty `spell_index_id` is rejected up front.
+            - VISIBILITY-FILTERED PROJECTION. Absence means "not visible to this
+              rift" OR "not present" - indistinguishable from outside. Never use an
+              empty result as proof that a spell does not exist.
+            - `frame_name` is an ASSERTION passed through to the frame helper, not
+              a selector. When supplied it must match the bound frame or the call
+              raises.
+            - Read-only snapshot taken at call time; it does not mutate frame state
+              and does not stay live as the frame changes.
+
+        Threading:
+            Reads a descriptor snapshot through the borrowed frame view;
+            concurrent frame changes are not reflected in a returned result.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`. The frame view is BORROWED, not owned -
+            cleaning this viewer does not clean it.
+
+        Raises:
+            ValueError: If a required argument is empty.
+            RuntimeError: If the viewer is unbound or cleaned, or `frame_name`
+                does not match the bound frame.
+
         Returns:
             List[FrameLink]: Matching visible spell links.
         """
@@ -1243,6 +1731,33 @@ class ViewSpell(Cleanable):
             frame_name:
                 Optional frame-name assertion passed through to the selected-
                 frame helper.
+
+        Contract:
+            - CASE-INSENSITIVE: the supplied name and the record value are both
+              lowered before comparison.
+            - An unrecognized name is not an error - it simply matches nothing.
+            - Empty input is rejected up front.
+            - VISIBILITY-FILTERED PROJECTION. Absence means "not visible to this
+              rift" OR "not present" - indistinguishable from outside. Never use an
+              empty result as proof that a spell does not exist.
+            - `frame_name` is an ASSERTION passed through to the frame helper, not
+              a selector. When supplied it must match the bound frame or the call
+              raises.
+            - Read-only snapshot taken at call time; it does not mutate frame state
+              and does not stay live as the frame changes.
+
+        Threading:
+            Reads a descriptor snapshot through the borrowed frame view;
+            concurrent frame changes are not reflected in a returned result.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`. The frame view is BORROWED, not owned -
+            cleaning this viewer does not clean it.
+
+        Raises:
+            ValueError: If a required argument is empty.
+            RuntimeError: If the viewer is unbound or cleaned, or `frame_name`
+                does not match the bound frame.
 
         Returns:
             List[FrameLink]: Matching visible spell links.
@@ -1275,6 +1790,33 @@ class ViewSpell(Cleanable):
                 Optional frame-name assertion passed through to the selected-
                 frame helper.
 
+        Contract:
+            - CASE-INSENSITIVE: the supplied name and the record value are both
+              lowered before comparison.
+            - An unrecognized name is not an error - it simply matches nothing.
+            - Empty input is rejected up front.
+            - VISIBILITY-FILTERED PROJECTION. Absence means "not visible to this
+              rift" OR "not present" - indistinguishable from outside. Never use an
+              empty result as proof that a spell does not exist.
+            - `frame_name` is an ASSERTION passed through to the frame helper, not
+              a selector. When supplied it must match the bound frame or the call
+              raises.
+            - Read-only snapshot taken at call time; it does not mutate frame state
+              and does not stay live as the frame changes.
+
+        Threading:
+            Reads a descriptor snapshot through the borrowed frame view;
+            concurrent frame changes are not reflected in a returned result.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`. The frame view is BORROWED, not owned -
+            cleaning this viewer does not clean it.
+
+        Raises:
+            ValueError: If a required argument is empty.
+            RuntimeError: If the viewer is unbound or cleaned, or `frame_name`
+                does not match the bound frame.
+
         Returns:
             List[FrameLink]: Matching visible spell links.
         """
@@ -1306,6 +1848,33 @@ class ViewSpell(Cleanable):
                 Optional frame-name assertion passed through to the selected-
                 frame helper.
 
+        Contract:
+            - EXACT, CASE-SENSITIVE match on spell name.
+            - Returns a LIST because spell names are NOT unique - the same name can
+              be bound many times under different frames or binding names.
+            - Empty `spell_name` is rejected up front.
+            - VISIBILITY-FILTERED PROJECTION. Absence means "not visible to this
+              rift" OR "not present" - indistinguishable from outside. Never use an
+              empty result as proof that a spell does not exist.
+            - `frame_name` is an ASSERTION passed through to the frame helper, not
+              a selector. When supplied it must match the bound frame or the call
+              raises.
+            - Read-only snapshot taken at call time; it does not mutate frame state
+              and does not stay live as the frame changes.
+
+        Threading:
+            Reads a descriptor snapshot through the borrowed frame view;
+            concurrent frame changes are not reflected in a returned result.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`. The frame view is BORROWED, not owned -
+            cleaning this viewer does not clean it.
+
+        Raises:
+            ValueError: If a required argument is empty.
+            RuntimeError: If the viewer is unbound or cleaned, or `frame_name`
+                does not match the bound frame.
+
         Returns:
             List[FrameLink]: Matching visible spell links.
         """
@@ -1335,6 +1904,33 @@ class ViewSpell(Cleanable):
             frame_name:
                 Optional frame-name assertion passed through to the selected-
                 frame helper.
+
+        Contract:
+            - Compares the NORMALIZED spellframe value, so pass the normalized form
+              rather than the raw object used at bind time.
+            - Spells whose spellframe normalizes to nothing never match.
+            - Empty `spellframe_name` is rejected up front.
+            - VISIBILITY-FILTERED PROJECTION. Absence means "not visible to this
+              rift" OR "not present" - indistinguishable from outside. Never use an
+              empty result as proof that a spell does not exist.
+            - `frame_name` is an ASSERTION passed through to the frame helper, not
+              a selector. When supplied it must match the bound frame or the call
+              raises.
+            - Read-only snapshot taken at call time; it does not mutate frame state
+              and does not stay live as the frame changes.
+
+        Threading:
+            Reads a descriptor snapshot through the borrowed frame view;
+            concurrent frame changes are not reflected in a returned result.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`. The frame view is BORROWED, not owned -
+            cleaning this viewer does not clean it.
+
+        Raises:
+            ValueError: If a required argument is empty.
+            RuntimeError: If the viewer is unbound or cleaned, or `frame_name`
+                does not match the bound frame.
 
         Returns:
             List[FrameLink]: Matching visible spell links.
@@ -1366,6 +1962,33 @@ class ViewSpell(Cleanable):
             frame_name:
                 Optional frame-name assertion passed through to the selected-
                 frame helper.
+
+        Contract:
+            - CASE-INSENSITIVE SUBSTRING match against spell identity. Use the
+              prefix sibling when you want anchored matching - this one will hit
+              mid-string and returns strictly more results.
+            - Empty `text` is rejected rather than matching everything.
+            - VISIBILITY-FILTERED PROJECTION. Absence means "not visible to this
+              rift" OR "not present" - indistinguishable from outside. Never use an
+              empty result as proof that a spell does not exist.
+            - `frame_name` is an ASSERTION passed through to the frame helper, not
+              a selector. When supplied it must match the bound frame or the call
+              raises.
+            - Read-only snapshot taken at call time; it does not mutate frame state
+              and does not stay live as the frame changes.
+
+        Threading:
+            Reads a descriptor snapshot through the borrowed frame view;
+            concurrent frame changes are not reflected in a returned result.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`. The frame view is BORROWED, not owned -
+            cleaning this viewer does not clean it.
+
+        Raises:
+            ValueError: If a required argument is empty.
+            RuntimeError: If the viewer is unbound or cleaned, or `frame_name`
+                does not match the bound frame.
 
         Returns:
             List[FrameLink]: Matching visible spell links.
@@ -1404,6 +2027,32 @@ class ViewSpell(Cleanable):
                 Optional frame-name assertion passed through to the selected-
                 frame helper.
 
+        Contract:
+            - CASE-INSENSITIVE PREFIX match, anchored at the start of the identity.
+              Narrower than the contains sibling.
+            - Empty `prefix` is rejected rather than matching everything.
+            - VISIBILITY-FILTERED PROJECTION. Absence means "not visible to this
+              rift" OR "not present" - indistinguishable from outside. Never use an
+              empty result as proof that a spell does not exist.
+            - `frame_name` is an ASSERTION passed through to the frame helper, not
+              a selector. When supplied it must match the bound frame or the call
+              raises.
+            - Read-only snapshot taken at call time; it does not mutate frame state
+              and does not stay live as the frame changes.
+
+        Threading:
+            Reads a descriptor snapshot through the borrowed frame view;
+            concurrent frame changes are not reflected in a returned result.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`. The frame view is BORROWED, not owned -
+            cleaning this viewer does not clean it.
+
+        Raises:
+            ValueError: If a required argument is empty.
+            RuntimeError: If the viewer is unbound or cleaned, or `frame_name`
+                does not match the bound frame.
+
         Returns:
             List[FrameLink]: Matching visible spell links.
         """
@@ -1440,6 +2089,32 @@ class ViewSpell(Cleanable):
             frame_name:
                 Optional frame-name assertion passed through to the selected-
                 frame helper.
+
+        Contract:
+            - Explains the ACL posture for one spell, including which sections are
+              visible. This is the honest way to distinguish "absent" from "hidden",
+              which the plain listers cannot express.
+            - VISIBILITY-FILTERED PROJECTION. Absence means "not visible to this
+              rift" OR "not present" - indistinguishable from outside. Never use an
+              empty result as proof that a spell does not exist.
+            - `frame_name` is an ASSERTION passed through to the frame helper, not
+              a selector. When supplied it must match the bound frame or the call
+              raises.
+            - Read-only snapshot taken at call time; it does not mutate frame state
+              and does not stay live as the frame changes.
+
+        Threading:
+            Reads a descriptor snapshot through the borrowed frame view;
+            concurrent frame changes are not reflected in a returned result.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`. The frame view is BORROWED, not owned -
+            cleaning this viewer does not clean it.
+
+        Raises:
+            ValueError: If a required argument is empty.
+            RuntimeError: If the viewer is unbound or cleaned, or `frame_name`
+                does not match the bound frame.
 
         Returns:
             Dict[str, object]: Spell visibility, section, and detail posture
@@ -1492,6 +2167,27 @@ class ViewSpell(Cleanable):
             record identity, provenance, ACL posture, and detailed payload
             availability in one place.
 
+        Contract:
+            - COMPOSITE of identity, origin and access in one call - a convenience over
+              three separate queries, each of which is individually available.
+            - Because it fans out, it costs more than any single component; prefer the
+              specific describer when you need only one part.
+            - VISIBILITY-FILTERED PROJECTION: absence means "not visible to this rift"
+              OR "not present", indistinguishable from outside.
+            - `frame_name` is an ASSERTION, not a selector - when supplied it must
+              match the bound frame or the call raises.
+
+        Threading:
+            Reads a descriptor snapshot; concurrent frame changes are not reflected in
+            an already-returned result.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If the viewer is unbound or cleaned, or `frame_name` does not
+                match the bound frame.
+
         Args:
             spell_source_id:
                 Published spell source id.
@@ -1535,6 +2231,26 @@ class ViewSpell(Cleanable):
             Give the operator one direct spell crosswalk from the spell to its
             conduit, root conduit, peer conduits, spellbook, spell index, and
             visible sibling spells.
+
+        Contract:
+            - Walks OWNER -> ROOT -> PEERS to place the spell in the conduit topology.
+            - AN UNOWNED SPELL yields a None root and an EMPTY peer tuple rather than
+              raising, so unowned is reported as data.
+            - VISIBILITY-FILTERED PROJECTION: absence means "not visible to this rift"
+              OR "not present", indistinguishable from outside.
+            - `frame_name` is an ASSERTION, not a selector - when supplied it must
+              match the bound frame or the call raises.
+
+        Threading:
+            Reads a descriptor snapshot; concurrent frame changes are not reflected in
+            an already-returned result.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If the viewer is unbound or cleaned, or `frame_name` does not
+                match the bound frame.
 
         Args:
             spell_source_id:
@@ -1595,6 +2311,36 @@ class ViewSpell(Cleanable):
             frame_name:
                 Optional frame-name assertion passed through to the selected-
                 frame helper.
+
+        Contract:
+            - BOTH spells must be visible; an invisible operand raises rather than
+              producing a partial comparison.
+            - Compares recorded fields AND the ACL-filtered descriptions, so a
+              reported difference can reflect DIFFERING VISIBILITY between the two
+              spells rather than a real difference in the underlying spells.
+            - Pure comparison: it reports differences and never reconciles them.
+            - The two operands are not read atomically with respect to each other.
+            - VISIBILITY-FILTERED PROJECTION. Absence means "not visible to this
+              rift" OR "not present" - indistinguishable from outside. Never use an
+              empty result as proof that a spell does not exist.
+            - `frame_name` is an ASSERTION passed through to the frame helper, not
+              a selector. When supplied it must match the bound frame or the call
+              raises.
+            - Read-only snapshot taken at call time; it does not mutate frame state
+              and does not stay live as the frame changes.
+
+        Threading:
+            Reads a descriptor snapshot through the borrowed frame view;
+            concurrent frame changes are not reflected in a returned result.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`. The frame view is BORROWED, not owned -
+            cleaning this viewer does not clean it.
+
+        Raises:
+            ValueError: If a required argument is empty.
+            RuntimeError: If the viewer is unbound or cleaned, or `frame_name`
+                does not match the bound frame.
 
         Returns:
             Dict[str, object]: Visible spell comparison summary.
@@ -1681,6 +2427,35 @@ class ViewSpell(Cleanable):
                 Optional frame-name assertion passed through to the selected-
                 frame helper.
 
+        Contract:
+            - ACL-GATED SECTION READ that RAISES when the section is not visible,
+              rather than reporting availability. That is the deliberate contrast
+              with the `describe_spell_*` probes, which return a flag.
+            - Because it raises on hidden sections, a returned value is always
+              genuinely visible data.
+            - Empty `section_name` is rejected up front.
+            - VISIBILITY-FILTERED PROJECTION. Absence means "not visible to this
+              rift" OR "not present" - indistinguishable from outside. Never use an
+              empty result as proof that a spell does not exist.
+            - `frame_name` is an ASSERTION passed through to the frame helper, not
+              a selector. When supplied it must match the bound frame or the call
+              raises.
+            - Read-only snapshot taken at call time; it does not mutate frame state
+              and does not stay live as the frame changes.
+
+        Threading:
+            Reads a descriptor snapshot through the borrowed frame view;
+            concurrent frame changes are not reflected in a returned result.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`. The frame view is BORROWED, not owned -
+            cleaning this viewer does not clean it.
+
+        Raises:
+            ValueError: If a required argument is empty.
+            RuntimeError: If the viewer is unbound or cleaned, or `frame_name`
+                does not match the bound frame.
+
         Returns:
             object: ACL-visible spell payload section value.
         """
@@ -1726,6 +2501,34 @@ class ViewSpell(Cleanable):
             frame_name:
                 Optional frame-name assertion passed through to the selected-
                 frame helper.
+
+        Contract:
+            - RAISES rather than returning None, which is the distinction from the
+              find/list siblings.
+            - The raise is AMBIGUOUS between "no such spell" and "exists but not
+              visible to this rift"; do not treat it as proof of non-existence.
+            - Empty `spell_source_id` is rejected up front.
+            - VISIBILITY-FILTERED PROJECTION. Absence means "not visible to this
+              rift" OR "not present" - indistinguishable from outside. Never use an
+              empty result as proof that a spell does not exist.
+            - `frame_name` is an ASSERTION passed through to the frame helper, not
+              a selector. When supplied it must match the bound frame or the call
+              raises.
+            - Read-only snapshot taken at call time; it does not mutate frame state
+              and does not stay live as the frame changes.
+
+        Threading:
+            Reads a descriptor snapshot through the borrowed frame view;
+            concurrent frame changes are not reflected in a returned result.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`. The frame view is BORROWED, not owned -
+            cleaning this viewer does not clean it.
+
+        Raises:
+            ValueError: If a required argument is empty.
+            RuntimeError: If the viewer is unbound or cleaned, or `frame_name`
+                does not match the bound frame.
 
         Returns:
             FrameLink: Matching spell link.

@@ -235,6 +235,19 @@ class SpellContract(Cleanable):
         when it captures unresolved contract sockets during analysis and later
         tries to match them against linked provider spells.
 
+        Contract:
+            - Returns the RAW, AS-SUPPLIED triplet - the spell, spellframe and binding
+              name exactly as the caller gave them, WITHOUT normalization.
+            - This is NOT the registry key. Use `canonical_key` when you need the
+              normalized identity the spellbook actually indexes by; the two can
+              differ for the same SpellContract.
+
+        Threading:
+            Pure computation over immutable fields; safe from any thread.
+
+        Lifecycle / Cleanup:
+            Carries no cleaned-state guard.
+
         Returns:
             tuple[Any, Optional[Any], Optional[str]]: `(spell, spellframe,
             binding_name)` exactly as stored on the descriptor.
@@ -261,6 +274,19 @@ class SpellContract(Cleanable):
         - match a consumer contract hole against provider spells during conduit
           linking
 
+        Contract:
+            - NORMALIZED identity: it runs the raw triplet through the shared key
+              normalizer, so equivalent-but-differently-spelled inputs collapse to
+              the same key. This is what the spellbook indexes by.
+            - Recomputed on every access rather than cached, so it always reflects
+              the current field values.
+
+        Threading:
+            Pure computation over immutable fields; safe from any thread.
+
+        Lifecycle / Cleanup:
+            Carries no cleaned-state guard.
+
         Returns:
             Tuple[str, str]: Normalized `(frame_key, binding_key)` pair.
         """
@@ -276,6 +302,16 @@ class SpellContract(Cleanable):
         """
         Compatibility alias for `canonical_key`.
 
+        Contract:
+            - ALIAS for `canonical_key`, kept for call-site readability. Identical
+              behaviour - it is the NORMALIZED key, not the raw triplet.
+
+        Threading:
+            Pure computation over immutable fields; safe from any thread.
+
+        Lifecycle / Cleanup:
+            Carries no cleaned-state guard.
+
         Returns:
             Tuple[str, str]: The same normalized contract identifier returned
             by `canonical_key`.
@@ -285,6 +321,18 @@ class SpellContract(Cleanable):
     def __repr__(self) -> str:
         """
         Return a debug-oriented representation of the contract descriptor.
+
+        Contract:
+            - Includes the override payload alongside the identity fields, so a `SpellContract`
+              repr shows what it will DO as well as what it names.
+            - Unguarded, unlike some other repr implementations in the codebase, so
+              it stays safe to log.
+
+        Threading:
+            Pure computation over immutable fields; safe from any thread.
+
+        Lifecycle / Cleanup:
+            Carries no cleaned-state guard.
 
         Returns:
             str: Representation showing the stored spell/frame/binding/override

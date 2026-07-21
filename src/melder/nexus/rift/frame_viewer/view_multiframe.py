@@ -510,6 +510,35 @@ class ViewMultiFrame(Cleanable):
         """
         Return the currently linked frame names in deterministic order.
 
+        Contract:
+            - SORTED, so iteration order is deterministic across calls.
+            - Scoped to the frames this rift is ASSIGNED. Frames the rift cannot
+              reach are absent, so this is a reachability list, not a census of the
+              process.
+            - DESCRIPTOR-LEVEL, CROSS-FRAME surface. Access is scoped at FRAME
+              granularity by the rift's assigned/accessible frame lists, and within
+              a reachable frame this reads descriptor records directly rather than
+              the per-target ACL-filtered link set used by `ViewFrame` / `ViewSpell`.
+              Results here therefore need not match those helpers for the same frame.
+            - `frame_name` is a per-call FILTER at this layer, not a bound-frame
+              assertion: None means "every reachable frame".
+            - Read-only; it resolves through the parent viewer per query rather than
+              from one frozen snapshot, so two calls can observe different state.
+
+        Threading:
+            Resolves descriptors through the parent viewer per query; multi-frame
+            results are assembled across several reads and are not one atomic
+            snapshot.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`. The parent viewer is BORROWED, not owned -
+            this helper must not outlive it.
+
+        Raises:
+            ValueError: If a required argument is empty.
+            RuntimeError: If a frame cannot be resolved, or the helper or its parent
+                viewer has been cleaned.
+
         Returns:
             List[str]: Sorted linked frame names.
         """
@@ -521,6 +550,35 @@ class ViewMultiFrame(Cleanable):
         """
         Return the currently linked frame names in deterministic order.
 
+        Contract:
+            - CURRENTLY IDENTICAL to `list_frame_names()` - it delegates straight to
+              it, so "linked" and "assigned" name the same set today. Treat the two
+              as interchangeable, and prefer `list_frame_names()` unless you
+              specifically mean linkage.
+            - DESCRIPTOR-LEVEL, CROSS-FRAME surface. Access is scoped at FRAME
+              granularity by the rift's assigned/accessible frame lists, and within
+              a reachable frame this reads descriptor records directly rather than
+              the per-target ACL-filtered link set used by `ViewFrame` / `ViewSpell`.
+              Results here therefore need not match those helpers for the same frame.
+            - `frame_name` is a per-call FILTER at this layer, not a bound-frame
+              assertion: None means "every reachable frame".
+            - Read-only; it resolves through the parent viewer per query rather than
+              from one frozen snapshot, so two calls can observe different state.
+
+        Threading:
+            Resolves descriptors through the parent viewer per query; multi-frame
+            results are assembled across several reads and are not one atomic
+            snapshot.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`. The parent viewer is BORROWED, not owned -
+            this helper must not outlive it.
+
+        Raises:
+            ValueError: If a required argument is empty.
+            RuntimeError: If a frame cannot be resolved, or the helper or its parent
+                viewer has been cleaned.
+
         Returns:
             List[str]: Sorted linked frame names.
         """
@@ -530,6 +588,35 @@ class ViewMultiFrame(Cleanable):
     def list_nexus_frame_names(self) -> List[str]:
         """
         Return the currently accessible Nexus-managed frame names.
+
+        Contract:
+            - SORTED, and scoped to the NEXUS-hosted frames this rift can access.
+            - Complementary to `list_non_nexus_frame_names()`; together they cover
+              the accessible set, and neither includes frames the rift cannot
+              reach.
+            - DESCRIPTOR-LEVEL, CROSS-FRAME surface. Access is scoped at FRAME
+              granularity by the rift's assigned/accessible frame lists, and within
+              a reachable frame this reads descriptor records directly rather than
+              the per-target ACL-filtered link set used by `ViewFrame` / `ViewSpell`.
+              Results here therefore need not match those helpers for the same frame.
+            - `frame_name` is a per-call FILTER at this layer, not a bound-frame
+              assertion: None means "every reachable frame".
+            - Read-only; it resolves through the parent viewer per query rather than
+              from one frozen snapshot, so two calls can observe different state.
+
+        Threading:
+            Resolves descriptors through the parent viewer per query; multi-frame
+            results are assembled across several reads and are not one atomic
+            snapshot.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`. The parent viewer is BORROWED, not owned -
+            this helper must not outlive it.
+
+        Raises:
+            ValueError: If a required argument is empty.
+            RuntimeError: If a frame cannot be resolved, or the helper or its parent
+                viewer has been cleaned.
 
         Returns:
             List[str]: Sorted accessible Nexus-managed frame names.
@@ -544,6 +631,33 @@ class ViewMultiFrame(Cleanable):
         """
         Return the currently accessible published non-Nexus frame names.
 
+        Contract:
+            - SORTED, and scoped to the accessible frames that are NOT nexus-hosted.
+            - Complementary to `list_nexus_frame_names()`.
+            - DESCRIPTOR-LEVEL, CROSS-FRAME surface. Access is scoped at FRAME
+              granularity by the rift's assigned/accessible frame lists, and within
+              a reachable frame this reads descriptor records directly rather than
+              the per-target ACL-filtered link set used by `ViewFrame` / `ViewSpell`.
+              Results here therefore need not match those helpers for the same frame.
+            - `frame_name` is a per-call FILTER at this layer, not a bound-frame
+              assertion: None means "every reachable frame".
+            - Read-only; it resolves through the parent viewer per query rather than
+              from one frozen snapshot, so two calls can observe different state.
+
+        Threading:
+            Resolves descriptors through the parent viewer per query; multi-frame
+            results are assembled across several reads and are not one atomic
+            snapshot.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`. The parent viewer is BORROWED, not owned -
+            this helper must not outlive it.
+
+        Raises:
+            ValueError: If a required argument is empty.
+            RuntimeError: If a frame cannot be resolved, or the helper or its parent
+                viewer has been cleaned.
+
         Returns:
             List[str]: Sorted accessible published non-Nexus frame names.
         """
@@ -556,6 +670,34 @@ class ViewMultiFrame(Cleanable):
     def count_frames(self) -> int:
         """
         Return the number of hosted frame descriptors.
+
+        Contract:
+            - Counts REACHABLE frames only - it is the length of `list_frame_names()`,
+              so it inherits that method's assigned-frame scoping and is not a count
+              of frames in the process.
+            - DESCRIPTOR-LEVEL, CROSS-FRAME surface. Access is scoped at FRAME
+              granularity by the rift's assigned/accessible frame lists, and within
+              a reachable frame this reads descriptor records directly rather than
+              the per-target ACL-filtered link set used by `ViewFrame` / `ViewSpell`.
+              Results here therefore need not match those helpers for the same frame.
+            - `frame_name` is a per-call FILTER at this layer, not a bound-frame
+              assertion: None means "every reachable frame".
+            - Read-only; it resolves through the parent viewer per query rather than
+              from one frozen snapshot, so two calls can observe different state.
+
+        Threading:
+            Resolves descriptors through the parent viewer per query; multi-frame
+            results are assembled across several reads and are not one atomic
+            snapshot.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`. The parent viewer is BORROWED, not owned -
+            this helper must not outlive it.
+
+        Raises:
+            ValueError: If a required argument is empty.
+            RuntimeError: If a frame cannot be resolved, or the helper or its parent
+                viewer has been cleaned.
 
         Returns:
             int: Hosted frame count.
@@ -575,6 +717,36 @@ class ViewMultiFrame(Cleanable):
             frame_name:
                 Optional frame name. When omitted, counts across all hosted
                 frames.
+
+        Contract:
+            - Counts DISTINCT root conduit ids PER FRAME and sums those counts. A
+              root id present in two frames is therefore counted TWICE - this is a
+              sum of per-frame totals, not a distinct count across frames.
+            - `frame_name=None` spans every reachable frame; supplying one narrows
+              to that frame.
+            - DESCRIPTOR-LEVEL, CROSS-FRAME surface. Access is scoped at FRAME
+              granularity by the rift's assigned/accessible frame lists, and within
+              a reachable frame this reads descriptor records directly rather than
+              the per-target ACL-filtered link set used by `ViewFrame` / `ViewSpell`.
+              Results here therefore need not match those helpers for the same frame.
+            - `frame_name` is a per-call FILTER at this layer, not a bound-frame
+              assertion: None means "every reachable frame".
+            - Read-only; it resolves through the parent viewer per query rather than
+              from one frozen snapshot, so two calls can observe different state.
+
+        Threading:
+            Resolves descriptors through the parent viewer per query; multi-frame
+            results are assembled across several reads and are not one atomic
+            snapshot.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`. The parent viewer is BORROWED, not owned -
+            this helper must not outlive it.
+
+        Raises:
+            ValueError: If a required argument is empty.
+            RuntimeError: If a frame cannot be resolved, or the helper or its parent
+                viewer has been cleaned.
 
         Returns:
             int: Root conduit record count.
@@ -605,6 +777,36 @@ class ViewMultiFrame(Cleanable):
                 Optional frame name. When omitted, counts across all hosted
                 frames.
 
+        Contract:
+            - Counts DESCRIPTOR RECORDS, so it counts spells as the frame descriptor
+              holds them rather than as the ACL-filtered projection exposes them. It
+              will not necessarily equal the length of `ViewSpell.list_spells(...)`
+              for the same frame.
+            - Sums per-frame totals; `frame_name=None` spans every reachable frame.
+            - DESCRIPTOR-LEVEL, CROSS-FRAME surface. Access is scoped at FRAME
+              granularity by the rift's assigned/accessible frame lists, and within
+              a reachable frame this reads descriptor records directly rather than
+              the per-target ACL-filtered link set used by `ViewFrame` / `ViewSpell`.
+              Results here therefore need not match those helpers for the same frame.
+            - `frame_name` is a per-call FILTER at this layer, not a bound-frame
+              assertion: None means "every reachable frame".
+            - Read-only; it resolves through the parent viewer per query rather than
+              from one frozen snapshot, so two calls can observe different state.
+
+        Threading:
+            Resolves descriptors through the parent viewer per query; multi-frame
+            results are assembled across several reads and are not one atomic
+            snapshot.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`. The parent viewer is BORROWED, not owned -
+            this helper must not outlive it.
+
+        Raises:
+            ValueError: If a required argument is empty.
+            RuntimeError: If a frame cannot be resolved, or the helper or its parent
+                viewer has been cleaned.
+
         Returns:
             int: Spell record count.
         """
@@ -624,6 +826,27 @@ class ViewMultiFrame(Cleanable):
             This host-level summary is limited to descriptor structure and
             published record identity. It does not expose payload bodies or
             ACL-shaped payload visibility.
+
+        Contract:
+            - Frame overview plus record counts. THE OVERVIEW MAY BE ABSENT, in which case
+              `frame_id`, `nexus_label` and `nexus_version` are None rather than the call
+              failing - None means "no overview recorded", not "no frame".
+            - DESCRIPTOR-LEVEL and CROSS-FRAME: scoped at FRAME granularity by the
+              rift's reachable frames, then reading descriptor records directly rather
+              than the ACL-filtered link set, so results need not match ViewFrame /
+              ViewSpell for the same frame.
+            - `frame_name` is a per-call FILTER here; None means every reachable frame.
+
+        Threading:
+            Resolves descriptors through the parent viewer per query; multi-frame
+            results are assembled across several reads, not one atomic snapshot.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`. The parent viewer is BORROWED, not owned.
+
+        Raises:
+            RuntimeError: If a frame cannot be resolved, or the helper or its parent
+                viewer has been cleaned.
 
         Args:
             frame_name:
@@ -657,6 +880,35 @@ class ViewMultiFrame(Cleanable):
     def describe_frames(self) -> Dict[str, Dict[str, object]]:
         """
         Return descriptor-level summaries for all hosted frames.
+
+        Contract:
+            - Describes EVERY reachable frame in one call, so its cost scales with
+              frame count - it is a fan-out over `describe_frame`, not a bulk query.
+            - Keys are the frame names; a frame the rift cannot reach is absent
+              rather than present with an empty description.
+            - DESCRIPTOR-LEVEL, CROSS-FRAME surface. Access is scoped at FRAME
+              granularity by the rift's assigned/accessible frame lists, and within
+              a reachable frame this reads descriptor records directly rather than
+              the per-target ACL-filtered link set used by `ViewFrame` / `ViewSpell`.
+              Results here therefore need not match those helpers for the same frame.
+            - `frame_name` is a per-call FILTER at this layer, not a bound-frame
+              assertion: None means "every reachable frame".
+            - Read-only; it resolves through the parent viewer per query rather than
+              from one frozen snapshot, so two calls can observe different state.
+
+        Threading:
+            Resolves descriptors through the parent viewer per query; multi-frame
+            results are assembled across several reads and are not one atomic
+            snapshot.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`. The parent viewer is BORROWED, not owned -
+            this helper must not outlive it.
+
+        Raises:
+            ValueError: If a required argument is empty.
+            RuntimeError: If a frame cannot be resolved, or the helper or its parent
+                viewer has been cleaned.
 
         Returns:
             Dict[str, Dict[str, object]]: Hosted frame summaries keyed by frame
@@ -964,6 +1216,37 @@ class ViewMultiFrame(Cleanable):
             right_frame_name:
                 Right hosted frame name.
 
+        Contract:
+            - CROSS-FRAME comparison of conduit inventories: record ids and root ids
+              on each side.
+            - Reports differences and never reconciles them.
+            - The two frames are not read atomically with respect to each other, so
+              a concurrently changing frame can produce a comparison that was never
+              simultaneously true.
+            - DESCRIPTOR-LEVEL, CROSS-FRAME surface. Access is scoped at FRAME
+              granularity by the rift's assigned/accessible frame lists, and within
+              a reachable frame this reads descriptor records directly rather than
+              the per-target ACL-filtered link set used by `ViewFrame` / `ViewSpell`.
+              Results here therefore need not match those helpers for the same frame.
+            - `frame_name` is a per-call FILTER at this layer, not a bound-frame
+              assertion: None means "every reachable frame".
+            - Read-only; it resolves through the parent viewer per query rather than
+              from one frozen snapshot, so two calls can observe different state.
+
+        Threading:
+            Resolves descriptors through the parent viewer per query; multi-frame
+            results are assembled across several reads and are not one atomic
+            snapshot.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`. The parent viewer is BORROWED, not owned -
+            this helper must not outlive it.
+
+        Raises:
+            ValueError: If a required argument is empty.
+            RuntimeError: If a frame cannot be resolved, or the helper or its parent
+                viewer has been cleaned.
+
         Returns:
             Dict[str, object]: Conduit-record comparison summary.
         """
@@ -1008,6 +1291,36 @@ class ViewMultiFrame(Cleanable):
                 Left hosted frame name.
             right_frame_name:
                 Right hosted frame name.
+
+        Contract:
+            - CROSS-FRAME comparison across FOUR axes - source ids, index ids, spell
+              names and binding names - so two frames can agree on names while
+              differing on identity, which is exactly the case this surfaces.
+            - Reports differences and never reconciles them.
+            - The two frames are not read atomically with respect to each other.
+            - DESCRIPTOR-LEVEL, CROSS-FRAME surface. Access is scoped at FRAME
+              granularity by the rift's assigned/accessible frame lists, and within
+              a reachable frame this reads descriptor records directly rather than
+              the per-target ACL-filtered link set used by `ViewFrame` / `ViewSpell`.
+              Results here therefore need not match those helpers for the same frame.
+            - `frame_name` is a per-call FILTER at this layer, not a bound-frame
+              assertion: None means "every reachable frame".
+            - Read-only; it resolves through the parent viewer per query rather than
+              from one frozen snapshot, so two calls can observe different state.
+
+        Threading:
+            Resolves descriptors through the parent viewer per query; multi-frame
+            results are assembled across several reads and are not one atomic
+            snapshot.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`. The parent viewer is BORROWED, not owned -
+            this helper must not outlive it.
+
+        Raises:
+            ValueError: If a required argument is empty.
+            RuntimeError: If a frame cannot be resolved, or the helper or its parent
+                viewer has been cleaned.
 
         Returns:
             Dict[str, object]: Spell-record comparison summary.
@@ -1060,6 +1373,26 @@ class ViewMultiFrame(Cleanable):
             Surface visible ambiguity at the record-identity level when the
             same binding name is attached to multiple published spell records.
 
+        Contract:
+            - Groups spells sharing a BINDING NAME. Collisions are legitimate - binding
+              names are reusable across frames - so this reports ambiguity, not a defect.
+            - DESCRIPTOR-LEVEL and CROSS-FRAME: scoped at FRAME granularity by the
+              rift's reachable frames, then reading descriptor records directly rather
+              than the ACL-filtered link set, so results need not match ViewFrame /
+              ViewSpell for the same frame.
+            - `frame_name` is a per-call FILTER here; None means every reachable frame.
+
+        Threading:
+            Resolves descriptors through the parent viewer per query; multi-frame
+            results are assembled across several reads, not one atomic snapshot.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`. The parent viewer is BORROWED, not owned.
+
+        Raises:
+            RuntimeError: If a frame cannot be resolved, or the helper or its parent
+                viewer has been cleaned.
+
         Args:
             frame_name:
                 Optional hosted frame name. When omitted, scans all hosted
@@ -1088,6 +1421,36 @@ class ViewMultiFrame(Cleanable):
                 Optional hosted frame name. When omitted, scans all hosted
                 frames.
 
+        Contract:
+            - Groups spells that SHARE A SPELL NAME. A collision is NOT an error:
+              names are legitimately reusable across spellframes and binding names,
+              so this reports ambiguity for a human to judge, not a defect.
+            - `frame_name=None` spans every reachable frame, which is where genuine
+              cross-frame ambiguity shows up.
+            - DESCRIPTOR-LEVEL, CROSS-FRAME surface. Access is scoped at FRAME
+              granularity by the rift's assigned/accessible frame lists, and within
+              a reachable frame this reads descriptor records directly rather than
+              the per-target ACL-filtered link set used by `ViewFrame` / `ViewSpell`.
+              Results here therefore need not match those helpers for the same frame.
+            - `frame_name` is a per-call FILTER at this layer, not a bound-frame
+              assertion: None means "every reachable frame".
+            - Read-only; it resolves through the parent viewer per query rather than
+              from one frozen snapshot, so two calls can observe different state.
+
+        Threading:
+            Resolves descriptors through the parent viewer per query; multi-frame
+            results are assembled across several reads and are not one atomic
+            snapshot.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`. The parent viewer is BORROWED, not owned -
+            this helper must not outlive it.
+
+        Raises:
+            ValueError: If a required argument is empty.
+            RuntimeError: If a frame cannot be resolved, or the helper or its parent
+                viewer has been cleaned.
+
         Returns:
             Dict[str, Tuple[str, ...]]: Spell names mapped to the colliding
             spell source ids.
@@ -1109,6 +1472,26 @@ class ViewMultiFrame(Cleanable):
         Purpose:
             Surface all published spell source ids grouped by spell-index id,
             even when an index currently has only one visible member.
+
+        Contract:
+            - Groups by spell INDEX id, so each group is one version LINEAGE rather than
+              one spell.
+            - DESCRIPTOR-LEVEL and CROSS-FRAME: scoped at FRAME granularity by the
+              rift's reachable frames, then reading descriptor records directly rather
+              than the ACL-filtered link set, so results need not match ViewFrame /
+              ViewSpell for the same frame.
+            - `frame_name` is a per-call FILTER here; None means every reachable frame.
+
+        Threading:
+            Resolves descriptors through the parent viewer per query; multi-frame
+            results are assembled across several reads, not one atomic snapshot.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`. The parent viewer is BORROWED, not owned.
+
+        Raises:
+            RuntimeError: If a frame cannot be resolved, or the helper or its parent
+                viewer has been cleaned.
 
         Args:
             frame_name:
@@ -1136,6 +1519,26 @@ class ViewMultiFrame(Cleanable):
         Purpose:
             Group published spells by normalized spellframe value so frame-wide
             spellframe overlaps are obvious.
+
+        Contract:
+            - Groups by NORMALIZED spellframe value; spells whose spellframe normalizes
+              to nothing are absent from every group.
+            - DESCRIPTOR-LEVEL and CROSS-FRAME: scoped at FRAME granularity by the
+              rift's reachable frames, then reading descriptor records directly rather
+              than the ACL-filtered link set, so results need not match ViewFrame /
+              ViewSpell for the same frame.
+            - `frame_name` is a per-call FILTER here; None means every reachable frame.
+
+        Threading:
+            Resolves descriptors through the parent viewer per query; multi-frame
+            results are assembled across several reads, not one atomic snapshot.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`. The parent viewer is BORROWED, not owned.
+
+        Raises:
+            RuntimeError: If a frame cannot be resolved, or the helper or its parent
+                viewer has been cleaned.
 
         Args:
             frame_name:
@@ -1167,6 +1570,35 @@ class ViewMultiFrame(Cleanable):
                 Optional hosted frame name. When omitted, scans all hosted
                 frames.
 
+        Contract:
+            - Reports where the SAME spell carries DIFFERENT permission postures across
+              spellbooks. Divergence is the finding; this method does not decide
+              which side is correct and changes nothing.
+            - Compares the permission enum's `.name`, so it is exact, not normalized.
+            - DESCRIPTOR-LEVEL, CROSS-FRAME surface. Access is scoped at FRAME
+              granularity by the rift's assigned/accessible frame lists, and within
+              a reachable frame this reads descriptor records directly rather than
+              the per-target ACL-filtered link set used by `ViewFrame` / `ViewSpell`.
+              Results here therefore need not match those helpers for the same frame.
+            - `frame_name` is a per-call FILTER at this layer, not a bound-frame
+              assertion: None means "every reachable frame".
+            - Read-only; it resolves through the parent viewer per query rather than
+              from one frozen snapshot, so two calls can observe different state.
+
+        Threading:
+            Resolves descriptors through the parent viewer per query; multi-frame
+            results are assembled across several reads and are not one atomic
+            snapshot.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`. The parent viewer is BORROWED, not owned -
+            this helper must not outlive it.
+
+        Raises:
+            ValueError: If a required argument is empty.
+            RuntimeError: If a frame cannot be resolved, or the helper or its parent
+                viewer has been cleaned.
+
         Returns:
             Dict[str, Dict[str, object]]: Spellbook ids mapped to permission
             mismatch summaries.
@@ -1189,6 +1621,36 @@ class ViewMultiFrame(Cleanable):
             frame_name:
                 Optional hosted frame name. When omitted, scans all hosted
                 frames.
+
+        Contract:
+            - Reports where the SAME spell carries DIFFERENT existence policies across
+              spellbooks - the lifetime equivalent of the permission mismatch report.
+              A mismatch means one book would produce a singleton where another
+              produces per-call instances.
+            - Compares the existence enum's `.name`, so it is exact, not normalized.
+            - DESCRIPTOR-LEVEL, CROSS-FRAME surface. Access is scoped at FRAME
+              granularity by the rift's assigned/accessible frame lists, and within
+              a reachable frame this reads descriptor records directly rather than
+              the per-target ACL-filtered link set used by `ViewFrame` / `ViewSpell`.
+              Results here therefore need not match those helpers for the same frame.
+            - `frame_name` is a per-call FILTER at this layer, not a bound-frame
+              assertion: None means "every reachable frame".
+            - Read-only; it resolves through the parent viewer per query rather than
+              from one frozen snapshot, so two calls can observe different state.
+
+        Threading:
+            Resolves descriptors through the parent viewer per query; multi-frame
+            results are assembled across several reads and are not one atomic
+            snapshot.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`. The parent viewer is BORROWED, not owned -
+            this helper must not outlive it.
+
+        Raises:
+            ValueError: If a required argument is empty.
+            RuntimeError: If a frame cannot be resolved, or the helper or its parent
+                viewer has been cleaned.
 
         Returns:
             Dict[str, Dict[str, object]]: Spellbook ids mapped to existence
@@ -1215,6 +1677,28 @@ class ViewMultiFrame(Cleanable):
             Give the operator one record-level spell diff without requiring them
             to manually compare multiple identity, provenance, and posture
             methods.
+
+        Contract:
+            - Compares two frames' spell records and REPORTS differences without
+              reconciling them.
+            - The two sides are not read atomically, so a concurrently changing frame can
+              yield a comparison that was never simultaneously true.
+            - DESCRIPTOR-LEVEL and CROSS-FRAME: scoped at FRAME granularity by the
+              rift's reachable frames, then reading descriptor records directly rather
+              than the ACL-filtered link set, so results need not match ViewFrame /
+              ViewSpell for the same frame.
+            - `frame_name` is a per-call FILTER here; None means every reachable frame.
+
+        Threading:
+            Resolves descriptors through the parent viewer per query; multi-frame
+            results are assembled across several reads, not one atomic snapshot.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`. The parent viewer is BORROWED, not owned.
+
+        Raises:
+            RuntimeError: If a frame cannot be resolved, or the helper or its parent
+                viewer has been cleaned.
 
         Args:
             left_spell_source_id:
@@ -1302,6 +1786,39 @@ class ViewMultiFrame(Cleanable):
             right_frame_name:
                 Optional hosted frame constraint for the right conduit.
 
+        Contract:
+            - Compares TWO CONDUITS THAT MAY LIVE IN DIFFERENT FRAMES, which is what
+              distinguishes this from `ViewConduit.compare_conduits`. The result
+              carries `same_frame` precisely because a cross-frame comparison is
+              legal here.
+            - Each operand resolves its own frame, so both frame names are optional
+              and independent.
+            - Reports differences and never reconciles them; the two operands are
+              not read atomically.
+            - DESCRIPTOR-LEVEL, CROSS-FRAME surface. Access is scoped at FRAME
+              granularity by the rift's assigned/accessible frame lists, and within
+              a reachable frame this reads descriptor records directly rather than
+              the per-target ACL-filtered link set used by `ViewFrame` / `ViewSpell`.
+              Results here therefore need not match those helpers for the same frame.
+            - `frame_name` is a per-call FILTER at this layer, not a bound-frame
+              assertion: None means "every reachable frame".
+            - Read-only; it resolves through the parent viewer per query rather than
+              from one frozen snapshot, so two calls can observe different state.
+
+        Threading:
+            Resolves descriptors through the parent viewer per query; multi-frame
+            results are assembled across several reads and are not one atomic
+            snapshot.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`. The parent viewer is BORROWED, not owned -
+            this helper must not outlive it.
+
+        Raises:
+            ValueError: If a required argument is empty.
+            RuntimeError: If a frame cannot be resolved, or the helper or its parent
+                viewer has been cleaned.
+
         Returns:
             Dict[str, object]: Record-level conduit comparison summary.
         """
@@ -1351,6 +1868,25 @@ class ViewMultiFrame(Cleanable):
         Purpose:
             Provide the canonical published spell identities for one hosted
             descriptor in deterministic order.
+
+        Contract:
+            - Built source ids for one frame, NOT deduplicated.
+            - DESCRIPTOR-LEVEL and CROSS-FRAME: scoped at FRAME granularity by the
+              rift's reachable frames, then reading descriptor records directly rather
+              than the ACL-filtered link set, so results need not match ViewFrame /
+              ViewSpell for the same frame.
+            - `frame_name` is a per-call FILTER here; None means every reachable frame.
+
+        Threading:
+            Resolves descriptors through the parent viewer per query; multi-frame
+            results are assembled across several reads, not one atomic snapshot.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`. The parent viewer is BORROWED, not owned.
+
+        Raises:
+            RuntimeError: If a frame cannot be resolved, or the helper or its parent
+                viewer has been cleaned.
 
         Args:
             frame_name:
@@ -1457,6 +1993,26 @@ class ViewMultiFrame(Cleanable):
             Surface conduit-record inventory at the descriptor host level
             without reaching into conduit payload bodies.
 
+        Contract:
+            - Counts DESCRIPTOR RECORDS, so it need not equal what `ViewConduit` exposes
+              for the same frame.
+            - DESCRIPTOR-LEVEL and CROSS-FRAME: scoped at FRAME granularity by the
+              rift's reachable frames, then reading descriptor records directly rather
+              than the ACL-filtered link set, so results need not match ViewFrame /
+              ViewSpell for the same frame.
+            - `frame_name` is a per-call FILTER here; None means every reachable frame.
+
+        Threading:
+            Resolves descriptors through the parent viewer per query; multi-frame
+            results are assembled across several reads, not one atomic snapshot.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`. The parent viewer is BORROWED, not owned.
+
+        Raises:
+            RuntimeError: If a frame cannot be resolved, or the helper or its parent
+                viewer has been cleaned.
+
         Args:
             frame_name:
                 Optional hosted frame name. When omitted, counts conduit
@@ -1479,6 +2035,26 @@ class ViewMultiFrame(Cleanable):
         Purpose:
             Expose the conduit ids owned by the selected frame descriptor scope
             without surfacing payload details.
+
+        Contract:
+            - Descriptor-level conduit ids, including conduits the per-target ACL would
+              hide from `ViewConduit`.
+            - DESCRIPTOR-LEVEL and CROSS-FRAME: scoped at FRAME granularity by the
+              rift's reachable frames, then reading descriptor records directly rather
+              than the ACL-filtered link set, so results need not match ViewFrame /
+              ViewSpell for the same frame.
+            - `frame_name` is a per-call FILTER here; None means every reachable frame.
+
+        Threading:
+            Resolves descriptors through the parent viewer per query; multi-frame
+            results are assembled across several reads, not one atomic snapshot.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`. The parent viewer is BORROWED, not owned.
+
+        Raises:
+            RuntimeError: If a frame cannot be resolved, or the helper or its parent
+                viewer has been cleaned.
 
         Args:
             frame_name:
@@ -1506,6 +2082,26 @@ class ViewMultiFrame(Cleanable):
             Surface conduit-root topology at the host level using record
             identity only.
 
+        Contract:
+            - Roots by descriptor record, so unlike the projection helpers this is not
+              distorted by invisible parents.
+            - DESCRIPTOR-LEVEL and CROSS-FRAME: scoped at FRAME granularity by the
+              rift's reachable frames, then reading descriptor records directly rather
+              than the ACL-filtered link set, so results need not match ViewFrame /
+              ViewSpell for the same frame.
+            - `frame_name` is a per-call FILTER here; None means every reachable frame.
+
+        Threading:
+            Resolves descriptors through the parent viewer per query; multi-frame
+            results are assembled across several reads, not one atomic snapshot.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`. The parent viewer is BORROWED, not owned.
+
+        Raises:
+            RuntimeError: If a frame cannot be resolved, or the helper or its parent
+                viewer has been cleaned.
+
         Args:
             frame_name:
                 Optional hosted frame name. When omitted, returns unique root
@@ -1532,6 +2128,26 @@ class ViewMultiFrame(Cleanable):
         Purpose:
             Surface spellbook provenance breadth at the descriptor host level.
 
+        Contract:
+            - DERIVED: it is the length of `list_origin_spellbook_ids(...)`, so it counts
+              DISTINCT origin spellbooks rather than spells.
+            - DESCRIPTOR-LEVEL and CROSS-FRAME: scoped at FRAME granularity by the
+              rift's reachable frames, then reading descriptor records directly rather
+              than the ACL-filtered link set, so results need not match ViewFrame /
+              ViewSpell for the same frame.
+            - `frame_name` is a per-call FILTER here; None means every reachable frame.
+
+        Threading:
+            Resolves descriptors through the parent viewer per query; multi-frame
+            results are assembled across several reads, not one atomic snapshot.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`. The parent viewer is BORROWED, not owned.
+
+        Raises:
+            RuntimeError: If a frame cannot be resolved, or the helper or its parent
+                viewer has been cleaned.
+
         Args:
             frame_name:
                 Optional hosted frame name. When omitted, counts distinct
@@ -1554,6 +2170,26 @@ class ViewMultiFrame(Cleanable):
         Purpose:
             Expose the spellbook provenance ids attached to the hosted spell
             records.
+
+        Contract:
+            - ORIGIN spellbooks - the books that first bound each spell - not the books
+              that own them now after a graft or transfer.
+            - DESCRIPTOR-LEVEL and CROSS-FRAME: scoped at FRAME granularity by the
+              rift's reachable frames, then reading descriptor records directly rather
+              than the ACL-filtered link set, so results need not match ViewFrame /
+              ViewSpell for the same frame.
+            - `frame_name` is a per-call FILTER here; None means every reachable frame.
+
+        Threading:
+            Resolves descriptors through the parent viewer per query; multi-frame
+            results are assembled across several reads, not one atomic snapshot.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`. The parent viewer is BORROWED, not owned.
+
+        Raises:
+            RuntimeError: If a frame cannot be resolved, or the helper or its parent
+                viewer has been cleaned.
 
         Args:
             frame_name:
@@ -1582,6 +2218,25 @@ class ViewMultiFrame(Cleanable):
             Expose spell ids directly from `SpellRecord` ownership without
             surfacing payload bodies.
 
+        Contract:
+            - Descriptor-level spell ids for the selected frame scope.
+            - DESCRIPTOR-LEVEL and CROSS-FRAME: scoped at FRAME granularity by the
+              rift's reachable frames, then reading descriptor records directly rather
+              than the ACL-filtered link set, so results need not match ViewFrame /
+              ViewSpell for the same frame.
+            - `frame_name` is a per-call FILTER here; None means every reachable frame.
+
+        Threading:
+            Resolves descriptors through the parent viewer per query; multi-frame
+            results are assembled across several reads, not one atomic snapshot.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`. The parent viewer is BORROWED, not owned.
+
+        Raises:
+            RuntimeError: If a frame cannot be resolved, or the helper or its parent
+                viewer has been cleaned.
+
         Args:
             frame_name:
                 Optional hosted frame name. When omitted, returns spell ids
@@ -1608,6 +2263,26 @@ class ViewMultiFrame(Cleanable):
             Surface the exact `(spellbook_id, spell_id)` storage identities
             attached to the selected descriptors.
 
+        Contract:
+            - The descriptor's RECORD KEYS, which are the internal index into
+              `spell_records_by_key` - not the same thing as spell source ids.
+            - DESCRIPTOR-LEVEL and CROSS-FRAME: scoped at FRAME granularity by the
+              rift's reachable frames, then reading descriptor records directly rather
+              than the ACL-filtered link set, so results need not match ViewFrame /
+              ViewSpell for the same frame.
+            - `frame_name` is a per-call FILTER here; None means every reachable frame.
+
+        Threading:
+            Resolves descriptors through the parent viewer per query; multi-frame
+            results are assembled across several reads, not one atomic snapshot.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`. The parent viewer is BORROWED, not owned.
+
+        Raises:
+            RuntimeError: If a frame cannot be resolved, or the helper or its parent
+                viewer has been cleaned.
+
         Args:
             frame_name:
                 Optional hosted frame name. When omitted, returns record keys
@@ -1632,6 +2307,25 @@ class ViewMultiFrame(Cleanable):
 
         Purpose:
             Expose spell-name inventory directly from `SpellRecord` metadata.
+
+        Contract:
+            - Spell names across the scope, NOT deduplicated - names are reusable.
+            - DESCRIPTOR-LEVEL and CROSS-FRAME: scoped at FRAME granularity by the
+              rift's reachable frames, then reading descriptor records directly rather
+              than the ACL-filtered link set, so results need not match ViewFrame /
+              ViewSpell for the same frame.
+            - `frame_name` is a per-call FILTER here; None means every reachable frame.
+
+        Threading:
+            Resolves descriptors through the parent viewer per query; multi-frame
+            results are assembled across several reads, not one atomic snapshot.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`. The parent viewer is BORROWED, not owned.
+
+        Raises:
+            RuntimeError: If a frame cannot be resolved, or the helper or its parent
+                viewer has been cleaned.
 
         Args:
             frame_name:
@@ -1658,6 +2352,26 @@ class ViewMultiFrame(Cleanable):
         Purpose:
             Expose the spell binding identities currently represented in the
             hosted descriptors.
+
+        Contract:
+            - Binding names across the scope. Spells with no binding name contribute
+              nothing, so this is shorter than the spell list and NOT aligned with it.
+            - DESCRIPTOR-LEVEL and CROSS-FRAME: scoped at FRAME granularity by the
+              rift's reachable frames, then reading descriptor records directly rather
+              than the ACL-filtered link set, so results need not match ViewFrame /
+              ViewSpell for the same frame.
+            - `frame_name` is a per-call FILTER here; None means every reachable frame.
+
+        Threading:
+            Resolves descriptors through the parent viewer per query; multi-frame
+            results are assembled across several reads, not one atomic snapshot.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`. The parent viewer is BORROWED, not owned.
+
+        Raises:
+            RuntimeError: If a frame cannot be resolved, or the helper or its parent
+                viewer has been cleaned.
 
         Args:
             frame_name:
@@ -1686,6 +2400,26 @@ class ViewMultiFrame(Cleanable):
         Purpose:
             Expose SpellIndex identity directly from `SpellRecord` metadata.
 
+        Contract:
+            - Index ids across the scope. Duplicates are EXPECTED, since many spells share
+              one lineage.
+            - DESCRIPTOR-LEVEL and CROSS-FRAME: scoped at FRAME granularity by the
+              rift's reachable frames, then reading descriptor records directly rather
+              than the ACL-filtered link set, so results need not match ViewFrame /
+              ViewSpell for the same frame.
+            - `frame_name` is a per-call FILTER here; None means every reachable frame.
+
+        Threading:
+            Resolves descriptors through the parent viewer per query; multi-frame
+            results are assembled across several reads, not one atomic snapshot.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`. The parent viewer is BORROWED, not owned.
+
+        Raises:
+            RuntimeError: If a frame cannot be resolved, or the helper or its parent
+                viewer has been cleaned.
+
         Args:
             frame_name:
                 Optional hosted frame name. When omitted, returns spell-index ids
@@ -1711,6 +2445,25 @@ class ViewMultiFrame(Cleanable):
         Purpose:
             Surface the logical spellframe inventory directly from
             `SpellRecord.spellframe` without exposing payload data.
+
+        Contract:
+            - Normalized spellframe values across the scope.
+            - DESCRIPTOR-LEVEL and CROSS-FRAME: scoped at FRAME granularity by the
+              rift's reachable frames, then reading descriptor records directly rather
+              than the ACL-filtered link set, so results need not match ViewFrame /
+              ViewSpell for the same frame.
+            - `frame_name` is a per-call FILTER here; None means every reachable frame.
+
+        Threading:
+            Resolves descriptors through the parent viewer per query; multi-frame
+            results are assembled across several reads, not one atomic snapshot.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`. The parent viewer is BORROWED, not owned.
+
+        Raises:
+            RuntimeError: If a frame cannot be resolved, or the helper or its parent
+                viewer has been cleaned.
 
         Args:
             frame_name:
@@ -1745,6 +2498,26 @@ class ViewMultiFrame(Cleanable):
             Surface the spell permission posture currently represented in the
             hosted descriptors.
 
+        Contract:
+            - DISTINCT and SORTED: values are collected into a set and then sorted, so this
+              lists which permission postures are IN USE, not one entry per spell.
+            - DESCRIPTOR-LEVEL and CROSS-FRAME: scoped at FRAME granularity by the
+              rift's reachable frames, then reading descriptor records directly rather
+              than the ACL-filtered link set, so results need not match ViewFrame /
+              ViewSpell for the same frame.
+            - `frame_name` is a per-call FILTER here; None means every reachable frame.
+
+        Threading:
+            Resolves descriptors through the parent viewer per query; multi-frame
+            results are assembled across several reads, not one atomic snapshot.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`. The parent viewer is BORROWED, not owned.
+
+        Raises:
+            RuntimeError: If a frame cannot be resolved, or the helper or its parent
+                viewer has been cleaned.
+
         Args:
             frame_name:
                 Optional hosted frame name. When omitted, returns permission
@@ -1771,6 +2544,26 @@ class ViewMultiFrame(Cleanable):
         Purpose:
             Surface spell lifetime categories directly from `SpellRecord`
             metadata.
+
+        Contract:
+            - DISTINCT and SORTED, like `list_permissions` - which existence policies are
+              in use, not one entry per spell.
+            - DESCRIPTOR-LEVEL and CROSS-FRAME: scoped at FRAME granularity by the
+              rift's reachable frames, then reading descriptor records directly rather
+              than the ACL-filtered link set, so results need not match ViewFrame /
+              ViewSpell for the same frame.
+            - `frame_name` is a per-call FILTER here; None means every reachable frame.
+
+        Threading:
+            Resolves descriptors through the parent viewer per query; multi-frame
+            results are assembled across several reads, not one atomic snapshot.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`. The parent viewer is BORROWED, not owned.
+
+        Raises:
+            RuntimeError: If a frame cannot be resolved, or the helper or its parent
+                viewer has been cleaned.
 
         Args:
             frame_name:
@@ -1906,6 +2699,25 @@ class ViewMultiFrame(Cleanable):
             Surface the conduit record identities and lineage grouping owned by
             one frame descriptor without exposing conduit payload bodies.
 
+        Contract:
+            - Full descriptor-level conduit descriptions; cost scales with record count.
+            - DESCRIPTOR-LEVEL and CROSS-FRAME: scoped at FRAME granularity by the
+              rift's reachable frames, then reading descriptor records directly rather
+              than the ACL-filtered link set, so results need not match ViewFrame /
+              ViewSpell for the same frame.
+            - `frame_name` is a per-call FILTER here; None means every reachable frame.
+
+        Threading:
+            Resolves descriptors through the parent viewer per query; multi-frame
+            results are assembled across several reads, not one atomic snapshot.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`. The parent viewer is BORROWED, not owned.
+
+        Raises:
+            RuntimeError: If a frame cannot be resolved, or the helper or its parent
+                viewer has been cleaned.
+
         Args:
             frame_name:
                 Hosted frame name whose conduit records should be described.
@@ -1944,6 +2756,25 @@ class ViewMultiFrame(Cleanable):
         Purpose:
             Surface spell record identities and provenance directly from
             `SpellRecord` without crossing into spell payload bodies.
+
+        Contract:
+            - Full descriptor-level spell descriptions; cost scales with record count.
+            - DESCRIPTOR-LEVEL and CROSS-FRAME: scoped at FRAME granularity by the
+              rift's reachable frames, then reading descriptor records directly rather
+              than the ACL-filtered link set, so results need not match ViewFrame /
+              ViewSpell for the same frame.
+            - `frame_name` is a per-call FILTER here; None means every reachable frame.
+
+        Threading:
+            Resolves descriptors through the parent viewer per query; multi-frame
+            results are assembled across several reads, not one atomic snapshot.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`. The parent viewer is BORROWED, not owned.
+
+        Raises:
+            RuntimeError: If a frame cannot be resolved, or the helper or its parent
+                viewer has been cleaned.
 
         Args:
             frame_name:
@@ -2026,6 +2857,26 @@ class ViewMultiFrame(Cleanable):
             Expose spell ownership at the descriptor host level without
             requiring a payload-aware helper path.
 
+        Contract:
+            - EXACT, CASE-SENSITIVE match on owner conduit id.
+            - Spells bound but NOT YET OWNED have no owner and match nothing here.
+            - DESCRIPTOR-LEVEL and CROSS-FRAME: scoped at FRAME granularity by the
+              rift's reachable frames, then reading descriptor records directly rather
+              than the ACL-filtered link set, so results need not match ViewFrame /
+              ViewSpell for the same frame.
+            - `frame_name` is a per-call FILTER here; None means every reachable frame.
+
+        Threading:
+            Resolves descriptors through the parent viewer per query; multi-frame
+            results are assembled across several reads, not one atomic snapshot.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`. The parent viewer is BORROWED, not owned.
+
+        Raises:
+            RuntimeError: If a frame cannot be resolved, or the helper or its parent
+                viewer has been cleaned.
+
         Args:
             conduit_id:
                 Required owner conduit id.
@@ -2061,6 +2912,35 @@ class ViewMultiFrame(Cleanable):
                 Optional hosted frame name. When omitted, scans all hosted
                 frames.
 
+        Contract:
+            - EXACT, CASE-SENSITIVE match on the ORIGIN spellbook id - the book that
+              first bound the spell, not necessarily the book that owns it now.
+            - Empty `spellbook_id` is rejected up front.
+            - Returns BUILT spell source ids, not links.
+            - DESCRIPTOR-LEVEL, CROSS-FRAME surface. Access is scoped at FRAME
+              granularity by the rift's assigned/accessible frame lists, and within
+              a reachable frame this reads descriptor records directly rather than
+              the per-target ACL-filtered link set used by `ViewFrame` / `ViewSpell`.
+              Results here therefore need not match those helpers for the same frame.
+            - `frame_name` is a per-call FILTER at this layer, not a bound-frame
+              assertion: None means "every reachable frame".
+            - Read-only; it resolves through the parent viewer per query rather than
+              from one frozen snapshot, so two calls can observe different state.
+
+        Threading:
+            Resolves descriptors through the parent viewer per query; multi-frame
+            results are assembled across several reads and are not one atomic
+            snapshot.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`. The parent viewer is BORROWED, not owned -
+            this helper must not outlive it.
+
+        Raises:
+            ValueError: If a required argument is empty.
+            RuntimeError: If a frame cannot be resolved, or the helper or its parent
+                viewer has been cleaned.
+
         Returns:
             List[str]: Matching spell source ids in deterministic order.
         """
@@ -2088,6 +2968,36 @@ class ViewMultiFrame(Cleanable):
             frame_name:
                 Optional hosted frame name. When omitted, scans all hosted
                 frames.
+
+        Contract:
+            - CASE-INSENSITIVE: the supplied value and the record's enum `.name` are
+              both lowered before comparison.
+            - An unrecognized value is not an error - it simply matches nothing.
+            - Empty input is rejected up front.
+            - Returns BUILT spell source ids, not links.
+            - DESCRIPTOR-LEVEL, CROSS-FRAME surface. Access is scoped at FRAME
+              granularity by the rift's assigned/accessible frame lists, and within
+              a reachable frame this reads descriptor records directly rather than
+              the per-target ACL-filtered link set used by `ViewFrame` / `ViewSpell`.
+              Results here therefore need not match those helpers for the same frame.
+            - `frame_name` is a per-call FILTER at this layer, not a bound-frame
+              assertion: None means "every reachable frame".
+            - Read-only; it resolves through the parent viewer per query rather than
+              from one frozen snapshot, so two calls can observe different state.
+
+        Threading:
+            Resolves descriptors through the parent viewer per query; multi-frame
+            results are assembled across several reads and are not one atomic
+            snapshot.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`. The parent viewer is BORROWED, not owned -
+            this helper must not outlive it.
+
+        Raises:
+            ValueError: If a required argument is empty.
+            RuntimeError: If a frame cannot be resolved, or the helper or its parent
+                viewer has been cleaned.
 
         Returns:
             List[str]: Matching spell source ids in deterministic order.
@@ -2118,6 +3028,36 @@ class ViewMultiFrame(Cleanable):
                 Optional hosted frame name. When omitted, scans all hosted
                 frames.
 
+        Contract:
+            - CASE-INSENSITIVE: the supplied value and the record's enum `.name` are
+              both lowered before comparison.
+            - An unrecognized value is not an error - it simply matches nothing.
+            - Empty input is rejected up front.
+            - Returns BUILT spell source ids, not links.
+            - DESCRIPTOR-LEVEL, CROSS-FRAME surface. Access is scoped at FRAME
+              granularity by the rift's assigned/accessible frame lists, and within
+              a reachable frame this reads descriptor records directly rather than
+              the per-target ACL-filtered link set used by `ViewFrame` / `ViewSpell`.
+              Results here therefore need not match those helpers for the same frame.
+            - `frame_name` is a per-call FILTER at this layer, not a bound-frame
+              assertion: None means "every reachable frame".
+            - Read-only; it resolves through the parent viewer per query rather than
+              from one frozen snapshot, so two calls can observe different state.
+
+        Threading:
+            Resolves descriptors through the parent viewer per query; multi-frame
+            results are assembled across several reads and are not one atomic
+            snapshot.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`. The parent viewer is BORROWED, not owned -
+            this helper must not outlive it.
+
+        Raises:
+            ValueError: If a required argument is empty.
+            RuntimeError: If a frame cannot be resolved, or the helper or its parent
+                viewer has been cleaned.
+
         Returns:
             List[str]: Matching spell source ids in deterministic order.
         """
@@ -2146,6 +3086,36 @@ class ViewMultiFrame(Cleanable):
             frame_name:
                 Optional hosted frame name. When omitted, scans all hosted
                 frames.
+
+        Contract:
+            - EXACT match against the NORMALIZED spellframe value, and unlike the
+              permission and existence listers it is CASE-SENSITIVE. Pass the
+              normalized form rather than the raw bind-time object.
+            - Empty `spellframe_name` is rejected up front.
+            - Returns BUILT spell source ids, not links.
+            - DESCRIPTOR-LEVEL, CROSS-FRAME surface. Access is scoped at FRAME
+              granularity by the rift's assigned/accessible frame lists, and within
+              a reachable frame this reads descriptor records directly rather than
+              the per-target ACL-filtered link set used by `ViewFrame` / `ViewSpell`.
+              Results here therefore need not match those helpers for the same frame.
+            - `frame_name` is a per-call FILTER at this layer, not a bound-frame
+              assertion: None means "every reachable frame".
+            - Read-only; it resolves through the parent viewer per query rather than
+              from one frozen snapshot, so two calls can observe different state.
+
+        Threading:
+            Resolves descriptors through the parent viewer per query; multi-frame
+            results are assembled across several reads and are not one atomic
+            snapshot.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`. The parent viewer is BORROWED, not owned -
+            this helper must not outlive it.
+
+        Raises:
+            ValueError: If a required argument is empty.
+            RuntimeError: If a frame cannot be resolved, or the helper or its parent
+                viewer has been cleaned.
 
         Returns:
             List[str]: Matching spell source ids in deterministic order.

@@ -56,6 +56,25 @@ class AetherConfigurationBuilder(Cleanable):
         """
         Initialize one builder with a fresh Aether configuration.
 
+        Contract:
+            - Constructs and OWNS a fresh `AetherConfiguration`. The builder is a
+              lifetime wrapper around exactly one configuration, not a factory that
+              can produce several.
+            - Starts un-finalized; ownership transfers only at `build()`.
+
+        Owned State:
+            Owns its lock, id, and the wrapped configuration until `build()` hands
+            it over.
+
+        Threading:
+            State transitions are applied under the configuration lock.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If the configuration has been cleaned.
+
         Returns:
             None.
         """
@@ -68,6 +87,21 @@ class AetherConfigurationBuilder(Cleanable):
     def cleanup(self) -> None:
         """
         Idempotently cleanup the builder and any still-owned configuration.
+
+        Contract:
+            - IDEMPOTENT and OWNERSHIP-AWARE: it cleans the wrapped configuration ONLY
+              IF `build()` has not already handed it to a caller. Cleaning a builder
+              you never built therefore DESTROYS the configuration; cleaning one you
+              did build leaves the caller's configuration intact.
+
+        Threading:
+            State transitions are applied under the configuration lock.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If the configuration has been cleaned.
 
         Returns:
             None.
@@ -87,6 +121,20 @@ class AetherConfigurationBuilder(Cleanable):
         """
         Apply the default Aether logger policy.
 
+        Contract:
+            - Delegates to the wrapped configuration and returns the BUILDER, not the
+              configuration - the chain stays at the builder layer.
+            - Overwrites anything set earlier, so call it first.
+
+        Threading:
+            State transitions are applied under the configuration lock.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If the configuration has been cleaned.
+
         Returns:
             AetherConfigurationBuilder: This builder.
         """
@@ -100,6 +148,19 @@ class AetherConfigurationBuilder(Cleanable):
     ) -> "AetherConfigurationBuilder":
         """
         Set the automatic channel logger activation flag.
+
+        Contract:
+            - Delegates to the wrapped configuration and returns the BUILDER.
+            - Refused once the wrapped configuration is frozen.
+
+        Threading:
+            State transitions are applied under the configuration lock.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If the configuration has been cleaned.
 
         Returns:
             AetherConfigurationBuilder: This builder.
@@ -120,6 +181,19 @@ class AetherConfigurationBuilder(Cleanable):
         """
         Set the channel logger resolver.
 
+        Contract:
+            - Delegates to the wrapped configuration and returns the BUILDER.
+            - `None` clears the resolver.
+
+        Threading:
+            State transitions are applied under the configuration lock.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If the configuration has been cleaned.
+
         Returns:
             AetherConfigurationBuilder: This builder.
 
@@ -139,6 +213,19 @@ class AetherConfigurationBuilder(Cleanable):
         """
         Set the stdlib fallback logger.
 
+        Contract:
+            - Delegates to the wrapped configuration and returns the BUILDER.
+            - `None` clears the default logger.
+
+        Threading:
+            State transitions are applied under the configuration lock.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If the configuration has been cleaned.
+
         Returns:
             AetherConfigurationBuilder: This builder.
 
@@ -153,6 +240,24 @@ class AetherConfigurationBuilder(Cleanable):
     def build(self) -> AetherConfiguration:
         """
         Finalize and transfer ownership of the wrapped configuration.
+
+        Contract:
+            - ONE-SHOT AND CONSUMING. It finalizes the configuration, transfers
+              ownership to the caller, and then CLEANS THIS BUILDER. The builder is
+              dead afterwards and a second `build()` raises.
+            - Ownership transfer is the point: after a successful build the caller
+              owns the configuration and the builder will never clean it.
+            - Returns a FROZEN configuration, not an activated one - call
+              `activate()` on the result if it is going live.
+
+        Threading:
+            State transitions are applied under the configuration lock.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If the configuration has been cleaned.
 
         Returns:
             AetherConfiguration: Finalized configuration instance.

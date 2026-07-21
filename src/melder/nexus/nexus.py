@@ -163,6 +163,12 @@ class Nexus(Cleanable):
             Uses the class-level singleton lock to serialize first-instance
             creation.
 
+        Contract:
+            - PROCESS-WIDE SINGLETON via double-checked locking: every construction
+              returns THE SAME instance.
+            - The fast path reads the cached instance without locking and only locks on
+              the miss, so steady-state construction is uncontended.
+
         Returns:
             Nexus: The one process-wide Nexus instance.
         """
@@ -546,6 +552,11 @@ class Nexus(Cleanable):
         Purpose:
             Return the stable Nexus identifier.
 
+        Contract:
+            - Identifies the Nexus singleton instance; assigned once and stable for the
+              process.
+            - Distinct from any rift, frame or configuration id.
+
         Returns:
             str: Stable singleton id.
         """
@@ -556,6 +567,23 @@ class Nexus(Cleanable):
     def frame_manager(self) -> NexusFrameManager:
         """
         Return the Nexus frame authoring facade.
+
+        Contract:
+            - Exposes the frame manager BY REFERENCE for advanced callers.
+            - Owned by Nexus: it must not be cleaned or replaced by the caller, and it
+              becomes invalid once Nexus is cleaned.
+            - Exposes the frame manager BY REFERENCE for advanced callers. It is owned
+              by Nexus, so it must not be cleaned or replaced by the caller, and it
+              becomes invalid once Nexus is cleaned.
+
+        Threading:
+            Delegated to the rift-gate controller, which owns the gate locking.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If Nexus has been cleaned.
 
         Returns:
             NexusFrameManager: Manager for authored Nexus-managed frames.
@@ -570,6 +598,9 @@ class Nexus(Cleanable):
             Return the installed Nexus configuration.
 
         Contract:
+            - DOUBLE-GUARDED: it requires Nexus to be configured AND re-checks for a
+              None configuration, so it never hands back None.
+            - Returns the installed configuration BY REFERENCE, not a copy.
             Returns the live installed configuration object, not a detached
             copy.
 
@@ -591,6 +622,11 @@ class Nexus(Cleanable):
         Purpose:
             Return whether Nexus currently has an installed configuration.
 
+        Contract:
+            - Reports that a configuration has been INSTALLED, which is weaker than being
+              usable - `is_enabled` is the operational switch.
+            - Stays True across `disable()`, which deliberately keeps the install.
+
         Returns:
             bool: True when configured.
         """
@@ -603,6 +639,11 @@ class Nexus(Cleanable):
         Purpose:
             Return whether Nexus is currently enabled for Rift operations.
 
+        Contract:
+            - The OPERATIONAL switch, distinct from `is_configured`. Nexus can be
+              configured and disabled at the same time; that is the normal disabled
+              state, not an inconsistency.
+
         Returns:
             bool: True when enabled.
         """
@@ -613,6 +654,25 @@ class Nexus(Cleanable):
     def rift_gate_controller(self) -> RiftGateController:
         """
         Return the Nexus-owned Rift gate controller.
+
+        Contract:
+            - Exposes the rift-gate controller BY REFERENCE; the convenience gate methods
+              on Nexus all route through it.
+            - Owned by Nexus - reach for it directly only for operations Nexus does not
+              wrap.
+            - Exposes the rift-gate controller BY REFERENCE. It is owned by Nexus;
+              the convenience gate methods on Nexus all route through this object,
+              so reaching for it directly is only needed for operations Nexus does
+              not wrap.
+
+        Threading:
+            Delegated to the rift-gate controller, which owns the gate locking.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If Nexus has been cleaned.
 
         Returns:
             RiftGateController: Controller for registered Rift gates.
@@ -695,6 +755,12 @@ class Nexus(Cleanable):
         Purpose:
             Turn off Rift-domain operation entrypoints while preserving the
             installed configuration and current registries.
+
+        Contract:
+            - KEEPS THE INSTALLED CONFIGURATION: it flips the operational switch only, so
+              `is_configured` stays True and the recorded twin is not evicted.
+            - That makes disable REVERSIBLE without re-supplying configuration, which is
+              the point of separating the two flags.
 
         Returns:
             None.
@@ -1029,6 +1095,10 @@ class Nexus(Cleanable):
                 Canonical Rift id.
 
         Contract:
+            - Requires only that Nexus is CONFIGURED, not enabled - so you can probe rift
+              registration while Nexus is disabled.
+            - Note the asymmetry with `list_rift_ids`, which requires Nexus to be ENABLED.
+              The two have deliberately different gates.
             Performs a registry existence check only; it does not apply the
             direct-access gate or materialize any Rift object.
 
@@ -1227,6 +1297,10 @@ class Nexus(Cleanable):
             Expose the current live Rift registry contents at the id level.
 
         Contract:
+            - REQUIRES NEXUS TO BE ENABLED, a stricter gate than `has_rift`, which only
+              requires configured. Enumerating the rift set is treated as an operational
+              action rather than a probe.
+            - Returns a point-in-time list; it goes stale as rifts are created or removed.
             Requires Nexus to be enabled before callers may inspect the live
             Rift registry.
 
@@ -1244,6 +1318,23 @@ class Nexus(Cleanable):
             rift_id:
                 Canonical Rift id.
 
+        Contract:
+            - Returns None for an unknown rift id rather than raising, so None means "no
+              gate registered" and is not an error channel.
+            - The returned gate is the LIVE object, so opening or closing it directly has
+              the same effect as the Nexus convenience methods.
+            - Returns None for an unknown rift id rather than raising, so None means
+              "no gate registered" and is not an error channel.
+
+        Threading:
+            Delegated to the rift-gate controller, which owns the gate locking.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If Nexus has been cleaned.
+
         Returns:
             Optional[RiftGate]: Registered Rift gate when present.
         """
@@ -1257,6 +1348,21 @@ class Nexus(Cleanable):
         Args:
             rift_id:
                 Canonical Rift id.
+
+        Contract:
+            - SILENTLY NO-OPS FOR AN UNKNOWN RIFT ID. A missing gate returns without
+              raising, so a typo'd id looks like success. Confirm with
+              `get_rift_gate(...)` when the id is not known-good.
+            - Opening an already-open gate is harmless.
+
+        Threading:
+            Delegated to the rift-gate controller, which owns the gate locking.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If Nexus has been cleaned.
 
         Returns:
             None.
@@ -1274,6 +1380,21 @@ class Nexus(Cleanable):
         Args:
             rift_id:
                 Canonical Rift id.
+
+        Contract:
+            - SILENTLY NO-OPS FOR AN UNKNOWN RIFT ID, exactly like the enable side - a
+              missing gate returns without raising.
+            - Closing the gate stops NEW entry; it does NOT wait for threads already
+              inside. Use `close_and_wait_rift(...)` when you need quiescence.
+
+        Threading:
+            Delegated to the rift-gate controller, which owns the gate locking.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If Nexus has been cleaned.
 
         Returns:
             None.
@@ -1301,6 +1422,22 @@ class Nexus(Cleanable):
             interval:
                 Poll interval in seconds while draining.
 
+        Contract:
+            - BLOCKS. It closes the gate and then waits until no threads remain inside
+              the rift, polling at the given interval up to the timeout - this is the
+              quiescence primitive that plain `disable_rift_gate` is not.
+            - The timeout bounds the wait, so a return does not by itself prove the
+              rift is empty; check the active-thread count if that matters.
+
+        Threading:
+            Delegated to the rift-gate controller, which owns the gate locking.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If Nexus has been cleaned.
+
         Returns:
             None.
         """
@@ -1319,6 +1456,22 @@ class Nexus(Cleanable):
             rift_id:
                 Canonical Rift id.
 
+        Contract:
+            - A point-in-time count for ONE rift; it can change the instant it returns.
+            - A DIAGNOSTIC, not a synchronization primitive - do not spin on it to decide
+              a rift is quiescent; use `close_and_wait_rift` for that.
+            - A point-in-time count for ONE rift; it can change the instant it
+              returns, so it is a diagnostic rather than a synchronization primitive.
+
+        Threading:
+            Delegated to the rift-gate controller, which owns the gate locking.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If Nexus has been cleaned.
+
         Returns:
             int: Active ticket count.
         """
@@ -1328,6 +1481,23 @@ class Nexus(Cleanable):
     def count_active_rift_threads_total(self) -> int:
         """
         Return active ticket count summed across all Rift gates.
+
+        Contract:
+            - A point-in-time count ACROSS ALL rifts.
+            - The per-rift counts are NOT sampled atomically together, so this total need
+              not equal the sum of individually queried rifts.
+            - A point-in-time count ACROSS ALL rifts. Because the per-rift counts are
+              not sampled atomically together, this total need not equal the sum of
+              individually queried rifts taken at slightly different moments.
+
+        Threading:
+            Delegated to the rift-gate controller, which owns the gate locking.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If Nexus has been cleaned.
 
         Returns:
             int: Total active ticket count.
@@ -1339,6 +1509,22 @@ class Nexus(Cleanable):
         """
         Open every registered Rift gate.
 
+        Contract:
+            - Opens EVERY registered gate, including ones deliberately closed earlier.
+            - It does NOT remember or restore prior per-gate state, so this is destructive
+              to a hand-tuned gate configuration.
+            - Opens EVERY registered gate, including ones deliberately closed earlier -
+              it does not remember or restore prior per-gate state.
+
+        Threading:
+            Delegated to the rift-gate controller, which owns the gate locking.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If Nexus has been cleaned.
+
         Returns:
             None.
         """
@@ -1348,6 +1534,22 @@ class Nexus(Cleanable):
     def disable_all_rift_gates(self) -> None:
         """
         Close every registered Rift gate.
+
+        Contract:
+            - Closes EVERY registered gate.
+            - Like the single-rift close, it stops NEW entry without waiting for threads
+              already inside.
+            - Closes EVERY registered gate. Like the single-rift close, it stops new
+              entry without waiting for threads already inside.
+
+        Threading:
+            Delegated to the rift-gate controller, which owns the gate locking.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If Nexus has been cleaned.
 
         Returns:
             None.
@@ -1365,6 +1567,22 @@ class Nexus(Cleanable):
             entry_mode:
                 Admission mode to apply.
 
+        Contract:
+            - Sets the admission policy for ONE rift's gate.
+            - Entry mode governs HOW callers are admitted and is independent of whether
+              the gate is open or closed.
+            - Sets the entry policy for ONE rift's gate. Entry mode governs HOW callers
+              are admitted; it is independent of whether the gate is open or closed.
+
+        Threading:
+            Delegated to the rift-gate controller, which owns the gate locking.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If Nexus has been cleaned.
+
         Returns:
             None.
         """
@@ -1379,6 +1597,21 @@ class Nexus(Cleanable):
             entry_mode:
                 Admission mode to apply.
 
+        Contract:
+            - Applies one entry mode to EVERY registered gate.
+            - It overwrites per-gate choices without preserving them.
+            - Applies one entry mode to EVERY registered gate, overwriting per-gate
+              choices without preserving them.
+
+        Threading:
+            Delegated to the rift-gate controller, which owns the gate locking.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If Nexus has been cleaned.
+
         Returns:
             None.
         """
@@ -1390,6 +1623,9 @@ class Nexus(Cleanable):
         Return the current placeholder ACL manager version string.
 
         Contract:
+            - A MONOTONIC CHANGE MARKER for the ACL manager: compare it across time to
+              detect that policy changed without diffing configurations.
+            - It describes the manager as a whole, not any single frame.
             Returns the version reported by the live Nexus-owned
             `FrameACLManager`.
 
@@ -1411,6 +1647,10 @@ class Nexus(Cleanable):
                 Profile object to store by its own name.
 
         Contract:
+            - Registers a REUSABLE profile that frames can then adopt by name; it does not
+              apply the profile to any frame by itself.
+            - Registration is by the profile's own name, so re-registering the same name
+              replaces rather than duplicates.
             Delegates registration to the Nexus-owned ACL manager and replaces
             any existing distinct profile with the same name.
 
@@ -1429,6 +1669,8 @@ class Nexus(Cleanable):
                 Profile name to resolve.
 
         Contract:
+            - REQUIRED lookup: an unknown profile name RAISES rather than returning None.
+            - Returns the registered profile by reference.
             Resolves through the Nexus-owned ACL manager without synthesizing a
             missing profile.
 
@@ -1446,6 +1688,9 @@ class Nexus(Cleanable):
         Return the current ACL profile names in insertion order.
 
         Contract:
+            - Lists REGISTERED profile names, which is not the same as profiles currently
+              in use by a frame.
+            - A name absent here cannot be adopted.
             Returns a snapshot list from the Nexus-owned ACL manager's composed
             profile registry.
 
@@ -1464,6 +1709,9 @@ class Nexus(Cleanable):
                 Profile name to remove.
 
         Contract:
+            - Removes the profile from the registry. Frames that already adopted it are not
+              retroactively stripped by this call.
+            - Returns the removal outcome rather than raising on an unknown name.
             Delegates removal to the Nexus-owned ACL manager and returns False
             when the profile name is not currently registered.
 
@@ -1513,6 +1761,12 @@ class Nexus(Cleanable):
             Expose the currently selected ACL configuration for a frame through
             the Nexus facade.
 
+        Contract:
+            - NOT A PURE READ: it ENSURES the frame's ACL container exists, so calling it
+              for a frame with none CREATES the container as a side effect.
+            - Returns the CURRENT effective configuration, which is the composition of
+              whatever contracts are selected - not a stored named configuration.
+
         Args:
             frame_name:
                 Stable frame name whose current ACL configuration is requested.
@@ -1545,6 +1799,22 @@ class Nexus(Cleanable):
         """
         Return the current selected view ACL configuration for one frame/contract.
 
+        Contract:
+            - NOT A PURE READ: it ENSURES the frame's ACL container exists first, so
+              calling it for a frame that has none CREATES the container as a side
+              effect rather than returning None.
+            - Returns the VIEW surface configuration specifically; the command and
+              codegen surfaces are separate configurations with their own getters.
+
+        Threading:
+            Delegated to the rift-gate controller, which owns the gate locking.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If Nexus has been cleaned.
+
         Returns:
             FrameACLViewConfiguration: Current view configuration.
 
@@ -1568,6 +1838,21 @@ class Nexus(Cleanable):
         """
         Return the current selected command ACL configuration for one frame/contract.
 
+        Contract:
+            - NOT A PURE READ: it ENSURES the frame's ACL container exists first, so
+              calling it creates the container when absent.
+            - Returns the COMMAND surface configuration only - distinct from the view
+              and codegen surfaces.
+
+        Threading:
+            Delegated to the rift-gate controller, which owns the gate locking.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If Nexus has been cleaned.
+
         Returns:
             FrameACLCommandConfiguration: Current command configuration.
 
@@ -1590,6 +1875,21 @@ class Nexus(Cleanable):
     ) -> FrameACLCodegenConfiguration:
         """
         Return the current selected codegen ACL configuration for one frame/contract.
+
+        Contract:
+            - NOT A PURE READ: it ENSURES the frame's ACL container exists first, so
+              calling it creates the container when absent.
+            - Returns the CODEGEN surface configuration only - distinct from the view
+              and command surfaces.
+
+        Threading:
+            Delegated to the rift-gate controller, which owns the gate locking.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If Nexus has been cleaned.
 
         Returns:
             FrameACLCodegenConfiguration: Current codegen configuration.
@@ -1616,6 +1916,11 @@ class Nexus(Cleanable):
         Purpose:
             Expose the per-frame named ACL contract registry through the Nexus
             facade.
+
+        Contract:
+            - NOT A PURE READ: it ENSURES the frame's ACL container exists first.
+            - Fetches a STORED, NAMED configuration rather than the current effective one,
+              so it is unaffected by which contracts are presently selected.
 
         Args:
             frame_name:
@@ -1645,6 +1950,11 @@ class Nexus(Cleanable):
             Expose the frame-local named ACL registry keys through the Nexus
             facade.
 
+        Contract:
+            - NOT A PURE READ: it ENSURES the frame's ACL container exists first, so
+              listing a frame that had none leaves a container behind.
+            - Lists STORED configuration names for one frame, not profiles.
+
         Args:
             frame_name:
                 Stable frame name whose contract names are requested.
@@ -1671,6 +1981,12 @@ class Nexus(Cleanable):
 
         Purpose:
             Add a new frame-local named ACL contract through the Nexus facade.
+
+        Contract:
+            - Type-checked: a non-`FrameACLConfiguration` raises `TypeError` rather than
+              being coerced.
+            - STORES the configuration under a name for later selection; it does not make
+              it current.
 
         Args:
             frame_name:
@@ -1886,6 +2202,23 @@ class Nexus(Cleanable):
             contract_names_by_frame_name:
                 Optional per-frame selected ACL contract names.
 
+        Contract:
+            - EXPLICITLY REJECTS A BARE STRING for `frame_names`, even though a string
+              is a valid `Sequence`. Passing one raises `TypeError` rather than
+              silently iterating its characters as frame names.
+            - Every entry must be a non-empty string; a bad element raises
+              `ValueError` before any projection is built, so the call is
+              all-or-nothing.
+
+        Threading:
+            Delegated to the rift-gate controller, which owns the gate locking.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If Nexus has been cleaned.
+
         Returns:
             Dict[str, IFrameProjectionSet]: Fresh projection sets keyed by frame name.
         """
@@ -1988,6 +2321,22 @@ class Nexus(Cleanable):
             frame_names:
                 Optional explicit multi-frame scope for one or more engaged
                 frames.
+
+        Contract:
+            - DEFAULTS TO THE RIFT'S ASSIGNED FRAMES when `frame_names` is None, which
+              is the normal path - you rarely need to enumerate them yourself.
+            - Supplying `frame_names` NARROWS within the rift's assignment; it cannot
+              widen it, so naming an unassigned frame is rejected rather than granted.
+            - Empty `rift_id` is rejected up front.
+
+        Threading:
+            Delegated to the rift-gate controller, which owns the gate locking.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If Nexus has been cleaned.
 
         Returns:
             Dict[str, IFrameProjectionSet]: Projection sets keyed by frame name.
@@ -2252,6 +2601,15 @@ class Nexus(Cleanable):
         Return a rooted Nexus-managed conduit for one Rift under the current
         topology rules.
 
+        Contract:
+            - Returns the frame's ROOT CONDUIT, as the `-> Conduit` signature states. The
+              frame object is deliberately NOT handed to rift-facing callers; the root
+              conduit is the intended handle, and the frame is resolved only to find it.
+            - That is the same boundary the viewer family keeps: rift-facing access hands
+              back the thing you may act through, not the container it lives in.
+            - The root conduit is REQUIRED - a managed frame without one raises rather
+              than returning None.
+
         Args:
             rift_id:
                 Requesting Rift id.
@@ -2284,6 +2642,14 @@ class Nexus(Cleanable):
 
         Create one rooted Nexus-managed conduit for one Rift under the current
         topology rules.
+
+        Contract:
+            - Returns the ROOT CONDUIT of the newly created frame, as the `-> Conduit`
+              signature states, matching the getter: the frame object is deliberately not
+              exposed to rift-facing callers.
+            - `root_conduit_name` names that conduit and defaults to "root".
+            - `immutable` fixes the new frame's posture at creation, so it cannot be
+              reconfigured afterwards - choose it deliberately.
 
         Args:
             rift_id:

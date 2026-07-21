@@ -152,6 +152,19 @@ class CrystallizerConfiguration(Cleanable):
         """
         Return the stable configuration id.
 
+        Contract:
+            - Identifies THIS CONFIGURATION OBJECT, not the crystallizer singleton it
+              configures. Assigned at construction and stable for its life.
+
+        Threading:
+            State transitions are applied under the configuration lock.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If the configuration has been cleaned.
+
         Returns:
             str: Stable configuration id.
         """
@@ -163,6 +176,20 @@ class CrystallizerConfiguration(Cleanable):
         """
         Return whether the configuration is frozen.
 
+        Contract:
+            - True once the configuration is sealed, meaning PROPERTY MUTATION IS
+              CLOSED. It does not mean the policy is in force - that requires
+              installing it on the crystallizer root.
+
+        Threading:
+            State transitions are applied under the configuration lock.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If the configuration has been cleaned.
+
         Returns:
             bool: True when property mutation is closed.
         """
@@ -173,6 +200,21 @@ class CrystallizerConfiguration(Cleanable):
     def activated(self) -> bool:
         """
         Return whether the configuration has been activated.
+
+        Contract:
+            - Marks THIS POLICY OBJECT as ready, NOT the crystallizer. Activating a
+              configuration does not activate the singleton; `Crystallizer.activate(
+              configuration)` is the step that installs it.
+            - Activation implies frozen; frozen does NOT imply activated.
+
+        Threading:
+            State transitions are applied under the configuration lock.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If the configuration has been cleaned.
 
         Returns:
             bool: True when the config is validated, frozen, and marked ready
@@ -410,6 +452,23 @@ class CrystallizerConfiguration(Cleanable):
             enabled:
                 True = every cadence seal ships its cached-item to disk.
 
+        Contract:
+            - COERCES with `bool(...)` rather than type-checking, so any truthy value
+              is accepted and silently converted. That is looser than the strict
+              `isinstance` setters elsewhere in this class.
+            - True makes every cadence seal ship its cached item to disk, trading
+              throughput for durability.
+            - Refused once frozen.
+
+        Threading:
+            State transitions are applied under the configuration lock.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If the configuration has been cleaned.
+
         Returns:
             CrystallizerConfiguration: This configuration instance.
         """
@@ -518,6 +577,20 @@ class CrystallizerConfiguration(Cleanable):
             key:
                 Property name.
 
+        Contract:
+            - Tests whether the key has been SET, not whether it is a legal key. An
+              unknown key returns False rather than raising, so this cannot validate
+              a property name against the schema.
+
+        Threading:
+            State transitions are applied under the configuration lock.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If the configuration has been cleaned.
+
         Returns:
             bool: True when the property has been set.
         """
@@ -599,6 +672,22 @@ class CrystallizerConfiguration(Cleanable):
             Use `activate()` when the next step is installation on the live
             crystallizer root.
 
+        Contract:
+            - `freeze()` plus `return self`: seals WITHOUT marking the policy ready.
+            - Choose it when a DIFFERENT owner will decide when activation happens;
+              choose `activate()` when installation on the crystallizer root is the
+              next step.
+            - Idempotent, inheriting freeze's early return.
+
+        Threading:
+            State transitions are applied under the configuration lock.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If the configuration has been cleaned.
+
         Returns:
             CrystallizerConfiguration: This configuration instance.
         """
@@ -613,6 +702,25 @@ class CrystallizerConfiguration(Cleanable):
             This is the normal final authoring step before
             `Crystallizer.activate(configuration)`. It changes only this policy
             object's readiness; it does not activate the singleton by itself.
+
+        Contract:
+            - Freezes and marks this policy object ready. UNLIKE the Aether and
+              mutation-research configurations, it EMITS NOTHING - there is no
+              activation record here, because this object configures the recorder
+              itself.
+            - It does NOT activate the crystallizer singleton; that is a separate
+              `Crystallizer.activate(configuration)` call.
+            - Safe to call more than once: freeze is idempotent and the flag is a
+              plain set with no side effect attached.
+
+        Threading:
+            State transitions are applied under the configuration lock.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If the configuration has been cleaned.
 
         Returns:
             CrystallizerConfiguration: This activated configuration instance.
@@ -804,6 +912,24 @@ class CrystallizerConfiguration(Cleanable):
                 SpellCrystals for fresh-pod rebuilds; False (default)
                 records paths and fingerprints only.
 
+        Contract:
+            - OPT-IN CUSTODY DECISION, and it defaults to FALSE for good reason: when
+              True, USER-OWNED MODULE SOURCE TEXT IS RETAINED INSIDE SEALED
+              CRYSTALS. With it False only paths and fingerprints are recorded.
+            - Enable it only when fresh-pod rebuilds genuinely require the source,
+              and only when the crystal store is a trusted location - it changes
+              what a crystal CONTAINS, not merely what it references.
+            - Refused once frozen.
+
+        Threading:
+            State transitions are applied under the configuration lock.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If the configuration has been cleaned.
+
         Returns:
             CrystallizerConfiguration: This configuration instance.
         """
@@ -842,6 +968,22 @@ class CrystallizerConfiguration(Cleanable):
     def user_source_root_paths(self) -> Tuple[Path, ...]:
         """
         Return the normalized user-source root tuple.
+
+        Contract:
+            - DEFENSIVE READ: the value must remain a tuple of `Path` entries, and a
+              drifted element raises `TypeError` rather than being returned. That
+              guards against direct tampering with the property bag.
+            - Returns NORMALIZED, resolved paths rather than the raw strings that
+              may have been supplied.
+
+        Threading:
+            State transitions are applied under the configuration lock.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If the configuration has been cleaned.
 
         Returns:
             Tuple[Path, ...]: Configured source roots as resolved paths.

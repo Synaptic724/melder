@@ -185,6 +185,20 @@ class DiffEngine(Cleanable):
         """
         Return every registered strategy name, sorted.
 
+        Contract:
+            - SORTED, so iteration order is deterministic across calls and processes.
+            - Lists REGISTERED strategy names; a name absent here cannot be selected
+              for a diff.
+
+        Threading:
+            Reads under `self._lock`, so the result is a coherent snapshot.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If the object has been cleaned.
+
         Returns:
             List[str]: Sorted registry keys.
         """

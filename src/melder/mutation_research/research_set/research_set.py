@@ -372,6 +372,20 @@ class ResearchSet(Cleanable):
         """
         Return whether type-mixing joins currently require force.
 
+        Contract:
+            - Reports whether lane-type rules are enforced for this set. When off,
+              lane-type mismatches are permitted rather than rejected, so a set can
+              hold members its lane types would otherwise refuse.
+
+        Threading:
+            Reads under `self._lock`, so the result is a coherent snapshot.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If the research set has been cleaned.
+
         Returns:
             bool:
                 True when the join gate is armed.
@@ -442,6 +456,20 @@ class ResearchSet(Cleanable):
         """
         Return the stable set id (ULID).
 
+        Contract:
+            - Identifies THIS RESEARCH SET OBJECT and is distinct from `name` - the id
+              is stable machine identity, the name is the human-facing key used for
+              lookups.
+
+        Threading:
+            Unsynchronized read of a slot fixed at construction.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If the research set has been cleaned.
+
         Returns:
             str:
                 Set id.
@@ -453,6 +481,19 @@ class ResearchSet(Cleanable):
     def name(self) -> str:
         """
         Return the set name.
+
+        Contract:
+            - The human-facing registry key for this set, distinct from `set_id`.
+              Lookups on `MutationResearch` are by NAME, not by id.
+
+        Threading:
+            Unsynchronized read of a slot fixed at construction.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If the research set has been cleaned.
 
         Returns:
             str:
@@ -466,6 +507,21 @@ class ResearchSet(Cleanable):
         """
         Return the guaranteed default lane.
 
+        Contract:
+            - Resolves the set's DEFAULT lane by its well-known name, so it is a
+              lookup rather than a stored reference - the default lane is whatever
+              currently answers to that name.
+            - Operations that omit a lane land here.
+
+        Threading:
+            Reads under `self._lock`, so the result is a coherent snapshot.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If the research set has been cleaned.
+
         Returns:
             ResearchLane:
                 The set's default lane.
@@ -478,6 +534,19 @@ class ResearchSet(Cleanable):
     def journal(self) -> ResearchJournal:
         """
         Return the set-level forward-only journal.
+
+        Contract:
+            - Exposes the set's journal BY REFERENCE. It is owned by this set and
+              becomes invalid once the set is cleaned; do not clean it separately.
+
+        Threading:
+            Unsynchronized read of a slot fixed at construction.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If the research set has been cleaned.
 
         Returns:
             ResearchJournal:
@@ -510,6 +579,20 @@ class ResearchSet(Cleanable):
         """
         Return every lane name in this set, sorted.
 
+        Contract:
+            - SORTED, so iteration order is deterministic across calls and processes.
+            - Lists ALL lanes regardless of state, including joined and archived ones
+              - unlike `heads()`, which reports open lanes only.
+
+        Threading:
+            Reads under `self._lock`, so the result is a coherent snapshot.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If the research set has been cleaned.
+
         Returns:
             List[str]:
                 Sorted lane names.
@@ -526,6 +609,20 @@ class ResearchSet(Cleanable):
             spell_id:
                 Identity to look up.
 
+        Contract:
+            - Returns the lane a spell currently RESIDES in, delegating to the
+              residence index. None means the spell has no residence in this set,
+              which is a normal answer rather than an error.
+
+        Threading:
+            Unsynchronized read of a slot fixed at construction.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If the research set has been cleaned.
+
         Returns:
             Optional[str]:
                 Holding lane id or None.
@@ -536,6 +633,22 @@ class ResearchSet(Cleanable):
     def heads(self) -> Dict[str, Optional[str]]:
         """
         Return the tip identity of every OPEN lane.
+
+        Contract:
+            - OPEN LANES ONLY. Joined and archived lanes are OMITTED entirely, so the
+              key set here is a subset of `lane_names()` and a missing name means
+              "not open", not "does not exist".
+            - A value of None means the lane is open but has NO TIP yet - distinct
+              from the lane being absent. Both cases exist and mean different things.
+
+        Threading:
+            Reads under `self._lock`, so the result is a coherent snapshot.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If the research set has been cleaned.
 
         Returns:
             Dict[str, Optional[str]]:
@@ -1790,6 +1903,22 @@ class ResearchSet(Cleanable):
         """
         Explicitly snapshot the current organization.
 
+        Contract:
+            - Builds a full network snapshot under the lock, so it is internally
+              consistent - but it is a point-in-time copy that does not track later
+              changes.
+            - Cost scales with the network, so this is a deliberate operation rather
+              than a cheap accessor.
+
+        Threading:
+            Reads under `self._lock`, so the result is a coherent snapshot.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If the research set has been cleaned.
+
         Returns:
             str:
                 Content address of the organization snapshot (mutating verbs
@@ -1803,6 +1932,20 @@ class ResearchSet(Cleanable):
         """
         Return retained organization snapshot addresses, oldest first.
 
+        Contract:
+            - Returns the versioner's recorded snapshot digests, which identify
+              snapshots WITHOUT materializing them - use it to detect change cheaply
+              instead of calling `snapshot_network()` repeatedly.
+
+        Threading:
+            Unsynchronized read of a slot fixed at construction.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If the research set has been cleaned.
+
         Returns:
             List[str]:
                 Detached ordered address list.
@@ -1814,6 +1957,20 @@ class ResearchSet(Cleanable):
     def latest_network_snapshot(self) -> Optional[str]:
         """
         Return the newest retained organization snapshot address.
+
+        Contract:
+            - The most recent snapshot digest. Comparing it against a previously held
+              value is the cheap way to ask "has the network changed since I looked",
+              with no snapshot build required.
+
+        Threading:
+            Unsynchronized read of a slot fixed at construction.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If the research set has been cleaned.
 
         Returns:
             Optional[str]:
@@ -1954,6 +2111,20 @@ class ResearchSet(Cleanable):
     def describe(self) -> Dict[str, object]:
         """
         Return the default detached snapshot of this set.
+
+        Contract:
+            - ALIAS for `describe_composition()`, delegating in full and adding
+              nothing. It carries no guard of its own; the cleaned-state check comes
+              from the method it delegates to.
+
+        Threading:
+            Inherited from `describe_composition()`.
+
+        Lifecycle / Cleanup:
+            Guarded indirectly, via the delegate.
+
+        Raises:
+            RuntimeError: If the research set has been cleaned.
 
         Returns:
             Dict[str, object]:

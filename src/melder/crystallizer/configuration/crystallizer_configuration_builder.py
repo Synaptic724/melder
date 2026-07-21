@@ -111,6 +111,19 @@ class CrystallizerConfigurationBuilder(Cleanable):
         """
         Return the stable builder id.
 
+        Contract:
+            - Identifies THIS BUILDER, not the configuration it wraps - the two carry
+              different ids.
+
+        Threading:
+            Unsynchronized read; a snapshot only.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If the object has been cleaned.
+
         Returns:
             str: Stable builder id.
         """
@@ -144,6 +157,23 @@ class CrystallizerConfigurationBuilder(Cleanable):
         Args:
             root_paths:
                 Sequence of source roots that should count as user-owned code.
+
+        Contract:
+            - SILENTLY NO-OPS AFTER HANDOFF. Once the wrapped configuration has been
+              handed to a caller the builder holds None, and this method returns
+              `self` without applying anything - it does NOT raise. Set properties
+              BEFORE building.
+            - MUTATES the wrapped configuration and returns the BUILDER, keeping the
+              chain at the builder layer.
+
+        Threading:
+            Unsynchronized read; a snapshot only.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If the object has been cleaned.
 
         Returns:
             CrystallizerConfigurationBuilder: This builder.

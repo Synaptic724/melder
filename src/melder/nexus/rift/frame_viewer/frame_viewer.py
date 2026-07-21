@@ -132,12 +132,43 @@ class FrameViewer(Cleanable):
         """
         Initialize one Rift-backed projection-native frame viewer.
 
+        Contract:
+            - REQUIRES a rift; `None` raises `TypeError` immediately. The viewer
+              has no standalone mode - every projection it serves comes from the
+              rift's ACL-filtered view.
+            - BORROWS the rift rather than owning it. Cleaning this viewer does
+              not clean the rift, and the rift outlives the viewer.
+            - Holds NO cached projection. Descriptors, ACL configuration and
+              access surfaces are resolved per call, which is what lets the
+              viewer stay correct as the frame changes - and why each facade call
+              re-resolves rather than reusing.
+            - The optional action-hook scope factory is stored as supplied and is
+              not validated here.
+
+        Owned State:
+            Owns `_lock` and `_id`. Borrows `_rift` and the action-hook scope
+            factory.
+
+        Threading:
+            Creates the reentrant lock used by later viewer operations;
+            construction itself needs no synchronization because the object is
+            not yet shared.
+
+        Lifecycle / Cleanup:
+            Born ready - there is no separate activation step. Sub-viewers are
+            built on demand and never retained.
+
         Args:
             rift:
                 Owning `Rift` that exposes the current view projections.
+            action_hook_scope_factory:
+                Optional factory used to wrap view actions in a hook scope.
 
         Returns:
             None.
+
+        Raises:
+            TypeError: If `rift` is None.
         """
         super().__init__()
         if rift is None:
@@ -178,6 +209,20 @@ class FrameViewer(Cleanable):
         """
         Return the stable viewer identifier.
 
+        Contract:
+            - Identifies THIS VIEWER OBJECT, not the rift and not the frame. A new
+              viewer over the same rift carries a different id.
+            - Assigned at construction and stable for the object's life.
+
+        Threading:
+            Unsynchronized read of a write-once slot; safe from any thread.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If the viewer has been cleaned.
+
         Returns:
             str: Stable viewer id.
         """
@@ -187,6 +232,31 @@ class FrameViewer(Cleanable):
     def list_frame_names(self) -> List[str]:
         """
         Return the currently linked frame names in deterministic order.
+
+        Contract:
+            - FACADE PASS-THROUGH to `ViewMultiFrame.list_frame_names(...)`. The filtering, ordering
+              and raise behaviour are that method's; this adds no logic of its own,
+              so read its contract for the details that matter.
+            - BUILDS A FRESH SUB-VIEWER ON EVERY CALL. `get_view_multiframe()` constructs a new
+              ViewMultiFrame per invocation against a freshly resolved
+              descriptor snapshot. A loop of facade calls therefore rebuilds the
+              projection each time; hold the sub-viewer yourself when making several
+              calls against one frame.
+            - Because each call re-resolves the descriptor, two facade calls are NOT
+              guaranteed to see the same frame state. Use one held sub-viewer when
+              results must be mutually consistent.
+            - VISIBILITY-FILTERED PROJECTION. Absence means "not visible to this
+              rift" OR "not present" - never proof of non-existence.
+            - Descriptor-hosted and CROSS-FRAME: the multi-frame helper is not bound
+              to a single frame, so no frame selection happens here.
+
+        Threading:
+            Each call takes its own descriptor snapshot; concurrent frame changes
+            are not reflected in an already-returned result.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`. The sub-viewer it builds is transient and
+            owned by the call, not retained by this viewer.
 
         Returns:
             List[str]: Sorted linked frame names.
@@ -198,6 +268,31 @@ class FrameViewer(Cleanable):
         """
         Return the currently linked frame names in deterministic order.
 
+        Contract:
+            - FACADE PASS-THROUGH to `ViewMultiFrame.list_linked_frame_names(...)`. The filtering, ordering
+              and raise behaviour are that method's; this adds no logic of its own,
+              so read its contract for the details that matter.
+            - BUILDS A FRESH SUB-VIEWER ON EVERY CALL. `get_view_multiframe()` constructs a new
+              ViewMultiFrame per invocation against a freshly resolved
+              descriptor snapshot. A loop of facade calls therefore rebuilds the
+              projection each time; hold the sub-viewer yourself when making several
+              calls against one frame.
+            - Because each call re-resolves the descriptor, two facade calls are NOT
+              guaranteed to see the same frame state. Use one held sub-viewer when
+              results must be mutually consistent.
+            - VISIBILITY-FILTERED PROJECTION. Absence means "not visible to this
+              rift" OR "not present" - never proof of non-existence.
+            - Descriptor-hosted and CROSS-FRAME: the multi-frame helper is not bound
+              to a single frame, so no frame selection happens here.
+
+        Threading:
+            Each call takes its own descriptor snapshot; concurrent frame changes
+            are not reflected in an already-returned result.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`. The sub-viewer it builds is transient and
+            owned by the call, not retained by this viewer.
+
         Returns:
             List[str]: Sorted linked frame names.
         """
@@ -207,6 +302,31 @@ class FrameViewer(Cleanable):
     def list_nexus_frame_names(self) -> List[str]:
         """
         Return the currently accessible Nexus-managed frame names.
+
+        Contract:
+            - FACADE PASS-THROUGH to `ViewMultiFrame.list_nexus_frame_names(...)`. The filtering, ordering
+              and raise behaviour are that method's; this adds no logic of its own,
+              so read its contract for the details that matter.
+            - BUILDS A FRESH SUB-VIEWER ON EVERY CALL. `get_view_multiframe()` constructs a new
+              ViewMultiFrame per invocation against a freshly resolved
+              descriptor snapshot. A loop of facade calls therefore rebuilds the
+              projection each time; hold the sub-viewer yourself when making several
+              calls against one frame.
+            - Because each call re-resolves the descriptor, two facade calls are NOT
+              guaranteed to see the same frame state. Use one held sub-viewer when
+              results must be mutually consistent.
+            - VISIBILITY-FILTERED PROJECTION. Absence means "not visible to this
+              rift" OR "not present" - never proof of non-existence.
+            - Descriptor-hosted and CROSS-FRAME: the multi-frame helper is not bound
+              to a single frame, so no frame selection happens here.
+
+        Threading:
+            Each call takes its own descriptor snapshot; concurrent frame changes
+            are not reflected in an already-returned result.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`. The sub-viewer it builds is transient and
+            owned by the call, not retained by this viewer.
 
         Returns:
             List[str]: Sorted accessible Nexus-managed frame names.
@@ -218,6 +338,31 @@ class FrameViewer(Cleanable):
         """
         Return the currently accessible published non-Nexus frame names.
 
+        Contract:
+            - FACADE PASS-THROUGH to `ViewMultiFrame.list_non_nexus_frame_names(...)`. The filtering, ordering
+              and raise behaviour are that method's; this adds no logic of its own,
+              so read its contract for the details that matter.
+            - BUILDS A FRESH SUB-VIEWER ON EVERY CALL. `get_view_multiframe()` constructs a new
+              ViewMultiFrame per invocation against a freshly resolved
+              descriptor snapshot. A loop of facade calls therefore rebuilds the
+              projection each time; hold the sub-viewer yourself when making several
+              calls against one frame.
+            - Because each call re-resolves the descriptor, two facade calls are NOT
+              guaranteed to see the same frame state. Use one held sub-viewer when
+              results must be mutually consistent.
+            - VISIBILITY-FILTERED PROJECTION. Absence means "not visible to this
+              rift" OR "not present" - never proof of non-existence.
+            - Descriptor-hosted and CROSS-FRAME: the multi-frame helper is not bound
+              to a single frame, so no frame selection happens here.
+
+        Threading:
+            Each call takes its own descriptor snapshot; concurrent frame changes
+            are not reflected in an already-returned result.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`. The sub-viewer it builds is transient and
+            owned by the call, not retained by this viewer.
+
         Returns:
             List[str]: Sorted accessible published non-Nexus frame names.
         """
@@ -227,6 +372,31 @@ class FrameViewer(Cleanable):
     def count_frames(self) -> int:
         """
         Return the number of hosted frame descriptors.
+
+        Contract:
+            - FACADE PASS-THROUGH to `ViewMultiFrame.count_frames(...)`. The filtering, ordering
+              and raise behaviour are that method's; this adds no logic of its own,
+              so read its contract for the details that matter.
+            - BUILDS A FRESH SUB-VIEWER ON EVERY CALL. `get_view_multiframe()` constructs a new
+              ViewMultiFrame per invocation against a freshly resolved
+              descriptor snapshot. A loop of facade calls therefore rebuilds the
+              projection each time; hold the sub-viewer yourself when making several
+              calls against one frame.
+            - Because each call re-resolves the descriptor, two facade calls are NOT
+              guaranteed to see the same frame state. Use one held sub-viewer when
+              results must be mutually consistent.
+            - VISIBILITY-FILTERED PROJECTION. Absence means "not visible to this
+              rift" OR "not present" - never proof of non-existence.
+            - Descriptor-hosted and CROSS-FRAME: the multi-frame helper is not bound
+              to a single frame, so no frame selection happens here.
+
+        Threading:
+            Each call takes its own descriptor snapshot; concurrent frame changes
+            are not reflected in an already-returned result.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`. The sub-viewer it builds is transient and
+            owned by the call, not retained by this viewer.
 
         Returns:
             int: Hosted frame count.
@@ -241,6 +411,15 @@ class FrameViewer(Cleanable):
         Contract:
             This is a host-only descriptor surface. It does not expose payload
             data or ACL-shaped visibility details.
+
+        Contract:
+            - Lists ONLY frame names, one single-key dict per reachable frame. It is a
+              directory of what can be viewed, not a description of any frame's
+              contents - use the `ViewFrame` helpers for that.
+            - Scoped to the rift's reachable frames, so a frame absent here is
+              invisible to this viewer entirely.
+            - The single-key dict shape is deliberate: it leaves room for more fields
+              without changing the return type.
 
         Returns:
             List[Dict[str, object]]: Hosted frame descriptions.
@@ -268,6 +447,31 @@ class FrameViewer(Cleanable):
                 Optional frame name. When omitted, counts across all hosted
                 frames.
 
+        Contract:
+            - FACADE PASS-THROUGH to `ViewMultiFrame.count_root_conduits(...)`. The filtering, ordering
+              and raise behaviour are that method's; this adds no logic of its own,
+              so read its contract for the details that matter.
+            - BUILDS A FRESH SUB-VIEWER ON EVERY CALL. `get_view_multiframe()` constructs a new
+              ViewMultiFrame per invocation against a freshly resolved
+              descriptor snapshot. A loop of facade calls therefore rebuilds the
+              projection each time; hold the sub-viewer yourself when making several
+              calls against one frame.
+            - Because each call re-resolves the descriptor, two facade calls are NOT
+              guaranteed to see the same frame state. Use one held sub-viewer when
+              results must be mutually consistent.
+            - VISIBILITY-FILTERED PROJECTION. Absence means "not visible to this
+              rift" OR "not present" - never proof of non-existence.
+            - Descriptor-hosted and CROSS-FRAME: the multi-frame helper is not bound
+              to a single frame, so no frame selection happens here.
+
+        Threading:
+            Each call takes its own descriptor snapshot; concurrent frame changes
+            are not reflected in an already-returned result.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`. The sub-viewer it builds is transient and
+            owned by the call, not retained by this viewer.
+
         Returns:
             int: Root conduit record count.
         """
@@ -287,6 +491,31 @@ class FrameViewer(Cleanable):
                 Optional frame name. When omitted, counts across all hosted
                 frames.
 
+        Contract:
+            - FACADE PASS-THROUGH to `ViewMultiFrame.count_spell_records(...)`. The filtering, ordering
+              and raise behaviour are that method's; this adds no logic of its own,
+              so read its contract for the details that matter.
+            - BUILDS A FRESH SUB-VIEWER ON EVERY CALL. `get_view_multiframe()` constructs a new
+              ViewMultiFrame per invocation against a freshly resolved
+              descriptor snapshot. A loop of facade calls therefore rebuilds the
+              projection each time; hold the sub-viewer yourself when making several
+              calls against one frame.
+            - Because each call re-resolves the descriptor, two facade calls are NOT
+              guaranteed to see the same frame state. Use one held sub-viewer when
+              results must be mutually consistent.
+            - VISIBILITY-FILTERED PROJECTION. Absence means "not visible to this
+              rift" OR "not present" - never proof of non-existence.
+            - Descriptor-hosted and CROSS-FRAME: the multi-frame helper is not bound
+              to a single frame, so no frame selection happens here.
+
+        Threading:
+            Each call takes its own descriptor snapshot; concurrent frame changes
+            are not reflected in an already-returned result.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`. The sub-viewer it builds is transient and
+            owned by the call, not retained by this viewer.
+
         Returns:
             int: Spell record count.
         """
@@ -302,6 +531,18 @@ class FrameViewer(Cleanable):
             published record identity. It does not expose payload bodies or
             ACL-shaped payload visibility.
 
+        Contract:
+            - FACADE PASS-THROUGH to `ViewMultiFrame.describe_frame(...)`. Filtering, ordering and raise
+              behaviour are that method's; this adds no logic of its own.
+            - BUILDS A FRESH SUB-VIEWER ON EVERY CALL: `get_view_multiframe()` constructs a new
+              ViewMultiFrame against a newly resolved descriptor snapshot, so a loop of
+              facade calls rebuilds the projection each time and TWO FACADE CALLS NEED
+              NOT SEE THE SAME FRAME STATE. Hold one sub-viewer when results must be
+              mutually consistent.
+            - VISIBILITY-FILTERED: absence means "not visible to this rift" OR "not
+              present" - never proof of non-existence.
+            - Descriptor-hosted and CROSS-FRAME: no frame selection happens here.
+
         Args:
             frame_name:
                 Hosted frame name to summarize.
@@ -315,6 +556,31 @@ class FrameViewer(Cleanable):
     def describe_frames(self) -> Dict[str, Dict[str, object]]:
         """
         Return descriptor-level summaries for all hosted frames.
+
+        Contract:
+            - FACADE PASS-THROUGH to `ViewMultiFrame.describe_frames(...)`. The filtering, ordering
+              and raise behaviour are that method's; this adds no logic of its own,
+              so read its contract for the details that matter.
+            - BUILDS A FRESH SUB-VIEWER ON EVERY CALL. `get_view_multiframe()` constructs a new
+              ViewMultiFrame per invocation against a freshly resolved
+              descriptor snapshot. A loop of facade calls therefore rebuilds the
+              projection each time; hold the sub-viewer yourself when making several
+              calls against one frame.
+            - Because each call re-resolves the descriptor, two facade calls are NOT
+              guaranteed to see the same frame state. Use one held sub-viewer when
+              results must be mutually consistent.
+            - VISIBILITY-FILTERED PROJECTION. Absence means "not visible to this
+              rift" OR "not present" - never proof of non-existence.
+            - Descriptor-hosted and CROSS-FRAME: the multi-frame helper is not bound
+              to a single frame, so no frame selection happens here.
+
+        Threading:
+            Each call takes its own descriptor snapshot; concurrent frame changes
+            are not reflected in an already-returned result.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`. The sub-viewer it builds is transient and
+            owned by the call, not retained by this viewer.
 
         Returns:
             Dict[str, Dict[str, object]]: Hosted frame summaries keyed by frame
@@ -538,6 +804,31 @@ class FrameViewer(Cleanable):
             right_frame_name:
                 Right hosted frame name.
 
+        Contract:
+            - FACADE PASS-THROUGH to `ViewMultiFrame.compare_frame_conduits(...)`. The filtering, ordering
+              and raise behaviour are that method's; this adds no logic of its own,
+              so read its contract for the details that matter.
+            - BUILDS A FRESH SUB-VIEWER ON EVERY CALL. `get_view_multiframe()` constructs a new
+              ViewMultiFrame per invocation against a freshly resolved
+              descriptor snapshot. A loop of facade calls therefore rebuilds the
+              projection each time; hold the sub-viewer yourself when making several
+              calls against one frame.
+            - Because each call re-resolves the descriptor, two facade calls are NOT
+              guaranteed to see the same frame state. Use one held sub-viewer when
+              results must be mutually consistent.
+            - VISIBILITY-FILTERED PROJECTION. Absence means "not visible to this
+              rift" OR "not present" - never proof of non-existence.
+            - Descriptor-hosted and CROSS-FRAME: the multi-frame helper is not bound
+              to a single frame, so no frame selection happens here.
+
+        Threading:
+            Each call takes its own descriptor snapshot; concurrent frame changes
+            are not reflected in an already-returned result.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`. The sub-viewer it builds is transient and
+            owned by the call, not retained by this viewer.
+
         Returns:
             Dict[str, object]: Conduit-record comparison summary.
         """
@@ -558,6 +849,31 @@ class FrameViewer(Cleanable):
             right_frame_name:
                 Right hosted frame name.
 
+        Contract:
+            - FACADE PASS-THROUGH to `ViewMultiFrame.compare_frame_spells(...)`. The filtering, ordering
+              and raise behaviour are that method's; this adds no logic of its own,
+              so read its contract for the details that matter.
+            - BUILDS A FRESH SUB-VIEWER ON EVERY CALL. `get_view_multiframe()` constructs a new
+              ViewMultiFrame per invocation against a freshly resolved
+              descriptor snapshot. A loop of facade calls therefore rebuilds the
+              projection each time; hold the sub-viewer yourself when making several
+              calls against one frame.
+            - Because each call re-resolves the descriptor, two facade calls are NOT
+              guaranteed to see the same frame state. Use one held sub-viewer when
+              results must be mutually consistent.
+            - VISIBILITY-FILTERED PROJECTION. Absence means "not visible to this
+              rift" OR "not present" - never proof of non-existence.
+            - Descriptor-hosted and CROSS-FRAME: the multi-frame helper is not bound
+              to a single frame, so no frame selection happens here.
+
+        Threading:
+            Each call takes its own descriptor snapshot; concurrent frame changes
+            are not reflected in an already-returned result.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`. The sub-viewer it builds is transient and
+            owned by the call, not retained by this viewer.
+
         Returns:
             Dict[str, object]: Spell-record comparison summary.
         """
@@ -575,6 +891,18 @@ class FrameViewer(Cleanable):
         Purpose:
             Surface visible ambiguity at the record-identity level when the
             same binding name is attached to multiple published spell records.
+
+        Contract:
+            - FACADE PASS-THROUGH to `ViewMultiFrame.describe_binding_name_collisions(...)`. Filtering, ordering and raise
+              behaviour are that method's; this adds no logic of its own.
+            - BUILDS A FRESH SUB-VIEWER ON EVERY CALL: `get_view_multiframe()` constructs a new
+              ViewMultiFrame against a newly resolved descriptor snapshot, so a loop of
+              facade calls rebuilds the projection each time and TWO FACADE CALLS NEED
+              NOT SEE THE SAME FRAME STATE. Hold one sub-viewer when results must be
+              mutually consistent.
+            - VISIBILITY-FILTERED: absence means "not visible to this rift" OR "not
+              present" - never proof of non-existence.
+            - Descriptor-hosted and CROSS-FRAME: no frame selection happens here.
 
         Args:
             frame_name:
@@ -601,6 +929,31 @@ class FrameViewer(Cleanable):
                 Optional hosted frame name. When omitted, scans all hosted
                 frames.
 
+        Contract:
+            - FACADE PASS-THROUGH to `ViewMultiFrame.describe_spell_name_collisions(...)`. The filtering, ordering
+              and raise behaviour are that method's; this adds no logic of its own,
+              so read its contract for the details that matter.
+            - BUILDS A FRESH SUB-VIEWER ON EVERY CALL. `get_view_multiframe()` constructs a new
+              ViewMultiFrame per invocation against a freshly resolved
+              descriptor snapshot. A loop of facade calls therefore rebuilds the
+              projection each time; hold the sub-viewer yourself when making several
+              calls against one frame.
+            - Because each call re-resolves the descriptor, two facade calls are NOT
+              guaranteed to see the same frame state. Use one held sub-viewer when
+              results must be mutually consistent.
+            - VISIBILITY-FILTERED PROJECTION. Absence means "not visible to this
+              rift" OR "not present" - never proof of non-existence.
+            - Descriptor-hosted and CROSS-FRAME: the multi-frame helper is not bound
+              to a single frame, so no frame selection happens here.
+
+        Threading:
+            Each call takes its own descriptor snapshot; concurrent frame changes
+            are not reflected in an already-returned result.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`. The sub-viewer it builds is transient and
+            owned by the call, not retained by this viewer.
+
         Returns:
             Dict[str, Tuple[str, ...]]: Spell names mapped to the colliding
             spell source ids.
@@ -619,6 +972,18 @@ class FrameViewer(Cleanable):
         Purpose:
             Surface all published spell source ids grouped by spell-index id,
             even when an index currently has only one visible member.
+
+        Contract:
+            - FACADE PASS-THROUGH to `ViewMultiFrame.describe_index_groups(...)`. Filtering, ordering and raise
+              behaviour are that method's; this adds no logic of its own.
+            - BUILDS A FRESH SUB-VIEWER ON EVERY CALL: `get_view_multiframe()` constructs a new
+              ViewMultiFrame against a newly resolved descriptor snapshot, so a loop of
+              facade calls rebuilds the projection each time and TWO FACADE CALLS NEED
+              NOT SEE THE SAME FRAME STATE. Hold one sub-viewer when results must be
+              mutually consistent.
+            - VISIBILITY-FILTERED: absence means "not visible to this rift" OR "not
+              present" - never proof of non-existence.
+            - Descriptor-hosted and CROSS-FRAME: no frame selection happens here.
 
         Args:
             frame_name:
@@ -643,6 +1008,18 @@ class FrameViewer(Cleanable):
         Purpose:
             Group published spells by normalized spellframe value so frame-wide
             spellframe overlaps are obvious.
+
+        Contract:
+            - FACADE PASS-THROUGH to `ViewMultiFrame.describe_spellframe_groups(...)`. Filtering, ordering and raise
+              behaviour are that method's; this adds no logic of its own.
+            - BUILDS A FRESH SUB-VIEWER ON EVERY CALL: `get_view_multiframe()` constructs a new
+              ViewMultiFrame against a newly resolved descriptor snapshot, so a loop of
+              facade calls rebuilds the projection each time and TWO FACADE CALLS NEED
+              NOT SEE THE SAME FRAME STATE. Hold one sub-viewer when results must be
+              mutually consistent.
+            - VISIBILITY-FILTERED: absence means "not visible to this rift" OR "not
+              present" - never proof of non-existence.
+            - Descriptor-hosted and CROSS-FRAME: no frame selection happens here.
 
         Args:
             frame_name:
@@ -669,6 +1046,31 @@ class FrameViewer(Cleanable):
                 Optional hosted frame name. When omitted, scans all hosted
                 frames.
 
+        Contract:
+            - FACADE PASS-THROUGH to `ViewMultiFrame.describe_spellbook_permission_mismatches(...)`. The filtering, ordering
+              and raise behaviour are that method's; this adds no logic of its own,
+              so read its contract for the details that matter.
+            - BUILDS A FRESH SUB-VIEWER ON EVERY CALL. `get_view_multiframe()` constructs a new
+              ViewMultiFrame per invocation against a freshly resolved
+              descriptor snapshot. A loop of facade calls therefore rebuilds the
+              projection each time; hold the sub-viewer yourself when making several
+              calls against one frame.
+            - Because each call re-resolves the descriptor, two facade calls are NOT
+              guaranteed to see the same frame state. Use one held sub-viewer when
+              results must be mutually consistent.
+            - VISIBILITY-FILTERED PROJECTION. Absence means "not visible to this
+              rift" OR "not present" - never proof of non-existence.
+            - Descriptor-hosted and CROSS-FRAME: the multi-frame helper is not bound
+              to a single frame, so no frame selection happens here.
+
+        Threading:
+            Each call takes its own descriptor snapshot; concurrent frame changes
+            are not reflected in an already-returned result.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`. The sub-viewer it builds is transient and
+            owned by the call, not retained by this viewer.
+
         Returns:
             Dict[str, Dict[str, object]]: Spellbook ids mapped to permission
             mismatch summaries.
@@ -688,6 +1090,31 @@ class FrameViewer(Cleanable):
             frame_name:
                 Optional hosted frame name. When omitted, scans all hosted
                 frames.
+
+        Contract:
+            - FACADE PASS-THROUGH to `ViewMultiFrame.describe_spellbook_existence_mismatches(...)`. The filtering, ordering
+              and raise behaviour are that method's; this adds no logic of its own,
+              so read its contract for the details that matter.
+            - BUILDS A FRESH SUB-VIEWER ON EVERY CALL. `get_view_multiframe()` constructs a new
+              ViewMultiFrame per invocation against a freshly resolved
+              descriptor snapshot. A loop of facade calls therefore rebuilds the
+              projection each time; hold the sub-viewer yourself when making several
+              calls against one frame.
+            - Because each call re-resolves the descriptor, two facade calls are NOT
+              guaranteed to see the same frame state. Use one held sub-viewer when
+              results must be mutually consistent.
+            - VISIBILITY-FILTERED PROJECTION. Absence means "not visible to this
+              rift" OR "not present" - never proof of non-existence.
+            - Descriptor-hosted and CROSS-FRAME: the multi-frame helper is not bound
+              to a single frame, so no frame selection happens here.
+
+        Threading:
+            Each call takes its own descriptor snapshot; concurrent frame changes
+            are not reflected in an already-returned result.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`. The sub-viewer it builds is transient and
+            owned by the call, not retained by this viewer.
 
         Returns:
             Dict[str, Dict[str, object]]: Spellbook ids mapped to existence
@@ -711,6 +1138,18 @@ class FrameViewer(Cleanable):
             Give the operator one record-level spell diff without requiring them
             to manually compare multiple identity, provenance, and posture
             methods.
+
+        Contract:
+            - FACADE PASS-THROUGH to `ViewMultiFrame.compare_spell_records(...)`. Filtering, ordering and raise
+              behaviour are that method's; this adds no logic of its own.
+            - BUILDS A FRESH SUB-VIEWER ON EVERY CALL: `get_view_multiframe()` constructs a new
+              ViewMultiFrame against a newly resolved descriptor snapshot, so a loop of
+              facade calls rebuilds the projection each time and TWO FACADE CALLS NEED
+              NOT SEE THE SAME FRAME STATE. Hold one sub-viewer when results must be
+              mutually consistent.
+            - VISIBILITY-FILTERED: absence means "not visible to this rift" OR "not
+              present" - never proof of non-existence.
+            - Descriptor-hosted and CROSS-FRAME: no frame selection happens here.
 
         Args:
             left_spell_source_id:
@@ -749,6 +1188,31 @@ class FrameViewer(Cleanable):
             right_frame_name:
                 Optional hosted frame constraint for the right conduit.
 
+        Contract:
+            - FACADE PASS-THROUGH to `ViewMultiFrame.compare_conduit_records(...)`. The filtering, ordering
+              and raise behaviour are that method's; this adds no logic of its own,
+              so read its contract for the details that matter.
+            - BUILDS A FRESH SUB-VIEWER ON EVERY CALL. `get_view_multiframe()` constructs a new
+              ViewMultiFrame per invocation against a freshly resolved
+              descriptor snapshot. A loop of facade calls therefore rebuilds the
+              projection each time; hold the sub-viewer yourself when making several
+              calls against one frame.
+            - Because each call re-resolves the descriptor, two facade calls are NOT
+              guaranteed to see the same frame state. Use one held sub-viewer when
+              results must be mutually consistent.
+            - VISIBILITY-FILTERED PROJECTION. Absence means "not visible to this
+              rift" OR "not present" - never proof of non-existence.
+            - Descriptor-hosted and CROSS-FRAME: the multi-frame helper is not bound
+              to a single frame, so no frame selection happens here.
+
+        Threading:
+            Each call takes its own descriptor snapshot; concurrent frame changes
+            are not reflected in an already-returned result.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`. The sub-viewer it builds is transient and
+            owned by the call, not retained by this viewer.
+
         Returns:
             Dict[str, object]: Record-level conduit comparison summary.
         """
@@ -762,6 +1226,18 @@ class FrameViewer(Cleanable):
         Purpose:
             Provide the canonical published spell identities for one hosted
             descriptor in deterministic order.
+
+        Contract:
+            - FACADE PASS-THROUGH to `ViewMultiFrame.list_spell_source_ids_for_frame(...)`. Filtering, ordering and raise
+              behaviour are that method's; this adds no logic of its own.
+            - BUILDS A FRESH SUB-VIEWER ON EVERY CALL: `get_view_multiframe()` constructs a new
+              ViewMultiFrame against a newly resolved descriptor snapshot, so a loop of
+              facade calls rebuilds the projection each time and TWO FACADE CALLS NEED
+              NOT SEE THE SAME FRAME STATE. Hold one sub-viewer when results must be
+              mutually consistent.
+            - VISIBILITY-FILTERED: absence means "not visible to this rift" OR "not
+              present" - never proof of non-existence.
+            - Descriptor-hosted and CROSS-FRAME: no frame selection happens here.
 
         Args:
             frame_name:
@@ -844,6 +1320,18 @@ class FrameViewer(Cleanable):
             Surface conduit-record inventory at the descriptor host level
             without reaching into conduit payload bodies.
 
+        Contract:
+            - FACADE PASS-THROUGH to `ViewMultiFrame.count_conduit_records(...)`. Filtering, ordering and raise
+              behaviour are that method's; this adds no logic of its own.
+            - BUILDS A FRESH SUB-VIEWER ON EVERY CALL: `get_view_multiframe()` constructs a new
+              ViewMultiFrame against a newly resolved descriptor snapshot, so a loop of
+              facade calls rebuilds the projection each time and TWO FACADE CALLS NEED
+              NOT SEE THE SAME FRAME STATE. Hold one sub-viewer when results must be
+              mutually consistent.
+            - VISIBILITY-FILTERED: absence means "not visible to this rift" OR "not
+              present" - never proof of non-existence.
+            - Descriptor-hosted and CROSS-FRAME: no frame selection happens here.
+
         Args:
             frame_name:
                 Optional hosted frame name. When omitted, counts conduit
@@ -866,6 +1354,18 @@ class FrameViewer(Cleanable):
         Purpose:
             Expose the conduit ids owned by the selected frame descriptor scope
             without surfacing payload details.
+
+        Contract:
+            - FACADE PASS-THROUGH to `ViewMultiFrame.list_conduit_record_ids(...)`. Filtering, ordering and raise
+              behaviour are that method's; this adds no logic of its own.
+            - BUILDS A FRESH SUB-VIEWER ON EVERY CALL: `get_view_multiframe()` constructs a new
+              ViewMultiFrame against a newly resolved descriptor snapshot, so a loop of
+              facade calls rebuilds the projection each time and TWO FACADE CALLS NEED
+              NOT SEE THE SAME FRAME STATE. Hold one sub-viewer when results must be
+              mutually consistent.
+            - VISIBILITY-FILTERED: absence means "not visible to this rift" OR "not
+              present" - never proof of non-existence.
+            - Descriptor-hosted and CROSS-FRAME: no frame selection happens here.
 
         Args:
             frame_name:
@@ -890,6 +1390,18 @@ class FrameViewer(Cleanable):
             Surface conduit-root topology at the host level using record
             identity only.
 
+        Contract:
+            - FACADE PASS-THROUGH to `ViewMultiFrame.list_root_conduit_ids(...)`. Filtering, ordering and raise
+              behaviour are that method's; this adds no logic of its own.
+            - BUILDS A FRESH SUB-VIEWER ON EVERY CALL: `get_view_multiframe()` constructs a new
+              ViewMultiFrame against a newly resolved descriptor snapshot, so a loop of
+              facade calls rebuilds the projection each time and TWO FACADE CALLS NEED
+              NOT SEE THE SAME FRAME STATE. Hold one sub-viewer when results must be
+              mutually consistent.
+            - VISIBILITY-FILTERED: absence means "not visible to this rift" OR "not
+              present" - never proof of non-existence.
+            - Descriptor-hosted and CROSS-FRAME: no frame selection happens here.
+
         Args:
             frame_name:
                 Optional hosted frame name. When omitted, returns unique root
@@ -911,6 +1423,18 @@ class FrameViewer(Cleanable):
 
         Purpose:
             Surface spellbook provenance breadth at the descriptor host level.
+
+        Contract:
+            - FACADE PASS-THROUGH to `ViewMultiFrame.count_spellbooks(...)`. Filtering, ordering and raise
+              behaviour are that method's; this adds no logic of its own.
+            - BUILDS A FRESH SUB-VIEWER ON EVERY CALL: `get_view_multiframe()` constructs a new
+              ViewMultiFrame against a newly resolved descriptor snapshot, so a loop of
+              facade calls rebuilds the projection each time and TWO FACADE CALLS NEED
+              NOT SEE THE SAME FRAME STATE. Hold one sub-viewer when results must be
+              mutually consistent.
+            - VISIBILITY-FILTERED: absence means "not visible to this rift" OR "not
+              present" - never proof of non-existence.
+            - Descriptor-hosted and CROSS-FRAME: no frame selection happens here.
 
         Args:
             frame_name:
@@ -935,6 +1459,18 @@ class FrameViewer(Cleanable):
             Expose the spellbook provenance ids attached to the hosted spell
             records.
 
+        Contract:
+            - FACADE PASS-THROUGH to `ViewMultiFrame.list_origin_spellbook_ids(...)`. Filtering, ordering and raise
+              behaviour are that method's; this adds no logic of its own.
+            - BUILDS A FRESH SUB-VIEWER ON EVERY CALL: `get_view_multiframe()` constructs a new
+              ViewMultiFrame against a newly resolved descriptor snapshot, so a loop of
+              facade calls rebuilds the projection each time and TWO FACADE CALLS NEED
+              NOT SEE THE SAME FRAME STATE. Hold one sub-viewer when results must be
+              mutually consistent.
+            - VISIBILITY-FILTERED: absence means "not visible to this rift" OR "not
+              present" - never proof of non-existence.
+            - Descriptor-hosted and CROSS-FRAME: no frame selection happens here.
+
         Args:
             frame_name:
                 Optional hosted frame name. When omitted, returns distinct
@@ -957,6 +1493,18 @@ class FrameViewer(Cleanable):
         Purpose:
             Expose spell ids directly from `SpellRecord` ownership without
             surfacing payload bodies.
+
+        Contract:
+            - FACADE PASS-THROUGH to `ViewMultiFrame.list_spell_record_ids(...)`. Filtering, ordering and raise
+              behaviour are that method's; this adds no logic of its own.
+            - BUILDS A FRESH SUB-VIEWER ON EVERY CALL: `get_view_multiframe()` constructs a new
+              ViewMultiFrame against a newly resolved descriptor snapshot, so a loop of
+              facade calls rebuilds the projection each time and TWO FACADE CALLS NEED
+              NOT SEE THE SAME FRAME STATE. Hold one sub-viewer when results must be
+              mutually consistent.
+            - VISIBILITY-FILTERED: absence means "not visible to this rift" OR "not
+              present" - never proof of non-existence.
+            - Descriptor-hosted and CROSS-FRAME: no frame selection happens here.
 
         Args:
             frame_name:
@@ -981,6 +1529,18 @@ class FrameViewer(Cleanable):
             Surface the exact `(spellbook_id, spell_id)` storage identities
             attached to the selected descriptors.
 
+        Contract:
+            - FACADE PASS-THROUGH to `ViewMultiFrame.list_spell_record_keys(...)`. Filtering, ordering and raise
+              behaviour are that method's; this adds no logic of its own.
+            - BUILDS A FRESH SUB-VIEWER ON EVERY CALL: `get_view_multiframe()` constructs a new
+              ViewMultiFrame against a newly resolved descriptor snapshot, so a loop of
+              facade calls rebuilds the projection each time and TWO FACADE CALLS NEED
+              NOT SEE THE SAME FRAME STATE. Hold one sub-viewer when results must be
+              mutually consistent.
+            - VISIBILITY-FILTERED: absence means "not visible to this rift" OR "not
+              present" - never proof of non-existence.
+            - Descriptor-hosted and CROSS-FRAME: no frame selection happens here.
+
         Args:
             frame_name:
                 Optional hosted frame name. When omitted, returns record keys
@@ -1002,6 +1562,18 @@ class FrameViewer(Cleanable):
 
         Purpose:
             Expose spell-name inventory directly from `SpellRecord` metadata.
+
+        Contract:
+            - FACADE PASS-THROUGH to `ViewMultiFrame.list_spell_names(...)`. Filtering, ordering and raise
+              behaviour are that method's; this adds no logic of its own.
+            - BUILDS A FRESH SUB-VIEWER ON EVERY CALL: `get_view_multiframe()` constructs a new
+              ViewMultiFrame against a newly resolved descriptor snapshot, so a loop of
+              facade calls rebuilds the projection each time and TWO FACADE CALLS NEED
+              NOT SEE THE SAME FRAME STATE. Hold one sub-viewer when results must be
+              mutually consistent.
+            - VISIBILITY-FILTERED: absence means "not visible to this rift" OR "not
+              present" - never proof of non-existence.
+            - Descriptor-hosted and CROSS-FRAME: no frame selection happens here.
 
         Args:
             frame_name:
@@ -1026,6 +1598,18 @@ class FrameViewer(Cleanable):
             Expose the spell binding identities currently represented in the
             hosted descriptors.
 
+        Contract:
+            - FACADE PASS-THROUGH to `ViewMultiFrame.list_binding_names(...)`. Filtering, ordering and raise
+              behaviour are that method's; this adds no logic of its own.
+            - BUILDS A FRESH SUB-VIEWER ON EVERY CALL: `get_view_multiframe()` constructs a new
+              ViewMultiFrame against a newly resolved descriptor snapshot, so a loop of
+              facade calls rebuilds the projection each time and TWO FACADE CALLS NEED
+              NOT SEE THE SAME FRAME STATE. Hold one sub-viewer when results must be
+              mutually consistent.
+            - VISIBILITY-FILTERED: absence means "not visible to this rift" OR "not
+              present" - never proof of non-existence.
+            - Descriptor-hosted and CROSS-FRAME: no frame selection happens here.
+
         Args:
             frame_name:
                 Optional hosted frame name. When omitted, returns binding names
@@ -1047,6 +1631,18 @@ class FrameViewer(Cleanable):
 
         Purpose:
             Expose SpellIndex identity directly from `SpellRecord` metadata.
+
+        Contract:
+            - FACADE PASS-THROUGH to `ViewMultiFrame.list_index_ids(...)`. Filtering, ordering and raise
+              behaviour are that method's; this adds no logic of its own.
+            - BUILDS A FRESH SUB-VIEWER ON EVERY CALL: `get_view_multiframe()` constructs a new
+              ViewMultiFrame against a newly resolved descriptor snapshot, so a loop of
+              facade calls rebuilds the projection each time and TWO FACADE CALLS NEED
+              NOT SEE THE SAME FRAME STATE. Hold one sub-viewer when results must be
+              mutually consistent.
+            - VISIBILITY-FILTERED: absence means "not visible to this rift" OR "not
+              present" - never proof of non-existence.
+            - Descriptor-hosted and CROSS-FRAME: no frame selection happens here.
 
         Args:
             frame_name:
@@ -1070,6 +1666,18 @@ class FrameViewer(Cleanable):
         Purpose:
             Surface the logical spellframe inventory directly from
             `SpellRecord.spellframe` without exposing payload data.
+
+        Contract:
+            - FACADE PASS-THROUGH to `ViewMultiFrame.list_spellframes(...)`. Filtering, ordering and raise
+              behaviour are that method's; this adds no logic of its own.
+            - BUILDS A FRESH SUB-VIEWER ON EVERY CALL: `get_view_multiframe()` constructs a new
+              ViewMultiFrame against a newly resolved descriptor snapshot, so a loop of
+              facade calls rebuilds the projection each time and TWO FACADE CALLS NEED
+              NOT SEE THE SAME FRAME STATE. Hold one sub-viewer when results must be
+              mutually consistent.
+            - VISIBILITY-FILTERED: absence means "not visible to this rift" OR "not
+              present" - never proof of non-existence.
+            - Descriptor-hosted and CROSS-FRAME: no frame selection happens here.
 
         Args:
             frame_name:
@@ -1095,6 +1703,18 @@ class FrameViewer(Cleanable):
             Surface the spell permission posture currently represented in the
             hosted descriptors.
 
+        Contract:
+            - FACADE PASS-THROUGH to `ViewMultiFrame.list_permissions(...)`. Filtering, ordering and raise
+              behaviour are that method's; this adds no logic of its own.
+            - BUILDS A FRESH SUB-VIEWER ON EVERY CALL: `get_view_multiframe()` constructs a new
+              ViewMultiFrame against a newly resolved descriptor snapshot, so a loop of
+              facade calls rebuilds the projection each time and TWO FACADE CALLS NEED
+              NOT SEE THE SAME FRAME STATE. Hold one sub-viewer when results must be
+              mutually consistent.
+            - VISIBILITY-FILTERED: absence means "not visible to this rift" OR "not
+              present" - never proof of non-existence.
+            - Descriptor-hosted and CROSS-FRAME: no frame selection happens here.
+
         Args:
             frame_name:
                 Optional hosted frame name. When omitted, returns permission
@@ -1117,6 +1737,18 @@ class FrameViewer(Cleanable):
         Purpose:
             Surface spell lifetime categories directly from `SpellRecord`
             metadata.
+
+        Contract:
+            - FACADE PASS-THROUGH to `ViewMultiFrame.list_existence_kinds(...)`. Filtering, ordering and raise
+              behaviour are that method's; this adds no logic of its own.
+            - BUILDS A FRESH SUB-VIEWER ON EVERY CALL: `get_view_multiframe()` constructs a new
+              ViewMultiFrame against a newly resolved descriptor snapshot, so a loop of
+              facade calls rebuilds the projection each time and TWO FACADE CALLS NEED
+              NOT SEE THE SAME FRAME STATE. Hold one sub-viewer when results must be
+              mutually consistent.
+            - VISIBILITY-FILTERED: absence means "not visible to this rift" OR "not
+              present" - never proof of non-existence.
+            - Descriptor-hosted and CROSS-FRAME: no frame selection happens here.
 
         Args:
             frame_name:
@@ -1191,6 +1823,18 @@ class FrameViewer(Cleanable):
             Surface the conduit record identities and lineage grouping owned by
             one frame descriptor without exposing conduit payload bodies.
 
+        Contract:
+            - FACADE PASS-THROUGH to `ViewMultiFrame.describe_conduit_records(...)`. Filtering, ordering and raise
+              behaviour are that method's; this adds no logic of its own.
+            - BUILDS A FRESH SUB-VIEWER ON EVERY CALL: `get_view_multiframe()` constructs a new
+              ViewMultiFrame against a newly resolved descriptor snapshot, so a loop of
+              facade calls rebuilds the projection each time and TWO FACADE CALLS NEED
+              NOT SEE THE SAME FRAME STATE. Hold one sub-viewer when results must be
+              mutually consistent.
+            - VISIBILITY-FILTERED: absence means "not visible to this rift" OR "not
+              present" - never proof of non-existence.
+            - Descriptor-hosted and CROSS-FRAME: no frame selection happens here.
+
         Args:
             frame_name:
                 Hosted frame name whose conduit records should be described.
@@ -1208,6 +1852,18 @@ class FrameViewer(Cleanable):
         Purpose:
             Surface spell record identities and provenance directly from
             `SpellRecord` without crossing into spell payload bodies.
+
+        Contract:
+            - FACADE PASS-THROUGH to `ViewMultiFrame.describe_spell_records(...)`. Filtering, ordering and raise
+              behaviour are that method's; this adds no logic of its own.
+            - BUILDS A FRESH SUB-VIEWER ON EVERY CALL: `get_view_multiframe()` constructs a new
+              ViewMultiFrame against a newly resolved descriptor snapshot, so a loop of
+              facade calls rebuilds the projection each time and TWO FACADE CALLS NEED
+              NOT SEE THE SAME FRAME STATE. Hold one sub-viewer when results must be
+              mutually consistent.
+            - VISIBILITY-FILTERED: absence means "not visible to this rift" OR "not
+              present" - never proof of non-existence.
+            - Descriptor-hosted and CROSS-FRAME: no frame selection happens here.
 
         Args:
             frame_name:
@@ -1263,6 +1919,18 @@ class FrameViewer(Cleanable):
             Expose spell ownership at the descriptor host level without
             requiring a payload-aware helper path.
 
+        Contract:
+            - FACADE PASS-THROUGH to `ViewMultiFrame.list_spells_by_owner_conduit(...)`. Filtering, ordering and raise
+              behaviour are that method's; this adds no logic of its own.
+            - BUILDS A FRESH SUB-VIEWER ON EVERY CALL: `get_view_multiframe()` constructs a new
+              ViewMultiFrame against a newly resolved descriptor snapshot, so a loop of
+              facade calls rebuilds the projection each time and TWO FACADE CALLS NEED
+              NOT SEE THE SAME FRAME STATE. Hold one sub-viewer when results must be
+              mutually consistent.
+            - VISIBILITY-FILTERED: absence means "not visible to this rift" OR "not
+              present" - never proof of non-existence.
+            - Descriptor-hosted and CROSS-FRAME: no frame selection happens here.
+
         Args:
             conduit_id:
                 Required owner conduit id.
@@ -1292,6 +1960,31 @@ class FrameViewer(Cleanable):
                 Optional hosted frame name. When omitted, scans all hosted
                 frames.
 
+        Contract:
+            - FACADE PASS-THROUGH to `ViewMultiFrame.list_spells_by_spellbook_id(...)`. The filtering, ordering
+              and raise behaviour are that method's; this adds no logic of its own,
+              so read its contract for the details that matter.
+            - BUILDS A FRESH SUB-VIEWER ON EVERY CALL. `get_view_multiframe()` constructs a new
+              ViewMultiFrame per invocation against a freshly resolved
+              descriptor snapshot. A loop of facade calls therefore rebuilds the
+              projection each time; hold the sub-viewer yourself when making several
+              calls against one frame.
+            - Because each call re-resolves the descriptor, two facade calls are NOT
+              guaranteed to see the same frame state. Use one held sub-viewer when
+              results must be mutually consistent.
+            - VISIBILITY-FILTERED PROJECTION. Absence means "not visible to this
+              rift" OR "not present" - never proof of non-existence.
+            - Descriptor-hosted and CROSS-FRAME: the multi-frame helper is not bound
+              to a single frame, so no frame selection happens here.
+
+        Threading:
+            Each call takes its own descriptor snapshot; concurrent frame changes
+            are not reflected in an already-returned result.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`. The sub-viewer it builds is transient and
+            owned by the call, not retained by this viewer.
+
         Returns:
             List[str]: Matching spell source ids in deterministic order.
         """
@@ -1313,6 +2006,31 @@ class FrameViewer(Cleanable):
             frame_name:
                 Optional hosted frame name. When omitted, scans all hosted
                 frames.
+
+        Contract:
+            - FACADE PASS-THROUGH to `ViewMultiFrame.list_spells_by_permission(...)`. The filtering, ordering
+              and raise behaviour are that method's; this adds no logic of its own,
+              so read its contract for the details that matter.
+            - BUILDS A FRESH SUB-VIEWER ON EVERY CALL. `get_view_multiframe()` constructs a new
+              ViewMultiFrame per invocation against a freshly resolved
+              descriptor snapshot. A loop of facade calls therefore rebuilds the
+              projection each time; hold the sub-viewer yourself when making several
+              calls against one frame.
+            - Because each call re-resolves the descriptor, two facade calls are NOT
+              guaranteed to see the same frame state. Use one held sub-viewer when
+              results must be mutually consistent.
+            - VISIBILITY-FILTERED PROJECTION. Absence means "not visible to this
+              rift" OR "not present" - never proof of non-existence.
+            - Descriptor-hosted and CROSS-FRAME: the multi-frame helper is not bound
+              to a single frame, so no frame selection happens here.
+
+        Threading:
+            Each call takes its own descriptor snapshot; concurrent frame changes
+            are not reflected in an already-returned result.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`. The sub-viewer it builds is transient and
+            owned by the call, not retained by this viewer.
 
         Returns:
             List[str]: Matching spell source ids in deterministic order.
@@ -1336,6 +2054,31 @@ class FrameViewer(Cleanable):
                 Optional hosted frame name. When omitted, scans all hosted
                 frames.
 
+        Contract:
+            - FACADE PASS-THROUGH to `ViewMultiFrame.list_spells_by_existence(...)`. The filtering, ordering
+              and raise behaviour are that method's; this adds no logic of its own,
+              so read its contract for the details that matter.
+            - BUILDS A FRESH SUB-VIEWER ON EVERY CALL. `get_view_multiframe()` constructs a new
+              ViewMultiFrame per invocation against a freshly resolved
+              descriptor snapshot. A loop of facade calls therefore rebuilds the
+              projection each time; hold the sub-viewer yourself when making several
+              calls against one frame.
+            - Because each call re-resolves the descriptor, two facade calls are NOT
+              guaranteed to see the same frame state. Use one held sub-viewer when
+              results must be mutually consistent.
+            - VISIBILITY-FILTERED PROJECTION. Absence means "not visible to this
+              rift" OR "not present" - never proof of non-existence.
+            - Descriptor-hosted and CROSS-FRAME: the multi-frame helper is not bound
+              to a single frame, so no frame selection happens here.
+
+        Threading:
+            Each call takes its own descriptor snapshot; concurrent frame changes
+            are not reflected in an already-returned result.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`. The sub-viewer it builds is transient and
+            owned by the call, not retained by this viewer.
+
         Returns:
             List[str]: Matching spell source ids in deterministic order.
         """
@@ -1358,6 +2101,31 @@ class FrameViewer(Cleanable):
                 Optional hosted frame name. When omitted, scans all hosted
                 frames.
 
+        Contract:
+            - FACADE PASS-THROUGH to `ViewMultiFrame.list_spells_by_spellframe(...)`. The filtering, ordering
+              and raise behaviour are that method's; this adds no logic of its own,
+              so read its contract for the details that matter.
+            - BUILDS A FRESH SUB-VIEWER ON EVERY CALL. `get_view_multiframe()` constructs a new
+              ViewMultiFrame per invocation against a freshly resolved
+              descriptor snapshot. A loop of facade calls therefore rebuilds the
+              projection each time; hold the sub-viewer yourself when making several
+              calls against one frame.
+            - Because each call re-resolves the descriptor, two facade calls are NOT
+              guaranteed to see the same frame state. Use one held sub-viewer when
+              results must be mutually consistent.
+            - VISIBILITY-FILTERED PROJECTION. Absence means "not visible to this
+              rift" OR "not present" - never proof of non-existence.
+            - Descriptor-hosted and CROSS-FRAME: the multi-frame helper is not bound
+              to a single frame, so no frame selection happens here.
+
+        Threading:
+            Each call takes its own descriptor snapshot; concurrent frame changes
+            are not reflected in an already-returned result.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`. The sub-viewer it builds is transient and
+            owned by the call, not retained by this viewer.
+
         Returns:
             List[str]: Matching spell source ids in deterministic order.
         """
@@ -1371,6 +2139,15 @@ class FrameViewer(Cleanable):
         Purpose:
             Preserve the borrowed Rift reference while creating a detached
             viewer object with no additional local state.
+
+        Contract:
+            - Produces a NEW viewer over THE SAME rift and the same action-hook scope
+              factory - it copies the wiring, NOT any state, because a viewer holds no
+              cached projection to copy.
+            - The clone is INDEPENDENTLY OWNED: cleaning it does not clean this viewer,
+              and both remain valid over the shared rift.
+            - Useful for handing a viewer to another thread without sharing this one;
+              it is not a snapshot and will see the same live frame state.
 
         Returns:
             FrameViewer: Detached viewer clone.
@@ -1394,6 +2171,33 @@ class FrameViewer(Cleanable):
         Args:
             frame_name:
                 Required hosted frame name.
+
+        Contract:
+            - CONSTRUCTS A FRESH `ViewFrame` ON EVERY CALL. Nothing is cached, so
+              two calls return two distinct objects over two distinct descriptor
+              snapshots. HOLD THE RESULT if you want a stable view or want to make
+              several queries against one consistent snapshot.
+            - `frame_name` is a SELECTOR here - it resolves which hosted frame to
+              bind. Inside the returned helper the same parameter becomes an
+              ASSERTION that must match this binding. Passing None resolves the
+              viewer's currently selected frame.
+            - Binds the descriptor, ACL configuration and compiled access surface
+              together at construction, so the returned helper is internally
+              consistent even if the frame changes afterwards.
+            - Built at `detailed` detail level and wired to this viewer's action
+              hook scope.
+
+        Threading:
+            Takes a descriptor snapshot at construction; the returned helper does
+            not track later frame changes.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`. The returned helper is owned by the
+            CALLER; this viewer does not retain or clean it.
+
+        Raises:
+            RuntimeError: If the frame cannot be resolved, or the viewer has been
+                cleaned.
 
         Returns:
             ViewFrame: Selected-frame helper surface.
@@ -1425,6 +2229,27 @@ class FrameViewer(Cleanable):
             frame_name:
                 Required hosted frame name.
 
+        Contract:
+            - CONSTRUCTS A FRESH `ViewConduit` ON EVERY CALL, and a fresh `ViewFrame`
+              beneath it. Two calls therefore cost two full projections; hold the
+              result when making several conduit queries.
+            - The returned helper BORROWS its frame view - it does not own it - so
+              the two share one descriptor snapshot and stay mutually consistent.
+            - `frame_name` is a SELECTOR here and becomes an ASSERTION inside the
+              helper.
+            - Does NOT call `check_cleaned()` itself; the guard comes from the
+              `get_view_frame(...)` call it delegates to.
+
+        Threading:
+            Snapshot-bound at construction; does not track later frame changes.
+
+        Lifecycle / Cleanup:
+            The returned helper is owned by the CALLER.
+
+        Raises:
+            RuntimeError: If the frame cannot be resolved, or the viewer has been
+                cleaned.
+
         Returns:
             ViewConduit: Bound conduit helper surface.
         """
@@ -1444,6 +2269,27 @@ class FrameViewer(Cleanable):
             frame_name:
                 Required hosted frame name.
 
+        Contract:
+            - CONSTRUCTS A FRESH `ViewSpell` ON EVERY CALL, and a fresh `ViewFrame`
+              beneath it. Two calls cost two full projections; hold the result when
+              making several spell queries.
+            - The returned helper BORROWS its frame view - it does not own it - so
+              the two share one descriptor snapshot and stay mutually consistent.
+            - `frame_name` is a SELECTOR here and becomes an ASSERTION inside the
+              helper.
+            - Does NOT call `check_cleaned()` itself; the guard comes from the
+              `get_view_frame(...)` call it delegates to.
+
+        Threading:
+            Snapshot-bound at construction; does not track later frame changes.
+
+        Lifecycle / Cleanup:
+            The returned helper is owned by the CALLER.
+
+        Raises:
+            RuntimeError: If the frame cannot be resolved, or the viewer has been
+                cleaned.
+
         Returns:
             ViewSpell: Bound spell helper surface.
         """
@@ -1454,6 +2300,27 @@ class FrameViewer(Cleanable):
     def get_view_multiframe(self) -> ViewMultiFrame:
         """
         Return one descriptor-hosted multi-frame helper.
+
+        Contract:
+            - CONSTRUCTS A FRESH `ViewMultiFrame` ON EVERY CALL; nothing is cached.
+            - CROSS-FRAME by design, so it takes no frame selector and is not bound
+              to one frame's snapshot. It reaches back through THIS viewer for each
+              frame it inspects, which is why it is the one helper that can compare
+              across frames.
+            - Because it holds this viewer rather than a snapshot, its reads are
+              resolved later rather than frozen at construction - the opposite of
+              the single-frame helpers.
+
+        Threading:
+            Resolves per query rather than from one snapshot, so two of its calls
+            can observe different frame states.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`. It BORROWS this viewer, so it must not
+            outlive it; the returned helper is owned by the CALLER.
+
+        Raises:
+            RuntimeError: If the viewer has been cleaned.
 
         Returns:
             ViewMultiFrame: Fresh helper for cross-frame and descriptor-hosted
@@ -1476,6 +2343,14 @@ class FrameViewer(Cleanable):
             the viewer itself without inspecting method bodies or runtime
             internals.
 
+        Contract:
+            - Reports THIS VIEWER'S OWN method names, not the frame's contents, so it
+              carries no frame data and needs no ACL filtering.
+            - `include_private` and `include_dunder` widen the surface; both default to
+              the narrow agent-facing view.
+            - Returned MINIFIED as JSON for token efficiency - it is meant to be handed
+              to an agent rather than read by a human.
+
         Args:
             include_private:
                 Whether `_private` methods should be included.
@@ -1496,6 +2371,24 @@ class FrameViewer(Cleanable):
         """
         Return the shared first-time onboarding hint for Melder agents.
 
+        Contract:
+            - STATIC CONTENT: the onboarding hint is produced by
+              `ClassSurfaceAstDescriber` and is identical for every viewer and every
+              frame. It describes how to drive Melder's agent surface, NOT anything
+              about this rift's contents, so it leaks no frame data and needs no ACL
+              filtering.
+            - Returned MINIFIED for token efficiency - it is meant to be handed to
+              an agent, not read by a human.
+
+        Threading:
+            No viewer state is read beyond the cleaned check.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If the viewer has been cleaned.
+
         Returns:
             str: Minified JSON onboarding hint for Melder agents.
         """
@@ -1505,6 +2398,24 @@ class FrameViewer(Cleanable):
     def describe_viewer_agent_purpose_json(self) -> str:
         """
         Return the minified JSON agent-purpose surface for the viewer host.
+
+        Contract:
+            - Describes THIS VIEWER'S OWN callable surface - the agent-facing
+              contract of the object you are holding - not the frame it projects.
+              It is built from the class's `__agent_purpose__` and
+              `__ast_helper_access__` markers by `ClassSurfaceAstDescriber`.
+            - Reports the SHAPE of the API, so it carries no frame contents and
+              needs no ACL filtering.
+            - Returned MINIFIED for token efficiency.
+
+        Threading:
+            Reflects over the class, not over frame state.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If the viewer has been cleaned.
 
         Returns:
             str: Minified JSON agent-purpose surface for this viewer.
@@ -1525,6 +2436,13 @@ class FrameViewer(Cleanable):
             Expose the source-defined `FrameViewer` class surface, including
             method signatures, properties, and docstrings, for direct agent
             consumption.
+
+        Contract:
+            - Describes THIS VIEWER'S CALLABLE SURFACE - signatures and the agent
+              markers on the class - rather than the frame it projects, so it is safe
+              regardless of ACL.
+            - Richer than `list_viewer_method_names_ast_json`, which returns names only.
+            - Returned MINIFIED as JSON for token efficiency.
 
         Args:
             include_private:
@@ -1878,6 +2796,19 @@ class FrameViewer(Cleanable):
             frame surface methods while still reflecting visible inventory and
             ACL posture.
 
+        Contract:
+            - FACADE PASS-THROUGH to `ViewFrame.describe_frame_brief(...)`. Filtering, ordering and raise
+              behaviour are that method's; this adds no logic of its own.
+            - BUILDS A FRESH SUB-VIEWER ON EVERY CALL: `get_view_frame()` constructs a new
+              ViewFrame against a newly resolved descriptor snapshot, so a loop of
+              facade calls rebuilds the projection each time and TWO FACADE CALLS NEED
+              NOT SEE THE SAME FRAME STATE. Hold one sub-viewer when results must be
+              mutually consistent.
+            - VISIBILITY-FILTERED: absence means "not visible to this rift" OR "not
+              present" - never proof of non-existence.
+            - `frame_name` SELECTS the frame at THIS layer and becomes an ASSERTION
+              inside the sub-viewer. Passing None resolves the selected frame.
+
         Args:
             frame_name:
                 Optional hosted frame name override.
@@ -1901,6 +2832,19 @@ class FrameViewer(Cleanable):
             Provide a frame-local grouped inventory over visible targets so the
             operator can see counts, source ids, and names without manually
             regrouping raw links.
+
+        Contract:
+            - FACADE PASS-THROUGH to `ViewFrame.describe_visible_inventory_by_kind(...)`. Filtering, ordering and raise
+              behaviour are that method's; this adds no logic of its own.
+            - BUILDS A FRESH SUB-VIEWER ON EVERY CALL: `get_view_frame()` constructs a new
+              ViewFrame against a newly resolved descriptor snapshot, so a loop of
+              facade calls rebuilds the projection each time and TWO FACADE CALLS NEED
+              NOT SEE THE SAME FRAME STATE. Hold one sub-viewer when results must be
+              mutually consistent.
+            - VISIBILITY-FILTERED: absence means "not visible to this rift" OR "not
+              present" - never proof of non-existence.
+            - `frame_name` SELECTS the frame at THIS layer and becomes an ASSERTION
+              inside the sub-viewer. Passing None resolves the selected frame.
 
         Args:
             frame_name:
@@ -1926,6 +2870,19 @@ class FrameViewer(Cleanable):
             each other so the operator can navigate the frame structure without
             reading each target individually first.
 
+        Contract:
+            - FACADE PASS-THROUGH to `ViewFrame.describe_frame_topology(...)`. Filtering, ordering and raise
+              behaviour are that method's; this adds no logic of its own.
+            - BUILDS A FRESH SUB-VIEWER ON EVERY CALL: `get_view_frame()` constructs a new
+              ViewFrame against a newly resolved descriptor snapshot, so a loop of
+              facade calls rebuilds the projection each time and TWO FACADE CALLS NEED
+              NOT SEE THE SAME FRAME STATE. Hold one sub-viewer when results must be
+              mutually consistent.
+            - VISIBILITY-FILTERED: absence means "not visible to this rift" OR "not
+              present" - never proof of non-existence.
+            - `frame_name` SELECTS the frame at THIS layer and becomes an ASSERTION
+              inside the sub-viewer. Passing None resolves the selected frame.
+
         Args:
             frame_name:
                 Optional hosted frame name override.
@@ -1949,6 +2906,19 @@ class FrameViewer(Cleanable):
         Purpose:
             Provide a compact id-only view over the currently visible target
             surface.
+
+        Contract:
+            - FACADE PASS-THROUGH to `ViewFrame.list_visible_target_ids(...)`. Filtering, ordering and raise
+              behaviour are that method's; this adds no logic of its own.
+            - BUILDS A FRESH SUB-VIEWER ON EVERY CALL: `get_view_frame()` constructs a new
+              ViewFrame against a newly resolved descriptor snapshot, so a loop of
+              facade calls rebuilds the projection each time and TWO FACADE CALLS NEED
+              NOT SEE THE SAME FRAME STATE. Hold one sub-viewer when results must be
+              mutually consistent.
+            - VISIBILITY-FILTERED: absence means "not visible to this rift" OR "not
+              present" - never proof of non-existence.
+            - `frame_name` SELECTS the frame at THIS layer and becomes an ASSERTION
+              inside the sub-viewer. Passing None resolves the selected frame.
 
         Args:
             frame_name:
@@ -1976,6 +2946,32 @@ class FrameViewer(Cleanable):
             frame_name:
                 Optional hosted frame name override.
 
+        Contract:
+            - FACADE PASS-THROUGH to `ViewFrame.list_visible_target_ids_by_kind(...)`. The filtering, ordering
+              and raise behaviour are that method's; this adds no logic of its own,
+              so read its contract for the details that matter.
+            - BUILDS A FRESH SUB-VIEWER ON EVERY CALL. `get_view_frame()` constructs a new
+              ViewFrame per invocation against a freshly resolved
+              descriptor snapshot. A loop of facade calls therefore rebuilds the
+              projection each time; hold the sub-viewer yourself when making several
+              calls against one frame.
+            - Because each call re-resolves the descriptor, two facade calls are NOT
+              guaranteed to see the same frame state. Use one held sub-viewer when
+              results must be mutually consistent.
+            - VISIBILITY-FILTERED PROJECTION. Absence means "not visible to this
+              rift" OR "not present" - never proof of non-existence.
+            - `frame_name` SELECTS the frame at THIS layer and then becomes an
+              ASSERTION inside the sub-viewer. Same parameter name, two different
+              meanings by layer. Passing None resolves the viewer's selected frame.
+
+        Threading:
+            Each call takes its own descriptor snapshot; concurrent frame changes
+            are not reflected in an already-returned result.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`. The sub-viewer it builds is transient and
+            owned by the call, not retained by this viewer.
+
         Returns:
             Dict[str, Tuple[str, ...]]: Visible target ids grouped by kind.
         """
@@ -1994,6 +2990,32 @@ class FrameViewer(Cleanable):
         Args:
             frame_name:
                 Optional hosted frame name override.
+
+        Contract:
+            - FACADE PASS-THROUGH to `ViewFrame.list_visible_conduit_ids(...)`. The filtering, ordering
+              and raise behaviour are that method's; this adds no logic of its own,
+              so read its contract for the details that matter.
+            - BUILDS A FRESH SUB-VIEWER ON EVERY CALL. `get_view_frame()` constructs a new
+              ViewFrame per invocation against a freshly resolved
+              descriptor snapshot. A loop of facade calls therefore rebuilds the
+              projection each time; hold the sub-viewer yourself when making several
+              calls against one frame.
+            - Because each call re-resolves the descriptor, two facade calls are NOT
+              guaranteed to see the same frame state. Use one held sub-viewer when
+              results must be mutually consistent.
+            - VISIBILITY-FILTERED PROJECTION. Absence means "not visible to this
+              rift" OR "not present" - never proof of non-existence.
+            - `frame_name` SELECTS the frame at THIS layer and then becomes an
+              ASSERTION inside the sub-viewer. Same parameter name, two different
+              meanings by layer. Passing None resolves the viewer's selected frame.
+
+        Threading:
+            Each call takes its own descriptor snapshot; concurrent frame changes
+            are not reflected in an already-returned result.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`. The sub-viewer it builds is transient and
+            owned by the call, not retained by this viewer.
 
         Returns:
             List[str]: Visible conduit ids in deterministic order.
@@ -2014,6 +3036,32 @@ class FrameViewer(Cleanable):
             frame_name:
                 Optional hosted frame name override.
 
+        Contract:
+            - FACADE PASS-THROUGH to `ViewFrame.list_visible_spell_source_ids(...)`. The filtering, ordering
+              and raise behaviour are that method's; this adds no logic of its own,
+              so read its contract for the details that matter.
+            - BUILDS A FRESH SUB-VIEWER ON EVERY CALL. `get_view_frame()` constructs a new
+              ViewFrame per invocation against a freshly resolved
+              descriptor snapshot. A loop of facade calls therefore rebuilds the
+              projection each time; hold the sub-viewer yourself when making several
+              calls against one frame.
+            - Because each call re-resolves the descriptor, two facade calls are NOT
+              guaranteed to see the same frame state. Use one held sub-viewer when
+              results must be mutually consistent.
+            - VISIBILITY-FILTERED PROJECTION. Absence means "not visible to this
+              rift" OR "not present" - never proof of non-existence.
+            - `frame_name` SELECTS the frame at THIS layer and then becomes an
+              ASSERTION inside the sub-viewer. Same parameter name, two different
+              meanings by layer. Passing None resolves the viewer's selected frame.
+
+        Threading:
+            Each call takes its own descriptor snapshot; concurrent frame changes
+            are not reflected in an already-returned result.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`. The sub-viewer it builds is transient and
+            owned by the call, not retained by this viewer.
+
         Returns:
             List[str]: Visible spell source ids in deterministic order.
         """
@@ -2032,6 +3080,32 @@ class FrameViewer(Cleanable):
         Args:
             frame_name:
                 Optional hosted frame name override.
+
+        Contract:
+            - FACADE PASS-THROUGH to `ViewFrame.list_visible_root_conduits(...)`. The filtering, ordering
+              and raise behaviour are that method's; this adds no logic of its own,
+              so read its contract for the details that matter.
+            - BUILDS A FRESH SUB-VIEWER ON EVERY CALL. `get_view_frame()` constructs a new
+              ViewFrame per invocation against a freshly resolved
+              descriptor snapshot. A loop of facade calls therefore rebuilds the
+              projection each time; hold the sub-viewer yourself when making several
+              calls against one frame.
+            - Because each call re-resolves the descriptor, two facade calls are NOT
+              guaranteed to see the same frame state. Use one held sub-viewer when
+              results must be mutually consistent.
+            - VISIBILITY-FILTERED PROJECTION. Absence means "not visible to this
+              rift" OR "not present" - never proof of non-existence.
+            - `frame_name` SELECTS the frame at THIS layer and then becomes an
+              ASSERTION inside the sub-viewer. Same parameter name, two different
+              meanings by layer. Passing None resolves the viewer's selected frame.
+
+        Threading:
+            Each call takes its own descriptor snapshot; concurrent frame changes
+            are not reflected in an already-returned result.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`. The sub-viewer it builds is transient and
+            owned by the call, not retained by this viewer.
 
         Returns:
             List[FrameLink]: Visible root conduit links.
@@ -2052,6 +3126,32 @@ class FrameViewer(Cleanable):
             frame_name:
                 Optional hosted frame name override.
 
+        Contract:
+            - FACADE PASS-THROUGH to `ViewFrame.list_visible_binding_names(...)`. The filtering, ordering
+              and raise behaviour are that method's; this adds no logic of its own,
+              so read its contract for the details that matter.
+            - BUILDS A FRESH SUB-VIEWER ON EVERY CALL. `get_view_frame()` constructs a new
+              ViewFrame per invocation against a freshly resolved
+              descriptor snapshot. A loop of facade calls therefore rebuilds the
+              projection each time; hold the sub-viewer yourself when making several
+              calls against one frame.
+            - Because each call re-resolves the descriptor, two facade calls are NOT
+              guaranteed to see the same frame state. Use one held sub-viewer when
+              results must be mutually consistent.
+            - VISIBILITY-FILTERED PROJECTION. Absence means "not visible to this
+              rift" OR "not present" - never proof of non-existence.
+            - `frame_name` SELECTS the frame at THIS layer and then becomes an
+              ASSERTION inside the sub-viewer. Same parameter name, two different
+              meanings by layer. Passing None resolves the viewer's selected frame.
+
+        Threading:
+            Each call takes its own descriptor snapshot; concurrent frame changes
+            are not reflected in an already-returned result.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`. The sub-viewer it builds is transient and
+            owned by the call, not retained by this viewer.
+
         Returns:
             List[str]: Visible binding names in deterministic spell order.
         """
@@ -2071,6 +3171,32 @@ class FrameViewer(Cleanable):
             frame_name:
                 Optional hosted frame name override.
 
+        Contract:
+            - FACADE PASS-THROUGH to `ViewFrame.list_visible_spell_names(...)`. The filtering, ordering
+              and raise behaviour are that method's; this adds no logic of its own,
+              so read its contract for the details that matter.
+            - BUILDS A FRESH SUB-VIEWER ON EVERY CALL. `get_view_frame()` constructs a new
+              ViewFrame per invocation against a freshly resolved
+              descriptor snapshot. A loop of facade calls therefore rebuilds the
+              projection each time; hold the sub-viewer yourself when making several
+              calls against one frame.
+            - Because each call re-resolves the descriptor, two facade calls are NOT
+              guaranteed to see the same frame state. Use one held sub-viewer when
+              results must be mutually consistent.
+            - VISIBILITY-FILTERED PROJECTION. Absence means "not visible to this
+              rift" OR "not present" - never proof of non-existence.
+            - `frame_name` SELECTS the frame at THIS layer and then becomes an
+              ASSERTION inside the sub-viewer. Same parameter name, two different
+              meanings by layer. Passing None resolves the viewer's selected frame.
+
+        Threading:
+            Each call takes its own descriptor snapshot; concurrent frame changes
+            are not reflected in an already-returned result.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`. The sub-viewer it builds is transient and
+            owned by the call, not retained by this viewer.
+
         Returns:
             List[str]: Visible spell names in deterministic spell order.
         """
@@ -2089,6 +3215,32 @@ class FrameViewer(Cleanable):
         Args:
             frame_name:
                 Optional hosted frame name override.
+
+        Contract:
+            - FACADE PASS-THROUGH to `ViewFrame.list_visible_spellframes(...)`. The filtering, ordering
+              and raise behaviour are that method's; this adds no logic of its own,
+              so read its contract for the details that matter.
+            - BUILDS A FRESH SUB-VIEWER ON EVERY CALL. `get_view_frame()` constructs a new
+              ViewFrame per invocation against a freshly resolved
+              descriptor snapshot. A loop of facade calls therefore rebuilds the
+              projection each time; hold the sub-viewer yourself when making several
+              calls against one frame.
+            - Because each call re-resolves the descriptor, two facade calls are NOT
+              guaranteed to see the same frame state. Use one held sub-viewer when
+              results must be mutually consistent.
+            - VISIBILITY-FILTERED PROJECTION. Absence means "not visible to this
+              rift" OR "not present" - never proof of non-existence.
+            - `frame_name` SELECTS the frame at THIS layer and then becomes an
+              ASSERTION inside the sub-viewer. Same parameter name, two different
+              meanings by layer. Passing None resolves the viewer's selected frame.
+
+        Threading:
+            Each call takes its own descriptor snapshot; concurrent frame changes
+            are not reflected in an already-returned result.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`. The sub-viewer it builds is transient and
+            owned by the call, not retained by this viewer.
 
         Returns:
             List[str]: Distinct visible spellframe values in deterministic
@@ -2110,6 +3262,32 @@ class FrameViewer(Cleanable):
             frame_name:
                 Optional hosted frame name override.
 
+        Contract:
+            - FACADE PASS-THROUGH to `ViewFrame.list_visible_index_ids(...)`. The filtering, ordering
+              and raise behaviour are that method's; this adds no logic of its own,
+              so read its contract for the details that matter.
+            - BUILDS A FRESH SUB-VIEWER ON EVERY CALL. `get_view_frame()` constructs a new
+              ViewFrame per invocation against a freshly resolved
+              descriptor snapshot. A loop of facade calls therefore rebuilds the
+              projection each time; hold the sub-viewer yourself when making several
+              calls against one frame.
+            - Because each call re-resolves the descriptor, two facade calls are NOT
+              guaranteed to see the same frame state. Use one held sub-viewer when
+              results must be mutually consistent.
+            - VISIBILITY-FILTERED PROJECTION. Absence means "not visible to this
+              rift" OR "not present" - never proof of non-existence.
+            - `frame_name` SELECTS the frame at THIS layer and then becomes an
+              ASSERTION inside the sub-viewer. Same parameter name, two different
+              meanings by layer. Passing None resolves the viewer's selected frame.
+
+        Threading:
+            Each call takes its own descriptor snapshot; concurrent frame changes
+            are not reflected in an already-returned result.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`. The sub-viewer it builds is transient and
+            owned by the call, not retained by this viewer.
+
         Returns:
             List[str]: Visible spell-index ids in deterministic spell order.
         """
@@ -2128,6 +3306,32 @@ class FrameViewer(Cleanable):
         Args:
             frame_name:
                 Optional hosted frame name override.
+
+        Contract:
+            - FACADE PASS-THROUGH to `ViewFrame.describe_visible_spell_ownership(...)`. The filtering, ordering
+              and raise behaviour are that method's; this adds no logic of its own,
+              so read its contract for the details that matter.
+            - BUILDS A FRESH SUB-VIEWER ON EVERY CALL. `get_view_frame()` constructs a new
+              ViewFrame per invocation against a freshly resolved
+              descriptor snapshot. A loop of facade calls therefore rebuilds the
+              projection each time; hold the sub-viewer yourself when making several
+              calls against one frame.
+            - Because each call re-resolves the descriptor, two facade calls are NOT
+              guaranteed to see the same frame state. Use one held sub-viewer when
+              results must be mutually consistent.
+            - VISIBILITY-FILTERED PROJECTION. Absence means "not visible to this
+              rift" OR "not present" - never proof of non-existence.
+            - `frame_name` SELECTS the frame at THIS layer and then becomes an
+              ASSERTION inside the sub-viewer. Same parameter name, two different
+              meanings by layer. Passing None resolves the viewer's selected frame.
+
+        Threading:
+            Each call takes its own descriptor snapshot; concurrent frame changes
+            are not reflected in an already-returned result.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`. The sub-viewer it builds is transient and
+            owned by the call, not retained by this viewer.
 
         Returns:
             Dict[str, Tuple[str, ...]]: Visible spell source ids grouped by
@@ -2148,6 +3352,32 @@ class FrameViewer(Cleanable):
         Args:
             frame_name:
                 Optional hosted frame name override.
+
+        Contract:
+            - FACADE PASS-THROUGH to `ViewFrame.describe_visible_conduit_tree(...)`. The filtering, ordering
+              and raise behaviour are that method's; this adds no logic of its own,
+              so read its contract for the details that matter.
+            - BUILDS A FRESH SUB-VIEWER ON EVERY CALL. `get_view_frame()` constructs a new
+              ViewFrame per invocation against a freshly resolved
+              descriptor snapshot. A loop of facade calls therefore rebuilds the
+              projection each time; hold the sub-viewer yourself when making several
+              calls against one frame.
+            - Because each call re-resolves the descriptor, two facade calls are NOT
+              guaranteed to see the same frame state. Use one held sub-viewer when
+              results must be mutually consistent.
+            - VISIBILITY-FILTERED PROJECTION. Absence means "not visible to this
+              rift" OR "not present" - never proof of non-existence.
+            - `frame_name` SELECTS the frame at THIS layer and then becomes an
+              ASSERTION inside the sub-viewer. Same parameter name, two different
+              meanings by layer. Passing None resolves the viewer's selected frame.
+
+        Threading:
+            Each call takes its own descriptor snapshot; concurrent frame changes
+            are not reflected in an already-returned result.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`. The sub-viewer it builds is transient and
+            owned by the call, not retained by this viewer.
 
         Returns:
             Dict[str, Tuple[str, ...]]: Visible conduit ids grouped by root
@@ -2170,6 +3400,19 @@ class FrameViewer(Cleanable):
         Purpose:
             Provide a forgiving search path over visible target display names
             and source ids.
+
+        Contract:
+            - FACADE PASS-THROUGH to `ViewFrame.search_targets_contains(...)`. Filtering, ordering and raise
+              behaviour are that method's; this adds no logic of its own.
+            - BUILDS A FRESH SUB-VIEWER ON EVERY CALL: `get_view_frame()` constructs a new
+              ViewFrame against a newly resolved descriptor snapshot, so a loop of
+              facade calls rebuilds the projection each time and TWO FACADE CALLS NEED
+              NOT SEE THE SAME FRAME STATE. Hold one sub-viewer when results must be
+              mutually consistent.
+            - VISIBILITY-FILTERED: absence means "not visible to this rift" OR "not
+              present" - never proof of non-existence.
+            - `frame_name` SELECTS the frame at THIS layer and becomes an ASSERTION
+              inside the sub-viewer. Passing None resolves the selected frame.
 
         Args:
             text:
@@ -2207,6 +3450,32 @@ class FrameViewer(Cleanable):
             source_kind:
                 Optional target-kind filter.
 
+        Contract:
+            - FACADE PASS-THROUGH to `ViewFrame.search_targets_prefix(...)`. The filtering, ordering
+              and raise behaviour are that method's; this adds no logic of its own,
+              so read its contract for the details that matter.
+            - BUILDS A FRESH SUB-VIEWER ON EVERY CALL. `get_view_frame()` constructs a new
+              ViewFrame per invocation against a freshly resolved
+              descriptor snapshot. A loop of facade calls therefore rebuilds the
+              projection each time; hold the sub-viewer yourself when making several
+              calls against one frame.
+            - Because each call re-resolves the descriptor, two facade calls are NOT
+              guaranteed to see the same frame state. Use one held sub-viewer when
+              results must be mutually consistent.
+            - VISIBILITY-FILTERED PROJECTION. Absence means "not visible to this
+              rift" OR "not present" - never proof of non-existence.
+            - `frame_name` SELECTS the frame at THIS layer and then becomes an
+              ASSERTION inside the sub-viewer. Same parameter name, two different
+              meanings by layer. Passing None resolves the viewer's selected frame.
+
+        Threading:
+            Each call takes its own descriptor snapshot; concurrent frame changes
+            are not reflected in an already-returned result.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`. The sub-viewer it builds is transient and
+            owned by the call, not retained by this viewer.
+
         Returns:
             List[FrameLink]: Matching visible targets in deterministic order.
         """
@@ -2234,6 +3503,32 @@ class FrameViewer(Cleanable):
             frame_name:
                 Optional hosted frame name override.
 
+        Contract:
+            - FACADE PASS-THROUGH to `ViewFrame.group_targets_by_kind(...)`. The filtering, ordering
+              and raise behaviour are that method's; this adds no logic of its own,
+              so read its contract for the details that matter.
+            - BUILDS A FRESH SUB-VIEWER ON EVERY CALL. `get_view_frame()` constructs a new
+              ViewFrame per invocation against a freshly resolved
+              descriptor snapshot. A loop of facade calls therefore rebuilds the
+              projection each time; hold the sub-viewer yourself when making several
+              calls against one frame.
+            - Because each call re-resolves the descriptor, two facade calls are NOT
+              guaranteed to see the same frame state. Use one held sub-viewer when
+              results must be mutually consistent.
+            - VISIBILITY-FILTERED PROJECTION. Absence means "not visible to this
+              rift" OR "not present" - never proof of non-existence.
+            - `frame_name` SELECTS the frame at THIS layer and then becomes an
+              ASSERTION inside the sub-viewer. Same parameter name, two different
+              meanings by layer. Passing None resolves the viewer's selected frame.
+
+        Threading:
+            Each call takes its own descriptor snapshot; concurrent frame changes
+            are not reflected in an already-returned result.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`. The sub-viewer it builds is transient and
+            owned by the call, not retained by this viewer.
+
         Returns:
             Dict[str, List[FrameLink]]: Visible targets grouped by source kind.
         """
@@ -2255,6 +3550,19 @@ class FrameViewer(Cleanable):
             Give the operator a quick identity/access snapshot for one visible
             target without forcing the richer identity or payload-specific
             methods immediately.
+
+        Contract:
+            - FACADE PASS-THROUGH to `ViewFrame.describe_target_brief(...)`. Filtering, ordering and raise
+              behaviour are that method's; this adds no logic of its own.
+            - BUILDS A FRESH SUB-VIEWER ON EVERY CALL: `get_view_frame()` constructs a new
+              ViewFrame against a newly resolved descriptor snapshot, so a loop of
+              facade calls rebuilds the projection each time and TWO FACADE CALLS NEED
+              NOT SEE THE SAME FRAME STATE. Hold one sub-viewer when results must be
+              mutually consistent.
+            - VISIBILITY-FILTERED: absence means "not visible to this rift" OR "not
+              present" - never proof of non-existence.
+            - `frame_name` SELECTS the frame at THIS layer and becomes an ASSERTION
+              inside the sub-viewer. Passing None resolves the selected frame.
 
         Args:
             source_kind:
@@ -2287,6 +3595,19 @@ class FrameViewer(Cleanable):
             Give the operator a stable identity/provenance snapshot for one
             currently visible target without forcing a wider payload dump.
 
+        Contract:
+            - FACADE PASS-THROUGH to `ViewFrame.describe_target_identity(...)`. Filtering, ordering and raise
+              behaviour are that method's; this adds no logic of its own.
+            - BUILDS A FRESH SUB-VIEWER ON EVERY CALL: `get_view_frame()` constructs a new
+              ViewFrame against a newly resolved descriptor snapshot, so a loop of
+              facade calls rebuilds the projection each time and TWO FACADE CALLS NEED
+              NOT SEE THE SAME FRAME STATE. Hold one sub-viewer when results must be
+              mutually consistent.
+            - VISIBILITY-FILTERED: absence means "not visible to this rift" OR "not
+              present" - never proof of non-existence.
+            - `frame_name` SELECTS the frame at THIS layer and becomes an ASSERTION
+              inside the sub-viewer. Passing None resolves the selected frame.
+
         Args:
             source_kind:
                 Required target kind.
@@ -2316,6 +3637,19 @@ class FrameViewer(Cleanable):
             Make visible ambiguity explicit at the frame-local surface so the
             operator can see where multiple visible spells share the same
             binding name, spell name, lineage, or spellframe.
+
+        Contract:
+            - FACADE PASS-THROUGH to `ViewFrame.describe_visible_collisions(...)`. Filtering, ordering and raise
+              behaviour are that method's; this adds no logic of its own.
+            - BUILDS A FRESH SUB-VIEWER ON EVERY CALL: `get_view_frame()` constructs a new
+              ViewFrame against a newly resolved descriptor snapshot, so a loop of
+              facade calls rebuilds the projection each time and TWO FACADE CALLS NEED
+              NOT SEE THE SAME FRAME STATE. Hold one sub-viewer when results must be
+              mutually consistent.
+            - VISIBILITY-FILTERED: absence means "not visible to this rift" OR "not
+              present" - never proof of non-existence.
+            - `frame_name` SELECTS the frame at THIS layer and becomes an ASSERTION
+              inside the sub-viewer. Passing None resolves the selected frame.
 
         Args:
             frame_name:
@@ -2399,6 +3733,19 @@ class FrameViewer(Cleanable):
             payload fields so the viewer operator can understand why certain
             data is or is not available.
 
+        Contract:
+            - FACADE PASS-THROUGH to `ViewFrame.describe_frame_access_contract(...)`. Filtering, ordering and raise
+              behaviour are that method's; this adds no logic of its own.
+            - BUILDS A FRESH SUB-VIEWER ON EVERY CALL: `get_view_frame()` constructs a new
+              ViewFrame against a newly resolved descriptor snapshot, so a loop of
+              facade calls rebuilds the projection each time and TWO FACADE CALLS NEED
+              NOT SEE THE SAME FRAME STATE. Hold one sub-viewer when results must be
+              mutually consistent.
+            - VISIBILITY-FILTERED: absence means "not visible to this rift" OR "not
+              present" - never proof of non-existence.
+            - `frame_name` SELECTS the frame at THIS layer and becomes an ASSERTION
+              inside the sub-viewer. Passing None resolves the selected frame.
+
         Args:
             frame_name:
                 Optional hosted frame name override.
@@ -2457,6 +3804,19 @@ class FrameViewer(Cleanable):
             Give the operator a fast exact-name lookup path over the currently
             visible target surface without forcing a manual target scan.
 
+        Contract:
+            - FACADE PASS-THROUGH to `ViewFrame.find_target_by_display_name(...)`. Filtering, ordering and raise
+              behaviour are that method's; this adds no logic of its own.
+            - BUILDS A FRESH SUB-VIEWER ON EVERY CALL: `get_view_frame()` constructs a new
+              ViewFrame against a newly resolved descriptor snapshot, so a loop of
+              facade calls rebuilds the projection each time and TWO FACADE CALLS NEED
+              NOT SEE THE SAME FRAME STATE. Hold one sub-viewer when results must be
+              mutually consistent.
+            - VISIBILITY-FILTERED: absence means "not visible to this rift" OR "not
+              present" - never proof of non-existence.
+            - `frame_name` SELECTS the frame at THIS layer and becomes an ASSERTION
+              inside the sub-viewer. Passing None resolves the selected frame.
+
         Args:
             display_name:
                 Exact display name to match.
@@ -2488,6 +3848,19 @@ class FrameViewer(Cleanable):
             Make the effective access posture explicit for one frame, conduit,
             or spell target instead of forcing the operator to infer it from
             missing results or partial payloads.
+
+        Contract:
+            - FACADE PASS-THROUGH to `ViewFrame.explain_target_access(...)`. Filtering, ordering and raise
+              behaviour are that method's; this adds no logic of its own.
+            - BUILDS A FRESH SUB-VIEWER ON EVERY CALL: `get_view_frame()` constructs a new
+              ViewFrame against a newly resolved descriptor snapshot, so a loop of
+              facade calls rebuilds the projection each time and TWO FACADE CALLS NEED
+              NOT SEE THE SAME FRAME STATE. Hold one sub-viewer when results must be
+              mutually consistent.
+            - VISIBILITY-FILTERED: absence means "not visible to this rift" OR "not
+              present" - never proof of non-existence.
+            - `frame_name` SELECTS the frame at THIS layer and becomes an ASSERTION
+              inside the sub-viewer. Passing None resolves the selected frame.
 
         Args:
             source_kind:
@@ -2601,6 +3974,32 @@ class FrameViewer(Cleanable):
             frame_name:
                 Optional hosted frame name override.
 
+        Contract:
+            - FACADE PASS-THROUGH to `ViewConduit.list_root_conduits(...)`. The filtering, ordering
+              and raise behaviour are that method's; this adds no logic of its own,
+              so read its contract for the details that matter.
+            - BUILDS A FRESH SUB-VIEWER ON EVERY CALL. `get_view_conduit()` constructs a new
+              ViewConduit (and a new ViewFrame beneath it) per invocation against a freshly resolved
+              descriptor snapshot. A loop of facade calls therefore rebuilds the
+              projection each time; hold the sub-viewer yourself when making several
+              calls against one frame.
+            - Because each call re-resolves the descriptor, two facade calls are NOT
+              guaranteed to see the same frame state. Use one held sub-viewer when
+              results must be mutually consistent.
+            - VISIBILITY-FILTERED PROJECTION. Absence means "not visible to this
+              rift" OR "not present" - never proof of non-existence.
+            - `frame_name` SELECTS the frame at THIS layer and then becomes an
+              ASSERTION inside the sub-viewer. Same parameter name, two different
+              meanings by layer. Passing None resolves the viewer's selected frame.
+
+        Threading:
+            Each call takes its own descriptor snapshot; concurrent frame changes
+            are not reflected in an already-returned result.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`. The sub-viewer it builds is transient and
+            owned by the call, not retained by this viewer.
+
         Returns:
             List[FrameLink]: Visible root conduit links.
         """
@@ -2646,6 +4045,32 @@ class FrameViewer(Cleanable):
                 Published conduit id.
             frame_name:
                 Optional hosted frame name override.
+
+        Contract:
+            - FACADE PASS-THROUGH to `ViewConduit.get_required_conduit(...)`. The filtering, ordering
+              and raise behaviour are that method's; this adds no logic of its own,
+              so read its contract for the details that matter.
+            - BUILDS A FRESH SUB-VIEWER ON EVERY CALL. `get_view_conduit()` constructs a new
+              ViewConduit (and a new ViewFrame beneath it) per invocation against a freshly resolved
+              descriptor snapshot. A loop of facade calls therefore rebuilds the
+              projection each time; hold the sub-viewer yourself when making several
+              calls against one frame.
+            - Because each call re-resolves the descriptor, two facade calls are NOT
+              guaranteed to see the same frame state. Use one held sub-viewer when
+              results must be mutually consistent.
+            - VISIBILITY-FILTERED PROJECTION. Absence means "not visible to this
+              rift" OR "not present" - never proof of non-existence.
+            - `frame_name` SELECTS the frame at THIS layer and then becomes an
+              ASSERTION inside the sub-viewer. Same parameter name, two different
+              meanings by layer. Passing None resolves the viewer's selected frame.
+
+        Threading:
+            Each call takes its own descriptor snapshot; concurrent frame changes
+            are not reflected in an already-returned result.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`. The sub-viewer it builds is transient and
+            owned by the call, not retained by this viewer.
 
         Returns:
             FrameLink: Matching conduit link.
@@ -2701,6 +4126,19 @@ class FrameViewer(Cleanable):
             Give the operator a smaller "start here" conduit summary than the
             richer inventory and relationship methods.
 
+        Contract:
+            - FACADE PASS-THROUGH to `ViewConduit.describe_conduit_brief(...)`. Filtering, ordering and raise
+              behaviour are that method's; this adds no logic of its own.
+            - BUILDS A FRESH SUB-VIEWER ON EVERY CALL: `get_view_conduit()` constructs a new
+              ViewConduit (and a new ViewFrame beneath it) against a newly resolved descriptor snapshot, so a loop of
+              facade calls rebuilds the projection each time and TWO FACADE CALLS NEED
+              NOT SEE THE SAME FRAME STATE. Hold one sub-viewer when results must be
+              mutually consistent.
+            - VISIBILITY-FILTERED: absence means "not visible to this rift" OR "not
+              present" - never proof of non-existence.
+            - `frame_name` SELECTS the frame at THIS layer and becomes an ASSERTION
+              inside the sub-viewer. Passing None resolves the selected frame.
+
         Args:
             conduit_id:
                 Published conduit id.
@@ -2727,6 +4165,19 @@ class FrameViewer(Cleanable):
         Purpose:
             Give the operator one quick conduit-local inventory view covering
             owned spells, peer links, and visible payload sections.
+
+        Contract:
+            - FACADE PASS-THROUGH to `ViewConduit.describe_conduit_inventory(...)`. Filtering, ordering and raise
+              behaviour are that method's; this adds no logic of its own.
+            - BUILDS A FRESH SUB-VIEWER ON EVERY CALL: `get_view_conduit()` constructs a new
+              ViewConduit (and a new ViewFrame beneath it) against a newly resolved descriptor snapshot, so a loop of
+              facade calls rebuilds the projection each time and TWO FACADE CALLS NEED
+              NOT SEE THE SAME FRAME STATE. Hold one sub-viewer when results must be
+              mutually consistent.
+            - VISIBILITY-FILTERED: absence means "not visible to this rift" OR "not
+              present" - never proof of non-existence.
+            - `frame_name` SELECTS the frame at THIS layer and becomes an ASSERTION
+              inside the sub-viewer. Passing None resolves the selected frame.
 
         Args:
             conduit_id:
@@ -2755,6 +4206,19 @@ class FrameViewer(Cleanable):
             Make the conduit root grouping, peer links, and owned visible
             spells explicit in one relationship-oriented view.
 
+        Contract:
+            - FACADE PASS-THROUGH to `ViewConduit.describe_conduit_relationships(...)`. Filtering, ordering and raise
+              behaviour are that method's; this adds no logic of its own.
+            - BUILDS A FRESH SUB-VIEWER ON EVERY CALL: `get_view_conduit()` constructs a new
+              ViewConduit (and a new ViewFrame beneath it) against a newly resolved descriptor snapshot, so a loop of
+              facade calls rebuilds the projection each time and TWO FACADE CALLS NEED
+              NOT SEE THE SAME FRAME STATE. Hold one sub-viewer when results must be
+              mutually consistent.
+            - VISIBILITY-FILTERED: absence means "not visible to this rift" OR "not
+              present" - never proof of non-existence.
+            - `frame_name` SELECTS the frame at THIS layer and becomes an ASSERTION
+              inside the sub-viewer. Passing None resolves the selected frame.
+
         Args:
             conduit_id:
                 Published conduit id.
@@ -2781,6 +4245,19 @@ class FrameViewer(Cleanable):
             Make the conduit-local "what is hidden?" answer explicit instead of
             forcing the operator to infer it from missing payload keys.
 
+        Contract:
+            - FACADE PASS-THROUGH to `ViewConduit.describe_conduit_missing_sections(...)`. Filtering, ordering and raise
+              behaviour are that method's; this adds no logic of its own.
+            - BUILDS A FRESH SUB-VIEWER ON EVERY CALL: `get_view_conduit()` constructs a new
+              ViewConduit (and a new ViewFrame beneath it) against a newly resolved descriptor snapshot, so a loop of
+              facade calls rebuilds the projection each time and TWO FACADE CALLS NEED
+              NOT SEE THE SAME FRAME STATE. Hold one sub-viewer when results must be
+              mutually consistent.
+            - VISIBILITY-FILTERED: absence means "not visible to this rift" OR "not
+              present" - never proof of non-existence.
+            - `frame_name` SELECTS the frame at THIS layer and becomes an ASSERTION
+              inside the sub-viewer. Passing None resolves the selected frame.
+
         Args:
             conduit_id:
                 Published conduit id.
@@ -2806,6 +4283,19 @@ class FrameViewer(Cleanable):
         Purpose:
             Give the operator one direct conduit crosswalk from the conduit to
             its root, peers, owned spells, and frame context.
+
+        Contract:
+            - FACADE PASS-THROUGH to `ViewConduit.describe_conduit_crosswalk(...)`. Filtering, ordering and raise
+              behaviour are that method's; this adds no logic of its own.
+            - BUILDS A FRESH SUB-VIEWER ON EVERY CALL: `get_view_conduit()` constructs a new
+              ViewConduit (and a new ViewFrame beneath it) against a newly resolved descriptor snapshot, so a loop of
+              facade calls rebuilds the projection each time and TWO FACADE CALLS NEED
+              NOT SEE THE SAME FRAME STATE. Hold one sub-viewer when results must be
+              mutually consistent.
+            - VISIBILITY-FILTERED: absence means "not visible to this rift" OR "not
+              present" - never proof of non-existence.
+            - `frame_name` SELECTS the frame at THIS layer and becomes an ASSERTION
+              inside the sub-viewer. Passing None resolves the selected frame.
 
         Args:
             conduit_id:
@@ -2834,6 +4324,19 @@ class FrameViewer(Cleanable):
             Give the viewer operator a direct conduit-to-spell traversal path
             instead of forcing a full spell scan and manual filtering.
 
+        Contract:
+            - FACADE PASS-THROUGH to `ViewConduit.list_conduit_spells(...)`. Filtering, ordering and raise
+              behaviour are that method's; this adds no logic of its own.
+            - BUILDS A FRESH SUB-VIEWER ON EVERY CALL: `get_view_conduit()` constructs a new
+              ViewConduit (and a new ViewFrame beneath it) against a newly resolved descriptor snapshot, so a loop of
+              facade calls rebuilds the projection each time and TWO FACADE CALLS NEED
+              NOT SEE THE SAME FRAME STATE. Hold one sub-viewer when results must be
+              mutually consistent.
+            - VISIBILITY-FILTERED: absence means "not visible to this rift" OR "not
+              present" - never proof of non-existence.
+            - `frame_name` SELECTS the frame at THIS layer and becomes an ASSERTION
+              inside the sub-viewer. Passing None resolves the selected frame.
+
         Args:
             conduit_id:
                 Published conduit id.
@@ -2860,6 +4363,19 @@ class FrameViewer(Cleanable):
         Purpose:
             Show the conduit peer links plus the visible spells currently owned
             by that conduit in one compact description.
+
+        Contract:
+            - FACADE PASS-THROUGH to `ViewConduit.describe_conduit_topology(...)`. Filtering, ordering and raise
+              behaviour are that method's; this adds no logic of its own.
+            - BUILDS A FRESH SUB-VIEWER ON EVERY CALL: `get_view_conduit()` constructs a new
+              ViewConduit (and a new ViewFrame beneath it) against a newly resolved descriptor snapshot, so a loop of
+              facade calls rebuilds the projection each time and TWO FACADE CALLS NEED
+              NOT SEE THE SAME FRAME STATE. Hold one sub-viewer when results must be
+              mutually consistent.
+            - VISIBILITY-FILTERED: absence means "not visible to this rift" OR "not
+              present" - never proof of non-existence.
+            - `frame_name` SELECTS the frame at THIS layer and becomes an ASSERTION
+              inside the sub-viewer. Passing None resolves the selected frame.
 
         Args:
             conduit_id:
@@ -2893,6 +4409,32 @@ class FrameViewer(Cleanable):
             frame_name:
                 Optional hosted frame name override.
 
+        Contract:
+            - FACADE PASS-THROUGH to `ViewConduit.compare_conduits(...)`. The filtering, ordering
+              and raise behaviour are that method's; this adds no logic of its own,
+              so read its contract for the details that matter.
+            - BUILDS A FRESH SUB-VIEWER ON EVERY CALL. `get_view_conduit()` constructs a new
+              ViewConduit (and a new ViewFrame beneath it) per invocation against a freshly resolved
+              descriptor snapshot. A loop of facade calls therefore rebuilds the
+              projection each time; hold the sub-viewer yourself when making several
+              calls against one frame.
+            - Because each call re-resolves the descriptor, two facade calls are NOT
+              guaranteed to see the same frame state. Use one held sub-viewer when
+              results must be mutually consistent.
+            - VISIBILITY-FILTERED PROJECTION. Absence means "not visible to this
+              rift" OR "not present" - never proof of non-existence.
+            - `frame_name` SELECTS the frame at THIS layer and then becomes an
+              ASSERTION inside the sub-viewer. Same parameter name, two different
+              meanings by layer. Passing None resolves the viewer's selected frame.
+
+        Threading:
+            Each call takes its own descriptor snapshot; concurrent frame changes
+            are not reflected in an already-returned result.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`. The sub-viewer it builds is transient and
+            owned by the call, not retained by this viewer.
+
         Returns:
             Dict[str, object]: Visible conduit comparison summary.
         """
@@ -2917,6 +4459,32 @@ class FrameViewer(Cleanable):
             frame_name:
                 Optional hosted frame name override.
 
+        Contract:
+            - FACADE PASS-THROUGH to `ViewConduit.is_root_conduit(...)`. The filtering, ordering
+              and raise behaviour are that method's; this adds no logic of its own,
+              so read its contract for the details that matter.
+            - BUILDS A FRESH SUB-VIEWER ON EVERY CALL. `get_view_conduit()` constructs a new
+              ViewConduit (and a new ViewFrame beneath it) per invocation against a freshly resolved
+              descriptor snapshot. A loop of facade calls therefore rebuilds the
+              projection each time; hold the sub-viewer yourself when making several
+              calls against one frame.
+            - Because each call re-resolves the descriptor, two facade calls are NOT
+              guaranteed to see the same frame state. Use one held sub-viewer when
+              results must be mutually consistent.
+            - VISIBILITY-FILTERED PROJECTION. Absence means "not visible to this
+              rift" OR "not present" - never proof of non-existence.
+            - `frame_name` SELECTS the frame at THIS layer and then becomes an
+              ASSERTION inside the sub-viewer. Same parameter name, two different
+              meanings by layer. Passing None resolves the viewer's selected frame.
+
+        Threading:
+            Each call takes its own descriptor snapshot; concurrent frame changes
+            are not reflected in an already-returned result.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`. The sub-viewer it builds is transient and
+            owned by the call, not retained by this viewer.
+
         Returns:
             bool: True when the conduit is a root conduit.
         """
@@ -2939,6 +4507,32 @@ class FrameViewer(Cleanable):
                 Published conduit id.
             frame_name:
                 Optional hosted frame name override.
+
+        Contract:
+            - FACADE PASS-THROUGH to `ViewConduit.get_root_conduit_id(...)`. The filtering, ordering
+              and raise behaviour are that method's; this adds no logic of its own,
+              so read its contract for the details that matter.
+            - BUILDS A FRESH SUB-VIEWER ON EVERY CALL. `get_view_conduit()` constructs a new
+              ViewConduit (and a new ViewFrame beneath it) per invocation against a freshly resolved
+              descriptor snapshot. A loop of facade calls therefore rebuilds the
+              projection each time; hold the sub-viewer yourself when making several
+              calls against one frame.
+            - Because each call re-resolves the descriptor, two facade calls are NOT
+              guaranteed to see the same frame state. Use one held sub-viewer when
+              results must be mutually consistent.
+            - VISIBILITY-FILTERED PROJECTION. Absence means "not visible to this
+              rift" OR "not present" - never proof of non-existence.
+            - `frame_name` SELECTS the frame at THIS layer and then becomes an
+              ASSERTION inside the sub-viewer. Same parameter name, two different
+              meanings by layer. Passing None resolves the viewer's selected frame.
+
+        Threading:
+            Each call takes its own descriptor snapshot; concurrent frame changes
+            are not reflected in an already-returned result.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`. The sub-viewer it builds is transient and
+            owned by the call, not retained by this viewer.
 
         Returns:
             str: Root conduit id for the conduit.
@@ -2963,6 +4557,32 @@ class FrameViewer(Cleanable):
             frame_name:
                 Optional hosted frame name override.
 
+        Contract:
+            - FACADE PASS-THROUGH to `ViewConduit.list_conduits_by_root_id(...)`. The filtering, ordering
+              and raise behaviour are that method's; this adds no logic of its own,
+              so read its contract for the details that matter.
+            - BUILDS A FRESH SUB-VIEWER ON EVERY CALL. `get_view_conduit()` constructs a new
+              ViewConduit (and a new ViewFrame beneath it) per invocation against a freshly resolved
+              descriptor snapshot. A loop of facade calls therefore rebuilds the
+              projection each time; hold the sub-viewer yourself when making several
+              calls against one frame.
+            - Because each call re-resolves the descriptor, two facade calls are NOT
+              guaranteed to see the same frame state. Use one held sub-viewer when
+              results must be mutually consistent.
+            - VISIBILITY-FILTERED PROJECTION. Absence means "not visible to this
+              rift" OR "not present" - never proof of non-existence.
+            - `frame_name` SELECTS the frame at THIS layer and then becomes an
+              ASSERTION inside the sub-viewer. Same parameter name, two different
+              meanings by layer. Passing None resolves the viewer's selected frame.
+
+        Threading:
+            Each call takes its own descriptor snapshot; concurrent frame changes
+            are not reflected in an already-returned result.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`. The sub-viewer it builds is transient and
+            owned by the call, not retained by this viewer.
+
         Returns:
             List[FrameLink]: Visible conduits whose root lineage matches.
         """
@@ -2985,6 +4605,32 @@ class FrameViewer(Cleanable):
                 Required conduit policy name.
             frame_name:
                 Optional hosted frame name override.
+
+        Contract:
+            - FACADE PASS-THROUGH to `ViewConduit.list_conduits_by_policy(...)`. The filtering, ordering
+              and raise behaviour are that method's; this adds no logic of its own,
+              so read its contract for the details that matter.
+            - BUILDS A FRESH SUB-VIEWER ON EVERY CALL. `get_view_conduit()` constructs a new
+              ViewConduit (and a new ViewFrame beneath it) per invocation against a freshly resolved
+              descriptor snapshot. A loop of facade calls therefore rebuilds the
+              projection each time; hold the sub-viewer yourself when making several
+              calls against one frame.
+            - Because each call re-resolves the descriptor, two facade calls are NOT
+              guaranteed to see the same frame state. Use one held sub-viewer when
+              results must be mutually consistent.
+            - VISIBILITY-FILTERED PROJECTION. Absence means "not visible to this
+              rift" OR "not present" - never proof of non-existence.
+            - `frame_name` SELECTS the frame at THIS layer and then becomes an
+              ASSERTION inside the sub-viewer. Same parameter name, two different
+              meanings by layer. Passing None resolves the viewer's selected frame.
+
+        Threading:
+            Each call takes its own descriptor snapshot; concurrent frame changes
+            are not reflected in an already-returned result.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`. The sub-viewer it builds is transient and
+            owned by the call, not retained by this viewer.
 
         Returns:
             List[FrameLink]: Visible conduits whose payload policy matches.
@@ -3009,6 +4655,32 @@ class FrameViewer(Cleanable):
             frame_name:
                 Optional hosted frame name override.
 
+        Contract:
+            - FACADE PASS-THROUGH to `ViewConduit.list_conduits_by_state(...)`. The filtering, ordering
+              and raise behaviour are that method's; this adds no logic of its own,
+              so read its contract for the details that matter.
+            - BUILDS A FRESH SUB-VIEWER ON EVERY CALL. `get_view_conduit()` constructs a new
+              ViewConduit (and a new ViewFrame beneath it) per invocation against a freshly resolved
+              descriptor snapshot. A loop of facade calls therefore rebuilds the
+              projection each time; hold the sub-viewer yourself when making several
+              calls against one frame.
+            - Because each call re-resolves the descriptor, two facade calls are NOT
+              guaranteed to see the same frame state. Use one held sub-viewer when
+              results must be mutually consistent.
+            - VISIBILITY-FILTERED PROJECTION. Absence means "not visible to this
+              rift" OR "not present" - never proof of non-existence.
+            - `frame_name` SELECTS the frame at THIS layer and then becomes an
+              ASSERTION inside the sub-viewer. Same parameter name, two different
+              meanings by layer. Passing None resolves the viewer's selected frame.
+
+        Threading:
+            Each call takes its own descriptor snapshot; concurrent frame changes
+            are not reflected in an already-returned result.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`. The sub-viewer it builds is transient and
+            owned by the call, not retained by this viewer.
+
         Returns:
             List[FrameLink]: Visible conduits whose payload state matches.
         """
@@ -3031,6 +4703,32 @@ class FrameViewer(Cleanable):
                 Published conduit id.
             frame_name:
                 Optional hosted frame name override.
+
+        Contract:
+            - FACADE PASS-THROUGH to `ViewConduit.list_peer_conduits(...)`. The filtering, ordering
+              and raise behaviour are that method's; this adds no logic of its own,
+              so read its contract for the details that matter.
+            - BUILDS A FRESH SUB-VIEWER ON EVERY CALL. `get_view_conduit()` constructs a new
+              ViewConduit (and a new ViewFrame beneath it) per invocation against a freshly resolved
+              descriptor snapshot. A loop of facade calls therefore rebuilds the
+              projection each time; hold the sub-viewer yourself when making several
+              calls against one frame.
+            - Because each call re-resolves the descriptor, two facade calls are NOT
+              guaranteed to see the same frame state. Use one held sub-viewer when
+              results must be mutually consistent.
+            - VISIBILITY-FILTERED PROJECTION. Absence means "not visible to this
+              rift" OR "not present" - never proof of non-existence.
+            - `frame_name` SELECTS the frame at THIS layer and then becomes an
+              ASSERTION inside the sub-viewer. Same parameter name, two different
+              meanings by layer. Passing None resolves the viewer's selected frame.
+
+        Threading:
+            Each call takes its own descriptor snapshot; concurrent frame changes
+            are not reflected in an already-returned result.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`. The sub-viewer it builds is transient and
+            owned by the call, not retained by this viewer.
 
         Returns:
             List[FrameLink]: Visible peer conduit links.
@@ -3055,6 +4753,32 @@ class FrameViewer(Cleanable):
             frame_name:
                 Optional hosted frame name override.
 
+        Contract:
+            - FACADE PASS-THROUGH to `ViewConduit.list_peer_conduit_ids(...)`. The filtering, ordering
+              and raise behaviour are that method's; this adds no logic of its own,
+              so read its contract for the details that matter.
+            - BUILDS A FRESH SUB-VIEWER ON EVERY CALL. `get_view_conduit()` constructs a new
+              ViewConduit (and a new ViewFrame beneath it) per invocation against a freshly resolved
+              descriptor snapshot. A loop of facade calls therefore rebuilds the
+              projection each time; hold the sub-viewer yourself when making several
+              calls against one frame.
+            - Because each call re-resolves the descriptor, two facade calls are NOT
+              guaranteed to see the same frame state. Use one held sub-viewer when
+              results must be mutually consistent.
+            - VISIBILITY-FILTERED PROJECTION. Absence means "not visible to this
+              rift" OR "not present" - never proof of non-existence.
+            - `frame_name` SELECTS the frame at THIS layer and then becomes an
+              ASSERTION inside the sub-viewer. Same parameter name, two different
+              meanings by layer. Passing None resolves the viewer's selected frame.
+
+        Threading:
+            Each call takes its own descriptor snapshot; concurrent frame changes
+            are not reflected in an already-returned result.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`. The sub-viewer it builds is transient and
+            owned by the call, not retained by this viewer.
+
         Returns:
             Tuple[str, ...]: Visible peer conduit ids in deterministic order.
         """
@@ -3078,6 +4802,32 @@ class FrameViewer(Cleanable):
             frame_name:
                 Optional hosted frame name override.
 
+        Contract:
+            - FACADE PASS-THROUGH to `ViewConduit.list_spell_source_ids_for_conduit(...)`. The filtering, ordering
+              and raise behaviour are that method's; this adds no logic of its own,
+              so read its contract for the details that matter.
+            - BUILDS A FRESH SUB-VIEWER ON EVERY CALL. `get_view_conduit()` constructs a new
+              ViewConduit (and a new ViewFrame beneath it) per invocation against a freshly resolved
+              descriptor snapshot. A loop of facade calls therefore rebuilds the
+              projection each time; hold the sub-viewer yourself when making several
+              calls against one frame.
+            - Because each call re-resolves the descriptor, two facade calls are NOT
+              guaranteed to see the same frame state. Use one held sub-viewer when
+              results must be mutually consistent.
+            - VISIBILITY-FILTERED PROJECTION. Absence means "not visible to this
+              rift" OR "not present" - never proof of non-existence.
+            - `frame_name` SELECTS the frame at THIS layer and then becomes an
+              ASSERTION inside the sub-viewer. Same parameter name, two different
+              meanings by layer. Passing None resolves the viewer's selected frame.
+
+        Threading:
+            Each call takes its own descriptor snapshot; concurrent frame changes
+            are not reflected in an already-returned result.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`. The sub-viewer it builds is transient and
+            owned by the call, not retained by this viewer.
+
         Returns:
             Tuple[str, ...]: Visible spell source ids owned by the conduit.
         """
@@ -3099,6 +4849,32 @@ class FrameViewer(Cleanable):
                 Published conduit id.
             frame_name:
                 Optional hosted frame name override.
+
+        Contract:
+            - FACADE PASS-THROUGH to `ViewConduit.list_binding_names_for_conduit(...)`. The filtering, ordering
+              and raise behaviour are that method's; this adds no logic of its own,
+              so read its contract for the details that matter.
+            - BUILDS A FRESH SUB-VIEWER ON EVERY CALL. `get_view_conduit()` constructs a new
+              ViewConduit (and a new ViewFrame beneath it) per invocation against a freshly resolved
+              descriptor snapshot. A loop of facade calls therefore rebuilds the
+              projection each time; hold the sub-viewer yourself when making several
+              calls against one frame.
+            - Because each call re-resolves the descriptor, two facade calls are NOT
+              guaranteed to see the same frame state. Use one held sub-viewer when
+              results must be mutually consistent.
+            - VISIBILITY-FILTERED PROJECTION. Absence means "not visible to this
+              rift" OR "not present" - never proof of non-existence.
+            - `frame_name` SELECTS the frame at THIS layer and then becomes an
+              ASSERTION inside the sub-viewer. Same parameter name, two different
+              meanings by layer. Passing None resolves the viewer's selected frame.
+
+        Threading:
+            Each call takes its own descriptor snapshot; concurrent frame changes
+            are not reflected in an already-returned result.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`. The sub-viewer it builds is transient and
+            owned by the call, not retained by this viewer.
 
         Returns:
             Tuple[str, ...]: Visible binding names owned by the conduit.
@@ -3122,6 +4898,32 @@ class FrameViewer(Cleanable):
             frame_name:
                 Optional hosted frame name override.
 
+        Contract:
+            - FACADE PASS-THROUGH to `ViewConduit.list_spell_names_for_conduit(...)`. The filtering, ordering
+              and raise behaviour are that method's; this adds no logic of its own,
+              so read its contract for the details that matter.
+            - BUILDS A FRESH SUB-VIEWER ON EVERY CALL. `get_view_conduit()` constructs a new
+              ViewConduit (and a new ViewFrame beneath it) per invocation against a freshly resolved
+              descriptor snapshot. A loop of facade calls therefore rebuilds the
+              projection each time; hold the sub-viewer yourself when making several
+              calls against one frame.
+            - Because each call re-resolves the descriptor, two facade calls are NOT
+              guaranteed to see the same frame state. Use one held sub-viewer when
+              results must be mutually consistent.
+            - VISIBILITY-FILTERED PROJECTION. Absence means "not visible to this
+              rift" OR "not present" - never proof of non-existence.
+            - `frame_name` SELECTS the frame at THIS layer and then becomes an
+              ASSERTION inside the sub-viewer. Same parameter name, two different
+              meanings by layer. Passing None resolves the viewer's selected frame.
+
+        Threading:
+            Each call takes its own descriptor snapshot; concurrent frame changes
+            are not reflected in an already-returned result.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`. The sub-viewer it builds is transient and
+            owned by the call, not retained by this viewer.
+
         Returns:
             Tuple[str, ...]: Visible spell names owned by the conduit.
         """
@@ -3143,6 +4945,32 @@ class FrameViewer(Cleanable):
                 Published conduit id.
             frame_name:
                 Optional hosted frame name override.
+
+        Contract:
+            - FACADE PASS-THROUGH to `ViewConduit.describe_conduit_access_summary(...)`. The filtering, ordering
+              and raise behaviour are that method's; this adds no logic of its own,
+              so read its contract for the details that matter.
+            - BUILDS A FRESH SUB-VIEWER ON EVERY CALL. `get_view_conduit()` constructs a new
+              ViewConduit (and a new ViewFrame beneath it) per invocation against a freshly resolved
+              descriptor snapshot. A loop of facade calls therefore rebuilds the
+              projection each time; hold the sub-viewer yourself when making several
+              calls against one frame.
+            - Because each call re-resolves the descriptor, two facade calls are NOT
+              guaranteed to see the same frame state. Use one held sub-viewer when
+              results must be mutually consistent.
+            - VISIBILITY-FILTERED PROJECTION. Absence means "not visible to this
+              rift" OR "not present" - never proof of non-existence.
+            - `frame_name` SELECTS the frame at THIS layer and then becomes an
+              ASSERTION inside the sub-viewer. Same parameter name, two different
+              meanings by layer. Passing None resolves the viewer's selected frame.
+
+        Threading:
+            Each call takes its own descriptor snapshot; concurrent frame changes
+            are not reflected in an already-returned result.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`. The sub-viewer it builds is transient and
+            owned by the call, not retained by this viewer.
 
         Returns:
             Dict[str, object]: Compact conduit access summary.
@@ -3166,6 +4994,32 @@ class FrameViewer(Cleanable):
             frame_name:
                 Optional hosted frame name override.
 
+        Contract:
+            - FACADE PASS-THROUGH to `ViewConduit.find_conduit_by_name(...)`. The filtering, ordering
+              and raise behaviour are that method's; this adds no logic of its own,
+              so read its contract for the details that matter.
+            - BUILDS A FRESH SUB-VIEWER ON EVERY CALL. `get_view_conduit()` constructs a new
+              ViewConduit (and a new ViewFrame beneath it) per invocation against a freshly resolved
+              descriptor snapshot. A loop of facade calls therefore rebuilds the
+              projection each time; hold the sub-viewer yourself when making several
+              calls against one frame.
+            - Because each call re-resolves the descriptor, two facade calls are NOT
+              guaranteed to see the same frame state. Use one held sub-viewer when
+              results must be mutually consistent.
+            - VISIBILITY-FILTERED PROJECTION. Absence means "not visible to this
+              rift" OR "not present" - never proof of non-existence.
+            - `frame_name` SELECTS the frame at THIS layer and then becomes an
+              ASSERTION inside the sub-viewer. Same parameter name, two different
+              meanings by layer. Passing None resolves the viewer's selected frame.
+
+        Threading:
+            Each call takes its own descriptor snapshot; concurrent frame changes
+            are not reflected in an already-returned result.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`. The sub-viewer it builds is transient and
+            owned by the call, not retained by this viewer.
+
         Returns:
             List[FrameLink]: Matching visible conduit links.
         """
@@ -3188,6 +5042,32 @@ class FrameViewer(Cleanable):
                 Published conduit id.
             frame_name:
                 Optional hosted frame name override.
+
+        Contract:
+            - FACADE PASS-THROUGH to `ViewConduit.explain_conduit_access(...)`. The filtering, ordering
+              and raise behaviour are that method's; this adds no logic of its own,
+              so read its contract for the details that matter.
+            - BUILDS A FRESH SUB-VIEWER ON EVERY CALL. `get_view_conduit()` constructs a new
+              ViewConduit (and a new ViewFrame beneath it) per invocation against a freshly resolved
+              descriptor snapshot. A loop of facade calls therefore rebuilds the
+              projection each time; hold the sub-viewer yourself when making several
+              calls against one frame.
+            - Because each call re-resolves the descriptor, two facade calls are NOT
+              guaranteed to see the same frame state. Use one held sub-viewer when
+              results must be mutually consistent.
+            - VISIBILITY-FILTERED PROJECTION. Absence means "not visible to this
+              rift" OR "not present" - never proof of non-existence.
+            - `frame_name` SELECTS the frame at THIS layer and then becomes an
+              ASSERTION inside the sub-viewer. Same parameter name, two different
+              meanings by layer. Passing None resolves the viewer's selected frame.
+
+        Threading:
+            Each call takes its own descriptor snapshot; concurrent frame changes
+            are not reflected in an already-returned result.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`. The sub-viewer it builds is transient and
+            owned by the call, not retained by this viewer.
 
         Returns:
             Dict[str, object]: Conduit visibility and section explanation.
@@ -3214,6 +5094,32 @@ class FrameViewer(Cleanable):
                 Required conduit payload field name.
             frame_name:
                 Optional hosted frame name override.
+
+        Contract:
+            - FACADE PASS-THROUGH to `ViewConduit.get_conduit_payload_field(...)`. The filtering, ordering
+              and raise behaviour are that method's; this adds no logic of its own,
+              so read its contract for the details that matter.
+            - BUILDS A FRESH SUB-VIEWER ON EVERY CALL. `get_view_conduit()` constructs a new
+              ViewConduit (and a new ViewFrame beneath it) per invocation against a freshly resolved
+              descriptor snapshot. A loop of facade calls therefore rebuilds the
+              projection each time; hold the sub-viewer yourself when making several
+              calls against one frame.
+            - Because each call re-resolves the descriptor, two facade calls are NOT
+              guaranteed to see the same frame state. Use one held sub-viewer when
+              results must be mutually consistent.
+            - VISIBILITY-FILTERED PROJECTION. Absence means "not visible to this
+              rift" OR "not present" - never proof of non-existence.
+            - `frame_name` SELECTS the frame at THIS layer and then becomes an
+              ASSERTION inside the sub-viewer. Same parameter name, two different
+              meanings by layer. Passing None resolves the viewer's selected frame.
+
+        Threading:
+            Each call takes its own descriptor snapshot; concurrent frame changes
+            are not reflected in an already-returned result.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`. The sub-viewer it builds is transient and
+            owned by the call, not retained by this viewer.
 
         Returns:
             object: ACL-visible conduit payload field value.
@@ -3289,6 +5195,32 @@ class FrameViewer(Cleanable):
             frame_name:
                 Optional hosted frame name override.
 
+        Contract:
+            - FACADE PASS-THROUGH to `ViewSpell.get_required_spell(...)`. The filtering, ordering
+              and raise behaviour are that method's; this adds no logic of its own,
+              so read its contract for the details that matter.
+            - BUILDS A FRESH SUB-VIEWER ON EVERY CALL. `get_view_spell()` constructs a new
+              ViewSpell (and a new ViewFrame beneath it) per invocation against a freshly resolved
+              descriptor snapshot. A loop of facade calls therefore rebuilds the
+              projection each time; hold the sub-viewer yourself when making several
+              calls against one frame.
+            - Because each call re-resolves the descriptor, two facade calls are NOT
+              guaranteed to see the same frame state. Use one held sub-viewer when
+              results must be mutually consistent.
+            - VISIBILITY-FILTERED PROJECTION. Absence means "not visible to this
+              rift" OR "not present" - never proof of non-existence.
+            - `frame_name` SELECTS the frame at THIS layer and then becomes an
+              ASSERTION inside the sub-viewer. Same parameter name, two different
+              meanings by layer. Passing None resolves the viewer's selected frame.
+
+        Threading:
+            Each call takes its own descriptor snapshot; concurrent frame changes
+            are not reflected in an already-returned result.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`. The sub-viewer it builds is transient and
+            owned by the call, not retained by this viewer.
+
         Returns:
             FrameLink: Matching spell link.
         """
@@ -3345,6 +5277,19 @@ class FrameViewer(Cleanable):
             Give the operator a smaller spell summary than the richer identity,
             access, and detail methods when they just need the essentials.
 
+        Contract:
+            - FACADE PASS-THROUGH to `ViewSpell.describe_spell_brief(...)`. Filtering, ordering and raise
+              behaviour are that method's; this adds no logic of its own.
+            - BUILDS A FRESH SUB-VIEWER ON EVERY CALL: `get_view_spell()` constructs a new
+              ViewSpell (and a new ViewFrame beneath it) against a newly resolved descriptor snapshot, so a loop of
+              facade calls rebuilds the projection each time and TWO FACADE CALLS NEED
+              NOT SEE THE SAME FRAME STATE. Hold one sub-viewer when results must be
+              mutually consistent.
+            - VISIBILITY-FILTERED: absence means "not visible to this rift" OR "not
+              present" - never proof of non-existence.
+            - `frame_name` SELECTS the frame at THIS layer and becomes an ASSERTION
+              inside the sub-viewer. Passing None resolves the selected frame.
+
         Args:
             spell_source_id:
                 Published spell source id.
@@ -3372,6 +5317,19 @@ class FrameViewer(Cleanable):
             Surface where the spell came from in frame/spellbook/conduit terms
             so the operator can reason about provenance before reading payload
             sections.
+
+        Contract:
+            - FACADE PASS-THROUGH to `ViewSpell.describe_spell_origin(...)`. Filtering, ordering and raise
+              behaviour are that method's; this adds no logic of its own.
+            - BUILDS A FRESH SUB-VIEWER ON EVERY CALL: `get_view_spell()` constructs a new
+              ViewSpell (and a new ViewFrame beneath it) against a newly resolved descriptor snapshot, so a loop of
+              facade calls rebuilds the projection each time and TWO FACADE CALLS NEED
+              NOT SEE THE SAME FRAME STATE. Hold one sub-viewer when results must be
+              mutually consistent.
+            - VISIBILITY-FILTERED: absence means "not visible to this rift" OR "not
+              present" - never proof of non-existence.
+            - `frame_name` SELECTS the frame at THIS layer and becomes an ASSERTION
+              inside the sub-viewer. Passing None resolves the selected frame.
 
         Args:
             spell_source_id:
@@ -3401,6 +5359,19 @@ class FrameViewer(Cleanable):
             same spell-index id so the operator can understand the spell-index
             context inside the current frame.
 
+        Contract:
+            - FACADE PASS-THROUGH to `ViewSpell.describe_spell_index(...)`. Filtering, ordering and raise
+              behaviour are that method's; this adds no logic of its own.
+            - BUILDS A FRESH SUB-VIEWER ON EVERY CALL: `get_view_spell()` constructs a new
+              ViewSpell (and a new ViewFrame beneath it) against a newly resolved descriptor snapshot, so a loop of
+              facade calls rebuilds the projection each time and TWO FACADE CALLS NEED
+              NOT SEE THE SAME FRAME STATE. Hold one sub-viewer when results must be
+              mutually consistent.
+            - VISIBILITY-FILTERED: absence means "not visible to this rift" OR "not
+              present" - never proof of non-existence.
+            - `frame_name` SELECTS the frame at THIS layer and becomes an ASSERTION
+              inside the sub-viewer. Passing None resolves the selected frame.
+
         Args:
             spell_source_id:
                 Published spell source id.
@@ -3427,6 +5398,19 @@ class FrameViewer(Cleanable):
         Purpose:
             Give the main viewer operator a stable, payload-focused spell read
             surface without the wider record wrapper.
+
+        Contract:
+            - FACADE PASS-THROUGH to `ViewSpell.describe_spell_payload(...)`. Filtering, ordering and raise
+              behaviour are that method's; this adds no logic of its own.
+            - BUILDS A FRESH SUB-VIEWER ON EVERY CALL: `get_view_spell()` constructs a new
+              ViewSpell (and a new ViewFrame beneath it) against a newly resolved descriptor snapshot, so a loop of
+              facade calls rebuilds the projection each time and TWO FACADE CALLS NEED
+              NOT SEE THE SAME FRAME STATE. Hold one sub-viewer when results must be
+              mutually consistent.
+            - VISIBILITY-FILTERED: absence means "not visible to this rift" OR "not
+              present" - never proof of non-existence.
+            - `frame_name` SELECTS the frame at THIS layer and becomes an ASSERTION
+              inside the sub-viewer. Passing None resolves the selected frame.
 
         Args:
             spell_source_id:
@@ -3457,6 +5441,32 @@ class FrameViewer(Cleanable):
             frame_name:
                 Optional hosted frame name override.
 
+        Contract:
+            - FACADE PASS-THROUGH to `ViewSpell.describe_spell_detail(...)`. The filtering, ordering
+              and raise behaviour are that method's; this adds no logic of its own,
+              so read its contract for the details that matter.
+            - BUILDS A FRESH SUB-VIEWER ON EVERY CALL. `get_view_spell()` constructs a new
+              ViewSpell (and a new ViewFrame beneath it) per invocation against a freshly resolved
+              descriptor snapshot. A loop of facade calls therefore rebuilds the
+              projection each time; hold the sub-viewer yourself when making several
+              calls against one frame.
+            - Because each call re-resolves the descriptor, two facade calls are NOT
+              guaranteed to see the same frame state. Use one held sub-viewer when
+              results must be mutually consistent.
+            - VISIBILITY-FILTERED PROJECTION. Absence means "not visible to this
+              rift" OR "not present" - never proof of non-existence.
+            - `frame_name` SELECTS the frame at THIS layer and then becomes an
+              ASSERTION inside the sub-viewer. Same parameter name, two different
+              meanings by layer. Passing None resolves the viewer's selected frame.
+
+        Threading:
+            Each call takes its own descriptor snapshot; concurrent frame changes
+            are not reflected in an already-returned result.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`. The sub-viewer it builds is transient and
+            owned by the call, not retained by this viewer.
+
         Returns:
             Dict[str, object]: Rich detail status and payload.
         """
@@ -3479,6 +5489,32 @@ class FrameViewer(Cleanable):
                 Published spell source id.
             frame_name:
                 Optional hosted frame name override.
+
+        Contract:
+            - FACADE PASS-THROUGH to `ViewSpell.describe_spell_identity(...)`. The filtering, ordering
+              and raise behaviour are that method's; this adds no logic of its own,
+              so read its contract for the details that matter.
+            - BUILDS A FRESH SUB-VIEWER ON EVERY CALL. `get_view_spell()` constructs a new
+              ViewSpell (and a new ViewFrame beneath it) per invocation against a freshly resolved
+              descriptor snapshot. A loop of facade calls therefore rebuilds the
+              projection each time; hold the sub-viewer yourself when making several
+              calls against one frame.
+            - Because each call re-resolves the descriptor, two facade calls are NOT
+              guaranteed to see the same frame state. Use one held sub-viewer when
+              results must be mutually consistent.
+            - VISIBILITY-FILTERED PROJECTION. Absence means "not visible to this
+              rift" OR "not present" - never proof of non-existence.
+            - `frame_name` SELECTS the frame at THIS layer and then becomes an
+              ASSERTION inside the sub-viewer. Same parameter name, two different
+              meanings by layer. Passing None resolves the viewer's selected frame.
+
+        Threading:
+            Each call takes its own descriptor snapshot; concurrent frame changes
+            are not reflected in an already-returned result.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`. The sub-viewer it builds is transient and
+            owned by the call, not retained by this viewer.
 
         Returns:
             Dict[str, object]: Stable identity fields for the visible spell.
@@ -3503,6 +5539,32 @@ class FrameViewer(Cleanable):
             frame_name:
                 Optional hosted frame name override.
 
+        Contract:
+            - FACADE PASS-THROUGH to `ViewSpell.describe_spell_binding(...)`. The filtering, ordering
+              and raise behaviour are that method's; this adds no logic of its own,
+              so read its contract for the details that matter.
+            - BUILDS A FRESH SUB-VIEWER ON EVERY CALL. `get_view_spell()` constructs a new
+              ViewSpell (and a new ViewFrame beneath it) per invocation against a freshly resolved
+              descriptor snapshot. A loop of facade calls therefore rebuilds the
+              projection each time; hold the sub-viewer yourself when making several
+              calls against one frame.
+            - Because each call re-resolves the descriptor, two facade calls are NOT
+              guaranteed to see the same frame state. Use one held sub-viewer when
+              results must be mutually consistent.
+            - VISIBILITY-FILTERED PROJECTION. Absence means "not visible to this
+              rift" OR "not present" - never proof of non-existence.
+            - `frame_name` SELECTS the frame at THIS layer and then becomes an
+              ASSERTION inside the sub-viewer. Same parameter name, two different
+              meanings by layer. Passing None resolves the viewer's selected frame.
+
+        Threading:
+            Each call takes its own descriptor snapshot; concurrent frame changes
+            are not reflected in an already-returned result.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`. The sub-viewer it builds is transient and
+            owned by the call, not retained by this viewer.
+
         Returns:
             Dict[str, object]: Binding-facing spell summary.
         """
@@ -3525,6 +5587,32 @@ class FrameViewer(Cleanable):
                 Published spell source id.
             frame_name:
                 Optional hosted frame name override.
+
+        Contract:
+            - FACADE PASS-THROUGH to `ViewSpell.describe_spell_resolution(...)`. The filtering, ordering
+              and raise behaviour are that method's; this adds no logic of its own,
+              so read its contract for the details that matter.
+            - BUILDS A FRESH SUB-VIEWER ON EVERY CALL. `get_view_spell()` constructs a new
+              ViewSpell (and a new ViewFrame beneath it) per invocation against a freshly resolved
+              descriptor snapshot. A loop of facade calls therefore rebuilds the
+              projection each time; hold the sub-viewer yourself when making several
+              calls against one frame.
+            - Because each call re-resolves the descriptor, two facade calls are NOT
+              guaranteed to see the same frame state. Use one held sub-viewer when
+              results must be mutually consistent.
+            - VISIBILITY-FILTERED PROJECTION. Absence means "not visible to this
+              rift" OR "not present" - never proof of non-existence.
+            - `frame_name` SELECTS the frame at THIS layer and then becomes an
+              ASSERTION inside the sub-viewer. Same parameter name, two different
+              meanings by layer. Passing None resolves the viewer's selected frame.
+
+        Threading:
+            Each call takes its own descriptor snapshot; concurrent frame changes
+            are not reflected in an already-returned result.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`. The sub-viewer it builds is transient and
+            owned by the call, not retained by this viewer.
 
         Returns:
             Dict[str, object]: Resolution-facing spell summary.
@@ -3549,6 +5637,32 @@ class FrameViewer(Cleanable):
             frame_name:
                 Optional hosted frame name override.
 
+        Contract:
+            - FACADE PASS-THROUGH to `ViewSpell.describe_spell_metadata(...)`. The filtering, ordering
+              and raise behaviour are that method's; this adds no logic of its own,
+              so read its contract for the details that matter.
+            - BUILDS A FRESH SUB-VIEWER ON EVERY CALL. `get_view_spell()` constructs a new
+              ViewSpell (and a new ViewFrame beneath it) per invocation against a freshly resolved
+              descriptor snapshot. A loop of facade calls therefore rebuilds the
+              projection each time; hold the sub-viewer yourself when making several
+              calls against one frame.
+            - Because each call re-resolves the descriptor, two facade calls are NOT
+              guaranteed to see the same frame state. Use one held sub-viewer when
+              results must be mutually consistent.
+            - VISIBILITY-FILTERED PROJECTION. Absence means "not visible to this
+              rift" OR "not present" - never proof of non-existence.
+            - `frame_name` SELECTS the frame at THIS layer and then becomes an
+              ASSERTION inside the sub-viewer. Same parameter name, two different
+              meanings by layer. Passing None resolves the viewer's selected frame.
+
+        Threading:
+            Each call takes its own descriptor snapshot; concurrent frame changes
+            are not reflected in an already-returned result.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`. The sub-viewer it builds is transient and
+            owned by the call, not retained by this viewer.
+
         Returns:
             Dict[str, object]: Metadata-facing spell summary.
         """
@@ -3572,6 +5686,32 @@ class FrameViewer(Cleanable):
             frame_name:
                 Optional hosted frame name override.
 
+        Contract:
+            - FACADE PASS-THROUGH to `ViewSpell.describe_spell_class_profile(...)`. The filtering, ordering
+              and raise behaviour are that method's; this adds no logic of its own,
+              so read its contract for the details that matter.
+            - BUILDS A FRESH SUB-VIEWER ON EVERY CALL. `get_view_spell()` constructs a new
+              ViewSpell (and a new ViewFrame beneath it) per invocation against a freshly resolved
+              descriptor snapshot. A loop of facade calls therefore rebuilds the
+              projection each time; hold the sub-viewer yourself when making several
+              calls against one frame.
+            - Because each call re-resolves the descriptor, two facade calls are NOT
+              guaranteed to see the same frame state. Use one held sub-viewer when
+              results must be mutually consistent.
+            - VISIBILITY-FILTERED PROJECTION. Absence means "not visible to this
+              rift" OR "not present" - never proof of non-existence.
+            - `frame_name` SELECTS the frame at THIS layer and then becomes an
+              ASSERTION inside the sub-viewer. Same parameter name, two different
+              meanings by layer. Passing None resolves the viewer's selected frame.
+
+        Threading:
+            Each call takes its own descriptor snapshot; concurrent frame changes
+            are not reflected in an already-returned result.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`. The sub-viewer it builds is transient and
+            owned by the call, not retained by this viewer.
+
         Returns:
             Dict[str, object]: Class-profile summary.
         """
@@ -3593,6 +5733,32 @@ class FrameViewer(Cleanable):
                 Published spell source id.
             frame_name:
                 Optional hosted frame name override.
+
+        Contract:
+            - FACADE PASS-THROUGH to `ViewSpell.describe_spell_callable_profile(...)`. The filtering, ordering
+              and raise behaviour are that method's; this adds no logic of its own,
+              so read its contract for the details that matter.
+            - BUILDS A FRESH SUB-VIEWER ON EVERY CALL. `get_view_spell()` constructs a new
+              ViewSpell (and a new ViewFrame beneath it) per invocation against a freshly resolved
+              descriptor snapshot. A loop of facade calls therefore rebuilds the
+              projection each time; hold the sub-viewer yourself when making several
+              calls against one frame.
+            - Because each call re-resolves the descriptor, two facade calls are NOT
+              guaranteed to see the same frame state. Use one held sub-viewer when
+              results must be mutually consistent.
+            - VISIBILITY-FILTERED PROJECTION. Absence means "not visible to this
+              rift" OR "not present" - never proof of non-existence.
+            - `frame_name` SELECTS the frame at THIS layer and then becomes an
+              ASSERTION inside the sub-viewer. Same parameter name, two different
+              meanings by layer. Passing None resolves the viewer's selected frame.
+
+        Threading:
+            Each call takes its own descriptor snapshot; concurrent frame changes
+            are not reflected in an already-returned result.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`. The sub-viewer it builds is transient and
+            owned by the call, not retained by this viewer.
 
         Returns:
             Dict[str, object]: Callable-profile summary.
@@ -3616,6 +5782,32 @@ class FrameViewer(Cleanable):
             frame_name:
                 Optional hosted frame name override.
 
+        Contract:
+            - FACADE PASS-THROUGH to `ViewSpell.describe_spell_instance_members(...)`. The filtering, ordering
+              and raise behaviour are that method's; this adds no logic of its own,
+              so read its contract for the details that matter.
+            - BUILDS A FRESH SUB-VIEWER ON EVERY CALL. `get_view_spell()` constructs a new
+              ViewSpell (and a new ViewFrame beneath it) per invocation against a freshly resolved
+              descriptor snapshot. A loop of facade calls therefore rebuilds the
+              projection each time; hold the sub-viewer yourself when making several
+              calls against one frame.
+            - Because each call re-resolves the descriptor, two facade calls are NOT
+              guaranteed to see the same frame state. Use one held sub-viewer when
+              results must be mutually consistent.
+            - VISIBILITY-FILTERED PROJECTION. Absence means "not visible to this
+              rift" OR "not present" - never proof of non-existence.
+            - `frame_name` SELECTS the frame at THIS layer and then becomes an
+              ASSERTION inside the sub-viewer. Same parameter name, two different
+              meanings by layer. Passing None resolves the viewer's selected frame.
+
+        Threading:
+            Each call takes its own descriptor snapshot; concurrent frame changes
+            are not reflected in an already-returned result.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`. The sub-viewer it builds is transient and
+            owned by the call, not retained by this viewer.
+
         Returns:
             Dict[str, object]: Instance-member summary.
         """
@@ -3637,6 +5829,32 @@ class FrameViewer(Cleanable):
                 Published spell source id.
             frame_name:
                 Optional hosted frame name override.
+
+        Contract:
+            - FACADE PASS-THROUGH to `ViewSpell.describe_spell_dynamic_access(...)`. The filtering, ordering
+              and raise behaviour are that method's; this adds no logic of its own,
+              so read its contract for the details that matter.
+            - BUILDS A FRESH SUB-VIEWER ON EVERY CALL. `get_view_spell()` constructs a new
+              ViewSpell (and a new ViewFrame beneath it) per invocation against a freshly resolved
+              descriptor snapshot. A loop of facade calls therefore rebuilds the
+              projection each time; hold the sub-viewer yourself when making several
+              calls against one frame.
+            - Because each call re-resolves the descriptor, two facade calls are NOT
+              guaranteed to see the same frame state. Use one held sub-viewer when
+              results must be mutually consistent.
+            - VISIBILITY-FILTERED PROJECTION. Absence means "not visible to this
+              rift" OR "not present" - never proof of non-existence.
+            - `frame_name` SELECTS the frame at THIS layer and then becomes an
+              ASSERTION inside the sub-viewer. Same parameter name, two different
+              meanings by layer. Passing None resolves the viewer's selected frame.
+
+        Threading:
+            Each call takes its own descriptor snapshot; concurrent frame changes
+            are not reflected in an already-returned result.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`. The sub-viewer it builds is transient and
+            owned by the call, not retained by this viewer.
 
         Returns:
             Dict[str, object]: Dynamic-access availability and normalized data.
@@ -3660,6 +5878,32 @@ class FrameViewer(Cleanable):
             frame_name:
                 Optional hosted frame name override.
 
+        Contract:
+            - FACADE PASS-THROUGH to `ViewSpell.list_spell_dunder_member_names(...)`. The filtering, ordering
+              and raise behaviour are that method's; this adds no logic of its own,
+              so read its contract for the details that matter.
+            - BUILDS A FRESH SUB-VIEWER ON EVERY CALL. `get_view_spell()` constructs a new
+              ViewSpell (and a new ViewFrame beneath it) per invocation against a freshly resolved
+              descriptor snapshot. A loop of facade calls therefore rebuilds the
+              projection each time; hold the sub-viewer yourself when making several
+              calls against one frame.
+            - Because each call re-resolves the descriptor, two facade calls are NOT
+              guaranteed to see the same frame state. Use one held sub-viewer when
+              results must be mutually consistent.
+            - VISIBILITY-FILTERED PROJECTION. Absence means "not visible to this
+              rift" OR "not present" - never proof of non-existence.
+            - `frame_name` SELECTS the frame at THIS layer and then becomes an
+              ASSERTION inside the sub-viewer. Same parameter name, two different
+              meanings by layer. Passing None resolves the viewer's selected frame.
+
+        Threading:
+            Each call takes its own descriptor snapshot; concurrent frame changes
+            are not reflected in an already-returned result.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`. The sub-viewer it builds is transient and
+            owned by the call, not retained by this viewer.
+
         Returns:
             Tuple[str, ...]: Visible dunder member names.
         """
@@ -3682,6 +5926,32 @@ class FrameViewer(Cleanable):
             frame_name:
                 Optional hosted frame name override.
 
+        Contract:
+            - FACADE PASS-THROUGH to `ViewSpell.describe_spell_dunder_members(...)`. The filtering, ordering
+              and raise behaviour are that method's; this adds no logic of its own,
+              so read its contract for the details that matter.
+            - BUILDS A FRESH SUB-VIEWER ON EVERY CALL. `get_view_spell()` constructs a new
+              ViewSpell (and a new ViewFrame beneath it) per invocation against a freshly resolved
+              descriptor snapshot. A loop of facade calls therefore rebuilds the
+              projection each time; hold the sub-viewer yourself when making several
+              calls against one frame.
+            - Because each call re-resolves the descriptor, two facade calls are NOT
+              guaranteed to see the same frame state. Use one held sub-viewer when
+              results must be mutually consistent.
+            - VISIBILITY-FILTERED PROJECTION. Absence means "not visible to this
+              rift" OR "not present" - never proof of non-existence.
+            - `frame_name` SELECTS the frame at THIS layer and then becomes an
+              ASSERTION inside the sub-viewer. Same parameter name, two different
+              meanings by layer. Passing None resolves the viewer's selected frame.
+
+        Threading:
+            Each call takes its own descriptor snapshot; concurrent frame changes
+            are not reflected in an already-returned result.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`. The sub-viewer it builds is transient and
+            owned by the call, not retained by this viewer.
+
         Returns:
             Dict[str, object]: Visible dunder member summary.
         """
@@ -3703,6 +5973,32 @@ class FrameViewer(Cleanable):
                 Required spell payload type.
             frame_name:
                 Optional hosted frame name override.
+
+        Contract:
+            - FACADE PASS-THROUGH to `ViewSpell.list_spells_by_payload_type(...)`. The filtering, ordering
+              and raise behaviour are that method's; this adds no logic of its own,
+              so read its contract for the details that matter.
+            - BUILDS A FRESH SUB-VIEWER ON EVERY CALL. `get_view_spell()` constructs a new
+              ViewSpell (and a new ViewFrame beneath it) per invocation against a freshly resolved
+              descriptor snapshot. A loop of facade calls therefore rebuilds the
+              projection each time; hold the sub-viewer yourself when making several
+              calls against one frame.
+            - Because each call re-resolves the descriptor, two facade calls are NOT
+              guaranteed to see the same frame state. Use one held sub-viewer when
+              results must be mutually consistent.
+            - VISIBILITY-FILTERED PROJECTION. Absence means "not visible to this
+              rift" OR "not present" - never proof of non-existence.
+            - `frame_name` SELECTS the frame at THIS layer and then becomes an
+              ASSERTION inside the sub-viewer. Same parameter name, two different
+              meanings by layer. Passing None resolves the viewer's selected frame.
+
+        Threading:
+            Each call takes its own descriptor snapshot; concurrent frame changes
+            are not reflected in an already-returned result.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`. The sub-viewer it builds is transient and
+            owned by the call, not retained by this viewer.
 
         Returns:
             List[FrameLink]: Matching visible spell links.
@@ -3727,6 +6023,32 @@ class FrameViewer(Cleanable):
             frame_name:
                 Optional hosted frame name override.
 
+        Contract:
+            - FACADE PASS-THROUGH to `ViewSpell.find_spell_by_binding_name(...)`. The filtering, ordering
+              and raise behaviour are that method's; this adds no logic of its own,
+              so read its contract for the details that matter.
+            - BUILDS A FRESH SUB-VIEWER ON EVERY CALL. `get_view_spell()` constructs a new
+              ViewSpell (and a new ViewFrame beneath it) per invocation against a freshly resolved
+              descriptor snapshot. A loop of facade calls therefore rebuilds the
+              projection each time; hold the sub-viewer yourself when making several
+              calls against one frame.
+            - Because each call re-resolves the descriptor, two facade calls are NOT
+              guaranteed to see the same frame state. Use one held sub-viewer when
+              results must be mutually consistent.
+            - VISIBILITY-FILTERED PROJECTION. Absence means "not visible to this
+              rift" OR "not present" - never proof of non-existence.
+            - `frame_name` SELECTS the frame at THIS layer and then becomes an
+              ASSERTION inside the sub-viewer. Same parameter name, two different
+              meanings by layer. Passing None resolves the viewer's selected frame.
+
+        Threading:
+            Each call takes its own descriptor snapshot; concurrent frame changes
+            are not reflected in an already-returned result.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`. The sub-viewer it builds is transient and
+            owned by the call, not retained by this viewer.
+
         Returns:
             List[FrameLink]: Matching visible spell links.
         """
@@ -3749,6 +6071,32 @@ class FrameViewer(Cleanable):
                 Required spell-index id.
             frame_name:
                 Optional hosted frame name override.
+
+        Contract:
+            - FACADE PASS-THROUGH to `ViewSpell.list_spells_by_index_id(...)`. The filtering, ordering
+              and raise behaviour are that method's; this adds no logic of its own,
+              so read its contract for the details that matter.
+            - BUILDS A FRESH SUB-VIEWER ON EVERY CALL. `get_view_spell()` constructs a new
+              ViewSpell (and a new ViewFrame beneath it) per invocation against a freshly resolved
+              descriptor snapshot. A loop of facade calls therefore rebuilds the
+              projection each time; hold the sub-viewer yourself when making several
+              calls against one frame.
+            - Because each call re-resolves the descriptor, two facade calls are NOT
+              guaranteed to see the same frame state. Use one held sub-viewer when
+              results must be mutually consistent.
+            - VISIBILITY-FILTERED PROJECTION. Absence means "not visible to this
+              rift" OR "not present" - never proof of non-existence.
+            - `frame_name` SELECTS the frame at THIS layer and then becomes an
+              ASSERTION inside the sub-viewer. Same parameter name, two different
+              meanings by layer. Passing None resolves the viewer's selected frame.
+
+        Threading:
+            Each call takes its own descriptor snapshot; concurrent frame changes
+            are not reflected in an already-returned result.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`. The sub-viewer it builds is transient and
+            owned by the call, not retained by this viewer.
 
         Returns:
             List[FrameLink]: Matching visible spell links.
@@ -3773,6 +6121,32 @@ class FrameViewer(Cleanable):
             frame_name:
                 Optional hosted frame name override.
 
+        Contract:
+            - FACADE PASS-THROUGH to `ViewSpell.list_spells_by_spell_name(...)`. The filtering, ordering
+              and raise behaviour are that method's; this adds no logic of its own,
+              so read its contract for the details that matter.
+            - BUILDS A FRESH SUB-VIEWER ON EVERY CALL. `get_view_spell()` constructs a new
+              ViewSpell (and a new ViewFrame beneath it) per invocation against a freshly resolved
+              descriptor snapshot. A loop of facade calls therefore rebuilds the
+              projection each time; hold the sub-viewer yourself when making several
+              calls against one frame.
+            - Because each call re-resolves the descriptor, two facade calls are NOT
+              guaranteed to see the same frame state. Use one held sub-viewer when
+              results must be mutually consistent.
+            - VISIBILITY-FILTERED PROJECTION. Absence means "not visible to this
+              rift" OR "not present" - never proof of non-existence.
+            - `frame_name` SELECTS the frame at THIS layer and then becomes an
+              ASSERTION inside the sub-viewer. Same parameter name, two different
+              meanings by layer. Passing None resolves the viewer's selected frame.
+
+        Threading:
+            Each call takes its own descriptor snapshot; concurrent frame changes
+            are not reflected in an already-returned result.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`. The sub-viewer it builds is transient and
+            owned by the call, not retained by this viewer.
+
         Returns:
             List[FrameLink]: Matching visible spell links.
         """
@@ -3796,6 +6170,32 @@ class FrameViewer(Cleanable):
             frame_name:
                 Optional hosted frame name override.
 
+        Contract:
+            - FACADE PASS-THROUGH to `ViewSpell.search_spells_contains(...)`. The filtering, ordering
+              and raise behaviour are that method's; this adds no logic of its own,
+              so read its contract for the details that matter.
+            - BUILDS A FRESH SUB-VIEWER ON EVERY CALL. `get_view_spell()` constructs a new
+              ViewSpell (and a new ViewFrame beneath it) per invocation against a freshly resolved
+              descriptor snapshot. A loop of facade calls therefore rebuilds the
+              projection each time; hold the sub-viewer yourself when making several
+              calls against one frame.
+            - Because each call re-resolves the descriptor, two facade calls are NOT
+              guaranteed to see the same frame state. Use one held sub-viewer when
+              results must be mutually consistent.
+            - VISIBILITY-FILTERED PROJECTION. Absence means "not visible to this
+              rift" OR "not present" - never proof of non-existence.
+            - `frame_name` SELECTS the frame at THIS layer and then becomes an
+              ASSERTION inside the sub-viewer. Same parameter name, two different
+              meanings by layer. Passing None resolves the viewer's selected frame.
+
+        Threading:
+            Each call takes its own descriptor snapshot; concurrent frame changes
+            are not reflected in an already-returned result.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`. The sub-viewer it builds is transient and
+            owned by the call, not retained by this viewer.
+
         Returns:
             List[FrameLink]: Matching visible spell links.
         """
@@ -3818,6 +6218,32 @@ class FrameViewer(Cleanable):
                 Case-insensitive prefix to match.
             frame_name:
                 Optional hosted frame name override.
+
+        Contract:
+            - FACADE PASS-THROUGH to `ViewSpell.search_spells_prefix(...)`. The filtering, ordering
+              and raise behaviour are that method's; this adds no logic of its own,
+              so read its contract for the details that matter.
+            - BUILDS A FRESH SUB-VIEWER ON EVERY CALL. `get_view_spell()` constructs a new
+              ViewSpell (and a new ViewFrame beneath it) per invocation against a freshly resolved
+              descriptor snapshot. A loop of facade calls therefore rebuilds the
+              projection each time; hold the sub-viewer yourself when making several
+              calls against one frame.
+            - Because each call re-resolves the descriptor, two facade calls are NOT
+              guaranteed to see the same frame state. Use one held sub-viewer when
+              results must be mutually consistent.
+            - VISIBILITY-FILTERED PROJECTION. Absence means "not visible to this
+              rift" OR "not present" - never proof of non-existence.
+            - `frame_name` SELECTS the frame at THIS layer and then becomes an
+              ASSERTION inside the sub-viewer. Same parameter name, two different
+              meanings by layer. Passing None resolves the viewer's selected frame.
+
+        Threading:
+            Each call takes its own descriptor snapshot; concurrent frame changes
+            are not reflected in an already-returned result.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`. The sub-viewer it builds is transient and
+            owned by the call, not retained by this viewer.
 
         Returns:
             List[FrameLink]: Matching visible spell links.
@@ -3848,6 +6274,32 @@ class FrameViewer(Cleanable):
             frame_name:
                 Optional hosted frame name override.
 
+        Contract:
+            - FACADE PASS-THROUGH to `ViewSpell.explain_spell_access(...)`. The filtering, ordering
+              and raise behaviour are that method's; this adds no logic of its own,
+              so read its contract for the details that matter.
+            - BUILDS A FRESH SUB-VIEWER ON EVERY CALL. `get_view_spell()` constructs a new
+              ViewSpell (and a new ViewFrame beneath it) per invocation against a freshly resolved
+              descriptor snapshot. A loop of facade calls therefore rebuilds the
+              projection each time; hold the sub-viewer yourself when making several
+              calls against one frame.
+            - Because each call re-resolves the descriptor, two facade calls are NOT
+              guaranteed to see the same frame state. Use one held sub-viewer when
+              results must be mutually consistent.
+            - VISIBILITY-FILTERED PROJECTION. Absence means "not visible to this
+              rift" OR "not present" - never proof of non-existence.
+            - `frame_name` SELECTS the frame at THIS layer and then becomes an
+              ASSERTION inside the sub-viewer. Same parameter name, two different
+              meanings by layer. Passing None resolves the viewer's selected frame.
+
+        Threading:
+            Each call takes its own descriptor snapshot; concurrent frame changes
+            are not reflected in an already-returned result.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`. The sub-viewer it builds is transient and
+            owned by the call, not retained by this viewer.
+
         Returns:
             Dict[str, object]: Spell visibility, section, and detail posture
             explanation.
@@ -3871,6 +6323,32 @@ class FrameViewer(Cleanable):
                 Published spell source id.
             frame_name:
                 Optional hosted frame name override.
+
+        Contract:
+            - FACADE PASS-THROUGH to `ViewSpell.describe_spell_access_summary(...)`. The filtering, ordering
+              and raise behaviour are that method's; this adds no logic of its own,
+              so read its contract for the details that matter.
+            - BUILDS A FRESH SUB-VIEWER ON EVERY CALL. `get_view_spell()` constructs a new
+              ViewSpell (and a new ViewFrame beneath it) per invocation against a freshly resolved
+              descriptor snapshot. A loop of facade calls therefore rebuilds the
+              projection each time; hold the sub-viewer yourself when making several
+              calls against one frame.
+            - Because each call re-resolves the descriptor, two facade calls are NOT
+              guaranteed to see the same frame state. Use one held sub-viewer when
+              results must be mutually consistent.
+            - VISIBILITY-FILTERED PROJECTION. Absence means "not visible to this
+              rift" OR "not present" - never proof of non-existence.
+            - `frame_name` SELECTS the frame at THIS layer and then becomes an
+              ASSERTION inside the sub-viewer. Same parameter name, two different
+              meanings by layer. Passing None resolves the viewer's selected frame.
+
+        Threading:
+            Each call takes its own descriptor snapshot; concurrent frame changes
+            are not reflected in an already-returned result.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`. The sub-viewer it builds is transient and
+            owned by the call, not retained by this viewer.
 
         Returns:
             Dict[str, object]: Compact spell access summary.
@@ -3897,6 +6375,32 @@ class FrameViewer(Cleanable):
             frame_name:
                 Optional hosted frame name override.
 
+        Contract:
+            - FACADE PASS-THROUGH to `ViewSpell.get_spell_payload_section(...)`. The filtering, ordering
+              and raise behaviour are that method's; this adds no logic of its own,
+              so read its contract for the details that matter.
+            - BUILDS A FRESH SUB-VIEWER ON EVERY CALL. `get_view_spell()` constructs a new
+              ViewSpell (and a new ViewFrame beneath it) per invocation against a freshly resolved
+              descriptor snapshot. A loop of facade calls therefore rebuilds the
+              projection each time; hold the sub-viewer yourself when making several
+              calls against one frame.
+            - Because each call re-resolves the descriptor, two facade calls are NOT
+              guaranteed to see the same frame state. Use one held sub-viewer when
+              results must be mutually consistent.
+            - VISIBILITY-FILTERED PROJECTION. Absence means "not visible to this
+              rift" OR "not present" - never proof of non-existence.
+            - `frame_name` SELECTS the frame at THIS layer and then becomes an
+              ASSERTION inside the sub-viewer. Same parameter name, two different
+              meanings by layer. Passing None resolves the viewer's selected frame.
+
+        Threading:
+            Each call takes its own descriptor snapshot; concurrent frame changes
+            are not reflected in an already-returned result.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`. The sub-viewer it builds is transient and
+            owned by the call, not retained by this viewer.
+
         Returns:
             object: ACL-visible spell payload section value.
         """
@@ -3919,6 +6423,19 @@ class FrameViewer(Cleanable):
             Make the spell-local "what is missing and why?" answer explicit
             instead of forcing the operator to infer it from absent detail
             fields.
+
+        Contract:
+            - FACADE PASS-THROUGH to `ViewSpell.describe_spell_missing_sections(...)`. Filtering, ordering and raise
+              behaviour are that method's; this adds no logic of its own.
+            - BUILDS A FRESH SUB-VIEWER ON EVERY CALL: `get_view_spell()` constructs a new
+              ViewSpell (and a new ViewFrame beneath it) against a newly resolved descriptor snapshot, so a loop of
+              facade calls rebuilds the projection each time and TWO FACADE CALLS NEED
+              NOT SEE THE SAME FRAME STATE. Hold one sub-viewer when results must be
+              mutually consistent.
+            - VISIBILITY-FILTERED: absence means "not visible to this rift" OR "not
+              present" - never proof of non-existence.
+            - `frame_name` SELECTS the frame at THIS layer and becomes an ASSERTION
+              inside the sub-viewer. Passing None resolves the selected frame.
 
         Args:
             spell_source_id:
@@ -3946,6 +6463,19 @@ class FrameViewer(Cleanable):
             Give the operator one direct spell crosswalk from the spell to its
             conduit, root conduit, peer conduits, spellbook, lineage, and
             visible sibling spells.
+
+        Contract:
+            - FACADE PASS-THROUGH to `ViewSpell.describe_spell_crosswalk(...)`. Filtering, ordering and raise
+              behaviour are that method's; this adds no logic of its own.
+            - BUILDS A FRESH SUB-VIEWER ON EVERY CALL: `get_view_spell()` constructs a new
+              ViewSpell (and a new ViewFrame beneath it) against a newly resolved descriptor snapshot, so a loop of
+              facade calls rebuilds the projection each time and TWO FACADE CALLS NEED
+              NOT SEE THE SAME FRAME STATE. Hold one sub-viewer when results must be
+              mutually consistent.
+            - VISIBILITY-FILTERED: absence means "not visible to this rift" OR "not
+              present" - never proof of non-existence.
+            - `frame_name` SELECTS the frame at THIS layer and becomes an ASSERTION
+              inside the sub-viewer. Passing None resolves the selected frame.
 
         Args:
             spell_source_id:
@@ -3978,6 +6508,32 @@ class FrameViewer(Cleanable):
                 Right visible spell source id.
             frame_name:
                 Optional hosted frame name override.
+
+        Contract:
+            - FACADE PASS-THROUGH to `ViewSpell.compare_spells(...)`. The filtering, ordering
+              and raise behaviour are that method's; this adds no logic of its own,
+              so read its contract for the details that matter.
+            - BUILDS A FRESH SUB-VIEWER ON EVERY CALL. `get_view_spell()` constructs a new
+              ViewSpell (and a new ViewFrame beneath it) per invocation against a freshly resolved
+              descriptor snapshot. A loop of facade calls therefore rebuilds the
+              projection each time; hold the sub-viewer yourself when making several
+              calls against one frame.
+            - Because each call re-resolves the descriptor, two facade calls are NOT
+              guaranteed to see the same frame state. Use one held sub-viewer when
+              results must be mutually consistent.
+            - VISIBILITY-FILTERED PROJECTION. Absence means "not visible to this
+              rift" OR "not present" - never proof of non-existence.
+            - `frame_name` SELECTS the frame at THIS layer and then becomes an
+              ASSERTION inside the sub-viewer. Same parameter name, two different
+              meanings by layer. Passing None resolves the viewer's selected frame.
+
+        Threading:
+            Each call takes its own descriptor snapshot; concurrent frame changes
+            are not reflected in an already-returned result.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`. The sub-viewer it builds is transient and
+            owned by the call, not retained by this viewer.
 
         Returns:
             Dict[str, object]: Visible spell comparison summary.

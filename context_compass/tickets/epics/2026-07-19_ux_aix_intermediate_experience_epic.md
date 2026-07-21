@@ -342,6 +342,169 @@ The working developer's tier: SpellBinder fluent binding, spellframes and contra
   SCORE_0_TO_10: 8
 
 
+## MEASURE - 2026-07-20 10:42 UTC - lesson 26 (conduit categories as factory types) + lesson 21 realigned
+  WHAT: Owner-directed lesson: conduit CATEGORIES with shared dependencies over
+    link - name conduits after your resolution ideas ("platform", "services",
+    "workflows") and late-bind the edges BETWEEN categories with SpellContract
+    sockets, instead of fronting scopes with abstract factories.
+    - NEW 26_conduit_categories_as_factories.py: three category books/conduits;
+      consumer classes declare md.SpellContract(spellframe=..., binding_name=...)
+      holes; per edge: link -> add_spell_to_contract inside
+      transaction("link", conduits=[consumer, provider]) -> 
+      validate_contracts_and_define(); one meld at the TOP category resolves the
+      two-hop chain. Idiom MIRRORED from the validated integration test
+      test_conduit_spell_contract_resolves_after_dynamic_link (borrower pulls
+      with conduit=<provider>, explicit link-transaction window, the
+      validate-and-define verb) - all surfaces source-verified
+      (SpellContract signature + md export at __init__.py:134/236;
+      contracted spells land in the borrower _spell_id_pool via
+      spellbook.py:_register_contracted_spell_id, the pool Phase 3 iterates).
+    - REALIGNED 21_dynamic_linking_basics.py to settle-then-inherit: the manual
+      bind_frame_configuration ritual is GONE from the lesson; step 1 is now the
+      settlement law (first conjure(dynamic=True) settles + locks), step 2 the
+      inheritance law (later books PLAIN-conjure and inherit), step 3 unchanged
+      link/share/meld.
+    - PROBES: broken test_probe_world_postures_once_then_locks (imported the
+      deleted ensure_dynamic_world helper) replaced by
+      test_probe_world_settles_once_then_inherits; stale lesson-21 docstring
+      fixed; TWO new lesson-26 rows - single-hop socket closure (guaranteed
+      mirror of the validated test) and the two-hop category chain (the stretch
+      past the proven shape; a red there is a FINDING, not a lesson bug).
+    Tier stands at 12 authored dynamic-arc examples (21-26) + probes.
+  EVIDENCE:
+  - src/melder/aether/conduit/meld/contracts/spell_contract.py:123-180
+  - tests/integration/melder/conduit/test_conduit_integration_links_contracts.py:352-445
+  - src/melder/aether/spellbook/spellbook.py:1195-1226
+  - src/melder/aether/conduit/conduit.py:4956 (bare add self-admits; window optional)
+  IMPACT: The owner's factory-replacement story is now a runnable lesson; the
+    SpellContract late-binding vocabulary enters the curriculum on the proven
+    integration idiom.
+  NEXT: Owner runs pytest UX_and_AIX_experiences/pytest_examples -v; decode any
+    reds (two-hop probe is the watch point).
+  REREAD: REQUIRED
+  SCORE_0_TO_10: -
+
+## MEASURE - 2026-07-20 11:02 UTC - harness run 3 decoded: 7 reds -> 5 contracts + 2 bugs, all fixed
+  WHAT: Owner ran the full UX harness. Beginner tree stayed green; intermediate
+    reds decoded and repaired:
+    - 01 scan lesson: HARNESS bug - spec-loaded modules were never registered in
+      sys.modules, so sys.modules[__name__] KeyErrored. Both runners now register
+      before exec (the canonical import procedure).
+    - 05 lineage: lesson re-conjured one book (one-book-one-conduit law).
+      Rewritten: the family GROWS via create_lesser_conduit; three generations
+      assert one shared ledger.
+    - 17 collection DI: frame-wide LookupContainer holds ONE active spell per
+      (frame_key, binding_name) - the two Handler providers now carry distinct
+      binding names. NEW LAW recorded.
+    - 21/22 sharing DIRECTION: add_spell_to_contract is a PULL - the named
+      conduit must OWN the spell. Both lessons flipped to borrower-pulls
+      (matches the validated integration idiom lesson 26 already used).
+    - 25 clusters: unique_per_conduit_cluster requires an ELECTED LEADER
+      (ClusterCreations.resolved_store hard-errors while inert). Lesson now
+      calls cloud.get_cluster("workers").elect_leader(owner.id). NEW LAW.
+    - 26 + two-hop probe: FINDING - the first hop closed (Flow.svc was a real
+      Svc) but the CONTRACTED Svc, constructed from the workflows world, got the
+      raw SpellContract descriptor for its own conf socket: contract sockets
+      close PER-WORLD, and dynamic missing-provider WARNING proceeds, so the
+      descriptor leaks silently. Lesson now teaches "a category FINISHES its own
+      products" (services melds Svc before workflows pulls; shared lifetimes
+      hand the finished instance across via owner creations). Probes split:
+      owner-warmed chain asserts identity reuse; cold probe PINS the leak and
+      raises the DIVERGENCE FLAG (should nested cross-conduit construction
+      refuse instead of leak? owner ruling wanted).
+  EVIDENCE:
+  - src/melder/aether/conduit/conduit_ward/conduit_ward.py:1722 (ownership check)
+  - src/melder/aether/aetheric_frame/lookup_container.py:96 (signature claim)
+  - src/melder/aether/conduit/creations/cluster_creations.py:163 (leader gate)
+  - src/melder/aether/conduit/conduit_cluster.py:810 (elect_leader verb)
+  IMPACT: Five runtime laws enter the charter; the factory-categories lesson now
+    teaches the true per-world contract model instead of an accidental leak.
+  NEXT: Owner reruns the harness; watch the two new lesson-26 probes and the
+    descriptor-leak divergence flag for a ruling.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: -
+
+## DECISION - 2026-07-20 11:23 UTC - owner rulings on the SpellContract lane
+  RULING 1 (order of operations; "the code is fine, you're just not
+  understanding what to do"): per edge - conjure provider, conjure consumer,
+  LINK after both are built, pull, MELD after the fact; chains assemble edge
+  by edge in dependency order. The run-3 "descriptor leak" was USAGE ERROR
+  (cold chain skipped the middle world's meld), not a runtime gap - the
+  divergence flag is WITHDRAWN and the cold misuse probe DELETED.
+  RULING 2 (normal code only; "just use link"): curriculum code must not pull
+  mediator transactions into user flow. The transaction("link", conduits=[...])
+  windows and validate_contracts_and_define ceremony (copied from the
+  integration test) are stripped from lesson 26 and both contract probes;
+  add_spell_to_contract SELF-ADMITS (conduit.py:4956). User surface = link /
+  add_spell_to_contract / meld.
+  STATE: lesson 26 and probes re-cut to canonical order + normal verbs;
+  AGENTS.md laws rewritten accordingly. Awaiting owner harness rerun.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: -
+
+## MEASURE - 2026-07-20 11:17 UTC - run 4: everything green except 25; owner-directed fix landed
+  WHAT: Owner run 4 - the full harness is GREEN except 25_clusters: election
+    fixed the owner-side meld (the previous inert-store error is gone) but the
+    MEMBER could not resolve ClusterBus at all (KeyError: not local, not
+    contracted) - the join-time auto-share never delivered the spell.
+    Owner-directed fix, both halves:
+    1) bind carries permissions="create" explicitly - cluster auto-sharing
+       contracts the spell to each joining member WITH the spell's own
+       permissions (share_to_borrower uses spell.permissions).
+    2) elect_leader(owner.id) moved BEFORE the member joins - the join-time
+       share then fires against the ARMED cluster ("elect a leader and the
+       rest falls into place").
+  LAW (charter-bound next pass): cluster assembly order - create_cluster ->
+    add the owner root -> elect the leader -> THEN add members -> meld.
+  EVIDENCE:
+  - UX_and_AIX_experiences/02_intermediate/25_clusters_unique_per_cluster.py:24-44
+  - context: run-4 traceback (member-side KeyError clusterbus/__default__)
+  IMPACT: With 25 green the intermediate tier (01-26) is fully run-proven.
+  NEXT: Owner reruns row 25 (or the tier); on green, close out and open the
+    next lesson wave.
+  REREAD: OPTIONAL
+  SCORE_0_TO_10: -
+
+## DECISION - 2026-07-20 11:23 UTC - owner ruling: with-book lock context is not user value
+  RULING: `with book:` (the Spellbook lock context) buys the user nothing - the
+    mediator pattern + internal locks already own synchronization. Lesson 07
+    retired to _to_delete/ (07_book_as_lock_context.py).
+  REPLACEMENT at slot 07: 07_lesser_conduits_child_scopes.py - lesser conduits
+    as lightweight child scopes (create_lesser_conduit; a child melds the
+    root's world - "unique" resolves the SAME instance via owner creations;
+    lessers are unnamed; upgrade_to_normal deferred to dynamic lessons), and
+    the explicit-cleanup teaching from the retired lesson carries over
+    (cleanup is a verb, post-cleanup bind guards).
+  NOTE: lesson 25 additionally gained the missing owner.link(member) step this
+    session - contracts ride links; the cluster auto-share adds spells into
+    EXISTING contract buckets (ward refuses "link ... prior to spell contract
+    initiation" and share_to_borrower swallows it silently).
+  REREAD: OPTIONAL
+  SCORE_0_TO_10: -
+
+## MEASURE - 2026-07-20 11:26 UTC - category arc named across tiers (owner-directed)
+  WHAT: Lesson 26's docstring now names THE ARC: beginner 25 (spellframes
+    categorize spells WITHIN one world) -> intermediate 26 (conduits
+    categorize WORLDS - each category gains an owner; permissions +
+    contracts + links set resolution conditions at the boundary). Arc
+    recorded in AGENTS.md as curriculum law.
+  EVIDENCE:
+  - UX_and_AIX_experiences/02_intermediate/26_conduit_categories_as_factories.py:1-26
+  - UX_and_AIX_experiences/AGENTS.md (Curriculum arc: categories)
+  REREAD: OPTIONAL
+  SCORE_0_TO_10: -
+
+## MEASURE - 2026-07-20 22:47 UTC - owner assessment: tier in a good spot
+  WHAT: Owner call (end of 2026-07-20 session): "beginner and intermediate are
+    in a good spot." Two rows still await one green run: 25_clusters (now with
+    the owner.link(member) fix - contracts ride links) and the replacement
+    07_lesser_conduits_child_scopes. After that run the tier is fully
+    run-proven at 26 lessons. Boot-melds epic parked ACTIVE/unassigned for the
+    owner's weekend design pass; the sophisticated follow-ons land in the
+    advanced/expert tiers (names TBD).
+  REREAD: OPTIONAL
+  SCORE_0_TO_10: -
+
 ## Context / Handoff Summary
 Method: every example imports melder as md ONLY - a deep-path import in an example
 IS the finding. Examples are runnable scripts with honest asserts; they ride the

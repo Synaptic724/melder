@@ -334,6 +334,23 @@ class RiftSpace(Cleanable):
                 Zero-argument callback to run before any top-level action in
                 the category.
 
+        Contract:
+            - Fires BEFORE every action in the category, so it is the place to observe
+              or veto work rather than to inspect results.
+            - Returns a SUBSCRIPTION ID; keep it, because unregistering is by id and
+              there is no unregister-by-callback path.
+            - Category-wide: it covers actions added to the category later, not just
+              those present at registration time.
+
+        Threading:
+            Unsynchronized read; a snapshot only.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If the object has been cleaned.
+
         Returns:
             str: Stable subscription id for later unregistration.
         """
@@ -358,6 +375,21 @@ class RiftSpace(Cleanable):
             callback:
                 Zero-argument callback to run after any top-level action in the
                 category.
+
+        Contract:
+            - Fires AFTER every action in the category, so it sees outcomes rather than
+              intentions.
+            - Returns a SUBSCRIPTION ID; keep it for unregistration.
+            - Category-wide, including actions added later.
+
+        Threading:
+            Unsynchronized read; a snapshot only.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If the object has been cleaned.
 
         Returns:
             str: Stable subscription id for later unregistration.
@@ -575,6 +607,18 @@ class RiftSpace(Cleanable):
             callback:
                 Zero-argument callback to run before the action body.
 
+        Contract:
+            - Fires BEFORE one NAMED action only, narrower than the category hook.
+            - Returns a SUBSCRIPTION ID; keep it for unregistration.
+            - NOTE: unlike its `post` counterpart and the category hooks, this method
+              does NOT perform its own cleaned-state check before delegating.
+
+        Threading:
+            Registration is serialized by the underlying hook registry.
+
+        Lifecycle / Cleanup:
+            Not directly guarded; the delegate performs registration.
+
         Returns:
             str: Stable subscription id for later unregistration.
         """
@@ -602,6 +646,19 @@ class RiftSpace(Cleanable):
             callback:
                 Zero-argument callback to run after the action exits.
 
+        Contract:
+            - Fires AFTER one NAMED action only, narrower than the category hook.
+            - Returns a SUBSCRIPTION ID; keep it for unregistration.
+
+        Threading:
+            Unsynchronized read; a snapshot only.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If the object has been cleaned.
+
         Returns:
             str: Stable subscription id for later unregistration.
         """
@@ -620,6 +677,22 @@ class RiftSpace(Cleanable):
         Args:
             subscription_id:
                 Stable subscription id returned by hook registration.
+
+        Contract:
+            - BY SUBSCRIPTION ID ONLY - there is no unregister-by-callback path, so a
+              lost id means a permanently registered hook.
+            - Empty `subscription_id` is rejected up front with `ValueError`.
+            - Removing an id that is not registered is a SILENT NO-OP rather than an
+              error, so success does not prove the hook existed.
+
+        Threading:
+            Reads under `self._lock`, so the result is a coherent snapshot.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If the object has been cleaned.
 
         Returns:
             None.

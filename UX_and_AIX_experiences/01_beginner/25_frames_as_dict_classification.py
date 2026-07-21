@@ -1,11 +1,16 @@
 """
 TIER: beginner (25)
-GOAL: Dict-STYLE classification - the ADDRESSING feels like a
-      two-level dict ((frame, name) is a full address), but frames are
-      NOT dicts: they are grouping and contract keys. A string frame
+GOAL: Spellframes are CATEGORIES. Organize one world's spells by the
+      resolution ideas your app already has - "repositories",
+      "notifiers" - and (category, name) becomes the full address.
+      The addressing FEELS like a two-level dict, but frames are NOT
+      dicts: they are grouping and contract keys. A string frame
       groups; a Protocol frame also VALIDATES what binds under it
-      (intermediate tier). The dict is the feel, not the structure.
-SURFACE EXERCISED: spellframe + binding_name as a dict-shaped address space
+      (intermediate tier).
+      Seed for later: when a category needs its own OWNER and its own
+      resolution conditions, the category graduates into a whole
+      CONDUIT - that story is intermediate lesson 26.
+SURFACE EXERCISED: spellframe + binding_name as a category address space
 """
 import melder as md
 
@@ -40,13 +45,13 @@ def main() -> None:
                       spellframe=frame, binding_name=name)
     conduit = book.conjure()
 
-    # melding = indexing the classified world
+    # melding = looking up a category member by its full address
     users = conduit.meld(spell=UsersRepo, spellframe="repositories",
                          binding_name="users")
     email = conduit.meld(spell=EmailNotifier, spellframe="notifiers",
                          binding_name="email")
     assert isinstance(users, UsersRepo) and isinstance(email, EmailNotifier)
-    print("dict-style world: 2 frames x 2 names, addressed as [frame][name]")
+    print("categories addressed as [category][name]: repositories, notifiers")
 
 
 if __name__ == "__main__":

@@ -177,6 +177,24 @@ class SpellIndex(Cleanable):
         Args:
             new_id (str): The new SHA256 spell id to select and add as a member.
 
+        Contract:
+            - SELECTS a new current spell id AND adds it to the member set, so
+              selection always implies membership.
+            - DOES NOT RETIRE THE PREVIOUS ID. The superseded version stays a
+              MEMBER, which is exactly why `Spellbook.find_spell_by_id` still
+              resolves a parked id to the live spell. The member set is the
+              lineage; the selected id is only the current head.
+
+        Threading:
+            Reads and writes under `self._lock`, so the result is a coherent
+            snapshot rather than a torn read.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If the object has been cleaned.
+
         Returns:
             None.
         """
@@ -197,6 +215,21 @@ class SpellIndex(Cleanable):
         Args:
             spell_id (str): The candidate member spell id to record.
 
+        Contract:
+            - Adds to the lineage WITHOUT changing the selected id, so it grows the
+              version set without promoting anything.
+            - Set semantics: re-adding an existing id is a silent no-op.
+
+        Threading:
+            Reads and writes under `self._lock`, so the result is a coherent
+            snapshot rather than a torn read.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If the object has been cleaned.
+
         Returns:
             None.
         """
@@ -213,6 +246,24 @@ class SpellIndex(Cleanable):
 
         Args:
             spell_id (str): The member spell id to remove.
+
+        Contract:
+            - Uses `discard`, so removing an id that was never a member is a SILENT
+              NO-OP rather than an error. Absence of an exception is not proof the
+              id was present.
+            - CAN REMOVE THE CURRENTLY SELECTED ID. Nothing here re-points the
+              selection, so afterwards `selected_spell_id` may name an id that is no
+              longer a member. Callers retiring the head must select a new one.
+
+        Threading:
+            Reads and writes under `self._lock`, so the result is a coherent
+            snapshot rather than a torn read.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If the object has been cleaned.
 
         Returns:
             None.
@@ -242,6 +293,21 @@ class SpellIndex(Cleanable):
         Args:
             spell_id (str): The spell id to check.
 
+        Contract:
+            - Tests MEMBERSHIP OF THE LINEAGE, not equality with the selected id, so a
+              superseded or parked version still answers True. This is the check
+              spellbook lookups rely on to resolve old ids to the live spell.
+
+        Threading:
+            Reads and writes under `self._lock`, so the result is a coherent
+            snapshot rather than a torn read.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If the object has been cleaned.
+
         Returns:
             bool: True if `spell_id` is in the member set, False otherwise.
         """
@@ -254,6 +320,21 @@ class SpellIndex(Cleanable):
         Return whether this index has no members.
 
         O(1): tests the live member set directly without copying it.
+
+        Contract:
+            - Reports that the MEMBER SET is empty. It says nothing about the selected
+              id, which member removal does not clear - an index can be empty and
+              still carry a stale selected id.
+
+        Threading:
+            Reads and writes under `self._lock`, so the result is a coherent
+            snapshot rather than a torn read.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If the object has been cleaned.
 
         Returns:
             bool: True if the member set is empty.
@@ -271,6 +352,21 @@ class SpellIndex(Cleanable):
 
         Args:
             spell_id (str): The spell id to test as the sole member.
+
+        Contract:
+            - True only when the member set has exactly one entry AND that entry is the
+              supplied id; a different lone member returns False rather than raising.
+            - The usual "is this the last version" test before a destructive step.
+
+        Threading:
+            Reads and writes under `self._lock`, so the result is a coherent
+            snapshot rather than a torn read.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If the object has been cleaned.
 
         Returns:
             bool: True iff the member set is exactly {spell_id}.
@@ -305,6 +401,19 @@ class SpellIndex(Cleanable):
 
         This ensures the hash is stable, even if _selected_spell_id changes,
         making it safe for use as a dictionary key.
+        Contract:
+            - Hashes on index IDENTITY ONLY, never on contents, so the hash is stable
+              while membership changes. That is what allows a live index to be a dict
+              key while its lineage evolves.
+            - DELIBERATELY NOT `check_cleaned()` GUARDED, so a cleaned index stays
+              hashable and can still be removed from the collections holding it.
+
+        Threading:
+            Reads a write-once slot without taking the lock; safe from any thread.
+
+        Lifecycle / Cleanup:
+            Remains valid after cleanup, by design.
+
         """
         return hash(self._id)
 
@@ -314,6 +423,19 @@ class SpellIndex(Cleanable):
 
         This guarantees that key equality is stable and not affected
         by selected-spell changes.
+        Contract:
+            - Compares index IDENTITY ONLY. Two indexes with identical membership are
+              NOT equal, and an index stays equal to itself across every mutation.
+            - Returns False for non-`SpellIndex` operands rather than raising.
+            - Not `check_cleaned()` guarded, matching `__hash__` so the pair stays
+              consistent for collection removal after cleanup.
+
+        Threading:
+            Reads a write-once slot without taking the lock; safe from any thread.
+
+        Lifecycle / Cleanup:
+            Remains valid after cleanup, by design.
+
         """
         return isinstance(other, SpellIndex) and self._id == other._id
 
@@ -323,6 +445,23 @@ class SpellIndex(Cleanable):
     def __repr__(self) -> str:
         """
         Return a developer-facing snapshot of identity and selected spell.
+        Contract:
+            - GUARDED BY `check_cleaned()` AND TAKES THE LOCK, which is unusual for a
+              repr: printing or logging a CLEANED index RAISES rather than degrading
+              to a placeholder. Take care with debugger watches and log statements
+              that may run after teardown.
+            - Shows identity and the currently selected id, not the membership set.
+
+        Threading:
+            Reads and writes under `self._lock`, so the result is a coherent
+            snapshot rather than a torn read.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If the object has been cleaned.
+
         """
         self.check_cleaned()
         with self._lock:
@@ -349,5 +488,21 @@ class SpellIndex(Cleanable):
     ) -> None:
         """
         Release the internal lock acquired by `__enter__`.
+        Contract:
+            - Releases unconditionally, including when the block raised. Exception
+              arguments are accepted and IGNORED, and the falsy return means no
+              exception is suppressed here.
+            - Exactly one release per `__enter__`; the lock is reentrant, so nested
+              `with` blocks are legal and each level must exit.
+
+        Threading:
+            Releases the index lock acquired by `__enter__`.
+
+        Lifecycle / Cleanup:
+            Performs no cleaned-state check - it is purely the unlock half.
+
+        Raises:
+            RuntimeError: If called without a matching `__enter__` on this thread.
+
         """
         self._lock.release()

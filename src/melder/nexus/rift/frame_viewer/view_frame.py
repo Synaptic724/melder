@@ -413,6 +413,25 @@ class ViewFrame(Cleanable):
             fields so the viewer operator can understand why certain data is or
             is not available.
 
+        Contract:
+            - Describes the ACL CONTRACT shaping this projection - the rules, not the
+              data they filter.
+            - VISIBILITY-FILTERED PROJECTION: absence means "not visible to this rift"
+              OR "not present", indistinguishable from outside.
+            - `frame_name` is an ASSERTION, not a selector - when supplied it must
+              match the bound frame or the call raises.
+
+        Threading:
+            Reads a descriptor snapshot; concurrent frame changes are not reflected in
+            an already-returned result.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If the viewer is unbound or cleaned, or `frame_name` does not
+                match the bound frame.
+
         Args:
             frame_name:
                 Optional frame-name assertion. When supplied, it must match the
@@ -453,6 +472,25 @@ class ViewFrame(Cleanable):
             frame surface methods while still reflecting visible inventory and
             ACL posture.
 
+        Contract:
+            - A summary of the frame rather than an inventory; cheap enough for polling
+              where the full descriptions are not.
+            - VISIBILITY-FILTERED PROJECTION: absence means "not visible to this rift"
+              OR "not present", indistinguishable from outside.
+            - `frame_name` is an ASSERTION, not a selector - when supplied it must
+              match the bound frame or the call raises.
+
+        Threading:
+            Reads a descriptor snapshot; concurrent frame changes are not reflected in
+            an already-returned result.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If the viewer is unbound or cleaned, or `frame_name` does not
+                match the bound frame.
+
         Args:
             frame_name:
                 Optional frame-name assertion. When supplied, it must match the
@@ -492,6 +530,24 @@ class ViewFrame(Cleanable):
             Give the operator a quick identity/access snapshot for one visible
             target without forcing the richer identity or payload-specific
             methods immediately.
+
+        Contract:
+            - Identity-level summary for ONE target, without its payload.
+            - VISIBILITY-FILTERED PROJECTION: absence means "not visible to this rift"
+              OR "not present", indistinguishable from outside.
+            - `frame_name` is an ASSERTION, not a selector - when supplied it must
+              match the bound frame or the call raises.
+
+        Threading:
+            Reads a descriptor snapshot; concurrent frame changes are not reflected in
+            an already-returned result.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If the viewer is unbound or cleaned, or `frame_name` does not
+                match the bound frame.
 
         Args:
             source_kind:
@@ -660,6 +716,29 @@ class ViewFrame(Cleanable):
             operator can see where multiple visible spells share the same
             binding name, spell name, spell index, or spellframe.
 
+        Contract:
+            - Groups visible spells FOUR WAYS at once - binding name, spell name, index
+              id and spellframe - so one call surfaces every kind of ambiguity.
+            - SPELLS WITH NO BINDING NAME ARE SKIPPED from the binding-name grouping
+              but still counted in the others, so group sizes differ legitimately.
+            - A collision is NOT an error: names are reusable by design. This reports
+              ambiguity for a human to judge.
+            - VISIBILITY-FILTERED PROJECTION: absence means "not visible to this rift"
+              OR "not present", indistinguishable from outside.
+            - `frame_name` is an ASSERTION, not a selector - when supplied it must
+              match the bound frame or the call raises.
+
+        Threading:
+            Reads a descriptor snapshot; concurrent frame changes are not reflected in
+            an already-returned result.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If the viewer is unbound or cleaned, or `frame_name` does not
+                match the bound frame.
+
         Args:
             frame_name:
                 Optional frame-name assertion. When supplied, it must match the
@@ -784,6 +863,25 @@ class ViewFrame(Cleanable):
             operator can see counts, source ids, and names without manually
             regrouping raw links.
 
+        Contract:
+            - Inventory grouped by target kind; kinds with nothing visible are absent as
+              keys rather than mapping to empty collections.
+            - VISIBILITY-FILTERED PROJECTION: absence means "not visible to this rift"
+              OR "not present", indistinguishable from outside.
+            - `frame_name` is an ASSERTION, not a selector - when supplied it must
+              match the bound frame or the call raises.
+
+        Threading:
+            Reads a descriptor snapshot; concurrent frame changes are not reflected in
+            an already-returned result.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If the viewer is unbound or cleaned, or `frame_name` does not
+                match the bound frame.
+
         Args:
             frame_name:
                 Optional frame-name assertion. When supplied, it must match the
@@ -827,6 +925,28 @@ class ViewFrame(Cleanable):
             each other so the operator can navigate the frame structure without
             reading each target individually first.
 
+        Contract:
+            - COMPOSITE view: root conduits, the conduit tree, and spell ownership in one
+              result, all built from the visible set.
+            - Because every component is visibility-filtered, the topology can appear
+              TRUNCATED - a tree may look rootless or a conduit parentless purely because
+              intermediate nodes are invisible here.
+            - VISIBILITY-FILTERED PROJECTION: absence means "not visible to this rift"
+              OR "not present", indistinguishable from outside.
+            - `frame_name` is an ASSERTION, not a selector - when supplied it must
+              match the bound frame or the call raises.
+
+        Threading:
+            Reads a descriptor snapshot; concurrent frame changes are not reflected in
+            an already-returned result.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If the viewer is unbound or cleaned, or `frame_name` does not
+                match the bound frame.
+
         Args:
             frame_name:
                 Optional frame-name assertion. When supplied, it must match the
@@ -868,6 +988,26 @@ class ViewFrame(Cleanable):
             Provide a compact id-only view over the currently visible target
             surface.
 
+        Contract:
+            - Flat id list across every kind. Use `list_visible_target_ids_by_kind` when
+              you need the kind, and note that one returns `link_id` while the id listers
+              return `source_id`.
+            - VISIBILITY-FILTERED PROJECTION: absence means "not visible to this rift"
+              OR "not present", indistinguishable from outside.
+            - `frame_name` is an ASSERTION, not a selector - when supplied it must
+              match the bound frame or the call raises.
+
+        Threading:
+            Reads a descriptor snapshot; concurrent frame changes are not reflected in
+            an already-returned result.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If the viewer is unbound or cleaned, or `frame_name` does not
+                match the bound frame.
+
         Args:
             frame_name:
                 Optional frame-name assertion. When supplied, it must match the
@@ -901,6 +1041,33 @@ class ViewFrame(Cleanable):
                 Optional frame-name assertion. When supplied, it must match the
                 bound frame.
 
+        Contract:
+            - Returns `link_id` values, NOT `source_id`. This is the one lister that
+              does - `list_visible_conduit_ids` and `list_visible_spell_source_ids`
+              both return source ids. Do not feed these ids into lookups that
+              expect a source id.
+            - Keys are SORTED, inherited from `group_targets_by_kind`.
+            - VISIBILITY-FILTERED PROJECTION. Everything here is derived from the
+              ACL-filtered target set, so absence means "not visible to this rift"
+              OR "not present" - the two are indistinguishable from the outside.
+              Never use an empty result as proof that something does not exist.
+            - `frame_name` is an ASSERTION, not a selector. When supplied it must
+              match the bound frame or the call raises; it cannot be used to look
+              at a different frame.
+            - Read-only snapshot taken at call time; it does not mutate frame
+              state and does not stay live as the frame changes.
+
+        Threading:
+            Reads a descriptor snapshot; concurrent frame changes are not
+            reflected in an already-returned result.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If `frame_name` does not match the bound frame, or the
+                viewer has been cleaned.
+
         Returns:
             Dict[str, Tuple[str, ...]]: Visible target ids grouped by kind.
         """
@@ -929,6 +1096,31 @@ class ViewFrame(Cleanable):
                 Optional frame-name assertion. When supplied, it must match the
                 bound frame.
 
+        Contract:
+            - Returns `source_id` values, one per visible conduit link, with NO
+              deduplication and no ordering guarantee beyond the underlying
+              target order.
+            - VISIBILITY-FILTERED PROJECTION. Everything here is derived from the
+              ACL-filtered target set, so absence means "not visible to this rift"
+              OR "not present" - the two are indistinguishable from the outside.
+              Never use an empty result as proof that something does not exist.
+            - `frame_name` is an ASSERTION, not a selector. When supplied it must
+              match the bound frame or the call raises; it cannot be used to look
+              at a different frame.
+            - Read-only snapshot taken at call time; it does not mutate frame
+              state and does not stay live as the frame changes.
+
+        Threading:
+            Reads a descriptor snapshot; concurrent frame changes are not
+            reflected in an already-returned result.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If `frame_name` does not match the bound frame, or the
+                viewer has been cleaned.
+
         Returns:
             List[str]: Visible conduit ids in deterministic order.
         """
@@ -955,6 +1147,31 @@ class ViewFrame(Cleanable):
                 Optional frame-name assertion. When supplied, it must match the
                 bound frame.
 
+        Contract:
+            - Returns `source_id` values, one per visible spell link, with NO
+              deduplication - the list is positionally aligned with the visible
+              spell links, so repeats are meaningful rather than accidental.
+            - VISIBILITY-FILTERED PROJECTION. Everything here is derived from the
+              ACL-filtered target set, so absence means "not visible to this rift"
+              OR "not present" - the two are indistinguishable from the outside.
+              Never use an empty result as proof that something does not exist.
+            - `frame_name` is an ASSERTION, not a selector. When supplied it must
+              match the bound frame or the call raises; it cannot be used to look
+              at a different frame.
+            - Read-only snapshot taken at call time; it does not mutate frame
+              state and does not stay live as the frame changes.
+
+        Threading:
+            Reads a descriptor snapshot; concurrent frame changes are not
+            reflected in an already-returned result.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If `frame_name` does not match the bound frame, or the
+                viewer has been cleaned.
+
         Returns:
             List[str]: Visible spell source ids in deterministic order.
         """
@@ -980,6 +1197,30 @@ class ViewFrame(Cleanable):
             frame_name:
                 Optional frame-name assertion. When supplied, it must match the
                 bound frame.
+
+        Contract:
+            - Filters the visible conduit links down to those whose
+              `root_conduit_id` equals their own id, so it returns TREE ROOTS as
+              seen through this rift.
+            - A conduit can look like a root here purely because its real parent
+              is not visible to this rift. Root-ness in a projection is a
+              statement about VISIBILITY, not about the underlying frame topology.
+            - VISIBILITY-FILTERED PROJECTION. Absence means "not visible to this
+              rift" OR "not present"; the two are indistinguishable from outside.
+            - `frame_name` is an ASSERTION, not a selector. When supplied it must
+              match the bound frame or the call raises.
+            - Read-only snapshot taken at call time.
+
+        Threading:
+            Reads a descriptor snapshot; concurrent frame changes are not
+            reflected in an already-returned result.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If `frame_name` does not match the bound frame, or the
+                viewer has been cleaned.
 
         Returns:
             List[FrameLink]: Visible root conduit links.
@@ -1009,6 +1250,32 @@ class ViewFrame(Cleanable):
             frame_name:
                 Optional frame-name assertion. When supplied, it must match the
                 bound frame.
+
+        Contract:
+            - SKIPS spells that have no binding name. The result is therefore
+              SHORTER than the visible spell list and is NOT positionally aligned
+              with it - do not zip it against `list_visible_spell_names`.
+            - No deduplication; two spells may share a binding name.
+            - VISIBILITY-FILTERED PROJECTION. Everything here is derived from the
+              ACL-filtered target set, so absence means "not visible to this rift"
+              OR "not present" - the two are indistinguishable from the outside.
+              Never use an empty result as proof that something does not exist.
+            - `frame_name` is an ASSERTION, not a selector. When supplied it must
+              match the bound frame or the call raises; it cannot be used to look
+              at a different frame.
+            - Read-only snapshot taken at call time; it does not mutate frame
+              state and does not stay live as the frame changes.
+
+        Threading:
+            Reads a descriptor snapshot; concurrent frame changes are not
+            reflected in an already-returned result.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If `frame_name` does not match the bound frame, or the
+                viewer has been cleaned.
 
         Returns:
             List[str]: Visible binding names in deterministic spell order.
@@ -1043,6 +1310,31 @@ class ViewFrame(Cleanable):
                 Optional frame-name assertion. When supplied, it must match the
                 bound frame.
 
+        Contract:
+            - NOT deduplicated. Spell names are not unique, so the same name can
+              appear more than once; the list is positionally aligned with the
+              visible spell links.
+            - VISIBILITY-FILTERED PROJECTION. Everything here is derived from the
+              ACL-filtered target set, so absence means "not visible to this rift"
+              OR "not present" - the two are indistinguishable from the outside.
+              Never use an empty result as proof that something does not exist.
+            - `frame_name` is an ASSERTION, not a selector. When supplied it must
+              match the bound frame or the call raises; it cannot be used to look
+              at a different frame.
+            - Read-only snapshot taken at call time; it does not mutate frame
+              state and does not stay live as the frame changes.
+
+        Threading:
+            Reads a descriptor snapshot; concurrent frame changes are not
+            reflected in an already-returned result.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If `frame_name` does not match the bound frame, or the
+                viewer has been cleaned.
+
         Returns:
             List[str]: Visible spell names in deterministic spell order.
         """
@@ -1073,6 +1365,32 @@ class ViewFrame(Cleanable):
             frame_name:
                 Optional frame-name assertion. When supplied, it must match the
                 bound frame.
+
+        Contract:
+            - DISTINCT, unlike the sibling listers. Duplicates are collapsed via a
+              seen-set while FIRST-SEEN ORDER is preserved, so this is not sorted
+              and not positionally aligned with the spell list.
+            - Spells whose spellframe normalizes to None are skipped entirely.
+            - VISIBILITY-FILTERED PROJECTION. Everything here is derived from the
+              ACL-filtered target set, so absence means "not visible to this rift"
+              OR "not present" - the two are indistinguishable from the outside.
+              Never use an empty result as proof that something does not exist.
+            - `frame_name` is an ASSERTION, not a selector. When supplied it must
+              match the bound frame or the call raises; it cannot be used to look
+              at a different frame.
+            - Read-only snapshot taken at call time; it does not mutate frame
+              state and does not stay live as the frame changes.
+
+        Threading:
+            Reads a descriptor snapshot; concurrent frame changes are not
+            reflected in an already-returned result.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If `frame_name` does not match the bound frame, or the
+                viewer has been cleaned.
 
         Returns:
             List[str]: Distinct visible spellframe values in deterministic
@@ -1112,6 +1430,32 @@ class ViewFrame(Cleanable):
                 Optional frame-name assertion. When supplied, it must match the
                 bound frame.
 
+        Contract:
+            - NOT deduplicated, and duplicates are EXPECTED: several spells can
+              share one spell index, so the same index id repeats once per spell.
+              Deduplicate yourself if you want distinct lineages.
+            - Positionally aligned with the visible spell links.
+            - VISIBILITY-FILTERED PROJECTION. Everything here is derived from the
+              ACL-filtered target set, so absence means "not visible to this rift"
+              OR "not present" - the two are indistinguishable from the outside.
+              Never use an empty result as proof that something does not exist.
+            - `frame_name` is an ASSERTION, not a selector. When supplied it must
+              match the bound frame or the call raises; it cannot be used to look
+              at a different frame.
+            - Read-only snapshot taken at call time; it does not mutate frame
+              state and does not stay live as the frame changes.
+
+        Threading:
+            Reads a descriptor snapshot; concurrent frame changes are not
+            reflected in an already-returned result.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If `frame_name` does not match the bound frame, or the
+                viewer has been cleaned.
+
         Returns:
             List[str]: Visible spell-index ids in deterministic spell order.
         """
@@ -1142,6 +1486,33 @@ class ViewFrame(Cleanable):
             frame_name:
                 Optional frame-name assertion. When supplied, it must match the
                 bound frame.
+
+        Contract:
+            - SKIPS spells with no owner conduit, so unowned spells - anything bound
+              but not yet stamped by conjure - are ABSENT from the result entirely
+              rather than grouped under a null key. The union of the values is
+              therefore not the full visible spell set.
+            - Keys are in insertion order, NOT sorted.
+            - VISIBILITY-FILTERED PROJECTION. Everything here is derived from the
+              ACL-filtered target set, so absence means "not visible to this rift"
+              OR "not present" - the two are indistinguishable from the outside.
+              Never use an empty result as proof that something does not exist.
+            - `frame_name` is an ASSERTION, not a selector. When supplied it must
+              match the bound frame or the call raises; it cannot be used to look
+              at a different frame.
+            - Read-only snapshot taken at call time; it does not mutate frame
+              state and does not stay live as the frame changes.
+
+        Threading:
+            Reads a descriptor snapshot; concurrent frame changes are not
+            reflected in an already-returned result.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If `frame_name` does not match the bound frame, or the
+                viewer has been cleaned.
 
         Returns:
             Dict[str, Tuple[str, ...]]: Visible spell source ids grouped by
@@ -1182,6 +1553,34 @@ class ViewFrame(Cleanable):
                 Optional frame-name assertion. When supplied, it must match the
                 bound frame.
 
+        Contract:
+            - A root conduit appears BOTH as a key and inside its own value tuple,
+              because a root's `root_conduit_id` is its own id. The value is the
+              whole tree including the root, not just descendants.
+            - Keys are in insertion order, NOT sorted.
+            - Only visible conduits are grouped, so a tree can appear truncated
+              when intermediate conduits are not visible to this rift.
+            - VISIBILITY-FILTERED PROJECTION. Everything here is derived from the
+              ACL-filtered target set, so absence means "not visible to this rift"
+              OR "not present" - the two are indistinguishable from the outside.
+              Never use an empty result as proof that something does not exist.
+            - `frame_name` is an ASSERTION, not a selector. When supplied it must
+              match the bound frame or the call raises; it cannot be used to look
+              at a different frame.
+            - Read-only snapshot taken at call time; it does not mutate frame
+              state and does not stay live as the frame changes.
+
+        Threading:
+            Reads a descriptor snapshot; concurrent frame changes are not
+            reflected in an already-returned result.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If `frame_name` does not match the bound frame, or the
+                viewer has been cleaned.
+
         Returns:
             Dict[str, Tuple[str, ...]]: Visible conduit ids grouped by root
             conduit id.
@@ -1217,6 +1616,26 @@ class ViewFrame(Cleanable):
         Purpose:
             Provide a forgiving search path over visible target display names
             and source ids.
+
+        Contract:
+            - CASE-INSENSITIVE SUBSTRING match, so it hits mid-string and returns
+              strictly more than the prefix sibling.
+            - Empty text is rejected rather than matching everything.
+            - VISIBILITY-FILTERED PROJECTION: absence means "not visible to this rift"
+              OR "not present", indistinguishable from outside.
+            - `frame_name` is an ASSERTION, not a selector - when supplied it must
+              match the bound frame or the call raises.
+
+        Threading:
+            Reads a descriptor snapshot; concurrent frame changes are not reflected in
+            an already-returned result.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If the viewer is unbound or cleaned, or `frame_name` does not
+                match the bound frame.
 
         Args:
             text:
@@ -1265,6 +1684,33 @@ class ViewFrame(Cleanable):
             source_kind:
                 Optional target-kind filter.
 
+        Contract:
+            - CASE-INSENSITIVE, and matches against EITHER the display name OR the
+              source id - a hit on either one includes the target, so results can
+              look unrelated to the visible name.
+            - Prefix match only; use the contains-search sibling for substrings.
+            - An empty prefix raises rather than matching everything.
+            - VISIBILITY-FILTERED PROJECTION. Everything here is derived from the
+              ACL-filtered target set, so absence means "not visible to this rift"
+              OR "not present" - the two are indistinguishable from the outside.
+              Never use an empty result as proof that something does not exist.
+            - `frame_name` is an ASSERTION, not a selector. When supplied it must
+              match the bound frame or the call raises; it cannot be used to look
+              at a different frame.
+            - Read-only snapshot taken at call time; it does not mutate frame
+              state and does not stay live as the frame changes.
+
+        Threading:
+            Reads a descriptor snapshot; concurrent frame changes are not
+            reflected in an already-returned result.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If `frame_name` does not match the bound frame, or the
+                viewer has been cleaned.
+
         Returns:
             List[FrameLink]: Matching visible targets in deterministic order.
         """
@@ -1296,6 +1742,32 @@ class ViewFrame(Cleanable):
                 Optional frame-name assertion. When supplied, it must match the
                 bound frame.
 
+        Contract:
+            - Keys are SORTED, so iteration order is deterministic across calls and
+              processes.
+            - Kinds with no visible targets are ABSENT as keys rather than mapping
+              to an empty list; use `.get(kind, [])` rather than indexing.
+            - VISIBILITY-FILTERED PROJECTION. Everything here is derived from the
+              ACL-filtered target set, so absence means "not visible to this rift"
+              OR "not present" - the two are indistinguishable from the outside.
+              Never use an empty result as proof that something does not exist.
+            - `frame_name` is an ASSERTION, not a selector. When supplied it must
+              match the bound frame or the call raises; it cannot be used to look
+              at a different frame.
+            - Read-only snapshot taken at call time; it does not mutate frame
+              state and does not stay live as the frame changes.
+
+        Threading:
+            Reads a descriptor snapshot; concurrent frame changes are not
+            reflected in an already-returned result.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If `frame_name` does not match the bound frame, or the
+                viewer has been cleaned.
+
         Returns:
             Dict[str, List[FrameLink]]: Visible targets grouped by source kind.
         """
@@ -1322,6 +1794,24 @@ class ViewFrame(Cleanable):
         Purpose:
             Give the operator a stable identity/provenance snapshot for one
             currently visible target without forcing a wider payload dump.
+
+        Contract:
+            - Identity fields for one target - the stable naming, not payload or access.
+            - VISIBILITY-FILTERED PROJECTION: absence means "not visible to this rift"
+              OR "not present", indistinguishable from outside.
+            - `frame_name` is an ASSERTION, not a selector - when supplied it must
+              match the bound frame or the call raises.
+
+        Threading:
+            Reads a descriptor snapshot; concurrent frame changes are not reflected in
+            an already-returned result.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If the viewer is unbound or cleaned, or `frame_name` does not
+                match the bound frame.
 
         Args:
             source_kind:
@@ -1411,6 +1901,26 @@ class ViewFrame(Cleanable):
             Give the operator a fast exact-name lookup path over the currently
             visible target surface without forcing a manual target scan.
 
+        Contract:
+            - EXACT, CASE-SENSITIVE match, unlike the case-insensitive search helpers.
+            - Returns a LIST because display names are NOT unique across the visible set.
+            - Empty `display_name` is rejected up front.
+            - VISIBILITY-FILTERED PROJECTION: absence means "not visible to this rift"
+              OR "not present", indistinguishable from outside.
+            - `frame_name` is an ASSERTION, not a selector - when supplied it must
+              match the bound frame or the call raises.
+
+        Threading:
+            Reads a descriptor snapshot; concurrent frame changes are not reflected in
+            an already-returned result.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If the viewer is unbound or cleaned, or `frame_name` does not
+                match the bound frame.
+
         Args:
             display_name:
                 Exact display name to match.
@@ -1450,6 +1960,28 @@ class ViewFrame(Cleanable):
             Make the effective access posture explicit for one frame, conduit,
             or spell target instead of forcing the operator to infer it from
             missing results or partial payloads.
+
+        Contract:
+            - THE HONEST ANSWER to "why can't I see this": it reports the ACL posture and
+              which sections are visible, which the plain listers cannot express.
+            - FRAME targets take a special path - existence is decided by matching the
+              frame overview's id rather than by scanning the target set.
+            - Empty `source_kind` or `source_id` is rejected up front.
+            - VISIBILITY-FILTERED PROJECTION: absence means "not visible to this rift"
+              OR "not present", indistinguishable from outside.
+            - `frame_name` is an ASSERTION, not a selector - when supplied it must
+              match the bound frame or the call raises.
+
+        Threading:
+            Reads a descriptor snapshot; concurrent frame changes are not reflected in
+            an already-returned result.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If the viewer is unbound or cleaned, or `frame_name` does not
+                match the bound frame.
 
         Args:
             source_kind:
@@ -1597,6 +2129,34 @@ class ViewFrame(Cleanable):
                 Required target kind.
             source_id:
                 Required target source identifier.
+
+        Contract:
+            - RAISES rather than returning None when nothing matches, which is the
+              distinction from the non-required lookups.
+            - "Not found" here is AMBIGUOUS: the target may not exist, or it may
+              exist and be filtered out by ACL for this rift. Do not treat the
+              raise as proof of non-existence.
+            - Empty `source_kind` or `source_id` is rejected up front.
+            - VISIBILITY-FILTERED PROJECTION. Everything here is derived from the
+              ACL-filtered target set, so absence means "not visible to this rift"
+              OR "not present" - the two are indistinguishable from the outside.
+              Never use an empty result as proof that something does not exist.
+            - `frame_name` is an ASSERTION, not a selector. When supplied it must
+              match the bound frame or the call raises; it cannot be used to look
+              at a different frame.
+            - Read-only snapshot taken at call time; it does not mutate frame
+              state and does not stay live as the frame changes.
+
+        Threading:
+            Reads a descriptor snapshot; concurrent frame changes are not
+            reflected in an already-returned result.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If `frame_name` does not match the bound frame, or the
+                viewer has been cleaned.
 
         Returns:
             FrameLink: Matching ACL-filtered target.

@@ -404,6 +404,21 @@ class SpellbookConfiguration(Cleanable):
         The validation pipeline is intentionally decomposed into small, focused
         helper methods to avoid an overly long and unmaintainable validate() method.
 
+        Contract:
+            - Checks the configuration's own coherence. It does not consult any
+              spellbook, so passing here does not guarantee a given spellbook will
+              accept the configuration.
+            - Raises on violation rather than returning False.
+
+        Threading:
+            State transitions are applied under the configuration lock.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If the configuration has been cleaned.
+
         Returns:
             bool: True when every required property is present and coherent. Raises
                 rather than returning False for a missing required property.
@@ -836,6 +851,27 @@ class SpellbookConfiguration(Cleanable):
         """
         Retrieve a merged detached hook map for compatibility callers.
 
+        Contract:
+            - KEYED BY SPELLBOOK ID. Hooks in this configuration are per-spellbook,
+              not global, so this returns only the hooks registered for the id you
+              pass.
+            - Returns a DETACHED MERGED VIEW of the conduit and meld hook maps -
+              a new dict of new lists. Mutating the result does NOT change
+              registered hooks; use `with_hook` / `with_hooks` for that.
+            - An id with no registered hooks yields an empty map rather than
+              raising.
+            - NOTE: the Args block below documents `hook_name`, which this method
+              does not take. The single parameter is `spellbook_id`.
+
+        Threading:
+            State transitions are applied under the configuration lock.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If the configuration has been cleaned.
+
         Returns:
             Dict[str, list[Callable[..., Any]]]:
                 Detached merged view of conduit and meld hooks.
@@ -926,6 +962,26 @@ class SpellbookConfiguration(Cleanable):
                 .with_hook("spellbook-123", "on_conduit_cleanup_complete", cleanup_fn)
                 .finalize())
 
+        Contract:
+            - REGISTERS ONE HOOK FOR ONE SPELLBOOK ID - the first parameter is the
+              spellbook id, not the hook name. Hooks are per-spellbook, so the same
+              configuration can carry different hooks for different books.
+            - Fluent wrapper over `add_hook`; it delegates and returns `self`,
+              adding no validation of its own. Hook names are validated against the
+              allowed-hook set by the underlying call.
+            - ADDITIVE: registering again appends rather than replacing, so calling
+              it twice with the same callable registers it twice.
+            - Refused once frozen.
+
+        Threading:
+            State transitions are applied under the configuration lock.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If the configuration has been cleaned.
+
         Returns:
             SpellbookConfiguration: This configuration, for fluent chaining.
 
@@ -960,6 +1016,25 @@ class SpellbookConfiguration(Cleanable):
                 )
                 .finalize())
 
+        Contract:
+            - REGISTERS MANY HOOKS FOR ONE SPELLBOOK ID in a single call; the first
+              parameter is the spellbook id and each keyword is a hook name.
+            - Each keyword value may be a SINGLE CALLABLE or an ITERABLE OF
+              CALLABLES; both shapes are accepted and flattened into the same
+              registration.
+            - ADDITIVE, like `with_hook` - it appends to whatever is already
+              registered rather than replacing it.
+            - Refused once frozen.
+
+        Threading:
+            State transitions are applied under the configuration lock.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If the configuration has been cleaned.
+
         Returns:
             SpellbookConfiguration: This configuration, for fluent chaining.
 
@@ -983,6 +1058,23 @@ class SpellbookConfiguration(Cleanable):
         - Sets local rich-config defaults:
           disposal=False, disposal_method_names=[].
         - Respects idempotency and immutability rules (raises if frozen or cleaned).
+
+        Contract:
+            - MUTATES THIS OBJECT and returns `self`; not a copying builder.
+            - Applies the standard local rich-config defaults in place, overwriting
+              anything set earlier, so call it FIRST and override afterwards.
+            - Does NOT clear previously registered hooks - it seeds value defaults,
+              not hook registrations.
+            - Refused once frozen.
+
+        Threading:
+            State transitions are applied under the configuration lock.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If the configuration has been cleaned.
 
         Returns:
             SpellbookConfiguration: This same configuration instance (for chaining).

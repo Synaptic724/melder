@@ -216,6 +216,14 @@ class Conduit(Cleanable):
 
         Initializes a new Conduit.
 
+        Contract:
+            - Generates a conduit id when none is supplied; a supplied non-string id is
+              rejected with `TypeError` rather than coerced.
+            - Creates the reentrant lock that guards every later conduit operation.
+            - A conduit is born in a specific `ConduitState`, and that state - not the
+              frame posture - is what decides whether `scan`, `link` and cluster
+              operations are even reachable: several refuse anything but `normal`.
+
         Args:
             spellbook (Spellbook):
                 The Spellbook governing this Conduit.
@@ -1000,6 +1008,22 @@ class Conduit(Cleanable):
         """
         Return the currently active SpellSpace for this Conduit, if any.
 
+        Contract:
+            - THREAD-LOCAL: it returns the spellspace active on THE CALLING THREAD, not
+              a conduit-wide value. Two threads inside the same conduit can see
+              different answers, and one can see None while the other does not.
+            - None means no spellspace is entered on this thread - a normal state,
+              not an error.
+
+        Threading:
+            Unsynchronized read; a snapshot only.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If the object has been cleaned.
+
         Returns:
             SpellSpace | None: The top-of-stack SpellSpace, or None if no spellspace is active.
         """
@@ -1416,6 +1440,14 @@ class Conduit(Cleanable):
             Allow internal or advanced coordinated operations to hold the conduit lock
             across a controlled block without exposing `_lock` directly.
 
+        Contract:
+            - Acquires the conduit lock and returns `self`, so `with conduit:` groups
+              several operations under one lock rather than exposing `_lock`.
+            - The lock is REENTRANT, so nested `with` blocks are legal and each level
+              must exit.
+            - Performs no cleaned-state check of its own; callers must be operating
+              on a live conduit.
+
         Returns:
             Conduit:
                 This conduit instance while the lock is held.
@@ -1435,6 +1467,20 @@ class Conduit(Cleanable):
 
         Exit the conduit lock context.
 
+        Contract:
+            - Releases unconditionally, including when the block raised. Exception
+              arguments are accepted and IGNORED, so no exception is suppressed.
+            - Exactly one release per `__enter__`; the lock is reentrant.
+
+        Threading:
+            Releases the conduit lock acquired by `__enter__`.
+
+        Lifecycle / Cleanup:
+            Performs no cleaned-state check - it is purely the unlock half.
+
+        Raises:
+            RuntimeError: If called without a matching `__enter__` on this thread.
+
         Returns:
             None.
 
@@ -1450,6 +1496,21 @@ class Conduit(Cleanable):
         Public API
 
         Return a concise diagnostic representation of this conduit.
+
+        Contract:
+            - GUARDED BY `check_cleaned()`, which is unusual for a repr: printing or
+              logging a CLEANED conduit RAISES rather than degrading to a
+              placeholder. Take care with debugger watches and post-teardown logging.
+            - Shows name and id only, not state or contents.
+
+        Threading:
+            Unsynchronized read; a snapshot only.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If the object has been cleaned.
 
         Returns:
             str:
@@ -1472,6 +1533,19 @@ class Conduit(Cleanable):
 
         Return the unique identifier of this conduit.
 
+        Contract:
+            - The conduit's stable identity, assigned at construction and unchanged for
+              its life - including across cluster join and leave.
+
+        Threading:
+            Unsynchronized read; a snapshot only.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If the object has been cleaned.
+
         Returns:
             str:
                 This conduit's unique identifier.
@@ -1486,6 +1560,21 @@ class Conduit(Cleanable):
         Public API
 
         Return the human-readable name for this conduit, if one exists.
+
+        Contract:
+            - NORMALIZES EMPTY TO NONE: an unnamed conduit and one named with an empty
+              string are indistinguishable through this property, both reporting
+              None.
+            - Names are a convenience label, not identity - use `id` for identity.
+
+        Threading:
+            Unsynchronized read; a snapshot only.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If the object has been cleaned.
 
         Returns:
             Optional[str]:
@@ -1517,6 +1606,21 @@ class Conduit(Cleanable):
                 If the conduit name is already set.
 
 
+        Contract:
+            - NORMALIZES EMPTY TO NONE: an unnamed conduit and one named with an empty
+              string are indistinguishable through this property, both reporting
+              None.
+            - Names are a convenience label, not identity - use `id` for identity.
+
+        Threading:
+            Unsynchronized read; a snapshot only.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If the object has been cleaned.
+
         Returns:
             None.
         """
@@ -1531,6 +1635,11 @@ class Conduit(Cleanable):
         Public API
 
         Return the frame-owned conduit cloud tied to this conduit.
+
+        Contract:
+            - Reaches THROUGH the aetheric frame to the frame-owned cloud, so the
+              returned object is shared by every conduit on the frame - it is
+              BORROWED, never owned here, and must not be cleaned by the caller.
 
         Returns:
             ConduitCloud: The `ConduitCloud` managed by this conduit’s
@@ -1556,6 +1665,12 @@ class Conduit(Cleanable):
 
         Hooks are always registered locally on this Conduit and do not propagate
         to other conduits or mutate the shared Configuration hook registry.
+
+        Contract:
+            - EMPTY INPUT IS A SILENT NO-OP: passing no hooks returns without error.
+            - SPLITS the supplied mapping into conduit-lane and meld-lane updates and
+              applies each to its own registry, so one call can touch two subsystems.
+            - Additive registration - it does not clear hooks registered earlier.
 
         Args:
             hooks: Mapping of hook name -> callable or iterable of callables.
@@ -2030,6 +2145,12 @@ class Conduit(Cleanable):
 
         Sets a new policy for this Conduit. This is only allowed in dynamic mode.
 
+        Contract:
+            - DYNAMIC MODE ONLY. On an automatic frame this raises `RuntimeError`
+              rather than silently ignoring the request, and the refusal is logged.
+            - Applies the policy through the conduit ward under the conduit lock, so
+              the swap is atomic with respect to other conduit operations.
+
         Args:
             policy (str): The new policy to set, governing linking behavior.
 
@@ -2093,6 +2214,14 @@ class Conduit(Cleanable):
             so concurrent lesser creation from many threads does not
             serialize on this parent. Hook implementations must be
             thread-safe under concurrent lesser creation.
+
+        Contract:
+            - The ROOT is resolved before anything is built: a `normal` conduit is its
+              own root, while a non-normal conduit derives the root from its ward -
+              so lesser conduits created off a lesser conduit still attach to the
+              original root rather than nesting.
+            - Lesser conduits are a LINEAGE attachment, not a peer link; this is why
+              `link()` explicitly refuses a lesser target.
 
         Returns:
             Conduit: The newly created lesser Conduit instance.
@@ -2270,6 +2399,12 @@ class Conduit(Cleanable):
 
         This method queries the Aether to find the original source conduit for a specific spell ID.
 
+        Contract:
+            - Resolves through the spellbook's Aether-wide lookup, so it can find a
+              conduit in ANOTHER frame - it is not scoped to this conduit's frame
+              unless you pass one.
+            - Runs under the conduit lock.
+
         Args:
             spell_id (str): The unique identifier of the spell.
             aetheric_frame_name (str): The aetheric frame to check against. Defaults to "default".
@@ -2292,6 +2427,12 @@ class Conduit(Cleanable):
         Public API
 
         Checks if a spell with the given spell_id exists within the global Aether registry.
+
+        Contract:
+            - An EXISTENCE PROBE across the Aether rather than a local check, so a True
+              answer does not mean this conduit can reach or meld the spell - only
+              that the id is known.
+            - Runs under the conduit lock.
 
         Args:
             spell_id (str): The unique identifier of the spell to check (version SHA).
@@ -2324,6 +2465,13 @@ class Conduit(Cleanable):
              this version ID.
           3) Returns the corresponding Spell instance if found.
 
+        Contract:
+            - Resolves via the spellbook's Aether-wide lookup, so the returned spell may
+              belong to a different conduit; ownership and permission are separate
+              questions from resolvability.
+            - Unlike its siblings, this one does NOT hold the conduit lock across the
+              lookup.
+
         Args:
             spell_id (str): The unique version identifier of the spell (SHA256).
             aetheric_frame_name (str): The aetheric frame to check against. Defaults to "default".
@@ -2353,6 +2501,13 @@ class Conduit(Cleanable):
             Expose the Spellbook-owned stable-lineage lookup path on the
             conduit facade so higher runtime surfaces can consume
             `spell_index_id` directly.
+
+        Contract:
+            - Resolves by SPELL INDEX id, so it addresses a whole version LINEAGE
+              rather than one version - the spell you get back is the lineage's
+              current selection, not a fixed version.
+            - Logs and handles an unavailable spellbook rather than dereferencing it,
+              so a torn-down conduit fails loudly rather than with an AttributeError.
 
         Args:
             spell_index_id:
@@ -2388,6 +2543,22 @@ class Conduit(Cleanable):
         Args:
             spell_id (str): The unique version ID (SHA) of the spell to find.
 
+        Contract:
+            - Searches CONTRACTED spells across EVERY peer conduit's contract map in
+              this spellbook, not just this conduit's own - it answers "is this spell
+              reachable to me by contract", not "did I bind it".
+            - Returns None when no contract exposes the id; that is a normal answer,
+              not an error.
+
+        Threading:
+            Walks the contract maps under the conduit lock.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If the conduit has been cleaned.
+
         Returns:
             Optional[Spell]: The contracted spell instance, or None if not found.
         """
@@ -2416,6 +2587,13 @@ class Conduit(Cleanable):
           1) Spellbook.find_spell_index(...) to locate the SpellIndex lineage.
           2) Spellbook._find_spell(SpellIndex) to retrieve the Spell.
           3) Returns spell.spell_id (the current head version for that lineage).
+
+        Contract:
+            - TRANSLATES THE UNDERLYING ERROR: the spellbook raises `RuntimeError` for
+              a missing key and this method re-raises it as `ValueError`, chaining the
+              original. Catch `ValueError` here, not `RuntimeError`.
+            - The translation is deliberate - at the conduit boundary a missing spell
+              is a caller-input problem, not a runtime fault.
 
         Args:
             spellframe (str): The logical namespace or grouping label.
@@ -2455,6 +2633,12 @@ class Conduit(Cleanable):
         Finds a spell's primary lookup key using its logical identifiers.
 
         The key is typically a tuple used for internal retrieval within the spellbook.
+
+        Contract:
+            - Treats a FALSY key as not-found and raises `ValueError`, so this never
+              returns an empty key.
+            - Like `find_spell_id`, it presents a missing spell as a caller-input
+              error at the conduit boundary.
 
         Args:
             spellframe (str): The logical namespace or grouping label.
@@ -2501,6 +2685,22 @@ class Conduit(Cleanable):
         Args:
             spell (Any): The class, function, or object instance to inspect.
             aetheric_frame (str): The Aetheric Frame to search within. Defaults to "default".
+
+        Contract:
+            - Delegates to the spellbook's frame-wide inspection while holding the
+              CONDUIT lock, so it inherits that method's three-stage search and its
+              habit of collapsing every failure into None.
+            - A None result is therefore AMBIGUOUS between "not registered" and
+              "lookup failed"; do not treat it as proof of absence.
+
+        Threading:
+            Holds the conduit lock across the spellbook call.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If the conduit has been cleaned.
 
         Returns:
             Optional[str]: The SHA256 unique ID of the spell if found, otherwise None.
@@ -3027,6 +3227,15 @@ class Conduit(Cleanable):
         and closes its own binding transaction around the scan so direct
         conduit-side scans remain transaction-correct.
 
+        Contract:
+            - NORMAL CONDUITS ONLY: a lesser or pooled conduit raises rather than
+              scanning, checked before any posture rule.
+            - Then posture-gated - refused when the frame disables the bind family,
+              which includes post-conjure scanning on a non-dynamic frame.
+            - Reuses an already-active binding transaction when one exists; otherwise
+              opens and closes its own, so a direct conduit-side scan is always
+              transaction-correct.
+
         Args:
             module (ModuleType): The module to scan for decorated spell targets.
         Returns:
@@ -3060,6 +3269,17 @@ class Conduit(Cleanable):
         conduit.
         This returns the access level ("read", "create", "block") defined when the
         spell was bound.
+
+        Contract:
+            - LOCAL ONLY. It walks THIS conduit's spellbook lineages, so a spell
+              reachable by contract from a peer conduit is NOT found here.
+            - Matches by LINEAGE MEMBERSHIP (`SpellIndex.has_spell`), so a superseded
+              version id still resolves - and it resolves to the CURRENT permissions,
+              not the permissions that version was bound with.
+            - NEVER RETURNS None despite the `Optional[str]` annotation: a miss RAISES
+              `RuntimeError`. Treat the annotation as wrong and the Raises block as
+              authoritative.
+            - Returns the permission enum's `.name` STRING, not the enum member.
 
         Args:
             spell_id (str): Version SHA256 identifier of the spell.
@@ -3710,6 +3930,23 @@ class Conduit(Cleanable):
             - Registers a meld ticket for the duration of the call so the gate
               can track active work and drain safely during shutdown.
 
+        Contract:
+            - FOUR ENTRY MODES, one positional: `spell` as a STRING is treated as the
+              canonical spell id and takes the cheapest lane; `spell` as an object,
+              or `spellframe`, or `spell_name` are the alternatives, and all of those
+              are keyword-only. `meld(spell_id)` is deliberately the fastest call
+              shape in the library.
+            - GATING IS MODE-DEPENDENT: in dynamic mode entry runs through the
+              creation gate and is ticketed; in automatic mode the gate is BYPASSED
+              entirely for a minimal hot path. The same call therefore has different
+              concurrency behaviour per frame posture.
+            - A DISABLED GATE BLOCKS rather than failing: the call waits until the
+              gate is re-enabled and then re-checks closure. A TERMINALLY CLOSED gate
+              raises immediately. Distinguish the two - one is back-pressure, the
+              other is refusal.
+            - Resolution, reuse and lifetime are delegated to the Meld runtime and
+              governed by the spell's `Existence`, not by this call.
+
         Args:
             spell:
                 Primary spell identifier (first positional parameter). If a
@@ -3813,6 +4050,14 @@ class Conduit(Cleanable):
         Purpose:
             Expose the cold-path reuse-only runtime operation without adding
             branches to the hot `meld(...)` path.
+
+        Contract:
+            - The pre-resolved counterpart to `meld`: it skips input normalization
+              because the spell is already identified, and is the path used when a
+              caller already holds the object.
+            - Shares `meld`'s gate behaviour exactly - ticketed through the creation
+              gate in dynamic mode, bypassed in automatic mode - so the same
+              blocking-versus-raising distinction applies.
 
         Args:
             spell_name:
@@ -4049,6 +4294,18 @@ class Conduit(Cleanable):
 
             - "on_conduit_post_link(self, target_conduit)"
 
+        Contract:
+            - NORMAL CONDUITS ONLY and DYNAMIC MODE ONLY; both are refused before any
+              transaction is opened.
+            - THE CHEAP GUARDS RUN BEFORE ADMISSION - self-link, lesser target, and
+              cross-frame target are all rejected before the transaction starts, so
+              an invalid link never consumes a transaction window.
+            - Self-admitted `link` transaction, the same shape `sever_link` uses for
+              `unlink`: started before the ward mutation, the mutation runs inside the
+              window under the conduit lock, and the transaction ends with
+              `success=False` if the mutation raises.
+            - Fires `on_conduit_post_link` only on success.
+
         Args:
             target_conduit (Conduit): The target Conduit to link to.
 
@@ -4147,6 +4404,18 @@ class Conduit(Cleanable):
         (resolvable) spell in its index. Delegates to the owning Spellbook,
         which admits the `notch` change-control transaction.
 
+        Contract:
+            - DYNAMIC MODE ONLY; refused on an automatic frame.
+            - REPOINTS THE ACTIVE MEMBER of an existing index - it does not create,
+              bind or remove anything. The previous member stays in the lineage and
+              remains resolvable by id.
+            - The default `change_reason` is `selected_different_spell`, which records
+              an ordinary selection rather than a mutation. Pass a mutation reason
+              explicitly when that is what happened, because this default will
+              otherwise misattribute the change in the state history.
+            - Admitted as a `notch` change-control transaction by the owning
+              spellbook, so it participates in change control rather than bypassing it.
+
         Args:
             spell_index: The SpellIndex whose active spell is switched.
             spell: The already-identified spell to make active.
@@ -4219,6 +4488,12 @@ class Conduit(Cleanable):
         Delegates to the owning Spellbook, which admits the `add_to_index`
         change-control transaction.
 
+        Contract:
+            - DYNAMIC MODE ONLY; refused on an automatic frame with a logged
+              `RuntimeError`.
+            - Adds a version to the lineage WITHOUT making it active - selection is a
+              separate `notch_spell` step, so adding is safe to do ahead of a switch.
+
         Args:
             spell: The owned, inactive spell to move.
             target_index: The index to move it onto.
@@ -4290,6 +4565,14 @@ class Conduit(Cleanable):
         Conduit facade for separating an owned spell out of its index into a fresh
         one. Delegates to the owning Spellbook, which admits the
         `remove_from_index` change-control transaction.
+
+        Contract:
+            - DYNAMIC MODE ONLY; refused on an automatic frame with a logged
+              `RuntimeError`.
+            - Removes a version from the lineage. Removal does NOT re-point the
+              selection, so retiring the currently active member leaves the index
+              selecting an id that is no longer a member - notch a new active member
+              first.
 
         Args:
             spell: The owned, inactive spell to separate.
@@ -5436,6 +5719,23 @@ class Conduit(Cleanable):
         Contract mutations require an active link transaction that includes the
         borrower and the peer conduits involved in the contract cleanup.
 
+        Contract:
+            - REQUIRES AN ACTIVE LINK TRANSACTION; it is not a bare mutation. The
+              transaction requirement is checked before anything is removed.
+            - Qualifies contracts first, so the removal operates on a settled view
+              rather than a stale one.
+            - Removes the ROOT spell from contracts and returns a report of what was
+              actually removed - read it rather than assuming a full sweep.
+
+        Threading:
+            Serialized by the surrounding link transaction.
+
+        Lifecycle / Cleanup:
+            Guarded via the contract-qualification path.
+
+        Raises:
+            RuntimeError: If no suitable link transaction is active.
+
         Returns:
             dict: Per-peer removal outcome keyed by contract, describing what was
                 untracked on each side.
@@ -5480,6 +5780,24 @@ class Conduit(Cleanable):
 
         Adds a spell to a contract and automatically links its dependencies
         (recursively) using the same permission level (downgraded to read when needed).
+
+        Contract:
+            - CONVENIENCE WRAPPER over `add_spell_to_contract(...)` that stamps
+              `DetailReason.root`, marking the spell as a deliberately contracted
+              ROOT rather than something pulled in as a dependency.
+            - It adds no logic of its own; every gate, transaction requirement and
+              raise belongs to the wrapped call.
+            - The reason stamp is what later lets contract reports tell roots apart
+              from dependency-driven entries.
+
+        Threading:
+            Inherited from `add_spell_to_contract(...)`.
+
+        Lifecycle / Cleanup:
+            Inherited from `add_spell_to_contract(...)`.
+
+        Raises:
+            RuntimeError: Propagated from `add_spell_to_contract(...)`.
 
         Returns:
             Optional[bool]: True when the spell and its dependency closure were added,

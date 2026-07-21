@@ -57,6 +57,17 @@ class SpellSpaceScopeError(RuntimeError):
             message (str): Human-readable description of the violated scoping
                 rule.
 
+        Contract:
+            - PASS-THROUGH constructor: it forwards the message unchanged and adds no
+              fields. The type carries the meaning - a spellspace-scoped object was
+              reached outside an active spellspace scope.
+
+        Threading:
+            Plain construction; no shared state.
+
+        Lifecycle / Cleanup:
+            None - it is an exception value.
+
         Returns:
             None.
         """

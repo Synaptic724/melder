@@ -149,6 +149,20 @@ class ExternalPersistenceManagerConfiguration(Cleanable):
         """
         Return the stable configuration id.
 
+        Contract:
+            - Identifies THIS CONFIGURATION OBJECT, not the persistence manager it
+              configures. Assigned at construction and stable for its life.
+
+        Threading:
+            Unsynchronized read of a slot fixed at construction.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`; raises after cleanup rather than
+            returning a stale value.
+
+        Raises:
+            RuntimeError: If the configuration has been cleaned.
+
         Returns:
             str: ULID minted at construction.
         """
@@ -159,6 +173,20 @@ class ExternalPersistenceManagerConfiguration(Cleanable):
     def frozen(self) -> bool:
         """
         Return whether the configuration has been sealed.
+
+        Contract:
+            - True once the configuration has been sealed; frozen means SETTERS ARE
+              REFUSED. It says nothing about whether any handler lane is attached.
+
+        Threading:
+            Unsynchronized read of a slot fixed at construction.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`; raises after cleanup rather than
+            returning a stale value.
+
+        Raises:
+            RuntimeError: If the configuration has been cleaned.
 
         Returns:
             bool: True after freeze().
@@ -171,6 +199,23 @@ class ExternalPersistenceManagerConfiguration(Cleanable):
         """
         Return the attached upload callable, if any.
 
+        Contract:
+            - `None` means THE LANE IS NOT ATTACHED, not that it failed. With it None, no upload is attempted at all.
+            - Returns the caller-supplied callable BY REFERENCE; the configuration
+              neither wraps nor validates it beyond attachment.
+            - Handlers are BORROWED - cleaning this configuration does not clean or
+              close them.
+
+        Threading:
+            Unsynchronized read of a slot fixed at construction.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`; raises after cleanup rather than
+            returning a stale value.
+
+        Raises:
+            RuntimeError: If the configuration has been cleaned.
+
         Returns:
             Optional[Callable]: The handler or None (lane not attached).
         """
@@ -181,6 +226,23 @@ class ExternalPersistenceManagerConfiguration(Cleanable):
     def download_handler(self) -> Optional[Callable[..., Any]]:
         """
         Return the attached download callable, if any.
+
+        Contract:
+            - `None` means THE LANE IS NOT ATTACHED, not that it failed. With it None, remote download is unavailable and callers fall back to local state.
+            - Returns the caller-supplied callable BY REFERENCE; the configuration
+              neither wraps nor validates it beyond attachment.
+            - Handlers are BORROWED - cleaning this configuration does not clean or
+              close them.
+
+        Threading:
+            Unsynchronized read of a slot fixed at construction.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`; raises after cleanup rather than
+            returning a stale value.
+
+        Raises:
+            RuntimeError: If the configuration has been cleaned.
 
         Returns:
             Optional[Callable]: The handler or None (lane not attached).
@@ -193,6 +255,23 @@ class ExternalPersistenceManagerConfiguration(Cleanable):
         """
         Return the attached list callable, if any.
 
+        Contract:
+            - `None` means THE LANE IS NOT ATTACHED, not that it failed. With it None, remote listing is unavailable.
+            - Returns the caller-supplied callable BY REFERENCE; the configuration
+              neither wraps nor validates it beyond attachment.
+            - Handlers are BORROWED - cleaning this configuration does not clean or
+              close them.
+
+        Threading:
+            Unsynchronized read of a slot fixed at construction.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`; raises after cleanup rather than
+            returning a stale value.
+
+        Raises:
+            RuntimeError: If the configuration has been cleaned.
+
         Returns:
             Optional[Callable]: The handler or None (lane not attached).
         """
@@ -204,6 +283,20 @@ class ExternalPersistenceManagerConfiguration(Cleanable):
         """
         Return whether flushes also upload through the manager.
 
+        Contract:
+            - Controls WHEN uploads happen, not WHETHER they can. With no upload
+              handler attached this flag has no effect.
+
+        Threading:
+            Unsynchronized read of a slot fixed at construction.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`; raises after cleanup rather than
+            returning a stale value.
+
+        Raises:
+            RuntimeError: If the configuration has been cleaned.
+
         Returns:
             bool: True when the flush path uploads (default).
         """
@@ -214,6 +307,24 @@ class ExternalPersistenceManagerConfiguration(Cleanable):
     def strict_uploads(self) -> bool:
         """
         Return the upload failure posture.
+
+        Contract:
+            - THE FAILURE POSTURE, and it defaults to LENIENT (False): upload failures
+              are logged and execution continues. That default is deliberate - the
+              local seal/cache lane must never die because a remote is unreachable.
+            - Setting it True makes upload failures RAISE, which couples local
+              progress to remote availability. Choose it only when a missed upload
+              must be treated as a hard error.
+
+        Threading:
+            Unsynchronized read of a slot fixed at construction.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`; raises after cleanup rather than
+            returning a stale value.
+
+        Raises:
+            RuntimeError: If the configuration has been cleaned.
 
         Returns:
             bool: True when upload failures raise; False when they log
@@ -228,6 +339,23 @@ class ExternalPersistenceManagerConfiguration(Cleanable):
         """
         Return the generic mesh store callable (None = lane not attached).
 
+        Contract:
+            - `None` means THE LANE IS NOT ATTACHED, not that it failed. With it None, remote store is unavailable.
+            - Returns the caller-supplied callable BY REFERENCE; the configuration
+              neither wraps nor validates it beyond attachment.
+            - Handlers are BORROWED - cleaning this configuration does not clean or
+              close them.
+
+        Threading:
+            Unsynchronized read of a slot fixed at construction.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`; raises after cleanup rather than
+            returning a stale value.
+
+        Raises:
+            RuntimeError: If the configuration has been cleaned.
+
         Returns:
             Optional[Callable]: The handler or None.
         """
@@ -238,6 +366,23 @@ class ExternalPersistenceManagerConfiguration(Cleanable):
     def fetch_handler(self) -> Optional[Callable[..., Any]]:
         """
         Return the generic mesh fetch callable (None = lane not attached).
+
+        Contract:
+            - `None` means THE LANE IS NOT ATTACHED, not that it failed. With it None, remote fetch is unavailable.
+            - Returns the caller-supplied callable BY REFERENCE; the configuration
+              neither wraps nor validates it beyond attachment.
+            - Handlers are BORROWED - cleaning this configuration does not clean or
+              close them.
+
+        Threading:
+            Unsynchronized read of a slot fixed at construction.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`; raises after cleanup rather than
+            returning a stale value.
+
+        Raises:
+            RuntimeError: If the configuration has been cleaned.
 
         Returns:
             Optional[Callable]: The handler or None.
@@ -250,6 +395,23 @@ class ExternalPersistenceManagerConfiguration(Cleanable):
         """
         Return the generic unit-listing callable (None = not attached).
 
+        Contract:
+            - `None` means THE LANE IS NOT ATTACHED, not that it failed. With it None, remote unit enumeration is unavailable.
+            - Returns the caller-supplied callable BY REFERENCE; the configuration
+              neither wraps nor validates it beyond attachment.
+            - Handlers are BORROWED - cleaning this configuration does not clean or
+              close them.
+
+        Threading:
+            Unsynchronized read of a slot fixed at construction.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`; raises after cleanup rather than
+            returning a stale value.
+
+        Raises:
+            RuntimeError: If the configuration has been cleaned.
+
         Returns:
             Optional[Callable]: The handler or None.
         """
@@ -261,6 +423,23 @@ class ExternalPersistenceManagerConfiguration(Cleanable):
         """
         Return the remote delete callable (None = retention not attached).
 
+        Contract:
+            - `None` means THE LANE IS NOT ATTACHED, not that it failed. With it None, remote deletion is unavailable and nothing is removed remotely.
+            - Returns the caller-supplied callable BY REFERENCE; the configuration
+              neither wraps nor validates it beyond attachment.
+            - Handlers are BORROWED - cleaning this configuration does not clean or
+              close them.
+
+        Threading:
+            Unsynchronized read of a slot fixed at construction.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`; raises after cleanup rather than
+            returning a stale value.
+
+        Raises:
+            RuntimeError: If the configuration has been cleaned.
+
         Returns:
             Optional[Callable]: The handler or None.
         """
@@ -271,6 +450,20 @@ class ExternalPersistenceManagerConfiguration(Cleanable):
     def stream_emissions(self) -> bool:
         """
         Return whether every crystallizer emission streams remote.
+
+        Contract:
+            - Selects streaming rather than batched emission. It changes delivery
+              shape only; it does not decide whether emissions occur.
+
+        Threading:
+            Unsynchronized read of a slot fixed at construction.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`; raises after cleanup rather than
+            returning a stale value.
+
+        Raises:
+            RuntimeError: If the configuration has been cleaned.
 
         Returns:
             bool: The opt-in tap flag, default False.

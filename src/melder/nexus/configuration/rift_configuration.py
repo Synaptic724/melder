@@ -69,6 +69,29 @@ class RiftConfiguration(Cleanable):
 
         Initialize an empty per-Rift configuration.
 
+        Contract:
+            - STARTS EMPTY: the property bag holds nothing until seeded, so a bare
+              configuration is not yet usable.
+            - The schema is four keys - `space_type` (RiftSpaceType), `space_name`
+              (str or None), `auto_activate_on_program` (bool) and
+              `validation_mode` (RiftValidationMode). `space_name` is the only one
+              that legally accepts None.
+            - Lifecycle is MUTABLE -> FROZEN -> CONSUMED. Note the third stage is
+              CONSUMED, not "activated": a rift configuration is spent by the rift
+              that takes it rather than marked live in place.
+
+        Owned State:
+            Owns its lock, id, the property bag and the declared type table.
+
+        Threading:
+            State transitions are applied under the configuration lock.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If the configuration has been cleaned.
+
         Returns:
             None.
         """
@@ -230,6 +253,19 @@ class RiftConfiguration(Cleanable):
             key:
                 Property name.
 
+        Contract:
+            - Tests whether the key has been SET, not whether it is a legal key. An
+              unknown key returns False rather than raising.
+
+        Threading:
+            State transitions are applied under the configuration lock.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If the configuration has been cleaned.
+
         Returns:
             bool: True when present.
         """
@@ -385,6 +421,22 @@ class RiftConfiguration(Cleanable):
                 `codegen`) used to
                 instantiate the primary space during Rift creation.
 
+        Contract:
+            - Selects the PRIMARY space instantiated during rift creation. Accepts the
+              enum or its string name (`static`, `capability`, `codegen`);
+              conversion is checked, so an unrecognized name raises.
+            - MUTATES THIS OBJECT and returns `self`; not a copying builder.
+            - Refused once frozen.
+
+        Threading:
+            State transitions are applied under the configuration lock.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If the configuration has been cleaned.
+
         Returns:
             RiftConfiguration: This configuration instance.
         """
@@ -403,6 +455,21 @@ class RiftConfiguration(Cleanable):
         Args:
             space_name:
                 Optional stable room name.
+
+        Contract:
+            - The one property whose declared type admits None, so passing None is a
+              legal "unnamed space" rather than an error.
+            - MUTATES THIS OBJECT and returns `self`.
+            - Refused once frozen.
+
+        Threading:
+            State transitions are applied under the configuration lock.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If the configuration has been cleaned.
 
         Returns:
             RiftConfiguration: This configuration instance.
@@ -423,6 +490,21 @@ class RiftConfiguration(Cleanable):
             enabled:
                 True to mark the Rift active during programming.
 
+        Contract:
+            - Decides whether programming a rift also activates it, rather than
+              leaving activation as a separate explicit step.
+            - MUTATES THIS OBJECT and returns `self`.
+            - Refused once frozen.
+
+        Threading:
+            State transitions are applied under the configuration lock.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If the configuration has been cleaned.
+
         Returns:
             RiftConfiguration: This configuration instance.
         """
@@ -441,6 +523,21 @@ class RiftConfiguration(Cleanable):
         Args:
             mode:
                 Validation mode enum or string.
+
+        Contract:
+            - Sets the strictness applied to rift contents. Accepts the enum or its
+              string name; conversion is checked.
+            - MUTATES THIS OBJECT and returns `self`.
+            - Refused once frozen.
+
+        Threading:
+            State transitions are applied under the configuration lock.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If the configuration has been cleaned.
 
         Returns:
             RiftConfiguration: This configuration instance.

@@ -145,6 +145,22 @@ class ExternalPersistenceManager(Cleanable):
         """
         Return whether the flush path should upload through this manager.
 
+        Contract:
+            - REQUIRES BOTH a handler AND the flush opt-in: either an upload or a store
+              handler must be attached, AND `upload_on_flush` must be set. Attaching a
+              handler alone does NOT enable uploading, which is the usual surprise.
+            - Accepts EITHER handler, so an upload-only or store-only configuration
+              both count as enabled.
+
+        Threading:
+            Unsynchronized read; a snapshot only.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If the object has been cleaned.
+
         Returns:
             bool: True when a WRITE lane is attached AND upload_on_flush
             is set. Since the generic mesh lane (external_mesh
@@ -167,6 +183,22 @@ class ExternalPersistenceManager(Cleanable):
     def upload_failure_count(self) -> int:
         """
         Return how many lenient-mode uploads have failed so far.
+
+        Contract:
+            - A CUMULATIVE tally, never reset by a later success, so a non-zero count
+              does not mean uploading is currently broken. Compare it across time
+              rather than reading it as current health.
+            - Meaningful mainly under the lenient default posture, where failures are
+              logged and counted instead of raised.
+
+        Threading:
+            Unsynchronized read; a snapshot only.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If the object has been cleaned.
 
         Returns:
             int: Count of swallowed-and-counted upload failures.
@@ -325,6 +357,19 @@ class ExternalPersistenceManager(Cleanable):
         """
         Return whether flush-shipped mesh lanes should store remote.
 
+        Contract:
+            - REQUIRES BOTH the store handler AND `upload_on_flush`. Narrower than
+              `upload_enabled`, which also accepts an upload handler.
+
+        Threading:
+            Unsynchronized read; a snapshot only.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If the object has been cleaned.
+
         Returns:
             bool: True when a store handler is attached AND
             upload_on_flush is set (the flush knob governs every
@@ -341,6 +386,20 @@ class ExternalPersistenceManager(Cleanable):
         """
         Return whether a generic store handler is attached.
 
+        Contract:
+            - Reports ATTACHMENT ONLY, ignoring `upload_on_flush`. This is the honest
+              way to tell "no handler" apart from "handler present but flushing off",
+              which `store_enabled` collapses into a single False.
+
+        Threading:
+            Unsynchronized read; a snapshot only.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If the object has been cleaned.
+
         Returns:
             bool: True when a store handler is wired, independent of the
             upload_on_flush knob. Explicit store operations (e.g. graft
@@ -354,6 +413,20 @@ class ExternalPersistenceManager(Cleanable):
     def stream_emissions_enabled(self) -> bool:
         """
         Return whether the opt-in emission tap should fire.
+
+        Contract:
+            - REQUIRES BOTH the store handler AND `stream_emissions`. Note it does NOT
+              consult `upload_on_flush`, so streaming can be enabled while
+              `store_enabled` is False - the two answer different questions.
+
+        Threading:
+            Unsynchronized read; a snapshot only.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If the object has been cleaned.
 
         Returns:
             bool: True when a store handler is attached AND
@@ -369,6 +442,19 @@ class ExternalPersistenceManager(Cleanable):
     def store_failure_count(self) -> int:
         """
         Return how many lenient-mode generic stores have failed so far.
+
+        Contract:
+            - A CUMULATIVE tally, never reset by a later success, and tracked separately
+              from the upload count so the two lanes can be diagnosed independently.
+
+        Threading:
+            Unsynchronized read; a snapshot only.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If the object has been cleaned.
 
         Returns:
             int: Count of swallowed-and-counted store failures.

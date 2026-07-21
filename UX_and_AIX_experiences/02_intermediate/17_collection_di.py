@@ -31,8 +31,12 @@ class Dispatcher:
 
 def main() -> None:
     book = md.Spellbook()
-    book.bind(spell=EmailHandler, existence="unique", spellframe=Handler)
-    book.bind(spell=SmsHandler, existence="unique", spellframe=Handler)
+    # One ACTIVE spell per (spellframe, binding_name) signature per
+    # frame - providers sharing a frame need distinct binding names.
+    book.bind(spell=EmailHandler, existence="unique", spellframe=Handler,
+              binding_name="email")
+    book.bind(spell=SmsHandler, existence="unique", spellframe=Handler,
+              binding_name="sms")
     book.bind(spell=Dispatcher, existence="unique")
     conduit = book.conjure()
 

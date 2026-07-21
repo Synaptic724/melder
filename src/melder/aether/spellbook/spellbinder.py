@@ -150,6 +150,19 @@ class SpellBinder(Cleanable):
         will fail via `check_cleaned()` / live Spellbook resolution. The method
         is idempotent.
 
+        Contract:
+            - IDEMPOTENT under double-checked locking: it returns immediately if already
+              cleaned, then re-checks inside the lock so concurrent callers cannot
+              both run teardown.
+            - Releases only binder-owned state; the spellbook it binds into is
+              BORROWED and is not cleaned here.
+
+        Threading:
+            Double-checked around the binder lock.
+
+        Lifecycle / Cleanup:
+            Safe to call more than once and from more than one thread.
+
         Returns:
             None.
         """

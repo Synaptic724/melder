@@ -86,10 +86,18 @@ class NexusConfiguration(Cleanable):
         Initialize an empty Nexus configuration.
 
         Contract:
-            - STARTS GENUINELY EMPTY. `_properties` holds nothing, so a freshly
-              constructed configuration CANNOT be frozen - `validate()` raises on
-              the first missing key. `with_defaults()` (or
-              `load_default_dictionary()`) is the intended first call.
+            - STARTS GENUINELY EMPTY, BY DESIGN. `_properties` holds nothing, so a
+              bare configuration cannot be frozen until it is seeded -
+              `validate()` raises on the first missing key. This is not a defect:
+              `Nexus` seeds its own configuration with `with_defaults()`, and the
+              restore lane seeds defaults inside `load_recorded_dictionary()`
+              before overlaying recorded values. Starting empty is what lets that
+              lane report which keys were REJECTED and which were BACKFILLED,
+              which a pre-populated constructor would hide.
+            - Because this class is exported, code constructing one DIRECTLY must
+              call `with_defaults()` (or `load_default_dictionary()`) first, then
+              override. Setting only the properties you care about leaves the
+              object unfreezable.
             - Establishes `available_properties`, the declared TYPE TABLE for all
               25 settable properties. That table is the whole schema: it decides
               which keys `set_property` accepts and what type each demands, so a

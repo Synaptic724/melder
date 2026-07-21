@@ -71,6 +71,25 @@ class AetherConfiguration(Cleanable):
         """
         Initialize one empty Aether configuration with the default logger policy.
 
+        Contract:
+            - Starts MUTABLE, UNFROZEN and INACTIVE, with the default logger policy
+              not yet applied - call `with_defaults()` to seed it.
+            - Part of the three-stage configuration lifecycle: MUTABLE -> FROZEN ->
+              ACTIVATED. Setters work only while mutable; `freeze()` seals values;
+              `activate()` additionally marks the config live and records it.
+
+        Owned State:
+            Owns its lock, id, and the backing property map.
+
+        Threading:
+            State transitions are applied under the configuration lock.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If the configuration has been cleaned.
+
         Returns:
             None.
         """
@@ -88,6 +107,20 @@ class AetherConfiguration(Cleanable):
     def cleanup(self) -> None:
         """
         Idempotently clear configuration state.
+
+        Contract:
+            - IDEMPOTENT: a second call returns without re-running teardown.
+            - Releases only configuration-owned state. Loggers and resolvers handed
+              in by the caller are BORROWED and are not cleaned here.
+
+        Threading:
+            State transitions are applied under the configuration lock.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If the configuration has been cleaned.
 
         Returns:
             None.
@@ -110,6 +143,20 @@ class AetherConfiguration(Cleanable):
         """
         Return the stable configuration id.
 
+        Contract:
+            - Identifies THIS CONFIGURATION OBJECT, not the Aether it configures.
+            - Assigned at construction and stable for the object's life; freezing
+              and activating do not change it.
+
+        Threading:
+            State transitions are applied under the configuration lock.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If the configuration has been cleaned.
+
         Returns:
             str: Stable configuration id.
         """
@@ -120,6 +167,22 @@ class AetherConfiguration(Cleanable):
     def frozen(self) -> bool:
         """
         Return whether the configuration is frozen.
+
+        Contract:
+            - True once `freeze()` has sealed the values. Frozen means SETTERS ARE
+              REFUSED; it does NOT mean the configuration is in use - that is
+              `activated`.
+            - Part of the three-stage configuration lifecycle: MUTABLE -> FROZEN ->
+              ACTIVATED. Setters work only while mutable; `freeze()` seals values;
+              `activate()` additionally marks the config live and records it.
+        Threading:
+            State transitions are applied under the configuration lock.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If the configuration has been cleaned.
 
         Returns:
             bool: True when the mutation is closed.
@@ -132,6 +195,22 @@ class AetherConfiguration(Cleanable):
         """
         Return whether the configuration has been activated.
 
+        Contract:
+            - True only after `activate()`. Activation implies frozen, but frozen does
+              NOT imply activated: `finalize()` freezes WITHOUT activating, so a
+              configuration can be sealed and never made live.
+            - Part of the three-stage configuration lifecycle: MUTABLE -> FROZEN ->
+              ACTIVATED. Setters work only while mutable; `freeze()` seals values;
+              `activate()` additionally marks the config live and records it.
+        Threading:
+            State transitions are applied under the configuration lock.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If the configuration has been cleaned.
+
         Returns:
             bool: True when validated, frozen, and marked ready for Aether.
         """
@@ -142,6 +221,21 @@ class AetherConfiguration(Cleanable):
     def channel_logger_activation_enabled(self) -> bool:
         """
         Return whether automatic channel logger activation is enabled.
+
+        Contract:
+            - DEFENSIVE READ: the stored value's type is re-checked on every read and
+              a drifted value raises `TypeError` rather than being returned. That
+              guards against direct tampering with the underlying property map.
+            - Reflects the sealed value once frozen, so a post-freeze read is stable.
+
+        Threading:
+            State transitions are applied under the configuration lock.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If the configuration has been cleaned.
 
         Returns:
             bool: True when `resolve_channel_logger(...)` may auto-attach.
@@ -159,6 +253,23 @@ class AetherConfiguration(Cleanable):
         """
         Return the configured channel logger resolver, if any.
 
+        Contract:
+            - `None` is a legitimate value meaning "no resolver attached", not an
+              error. The read accepts None and rejects any non-callable.
+            - DEFENSIVE READ: the stored value's type is re-checked on every read and
+              a drifted value raises `TypeError` rather than being returned. That
+              guards against direct tampering with the underlying property map.
+            - Reflects the sealed value once frozen, so a post-freeze read is stable.
+
+        Threading:
+            State transitions are applied under the configuration lock.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If the configuration has been cleaned.
+
         Returns:
             Optional[Callable[..., Any]]: Configured resolver.
         """
@@ -175,6 +286,23 @@ class AetherConfiguration(Cleanable):
         """
         Return the configured stdlib fallback logger, if any.
 
+        Contract:
+            - `None` is a legitimate value meaning "no default logger", not an error.
+              Any non-`logging.Logger` value raises on read.
+            - DEFENSIVE READ: the stored value's type is re-checked on every read and
+              a drifted value raises `TypeError` rather than being returned. That
+              guards against direct tampering with the underlying property map.
+            - Reflects the sealed value once frozen, so a post-freeze read is stable.
+
+        Threading:
+            State transitions are applied under the configuration lock.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If the configuration has been cleaned.
+
         Returns:
             Optional[logging.Logger]: Configured default logger.
         """
@@ -187,6 +315,21 @@ class AetherConfiguration(Cleanable):
     def with_defaults(self) -> "AetherConfiguration":
         """
         Apply the default Aether logger policy.
+
+        Contract:
+            - MUTATES THIS OBJECT and returns `self`; it is not a copying builder.
+            - Applies the default logger policy in place, overwriting anything set
+              earlier, so call it FIRST and override afterwards.
+            - Refused once frozen.
+
+        Threading:
+            State transitions are applied under the configuration lock.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If the configuration has been cleaned.
 
         Returns:
             AetherConfiguration: This configuration instance.
@@ -275,6 +418,21 @@ class AetherConfiguration(Cleanable):
                 True when `resolve_channel_logger(...)` may auto-attach a
                 logger for callers that opt into that path.
 
+        Contract:
+            - FLUENT WRAPPER over the matching `set_...` method: it delegates and
+              returns `self`, adding no validation of its own.
+            - MUTATES THIS OBJECT; it does not produce a variant.
+            - Refused once frozen.
+
+        Threading:
+            State transitions are applied under the configuration lock.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If the configuration has been cleaned.
+
         Returns:
             AetherConfiguration: This configuration instance.
         """
@@ -292,6 +450,21 @@ class AetherConfiguration(Cleanable):
             resolver:
                 Resolver callable or None.
 
+        Contract:
+            - FLUENT WRAPPER over the matching `set_...` method; delegates and returns
+              `self`, adding no validation of its own.
+            - `None` is accepted and clears the resolver.
+            - Refused once frozen.
+
+        Threading:
+            State transitions are applied under the configuration lock.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If the configuration has been cleaned.
+
         Returns:
             AetherConfiguration: This configuration instance.
         """
@@ -308,6 +481,21 @@ class AetherConfiguration(Cleanable):
         Args:
             logger:
                 Fallback stdlib logger or None.
+
+        Contract:
+            - FLUENT WRAPPER over the matching `set_...` method; delegates and returns
+              `self`, adding no validation of its own.
+            - `None` is accepted and clears the default logger.
+            - Refused once frozen.
+
+        Threading:
+            State transitions are applied under the configuration lock.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If the configuration has been cleaned.
 
         Returns:
             AetherConfiguration: This configuration instance.
@@ -406,6 +594,25 @@ class AetherConfiguration(Cleanable):
         """
         Validate the logger policy values.
 
+        Contract:
+            - NEVER RETURNS False. Every failure raises `ValueError`; the `bool` return
+              is a convention, not a verdict channel. Treat it as an assertion.
+              (`freeze()`'s `if not self.validate()` branch is consequently
+              unreachable.)
+            - Checks VALUE TYPES only - the activation flag must be a bool, the
+              resolver must be callable or None, the default logger must be a
+              `logging.Logger` or None.
+            - Does not mutate, and may be called before or after freeze.
+
+        Threading:
+            State transitions are applied under the configuration lock.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If the configuration has been cleaned.
+
         Returns:
             bool: True when the configuration is valid.
         """
@@ -430,6 +637,21 @@ class AetherConfiguration(Cleanable):
         """
         Validate and freeze the configuration.
 
+        Contract:
+            - IDEMPOTENT: a second call returns immediately without re-validating.
+            - VALIDATES BEFORE SEALING, so an invalid configuration raises and stays
+              MUTABLE. Freeze is all-or-nothing.
+            - Seals values only; it does NOT activate. Use `activate()` for that.
+
+        Threading:
+            State transitions are applied under the configuration lock.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If the configuration has been cleaned.
+
         Returns:
             None.
         """
@@ -445,6 +667,22 @@ class AetherConfiguration(Cleanable):
         """
         Validate and freeze the configuration, then return it.
 
+        Contract:
+            - `freeze()` plus `return self` - nothing more. It seals the configuration
+              WITHOUT activating it and WITHOUT recording anything.
+            - Use this when you want an immutable configuration to hand somewhere;
+              use `activate()` when the configuration is going live now.
+            - Idempotent, inheriting `freeze()`'s early return.
+
+        Threading:
+            State transitions are applied under the configuration lock.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If the configuration has been cleaned.
+
         Returns:
             AetherConfiguration: This configuration instance.
         """
@@ -454,6 +692,25 @@ class AetherConfiguration(Cleanable):
     def activate(self) -> "AetherConfiguration":
         """
         Validate, freeze, and mark the configuration active.
+
+        Contract:
+            - Freezes, marks the configuration ACTIVE, and then EMITS a configured-twin
+              record when recording is on. That emission is a real side effect that
+              `finalize()` does not have.
+            - NOT FULLY IDEMPOTENT. The freeze and the flag are, but the emission is
+              NOT guarded by the activated flag, so calling `activate()` twice
+              records TWICE. Call it once.
+            - Emission happens after the flag is set, so the configuration is already
+              observably active while the record is written.
+
+        Threading:
+            State transitions are applied under the configuration lock.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If the configuration has been cleaned.
 
         Returns:
             AetherConfiguration: This activated configuration instance.

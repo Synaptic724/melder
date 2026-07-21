@@ -57,6 +57,21 @@ class HookExecutionError(Exception):
             original_exception (Exception): Original exception raised by the
                 hook body.
 
+        Contract:
+            - PRESERVES THE ORIGINAL EXCEPTION on the instance rather than discarding
+              it, so callers can inspect the underlying failure instead of parsing the
+              message.
+            - Records the PHASE and HOOK NAME separately, so handlers can decide
+              whether a pre-hook or post-hook failure is recoverable.
+            - The composed message names the hook and the original exception type,
+              which is what makes these readable in a log without unwrapping.
+
+        Threading:
+            Plain construction; no shared state.
+
+        Lifecycle / Cleanup:
+            None - it is an exception value.
+
         Returns:
             None.
         """

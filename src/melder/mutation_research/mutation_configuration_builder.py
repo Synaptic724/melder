@@ -59,6 +59,25 @@ class MutationResearchConfigurationBuilder(Cleanable):
         """
         Initialize one builder with a fresh configuration.
 
+        Contract:
+            - Constructs and OWNS a fresh `MutationResearchConfiguration`. The builder
+              wraps exactly one configuration; it is not a reusable factory.
+            - The wrapped configuration starts EMPTY, so seed both properties before
+              any exit method that freezes.
+
+        Owned State:
+            Owns its lock, id, and the wrapped configuration until an exit method
+            hands it over.
+
+        Threading:
+            State transitions are applied under the configuration lock.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If the configuration has been cleaned.
+
         Returns:
             None.
         """
@@ -72,6 +91,21 @@ class MutationResearchConfigurationBuilder(Cleanable):
     def cleanup(self) -> None:
         """
         Idempotently cleanup the builder and any still-owned configuration.
+
+        Contract:
+            - IDEMPOTENT under double-checked locking, and OWNERSHIP-AWARE: it cleans
+              the wrapped configuration ONLY while the builder still owns it.
+              Cleaning a builder you never exited DESTROYS the configuration;
+              cleaning one you already exited leaves the caller's intact.
+
+        Threading:
+            State transitions are applied under the configuration lock.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If the configuration has been cleaned.
 
         Returns:
             None.
@@ -93,6 +127,19 @@ class MutationResearchConfigurationBuilder(Cleanable):
         """
         Return the stable builder id.
 
+        Contract:
+            - Identifies THIS BUILDER, not the configuration it wraps - the two carry
+              different ids.
+
+        Threading:
+            State transitions are applied under the configuration lock.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If the configuration has been cleaned.
+
         Returns:
             str: Stable builder id.
         """
@@ -102,6 +149,20 @@ class MutationResearchConfigurationBuilder(Cleanable):
     def with_defaults(self) -> "MutationResearchConfigurationBuilder":
         """
         Apply the default mutation-research configuration.
+
+        Contract:
+            - Delegates to the wrapped configuration and returns the BUILDER, not the
+              configuration, so the chain stays at the builder layer.
+            - Overwrites anything set earlier; call it first.
+
+        Threading:
+            State transitions are applied under the configuration lock.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If the configuration has been cleaned.
 
         Returns:
             MutationResearchConfigurationBuilder: This builder.
@@ -121,6 +182,19 @@ class MutationResearchConfigurationBuilder(Cleanable):
             enabled:
                 Whether unrestricted module mutation mode is enabled.
 
+        Contract:
+            - Delegates to the wrapped configuration and returns the BUILDER.
+            - Refused once the wrapped configuration is frozen.
+
+        Threading:
+            State transitions are applied under the configuration lock.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If the configuration has been cleaned.
+
         Returns:
             MutationResearchConfigurationBuilder: This builder.
         """
@@ -139,6 +213,19 @@ class MutationResearchConfigurationBuilder(Cleanable):
             enabled:
                 Whether type-mixing lane joins require force=True.
 
+        Contract:
+            - Delegates to the wrapped configuration and returns the BUILDER.
+            - Refused once the wrapped configuration is frozen.
+
+        Threading:
+            State transitions are applied under the configuration lock.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If the configuration has been cleaned.
+
         Returns:
             MutationResearchConfigurationBuilder: This builder.
         """
@@ -150,6 +237,25 @@ class MutationResearchConfigurationBuilder(Cleanable):
         """
         Transfer the wrapped mutable configuration to the caller.
 
+        Contract:
+            - HANDS OVER A MUTABLE, UNFROZEN CONFIGURATION. It does NOT freeze, unlike
+              `AetherConfigurationBuilder.build()`, which returns a frozen one. Same
+              method name, different guarantee - check which builder you hold.
+            - ONE-SHOT: it transfers ownership, so a second exit call on this builder
+              raises. `build()`, `finalize()` and `activate()` are mutually exclusive
+              exits; whichever you call first consumes the builder.
+            - After handover the caller owns the configuration and the builder will
+              never clean it.
+
+        Threading:
+            State transitions are applied under the configuration lock.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If the configuration has been cleaned.
+
         Returns:
             MutationResearchConfiguration: Wrapped configuration instance.
         """
@@ -159,6 +265,22 @@ class MutationResearchConfigurationBuilder(Cleanable):
     def finalize(self) -> MutationResearchConfiguration:
         """
         Finalize and transfer the wrapped configuration to the caller.
+
+        Contract:
+            - Freezes the wrapped configuration and THEN hands it over, so the caller
+              receives a FROZEN, NOT-YET-ACTIVATED configuration.
+            - ONE-SHOT and mutually exclusive with `build()` and `activate()`.
+            - Because it freezes, the configuration must be complete first - an
+              unseeded bag raises here rather than at handover.
+
+        Threading:
+            State transitions are applied under the configuration lock.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If the configuration has been cleaned.
 
         Returns:
             MutationResearchConfiguration: Frozen configuration instance.
@@ -170,6 +292,23 @@ class MutationResearchConfigurationBuilder(Cleanable):
     def activate(self) -> MutationResearchConfiguration:
         """
         Activate and transfer the wrapped configuration to the caller.
+
+        Contract:
+            - Activates the wrapped configuration and THEN hands it over, so the caller
+              receives an ACTIVATED configuration and the activation record has
+              already been emitted.
+            - ONE-SHOT and mutually exclusive with `build()` and `finalize()`.
+            - Prefer this over calling `activate()` yourself on a built
+              configuration: doing both would emit the activation record twice.
+
+        Threading:
+            State transitions are applied under the configuration lock.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If the configuration has been cleaned.
 
         Returns:
             MutationResearchConfiguration: Activated configuration instance.

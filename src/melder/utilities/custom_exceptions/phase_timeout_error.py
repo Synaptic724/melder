@@ -58,6 +58,20 @@ class PhaseTimeoutError(PhaseSchedulerError):
                 timeout budget.
             timeout_ms (int): Configured timeout in milliseconds.
 
+        Contract:
+            - COMPOSES ITS OWN MESSAGE from the phase name and timeout, so callers pass
+              structured values rather than pre-formatted text.
+            - RETAINS `phase_name` and `timeout_ms` as attributes, so handlers can
+              branch on which phase timed out without parsing the message.
+            - Signals that the resolution pipeline was ABORTED, not merely delayed -
+              this is a terminal condition for that run.
+
+        Threading:
+            Plain construction; no shared state.
+
+        Lifecycle / Cleanup:
+            None - it is an exception value.
+
         Returns:
             None.
         """

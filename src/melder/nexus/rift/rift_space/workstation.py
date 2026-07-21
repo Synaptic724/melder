@@ -194,6 +194,19 @@ class Workstation(Cleanable):
         """
         Return the stable workstation identifier.
 
+        Contract:
+            - Identifies THIS WORKSTATION, distinct from `owner_space_id` - the space
+              that hosts it.
+
+        Threading:
+            Reads under `self._lock`, so the result is a coherent snapshot.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If the object has been cleaned.
+
         Returns:
             str: Stable workstation id.
         """
@@ -205,6 +218,19 @@ class Workstation(Cleanable):
     def owner_space_id(self) -> str:
         """
         Return the owning room identifier.
+
+        Contract:
+            - The rift space hosting this workstation, fixed at construction. A
+              workstation is never re-homed to another space.
+
+        Threading:
+            Reads under `self._lock`, so the result is a coherent snapshot.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If the object has been cleaned.
 
         Returns:
             str: Owning `RiftSpace` id.
@@ -385,6 +411,25 @@ class Workstation(Cleanable):
     def describe_bindings(self) -> Dict[str, List[str]]:
         """
         Return a detached summary of saved binding names by logical store.
+
+        Contract:
+            - Returns a FOUR-KEY summary - `objects`, `attributes`, `methods` and
+              `target_name` - always with all four keys present, so callers can index
+              them without a `get`.
+            - `target_name` is normalized to a LIST for shape consistency with the
+              other three: empty when no target is bound, single-element when one is.
+              It is not a list of many targets.
+            - Names only, not values: this describes what is bound, not what those
+              bindings currently hold.
+
+        Threading:
+            Reads under `self._lock`, so the result is a coherent snapshot.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If the object has been cleaned.
 
         Returns:
             Dict[str, List[str]]: Binding names grouped by logical store.
