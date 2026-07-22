@@ -63,8 +63,27 @@ class SpellSymbolicDependency(Cleanable):
     contract_key:
         For SPELL_CONTRACT shapes, the canonical
         "(frame_key, binding_key)" derived from the contract object.
+
+    Registration:
+        MELDER KERNEL - guarded. A Phase-2 compiler edge; not user-bindable.
+
+    Subsystem Context:
+        An edge in the `symbolic_graph` package: `SpellSymbolicGraph` holds a list
+        of these, one per constructor socket, each carrying a `ParameterDIShape`
+        classified back in Phase 1.
+
+    System Context:
+        Produced in Phase 2 (symbolic graph) of the conjure pipeline, between
+        Phase-1 requirements and Phase-3 DAG construction. It is SYMBOLIC - no
+        Spellbook lookups, no concrete dependency spell ids, and no ordering.
     """
     __melder_internal__: ClassVar[object] = _mrg.sentinel
+    __ast_helper_access__: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. Phase-2 symbolic socket for ONE constructor parameter: spell_id, "
+        "param_name, position, di_shape, target_annotation, is_collection, spellmap_default, "
+        "contract_key. Symbolic only - not yet tied to concrete spell ids."
+    )
     __slots__ = Cleanable.__slots__ + [
         "_lock",
         "_spell_id",

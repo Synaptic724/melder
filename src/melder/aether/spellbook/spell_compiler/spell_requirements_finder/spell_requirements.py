@@ -35,8 +35,30 @@ class SpellRequirements(Cleanable):
         * Build DAGs or symbolic graphs.
 
     Those concerns are reserved for later phases.
+
+    Registration:
+        MELDER KERNEL - guarded. A per-spell compiler artifact built during Phase
+        1; not a user-bindable object.
+
+    Subsystem Context:
+        The aggregate of the `spell_requirements_finder` trio: it owns the ordered
+        `SpellParameterRequirement` list, each element of which carries a
+        `ParameterDIShape`. Its `iter_di_parameters` / `iter_plain_parameters` /
+        `iter_required_holes` helpers classify parameters without resolving them.
+
+    System Context:
+        A Phase-1 output of the conjure pipeline, consumed downstream by the
+        symbolic graph, DAG construction, and validation phases. It never touches
+        the Spellbook or the live object world.
     """
     __melder_internal__: ClassVar[object] = _mrg.sentinel
+    __ast_helper_access__: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. Phase-1 per-spell requirements artifact: identity (spell_id, type, "
+        "existence, spellframe, binding_name) plus the ordered SpellParameterRequirement list. "
+        "iter_di_parameters / iter_plain_parameters / iter_required_holes classify without "
+        "resolving."
+    )
     __slots__ = Cleanable.__slots__ + [
         "_lock",
         "_spell_id",

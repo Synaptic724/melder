@@ -40,6 +40,9 @@ class CodegenCreationDiscoveryStrategy(ABC):
     def strategy_id(self) -> str:
         """
         Return the stable identifier for this discovery strategy.
+
+        Returns:
+            str: Registry key this strategy is registered and selected by.
         """
         raise NotImplementedError
 
@@ -50,6 +53,22 @@ class CodegenCreationDiscoveryStrategy(ABC):
             spell_codegen_plan: SpellCodegenPlan,
     ) -> Optional[CodegenCreationDiscovery]:
         """
-        Inspect the model/plan pair and optionally produce a codegen-style result.
+        Inspect the model/plan pair and optionally claim it for a codegen style.
+
+        Contract:
+            Reads only the passed model and plan; builds no runtime artifacts.
+            Per the class Contract, return None to decline the pair, or a
+            `CodegenCreationDiscovery` to stop discovery and use that result.
+
+        Args:
+            spell_codegen_model:
+                Analyzed spell model for the current compile.
+            spell_codegen_plan:
+                Phase-10-selected plan whose concrete codegen style this
+                strategy may choose.
+
+        Returns:
+            Optional[CodegenCreationDiscovery]:
+                The claim result, or None when this strategy declines the pair.
         """
         raise NotImplementedError

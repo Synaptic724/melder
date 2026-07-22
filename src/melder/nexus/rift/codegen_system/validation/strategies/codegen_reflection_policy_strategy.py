@@ -112,10 +112,32 @@ class CodegenReflectionPolicyStrategy(Cleanable):
     }
 
     def __init__(self) -> None:
+        """
+        Initialize the strategy with its own reentrant guard lock.
+
+        Contract:
+            Stateless beyond the guard lock: the reflection module/helper
+            alias sets are recomputed per `validate` call from the request
+            AST, so one instance serves every request in the strategy set.
+
+        Returns:
+            None.
+        """
         super().__init__()
         self._lock: threading.RLock = threading.RLock()
 
     def cleanup(self) -> None:
+        """
+        Idempotently release the strategy's guard lock.
+
+        Contract:
+            Double-checked under the lock and terminal; the lock is deleted
+            last. Cleanup touches neither the owning validator nor any
+            in-flight transaction context.
+
+        Returns:
+            None.
+        """
         if self._cleaned:
             return
         with self._lock:

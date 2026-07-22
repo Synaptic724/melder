@@ -26,8 +26,33 @@ class SpellMapShapeValidationStrategy(SpellValidationStrategy):
 
     This checks that SpellMap defaults are present, have valid targets,
     and use normalized binding names.
+
+    Contract:
+        Runs per SPELLMAP_DEFAULT parameter. Errors on SPELLMAP_DEFAULT_MISSING (no
+        captured SpellMap), SPELLMAP_DEFAULT_INVALID (default is not a SpellMap), and
+        SPELLMAP_MISSING_TARGET (neither spell nor spellframe). Warns
+        SPELLMAP_BINDING_NAME_NOT_NORMALIZED. Validation only; mutates nothing.
+
+    Registration:
+        MELDER KERNEL - guarded via the inherited `SpellValidationStrategy` sentinel
+        (no redundant sentinel). A built-in strategy; registered, never bound.
+
+    Subsystem Context:
+        A built-in of the `validation/strategies` family; it inspects the SpellMap
+        defaults captured on Phase-1 parameters and normalizes binding names via
+        `SpellInputUtils`.
+
+    System Context:
+        Phase 4 (validation) of the conjure pipeline, guarding the explicit
+        SpellMap DI descriptor shape.
     """
 
+    __ast_helper_access__: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. Phase-4 strategy for SPELLMAP_DEFAULT params: errors on missing / "
+        "invalid SpellMap or a SpellMap with no spell/spellframe target; warns when binding_name "
+        "is not normalized. Validation only."
+    )
     __slots__ = SpellValidationStrategy.__slots__
 
     def __init__(self) -> None:

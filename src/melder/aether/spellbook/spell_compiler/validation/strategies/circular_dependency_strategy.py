@@ -26,8 +26,28 @@ class CircularDependencyStrategy(SpellValidationStrategy):
     - Reports only cycles reachable from the spell currently under validation.
     - Emits validation issues into the supplied context; it does not mutate the
       graph or try to break cycles automatically.
+
+    Registration:
+        MELDER KERNEL - guarded via the inherited `SpellValidationStrategy` sentinel
+        (no redundant sentinel). A built-in strategy; registered, never bound.
+
+    Subsystem Context:
+        A built-in of the `validation/strategies` family; the multi-hop counterpart
+        to `SelfDependencyStrategy`, and it leaves dangling ids to
+        `DanglingDependenciesStrategy`.
+
+    System Context:
+        Phase 4 (validation) of the conjure pipeline. It reuses
+        `validation_pass_cache` so one adjacency build serves the whole scheduler
+        pass.
     """
 
+    __ast_helper_access__: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. Phase-4 strategy: DFS over the spellbook-wide dependency adjacency "
+        "(pass-cached) from the current spell; emits CIRCULAR_DEPENDENCY (error) with the cycle "
+        "path when a reachable cycle is found. Ignores dangling ids."
+    )
     __slots__ = SpellValidationStrategy.__slots__
 
     def __init__(self) -> None:

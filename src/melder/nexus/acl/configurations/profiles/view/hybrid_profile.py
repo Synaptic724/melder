@@ -46,6 +46,13 @@ class HybridViewProfileStrategy:
 
     @property
     def name(self) -> str:
+        """
+        Return the preset's registration/selection key.
+
+        Returns:
+            str: `hybrid` - the name this preset is registered and selected
+            by in the view profile builder.
+        """
         return self._NAME
 
     def build(self) -> FrameACLViewProfile:

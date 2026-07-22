@@ -24,6 +24,18 @@ class SpellOccurrenceOrderAnalysis(Cleanable):
     ) -> None:
         """
         Build one occurrence-order artifact.
+
+        Contract:
+            Stores the execution-order list by reference and caches its length
+            as `execution_order_count`.
+
+        Args:
+            execution_order:
+                Deterministic execution-order spell ids from the analyzer's
+                occurrence graph.
+
+        Returns:
+            None.
         """
         super().__init__()
         self.execution_order = execution_order

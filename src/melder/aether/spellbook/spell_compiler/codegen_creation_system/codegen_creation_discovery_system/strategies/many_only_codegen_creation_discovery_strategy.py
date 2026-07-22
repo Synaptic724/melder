@@ -39,7 +39,26 @@ class ManyOnlyCodegenCreationDiscoveryStrategy(CodegenCreationDiscoveryStrategy)
             spell_codegen_plan: SpellCodegenPlan,
     ) -> Optional[CodegenCreationDiscovery]:
         """
-        Claim many-only planner output and return the many-only creation family id.
+        Claim many-only planner output and route it to the many-only family.
+
+        Contract:
+            Declines (returns None) unless the plan's
+            metadata["selected_strategy_id"] is "many_only_codegen_plan". On a
+            match, selects the first candidate codegen style (or "many_only"
+            when none) and claims the "many_only_codegen_creation" family. The
+            model is not inspected.
+
+        Args:
+            spell_codegen_model:
+                Analyzed spell model (unused; selection is plan-driven).
+            spell_codegen_plan:
+                Phase-10 plan whose metadata and candidate styles drive the
+                claim.
+
+        Returns:
+            Optional[CodegenCreationDiscovery]:
+                The many-only-family discovery, or None when the plan is not
+                many-only.
         """
         _ = spell_codegen_model
         selected_plan_strategy_id = spell_codegen_plan.metadata.get(

@@ -72,6 +72,36 @@ class CodegenProjection(Cleanable):
             compiled_access_surface: CompiledFrameACLAccessSurface,
             metadata: Optional[Dict[str, object]] = None,
     ) -> None:
+        """
+        Bind one codegen projection to its detached ACL snapshot.
+
+        Contract:
+            - Takes ownership of `frame_acl_configuration` and
+              `compiled_access_surface` (both detached snapshots); this
+              projection's cleanup tears them down.
+            - References `frame_descriptor` without owning its cleanup, so
+              descriptor lifetime stays with the descriptor's owner.
+            - Copies `metadata` into a fresh dict so later caller mutation
+              cannot reach projection state.
+
+        Args:
+            frame_name:
+                Target frame this projection answers for; must be non-empty.
+            frame_descriptor:
+                Live descriptor truth for the frame (referenced, not owned).
+            frame_acl_configuration:
+                Detached ACL configuration snapshot owned by this projection.
+            compiled_access_surface:
+                Detached compiled access surface owned by this projection.
+            metadata:
+                Optional projection metadata; copied defensively (None -> {}).
+
+        Raises:
+            ValueError: If `frame_name` is empty.
+
+        Returns:
+            None.
+        """
         super().__init__()
         if not frame_name:
             raise ValueError("frame_name cannot be empty.")

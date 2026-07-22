@@ -78,6 +78,28 @@ class SpellOverrideTargetingCodegenCreation(Cleanable):
     ) -> None:
         """
         Build one override-targeting creation artifact.
+
+        Contract:
+            Validates a non-empty root spell id, stores `targets_by_spec` by
+            reference, and converts each `specificity_by_spec` value into a
+            `_Specificity` enum (PATH > UNIQUE > BROADCAST) for conflict
+            ordering. Initializes the raw-key resolution memo and the two
+            last-entry apply caches (single/multi), which each publish as one
+            atomic tuple snapshot to stay torn-read-safe on 3.14t.
+
+        Args:
+            root_spell_id:
+                Root spell this override surface belongs to; must be non-empty.
+            targets_by_spec:
+                Per-spec tuple of target socket rows.
+            specificity_by_spec:
+                Per-spec integer specificity, coerced to `_Specificity`.
+
+        Raises:
+            ValueError: If `root_spell_id` is empty.
+
+        Returns:
+            None.
         """
         super().__init__()
         if not root_spell_id:
@@ -129,6 +151,23 @@ class SpellOverrideTargetingCodegenCreation(Cleanable):
     ) -> "SpellOverrideTargetingCodegenCreation":
         """
         Build the artifact from processor-owned override targeting analysis.
+
+        Contract:
+            Normalizes each processor `SpellOverrideTargetRef` into a
+            compiler-owned, hashable `SpellOverrideTargetSocketRef` (dropping the
+            runtime SocketRef dependency), preserving per-spec grouping, then
+            delegates to `__init__`.
+
+        Args:
+            root_spell_id:
+                Root spell this override surface belongs to.
+            targets_by_spec:
+                Per-spec tuple of processor `SpellOverrideTargetRef` rows.
+            specificity_by_spec:
+                Per-spec integer specificity.
+
+        Returns:
+            SpellOverrideTargetingCodegenCreation: The compiler-owned artifact.
         """
         normalized_targets_by_spec: Dict[
             str,

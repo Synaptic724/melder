@@ -125,6 +125,10 @@ class AethericFrameCrystal(Cleanable):
         """
         Return the canonical frame name this twin mirrors.
 
+        Contract:
+            - The stable reconstruction coordinate (a NAME, not a runtime id);
+              restore never reuses a frame runtime identity from this payload.
+
         Returns:
             str:
                 The frame name (parent edge key for child twins).
@@ -136,6 +140,10 @@ class AethericFrameCrystal(Cleanable):
     def system_state_name(self) -> str:
         """
         Return the recorded SystemState name for the frame.
+
+        Contract:
+            - Recorded SystemState NAME ("dynamic" expected - the emit gate
+              excludes automatic frames); a string, not the enum member.
 
         Returns:
             str:
@@ -149,6 +157,10 @@ class AethericFrameCrystal(Cleanable):
         """
         Return the recorded rift_enabled posture.
 
+        Contract:
+            - Part of the recorded posture trio; drives AR/Rift eligibility on
+              restore.
+
         Returns:
             bool:
                 True when the frame allowed AR/Rift attachment at emission.
@@ -160,6 +172,10 @@ class AethericFrameCrystal(Cleanable):
     def ai_native_enabled(self) -> bool:
         """
         Return the recorded ai_native posture.
+
+        Contract:
+            - Part of the recorded posture trio; gates AI-native attachment on
+              restore.
 
         Returns:
             bool:
@@ -173,6 +189,10 @@ class AethericFrameCrystal(Cleanable):
         """
         Return a detached copy of the frame's dev-ops configured surface.
 
+        Contract:
+            - A FRESH copy of the frame's dev-ops value surface; mutating it
+              never touches the twin.
+
         Returns:
             Dict[str, object]:
                 Detached mapping of dev-ops property name -> value.
@@ -183,6 +203,10 @@ class AethericFrameCrystal(Cleanable):
     def describe(self) -> Dict[str, object]:
         """
         Return a detached, serialization-ready snapshot of this twin.
+
+        Contract:
+            - Detached, plain-value cached-item form; carries `twin_kind:
+              "frame"` for persistence-layer dispatch.
 
         Returns:
             Dict[str, object]:

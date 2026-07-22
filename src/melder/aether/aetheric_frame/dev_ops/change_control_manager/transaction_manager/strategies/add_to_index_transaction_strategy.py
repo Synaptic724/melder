@@ -78,7 +78,34 @@ class AddToIndexTransactionStrategy(TransactionStrategy):
             metadata: Dict[str, object],
     ) -> Dict[str, object]:
         """
-        Build the change-control request inputs for one add-to-index transaction.
+        Build the change-control request inputs for one add-to-index move.
+
+        Contract:
+            Produces the EXCLUSIVE-seal request for a move-in: collects the
+            source+target spellbook and conduit ids from metadata (falling back
+            to the submitter's owner id), extends the conduit seal to each
+            acting conduit's borrowers and providers, resolves the optional
+            binding key, and claims all of them EXCLUSIVE via `_seal_scope_keys`.
+            Stamps normalized metadata with the transaction identity,
+            `index_mode="add_to_index"`, and the quiesce root-conduit footprint
+            that `on_start`/`on_end` freeze. Pure planning - no runtime object is
+            mutated here.
+
+        Args:
+            transaction_manager:
+                Frame-local scope-key/request helper surface.
+            devops_information_registry:
+                Topology registry used to expand the conduit seal to peers.
+            identity:
+                Submitter identity (owner-id fallback for the seal).
+            metadata:
+                Caller metadata carrying source/target ids and options.
+
+        Returns:
+            Dict[str, object]:
+                Normalized request inputs (initiator, spellbook, sealed conduit
+                set, EXCLUSIVE scope claims, capabilities, normalized metadata)
+                for mediator admission.
         """
         spellbook_ids = cls._collect_ids(
             metadata, ("source_spellbook_id", "target_spellbook_id", "spellbook_id")

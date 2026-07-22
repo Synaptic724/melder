@@ -32,6 +32,18 @@ class FallbackNoOverridesCodegenCreationStrategy(SpellCodegenStrategy):
     ]
 
     def __init__(self) -> None:
+        """
+        Build the fallback strategy over one generalized no-overrides step.
+
+        Contract:
+            Owns one `GeneralizedNoOverridesCodegenCreationStep`. The
+            fallback keeps the legacy discovery/result contract of a public
+            strategy while delegating the real creation work to that step in
+            `apply`.
+
+        Returns:
+            None.
+        """
         super().__init__()
         self._step = GeneralizedNoOverridesCodegenCreationStep()
 
@@ -50,6 +62,23 @@ class FallbackNoOverridesCodegenCreationStrategy(SpellCodegenStrategy):
     ) -> None:
         """
         Populate the no-overrides runtime output through the generalized step.
+
+        Contract:
+            Wraps the three inputs in a `GeneralizedCodegenCreationState` and
+            drives the owned step over it; the creation output lands on the
+            passed `spell_codegen_creation`, so this strategy returns nothing
+            of its own.
+
+        Args:
+            spell_codegen_model:
+                Analyzed spell model the creation output is derived from.
+            spell_codegen_plan:
+                Ordered creation plan selected for this spell.
+            spell_codegen_creation:
+                Mutable creation sink the generalized step populates.
+
+        Returns:
+            None.
         """
         state = GeneralizedCodegenCreationState(
             spell_codegen_model=spell_codegen_model,

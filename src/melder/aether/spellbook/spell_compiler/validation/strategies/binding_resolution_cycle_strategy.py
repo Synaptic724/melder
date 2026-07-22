@@ -38,8 +38,28 @@ class BindingResolutionCycleStrategy(SpellValidationStrategy):
         - Builds a binding-key graph from available requirements.
         - Reports cycles reachable from the spell under validation.
         - Does not mutate spells, spellbooks, or requirements.
+
+    Registration:
+        MELDER KERNEL - guarded via the inherited `SpellValidationStrategy` sentinel
+        (no redundant sentinel). A built-in strategy; registered, never bound.
+
+    Subsystem Context:
+        A built-in of the `validation/strategies` family; the binding-KEY counterpart
+        to `CircularDependencyStrategy` (which works at the spell-id level). Both are
+        pass-cached.
+
+    System Context:
+        Phase 4 (validation) of the conjure pipeline. It models resolution by
+        canonical binding key, catching cycles that only appear once
+        SpellMap/SpellContract/annotation targets are normalized.
     """
 
+    __ast_helper_access__: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. Phase-4 strategy: builds a binding-KEY adjacency graph from the pool's "
+        "Phase-1 requirements (pass-cached) and emits BINDING_RESOLUTION_CYCLE (error) per cycle "
+        "reachable from the current spell's key. Catches loops invisible at the spell-id level."
+    )
     __slots__ = SpellValidationStrategy.__slots__
 
     def __init__(self) -> None:

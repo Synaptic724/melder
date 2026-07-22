@@ -76,6 +76,33 @@ class CreationContextBuilder:
     ) -> CreationContext:
         """
         Build one spell-bound CreationContext.
+
+        Contract:
+            Two shapes by spell kind: an EXISTING-creation spell synthesizes its
+            three runtime executors locally (no compiler artifact required); a
+            constructed spell pulls its no-overrides, no-overrides-instance, and
+            overrides executors from `spell_codegen_creation` and refuses
+            (raises) when that payload - or any of the three executors - is
+            absent, since that means the analyzer -> processor -> planner ->
+            codegen pipeline was skipped. The resulting context receives only
+            the final tuple-return executors plus the gate wiring.
+
+        Args:
+            spell:
+                Spell to bind the context to.
+            dynamic_environment:
+                When True, build the context for a dynamic meld environment.
+            creation_gate:
+                Optional creation gate the context coordinates through.
+            creation_gate_index_id:
+                Optional index id scoping the creation gate.
+
+        Returns:
+            CreationContext: The spell-bound creation context.
+
+        Raises:
+            RuntimeError: For a constructed spell, if `spell_codegen_creation`
+                or any required executor was not populated.
         """
         artifact = spell._compiler_artifact
         spell_codegen_creation = artifact._spell_codegen_creation

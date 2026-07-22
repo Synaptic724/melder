@@ -85,7 +85,36 @@ class AddSpellOrIndexToContractTransactionStrategy(TransactionStrategy):
             metadata: Dict[str, object],
     ) -> Dict[str, object]:
         """
-        Build the change-control request inputs for one add-spell-or-index-to-contract transaction.
+        Build the change-control request inputs for one add-to-contract grant.
+
+        Contract:
+            Produces the mixed-claim request for a standalone contract add:
+            collects the borrower + provider conduit ids from metadata (owner-id
+            fallback) and claims each conduit AND its `conduit_ward` identity
+            EXCLUSIVE (the mutation writes the borrower ward and reads the
+            provider surface); the owning spellbook, when named, is claimed
+            INTENT so a single spell/index add does not serialize unrelated
+            piece-work on a whole book; an optional binding key is claimed
+            EXCLUSIVE. Stamps normalized metadata with the transaction identity
+            and `contract_mode="add_spell_or_index_to_contract"`. Envelope-only:
+            the registry argument is unused and no runtime object is mutated
+            here.
+
+        Args:
+            transaction_manager:
+                Frame-local scope-key/request helper surface.
+            devops_information_registry:
+                Unused by this envelope strategy (accepted for contract parity).
+            identity:
+                Submitter identity (owner-id fallback for the seal + initiator).
+            metadata:
+                Caller metadata carrying the conduit/spellbook ids and options.
+
+        Returns:
+            Dict[str, object]:
+                Normalized request inputs (initiator, spellbook, sealed conduit
+                set, mixed EXCLUSIVE/INTENT scope claims, capabilities,
+                normalized metadata) for mediator admission.
         """
         del devops_information_registry
         conduit_ids: Set[str] = set()

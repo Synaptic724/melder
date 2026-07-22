@@ -68,8 +68,31 @@ class SpellRequirementsFinder(Cleanable):
     canonical Phase 1 identity used by later planning artifacts, so this finder
     intentionally anchors its output to the current spell version rather than
     any legacy unversioned spell id.
+
+    Registration:
+        MELDER KERNEL - guarded. The Phase-1 requirements builder, constructed
+        per spell by the compiler; it is never bound as a spell.
+
+    Subsystem Context:
+        The driver of the `spell_requirements_finder` trio: it emits the
+        `SpellRequirements` aggregate whose elements are `SpellParameterRequirement`,
+        each classified by a `ParameterDIShape`. It is the boundary between raw
+        Python callable inspection and the later planning/resolution phases.
+
+    System Context:
+        Phase 1 (requirements extraction) of the conjure pipeline. Its output is
+        anchored to `spell.spell_index.selected_spell_id` and consumed downstream
+        by Phase 2 (symbolic graph), Phase 3 (DAG), and Phase 4 (validation). It
+        inspects signatures and annotations only - it never queries the Spellbook
+        or the live object world.
     """
     __melder_internal__: ClassVar[object] = _mrg.sentinel
+    __ast_helper_access__: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. Phase-1 driver: inspects one Spell's callable, resolves annotations, "
+        "classifies each parameter into a ParameterDIShape, and emits a cached SpellRequirements. "
+        "Inspection only - no spellbook lookups, no graph/DAG, no resolution."
+    )
     __slots__ = Cleanable.__slots__ + [
         "_spell",
         "_requirements",

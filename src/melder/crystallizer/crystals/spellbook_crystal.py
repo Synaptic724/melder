@@ -140,6 +140,10 @@ class SpellbookCrystal(Cleanable):
         """
         Return the stable spellbook identity this twin mirrors.
 
+        Contract:
+            - RECORD-LOCAL parent-edge key for the L3 children (spell crystals
+              and the conduit); restore translates it to a fresh id.
+
         Returns:
             str:
                 Spellbook id (parent edge key for spell crystals + conduit).
@@ -152,6 +156,10 @@ class SpellbookCrystal(Cleanable):
         """
         Return the owning frame's canonical name.
 
+        Contract:
+            - The stable L1 parent coordinate (a NAME, not a runtime id), so it
+              survives restore identity translation unchanged.
+
         Returns:
             str:
                 Parent frame name (L1 edge).
@@ -163,6 +171,11 @@ class SpellbookCrystal(Cleanable):
     def configuration_payload(self) -> Dict[str, object]:
         """
         Return a detached copy of the recorded configuration surface.
+
+        Contract:
+            - A FRESH copy of the frozen-config value surface with HOOKS
+              EXCLUDED (callables cannot persist); mutating it never touches
+              the twin.
 
         Returns:
             Dict[str, object]:
@@ -177,6 +190,10 @@ class SpellbookCrystal(Cleanable):
         """
         Return the replay-required hook markers recorded at emission.
 
+        Contract:
+            - A FRESH copy of hook-slot NAMES only - replay-required markers,
+              since the callable bodies do not cross persistence.
+
         Returns:
             List[str]:
                 Hook slot names that require code participation at restore.
@@ -189,6 +206,10 @@ class SpellbookCrystal(Cleanable):
         """
         Return spell_ids in recorded bind order.
 
+        Contract:
+            - A FRESH copy of spell_ids in emission order; restore replays these
+              binds in order BEFORE conjuring the conduit (L3 rule).
+
         Returns:
             List[str]:
                 Ordered spell_ids; restore replays binds in this order.
@@ -199,6 +220,10 @@ class SpellbookCrystal(Cleanable):
     def describe(self) -> Dict[str, object]:
         """
         Return a detached, serialization-ready snapshot of this twin.
+
+        Contract:
+            - Detached, plain-value cached-item form; carries `twin_kind:
+              "spellbook"` for persistence-layer dispatch.
 
         Returns:
             Dict[str, object]:

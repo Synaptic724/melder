@@ -90,6 +90,16 @@ class SpellCodegenStrategyBuilder(Cleanable):
     ) -> SpellCodegenStrategy:
         """
         Return one registered codegen creation strategy by stable name.
+
+        Args:
+            strategy_name:
+                Stable `strategy_id` the strategy was registered under.
+
+        Returns:
+            SpellCodegenStrategy: The registered strategy.
+
+        Raises:
+            RuntimeError: If no strategy is registered under that name.
         """
         strategy = self._strategies_by_name.get(strategy_name)
         if strategy is not None:

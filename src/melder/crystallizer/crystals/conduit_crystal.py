@@ -149,6 +149,10 @@ class ConduitCrystal(Cleanable):
         """
         Return the stable conduit identity this twin mirrors.
 
+        Contract:
+            - RECORD-LOCAL identity: expresses edges and log correlation within
+              the recorded session only; restore translates it to a fresh id.
+
         Returns:
             str:
                 Conduit id within the profile.
@@ -160,6 +164,10 @@ class ConduitCrystal(Cleanable):
     def spellbook_id(self) -> str:
         """
         Return the owning spellbook's id.
+
+        Contract:
+            - The parent (conjure-source) edge, record-local like `conduit_id`;
+              restore resolves it through fresh identity translation.
 
         Returns:
             str:
@@ -173,6 +181,10 @@ class ConduitCrystal(Cleanable):
         """
         Return the registered conduit name, when one existed.
 
+        Contract:
+            - None for unnamed root conduits; a name is present only when the
+              root was registered under one.
+
         Returns:
             Optional[str]:
                 Conduit name or None for unnamed roots.
@@ -184,6 +196,10 @@ class ConduitCrystal(Cleanable):
     def policy_name(self) -> str:
         """
         Return the recorded conjure policy name.
+
+        Contract:
+            - The `Policies` enum NAME recorded at conjure (a string, not the
+              enum member), so the record stays value-typed.
 
         Returns:
             str:
@@ -197,6 +213,10 @@ class ConduitCrystal(Cleanable):
         """
         Return the recorded conjure mode.
 
+        Contract:
+            - Recorded conjure mode; dynamic-lane worlds emit True by the
+              posture gate, kept for restore fidelity.
+
         Returns:
             bool:
                 True when the conduit was conjured dynamic.
@@ -208,6 +228,10 @@ class ConduitCrystal(Cleanable):
     def link_targets(self) -> List[str]:
         """
         Return a detached copy of recorded peer-link edges.
+
+        Contract:
+            - A FRESH copy of peer conduit ids as EDGES (not objects); the
+              restore engine applies them LAST, once every conduit exists.
 
         Returns:
             List[str]:
@@ -221,6 +245,10 @@ class ConduitCrystal(Cleanable):
         """
         Return a detached copy of the retained conduit configuration.
 
+        Contract:
+            - A FRESH copy of the value-typed conduit configuration surface;
+              mutating it never touches the twin.
+
         Returns:
             Dict[str, object]:
                 Detached mapping of configuration name -> value.
@@ -231,6 +259,10 @@ class ConduitCrystal(Cleanable):
     def describe(self) -> Dict[str, object]:
         """
         Return a detached, serialization-ready snapshot of this twin.
+
+        Contract:
+            - Detached, plain-value cached-item form; carries `twin_kind:
+              "conduit"` so the persistence layer dispatches it correctly.
 
         Returns:
             Dict[str, object]:

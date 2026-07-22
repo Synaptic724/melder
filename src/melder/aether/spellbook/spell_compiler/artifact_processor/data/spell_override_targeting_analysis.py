@@ -29,6 +29,20 @@ class SpellOverrideTargetRef:
     ) -> None:
         """
         Build one normalized override target row.
+
+        Args:
+            node_id:
+                Blueprint node id the override targets.
+            param_path_id:
+                Parameter path id within the node.
+            param_name:
+                Parameter name at that path.
+            socket_kind_value:
+                Integer socket-kind discriminator (the normalized SocketRef
+                kind, kept as a value rather than the raw object).
+
+        Returns:
+            None.
         """
         self.node_id = node_id
         self.param_path_id = param_path_id
@@ -67,6 +81,23 @@ class SpellOverrideTargetingAnalysis(Cleanable):
     ) -> None:
         """
         Build one override-targeting section.
+
+        Contract:
+            Stores the three inputs by reference and derives the summary stats
+            in one pass over `targets_by_spec`: spec count, distinct targeted
+            socket and spell counts, max/single/multi targets-per-spec, and
+            (from the histogram) the max target path depth.
+
+        Args:
+            targets_by_spec:
+                Per-spec tuple of `SpellOverrideTargetRef` rows.
+            specificity_by_spec:
+                Per-spec integer specificity score.
+            path_depth_histogram:
+                (path_depth, count) pairs over the targeting paths.
+
+        Returns:
+            None.
         """
         super().__init__()
         self.targets_by_spec = targets_by_spec

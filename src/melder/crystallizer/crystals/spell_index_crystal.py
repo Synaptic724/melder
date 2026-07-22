@@ -106,6 +106,10 @@ class SpellIndexCrystal(Cleanable):
         """
         Return the live index's record-local ULID key.
 
+        Contract:
+            - RECORD-LOCAL grouping ULID (emitted, never rehydrated); the member
+              and selected spell SHA256s are the stable coordinates.
+
         Returns:
             str: Index identity within this record.
         """
@@ -117,6 +121,10 @@ class SpellIndexCrystal(Cleanable):
         """
         Return the owning spellbook edge (the subtree-sweep match).
 
+        Contract:
+            - The owning-spellbook subtree-sweep edge; record-local, correlated
+              through the spellbook twin on restore.
+
         Returns:
             str: Owner spellbook identity.
         """
@@ -126,6 +134,10 @@ class SpellIndexCrystal(Cleanable):
     def describe(self) -> dict:
         """
         Return the detached plain-data snapshot of this index twin.
+
+        Contract:
+            - Detached plain-data snapshot carrying `twin_kind: "spell_index"`;
+              a full membership + selection snapshot (replace-on-emit).
 
         Returns:
             dict: twin_kind, index identity, owner edge, selection, and a

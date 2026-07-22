@@ -40,8 +40,27 @@ class SpellSymbolicGraph(Cleanable):
     * No runtime execution logic.
 
     Those concerns belong to Phase 3 (local frame / DAG) and Phase 4 (validation).
+
+    Registration:
+        MELDER KERNEL - guarded. A per-spell Phase-2 artifact; not user-bindable.
+
+    Subsystem Context:
+        The aggregate of the `symbolic_graph` package: it owns the list of
+        `SpellSymbolicDependency` edges. Built from the Phase-1 `SpellRequirements`
+        and consumed by Phase-3 DAG construction.
+
+    System Context:
+        Phase 2 (symbolic graph) of the conjure pipeline, scoped per spell version
+        (`selected_spell_id`). Symbolic only - it binds to no implementations and
+        never touches the live object world; that is Phase 3/4's job.
     """
     __melder_internal__: ClassVar[object] = _mrg.sentinel
+    __ast_helper_access__: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. Phase-2 per-spell symbolic graph: the set of SpellSymbolicDependency "
+        "edges (one per constructor socket) for one spell version. No DAG ordering, no concrete "
+        "spell ids, no existence policy."
+    )
     __slots__ = Cleanable.__slots__ + [
         "_lock",
         "_spell_id",

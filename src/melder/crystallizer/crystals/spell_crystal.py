@@ -515,6 +515,10 @@ class SpellCrystal(Cleanable):
         """
         Return the owning-spellbook identity supplied at construction.
 
+        Contract:
+            - The crystal's parent edge inside a PersistenceProfile; None when
+              built outside a bind context.
+
         Returns:
             Optional[str]:
                 Parent spellbook id, or None outside a bind context.
@@ -527,6 +531,10 @@ class SpellCrystal(Cleanable):
     def spell_name(self) -> Optional[str]:
         """
         Return the logical spell name recorded at bind.
+
+        Contract:
+            - Part of the retained bind signature replayed at restore; None when
+              the spell was unnamed.
 
         Returns:
             Optional[str]:
@@ -541,6 +549,10 @@ class SpellCrystal(Cleanable):
         """
         Return the binding name recorded at bind.
 
+        Contract:
+            - Bind-signature field replayed at restore; None means the default
+              binding.
+
         Returns:
             Optional[str]:
                 Recorded binding name, or None for the default binding.
@@ -553,6 +565,10 @@ class SpellCrystal(Cleanable):
     def spellframe_name(self) -> Optional[str]:
         """
         Return the spellframe name recorded at bind.
+
+        Contract:
+            - The frame-type NAME (class `__name__` or string form), not the
+              type object; None when bound unframed.
 
         Returns:
             Optional[str]:
@@ -568,6 +584,10 @@ class SpellCrystal(Cleanable):
         """
         Return the Existence enum name recorded at bind.
 
+        Contract:
+            - Existence enum NAME (a string, not the member); bind replay passes
+              it back to reconstruct the lifetime posture.
+
         Returns:
             str:
                 Lifetime posture name consumed by bind replay.
@@ -580,6 +600,10 @@ class SpellCrystal(Cleanable):
     def permissions_name(self) -> str:
         """
         Return the Permissions enum name recorded at bind.
+
+        Contract:
+            - Permissions enum NAME (a string, not the member); bind replay
+              passes it back to reconstruct the borrow posture.
 
         Returns:
             str:
@@ -614,6 +638,11 @@ class SpellCrystal(Cleanable):
         """
         Return the examination-profile family recorded at bind.
 
+        Contract:
+            - Derived from the spell's profile TYPE NAME at construction, so this
+              module never imports examiner types; bind replay passes it to the
+              `profile` argument.
+
         Returns:
             str:
                 "detailed" when the spell carried a SpellDetailedProfile at
@@ -628,6 +657,11 @@ class SpellCrystal(Cleanable):
     def rebindability(self) -> str:
         """
         Return the restore-honesty class derived at construction.
+
+        Contract:
+            - Fixed at construction: class/function roots are "hydratable";
+              method/lambda/callable-object/instance roots are "replay_required"
+              (they need live code participation at restore).
 
         Returns:
             str:

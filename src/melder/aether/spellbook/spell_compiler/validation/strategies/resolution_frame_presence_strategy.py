@@ -20,8 +20,26 @@ class ResolutionFramePresenceStrategy(SpellValidationStrategy):
       downstream resolution.
     - Emits validation issues into the supplied context; it does not attempt to
       rebuild missing graph artifacts.
+
+    Registration:
+        MELDER KERNEL - guarded via the inherited `SpellValidationStrategy` sentinel
+        (no redundant sentinel). A built-in strategy; registered, never bound.
+
+    Subsystem Context:
+        A built-in of the `validation/strategies` family - the most basic structural
+        check, run first in the default registration order.
+
+    System Context:
+        Phase 4 (validation) of the conjure pipeline, verifying Phase-3 artifacts
+        exist before the deeper strategies run.
     """
 
+    __ast_helper_access__: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. Phase-4 structural gate: emits MISSING_RESOLUTION_FRAME (error) when "
+        "Phase 3 produced no resolution frame, or MISSING_DEPENDENCY_GRAPH (warning) when the "
+        "frame exists but the spell has no attached dependency graph."
+    )
     __slots__ = SpellValidationStrategy.__slots__
 
     def __init__(self) -> None:

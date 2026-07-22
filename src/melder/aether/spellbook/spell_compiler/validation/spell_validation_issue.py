@@ -29,8 +29,27 @@ class SpellValidationIssue(Cleanable):
         Optional strategy identifier that produced the issue.
     details:
         Optional extra context for tooling (parameter name, cycle, etc.).
+
+    Registration:
+        MELDER KERNEL - guarded. A compiler diagnostic value; not user-bindable.
+
+    Subsystem Context:
+        The unit of the `validation` package: strategies emit these into
+        `SpellValidationContext.issues`, and `SpellValidationResult` aggregates
+        them into split error/warning views.
+
+    System Context:
+        Phase 4 (validation) of the conjure pipeline. A structural diagnostic
+        only - but an `error`-severity issue is what ultimately makes a spell
+        "broken" and raises `SpellbookValidationError` at the Spellbook boundary.
     """
     __melder_internal__: ClassVar[object] = _mrg.sentinel
+    __ast_helper_access__: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. One Phase-4 validation finding: severity ('error'|'warning'), code, "
+        "message, optional source (emitting strategy) and details. The unit strategies append "
+        "into the context's issues list."
+    )
     __slots__ = Cleanable.__slots__ + [
         "severity",
         "code",

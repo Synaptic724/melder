@@ -32,8 +32,27 @@ class AnnotationShapeGuardStrategy(SpellValidationStrategy):
       in this first cut.
     - Emits validation issues into the supplied context; it does not mutate the
       spell or attempt recovery.
+
+    Registration:
+        MELDER KERNEL - guarded via the inherited `SpellValidationStrategy` sentinel
+        (no redundant sentinel). A built-in strategy; registered, never bound.
+
+    Subsystem Context:
+        A built-in of the `validation/strategies` family; it reads Phase-1
+        requirements annotations and defers SpellMap/SpellContract defaults to their
+        own strategies.
+
+    System Context:
+        Phase 4 (validation) of the conjure pipeline, catching unsupported
+        annotation shapes before Phase-3 resolution would fail at runtime.
     """
 
+    __ast_helper_access__: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. Phase-4 strategy: rejects unsupported collection DI annotation shapes. "
+        "Emits UNSUPPORTED_COLLECTION_SHAPE (set/dict/tuple of DI targets), LIST_ELEMENT_NOT_DI_TARGET, "
+        "and UNRESOLVED_FORWARD_REF. Only list[FrameType] is valid collection DI."
+    )
     __slots__ = SpellValidationStrategy.__slots__
 
     def __init__(self) -> None:

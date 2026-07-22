@@ -54,6 +54,26 @@ class GeneralizedCacheCodegenCreationDiscoveryStrategy(
     ) -> Optional[CodegenCreationDiscovery]:
         """
         Claim generalized planner output for the manifest-first family.
+
+        Contract:
+            Declines (returns None) unless the plan's
+            metadata["selected_strategy_id"] is "generalized_codegen_plan" -
+            exactly what the legacy generalized discovery claimed. On a match,
+            selects the first candidate codegen style (or "generalized_default"
+            when none) and claims the "generalized_cache_codegen_creation"
+            family. The model is not inspected.
+
+        Args:
+            spell_codegen_model:
+                Analyzed spell model (unused; selection is plan-driven).
+            spell_codegen_plan:
+                Phase-10 plan whose metadata and candidate styles drive the
+                claim.
+
+        Returns:
+            Optional[CodegenCreationDiscovery]:
+                The generalized_cache-family discovery, or None when the plan
+                is not generalized.
         """
         _ = spell_codegen_model
         selected_plan_strategy_id = spell_codegen_plan.metadata.get(

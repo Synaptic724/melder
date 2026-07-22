@@ -52,6 +52,21 @@ class PlanBindingResolver(Cleanable):
     ) -> None:
         """
         Build one live resolver from phase-9 model and phase-10 plan truth.
+
+        Contract:
+            Extracts - by reference, never copied - the model's runtime-shape
+            `records_by_spell_id` (empty when no runtime shape), a spell-by-id
+            map harvested from both lane plans' steps (first occurrence wins),
+            and the analyzer graph-shape path registry (None when absent).
+
+        Args:
+            spell_codegen_model:
+                Phase-9 model carrying runtime shape and graph shape.
+            spell_codegen_plan:
+                Phase-10 plan carrying the no-overrides and overrides lanes.
+
+        Returns:
+            None.
         """
         super().__init__()
         runtime_shape = spell_codegen_model.spell_runtime_shape
@@ -95,6 +110,20 @@ class PlanBindingResolver(Cleanable):
     def resolve_spell(self, spell_id: str) -> Any:
         """
         Return one live spell for the supplied current spell id.
+
+        Contract:
+            Prefers the runtime-shape record's spell; falls back to the
+            lane-plan spell map when no record exists.
+
+        Args:
+            spell_id:
+                Current spell id to resolve.
+
+        Returns:
+            Any: The live spell object.
+
+        Raises:
+            RuntimeError: If the id resolves from neither runtime shape nor plan.
         """
         self.check_cleaned()
         record = self._records_by_spell_id.get(spell_id)
@@ -111,6 +140,13 @@ class PlanBindingResolver(Cleanable):
     def resolve_path_registry(self) -> Optional[Any]:
         """
         Return the phase-5 path registry, or `None` when unavailable.
+
+        Contract:
+            None is a valid result; downstream override compilation tolerates
+            it (unlike the Spellbook resolver, which raises on absence).
+
+        Returns:
+            Optional[Any]: The path registry, or None.
         """
         self.check_cleaned()
         return self._path_registry
@@ -145,6 +181,14 @@ class SpellbookBindingResolver(Cleanable):
     ) -> None:
         """
         Build one cache-load resolver bound to the spell being hydrated.
+
+        Args:
+            spell:
+                Live spell whose owning Spellbook backs resolution (referenced,
+                not owned).
+
+        Returns:
+            None.
         """
         super().__init__()
         self._spell = spell
@@ -164,6 +208,17 @@ class SpellbookBindingResolver(Cleanable):
     def resolve_spell(self, spell_id: str) -> Any:
         """
         Return one live spell from the owning Spellbook pool.
+
+        Args:
+            spell_id:
+                Manifest spell id to resolve against the Spellbook pool.
+
+        Returns:
+            Any: The live spell object from the pool.
+
+        Raises:
+            RuntimeError: If the spell has no owning Spellbook, or the pool has
+                no entry for `spell_id`.
         """
         self.check_cleaned()
         spellbook = self._spell._spellbook
@@ -180,6 +235,19 @@ class SpellbookBindingResolver(Cleanable):
     def resolve_path_registry(self) -> Optional[Any]:
         """
         Return the live phase-5 path registry for override specialization.
+
+        Contract:
+            Requires the full live prerequisite chain (owning compiler artifact
+            and its phase-5 root blueprint); a missing link is a sequencing bug,
+            not a tolerable absence, so it raises rather than returning None.
+
+        Returns:
+            Optional[Any]: The live path registry from the phase-5 root
+            blueprint.
+
+        Raises:
+            RuntimeError: If the compiler artifact or phase-5 root blueprint is
+                not live.
         """
         self.check_cleaned()
         artifact = self._spell._compiler_artifact

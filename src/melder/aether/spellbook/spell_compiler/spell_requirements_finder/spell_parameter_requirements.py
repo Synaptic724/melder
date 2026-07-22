@@ -32,8 +32,28 @@ class SpellParameterRequirement(Cleanable):
         * The raw parameter signature shape (name, position, kind, default).
         * How DI *might* satisfy it (via type-hint, SpellMap, collection).
         * Optionality and element type info for collections.
+
+    Registration:
+        MELDER KERNEL - guarded. A per-parameter compiler artifact constructed by
+        `SpellRequirementsFinder`; it is never bound as a spell.
+
+    Subsystem Context:
+        The element type of the `spell_requirements_finder` trio:
+        `SpellRequirements` holds an ordered sequence of these, and each one
+        carries a `ParameterDIShape` describing how DI should satisfy it.
+
+    System Context:
+        A Phase-1 (requirements extraction) artifact of the conjure pipeline. It
+        feeds Phase 2 (symbolic graph) and Phase 3 (DAG) but performs no spellbook
+        lookups, no existence decisions, and no graph construction itself.
     """
     __melder_internal__: ClassVar[object] = _mrg.sentinel
+    __ast_helper_access__: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. Phase-1 descriptor for ONE constructor parameter: name, position, "
+        "kind, annotation, default, plus its ParameterDIShape and any collection-element or "
+        "SpellMap detail. Read-only capture - it resolves nothing."
+    )
     __slots__ = Cleanable.__slots__ + [
         "_lock",
         "_name",

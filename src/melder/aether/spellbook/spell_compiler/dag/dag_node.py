@@ -25,8 +25,27 @@ class DagNode(Cleanable):
         - Each node maps to a "unit of work" (e.g., a spell or constructor).
         - Dependencies model "must be created before me".
         - The DAG object is responsible for computing a topological order.
+
+    Registration:
+        MELDER KERNEL - guarded. A compiler graph node; not user-bindable.
+
+    Subsystem Context:
+        The node type of the `dag` package: `DirectedAcyclicWorkGraph` owns these and
+        computes a topological order over them; param-aware edges
+        (`children_by_param` / `incoming_params`) let the override system target one
+        socket later.
+
+    System Context:
+        Phase 3 (local frame / DAG) of the conjure pipeline. Its edges model "must be
+        created before me" for resolution ordering.
     """
     __melder_internal__: ClassVar[object] = _mrg.sentinel
+    __ast_helper_access__: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. A node in the resolution DAG: a keyed unit of work with "
+        "dependency/dependent DagNode sets and param-aware edges (children_by_param / "
+        "incoming_params). Lightweight - no separate Edge objects."
+    )
     __slots__ = Cleanable.__slots__ + [
         "_children_by_param",
         "_dependencies",

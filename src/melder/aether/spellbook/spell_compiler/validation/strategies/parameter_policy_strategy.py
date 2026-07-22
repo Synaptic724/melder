@@ -27,8 +27,32 @@ class ParameterPolicyStrategy(SpellValidationStrategy):
 
     This strategy ensures DI is not requested on variadic parameters and
     checks for contradictory DI classifications.
+
+    Contract:
+        Errors: VARIADIC_DI_UNSUPPORTED (DI annotation on *args/**kwargs),
+        DI_MISSING_ANNOTATION (single/collection DI with no annotation),
+        DI_BUILTIN_ANNOTATION (single DI on a builtin type),
+        DI_COLLECTION_MISSING_ELEMENT and DI_COLLECTION_NON_FRAME. Validation only.
+
+    Registration:
+        MELDER KERNEL - guarded via the inherited `SpellValidationStrategy` sentinel
+        (no redundant sentinel). A built-in strategy; registered, never bound.
+
+    Subsystem Context:
+        A built-in of the `validation/strategies` family; it reads Phase-1
+        `SpellRequirements` parameters and their `ParameterDIShape`.
+
+    System Context:
+        Phase 4 (validation) of the conjure pipeline, enforcing which parameter
+        shapes DI is allowed to satisfy.
     """
 
+    __ast_helper_access__: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. Phase-4 strategy: enforces DI policy on parameters - no variadic DI, "
+        "single/collection DI must carry a resolvable non-builtin annotation/element. Emits the "
+        "DI_* / VARIADIC_DI_UNSUPPORTED errors. Validation only."
+    )
     __slots__ = SpellValidationStrategy.__slots__
 
     def __init__(self) -> None:

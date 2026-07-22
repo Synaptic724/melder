@@ -100,6 +100,13 @@ class SyncWeakRef(Sync, Generic[T]):
             "_phantom_fired",
     ]
     __melder_internal__: ClassVar[object] = _mrg.sentinel
+    __ast_helper_access__: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. Thread-safe non-owning weak-ref cell with CAS/swap and phantom "
+        "on-collect (get/try_get/is_alive, cas/swap/locked). Melder-owned runtime machinery, "
+        "not part of the exported surface; it synchronizes the CELL, not the referent, and is "
+        "guarded so it cannot be bound as a spell."
+    )
 
     # ------------------------------------------------------------------
     # Construction

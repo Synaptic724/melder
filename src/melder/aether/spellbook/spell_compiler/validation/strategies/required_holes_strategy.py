@@ -23,8 +23,26 @@ class RequiredHolesStrategy(SpellValidationStrategy):
     - Reports caller-required parameters that Melder DI will never satisfy.
     - Emits warnings rather than hard errors because the caller may still
       provide these values at invocation time.
+
+    Registration:
+        MELDER KERNEL - guarded via the inherited `SpellValidationStrategy` sentinel
+        (no redundant sentinel). A built-in strategy; registered, never bound.
+
+    Subsystem Context:
+        A built-in of the `validation/strategies` family; it consumes the Phase-1
+        `SpellRequirements.iter_required_holes()` view.
+
+    System Context:
+        Phase 4 (validation) of the conjure pipeline. It emits warnings only - they
+        ride along without breaking the build.
     """
 
+    __ast_helper_access__: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. Phase-4 strategy: emits a REQUIRED_HOLE warning per PLAIN, "
+        "default-less parameter - a hole Melder DI will never fill, so the caller must supply it "
+        "via overrides or manual composition. Reporting only."
+    )
     __slots__ = SpellValidationStrategy.__slots__
 
     def __init__(self) -> None:

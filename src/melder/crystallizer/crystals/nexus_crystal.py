@@ -100,6 +100,10 @@ class NexusCrystal(Cleanable):
         """
         Return whether a NexusConfiguration was installed at emission.
 
+        Contract:
+            - Records whether a config was installed; pairs with the profile's
+              Nexus RecordedUnitState for enabled/disabled/cleaned intent.
+
         Returns:
             bool:
                 Recorded configured flag.
@@ -111,6 +115,10 @@ class NexusCrystal(Cleanable):
     def enabled(self) -> bool:
         """
         Return whether the Nexus root was enabled at emission.
+
+        Contract:
+            - Emission-time enabled flag; the LATER enabled/disabled/cleaned
+              intent rides the state switch, not this twin.
 
         Returns:
             bool:
@@ -124,6 +132,10 @@ class NexusCrystal(Cleanable):
         """
         Return a detached copy of the recorded Nexus configuration surface.
 
+        Contract:
+            - A FRESH copy of the installed configuration surface; empty when
+              unconfigured. Mutating it never touches the twin.
+
         Returns:
             Dict[str, object]:
                 Detached mapping of configured property name -> value.
@@ -134,6 +146,10 @@ class NexusCrystal(Cleanable):
     def describe(self) -> Dict[str, object]:
         """
         Return a detached, serialization-ready snapshot of this twin.
+
+        Contract:
+            - Detached, plain-value cached-item form; carries `twin_kind:
+              "nexus"` for persistence-layer dispatch.
 
         Returns:
             Dict[str, object]:

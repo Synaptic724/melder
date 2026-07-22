@@ -84,6 +84,13 @@ class ProtocolCrafter(Cleanable):
     """
 
     __melder_internal__: ClassVar[object] = _mrg.sentinel
+    __ast_helper_access__: str = "public"
+    __agent_purpose__: str = (
+        "access: public. Generates @runtime_checkable Protocol code from a class/object "
+        "(craft_protocol_code) and maintains bounded protocol blocks in interface files "
+        "(write_protocol_module_from_source_file). Exported for direct use; guarded, so call "
+        "it - do not bind it. It WRITES to disk, editing a delimited region only."
+    )
     __slots__ = Cleanable.__slots__ + [
         "_id",
         "_lock",

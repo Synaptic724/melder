@@ -67,10 +67,32 @@ class CodegenRecursiveControlStrategy(Cleanable):
     )
 
     def __init__(self) -> None:
+        """
+        Initialize the strategy with its own reentrant guard lock.
+
+        Contract:
+            Stateless beyond the guard lock: it holds no per-request state
+            between `validate` calls, so one instance serves every request
+            in the validator's strategy set.
+
+        Returns:
+            None.
+        """
         super().__init__()
         self._lock: threading.RLock = threading.RLock()
 
     def cleanup(self) -> None:
+        """
+        Idempotently release the strategy's guard lock.
+
+        Contract:
+            Double-checked under the lock and terminal; the lock is deleted
+            last. Cleanup touches neither the owning validator nor any
+            in-flight transaction context.
+
+        Returns:
+            None.
+        """
         if self._cleaned:
             return
         with self._lock:

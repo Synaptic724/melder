@@ -20,8 +20,31 @@ class SpellValidationStrategy(Cleanable):
     * Implement: meth: 'validate` and **never** mutate the spell or spellbook.
     * Prefer appending issues instead of raising; raising is reserved for
       truly unrecoverable situations.
+
+    Registration:
+        MELDER KERNEL - guarded (base). NOTE: this is a user-extensible strategy
+        base, so an inherited sentinel would normally violate the MRO law - but it
+        is INERT here, because strategies register into `SpellValidationSystem` via
+        `register_strategy` and are NEVER passed to `Spellbook.bind`, so the guard
+        (which only blocks binding) can never fire on a strategy. Concrete
+        strategies therefore add NO sentinel of their own.
+
+    Subsystem Context:
+        The base of the `validation/strategies` family: every built-in strategy
+        subclasses it, and `SpellValidationSystem` registers instances by `name`.
+
+    System Context:
+        Phase 4 (validation) of the conjure pipeline. Strategies run in registry
+        order over one `SpellValidationContext` per spell; an emitted error makes
+        the spell broken.
     """
     __melder_internal__: ClassVar[object] = _mrg.sentinel
+    __ast_helper_access__: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. Base class for Phase-4 validation strategies: implement validate("
+        "context) to inspect one spell and append SpellValidationIssue; name/description identify "
+        "it in the registry. Never mutate the spell/spellbook; prefer appending issues to raising."
+    )
     __slots__ = Cleanable.__slots__ + [
         "_name",
         "_description",

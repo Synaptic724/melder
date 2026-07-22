@@ -118,7 +118,38 @@ class NotchTransactionStrategy(TransactionStrategy):
             metadata: Dict[str, object],
     ) -> Dict[str, object]:
         """
-        Build the change-control request inputs for one notch transaction.
+        Build the change-control request inputs for one notch (active repoint).
+
+        Contract:
+            Produces the EXCLUSIVE-seal request for an intra-index active-spell
+            repoint: resolves the owning spellbook (owner-id fallback) and
+            acting conduit, extends the conduit seal to its borrowers and
+            providers (the notch changes what they resolve through their
+            contracts), resolves the optional binding key, and claims them
+            EXCLUSIVE. Sets `index_mode="notch"` and the quiesce root-conduit
+            footprint that `on_start`/`on_end` freeze - notch is the one index
+            flow that also needs the runtime gate freeze, so structure and
+            runtime are sealed together. Stages the promoted member's binding
+            key into `binding_keys` so the commit-side structural validator and
+            dirty-marker participate. Pure planning - no runtime object is
+            mutated here.
+
+        Args:
+            transaction_manager:
+                Frame-local scope-key/request helper surface.
+            devops_information_registry:
+                Topology registry used to expand the conduit seal to peers.
+            identity:
+                Submitter identity (owner-id fallback for the seal).
+            metadata:
+                Caller metadata carrying the spellbook/conduit ids, the promoted
+                binding key, and options.
+
+        Returns:
+            Dict[str, object]:
+                Normalized request inputs (initiator, spellbook, sealed conduit
+                set, EXCLUSIVE scope claims, staged binding keys, capabilities,
+                normalized metadata) for mediator admission.
         """
         spellbook_id = metadata.get("spellbook_id")
         if not isinstance(spellbook_id, str) or not spellbook_id:

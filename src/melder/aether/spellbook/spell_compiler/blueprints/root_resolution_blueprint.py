@@ -274,8 +274,24 @@ class RootResolutionBlueprint(Cleanable):
         """
         Replace the underlying DagIndex.
 
-        Normally not needed – Phase 5 can just add sockets via this blueprint.
-        Provided for completeness / testing.
+        Normally not needed - Phase 5 can just add sockets via this blueprint;
+        provided for completeness / testing.
+
+        Contract:
+            Swaps the index reference WITHOUT rebuilding sockets - the caller is
+            responsible for ensuring the supplied index is consistent with this
+            blueprint's socket set.
+
+        Args:
+            index:
+                Replacement DagIndex; must not be None.
+
+        Raises:
+            RuntimeError: If the blueprint was already cleaned.
+            ValueError: If `index` is None.
+
+        Returns:
+            None.
         """
         self.check_cleaned()
         if index is None:

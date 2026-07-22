@@ -95,7 +95,37 @@ class LinkTransactionStrategy(TransactionStrategy):
             metadata: Dict[str, object],
     ) -> Dict[str, object]:
         """
-        Build the change-control request inputs for one link transaction.
+        Build the change-control request inputs for one conduit-link transaction.
+
+        Contract:
+            Resolves the participating conduit ids, then for each: seals the
+            conduit and its `conduit_ward` (default EXCLUSIVE), resolves the
+            owning spellbook and adds its scope, and folds in each resolved
+            identity's transaction-owner scopes. Owning spellbooks are claimed
+            INTENT rather than EXCLUSIVE - a link adds one contract bucket, so it
+            blocks a whole-spellbook claim (transfer) without serializing
+            unrelated piece-work; conduits and wards stay EXCLUSIVE. Stamps
+            normalized metadata with the transaction identity,
+            `link_mode="conduit_link"`, and the participant/affected id sets.
+            Pure planning - no runtime object is mutated here.
+
+        Args:
+            transaction_manager:
+                Frame-local scope-key/request helper surface.
+            devops_information_registry:
+                Topology registry used to resolve each conduit's identity and
+                owning spellbook.
+            identity:
+                Submitter identity (initiator + spellbook hint).
+            metadata:
+                Caller metadata carrying participant ids and explicit scope
+                keys/hashes/binding/contract keys.
+
+        Returns:
+            Dict[str, object]:
+                Normalized request inputs (initiator, spellbook, sealed conduit
+                set, INTENT spellbook claims, capabilities, normalized metadata)
+                for mediator admission.
         """
         conduit_ids = cls._resolve_participant_conduit_ids(
             identity=identity,

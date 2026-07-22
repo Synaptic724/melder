@@ -23,6 +23,9 @@ class CodegenCreationFamilyStep(ABC):
     def step_id(self) -> str:
         """
         Return the stable internal step id.
+
+        Returns:
+            str: Identifier used to order and track this step within its family.
         """
         raise NotImplementedError
 
@@ -33,5 +36,17 @@ class CodegenCreationFamilyStep(ABC):
     ) -> None:
         """
         Mutate the supplied family-local state object.
+
+        Contract:
+            Reads and mutates ONLY the passed `state` (the family-local build
+            accumulator); owns neither discovery nor facade selection, and does
+            not control its own ordering - the family strategy sequences steps.
+
+        Args:
+            state:
+                Family-local state object this step advances in place.
+
+        Returns:
+            None.
         """
         raise NotImplementedError

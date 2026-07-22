@@ -82,6 +82,16 @@ class CodegenCreationDiscoveryStrategyBuilder(Cleanable):
     ) -> CodegenCreationDiscoveryStrategy:
         """
         Return one registered discovery strategy by stable name.
+
+        Args:
+            strategy_name:
+                Stable `strategy_id` the strategy was registered under.
+
+        Returns:
+            CodegenCreationDiscoveryStrategy: The registered strategy.
+
+        Raises:
+            RuntimeError: If no strategy is registered under that name.
         """
         strategy = self._strategies_by_name.get(strategy_name)
         if strategy is not None:
@@ -97,6 +107,17 @@ class CodegenCreationDiscoveryStrategyBuilder(Cleanable):
     ) -> Tuple[CodegenCreationDiscoveryStrategy, ...]:
         """
         Return an ordered tuple of discovery strategies by stable name.
+
+        Args:
+            strategy_names:
+                Stable strategy ids in the desired discovery order.
+
+        Returns:
+            Tuple[CodegenCreationDiscoveryStrategy, ...]:
+                Strategies in the same order as `strategy_names`.
+
+        Raises:
+            RuntimeError: If any requested name is not registered.
         """
         return tuple(
             self.get_strategy(strategy_name)

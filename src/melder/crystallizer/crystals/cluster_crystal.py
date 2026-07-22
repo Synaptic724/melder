@@ -118,6 +118,10 @@ class ClusterCrystal(Cleanable):
         """
         Return the live cluster's record-local ULID key.
 
+        Contract:
+            - RECORD-LOCAL ULID (emitted, never rehydrated); `cluster_name` and
+              `frame_name` are the stable cross-session coordinates.
+
         Returns:
             str: Cluster identity within this record.
         """
@@ -129,6 +133,10 @@ class ClusterCrystal(Cleanable):
         """
         Return the owning frame edge (the frame-sweep match).
 
+        Contract:
+            - The stable frame-sweep coordinate (a NAME); frame death evicts the
+              cluster twin by this edge.
+
         Returns:
             str: Owning frame name.
         """
@@ -138,6 +146,10 @@ class ClusterCrystal(Cleanable):
     def describe(self) -> dict:
         """
         Return the detached plain-data snapshot of this cluster twin.
+
+        Contract:
+            - Detached plain-data snapshot carrying `twin_kind: "cluster"`; a
+              FULL membership/leadership/share snapshot (replace-on-emit).
 
         Returns:
             dict: twin_kind, identities, membership, leadership, and copied

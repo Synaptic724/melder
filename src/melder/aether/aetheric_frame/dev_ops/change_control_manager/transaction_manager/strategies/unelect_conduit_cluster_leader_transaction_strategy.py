@@ -99,7 +99,32 @@ class UnelectConduitClusterLeaderTransactionStrategy(TransactionStrategy):
             metadata: Dict[str, object],
     ) -> Dict[str, object]:
         """
-        Build the change-control request inputs for one unelect transaction.
+        Build the change-control request inputs for one leader-unelect transaction.
+
+        Contract:
+            Freeze envelope with no domain effect (the registry argument is
+            unused): collects the cluster member conduit ids and claims each one
+            EXCLUSIVE, so no concurrent transaction touches a member while the
+            leader is stepped down. The unelect EFFECT runs at the call site;
+            this plan owns isolation only. Sets `cluster_leader_mode="unelect"`
+            and the transaction identity. Pure planning - no runtime object is
+            mutated here.
+
+        Args:
+            transaction_manager:
+                Frame-local scope-key/request helper surface.
+            devops_information_registry:
+                Unused by this envelope strategy (accepted for contract parity).
+            identity:
+                Submitter identity (owner-id fallback for the initiator).
+            metadata:
+                Caller metadata carrying the member conduit ids and options.
+
+        Returns:
+            Dict[str, object]:
+                Normalized request inputs (initiator, member conduit set,
+                EXCLUSIVE scope claims, capabilities, normalized metadata) for
+                mediator admission.
         """
         del devops_information_registry
         member_conduit_ids = cls._member_conduit_ids(metadata)

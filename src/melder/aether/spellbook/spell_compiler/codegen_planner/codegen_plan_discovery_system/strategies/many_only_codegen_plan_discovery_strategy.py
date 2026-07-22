@@ -37,6 +37,22 @@ class ManyOnlyCodegenPlanDiscoveryStrategy(CodegenPlanDiscoveryStrategy):
     ) -> Optional[CodegenPlanDiscovery]:
         """
         Claim the model when every visible spell is `Existence.many`.
+
+        Contract:
+            Declines (returns None) unless the model's existence-occurrence
+            shape exists, has MORE than one visible spell, and ALL visible
+            spells are `Existence.many`. On a match, selects the
+            "many_only_codegen_plan" strategy / "many_only" family. Reads only
+            the existence-occurrence shape.
+
+        Args:
+            spell_codegen_model:
+                Processor-owned model whose existence-occurrence shape is
+                inspected.
+
+        Returns:
+            Optional[CodegenPlanDiscovery]:
+                The many-only selection, or None when the model is not all-many.
         """
         existence_occurrence_shape = spell_codegen_model.existence_occurrence_shape
         if existence_occurrence_shape is None:

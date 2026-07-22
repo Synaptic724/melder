@@ -75,8 +75,31 @@ class SpellValidationSystem(Cleanable):
     The system itself is **ephemeral** – it is created per validation run
     and cleaned up afterwards. Strategies are owned by the system and are
     also cleaned when the system is cleaned.
+
+    Registration:
+        MELDER KERNEL - guarded. The compiler's Phase-4 driver; not user-bindable.
+        Custom strategies register through `register_strategy`, they are never
+        bound as spells.
+
+    Subsystem Context:
+        The owner of the `validation` package: it holds the strategy registry,
+        builds a `SpellValidationContext` per spell, and aggregates
+        `SpellValidationIssue` into a `SpellValidationResult`. Its extension point
+        is `register_strategy(SpellValidationStrategy)`.
+
+    System Context:
+        Phase 4 (validation) of the conjure pipeline, run after Phases 1-3. A
+        produced error makes the spell broken and aborts conjure with
+        `SpellbookValidationError` before any Conduit is built.
     """
     __melder_internal__: ClassVar[object] = _mrg.sentinel
+    __ast_helper_access__: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. Phase-4 registry+runner: auto-registers the built-in "
+        "SpellValidationStrategy set, runs them in order over one SpellValidationContext per "
+        "spell, tags issues with their strategy, and returns a SpellValidationResult. Ephemeral "
+        "- one per validation run, cleaned after."
+    )
     __slots__ = Cleanable.__slots__ + [
         "_lock",
         "_strategies",

@@ -132,6 +132,10 @@ class ContractCrystal(Cleanable):
         """
         Return the live contract's record-local ULID key.
 
+        Contract:
+            - RECORD-LOCAL ULID (emitted, never rehydrated); the spell SHA
+              coordinates inside the detail rows are the stable ones.
+
         Returns:
             str: Contract identity within this record.
         """
@@ -142,6 +146,10 @@ class ContractCrystal(Cleanable):
     def conduit_a_id(self) -> str:
         """
         Return ward A's conduit identity (a sweep edge).
+
+        Contract:
+            - The INITIATOR-side conduit edge, record-local; restore correlates
+              it through the conduit twins' translation map.
 
         Returns:
             str: Conduit id of the link's initiator side.
@@ -154,6 +162,10 @@ class ContractCrystal(Cleanable):
         """
         Return ward B's conduit identity (a sweep edge).
 
+        Contract:
+            - The RECEIVER-side conduit edge, record-local; translated on
+              restore like `conduit_a_id`.
+
         Returns:
             str: Conduit id of the link's receiver side.
         """
@@ -163,6 +175,11 @@ class ContractCrystal(Cleanable):
     def describe(self) -> dict:
         """
         Return the detached plain-data snapshot of this contract twin.
+
+        Contract:
+            - Detached plain-data snapshot carrying `twin_kind: "contract"`;
+              retains BOTH sides' detail/subscription projections so no
+              inspection mistakes one side for the whole contract.
 
         Returns:
             dict: twin_kind, contract identity, both conduit edges, and

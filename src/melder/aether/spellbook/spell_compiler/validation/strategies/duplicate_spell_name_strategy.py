@@ -27,8 +27,26 @@ class DuplicateSpellNameStrategy(SpellValidationStrategy):
     - Treats duplicate visible `spell_name` values as a hard ambiguity for
       name-based resolution.
     - Emits validation issues only; it does not rename or partition spells.
+
+    Registration:
+        MELDER KERNEL - guarded via the inherited `SpellValidationStrategy` sentinel
+        (no redundant sentinel). A built-in strategy; registered, never bound.
+
+    Subsystem Context:
+        A built-in of the `validation/strategies` family, keyed off the same
+        `_spell_id_pool` the dangling/circular strategies read.
+
+    System Context:
+        Phase 4 (validation) of the conjure pipeline. It guards the name-based meld
+        entry mode (`meld(spell_name=...)`) against ambiguity.
     """
 
+    __ast_helper_access__: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. Phase-4 strategy: collects visible spells sharing a spell_name "
+        "(pass-cached) and emits DUPLICATE_SPELL_NAME (error) when more than one collide, since "
+        "meld(spell_name=...) would be ambiguous. Advises disambiguating via spellframe/binding_name."
+    )
     __slots__ = SpellValidationStrategy.__slots__
 
     def __init__(self) -> None:

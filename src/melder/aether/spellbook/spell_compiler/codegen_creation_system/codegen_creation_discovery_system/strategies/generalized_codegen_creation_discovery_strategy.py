@@ -48,7 +48,26 @@ class GeneralizedCodegenCreationDiscoveryStrategy(
             spell_codegen_plan: SpellCodegenPlan,
     ) -> Optional[CodegenCreationDiscovery]:
         """
-        Claim generalized planner output and return the generalized family facade.
+        Claim generalized planner output and route it to the generalized family.
+
+        Contract:
+            Declines (returns None) unless the plan's
+            metadata["selected_strategy_id"] is "generalized_codegen_plan". On
+            a match, selects the first candidate codegen style (or
+            "generalized_default" when none) and claims the
+            "generalized_codegen_creation" family. The model is not inspected.
+
+        Args:
+            spell_codegen_model:
+                Analyzed spell model (unused; selection is plan-driven).
+            spell_codegen_plan:
+                Phase-10 plan whose metadata and candidate styles drive the
+                claim.
+
+        Returns:
+            Optional[CodegenCreationDiscovery]:
+                The generalized-family discovery, or None when the plan is not
+                generalized.
         """
         _ = spell_codegen_model
         selected_plan_strategy_id = spell_codegen_plan.metadata.get(

@@ -45,7 +45,37 @@ class SpellRuntimeRecord:
             user_created_object: Any,
     ) -> None:
         """
-        Build one runtime spell record.
+        Build one runtime spell record (pure store; no derivation or validation).
+
+        Args:
+            spell_id:
+                Stable spell id.
+            spell_name:
+                Human-facing spell name.
+            spell:
+                Live spell object.
+            call_target:
+                Callable the executor invokes for this spell.
+            existence:
+                Existence posture (lifetime/sharing) for the spell.
+            is_existing_creation:
+                True when the spell wraps an already-created object rather than
+                constructing one.
+            is_class_spell:
+                True when the spell root is a class.
+            is_method_spell:
+                True when the spell root is a method.
+            is_lambda_spell:
+                True when the spell root is a lambda.
+            has_disposal_methods:
+                True when the spell declares disposal methods.
+            disposal_method_names:
+                Names of the declared disposal methods.
+            user_created_object:
+                Pre-supplied object for existing-creation spells, else None.
+
+        Returns:
+            None.
         """
         self.spell_id = spell_id
         self.spell_name = spell_name
@@ -82,6 +112,17 @@ class SpellRuntimeAnalysis(Cleanable):
     ) -> None:
         """
         Build one runtime spell section.
+
+        Contract:
+            Stores the record map by reference and caches its size as
+            `spell_count`.
+
+        Args:
+            records_by_spell_id:
+                Map of spell id to its `SpellRuntimeRecord`.
+
+        Returns:
+            None.
         """
         super().__init__()
         self.records_by_spell_id = records_by_spell_id

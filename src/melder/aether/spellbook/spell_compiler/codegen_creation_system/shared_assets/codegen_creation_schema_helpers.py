@@ -24,6 +24,21 @@ class CodegenCreationSchemaHelpers:
     def serialize_codegen_signature_part(part: Any) -> bytes:
         """
         Serialize one signature part into deterministic bytes.
+
+        Contract:
+            Type-dispatched with a stable one-byte tag per primitive
+            (N/B/I/F/S/Y) so distinct types never collide on the same payload.
+            Collections and unrecognized objects fall to pickle (protocol 5),
+            with a `repr()` fallback if pickling raises. Callers that need
+            canonical ordering across dict/set inputs must pre-freeze via
+            `freeze_phase11_schema_value`; this helper does not reorder.
+
+        Args:
+            part:
+                Any signature component to encode.
+
+        Returns:
+            bytes: Deterministic encoding of `part`.
         """
         part_type = type(part)
         if (
@@ -63,7 +78,20 @@ class CodegenCreationSchemaHelpers:
     @staticmethod
     def hash_codegen_signature(*parts: Any) -> str:
         """
-        Build a deterministic signature from primitive IR parts.
+        Build a deterministic SHA256 signature over ordered IR parts.
+
+        Contract:
+            Each part is encoded via `serialize_codegen_signature_part` and
+            followed by a `|` separator byte, so ordering and grouping are
+            significant - two different partitions of the same values never
+            collide.
+
+        Args:
+            *parts:
+                Ordered signature components.
+
+        Returns:
+            str: Hex SHA256 digest over the encoded parts.
         """
         digest = hashlib.sha256()
         for part in parts:
@@ -76,7 +104,22 @@ class CodegenCreationSchemaHelpers:
     @staticmethod
     def freeze_phase11_schema_value(value: Any) -> Any:
         """
-        Normalize arbitrary values into deterministic schema-safe forms.
+        Normalize an arbitrary value into a deterministic schema-safe form.
+
+        Contract:
+            Primitives (None/bool/int/float/str) pass through unchanged. Dicts
+            become sorted `(key, frozen-value)` tuples; lists and tuples become
+            order-preserving frozen tuples; sets become repr-sorted frozen
+            tuples. Anything else collapses to `repr(value)`. Recurses into
+            nested containers so the whole structure is order-canonical and
+            hashable.
+
+        Args:
+            value:
+                Value to freeze.
+
+        Returns:
+            Any: A deterministic, hashable projection of `value`.
         """
         if value is None or isinstance(value, (bool, int, float, str)):
             return value
@@ -112,7 +155,16 @@ class CodegenCreationSchemaHelpers:
             instance_key: Tuple[str, Optional[int]],
     ) -> Tuple[str, Optional[int]]:
         """
-        Return one explicit two-element instance key tuple.
+        Return the instance key as an explicit two-element tuple.
+
+        Args:
+            instance_key:
+                `(spell_name, occurrence-or-None)` pair.
+
+        Returns:
+            Tuple[str, Optional[int]]:
+                The same pair rebuilt explicitly, so downstream code always
+                sees a plain 2-tuple regardless of the input's concrete type.
         """
         return instance_key[0], instance_key[1]
 
@@ -121,7 +173,22 @@ class CodegenCreationSchemaHelpers:
             transient_plan: Optional[Tuple[Any, ...]],
     ) -> Optional[Dict[str, Any]]:
         """
-        Convert the phase-11 transient tuple into a schema-only payload.
+        Convert the phase-11 transient plan tuple into a schema-only dict.
+
+        Contract:
+            Returns None when `transient_plan` is None (no fast lane).
+            Otherwise projects the positional tuple into named fields:
+            step_count (index 0), root_step_index (1), call_modes (3), and the
+            full dep1..dep8h dependency-slot family (indices 4..39), each copied
+            into a fresh tuple. Index 2 is intentionally not part of the schema
+            surface.
+
+        Args:
+            transient_plan:
+                Positional transient plan tuple, or None.
+
+        Returns:
+            Optional[Dict[str, Any]]: Named schema payload, or None.
         """
         if transient_plan is None:
             return None
@@ -172,7 +239,20 @@ class CodegenCreationSchemaHelpers:
             transient_schema: Optional[Dict[str, Any]],
     ) -> Optional[str]:
         """
-        Build a deterministic signature for a phase-11 transient plan.
+        Build a deterministic signature for a phase-11 transient schema.
+
+        Contract:
+            Returns None when `transient_schema` is None. Otherwise hashes
+            step_count, root_step_index, call_modes, and every dep1..dep8h slot
+            in fixed order via `hash_codegen_signature`, so two transient plans
+            share a signature only when all those fields match.
+
+        Args:
+            transient_schema:
+                Named schema from `build_fast_transient_schema`, or None.
+
+        Returns:
+            Optional[str]: Hex signature, or None.
         """
         if transient_schema is None:
             return None
@@ -276,6 +356,27 @@ class CodegenCreationSchemaHelpers:
     ) -> Dict[str, Any]:
         """
         Build one schema-only phase-11 step row for IR export.
+
+        Contract:
+            Projects an immutable plan step into a plain dict of primitives and
+            tuples (instance key, selected spell id, existence NAME, target
+            kind, dependency-resolution order, frozen contract payload, lock and
+            registration hints, disposal names). When `include_override_metadata`
+            is False, every override-lane field (override_match_prefix and its
+            length, override_keys, expects_overrides, contract_keys) is emitted
+            empty/false, so the no-overrides lane's rows stay byte-identical even
+            when the step object physically carries override data. Payload
+            values are frozen via `freeze_phase11_schema_value` for determinism.
+
+        Args:
+            step:
+                Immutable phase-11 plan step to rowify.
+            include_override_metadata:
+                When True (default), emit the override-lane fields; when False,
+                zero them for byte-identical no-overrides rows.
+
+        Returns:
+            Dict[str, Any]: Schema-only step row.
         """
         dependency_resolution_order = tuple(
             (
@@ -346,6 +447,22 @@ class CodegenCreationSchemaHelpers:
     ) -> Tuple[Any, ...]:
         """
         Build one deterministic signature row for no-overrides compile caching.
+
+        Contract:
+            Returns a fixed-order tuple of the caching-relevant step facts:
+            instance key, selected spell id, existence NAME, target kind,
+            dependency-resolution order, sorted collection params, the
+            positional-override flag and frozen value, contract-payload presence
+            and frozen sorted items, and the lock-hint and must-register flags.
+            Override-lane fields are intentionally excluded - this row is the
+            no-overrides cache key, so it stays stable across override churn.
+
+        Args:
+            step:
+                Immutable phase-11 plan step.
+
+        Returns:
+            Tuple[Any, ...]: Deterministic signature row for cache keying.
         """
         dependency_resolution_order = tuple(
             (

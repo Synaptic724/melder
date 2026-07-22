@@ -37,6 +37,9 @@ class CodegenPlanDiscoveryStrategy(ABC):
     def strategy_id(self) -> str:
         """
         Return the stable identifier for this discovery strategy.
+
+        Returns:
+            str: Registry key this strategy is registered and selected by.
         """
         raise NotImplementedError
 
@@ -46,6 +49,21 @@ class CodegenPlanDiscoveryStrategy(ABC):
             spell_codegen_model: SpellCodegenModel,
     ) -> Optional[CodegenPlanDiscovery]:
         """
-        Inspect the model and optionally produce a planning-family result.
+        Inspect the model and optionally claim it for a planning family.
+
+        Contract:
+            Reads only the processor-owned model; builds no planner artifacts.
+            Per the class Contract, return None to decline, or a
+            `CodegenPlanDiscovery` to stop discovery and use that result (it may
+            narrow the concrete codegen styles phase 11 considers, but does not
+            choose the final style).
+
+        Args:
+            spell_codegen_model:
+                Processor-owned model for the current compile.
+
+        Returns:
+            Optional[CodegenPlanDiscovery]:
+                The claim result, or None when this strategy declines the model.
         """
         raise NotImplementedError

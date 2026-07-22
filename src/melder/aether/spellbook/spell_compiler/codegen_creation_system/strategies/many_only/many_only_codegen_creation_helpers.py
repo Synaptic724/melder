@@ -19,6 +19,21 @@ class ManyOnlyCodegenCreationHelpers:
     def serialize_signature_part(part: Any) -> bytes:
         """
         Serialize one signature part into deterministic bytes.
+
+        Contract:
+            Type-dispatched with a stable one-byte tag per primitive
+            (N/B/I/F/S/Y) so distinct types never collide on the same payload.
+            Collections and unrecognized objects fall to pickle (protocol 5),
+            with a `repr()` fallback if pickling raises. Callers needing
+            canonical ordering across dict/set inputs pre-freeze via
+            `freeze_value`; this helper does not reorder.
+
+        Args:
+            part:
+                Any signature component to encode.
+
+        Returns:
+            bytes: Deterministic encoding of `part`.
         """
         part_type = type(part)
         if (
@@ -54,7 +69,18 @@ class ManyOnlyCodegenCreationHelpers:
     @staticmethod
     def hash_signature(*parts: Any) -> str:
         """
-        Build a deterministic hash from primitive or tuple-backed parts.
+        Build a deterministic SHA256 signature over ordered parts.
+
+        Contract:
+            Each part is encoded via `serialize_signature_part` and followed by
+            a `|` separator byte, so ordering and grouping are significant.
+
+        Args:
+            *parts:
+                Ordered signature components.
+
+        Returns:
+            str: Hex SHA256 digest over the encoded parts.
         """
         digest = hashlib.sha256()
         for part in parts:
@@ -67,7 +93,22 @@ class ManyOnlyCodegenCreationHelpers:
     @staticmethod
     def freeze_value(value: Any) -> Any:
         """
-        Normalize arbitrary values into deterministic tuple-backed forms.
+        Normalize an arbitrary value into a deterministic tuple-backed form.
+
+        Contract:
+            Primitives (None/bool/int/float/str) pass through. Dicts become
+            sorted (key, frozen-value) tuples; lists/tuples become
+            order-preserving frozen tuples; sets become repr-sorted frozen
+            tuples; anything else collapses to `repr(value)`. Recurses into
+            nested containers so the whole structure is order-canonical and
+            hashable.
+
+        Args:
+            value:
+                Value to freeze.
+
+        Returns:
+            Any: A deterministic, hashable projection of `value`.
         """
         if value is None or isinstance(value, (bool, int, float, str)):
             return value
@@ -103,7 +144,15 @@ class ManyOnlyCodegenCreationHelpers:
             instance_key: Tuple[str, Optional[int]],
     ) -> Tuple[str, Optional[int]]:
         """
-        Return one explicit two-element instance-key tuple.
+        Return the instance key as an explicit two-element tuple.
+
+        Args:
+            instance_key:
+                `(spell_name, occurrence-or-None)` pair.
+
+        Returns:
+            Tuple[str, Optional[int]]:
+                The same pair rebuilt explicitly as a plain 2-tuple.
         """
         return instance_key[0], instance_key[1]
 
@@ -113,6 +162,21 @@ class ManyOnlyCodegenCreationHelpers:
     ) -> Tuple[Any, ...]:
         """
         Build one deterministic many-only no-overrides step signature row.
+
+        Contract:
+            Returns a fixed-order tuple of the caching-relevant step facts:
+            instance key, selected spell id, dependency-resolution order, sorted
+            collection params, positional-override flag + frozen value,
+            contract-payload presence + frozen sorted items, and disposal-method
+            presence + names. Override-lane fields are excluded - this row is the
+            no-overrides cache key.
+
+        Args:
+            step:
+                Immutable many-only plan step.
+
+        Returns:
+            Tuple[Any, ...]: Deterministic signature row for cache keying.
         """
         dependency_resolution_order = tuple(
             (

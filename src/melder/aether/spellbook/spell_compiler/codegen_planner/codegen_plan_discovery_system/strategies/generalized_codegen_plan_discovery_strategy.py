@@ -39,6 +39,21 @@ class GeneralizedCodegenPlanDiscoveryStrategy(CodegenPlanDiscoveryStrategy):
     ) -> CodegenPlanDiscovery:
         """
         Claim the model and return the generalized planner-family selection.
+
+        Contract:
+            The default catch-all: never declines (the return type is
+            non-optional), ignores model specifics, and always selects the
+            "generalized_codegen_plan" strategy / "generalized" family with the
+            "generalized_default" candidate style. Registered last so it runs
+            only when no narrower strategy claimed the model.
+
+        Args:
+            spell_codegen_model:
+                Processor-owned model (unused; this strategy always claims).
+
+        Returns:
+            CodegenPlanDiscovery:
+                The generalized planner-family selection (never None).
         """
         _ = spell_codegen_model
         return CodegenPlanDiscovery(

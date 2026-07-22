@@ -19,8 +19,27 @@ class SelfDependencyStrategy(SpellValidationStrategy):
     - Checks only for direct self-dependency, not longer dependency cycles.
     - Emits validation issues into the supplied context; it does not mutate the
       dependency graph.
+
+    Registration:
+        MELDER KERNEL - guarded via the inherited `SpellValidationStrategy` sentinel
+        (no redundant sentinel). A built-in strategy; registered, never bound.
+
+    Subsystem Context:
+        One built-in of the `validation/strategies` family, registered into
+        `SpellValidationSystem`. Sibling to `CircularDependencyStrategy`, which
+        catches the multi-hop cycles this one deliberately does not.
+
+    System Context:
+        Phase 4 (validation) of the conjure pipeline. Its error marks the spell
+        broken and aborts conjure.
     """
 
+    __ast_helper_access__: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. Phase-4 strategy: emits one SELF_DEPENDENCY error if a spell's "
+        "dependency list contains its own selected_spell_id. Direct self-dependency only, not "
+        "longer cycles."
+    )
     __slots__ = SpellValidationStrategy.__slots__
 
     def __init__(self) -> None:

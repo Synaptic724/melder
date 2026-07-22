@@ -77,6 +77,13 @@ class CachingSystem(Cleanable):
     """
 
     __melder_internal__: ClassVar[object] = _mrg.sentinel
+    __ast_helper_access__: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. Per-conduit on-disk payload cache (one .melc marshal bundle per "
+        "frame_name/conduit_name); upsert/get/remove_spell_payload plus emit() to write. "
+        "Melder-owned and guarded - the owning conduit gives you this behaviour, you do not "
+        "construct or bind it. Distinct from the crystallizer's restore record."
+    )
     # Version 7: phase-10 family selection is root-visible (the phase-8
     # existence analysis filters the shared pool walk down to the root's
     # occurrence graph) and shared-provider SpellContract payloads resolve by

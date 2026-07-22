@@ -38,8 +38,31 @@ class ParameterDIShape(Enum):
         Parameter default is a: class:`SpellContract`. This indicates that
         the parameter expects a single resolved spell matching the contract.
 
+    Registration:
+        MELDER KERNEL - guarded. A Phase-1 classification enum owned by the
+        compiler; it is not a user-bindable value. (The dunder attributes below
+        are class attributes, not enum members, so they do not widen the value
+        set.)
+
+    Subsystem Context:
+        The vocabulary the `spell_requirements_finder` package speaks: each
+        `SpellParameterRequirement` carries exactly one of these shapes, and
+        `SpellRequirements.iter_di_parameters()` selects on them. It captures what
+        a parameter WANTS before any lookup happens.
+
+    System Context:
+        Decided in Phase 1 (requirements extraction) of the conjure pipeline,
+        upstream of the symbolic graph (Phase 2), the local frame/DAG (Phase 3),
+        and validation (Phase 4). Nothing here touches the Spellbook or the live
+        object world.
     """
     __melder_internal__ = _mrg.sentinel
+    __ast_helper_access__ = "internal"
+    __agent_purpose__ = (
+        "access: internal. Phase-1 enum classifying how one parameter wants to be satisfied: "
+        "IGNORE / PLAIN / SINGLE_BY_ANNOTATION / COLLECTION_BY_ANNOTATION / SPELLMAP_DEFAULT / "
+        "SPELL_CONTRACT. Describes intent only - it performs no lookups."
+    )
     IGNORE = auto()
     PLAIN = auto()
     SINGLE_BY_ANNOTATION = auto()

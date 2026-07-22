@@ -39,7 +39,26 @@ class SoloCodegenCreationDiscoveryStrategy(CodegenCreationDiscoveryStrategy):
             spell_codegen_plan: SpellCodegenPlan,
     ) -> Optional[CodegenCreationDiscovery]:
         """
-        Claim solo planner output and return the solo creation family id.
+        Claim solo planner output and route it to the solo creation family.
+
+        Contract:
+            Declines (returns None) unless the plan's
+            metadata["selected_strategy_id"] is
+            "generalized_solo_codegen_plan". On a match, selects the first
+            candidate codegen style (or "generalized_solo" when none) and
+            claims the "solo_codegen_creation" family. The model is not
+            inspected.
+
+        Args:
+            spell_codegen_model:
+                Analyzed spell model (unused; selection is plan-driven).
+            spell_codegen_plan:
+                Phase-10 plan whose metadata and candidate styles drive the
+                claim.
+
+        Returns:
+            Optional[CodegenCreationDiscovery]:
+                The solo-family discovery, or None when the plan is not solo.
         """
         _ = spell_codegen_model
         selected_plan_strategy_id = spell_codegen_plan.metadata.get(

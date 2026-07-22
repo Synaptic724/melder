@@ -89,7 +89,35 @@ class ClusterLinkTransactionStrategy(TransactionStrategy):
             metadata: Dict[str, object],
     ) -> Dict[str, object]:
         """
-        Build the change-control request inputs for one cluster-owned share/unshare operation.
+        Build the change-control request inputs for one cluster share/unshare.
+
+        Contract:
+            Resolves the owning cluster id and participant conduit ids, then
+            seals the cluster scope (plus the cluster's transaction-owner scopes)
+            AND, for each participant conduit, its conduit + `conduit_ward` +
+            owning spellbook + owner scopes - the link footprint, widened by the
+            cluster seal so no concurrent membership change races the share.
+            Stamps normalized metadata with the transaction identity,
+            `cluster_mode="cluster_link"`, the cluster id, and the participant id
+            set. Pure planning - no runtime object is mutated here.
+
+        Args:
+            transaction_manager:
+                Frame-local scope-key/request helper surface.
+            devops_information_registry:
+                Topology registry used to resolve the cluster, each conduit, and
+                owning spellbooks.
+            identity:
+                Submitter identity (initiator + cluster hint).
+            metadata:
+                Caller metadata carrying the cluster/participant ids and explicit
+                scope keys/hashes/binding/contract keys.
+
+        Returns:
+            Dict[str, object]:
+                Normalized request inputs (initiator, sealed cluster + conduit
+                scopes, capabilities, normalized metadata) for mediator
+                admission.
         """
         cluster_id = cls._resolve_cluster_id(identity=identity, metadata=metadata)
         conduit_ids = cls._resolve_participant_conduit_ids(metadata=metadata)

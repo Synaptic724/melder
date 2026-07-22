@@ -103,6 +103,33 @@ class ClusterLeaveTransactionStrategy(TransactionStrategy):
     ) -> Dict[str, object]:
         """
         Build the change-control scope plan for one cluster-leave transaction.
+
+        Contract:
+            DevOps scope-isolation envelope (the move-out counterpart to
+            cluster-join): resolves the involved conduit ids and, for each,
+            seals the conduit + its `conduit_ward` + owning spellbook + every
+            resolved identity's transaction-owner scopes (the link footprint).
+            The actual membership change runs at the call site; this plan only
+            isolates the affected scopes. Stamps normalized metadata with the
+            transaction identity and the affected id sets. Pure planning - no
+            runtime object is mutated here.
+
+        Args:
+            transaction_manager:
+                Frame-local scope-key/request helper surface.
+            devops_information_registry:
+                Topology registry used to resolve each conduit's identity and
+                owning spellbook.
+            identity:
+                Submitter identity (initiator + spellbook hint).
+            metadata:
+                Caller metadata carrying the involved conduit ids and explicit
+                scope keys/hashes/binding/contract keys.
+
+        Returns:
+            Dict[str, object]:
+                Normalized request inputs (sealed conduit/ward/spellbook scopes,
+                capabilities, normalized metadata) for mediator admission.
         """
         conduit_ids = cls._involved_conduit_ids(metadata)
         explicit_scope_keys = tuple(metadata.get("scope_keys", ()))

@@ -35,6 +35,24 @@ class SpellOccurrenceInstanceAnalysis(Cleanable):
     ) -> None:
         """
         Build one occurrence-instance artifact.
+
+        Contract:
+            Stores the four inputs by reference and derives three counts:
+            `unique_spell_count` (distinct spells), `shared_spell_count`
+            (shared spells), and `instance_count` (total instance keys).
+
+        Args:
+            instance_keys_by_spell_id:
+                Per-spell list of instance keys (spell_name, occurrence-or-None).
+            canonical_occurrences_by_spell_id:
+                Chosen canonical occurrence key per spell.
+            root_instance_key:
+                Instance key of the root spell.
+            shared_spell_ids:
+                Ids of spells shared across more than one instance.
+
+        Returns:
+            None.
         """
         super().__init__()
         self.instance_keys_by_spell_id = instance_keys_by_spell_id

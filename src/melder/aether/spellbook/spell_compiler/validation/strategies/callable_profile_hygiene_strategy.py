@@ -35,8 +35,34 @@ class CallableProfileHygieneStrategy(SpellValidationStrategy):
 
     This catches mismatches such as class spells bound to non-classes or
     callable spells missing callable metadata.
+
+    Contract:
+        Errors: MISSING_BINDING_PROFILE; for class spells NON_CLASS_SPELL_TARGET /
+        CLASS_PROFILE_MISSING; for method/lambda spells NON_CALLABLE_SPELL_TARGET /
+        CALLABLE_PROFILE_MISSING; for existing-creation spells
+        EXISTING_CREATION_MISSING_INSTANCE / _PROFILE_MISMATCH. Validation only.
+
+    Registration:
+        MELDER KERNEL - guarded via the inherited `SpellValidationStrategy` sentinel
+        (no redundant sentinel). A built-in strategy; registered, never bound.
+
+    Subsystem Context:
+        A built-in of the `validation/strategies` family; it reads the spell's
+        binding profile (via SpellExaminer general/detailed profiles) and its
+        class/callable/existing-creation kind flags.
+
+    System Context:
+        Phase 4 (validation) of the conjure pipeline, ensuring the bound target and
+        its captured binding profile agree before resolution planning.
     """
 
+    __ast_helper_access__: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. Phase-4 strategy: checks the spell target matches its binding "
+        "profile and kind - class spells must be classes with a ClassBindingProfile, "
+        "method/lambda spells callable with a CallableBindingProfile, existing creations an "
+        "instance with an instance profile. Validation only."
+    )
     __slots__ = SpellValidationStrategy.__slots__
 
     def __init__(self) -> None:

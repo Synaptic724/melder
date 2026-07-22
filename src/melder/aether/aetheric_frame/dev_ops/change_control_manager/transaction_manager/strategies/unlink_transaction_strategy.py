@@ -94,7 +94,37 @@ class UnlinkTransactionStrategy(TransactionStrategy):
             metadata: Dict[str, object],
     ) -> Dict[str, object]:
         """
-        Build the change-control request inputs for one unlink transaction.
+        Build the change-control request inputs for one conduit-unlink (sever).
+
+        Contract:
+            The structural twin of the link plan, for a sever: resolves the
+            participating conduit ids, seals each conduit and its `conduit_ward`
+            (default EXCLUSIVE), and adds each owning spellbook plus every
+            resolved identity's transaction-owner scopes. Owning spellbooks are
+            claimed INTENT - a sever removes one contract bucket, so it blocks a
+            whole-spellbook claim (transfer) without serializing unrelated
+            piece-work; conduits and wards stay EXCLUSIVE. Stamps normalized
+            metadata with the transaction identity,
+            `unlink_mode="conduit_unlink"`, and the participant/affected id sets.
+            Pure planning - no runtime object is mutated here.
+
+        Args:
+            transaction_manager:
+                Frame-local scope-key/request helper surface.
+            devops_information_registry:
+                Topology registry used to resolve each conduit's identity and
+                owning spellbook.
+            identity:
+                Submitter identity (initiator + spellbook hint).
+            metadata:
+                Caller metadata carrying participant ids and explicit scope
+                keys/hashes/binding/contract keys.
+
+        Returns:
+            Dict[str, object]:
+                Normalized request inputs (initiator, spellbook, sealed conduit
+                set, INTENT spellbook claims, capabilities, normalized metadata)
+                for mediator admission.
         """
         conduit_ids = cls._resolve_participant_conduit_ids(
             identity=identity,

@@ -26,8 +26,26 @@ class ResolutionFrame(Cleanable):
 
     It does NOT know about graph structure or spell details; it only stores values
     keyed by ids/names decided by SpellCrafter/DAG builder.
+
+    Registration:
+        MELDER KERNEL - guarded. Per-meld runtime state; not user-bindable.
+
+    Subsystem Context:
+        The shared state object of the `dag` package's `resolution_frame`: the DAG
+        resolver reads caller overrides from it and writes per-node results and
+        errors back into it. It knows nothing about graph structure.
+
+    System Context:
+        Phase 3 (local frame) at build time, reused during meld-time resolution. It
+        stores values only, keyed by ids the SpellCompiler / DAG builder decide.
     """
     __melder_internal__: ClassVar[object] = _mrg.sentinel
+    __ast_helper_access__: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. Per-meld resolution state: caller overrides, per-node results, and "
+        "per-node errors keyed by node id. Created once per resolution run, RLock-guarded, "
+        "cleaned after. Knows no graph structure."
+    )
     __slots__ = Cleanable.__slots__ + [
         "_errors",
         "_id",

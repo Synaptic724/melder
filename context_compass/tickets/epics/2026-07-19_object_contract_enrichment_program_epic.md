@@ -1745,6 +1745,54 @@ NOTE (ITEM 5 hand-written pass through the mutation_research/research_set packag
   REREAD: REQUIRED
   SCORE_0_TO_10: 8
 
+- DATETIME: 2026-07-21T23:14:00Z
+  TYPE: FACT
+  CLAIM: Started the spell_compiler lane BY HAND. First bounded task landed: the
+    spell_requirements_finder package (Phase 1) - all four classes (ParameterDIShape,
+    SpellParameterRequirement, SpellRequirements, SpellRequirementsFinder) gained Registration
+    (MELDER KERNEL; all were already sentinel-tagged), Subsystem + System Context,
+    __agent_purpose__, and __ast_helper_access__="internal". Existing method docstrings left
+    intact - added the missing contract sections + agent pair only. NB re the note above: my
+    gap-finder was an EXACT attribute check (presence of __agent_purpose__), not a docstring-rank
+    keyword proxy, and I read every body before writing.
+  EVIDENCE:
+  - src/melder/aether/spellbook/spell_compiler/spell_requirements_finder/parameter_di_shape.py:42-49
+  - src/melder/aether/spellbook/spell_compiler/spell_requirements_finder/spell_requirements_finder.py:72-96
+  MEASURE: py_compile green on all four; package coverage 4/4 agent_purpose/ast_access/Registration.
+    AST sweep + 3.14t validation NOT run by agent.
+  COORDINATION: the note directly above (mutation_research complete) was written by another
+    active hand while I held this file open - concurrent work is happening on this program.
+    Agents should split by subsystem via mailbox_board.md to avoid collision.
+  PLANNING GAP: aether/spell_compiler/** (~180 files below the agent-surface bar) has NO child
+    epic. It needs one (oce-aether-spellbook, chunked <=10 classes/task per THE CHUNKING LAW).
+  NEXT: continue spell_compiler in bounded packages under a proper child epic; coordinate lane
+    ownership first.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-07-21T23:40:00Z
+  TYPE: FACT
+  CLAIM: spell_compiler progress (melder_0, hand-authored): THREE full packages complete and
+    py_compile-green - spell_requirements_finder (4 classes), symbolic_graph (2), and the whole
+    validation package (18: context/issue/result/system + the SpellValidationStrategy base + 13
+    concrete strategies). All MELDER KERNEL, access=internal; concrete strategies inherit the
+    base sentinel via the MRO, so NO redundant sentinel was added. Method docstrings left intact;
+    four thin class docstrings (existing_creation, spellmap_shape, parameter_policy,
+    callable_profile) enriched to Rank-4. A post-edit self-audit caught 6 files where I had added
+    the docstring sections but missed the agent pair - fixed and re-verified.
+  EVIDENCE:
+  - src/melder/aether/spellbook/spell_compiler/validation/strategies/spell_validation_strategy.py:24-46
+  - src/melder/aether/spellbook/spell_compiler/validation/validation_system.py:79-92
+  MEASURE: py_compile green across all 24 files; coverage sweep TODO_COUNT=0 (every class carries
+    agent_purpose + ast_access + Registration). AST sweep + 3.14t run NOT done by agent.
+  REVIEW ITEM: SpellValidationStrategy is a user-extensible base that carries the sentinel -
+    documented as INERT (strategies register into SpellValidationSystem, never Spellbook.bind),
+    but flagged for owner review since it technically sits against the MRO-never-guard-a-base rule.
+  NEXT: next spell_compiler packages (dag, spell_analyzer, codegen_planner, artifact_processor,
+    codegen_creation_system, ...) - ~150 files remain; needs the chunked oce-aether-spellbook epic.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
 ## Context / Handoff Summary
 Program epic for a correctness-plus-enrichment pass over all 542 classes in `src/melder`.
 Carries THE OBJECT CONTRACT (five items per class) and THE CHUNKING LAW (task <=10 classes,

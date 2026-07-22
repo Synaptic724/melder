@@ -96,7 +96,47 @@ class CodegenStepRuntimeRow(Cleanable):
             override_match_prefix_len: int,
     ) -> None:
         """
-        Build one slotted runtime row.
+        Build one slotted runtime row (pure store; mirrors the plan-step surface).
+
+        Contract:
+            Stores each field verbatim (`spell` is referenced, not owned); the
+            attribute set is exactly what emitted source and the family runtime
+            helpers read off a plan step.
+
+        Args:
+            instance_key:
+                (spell_name, occurrence-or-None) identity for this step.
+            spell:
+                Live spell reference the executor invokes.
+            existence:
+                Existence posture (lifetime/sharing) for the instance.
+            creations_target_kind:
+                Integer discriminator for the creations target shape.
+            dependency_resolution_order:
+                Ordered (param_name, dependency-keys) resolution plan.
+            collection_param_names:
+                Params that aggregate a collection of dependencies.
+            uses_positional_override:
+                True when a positional override value applies.
+            contract_positional_override:
+                The positional override value (when used).
+            has_contract_payload:
+                True when a keyword contract payload is present.
+            contract_payload:
+                The keyword contract payload, or None.
+            use_spell_lock_hint:
+                True when the executor should take the spell lock hint.
+            must_register:
+                True when the created instance must be registered.
+            shared_instance:
+                True when the instance is shared across occurrences.
+            override_match_prefix:
+                Prefix used to match overrides to this step.
+            override_match_prefix_len:
+                Length of `override_match_prefix`.
+
+        Returns:
+            None.
         """
         super().__init__()
         self.instance_key = instance_key

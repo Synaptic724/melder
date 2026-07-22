@@ -34,8 +34,28 @@ class ContractProviderPresenceStrategy(SpellValidationStrategy):
         - Emits errors when more than one provider matches a contract key.
         - Emits warnings for missing SpellContract providers in dynamic mode.
         - Emits errors for contract sockets in automatic system state.
+
+    Registration:
+        MELDER KERNEL - guarded via the inherited `SpellValidationStrategy` sentinel
+        (no redundant sentinel). A built-in strategy; registered, never bound.
+
+    Subsystem Context:
+        A built-in of the `validation/strategies` family; it reads the Spellbook's
+        contracted-spell maps (pass-cached) and the frame `system_state`.
+
+    System Context:
+        Phase 4 (validation) of the conjure pipeline. Contract sockets are
+        late-bound and only resolvable in dynamic mode; this strategy is where an
+        automatic-mode contract, or a missing/ambiguous provider, is surfaced up front.
     """
 
+    __ast_helper_access__: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. Phase-4 strategy for SPELL_CONTRACT sockets: errors "
+        "CONTRACT_IN_AUTOMATIC_MODE (contracts need dynamic mode), SPELL_CONTRACT_INVALID, "
+        "SPELL_CONTRACT_AMBIGUOUS (>1 provider); warns SPELL_CONTRACT_MISSING_PROVIDER. Provider "
+        "map is pass-cached."
+    )
     __slots__ = SpellValidationStrategy.__slots__
 
     def __init__(self) -> None:

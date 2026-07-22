@@ -38,7 +38,24 @@ class FallbackNoOverridesCodegenCreationDiscoveryStrategy(
             spell_codegen_plan: SpellCodegenPlan,
     ) -> CodegenCreationDiscovery:
         """
-        Return the current fallback no-overrides discovery result.
+        Unconditionally claim the pair for the no-overrides fallback family.
+
+        Contract:
+            The terminal discovery strategy: it NEVER declines (the return type
+            is non-optional). Registered last, so it runs only when no earlier
+            strategy claimed the pair, and always routes to the
+            "generalized_no_overrides_codegen_creation" family. Neither the
+            model nor the plan is inspected.
+
+        Args:
+            spell_codegen_model:
+                Analyzed spell model (unused).
+            spell_codegen_plan:
+                Phase-10 plan (unused).
+
+        Returns:
+            CodegenCreationDiscovery:
+                The fallback no-overrides discovery result (never None).
         """
         _ = spell_codegen_model
         _ = spell_codegen_plan

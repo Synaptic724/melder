@@ -33,6 +33,9 @@ class SpellCodegenStrategy(ABC):
     def strategy_id(self) -> str:
         """
         Return the stable strategy id.
+
+        Returns:
+            str: Registry key this creation strategy is selected by.
         """
         raise NotImplementedError
 
@@ -45,5 +48,22 @@ class SpellCodegenStrategy(ABC):
     ) -> None:
         """
         Populate the codegen creation output from model and plan truth.
+
+        Contract:
+            Reads from the model and plan and mutates ONLY the supplied
+            `spell_codegen_creation` (never the planner or processor contracts);
+            see the class Contract. Returns nothing - the populated creation is
+            the output.
+
+        Args:
+            spell_codegen_model:
+                Fitted spell model for the current compile.
+            spell_codegen_plan:
+                Chosen plan whose steps this strategy realizes.
+            spell_codegen_creation:
+                Artifact-owned creation sink this strategy populates in place.
+
+        Returns:
+            None.
         """
         raise NotImplementedError

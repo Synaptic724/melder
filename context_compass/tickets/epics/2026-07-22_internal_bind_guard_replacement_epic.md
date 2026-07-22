@@ -50,6 +50,50 @@ LANE A - path/module recognition (the likely "faster smarter way"):
   needed); crystallizer SyntheticModule worlds (rebuilt user modules must
   never read as internal); vendored/renamed installs; functions/instances
   vs classes as bind candidates (what does the guard actually receive?).
+OWNER LEADING DIRECTION (2026-07-22, end of discussion): SPLIT the
+  concerns. Docstrings keep ONLY the AST/agent metadata (sibling epic; no
+  load-bearing policy in docstrings, so no -OO concern for the guard). The
+  GUARD becomes an ORIGIN LOOKUP in bind: "is this class defined inside
+  melder?" - anything in melder is imported, not bound - refined Lane A
+  with an ALLOWLIST: a small explicit set of melder utility classes that
+  ARE bindable, consulted only AFTER a melder-origin hit (user binds never
+  pay the allowlist probe). Check cost: one interned-string compare on
+  type(candidate).__module__ - the cheapest candidate discussed. The Lane A
+  subclass ruling stands as the one deliberate behavior flip (user
+  subclasses of melder classes become bindable under origin semantics).
+  Lanes A2/A3/B remain recorded as alternatives for the investigation to
+  race against this direction.
+
+LANE A2 - DOCSTRING MARKER (owner extension, 2026-07-22): the sibling
+  agent-metadata epic moves access metadata to docstring level - bind could
+  read THAT marker as its guard signal ("this is easy to implement... a
+  marker there instead of a sentinel would be much cheaper"). One
+  convention, two consumers: agents/AST tooling read it offline, bind reads
+  it live. Cost profile: docstrings already exist on every class (zero new
+  memory), the check is one cls.__doc__ prefix probe, cache-able per class.
+  MUST-ANSWER edges: (1) `python -OO` strips docstrings - the guard would
+  vanish; fallback (AST-from-source, build-time manifest) or documented
+  refusal to support -OO needs a ruling. (2) class __doc__ does NOT inherit
+  - user subclasses of internal classes would NOT carry the marker, same
+  behavior flip as the module-path lane (the Lane A subclass ruling covers
+  both). (3) user classes whose docstrings coincidentally match the marker
+  grammar - marker must be unambiguous.
+LANE A3 - MELDER-DEFINED DUNDER METHOD (owner extension, 2026-07-22):
+  replace the sentinel ATTR with a melder dunder METHOD on internal
+  classes, and the guard becomes a method probe at bind. Why a method:
+  it is the least-impacted carrier - untouched by -OO, ignored by
+  dataclass/init machinery and data-plane reflection sweeps, no
+  interaction with instance state or serialization. The probe at bind is
+  ONE direct check on the candidate, replacing today's slow path
+  (guard singleton -> assert_allowed call chain -> context strings) with
+  a single lookup/call; the 177-line guard module collapses into it.
+  Investigation questions: per-class definition vs hoisting to a shared
+  internal base (inheritance kills the per-class stamping AND preserves
+  today's subclass-refusal semantics - but base-scope correctness must be
+  proven: does every internal class sit under one base, and does nothing
+  user-facing?); presence-check vs call-and-answer; spoof/collision
+  (a user defining the same dunder); memory/import cost measured, not
+  assumed.
 LANE B - internal SHA256 manifest:
 - A cached registry of internal-class fingerprints consulted at bind.
 - When is it built - build-time shipped manifest vs first-import scan vs
@@ -85,7 +129,9 @@ LANE D - the perf claim, measured:
   replacement phase is its own story set after the DECISION.
 - DEPENDENCIES: bind pipeline (bind.py guarded entry), binding profile
   fingerprinting, InternalRegistrationError contract, crystallizer
-  synthetic-module world (false-positive risk).
+  synthetic-module world (false-positive risk), and the sibling epic
+  EPIC-2026-07-22-agent-metadata-to-docstring (shared docstring grammar if
+  Lane A2 wins - ONE sweep serves both).
 - EXIT_GATE: see Exit Shape.
 - FAILURE_ESCALATION: DECISION_REQUEST to owner on the subclass-semantics
   ruling and on any mechanism trade-off with user-visible behavior change.

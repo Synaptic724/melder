@@ -75,6 +75,38 @@ class FrameProjectionSet(Cleanable):
             generation: Optional[str] = None,
             metadata: Optional[Dict[str, object]] = None,
     ) -> None:
+        """
+        Bundle one frame's projection triple under a generation token.
+
+        Contract:
+            - Takes ownership of all three passed projections (view,
+              command, codegen); cleanup cascades into each.
+            - `generation` identifies this exact build; when omitted a fresh
+              id is minted (via `IDBuilder`) so every rebuild is
+              distinguishable and `RiftSpace` can tell whether a room runs
+              current policy without comparing projections.
+            - Copies `metadata` into a fresh dict.
+
+        Args:
+            frame_name:
+                Target frame for the bundled triple; must be non-empty.
+            view_projection:
+                Owned view projection for the frame.
+            command_projection:
+                Owned command projection for the frame.
+            codegen_projection:
+                Owned codegen projection for the frame.
+            generation:
+                Optional generation token; a fresh id is minted when omitted.
+            metadata:
+                Optional set metadata; copied defensively (None -> {}).
+
+        Raises:
+            ValueError: If `frame_name` is empty.
+
+        Returns:
+            None.
+        """
         super().__init__()
         if not frame_name:
             raise ValueError("frame_name cannot be empty.")

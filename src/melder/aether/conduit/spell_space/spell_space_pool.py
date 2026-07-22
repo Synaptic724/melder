@@ -121,6 +121,21 @@ class SpellSpacePool(AbstractElasticPool[SpellSpace]):
     def create_object(self, *args: Any, **kwargs: Any) -> SpellSpace:
         """
         Create one new spellspace owned by this pool's conduit runtime.
+
+        Contract:
+            Pool factory hook: constructs a fresh `SpellSpace` wired to this
+            pool's owner conduit id, meld, creations, registry, and stack state.
+            Positional/keyword args are accepted for the pool-factory signature
+            but not used.
+
+        Args:
+            *args:
+                Ignored (pool-factory signature parity).
+            **kwargs:
+                Ignored (pool-factory signature parity).
+
+        Returns:
+            SpellSpace: A newly constructed spellspace bound to this pool.
         """
         return SpellSpace(
             owner_conduit_id=self._owner_conduit_id,
@@ -140,6 +155,26 @@ class SpellSpacePool(AbstractElasticPool[SpellSpace]):
     ) -> SpellSpace:
         """
         Reactivate one spellspace before use.
+
+        Contract:
+            Manual-path reactivation hook: when `track_registry` is True, marks
+            the spellspace registry-tracked and adds it to the shared registry;
+            when False, leaves it untracked (the managed enter path tracks on
+            the conduit-local stack instead). Returns the same object.
+
+        Args:
+            obj:
+                Idle spellspace being reactivated.
+            *args:
+                Ignored (pool-factory signature parity).
+            track_registry:
+                When True (default), register the spellspace for manual-path
+                bookkeeping.
+            **kwargs:
+                Ignored (pool-factory signature parity).
+
+        Returns:
+            SpellSpace: The same, reactivated spellspace.
         """
         if track_registry:
             obj._registry_tracked = True
@@ -206,6 +241,14 @@ class SpellSpacePool(AbstractElasticPool[SpellSpace]):
     def destroy_object(self, obj: SpellSpace) -> None:
         """
         Permanently destroy one spellspace that should not be retained.
+
+        Contract:
+            Pool destroy hook: runs the spellspace's `permanent_cleanup()`, so
+            it is not returned to idle storage.
+
+        Args:
+            obj:
+                Spellspace to permanently tear down.
 
         Returns:
             None.

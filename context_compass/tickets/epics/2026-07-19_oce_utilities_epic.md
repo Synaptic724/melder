@@ -199,6 +199,35 @@ to the active `melder_init_wheel_strategy` lane, not to this program.
   REREAD: REQUIRED
   SCORE_0_TO_10: 8
 
+- DATETIME: 2026-07-21T22:58:00Z
+  TYPE: FACT
+  CLAIM: Utilities agent-surface pass completed BY HAND. Added __ast_helper_access__ + a
+    hand-authored __agent_purpose__ to the three kernel classes that had the sentinel but no
+    agent surface: SyncWeakRef (internal), CachingSystem (internal), ProtocolCrafter (public).
+    access values follow the established convention (exposed=public per SafeGuard/IDBuilder;
+    internal machinery=internal per PhaseLatch). NO sentinels added or removed.
+    DELIBERATE EXEMPTIONS (do NOT "fix" these):
+    - Protocols ICleanable / IChannelLogger: docstrings already carry Registration + contexts;
+      NOT adding valued class attrs to a runtime_checkable Protocol - that makes them structural
+      members and changes the public typing contract (Non-Goal: no behavior change).
+    - Private views _WeakDictKeysView/_ValuesView/_ItemsView and nested Cleanable._CleanupContext:
+      internal, not bind-reachable, not agent-facing; owner steer "agents don't need to see
+      everything" - left without the agent pair by design.
+    - helpers/package.py (Package): dead code, S3 deletion lane - untouched pending owner ruling.
+  EVIDENCE:
+  - src/melder/utilities/synchronization/sync_weak_ref.py:102-108
+  - src/melder/utilities/caching_system/caching_system.py:79-86
+  - src/melder/utilities/ai_native_support_tools/protocol_crafter.py:86-93
+  IMPACT: Every public/kernel major class in utilities/** now carries the agent surface; the
+    only ap<class-count files remaining are the four intentional exemptions above.
+  MEASURE: py_compile green on the three edited files; re-sweep shows only the exemptions remain.
+    Full AST sweep + MRO-law regression NOT run by agent - owner runs on 3.14t.
+  NEXT: Owner decisions remain: (1) Package delete vs retain (S3); (2) owner ruled the guard
+    NEEDS-TAG additions OVERKILL 2026-07-21, so AC "the 7 NEEDS-TAG classes carry the sentinel"
+    should be struck. No further docstring work outstanding in utilities/**.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
 ## Context / Handoff Summary
 Utilities is the classification-defining epic: three base classes that must stay unguarded,
 11 exceptions and 4 weak containers that are the user's, ~19 kernel primitives that are

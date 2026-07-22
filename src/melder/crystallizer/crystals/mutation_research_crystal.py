@@ -210,6 +210,10 @@ class MutationResearchCrystal(Cleanable):
         """
         Return whether the MR root was activated at emission.
 
+        Contract:
+            - Emission-time activation flag; the profile's MR RecordedUnitState
+              decides enabled/disabled/refuse-resurrection at restore.
+
         Returns:
             bool:
                 Recorded activation flag.
@@ -221,6 +225,10 @@ class MutationResearchCrystal(Cleanable):
     def configuration_payload(self) -> Dict[str, object]:
         """
         Return a detached copy of the recorded MR configuration surface.
+
+        Contract:
+            - A FRESH copy of the installed MR configuration surface; mutating
+              it never touches the twin.
 
         Returns:
             Dict[str, object]:
@@ -234,6 +242,10 @@ class MutationResearchCrystal(Cleanable):
         """
         Return a detached copy of the recorded research composition.
 
+        Contract:
+            - A FRESH copy of the nested research composition - the HYDRATION
+              carrier (the proven restore loop reads this, not the flat rows).
+
         Returns:
             Dict[str, object]:
                 Detached mapping of set name -> composition payload
@@ -246,6 +258,11 @@ class MutationResearchCrystal(Cleanable):
     def research_nodes(self) -> List[Dict[str, object]]:
         """
         Return the recorded ResearchNodes as flat, DB-storable rows.
+
+        Contract:
+            - DERIVED from `composition_payload` at construction (blob and rows
+              cannot disagree); returns detached row copies - the queryable,
+              DB-storable face of the spell-version records.
 
         Returns:
             List[Dict[str, object]]:
@@ -261,6 +278,11 @@ class MutationResearchCrystal(Cleanable):
     def grouped_research_nodes(self) -> List[Dict[str, object]]:
         """
         Return the recorded GroupedResearchNodes as flat, DB-storable rows.
+
+        Contract:
+            - DERIVED from `composition_payload` at construction; returns
+              detached row copies - the DB-storable face of the composition
+              records.
 
         Returns:
             List[Dict[str, object]]:
@@ -281,6 +303,11 @@ class MutationResearchCrystal(Cleanable):
                 Plain-value payload (the cached-item form for this twin):
                 the composition blob (the hydration carrier) PLUS the
                 explicit per-family node rows (the DB-storable objects).
+
+        Contract:
+            - Detached cached-item form carrying `twin_kind:
+              "mutation_research"`; blob and node rows are derived from one
+              source so they cannot disagree.
         """
         self.check_cleaned()
         return {

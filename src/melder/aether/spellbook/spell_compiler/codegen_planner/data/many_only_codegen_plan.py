@@ -490,146 +490,182 @@ class ManyOnlyNoOverridesPlan(Cleanable):
 
     @property
     def step_dep1(self) -> Tuple[int, ...]:
+        """Return the ordered dependency-slot 1 references (detached)."""
         return tuple(self._step_dep1)
 
     @property
     def step_dep2a(self) -> Tuple[int, ...]:
+        """Return the ordered dependency-slot 2a references (detached)."""
         return tuple(self._step_dep2a)
 
     @property
     def step_dep2b(self) -> Tuple[int, ...]:
+        """Return the ordered dependency-slot 2b references (detached)."""
         return tuple(self._step_dep2b)
 
     @property
     def step_dep3a(self) -> Tuple[int, ...]:
+        """Return the ordered dependency-slot 3a references (detached)."""
         return tuple(self._step_dep3a)
 
     @property
     def step_dep3b(self) -> Tuple[int, ...]:
+        """Return the ordered dependency-slot 3b references (detached)."""
         return tuple(self._step_dep3b)
 
     @property
     def step_dep3c(self) -> Tuple[int, ...]:
+        """Return the ordered dependency-slot 3c references (detached)."""
         return tuple(self._step_dep3c)
 
     @property
     def step_dep4a(self) -> Tuple[int, ...]:
+        """Return the ordered dependency-slot 4a references (detached)."""
         return tuple(self._step_dep4a)
 
     @property
     def step_dep4b(self) -> Tuple[int, ...]:
+        """Return the ordered dependency-slot 4b references (detached)."""
         return tuple(self._step_dep4b)
 
     @property
     def step_dep4c(self) -> Tuple[int, ...]:
+        """Return the ordered dependency-slot 4c references (detached)."""
         return tuple(self._step_dep4c)
 
     @property
     def step_dep4d(self) -> Tuple[int, ...]:
+        """Return the ordered dependency-slot 4d references (detached)."""
         return tuple(self._step_dep4d)
 
     @property
     def step_dep5a(self) -> Tuple[int, ...]:
+        """Return the ordered dependency-slot 5a references (detached)."""
         return tuple(self._step_dep5a)
 
     @property
     def step_dep5b(self) -> Tuple[int, ...]:
+        """Return the ordered dependency-slot 5b references (detached)."""
         return tuple(self._step_dep5b)
 
     @property
     def step_dep5c(self) -> Tuple[int, ...]:
+        """Return the ordered dependency-slot 5c references (detached)."""
         return tuple(self._step_dep5c)
 
     @property
     def step_dep5d(self) -> Tuple[int, ...]:
+        """Return the ordered dependency-slot 5d references (detached)."""
         return tuple(self._step_dep5d)
 
     @property
     def step_dep5e(self) -> Tuple[int, ...]:
+        """Return the ordered dependency-slot 5e references (detached)."""
         return tuple(self._step_dep5e)
 
     @property
     def step_dep6a(self) -> Tuple[int, ...]:
+        """Return the ordered dependency-slot 6a references (detached)."""
         return tuple(self._step_dep6a)
 
     @property
     def step_dep6b(self) -> Tuple[int, ...]:
+        """Return the ordered dependency-slot 6b references (detached)."""
         return tuple(self._step_dep6b)
 
     @property
     def step_dep6c(self) -> Tuple[int, ...]:
+        """Return the ordered dependency-slot 6c references (detached)."""
         return tuple(self._step_dep6c)
 
     @property
     def step_dep6d(self) -> Tuple[int, ...]:
+        """Return the ordered dependency-slot 6d references (detached)."""
         return tuple(self._step_dep6d)
 
     @property
     def step_dep6e(self) -> Tuple[int, ...]:
+        """Return the ordered dependency-slot 6e references (detached)."""
         return tuple(self._step_dep6e)
 
     @property
     def step_dep6f(self) -> Tuple[int, ...]:
+        """Return the ordered dependency-slot 6f references (detached)."""
         return tuple(self._step_dep6f)
 
     @property
     def step_dep7a(self) -> Tuple[int, ...]:
+        """Return the ordered dependency-slot 7a references (detached)."""
         return tuple(self._step_dep7a)
 
     @property
     def step_dep7b(self) -> Tuple[int, ...]:
+        """Return the ordered dependency-slot 7b references (detached)."""
         return tuple(self._step_dep7b)
 
     @property
     def step_dep7c(self) -> Tuple[int, ...]:
+        """Return the ordered dependency-slot 7c references (detached)."""
         return tuple(self._step_dep7c)
 
     @property
     def step_dep7d(self) -> Tuple[int, ...]:
+        """Return the ordered dependency-slot 7d references (detached)."""
         return tuple(self._step_dep7d)
 
     @property
     def step_dep7e(self) -> Tuple[int, ...]:
+        """Return the ordered dependency-slot 7e references (detached)."""
         return tuple(self._step_dep7e)
 
     @property
     def step_dep7f(self) -> Tuple[int, ...]:
+        """Return the ordered dependency-slot 7f references (detached)."""
         return tuple(self._step_dep7f)
 
     @property
     def step_dep7g(self) -> Tuple[int, ...]:
+        """Return the ordered dependency-slot 7g references (detached)."""
         return tuple(self._step_dep7g)
 
     @property
     def step_dep8a(self) -> Tuple[int, ...]:
+        """Return the ordered dependency-slot 8a references (detached)."""
         return tuple(self._step_dep8a)
 
     @property
     def step_dep8b(self) -> Tuple[int, ...]:
+        """Return the ordered dependency-slot 8b references (detached)."""
         return tuple(self._step_dep8b)
 
     @property
     def step_dep8c(self) -> Tuple[int, ...]:
+        """Return the ordered dependency-slot 8c references (detached)."""
         return tuple(self._step_dep8c)
 
     @property
     def step_dep8d(self) -> Tuple[int, ...]:
+        """Return the ordered dependency-slot 8d references (detached)."""
         return tuple(self._step_dep8d)
 
     @property
     def step_dep8e(self) -> Tuple[int, ...]:
+        """Return the ordered dependency-slot 8e references (detached)."""
         return tuple(self._step_dep8e)
 
     @property
     def step_dep8f(self) -> Tuple[int, ...]:
+        """Return the ordered dependency-slot 8f references (detached)."""
         return tuple(self._step_dep8f)
 
     @property
     def step_dep8g(self) -> Tuple[int, ...]:
+        """Return the ordered dependency-slot 8g references (detached)."""
         return tuple(self._step_dep8g)
 
     @property
     def step_dep8h(self) -> Tuple[int, ...]:
+        """Return the ordered dependency-slot 8h references (detached)."""
         return tuple(self._step_dep8h)
 
     @property
@@ -711,22 +747,27 @@ class ManyOnlyOverridesPlan(Cleanable):
 
     @property
     def lane_id(self) -> str:
+        """Return the many-only overrides lane id."""
         return self._lane_id
 
     @property
     def root_spell_id(self) -> str:
+        """Return the root spell id for this overrides lane."""
         return self._root_spell_id
 
     @property
     def root_instance_key(self) -> InstanceKey:
+        """Return the root instance key for this overrides lane."""
         return self._root_instance_key
 
     @property
     def steps(self) -> List[ManyOnlyCodegenPlanStep]:
+        """Return the live ordered many-only step list (not copied)."""
         return self._steps
 
     @property
     def metadata(self) -> Dict[str, Any]:
+        """Return the live mutable metadata mapping (not copied)."""
         return self._metadata
 
 

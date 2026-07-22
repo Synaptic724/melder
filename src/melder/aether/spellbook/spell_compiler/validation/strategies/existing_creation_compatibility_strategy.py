@@ -29,8 +29,42 @@ if TYPE_CHECKING:
 class ExistingCreationCompatibilityStrategy(SpellValidationStrategy):
     """
     Validate existing-creation spells are wired with valid instances and policies.
+
+    Purpose:
+        An existing-creation spell binds an already-constructed object rather than a
+        class Melder instantiates. This strategy enforces the invariants that make
+        such a spell resolvable.
+
+    Contract:
+        Emits one error into `context.issues` per violated invariant:
+        - EXISTING_CREATION_MISSING_INSTANCE: no bound instance.
+        - EXISTING_CREATION_INVALID_EXISTENCE: existence is not `Existence.unique`.
+        - EXISTING_CREATION_PROFILE_MISMATCH: no instance binding profile.
+        - EXISTING_CREATION_PARAMETERS_PRESENT: it declares DI parameters (an
+          existing object is never constructed, so it must not).
+        Runs only when `spell.is_existing_creation` is true; it mutates nothing.
+
+    Registration:
+        MELDER KERNEL - guarded via the inherited `SpellValidationStrategy` sentinel
+        (no redundant sentinel). A built-in strategy; registered, never bound.
+
+    Subsystem Context:
+        A built-in of the `validation/strategies` family, registered into
+        `SpellValidationSystem`. It reads the Phase-1 requirements and the spell's
+        binding profile.
+
+    System Context:
+        Phase 4 (validation) of the conjure pipeline. Existing-creation spells bypass
+        the live Phase 8-11 codegen group, so this validation gate is the main
+        structural check they pass through.
     """
 
+    __ast_helper_access__: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. Phase-4 strategy for existing-creation spells: errors if there is no "
+        "bound instance, existence is not unique, the instance binding profile is missing, or DI "
+        "parameters are declared. No-op for non-existing-creation spells."
+    )
     __slots__ = SpellValidationStrategy.__slots__
 
     def __init__(self) -> None:

@@ -32,6 +32,23 @@ class SpellOccurrenceContractAnalysis(Cleanable):
     ) -> None:
         """
         Build one occurrence-contract artifact.
+
+        Contract:
+            Stores the three inputs by reference and derives three counts:
+            `contract_override_occurrence_count` (override occurrences),
+            `contract_override_spell_count` (spells carrying overrides), and
+            `contract_payload_count` (total override payload entries).
+
+        Args:
+            contract_overrides_by_occurrence:
+                Override payloads keyed by (spell_id, occurrence) key.
+            contract_overrides_by_spell_id:
+                Per-spell list of (occurrence key, override payload) pairs.
+            contract_dependencies_complete:
+                True when every contract dependency resolved during analysis.
+
+        Returns:
+            None.
         """
         super().__init__()
         self.contract_overrides_by_occurrence = contract_overrides_by_occurrence

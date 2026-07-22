@@ -37,8 +37,27 @@ class SpellValidationResult(Cleanable):
       duplicating the stored state.
     - Convenience properties expose whether any error/warning class is present
       without forcing callers to rescan the issue list manually.
+
+    Registration:
+        MELDER KERNEL - guarded. A compiler result artifact; not user-bindable.
+
+    Subsystem Context:
+        The output of the `validation` package: built by
+        `SpellValidationSystem.validate_spell` from the `SpellValidationIssue`
+        list the strategies produced for one spell version.
+
+    System Context:
+        Phase 4 (validation) of the conjure pipeline. `has_errors` here is what
+        surfaces as `Spell.is_broken` and drives `SpellbookValidationError`;
+        warnings ride along without breaking the build.
     """
     __melder_internal__: ClassVar[object] = _mrg.sentinel
+    __ast_helper_access__: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. Aggregate Phase-4 result for one spell version: spell_id, spell_name, "
+        "the full issues list, plus derived errors/warnings/has_errors/has_warnings views. The "
+        "artifact Spell.validated / is_broken reads from."
+    )
     __slots__ = Cleanable.__slots__ + [
         "spell_id",
         "spell_name",

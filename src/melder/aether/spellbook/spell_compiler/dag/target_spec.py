@@ -15,8 +15,24 @@ class TargetSpecKind(Enum):
     * PATH -> explicit param path: "a>b>c".
     * UNIQUE -> unique-by-name wildcard: "*repo".
     * BROADCAST -> broadcast-by-name wildcard: "**logger".
+
+    Registration:
+        MELDER KERNEL - guarded. A compiler classification enum; not a
+        user-bindable value.
+
+    Subsystem Context:
+        Paired with `TargetSpec`, which parses a raw override key into one of these
+        modes.
+
+    System Context:
+        Phase 3 (DAG) override targeting of the conjure/meld pipeline.
     """
     __melder_internal__ = _mrg.sentinel
+    __ast_helper_access__ = "internal"
+    __agent_purpose__ = (
+        "access: internal. Override-targeting mode: PATH (a>b>c param path), UNIQUE (*name), "
+        "BROADCAST (**name). Classifies how an override key targets DAG sockets."
+    )
     PATH = auto()
     UNIQUE = auto()
     BROADCAST = auto()
@@ -40,8 +56,25 @@ class TargetSpec:
         param_name:
             The parameter name used for UNIQUE / BROADCAST specs (e.g. ``"logger"``).
             "None" for PATH specs.
+
+    Registration:
+        MELDER KERNEL - guarded (ClassVar sentinel). A frozen value dataclass, so it
+        is not a bindable service in any case.
+
+    Subsystem Context:
+        The parsed form of an override key in the `dag` package; its `kind` is a
+        `TargetSpecKind`, and `TargetSpec.parse(raw)` is the only constructor.
+
+    System Context:
+        Phase 3 (DAG) override targeting - it resolves which socket(s) a meld
+        override applies to.
     """
     __melder_internal__: ClassVar[object] = _mrg.sentinel
+    __ast_helper_access__: ClassVar[str] = "internal"
+    __agent_purpose__: ClassVar[str] = (
+        "access: internal. Parsed override target key: kind (TargetSpecKind) plus path (PATH "
+        "segments) or param_name (UNIQUE/BROADCAST). Built by TargetSpec.parse(raw)."
+    )
     kind: TargetSpecKind
     path: Tuple[str, ...] | None = None
     param_name: str | None = None

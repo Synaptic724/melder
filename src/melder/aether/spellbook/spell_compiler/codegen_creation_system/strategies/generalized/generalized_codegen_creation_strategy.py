@@ -78,6 +78,24 @@ class GeneralizedCodegenCreationStrategy(SpellCodegenStrategy):
     ) -> None:
         """
         Execute the generalized family over one mutable state object.
+
+        Contract:
+            Wraps the three inputs in a `GeneralizedManifestState` and runs the
+            ordered family steps (manifest, then lazy-door) over it; the steps
+            populate the passed `spell_codegen_creation` in place. Finally stamps
+            `creation_context_strategy` = this family's id into the creation's
+            metadata. Returns nothing - the populated creation is the output.
+
+        Args:
+            spell_codegen_model:
+                Fitted spell model for the current compile.
+            spell_codegen_plan:
+                Chosen plan whose lanes the family realizes.
+            spell_codegen_creation:
+                Artifact-owned creation sink the steps populate in place.
+
+        Returns:
+            None.
         """
         state = GeneralizedManifestState(
             spell_codegen_model=spell_codegen_model,

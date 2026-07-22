@@ -23,8 +23,27 @@ class DanglingDependenciesStrategy(SpellValidationStrategy):
       to repair or prune dependency lists.
     - Distinguishes between "cannot check because no spellbook exists" and
       "dependency is definitely dangling."
+
+    Registration:
+        MELDER KERNEL - guarded via the inherited `SpellValidationStrategy` sentinel
+        (no redundant sentinel). A built-in strategy; registered, never bound.
+
+    Subsystem Context:
+        A built-in of the `validation/strategies` family; it pairs with
+        `CircularDependencyStrategy`, which deliberately ignores dangling ids so
+        this strategy owns reporting them.
+
+    System Context:
+        Phase 4 (validation) of the conjure pipeline, checking dependency existence
+        against the owning Spellbook's live `_spell_id_pool`.
     """
 
+    __ast_helper_access__: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. Phase-4 strategy: checks every id in spell.dependencies exists in the "
+        "owning Spellbook's _spell_id_pool. Emits DANGLING_DEPENDENCY (error) per missing id, or "
+        "NO_SPELLBOOK_FOR_DEPENDENCY_CHECK (warning) when no spellbook is attached."
+    )
     __slots__ = SpellValidationStrategy.__slots__
 
     def __init__(self) -> None:

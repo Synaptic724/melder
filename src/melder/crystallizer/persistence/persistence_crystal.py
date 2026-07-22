@@ -204,6 +204,10 @@ class PersistenceCrystal(Cleanable):
         """
         Return the checkpoint's ULID identity (lexicographic = chronological).
 
+        Contract:
+            - ULID, so lexicographic order IS chronological; the chain folds
+              1..K in this order (later payloads win per (kind, key)).
+
         Returns:
             str:
                 ULID checkpoint id.
@@ -215,6 +219,10 @@ class PersistenceCrystal(Cleanable):
     def profile_name(self) -> str:
         """
         Return the profile this checkpoint was cut from.
+
+        Contract:
+            - The source profile; a checkpoint composes only with others from
+              the SAME profile chain.
 
         Returns:
             str:
@@ -228,6 +236,10 @@ class PersistenceCrystal(Cleanable):
         """
         Return the per-profile checkpoint counter (1-based).
 
+        Contract:
+            - 1-based monotonic position in the profile chain; minted highest+1
+              (count-based minting duplicated under FIFO dropout, since fixed).
+
         Returns:
             int:
                 Position of this checkpoint in its profile's chain.
@@ -239,6 +251,10 @@ class PersistenceCrystal(Cleanable):
     def created_at(self) -> str:
         """
         Return the ISO-8601 UTC creation stamp.
+
+        Contract:
+            - A rehydrated crystal preserves the ORIGINAL stamp
+              (`from_cached_item` passes it through, never re-mints).
 
         Returns:
             str:
@@ -252,6 +268,9 @@ class PersistenceCrystal(Cleanable):
         """
         Return the caller note recorded at seal time.
 
+        Contract:
+            - Optional caller note; None when unlabeled. Free text, never parsed.
+
         Returns:
             Optional[str]:
                 Description, or None.
@@ -263,6 +282,10 @@ class PersistenceCrystal(Cleanable):
     def sequence_range(self) -> Tuple[int, int]:
         """
         Return the (first, last) journal-sequence window this seal captured.
+
+        Contract:
+            - (first, last) window; the journal-integrity guard requires every
+              entry strictly increasing and inside it (empty-window markers exempt).
 
         Returns:
             Tuple[int, int]:
