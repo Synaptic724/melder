@@ -71,6 +71,30 @@ class SoloHydratedExecutors(Cleanable):
     ) -> None:
         """
         Build one solo hydration result container.
+
+        Contract:
+            Pure store of the solo hydration outputs; every field is retained
+            verbatim. Executors are plain callables; code objects are shared via
+            the process-wide caches and referenced, not owned.
+
+        Args:
+            route_key:
+                Runtime route key the doors were compiled for.
+            fast_transient_no_overrides:
+                True when the no-overrides fast-transient lane is available.
+            no_overrides_executor:
+                Final route-keyed no-overrides CreationContext door.
+            no_overrides_instance_executor:
+                Instance-only no-hooks twin of the no-overrides door.
+            overrides_executor:
+                Final route-keyed overrides CreationContext door.
+            no_overrides_code_object:
+                Compiled code object backing the no-overrides door.
+            overrides_code_object:
+                Compiled code object backing the overrides door.
+
+        Returns:
+            None.
         """
         super().__init__()
         self.route_key = route_key

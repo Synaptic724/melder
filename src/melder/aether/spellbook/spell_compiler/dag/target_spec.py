@@ -70,8 +70,10 @@ class TargetSpec:
         override applies to.
     """
     __melder_internal__: ClassVar[object] = _mrg.sentinel
-    __ast_helper_access__: ClassVar[str] = "internal"
-    __agent_purpose__: ClassVar[str] = (
+    # Unannotated on purpose: an annotated class var could be misread as a
+    # dataclass field on some Python versions; unannotated attrs never are.
+    __ast_helper_access__ = "internal"
+    __agent_purpose__ = (
         "access: internal. Parsed override target key: kind (TargetSpecKind) plus path (PATH "
         "segments) or param_name (UNIQUE/BROADCAST). Built by TargetSpec.parse(raw)."
     )

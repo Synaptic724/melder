@@ -217,6 +217,19 @@ class ManyOnlyCodegenCreationHelpers:
     ) -> Dict[str, Any]:
         """
         Build one many-only-local override step row.
+
+        Contract:
+            Projects the step into a schema-only dict including the override-lane
+            fields (shared_instance, override_match_prefix + length) that the
+            no-overrides signature row omits. Payload and positional-override
+            values are frozen via `freeze_value` for determinism.
+
+        Args:
+            step:
+                Immutable many-only plan step.
+
+        Returns:
+            Dict[str, Any]: Schema-only override step row.
         """
         dependency_resolution_order = tuple(
             (

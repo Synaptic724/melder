@@ -37,6 +37,23 @@ class ManyOnlyNoOverridesCodegenCreationStep(CodegenCreationFamilyStep):
     ) -> None:
         """
         Populate no-overrides executor output from many-only lane truth.
+
+        Contract:
+            Requires a no_overrides lane plan (raises otherwise). Compiles the
+            spell-static no-overrides executor (and its code object) from the
+            plan, then publishes it onto state and the creation along with the
+            code object, metadata, and the deterministic executor signature.
+
+        Args:
+            state:
+                Family-local state carrying model, plan, and creation; mutated
+                in place.
+
+        Returns:
+            None.
+
+        Raises:
+            RuntimeError: If the no_overrides lane plan is missing.
         """
         spell_codegen_plan = state.spell_codegen_plan
         spell_codegen_creation = state.spell_codegen_creation

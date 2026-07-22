@@ -8,8 +8,26 @@ from melder.aether.spellbook.existence.existence import Existence
 class SpellExistenceOccurrence:
     """
     One visible spell-id to existence row captured during the phase-8 spell walk.
+
+    Registration:
+        MELDER KERNEL - value dataclass, unguarded. A frozen value row with no live
+        references; not a bind target.
+
+    Subsystem Context:
+        A row inside `SpellExistenceOccurrenceAnalysis`, captured during the Phase-8
+        spell walk in the `spell_analyzer` package.
+
+    System Context:
+        Phase 8 (occurrence analysis) of the conjure pipeline. Value-only.
     """
 
+    # Unannotated on purpose: annotated class vars can be misread as dataclass
+    # fields on some Python versions; unannotated attrs never are.
+    __ast_helper_access__ = "internal"
+    __agent_purpose__ = (
+        "access: internal. One Phase-8 value row: spell_id + its Existence + "
+        "has_disposal_methods. Frozen value object captured during the spell walk."
+    )
     spell_id: str
     existence: Existence
     has_disposal_methods: bool
@@ -23,8 +41,27 @@ class SpellExistenceOccurrenceAnalysis:
     Purpose:
         Hold both the raw spell-id/existence rows and the aggregate existence
         counts in one immutable payload with no live spell references.
+
+    Registration:
+        MELDER KERNEL - value dataclass, unguarded. Immutable aggregate payload with
+        no live spell references; not a bind target.
+
+    Subsystem Context:
+        The aggregate of `SpellExistenceOccurrence` rows in the `spell_analyzer`
+        package; carried on `SpellOccurrenceGraphAnalysis`.
+
+    System Context:
+        Phase 8 (occurrence analysis) of the conjure pipeline; feeds later planning
+        without holding live spells.
     """
 
+    # Unannotated on purpose: annotated class vars can be misread as dataclass fields.
+    __ast_helper_access__ = "internal"
+    __agent_purpose__ = (
+        "access: internal. Phase-8 existence-occurrence payload: root_existence, "
+        "total_spell_count, spell_existence_rows, existence_counts, and disposal counts. "
+        "Immutable, no live spell refs."
+    )
     root_existence: Optional[Existence]
     total_spell_count: int
     spell_existence_rows: Tuple[SpellExistenceOccurrence, ...]

@@ -21,7 +21,28 @@ class SpellOccurrenceGraphAnalysis(Cleanable):
         - Borrows `path_registry`; it must not clean it.
         - Stores only occurrence-graph analysis, not execution ordering or
           final plan decisions.
+
+    Registration:
+        MELDER KERNEL - currently UNGUARDED. A compiler analysis artifact held on
+        `SpellCompilerArtifact`; not a bind target. (Left untagged as-is; guard
+        classification is the owner's call.)
+
+    Subsystem Context:
+        The occurrence-analysis output of the `spell_analyzer` package, produced by
+        the occurrence-graph analyzer strategy; it borrows a `path_registry` it must
+        not clean.
+
+    System Context:
+        Phase 8 (occurrence analysis) of the conjure pipeline. Stores the expanded
+        occurrence graph plus cheap metrics - not execution ordering or plan choices.
     """
+
+    __ast_helper_access__: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. Phase-8 occurrence-graph artifact: owns the expanded occurrence_graph "
+        "and cheap metrics (occurrence/edge/dependency counts, shared_collapse flag) plus the "
+        "existence analysis. Borrows path_registry (does not clean it)."
+    )
 
     __slots__ = Cleanable.__slots__ + [
         "root_spell_id",

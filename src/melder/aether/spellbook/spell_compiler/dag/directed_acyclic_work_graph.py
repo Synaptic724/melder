@@ -31,8 +31,26 @@ class DirectedAcyclicWorkGraph(Cleanable):
       - Cleanup when finished.
 
     It is intentionally not a general-purpose runtime workflow engine.
+
+    Registration:
+        MELDER KERNEL - guarded. A compiler graph; not user-bindable.
+
+    Subsystem Context:
+        The graph type of the `dag` package: it owns `DagNode`s and records per-edge
+        `SocketKind`, producing the topological order the resolver consumes.
+
+    System Context:
+        Phase 3 (local frame / DAG) of the conjure pipeline; `topological_levels`
+        feeds the parallel-restore execution planner.
     """
     __melder_internal__: ClassVar[object] = _mrg.sentinel
+    __ast_helper_access__: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. Minimal DAG of DagNodes keyed by id: add_node/add_dependency (+ "
+        "bulk), topological_sort, topological_levels (parallel-execution peeling), "
+        "collect_dependency_ids, execute. Static build-then-sort; RLock-guarded. Not a general "
+        "workflow engine."
+    )
     __slots__ = Cleanable.__slots__ + [
         "_id",
         "_lock",

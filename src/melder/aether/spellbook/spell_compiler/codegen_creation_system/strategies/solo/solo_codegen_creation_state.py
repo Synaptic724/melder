@@ -44,6 +44,23 @@ class SoloCodegenCreationState:
     ) -> None:
         """
         Build one solo family state object.
+
+        Contract:
+            Stores the three phase inputs (model, plan, creation) by reference
+            and initializes every solo intermediate (root spell + id, route key,
+            solo emit key, fast-transient flag, and the two executors) to its
+            empty default; the ordered steps populate them in place.
+
+        Args:
+            spell_codegen_model:
+                Fitted spell model for the current compile.
+            spell_codegen_plan:
+                Chosen solo plan.
+            spell_codegen_creation:
+                Artifact-owned creation sink the steps populate.
+
+        Returns:
+            None.
         """
         self.spell_codegen_model = spell_codegen_model
         self.spell_codegen_plan = spell_codegen_plan

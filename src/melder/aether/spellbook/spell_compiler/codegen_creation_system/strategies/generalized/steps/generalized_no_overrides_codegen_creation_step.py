@@ -36,6 +36,26 @@ class GeneralizedNoOverridesCodegenCreationStep(CodegenCreationFamilyStep):
     ) -> None:
         """
         Populate no-overrides executor output from generalized lane truth.
+
+        Contract:
+            Requires a no_overrides lane plan (raises otherwise). Compiles the
+            spell-static no-overrides executor (and its code object) from the
+            plan plus the fast-transient schema, then stores the executor on
+            both `state.base_no_overrides_executor` and the creation, along with
+            the code object and metadata (lane id, root spell id, step count,
+            fast-transient availability, and the deterministic executor
+            signature).
+
+        Args:
+            state:
+                Family-local state carrying model, plan, and creation; mutated
+                in place.
+
+        Returns:
+            None.
+
+        Raises:
+            RuntimeError: If the no_overrides lane plan is missing.
         """
         spell_codegen_plan = state.spell_codegen_plan
         spell_codegen_creation = state.spell_codegen_creation

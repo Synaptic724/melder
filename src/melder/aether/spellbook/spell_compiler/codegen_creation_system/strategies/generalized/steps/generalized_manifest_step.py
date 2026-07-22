@@ -41,6 +41,20 @@ class GeneralizedManifestStep(CodegenCreationFamilyStep):
     ) -> None:
         """
         Build and publish the family manifest.
+
+        Contract:
+            Builds the marshal-safe manifest from the state's model and plan,
+            publishes it to `state.manifest`, and mirrors it into
+            `SpellCodegenCreation.metadata[MANIFEST_METADATA_KEY]` so the cache
+            codec can export it without re-reading plan/model objects.
+
+        Args:
+            state:
+                Family-local state carrying model, plan, and creation; mutated
+                in place.
+
+        Returns:
+            None.
         """
         manifest = build_generalized_manifest(
             spell_codegen_model=state.spell_codegen_model,

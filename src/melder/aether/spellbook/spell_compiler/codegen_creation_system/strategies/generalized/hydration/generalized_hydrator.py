@@ -101,6 +101,32 @@ class GeneralizedHydratedExecutors(Cleanable):
     ) -> None:
         """
         Build one hydration result container.
+
+        Contract:
+            Pure store of the hydration outputs; every field is retained
+            verbatim. Executors are plain callables; code objects are shared via
+            the process-wide caches and referenced, not owned.
+
+        Args:
+            route_key:
+                Runtime route key the doors were compiled for.
+            fast_transient_no_overrides:
+                True when the no-overrides fast-transient lane is available.
+            inner_no_overrides_executor:
+                Underlying no-overrides executor (exposed for diagnostics only).
+            no_overrides_executor:
+                Final route-keyed no-overrides CreationContext door.
+            no_overrides_instance_executor:
+                Instance-only no-hooks twin of the no-overrides door.
+            overrides_executor:
+                Final route-keyed overrides CreationContext door.
+            no_overrides_code_object:
+                Compiled code object backing the no-overrides door.
+            overrides_code_object:
+                Compiled code object backing the overrides door.
+
+        Returns:
+            None.
         """
         super().__init__()
         self.route_key = route_key

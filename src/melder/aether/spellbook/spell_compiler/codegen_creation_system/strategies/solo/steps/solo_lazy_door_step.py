@@ -44,6 +44,25 @@ class SoloLazyDoorStep(CodegenCreationFamilyStep):
     ) -> None:
         """
         Publish cold doors and metadata parity keys from manifest truth.
+
+        Contract:
+            Requires a built manifest and a resolved root spell (raises
+            otherwise). Publishes three COLD solo doors (closures that compile
+            the two root-only executors on first meld) onto the creation, plus
+            the solo parity metadata keys (executor signatures, lane ids, emit
+            key, route key). Leaves the code-object fields None - the manifest is
+            this family's cache currency, not compiled code.
+
+        Args:
+            state:
+                Family-local state carrying model, plan, creation, and the
+                resolved root spell; mutated in place.
+
+        Returns:
+            None.
+
+        Raises:
+            RuntimeError: If the manifest or root spell is missing.
         """
         spell_codegen_creation = state.spell_codegen_creation
         manifest = spell_codegen_creation.metadata.get(MANIFEST_METADATA_KEY)

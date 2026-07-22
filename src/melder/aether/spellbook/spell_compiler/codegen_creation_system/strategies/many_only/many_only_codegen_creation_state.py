@@ -48,6 +48,24 @@ class ManyOnlyCodegenCreationState:
     ) -> None:
         """
         Build one many-only family state object.
+
+        Contract:
+            Stores the three phase inputs (model, plan, creation) by reference
+            and initializes every family-local intermediate (root spell, base
+            no-overrides executor, the override-targeting fields, and the final
+            overrides executor) to None; the ordered steps populate them in
+            place.
+
+        Args:
+            spell_codegen_model:
+                Fitted spell model for the current compile.
+            spell_codegen_plan:
+                Chosen many-only plan.
+            spell_codegen_creation:
+                Artifact-owned creation sink the steps populate.
+
+        Returns:
+            None.
         """
         self.spell_codegen_model = spell_codegen_model
         self.spell_codegen_plan = spell_codegen_plan

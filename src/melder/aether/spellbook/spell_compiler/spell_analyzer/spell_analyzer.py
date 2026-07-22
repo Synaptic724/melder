@@ -40,9 +40,28 @@ class SpellAnalyzer(Cleanable):
         - Reusable across many spells.
         - Safe to construct with an empty strategy registry while the analyzer lane
           is being scaffolded.
+
+    Registration:
+        MELDER KERNEL - guarded. A compiler orchestrator; not user-bindable.
+
+    Subsystem Context:
+        The orchestrator of the `spell_analyzer` package: it owns a
+        `SpellAnalyzerStrategyBuilder` and dispatches named strategy chains over a
+        `Spell` + `SpellCompilerArtifact` pair.
+
+    System Context:
+        Phase 8 (occurrence analysis) of the conjure pipeline - the post-phase-7 seam
+        that enriches `SpellCompilerArtifact` before the planning stages run.
     """
 
     __melder_internal__: ClassVar[object] = _mrg.sentinel
+    __ast_helper_access__: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. Phase-8 analyzer orchestrator: runs registered analyzer strategies "
+        "(resolved from its owned SpellAnalyzerStrategyBuilder) over a Spell + "
+        "SpellCompilerArtifact via analyze_occurrence. Enriches the artifact; does not choose the "
+        "codegen plan."
+    )
     __slots__ = Cleanable.__slots__ + [
         "_strategy_builder",
     ]

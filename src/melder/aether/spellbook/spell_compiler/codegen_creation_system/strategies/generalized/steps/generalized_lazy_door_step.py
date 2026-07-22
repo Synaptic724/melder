@@ -50,6 +50,26 @@ class GeneralizedLazyDoorStep(CodegenCreationFamilyStep):
     ) -> None:
         """
         Publish cold doors and metadata parity keys from manifest truth.
+
+        Contract:
+            Requires a built manifest (raises otherwise). Resolves the root
+            spell via a transient `PlanBindingResolver`, then publishes three
+            COLD executor doors (closures that hydrate on first meld) onto the
+            creation plus parity metadata keys (lane ids, step counts, executor
+            signature, route key). Leaves the code-object fields None - this
+            family's cache currency is the manifest, not compiled code. No
+            hydration, emission, or compile happens here.
+
+        Args:
+            state:
+                Family-local state carrying model, plan, creation, and the built
+                manifest; mutated in place.
+
+        Returns:
+            None.
+
+        Raises:
+            RuntimeError: If the manifest was not built by a prior step.
         """
         manifest = state.manifest
         if manifest is None:

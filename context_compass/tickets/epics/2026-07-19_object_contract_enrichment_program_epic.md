@@ -1793,6 +1793,44 @@ NOTE (ITEM 5 hand-written pass through the mutation_research/research_set packag
   REREAD: REQUIRED
   SCORE_0_TO_10: 8
 
+- DATETIME: 2026-07-22T00:05:00Z
+  TYPE: FACT
+  CLAIM: spell_compiler/dag package COMPLETE by hand (melder_0): all 11 classes - socket_kind
+    (SocketKind), target_spec (TargetSpecKind + frozen TargetSpec dataclass), dag_node (DagNode),
+    resolution_frame (ResolutionFrame), dag_index (PathRegistry, SocketRef dataclass, DagIndex,
+    DagTargetingEngine, DagIndexBuilder), directed_acyclic_work_graph (DirectedAcyclicWorkGraph).
+    All MELDER KERNEL / access=internal; Registration + Subsystem/System Context + agent pair
+    added, method docstrings left intact.
+  VERSION-SAFETY: TargetSpec and SocketRef are frozen(slots) dataclasses. Agent-surface attrs
+    were added UNANNOTATED so they can NEVER be misread as dataclass fields (sandbox is py3.10
+    where ClassVar detection differs from the 3.14t target; proven in isolation that unannotated
+    attrs stay out of __dataclass_fields__ and construction is unaffected).
+  EVIDENCE:
+  - src/melder/aether/spellbook/spell_compiler/dag/dag_index.py:262-281
+  - src/melder/aether/spellbook/spell_compiler/dag/target_spec.py:44-54
+  MEASURE: py_compile green across dag/**; coverage sweep TODO_COUNT=0. AST sweep + 3.14t run NOT
+    done by agent (sandbox is 3.10) - owner runs the definitive validation.
+  NEXT: spell_analyzer / codegen_planner / artifact_processor / codegen_creation_system remain
+    (~140 files) - continue in bounded packages under the (still-unauthorized) oce-aether-spellbook epic.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-07-22T00:25:00Z
+  TYPE: FACT
+  CLAIM: spell_compiler/spell_analyzer package COMPLETE by hand (melder_0): 7 classes -
+    SpellExistenceOccurrence + SpellExistenceOccurrenceAnalysis (frozen value dataclasses,
+    unguarded, unannotated agent attrs), SpellOccurrenceGraphAnalysis (Cleanable, left UNGUARDED,
+    documented as owner's call), SpellAnalyzer (guarded), SpellAnalyzerStrategy (ABC, guarded),
+    SpellAnalyzerStrategyBuilder (unguarded), and the 1151-line SpellOccurrenceGraphAnalyzerStrategy
+    (guarded via inherited base sentinel). All access=internal; method docstrings left intact.
+  MEASURE: py_compile green across spell_analyzer/**; coverage TODO_COUNT=0. 3.14t run = owner.
+  REVIEW ITEM: SpellOccurrenceGraphAnalysis and SpellAnalyzerStrategyBuilder are currently
+    unguarded compiler artifacts - documented as-is; owner may want to rule on guarding them.
+  NEXT: codegen_planner / artifact_processor / codegen_creation_system / topology / profiles /
+    spell_examiner remain (~130 files). Session running total ~56 classes documented + verified.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
 ## Context / Handoff Summary
 Program epic for a correctness-plus-enrichment pass over all 542 classes in `src/melder`.
 Carries THE OBJECT CONTRACT (five items per class) and THE CHUNKING LAW (task <=10 classes,

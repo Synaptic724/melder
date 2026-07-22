@@ -41,6 +41,22 @@ class ManyOnlyManifestStep(CodegenCreationFamilyStep):
     ) -> None:
         """
         Build and publish the many_only manifest plus the live root spell.
+
+        Contract:
+            Builds the marshal-safe many-only manifest from the state's model
+            and plan, then resolves the live root spell (from the runtime shape,
+            falling back to a scan of the no-overrides lane steps) onto
+            `state.root_spell`, and carries the manifest forward for the
+            lazy-door/finalize steps. Pure planning - no executor compile happens
+            here.
+
+        Args:
+            state:
+                Family-local state carrying model, plan, and creation; mutated
+                in place.
+
+        Returns:
+            None.
         """
         manifest = build_many_only_manifest(
             spell_codegen_model=state.spell_codegen_model,

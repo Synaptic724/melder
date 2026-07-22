@@ -41,6 +41,26 @@ class ManyOnlyOverridesCodegenCreationStep(CodegenCreationFamilyStep):
     ) -> None:
         """
         Populate many-only override scratch on family-local state.
+
+        Contract:
+            Requires an overrides lane plan and an override-targeting shape
+            (raises otherwise). Builds the override-targeting artifact and the
+            spell-static override runtime inputs, storing them on family-local
+            state for the finalizer to consume, along with override lane
+            metadata. Does not build the final override executor - that is the
+            finalizer's job.
+
+        Args:
+            state:
+                Family-local state carrying model, plan, and creation; mutated
+                in place.
+
+        Returns:
+            None.
+
+        Raises:
+            RuntimeError: If the overrides lane plan or override-targeting shape
+                is missing.
         """
         spell_codegen_model = state.spell_codegen_model
         spell_codegen_plan = state.spell_codegen_plan

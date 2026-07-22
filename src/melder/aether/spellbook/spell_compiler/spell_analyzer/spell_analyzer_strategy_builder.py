@@ -26,7 +26,26 @@ class SpellAnalyzerStrategyBuilder(Cleanable):
           registry.
         - Later compiler code can ask for strategies by name or ask for a
           deterministic ordered tuple of strategies for one analysis chain.
+
+    Registration:
+        MELDER KERNEL - currently UNGUARDED. A compiler registry/builder held by
+        `SpellAnalyzer`; not a bind target. (Left untagged as-is; guard classification
+        is the owner's call.)
+
+    Subsystem Context:
+        The registry holder of the `spell_analyzer` package: `SpellAnalyzer` owns one
+        and resolves its named strategy chains from it.
+
+    System Context:
+        Phase 8 (occurrence analysis) of the conjure pipeline.
     """
+
+    __ast_helper_access__: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. Registry of analyzer strategies keyed by strategy_id: load_defaults / "
+        "get_strategy / get_strategies / registered_strategy_names. Owned by SpellAnalyzer; holds "
+        "no spells or artifacts."
+    )
 
     __slots__ = Cleanable.__slots__ + [
         "_strategies_by_name",

@@ -81,7 +81,29 @@ class SpellOccurrenceGraphAnalyzerStrategy(SpellAnalyzerStrategy):
         - Runs inside compiler-thread orchestration only.
         - Assumes upstream compiler coordination serializes artifact mutation
           for one spell during this analysis pass.
+
+    Registration:
+        MELDER KERNEL - guarded via the inherited `SpellAnalyzerStrategy` sentinel
+        (no redundant sentinel). A built-in analyzer strategy; registered, never bound.
+
+    Subsystem Context:
+        The occurrence lane's structural foundation in `spell_analyzer/strategies`:
+        registered into `SpellAnalyzerStrategyBuilder` and invoked by
+        `SpellAnalyzer.analyze_occurrence`.
+
+    System Context:
+        Phase 8 (occurrence analysis) of the conjure pipeline. It expands the graph
+        but computes no execution order, instance/sharedness, or contract-payload
+        analysis - later strategies own those.
     """
+
+    __ast_helper_access__: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. Phase-8 occurrence-graph builder strategy: turns Phase-5 rooted "
+        "blueprint + live topology into a path-aware occurrence graph, publishing "
+        "_occurrence_graph_analysis (+ fast_key + input_signature) onto SpellCompilerArtifact. "
+        "Existing-creation spells no-op."
+    )
 
     __slots__ = ()
 

@@ -43,8 +43,24 @@ class PathRegistry(Cleanable):
 
     Threading:
         - Not thread-safe. Builder-owned only.
+
+    Registration:
+        MELDER KERNEL - guarded. A compiler build helper; not user-bindable.
+
+    Subsystem Context:
+        The path-interning substrate of the `dag` package; `DagIndex` owns one and
+        keys `SocketRef`s by the PathIds it mints.
+
+    System Context:
+        Phase 3/5 DAG index construction of the conjure pipeline.
     """
     __melder_internal__: ClassVar[object] = _mrg.sentinel
+    __ast_helper_access__: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. Interns param-path segments into stable integer PathIds so "
+        "Phase-5/8 builds compare and extend paths cheaply: extend_path / resolve_path_id / "
+        "materialize_path / format_path / clone. Builder-owned, not thread-safe."
+    )
     __slots__ = Cleanable.__slots__ + [
         "_root_path_id",
         "_parent_ids",
@@ -258,8 +274,28 @@ class SocketRef:
 
         socket_kind:
             The logical kind of socket – normal DI, SpellContract.
+
+    Registration:
+        MELDER KERNEL - guarded (ClassVar sentinel). A frozen value dataclass; not a
+        bindable service in any case.
+
+    Subsystem Context:
+        The addressable unit of the `dag` index: `DagIndex` buckets these by path id
+        and name, and `DagTargetingEngine` returns them.
+
+    System Context:
+        Phase 3 (DAG) of the conjure pipeline - a `SocketRef` is what a
+        `spell_override` targets.
     """
     __melder_internal__: ClassVar[object] = _mrg.sentinel
+    # Unannotated on purpose: annotated class vars can be misread as dataclass
+    # fields on some Python versions; unannotated attrs never are.
+    __ast_helper_access__ = "internal"
+    __agent_purpose__ = (
+        "access: internal. Immutable identity of ONE DAG socket: node_id (owning spell "
+        "version), param_name, param_path_id (interned), socket_kind. Precomputed hash so it "
+        "works as a dict key. Frozen dataclass."
+    )
     node_id: str
     param_name: str
     param_path_id: int
@@ -290,8 +326,25 @@ class DagIndex(Cleanable):
 
     This is the shared substrate for `spell_override` targeting. It is
     intentionally dumb: no graph logic, no Melder awareness.
+
+    Registration:
+        MELDER KERNEL - guarded. A compiler index; not user-bindable.
+
+    Subsystem Context:
+        The shared override-targeting substrate of the `dag` package: it owns a
+        `PathRegistry`, holds `SocketRef`s, and is consumed by `DagTargetingEngine`.
+
+    System Context:
+        Phase 3 (DAG) of the conjure pipeline - the lookup layer the override system
+        resolves against.
     """
     __melder_internal__: ClassVar[object] = _mrg.sentinel
+    __ast_helper_access__: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. Index over SocketRef by exact param-path id and by param name, for "
+        "spell_override targeting: rebuild / add_socket / get_by_exact_path / get_by_name. "
+        "Intentionally dumb - no graph logic."
+    )
     __slots__ = Cleanable.__slots__ + [
         "_path_registry",
         "_by_exact_path_id",
@@ -451,8 +504,24 @@ class DagTargetingEngine(Cleanable):
 
     It does *not* know about Melder, SpellCrafter, or contracts – a caller
     provides a `filter_fn` to constrain which sockets are eligible.
+
+    Registration:
+        MELDER KERNEL - guarded. A compiler targeting core; not user-bindable.
+
+    Subsystem Context:
+        The resolver of the `dag` package: it pairs a `DagIndex` with a `TargetSpec`
+        to answer "which sockets does this override key hit".
+
+    System Context:
+        Phase 3 (DAG) override resolution during meld.
     """
     __melder_internal__: ClassVar[object] = _mrg.sentinel
+    __ast_helper_access__: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. Resolves a TargetSpec + filter_fn against a DagIndex to the affected "
+        "SocketRefs, enforcing cardinality: PATH/BROADCAST 1+, UNIQUE exactly one, 0 matches "
+        "raises. Knows nothing about Melder/contracts."
+    )
     __slots__ = Cleanable.__slots__ + ["_index",]
 
     def __init__(self, index: DagIndex) -> None:
@@ -597,10 +666,27 @@ class DagIndexBuilder:
     At this stage we only support building a shallow index for a *single*
     spell's constructor sockets (param_path_id represents ``(param_name,)``).
 
+    Registration:
+        MELDER KERNEL - guarded. A compiler build helper (static); not user-bindable.
+
+    Subsystem Context:
+        The constructor helper of the `dag` package: `build_shallow(owner_spell_id,
+        sockets)` mints a `DagIndex` from `SpellSocketDescriptor`s.
+
+    System Context:
+        Phase 3/5 DAG index construction; currently shallow (single spell), with deep
+        param paths deferred to later phases.
+
     Phases 5–7 will extend this to walk the full system blueprint and assign
     deep param paths (``\"orchestrator>order_service>repo\"`` style).
     """
     __melder_internal__: ClassVar[object] = _mrg.sentinel
+    __ast_helper_access__ = "internal"
+    __agent_purpose__ = (
+        "access: internal. Static builder for a shallow DagIndex from one spell's local "
+        "topology sockets (single-segment param paths). Phases 5-7 will extend it to deep "
+        "param paths."
+    )
     __slots__ = ()
     @staticmethod
     def build_shallow(

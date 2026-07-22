@@ -33,6 +33,20 @@ class SoloOverridesCodegenCreationStep(CodegenCreationFamilyStep):
     ) -> None:
         """
         Populate the solo overrides executor.
+
+        Contract:
+            Compiles the root-only solo overrides executor (and its code object)
+            from the resolved root spell and solo emit key, then publishes it
+            onto `state` and the creation along with the code object and metadata
+            (lane id, root spell id, step count = 1, executor signature).
+
+        Args:
+            state:
+                Family-local state carrying the resolved root spell, solo facts,
+                plan, and creation; mutated in place.
+
+        Returns:
+            None.
         """
         root_spell = state.root_spell
         solo_emit_key = state.solo_emit_key

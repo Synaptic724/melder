@@ -41,6 +41,22 @@ class SoloManifestStep(CodegenCreationFamilyStep):
     ) -> None:
         """
         Build and publish the solo manifest plus live root-spell facts.
+
+        Contract:
+            Builds the marshal-safe solo manifest from the state's model and
+            plan, resolves the live root spell from the runtime shape, and
+            publishes the root spell + id, route key, solo emit key, and
+            fast-transient flag onto family-local state. Mirrors the manifest
+            into `SpellCodegenCreation.metadata[MANIFEST_METADATA_KEY]` for the
+            cross-family cache envelope.
+
+        Args:
+            state:
+                Family-local state carrying model, plan, and creation; mutated
+                in place.
+
+        Returns:
+            None.
         """
         manifest = build_solo_manifest(
             spell_codegen_model=state.spell_codegen_model,

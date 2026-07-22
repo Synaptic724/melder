@@ -52,6 +52,25 @@ class ManyOnlyFinalizeCreationContextStep(CodegenCreationFamilyStep):
     ) -> None:
         """
         Build the final runtime doors from many-only family scratch state.
+
+        Contract:
+            The eager finalize path: requires both lane plans (raises
+            otherwise), resolves the route key and root spell, builds the base
+            no-overrides executor and the heavy overrides runtime, then compiles
+            and publishes the three creation-context hook executors (plus code
+            objects and lane metadata) onto the creation. Reuses any executor or
+            root spell already cached on state.
+
+        Args:
+            state:
+                Family-local scratch state carrying model, plan, creation, and
+                override intermediates; mutated in place.
+
+        Returns:
+            None.
+
+        Raises:
+            RuntimeError: If either lane plan is missing.
         """
         spell_codegen_model = state.spell_codegen_model
         spell_codegen_plan = state.spell_codegen_plan

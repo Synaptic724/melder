@@ -31,6 +31,20 @@ class SoloCreationContextSetupStep(CodegenCreationFamilyStep):
     ) -> None:
         """
         Populate solo route/setup facts on family-local state.
+
+        Contract:
+            Resolves the single visible root spell (id + live object) from the
+            model, plus its route key, solo emit key, and whether the
+            fast-transient no-overrides lane applies (emit key "many" with no
+            disposal methods), and stores them on family-local state for the
+            compile steps.
+
+        Args:
+            state:
+                Family-local state carrying the model; mutated in place.
+
+        Returns:
+            None.
         """
         spell_codegen_model = state.spell_codegen_model
         spell_runtime_shape = spell_codegen_model.spell_runtime_shape
