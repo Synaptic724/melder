@@ -22,8 +22,25 @@ class GeneralizedCodegenPlanDiscoveryStrategy(CodegenPlanDiscoveryStrategy):
         - Provides the current candidate codegen style list for that family.
         - Does not choose the final codegen style; it only bounds what phase
           11 is allowed to pick from.
+
+    Registration:
+        MELDER KERNEL - currently UNGUARDED (inherits the unguarded base). A built-in
+        discovery strategy; not bound as a spell.
+
+    Subsystem Context:
+        The fallback claimant of the `codegen_plan_discovery_system/strategies` family;
+        registered last so it runs only when no narrower strategy claimed the model.
+
+    System Context:
+        Phase 10 (codegen planning) discovery of the conjure pipeline.
     """
 
+    __ast_helper_access__: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. Default catch-all phase-10 discovery strategy: always claims, "
+        "selecting the generalized_codegen_plan strategy / generalized family / generalized_default "
+        "style. Registered last; runs only when no narrower strategy claimed the model."
+    )
     __slots__ = ()
 
     @property

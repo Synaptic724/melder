@@ -96,7 +96,44 @@ class ManyOnlyCodegenPlanStep:
             override_match_prefix_len: int,
     ) -> None:
         """
-        Initialize one many-only execution step.
+        Initialize one many-only execution step (pure store; one validation).
+
+        Contract:
+            Stores each field verbatim. Validates only that
+            `collection_param_names` is not None (raises otherwise); no other
+            derivation occurs.
+
+        Args:
+            instance_key:
+                (spell_name, occurrence-or-None) identity for this step.
+            occurrence:
+                Backing (spell_id, occurrence) key.
+            spell:
+                Live runtime spell object.
+            shared_instance:
+                True when the instance is shared in the instance layer.
+            dependency_resolution_order:
+                Ordered (param_name, dependency instance-keys) bindings.
+            collection_param_names:
+                Constructor params that are collection DI sockets.
+            uses_positional_override:
+                True when a positional override applies.
+            contract_positional_override:
+                The plan-time positional override payload, if any.
+            has_contract_payload:
+                True when plan-time contract kwargs are present.
+            contract_payload:
+                The plan-time contract kwargs payload, or None.
+            override_match_prefix:
+                Override-target path prefix for this step, if any.
+            override_match_prefix_len:
+                Length of `override_match_prefix`.
+
+        Raises:
+            ValueError: If `collection_param_names` is None.
+
+        Returns:
+            None.
         """
         if collection_param_names is None:
             raise ValueError("collection_param_names must not be None.")
@@ -303,7 +340,45 @@ class ManyOnlyNoOverridesPlan(Cleanable):
             metadata: Optional[Dict[str, Any]] = None,
     ) -> None:
         """
-        Initialize one many-only no-overrides plan.
+        Initialize one many-only no-overrides plan (pure store).
+
+        Contract:
+            Stores plan identity (lane_id, root_spell_id, root_instance_key),
+            the ordered `steps`, and the flat parallel emit arrays the runtime
+            emitters read positionally: call targets/modes, the fixed-arity
+            dependency-slot family (`step_dep1`..`step_dep8h`), per-step spell
+            ids, and per-step disposal metadata. Every field is retained
+            verbatim; the per-slot accessors expose each `step_depNx` array.
+
+        Args:
+            lane_id:
+                Stable id for this no-overrides lane.
+            root_spell_id:
+                Root spell id for the lane.
+            root_instance_key:
+                Instance key of the root spell.
+            steps:
+                Ordered `ManyOnlyCodegenPlanStep` list.
+            root_step_index:
+                Index of the root step within `steps`.
+            step_call_targets:
+                Per-step call targets (positional emit array).
+            step_call_modes:
+                Per-step fixed-arity call modes (positional emit array).
+            step_dep1 ... step_dep8h:
+                The fixed-arity dependency-slot arrays; `step_depNx` is the Nth
+                call-arity's x-th dependency slot, an int list indexed by step.
+            step_spell_ids:
+                Per-step selected spell ids.
+            step_has_disposal_methods:
+                Per-step disposal-presence flags.
+            step_disposal_methods:
+                Per-step disposal method-name tuples.
+            metadata:
+                Optional plan metadata (defaults to empty).
+
+        Returns:
+            None.
         """
         super().__init__()
         self._lane_id = lane_id
@@ -721,7 +796,28 @@ class ManyOnlyOverridesPlan(Cleanable):
             metadata: Optional[Dict[str, Any]] = None,
     ) -> None:
         """
-        Initialize one many-only overrides plan.
+        Initialize one many-only overrides plan (pure store).
+
+        Contract:
+            Stores plan identity and the ordered override steps by reference;
+            `metadata` defaults to an empty dict when omitted. Unlike the
+            no-overrides plan, the overrides lane carries no flat
+            dependency-slot arrays.
+
+        Args:
+            lane_id:
+                Stable id for this overrides lane.
+            root_spell_id:
+                Root spell id for the lane.
+            root_instance_key:
+                Instance key of the root spell.
+            steps:
+                Ordered `ManyOnlyCodegenPlanStep` list for the override lane.
+            metadata:
+                Optional plan metadata (defaults to empty).
+
+        Returns:
+            None.
         """
         super().__init__()
         self._lane_id = lane_id
@@ -793,6 +889,21 @@ class ManyOnlyCodegenPlanBuilder:
     ) -> None:
         """
         Initialize one many-only builder.
+
+        Contract:
+            References the model `state` and the target `plan_variant` (the
+            no-overrides vs overrides lane label); builds nothing until a build
+            method is called.
+
+        Args:
+            state:
+                Fitted `SpellCodegenModel` the plan is built from.
+            plan_variant:
+                Lane variant label (`ManyOnlyCodegenPlanVariant.NO_OVERRIDES`
+                or `OVERRIDES`).
+
+        Returns:
+            None.
         """
         self._state = state
         self._plan_variant = plan_variant

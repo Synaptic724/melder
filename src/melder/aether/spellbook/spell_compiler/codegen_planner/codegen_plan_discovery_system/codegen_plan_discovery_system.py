@@ -27,8 +27,26 @@ class CodegenPlanDiscoverySystem(Cleanable):
           that family, but it does not choose the final style.
         - For now it always selects the generalized model-native strategy and
           generalized family.
+
+    Registration:
+        MELDER KERNEL - currently UNGUARDED. A compiler facade; not a bind target.
+
+    Subsystem Context:
+        The selector of the `codegen_plan_discovery_system`: it owns a
+        `CodegenPlanDiscoveryStrategyBuilder` and returns the first strategy claim.
+
+    System Context:
+        Phase 10 (codegen planning) - it picks the plan strategy/family the planner
+        then builds.
     """
 
+    __ast_helper_access__: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. Phase-10 discovery facade: iterates its owned "
+        "CodegenPlanDiscoveryStrategyBuilder's strategies in order and returns the first "
+        "CodegenPlanDiscovery claim. Reads the model only; builds no plan. Currently defaults to "
+        "the generalized family."
+    )
     __slots__ = Cleanable.__slots__ + [
         "_strategy_builder",
     ]

@@ -197,8 +197,23 @@ class FrameACLCodegenConfiguration(Cleanable):
         """
         Build one applied codegen configuration from a reusable profile.
 
+        Args:
+            profile: Source codegen profile to apply.
+            precision_profile: Optional precision profile overlay.
+            frame_override_ruleset: Optional frame-scope override rules.
+            conduit_override_ruleset: Optional conduit-scope override rules.
+            spell_override_ruleset: Optional spell-scope override rules.
+            capability_override_ruleset: Optional capability-scope override rules.
+            source_configuration_id: Optional id of the source configuration.
+            previous_configuration_id: Optional id of the prior revision.
+            reason: Audit reason recorded on the configuration.
+            locked: When True (default), the result is locked/immutable.
+
         Returns:
             FrameACLCodegenConfiguration: Applied codegen configuration.
+
+        Raises:
+            TypeError: If `profile` or `precision_profile` is the wrong type.
         """
         if not isinstance(profile, FrameACLCodegenProfile):
             raise TypeError("profile must be a FrameACLCodegenProfile instance.")
@@ -239,8 +254,18 @@ class FrameACLCodegenConfiguration(Cleanable):
         """
         Build one applied codegen configuration from a JSON-compatible payload.
 
+        Args:
+            payload: JSON-compatible dict describing the configuration.
+            source_configuration_id: Optional id of the source configuration.
+            previous_configuration_id: Optional id of the prior revision.
+            reason: Audit reason recorded on the configuration.
+            locked: When True (default), the result is locked/immutable.
+
         Returns:
             FrameACLCodegenConfiguration: Reconstructed applied codegen config.
+
+        Raises:
+            TypeError: If `payload` is not a dict.
         """
         if not isinstance(payload, dict):
             raise TypeError("payload must be a dict.")
@@ -289,8 +314,15 @@ class FrameACLCodegenConfiguration(Cleanable):
         """
         Create one new unlocked configuration copied from an existing config.
 
+        Args:
+            source_configuration: Existing configuration to copy from.
+            reason: Audit reason recorded on the new draft.
+
         Returns:
             FrameACLCodegenConfiguration: New unlocked detached configuration copy.
+
+        Raises:
+            TypeError: If `source_configuration` is the wrong type.
         """
         if not isinstance(source_configuration, FrameACLCodegenConfiguration):
             raise TypeError(

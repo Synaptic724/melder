@@ -329,8 +329,15 @@ class FrameACLContainer(Cleanable):
         """
         Return the current selected view configuration for one contract.
 
+        Args:
+            contract_name:
+                Contract chain name to read the current selection from.
+
         Returns:
             FrameACLViewConfiguration: Current view configuration.
+
+        Raises:
+            RuntimeError: If the chain returns a non-view configuration.
         """
         configuration = self._get_required_family_chain(
             "view",
@@ -347,8 +354,15 @@ class FrameACLContainer(Cleanable):
         """
         Return the current selected command configuration for one contract.
 
+        Args:
+            contract_name:
+                Contract chain name to read the current selection from.
+
         Returns:
             FrameACLCommandConfiguration: Current command configuration.
+
+        Raises:
+            RuntimeError: If the chain returns a non-command configuration.
         """
         configuration = self._get_required_family_chain(
             "command",
@@ -365,8 +379,15 @@ class FrameACLContainer(Cleanable):
         """
         Return the current selected codegen configuration for one contract.
 
+        Args:
+            contract_name:
+                Contract chain name to read the current selection from.
+
         Returns:
             FrameACLCodegenConfiguration: Current codegen configuration.
+
+        Raises:
+            RuntimeError: If the chain returns a non-codegen configuration.
         """
         configuration = self._get_required_family_chain(
             "codegen",
@@ -382,6 +403,10 @@ class FrameACLContainer(Cleanable):
     ) -> FrameACLConfiguration:
         """
         Return one assembled same-name ACL snapshot for this frame.
+
+        Args:
+            contract_name:
+                Same-name contract to assemble across all three families.
 
         Returns:
             FrameACLConfiguration: Assembled ACL snapshot for the selected name.
@@ -418,8 +443,18 @@ class FrameACLContainer(Cleanable):
         """
         Register one same-name ACL bundle across all three families.
 
+        Args:
+            configuration:
+                Locked `FrameACLConfiguration` targeting this frame.
+            contract_name:
+                Contract name to register the bundle under.
+
         Returns:
             FrameACLConfiguration: Registered assembled bundle snapshot.
+
+        Raises:
+            TypeError: If `configuration` is not a FrameACLConfiguration.
+            ValueError: If it targets another frame or is not locked.
         """
         self.check_cleaned()
         if not isinstance(configuration, FrameACLConfiguration):
@@ -464,8 +499,18 @@ class FrameACLContainer(Cleanable):
         """
         Install one same-name ACL bundle revision across all three families.
 
+        Args:
+            configuration:
+                Locked `FrameACLConfiguration` targeting this frame.
+            contract_name:
+                Contract name to install the revision under.
+
         Returns:
             FrameACLConfiguration: Newly assembled current ACL snapshot.
+
+        Raises:
+            TypeError: If `configuration` is not a FrameACLConfiguration.
+            ValueError: If it targets another frame or is not locked.
         """
         self.check_cleaned()
         if not isinstance(configuration, FrameACLConfiguration):
@@ -509,8 +554,19 @@ class FrameACLContainer(Cleanable):
         """
         Create a new view draft copied from one existing view revision.
 
+        Args:
+            configuration_id:
+                Source view revision id to copy.
+            contract_name:
+                Contract chain the source revision lives in.
+            reason:
+                Audit reason recorded on the new draft.
+
         Returns:
             FrameACLViewConfiguration: New unlocked view configuration draft.
+
+        Raises:
+            RuntimeError: If the chain returns a non-view configuration.
         """
         configuration = self._get_required_family_chain(
             "view",
@@ -533,8 +589,19 @@ class FrameACLContainer(Cleanable):
         """
         Create a new command draft copied from one existing command revision.
 
+        Args:
+            configuration_id:
+                Source command revision id to copy.
+            contract_name:
+                Contract chain the source revision lives in.
+            reason:
+                Audit reason recorded on the new draft.
+
         Returns:
             FrameACLCommandConfiguration: New unlocked command configuration draft.
+
+        Raises:
+            RuntimeError: If the chain returns a non-command configuration.
         """
         configuration = self._get_required_family_chain(
             "command",
@@ -557,8 +624,19 @@ class FrameACLContainer(Cleanable):
         """
         Create a new codegen draft copied from one existing codegen revision.
 
+        Args:
+            configuration_id:
+                Source codegen revision id to copy.
+            contract_name:
+                Contract chain the source revision lives in.
+            reason:
+                Audit reason recorded on the new draft.
+
         Returns:
             FrameACLCodegenConfiguration: New unlocked codegen configuration draft.
+
+        Raises:
+            RuntimeError: If the chain returns a non-codegen configuration.
         """
         configuration = self._get_required_family_chain(
             "codegen",
@@ -581,8 +659,19 @@ class FrameACLContainer(Cleanable):
         """
         Insert one view configuration revision at the head of a named chain.
 
+        Args:
+            configuration:
+                View configuration revision to insert at the head.
+            contract_name:
+                Named chain to insert into.
+            select_as_current:
+                When True, select the inserted revision as current.
+
         Returns:
             FrameACLViewConfiguration: Inserted view configuration revision.
+
+        Raises:
+            RuntimeError: If the chain returns a non-view configuration.
         """
         self._validate_family_change(
             family_name="view",
@@ -609,8 +698,19 @@ class FrameACLContainer(Cleanable):
         """
         Insert one command configuration revision at the head of a named chain.
 
+        Args:
+            configuration:
+                Command configuration revision to insert at the head.
+            contract_name:
+                Named chain to insert into.
+            select_as_current:
+                When True, select the inserted revision as current.
+
         Returns:
             FrameACLCommandConfiguration: Inserted command configuration revision.
+
+        Raises:
+            RuntimeError: If the chain returns a non-command configuration.
         """
         self._validate_family_change(
             family_name="command",
@@ -637,8 +737,19 @@ class FrameACLContainer(Cleanable):
         """
         Insert one codegen configuration revision at the head of a named chain.
 
+        Args:
+            configuration:
+                Codegen configuration revision to insert at the head.
+            contract_name:
+                Named chain to insert into.
+            select_as_current:
+                When True, select the inserted revision as current.
+
         Returns:
             FrameACLCodegenConfiguration: Inserted codegen configuration revision.
+
+        Raises:
+            RuntimeError: If the chain returns a non-codegen configuration.
         """
         self._validate_family_change(
             family_name="codegen",
@@ -664,8 +775,17 @@ class FrameACLContainer(Cleanable):
         """
         Select one existing view configuration revision as current.
 
+        Args:
+            configuration_id:
+                Existing view revision id to select.
+            contract_name:
+                Named chain the revision lives in.
+
         Returns:
             FrameACLViewConfiguration: Newly selected current view revision.
+
+        Raises:
+            RuntimeError: If the chain returns a non-view configuration.
         """
         selected = self._get_required_family_chain(
             "view",
@@ -685,8 +805,17 @@ class FrameACLContainer(Cleanable):
         """
         Select one existing command configuration revision as current.
 
+        Args:
+            configuration_id:
+                Existing command revision id to select.
+            contract_name:
+                Named chain the revision lives in.
+
         Returns:
             FrameACLCommandConfiguration: Newly selected current command revision.
+
+        Raises:
+            RuntimeError: If the chain returns a non-command configuration.
         """
         selected = self._get_required_family_chain(
             "command",
@@ -706,8 +835,17 @@ class FrameACLContainer(Cleanable):
         """
         Select one existing codegen configuration revision as current.
 
+        Args:
+            configuration_id:
+                Existing codegen revision id to select.
+            contract_name:
+                Named chain the revision lives in.
+
         Returns:
             FrameACLCodegenConfiguration: Newly selected current codegen revision.
+
+        Raises:
+            RuntimeError: If the chain returns a non-codegen configuration.
         """
         selected = self._get_required_family_chain(
             "codegen",
@@ -727,8 +865,17 @@ class FrameACLContainer(Cleanable):
         """
         Roll current view selection back to one historical revision.
 
+        Args:
+            configuration_id:
+                Historical view revision id to roll back to.
+            contract_name:
+                Named chain the revision lives in.
+
         Returns:
             FrameACLViewConfiguration: Newly selected current view revision.
+
+        Raises:
+            RuntimeError: If the chain returns a non-view configuration.
         """
         rolled_back = self._get_required_family_chain(
             "view",
@@ -748,8 +895,17 @@ class FrameACLContainer(Cleanable):
         """
         Roll current command selection back to one historical revision.
 
+        Args:
+            configuration_id:
+                Historical command revision id to roll back to.
+            contract_name:
+                Named chain the revision lives in.
+
         Returns:
             FrameACLCommandConfiguration: Newly selected current command revision.
+
+        Raises:
+            RuntimeError: If the chain returns a non-command configuration.
         """
         rolled_back = self._get_required_family_chain(
             "command",
@@ -769,8 +925,17 @@ class FrameACLContainer(Cleanable):
         """
         Roll current codegen selection back to one historical revision.
 
+        Args:
+            configuration_id:
+                Historical codegen revision id to roll back to.
+            contract_name:
+                Named chain the revision lives in.
+
         Returns:
             FrameACLCodegenConfiguration: Newly selected current codegen revision.
+
+        Raises:
+            RuntimeError: If the chain returns a non-codegen configuration.
         """
         rolled_back = self._get_required_family_chain(
             "codegen",
@@ -790,8 +955,17 @@ class FrameACLContainer(Cleanable):
         """
         Return view revisions for one named chain from newest to oldest.
 
+        Args:
+            contract_name:
+                Named chain to list revisions from.
+            limit:
+                Optional max number of revisions to return (newest first).
+
         Returns:
             List[FrameACLViewConfiguration]: View configuration revisions.
+
+        Raises:
+            RuntimeError: If the chain returns a non-view configuration.
         """
         raw_configurations = self._get_required_family_chain(
             "view",
@@ -813,8 +987,17 @@ class FrameACLContainer(Cleanable):
         """
         Return command revisions for one named chain from newest to oldest.
 
+        Args:
+            contract_name:
+                Named chain to list revisions from.
+            limit:
+                Optional max number of revisions to return (newest first).
+
         Returns:
             List[FrameACLCommandConfiguration]: Command configuration revisions.
+
+        Raises:
+            RuntimeError: If the chain returns a non-command configuration.
         """
         raw_configurations = self._get_required_family_chain(
             "command",
@@ -836,8 +1019,17 @@ class FrameACLContainer(Cleanable):
         """
         Return codegen revisions for one named chain from newest to oldest.
 
+        Args:
+            contract_name:
+                Named chain to list revisions from.
+            limit:
+                Optional max number of revisions to return (newest first).
+
         Returns:
             List[FrameACLCodegenConfiguration]: Codegen configuration revisions.
+
+        Raises:
+            RuntimeError: If the chain returns a non-codegen configuration.
         """
         raw_configurations = self._get_required_family_chain(
             "codegen",
@@ -861,8 +1053,18 @@ class FrameACLContainer(Cleanable):
         """
         Assemble one full ACL snapshot from selected family chains.
 
+        Args:
+            view_contract_name:
+                Contract chain to read the current view configuration from.
+            command_contract_name:
+                Contract chain to read the current command configuration from.
+            codegen_contract_name:
+                Contract chain to read the current codegen configuration from.
+            reason:
+                Audit reason recorded on the assembled snapshot.
+
         Returns:
-            FrameACLConfiguration: Detached assembled ACL snapshot.
+            FrameACLConfiguration: Detached assembled ACL snapshot (locked).
         """
         self.check_cleaned()
         view_configuration = self.get_current_view_configuration(view_contract_name)

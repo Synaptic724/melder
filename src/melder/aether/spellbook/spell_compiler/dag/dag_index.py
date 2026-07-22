@@ -185,6 +185,13 @@ class PathRegistry(Cleanable):
 
         Contract:
             - Returns None for the root path.
+
+        Args:
+            path_id:
+                Path id whose parent is requested.
+
+        Returns:
+            Optional[int]: Parent path id, or None for the root.
         """
         self.check_cleaned()
         if path_id == self._root_path_id:
@@ -194,6 +201,13 @@ class PathRegistry(Cleanable):
     def depth(self, path_id: int) -> int:
         """
         Return the depth (segment count) for the provided path id.
+
+        Args:
+            path_id:
+                Path id whose depth is requested.
+
+        Returns:
+            int: Number of segments from the root to this path.
         """
         self.check_cleaned()
         return self._depths[path_id]
@@ -226,6 +240,17 @@ class PathRegistry(Cleanable):
     def format_path(self, path_id: int) -> str:
         """
         Format a path id into the canonical 'a>b>c' string.
+
+        Contract:
+            Memoized: the formatted string is cached per path id after the first
+            call.
+
+        Args:
+            path_id:
+                Path id to format.
+
+        Returns:
+            str: Canonical `>`-joined path string (empty for the root).
         """
         self.check_cleaned()
         path_text = self._formatted_path_by_id.get(path_id)
@@ -435,6 +460,17 @@ class DagIndex(Cleanable):
     def add_socket(self, socket: SocketRef) -> None:
         """
         Add a socket reference to the index.
+
+        Contract:
+            Indexes the socket both by its exact param path id and by its param
+            name, and marks the index built.
+
+        Args:
+            socket:
+                Socket reference to index.
+
+        Returns:
+            None.
         """
         path_id = socket.param_path_id
         sockets_by_path_id = self._by_exact_path_id.get(path_id)
@@ -525,7 +561,24 @@ class DagTargetingEngine(Cleanable):
     __slots__ = Cleanable.__slots__ + ["_index",]
 
     def __init__(self, index: DagIndex) -> None:
-        """Initialize the targeting engine over one prebuilt `DagIndex`."""
+        """
+        Initialize the targeting engine over one prebuilt `DagIndex`.
+
+        Contract:
+            References the index (does not build it); `cleanup()` tears the
+            index down, so the engine owns it for lifetime purposes.
+
+        Args:
+            index:
+                Prebuilt `DagIndex` to resolve target specs against; must not be
+                None.
+
+        Raises:
+            ValueError: If `index` is None.
+
+        Returns:
+            None.
+        """
         super().__init__()
         if index is None:
             raise ValueError("index must not be None.")
@@ -699,6 +752,18 @@ class DagIndexBuilder:
         Each socket is indexed under a single-segment param path:
 
             param_path_id -> (socket.param_name,)
+
+        Args:
+            owner_spell_id:
+                Spell id that owns the sockets; must not be None.
+            sockets:
+                Local topology socket descriptors to index.
+
+        Returns:
+            DagIndex: A built index with single-segment param paths.
+
+        Raises:
+            ValueError: If `owner_spell_id` is None.
         """
         if owner_spell_id is None:
             raise ValueError("owner_spell_id must not be None.")

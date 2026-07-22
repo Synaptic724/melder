@@ -311,6 +311,12 @@ class FrameACLCodegenBuilder(Cleanable):
     ) -> FrameACLCodegenBuilder:
         """
         Merge allowed import roots into the active draft.
+
+        Args:
+            *module_roots: Import module root names to allow.
+
+        Returns:
+            FrameACLCodegenBuilder: This builder, for fluent chaining.
         """
         return self._merge_condition_values_rule(
             self.draft_configuration.capability_override_ruleset,
@@ -327,6 +333,12 @@ class FrameACLCodegenBuilder(Cleanable):
     ) -> FrameACLCodegenBuilder:
         """
         Merge denied import roots into the active draft.
+
+        Args:
+            *module_roots: Import module root names to deny.
+
+        Returns:
+            FrameACLCodegenBuilder: This builder, for fluent chaining.
         """
         return self._merge_condition_values_rule(
             self.draft_configuration.capability_override_ruleset,
@@ -343,6 +355,12 @@ class FrameACLCodegenBuilder(Cleanable):
     ) -> FrameACLCodegenBuilder:
         """
         Merge explicitly allowed builtin names into the active draft.
+
+        Args:
+            *builtin_names: Builtin names to allow.
+
+        Returns:
+            FrameACLCodegenBuilder: This builder, for fluent chaining.
         """
         return self._merge_condition_values_rule(
             self.draft_configuration.capability_override_ruleset,
@@ -359,6 +377,12 @@ class FrameACLCodegenBuilder(Cleanable):
     ) -> FrameACLCodegenBuilder:
         """
         Merge explicitly denied builtin names into the active draft.
+
+        Args:
+            *builtin_names: Builtin names to deny.
+
+        Returns:
+            FrameACLCodegenBuilder: This builder, for fluent chaining.
         """
         return self._merge_condition_values_rule(
             self.draft_configuration.capability_override_ruleset,

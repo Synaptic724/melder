@@ -159,6 +159,15 @@ class FrameACLCommandProfileBuilder(Cleanable):
     ) -> CommandProfileStrategy:
         """
         Return one registered command-profile strategy or raise.
+
+        Args:
+            strategy_name: Registered strategy name to fetch.
+
+        Returns:
+            CommandProfileStrategy: The registered strategy.
+
+        Raises:
+            KeyError: If no strategy is registered under that name.
         """
         self.check_cleaned()
         with self._lock:
@@ -181,6 +190,15 @@ class FrameACLCommandProfileBuilder(Cleanable):
     ) -> FrameACLCommandProfile:
         """
         Build one fresh command profile instance from the named strategy.
+
+        Args:
+            strategy_name: Registered strategy name whose `build()` runs.
+
+        Returns:
+            FrameACLCommandProfile: A freshly built command profile.
+
+        Raises:
+            KeyError: If no strategy is registered under that name.
         """
         self.check_cleaned()
         strategy = self.get_required_strategy(strategy_name)

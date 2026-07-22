@@ -159,6 +159,15 @@ class FrameACLViewProfileBuilder(Cleanable):
     ) -> ViewProfileStrategy:
         """
         Return one registered view-profile strategy or raise.
+
+        Args:
+            strategy_name: Registered strategy name to fetch.
+
+        Returns:
+            ViewProfileStrategy: The registered strategy.
+
+        Raises:
+            KeyError: If no strategy is registered under that name.
         """
         self.check_cleaned()
         with self._lock:
@@ -181,6 +190,15 @@ class FrameACLViewProfileBuilder(Cleanable):
     ) -> FrameACLViewProfile:
         """
         Build one fresh view profile instance from the named strategy.
+
+        Args:
+            strategy_name: Registered strategy name whose `build()` runs.
+
+        Returns:
+            FrameACLViewProfile: A freshly built view profile.
+
+        Raises:
+            KeyError: If no strategy is registered under that name.
         """
         self.check_cleaned()
         strategy = self.get_required_strategy(strategy_name)

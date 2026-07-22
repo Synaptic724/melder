@@ -142,8 +142,16 @@ class FrameACLCodegenProfileBuilder(Cleanable):
         """
         Register or replace one codegen-profile construction strategy.
 
+        Args:
+            strategy: Strategy to register, keyed by its `name`; must not be
+                None and must have a non-empty name.
+
         Returns:
             None.
+
+        Raises:
+            TypeError: If `strategy` is None.
+            ValueError: If the strategy name is empty.
         """
         self.check_cleaned()
         if strategy is None:
@@ -160,6 +168,15 @@ class FrameACLCodegenProfileBuilder(Cleanable):
     ) -> CodegenProfileStrategy:
         """
         Return one registered codegen-profile strategy or raise.
+
+        Args:
+            strategy_name: Registered strategy name to fetch.
+
+        Returns:
+            CodegenProfileStrategy: The registered strategy.
+
+        Raises:
+            KeyError: If no strategy is registered under that name.
         """
         self.check_cleaned()
         with self._lock:
@@ -182,6 +199,15 @@ class FrameACLCodegenProfileBuilder(Cleanable):
     ) -> FrameACLCodegenProfile:
         """
         Build one fresh codegen profile instance from the named strategy.
+
+        Args:
+            strategy_name: Registered strategy name whose `build()` runs.
+
+        Returns:
+            FrameACLCodegenProfile: A freshly built codegen profile.
+
+        Raises:
+            KeyError: If no strategy is registered under that name.
         """
         self.check_cleaned()
         strategy = self.get_required_strategy(strategy_name)

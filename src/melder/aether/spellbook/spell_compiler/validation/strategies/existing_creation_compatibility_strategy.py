@@ -79,6 +79,20 @@ class ExistingCreationCompatibilityStrategy(SpellValidationStrategy):
     def validate(self, context: SpellValidationContext) -> None:
         """
         Validate existing-creation spell wiring and policies.
+
+        Contract:
+            Honors the context cancel event. A no-op for non-existing-creation
+            spells; for existing-creation spells it appends an error when there
+            is no bound instance, existence is not unique, the instance binding
+            profile is missing, or DI parameters are declared. Read-only;
+            appends to `context.issues`.
+
+        Args:
+            context:
+                Per-spell validation context (spell, cancel event).
+
+        Returns:
+            None.
         """
         self.check_cleaned()
 

@@ -28,8 +28,26 @@ class CodegenPlanDiscoveryStrategy(ABC):
         - Returning `None` means the strategy declines the model.
         - Returning `CodegenPlanDiscovery` means discovery should stop and use
           that result.
+
+    Registration:
+        MELDER KERNEL - currently UNGUARDED (ABC base; concrete strategies also
+        unguarded). A compiler strategy contract; not bound as a spell.
+
+    Subsystem Context:
+        The base of the `codegen_plan_discovery_system/strategies` family; instances
+        register into `CodegenPlanDiscoveryStrategyBuilder`.
+
+    System Context:
+        Phase 10 (codegen planning) discovery of the conjure pipeline.
     """
 
+    __ast_helper_access__: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. ABC for phase-10 discovery strategies: strategy_id + "
+        "discover(SpellCodegenModel) -> Optional[CodegenPlanDiscovery]. Reads the model only; "
+        "return None to decline or a discovery to claim it. Chooses a planning family, not the "
+        "final style."
+    )
     __slots__ = ()
 
     @property

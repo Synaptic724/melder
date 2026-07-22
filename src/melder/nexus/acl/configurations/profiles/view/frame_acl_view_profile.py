@@ -367,7 +367,16 @@ class FrameACLViewProfile(Cleanable):
             ruleset: Optional[FrameACLRuleSet],
             default_name: str,
     ) -> FrameACLRuleSet:
-        """Normalize one optional ruleset input into a usable ruleset object."""
+        """Normalize one optional ruleset input into a usable ruleset object.
+
+        Args:
+            ruleset: Optional ruleset to normalize; None yields an empty
+                default-named ruleset.
+            default_name: Name used when synthesizing a default ruleset.
+
+        Returns:
+            FrameACLRuleSet: A concrete usable ruleset.
+        """
         return FrameACLViewProfile._coerce_ruleset(ruleset, default_name)
 
     @staticmethod
@@ -377,7 +386,17 @@ class FrameACLViewProfile(Cleanable):
             effect: str,
             conditions: Optional[dict] = None,
     ) -> FrameACLRule:
-        """Build one typed ACL rule from the supplied rule components."""
+        """Build one typed ACL rule from the supplied rule components.
+
+        Args:
+            rule_name: Stable rule name.
+            operation: Operation the rule governs.
+            effect: Rule effect (e.g. "allow"/"deny").
+            conditions: Optional condition dict.
+
+        Returns:
+            FrameACLRule: The constructed rule.
+        """
         return FrameACLViewProfile._build_rule(
             rule_name,
             operation,
@@ -390,7 +409,15 @@ class FrameACLViewProfile(Cleanable):
             name: str,
             rules: List[FrameACLRule],
     ) -> FrameACLRuleSet:
-        """Build one typed ACL ruleset from a name and rule list."""
+        """Build one typed ACL ruleset from a name and rule list.
+
+        Args:
+            name: Ruleset name.
+            rules: Rules to include.
+
+        Returns:
+            FrameACLRuleSet: The constructed ruleset.
+        """
         return FrameACLViewProfile._build_ruleset(name, rules)
 
     @staticmethod

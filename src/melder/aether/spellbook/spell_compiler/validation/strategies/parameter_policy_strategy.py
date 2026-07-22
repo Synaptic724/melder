@@ -67,6 +67,19 @@ class ParameterPolicyStrategy(SpellValidationStrategy):
     def validate(self, context: SpellValidationContext) -> None:
         """
         Validate parameter shapes against DI policy constraints.
+
+        Contract:
+            Honors the context cancel event, returns early when the spell has no
+            requirements, and otherwise scans each parameter, appending issues
+            for DI usage on variadic parameters and inconsistent DI annotations.
+            Read-only; appends to `context.issues` rather than raising.
+
+        Args:
+            context:
+                Per-spell validation context (requirements, spell, cancel event).
+
+        Returns:
+            None.
         """
         self.check_cleaned()
 

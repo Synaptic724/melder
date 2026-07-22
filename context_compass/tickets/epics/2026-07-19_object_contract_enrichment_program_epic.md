@@ -1831,6 +1831,47 @@ NOTE (ITEM 5 hand-written pass through the mutation_research/research_set packag
   REREAD: REQUIRED
   SCORE_0_TO_10: 8
 
+- DATETIME: 2026-07-22T00:45:00Z
+  TYPE: FACT
+  CLAIM: spell_compiler/topology (2) + profiles (7) packages COMPLETE by hand (melder_0).
+    topology: SpellSocketDescriptor (frozen dataclass, guarded, unannotated attrs) + SpellLocalTopology.
+    profiles/resolution_profile.py (the guard-idiom exemplar the contract cites): all 7 -
+    SpellSymbolicNode/Edge, SpellSymbolicGraph, SpellResolutionFrame, SpellValidationIssue,
+    SpellValidationResult, SpellResolutionProfile. All MELDER KERNEL / guarded / access=internal.
+    NOTE: four profile classes share names with the symbolic_graph/ and validation/ classes - each
+    was documented with an explicit "DISTINCT from ..." pointer so agents don't confuse them.
+  MEASURE: py_compile green; coverage TODO_COUNT=0 across both packages. 3.14t run = owner.
+  NEXT: codegen_planner is the big remaining lane (~18 files incl. two 1.3k / 2.7k-line data files)
+    plus artifact_processor + codegen_creation_system + spell_examiner. Session total ~65 classes
+    documented + verified across 9 packages. codegen_planner should be chunked carefully - start
+    with its small discovery-system files; the giant plan/lane data files are their own tasks.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-07-22T01:05:00Z
+  TYPE: FACT
+  CLAIM: codegen_planner/codegen_plan_discovery_system sub-package COMPLETE by hand (melder_0):
+    7 classes - CodegenPlanDiscovery (frozen dataclass), CodegenPlanDiscoveryStrategy (ABC),
+    CodegenPlanDiscoverySystem, CodegenPlanDiscoveryStrategyBuilder, and the 3 concrete discovery
+    strategies (generalized/many_only/solo). ALL currently UNGUARDED (documented as such; no
+    sentinels added). access=internal.
+  MEASURE: py_compile green; coverage TODO_COUNT=0. 3.14t run = owner.
+  GUARD-COVERAGE GAP (owner review): the whole codegen_plan_discovery_system is unguarded
+    compiler internals; likewise SpellOccurrenceGraphAnalysis and SpellAnalyzerStrategyBuilder.
+    If these should be MELDER KERNEL guarded, that is a batch for the owner to rule on - I
+    documented current state and did NOT guess-guard.
+  SESSION SUMMARY (melder_0): ~72 classes documented + verified across 10 packages - utilities
+    custom_exceptions (11) + 3 kernel; spell_compiler: spell_requirements_finder (4),
+    symbolic_graph (2), validation (18), dag (11), spell_analyzer (7), topology (2), profiles (7),
+    codegen_plan_discovery_system (7). Every one hand-written after reading the body, py_compile
+    green, swept to zero gaps; frozen dataclasses got version-safe unannotated agent attrs.
+  NEXT: codegen_planner core + its two giant data files (many_only_codegen_plan.py 1298 LOC/6
+    classes, spell_generalized_codegen_lane_plan.py 2734 LOC/8 classes) + planner facade/strategies,
+    then artifact_processor, codegen_creation_system, spell_examiner (~120 files). The giant data
+    files need a FRESH context to keep the docs correct.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
 ## Context / Handoff Summary
 Program epic for a correctness-plus-enrichment pass over all 542 classes in `src/melder`.
 Carries THE OBJECT CONTRACT (five items per class) and THE CHUNKING LAW (task <=10 classes,

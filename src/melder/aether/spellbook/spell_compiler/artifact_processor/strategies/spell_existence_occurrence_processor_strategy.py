@@ -43,6 +43,29 @@ class SpellExistenceOccurrenceProcessorStrategy(SpellArtifactProcessorStrategy):
     ) -> None:
         """
         Publish analyzer-owned existence-occurrence truth onto the model.
+
+        Contract:
+            Requires the occurrence-graph analysis to be present on the artifact
+            (raises otherwise). Copies the analyzer's existence-occurrence shape
+            onto `model.existence_occurrence_shape`, then releases the previous
+            shape. The spell argument is unused. Mutates the model in place.
+
+        Args:
+            spell:
+                The spell being processed (unused; truth comes from the
+                artifact).
+            artifact:
+                Compiler artifact carrying the phase-8 occurrence-graph analysis.
+            model:
+                Processor model the existence-occurrence section is published
+                onto.
+
+        Returns:
+            None.
+
+        Raises:
+            RuntimeError: If the occurrence-graph analysis is not yet on the
+                artifact.
         """
         _ = spell
         graph_shape = artifact._occurrence_graph_analysis

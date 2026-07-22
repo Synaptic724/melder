@@ -145,11 +145,24 @@ class SpellSystemAdjacencySnapshot(Cleanable):
     def get_dependencies_for(self, spell_id: str) -> Set[str]:
         """
         Returns the outgoing dependencies for the given spell_id.
+
+        Args:
+            spell_id: Spell id whose forward dependencies are requested.
+
+        Returns:
+            Set[str]: The spell ids this spell depends on.
         """
         return self._dependencies[spell_id]
 
     def get_reverse_dependencies_for(self, spell_id: str) -> Set[str]:
         """
         Returns the incoming dependencies (parents) for the given spell_id.
+
+        Args:
+            spell_id: Spell id whose reverse dependencies (dependents) are
+                requested.
+
+        Returns:
+            Set[str]: The spell ids that depend on this spell.
         """
         return self._reverse_dependencies[spell_id]

@@ -28,8 +28,24 @@ class CodegenPlanDiscoveryStrategyBuilder(Cleanable):
         - Stores discovery strategies by stable `strategy_id`.
         - Registration order is discovery order.
         - Does not inspect models or emit discovery results itself.
+
+    Registration:
+        MELDER KERNEL - currently UNGUARDED. A compiler registry; not a bind target.
+
+    Subsystem Context:
+        The registry holder of the `codegen_plan_discovery_system`, owned by
+        `CodegenPlanDiscoverySystem`.
+
+    System Context:
+        Phase 10 (codegen planning) discovery of the conjure pipeline.
     """
 
+    __ast_helper_access__: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. Registry of phase-10 discovery strategies keyed by strategy_id "
+        "(registration order = discovery order): solo, many_only, generalized. get_strategy / "
+        "get_strategies / registered_strategy_names. Owned by CodegenPlanDiscoverySystem."
+    )
     __slots__ = Cleanable.__slots__ + [
         "_strategies_by_name",
     ]

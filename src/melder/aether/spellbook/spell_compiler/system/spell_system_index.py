@@ -77,6 +77,15 @@ class SpellSystemIndex(Cleanable):
     def get_node(self, spell_id: str) -> Optional[SpellSystemNode]:
         """
         Retrieve an existing node by version id, if present.
+
+        Args:
+            spell_id: Version id to look up; must not be None.
+
+        Returns:
+            Optional[SpellSystemNode]: The node, or None when absent.
+
+        Raises:
+            ValueError: If `spell_id` is None.
         """
         self.check_cleaned()
         if spell_id is None:
@@ -87,8 +96,14 @@ class SpellSystemIndex(Cleanable):
         """
         Register or replace a SpellSystemNode instance.
 
+        Args:
+            node: Node to register (keyed by its `spell_id`); must not be None.
+
         Returns:
             The node that ended up in the index (same instance as input).
+
+        Raises:
+            ValueError: If `node` is None.
         """
         self.check_cleaned()
         if node is None:

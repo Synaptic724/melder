@@ -380,6 +380,12 @@ class SpellCompilerSystem(Cleanable):
 
             Delegates to the new processor-backed live phase-9 substitute so
             the compiler artifact receives `SpellCodegenModel`.
+
+            Args:
+                spell: Spell whose compiler artifact receives the phase-9 model.
+
+            Returns:
+                None.
         """
         self._spell_compiler.run_phase_injection_plan(
             spell,
@@ -395,6 +401,12 @@ class SpellCompilerSystem(Cleanable):
 
             Delegates to the planner-backed live phase-10 substitute so the
             compiler artifact receives `SpellCodegenPlan`.
+
+            Args:
+                spell: Spell whose compiler artifact receives the phase-10 plan.
+
+            Returns:
+                None.
         """
         self._spell_compiler.run_phase_patch_maps(
             spell,
@@ -411,6 +423,14 @@ class SpellCompilerSystem(Cleanable):
 
             Delegates to the codegen-creation-backed live phase-11 substitute
             so the compiler artifact receives `SpellCodegenCreation`.
+
+            Args:
+                spellbook: Owning spellbook for the creation pass.
+                spell: Spell whose compiler artifact receives the phase-11
+                    creation.
+
+            Returns:
+                None.
         """
         self._spell_compiler.run_phase_execution_plan(
             spell,

@@ -71,6 +71,34 @@ class SpellOccurrenceGraphAnalysis(Cleanable):
     ) -> None:
         """
         Build one occurrence-graph analysis artifact.
+
+        Contract:
+            Pure store of the phase-8 occurrence analysis; every field is
+            retained verbatim. `path_registry` is BORROWED and must not be
+            cleaned by this artifact.
+
+        Args:
+            root_spell_id:
+                Root spell id the occurrence graph is rooted at.
+            occurrence_graph:
+                Expanded occurrence graph (occurrence key -> edges by relation).
+            path_registry:
+                Borrowed path registry (referenced, not owned or cleaned).
+            occurrence_count:
+                Total occurrences in the graph.
+            edge_count:
+                Total edges in the graph.
+            topology_dependency_count:
+                Dependency count derived from topology.
+            dag_fallback_dependency_count:
+                Dependency count derived from the DAG fallback.
+            shared_collapse_enabled:
+                True when shared-instance collapse applied.
+            existence_occurrence_analysis:
+                Optional existence-distribution analysis for the graph.
+
+        Returns:
+            None.
         """
         super().__init__()
         self.root_spell_id = root_spell_id

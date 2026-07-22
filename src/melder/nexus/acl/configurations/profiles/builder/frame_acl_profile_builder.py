@@ -580,7 +580,15 @@ class FrameACLProfileBuilder(Cleanable):
         )
 
     def remove_view_profile(self, profile_name: str) -> bool:
-        """Remove one non-default reusable view profile by name."""
+        """Remove one non-default reusable view profile by name.
+
+        Args:
+            profile_name: Name of the view profile to remove (the reserved
+                default cannot be removed).
+
+        Returns:
+            bool: True when a profile was removed, False when absent.
+        """
         return self._remove_profile(
             self._view_profiles_by_name,
             profile_name,
@@ -589,7 +597,15 @@ class FrameACLProfileBuilder(Cleanable):
         )
 
     def remove_command_profile(self, profile_name: str) -> bool:
-        """Remove one non-default reusable command profile by name."""
+        """Remove one non-default reusable command profile by name.
+
+        Args:
+            profile_name: Name of the command profile to remove (the reserved
+                default cannot be removed).
+
+        Returns:
+            bool: True when a profile was removed, False when absent.
+        """
         return self._remove_profile(
             self._command_profiles_by_name,
             profile_name,
@@ -598,7 +614,15 @@ class FrameACLProfileBuilder(Cleanable):
         )
 
     def remove_codegen_profile(self, profile_name: str) -> bool:
-        """Remove one non-default reusable codegen profile by name."""
+        """Remove one non-default reusable codegen profile by name.
+
+        Args:
+            profile_name: Name of the codegen profile to remove (the reserved
+                default cannot be removed).
+
+        Returns:
+            bool: True when a profile was removed, False when absent.
+        """
         return self._remove_profile(
             self._codegen_profiles_by_name,
             profile_name,
@@ -607,7 +631,15 @@ class FrameACLProfileBuilder(Cleanable):
         )
 
     def remove_view_precision_profile(self, profile_name: str) -> bool:
-        """Remove one non-default reusable view precision profile by name."""
+        """Remove one non-default reusable view precision profile by name.
+
+        Args:
+            profile_name: Name of the view precision profile to remove (the
+                reserved default cannot be removed).
+
+        Returns:
+            bool: True when a profile was removed, False when absent.
+        """
         return self._remove_profile(
             self._view_precision_profiles_by_name,
             profile_name,
@@ -616,7 +648,15 @@ class FrameACLProfileBuilder(Cleanable):
         )
 
     def remove_command_precision_profile(self, profile_name: str) -> bool:
-        """Remove one non-default reusable command precision profile by name."""
+        """Remove one non-default reusable command precision profile by name.
+
+        Args:
+            profile_name: Name of the command precision profile to remove (the
+                reserved default cannot be removed).
+
+        Returns:
+            bool: True when a profile was removed, False when absent.
+        """
         return self._remove_profile(
             self._command_precision_profiles_by_name,
             profile_name,
@@ -625,7 +665,15 @@ class FrameACLProfileBuilder(Cleanable):
         )
 
     def remove_codegen_precision_profile(self, profile_name: str) -> bool:
-        """Remove one non-default reusable codegen precision profile by name."""
+        """Remove one non-default reusable codegen precision profile by name.
+
+        Args:
+            profile_name: Name of the codegen precision profile to remove (the
+                reserved default cannot be removed).
+
+        Returns:
+            bool: True when a profile was removed, False when absent.
+        """
         return self._remove_profile(
             self._codegen_precision_profiles_by_name,
             profile_name,

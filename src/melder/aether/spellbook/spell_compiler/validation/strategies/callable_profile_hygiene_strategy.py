@@ -77,6 +77,20 @@ class CallableProfileHygieneStrategy(SpellValidationStrategy):
     def validate(self, context: SpellValidationContext) -> None:
         """
         Validate that the spell target aligns with its binding profile.
+
+        Contract:
+            Honors the context cancel event, then checks the spell target
+            matches its binding profile and kind: class spells must be classes
+            with a ClassBindingProfile, method/lambda spells callable with a
+            CallableBindingProfile, and existing creations an instance with an
+            instance profile. Read-only; appends to `context.issues`.
+
+        Args:
+            context:
+                Per-spell validation context (spell, cancel event).
+
+        Returns:
+            None.
         """
         self.check_cleaned()
 

@@ -67,6 +67,20 @@ class SpellMapShapeValidationStrategy(SpellValidationStrategy):
     def validate(self, context: SpellValidationContext) -> None:
         """
         Validate SpellMap defaults attached to constructor parameters.
+
+        Contract:
+            Honors the context cancel event, returns early when the spell has no
+            requirements, and otherwise scans each parameter's SpellMap default,
+            appending issues for missing required fields and non-normalized
+            binding names. Read-only; appends to `context.issues` rather than
+            raising.
+
+        Args:
+            context:
+                Per-spell validation context (requirements, spell, cancel event).
+
+        Returns:
+            None.
         """
         self.check_cleaned()
 

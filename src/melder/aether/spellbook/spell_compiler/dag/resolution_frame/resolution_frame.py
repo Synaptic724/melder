@@ -147,6 +147,12 @@ class ResolutionFrame(Cleanable):
     def has_override(self, key: str) -> bool:
         """
         Returns True if a caller override exists for the given key.
+
+        Args:
+            key: Override key to check.
+
+        Returns:
+            bool: True when an override is registered under `key`.
         """
         self.check_cleaned()
         with self._lock:
@@ -155,6 +161,12 @@ class ResolutionFrame(Cleanable):
     def get_override(self, key: str) -> Any:
         """
         Retrieves a caller override by key.
+
+        Args:
+            key: Override key to fetch.
+
+        Returns:
+            Any: The registered override value.
 
         Raises:
             KeyError: If the key is not present in overrides.
@@ -169,6 +181,16 @@ class ResolutionFrame(Cleanable):
     def set_result(self, node_id: str, value: Any) -> None:
         """
         Registers the resolved value for a given node id.
+
+        Args:
+            node_id: Node id the value resolves; must not be empty.
+            value: Resolved value to store.
+
+        Raises:
+            ValueError: If `node_id` is empty.
+
+        Returns:
+            None.
         """
         self.check_cleaned()
         with self._lock:
@@ -179,6 +201,12 @@ class ResolutionFrame(Cleanable):
     def has_result(self, node_id: str) -> bool:
         """
         Returns True if a result exists for the given node id.
+
+        Args:
+            node_id: Node id to check.
+
+        Returns:
+            bool: True when a result is registered for `node_id`.
         """
         self.check_cleaned()
         with self._lock:
@@ -187,6 +215,12 @@ class ResolutionFrame(Cleanable):
     def get_result(self, node_id: str) -> Any:
         """
         Retrieves the resolved value for a given node id.
+
+        Args:
+            node_id: Node id whose result is fetched.
+
+        Returns:
+            Any: The registered resolved value.
 
         Raises:
             KeyError: If no result is registered for the node id.
@@ -203,6 +237,16 @@ class ResolutionFrame(Cleanable):
         Records an error for a node id.
 
         The resolver can use this for debugging or to build richer error reports.
+
+        Args:
+            node_id: Node id the error belongs to; must not be empty.
+            error: Exception instance to record; must not be None.
+
+        Raises:
+            ValueError: If `node_id` is empty or `error` is None.
+
+        Returns:
+            None.
         """
         self.check_cleaned()
         with self._lock:
@@ -215,6 +259,9 @@ class ResolutionFrame(Cleanable):
     def get_error(self, node_id: str) -> Optional[BaseException]:
         """
         Retrieves the error associated with a node id, if any.
+
+        Args:
+            node_id: Node id whose error is fetched.
 
         Returns:
             The recorded exception instance, or None if no error is recorded.

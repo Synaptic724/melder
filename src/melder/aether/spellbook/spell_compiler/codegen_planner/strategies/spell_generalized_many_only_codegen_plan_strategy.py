@@ -44,6 +44,24 @@ class SpellGeneralizedManyOnlyCodegenPlanStrategy(SpellCodegenPlanStrategy):
         """
         Populate the many-only category plan using the dedicated many-only
         lane builder.
+
+        Contract:
+            Builds the no-overrides and overrides lane plans via
+            `SpellManyOnlyCodegenPlanBuilder` (the artifact argument is unused),
+            assigns them to `plan`, and stamps plan metadata (selected strategy
+            id, discovery reason, model section names). Mutates `plan` in place;
+            returns nothing.
+
+        Args:
+            state:
+                Fitted `SpellCodegenModel` the lanes are built from.
+            artifact:
+                Compiler artifact (unused by this strategy).
+            plan:
+                Plan object populated in place with both lanes and metadata.
+
+        Returns:
+            None.
         """
         _ = artifact
         no_overrides_builder = SpellManyOnlyCodegenPlanBuilder(

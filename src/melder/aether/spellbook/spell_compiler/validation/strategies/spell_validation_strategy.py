@@ -97,6 +97,17 @@ class SpellValidationStrategy(Cleanable):
         Execute this validation strategy against a single spell.
 
         Implementations should inspect the context and append: class:`SpellValidationIssue` instances to "context.issues".
+
+        Contract:
+            Read-only over the spell/spellbook (see the class Contract); prefer
+            appending issues to `context.issues` over raising.
+
+        Args:
+            context:
+                Per-spell validation context to inspect and append issues to.
+
+        Returns:
+            None.
         """
         raise NotImplementedError("SpellValidationStrategy.validate must be overridden.")
 

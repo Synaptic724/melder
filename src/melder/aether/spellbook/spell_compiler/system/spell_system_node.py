@@ -135,6 +135,15 @@ class SpellSystemNode(Cleanable):
     def add_dependency(self, spell_id: str) -> None:
         """
         Add a single direct dependency.
+
+        Args:
+            spell_id: Dependency spell id to add; must not be None.
+
+        Raises:
+            ValueError: If `spell_id` is None.
+
+        Returns:
+            None.
         """
         self.check_cleaned()
         if spell_id is None:
@@ -144,6 +153,18 @@ class SpellSystemNode(Cleanable):
     def add_dependencies(self, spell_ids: Iterable[str]) -> None:
         """
         Union in multiple direct dependencies.
+
+        Contract:
+            None elements in the iterable are skipped.
+
+        Args:
+            spell_ids: Iterable of dependency spell ids; must not be None.
+
+        Raises:
+            ValueError: If `spell_ids` is None.
+
+        Returns:
+            None.
         """
         self.check_cleaned()
         if spell_ids is None:

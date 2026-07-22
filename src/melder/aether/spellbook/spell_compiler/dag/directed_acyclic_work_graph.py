@@ -172,6 +172,12 @@ class DirectedAcyclicWorkGraph(Cleanable):
     def get_node(self, key: str) -> Optional[DagNode]:
         """
         Retrieves a node by key, or None if not present.
+
+        Args:
+            key: Node key to look up.
+
+        Returns:
+            Optional[DagNode]: The node, or None when absent.
         """
         self.check_cleaned()
         return self._nodes.get(key)

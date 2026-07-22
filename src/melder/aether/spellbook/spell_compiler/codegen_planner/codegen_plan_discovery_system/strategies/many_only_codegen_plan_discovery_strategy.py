@@ -20,8 +20,25 @@ class ManyOnlyCodegenPlanDiscoveryStrategy(CodegenPlanDiscoveryStrategy):
         Claim any model whose visible spell set contains more than one spell
         and every visible spell is `Existence.many`, so phase 10 can emit the
         dedicated many-only planning family.
+
+    Registration:
+        MELDER KERNEL - currently UNGUARDED (inherits the unguarded base). A built-in
+        discovery strategy; not bound as a spell.
+
+    Subsystem Context:
+        A narrower claimant in the `codegen_plan_discovery_system/strategies` family;
+        runs before the generalized fallback.
+
+    System Context:
+        Phase 10 (codegen planning) discovery of the conjure pipeline.
     """
 
+    __ast_helper_access__: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. Phase-10 discovery strategy: claims a model with >1 visible spell "
+        "where ALL are Existence.many, selecting the many_only strategy/family. Reads the "
+        "existence-occurrence shape only; declines otherwise."
+    )
     __slots__ = ()
 
     @property

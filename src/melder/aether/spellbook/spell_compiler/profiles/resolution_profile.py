@@ -19,8 +19,23 @@ class SpellSymbolicNode(Cleanable):
         * future AI rewrites.
 
     For now, it is just a tagged node with an identifier and metadata bag.
+
+    Registration:
+        MELDER KERNEL - guarded. A compiler artifact; not user-bindable.
+
+    Subsystem Context:
+        An element of this package's `SpellSymbolicGraph` (the resolution_profile
+        family), one of the seven artifact classes in `profiles/resolution_profile.py`.
+
+    System Context:
+        Phase 2 (symbolic) artifact family carried by `SpellResolutionProfile`.
     """
     __melder_internal__: ClassVar[object] = _mrg.sentinel
+    __ast_helper_access__: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. Symbolic dependency-graph node: node_id, kind, metadata bag. "
+        "Placeholder-level tagged node in the resolution_profile symbolic model."
+    )
     __slots__ = Cleanable.__slots__ + ["node_id", "kind", "metadata"]
 
     def __init__(self, node_id: str, kind: str, metadata: Optional[dict[str, Any]] = None) -> None:
@@ -66,8 +81,23 @@ class SpellSymbolicEdge(Cleanable):
 
     Semantically this is:
         "node_from depends on node_to (optionally via parameter X)".
+
+    Registration:
+        MELDER KERNEL - guarded. A compiler artifact; not user-bindable.
+
+    Subsystem Context:
+        An edge of this package's `SpellSymbolicGraph` (the resolution_profile family),
+        pairing two `SpellSymbolicNode`s.
+
+    System Context:
+        Phase 2 (symbolic) artifact family carried by `SpellResolutionProfile`.
     """
     __melder_internal__: ClassVar[object] = _mrg.sentinel
+    __ast_helper_access__: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. Symbolic dependency edge: from_node -> to_node, optionally "
+        "via_parameter. Part of the resolution_profile symbolic graph."
+    )
     __slots__ = Cleanable.__slots__ + ["from_node", "to_node", "via_parameter"]
 
     def __init__(self, from_node: str, to_node: str, via_parameter: Optional[str] = None) -> None:
@@ -111,8 +141,26 @@ class SpellSymbolicGraph(Cleanable):
 
     No global DAG semantics. No resolution against the Spellbook. This is
     purely a structural description derived from SpellRequirements.
+
+    Registration:
+        MELDER KERNEL - guarded. A compiler artifact; not user-bindable.
+
+    Subsystem Context:
+        The symbolic graph of the resolution_profile family: owns `SpellSymbolicNode`
+        and `SpellSymbolicEdge` lists. DISTINCT from
+        `spell_compiler/symbolic_graph/SpellSymbolicGraph` - this one is the
+        profile-family placeholder version.
+
+    System Context:
+        Phase 2 (symbolic) artifact carried by `SpellResolutionProfile`.
     """
     __melder_internal__: ClassVar[object] = _mrg.sentinel
+    __ast_helper_access__: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. Phase-2 local symbolic graph in the profile family: spell_id plus "
+        "owned SpellSymbolicNode/SpellSymbolicEdge lists. Structural only - no global DAG, no "
+        "Spellbook resolution. Distinct from spell_compiler/symbolic_graph's version."
+    )
     __slots__ = Cleanable.__slots__ + ["spell_id", "nodes", "edges"]
 
     def __init__(
@@ -175,8 +223,25 @@ class SpellResolutionFrame(Cleanable):
 
     This is the structure that `Meld` / the resolver will eventually walk in
     topological order to construct instances.
+
+    Registration:
+        MELDER KERNEL - guarded. A compiler artifact; not user-bindable.
+
+    Subsystem Context:
+        The concrete resolution frame of the resolution_profile family. DISTINCT from
+        `dag/resolution_frame/ResolutionFrame` - this one is the profile-family
+        placeholder carrying only ordered node ids.
+
+    System Context:
+        Phase 3 (concrete resolution frame) artifact carried by `SpellResolutionProfile`.
     """
     __melder_internal__: ClassVar[object] = _mrg.sentinel
+    __ast_helper_access__: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. Phase-3 concrete resolution frame in the profile family: spell_id "
+        "plus ordered_node_ids (the topological order the resolver walks). Distinct from "
+        "dag/resolution_frame's ResolutionFrame."
+    )
     __slots__ = Cleanable.__slots__ + ["spell_id", "ordered_node_ids"]
 
     def __init__(self, spell_id: str, ordered_node_ids: Optional[List[str]] = None) -> None:
@@ -216,8 +281,24 @@ class SpellResolutionFrame(Cleanable):
 class SpellValidationIssue(Cleanable):
     """
     One validation warning or error associated with a spell's resolution state.
+
+    Registration:
+        MELDER KERNEL - guarded. A compiler artifact; not user-bindable.
+
+    Subsystem Context:
+        An issue of the resolution_profile family, aggregated by this package's
+        `SpellValidationResult`. DISTINCT from
+        `spell_compiler/validation/SpellValidationIssue`.
+
+    System Context:
+        Phase 4 (validation) artifact family carried by `SpellResolutionProfile`.
     """
     __melder_internal__: ClassVar[object] = _mrg.sentinel
+    __ast_helper_access__: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. One validation issue in the profile family: code, message, details. "
+        "Distinct from validation/SpellValidationIssue."
+    )
     __slots__ = Cleanable.__slots__ + ["code", "message", "details"]
 
     def __init__(self, code: str, message: str, details: Optional[dict[str, Any]] = None) -> None:
@@ -261,8 +342,25 @@ class SpellValidationResult(Cleanable):
     """
     Phase 4 artifact: readiness / health summary for a spell's resolution
     artifacts (requirements + symbolic graph + local frame).
+
+    Registration:
+        MELDER KERNEL - guarded. A compiler artifact; not user-bindable.
+
+    Subsystem Context:
+        The validation summary of the resolution_profile family: owns error/warning
+        lists of this package's `SpellValidationIssue`. DISTINCT from
+        `spell_compiler/validation/SpellValidationResult`.
+
+    System Context:
+        Phase 4 (validation) artifact carried by `SpellResolutionProfile`.
     """
     __melder_internal__: ClassVar[object] = _mrg.sentinel
+    __ast_helper_access__: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. Phase-4 readiness summary in the profile family: is_valid plus "
+        "errors/warnings lists of the profile SpellValidationIssue. Distinct from "
+        "validation/SpellValidationResult."
+    )
     __slots__ = Cleanable.__slots__ + ["is_valid", "errors", "warnings"]
 
     def __init__(
@@ -336,8 +434,26 @@ class SpellResolutionProfile(Cleanable):
 
     In the initial integration, you will likely populate only `requirements`,
     and leave the others as None until their phases are implemented.
+
+    Registration:
+        MELDER KERNEL - guarded. A compiler artifact; not user-bindable.
+
+    Subsystem Context:
+        The aggregate root of the `profiles/resolution_profile` family: it owns the
+        four phase artifacts (requirements, symbolic_graph, resolution_frame,
+        validation) plus the spell's identity/existence/frame/binding.
+
+    System Context:
+        Spans Phases 1-4 as the semantic "how to resolve this spell" payload,
+        independent of any execution model.
     """
     __melder_internal__: ClassVar[object] = _mrg.sentinel
+    __ast_helper_access__: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. Canonical in-memory 'how to resolve one Spell': "
+        "spell_id/existence/spellframe/binding_name plus the Phase 1-4 artifacts "
+        "(requirements/symbolic_graph/resolution_frame/validation). Execution-model-independent."
+    )
     __slots__ = Cleanable.__slots__ + [
         "spell_id",
         "existence",

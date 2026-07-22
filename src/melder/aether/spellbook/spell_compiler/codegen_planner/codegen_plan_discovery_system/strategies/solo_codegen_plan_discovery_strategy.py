@@ -19,8 +19,25 @@ class SoloCodegenPlanDiscoveryStrategy(CodegenPlanDiscoveryStrategy):
         Claim any model whose visible spell set contains exactly one spell,
         regardless of existence policy, so phase 10 can emit the dedicated
         solo planning family.
+
+    Registration:
+        MELDER KERNEL - currently UNGUARDED (inherits the unguarded base). A built-in
+        discovery strategy; not bound as a spell.
+
+    Subsystem Context:
+        A narrower claimant in the `codegen_plan_discovery_system/strategies` family;
+        runs before the generalized fallback.
+
+    System Context:
+        Phase 10 (codegen planning) discovery of the conjure pipeline.
     """
 
+    __ast_helper_access__: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. Phase-10 discovery strategy: claims a single-visible-spell model "
+        "(selecting the generalized_solo strategy / solo family), but declines when any "
+        "collection socket is present - those route to collection-aware families. Collection-blind."
+    )
     __slots__ = ()
 
     @property

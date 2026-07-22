@@ -60,8 +60,26 @@ class SpellSocketDescriptor:
             Canonical "(frame_key, binding_key)" for contract sockets.
             This is populated with SPELL_CONTRACT sockets to support
             system-level contract validation.
+
+    Registration:
+        MELDER KERNEL - guarded (ClassVar sentinel). A frozen value dataclass.
+
+    Subsystem Context:
+        The local socket view of the `topology` package; `SpellLocalTopology` owns a
+        tuple of these, one per constructor socket.
+
+    System Context:
+        Phase 3 (local topology) of the conjure pipeline; Phases 5-7 stitch these
+        per-spell descriptors into the system-level blueprint.
     """
     __melder_internal__: ClassVar[object] = _mrg.sentinel
+    # Unannotated on purpose: annotated class vars can be misread as dataclass fields.
+    __ast_helper_access__ = "internal"
+    __agent_purpose__ = (
+        "access: internal. Phase-3 immutable per-spell socket descriptor: spell_id, param_name, "
+        "position, socket_kind, is_collection/is_optional, resolved target_spell_ids, and "
+        "dependency_key/contract_key. Frozen value object."
+    )
     spell_id: str
     param_name: str
     position: int
@@ -86,8 +104,26 @@ class SpellLocalTopology(Cleanable):
     - Owns the socket tuple and the parameter-name index derived from it.
     - Is effectively immutable after construction; callers read from it but do
       not mutate it in place.
+
+    Registration:
+        MELDER KERNEL - guarded. A compiler artifact; not user-bindable.
+
+    Subsystem Context:
+        The per-spell view of the `topology` package: it owns the
+        `SpellSocketDescriptor` tuple plus a param-name index, and is handed to
+        `SpellSystemStates` for aggregation and blueprint building.
+
+    System Context:
+        Phase 3 (local topology) of the conjure pipeline. Effectively immutable after
+        construction.
     """
     __melder_internal__: ClassVar[object] = _mrg.sentinel
+    __ast_helper_access__: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. Per-spell local topology: the SpellSocketDescriptor tuple plus a "
+        "param-name index (sockets / iter_sockets / get_sockets_for_param). Produced once in "
+        "Phase 3, effectively immutable."
+    )
     __slots__ = Cleanable.__slots__ + [
         "_spell_id",
         "_sockets",
