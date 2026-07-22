@@ -178,6 +178,27 @@ to the active `melder_init_wheel_strategy` lane, not to this program.
   REREAD: REQUIRED
   SCORE_0_TO_10: 9
 
+- DATETIME: 2026-07-21T22:44:00Z
+  TYPE: FACT
+  CLAIM: custom_exceptions cluster (all 11 files) brought to agent-surface contract BY HAND.
+    Each already carried a Rank-5 docstring with a `Registration:` USER-BINDABLE classification;
+    the missing piece on every one was the agent pair. Added `__ast_helper_access__ = "public"`
+    and a hand-authored action-shaped `__agent_purpose__` to all 11; NO sentinel added
+    (USER-BINDABLE per the ratified vocabulary). Docstrings were already correct and were NOT
+    rewritten - editing them would be a drive-by.
+  EVIDENCE:
+  - src/melder/utilities/custom_exceptions/internal_registration_error.py:51-57
+  - src/melder/utilities/custom_exceptions/meld_execution_error.py:86-93
+  - src/melder/utilities/custom_exceptions/spellbook_validation_error.py:71-77
+  IMPACT: The "agent_purpose + ast_access on all utilities classes" AC now holds for the whole
+    custom_exceptions package (11/11); the USER-BINDABLE-unguarded AC holds (0 sentinels).
+  MEASURE: `python -m py_compile` green on all 11; grep coverage 11/11 both attrs, 0 sentinels.
+    Full AST sweep + MRO-law regression NOT run by agent - owner runs on 3.14t.
+  NEXT: NEEDS-TAG kernel classes (PhaseLatch, TicketFlag, IDBuilder, InitHelpers, EnumHelpers,
+    SpellInputUtils, ClassSurfaceAstDescriber): read each body, add sentinel + agent pair.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
 ## Context / Handoff Summary
 Utilities is the classification-defining epic: three base classes that must stay unguarded,
 11 exceptions and 4 weak containers that are the user's, ~19 kernel primitives that are

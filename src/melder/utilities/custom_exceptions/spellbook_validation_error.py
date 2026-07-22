@@ -69,6 +69,13 @@ class SpellbookValidationError(RuntimeError):
         cannot be built" from "your resolution failed while running".
     """
 
+    __ast_helper_access__: str = "public"
+    __agent_purpose__: str = (
+        "access: public. The build-time 'your graph is broken' error from conjure/meld; the "
+        "message carries Phase 4/6 diagnostics with strategy attribution. Fix the binding, not "
+        "the validator."
+    )
+
     def __init__(self, broken_spells: list[Spell]) -> None:
         """
         Purpose:

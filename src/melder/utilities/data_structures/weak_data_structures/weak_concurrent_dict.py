@@ -1300,6 +1300,17 @@ class WeakConcurrentDict(Generic[_K, _V], Cleanable):
         Iterate over keys in reverse insertion order (snapshot).
 
         Mirrors ``dict.__reversed__`` semantics on a snapshot of keys.
+
+        Contract:
+            - Snapshots live (key, node) pairs first (pruning when `auto_prune`
+              is on), then yields keys last-to-first. The snapshot is detached,
+              so collection during iteration does not resize it.
+
+        Returns:
+            Iterator[_K]: Keys in reverse insertion order.
+
+        Raises:
+            RuntimeError: If the dict has been cleaned.
         """
         self.check_cleaned()
         items = self._snapshot_items()
@@ -1569,6 +1580,17 @@ class WeakConcurrentDict(Generic[_K, _V], Cleanable):
     def __str__(self) -> str:
         """
         Return a user-facing string representation of the current live snapshot.
+
+        Contract:
+            - Renders `to_dict()`, so a dead-but-unpruned entry raises
+              `DeadReferenceError` (unlike `__repr__`, which shows `<dead>`).
+
+        Returns:
+            str: `str()` of the live-value snapshot dict.
+
+        Raises:
+            RuntimeError: If the dict has been cleaned.
+            DeadReferenceError: If a dead entry is met before pruning.
         """
         self.check_cleaned()
         return str(self.to_dict())
@@ -1600,6 +1622,21 @@ class WeakConcurrentDict(Generic[_K, _V], Cleanable):
     ) -> "WeakConcurrentDict[_K, _V]":
         """
         Merge this dict with another mapping or iterable into a new weak dict.
+
+        Contract:
+            - Builds a NEW weak dict from this dict's live items followed by
+              `other`'s, so `other` wins on key conflicts (last-write). Values
+              are re-wrapped and held weakly.
+
+        Args:
+            other:
+                Mapping, pair-iterable, or `WeakConcurrentDict` to merge in.
+
+        Returns:
+            WeakConcurrentDict[_K, _V]: The merged new weak dict.
+
+        Raises:
+            RuntimeError: If the dict has been cleaned.
         """
         self.check_cleaned()
         if other is None:
@@ -1621,6 +1658,21 @@ class WeakConcurrentDict(Generic[_K, _V], Cleanable):
     ) -> "WeakConcurrentDict[_K, _V]":
         """
         In-place merge (`|=`) with another mapping or iterable.
+
+        Contract:
+            - Delegates to `update(...)`, so `other` overwrites existing keys in
+              place and the incoming values are held weakly. Returns self.
+
+        Args:
+            other:
+                Mapping, pair-iterable, or `WeakConcurrentDict` to merge in.
+
+        Returns:
+            WeakConcurrentDict[_K, _V]: This dict, mutated in place.
+
+        Raises:
+            TypeError: If the dict is frozen.
+            RuntimeError: If the dict has been cleaned.
         """
         if isinstance(other, WeakConcurrentDict):
             self.update(other.to_dict())
@@ -1636,6 +1688,20 @@ class WeakConcurrentDict(Generic[_K, _V], Cleanable):
         Right-hand merge to support ``mapping | WeakConcurrentDict`` (PEP 584 style).
 
         The right-hand operand (``self``) wins on key conflicts, mirroring built-in dict behavior.
+
+        Contract:
+            - Builds the left operand first, then merges self over it, so self's
+              keys win. The result is a NEW weak dict.
+
+        Args:
+            other:
+                Left-hand mapping/iterable in `other | self`.
+
+        Returns:
+            WeakConcurrentDict[_K, _V]: The merged new weak dict.
+
+        Raises:
+            RuntimeError: If the dict has been cleaned.
         """
         # Build from the left operand first, then merge self so our keys win.
         if isinstance(other, WeakConcurrentDict):
@@ -1695,6 +1761,10 @@ class WeakConcurrentDict(Generic[_K, _V], Cleanable):
 
         This releases the internal lock acquired in `__enter__`.
 
+        Contract:
+            - Always releases the lock; a spurious release `RuntimeError` is
+              swallowed. Never suppresses exceptions from the with-body.
+
         Args:
             exc_type:
                 Exception type, if any.
@@ -1702,6 +1772,9 @@ class WeakConcurrentDict(Generic[_K, _V], Cleanable):
                 Exception instance, if any.
             exc_tb:
                 Traceback object, if any.
+
+        Returns:
+            None.
         """
         try:
             self._lock.release()

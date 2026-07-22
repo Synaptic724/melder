@@ -99,6 +99,10 @@ class IChannelLogger(Protocol):
         (e.g., "Iris.<console>.<{registrant}>") and records the routing in
         self._channels / self._loggers.
 
+        Args:
+            channel_name:
+                IRIS channel to also route this logger's records to.
+
         Returns:
             None.
         """
@@ -111,6 +115,14 @@ class IChannelLogger(Protocol):
         We detect the child logger(s) to drop by inspecting their *parent* logger's
         monkey-patched attribute `_command_ops_name`, which IrisChannel sets when
         constructing the parent (e.g., "console").
+
+        Args:
+            channel_name:
+                IRIS channel to stop routing to.
+
+        Returns:
+            bool: True when a routed child logger was found and removed,
+            otherwise False.
         """
         ...
 
@@ -435,6 +447,17 @@ class IChannelLogger(Protocol):
         Log once with masking enabled, using the owner's display identity
         ('<ULID>.<ClassName>'), and optionally overriding groups/system_groups/properties.
 
+        Args:
+            level: Logging level for this record (e.g., `logging.ERROR`).
+            message: Message string or format string.
+            owner: Object whose display identity ('<ULID>.<ClassName>') masks
+                the record source.
+            groups: Optional per-call group tokens overriding the logger's.
+            system_groups: Optional per-call system-group override.
+            properties: Optional per-call property stamp override.
+            exc_info: Exception context (True, an exception instance, or None).
+            **kwargs: Additional record keyword arguments.
+
         Returns:
             None.
         """
@@ -640,6 +663,14 @@ class IChannelLogger(Protocol):
     def critical(self, msg: str, *args: Any, **kwargs: Any) -> None:
         """
         Log a message with the ` CRITICAL ` level.
+
+        Args:
+            msg: Message string or format string.
+            *args: Positional args used with `msg` if it's a format string.
+            **kwargs: Additional keyword arguments (e.g., `exc_info`).
+
+        Notes:
+            - Subject to effective enablement and min-level filtering.
 
         Returns:
             None.

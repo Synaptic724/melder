@@ -62,12 +62,30 @@ class ICleanable(Protocol):
 
     @property
     def cleaned(self) -> bool:
-        """Returns True if the object has already been cleaned."""
+        """
+        Return whether the object has already been cleaned.
+
+        Contract:
+            - Structural mirror of `Cleanable.cleaned`: a monotonic latch that
+              only moves False -> True.
+
+        Returns:
+            bool: True when the object has been cleaned.
+        """
         ...
 
     @property
     def is_cleaned(self) -> bool:
-        """Alias for `cleaned`."""
+        """
+        Alias for `cleaned`.
+
+        Contract:
+            - Structural mirror of `Cleanable.is_cleaned`: reads the same
+              cleaned-state as `cleaned`.
+
+        Returns:
+            bool: Current cleaned-state flag.
+        """
         ...
 
     def check_cleaned(self) -> None:
@@ -82,7 +100,7 @@ class ICleanable(Protocol):
         """
         ...
 
-    def  cleanup(self) -> None:
+    def cleanup(self) -> None:
         """
         Dispose must be implemented by subclasses.
 

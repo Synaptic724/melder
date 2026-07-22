@@ -49,6 +49,12 @@ class PhaseTimeoutError(PhaseSchedulerError):
         cascade is owed - the failure is total and leaves no partial world.
     """
 
+    __ast_helper_access__: str = "public"
+    __agent_purpose__: str = (
+        "access: public. Raised when a conjure phase exceeds its barrier timeout; phase_name + "
+        "timeout_ms locate it. Usually a blocked constructor/lock/hook, not slow work."
+    )
+
     def __init__(self, phase_name: str, timeout_ms: int) -> None:
         """
         Build a timeout error for one named phase.

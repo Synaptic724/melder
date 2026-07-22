@@ -183,6 +183,11 @@ class ClassSurfaceAstDescriber:
 
         Returns:
             str: Minified JSON description of the target class surface.
+
+        Raises:
+            ValueError:
+                If the class marks `__ast_helper_access__ = "private"` (private
+                classes expose nothing), or its source cannot be resolved.
         """
         access_level = ClassSurfaceAstDescriber._get_required_access_level(
             target_object
@@ -217,6 +222,10 @@ class ClassSurfaceAstDescriber:
         Returns:
             str: Minified JSON containing the class name and listed method
             names.
+
+        Raises:
+            ValueError:
+                If the class is private, or its source cannot be resolved.
         """
         access_level = ClassSurfaceAstDescriber._get_required_access_level(
             target_object
@@ -272,6 +281,12 @@ class ClassSurfaceAstDescriber:
 
         Returns:
             str: Minified JSON agent-purpose surface.
+
+        Raises:
+            ValueError:
+                If the class is missing or has an invalid
+                `__ast_helper_access__` marker, or a private class omits
+                `__agent_purpose__`.
         """
         access_level = ClassSurfaceAstDescriber._get_required_access_level(
             target_object
@@ -316,6 +331,16 @@ class ClassSurfaceAstDescriber:
 
         Returns:
             ClassSurfaceDescription: Structured class-surface description.
+
+        Contract:
+            - Describes only members defined DIRECTLY on the concrete class
+              (not inherited), from AST source - the class is never imported or
+              instantiated. Private/dunder members are excluded by default.
+
+        Raises:
+            ValueError:
+                If the class is private, its source file cannot be resolved, or
+                the class node is not found in that source.
         """
         access_level = ClassSurfaceAstDescriber._get_required_access_level(
             target_object

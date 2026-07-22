@@ -113,6 +113,12 @@ class SyncWeakRef(Sync, Generic[T]):
         """
         Initialize a SyncWeakRef.
 
+        Contract:
+            - NON-OWNING: creates the weakref immediately and never keeps the
+              target alive; registers the internal phantom callback at once.
+            - Owns its own `RLock`; this is a self-synchronizing cell, unlike
+              `WeakRefNode` which relies on its container's lock.
+
         Parameters:
         -----------
         target:
@@ -144,6 +150,10 @@ class SyncWeakRef(Sync, Generic[T]):
         """
         Return whether this wrapper has already been cleaned.
 
+        Contract:
+            - MONOTONIC latch: only ever moves False -> True; once True it
+              stays True for the wrapper's life. Read without the lock.
+
         Returns:
             bool:
                 True when cleanup has completed.
@@ -154,6 +164,10 @@ class SyncWeakRef(Sync, Generic[T]):
     def is_cleaned(self) -> bool:
         """
         Alias for `cleaned`.
+
+        Contract:
+            - Exact alias: reads the same `_cleaned` flag with the same
+              monotonic semantics. Both spellings exist for call-site parity.
 
         Returns:
             bool:
@@ -173,6 +187,12 @@ class SyncWeakRef(Sync, Generic[T]):
         - Wrapper is marked cleaned.
         - Underlying weak reference and callback are removed.
         - All operations raise RuntimeError via check_cleaned().
+
+        Contract:
+            - Idempotent and double-checked under the lock (check `_cleaned`,
+              acquire, re-check), so concurrent teardown is safe.
+            - Del posture: deletes the weakref and callback inside the lock,
+              then deletes the lock itself last.
 
         Returns:
             None.
@@ -286,8 +306,17 @@ class SyncWeakRef(Sync, Generic[T]):
     @property
     def has_fired(self) -> bool:
         """
-        Returns True if the GC/phantom callback has fired
-        (i.e., the referent has been collected).
+        Return whether the GC/phantom callback has fired.
+
+        Contract:
+            - LATCHES True when the internal weakref callback fires (the
+              referent was collected) and is NEVER reset - even a later
+              `set()`/`cas()`/`swap()` to a fresh referent leaves it True.
+              Read without the lock.
+
+        Returns:
+            bool:
+                True once the phantom callback has fired for this wrapper.
         """
         return self._phantom_fired
 
@@ -422,6 +451,10 @@ class SyncWeakRef(Sync, Generic[T]):
         Args:
             obj: New referent to track weakly.
 
+        Raises:
+            RuntimeError:
+                If the wrapper has already been cleaned.
+
         Returns:
             None.
         """
@@ -441,9 +474,19 @@ class SyncWeakRef(Sync, Generic[T]):
           reference with a new one pointing at `new`.
         - Returns True on success, False otherwise.
 
+        Args:
+            expected:
+                Identity the current live referent must match (by `is`).
+            new:
+                Referent to install weakly when the match succeeds.
+
         Returns:
             bool: True when the expected live referent matched and the swap was
             applied; otherwise False.
+
+        Raises:
+            RuntimeError:
+                If the wrapper has already been cleaned.
         """
         self.check_cleaned()
         with self._lock:
@@ -458,11 +501,23 @@ class SyncWeakRef(Sync, Generic[T]):
         """
         Replace the target and return the previous live value (if any).
 
+        Contract:
+            - Atomic under the wrapper lock: reads the old live referent, then
+              installs `new`. Does NOT reset `has_fired`.
+
+        Args:
+            new:
+                New referent to track weakly.
+
         Returns:
         --------
         Optional[T]:
             The previously referenced object if it was still alive,
             otherwise None.
+
+        Raises:
+            RuntimeError:
+                If the wrapper has already been cleaned.
         """
         self.check_cleaned()
         with self._lock:
@@ -527,6 +582,12 @@ class SyncWeakRef(Sync, Generic[T]):
 
         Yields:
             T: Live referent while the wrapper lock is held.
+
+        Raises:
+            ReferenceError:
+                If the referent is no longer alive when the block is entered.
+            RuntimeError:
+                If the wrapper has already been cleaned.
         """
         self.check_cleaned()
         with self._lock:
@@ -538,7 +599,18 @@ class SyncWeakRef(Sync, Generic[T]):
     # Dunder & repr
     # ------------------------------------------------------------------
     def __repr__(self) -> str:
-        """Return a debug-oriented representation of the wrapper liveness state."""
+        """
+        Return a debug-oriented representation of the wrapper liveness state.
+
+        Contract:
+            - Reads `try_get()` for liveness (takes the lock); a cleaned
+              wrapper reports `SyncWeakRef(cleaned)` without touching the
+              referent. Debug/telemetry only.
+
+        Returns:
+            str:
+                Representation showing liveness state, id, and phantom status.
+        """
         if self._cleaned:
             return "SyncWeakRef(cleaned)"
 

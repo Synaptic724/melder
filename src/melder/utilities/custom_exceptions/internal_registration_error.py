@@ -49,3 +49,10 @@ class InternalRegistrationError(RuntimeError):
         spell registry, which is why the sentinel exists at all.
     """
 
+    __ast_helper_access__: str = "public"
+    __agent_purpose__: str = (
+        "access: public. Raised by the registration guard when bind() is handed a Melder "
+        "internal; catch it to detect a kernel-object-bound-as-spell mistake. The guard "
+        "constructs it - you do not."
+    )
+

@@ -188,6 +188,10 @@ class UnitOfWork(Cleanable, Future):
                 Optional arbitrary metadata describing this unit of work
                 (spell ID, stage name, ResolutionContext, etc.).
 
+        Raises:
+            TypeError:
+                If `func` is not callable.
+
         Returns:
             None.
         """
@@ -292,6 +296,18 @@ class UnitOfWork(Cleanable, Future):
 
         The internal lock is always released, and exceptions from the with-body
         are not suppressed.
+
+        Args:
+            exc_type:
+                Exception type raised in the with-body, or None.
+            exc_val:
+                Exception instance raised in the with-body, or None.
+            exc_tb:
+                Traceback for the with-body exception, or None.
+
+        Returns:
+            Literal[False]:
+                Always False, so with-body exceptions propagate.
         """
         self._lock.release()
         return False
@@ -310,9 +326,18 @@ class UnitOfWork(Cleanable, Future):
         additional cooperative cancellation checks beyond the up-front check
         done in: meth:`run_synchronously`.
 
+        Contract:
+            - Returns the BORROWED view, not an owned copy: it belongs to the
+              parent `CancellationEventSignal`, so this unit never cleans it.
+            - Read under the instance lock; guarded by `check_cleaned()`.
+
         Returns:
             Optional[CancellationEvent]: Shared cancellation view for this unit,
             or None when no cooperative cancellation source was attached.
+
+        Raises:
+            RuntimeError:
+                If the unit has already been cleaned.
         """
         self.check_cleaned()
         with self._lock:
@@ -420,6 +445,15 @@ class UnitOfWork(Cleanable, Future):
 
         Returns:
             Any: Result of the wrapped callable, exactly as returned by: meth:`run_synchronously`.
+
+        Raises:
+            OperationCancelledError:
+                If cancellation was requested before execution.
+            Exception:
+                Anything the wrapped callable raises (re-raised via
+                `run_synchronously`).
+            RuntimeError:
+                If the unit has already been cleaned.
         """
         return self.run_synchronously()
 

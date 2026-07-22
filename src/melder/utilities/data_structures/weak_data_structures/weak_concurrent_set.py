@@ -948,6 +948,16 @@ class WeakConcurrentSet(Generic[_T], Cleanable):
 
         Dead entries are displayed as ``'<dead>'`` to avoid raising during
         repr generation.
+
+        Contract:
+            - Non-strict deref, so a dead entry renders as `<dead>` rather than
+              raising. Debug/telemetry only.
+
+        Returns:
+            str: `WeakConcurrentSet([...])` over live values and `<dead>` marks.
+
+        Raises:
+            RuntimeError: If the set has been cleaned.
         """
         self.check_cleaned()
         values = []
@@ -961,6 +971,18 @@ class WeakConcurrentSet(Generic[_T], Cleanable):
         Equality comparison against another WeakConcurrentSet or plain set-like.
 
         Live values are compared; dead entries will raise unless already pruned.
+
+        Contract:
+            - Compares LIVE values via `to_set()`; only `WeakConcurrentSet`,
+              `set`, and `frozenset` are comparable - anything else is False. A
+              dead entry not yet pruned raises during materialization.
+
+        Args:
+            other:
+                Object to compare against.
+
+        Returns:
+            bool: True when the live value sets are equal.
         """
         if isinstance(other, WeakConcurrentSet):
             return self.to_set() == other.to_set()
@@ -1206,6 +1228,10 @@ class WeakConcurrentSet(Generic[_T], Cleanable):
 
         This releases the internal lock acquired in `__enter__`.
 
+        Contract:
+            - Always releases the lock; a spurious release `RuntimeError` is
+              swallowed. Never suppresses exceptions from the with-body.
+
         Args:
             exc_type:
                 Exception type, if any.
@@ -1213,6 +1239,9 @@ class WeakConcurrentSet(Generic[_T], Cleanable):
                 Exception instance, if any.
             exc_tb:
                 Traceback object, if any.
+
+        Returns:
+            None.
         """
         try:
             self._lock.release()

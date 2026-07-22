@@ -347,6 +347,11 @@ class CancellationEventSignal(Cleanable):
         All callers receive the same event instance so every observer sees the
         same cancellation state.
 
+        Returns:
+            CancellationEvent:
+                The one shared read-only view - the SAME instance on every
+                call, never a per-consumer copy.
+
         Raises:
             RuntimeError: If this signal has already been cleaned.
         """

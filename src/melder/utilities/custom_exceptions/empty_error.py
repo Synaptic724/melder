@@ -37,4 +37,9 @@ class Empty(Exception):
         signal usable anywhere in the stack, which is exactly why it should be
         reached for last rather than first.
     """
-    pass
+
+    __ast_helper_access__: str = "public"
+    __agent_purpose__: str = (
+        "access: public. The contextless empty-container signal; catch it when an operation "
+        "required at least one item. Not queue.Empty - import this one explicitly."
+    )

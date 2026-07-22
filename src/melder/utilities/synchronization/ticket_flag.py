@@ -365,6 +365,14 @@ class TicketFlag(Cleanable):
             - Always attempts one decrement.
             - Never suppresses exceptions from the with-body.
 
+        Args:
+            exc_type:
+                Exception type raised in the with-body, or None.
+            exc:
+                Exception instance raised in the with-body, or None.
+            tb:
+                Traceback for the with-body exception, or None.
+
         Returns:
             False.
 

@@ -83,6 +83,13 @@ class MeldExecutionError(RuntimeError):
         tear down.
     """
 
+    __ast_helper_access__: str = "public"
+    __agent_purpose__: str = (
+        "access: public. The single 'resolution failed' signal from the Meld runtime; start at "
+        "inner for the real cause, node_id/param_name narrow it. A dirty-root gate means "
+        "revalidate, not a defect."
+    )
+
     __slots__ = (
         "spell_id",
         "spell_name",

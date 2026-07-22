@@ -187,6 +187,11 @@ class Sync:
         Contract:
         - Serializes only the wrapped scalar value.
         - Never serializes the runtime lock object.
+
+        Returns:
+            Dict[str, Any]:
+                A one-key mapping carrying the picklable scalar (`_value`);
+                the lock is deliberately omitted and rebuilt on load.
         """
         return {"_value": self.get()}        # plain float, fully picklable
 
@@ -197,6 +202,13 @@ class Sync:
         Contract:
         - Rebuilds `_value` through the concrete class `_coerce(...)`.
         - Creates a fresh `threading.RLock` for the unpickled instance.
+
+        Args:
+            state:
+                The mapping produced by `__getstate__` (carries `_value`).
+
+        Returns:
+            None.
         """
         # Route state restoration through subclass-defined slots instead of
         # claiming the base mix-in owns concrete storage fields.

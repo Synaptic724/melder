@@ -222,6 +222,11 @@ class AbstractElasticPool(Generic[_T], Cleanable, ABC):
         """
         Return the current retained idle object count.
 
+        Contract:
+            - ADVISORY snapshot read WITHOUT the lock (deque length); may drift
+              under concurrent acquire/release, matching the class threading
+              model.
+
         Returns:
             int: Objects currently pooled and available for reuse.
         """
@@ -232,6 +237,10 @@ class AbstractElasticPool(Generic[_T], Cleanable, ABC):
     def in_use_count(self) -> int:
         """
         Return the number of objects currently checked out of the pool.
+
+        Contract:
+            - ADVISORY counter read without the lock; steers sizing, does not
+              gate correctness, so it may race under concurrent traffic.
 
         Returns:
             int: Objects currently checked out.
@@ -244,6 +253,10 @@ class AbstractElasticPool(Generic[_T], Cleanable, ABC):
         """
         Return the current elastic idle-retention target.
 
+        Contract:
+            - ADVISORY: mutated by stretch/decay bookkeeping without the lock,
+              so it reflects a recent-but-not-instantaneous target.
+
         Returns:
             int: The idle count the pool is currently steering toward.
         """
@@ -255,6 +268,9 @@ class AbstractElasticPool(Generic[_T], Cleanable, ABC):
         """
         Return the baseline idle-retention floor.
 
+        Contract:
+            - Fixed at construction; `target_idle` never decays below it.
+
         Returns:
             int: The floor the pool will not shrink below.
         """
@@ -265,6 +281,10 @@ class AbstractElasticPool(Generic[_T], Cleanable, ABC):
     def max_idle(self) -> int:
         """
         Return the hard idle-retention ceiling.
+
+        Contract:
+            - Fixed at construction (defaults to `baseline_idle`); `target_idle`
+              never stretches above it and released overflow is destroyed.
 
         Returns:
             int: The ceiling above which idle objects are destroyed rather than kept.
@@ -373,6 +393,10 @@ class AbstractElasticPool(Generic[_T], Cleanable, ABC):
         Returns:
             _T: A newly constructed pooled object. Subclasses implement this; the pool
                 calls it only when no idle object is available.
+
+        Raises:
+            NotImplementedError:
+                Always on the base; every concrete pool overrides it.
         """
         raise NotImplementedError
 
@@ -387,6 +411,10 @@ class AbstractElasticPool(Generic[_T], Cleanable, ABC):
         Args:
             obj:
                 Object being permanently discarded. Release its resources here.
+
+        Raises:
+            NotImplementedError:
+                Always on the base; every concrete pool overrides it.
         """
         raise NotImplementedError
 

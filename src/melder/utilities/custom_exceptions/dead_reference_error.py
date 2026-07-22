@@ -46,3 +46,10 @@ class DeadReferenceError(ReferenceError):
         collection event rather than raising when a weakly-bound object goes
         away.
     """
+
+    __ast_helper_access__: str = "public"
+    __agent_purpose__: str = (
+        "access: public. Raised when a weak-reference target is requested after collection; "
+        "catch it (it subclasses ReferenceError) or hold a strong reference. It means you "
+        "outlived the referent."
+    )

@@ -109,6 +109,11 @@ class Cleanable(ABC):
         """
         Return whether the object has already been cleaned.
 
+        Contract:
+            - MONOTONIC latch: reads the `_cleaned` flag, which only ever
+              moves False -> True. Once this returns True it never returns
+              False again for the object's life.
+
         Returns:
             bool:
                 True when `_cleaned` has been set.
@@ -119,6 +124,11 @@ class Cleanable(ABC):
     def is_cleaned(self) -> bool:
         """
         Alias for `cleaned`.
+
+        Contract:
+            - Exact alias: reads the same `_cleaned` flag as `cleaned`, with
+              the same monotonic semantics. Both spellings exist because call
+              sites across the runtime use both.
 
         Returns:
             bool:
@@ -152,6 +162,11 @@ class Cleanable(ABC):
         - Release all resources.
         - Deregister or finalize any allocations.
         - Be idempotent (safe to call multiple times).
+        - Set `_cleaned = True` when teardown completes.
+
+        Raises:
+            NotImplementedError:
+                Always on the base; every concrete subclass overrides it.
 
         Returns:
             None.
@@ -168,6 +183,11 @@ class Cleanable(ABC):
         - Be idempotent (safe to call multiple times).
         - Preserve the same lifecycle semantics as `cleanup()` once async
           teardown completes.
+
+        Raises:
+            NotImplementedError:
+                Always on the base; subclasses that support async teardown
+                override it.
 
         Returns:
             None.
@@ -196,6 +216,11 @@ class Cleanable(ABC):
             - Stores one strong owner reference until exit.
             - Tracks whether cleanup has already been triggered so exit remains
               idempotent.
+
+            Args:
+                owner:
+                    The cleanable object this context cleans up exactly once on
+                    exit.
             """
             self._owner: Optional["Cleanable"] = owner
             self._cleaned: bool = False
@@ -205,9 +230,18 @@ class Cleanable(ABC):
             """
             Enter the cleanup helper context and return the owner.
 
+            Contract:
+                - Acquires the context's own `RLock` for the duration of the
+                  `with` block, so entry and the single cleanup-on-exit are
+                  serialized.
+
             Returns:
                 Cleanable:
                     The owner object protected by this helper.
+
+            Raises:
+                RuntimeError:
+                    If the context has already exited and dropped its owner.
             """
             self._lock.acquire()
             if self._owner is None:
@@ -222,6 +256,21 @@ class Cleanable(ABC):
         ) -> Literal[False]:
             """
             Exit the cleanup helper context and trigger owner cleanup once.
+
+            Contract:
+                - Calls `owner.cleanup()` AT MOST ONCE across repeated exits,
+                  swallowing any exception it raises (best-effort teardown),
+                  then drops the strong owner reference so nothing leaks.
+                - Never suppresses exceptions from the caller's `with` block.
+                - Releases the context lock in a `finally`.
+
+            Args:
+                exc_type:
+                    Exception type raised in the `with` block, or None.
+                exc:
+                    Exception instance raised in the `with` block, or None.
+                tb:
+                    Traceback for the `with`-block exception, or None.
 
             Returns:
                 Literal[False]:

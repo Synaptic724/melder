@@ -244,6 +244,11 @@ class SpellInputUtils:
             - A string frame name
             - Any other object (fallback to str(obj))
 
+        Contract:
+            - Lowercases the resolved name: a class/Protocol uses `__name__`, a
+              string uses itself, anything else falls back to `str(frame)`.
+              Cached (`lru_cache`), so repeated identical frames are cheap.
+
         Returns:
             str: Lowercased string used as the "frame" component of the key.
 
@@ -253,7 +258,7 @@ class SpellInputUtils:
             MyService     -> "myservice"
 
         Args:
-            value:
+            frame:
                 Frame identity - a type, Protocol, or string - to normalize.
         """
         if inspect.isclass(frame):
@@ -280,8 +285,8 @@ class SpellInputUtils:
             str: The spell name (NOT lowercased; this is a display name).
 
         Args:
-            value:
-                Spell name to normalize for case-insensitive lookup.
+            spell:
+                Spell object whose name to derive (class/function/instance).
         """
         # This is for display/metadata; we don't lowercase here so that
         # spell.spell_name can remain pretty. The key path lowercases later.
@@ -299,6 +304,11 @@ class SpellInputUtils:
         If no binding name is provided, DEFAULT_BINDING_NAME ("__default__")
         is used.
 
+        Contract:
+            - Falsy input (None or empty) resolves to `DEFAULT_BINDING_NAME`
+              ("__default__"); otherwise the name is lowercased. Cached
+              (`lru_cache`).
+
         Returns:
             str: Lowercased binding name, or "__default__" if None/empty.
 
@@ -308,7 +318,7 @@ class SpellInputUtils:
             "MyVariant_01" -> "myvariant_01"
 
         Args:
-            value:
+            binding_name:
                 Binding name to normalize, or None for default-binding semantics.
         """
         if not binding_name:

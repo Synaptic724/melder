@@ -48,3 +48,9 @@ class OperationCancelledError(RuntimeError):
         without a Conduit, and this type is what tells the caller which one
         happened.
     """
+
+    __ast_helper_access__: str = "public"
+    __agent_purpose__: str = (
+        "access: public. Raised when a unit of work observes cooperative cancellation; catch "
+        "it distinctly from real failures - it means aborted, not broken."
+    )

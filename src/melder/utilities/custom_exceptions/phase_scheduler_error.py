@@ -47,6 +47,12 @@ class PhaseSchedulerError(RuntimeError):
         is the runtime-resolution counterpart.
     """
 
+    __ast_helper_access__: str = "public"
+    __agent_purpose__: str = (
+        "access: public. Base type for PhaseScheduler failures; catch it to mean 'the conjure "
+        "phase pipeline aborted' without enumerating PhaseExecutionError vs PhaseTimeoutError."
+    )
+
     def __init__(self, message: str) -> None:
         """
         Build a scheduler-scoped runtime error.

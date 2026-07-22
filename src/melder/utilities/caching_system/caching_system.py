@@ -146,6 +146,12 @@ class CachingSystem(Cleanable):
                 Optional explicit logger surface. When omitted, the hosted
                 channel-logger path is used.
 
+        Contract:
+            - Derives the bundle path as
+              `<cache_root>/<frame_name>/<conduit_name>.melc` and LOADS the
+              cache from disk during construction; a corrupt or version-
+              mismatched bundle is treated as a cold cache, not an error.
+
         Returns:
             None.
         """
@@ -227,6 +233,11 @@ class CachingSystem(Cleanable):
         """
         Return the live spell-id key view for this cache.
 
+        Contract:
+            - Returns the LIVE `dict.keys()` view, not a snapshot: it reflects
+              later upserts/removes and must not be iterated while the cache is
+              mutated on another thread.
+
         Returns:
             KeysView[str]:
                 Live `dict.keys()` view over cached spell ids.
@@ -236,6 +247,12 @@ class CachingSystem(Cleanable):
     def cleanup(self) -> None:
         """
         Deterministically release owned runtime state.
+
+        Contract:
+            - Idempotent and double-checked under the lock; clears and deletes
+              the in-memory cache and metadata slots, then cleans the logger
+              LAST (best-effort) and drops the lock.
+            - Does NOT delete the cache file on disk; teardown is in-memory only.
 
         Returns:
             None.
@@ -406,6 +423,11 @@ class CachingSystem(Cleanable):
     def emit(self) -> None:
         """
         Write the current in-memory cache dict to disk.
+
+        Contract:
+            - Serializes under the instance lock and persists atomically (temp
+              file then `replace`), so a crash mid-write never leaves a torn
+              bundle. Creates the frame folder if absent.
 
         Returns:
             None.

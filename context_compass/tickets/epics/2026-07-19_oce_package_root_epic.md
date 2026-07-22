@@ -166,6 +166,47 @@ document surface is not worth querying.
   REREAD: REQUIRED
   SCORE_0_TO_10: 8
 
+- DATETIME: 2026-07-21T22:36:00Z
+  TYPE: FACT
+  CLAIM: Exemplar is ALREADY contract-complete in source; the 2026-07-19 note above is stale.
+    `StaticSystemDocument` now carries `__melder_internal__ = _mrg.sentinel`, both
+    `__agent_purpose__`/`__ast_helper_access__`, a Rank-5 class docstring with all nine
+    canonical headers (incl. Subsystem + System Context), and rich docstrings on every public
+    method. The four hardcopy modules carry question-shaped `agent_purpose` strings plus
+    Subsystem/System Context module docstrings. `MelderRegistrationGuard` is richly documented
+    with per-method docstrings. No documentation edit is warranted - authoring redundant
+    docstrings on a correct public-library file would violate No-Drive-By-Refactors.
+  EVIDENCE:
+  - src/melder/system_document.py:78-84
+  - src/melder/system_document.py:13-76
+  - src/melder/__architecture__.py:1-39
+  - src/melder/__graph_details__.py:16-24
+  - src/melder/__melder_registration_guard__.py:14-96
+  IMPACT: The contract lane for oce-package-root is DONE in code; only ticket reconciliation
+    plus the owner 3.14t validation run remain.
+  NEXT: Raise the two stale acceptance criteria (below) to the owner before any closure.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-07-21T22:36:00Z
+  TYPE: DECISION_REQUEST
+  CLAIM: Two acceptance criteria contradict the resolved design and cannot both stand as
+    written. (AC2) "MelderRegistrationGuard carries all five contract items" - the guard is
+    DELIBERATELY UNGUARDED (no `__melder_internal__`), which is correct per the MRO law it
+    documents; item-1 (guard classification) is satisfied as "unguarded, reasoned", not as a
+    sentinel. (AC4) "Regression proving BOTH root classes are refused by bind(...)" is wrong:
+    an unguarded guard is not bind-refused, so the refusal regression must be scoped to
+    `StaticSystemDocument` ONLY.
+  EVIDENCE:
+  - src/melder/__melder_registration_guard__.py:50-89
+  - src/melder/system_document.py:78
+  IMPACT: If AC2/AC4 stand as written, "done" is unreachable and a future agent could wrongly
+    tag the guard, poisoning every user subclass through the MRO.
+  NEXT: Owner ruling - accept the unguarded-guard resolution and rescope AC4 to
+    `StaticSystemDocument` only; then this epic is closure-ready pending the owner 3.14t run.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
 ## Context / Handoff Summary
 Smallest child epic and the program's reference diff: 2 classes, 4 hardcopy modules, one
 story. Establishes what "all five contract items" looks like in a real file before the

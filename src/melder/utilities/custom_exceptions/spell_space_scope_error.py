@@ -49,6 +49,13 @@ class SpellSpaceScopeError(RuntimeError):
         their container from state Melder already owns.
     """
 
+    __ast_helper_access__: str = "public"
+    __agent_purpose__: str = (
+        "access: public. Raised when a unique_per_spell_space spell is resolved with no active "
+        "SpellSpace, or a SpellSpace is used cross-conduit or after close; enter "
+        "conduit.enter_spellspace() first."
+    )
+
     def __init__(self, message: str) -> None:
         """
         Build a SpellSpace scope violation error.

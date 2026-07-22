@@ -46,6 +46,14 @@ class HookExecutionError(Exception):
         extension points, so this error is the boundary where user-supplied
         behavior re-enters Melder's control flow.
     """
+
+    __ast_helper_access__: str = "public"
+    __agent_purpose__: str = (
+        "access: public. Raised when a user lifecycle hook (pre_cast/activation/post_cast) "
+        "raises during meld; read original_exception, phase, hook_name. It means YOUR callback "
+        "failed, not Melder."
+    )
+
     def __init__(self, phase: str, hook_name: str, original_exception: Exception):
         """
         Build a hook-execution failure with preserved source metadata.

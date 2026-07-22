@@ -222,6 +222,13 @@ class PhaseLatch:
         """
         Wait for all-done or first-error, bounded by the barrier timeout.
 
+        Contract:
+            - Waits on `_event`, which fires on all-done OR the first
+              `record_error(...)` (fail-fast). A True return does NOT mean
+              success - inspect `errors` to disambiguate.
+            - Does not hold the internal lock while waiting, so reporting
+              threads never block on the waiter.
+
         Args:
             timeout_seconds: Maximum seconds to wait.
 
@@ -236,6 +243,10 @@ class PhaseLatch:
     def errors(self) -> List[BaseException]:
         """
         Return a snapshot of the errors recorded so far.
+
+        Threading:
+            - Returns a COPY taken under the lock, so the control thread can
+              iterate it safely while straggler workers are still appending.
 
         Returns:
             List[BaseException]: Copied error list; safe to iterate while

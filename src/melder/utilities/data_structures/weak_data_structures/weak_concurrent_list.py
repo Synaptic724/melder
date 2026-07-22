@@ -679,6 +679,20 @@ class WeakConcurrentList(Generic[_T], Cleanable):
     def __setstate__(self, state: dict) -> None:
         """
         Restore this list from a pickled or deep-copied state payload.
+
+        Contract:
+            - Rebuilds a FRESH lock and re-wraps each restored value in a new
+              `WeakRefNode`, so weak semantics survive the round trip
+              (referents are held weakly again). A payload marked cleaned
+              restores an empty, cleaned list.
+
+        Args:
+            state:
+                Snapshot mapping produced by `__getstate__` (id, flags, and the
+                live `_values`).
+
+        Returns:
+            None.
         """
         self._id = state.get("_id", new_ulid())
         self._freeze = state.get("_freeze", False)
@@ -694,6 +708,15 @@ class WeakConcurrentList(Generic[_T], Cleanable):
     def reverse(self) -> None:
         """
         Reverse the list in place (order of nodes), preserving weak semantics.
+
+        Contract:
+            - Prunes dead nodes first when `auto_prune` is on, then reverses the
+              node order under the lock. Weak semantics survive: nodes move,
+              referents are untouched.
+
+        Raises:
+            RuntimeError: If the list has been cleaned.
+            TypeError: If the list is frozen.
 
         Returns:
             None.
@@ -727,12 +750,20 @@ class WeakConcurrentList(Generic[_T], Cleanable):
         """
         Count occurrences of ``item`` among live entries.
 
+        Contract:
+            - Compares LIVE elements only; with `auto_prune` on, dead entries
+              are skipped, otherwise a dead entry raises.
+
+        Args:
+            item:
+                Value to count. Only LIVE elements are compared.
+
         Returns:
             int: Number of live entries equal to `item`.
 
-        Args:
-            value:
-                Value to count. Only LIVE elements are compared.
+        Raises:
+            RuntimeError: If the list has been cleaned.
+            DeadReferenceError: If a dead entry is met and `auto_prune` is off.
         """
         self.check_cleaned()
         with self._lock:
@@ -753,12 +784,25 @@ class WeakConcurrentList(Generic[_T], Cleanable):
         """
         Return the first index of ``item`` among live entries.
 
+        Contract:
+            - Searches [start, stop) over LIVE elements; with `auto_prune` on,
+              dead entries are skipped, otherwise a dead entry raises.
+
+        Args:
+            item:
+                Value to locate among the live elements.
+            start:
+                Inclusive start index.
+            stop:
+                Exclusive stop index, or None for the end.
+
         Returns:
             int: Index of the first matching live value.
 
-        Args:
-            value:
-                Value to locate among the live elements.
+        Raises:
+            RuntimeError: If the list has been cleaned.
+            ValueError: If no live element equals `item`.
+            DeadReferenceError: If a dead entry is met and `auto_prune` is off.
         """
         self.check_cleaned()
         with self._lock:
@@ -814,6 +858,19 @@ class WeakConcurrentList(Generic[_T], Cleanable):
     def __reversed__(self) -> Iterator[_T]:
         """
         Iterate over live elements in reverse order.
+
+        Contract:
+            - Snapshots the nodes (reversed) under the lock, then dereferences
+              lazily; a node collected after the snapshot raises
+              `DeadReferenceError` when reached. Prunes first when `auto_prune`
+              is on.
+
+        Yields:
+            _T: The next live item, last to first.
+
+        Raises:
+            RuntimeError: If the list has been cleaned.
+            DeadReferenceError: If a snapshotted node has since been collected.
         """
         self.check_cleaned()
         with self._lock:
@@ -906,6 +963,19 @@ class WeakConcurrentList(Generic[_T], Cleanable):
     def __eq__(self, other: object) -> bool:
         """
         Equality comparison against another list/tuple/WeakConcurrentList using live values.
+
+        Contract:
+            - Compares LIVE values only, via `to_list()`; a `DeadReferenceError`
+              during materialization yields False rather than raising. Only
+              `WeakConcurrentList`, `list`, and `tuple` are comparable - anything
+              else is False.
+
+        Args:
+            other:
+                Object to compare against.
+
+        Returns:
+            bool: True when the live values compare equal.
         """
         if isinstance(other, WeakConcurrentList):
             try:
@@ -1024,6 +1094,21 @@ class WeakConcurrentList(Generic[_T], Cleanable):
     ) -> None:
         """
         Exit the synchronization context and release the internal lock.
+
+        Contract:
+            - Always releases the lock; a spurious release `RuntimeError` is
+              swallowed. Never suppresses exceptions from the with-body.
+
+        Args:
+            exc_type:
+                Exception type raised in the with-body, or None.
+            exc_value:
+                Exception instance raised in the with-body, or None.
+            traceback:
+                Traceback for the with-body exception, or None.
+
+        Returns:
+            None.
         """
         try:
             self._lock.release()

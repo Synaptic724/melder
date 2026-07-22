@@ -490,6 +490,13 @@ class PhaseScheduler(Cleanable):
     def is_cancelled(self) -> bool:
         """
         Return whether the current run scope has been cancelled.
+
+        Contract:
+            - Reflects the CURRENT (or most recent) run's signal; a fresh scope
+              is installed per `run_all_phases(...)`, so this resets each run.
+
+        Returns:
+            bool: True when this run's cancellation signal has been tripped.
         """
         return self._cancel_signal.is_set
 
@@ -497,6 +504,10 @@ class PhaseScheduler(Cleanable):
     def workers(self) -> int:
         """
         Return the configured worker-thread count for this scheduler instance.
+
+        Returns:
+            int: Fixed pool size resolved at construction (config or explicit
+            override); the pool is spawned once and reused for the lifetime.
         """
         return self._workers
 
@@ -504,6 +515,10 @@ class PhaseScheduler(Cleanable):
     def barrier_timeout_ms(self) -> int:
         """
         Return a configured per-phase barrier timeout in milliseconds.
+
+        Returns:
+            int: Fixed per-phase barrier budget in ms (config or explicit
+            override); bounds both the phase wait and the fail-fast quiesce.
         """
         return self._barrier_timeout_ms
 
@@ -547,6 +562,10 @@ class PhaseScheduler(Cleanable):
         Returns:
             UnitOfWork: A newly constructed UnitOfWork bound to the current
             run's CancellationEvent.
+
+        Raises:
+            RuntimeError:
+                If the scheduler has been cleaned.
         """
         self.check_cleaned()
 
