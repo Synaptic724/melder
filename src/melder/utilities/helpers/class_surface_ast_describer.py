@@ -155,6 +155,13 @@ class ClassSurfaceAstDescriber:
         This class is never instantiated. It owns no mutable runtime state and
         allocates no per-object describer instances.
     """
+    __ast_helper_access__: str = "public"
+    __agent_purpose__: str = (
+        "access: public. THE consumer of __ast_helper_access__ / __agent_purpose__: pass any "
+        "Melder object and get a source-defined (AST, no import) class-surface description - "
+        "members, signatures, docstrings, and the inherited agent-purpose chain - as a dict or "
+        "minified JSON."
+    )
 
     _SYSTEM_DOC_OBJECT_NAMES: ClassVar[Tuple[str, ...]] = (
         "__architecture__",

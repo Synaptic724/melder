@@ -44,6 +44,32 @@ class SourceCustodyStrategy(Cleanable, ABC):
     Lifecycle / Cleanup:
         `cleanup()` on subclasses deletes owned policy references and is
         idempotent.
+
+    Registration:
+        MELDER KERNEL - guarded. Per-analysis strategy instances constructed by
+        the analyzer with the installed policy; never user-constructed or bound.
+
+    Subsystem Context:
+        The authority-class contract of the `crystal_analysis` custody family.
+        One concrete strategy exists per source authority - synthetic, user
+        source, site package, and the binary/unknown fallback - and the analyzer
+        resolves the FIRST matching strategy in priority order (synthetic ->
+        user_source -> site_package -> fallback), reproducing the
+        pre-decomposition `SpellCrystal._classify_module_target` decision table.
+        Each answers the four custody questions (matches / resolve_source /
+        fingerprint / descends) the analyzer asks per walked module.
+
+    System Context:
+        Custody is how the crystallizer decides WHAT a module is and therefore how
+        to persist and later verify it: synthetic modules ride their source on the
+        record, user source carries a fingerprint (and optionally retained text)
+        so drift is detectable, site packages carry distribution provenance, and
+        binary/unknown leaves stop the walk. Splitting that decision into one
+        strategy per authority (rather than one branchy classifier) is what lets a
+        new source authority be added as a strategy plus a priority slot, and the
+        never-raise-for-content rule (failures flow to the walk-error ledger) is
+        what keeps analysis HONEST - a bad file is reported, not thrown, so one
+        unreadable module cannot abort a whole world's record.
     """
     __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (

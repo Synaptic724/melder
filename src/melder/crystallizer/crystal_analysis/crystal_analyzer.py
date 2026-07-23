@@ -126,6 +126,35 @@ class CrystalAnalyzer(Cleanable):
         children-first then deletes the owned lists (del posture). The shared
         bounded memo is not owned by an analyzer instance and therefore
         survives individual analyzer cleanup.
+
+    Registration:
+        MELDER KERNEL - guarded. Called by a `SpellCrystal` at construction (or by
+        MutationResearch for re-analysis); single-use, cleaned by its caller.
+        Never user-constructed or bound.
+
+    Subsystem Context:
+        The composition MACHINERY of the `crystal_analysis` subsystem - the code
+        that previously lived welded inside the SpellCrystal constructor
+        (classification, source resolution, AST extraction, dependency walk,
+        synthetic harvest), now a standalone service. It consults the custody
+        strategies in priority order to classify each module and drives the fact
+        strategies over one shared `ast.walk`, producing one
+        `CrystalAnalysisResult`. Two entry points: a live spell root (bind-time)
+        or a retained `describe()` payload (the seam MutationResearch needs to
+        re-analyze historical versions without a living object).
+
+    System Context:
+        This is the enforcement point of the V3 carrier law: crystals CALL this
+        service and own the returned result, but never own the machinery - which
+        is what lets a durable crystal carry a value manifest without dragging
+        analyzers/strategies/ASTs across a boot. Its process-local, value-only
+        syntax memo (keyed by fact-schema version + source SHA-256) is the
+        IO-economy win: an unchanged module's AST facts are replayed from tuples
+        rather than re-parsed, so warm bind/load cost is O(changed files) - yet a
+        hit still re-resolves relative imports and re-captures custody/provenance
+        against the LIVE environment, so the memo never lets analysis go stale. It
+        retains no source, nodes, modules, or results, so it can never extend an
+        object's lifetime or interfere with module GC.
     """
     __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (

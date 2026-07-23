@@ -66,6 +66,25 @@ class SqliteMeshAdapter(Cleanable):
         idempotent and drops the identity fields; a cleaned adapter's
         verbs refuse through `check_cleaned()`. The database file itself
         is the user's asset and is never deleted by cleanup.
+
+    Registration:
+        MELDER KERNEL - guarded (`__melder_internal__` sentinel). A first-party adapter the USER
+        imports and registers (melder core never imports it or sqlite3); not a bind target.
+        access=internal.
+
+    Subsystem Context:
+        A drop-in provider for BYTES AT REST's external mesh: it implements the four generic
+        handlers of `MeshInterfaceContract` over a local SQLite file and registers them on an
+        `ExternalPersistenceManagerConfiguration`. One contract-shaped table (kind, profile,
+        unit_id, payload) carries checkpoints, formations, grafts, emissions, and future kinds,
+        partitioned by kind and profile.
+
+    System Context:
+        Crystallizer layer (position 2). It upholds the callables-first law - core only ever
+        calls the registered plain callables; the adapter lives on the user's side of the seam.
+        Store is INSERT OR REPLACE (the record's replace-on-emit precedent), delete is strict
+        (raises so retention cannot silently half-run), and each verb uses its own connection so
+        the handlers are free-threaded-safe flush-time IO.
     """
     __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (

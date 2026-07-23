@@ -49,6 +49,28 @@ class ImpactEngine(Cleanable):
 
     Lifecycle / Cleanup:
         cleanup() deletes the carried indexes (del posture); idempotent.
+
+    Registration:
+        MELDER KERNEL - guarded. Constructed over a record's describe payload for
+        diagnostics/impact queries; read-only, never user-bound.
+
+    Subsystem Context:
+        The blast-radius view of the `crystal_analysis` subsystem (S3). It
+        consumes the record's `describe_spell_crystals()` payloads (never live
+        twins), builds reverse module edges once at construction (who imports
+        whom, who carries what), then answers pure-read radius and drift questions
+        over that index, using `PhysicalSourceCache` for the on-disk checks.
+
+    System Context:
+        The custody manifests already record every spell's module world and every
+        physical module's bind-time fingerprint; the ImpactEngine turns that
+        latent truth into ANSWERS - "which spells does this module reach," "what
+        has drifted on disk since the world sealed, and what does that drift
+        touch." Being read-only by law (detached payloads in, detached dicts out,
+        disk-only drift reads, never the live runtime) is what makes it safe to
+        ask impact questions of a sealed world without perturbing it, and
+        answering unknown inputs honestly (empty radius plus an unknown marker,
+        never a raise) keeps "what does X touch?" a total question.
     """
     __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (

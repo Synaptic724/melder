@@ -49,6 +49,23 @@ class ExternalPersistenceManager(Cleanable):
         Owned by one `AssetManagementSystem` at a time. Cleanup releases the
         owned configuration and counters but never calls a remote handler to
         close, delete, or otherwise mutate user storage.
+
+    Registration:
+        MELDER KERNEL - guarded (`__melder_internal__` sentinel). access=public: it is the
+        user's DB seam - the app supplies the transport callables and Melder ships mesh units
+        across them - but it is `AssetManagementSystem`-owned and never a bind target.
+
+    Subsystem Context:
+        The external-mesh transport of BYTES AT REST: it carries checkpoint cached-items,
+        formations, index grafts, and emission events across a host-owned boundary. Constructed
+        from one frozen `ExternalPersistenceManagerConfiguration`; legacy checkpoint handlers
+        bridge to the generic store/fetch/list lanes so one handler family serves the whole mesh.
+
+    System Context:
+        Crystallizer layer (position 2). Callables-first by owner decision: handlers are LIVE
+        USER CODE run outside any record lock, and the record stores presence flags only, never
+        the code. Write lanes are lenient by default (local custody survives a remote failure;
+        strict mode re-raises); download lanes refuse loudly when no handler is attached.
     """
     __ast_helper_access__: str = "public"
     __agent_purpose__: str = (

@@ -123,6 +123,13 @@ class RiftSpace(Cleanable):
     """
 
     __melder_internal__ = _mrg.sentinel
+    __ast_helper_access__: str = "public"
+    __agent_purpose__: str = (
+        "access: public. The base room/workspace a Rift hosts - it owns the viewer, "
+        "workstation, command system, and the room-local event and memory systems. You work "
+        "in a concrete room mode (static/capability/codegen) through space.command_system and "
+        "space.workstation; you do not construct or bind one."
+    )
     __slots__ = Cleanable.__slots__ + [
         "_id",
         "_space_name",

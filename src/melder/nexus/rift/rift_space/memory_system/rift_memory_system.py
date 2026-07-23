@@ -52,6 +52,13 @@ class RiftMemorySystem(Cleanable):
     """
 
     __melder_internal__ = _mrg.sentinel
+    __ast_helper_access__: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. The room's memory-sequencing hub: it owns the step/epoch counters "
+        "and shared metadata and mints immutable RiftMemory records that command/view/"
+        "workstation emission share. Read it to understand room memory; you receive the "
+        "RiftMemory records, not this system."
+    )
     __slots__ = Cleanable.__slots__ + [
         "_lock",
         "_rift_id",

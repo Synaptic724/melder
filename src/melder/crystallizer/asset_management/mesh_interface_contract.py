@@ -46,6 +46,25 @@ class MeshInterfaceContract:
 
     Lifecycle / Cleanup:
         None. Static authority classes carry no state to clean.
+
+    Registration:
+        MELDER KERNEL - guarded (`__melder_internal__` sentinel). A static authority - never
+        instantiated, never mutated, never a bind target. access=internal (agents read it
+        through `Crystallizer.describe_external_interface()`).
+
+    Subsystem Context:
+        The interface description for BYTES AT REST's external mesh: the complete value/callable
+        boundary (unit kinds, identity columns, payload shapes, handler signatures, config
+        fluents) that an adapter implements against without depending on crystallizer internals.
+        Its shape rows mirror the REAL producers (`PersistenceCrystal`, `PersistenceSystem`,
+        `PersistenceProfile`, `AssetManagementSystem`) exactly.
+
+    System Context:
+        Crystallizer layer (position 2). Twin-kind honesty applied to the mesh: if a producer's
+        payload shape changes, this table changes in the SAME patch. Emitting the contract is
+        descriptive only - Melder never generates storage code (callables-first), the "columns"
+        row is a suggested identity model, not DDL - mirroring the `RecordVersion`
+        static-authority precedent.
     """
     __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (

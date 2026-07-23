@@ -47,6 +47,28 @@ class DependencyViewStrategy(CrystalFactStrategy):
     Lifecycle / Cleanup:
         Holds no resources or references between calls; inherited cleanup is a
         no-op beyond the strategy lifecycle contract.
+
+    Registration:
+        MELDER KERNEL - guarded. A per-analysis fact strategy in the analyzer's
+        set; never user-constructed or bound.
+
+    Subsystem Context:
+        A concrete `CrystalFactStrategy` in the `crystal_analysis` fact family.
+        Unlike the per-node strategies, it runs in `finalize` (post-walk) because
+        it needs the COMPLETE direct-dependency edge map: it derives the
+        topological, dependencies-before-dependents unfold order over the walked
+        modules and records it as `module_load_order` on the
+        `CrystalAnalysisResult`.
+
+    System Context:
+        Recording the unfold order at ANALYSIS time is the S1 capability that
+        replaced the restore engine's dot-depth heuristics with crystal-side
+        TRUTH: the loader no longer guesses activation order at restore, it reads
+        an order the analyzer already proved. The cycle-tolerant contract keeps
+        that honest under real code - when a dependency cycle blocks a clean
+        topological sort, the remaining nodes are appended deterministically and a
+        walk error names them, so the order stays usable AND the honesty ledger
+        records that the graph had a cycle rather than silently papering over it.
     """
     __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (

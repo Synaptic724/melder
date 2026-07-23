@@ -65,6 +65,12 @@ class CodegenRiftSpace(RiftSpace):
     """
 
     __melder_internal__ = _mrg.sentinel
+    __ast_helper_access__: str = "public"
+    __agent_purpose__: str = (
+        "access: public. The codegen room type - a room that owns an internal CodegenSystem "
+        "for validate/execute-code workflows plus a slim runtime-helper surface and the full "
+        "research command family. You get it as a Rift's space when space_type=codegen."
+    )
     def __init__(
             self,
             owner_rift_id: str,

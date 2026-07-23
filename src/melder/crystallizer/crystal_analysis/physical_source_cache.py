@@ -56,6 +56,31 @@ class PhysicalSourceCache:
     Lifecycle / Cleanup:
         Class-hosted state (like the analyzer syntax memo); no instance
         lifecycle. `_clear_for_tests` resets entries and counters.
+
+    Registration:
+        MELDER KERNEL - guarded. A process-wide shared cache used by the analyzer,
+        preflight, and impact view; never user-constructed or bound.
+
+    Subsystem Context:
+        The stat-guarded fingerprint cache shared across the `crystal_analysis` IO
+        paths - bind-time module walks, the source-drift preflight, and the impact
+        drift view. It answers "the sha256 of this file's current text" from a
+        (mtime_ns, size) stat guard, so an unchanged world costs a stat call
+        instead of a read + hash per module per pass; it mirrors the
+        `CrystalAnalyzer` syntax-fact memo posture.
+
+    System Context:
+        This cache is the other half of the IO-economy story (the syntax memo
+        handles AST facts; this handles source fingerprints), and together they
+        make warm bind/load cost O(changed files). Its truth law keeps it honest:
+        a served fingerprint always matches content observed WITH the guarded stat
+        pair, so any observable change misses and forces a fresh read - the same
+        stat-based freshness bet every build system makes, with the same
+        documented residual (an edit preserving both mtime and size is
+        undetectable; callers needing proof re-hash). Retaining no source text -
+        two ints and a hex digest per path, LRU-bounded - is what lets a
+        process-wide cache accelerate analysis without holding files or code
+        alive.
     """
     __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (

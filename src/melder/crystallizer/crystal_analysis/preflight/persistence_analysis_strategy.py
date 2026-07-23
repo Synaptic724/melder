@@ -34,6 +34,28 @@ class PersistenceAnalysisStrategy(ABC):
 
     Threading:
         Stateless by contract; safe to share.
+
+    Registration:
+        MELDER KERNEL - guarded. Concrete strategies are registered in the
+        `PersistenceAnalyzer`'s set; never user-constructed or bound.
+
+    Subsystem Context:
+        The one-concern contract of the `crystal_analysis` preflight family. Each
+        concrete strategy inspects a single bootload concern (link integrity,
+        contract peers, hydration viability, configuration loss, and the rest) of
+        a persistence bundle and returns finding rows; the `PersistenceAnalyzer`
+        iterates the set and folds the rows into a verdict.
+
+    System Context:
+        Decomposing preflight into one strategy per concern is what makes the
+        record's honesty MACHINE-READABLE: every strategy emits the same finding
+        row shape with a severity (blocker / warning / info), so a restore report
+        is a uniform, gate-able list rather than prose. That shared severity
+        vocabulary is the contract the RestoreEngine keys on - a blocker means the
+        restore will fail or omit an anchor, a warning means it completes but
+        shortfalls that element, info is context - and it is what lets a new
+        integrity check be added as a strategy without changing how callers
+        consume the verdict.
     """
     __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (

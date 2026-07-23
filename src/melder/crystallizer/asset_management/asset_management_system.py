@@ -73,6 +73,24 @@ class AssetManagementSystem(Cleanable):
         (this object borrows it). cleanup(): manager first, then the
         cache, then owned references (del posture, lock last); the
         borrowed record is dereferenced, never cleaned.
+
+    Registration:
+        MELDER KERNEL - guarded (`__melder_internal__` sentinel). One of the three same-rank
+        children `Crystallizer` owns; Melder constructs it and users reach it only through
+        `Crystallizer` facades. access=internal.
+
+    Subsystem Context:
+        BYTES AT REST of the crystallizer subsystem (sibling to `PersistenceSystem` the record
+        and `CrystalLoaderSystem` the unfold). It owns the `CrystallizerCache` and the optional
+        `ExternalPersistenceManager`, and BORROWS the record - reading feedstock and calling its
+        insert sink through PUBLIC verbs only. Formation files live here.
+
+    System Context:
+        Crystallizer layer of the boot order (position 2, after Aether|AetherUtilitySystem). Its
+        FLUSH CONTRACT is seal-then-ship: the record seals a checkpoint, then this system writes
+        the local cache, applies FIFO retention at the record's LIVE cap, and runs the lenient
+        remote upload leg (a remote failure never breaks local custody). Reloads are
+        insert-if-absent through the record's sink and never trigger retention.
     """
     __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (

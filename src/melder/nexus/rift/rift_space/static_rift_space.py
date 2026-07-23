@@ -60,6 +60,12 @@ class StaticRiftSpace(RiftSpace):
     """
 
     __melder_internal__ = _mrg.sentinel
+    __ast_helper_access__: str = "public"
+    __agent_purpose__: str = (
+        "access: public. The static (lower-risk) room type - live-only, read-shaped, no "
+        "topology mutation or create-path activation, weak-by-default binds. You get it as a "
+        "Rift's space when space_type=static, to observe the world without changing it."
+    )
     def __init__(
             self,
             owner_rift_id: str,

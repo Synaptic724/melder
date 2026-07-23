@@ -39,6 +39,30 @@ class SyntheticCustodyStrategy(SourceCustodyStrategy):
 
     Lifecycle / Cleanup:
         Stateless beyond the Cleanable flag; cleanup is a flag flip.
+
+    Registration:
+        MELDER KERNEL - guarded. A per-analysis strategy in the analyzer's custody
+        set; never user-constructed or bound.
+
+    Subsystem Context:
+        The highest-priority member of the `crystal_analysis` custody family (see
+        `SourceCustodyStrategy`). It claims explicitly synthetic modules FIRST -
+        their authority is object-identity, so they win over every path-driven
+        classification - resolves source through the `SyntheticModule` protocol
+        (never disk), and harvests the full rebuildable payload (source_text/sha256,
+        binding_signature, spell_crystal_id, parent_name, is_package) that rides
+        the analysis result.
+
+    System Context:
+        Synthetic modules are the crystallizer-born code that has no file - their
+        source IS the record - so this strategy is the M3 loader-chain seam that
+        makes them reconstructable in a fresh process. It matches by object
+        identity rather than path precisely because a synthetic module could
+        otherwise be misclassified by a path fallback; capturing everything
+        `SyntheticModule.__init__` needs is what lets restore rebuild the module
+        world from the record alone, without the original process. This is the
+        authority that turns "a world made of generated modules" into something
+        that survives a boot.
     """
     __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (

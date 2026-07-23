@@ -49,6 +49,29 @@ class CrystalAnalysisResult(Cleanable):
         Owned by exactly one crystal (or one transient analyzer caller).
         `cleanup()` is idempotent, deletes owned field surfaces (del
         posture), and deletes the lock last.
+
+    Registration:
+        MELDER KERNEL - guarded. Produced by `CrystalAnalyzer` during one analysis
+        pass and carried by a `SpellCrystal`; never user-constructed or bound.
+
+    Subsystem Context:
+        The detached carrier of the `crystal_analysis` subsystem. Per the V3
+        CARRIER law, crystals own analysis OUTPUT not machinery: `CrystalAnalyzer`
+        fills one of these via its `record_*`/`set_*` verbs during a single pass,
+        then hands it to the `SpellCrystal` that carries it; MutationResearch
+        consumes the same payload shape when re-analyzing retained historical
+        versions. Its `describe()` is the persistence-facing manifest.
+
+    System Context:
+        One node of the V3 model's separation between analysis MACHINERY (the
+        analyzer, strategies, walkers) and analysis RESULTS (this value object).
+        Making the result value-only - plain str/list/dict/bool, no live modules
+        or strategies, detached copies on every read - is what lets a crystal
+        carry a durable module-world manifest across a boot without dragging the
+        analyzer with it, and what lets the same payload be stored, diffed, and
+        re-consumed by mutation research. The write-then-frozen discipline (the
+        analyzer is the only writer and never retains the result) is what makes
+        those detached reads safe without a real freeze bit.
     """
     __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (

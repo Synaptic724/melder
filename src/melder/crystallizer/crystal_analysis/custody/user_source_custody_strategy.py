@@ -37,6 +37,28 @@ class UserSourceCustodyStrategy(SourceCustodyStrategy):
 
     Lifecycle / Cleanup:
         Owns the user-root tuple; cleanup deletes it (del posture).
+
+    Registration:
+        MELDER KERNEL - guarded. A per-analysis strategy in the analyzer's custody
+        set; never user-constructed or bound.
+
+    Subsystem Context:
+        The user-source member of the `crystal_analysis` custody family (see
+        `SourceCustodyStrategy`). Policy-driven: it claims modules whose resolved
+        path sits under the configured user source roots, exposes their .py/.pyi
+        text for fact analysis, and stamps the bind-time SHA256 fingerprint over
+        that source. Its optional retention lane (harvest_payload) is the S2
+        physical-custody seam for user modules.
+
+    System Context:
+        This is the authority the crystallizer takes real custody of, and the
+        fingerprint is why: stamping a bind-time SHA256 over user source turns
+        silent on-disk drift into a DETECTABLE preflight finding - preflight
+        recomputes the hash at load and flags a mismatch instead of quietly
+        restoring against changed code. Keeping fingerprint custody to user source
+        (not site packages, not binaries) is the trust boundary that makes drift
+        detection meaningful: it is Melder's answer for the code its user owns and
+        can change under it.
     """
     __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (

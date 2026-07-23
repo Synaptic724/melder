@@ -47,6 +47,23 @@ class ExternalPersistenceManagerConfiguration(Cleanable):
         Caller-owned until attached through the crystallizer facade, after which
         the asset-owned manager owns and eventually cleans it. Cleanup drops
         callable references but never invokes them or deletes remote data.
+
+    Registration:
+        MELDER KERNEL - guarded (`__melder_internal__` sentinel). access=public: the user
+        authors it (registering the mesh callables) and hands it to the crystallizer facade;
+        guarding only refuses it as a bind target.
+
+    Subsystem Context:
+        The handler-configuration surface for BYTES AT REST's external mesh: it registers the
+        generic store/fetch/list/delete callables (and the legacy checkpoint trio) that
+        `ExternalPersistenceManager` transports over. Callables live here - separate from the
+        world record - because executable code cannot be serialized into a record.
+
+    System Context:
+        Crystallizer layer (position 2). Records expose handler PRESENCE flags, never callable
+        objects (callables-first law), so a recorded world stays code-free and portable. The
+        facade freezes this configuration and transfers ownership to the asset system, and a
+        read-only configuration must explicitly disable upload-on-flush.
     """
     __ast_helper_access__: str = "public"
     __agent_purpose__: str = (

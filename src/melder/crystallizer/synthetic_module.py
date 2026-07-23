@@ -33,6 +33,24 @@ class _SyntheticModuleImportLoader(importlib.abc.Loader):
     Lifecycle / Cleanup:
         One process-wide loader is created lazily by `SyntheticModule`. It owns
         no module and has no independent cleanup surface.
+
+    Registration:
+        MELDER KERNEL - guarded (`__melder_internal__` sentinel). Private importlib plumbing
+        `SyntheticModule` creates lazily; never user-held or bound. access=internal.
+
+    Subsystem Context:
+        The importlib create/exec bridge for `SyntheticModule` in the crystallizer subsystem.
+        `SyntheticModule` is the live in-memory embodiment of crystallized source; this loader
+        lets normal importlib machinery instantiate and execute a REGISTERED synthetic module -
+        returning the exact registry object, never a second one - so restored or synthesized
+        code enters `sys.modules` through the standard path.
+
+    System Context:
+        Crystallizer layer of the boot order (position 2, after Aether|AetherUtilitySystem). It
+        exists so the restore/synthesis lanes can rebuild user-file spells as importable modules
+        without callers hand-managing `sys.modules` / `ModuleSpec`; it allocates no world object
+        and owns no module, keeping module identity single-sourced in the `SyntheticModule`
+        registry.
     """
     __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (
@@ -153,6 +171,24 @@ class _SyntheticModuleMetaPathFinder(importlib.abc.MetaPathFinder):
     Lifecycle / Cleanup:
         The singleton finder may be installed or removed repeatedly. Removing
         it does not unregister, unpublish, execute, or clean a module.
+
+    Registration:
+        MELDER KERNEL - guarded (`__melder_internal__` sentinel). A private singleton finder
+        installed on `sys.meta_path`; internal plumbing, never user-held or bound.
+        access=internal.
+
+    Subsystem Context:
+        The importlib DISCOVERY half of the `SyntheticModule` import bridge (paired with
+        `_SyntheticModuleImportLoader`, the create/exec half). Sitting on `sys.meta_path`, it
+        returns a spec only for a currently-registered synthetic name and returns None
+        otherwise, delegating to later finders without touching synthetic state.
+
+    System Context:
+        Crystallizer layer of the boot order (position 2, after Aether|AetherUtilitySystem). It
+        is what lets ordinary `import ...` flows resolve crystallizer-owned synthetic modules
+        during restore/synthesis; being install/remove-idempotent (removal never unregisters,
+        unpublishes, executes, or cleans a module) keeps import visibility separate from module
+        lifecycle.
     """
     __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (
@@ -247,6 +283,34 @@ class SyntheticModule(ModuleType):
         - reload cleanly at explicit boundaries
         - still expose the crystallizer-owned metadata that ties the live
           module back to durable truth
+
+    Registration:
+        MELDER KERNEL - guarded. Created by the crystallizer's loader chain and
+        registered in its own synthetic import registry; never user-constructed
+        or bound.
+
+    Subsystem Context:
+        The runtime embodiment of crystallized source - the object a synthetic
+        custody payload rebuilds into. `SyntheticCustodyStrategy` captures a
+        module that has no file (its source IS the record) into a value payload;
+        at restore that payload reconstructs one of these, which registers itself
+        with the class-level import registry (finder + loader) so normal `import`
+        / `importlib` flows resolve it. It owns module identity, source
+        text/hash, dependency metadata, package-shell semantics, and
+        importlib-capable activation.
+
+    System Context:
+        This class is the M3 loader-chain payoff: it is what lets a world MADE OF
+        generated modules survive a boot, because the four states - registration,
+        import-hook install, publication, and source execution - are kept distinct
+        and importlib-cycle-aware (a module is published BEFORE execution so
+        circular imports see the partially-initialized object exactly as
+        importlib-managed modules do). It cannot inherit `Cleanable` because
+        `ModuleType`'s instance layout conflicts, so it mirrors the Cleanable
+        contract by hand. Carrying crystallizer-owned metadata on the live module
+        is the thread that ties an executing module back to the durable record it
+        was rebuilt from - the reason a synthetic world is reproducible rather
+        than merely re-runnable.
     """
     __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (

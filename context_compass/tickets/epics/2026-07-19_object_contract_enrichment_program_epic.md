@@ -1901,6 +1901,71 @@ NOTE (ITEM 5 hand-written pass through the mutation_research/research_set packag
   REREAD: REQUIRED
   SCORE_0_TO_10: 9
 
+- DATETIME: 2026-07-23T00:10:00Z
+  TYPE: FACT
+  AGENT: melder_1
+  CLAIM: DOCSTRING-HEADER SWEEP COMPLETE. A tree-wide read-only scan now shows ZERO in-scope
+    classes with the "has agent pair but missing a context header" gap - every class carrying
+    __agent_purpose__ + __ast_helper_access__ also carries Registration / Subsystem Context /
+    System Context. melder_1 landed 21 docstring-only classes this session (crystallizer:
+    persistence 4, configuration 2, crystal_loader_system 7, asset_management 6,
+    synthetic_module 2 private importlib helpers); melder_0 closed crystals, crystal_analysis,
+    aetheric_frame dev_ops, conduit, nexus/acl, and utilities headers in parallel. Every
+    melder_1 edit verified DOCSTRING_ONLY vs HEAD (zero code change), py_compile green, scan OK.
+  RESIDUAL (NOT docstring-only; cannot close under "no code changes") - 16 classes still lack
+    the agent pair, which is a CODE addition:
+    - 9 non-exempt public (headers already present; only the pair is left): nexus/rift room
+      surface (RiftSpace, CodegenRiftSpace, StaticRiftSpace, Workstation, RiftMemorySystem) +
+      utilities/helpers/class_surface_ast_describer (ClassSurfaceAstDescriber,
+      ClassSurfaceDescription, ClassMemberDescription, InheritedAgentPurposeDescription).
+    - Package (utilities/helpers/package.py): DEAD CODE, deletion pending owner ruling (oce-utils S3).
+    - IChannelLogger / ICleanable: runtime_checkable Protocols - intentional exemption (valued
+      class attrs would become structural members and change the public typing contract).
+    - 4 private views (_WeakDict*View x3, Cleanable._CleanupContext): owner-steered exempt.
+  DECISION_REQUEST: to reach 100% of the "agent pair on every class" AC, the 9 non-exempt public
+    classes need a 2-line class-attr addition each (~18 lines total) - additive, no behavior
+    change, but a CODE change currently excluded by "no code changes". Options: (a) owner lifts
+    the exclusion for these 9 agent-pair additions, or (b) accept "docstrings complete,
+    agent-pair deferred". Plus the standing Package deletion ruling.
+  EVIDENCE:
+  - src/melder/crystallizer/crystal_loader_system/
+  - src/melder/crystallizer/asset_management/
+  - src/melder/crystallizer/synthetic_module.py:15,137
+  IMPACT: The docstring half of the object contract is DONE in scope. What remains is a bounded,
+    16-class agent-pair question that is either code (9) or already-decided exempt/dead (7).
+  NEXT: Owner ruling on (a)/(b) + Package. If (a), melder_1 adds the 9 pairs.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-07-23T00:05:00Z
+  TYPE: FACT
+  CLAIM: OCE DOCSTRING PROGRAM COMPLETE across every in-scope surface (melder_0, this session).
+    (1) METHOD-DOCSTRING FRONTIER: 0 genuine gaps tree-wide - every argument-taking and
+    substantial-body public method carries a Rank-4 contract; residual scanner flags are all the
+    owner-sanctioned leave-as-concise categories (no-op transaction hooks, PEP-584/standard dunders,
+    pure delegators, trivial getters) - NOT churned per the anti-box-check ruling.
+    (2) CLASS-CONTEXT TIER: 0 guarded classes missing Registration/Subsystem Context/System Context
+    tree-wide INCLUDING spellbook - melder_0 did aether 17 + nexus 7 + crystallizer 19 (12 crystal
+    twins + machinery: Crystallizer facade, SyntheticModule, CrystalAnalyzer/ImpactEngine/
+    PhysicalSourceCache/result, custody family, fact strategies, preflight); melder_1 did the
+    spellbook trio (Spell/SpellbookCreationSystem/Spellbook); a concurrent guard-classification pass
+    landed asset_management + crystal_loader_system.
+    (3) Also this session: mutation_research + utilities + spell_compiler method contracts, 9 ACL
+    profile-strategy build() security-policy docs, the last 3 spell_compiler cleanup/build methods.
+    INTEGRITY PROOF: BOM-aware stripped-AST verifier over ALL 532 uncommitted src .py files =
+    docstring-only; the ONLY code changes are the AUTHORIZED guard-attr additions
+    (__ast_helper_access__/__agent_purpose__). Every batch verified diff-0 as it landed.
+  EVIDENCE:
+  - src/melder (tree-wide scans: 0 genuine method gaps; 0 class-context gaps incl spellbook)
+  - outputs/verify_docstring_only.py (532-file docstring-only proof)
+  IMPACT: The rich-docstring + subsystem/system-context objective of the program is COMPLETE. What
+    remains is the guard-classification half (agent-pair/sentinel = CODE additions) a concurrent
+    linter/agent pass is landing, plus the standing owner decisions (16-class agent-pair question,
+    Package dead-code deletion).
+  NEXT: Owner 3.14t run to confirm import health -> close the docstring child epics.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
 ## Context / Handoff Summary
 Program epic for a correctness-plus-enrichment pass over all 542 classes in `src/melder`.
 Carries THE OBJECT CONTRACT (five items per class) and THE CHUNKING LAW (task <=10 classes,

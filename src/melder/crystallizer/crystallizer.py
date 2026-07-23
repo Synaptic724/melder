@@ -84,6 +84,34 @@ class Crystallizer(Cleanable):
         `Aether` owns the singleton. Cleanup is terminal and orders borrowers
         before the record: loader, assets, persistence, then configuration.
         Singleton bookkeeping is reset only after child teardown completes.
+
+    Registration:
+        MELDER KERNEL - guarded, access=public. A process-wide singleton privately
+        hosted by `Aether`; the user configures, activates, and drives it through
+        its facade verbs but never `bind()`s it - the guard refuses that.
+
+    Subsystem Context:
+        The public facade and ownership ROOT of the crystallizer. It presents one
+        stable surface over the three V3 subsystems it privately owns -
+        `PersistenceSystem` (the in-process record + checkpoint ledger),
+        `AssetManagementSystem` (cache, formation files, external mesh), and
+        `CrystalLoaderSystem` (admission planning + runtime unfolding) - while the
+        crystal-twin value carriers and the `crystal_analysis` service stay
+        callable seams beneath it. Callers exchange names, ids, detached dicts,
+        and crystal carriers here; the subsystem objects never escape as public
+        state.
+
+    System Context:
+        Crystallization is the DGR's serialize-then-restore capability, and this
+        root is where the design's key discipline lives: recording is PASSIVE -
+        runtime owners push twins into `emit()`, the root never discovers or walks
+        the live world - so an active crystallizer observes the world being built
+        rather than snapshotting it, and a crystallizer-off world runs identically
+        because inactive emit paths simply do nothing. Owning the three subsystems
+        privately behind one facade (with a strict teardown order loader -> assets
+        -> persistence -> configuration) is what keeps persistence a cohesive
+        capability the rest of Melder uses through verbs, not a set of engines
+        callers must wire together.
     """
     __ast_helper_access__: str = "public"
     __agent_purpose__: str = (

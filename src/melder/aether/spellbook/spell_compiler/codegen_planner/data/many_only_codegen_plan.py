@@ -432,6 +432,15 @@ class ManyOnlyNoOverridesPlan(Cleanable):
     def cleanup(self) -> None:
         """
         Deterministically release the many-only no-overrides plan.
+
+        Contract:
+            Idempotent and terminal: clears the ordered steps, the call
+            target/mode arrays, and every fixed-arity dependency-slot array
+            (step_dep1..step_dep8h) plus the per-step metadata. Owns only value
+            collections; it holds no live runtime object to dispose.
+
+        Returns:
+            None.
         """
         if self._cleaned:
             return

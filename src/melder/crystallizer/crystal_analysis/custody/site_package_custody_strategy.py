@@ -39,6 +39,29 @@ class SitePackageCustodyStrategy(SourceCustodyStrategy):
 
     Lifecycle / Cleanup:
         Owns the site-root tuple; cleanup deletes it (del posture).
+
+    Registration:
+        MELDER KERNEL - guarded. A per-analysis strategy in the analyzer's custody
+        set; never user-constructed or bound.
+
+    Subsystem Context:
+        The site-package member of the `crystal_analysis` custody family (see
+        `SourceCustodyStrategy`). Path-driven: it claims modules under the
+        interpreter's site-package roots (or the historical site-/dist-packages
+        path-text fallback), reads their source so the walk descends through
+        installed packages, but makes NO fingerprint custody claim over
+        third-party code. Its `harvest_provenance` verb captures distribution
+        name/version identity via importlib.metadata.
+
+    System Context:
+        Third-party code sits at a different trust boundary than a user's own
+        source, and this strategy encodes that: the crystallizer does not
+        fingerprint-and-retain installed packages (it does not own them), but it
+        DOES record their distribution identity so a restored world can diff its
+        environment against the sealed one - the env-layer sibling of source
+        drift. Descending through site packages for fact analysis while declining
+        custody is the deliberate line between "understand what this world
+        imports" and "claim responsibility for code Melder did not author."
     """
     __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (

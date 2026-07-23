@@ -689,6 +689,16 @@ class SpellGeneralizedCodegenLanePlan(Cleanable):
     def cleanup(self) -> None:
         """
         Deterministically clear the generalized lane plan and owned collections.
+
+        Contract:
+            Idempotent and terminal: clears the ordered steps, the spell-id step
+            index, the optimistic-ref and available-param maps, and every
+            optional fast-path array (dep indices, param-group tables, instance
+            keys, existence, flags, spells) when present. Owns only value
+            collections; it holds no live runtime object to dispose.
+
+        Returns:
+            None.
         """
         if self._cleaned:
             return
@@ -1964,6 +1974,21 @@ class SpellManyOnlyCodegenPlanBuilder(SpellGeneralizedCodegenPlanBuilder):
     def build(self) -> SpellGeneralizedCodegenLanePlan:
         """
         Build one many-only lane plan after enforcing many-only preconditions.
+
+        Contract:
+            Refuses (raises) unless the model's existence-occurrence shape exists,
+            has MORE than one visible spell, and every visible spell is
+            `Existence.many` - the many-only gate. On success builds the lane plan
+            from the model and stamps `plan_family = "many_only"` into its
+            metadata.
+
+        Returns:
+            SpellGeneralizedCodegenLanePlan: The built many-only lane plan.
+
+        Raises:
+            ValueError: If the existence-occurrence shape is missing, there is one
+                or fewer visible spells, or any visible spell is not
+                `Existence.many`.
         """
         existence_occurrence_shape = self._state.existence_occurrence_shape
         if existence_occurrence_shape is None:

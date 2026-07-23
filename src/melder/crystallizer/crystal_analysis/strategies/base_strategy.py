@@ -62,6 +62,31 @@ class FactContext(Cleanable):
         recorded. On a memo-eligible cold path, the analyzer first freezes
         event/export values into tuples, then cleanup deletes every transient
         source, AST, and accumulator reference.
+
+    Registration:
+        MELDER KERNEL - guarded. Constructed by the analyzer per module pass;
+        never user-constructed or bound.
+
+    Subsystem Context:
+        The per-module workspace of the `crystal_analysis` fact-extraction lane.
+        The analyzer creates one per (module, pass) and hands it to every
+        `CrystalFactStrategy` during a single shared `ast.walk`: strategies read
+        its parse inputs (source, syntax tree, package) and append their
+        dependency / import / export contributions, which the analyzer - the
+        single result writer - then merges in visit order into the
+        `CrystalAnalysisResult`.
+
+    System Context:
+        Sharing ONE ordered accumulator across all fact strategies is what lets
+        the analyzer walk each module's AST exactly ONCE while several
+        independent facts (imports, from-imports, export surface, dependency view)
+        are extracted together - and preserving visit order in
+        `flat_import_targets`/`import_events` is what keeps manifest ordering
+        byte-compatible with the pre-decomposition single-pass extractor. Keeping
+        the accumulator value-only besides the transient AST (events are
+        strings/ints/tuples, never nodes) is what lets the analyzer MEMOIZE a cold
+        pass's facts and then drop the source and tree, so re-analysis of an
+        unchanged module costs nothing.
     """
     __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (
@@ -245,6 +270,28 @@ class CrystalFactStrategy(Cleanable, ABC):
     Lifecycle / Cleanup:
         Default cleanup is a flag flip; stateful subclasses override with
         del posture for owned fields.
+
+    Registration:
+        MELDER KERNEL - guarded. Per-analysis strategy instances registered in the
+        analyzer's fact set; never user-constructed or bound.
+
+    Subsystem Context:
+        The fact-extraction contract of the `crystal_analysis` subsystem. Concrete
+        strategies (imports, from-imports, export surface, dependency view) plug
+        into the analyzer's single AST walk: `visit_node` runs for every node in
+        walk order, `analyze_module` records module-scoped facts after dispatch,
+        and `finalize` records post-walk facts (like topological load order). They
+        share the `FactContext` accumulator; the analyzer owns traversal and
+        result-recording order.
+
+    System Context:
+        This contract is what makes fact extraction EXTENSIBLE without a second
+        pass: a new fact is a new strategy that acts on the node types it owns
+        during the same walk, rather than another traversal of every module. The
+        strict visit-order dispatch is not incidental - it is what keeps manifest
+        ordering byte-compatible with the pre-decomposition single-pass extractor,
+        so decomposing the old monolithic extractor into strategies changed the
+        structure without changing a single recorded byte.
     """
     __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (

@@ -73,6 +73,29 @@ class PersistenceAnalyzer(Cleanable):
     Lifecycle:
         cleanup() drops the strategy list (strategies are stateless and
         need no teardown of their own); idempotent.
+
+    Registration:
+        MELDER KERNEL - guarded. Run over a persistence bundle by the restore
+        engine (and callable standalone); read-only, never user-bound.
+
+    Subsystem Context:
+        The preflight orchestrator of the `crystal_analysis` subsystem. It runs
+        the ten-strategy default set (link integrity, contract peers, hydration,
+        configuration loss, cluster membership, frame posture, synthetic-source
+        integrity, retained user-source integrity, mutation-research composition,
+        live source drift) over a record's payloads and folds their finding rows
+        into one verdict. The same set runs AT LOAD TIME inside the RestoreEngine,
+        so every restore report carries a "preflight" section.
+
+    System Context:
+        This is the owner-charter answer to "can I trust this formation/checkpoint
+        before I boot it": rather than discovering a broken link or unhydratable
+        module mid-restore, the analyzer reports exactly what a bootloader WILL
+        hit, from the payloads alone, before ANY activation. Read-only-over-the-
+        bundle is what makes that safe to run speculatively; the verdict ladder
+        (blockers > warnings > clean, info never changes it) is what lets a caller
+        gate on severity - refuse on blockers, proceed-with-shortfalls on warnings
+        - turning restore from a hope into a checked operation.
     """
     __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (

@@ -39,6 +39,27 @@ class BinaryUnknownCustodyStrategy(SourceCustodyStrategy):
 
     Lifecycle / Cleanup:
         Stateless beyond the Cleanable flag; cleanup is a flag flip.
+
+    Registration:
+        MELDER KERNEL - guarded. A per-analysis strategy in the analyzer's custody
+        set; never user-constructed or bound.
+
+    Subsystem Context:
+        The terminal member of the `crystal_analysis` custody family (see
+        `SourceCustodyStrategy`). Registered LAST in the analyzer's priority
+        order, it claims every module the synthetic, user-source, and
+        site-package strategies declined - pathless modules, unresolvable origins,
+        and compiled leaves - recording them as honest manifest leaves.
+
+    System Context:
+        Its existence guarantees the custody decision is TOTAL: every walked
+        module classifies, because the fallback claims unconditionally. Recording
+        unknowns as leaves (present in the manifest, never walked) is the honesty
+        law - the record never implies a more complete dependency picture than the
+        source actually provides. Its binary-identity harvest extends that law
+        without weakening it: a compiled .so/.pyd/.dylib leaf exposes a HASH of its
+        bytes for drift detection, never a parse of them, so the record can verify
+        a native dependency changed without pretending to understand its contents.
     """
     __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (

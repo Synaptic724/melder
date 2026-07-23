@@ -38,6 +38,24 @@ class CrystallizerCache(Cleanable):
         Owned by exactly one `AssetManagementSystem`, not by the persistence
         record. Cleanup releases the in-memory lock only; cached checkpoints
         and formation files deliberately survive for later reload.
+
+    Registration:
+        MELDER KERNEL - guarded (`__melder_internal__` sentinel). Owned by
+        `AssetManagementSystem`, not the record; Melder constructs it and users never hold or
+        bind it. access=internal.
+
+    Subsystem Context:
+        The built-in disk layer of BYTES AT REST, beneath `AssetManagementSystem`: checkpoint
+        cached-items are profile-scoped JSON files and formations live under each profile's
+        `__formations__` directory. The optional external mesh is a separate durability layer
+        and does not change these local file contracts.
+
+    System Context:
+        Crystallizer layer (position 2). The cache root always resolves under the melder package
+        root (never the caller's working directory) and writes are ATOMIC (tmp + os.replace), so
+        a reader never sees a torn cached-item. Checkpoint retention is FIFO by recorded
+        checkpoint number while name-addressed formations survive until explicitly deleted - a
+        profile's cache folder IS its portable form.
     """
     __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (
