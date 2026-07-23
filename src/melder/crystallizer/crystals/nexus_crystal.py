@@ -36,6 +36,31 @@ class NexusCrystal(Cleanable):
     Lifecycle / Cleanup:
         Owned by exactly one `PersistenceProfile`. Cleanup releases the recorded
         flags/configuration only and does not disable or clean the live Nexus.
+
+    Registration:
+        MELDER KERNEL - guarded. Emitted by the crystallizer's builders from live
+        runtime truth and owned by one `PersistenceProfile`; never
+        user-constructed or bound.
+
+    Subsystem Context:
+        One member of the crystal-twin family - the ROOT twin for the process
+        Nexus. It records only the Nexus's configured surface (configured/enabled
+        + its NexusConfiguration value) and is meant to be read WITH the profile's
+        Nexus `RecordedUnitState`: the twin holds installed configuration, the
+        state switch holds the later enabled/disabled/cleaned intent. Live Rift
+        instances, rooms, and projections are session assets deliberately OUTSIDE
+        this twin.
+
+    System Context:
+        One node of the V3 crystallizer's serialize-then-restore model, governed
+        by the "we twin anything we want to configure/persist" principle. The
+        boundary this twin draws - configuration truth IN, live registry state
+        OUT - keeps the whole record durable rather than a runtime snapshot: a
+        Rift or room is a session object a restored world recreates fresh, so
+        persisting it would record transient state that can never be replayed
+        faithfully. Pairing a thin config twin with a separate state switch is how
+        the record captures "how it was set up" and "what state it was left in"
+        without conflating the two.
     """
     __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (

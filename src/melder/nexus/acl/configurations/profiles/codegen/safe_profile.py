@@ -55,7 +55,25 @@ class SafeCodegenProfileStrategy:
         return self._NAME
 
     def build(self) -> FrameACLCodegenProfile:
-        """Build and return one configured `safe` codegen profile."""
+        """
+        Build and return one configured `safe` codegen profile.
+
+        Contract:
+            Assembles a fresh `FrameACLCodegenProfile` (validation strategy
+            `safe`) encoding the most restrictive standard posture:
+            - frame: allow query only.
+            - conduit: allow query; DENY link, unlink, create-lesser, and
+              transfer-ownership.
+            - spell: allow resolve-existing and bind-existing; DENY local-create,
+              invoke-method, read-attribute, and write-attribute.
+            - capability: imports are NOT enabled; DENY dangerous builtins,
+              dynamic access, mutation, contract override, unsafe reflection,
+              dunder access, and recursive codegen.
+            Stateless: a new instance is returned per call.
+
+        Returns:
+            FrameACLCodegenProfile: A freshly built `safe` codegen profile.
+        """
         return FrameACLCodegenProfile(
             self._NAME,
             validation_strategy_name="safe",

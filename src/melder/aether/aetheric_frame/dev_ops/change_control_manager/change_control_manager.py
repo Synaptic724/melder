@@ -91,6 +91,33 @@ class ChangeControlManager(Cleanable):
         All state mutations are guarded by an internal RLock.
     Lifecycle:
         cleanup() is idempotent and nulls internal references.
+
+    Registration:
+        MELDER KERNEL - guarded. The frame's DevOps control-plane owner:
+        constructed and driven by the AethericFrame dev-ops layer; never
+        user-constructed or bound.
+
+    Subsystem Context:
+        The top of the `change_control_manager` subsystem. It OWNS and wires the
+        helper managers - `ChangeControlTransactionManager` (in-flight request
+        registry), `ChangeControlConflictManager`, `ChangeControlEmbargoManager`
+        (scope claims), and `ChangeControlOrchestrator` (commit/abort) - plus the
+        `TransactionMediator` that runs live sessions over them. It holds the
+        frame-level bookkeeping (pending changes by SpellIndex id, per-conduit
+        component-of and dirty-root sets) and the hook-registration seams
+        (commit / abort / structural-validation / dirty-marking) the transaction
+        strategies fire through. It does NOT own the SpellSystemStates lifecycle
+        or resolve on the hot path.
+
+    System Context:
+        The control plane that keeps structural change safe in the DGR: every
+        bind/link/cluster/transfer/notch flows through admission here, so the
+        frame serializes by scope claim (not a global lock) and drives targeted
+        revalidation of exactly the dirty roots a change touched rather than the
+        whole world. This is the AethericFrame's answer to "who may mutate the
+        graph, in what order, and what must be re-checked afterward" - the layer
+        Spellbook delegates to whenever a registration or contract actually
+        changes.
     """
     __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (

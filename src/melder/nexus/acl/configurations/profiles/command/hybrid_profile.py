@@ -53,6 +53,16 @@ class HybridCommandProfileStrategy:
     def build(self) -> FrameACLCommandProfile:
         """
         Build and return one configured `hybrid` command profile.
+
+        Contract:
+            Assembles a fresh `FrameACLCommandProfile` (validation strategy
+            `generic`) encoding the mid-ladder command posture: frame, conduit,
+            and spell `enable` are allowed, and on member operations it allows
+            read-attribute and invoke-method - DENYING write-attribute and
+            dunder-access. Stateless: a new instance is returned per call.
+
+        Returns:
+            FrameACLCommandProfile: A freshly built `hybrid` command profile.
         """
         return FrameACLCommandProfile(
             self._NAME,

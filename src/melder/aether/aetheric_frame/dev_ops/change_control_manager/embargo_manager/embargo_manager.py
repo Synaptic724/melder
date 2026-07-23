@@ -35,6 +35,27 @@ class ClaimMode(StrEnum):
 
     Threading:
         Stateless enum; safe to share across threads.
+
+    Registration:
+        MELDER KERNEL - guarded. A value enum read throughout admission; it
+        travels in request payloads and logs. Never bound.
+
+    Subsystem Context:
+        The strength axis of the `embargo_manager` moded lock table. Each
+        `ChangeControlEmbargoRecord` carries one of these modes; the embargo
+        manager's acquisition decision uses them to admit share-compatible
+        claims in parallel while serializing exclusive overlap. Transaction
+        strategies choose the mode per scope key when they build their start
+        plan.
+
+    System Context:
+        This enum is what upgrades change-control from a single global mutex to a
+        MODED lock table: EXCLUSIVE preserves the old serialize-everything
+        default, SHARED lets non-conflicting claims coexist, and INTENT marks a
+        parent scope so a whole-spellbook claim (transfer) blocks piece-work
+        without serializing it. Choosing the right mode per key is precisely how
+        the DGR gets concurrency on independent subtrees while keeping true
+        structural overlap safe.
     """
     __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (
@@ -183,6 +204,28 @@ class ChangeControlEmbargoManager(Cleanable):
     Lifecycle:
         `cleanup()` marks the manager cleaned and notifies all waiters before
         dropping state so blocked threads fail fast instead of hanging.
+
+    Registration:
+        MELDER KERNEL - guarded. The admission gate owned by
+        `ChangeControlManager`; driven by the mediator during transaction
+        admission, never user-constructed or bound.
+
+    Subsystem Context:
+        The lock table at the center of the `change_control_manager` admission
+        path. `ClaimMode` supplies each claim's strength and
+        `ChangeControlEmbargoRecord` is one held row; the `TransactionMediator`
+        acquires here per transaction start and drains on commit/abort.
+        Compatibility is decided purely by the static mode matrix, and blocked
+        acquirers wait on this manager's condition (never on the mediator lock).
+
+    System Context:
+        This is what lets the DGR serialize structural change by SCOPE rather
+        than globally: two transactions touching disjoint scope keys admit and
+        run in parallel, while true overlap blocks scope-locally and retries on
+        release. All-or-nothing acquisition under one lock prevents
+        deadlock-by-partial-claim (a request takes its whole key set or nothing),
+        and owner-request keying lets commit and abort both release through a
+        single path even though a transaction crosses many call frames.
     """
     __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (

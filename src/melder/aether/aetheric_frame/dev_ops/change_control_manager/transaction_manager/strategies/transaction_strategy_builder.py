@@ -129,6 +129,28 @@ class TransactionStrategyBuilder:
           is populated during initialization.
         - It is read-only during normal runtime use and does not require its
           own lock.
+
+    Registration:
+        MELDER KERNEL - currently UNGUARDED. A registry / dispatch seam (no bind
+        sentinel), never a bind target; constructed by the change-control layer.
+
+    Subsystem Context:
+        The transaction-kind -> strategy-class map of the
+        `change_control_manager` subsystem. The `TransactionMediator` asks it
+        "which strategy resolves this transaction type?" and it returns the
+        registered `TransactionStrategy` (the per-type build_start_plan /
+        on_start / on_end owner), handing every resolved strategy the same
+        builder-owned collaborators (`ChangeControlTransactionManager`,
+        `DevopsInformationRegistry`). It accepts either a `ChangeTransactionType`
+        or its string value.
+
+    System Context:
+        Isolating this one mapping is what keeps the mediator free of
+        per-transaction policy branches: adding a structural operation is
+        "register a strategy here," not "edit an if-ladder in the mediator." The
+        registry is populated once at init and read-only thereafter, so dispatch
+        needs no lock - the concurrency all lives in the mediator and the scope
+        claims each resolved strategy requests.
     """
     __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (

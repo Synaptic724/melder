@@ -36,6 +36,31 @@ class ClusterCrystal(Cleanable):
     Lifecycle / Cleanup:
         Owned by one `PersistenceProfile`. Cleanup releases copied membership,
         leadership, and share rows; it does not mutate a live cluster.
+
+    Registration:
+        MELDER KERNEL - guarded. Emitted by the crystallizer's builders from live
+        runtime truth and owned by one `PersistenceProfile`; never
+        user-constructed or bound.
+
+    Subsystem Context:
+        One member of the crystal-twin family, capturing the THIRD inter-conduit
+        relationship: after links (peer edges on `ConduitCrystal`) and contracts
+        (`ContractCrystal`), clusters are named member groups with shared lineage
+        roots and an optional elected leader. This twin records membership,
+        shares, and leadership per frame so restore can regroup a frame's cluster
+        topology; member/leader conduit ids correlate through the conduit twins'
+        translation map.
+
+    System Context:
+        One node of the V3 crystallizer's serialize-then-restore model, and a
+        clear case of the record's honesty boundary between REPLAYABLE topology
+        and RECORDED evidence. Membership is replayable: restore recreates the
+        named cluster and rejoins rebuilt members. Leadership and explicit share
+        rows are recorded evidence only - leader election is a runtime act restore
+        does not fake, and member-join auto-sharing cannot prove exact historical
+        equivalence, so those surface as restore shortfalls rather than silent
+        reconstruction. That line is what keeps the record trustworthy: it never
+        claims to have restored something it only observed.
     """
     __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (

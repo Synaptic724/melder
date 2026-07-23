@@ -63,6 +63,32 @@ class SpellSpace(Cleanable):
         - Created by `Conduit.create_spellspace(...)` or `Conduit.enter_spellspace(...)`.
         - Normal cleanup returns the spellspace to its conduit-local pool.
         - Permanent cleanup drops all injected collaborators.
+
+    Registration:
+        MELDER KERNEL - guarded, access=public. Users DRIVE it as a context
+        manager (`with conduit.enter_spellspace() as space:`) and meld against
+        the active space, but never construct or `bind()` it - the conduit is the
+        factory and the guard refuses binding.
+
+    Subsystem Context:
+        The scope handle of the conduit `spell_space` subsystem, backing
+        `Existence.unique_per_spell_space`. The conduit is the factory; this
+        object carries only the explicit collaborators it needs (an owned
+        `SpellSpaceMeld` for execution, an injected `Creations` for its scoped
+        instances, and the registry/pool it unregisters and recycles into). It
+        holds NO live conduit back-reference. Managed entry lives on a per-thread
+        stack, so nested `enter_spellspace()` scopes (A -> B -> C) each own their
+        storage and must unwind LIFO.
+
+    System Context:
+        This is how the DGR gives a caller an EXPLICIT, nestable resolution
+        window without leaking conduit-wide state into it: instances resolved as
+        `unique_per_spell_space` live and die with the space, and `reset()` clears
+        them and bumps a version so a recycled space cannot serve stale
+        instances. Making the space its own context manager (trivial `__enter__`,
+        LIFO-validated `__exit__` recycle) and confining the managed lane to one
+        thread is what lets the pool hand spaces back and forth without per-cycle
+        wrapper objects or cross-thread synchronization.
     """
     __ast_helper_access__: str = "public"
     __agent_purpose__: str = (

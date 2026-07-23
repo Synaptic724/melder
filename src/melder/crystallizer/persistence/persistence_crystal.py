@@ -38,6 +38,25 @@ class PersistenceCrystal(Cleanable):
         only the in-memory artifact and is terminal for that instance; a stored
         cached item can construct an equivalent new instance through
         `from_cached_item()`.
+
+    Registration:
+        MELDER KERNEL - guarded (`__melder_internal__` sentinel). A sealed snapshot
+        artifact `PersistenceSystem` mints and its ledger owns; not user-held and not a
+        bind target. access=internal.
+
+    Subsystem Context:
+        The checkpoint artifact of THE RECORD: one sealed, fully-detached snapshot of a
+        profile's journal segment since its previous checkpoint, held in
+        `PersistenceSystem`'s ledger. `to_cached_item()` / `from_cached_item()` round-trip
+        it through `AssetManagementSystem`'s cache; folding the chain 1..K (later payloads
+        winning per (kind, key)) composes a world at checkpoint K.
+
+    System Context:
+        Crystallizer layer of the boot order (position 2, after
+        Aether|AetherUtilitySystem). Being plain-data-from-birth (no live twins, locks, or
+        callables) is what lets a checkpoint survive replace-on-emit cleanup and cross the
+        cache/DB boundary; it is the durable unit the loader's admission pipeline folds and
+        replays on restore.
     """
     __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (

@@ -41,6 +41,28 @@ class FrameACLConfigurationChain(Cleanable):
     Threading:
         Uses one instance `threading.RLock` to serialize head/current/history
         mutation and ordered traversal.
+
+    Registration:
+        MELDER KERNEL - guarded. Owned by the `FrameACLContainer` per family and
+        name; never user-constructed or bound.
+
+    Subsystem Context:
+        The revision-lineage owner of the ACL subsystem. The `FrameACLContainer`
+        keeps one of these per (family, contract name): it holds the head, the
+        current selection, and the ordered history of one family's
+        configurations. New committed nodes insert at the head; current may
+        diverge from head during rollback or staged activation; tail-trim is the
+        only delete path. The container's install / select / rollback / list
+        verbs all delegate here.
+
+    System Context:
+        Modeling ACL config as an append-at-head CHAIN with a separately-tracked
+        "current" pointer is what makes posture changes revertible and auditable:
+        installing a new revision never destroys the old one, rolling back is
+        re-pointing current at an existing node rather than mutating in place, and
+        the refresh barrier can swap what a room evaluates against by moving
+        current under the lock. Bounding deletion to tail-trim keeps recent
+        history intact for rollback while capping unbounded growth.
     """
     __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (

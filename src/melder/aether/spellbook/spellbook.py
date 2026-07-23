@@ -116,6 +116,37 @@ and logging.
         - Frame-wide rich Spellbook configuration reuse is explicit and only
           occurs when the frame posture permits it and a shared rich config
           object already exists on the frame.
+
+    Registration:
+        MELDER KERNEL - guarded. The user DRIVES a Spellbook through its public
+        API (bind/scan/conjure plus the transaction-backed SpellIndex verbs) but
+        can never `bind()` the Spellbook itself - the guard sentinel refuses that
+        category error. `access = "public"` reflects that hands-on driving.
+
+    Subsystem Context:
+        The primary front door of the `aether/spellbook` binding surface. It
+        owns the local spell registries and O(1) spell-id maps, runs the
+        SpellCompiler phase pipeline through `PhaseScheduler`, and conjures
+        exactly ONE `Conduit` per instance. `bind()` reflects a user object into
+        a `SpellIndex` (stable ULID identity + active selected spell) plus a
+        `Spell` (the bind-time metadata record), and it delegates the
+        conjure-only orchestration - hook flow, the `check_system_state`
+        policy/posture gate, conduit-ownership stamping - to
+        `SpellbookCreationSystem`. `Existence` / `SpellType` /
+        `SpellbookConfiguration` are the value and policy surfaces it binds
+        against.
+
+    System Context:
+        The Spellbook layer of the canonical boot order
+        `Aether|AetherUtilitySystem -> Crystallizer -> MutationResearch ->
+        Nexus -> AethericFrame -> Spellbook -> Conduit|Ward`. It runs AFTER a
+        frame exists and BEFORE/DURING conjure, which is why joining a frame is a
+        real coupling rather than a cosmetic namespace (see the aetheric_frame
+        warning above): reusing a frame shares spell visibility, configuration
+        posture, and change-control surfaces with every other participant. The
+        `Spell` it produces is the unit of currency every downstream layer keys
+        on - the SpellCompiler phases, SpellSystemStates validity, ChangeControl
+        dirty-roots, and Meld resolution all resolve through it.
     """
     __ast_helper_access__: str = "public"
     __agent_purpose__: str = (

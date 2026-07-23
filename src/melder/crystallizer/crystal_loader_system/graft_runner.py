@@ -83,6 +83,24 @@ class GraftRunner(Cleanable):
     Lifecycle / Cleanup:
         cleanup() releases the carried record and host references (del
         posture); idempotent.
+
+    Registration:
+        MELDER KERNEL - guarded (`__melder_internal__` sentinel). A single-use runner reached
+        through `Crystallizer.graft_index(...)`; not directly user-constructed or bound.
+        access=internal.
+
+    Subsystem Context:
+        The finer-than-conduit restore grain of THE UNFOLD: it replays one captured spell_index
+        (membership, custody, selection) into a LIVE host spellbook through ordinary public
+        bind / bind_inactive / notch verbs. Unlike a world load it is NOT one transaction - each
+        member entry is its own self-admitting per-verb transaction; only structural refusals
+        raise, per-member problems ride `shortfalls`.
+
+    System Context:
+        Crystallizer layer (position 2). Index identity is disposable (owner ruling: a graft's
+        contract is MEMBERSHIP placement, never index-id preservation - fresh ids mint freely,
+        the never-rehydrate-ULIDs law applied to indexes), and every structural write rides the
+        host's own mediator, so a graft is admitted work rather than an engine bypass.
     """
     __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (

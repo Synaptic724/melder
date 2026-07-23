@@ -61,6 +61,12 @@ class RiftEvent:
     """
 
     __melder_internal__ = _mrg.sentinel
+    __ast_helper_access__: str = "public"
+    __agent_purpose__: str = (
+        "access: public. One immutable room event - type, ids, payload, and timestamp "
+        "fixed at creation - delivered to the RiftSpace callbacks you register; you receive "
+        "and read it, you do not construct it."
+    )
     __slots__ = [
         "_id",
         "_event_type",

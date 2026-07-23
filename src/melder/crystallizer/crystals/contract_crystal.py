@@ -40,6 +40,31 @@ class ContractCrystal(Cleanable):
     Lifecycle / Cleanup:
         Owned by one `PersistenceProfile`. Cleanup deletes copied relationship
         rows only and never severs a live contract.
+
+    Registration:
+        MELDER KERNEL - guarded. Emitted by the crystallizer's builders from live
+        runtime truth and owned by one `PersistenceProfile`; never
+        user-constructed or bound.
+
+    Subsystem Context:
+        One member of the crystal-twin family, capturing an inter-conduit
+        RELATIONSHIP: which conduits are linked and which spells/lineages are
+        shared into which peer, with what permissions and direction. Unlike the
+        per-object twins, it records the WHOLE contract (both sides' details plus
+        index-detail subscriptions) so restore can re-establish the relationship
+        AFTER both endpoint worlds rebuild - link/contract edges replay LAST per
+        the restore ordering canon.
+
+    System Context:
+        One node of the V3 crystallizer's serialize-then-restore model, and a
+        case where the twin deliberately holds BOTH projections together. A
+        contract is a two-sided fact; retaining only one ward's view would let
+        inspection mistake a borrower's slice for the complete relationship, so
+        the twin keeps both. Restore ordering follows from the same reasoning:
+        a relationship references two conduits, so it can only be replayed once
+        both exist - hence edges last. Endpoint and index ids are record-local
+        (translated on restore); spell SHAs are the stable coordinates that
+        survive a boot unchanged.
     """
     __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (

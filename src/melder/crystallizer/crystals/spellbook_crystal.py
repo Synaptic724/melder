@@ -48,6 +48,31 @@ class SpellbookCrystal(Cleanable):
         Owned by exactly one `PersistenceProfile`. Cleanup releases configuration,
         hook markers, and bind-order values only; it never cleans the live
         spellbook, conduit, or bound spells.
+
+    Registration:
+        MELDER KERNEL - guarded. Emitted by the crystallizer's builders from live
+        runtime truth and owned by one `PersistenceProfile`; never
+        user-constructed or bound.
+
+    Subsystem Context:
+        One member of the crystal-twin family - the pure-data value objects the
+        crystallizer records and restore replays. This twin is the spellbook
+        slice AND the custody PARENT of the L3 layer: spell crystals and the root
+        `ConduitCrystal` reference it by `spellbook_id`, mirroring the runtime
+        where spells bind to the spellbook and the conduit is conjured from it.
+        `PersistenceProfile` holds it (replace-on-emit); restore replays its
+        `bind_order` binds BEFORE conjuring the conduit.
+
+    System Context:
+        One node of the V3 crystallizer's serialize-then-restore model, where two
+        design laws surface. First, custody: making the spellbook the parent
+        record for its spells and conduit lets restore rebuild a world in the
+        right order (binds in `bind_order`, then conjure) purely from the twin
+        graph. Second, HONESTY about what does not persist: hook callables cannot
+        cross a boot, so `hook_names` records their PRESENCE as replay-required
+        markers - restore reports exactly what needs code reattachment rather than
+        silently dropping behavior. Record-local ULIDs translate to fresh
+        identities on restore; `frame_name` is the stable parent coordinate.
     """
     __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (

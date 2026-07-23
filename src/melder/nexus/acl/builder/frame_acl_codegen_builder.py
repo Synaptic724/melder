@@ -34,6 +34,29 @@ class FrameACLCodegenBuilder(Cleanable):
     Lifecycle:
         Cleanup is idempotent and only drops borrowed references; it does not
         own persistence or chain installation.
+
+    Registration:
+        MELDER KERNEL - guarded. A fluent authoring facade handed out by the
+        generic `FrameACLBuilder`; the user chains its mutators but never
+        constructs or `bind()`s it.
+
+    Subsystem Context:
+        The codegen-family authoring surface of the ACL builder subsystem. It
+        BORROWS one active codegen draft (`FrameACLCodegenConfiguration`) from the
+        generic `FrameACLBuilder` and mutates that typed draft in place - notably
+        the capability ruleset (allow/deny import module roots and builtin names)
+        that gates room codegen - returning itself for chaining. It owns neither
+        persistence nor chain installation. Its view and command siblings cover
+        their families.
+
+    System Context:
+        The codegen family is the security-sensitive one: its capability rules
+        decide what generated room code may import and call, so authoring them
+        through a typed fluent surface (rather than raw rulesets) is what makes a
+        codegen posture reviewable before it is installed. Borrow-not-persist
+        means an in-progress draft never affects live evaluation until the
+        container installs it; the instance lock covers multi-field fluent
+        updates under nogil.
     """
     __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (

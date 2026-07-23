@@ -57,6 +57,25 @@ class CrystalLoaderSystem(Cleanable):
         Owned by exactly one Crystallizer and cleaned BEFORE the record
         (borrower-before-owner). cleanup(): mediator first, then owned
         state, borrowed deref, lock last; idempotent.
+
+    Registration:
+        MELDER KERNEL - guarded (`__melder_internal__` sentinel). One of the three same-rank
+        children `Crystallizer` owns; Melder constructs it and users reach it only through
+        `Crystallizer` load facades. access=internal.
+
+    Subsystem Context:
+        THE UNFOLD of the crystallizer subsystem (sibling to `PersistenceSystem` the record and
+        `AssetManagementSystem` the bytes-at-rest). It owns the `LoadAdmission` plane and the
+        durable last-load state; it BORROWS the record (detaches checkpoint chains through
+        public verbs) and never cleans it. Checkpoint world loads and scoped formation loads
+        both run through the admission pipeline it owns.
+
+    System Context:
+        Crystallizer layer of the boot order (position 2, after Aether|AetherUtilitySystem).
+        Every load it runs is gated - the engine refuses a "blockers" verdict before any replay
+        (standard admission) - and it is cleaned BEFORE the record on teardown
+        (borrower-before-owner, the EDGE/LOCK laws), so the record it reads from is always still
+        live.
     """
     __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (

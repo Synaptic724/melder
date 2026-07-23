@@ -39,6 +39,22 @@ class LoadPlan(Cleanable):
 
     Lifecycle / Cleanup:
         cleanup() deletes carried fields (del posture); idempotent.
+
+    Registration:
+        MELDER KERNEL - guarded (`__melder_internal__` sentinel). A single-use value carrier
+        `LoadAdmission` builds; not user-constructed or bound. access=internal.
+
+    Subsystem Context:
+        The declarative unit of THE UNFOLD: built by the `LoadAdmission` plane, fed to exactly
+        one `RestoreEngine` run, then cleaned by the loader. It carries the detached replay
+        `chain` plus identity/scope facts; `describe()` exposes counts and identity, never
+        payload dumps, so a caller can inspect a load before it happens.
+
+    System Context:
+        Crystallizer layer (position 2). Its `scope` (`world` | `conduit` | `frame`) is the
+        admission adjudication key that drives scope-aware verdict views; the carried windows
+        are DETACHED replay payloads, never live runtime objects, which is what lets a load be
+        inspected and gated before anything is built.
     """
     __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (

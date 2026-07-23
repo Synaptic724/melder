@@ -107,6 +107,28 @@ class FrameACLProfileBuilder(Cleanable):
     Lifecycle:
         After `cleanup()`, all registries and family builders are gone and the
         builder must be treated as unusable.
+
+    Registration:
+        MELDER KERNEL - guarded. The profile catalog owned by the ACL subsystem;
+        constructed by the ACL layer, never user-bound.
+
+    Subsystem Context:
+        The composition root of the ACL profile subsystem. It owns the reusable
+        view / command / codegen profile catalogs (and their precision variants),
+        seeding the standard safe/hybrid/permissive/precision presets through the
+        per-family profile builders it holds. `create_profile(...)` composes a
+        detached `FrameACLProfile` bundle from those catalogs on demand without
+        registering the bundle back into itself; the `remove_*` verbs prune
+        non-default presets.
+
+    System Context:
+        Centralizing the preset catalog here is what lets ACL authoring start
+        from a REVIEWED posture (safe/hybrid/permissive/precision) rather than an
+        empty ruleset, across all three families at once. Returning DETACHED
+        bundles (not auto-registered) keeps ownership clean: a composed profile a
+        caller holds is its own to install and clean, while the builder owns only
+        the reusable catalog it seeded - so tearing the builder down reclaims the
+        presets without touching caller-owned bundles.
     """
     __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (

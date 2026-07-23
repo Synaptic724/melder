@@ -28,6 +28,27 @@ class ConduitPool(AbstractElasticPool[Any]):
         - Idle deque operations follow the base pool's deque-first advisory
           policy.
         - Adds no extra shared mutable state beyond the root-conduit reference.
+
+    Registration:
+        MELDER KERNEL - guarded. Constructed and owned by one root `Conduit`;
+        never user-bound.
+
+    Subsystem Context:
+        The conduit subsystem's lesser-conduit pool - a concrete
+        `AbstractElasticPool` subclass owned by one root conduit. It holds the
+        pool state (root reference + id) and hands back a retained lesser conduit
+        when one is idle; it never constructs a conduit itself (creation stays
+        with the conduit layer, so this is the reuse/retention seam only). It is
+        currently a SCAFFOLD ahead of the full lesser-conduit acquire/release
+        wiring.
+
+    System Context:
+        Pooling lesser conduits per root exists so repeated sub-conduit creation
+        inside one root does not churn allocation - the same deque-first
+        fixed-capacity policy the SpellSpace pool uses. Scoping the pool to the
+        OWNING root rather than a global pool keeps a root's reused conduits
+        inside its own lifecycle and cleanup boundary, so tearing down a root
+        reclaims exactly its pooled lessers and nothing shared.
     """
     __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (

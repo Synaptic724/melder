@@ -57,7 +57,29 @@ class HybridCodegenProfileStrategy:
         return self._NAME
 
     def build(self) -> FrameACLCodegenProfile:
-        """Build and return one configured `hybrid` codegen profile."""
+        """
+        Build and return one configured `hybrid` codegen profile.
+
+        Contract:
+            Assembles a fresh `FrameACLCodegenProfile` (validation strategy
+            `generic`) encoding the mid-ladder posture between `safe` and
+            `permissive`:
+            - frame: allow query.
+            - conduit: allow query/link/unlink; DENY create-lesser and
+              transfer-ownership.
+            - spell: allow resolve-existing/bind-existing/invoke-method/
+              read-attribute; DENY local-create and write-attribute.
+            - capability: enable imports for the hybrid module-root allowlist
+              (denying the hybrid denylist and dangerous builtins); DENY dynamic
+              access, mutation, contract override, unsafe reflection, dunder
+              access, and recursive codegen.
+            Mirrors `precision`'s allow/deny shape but with the hybrid import
+            allowlist and generic validation. Stateless: a new instance is
+            returned per call.
+
+        Returns:
+            FrameACLCodegenProfile: A freshly built `hybrid` codegen profile.
+        """
         return FrameACLCodegenProfile(
         self._NAME,
         validation_strategy_name="generic",

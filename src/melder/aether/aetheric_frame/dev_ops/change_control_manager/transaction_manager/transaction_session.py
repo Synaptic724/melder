@@ -55,6 +55,32 @@ class TransactionSession(Cleanable):
         - Internal state mutation is protected by an `RLock`.
         - Same-thread ownership checks are explicit; cross-thread join is
           rejected.
+
+    Registration:
+        MELDER KERNEL - guarded. Created and stacked by the
+        `TransactionMediator` during transaction execution; never
+        user-constructed or bound.
+
+    Subsystem Context:
+        The per-frame ownership record of the `change_control_manager`
+        transaction subsystem. The `TransactionMediator` mints one per admitted
+        root request and pushes/pops it on the owning thread's stack; nested
+        same-thread work increments this session's depth rather than starting a
+        new one. It carries the abort-only poison flag and the local
+        commit/abort/rollback callback registrations that the mediator's
+        `_finalize_root_session` drains at the root leave. The immutable
+        `ChangeControlTransactionRequest` + `ChangeControlStagedMutation` are the
+        snapshots it wraps with mutable runtime state.
+
+    System Context:
+        This is the object that makes DevOps change control TRANSACTIONAL rather
+        than fire-and-forget: the status ladder (open -> committing -> committed,
+        or open -> abort_only -> aborted) plus validators-before-hooks and
+        reverse-order rollback are what give a structural mutation all-or-nothing
+        semantics. Abort-only is sticky and owner-thread-scoped, so a participant
+        deep in a nested frame can poison the whole root's commit without
+        unwinding by hand - the reliability guarantee every coordination strategy
+        (gate freezes, mirror maintenance) builds on.
     """
     __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (

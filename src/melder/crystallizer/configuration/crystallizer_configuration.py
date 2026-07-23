@@ -50,6 +50,28 @@ class CrystallizerConfiguration(Cleanable):
         `Crystallizer` owns it afterwards and cleans it during root teardown.
         Callers must not independently clean an installed configuration because
         the live root continues to read policy from it.
+
+    Registration:
+        MELDER KERNEL - guarded (`__melder_internal__` sentinel). access=public because a
+        user CONSTRUCTS one, sets policy fluently, and hands it to `Crystallizer.activate(...)`.
+        Guarding and being user-constructed are orthogonal: the guard only refuses it as a
+        bind target (Melder never injects a configuration); the user still holds and drives it.
+
+    Subsystem Context:
+        The capture/durability POLICY surface of the crystallizer subsystem. It carries
+        source-classification and checkpoint policy (world-recording decisions) so
+        individual `SpellCrystal` objects do not; `Crystallizer.activate(...)` installs it,
+        and the record/asset children read policy from it (retain_user_sources, checkpoint
+        cadence, max rolling history, auto-flush). Paired with
+        `CrystallizerConfigurationBuilder` (the ownership-wrapped authoring path).
+
+    System Context:
+        Crystallizer layer of the boot order (position 2, after Aether|AetherUtilitySystem).
+        It is the world-recording contract that must be settled BEFORE the crystallizer
+        activates: `with_defaults()` is complete easy mode (only `user_source_root_paths` is
+        hard-required), and a recorded-policy reload freezes a fresh instance over
+        compatibility defaults so a restored world records under the SAME policy that sealed
+        it.
     """
     __ast_helper_access__: str = "public"
     __agent_purpose__: str = (

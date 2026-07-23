@@ -40,6 +40,25 @@ class CrystallizerConfigurationBuilder(Cleanable):
     Lifecycle / Cleanup:
         Short-lived by design. After handoff, the caller owns the returned
         configuration and the builder is terminal.
+
+    Registration:
+        MELDER KERNEL - guarded (`__melder_internal__` sentinel). access=public: a user
+        constructs and drives the builder, then it hands the configuration off; it is never
+        a bind target.
+
+    Subsystem Context:
+        The one-shot ownership helper for `CrystallizerConfiguration` authoring in the
+        crystallizer subsystem. It owns exactly one mutable configuration until `build()` /
+        `finalize()` / `activate()` transfers ownership and consumes the builder - a
+        companion to the direct configuration fluents when an explicit ownership wrapper is
+        useful.
+
+    System Context:
+        Crystallizer layer of the boot order (position 2, after Aether|AetherUtilitySystem).
+        It exists to give one explicit ownership boundary around the pre-activation policy
+        object - the same settle-before-activate discipline the record depends on - so the
+        configuration handed to `Crystallizer.activate(...)` has exactly one owner at each
+        step.
     """
     __ast_helper_access__: str = "public"
     __agent_purpose__: str = (

@@ -37,6 +37,31 @@ class SpellIndexCrystal(Cleanable):
     Lifecycle / Cleanup:
         Owned by one `PersistenceProfile`. Cleanup releases copied membership
         data only and never mutates a live `SpellIndex` or its selection.
+
+    Registration:
+        MELDER KERNEL - guarded. Emitted by the crystallizer's builders from live
+        runtime truth and owned by one `PersistenceProfile`; never
+        user-constructed or bound.
+
+    Subsystem Context:
+        One member of the crystal-twin family. Where the custody crystals (spell
+        crystals) capture each spell's bind facts, this twin captures the
+        index-owned GROUPING state: which parked members ride which lineage and
+        which member is selected. Restore reads it to regroup staged members onto
+        the right lineage, and transfer-of-ownership uses it to re-anchor a moved
+        index under its new spellbook. It rides under its owning
+        `SpellbookCrystal`.
+
+    System Context:
+        One node of the V3 crystallizer's serialize-then-restore model, where
+        splitting index GROUPING from spell CUSTODY is the design point: a spell's
+        durable identity is its stable SHA256, but "which index it currently sits
+        in and whether it is the selected member" is grouping state the index owns
+        and can change (notch, add/remove). Recording that separately -
+        record-local `index_id` for correlation, stable member/selected SHAs as
+        the real coordinates - is what lets restore mint fresh indexes yet still
+        rebuild the exact historical membership, while finer-grained movement goes
+        through the graft path (a twin alone lacks each member's custody payload).
     """
     __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (

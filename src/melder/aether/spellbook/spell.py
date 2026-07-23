@@ -193,6 +193,34 @@ class Spell(Cleanable):
         - `cleanup()` is deterministic, best-effort for owned child cleanup, and
           clears references to prevent reuse-after-clean.
 
+    Registration:
+        MELDER KERNEL - guarded (`__melder_internal__` sentinel). Melder constructs
+        every `Spell` during `Bind`; a user never asks Melder to inject one, so
+        `bind(Spell)` is the category error the guard refuses. `access=public` is
+        deliberate and orthogonal to the guard: agents RECEIVE spells from `bind()`
+        and from viewer/examination surfaces and read their identity, existence, and
+        permissions - they simply do not construct or re-bind them.
+
+    Subsystem Context:
+        The unit of currency of the spellbook subsystem. `Bind` produces one `Spell`
+        (paired with its `SpellIndex` lineage/version record) from a user target;
+        `Spellbook` registers it into its owned/contracted maps and spell-id caches and
+        registers the lineage into `SpellSystemStates`. Downstream, the SpellCompiler
+        keys every phase artifact on this spell (by `spell_index.selected_spell_id`) and
+        `Meld` reads it to choose reuse-vs-construct. It hands structural identity to
+        `SpellIndex`, build/plan artifacts to the SpellCompiler, and its `Permissions`
+        to `ConduitWard` contract evaluation.
+
+    System Context:
+        Lives in the Spellbook layer of the DGR boot order
+        (Aether|AetherUtilitySystem -> Crystallizer -> MutationResearch -> Nexus ->
+        AethericFrame -> Spellbook -> Conduit|Ward). Created at bind time - after a
+        frame exists, before conjure - and is the object every later layer operates on
+        per-spell: SpellCompiler phases 1-11, `SpellSystemStates` validity, ChangeControl
+        dirty-root gating, and `Meld` resolution into live instances via `Creations`. It
+        sits between the `Spellbook` that owns it and the Conduit/Meld layer that
+        resolves it.
+
     Notes:
         - This class is never used directly by users. It is created during `bind()` and
           registered into the Spellbook and Aether.

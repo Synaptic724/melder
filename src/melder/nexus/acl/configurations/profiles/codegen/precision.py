@@ -51,7 +51,27 @@ class PrecisionCodegenProfileStrategy:
         return self._NAME
 
     def build(self) -> FrameACLCodegenProfile:
-        """Build and return one configured `precision` codegen profile."""
+        """
+        Build and return one configured `precision` codegen profile.
+
+        Contract:
+            Assembles a fresh `FrameACLCodegenProfile` (validation strategy
+            `precision`) with four rulesets encoding the explicitly-enumerated
+            posture:
+            - frame: allow query only.
+            - conduit: allow query/link/unlink; DENY create-lesser and
+              transfer-ownership.
+            - spell: allow resolve-existing/bind-existing/invoke-method/
+              read-attribute; DENY local-create and write-attribute.
+            - capability: enable imports for the precision module-root allowlist
+              (denying the precision denylist and dangerous builtins); DENY
+              dynamic access, mutation, contract override, unsafe reflection,
+              dunder access, and recursive codegen.
+            Stateless: a new instance is returned per call.
+
+        Returns:
+            FrameACLCodegenProfile: A freshly built `precision` codegen profile.
+        """
         return FrameACLCodegenProfile(
         self._NAME,
         validation_strategy_name="precision",

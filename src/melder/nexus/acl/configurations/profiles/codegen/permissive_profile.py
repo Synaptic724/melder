@@ -54,7 +54,24 @@ class PermissiveCodegenProfileStrategy:
         return self._NAME
 
     def build(self) -> FrameACLCodegenProfile:
-        """Build and return one configured `permissive` codegen profile."""
+        """
+        Build and return one configured `permissive` codegen profile.
+
+        Contract:
+            Assembles a fresh `FrameACLCodegenProfile` (validation strategy
+            `generic`) encoding the most open standard rung below `full_access`:
+            - frame: allow query.
+            - conduit: allow query/link/unlink/create-lesser/transfer-ownership.
+            - spell: allow resolve/bind/local-create/invoke/read/write.
+            - capability: enable imports for the permissive module-root allowlist
+              (no denylist); ALLOW dynamic access, contract override, mutation,
+              unsafe reflection, dunder access, and recursive codegen.
+            The one guardrail versus `full_access` is that imports stay scoped to
+            an allowlist. Stateless: a new instance is returned per call.
+
+        Returns:
+            FrameACLCodegenProfile: A freshly built `permissive` codegen profile.
+        """
         return FrameACLCodegenProfile(
         self._NAME,
         validation_strategy_name="generic",

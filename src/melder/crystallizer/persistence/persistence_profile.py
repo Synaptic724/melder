@@ -68,6 +68,25 @@ class PersistenceProfile(Cleanable):
         detached snapshots and never own profiles. Cleanup releases every live
         twin held by this profile, clears journal/state surfaces, and deletes
         the profile lock last.
+
+    Registration:
+        MELDER KERNEL - guarded (`__melder_internal__` sentinel). Owned by
+        `PersistenceSystem`; Melder constructs it, never a user, and it is never a bind
+        target. access=internal.
+
+    Subsystem Context:
+        The per-profile content of THE RECORD: one recorded world's flat, level-mapped
+        twin store, owned by `PersistenceSystem`. The ACTIVE profile is the live mirror
+        (emissions land here, starting as "default"); named profiles are saved worlds
+        (bootstraps / kits). It journals every replace-on-emit record with a monotonic
+        sequence, and `PersistenceCrystal` seals its journal segments into the ledger.
+
+    System Context:
+        Crystallizer layer of the boot order (position 2, after
+        Aether|AetherUtilitySystem). Replace-on-emit plus monotonic journaling is what
+        makes a recorded world replayable in order; twins carry parent-reference edges in
+        flat maps (never nested objects), mirroring the AethericFrame ownership hierarchy
+        so the loader can rebuild the world top-down on restore.
     """
     __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (

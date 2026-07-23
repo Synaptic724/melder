@@ -39,6 +39,27 @@ class FrameDescriptor(Cleanable):
     Lifecycle:
         Cleanup cascades into all owned record objects before dropping indexes
         and references.
+
+    Registration:
+        MELDER KERNEL - guarded. Owned by the Nexus per frame name; constructed
+        by the Nexus layer, never user-bound.
+
+    Subsystem Context:
+        The Nexus's per-frame state surface. There is at most one descriptor per
+        frame name, and it aggregates the Nexus-side records derived from that
+        frame - `FrameRecord`, `ConduitRecord`, `SpellRecord`, and the secondary
+        indexes (spell keys by conduit / by spellbook). It REFERENCES the live
+        `AethericFrame` and its bound posture without owning their runtime
+        lifecycle, and it is what a room projection targets by frame.
+
+    System Context:
+        The Nexus keeps a descriptor per frame so it can answer "what is in this
+        frame, and who is where" without walking the live runtime graph each
+        time: the secondary indexes turn "which spells does this conduit hold"
+        and "which belong to this spellbook" into O(1) lookups the room and ACL
+        refresh paths depend on. Owning DERIVED records while only REFERENCING the
+        live frame is the boundary that lets the Nexus rebuild its view on frame
+        change without being responsible for the frame's own teardown.
     """
     __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (

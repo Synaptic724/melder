@@ -52,7 +52,22 @@ class FullAccessCodegenProfileStrategy:
         return self._NAME
 
     def build(self) -> FrameACLCodegenProfile:
-        """Build and return one configured `full_access` codegen profile."""
+        """
+        Build and return one configured `full_access` codegen profile.
+
+        Contract:
+            Assembles a fresh `FrameACLCodegenProfile` (validation strategy
+            `generic`) encoding the unconstrained top-of-ladder posture: every
+            frame, conduit (query/link/unlink/create-lesser/transfer-ownership),
+            spell (resolve/bind/local-create/invoke/read/write), and capability
+            operation is ALLOWED. This is the deliberately permissive preset;
+            prefer a narrower rung unless full access is genuinely intended.
+            Stateless: a new instance is returned per call.
+
+        Returns:
+            FrameACLCodegenProfile: A freshly built `full_access` codegen
+                profile.
+        """
         return FrameACLCodegenProfile(
         self._NAME,
         validation_strategy_name="generic",

@@ -40,6 +40,29 @@ class ConduitLineageGateOps(Cleanable):
     Lifecycle:
         - `cleanup()` is idempotent and lock-guarded; it drops the borrowed
           controller reference and retires the facade.
+
+    Registration:
+        MELDER KERNEL - guarded. A narrow facade constructed by the dev-ops
+        layer over the frame's `CreationGateController`; driven by coordinated
+        transaction strategies, never user-bound.
+
+    Subsystem Context:
+        The runtime-gate seam the change-control transaction strategies reach
+        through. Strategies whose `on_start` must freeze runtime work (notch, the
+        index moves) carry this facade in metadata and call
+        `quiesce_conduit_lineage` / `enable_conduit_lineage` on it, keyed by
+        `root_conduit_id`. It wraps the frame's single `CreationGateController`
+        (owned by `DevOpsManager`) BY REFERENCE and covers every root in the
+        frame.
+
+    System Context:
+        The "runtime" half of the two-part serialization the DGR uses for member
+        moves: transaction CLAIMS serialize STRUCTURE (who may mutate the graph),
+        gate freezes serialize RUNTIME (no in-flight meld/validator straddles the
+        change). Draining OUTSIDE this facade's own lock is what lets a long
+        blocking quiesce proceed without pinning the facade, and the
+        borrow-not-own contract keeps gate lifecycle with the DevOpsManager while
+        strategies get a minimal, teardown-safe handle.
     """
     __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (

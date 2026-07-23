@@ -56,6 +56,24 @@ class CrystallizerBootstrap(Cleanable):
         Cleanup releases configurations that were never consumed. After
         `bootstrap()` begins, configuration ownership transfers downstream and
         cleanup never tears down the resulting crystallizer world.
+
+    Registration:
+        MELDER KERNEL - guarded (`__melder_internal__` sentinel). access=public: a deploy/pod
+        constructs and drives it for restart orchestration; guarding only refuses it as a bind
+        target (Melder never injects it) - it is still user-driven.
+
+    Subsystem Context:
+        The pod-restart lane of THE UNFOLD: a single-use fluent builder that composes ONLY
+        `Crystallizer` facades in order - activate -> attach external assets -> reload local
+        cache -> pull remote history + re-flush -> chain-verify gate -> load newest checkpoint
+        -> report. The crystallizer owns its internals; the bootstrap owns the ORDER.
+
+    System Context:
+        Crystallizer layer (position 2), the entry point for bringing a fresh process back to a
+        recorded world. A fresh-ever pod is LEGAL (no history boots an empty recording world, no
+        error); the chain verdict GATES the load - "broken" refuses loudly because booting a
+        wrong world is worse than not booting, while "truncated_prefix" boots and rides the
+        report.
     """
     __ast_helper_access__: str = "public"
     __agent_purpose__: str = (

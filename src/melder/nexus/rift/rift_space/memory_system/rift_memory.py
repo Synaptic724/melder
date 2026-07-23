@@ -43,6 +43,12 @@ class RiftMemory:
     """
 
     __melder_internal__ = _mrg.sentinel
+    __ast_helper_access__: str = "public"
+    __agent_purpose__: str = (
+        "access: public. One immutable executed-step record of a room action - frame, "
+        "action, step/epoch counters, metadata - emitted through RiftMemorySystem; you "
+        "receive it from the room's memory stream and read it, you do not construct it."
+    )
     __slots__ = [
         "_id",
         "_created_at",

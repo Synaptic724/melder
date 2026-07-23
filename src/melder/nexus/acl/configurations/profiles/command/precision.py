@@ -48,6 +48,18 @@ class PrecisionCommandProfileStrategy:
     def build(self) -> FrameACLCommandProfile:
         """
         Build and return one configured `precision` command profile.
+
+        Contract:
+            Assembles a fresh `FrameACLCommandProfile` (validation strategy
+            `precision`) encoding the explicitly-enumerated command posture:
+            frame, conduit, and spell `enable` are allowed, and on member
+            operations it allows read-attribute and invoke-method - DENYING
+            write-attribute and dunder-access. Same member policy as `hybrid`;
+            it differs in validation strategy. Stateless: a new instance is
+            returned per call.
+
+        Returns:
+            FrameACLCommandProfile: A freshly built `precision` command profile.
         """
         return FrameACLCommandProfile(
             self._NAME,

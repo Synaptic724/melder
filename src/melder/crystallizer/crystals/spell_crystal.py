@@ -77,6 +77,34 @@ class SpellCrystal(Cleanable):
         A persistence profile owns recorded instances. Cleanup releases the
         carried `CrystalAnalysisResult` first, then identity and policy fields;
         it never cleans the original spell, module, or analyzer.
+
+    Registration:
+        MELDER KERNEL - guarded. Obtained through
+        `Crystallizer.create_spell_crystal(...)` / `get_spell_crystal(...)` and
+        owned by a `PersistenceProfile`; direct construction is an internal
+        analysis seam only, never user-bound.
+
+    Subsystem Context:
+        One member of the crystal-twin family - the CUSTODY twin for one concrete
+        spell version and the loader-facing manifest of the module world that
+        spell depends on. Per the V3 CARRIER law it owns analysis RESULTS, not
+        machinery: it resolves the root target module itself but DELEGATES
+        module-world analysis to `CrystalAnalyzer` (the crystal_analysis
+        subsystem) and CARRIES the returned `CrystalAnalysisResult`, exposing flat
+        module/path/classification targets and direct-dependency edges over it. It
+        rides under its `SpellbookCrystal` and pairs with the `SpellIndexCrystal`
+        grouping twin.
+
+    System Context:
+        One node of the V3 crystallizer's serialize-then-restore model, and the
+        object the loader chain reads to validate a spell's module world BEFORE
+        bind/conjure - what it imports, which targets are
+        synthetic/user-owned/site-package/unresolved, which direct-dependency
+        edges must activate. The carrier law (own results, never analyzers) keeps
+        a durable custody record from dragging live analysis machinery across a
+        boot; anchoring to the spell's concrete SHA256 makes the record
+        content-addressed, so identical spell worlds compare identical and
+        record-local ULIDs normalize out of the seal.
     """
     __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (

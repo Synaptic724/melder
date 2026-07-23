@@ -53,6 +53,16 @@ class SafeCommandProfileStrategy:
     def build(self) -> FrameACLCommandProfile:
         """
         Build and return one configured `safe` command profile.
+
+        Contract:
+            Assembles a fresh `FrameACLCommandProfile` (validation strategy
+            `safe`) encoding the most restrictive command posture: frame,
+            conduit, and spell `enable` are allowed, and on member operations it
+            allows read-attribute only - DENYING invoke-method, write-attribute,
+            and dunder-access. Stateless: a new instance is returned per call.
+
+        Returns:
+            FrameACLCommandProfile: A freshly built `safe` command profile.
         """
         return FrameACLCommandProfile(
             self._NAME,

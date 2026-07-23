@@ -63,6 +63,24 @@ class LoadAdmission(Cleanable):
     Lifecycle / Cleanup:
         Owned by exactly one CrystalLoaderSystem; cleanup dereferences the
         borrowed record (del posture); idempotent.
+
+    Registration:
+        MELDER KERNEL - guarded (`__melder_internal__` sentinel). The admission plane
+        `CrystalLoaderSystem` constructs and owns; not user-held or bound. access=internal.
+
+    Subsystem Context:
+        The admission pipeline of THE UNFOLD: it turns a declarative `LoadPlan` into a gated
+        engine run and a scope-adjudicated view (plan -> map -> verdict -> execute -> remember;
+        renamed from BootMediator in S4). It mints formation windows in canonical kind order so
+        folds see parents first, and borrows the record plus an optional `Aether` host without
+        cleaning either.
+
+    System Context:
+        Crystallizer layer (position 2). The verdict law lives here: the engine always runs
+        `refuse_on_blockers=True`, so blocker refusal is standard admission, not an opt-in; and
+        adjudication is a VIEW - raw preflight findings are never rewritten, scope-expected
+        warnings are only RECLASSIFIED into the additive "admission" payload. It never creates a
+        frame merely to inspect host posture.
     """
     __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (

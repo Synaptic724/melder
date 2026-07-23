@@ -35,6 +35,29 @@ class FrameACLViewBuilder(Cleanable):
     Lifecycle:
         Cleanup is idempotent. It only drops borrowed references and does not
         clean or commit the underlying draft automatically.
+
+    Registration:
+        MELDER KERNEL - guarded. A fluent authoring facade handed out by the
+        generic `FrameACLBuilder`; the user chains its mutators but never
+        constructs or `bind()`s it.
+
+    Subsystem Context:
+        The view-family authoring surface of the ACL builder subsystem. It
+        BORROWS one active view draft (`FrameACLViewConfiguration`) from the
+        generic `FrameACLBuilder` and mutates that typed draft in place, returning
+        itself from each mutator for chaining. It owns neither persistence nor
+        configuration-chain installation - those stay with the container /
+        `FrameACLConfigurationChain`. Its command and codegen siblings do the same
+        for their families.
+
+    System Context:
+        Splitting authoring into per-family fluent builders keeps ACL drafting
+        typed and reviewable: a caller edits view rules through view-specific
+        verbs rather than hand-assembling raw rulesets, and because the builder
+        only borrows the active draft, nothing is persisted until the container
+        explicitly installs the finished configuration. The instance lock matters
+        under the nogil runtime because one fluent call can change several draft
+        fields together.
     """
     __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (

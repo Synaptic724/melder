@@ -62,6 +62,31 @@ class SpellbookCreationSystem(Cleanable):
         Spellbook is expected to hold its own lock while invoking this system.
         This class uses an internal lock only to make "cleanup()" idempotent
         under concurrent teardown calls.
+
+    Registration:
+        MELDER KERNEL - guarded (`__melder_internal__` sentinel). Conjure-only
+        orchestration that `Spellbook` constructs internally for one `conjure(...)`
+        run; a user never holds or binds it. `access=internal` - kernel machinery to
+        read for understanding, not to drive directly.
+
+    Subsystem Context:
+        The conjure orchestration helper of the spellbook subsystem. `Spellbook.conjure`
+        constructs one per run and delegates conjure-only concerns to it: the pre/
+        activation/post hook flow, the `check_system_state` policy/posture gate (a static
+        method that raises when the frame's `AethericFrameConfiguration` posture is
+        missing and admits only `Policies.default` when the effective mode is non-dynamic),
+        and conduit-ownership stamping (`define_conduit_into_spells`) - while borrowing
+        Spellbook's shared configuration-freeze, structural-phase, and resolution-phase
+        methods. It sits between `SpellbookConfiguration` (freeze/bind) and the
+        `PhaseScheduler` phase pipeline, and hands off to the constructed `Conduit`.
+
+    System Context:
+        Runs in the Spellbook layer of the DGR boot order
+        (Aether|AetherUtilitySystem -> Crystallizer -> MutationResearch -> Nexus ->
+        AethericFrame -> Spellbook -> Conduit|Ward), during `conjure` only: after config
+        freeze and the settle-then-inherit effective-mode resolution, it gates whether a
+        `Conduit` is born and threads the effective dynamic mode through phases 1-11 and
+        cloud registration. One-run helper, cleaned after each conjure.
     """
     __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (

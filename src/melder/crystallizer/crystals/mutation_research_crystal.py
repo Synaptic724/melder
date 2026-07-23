@@ -53,6 +53,33 @@ class MutationResearchCrystal(Cleanable):
         Owned by exactly one `PersistenceProfile`. Cleanup releases copied
         configuration/composition/node rows only and does not alter the hosted
         MutationResearch root or research sets.
+
+    Registration:
+        MELDER KERNEL - guarded. Emitted by the crystallizer's builders from live
+        runtime truth and owned by one `PersistenceProfile`; never
+        user-constructed or bound.
+
+    Subsystem Context:
+        One member of the crystal-twin family - the ROOT twin for MutationResearch
+        - read WITH the profile's MR `RecordedUnitState`. It carries configured
+        policy AND (Phase B) the research COMPOSITION emitted by
+        `describe_research_composition()`: research sets with lanes, full-object
+        version records, residence partition, bounded recent-transition windows,
+        and retained network-snapshot addresses. Because MR is codegen-lane-only
+        at runtime, this twin appears only in profiles emitted from dynamic-lane
+        worlds.
+
+    System Context:
+        One node of the V3 crystallizer's serialize-then-restore model, and the
+        one twin that keeps BOTH a nested hydration blob and flat derived rows.
+        The nested `composition_payload` is the proven hydration loop restore
+        reads; `research_nodes` / `grouped_research_nodes` are FLAT, value-typed,
+        DB-storable rows DERIVED from that same blob at construction (owner ruling
+        2026-07-12) so the two can never disagree. That dual shape is deliberate:
+        storage handlers map the rows straight to tables (the record's queryable
+        face) while hydration keeps reading the composition - one truth, two
+        projections, generated together so a query can never see a node the
+        rebuild loop won't.
     """
     __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (

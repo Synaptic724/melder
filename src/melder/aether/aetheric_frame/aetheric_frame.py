@@ -579,6 +579,37 @@ class AethericFrame(Cleanable):
     ) -> AethericFrameConfiguration:
         """
         Freeze the frame-owned posture configuration and return it.
+
+        Purpose:
+            Seal the frame's narrow AR posture into its canonical, immutable
+            state at the Spellbook/Nexus activation boundary, and let the
+            configuration emit its crystallizer twin at that moment (freeze IS
+            the emission factor).
+
+        Contract:
+            - Serialized by the frame instance lock.
+            - Delegates to the configuration's own `freeze`, supplying the
+              frame's identity (`origin_frame_name = self.name`, plus the
+              optional originating spellbook id) so the emitted twin anchors by
+              frame name.
+            - Returns the SAME live configuration object (now frozen), never a
+              copy; a subsequent freeze is a no-op at the configuration level.
+
+        Args:
+            origin_spellbook_id:
+                Spellbook driving the activation, recorded on the emitted twin;
+                None when the frame freezes outside a spellbook context.
+
+        Returns:
+            AethericFrameConfiguration: The frozen frame posture configuration.
+
+        Raises:
+            RuntimeError: If the frame has no configuration to freeze, or the
+                frame has already been cleaned.
+
+        Threading:
+            Holds the frame instance lock across the freeze and twin emission so
+            no concurrent posture read observes a half-frozen configuration.
         """
         self.check_cleaned()
         with self._lock:

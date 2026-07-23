@@ -58,6 +58,30 @@ class ChangeControlOrchestrator(Cleanable):
     Lifecycle:
         cleanup() is idempotent and clears only orchestrator-owned staged state
         and hook references.
+
+    Registration:
+        MELDER KERNEL - guarded. A helper coordinator owned by
+        `ChangeControlManager`; driven by the admission path, never
+        user-constructed or bound.
+
+    Subsystem Context:
+        The admit -> stage -> commit/abort coordinator of the
+        `change_control_manager` subsystem. It serializes admission under its own
+        lock, consulting the `ChangeControlConflictManager` and
+        `ChangeControlEmbargoManager` to accept or reject a
+        `ChangeControlTransactionRequest`, and on acceptance stages a
+        `ChangeControlStagedMutation` and registers it in-flight via the
+        `ChangeControlTransactionManager`. The `TransactionMediator` calls into
+        it for the outermost-frame finalize.
+
+    System Context:
+        The seam that makes admission ATOMIC against concurrent requests:
+        because accept-and-stage happens under one lock before release, no other
+        request can observe a half-admitted world (staged but not in-flight, or
+        embargoed but not conflict-checked). Commit and abort deliberately unwind
+        the SAME admission-state resources so a mutation leaves no residue on
+        either path, and running hooks outside the lock keeps user-registered
+        commit/abort work from blocking unrelated admissions.
     """
     __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (

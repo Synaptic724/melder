@@ -37,6 +37,29 @@ class ClusterCreations(Cleanable):
     Lifecycle:
         - `cleanup()` is idempotent: it disables the facade and drops the target
           reference (without cleaning the referenced store), then retires it.
+
+    Registration:
+        MELDER KERNEL - guarded. A per-cluster facade bound/unbound by the
+        elect/unelect leader transactions; never user-constructed or bound.
+
+    Subsystem Context:
+        The cluster-sharing seam of the conduit `creations` subsystem. It fronts
+        the `Creations` store owned by a cluster's ELECTED LEADER conduit so that
+        every member resolving a `unique_per_conduit_cluster` spell lands in one
+        shared team-store regardless of which member owns the spell. The
+        elect/unelect-cluster-leader transactions bind and unbind its target;
+        `Creations` itself knows nothing about clusters (the dependency points
+        one way).
+
+    System Context:
+        Cluster-shared uniqueness needs a single home for the instance, but which
+        conduit hosts it is a runtime election that can change. This facade is the
+        indirection that lets members keep resolving through a stable handle while
+        the actual store moves with the leader. It carries NO lock: the
+        leader-election transactions freeze all in-flight melds before they
+        re-target it, so safety comes from that transaction-level quiesce rather
+        than facade-local synchronization - and disabled-until-a-leader-exists is
+        an explicit refusal, not a silent empty store.
     """
     __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (

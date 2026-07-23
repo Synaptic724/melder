@@ -50,6 +50,28 @@ class PersistenceSystem(Cleanable):
         first by that root. This record then cleans every profile, followed by
         every ledger crystal, and deletes its lock last. It never cleans the
         asset or loader systems that borrowed it.
+
+    Registration:
+        MELDER KERNEL - guarded (`__melder_internal__` sentinel). The record ledger
+        `Crystallizer` constructs and owns; users talk to `Crystallizer` facades only
+        and never hold or bind this object. access=internal.
+
+    Subsystem Context:
+        THE RECORD - one of the three same-rank children `Crystallizer` owns
+        (`PersistenceSystem` the record, `AssetManagementSystem` the bytes-at-rest,
+        `CrystalLoaderSystem` the unfold). It owns the named profiles plus the checkpoint
+        ledger and is the insert sink; `AssetManagementSystem` reads its feedstock and
+        feeds cache/remote reloads back through that sink. EDGE LAW: the record calls
+        nobody and constructs no engines - borrowers clean before it.
+
+    System Context:
+        Crystallizer layer of the boot order (Aether|AetherUtilitySystem -> Crystallizer
+        -> MutationResearch -> Nexus -> AethericFrame -> Spellbook -> Conduit|Ward).
+        Passive and in-process only: structural units PUSH twins into the Crystallizer
+        emit path, which routes to `record(...)` on the active profile; a crystallizer-off
+        world stays byte-identical (the R-A covenant). It holds plain values only
+        (callables appear as presence flags), so the ledger can be cached and restored
+        without live references.
     """
     __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (

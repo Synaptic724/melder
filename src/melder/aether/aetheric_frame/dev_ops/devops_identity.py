@@ -31,6 +31,29 @@ class DevopsIdentity(Cleanable):
 
     Threading:
         - Internal mutation is guarded by an `RLock`.
+
+    Registration:
+        MELDER KERNEL - guarded. An identity surface created by frame-owned
+        runtime objects (conduits, wards, clusters) and registered into
+        `DevopsInformationRegistry`; never user-bound.
+
+    Subsystem Context:
+        The identity record of the dev-ops layer. Every runtime object that
+        participates in change control (as an initiator or an affected party)
+        registers one of these into `DevopsInformationRegistry` under its
+        (owner_kind, owner_id); `available_transactions` declares which
+        `ChangeTransactionType` kinds it may originate, and the registry answers
+        the topology queries (who owns what, who links to whom) that admission
+        and targeted revalidation read.
+
+    System Context:
+        Giving runtime objects a stable, frame-scoped identity is what lets
+        change control reason about the graph WITHOUT holding references to live
+        objects: admission, conflict detection, and dirty-root tracking all key
+        on (owner_kind, owner_id) strings, so a transaction's footprint survives
+        across call frames and helper objects. Cleanup unregistering the identity
+        before teardown is the invariant that keeps the registry from pointing at
+        dead objects.
     """
     __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (

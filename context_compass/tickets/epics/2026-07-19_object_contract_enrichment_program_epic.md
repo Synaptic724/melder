@@ -1872,6 +1872,35 @@ NOTE (ITEM 5 hand-written pass through the mutation_research/research_set packag
   REREAD: REQUIRED
   SCORE_0_TO_10: 8
 
+- DATETIME: 2026-07-22T23:30:00Z
+  TYPE: FACT
+  AGENT: melder_1
+  CLAIM: The in-scope program is NOT yet at its stated Acceptance Criteria. A read-only
+    tree-wide AST scan (all of src/melder EXCLUDING spell_compiler) against the ACTUAL ACs -
+    __agent_purpose__ + __ast_helper_access__ + the literal headers `Registration:` /
+    `Subsystem Context:` / `System Context:` on every class - finds 89 classes with gaps
+    (83 top-level public, 5 top-level private, 1 nested). TWO patterns: (a) ~74 classes HAVE
+    the agent pair but MISS the three context headers (crystallizer/**, aetheric_frame dev_ops
+    [ChangeControlManager, TransactionMediator, embargo/orchestrator], conduit [ConduitPool,
+    ClusterCreations, SpellSpace], nexus/acl builders, utilities/helpers); (b) the nexus/rift
+    room surface (RiftSpace + modes, Workstation, RiftEvent/RiftMemory + their systems) HAS
+    the context headers but MISSES the agent pair. Spot-verified by grep on
+    change_control_manager.py, spell_crystal.py, rift_space.py.
+  EVIDENCE:
+  - src/melder/aether/aetheric_frame/dev_ops/change_control_manager/change_control_manager.py
+  - src/melder/crystallizer/crystals/spell_crystal.py
+  - src/melder/nexus/rift/rift_space/rift_space.py
+  IMPACT: The completed epics (oce-nexus, oce-aether-aetheric-frame, oce-aether-conduit) and
+    the crystallizer "verified at bar" pass were measured on a LOOSER bar ("3+ canonical
+    headers" / method-docstring completeness), not on the two HARD ACs (agent pair 100% +
+    Subsystem/System Context on every class). ~83 top-level public in-scope classes still need
+    contract-completion. This corrects the earlier over-optimistic "program complete" read.
+  NEXT: melder_1 sweeps the gap in bounded <=10-class single-package chunks (chunking law).
+    Recommend the owner either treat the "completed" child epics as done-for-method-docstrings
+    but REOPEN-worthy for the agent pair + context headers, or accept the looser bar explicitly.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
 ## Context / Handoff Summary
 Program epic for a correctness-plus-enrichment pass over all 542 classes in `src/melder`.
 Carries THE OBJECT CONTRACT (five items per class) and THE CHUNKING LAW (task <=10 classes,

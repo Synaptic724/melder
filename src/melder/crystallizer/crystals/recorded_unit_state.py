@@ -33,6 +33,28 @@ class RecordedUnitState(enum.Enum):
 
     Lifecycle / Cleanup:
         None. Enum members are process-lifetime constants.
+
+    Registration:
+        MELDER KERNEL - guarded. A value enum stored on a `PersistenceProfile`
+        alongside the singleton twins it annotates; never bound.
+
+    Subsystem Context:
+        The lifecycle state-switch of the crystal-twin family. For singleton units
+        the record tracks by SWITCH rather than eviction (MutationResearch,
+        Nexus), the unit's twin stays in the record and this enum carries whether
+        it was left enabled, disabled, or cleaned. Aether and Crystallizer are
+        deliberately NOT tracked this way - the record itself dies with them, so
+        their state can never outlive the profile.
+
+    System Context:
+        One node of the V3 crystallizer's serialize-then-restore model, encoding a
+        subtle honesty rule: for a configured singleton, "turned off" is NOT the
+        same as "gone." `disabled` keeps configuration so restore can rebuild then
+        deactivate; `cleaned` is terminal recorded intent that forbids restore
+        from silently resurrecting a unit whose teardown was observed. Representing
+        that as a switch beside a retained twin - rather than a tombstone/eviction,
+        which is how ordinary removable twins express absence - is what lets the
+        record distinguish "configured but off" from "deliberately destroyed."
     """
     __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (

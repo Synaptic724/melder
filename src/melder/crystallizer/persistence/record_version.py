@@ -48,6 +48,24 @@ class RecordVersion:
 
     Lifecycle / Cleanup:
         None. This class owns no runtime state or external resource.
+
+    Registration:
+        MELDER KERNEL - guarded (`__melder_internal__` sentinel). A static-only version
+        authority: never constructed, never user-held, never a bind target. access=internal.
+
+    Subsystem Context:
+        The schema-version authority for THE RECORD's durable artifacts. It stamps
+        outgoing value payloads (cached items, formation records, tap envelopes) at the
+        durable boundary and gates readers at `from_cached_item` / load before they trust
+        an unfamiliar shape; `PersistenceCrystal` and `AssetManagementSystem` call it there.
+
+    System Context:
+        Crystallizer layer of the boot order (position 2, after
+        Aether|AetherUtilitySystem). MAJOR-version gating is what keeps the persistence
+        format forward-safe across restores: a newer-major artifact refuses rather than
+        being misread, and an absent stamp reads as the oldest ("0.0.0") into the tolerance
+        lanes - the discipline that lets recorded worlds outlive the code version that
+        sealed them.
     """
     __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (

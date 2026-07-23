@@ -45,6 +45,32 @@ class ConduitCrystal(Cleanable):
         Owned by exactly one `PersistenceProfile`. Cleanup releases the conjure
         and edge payload only; conduit disposal remains a live-runtime owner
         responsibility.
+
+    Registration:
+        MELDER KERNEL - guarded. Emitted by the crystallizer's builders from live
+        runtime truth and owned by one `PersistenceProfile`; never
+        user-constructed or bound.
+
+    Subsystem Context:
+        One member of the crystal-twin family - the pure-data value objects the
+        crystallizer records and the restore engine replays. This twin is the
+        root conduit's slice: a builder projects a live root Conduit into it,
+        `PersistenceProfile` holds it (replace-on-emit), and restore replays it as
+        the conjure step AFTER the owning spellbook's binds, applying its link
+        edges LAST once every conduit exists. `ContractCrystal` and
+        `ClusterCrystal` carry the borrowed-detail and membership slices it joins
+        with.
+
+    System Context:
+        One node of the V3 crystallizer's serialize-then-restore model, where a
+        live world is recorded as a graph of value twins and rebuilt by replaying
+        them in dependency order. Keeping runtime ULIDs RECORD-LOCAL (translated
+        to fresh identities on restore, normalized out of seal fingerprints) is
+        what lets two structurally-identical worlds compare equal across boots and
+        lets restore rebuild the graph without reusing stale ids. Recording ROOT
+        conduits only - lessers are ephemeral scope machinery rebuilt at runtime -
+        is the boundary that keeps the record the durable structural truth, not a
+        snapshot of transient runtime state.
     """
     __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (

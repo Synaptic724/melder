@@ -778,6 +778,18 @@ class WeakConcurrentSet(Generic[_T], Cleanable):
         """
         Return a new weak set containing the live intersection with `others`.
 
+        Contract:
+            Snapshots this set's currently-live members via `to_set()`,
+            intersects with each materialized `other`, and returns a NEW
+            `WeakConcurrentSet`. Members are held WEAKLY, so the result never
+            keeps a value alive; already-dead referents are excluded from the
+            snapshot. This set is not mutated.
+
+        Args:
+            *others:
+                Iterables to intersect against; each is materialized to its
+                live values before intersecting.
+
         Returns:
             WeakConcurrentSet[_T]: A new weak set over the live intersection.
         """
@@ -790,8 +802,19 @@ class WeakConcurrentSet(Generic[_T], Cleanable):
         """
         Return a new weak set containing live values not present in `others`.
 
+        Contract:
+            Snapshots this set's currently-live members via `to_set()`, removes
+            each materialized `other`, and returns a NEW `WeakConcurrentSet`.
+            Members are held WEAKLY, so the result never keeps a value alive.
+            This set is not mutated.
+
+        Args:
+            *others:
+                Iterables whose live values are removed from the result.
+
         Returns:
-            WeakConcurrentSet[_T]: A new weak set of live values absent from `others`.
+            WeakConcurrentSet[_T]: A new weak set of live values absent from
+                `others`.
         """
         result = self.to_set()
         for o in others:

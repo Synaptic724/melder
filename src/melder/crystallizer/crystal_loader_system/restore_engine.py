@@ -58,6 +58,23 @@ class RestoreReport(Cleanable):
         Owned by the engine while the run is live; ownership passes to the
         caller with the return. Cleanup deletes reporting fields only and never
         tears down the rebuilt runtime.
+
+    Registration:
+        MELDER KERNEL - guarded (`__melder_internal__` sentinel). A detached outcome record the
+        `RestoreEngine` fills and hands back; not user-constructed or bound. access=internal.
+
+    Subsystem Context:
+        The outcome surface of THE UNFOLD: it carries built-counts-by-kind, the shortfall
+        entries (everything the engine could not rebuild and why), and the old->new identity
+        translation map. The engine owns it while a run is live; ownership passes to the caller
+        with the return.
+
+    System Context:
+        Crystallizer layer (position 2). Two restore laws are visible in its shape: shortfalls
+        are the HONESTY surface (nothing is silently under-built), and recorded ULIDs appear
+        ONLY inside the translation map - they never escape into the rebuilt world
+        (never-rehydrate-ULIDs). Its mutators/readers are RLock-serialized because the parallel
+        restore driver reports built counts and mappings from scheduler worker threads.
     """
     __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (
@@ -386,6 +403,25 @@ class RestoreEngine(Cleanable):
     Lifecycle:
         Constructed per restore call. `cleanup()` deletes owned fold state;
         the returned report's ownership passes to the caller; idempotent.
+
+    Registration:
+        MELDER KERNEL - guarded (`__melder_internal__` sentinel). Constructed per restore call
+        by the loader; it drives only PUBLIC runtime verbs and is never user-held or bound.
+        access=internal.
+
+    Subsystem Context:
+        The replay driver of THE UNFOLD: it folds a profile's checkpoint chain (later payloads
+        win per (kind, key); tombstones delete) and replays the folded world through ordinary
+        PUBLIC verbs in canon order - configs -> conjure -> binds by bind_order -> staged
+        members -> notch to recorded selections -> links -> clusters -> contracts LAST. It
+        consumes only detached chain data and never holds the record's lock (replay re-enters
+        the emit path).
+
+    System Context:
+        Crystallizer layer (position 2), the boot lane. All-or-nothing: any stage failure tears
+        down every unit this run built (reverse order) and re-raises with the stage cause
+        chained. Fresh identities are always minted (never-rehydrate-ULIDs), and re-emission is
+        intended - the rebuilt world re-records itself into the active profile as it comes up.
     """
     __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (

@@ -83,6 +83,34 @@ class TransactionMediator(Cleanable):
         - Active execution frame stacks are stored in `threading.local()`.
         - Scope waiting blocks on the embargo manager's condition, never while
           holding the mediator lock.
+
+    Registration:
+        MELDER KERNEL - guarded. Frame-local change-control machinery: the
+        Spellbook / ChangeControlManager path drives it; it is never bound or
+        constructed by a user.
+
+    Subsystem Context:
+        The live session layer of the `change_control_manager` transaction
+        subsystem. It sits ABOVE the immutable request/staged payloads and
+        BELOW the orchestrator: `TransactionStrategyBuilder` supplies the
+        per-transaction strategies, admission runs through the embargo manager's
+        scope claims, and only the outermost frame finalizes through
+        `_finalize_root_session` (where a strategy's `on_end` fires exactly
+        once). `TransactionSession` is the per-frame record it stacks per
+        thread; `ChangeControlManager` owns the surrounding admit -> stage ->
+        commit flow it plugs into.
+
+    System Context:
+        The concurrency heart of DevOps change control - how the DGR keeps
+        structural mutations (bind, link, cluster, transfer, notch) serialized
+        without a global lock. Overlap is decided by SCOPE-CLAIM acquisition at
+        admission - a blocked request waits scope-locally and retries rather
+        than being arbitrated by thread - so same-thread nesting joins one root
+        session while cross-thread starts contend only where their claimed
+        scopes actually overlap. Strategy commit deltas run while the
+        transaction still holds its scopes, which is what lets downstream
+        mirrors (link edges, cluster membership) be maintained eagerly and
+        race-free at the mutation site.
     """
     __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (
@@ -531,8 +559,35 @@ class TransactionMediator(Cleanable):
     ) -> Optional[TransactionSession]:
         """
         Return the newest local session matching one identity and transaction kind.
+
+        Purpose:
+            Let a caller re-enter its own in-flight transaction (nested
+            change-control ops) by finding the session it already opened for a
+            given identity + transaction kind, instead of opening a second one.
+
+        Contract:
+            - Walks the CALLING THREAD's transaction stack newest-first and
+              returns the first session whose submitter identity matches on both
+              `owner_id` and `owner_kind` and whose request type normalizes to
+              the same transaction name.
+            - Thread-local: only sessions on this thread's stack are considered;
+              a session opened on another thread is invisible here.
+            - Read-only: opens, mutates, and closes nothing.
+            - Returns None when no matching session is on the stack.
+
+        Args:
+            identity:
+                Submitter identity to match (by owner_id + owner_kind).
+            transaction_type:
+                Transaction kind to match (normalized to a transaction name).
+
+        Returns:
+            Optional[TransactionSession]: The newest matching session, or None.
+
+        Raises:
+            ValueError: If `identity` is None.
         """
-        
+
         if identity is None:
             raise ValueError("identity must not be None.")
         transaction_name = self._normalize_transaction_name(transaction_type)
@@ -647,8 +702,36 @@ class TransactionMediator(Cleanable):
     ) -> TransactionSession:
         """
         End one high-level transaction by identity and transaction kind.
+
+        Purpose:
+            Close the caller's own in-flight transaction without threading the
+            request id back through the call site - the identity + kind locate
+            the session opened earlier on this thread.
+
+        Contract:
+            - Resolves the session via `get_session_for_identity` (thread-local,
+              newest-first); raises when no matching session is active.
+            - Derives success from the ambient exception state: the end counts
+              as successful only when no exception is in flight
+              (`sys.exc_info()` is clear) AND the session is not marked
+              ABORT_ONLY.
+            - Delegates the actual close to `end_transaction_by_request_id`;
+              strategy `on_end` is NOT dispatched here (it fires exactly once
+              per ROOT end from `_finalize_root_session`, on every exit path).
+
+        Args:
+            identity:
+                Submitter identity whose active session is closed.
+            transaction_type:
+                Expected transaction kind, asserted during the close.
+
+        Returns:
+            TransactionSession: The session whose frame was ended.
+
+        Raises:
+            RuntimeError: If no active session matches this identity/kind.
         """
-        
+
         session = self.get_session_for_identity(
             identity=identity,
             transaction_type=transaction_type,
@@ -673,8 +756,29 @@ class TransactionMediator(Cleanable):
     ) -> Optional[TransactionSession]:
         """
         Return one live session by request id, if present.
+
+        Contract:
+            - Validates that `request_id` is a non-empty string.
+            - Reads the session registry under the mediator lock.
+            - Cross-thread readable: unlike the stack-based lookups, this reaches
+              any registered session regardless of which thread opened it.
+            - Returns None when no session is registered under the id.
+
+        Args:
+            request_id:
+                Non-empty request id to look up.
+
+        Returns:
+            Optional[TransactionSession]: The registered session, or None.
+
+        Raises:
+            TypeError: If `request_id` is not a string.
+            ValueError: If `request_id` is empty or whitespace.
+
+        Threading:
+            Holds the mediator lock for the registry read.
         """
-        
+
         if not isinstance(request_id, str):
             raise TypeError("request_id must be a string.")
         if not request_id.strip():
@@ -724,8 +828,45 @@ class TransactionMediator(Cleanable):
     ) -> TransactionSession:
         """
         End one specific active transaction frame identified by request id.
+
+        Purpose:
+            The single close primitive every other end path funnels through: it
+            pops one frame of a (possibly nested) transaction and, when the last
+            frame leaves, finalizes and unregisters the root session.
+
+        Contract:
+            - Only the OWNER THREAD that opened the session may end it (raises
+              otherwise).
+            - Optionally asserts the active request type matches `expected_type`.
+            - Pops the request id from this thread's stack; a `success=False`
+              leave marks the whole session ABORT_ONLY so the root cannot commit.
+            - Decrements session depth via `leave()`. On a NESTED leave
+              (remaining depth > 0) it returns immediately without finalizing.
+            - On the ROOT leave (depth reaches 0) it runs
+              `_finalize_root_session` (where strategy `on_end` fires exactly
+              once), then - in a finally, under the mediator lock - unregisters
+              the session, drops it from the registry, and notifies all waiters.
+
+        Args:
+            request_id:
+                Request id of the frame to end.
+            expected_type:
+                Optional transaction-kind assertion for the frame.
+            success:
+                False marks the session abort-only before leaving.
+
+        Returns:
+            TransactionSession: The session whose frame was ended.
+
+        Raises:
+            RuntimeError: If the session is missing, the caller is not the owner
+                thread, or the active type does not match `expected_type`.
+
+        Threading:
+            Owner-thread only. Root finalization holds the mediator lock to
+            unregister and wake waiters.
         """
-        
+
         session = self._get_session_or_raise(request_id)
         current_thread_id = threading.get_ident()
         if session.owner_thread_id != current_thread_id:
@@ -800,10 +941,31 @@ class TransactionMediator(Cleanable):
         """
         Mark the current active session abort-only on the current thread.
 
+        Purpose:
+            Poison the in-flight transaction so its eventual root end can only
+            roll back, never commit - used when a caller detects a failure it
+            wants to survive to finalization rather than raise immediately.
+
+        Contract:
+            - Targets the ACTIVE (top-of-stack) session on the calling thread;
+              raises when none is open.
+            - Delegates to `session.mark_abort_only`, recording the reason and
+              optional causing error; the flag is sticky - once abort-only, the
+              root cannot commit regardless of later successful leaves.
+
+        Args:
+            reason:
+                Human-readable justification recorded on the session.
+            error:
+                Optional causing exception to attach.
+
         Returns:
             None.
+
+        Raises:
+            RuntimeError: If no active session exists on this thread.
         """
-        
+
         session = self.get_active_session()
         if session is None:
             raise RuntimeError("No active transaction session exists on this thread.")
@@ -812,8 +974,22 @@ class TransactionMediator(Cleanable):
     def get_active_session(self) -> Optional[TransactionSession]:
         """
         Return the active session for the current thread, if any.
+
+        Contract:
+            The active session is the TOP of this thread's transaction stack -
+            the innermost frame the calling thread has open. Reads the
+            thread-local stack and resolves the id in the registry under the
+            mediator lock; returns None when this thread has no frame open. A
+            session active on another thread is not returned.
+
+        Returns:
+            Optional[TransactionSession]: The innermost active session on this
+                thread, or None.
+
+        Threading:
+            Holds the mediator lock for the registry read.
         """
-        
+
         stack = self._get_stack()
         if not stack:
             return None
@@ -841,8 +1017,23 @@ class TransactionMediator(Cleanable):
     def describe(self) -> dict:
         """
         Return a detached diagnostic snapshot of mediator state.
+
+        Contract:
+            Read under the mediator lock; returns plain values only (no live
+            session objects), so the snapshot is safe to log or serialize - the
+            configured max wait time, the count of registered sessions, and a
+            sorted tuple of their request ids. Cross-thread: reflects every
+            registered session, not just this thread's.
+
+        Returns:
+            dict: {"max_transaction_wait_time_in_seconds",
+                "active_session_count", "request_ids"} - a detached diagnostic
+                view.
+
+        Threading:
+            Holds the mediator lock for a consistent snapshot.
         """
-        
+
         with self._lock:
             return {
                 "max_transaction_wait_time_in_seconds": (

@@ -443,8 +443,28 @@ class IndexDetail(Cleanable):
         """
         Record that one root spell id currently justifies this index detail.
 
+        Purpose:
+            Index details live only while at least one root spell still
+            references them; this adds one justification (the source-counting
+            half of the `add_source`/`remove_source` pair that governs detail
+            lifetime).
+
+        Contract:
+            - Serialized by the detail instance lock.
+            - A None `root_spell_id` is silently ignored (no-op).
+            - The backing `sources` set is created lazily on first add.
+            - Idempotent per id: re-adding a present source is a set no-op.
+
+        Args:
+            root_spell_id:
+                Root spell id now justifying this detail; None is ignored.
+
         Returns:
             None.
+
+        Threading:
+            Holds the detail lock; safe against concurrent add/remove on the
+            same detail.
         """
         self.check_cleaned()
         if root_spell_id is None:

@@ -39,6 +39,30 @@ class AetherCrystal(Cleanable):
         Owned by exactly one `PersistenceProfile`. Replacement or profile
         teardown cleans the displaced twin's value fields only; no live Aether
         root, logger, frame, or hosted subsystem is affected.
+
+    Registration:
+        MELDER KERNEL - guarded. Emitted by the crystallizer's builders from live
+        runtime truth and owned by one `PersistenceProfile`; never
+        user-constructed or bound.
+
+    Subsystem Context:
+        One member of the crystal-twin family - the ROOT twin for the process
+        Aether, deliberately THIN. It records the root's configuration only (root
+        logger policy and any future root-level properties); the deep Aether state
+        (frames, registries, hosted singletons) lives in the child twins beneath
+        it. Unlike the frame twins, it is retained whenever the crystallizer is
+        active regardless of frame posture - root configuration sits ABOVE the
+        dynamic-lane gate.
+
+    System Context:
+        One node of the V3 crystallizer's serialize-then-restore model, and the
+        top of its composition. Keeping the root twin thin is the point: the
+        record is a flat maps-plus-edges value graph, so the Aether root
+        contributes only its own policy and lets each subsystem's twin carry its
+        own slice, rather than becoming a deep snapshot of the entire process. An
+        empty config payload therefore means "root emitted without installed
+        policy," not "no Aether existed" - the same selective-capture honesty the
+        rest of the record follows.
     """
     __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (

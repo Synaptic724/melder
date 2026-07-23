@@ -60,6 +60,12 @@ class RiftEventSystem(Cleanable):
     """
 
     __melder_internal__ = _mrg.sentinel
+    __ast_helper_access__: str = "internal"
+    __agent_purpose__: str = (
+        "access: internal. The room-local event publisher a RiftSpace owns: it registers "
+        "callbacks and builds/emits RiftEvent objects synchronously. Read it to understand "
+        "room eventing; do not drive it directly."
+    )
     __slots__ = Cleanable.__slots__ + [
         "_lock",
         "_rift_id",

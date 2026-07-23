@@ -24,6 +24,26 @@ class FrameACLRuleSet(Cleanable):
 
     Lifecycle:
         Cleanup is idempotent and cascades into all owned rules.
+
+    Registration:
+        MELDER KERNEL - guarded. Built by profile/builder code (e.g.
+        `build_ruleset`) and owned by the configuration or profile that holds it;
+        never user-bound.
+
+    Subsystem Context:
+        The rule container of the ACL subsystem: one named collection of typed
+        `FrameACLRule`s keyed by rule name, owned per scope (frame / conduit /
+        spell / member / capability) inside a profile or configuration. The
+        profile presets and the fluent builders assemble these; the compiled
+        access surface evaluates them.
+
+    System Context:
+        Making the ruleset own its rules (replace-and-clean on re-register,
+        cascade cleanup, detached snapshots on read) keeps ACL evaluation
+        deterministic: a reader always sees a coherent rule map rather than a set
+        mid-edit, and the 1:1 name keying makes "the rule for this operation" an
+        O(1) lookup rather than a scan. This is the smallest owned unit the whole
+        posture ladder is built from.
     """
     __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (

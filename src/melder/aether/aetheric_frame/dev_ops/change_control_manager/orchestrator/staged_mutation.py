@@ -58,6 +58,27 @@ class ChangeControlStagedMutation:
         Safe to share across threads because instances are immutable.
     Lifecycle:
         Immutable; no cleanup required.
+
+    Registration:
+        MELDER KERNEL - guarded. Produced by the orchestrator at staging time;
+        never user-constructed.
+
+    Subsystem Context:
+        The canonical post-admission payload of the `change_control_manager`
+        subsystem. The orchestrator builds one after a
+        `ChangeControlTransactionRequest` passes admission; it then travels
+        through the commit / abort / dirty-marking / structural-validation hooks
+        (and into `apply_commit_delta`) as the single shared record those steps
+        read, so none of them re-opens the original request.
+
+    System Context:
+        Splitting the immutable STAGED record from the mutable
+        `TransactionSession` is what keeps change-control lifecycle steps
+        decoupled and race-free: a hook running late in commit reasons about a
+        frozen snapshot of what was admitted (scope/binding/contract keys,
+        initiator, spellbook), not about live state that could shift underneath
+        it. That immutability is why the payload can be shared freely across the
+        hook and thread boundaries a transaction spans.
     """
     __ast_helper_access__: ClassVar[str] = "internal"
     __agent_purpose__: ClassVar[str] = (

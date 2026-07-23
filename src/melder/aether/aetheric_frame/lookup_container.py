@@ -40,6 +40,28 @@ class LookupContainer:
     Lifecycle:
         - `cleanup` clears both maps and drops the lock. It is idempotent;
           after cleanup the container exposes no live surface.
+
+    Registration:
+        MELDER KERNEL - currently UNGUARDED. A frame-owned registry (no bind
+        sentinel), constructed by the AethericFrame; never a bind target.
+
+    Subsystem Context:
+        The frame-wide binding-signature uniqueness surface. One per
+        `AethericFrame`, it replaces per-spellbook signature checks: `claim`
+        enforces at most one active spell per `(frame_key, bind_key)` across the
+        whole frame, and the reverse `spell_id -> signature` index lets a spell
+        release its claim in O(1) on notch, disable, or spellbook cleanup.
+        Resolution (signature -> SpellIndex -> Spell) lives elsewhere; this is
+        the claim/uniqueness layer only.
+
+    System Context:
+        Centralizing signature uniqueness at the FRAME rather than the spellbook
+        is what makes "one active binding per signature" a frame-wide invariant
+        even when several spellbooks share a frame - the coupling the
+        aetheric_frame warning is about. Keeping the forward and reverse maps in
+        lockstep under one non-reentrant lock lets any layer trust that a
+        signature lookup never observes a half-applied claim, so notch (which
+        re-points the active spell_id) is atomic from every reader's view.
     """
     __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (

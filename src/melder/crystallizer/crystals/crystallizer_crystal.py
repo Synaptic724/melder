@@ -43,6 +43,31 @@ class CrystallizerCrystal(Cleanable):
         Owned by exactly one `PersistenceProfile`. Cleanup releases the recorded
         policy document only; it neither reconfigures nor deactivates the live
         crystallizer.
+
+    Registration:
+        MELDER KERNEL - guarded. SELF-emitted by the crystallizer at its own
+        activation and owned by one `PersistenceProfile`; never user-constructed
+        or bound.
+
+    Subsystem Context:
+        One member of the crystal-twin family - the META twin, recording the
+        RECORDER's own configured surface (source-root policy, retention caps,
+        checkpoint cadence, flush posture). It sits above the dynamic-lane gate
+        with the other root twins, and it is the twin bootstrap reads first: a
+        cached world reboots its crystallizer FROM this record before unfolding
+        the rest of the world.
+
+    System Context:
+        One node of the V3 crystallizer's serialize-then-restore model, and the
+        reason the model is self-describing: the recorder's OWN policy is part of
+        the recorded truth, not ambient process state, so a sealed world carries
+        which policy produced it. The invariant is that restore treats this as
+        BOOT-TIME truth only - it never swaps a live crystallizer's configuration
+        mid-restore; bootstrap that wants to reproduce recorded policy loads the
+        payload into a fresh `CrystallizerConfiguration` before activating the
+        root, and otherwise the engine just reports the recorded policy as
+        context. That keeps "how this world was recorded" answerable without
+        letting the record mutate the running recorder.
     """
     __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (

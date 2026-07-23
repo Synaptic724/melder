@@ -39,6 +39,30 @@ class AethericFrameCrystal(Cleanable):
         Owned by exactly one `PersistenceProfile`. Cleanup releases recorded
         posture/configuration values only and never disposes the live frame or
         its spellbooks.
+
+    Registration:
+        MELDER KERNEL - guarded. Emitted by the crystallizer's builders from live
+        runtime truth and owned by one `PersistenceProfile`; never
+        user-constructed or bound.
+
+    Subsystem Context:
+        One member of the crystal-twin family and the top parent coordinate for
+        spellbook twins. It carries a frame's identity, its posture (the
+        feature-gating trio system_state / rift_enabled / ai_native), and its
+        dev-ops configuration. Because frames own posture in the runtime, this is
+        where the restore engine's dynamic-lane gate reads its recorded truth;
+        child spellbook twins reference it by `frame_name`.
+
+    System Context:
+        One node of the V3 crystallizer's serialize-then-restore model, and the
+        clearest example of the record's SELECTIVE-capture law: only
+        DYNAMIC-posture frames are emitted (a hard gate), because automatic-posture
+        frames are reconstructable defaults, not durable state worth recording. So
+        a missing frame twin is NOT proof no live frame existed - it means the
+        frame was outside the recording lane. Flat maps-plus-edges composition
+        (child twins reference this frame by name, never nest under it) is what
+        keeps the record a value graph restore can rebuild in dependency order
+        rather than a deep object snapshot.
     """
     __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (

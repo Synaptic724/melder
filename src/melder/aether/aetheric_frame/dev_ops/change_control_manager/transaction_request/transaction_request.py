@@ -32,6 +32,27 @@ class ChangeTransactionType(StrEnum):
         Stateless; safe to share across threads.
     Lifecycle:
         No cleanup required.
+
+    Registration:
+        MELDER KERNEL - guarded. A value enum in request payloads and logs;
+        never bound.
+
+    Subsystem Context:
+        The vocabulary of the `change_control_manager` subsystem: every
+        `ChangeControlTransactionRequest` carries one member, the strategy
+        builder maps each to its `TransactionStrategy`, and the mediator/embargo
+        path normalizes and matches on these names. The set is exactly the
+        structural mutations the DGR admits - bind/conjure, the link and cluster
+        family, transfer/notch, and the index/contract verbs.
+
+    System Context:
+        This enum is the closed list of "things that can change the graph under
+        change control." That it is closed and stable is the point: admission,
+        conflict detection, embargo claims, and the per-type strategies all key
+        on these names, so adding a structural operation means adding a member
+        here plus a strategy - not threading a new ad-hoc string through the
+        whole control plane. Scan and embargo are deliberately NOT modeled as
+        transaction types (they are not user-driven graph mutations).
     """
     __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (
@@ -110,6 +131,27 @@ class ChangeControlTransactionRequest:
         Safe to share across threads because instances are immutable.
     Lifecycle:
         Immutable; no cleanup required.
+
+    Registration:
+        MELDER KERNEL - guarded. Built by the transaction-manager construction
+        helpers from a strategy's start plan; never user-constructed.
+
+    Subsystem Context:
+        The canonical PRE-admission record of the `change_control_manager`
+        subsystem - the inverse of `ChangeControlStagedMutation` (its
+        post-admission counterpart). A transaction strategy's `build_start_plan`
+        produces the normalized scope keys, claims, and metadata that populate
+        one of these; admission (conflict + embargo) then adjudicates it, and on
+        acceptance the orchestrator stages it.
+
+    System Context:
+        Freezing the request BEFORE admission is what makes admission
+        deterministic and replayable: conflict detection and scope-claim
+        acquisition read a fixed snapshot, so the same request cannot admit
+        differently depending on when its fields are read. The `scope_claims`
+        field is where a strategy expresses its concurrency intent per key
+        (exclusive/shared/intent); everything downstream - who blocks whom, what
+        the lock table records - follows from these normalized keys and modes.
     """
     __ast_helper_access__: ClassVar[str] = "internal"
     __agent_purpose__: ClassVar[str] = (
@@ -163,6 +205,26 @@ class ChangeControlAdmissionResult:
         Safe to share across threads because instances are immutable.
     Lifecycle:
         Immutable; no cleanup required.
+
+    Registration:
+        MELDER KERNEL - guarded. Returned by the orchestrator's admission path;
+        never user-constructed.
+
+    Subsystem Context:
+        The verdict object of the `change_control_manager` admission gate. The
+        orchestrator produces one per `ChangeControlTransactionRequest`:
+        `admitted=True` proceeds to staging, while a rejection carries the
+        concrete `conflicts` (blocking request ids) and `embargoes` (contended
+        scope keys) plus compact `reasons` codes.
+
+    System Context:
+        Returning EVIDENCE rather than a bare bool is what makes admission
+        debuggable and retry-able: a blocked transaction sees exactly which
+        request or scope key stopped it and waits scope-locally for that specific
+        release, and an operator inspecting a stuck mutation reads why it was
+        refused without decoding lock-table internals. The `reasons` layer keeps
+        that explanation machine-readable so callers branch on it without parsing
+        identifier tuples.
     """
     __ast_helper_access__: ClassVar[str] = "internal"
     __agent_purpose__: ClassVar[str] = (
