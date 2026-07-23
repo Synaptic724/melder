@@ -1,5 +1,12 @@
 # Epic: OCE - Aether Spellbook Core (user-facing binding surface)
 
+## Completion
+- Completed: 2026-07-23T00:20:00Z (done_pending_owner_run)
+- Summary: All 3 core spellbook classes carry the three context headers - melder_1 did `Spell` +
+  `SpellbookCreationSystem`, melder_0 did `Spellbook`; all DOCSTRING_ONLY vs HEAD, py_compile
+  green, scan 3/3 OK. spell_compiler excluded per owner.
+- NOT done by agent: the owner 3.14t suite run (exit gate). If it goes red, reopen.
+
 ## Metadata
 - Epic ID: EPIC-2026-07-19-oce-aether-spellbook
 - Parent: EPIC-2026-07-19-object-contract-enrichment-program

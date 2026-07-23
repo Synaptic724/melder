@@ -1,5 +1,15 @@
 # Epic: OCE - Utilities (classification + exposure + dead-code removal)
 
+## Completion
+- Completed: 2026-07-23T00:30:00Z (done_pending_owner_run)
+- Summary: Utilities classification + agent surface complete - 11 custom_exceptions USER-BINDABLE
+  (unguarded + agent pair); kernel primitives guarded + agent pair; base classes (Cleanable /
+  Sync / AbstractElasticPool) deliberately UNGUARDED per the MRO law; context headers present.
+  Owner ruled the NEEDS-TAG guard additions OVERKILL (that AC struck) and ruled KEEP `Package`
+  (dead code, not deleted).
+- TESTS NOT RUN by agent (3.10 sandbox): the owner 3.14t suite + the MRO-law regression are the
+  outstanding gate. Filed done_pending_owner_run; reopen if the owner run goes red.
+
 ## Metadata
 - Epic ID: EPIC-2026-07-19-oce-utilities
 - Parent: EPIC-2026-07-19-object-contract-enrichment-program

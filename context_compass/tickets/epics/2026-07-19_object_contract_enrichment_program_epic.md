@@ -1966,6 +1966,47 @@ NOTE (ITEM 5 hand-written pass through the mutation_research/research_set packag
   REREAD: REQUIRED
   SCORE_0_TO_10: 9
 
+- DATETIME: 2026-07-23T00:20:00Z
+  TYPE: DECISION
+  CLAIM: Owner (cowork) ruled 2026-07-23: LEAVE `utilities/helpers/package.py::Package` IN PLACE
+    (do NOT delete). Confirmed dead within the library - zero src references, only its own two
+    test files import it - and previously ruled do-not-expose; owner elects to keep it rather than
+    remove. This RESOLVES the standing Package deletion DECISION_REQUEST.
+  ALSO: guard-classification (agent-pair) half verified essentially COMPLETE - a tree-wide scan
+    (excl spell_compiler/tests) finds only 4 public classes without __agent_purpose__: three
+    TypedDicts (structurally exempt - a TypedDict cannot carry the attr) + Package (dead, now
+    kept). The concurrent guard-classification pass landed the rest. No further agent-pair
+    additions required.
+  EVIDENCE:
+  - src/melder/utilities/helpers/package.py (zero src importers; tests only)
+  - outputs/scan_agent_pair.py (4 remaining = 3 exempt TypedDicts + dead Package)
+  IMPACT: With docstrings COMPLETE (prior FACT note) and the agent-pair half complete/exempt,
+    the OCE program's remaining work is ZERO. Only the owner 3.14t import-health run stands
+    between here and closing the docstring child epics.
+  NEXT: Owner 3.14t run -> close.
+  REREAD: OPTIONAL
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-07-23T00:25:00Z
+  TYPE: FACT
+  AGENT: melder_1
+  CLAIM: Landed the final 6 agent pairs under owner approval (RiftSpace / CodegenRiftSpace /
+    StaticRiftSpace / Workstation = public, RiftMemorySystem = internal, ClassSurfaceAstDescriber
+    = public) - each ADDITIVE_ATTR_ONLY vs HEAD, py_compile green, BOM preserved on
+    rift_memory_system.py. Verified NO duplicate attrs anywhere (per-class AST scan tree-wide = 0
+    duplicate __agent_purpose__ classes), so the concurrent guard-pass and this pass did not
+    collide. Confirms the census: 0 non-exempt agent-pair gaps, 0 docstring-header gaps in scope.
+  DEFECT FOUND (flagged, NOT fixed - behavior change, out of scope): CodegenRiftSpace's
+    `__slots__ = ["_codegen_system"]` is SWALLOWED INTO its class docstring (the opening `"""`
+    precedes it), so the class declares no real __slots__ and _codegen_system falls to __dict__.
+    Latent (works, not crashing); owner should fix the docstring/slots ordering in a code lane.
+    EVIDENCE: src/melder/nexus/rift/rift_space/codegen_rift_space.py:18-23
+  IMPACT: Object contract COMPLETE in scope (docstrings + agent surface). Only the owner 3.14t
+    run + guard-regression tests remain (owner lane; agent reports Not run).
+  NEXT: Owner 3.14t run. melder_1 closed its own lanes (oce-aether-spellbook-core, sweep).
+  REREAD: OPTIONAL
+  SCORE_0_TO_10: 8
+
 ## Context / Handoff Summary
 Program epic for a correctness-plus-enrichment pass over all 542 classes in `src/melder`.
 Carries THE OBJECT CONTRACT (five items per class) and THE CHUNKING LAW (task <=10 classes,

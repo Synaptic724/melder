@@ -1,5 +1,12 @@
 # Story: OCE S1 - Package root document surfaces (exemplar diff)
 
+## Completion
+- Completed: 2026-07-23T00:30:00Z (done_pending_owner_run)
+- Summary: Guard sentinel + Subsystem/System Context landed on the root document surfaces (the
+  exemplar diff). The open DECISION_REQUEST (persist per-instance agent_purpose) is a behavior
+  change the program's non-goals exclude - deferred to owner, not implemented.
+- TESTS NOT RUN by agent. Filed done_pending_owner_run.
+
 ## Metadata
 - Story ID: STORY-2026-07-19-oce-root-document-surfaces
 - Epic: EPIC-2026-07-19-oce-package-root

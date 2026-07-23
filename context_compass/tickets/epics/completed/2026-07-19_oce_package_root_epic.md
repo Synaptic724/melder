@@ -1,5 +1,15 @@
 # Epic: OCE - Package Root and Document Surfaces (EXEMPLAR)
 
+## Completion
+- Completed: 2026-07-23T00:30:00Z (done_pending_owner_run)
+- Summary: Exemplar contract-complete: StaticSystemDocument carries all five items; the four
+  hardcopy modules carry question-shaped agent_purpose; MelderRegistrationGuard fully documented.
+  AC2/AC4 RESOLVED - the guard is DELIBERATELY unguarded (MRO law), so item-1 is "unguarded,
+  reasoned" and the bind-refusal regression is scoped to StaticSystemDocument only. Placeholder
+  hardcopy payloads left as-is (a separate content lane).
+- TESTS NOT RUN by agent (3.10 sandbox): owner 3.14t + guard regression outstanding. Filed
+  done_pending_owner_run.
+
 ## Metadata
 - Epic ID: EPIC-2026-07-19-oce-package-root
 - Parent: EPIC-2026-07-19-object-contract-enrichment-program
