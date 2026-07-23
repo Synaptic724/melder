@@ -1,5 +1,22 @@
 # Epic: Object Contract Enrichment Program (guard + agent surface + rich docstrings)
 
+## Completion
+- Completed: 2026-07-23T00:40:00Z (DONE - owner 3.14t GREEN)
+- Owner ran the 3.14t suite 2026-07-23 and reported it GREEN, satisfying the exit gate for this
+  program epic AND all its child epics.
+- Summary: Object Contract Enrichment Program COMPLETE in scope (spell_compiler excluded per
+  owner). Every in-scope class carries its guard classification, the agent pair
+  (__agent_purpose__ + __ast_helper_access__), and a Rank-4 docstring with Registration /
+  Subsystem Context / System Context. Final census: 357 in-scope classes, 0 docstring-header
+  gaps, 0 non-exempt agent-pair gaps; the 10 agent-pair-missing are all documented exemptions
+  (3 TypedDicts, 2 runtime_checkable Protocols, 4 private views, dead `Package` - owner ruled
+  keep). Delivered collaboratively by melder_0 + melder_1, hand-written, verified
+  docstring-/additive-attr-only vs HEAD + py_compile throughout.
+- One code-lane follow-up flagged (NOT a docstring issue): CodegenRiftSpace __slots__ swallowed
+  into its class docstring (codegen_rift_space.py:18-23).
+- Child epics (all in tickets/epics/completed/): oce-package-root, oce-utilities,
+  oce-aether-conduit, oce-aether-aetheric-frame, oce-nexus, oce-aether-spellbook-core.
+
 ## Metadata
 - Epic ID: EPIC-2026-07-19-object-contract-enrichment-program
 - Status: ready
@@ -2013,3 +2030,29 @@ Carries THE OBJECT CONTRACT (five items per class) and THE CHUNKING LAW (task <=
 story <=40, agent reads only contract + subsystem brief + its files). Ten child epics sized
 from a measured baseline; execution starts with oce-package-root as the exemplar. The
 headline correctness fact: 246 internals are currently bindable as spells.
+
+## Post-Closure Follow-up
+- DATETIME: 2026-07-23T00:50:00Z
+  TYPE: FACT
+  AGENT: melder_1
+  CLAIM: Owner-directed post-closure CODE fix: the CodegenRiftSpace `__slots__` defect flagged at
+    closure is FIXED. `__slots__ = ["_codegen_system"]` had been swallowed inside the class
+    docstring (the opening `"""` preceded it), so the class declared no real slots. Removed it
+    from the docstring and added it as a real class attribute. Verified: py_compile green; AST
+    confirms real `__slots__ == ['_codegen_system']`, the docstring no longer contains `__slots__`,
+    and the agent pair + three context headers are intact. `_codegen_system` is the ONLY instance
+    attr the class adds (confirmed by reading __init__), so the restored slots match the author's
+    intent and construction is unaffected.
+  REPO SCAN (owner-directed): scanned ALL of src/ for the same bug class - code (`__slots__ =`,
+    `= _mrg.sentinel`, `__melder_internal__ =`, a `def`/`@decorator` line) swallowed into a
+    docstring. 5 flags, ALL false positives: 1 prose mention of `_mrg.sentinel`
+    (MelderRegistrationGuard) + 4 legitimate docstring code examples (SpellMap, class_wraps,
+    CancellationEvent, SpellContract "Typical usage" block). CodegenRiftSpace was the ONLY real
+    instance; the tree is clean.
+  NOTE: this is a real CODE change (adds slots), NOT covered by the owner's earlier 3.14t GREEN
+    run. Owner should RE-RUN 3.14t to confirm - any code that set an arbitrary attribute on a
+    codegen room (relying on the accidental __dict__) would now raise. Unlikely (the class was
+    designed slotted), but the run confirms it.
+  EVIDENCE: src/melder/nexus/rift/rift_space/codegen_rift_space.py:18-24,67-79
+  REREAD: OPTIONAL
+  SCORE_0_TO_10: 8

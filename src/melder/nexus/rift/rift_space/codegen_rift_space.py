@@ -17,10 +17,6 @@ from melder.nexus.rift.rift_gate.rift_gate import RiftGate
 
 class CodegenRiftSpace(RiftSpace):
     """
-
-    __slots__ = [
-        "_codegen_system",
-    ]
     Internal
 
     Purpose:
@@ -71,6 +67,10 @@ class CodegenRiftSpace(RiftSpace):
         "for validate/execute-code workflows plus a slim runtime-helper surface and the full "
         "research command family. You get it as a Rift's space when space_type=codegen."
     )
+    __slots__ = [
+        "_codegen_system",
+    ]
+
     def __init__(
             self,
             owner_rift_id: str,

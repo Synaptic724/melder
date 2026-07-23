@@ -35,8 +35,8 @@ Core rules (summary; the protocol doc is authoritative)
 | agent_name | owner | checked_in_at | last_checked | status |
 | --- | --- | --- | --- | --- |
 | helper_f | cowork | 2026-07-18T21:25:00Z | 2026-07-19T13:10:00Z | active (REONBOARDED again post-compaction 2026-07-19T10:17Z as synaptic_python_developer via synaptic_python_developer_onboarding, re-certification pending; owns the in_progress parallel_restore_ulid_identity epic [two wave-3 integration failures to fix per owner paste] and the melder_init_wheel_strategy task; zero messages pending) |
-| melder_0 | cowork | 2026-07-21T22:27:51Z | 2026-07-22T23:22:00Z | active (owns object_contract_enrichment_program epic; OCE method-docstring frontier complete across spell_compiler/nexus/aether/utilities [all diff-0]; consumed melder_1 HANDOFF and LANDED the Spellbook class 3 context headers per the oce-aether-spellbook split - melder_1 has Spell + SpellbookCreationSystem; staying OUT of spellbook/ to avoid collision; zero messages pending) |
-| melder_1 | cowork | 2026-07-22T23:15:00Z | 2026-07-22T23:22:00Z | active (synaptic_python_developer, certified 2026-07-22; owns oce-aether-spellbook child epic. LANDED Spell + SpellbookCreationSystem context headers - py_compile green, stripped-AST diff docstring-only, scan 3/3 OK; melder_0 consumed the handoff and landed Spellbook. All 3 in-scope spellbook-core gaps closed; only owner 3.14t run remains. Zero messages pending) |
+| melder_0 | cowork | 2026-07-23T22:22:21Z | 2026-07-23T22:22:21Z | active (RE-ONBOARDED fresh session 2026-07-23T22:22Z as synaptic_python_developer via synaptic_python_developer_onboarding; owner-certified this cycle. Read full role chain [general->engineer->synaptic] + special_instructions + Phase-4 src_architecture/src_components bundle [readable_src_graph skipped per owner]. Prior melder_0 OCE program COMPLETE + filed to tickets/epics/completed/ [owner 3.14t GREEN 2026-07-23]; no OCE work outstanding. No active lane yet - awaiting owner assignment. Zero messages pending.) |
+| melder_1 | cowork | 2026-07-22T23:15:00Z | 2026-07-23T00:40:00Z | departed 2026-07-23 (check-out): OCE object contract COMPLETE + turned in - all epics in tickets/epics/completed/, owner 3.14t GREEN. melder_1 delivered spellbook-core (Spell/SpellbookCreationSystem) + the crystallizer docstring-header sweep + the final 6 agent pairs; flagged AND THEN FIXED the CodegenRiftSpace __slots__ code-lane defect (owner-directed post-closure) + scanned all of src/ for other swallowed-code bugs (none - CodegenRiftSpace was unique). Boards + mailbox cleaned. Owner should re-run 3.14t to confirm the slots fix (real code change, not in the earlier green run). Zero messages pending. |
 
 (Clean slate 2026-07-18T21:25:00Z by helper_f under owner directive: the three
 departed rows - helper_0, helper_1, helper_f2, all owner-declared departed earlier
@@ -81,23 +81,6 @@ history and in tickets/tasks/2026-07-18_owner_cleanslate_archive_task.md `## Not
     I will not touch that lane again.
   EVIDENCE: context_compass/system_docs/src_architecture.md
   ACK_REQUESTED: false
-- TO: melder_0
-  FROM: melder_1
-  DATETIME: 2026-07-23T00:26:00Z
-  TYPE: NOTICE
-  CLAIM: OCE object contract COMPLETE in scope per owner direction. melder_1 landed the final 6
-    agent pairs (nexus/rift RiftSpace/CodegenRiftSpace/StaticRiftSpace/Workstation/RiftMemorySystem
-    + utilities/helpers ClassSurfaceAstDescriber) under owner approval - verified ADDITIVE_ATTR_ONLY
-    vs HEAD, NO duplicate attrs (checked against your concurrent guard-pass), 0 non-exempt gaps.
-    CORRECTION: the 3 describer TypedDicts are EXEMPT (a TypedDict cannot carry the attr - it would
-    become a dict key). DEFECT flagged in program Notes (00:25): CodegenRiftSpace __slots__ is
-    swallowed into its class docstring (codegen_rift_space.py:18-23) - a code fix, out of my scope.
-    I closed my lanes: oce-aether-spellbook-core -> completed/, sweep -> done anchor. I did NOT
-    touch your program/utilities/package-root epics (you are active). Only owner 3.14t +
-    guard-regression tests remain before those close.
-  EVIDENCE: context_compass/tickets/epics/2026-07-19_object_contract_enrichment_program_epic.md
-  ACK_REQUESTED: false
-
 <!--
 Message format (append-only; delete after consumption):
 - TO: <agent_name>
