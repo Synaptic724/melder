@@ -5,7 +5,7 @@
 ## Metadata
 - Task ID: TASK-2026-07-25-sentinel-deadcode-strip
 - Story: STORY-2026-07-25-guard-manifest-truth
-- Status: blocked
+- Status: done (SUPERSEDED - the target code was deleted by the owner's sweep)
 - Owner: melder_1
 - Agent Name: melder_1
 - Priority: p2
@@ -161,8 +161,48 @@ exposing a surface whose own docstring instructs a pattern that no longer works.
   REREAD: REQUIRED
   SCORE_0_TO_10: 9
 
+- DATETIME: 2026-07-25T18:43:26Z
+  TYPE: DECISION
+  CLAIM: SUPERSEDED, not completed. The owner's sweep deleted the entire guard module
+    rather than just its dead sentinel surface, so this task has no target left. The
+    patch gate that blocked it is moot: no code change is made by this agent.
+    `__melder_registration_guard__.py` no longer exists; refusal is now a module-level
+    `assert_allowed` in `bind.py` plus a `_RegistrationGuardProxy` compat shim, and
+    `melder/__init__.py` neither imports nor exports any guard symbol.
+  EVIDENCE:
+  - src/melder/aether/spellbook/bind/bind.py:23-43
+  - src/melder/aether/spellbook/bind/bind.py:308-308
+  IMPACT: Closing as superseded keeps a blocked row off the board without claiming
+    work that was never performed here. The two patch artifacts were never authored,
+    correctly, because no system-impacting code edit occurred.
+  NEXT: None. Residual code-side item recorded below for owner routing.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 8
+- DATETIME: 2026-07-25T18:43:26Z
+  TYPE: RISK
+  CLAIM: Two stale code-side docstrings survive the sweep and still teach the retired
+    mechanism. `_builder.py:9` names `melder.__melder_registration_guard__` as the
+    manifest's consumer, but that module is deleted and the consumer is `bind.py`.
+    `cleanable.py:51-54` still describes detection via
+    `getattr(candidate, "__melder_internal__", None)` walking the MRO, which is exactly
+    the behavior the manifest retired.
+  EVIDENCE:
+  - src/melder/_build_assets/_init_manifest/_builder.py:9-9
+  - src/melder/utilities/general_base/cleanable.py:51-54
+  IMPACT: `cleanable.py` is referenced across ~277 files and its note is the one most
+    likely to be read by someone deciding whether to guard a base class; it currently
+    justifies a rule using a mechanism that no longer exists.
+  NEXT: Owner routing - these are two docstring edits, deliberately not taken as a
+    drive-by inside a documentation lane.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
 ## Context / Handoff Summary
-Blocked by the patch gate, not by unknowns - the mechanism and the dead surface are
+SUPERSEDED. The owner's sweep removed the guard module outright, so there is nothing
+left to strip and the patch gate never needed satisfying. Two stale code docstrings
+(`_builder.py:9`, `cleanable.py:51-54`) remain and are recorded above for routing.
+
+Original framing follows for history: blocked by the patch gate, not by unknowns - the mechanism and the dead surface are
 both fully evidenced. Unblocking is two patch documents plus one owner ruling on
 whether a code-description patch applies to a mechanical removal. The guard docstring's
 historical account of the retired sentinel stays; only the live surface goes.

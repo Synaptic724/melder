@@ -11,7 +11,7 @@ class InternalRegistrationError(RuntimeError):
         public path."
 
     Raised When:
-        `MelderRegistrationGuard.assert_allowed(...)` finds the registration
+        `melder.aether.spellbook.bind.bind.assert_allowed(...)` finds the registration
         sentinel on a candidate. In practice this means `Spellbook.bind(...)`
         was handed a Melder kernel object - a gate, a scheduler, a control-plane
         registry - rather than a user service.

@@ -1,7 +1,8 @@
 # UX_and_AIX_experiences (AGENTS.md)
 
 Purpose: the living exploration of how HUMANS (UX) and AGENTS (AIX) use melder,
-tiered beginner -> intermediate -> expert -> master. Every example is written
+tiered beginner -> intermediate -> advanced -> expert (matched to the
+README ladder, owner ruling 2026-07-22). Every example is written
 against `import melder as md` ONLY - any example forced to reach a deep path is,
 by definition, an init-surface gap and must be recorded on the owning epic.
 
@@ -20,8 +21,8 @@ Layout:
                     NO Nexus, NO MutationResearch, NO crystallizer, and NO
                     AethericFrame objects - substrate stays invisible; the
                     _dynamic_world helper is a black box by design)
-- 03_expert/        AR rooms, viewers, workstations, research lanes, diff/impact foresight
-- 04_master/        pod restart, external DB meshes, group composition, campaign evolution, custom decorators
+- 03_advanced/      frames as worlds, static rooms, clusters, deep overrides
+- 04_expert/        AR rooms, transactions, checkpoints, governed mutation, external DB meshes
 
 Laws:
 - Examples are RUNNABLE scripts (3.14t) with a main() and honest printed asserts.

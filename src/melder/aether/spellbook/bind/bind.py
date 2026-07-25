@@ -1,7 +1,7 @@
 import inspect
 import threading
 import hashlib
-from typing import TYPE_CHECKING, Any, Optional, Sequence, Union, ClassVar
+from typing import TYPE_CHECKING, Any, Optional, Sequence, Tuple, Union, ClassVar
 
 if TYPE_CHECKING:
     from melder.aether.spellbook.spellbook import Spellbook
@@ -20,27 +20,82 @@ from melder.aether.spellbook.spell import Spell
 from melder._build_assets._init_manifest.internal_manifest import INTERNAL_MANIFEST
 from melder.utilities.custom_exceptions.internal_registration_error import InternalRegistrationError
 
-def assert_allowed(candidate: Any, context: str = "bind") -> None:
+
+def _internal_identity_of(candidate: Any) -> Tuple[str, str]:
+    """
+    Resolve the `(module, qualname)` identity used for manifest lookup.
+
+    Contract:
+        Classes answer for themselves; instances answer through `type(candidate)`,
+        so binding an instance of an internal class is refused exactly like
+        binding the class. Pure and deterministic - it reads two attributes and
+        allocates nothing.
+
+        `getattr` with a default is deliberate here and is NOT the defensive
+        introspection the repo bans: `candidate` is arbitrary USER input whose
+        attribute contract is not visible to us, which is the documented
+        polymorphic/external exception. A target missing either attribute
+        degrades to an empty string, which simply misses the manifest instead of
+        raising - an unidentifiable object is not a melder internal.
+
+    Args:
+        candidate: The class or object being considered for registration.
+
+    Returns:
+        Tuple[str, str]: The candidate's module name and qualified name.
+    """
     target_cls = candidate if isinstance(candidate, type) else type(candidate)
-    mod_name = getattr(target_cls, "__module__", "") or ""
-    qual_name = getattr(target_cls, "__qualname__", "") or ""
-    if (mod_name, qual_name) in INTERNAL_MANIFEST:
+    module_name = getattr(target_cls, "__module__", "") or ""
+    qualified_name = getattr(target_cls, "__qualname__", "") or ""
+    return module_name, qualified_name
+
+
+def assert_allowed(candidate: Any, context: str = "bind") -> None:
+    """
+    Refuse registration of a Melder-internal class as a spell.
+
+    Purpose:
+        The single enforcement seam for the internal-bind policy. `Bind` calls it
+        once per registration; nothing else in the runtime consults the manifest.
+
+    Contract:
+        Membership is an EXACT `(module, qualname)` match against the generated
+        `INTERNAL_MANIFEST` and does NOT walk the MRO. Listing `Cleanable` blocks
+        `Cleanable` itself; a user subclass carries its own module and qualname,
+        is absent from the manifest, and binds normally. That non-inheritance is
+        precisely what allows the blanket "every class in the package is guarded"
+        rule to exist without a curated exclusion list, and it is the accepted
+        behaviour change from the retired `__melder_internal__` sentinel, which
+        was read with `getattr` and therefore inherited.
+
+        Guarding and exporting are ORTHOGONAL: this restricts REGISTRATION, never
+        USE. Exported, user-constructible surfaces such as the custom exceptions
+        and `ProtocolCrafter` stay importable and callable while being unbindable.
+
+    Threading / Concurrency:
+        Lock-free and safe under free-threaded 3.14t. `INTERNAL_MANIFEST` is an
+        immutable module-level `frozenset`, so enforcement adds no contention to
+        the bind path.
+
+    Args:
+        candidate: The class or object being offered for registration.
+        context: Call-site label carried into the error message.
+
+    Returns:
+        None: Returns normally when the candidate is bindable.
+
+    Raises:
+        InternalRegistrationError: When the candidate's identity is present in
+            the generated manifest.
+    """
+    module_name, qualified_name = _internal_identity_of(candidate)
+    if (module_name, qualified_name) in INTERNAL_MANIFEST:
         raise InternalRegistrationError(
             f"Registration blocked for Melder internal object "
-            f"(type={qual_name}, module='{mod_name}', context='{context}'). "
+            f"(type={qualified_name}, module='{module_name}', context='{context}'). "
             f"Melder kernel/control-plane objects cannot be registered as spells."
         )
 
-class _RegistrationGuardProxy:
-    def assert_allowed(self, candidate: Any, context: str = "bind") -> None:
-        assert_allowed(candidate, context=context)
-    def is_internal(self, candidate: Any) -> bool:
-        target_cls = candidate if isinstance(candidate, type) else type(candidate)
-        mod_name = getattr(target_cls, "__module__", "") or ""
-        qual_name = getattr(target_cls, "__qualname__", "") or ""
-        return (mod_name, qual_name) in INTERNAL_MANIFEST
-
-_mrg = _RegistrationGuardProxy()
 from melder.aether.spellbook.bind.spell_index import SpellIndex
 from melder.aether.spellbook.spell_compiler.spell_examiner.spell_examiner import SpellExaminer
 from melder.utilities.helpers.id_builder import IDBuilder
@@ -305,7 +360,7 @@ class Bind(Cleanable):
         """
         with self._lock:
             # 0. Block registration of Melder internal objects/classes.
-            _mrg.assert_allowed(spell, context="bind")
+            assert_allowed(spell, context="bind")
             # 0.1 Reject modules outright.
             if inspect.ismodule(spell):
                 raise TypeError(

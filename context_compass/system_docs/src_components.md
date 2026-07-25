@@ -179,52 +179,32 @@ Purpose:
 
 Responsibilities:
 - Warn on Python < 3.14 and on GIL-enabled builds (3.14+ is the supported floor).
-- Resolve `INTERNAL_MANIFEST` through the manifest loader before the guard is built.
-- Instantiate the registration guard singleton.
 - Boot `Aether()` eagerly from the package root.
 - Expose package metadata and version string.
 
 Inputs:
 - Python runtime version and `sys._is_gil_enabled()`.
-- The generated internal-bind cache, or the package source when the cache is absent or
-  stamped for a different melder version.
 
 Outputs:
 - UserWarning messages.
-- Module-level `__melder_registration_guard__` instance.
-- `INTERNAL_MANIFEST` as a module-level `frozenset` of `(module, qualname)` pairs.
 
 Owned State:
 - Package metadata (`__version__`, `__author__`, `__license__`, `__description__`).
-- `__melder_registration_guard__` singleton instance.
-- `INTERNAL_MANIFEST` frozenset (`MANIFEST_ENTRY_COUNT` 578 in the current cache).
 
 Lifecycle/Cleanup:
 - Executes at import time; no explicit cleanup.
-- The cache module is a build product, not source, and is not shipped in the wheel; a
-  fresh environment rebuilds it on first import.
 
 Concurrency/Threading:
-- Import-time only for the warnings and metadata.
-- Guard singleton construction is guarded by a class-level lock, which matters under
-  free-threaded 3.14t where several threads may race on first access.
-- Enforcement is lock-free: a frozenset membership test on an immutable object, so it
-  adds no contention to bind.
+- Import-time only.
 
 Invariants/Guarantees:
-- Guard singleton exists after package import.
-- The manifest is identical on all three loader paths (cached, cold-boot write,
-  in-memory); only cost differs. Correctness never depends on the write succeeding.
-- Cache invalidation is keyed to the melder version, so an upgrade cannot resolve bind
-  decisions against a stale class list.
+- No registration-guard object is constructed at package import; the package root
+  neither imports nor exports any guard symbol.
 - Runtime warnings are emitted but do not block execution.
 
 Failure Modes:
-- `InternalRegistrationError` when a candidate's `(module, qualname)` is present in
-  `INTERNAL_MANIFEST` and it is submitted through a guarded registration path.
-- Missing `__module__`/`__qualname__` degrade to empty strings, which simply miss the
-  manifest rather than raising.
 - Runtime guardrails are warning-only for Python version / GIL mode checks.
+- Registration refusal is not raised from here; it belongs to the bind pipeline.
 
 Observability:
 - Warnings via `warnings.warn`.
@@ -236,7 +216,6 @@ Extension Points:
 
 Key Files (C1):
 - `src/melder/__init__.py`
-- `src/melder/__melder_registration_guard__.py`
 
 ### Component: Packaged Hardcopy Documents And Public Helper Exports
 Purpose:
@@ -2157,20 +2136,32 @@ Concurrency/Threading:
 Key Files (C1):
 - `src/melder/__init__.py`
 
-### Subcomponent: Registration Guard (Internal-Bind Manifest)
-Parent Component: Public API and Runtime Guardrails
+### Subcomponent: Registration Refusal (Internal-Bind Manifest)
+Parent Component: Binding Pipeline (Bind, Spell, SpellIndex)
 Purpose:
 - Block Melder-internal classes from being bound as spells, by exact identity rather
   than by an inherited tag.
 Contract/Interface:
-- `assert_allowed(candidate, context="bind")` raises `InternalRegistrationError` when
-  the candidate's `(module, qualname)` is in `INTERNAL_MANIFEST`.
-- `is_internal(candidate)` is the non-raising predicate over the same lookup.
-- `_identity_of(candidate)` resolves classes directly and instances through
-  `type(candidate)`.
+- `assert_allowed(candidate, context="bind")` is a MODULE-LEVEL FUNCTION in `bind.py`.
+  It raises `InternalRegistrationError` when the candidate's `(module, qualname)` is in
+  `INTERNAL_MANIFEST`. There is no guard class and no singleton.
+- `_RegistrationGuardProxy` (bound as `_mrg` in the same module) forwards
+  `assert_allowed`. It is a TEST SEAM, not vestigial scaffolding: no production module
+  outside `bind.py` references `_mrg`, but `test_bind.py` substitutes it as a module
+  attribute in seven places - an autouse fixture neutralizing the check for the whole
+  file, plus targeted swaps including a `RejectingGuard` asserting refusal propagates.
+  Collapsing the proxy into a direct function call would silently defeat every one of
+  them, since the patches would still land on `_mrg` while production no longer read it.
+- `_RegistrationGuardProxy.is_internal(...)` has zero callers in `src/`, `tests/`, or
+  `benchmarks/` and is dead on the current tree.
+- Classes answer for themselves; instances resolve through `type(candidate)`.
 Data Structures:
-- `INTERNAL_MANIFEST`: `FrozenSet[Tuple[str, str]]` of `(module, qualname)` pairs.
-- Generated cache module carrying `BUILT_FOR_VERSION` and `MANIFEST_ENTRY_COUNT`.
+- `INTERNAL_MANIFEST`: `FrozenSet[Tuple[str, str]]` of `(module, qualname)` pairs,
+  imported from `melder._build_assets._init_manifest.internal_manifest`.
+- That module is a GENERATED DURABLE BUILD ASSET carrying `BUILT_FOR_VERSION` and
+  `MANIFEST_ENTRY_COUNT` (577 at the current build). It is committed, not built at
+  import: there is no loader, no first-import scan, and no cache-write fallback.
+  Regeneration is explicit via `python build_scripts/build_internal_manifest.py`.
 Semantics:
 - EXACT MATCH, NO INHERITANCE. Listing `Cleanable` blocks `Cleanable` itself; a user
   subclass carries its own module and qualname, is absent from the manifest, and binds
@@ -2183,20 +2174,15 @@ Semantics:
   where one missed stamp produced a bindable internal.
 - Guarding and exporting are ORTHOGONAL: the guard restricts REGISTRATION, never USE.
 Concurrency/Threading:
-- Singleton construction is guarded by a class-level lock for free-threaded 3.14t.
-- Enforcement is lock-free (frozenset membership on an immutable module-level object).
+- Stateless. Enforcement is lock-free: a frozenset membership test on an immutable
+  module-level object, so it adds no contention to bind.
 Enforcement Surface:
-- Exactly one live call site: `bind.py:285`.
-Known Vestigial Surface:
-- The module still carries `_SENTINEL`, a `_sentinel` slot, an `__init__` assignment,
-  and a `sentinel` property whose docstring instructs assigning it to
-  `__melder_internal__`. Nothing reads that attribute anymore, so the instruction no
-  longer works. Removal is tracked by TASK-2026-07-25-sentinel-deadcode-strip.
+- Exactly one live call site: `bind.py:308  _mrg.assert_allowed(spell, context="bind")`.
 Key Files (C1):
-- `src/melder/__melder_registration_guard__.py`
-- `src/melder/__melder_cache__/__init_cache__/manifest_loader.py`
-- `src/melder/__melder_cache__/__init_cache__/internal_manifest.py` (GENERATED)
-- `src/melder/__melder_cache__/__init_cache__/_builder.py`
+- `src/melder/aether/spellbook/bind/bind.py` (`assert_allowed`,
+  `_RegistrationGuardProxy`)
+- `src/melder/_build_assets/_init_manifest/internal_manifest.py` (GENERATED, committed)
+- `src/melder/_build_assets/_init_manifest/_builder.py` (build-time only)
 - `build_scripts/build_internal_manifest.py`
 
 ### Subcomponent: Packaged Hardcopy Document Modules
@@ -3454,14 +3440,11 @@ These flows describe concrete method sequences for core behaviors.
 
 ### Flow: Import -> Runtime Guardrails
 1. `import melder`:
-   - `melder/__init__.py` imports `MelderRegistrationGuard`, which imports
-     `manifest_loader`, which resolves `INTERNAL_MANIFEST` at module scope.
-   - Loader path taken: cached module when `BUILT_FOR_VERSION` matches; else scan and
-     write a fresh cache; else in-memory scan when the directory is not writable.
-   - `__melder_registration_guard__` singleton is instantiated.
    - `Aether()` is booted eagerly from the package root.
    - `melder/__init__.py` checks Python version and warns if < 3.14.
    - `_detect_nogil_mode()` calls `sys._is_gil_enabled()` and warns if GIL on.
+   - No guard object is constructed. `INTERNAL_MANIFEST` is imported as a committed
+     build asset the first time `bind.py` is imported.
 
 ### Flow: Spellbook Init -> SpellbookConfiguration and Logging
 1. `Spellbook.__init__`:
@@ -3776,9 +3759,9 @@ unbreakable tokens (`configuration_standards.md`).
 REGENERATION: this section is a derived inventory. Re-walk the package rather
 than hand-editing entries, so it cannot drift silently from source.
 
-Module count: 553 (excluding `__init__.py`).
+Module count: 550 (excluding `__init__.py`).
 
-**Package root** - 10 modules
+**Package root** - 9 modules
 
 - `src/melder/__architecture__.py` - Packaged hardcopy runtime object for Melder architecture documentation
 - `src/melder/__author__.py` - Author metadata exposed at the top-level Melder package surface
@@ -3787,18 +3770,16 @@ Module count: 553 (excluding `__init__.py`).
 - `src/melder/__graph_details__.py` - Packaged hardcopy runtime object for future Melder graph-details documentation
 - `src/melder/__graph_network__.py` - Packaged hardcopy runtime object for future Melder graph-network documentation
 - `src/melder/__license__.py` - License metadata exposed by the top-level Melder package
-- `src/melder/__melder_registration_guard__.py` - Singleton guard for blocking registration of Melder internals
 - `src/melder/__version__.py` - Version metadata exposed by the top-level Melder package
 - `src/melder/system_document.py` - Top-level hardcopy system document object for agent-facing Melder surfaces
 
-**__melder_cache__/ - generated build products** - 5 modules
+**_build_assets/ - generated durable build assets** - 2 modules
 
-- `src/melder/__melder_cache__/__init_cache__/__init_cache__.py`
-  Init-cache storage root for Melder's boot-time generated artifacts
-- `src/melder/__melder_cache__/__init_cache__/_builder.py` - Internal-bind manifest scanner and cache writer
-- `src/melder/__melder_cache__/__init_cache__/internal_manifest.py` - GENERATED FILE - DO NOT EDIT
-- `src/melder/__melder_cache__/__init_cache__/manifest_loader.py`
-  Load the internal-bind manifest, rebuilding the boot cache when necessary
+- `src/melder/_build_assets/_init_manifest/_builder.py` - Internal-bind manifest scanner and durable asset builder
+- `src/melder/_build_assets/_init_manifest/internal_manifest.py` - GENERATED DURABLE BUILD ASSET - DO NOT EDIT MANUALLY
+
+**__melder_cache__/ - runtime cache surfaces** - 1 modules
+
 - `src/melder/__melder_cache__/__melder_cache__.py`
   This module serves as a cache for Melder-related data and functions
 
@@ -4763,12 +4744,13 @@ Module count: 553 (excluding `__init__.py`).
   Depth-counting flag: truthy while at least one ticket is held, and truthy writes STACK
 - `src/melder/utilities/synchronization/unit_of_work.py` - One runnable unit bound to a callable, exposed as a Future
 
-UNKNOWN entries: 17 of 553.
+UNKNOWN entries: 17 of 550.
 
 HISTORICAL NOTE: this section previously held two entries plus a 2026-07-07
 tail-repair marker recording that its remainder was lost to a mid-write
 truncation predating recoverable git history. It was rebuilt in full on
-2026-07-25 under TASK-2026-07-25-c1-code-map-restore.
+2026-07-25 under TASK-2026-07-25-c1-code-map-restore, and regenerated the same
+day after the guard/manifest relocation sweep moved and removed modules.
 ## Crystallizer Persistence & Restore (promoted from patch
 ## restore_engine_2026_07_07 + successor lanes, 2026-07-07)
 

@@ -6,33 +6,51 @@ It lives inside `src/melder/_build_assets/_init_manifest/` as a durable package 
 
 Consumers:
   * `build_scripts/build_internal_manifest.py` - CLI generation script and CI staleness gate.
-  * `melder.__melder_registration_guard__` - reads `INTERNAL_MANIFEST` from `internal_manifest.py`.
+  * `melder.aether.spellbook.bind.bind` - imports `INTERNAL_MANIFEST` from
+    `internal_manifest.py` and enforces it through `assert_allowed(...)`.
 
 The scan uses pure AST parsing: nothing is imported from `melder`, so it is cycle-safe and free of side effects.
 """
-from __future__ import annotations
-
 import ast
 import pathlib
-from collections.abc import Iterable
+from typing import Iterable, List, Set, Tuple
 
-# ---------------------------------------------------------------------------
-# EXCLUSIONS - classes that must remain BINDABLE by users.
-# Entries are (module_suffix, qualname) where module_suffix is the dotted path
-# BELOW `melder.` - e.g. ("utilities.helpers.id_builder", "IDBuilder").
-# ---------------------------------------------------------------------------
-EXCLUDED: set[tuple[str, str]] = set()
 
-BUILD_ASSETS_DIR_NAME = "_build_assets"
-INIT_MANIFEST_DIR_NAME = "_init_manifest"
-MANIFEST_FILE_NAME = "internal_manifest.py"
+class ManifestBuildPolicy:
+    """
+    Static namespace for the manifest generator's fixed policy values.
 
-_SKIP_DIR_NAMES = {
-    "__pycache__",
-    "__melder_cache__",
-    BUILD_ASSETS_DIR_NAME,
-    INIT_MANIFEST_DIR_NAME,
-}
+    Contract:
+        Class-level constants rather than module globals, per the repo's module
+        scope rule. Nothing here is mutated at runtime; the generator reads these
+        to decide what to scan and where to write.
+
+    Attributes:
+        EXCLUDED: Classes that must remain BINDABLE by users, as
+            `(module_suffix, qualname)` where module_suffix is the dotted path
+            BELOW `melder.` - e.g. `("utilities.helpers.id_builder", "IDBuilder")`.
+            Starts EMPTY under the owner's blanket-guard ruling and exists as the
+            documented seam for future exceptions.
+        BUILD_ASSETS_DIR_NAME: Package directory holding durable build assets.
+        INIT_MANIFEST_DIR_NAME: Package directory holding the manifest asset.
+        MANIFEST_FILE_NAME: Generated manifest module filename.
+        SKIP_DIR_NAMES: Directories excluded from the scan. `__melder_cache__` is
+            disposable runtime output, and the asset directories are skipped so
+            the generator never records its own scaffolding as bindable internals.
+    """
+
+    EXCLUDED: Set[Tuple[str, str]] = set()
+
+    BUILD_ASSETS_DIR_NAME: str = "_build_assets"
+    INIT_MANIFEST_DIR_NAME: str = "_init_manifest"
+    MANIFEST_FILE_NAME: str = "internal_manifest.py"
+
+    SKIP_DIR_NAMES: Set[str] = {
+        "__pycache__",
+        "__melder_cache__",
+        "_build_assets",
+        "_init_manifest",
+    }
 
 
 def package_root() -> pathlib.Path:
@@ -52,7 +70,12 @@ def manifest_path() -> pathlib.Path:
     Returns:
         pathlib.Path: `<package>/_build_assets/_init_manifest/internal_manifest.py`.
     """
-    return package_root() / BUILD_ASSETS_DIR_NAME / INIT_MANIFEST_DIR_NAME / MANIFEST_FILE_NAME
+    return (
+        package_root()
+        / ManifestBuildPolicy.BUILD_ASSETS_DIR_NAME
+        / ManifestBuildPolicy.INIT_MANIFEST_DIR_NAME
+        / ManifestBuildPolicy.MANIFEST_FILE_NAME
+    )
 
 
 def _iter_source_files(root: pathlib.Path) -> Iterable[pathlib.Path]:
@@ -66,7 +89,7 @@ def _iter_source_files(root: pathlib.Path) -> Iterable[pathlib.Path]:
         Iterable[pathlib.Path]: Source files in stable sorted order.
     """
     for path in sorted(root.rglob("*.py")):
-        if any(part in _SKIP_DIR_NAMES for part in path.parts):
+        if any(part in ManifestBuildPolicy.SKIP_DIR_NAMES for part in path.parts):
             continue
         yield path
 
@@ -90,7 +113,7 @@ def _module_name_for(path: pathlib.Path, root: pathlib.Path) -> str:
     return ".".join(["melder", *parts]) if parts else "melder"
 
 
-def _collect_qualnames(tree: ast.Module) -> list[str]:
+def _collect_qualnames(tree: ast.Module) -> List[str]:
     """
     Collect dotted qualnames for every class defined in a module.
 
@@ -100,7 +123,7 @@ def _collect_qualnames(tree: ast.Module) -> list[str]:
     Returns:
         List[str]: Qualnames in source order.
     """
-    found: list[str] = []
+    found: List[str] = []
 
     def walk(body: Iterable[ast.stmt], prefix: str) -> None:
         for node in body:
@@ -114,7 +137,7 @@ def _collect_qualnames(tree: ast.Module) -> list[str]:
     return found
 
 
-def scan_manifest() -> list[tuple[str, str]]:
+def scan_manifest() -> List[Tuple[str, str]]:
     """
     Scan the package and return every internal `(module, qualname)` pair.
 
@@ -122,19 +145,19 @@ def scan_manifest() -> list[tuple[str, str]]:
         List[Tuple[str, str]]: Sorted, de-duplicated manifest entries.
     """
     root = package_root()
-    entries: set[tuple[str, str]] = set()
+    entries: Set[Tuple[str, str]] = set()
     for path in _iter_source_files(root):
         tree = ast.parse(path.read_text(encoding="utf-8-sig"), filename=str(path))
         module_name = _module_name_for(path, root)
         suffix = module_name[len("melder.") :] if module_name != "melder" else ""
         for qualname in _collect_qualnames(tree):
-            if (suffix, qualname) in EXCLUDED:
+            if (suffix, qualname) in ManifestBuildPolicy.EXCLUDED:
                 continue
             entries.add((module_name, qualname))
     return sorted(entries)
 
 
-def render_manifest(entries: list[tuple[str, str]], version: str) -> str:
+def render_manifest(entries: List[Tuple[str, str]], version: str) -> str:
     """
     Render the generated manifest module source.
 
@@ -145,7 +168,7 @@ def render_manifest(entries: list[tuple[str, str]], version: str) -> str:
     Returns:
         str: Complete module source, newline-terminated.
     """
-    lines: list[str] = [
+    lines: List[str] = [
         '"""',
         "GENERATED DURABLE BUILD ASSET - DO NOT EDIT MANUALLY.",
         "",
@@ -172,7 +195,7 @@ def render_manifest(entries: list[tuple[str, str]], version: str) -> str:
     return "\n".join(lines)
 
 
-def write_manifest(version: str) -> tuple[pathlib.Path, int]:
+def write_manifest(version: str) -> Tuple[pathlib.Path, int]:
     """
     Scan the package and write the durable manifest asset to disk.
 

@@ -1,7 +1,7 @@
-# Epic: UX/AIX Master experience exploration
+# Epic: UX/AIX Advanced experience exploration
 
 ## Metadata
-- Epic ID: EPIC-2026-07-19-ux-aix-master
+- Epic ID: EPIC-2026-07-19-ux-aix-advanced
 - Status: pending
 - Owner: cowork
 - Agent Name: helper_f
@@ -10,13 +10,13 @@
 - Updated: 2026-07-19T12:52:00Z
 
 ## Objective
-The operator's tier: CrystallizerBootstrap pod restart, external persistence meshes (user DB callables), profile/checkpoint operations, group composition and campaign evolution, synthesis previews, class_wraps-built custom decorators over bound spells, multi-frame orchestration.
+The AR + research tier: Nexus enablement, rifts, rooms by RiftSpaceType, workstation binding canvases, frame viewers and the View* family, research sets with typed lanes, diff/impact/foresight reads, drift views.
 
 ## Ticket Contract
 - ENTRY_GATE: owner directive 2026-07-19 ("explore all the ways a user might use the
   library beginner -> intermediate -> expert -> Master... so we can properly explore
-  what we need in init"). Examples live in UX_and_AIX_experiences/04_master/.
-- EXECUTION_BOUNDARY: UX_and_AIX_experiences/04_master/ examples + findings notes ONLY.
+  what we need in init"). Examples live in UX_and_AIX_experiences/03_advanced/.
+- EXECUTION_BOUNDARY: UX_and_AIX_experiences/03_expert/ examples + findings notes ONLY.
 - DEPENDENCIES: init composition story (the 66-name root is the surface under test);
   prior tiers' findings.
 - EXIT_GATE: every example runs green on the owner's 3.14t; every discovered
@@ -30,6 +30,16 @@ The operator's tier: CrystallizerBootstrap pod restart, external persistence mes
 - DECISION for every init-surface change the tier proposes.
 
 ## Notes
+
+## DECISION - 2026-07-25 19:23 UTC - tier renamed to ADVANCED (README ladder match)
+  RULING: owner (2026-07-22) - the ladder is Beginner/Intermediate/Advanced/
+    Expert per the shipped README. This epic (formerly "Expert", folder
+    03_expert) is now the ADVANCED tier: frames as worlds, static rooms,
+    clusters, deep overrides. Folder renamed 03_expert -> 03_advanced; the two
+    seeded lessons retiered in their headers (cluster declaration, deep
+    override paths). Historical notes below keep their original wording.
+  REREAD: OPTIONAL
+  SCORE_0_TO_10: -
 
 ## Context / Handoff Summary
 Method: every example imports melder as md ONLY - a deep-path import in an example

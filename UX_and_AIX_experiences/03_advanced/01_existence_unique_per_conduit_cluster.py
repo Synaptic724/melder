@@ -1,5 +1,5 @@
 """
-TIER: expert (01)
+TIER: advanced (01)
 GOAL: unique_per_conduit_cluster - DECLARED here, LIVED later: clusters are
       groups of linked dynamic conduits (an intermediate-tier feature).
       A beginner can still bind the mode today; the book accepts it and

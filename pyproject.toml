@@ -150,12 +150,11 @@ exclude = [
     "build_scripts*", "performance_hunt*", "profiles*",
 ]
 
-# The `melder_cache` PACKAGE ships (so the write target exists at runtime and
-# needs no mkdir) along with its loader/builder modules. The GENERATED
-# `internal_manifest.py` does not: it is gitignored, therefore absent from the
-# source tree the wheel is built from, and melder rebuilds it on first import.
-[tool.setuptools.exclude-package-data]
-"melder.__melder_cache__.__init_cache__" = ["internal_manifest.py"]
+# The generated internal-bind manifest is a DURABLE build asset: it is committed,
+# and it MUST ship in the wheel because `bind.py` imports it at module scope and
+# there is no runtime rebuild lane. Nothing is excluded here - the previous
+# exclude-package-data entry pointed at a path that no longer exists and was
+# silently inert.
 
 
 [tool.coverage.run]
@@ -168,7 +167,7 @@ omit = [
     "UX_and_AIX_experiences/*",
     "performance_hunt/*",
     "build_scripts/*",
-    "*/__melder_cache__/__init_cache__/internal_manifest.py",
+    "*/_build_assets/_init_manifest/internal_manifest.py",
 ]
 
 [tool.coverage.report]
@@ -179,7 +178,7 @@ omit = [
     "UX_and_AIX_experiences/*",
     "performance_hunt/*",
     "build_scripts/*",
-    "*/__melder_cache__/__init_cache__/internal_manifest.py",
+    "*/_build_assets/_init_manifest/internal_manifest.py",
 ]
 exclude_also = [
     "if TYPE_CHECKING:",
@@ -222,5 +221,5 @@ pretty = true
 exclude = [
     "^build_scripts/",
     # generated artifact; the loader/builder ARE type-checked
-    "__melder_cache__/__init_cache__/internal_manifest\\.py$",
+    "_build_assets/_init_manifest/internal_manifest\\.py$",
 ]

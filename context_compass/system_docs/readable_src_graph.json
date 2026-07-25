@@ -11,11 +11,8 @@
 "__graph_network__"],"phases":["init","runtime"]},"melder.__license__":{"id":"melder.__license__","label":"__license__","kind":"module","file":"src/melder/__license__.py","role":"Top-level license metadata module.",
 "responsibilities":["stores the package license label and embedded license context"],"owns_state":["__license__"],"phases":["runtime"]},"melder.__melder_cache__.__melder_cache__":{
 "id":"melder.__melder_cache__.__melder_cache__","label":"__melder_cache__","kind":"module","file":"src/melder/__melder_cache__/__melder_cache__.py","role":"Package-local marker module for the default Melder cache root.",
-"responsibilities":["anchors the package-local cache-root fragment used by frame configuration defaults"],"owns_state":[],"phases":["runtime"]},"melder.__melder_registration_guard__.MelderRegistrationGuard":{
-"id":"melder.__melder_registration_guard__.MelderRegistrationGuard","label":"MelderRegistrationGuard","kind":"class","file":"src/melder/__melder_registration_guard__.py",
-"role":"Singleton guard blocking registration of Melder internals via a build-time manifest.","responsibilities":["classifies candidates as internal by EXACT (module, qualname) manifest lookup that does not inherit",
-"blocks spell registration of Melder kernel and control-plane objects"],"owns_state":[],"phases":["init","runtime"]},"melder.__version__":{"id":"melder.__version__","label":"__version__","kind":"module",
-"file":"src/melder/__version__.py","role":"Top-level version metadata module.","responsibilities":["stores the canonical package version string"],"owns_state":["__version__"],"phases":["runtime"]},
+"responsibilities":["anchors the package-local cache-root fragment used by frame configuration defaults"],"owns_state":[],"phases":["runtime"]},"melder.__version__":{"id":"melder.__version__","label":"__version__",
+"kind":"module","file":"src/melder/__version__.py","role":"Top-level version metadata module.","responsibilities":["stores the canonical package version string"],"owns_state":["__version__"],"phases":["runtime"]},
 "melder.aether.aether.Aether":{"id":"melder.aether.aether.Aether","label":"Aether","kind":"class","file":"src/melder/aether/aether.py","role":"Global Melder substrate root.","responsibilities":[
 "owns frames and frame registries","hosts hidden support roots","binds frame configuration","registers conduits and spell lineage state"],"owns_state":["_aetheric_frames","_default_frame","_logger"],"phases":["init",
 "runtime","cleanup"]},"melder.aether.aether_configuration.AetherConfiguration":{"id":"melder.aether.aether_configuration.AetherConfiguration","label":"AetherConfiguration","kind":"class",
@@ -1989,13 +1986,12 @@
 "why":"The packaged graph-details module instantiates one top-level StaticSystemDocument for graph-details hardcopy access.","cardinality":"one_to_one","phase":["init","runtime"],"strength":"hard"},{
 "from":"melder.__graph_network__","to":"melder.system_document.StaticSystemDocument","relation":"creates",
 "why":"The packaged graph-network module instantiates one top-level StaticSystemDocument for graph-network hardcopy access.","cardinality":"one_to_one","phase":["init","runtime"],"strength":"hard"},{
-"from":"melder.__melder_registration_guard__.MelderRegistrationGuard","to":"melder.utilities.custom_exceptions.internal_registration_error.InternalRegistrationError","relation":"creates",
-"why":"MelderRegistrationGuard raises InternalRegistrationError when internal objects are registered as spells.","cardinality":"one_to_many","phase":["runtime"],"strength":"hard"},{"from":"melder.aether.aether.Aether",
-"to":"melder.aether.aether_configuration.AetherConfiguration","relation":"owns_lifecycle_of","why":"Aether installs and retains one root AetherConfiguration as its process-wide policy surface.",
-"cardinality":"one_to_one","phase":["runtime","cleanup"],"strength":"hard"},{"from":"melder.aether.aether.Aether","to":"melder.aether.aether_configuration_builder.AetherConfigurationBuilder","relation":"creates",
-"why":"Aether creates AetherConfigurationBuilder instances as the fluent assembly path for root configuration.","cardinality":"one_to_many","phase":["runtime"],"strength":"hard"},{"from":"melder.aether.aether.Aether",
-"to":"melder.aether.aether_utility_system.AetherUtilitySystem","relation":"owns_lifecycle_of","why":"Aether hosts the utility system as one hidden support root inside the global runtime lifecycle.",
-"cardinality":"one_to_one","phase":["init","runtime","cleanup"],"strength":"hard"},{"from":"melder.aether.aether.Aether","to":"melder.aether.aetheric_frame.aetheric_frame.AethericFrame","relation":"owns_lifecycle_of",
+"from":"melder.aether.aether.Aether","to":"melder.aether.aether_configuration.AetherConfiguration","relation":"owns_lifecycle_of",
+"why":"Aether installs and retains one root AetherConfiguration as its process-wide policy surface.","cardinality":"one_to_one","phase":["runtime","cleanup"],"strength":"hard"},{"from":"melder.aether.aether.Aether",
+"to":"melder.aether.aether_configuration_builder.AetherConfigurationBuilder","relation":"creates","why":"Aether creates AetherConfigurationBuilder instances as the fluent assembly path for root configuration.",
+"cardinality":"one_to_many","phase":["runtime"],"strength":"hard"},{"from":"melder.aether.aether.Aether","to":"melder.aether.aether_utility_system.AetherUtilitySystem","relation":"owns_lifecycle_of",
+"why":"Aether hosts the utility system as one hidden support root inside the global runtime lifecycle.","cardinality":"one_to_one","phase":["init","runtime","cleanup"],"strength":"hard"},{
+"from":"melder.aether.aether.Aether","to":"melder.aether.aetheric_frame.aetheric_frame.AethericFrame","relation":"owns_lifecycle_of",
 "why":"Aether owns the frame registry and creates frame containers for the runtime substrate.","cardinality":"one_to_many","phase":["init","runtime","cleanup"],"strength":"hard"},{"from":"melder.aether.aether.Aether",
 "to":"melder.crystallizer.crystallizer.Crystallizer","relation":"owns_lifecycle_of","why":"Aether hosts the crystallizer singleton root as one private runtime subsystem.","cardinality":"one_to_one","phase":["init",
 "runtime","cleanup"],"strength":"hard"},{"from":"melder.aether.aether.Aether","to":"melder.mutation_research.mutation_research.MutationResearch","relation":"owns_lifecycle_of",
@@ -2358,11 +2354,8 @@
 "why":"SpellSpacePool specializes AbstractElasticPool for reusable spellspace scopes.","cardinality":"one_to_one","phase":["init","runtime","cleanup"],"strength":"hard"},{
 "from":"melder.aether.conduit.spell_space.spell_space_thread_state.SpellSpaceThreadState","to":"melder.utilities.general_base.cleanable.Cleanable","relation":"specializes",
 "why":"SpellSpaceThreadState inherits the explicit cleanup lifecycle from Cleanable.","cardinality":"one_to_one","phase":["init","runtime","cleanup"],"strength":"hard"},{"from":"melder.aether.spellbook.bind.bind.Bind",
-"to":"melder.__melder_registration_guard__.MelderRegistrationGuard","relation":"uses",
-"why":"Bind calls the Melder registration guard before constructing a Spell so internal control-plane objects cannot be registered as spells.","cardinality":"many_to_one","phase":["init","runtime"],"strength":"borrowed"}
-,{"from":"melder.aether.spellbook.bind.bind.Bind","to":"melder.aether.conduit.conduit_ward.permissions.permissions.Permissions","relation":"uses",
-"why":"Bind accepts and carries Permissions as the access policy for newly registered spells.","cardinality":"many_to_one","phase":["init","runtime"],"strength":"borrowed"},{
-"from":"melder.aether.spellbook.bind.bind.Bind","to":"melder.aether.spellbook.bind.spell_index.SpellIndex","relation":"creates",
+"to":"melder.aether.conduit.conduit_ward.permissions.permissions.Permissions","relation":"uses","why":"Bind accepts and carries Permissions as the access policy for newly registered spells.","cardinality":"many_to_one",
+"phase":["init","runtime"],"strength":"borrowed"},{"from":"melder.aether.spellbook.bind.bind.Bind","to":"melder.aether.spellbook.bind.spell_index.SpellIndex","relation":"creates",
 "why":"Bind creates a SpellIndex lineage key from the structural fingerprint before constructing the Spell record.","cardinality":"one_to_many","phase":["init","runtime"],"strength":"hard"},{
 "from":"melder.aether.spellbook.bind.bind.Bind","to":"melder.aether.spellbook.existence.existence.Existence","relation":"uses","why":"Bind accepts Existence as the lifecycle policy for newly registered spells.",
 "cardinality":"many_to_one","phase":["init","runtime"],"strength":"borrowed"},{"from":"melder.aether.spellbook.bind.bind.Bind","to":"melder.aether.spellbook.spell.Spell","relation":"creates",
@@ -4045,8 +4038,6 @@
 "relation":"owns_lifecycle_of","why":"RiftSpace constructs and owns the room-local workstation.","cardinality":"one_to_one","phase":["init","runtime","cleanup"],"strength":"hard"},{
 "from":"melder.nexus.rift.rift_space.static_rift_space.StaticRiftSpace","to":"melder.nexus.rift.rift_space.rift_space.RiftSpace","relation":"specializes",
 "why":"StaticRiftSpace is the static-mode specialization of the base room.","cardinality":"many_to_one","phase":["init","runtime"],"strength":"hard"},{
-"from":"melder.utilities.ai_native_support_tools.protocol_crafter.ProtocolCrafter","to":"melder.__melder_registration_guard__.MelderRegistrationGuard","relation":"uses",
-"why":"ProtocolCrafter uses the Melder registration guard sentinel to mark itself as internal-only runtime infrastructure.","cardinality":"one_to_one","phase":["init","runtime"],"strength":"borrowed"},{
 "from":"melder.utilities.ai_native_support_tools.protocol_crafter.ProtocolCrafter","to":"melder.utilities.general_base.cleanable.Cleanable","relation":"specializes",
 "why":"ProtocolCrafter inherits the explicit cleanup lifecycle from Cleanable.","cardinality":"one_to_one","phase":["init","runtime","cleanup"],"strength":"hard"},{
 "from":"melder.utilities.ai_native_support_tools.protocol_crafter.ProtocolCrafter","to":"melder.utilities.helpers.id_builder.IDBuilder","relation":"uses",
@@ -4280,6 +4271,6 @@
 "why":"Default-registered grouped strategy; engine cleanup cascades.","cardinality":"one_to_one","phase":["init","runtime","cleanup"],"strength":"hard"},{
 "from":"melder.mutation_research.group_diff.group_diff_engine.GroupDiffEngine","to":"melder.mutation_research.group_diff.strategies.member_diff_strategy.MemberDiffStrategy","relation":"creates",
 "why":"register_defaults births the members strategy.","cardinality":"one_to_one","phase":["init"],"strength":"hard"},{"from":"melder.mutation_research.group_diff.strategies.member_diff_strategy.MemberDiffStrategy",
-"to":"melder.mutation_research.group_diff.group_diff_strategy.GroupDiffStrategy","relation":"specializes","why":"Implements the GroupDiffStrategy contract.","cardinality":"one_to_one","phase":["init"],"strength":"hard"}]
-}
-
+"to":"melder.mutation_research.group_diff.group_diff_strategy.GroupDiffStrategy","relation":"specializes","why":"Implements the GroupDiffStrategy contract.","cardinality":"one_to_one","phase":["init"],"strength":"hard"},
+{"from":"melder.aether.spellbook.bind.bind.Bind","to":"melder.utilities.custom_exceptions.internal_registration_error.InternalRegistrationError","relation":"creates",
+"why":"Bind.assert_allowed raises InternalRegistrationError when a candidate's (module, qualname) is in the generated INTERNAL_MANIFEST.","cardinality":"one_to_many","phase":["runtime"],"strength":"hard"}]}

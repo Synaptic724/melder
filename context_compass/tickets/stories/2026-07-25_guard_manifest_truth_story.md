@@ -190,6 +190,122 @@ doc surface that lies.
   REREAD: REQUIRED
   SCORE_0_TO_10: 8
 
+- DATETIME: 2026-07-25T18:43:26Z
+  TYPE: CONFLICT
+  CLAIM: A 539-file sweep landed mid-lane and invalidated three of four deliverables
+    minutes after they were written. The guard was not merely stripped of its sentinel;
+    the whole module was DELETED. Refusal is now a module-level `assert_allowed` inside
+    `bind.py` with a `_RegistrationGuardProxy` compat shim; the manifest moved from
+    `__melder_cache__/__init_cache__/` (with its runtime loader and cold-boot lane) to
+    `_build_assets/_init_manifest/` as a committed durable asset with NO loader; the
+    call site moved 285 -> 308; entry count 578 -> 577; module count 553 -> 550.
+  EVIDENCE:
+  - src/melder/aether/spellbook/bind/bind.py:20-43
+  - src/melder/_build_assets/_init_manifest/internal_manifest.py:1-16
+  IMPACT: Work was stopped and re-verified rather than continued, because every guard
+    claim just written now cited a deleted module. The SEMANTICS survived intact -
+    exact `(module, qualname)`, no MRO inheritance, one call site, guarding orthogonal
+    to exporting - so this was a re-point, not a rewrite.
+  NEXT: Re-point all four surfaces against verified current source.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+- DATETIME: 2026-07-25T18:43:26Z
+  TYPE: MEASURE
+  CLAIM: Re-point complete and verified across all four surfaces. Zero stale references
+    to `__melder_registration_guard__`, `__init_cache__`, `manifest_loader`, or
+    `MelderRegistrationGuard` remain in either system doc or either graph artifact.
+    Graph: the node for the deleted class was removed with its two dead edges, and one
+    truthful `Bind --creates--> InternalRegistrationError` edge added (537->536 nodes,
+    1002->1000 edges); both artifacts JSON-validate. C1 map regenerated at 550 entries,
+    17 honest UNKNOWNs. Encoding intact: 2122 and 5165 CRLF lines, zero bare LF, zero
+    NUL bytes. Zero over-cap prose lines were authored in this session.
+  EVIDENCE:
+  - context_compass/system_docs/src_architecture.md
+  - context_compass/system_docs/src_components.md
+  IMPACT: Docs, graph, and source now agree on the guard for the first time in this
+    lane, and the doc claims were cross-checked against live source (`bind.py:308`,
+    `MANIFEST_ENTRY_COUNT: 577`) rather than against my own earlier notes.
+  NEXT: Owner acceptance walkthrough.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+- DATETIME: 2026-07-25T18:43:26Z
+  TYPE: FACT
+  CLAIM: One deliberate UNKNOWN is carried in both docs: whether
+    `_RegistrationGuardProxy` is a transitional shim for callers written against the
+    retired guard object, or the intended long-term surface. The owner was asked and
+    did not rule. Intent is not derivable from the code, so it is recorded as UNKNOWN
+    rather than inferred.
+  EVIDENCE:
+  - src/melder/aether/spellbook/bind/bind.py:34-43
+  IMPACT: If the shim is transitional, both docs need one line changed when it goes;
+    if permanent, the UNKNOWN should be promoted to a stated contract.
+  NEXT: Obtain the ruling at acceptance walkthrough.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-07-25T18:43:26Z
+  TYPE: RISK
+  CLAIM: SELF-INFLICTED INCIDENT, detected and recovered in the same pass. While
+    pruning a duplicate board row I split `attention_board.md` on `\r\n` after having
+    verified CRLF on the SYSTEM DOCS, not on the board. The board is LF-only, so the
+    split returned one element, the filter matched it, and the file was truncated to
+    0 bytes. Recovered from `git show HEAD` (the owner's sweep had committed the prior
+    state) and the row re-applied with an LF-safe path plus an assertion that exactly
+    one row is replaced. Verified after: 1-line diff vs HEAD, 20 table rows, all other
+    agents' rows intact, zero NUL bytes.
+  EVIDENCE:
+  - context_compass/attention_board.md
+  IMPACT: A shared routing surface was briefly destroyed. The lesson is specific and
+    worth keeping: line endings are per-file in this repo, not per-repo, and a
+    verification done on one file does not transfer to another. Bulk line-splitting on
+    a shared board should assert its assumptions before writing, not after.
+  NEXT: For any future board edit, read the file's actual line endings first and
+    prefer targeted single-row edits over whole-file rewrites.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-07-25T18:55:00Z
+  TYPE: FACT
+  CLAIM: The `_RegistrationGuardProxy` UNKNOWN is RESOLVED by evidence, and my earlier
+    framing of it as a compat shim for retired callers was wrong. It is a TEST SEAM.
+    No production module outside `bind.py` references `_mrg` - every former
+    `from melder.__melder_registration_guard__ import ... as _mrg` import was removed by
+    the sweep - but `test_bind.py` substitutes `bind._mrg` as a module attribute in
+    SEVEN places, including an AUTOUSE fixture that neutralizes the check for every test
+    in the file, and a `RejectingGuard` asserting the refusal propagates out of
+    `Bind.bind(...)`. `is_internal` on the proxy is separately dead: zero callers in
+    `src/`, `tests/`, or `benchmarks/`.
+  EVIDENCE:
+  - src/melder/aether/spellbook/bind/bind.py:34-43
+  - tests/unit/melder/spellbook/bind/test_bind.py:114-118
+  - tests/unit/melder/spellbook/bind/test_bind.py:616-625
+  IMPACT: Collapsing the proxy into a direct `assert_allowed(...)` call would SILENTLY
+    defeat the seam - monkeypatches would still land on `_mrg` while production no
+    longer consulted it, so the autouse fixture would stop neutralizing anything and
+    binds of internal classes would begin hitting the real manifest mid-suite. The
+    object shape at module scope is load-bearing and must not be removed without
+    updating all seven sites in the same pass.
+  NEXT: Both docs updated from UNKNOWN to this evidenced statement; no owner ruling
+    needed after all.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+- DATETIME: 2026-07-25T18:55:00Z
+  TYPE: RISK
+  CLAIM: The seam's own comment is stale and actively misleading.
+    `test_bind.py:116` states "_mrg.assert_allowed is defined via `__getattr__` on a
+    registration guard; we bypass via patching the module attribute directly." There is
+    no `__getattr__` anywhere in `bind.py` - the retired guard had one, the current
+    proxy does not. The patching technique still works, but for a different reason than
+    the comment gives.
+  EVIDENCE:
+  - tests/unit/melder/spellbook/bind/test_bind.py:116-116
+  - src/melder/aether/spellbook/bind/bind.py:34-43
+  IMPACT: Anyone reading that comment while deciding whether the proxy is safe to
+    remove gets a wrong mental model of why the patch point works.
+  NEXT: Raise with the two other stale code docstrings for owner routing.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 8
+
 ## Closure Confirmation
 - [ ] Work walkthrough shared with user
 - [ ] Acceptance criteria confirmed by user

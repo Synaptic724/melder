@@ -113,8 +113,19 @@ def patch_spell(monkeypatch):
 
 @pytest.fixture(autouse=True)
 def patch_assert_allowed(monkeypatch):
-    # _mrg.assert_allowed is defined via __getattr__ on a registration guard; we bypass via patching the module attribute directly.
-    monkeypatch.setattr("melder.aether.spellbook.bind.bind._mrg", types.SimpleNamespace(assert_allowed=lambda *a, **k: None), raising=False)
+    # Neutralize the internal-bind guard for this file: these tests bind stub
+    # classes and are not exercising the manifest.
+    #
+    # raising=True is deliberate. `assert_allowed` is the module-level
+    # enforcement seam in bind.py; if it is ever renamed or moved, monkeypatch
+    # must fail LOUDLY here rather than silently create a new attribute nothing
+    # reads - which would let the real 577-entry manifest start refusing binds
+    # mid-suite with no signal pointing back at this fixture.
+    monkeypatch.setattr(
+        "melder.aether.spellbook.bind.bind.assert_allowed",
+        lambda *a, **k: None,
+        raising=True,
+    )
     yield
 
 
@@ -614,11 +625,10 @@ def test_protocol_check_ignores_private():
 # Registration guard handling -----------------------------------------
 
 def test_registration_guard_rejection(monkeypatch):
-    class RejectingGuard:
-        def assert_allowed(self, obj, context=None):
-            raise RuntimeError("blocked")
-    # Swap in rejecting guard for this test only
-    monkeypatch.setattr("melder.aether.spellbook.bind.bind._mrg", RejectingGuard(), raising=False)
+    def rejecting_guard(obj, context=None):
+        raise RuntimeError("blocked")
+    # Swap in a refusing guard for this test only
+    monkeypatch.setattr("melder.aether.spellbook.bind.bind.assert_allowed", rejecting_guard, raising=True)
     profile = class_profile()
     monkeypatch.setattr("melder.aether.spellbook.bind.bind.SpellExaminer", lambda: StubExaminer(profile))
     b = Bind(StubSpellbook())
@@ -1138,10 +1148,9 @@ def test_sha_changes_with_method_names_diff():
 
 def test_registration_guard_receives_context(monkeypatch):
     ctx = {}
-    class Guard:
-        def assert_allowed(self, obj, context=None):
-            ctx["context"] = context
-    monkeypatch.setattr("melder.aether.spellbook.bind.bind._mrg", Guard(), raising=False)
+    def recording_guard(obj, context=None):
+        ctx["context"] = context
+    monkeypatch.setattr("melder.aether.spellbook.bind.bind.assert_allowed", recording_guard, raising=True)
     profile = class_profile()
     monkeypatch.setattr("melder.aether.spellbook.bind.bind.SpellExaminer", lambda: StubExaminer(profile))
     b = Bind(StubSpellbook())
@@ -1216,13 +1225,10 @@ def test_sha_changes_with_parameter_annotation():
 # Guard isolation between tests ---------------------------------------
 
 def test_registration_guard_does_not_leak(monkeypatch):
-    class Guard:
-        def __init__(self):
-            self.calls = 0
-        def assert_allowed(self, obj, context=None):
-            self.calls += 1
-    g = Guard()
-    monkeypatch.setattr("melder.aether.spellbook.bind.bind._mrg", g, raising=False)
+    calls = {"count": 0}
+    def counting_guard(obj, context=None):
+        calls["count"] += 1
+    monkeypatch.setattr("melder.aether.spellbook.bind.bind.assert_allowed", counting_guard, raising=True)
     monkeypatch.setattr("melder.aether.spellbook.bind.bind.SpellExaminer", lambda: StubExaminer(class_profile()))
     b = Bind(StubSpellbook())
     b.bind(Permissions.read, Existence.unique, aetheric_frame="f", spell=RealClassImplementingProto)
@@ -1460,10 +1466,9 @@ def test_bind_after_cleanup_lock_is_none(monkeypatch):
 
 def test_registration_guard_context_on_decorator(monkeypatch):
     ctx = {}
-    class Guard:
-        def assert_allowed(self, obj, context=None):
-            ctx["ctx"] = context
-    monkeypatch.setattr("melder.aether.spellbook.bind.bind._mrg", Guard(), raising=False)
+    def recording_guard(obj, context=None):
+        ctx["ctx"] = context
+    monkeypatch.setattr("melder.aether.spellbook.bind.bind.assert_allowed", recording_guard, raising=True)
     monkeypatch.setattr("melder.aether.spellbook.bind.bind.SpellExaminer", lambda: StubExaminer(class_profile()))
     b = Bind(StubSpellbook())
     dec = b.bind(Permissions.read, Existence.unique, aetheric_frame="f")
@@ -1616,10 +1621,9 @@ def test_spell_index_hash_differs_for_different_ids():
 # Registration guard exception propagation -----------------------------
 
 def test_registration_guard_exception_bubbles(monkeypatch):
-    class Guard:
-        def assert_allowed(self, obj, context=None):
-            raise ValueError("blocked")
-    monkeypatch.setattr("melder.aether.spellbook.bind.bind._mrg", Guard(), raising=False)
+    def raising_guard(obj, context=None):
+        raise ValueError("blocked")
+    monkeypatch.setattr("melder.aether.spellbook.bind.bind.assert_allowed", raising_guard, raising=True)
     monkeypatch.setattr("melder.aether.spellbook.bind.bind.SpellExaminer", lambda: StubExaminer(class_profile()))
     b = Bind(StubSpellbook())
     with pytest.raises(ValueError):
@@ -1627,10 +1631,9 @@ def test_registration_guard_exception_bubbles(monkeypatch):
 
 
 def test_registration_guard_error_leaves_lock_usable(monkeypatch):
-    class Guard:
-        def assert_allowed(self, obj, context=None):
-            raise RuntimeError("blocked")
-    monkeypatch.setattr("melder.aether.spellbook.bind.bind._mrg", Guard(), raising=False)
+    def raising_guard(obj, context=None):
+        raise RuntimeError("blocked")
+    monkeypatch.setattr("melder.aether.spellbook.bind.bind.assert_allowed", raising_guard, raising=True)
     monkeypatch.setattr("melder.aether.spellbook.bind.bind.SpellExaminer", lambda: StubExaminer(class_profile()))
     b = Bind(StubSpellbook())
     with pytest.raises(RuntimeError):

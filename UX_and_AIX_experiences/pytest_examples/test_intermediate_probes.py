@@ -219,7 +219,7 @@ def test_probe_spell_override_targets_spells_inside_the_graph():
     for the ROOT spell's own constructor (intermediate lesson 08 - kept
     simple on purpose). ">"-path key = walks dependency parameter names
     and REPLACES the actual object at that socket inside the graph
-    (expert lesson 02; mirrors the component deep-override suite)."""
+    (advanced lesson 02; mirrors the component deep-override suite)."""
     class Leaf:
         def __init__(self) -> None:
             self.marker = "default"
