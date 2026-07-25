@@ -1,28 +1,62 @@
-ast_serialize==0.5.0
-colorama==0.4.6
-coverage==7.15.0
-dependency-injector==4.49.1
-dishka==1.10.1
-execnet==2.1.2
-iniconfig==2.3.0
-injector==0.24.0
-lagom==2.7.7
-libcst==1.8.6
-librt==0.12.0
-mypy==2.1.0
-mypy_extensions==1.1.0
-packaging==26.2
-pathspec==1.1.1
-pluggy==1.6.0
-Pygments==2.20.0
+# Melder has ZERO third-party RUNTIME dependencies.
+#
+# Verified: no import of any third-party package exists anywhere in
+# `src/melder`, including dynamic paths (every `importlib.import_module`
+# call takes a USER module name for hydration, never a package). ULIDs come
+# from the in-house `melder.utilities.helpers.ulid_factory` (stdlib `os` +
+# `time` only). `[project] dependencies = []` in pyproject.toml is correct
+# and load-bearing: `pip install melder` pulls nothing.
+#
+# Everything below is DEVELOPMENT tooling. The canonical declaration lives in
+# pyproject.toml under PEP 735 `[dependency-groups]`; this file is a
+# convenience for `pip install -r` workflows.
+#
+#     pip install --group dev       # test + build
+#     pip install --group test
+#     pip install --group benchmark # competing DI libs, benchmarks/ only
+#
+# Transitive pins are intentionally omitted (pluggy, iniconfig, execnet,
+# mypy_extensions, typing_extensions, pathspec, packaging, Pygments,
+# colorama): the resolver owns those. Pin them in a lock file, not here.
+#
+# Removed 2026-07-23 - zero imports anywhere in the repo:
+#   ast_serialize, librt, PyYAML, colorama
+# Removed - replaced in-house:
+#   python-ulid   -> melder.utilities.helpers.ulid_factory
+# Removed - plugin never exercised by the suite (verified marker/fixture scan):
+#   pytest-mock          (0 `mocker` uses; suite uses stdlib unittest.mock)
+#   pytest-timeout       (0 `@pytest.mark.timeout`)
+#   pytest-rerunfailures (0 flaky/reruns)
+# Removed - install on demand, not needed for normal development:
+#   libcst  (context_compass/scripts/strip_*_codemod.py import it lazily and
+#            print their own install hint)
+
+# --- test ---
+# Only pytest built-in markers are used across the suite: parametrize, xfail,
+# skip. Test tiers are separated by DIRECTORY (tests/unit, tests/component,
+# tests/integration), not by marker.
 pytest==9.0.3
 pytest-cov==7.1.0
-pytest-mock==3.15.1
-pytest-rerunfailures==16.3
-pytest-timeout==2.4.0
-pytest-xdist==3.8.0
-python-ulid==3.1.0
-PyYAML==6.0.3
+coverage==7.15.0
+
+# --- lint ---
 ruff==0.15.15
-setuptools==82.0.1
-typing_extensions==4.15.0
+
+# --- build ---
+setuptools==83.0.0
+wheel==0.47.0
+build==1.2.2
+
+# --- optional: parallel test runs (`pytest -n auto`) ---
+# pytest-xdist==3.8.0
+
+# --- optional: type checking ---
+# NOTE: repo policy bans `type: ignore` / `Any` widening, which only has teeth
+# if something actually type-checks. Re-add if you want that enforced.
+# mypy==2.1.0
+
+# --- optional: benchmarks only (imported solely by benchmarks/) ---
+# dependency-injector==4.49.1
+# dishka==1.10.1
+# injector==0.24.0
+# lagom==2.7.7

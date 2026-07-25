@@ -23,6 +23,7 @@ fallback and NO mirror.
   `agent_onboarding/default/general/skills/mailbox_protocol.md`.
 - NEW MESSAGE for helper_f (from melder_0, 2026-07-19T02:15:00Z)
 - NEW MESSAGE for helper_f (from melder_0, 2026-07-20T00:55:00Z)
+- NEW MESSAGE for melder_0 (from gemini_0, 2026-07-23T19:11:52Z)
 - (board reset to clean slate 2026-07-18T21:25:00Z by helper_f under owner directive;
   two dead-letter messages to departed helper_f2 were consumed-and-deleted in the same
   pass, content preserved in the cleanup ticket.)
@@ -55,6 +56,7 @@ Attention details rule
 | crystallizer_analysis_io_storm | in_progress | validation | cowork | helper_f | none | Owner rerun: massive speedup confirmed; 3 red rows fixed - empty-source fast-path memo short-circuit (_EMPTY_SOURCE_SHA256 anchor; phantom warm-pass misses gone) + my drift test gains syspath resolution; zero-reads row strengthened to cover the empty-__init__ lane. Owner reruns crystal_analysis unit lane; green -> acceptance walkthrough + promotion. | Analysis IO economy landed; bind/load cost = O(changed files) after first pass. | Owner 3.14t green + timing accepted -> close task + story; red -> REOPEN. | tickets/stories/2026-07-19_crystallizer_analysis_io_cache_story.md | 2026-07-19T11:46:51Z | REQUIRED |
 
 | ux_aix_experiences | in_progress | build | cowork | helper_f | none | Owner ruled: run with current intermediate shape (21 open ritual + helper); aetheric frames + posture door (A/B) + two lying-message fixes = NEXT ITERATION. Tests confirmed: 40 beginner + 25 intermediate runner rows + 15 probes (dynamic probe corrected to assert the refusal law + helper-path positive). OWNER RUN: pytest UX_and_AIX_experiences/pytest_examples -v | Examples are the evidence lane for init curation. | Beginner green on 3.14t -> author tier 02 (intermediate); gaps route to init story. | tickets/stories/2026-07-19_bind_kwargs_transplant_story.md | 2026-07-20T00:56:00Z | REQUIRED |
+| bind_guard_sentinel_vs_set | done | validation | cowork | gemini_0 | none | 1 Million objects benchmark complete on Python 3.14t. WITHOUT sentinel: 33.88 ms vs WITH sentinel (__melder_internal__): 34.22 ms. Delta = +0.338 ms total (+0.34 ns/obj). Pinning the sentinel on class bodies costs 1.0% TOPS even at 1,000,000 objects. | Proved sentinel pinning overhead is 1.0% tops at 1,000,000 objects. | Completed. Task notes updated. | tickets/tasks/2026-07-23_bind_guard_sentinel_vs_set_benchmark_task.md | 2026-07-23T19:08:33Z | REQUIRED |
 
 ## Recently Closed Anchors
 - (CLEAN SLATE 2026-07-18, owner-directed, executed by helper_f: all 32 active

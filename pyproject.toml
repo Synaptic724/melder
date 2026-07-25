@@ -1,11 +1,11 @@
 [build-system]
-requires = ["setuptools>=77.0", "wheel>=0.37"]
+requires = ["setuptools>=83.0.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "melder"
 dynamic = ["version"]
-description = "Lightweight, high-performance dependency injection container for Python 3.14+ applications."
+description = "AI-native dependency graph runtime for free-threaded Python: a live, inspectable object graph that agents can read, safely operate under compiled permissions, checkpoint, and evolve. Zero dependencies, 3.14+ no-GIL."
 readme = { file = "README.md", content-type = "text/markdown" }
 requires-python = ">=3.14"
 license = "Apache-2.0"
@@ -30,18 +30,40 @@ keywords = [
     "scoped services",
     "singleton services",
     "service resolution",
+    "free threading",
+    "no-gil",
+    "nogil",
+    "free-threaded",
+    "thread-safe",
+    "concurrency",
+    "dependency graph",
+    "runtime",
+    "ai-native",
+    "ai agents",
+    "agent runtime",
+    "agentic",
+    "llm tools",
+    "codegen",
+    "sandbox",
+    "checkpoint",
+    "hot reload",
+    "introspection",
     "melder",
 ]
 
 classifiers = [
+    "Development Status :: 3 - Alpha",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.14",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: Free Threading :: 2 - Beta",
     "Programming Language :: Python :: Implementation :: CPython",
     "Operating System :: OS Independent",
     "Intended Audience :: Developers",
     "Intended Audience :: Science/Research",
     "Topic :: Software Development :: Libraries :: Python Modules",
     "Topic :: Software Development :: Libraries",
+    "Topic :: Software Development :: Object Brokering",
     "Environment :: Console",
     "Typing :: Typed",
 ]
@@ -52,8 +74,58 @@ dependencies = []
 Homepage = "https://github.com/Synaptic724/melder"
 Repository = "https://github.com/Synaptic724/melder"
 Issues = "https://github.com/Synaptic724/melder/issues"
-Documentation = "https://github.com/Synaptic724/melder"
+Documentation = "https://melder.readthedocs.io/en/latest/"
+Changelog = "https://github.com/Synaptic724/melder/releases"
 LinkedIn = "https://www.linkedin.com/in/mark-geleta-4b59b752/"
+
+# PEP 735 dependency groups: development-only requirements that are NEVER
+# published in any built distribution. Install with `pip install --group dev`
+# (pip >= 25.1). Transitive pins (pluggy, iniconfig, execnet, mypy_extensions,
+# typing_extensions, packaging, ...) are deliberately omitted - the resolver
+# owns those.
+[dependency-groups]
+# Only pytest built-in markers are used suite-wide (parametrize, xfail, skip);
+# test tiers are split by directory, not marker. pytest-mock/-timeout/
+# -rerunfailures were dropped as never exercised (suite uses unittest.mock).
+test = [
+    "pytest>=9.0.3",
+    "pytest-cov>=7.1.0",
+    "coverage>=7.15.0",
+]
+lint = [
+    "ruff>=0.15.15",
+]
+# Opt-in: parallel test execution (`pytest -n auto`).
+parallel = [
+    "pytest-xdist>=3.8.0",
+]
+# Opt-in: repo policy bans `type: ignore` and `Any` widening, which is only
+# enforced if something type-checks. Install this group to enforce it.
+typecheck = [
+    "mypy>=2.1.0",
+]
+# Opt-in: imported lazily by context_compass/scripts/strip_*_codemod.py only.
+codemod = [
+    "libcst>=1.8.6",
+]
+build = [
+    "setuptools>=83.0.0",
+    "wheel>=0.47.0",
+    "build>=1.2",
+]
+# Competing DI containers, imported ONLY by benchmarks/ for comparison runs.
+# Never required to develop, test, or build melder itself.
+benchmark = [
+    "dependency-injector>=4.49.1",
+    "dishka>=1.10.1",
+    "injector>=0.24.0",
+    "lagom>=2.7.7",
+]
+dev = [
+    { include-group = "test" },
+    { include-group = "lint" },
+    { include-group = "build" },
+]
 
 [tool.setuptools]
 package-dir = { "" = "src" }
@@ -73,27 +145,46 @@ where = ["src"]
 include = ["melder*"]
 exclude = [
     "tests*", "docs*", "examples*", "Plans*", "benchmarks*", "benchmark_data*",
-    ".github*", ".venv*", "__pycache__", "*.egg-info", "TestIdeas"
+    ".github*", ".venv*", "__pycache__", "*.egg-info", "TestIdeas",
+    "context_compass*", "UX_and_AIX_experiences*",
+    "build_scripts*", "performance_hunt*", "profiles*",
 ]
+
+# The `__init_cache__` PACKAGE ships (so the write target exists at runtime and
+# needs no mkdir); its generated CONTENTS never do. Cache artifacts are written
+# per-environment, keyed to the installed version, and are gitignored - so they
+# are absent from the source tree the wheel is built from.
+[tool.setuptools.exclude-package-data]
+"melder.__init_cache__" = ["*"]
 
 
 [tool.coverage.run]
 source = ["src/melder"]
+branch = true
 omit = [
     "benchmarks/*",
     "Plans/*",
-    "codex/*",
-    "codex_agent_2/*",
-    "codex_agent_3/*",
+    "context_compass/*",
+    "UX_and_AIX_experiences/*",
+    "performance_hunt/*",
+    "build_scripts/*",
+    "*/__init_cache__/*",
 ]
 
 [tool.coverage.report]
 omit = [
     "benchmarks/*",
     "Plans/*",
-    "codex/*",
-    "codex_agent_2/*",
-    "codex_agent_3/*",
+    "context_compass/*",
+    "UX_and_AIX_experiences/*",
+    "performance_hunt/*",
+    "build_scripts/*",
+    "*/__init_cache__/*",
+]
+exclude_also = [
+    "if TYPE_CHECKING:",
+    "raise NotImplementedError",
+    "@(abc\\.)?abstractmethod",
 ]
 
 [tool.pytest.ini_options]
@@ -101,10 +192,34 @@ testpaths = ["tests"]
 norecursedirs = [
     "benchmarks",
     "Plans",
-    "codex",
-    "codex_agent_2",
-    "codex_agent_3",
+    "context_compass",
+    "UX_and_AIX_experiences",
+    "performance_hunt",
+    "profiles",
+    "build_scripts",
     ".venv",
     ".venv_new",
     "__pycache__",
+    "__init_cache__",
+]
+markers = [
+    "integration: integration tests that wire multiple real components together",
+    "component: component tests over a small slice of real wiring, no external IO",
+]
+
+# Typing is a first-class contract in this repo: `type: ignore` and `Any`
+# widening are disallowed by policy, so the checker is configured strictly.
+[tool.mypy]
+python_version = "3.14"
+files = ["src/melder"]
+strict = true
+warn_unused_ignores = true
+warn_unreachable = true
+warn_redundant_casts = true
+disallow_any_explicit = false
+show_error_codes = true
+pretty = true
+exclude = [
+    "^build_scripts/",
+    "__init_cache__",
 ]
