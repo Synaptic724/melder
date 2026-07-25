@@ -61,34 +61,71 @@ from melder.__version__ import __version__
 
 # ---- core runtime objects ----
 from melder.aether.aether import Aether
-from melder.aether.conduit.conduit import Conduit
-from melder.aether.spellbook.bind.scan import Scan, scan_bind
-from melder.aether.spellbook.bind.spell_index import SpellIndex
-from melder.aether.spellbook.spell import Spell
-from melder.aether.spellbook.spellbinder import SpellBinder
-from melder.aether.spellbook.spellbook import Spellbook
-from melder.crystallizer.crystallizer import Crystallizer
-from melder.mutation_research.mutation_research import MutationResearch
-from melder.nexus.nexus import Nexus
+
+# ---- configuration surfaces ----
+from melder.aether.aether_configuration import AetherConfiguration
+from melder.aether.aether_configuration_builder import AetherConfigurationBuilder
+from melder.aether.aetheric_frame.aetheric_frame_configuration import (
+    AethericFrameConfiguration,
+)
 
 # ---- user-held work surfaces (returned by the objects above; exported so
 # ---- user code can type, isinstance, and discover them from the root) ----
 from melder.aether.aetheric_frame.conduit_cloud import ConduitCloud
+from melder.aether.conduit.conduit import Conduit
+
+# ---- front-facing enum vocabularies ----
+from melder.aether.conduit.conduit_ward.permissions.permissions import Permissions
+from melder.aether.conduit.conduit_ward.policies.policies import Policies
+
+# ---- DI descriptors ----
+from melder.aether.conduit.meld.contracts.spell_contract import SpellContract
+from melder.aether.conduit.meld.contracts.spell_map import SpellMap
 from melder.aether.conduit.spell_space.spell_space import SpellSpace
+from melder.aether.spellbook.bind.scan import Scan, scan_bind
+from melder.aether.spellbook.bind.spell_index import SpellIndex
+from melder.aether.spellbook.configuration.spellbook_configuration import (
+    SpellbookConfiguration,
+)
+from melder.aether.spellbook.configuration.system_state import SystemState
+from melder.aether.spellbook.existence.existence import Existence
+from melder.aether.spellbook.spell import Spell
 from melder.aether.spellbook.spell_compiler.spell_examiner.spell_examiner import (
     SpellExaminer,
 )
+from melder.aether.spellbook.spellbinder import SpellBinder
+from melder.aether.spellbook.spellbook import Spellbook
 from melder.crystallizer.asset_management.external_persistence_manager import (
     ExternalPersistenceManager,
 )
 from melder.crystallizer.asset_management.external_persistence_manager_configuration import (
     ExternalPersistenceManagerConfiguration,
 )
+from melder.crystallizer.configuration.crystallizer_configuration import (
+    CrystallizerConfiguration,
+)
+from melder.crystallizer.configuration.crystallizer_configuration_builder import (
+    CrystallizerConfigurationBuilder,
+)
 from melder.crystallizer.crystal_loader_system.bootstrap_loader import (
     CrystallizerBootstrap,
 )
+from melder.crystallizer.crystallizer import Crystallizer
 from melder.mutation_research.diff.diff_engine import DiffEngine
+from melder.mutation_research.mutation_configuration import (
+    MutationResearchConfiguration,
+)
+from melder.mutation_research.mutation_configuration_builder import (
+    MutationResearchConfigurationBuilder,
+)
+from melder.mutation_research.mutation_research import MutationResearch
+from melder.mutation_research.research_set.research_lane import LaneState, LaneType
 from melder.mutation_research.research_set.research_set import ResearchSet
+from melder.nexus.configuration.nexus_configuration import NexusConfiguration
+from melder.nexus.configuration.nexus_frame_mode import NexusFrameMode
+from melder.nexus.configuration.rift_configuration import RiftConfiguration
+from melder.nexus.configuration.rift_space_type import RiftSpaceType
+from melder.nexus.nexus import Nexus
 from melder.nexus.rift.frame_viewer.frame_viewer import FrameViewer
 from melder.nexus.rift.frame_viewer.view_conduit import ViewConduit
 from melder.nexus.rift.frame_viewer.view_frame import ViewFrame
@@ -98,40 +135,8 @@ from melder.nexus.rift.rift import Rift
 from melder.nexus.rift.rift_space.rift_space import RiftSpace
 from melder.nexus.rift.rift_space.workstation import Workstation
 
-# ---- configuration surfaces ----
-from melder.aether.aether_configuration import AetherConfiguration
-from melder.aether.aether_configuration_builder import AetherConfigurationBuilder
-from melder.aether.aetheric_frame.aetheric_frame_configuration import AethericFrameConfiguration
-from melder.aether.spellbook.configuration.spellbook_configuration import (
-    SpellbookConfiguration,
-)
-from melder.crystallizer.configuration.crystallizer_configuration import (
-    CrystallizerConfiguration,
-)
-from melder.crystallizer.configuration.crystallizer_configuration_builder import (
-    CrystallizerConfigurationBuilder,
-)
-from melder.mutation_research.mutation_configuration import (
-    MutationResearchConfiguration,
-)
-from melder.mutation_research.mutation_configuration_builder import (
-    MutationResearchConfigurationBuilder,
-)
-from melder.nexus.configuration.nexus_configuration import NexusConfiguration
-from melder.nexus.configuration.rift_configuration import RiftConfiguration
-
-# ---- front-facing enum vocabularies ----
-from melder.aether.conduit.conduit_ward.permissions.permissions import Permissions
-from melder.aether.conduit.conduit_ward.policies.policies import Policies
-from melder.aether.spellbook.configuration.system_state import SystemState
-from melder.aether.spellbook.existence.existence import Existence
-from melder.mutation_research.research_set.research_lane import LaneState, LaneType
-from melder.nexus.configuration.nexus_frame_mode import NexusFrameMode
-from melder.nexus.configuration.rift_space_type import RiftSpaceType
-
-# ---- DI descriptors ----
-from melder.aether.conduit.meld.contracts.spell_contract import SpellContract
-from melder.aether.conduit.meld.contracts.spell_map import SpellMap
+# ---- agent/tooling helpers ----
+from melder.utilities.ai_native_support_tools.protocol_crafter import ProtocolCrafter
 
 # ---- user-catchable error vocabulary (raised through public verbs) ----
 from melder.utilities.custom_exceptions.dead_reference_error import DeadReferenceError
@@ -149,9 +154,6 @@ from melder.utilities.custom_exceptions.spell_space_scope_error import (
 from melder.utilities.custom_exceptions.spellbook_validation_error import (
     SpellbookValidationError,
 )
-
-# ---- agent/tooling helpers ----
-from melder.utilities.ai_native_support_tools.protocol_crafter import ProtocolCrafter
 
 # Eagerly instantiate the registration guard at package import time: the
 # sentinel must exist before ANY internal object can be offered for
@@ -196,69 +198,69 @@ _detect_nogil_mode()
 
 
 __all__ = [
-    "__version__",
-    "__author__",
-    "__license__",
-    "__description__",
-    "__architecture__",
-    "__components__",
-    "__graph_network__",
-    "__graph_details__",
     "Aether",
-    "Nexus",
-    "Spellbook",
-    "SpellBinder",
-    "Conduit",
-    "Crystallizer",
-    "MutationResearch",
-    "Scan",
-    "ProtocolCrafter",
     "AetherConfiguration",
     "AetherConfigurationBuilder",
     "AethericFrameConfiguration",
-    "SpellbookConfiguration",
+    "Conduit",
+    "ConduitCloud",
+    "Crystallizer",
+    "CrystallizerBootstrap",
     "CrystallizerConfiguration",
     "CrystallizerConfigurationBuilder",
-    "MutationResearchConfiguration",
-    "MutationResearchConfigurationBuilder",
-    "NexusConfiguration",
-    "RiftConfiguration",
+    "DeadReferenceError",
+    "DiffEngine",
     "Existence",
-    "Policies",
-    "Permissions",
-    "SystemState",
-    "LaneType",
-    "NexusFrameMode",
-    "RiftSpaceType",
-    "SpellMap",
-    "SpellContract",
-    "Rift",
-    "RiftSpace",
-    "FrameViewer",
-    "Workstation",
-    "SpellSpace",
-    "ConduitCloud",
-    "ResearchSet",
-    "SpellExaminer",
-    "CrystallizerBootstrap",
     "ExternalPersistenceManager",
     "ExternalPersistenceManagerConfiguration",
-    "scan_bind",
-    "SpellbookValidationError",
-    "MeldExecutionError",
-    "SpellSpaceScopeError",
+    "FrameViewer",
     "HookExecutionError",
     "InternalRegistrationError",
-    "PhaseSchedulerError",
-    "PhaseExecutionError",
-    "PhaseTimeoutError",
-    "DeadReferenceError",
-    "ViewFrame",
-    "ViewConduit",
-    "ViewSpell",
-    "ViewMultiFrame",
-    "DiffEngine",
     "LaneState",
+    "LaneType",
+    "MeldExecutionError",
+    "MutationResearch",
+    "MutationResearchConfiguration",
+    "MutationResearchConfigurationBuilder",
+    "Nexus",
+    "NexusConfiguration",
+    "NexusFrameMode",
+    "Permissions",
+    "PhaseExecutionError",
+    "PhaseSchedulerError",
+    "PhaseTimeoutError",
+    "Policies",
+    "ProtocolCrafter",
+    "ResearchSet",
+    "Rift",
+    "RiftConfiguration",
+    "RiftSpace",
+    "RiftSpaceType",
+    "Scan",
     "Spell",
+    "SpellBinder",
+    "SpellContract",
+    "SpellExaminer",
     "SpellIndex",
+    "SpellMap",
+    "SpellSpace",
+    "SpellSpaceScopeError",
+    "Spellbook",
+    "SpellbookConfiguration",
+    "SpellbookValidationError",
+    "SystemState",
+    "ViewConduit",
+    "ViewFrame",
+    "ViewMultiFrame",
+    "ViewSpell",
+    "Workstation",
+    "__architecture__",
+    "__author__",
+    "__components__",
+    "__description__",
+    "__graph_details__",
+    "__graph_network__",
+    "__license__",
+    "__version__",
+    "scan_bind",
 ]

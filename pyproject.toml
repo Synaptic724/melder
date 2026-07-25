@@ -155,7 +155,7 @@ exclude = [
 # `internal_manifest.py` does not: it is gitignored, therefore absent from the
 # source tree the wheel is built from, and melder rebuilds it on first import.
 [tool.setuptools.exclude-package-data]
-"melder.__melder_cache__" = ["internal_manifest.py"]
+"melder.__melder_cache__.__init_cache__" = ["internal_manifest.py"]
 
 
 [tool.coverage.run]
