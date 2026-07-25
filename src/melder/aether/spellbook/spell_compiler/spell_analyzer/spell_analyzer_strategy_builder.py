@@ -27,11 +27,6 @@ class SpellAnalyzerStrategyBuilder(Cleanable):
         - Later compiler code can ask for strategies by name or ask for a
           deterministic ordered tuple of strategies for one analysis chain.
 
-    Registration:
-        MELDER KERNEL. A compiler registry/builder held by
-        `SpellAnalyzer`; not a bind target. (Left untagged as-is; guard classification
-        is the owner's call.)
-
     Subsystem Context:
         The registry holder of the `spell_analyzer` package: `SpellAnalyzer` owns one
         and resolves its named strategy chains from it.

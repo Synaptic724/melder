@@ -29,9 +29,6 @@ class CodegenPlanDiscoveryStrategyBuilder(Cleanable):
         - Registration order is discovery order.
         - Does not inspect models or emit discovery results itself.
 
-    Registration:
-        MELDER KERNEL. A compiler registry; not a bind target.
-
     Subsystem Context:
         The registry holder of the `codegen_plan_discovery_system`, owned by
         `CodegenPlanDiscoverySystem`.

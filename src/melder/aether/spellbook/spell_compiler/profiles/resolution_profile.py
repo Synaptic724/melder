@@ -19,9 +19,6 @@ class SpellSymbolicNode(Cleanable):
 
     For now, it is just a tagged node with an identifier and metadata bag.
 
-    Registration:
-        MELDER KERNEL - guarded. A compiler artifact; not user-bindable.
-
     Subsystem Context:
         An element of this package's `SpellSymbolicGraph` (the resolution_profile
         family), one of the seven artifact classes in `profiles/resolution_profile.py`.
@@ -80,9 +77,6 @@ class SpellSymbolicEdge(Cleanable):
     Semantically this is:
         "node_from depends on node_to (optionally via parameter X)".
 
-    Registration:
-        MELDER KERNEL - guarded. A compiler artifact; not user-bindable.
-
     Subsystem Context:
         An edge of this package's `SpellSymbolicGraph` (the resolution_profile family),
         pairing two `SpellSymbolicNode`s.
@@ -138,9 +132,6 @@ class SpellSymbolicGraph(Cleanable):
 
     No global DAG semantics. No resolution against the Spellbook. This is
     purely a structural description derived from SpellRequirements.
-
-    Registration:
-        MELDER KERNEL - guarded. A compiler artifact; not user-bindable.
 
     Subsystem Context:
         The symbolic graph of the resolution_profile family: owns `SpellSymbolicNode`
@@ -220,9 +211,6 @@ class SpellResolutionFrame(Cleanable):
     This is the structure that `Meld` / the resolver will eventually walk in
     topological order to construct instances.
 
-    Registration:
-        MELDER KERNEL - guarded. A compiler artifact; not user-bindable.
-
     Subsystem Context:
         The concrete resolution frame of the resolution_profile family. DISTINCT from
         `dag/resolution_frame/ResolutionFrame` - this one is the profile-family
@@ -276,9 +264,6 @@ class SpellResolutionFrame(Cleanable):
 class SpellValidationIssue(Cleanable):
     """
     One validation warning or error associated with a spell's resolution state.
-
-    Registration:
-        MELDER KERNEL - guarded. A compiler artifact; not user-bindable.
 
     Subsystem Context:
         An issue of the resolution_profile family, aggregated by this package's
@@ -336,9 +321,6 @@ class SpellValidationResult(Cleanable):
     """
     Phase 4 artifact: readiness / health summary for a spell's resolution
     artifacts (requirements + symbolic graph + local frame).
-
-    Registration:
-        MELDER KERNEL - guarded. A compiler artifact; not user-bindable.
 
     Subsystem Context:
         The validation summary of the resolution_profile family: owns error/warning
@@ -427,9 +409,6 @@ class SpellResolutionProfile(Cleanable):
 
     In the initial integration, you will likely populate only `requirements`,
     and leave the others as None until their phases are implemented.
-
-    Registration:
-        MELDER KERNEL - guarded. A compiler artifact; not user-bindable.
 
     Subsystem Context:
         The aggregate root of the `profiles/resolution_profile` family: it owns the

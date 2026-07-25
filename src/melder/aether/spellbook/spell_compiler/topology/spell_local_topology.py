@@ -60,9 +60,6 @@ class SpellSocketDescriptor:
             This is populated with SPELL_CONTRACT sockets to support
             system-level contract validation.
 
-    Registration:
-        MELDER KERNEL. A frozen value dataclass.
-
     Subsystem Context:
         The local socket view of the `topology` package; `SpellLocalTopology` owns a
         tuple of these, one per constructor socket.
@@ -102,9 +99,6 @@ class SpellLocalTopology(Cleanable):
     - Owns the socket tuple and the parameter-name index derived from it.
     - Is effectively immutable after construction; callers read from it but do
       not mutate it in place.
-
-    Registration:
-        MELDER KERNEL - guarded. A compiler artifact; not user-bindable.
 
     Subsystem Context:
         The per-spell view of the `topology` package: it owns the

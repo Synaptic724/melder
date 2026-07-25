@@ -17,10 +17,6 @@ _OnCollect = Callable[["SyncWeakRef[T]"], None]
 class SyncWeakRef(Sync, Generic[T]):
     """
 
-    Registration:
-        MELDER KERNEL - guarded. A synchronized reference cell is runtime
-        machinery.
-
     Subsystem Context:
         Lives in `utilities/synchronization/` rather than with the weak
         containers, and the placement is the point: `WeakRefNode` is a passive

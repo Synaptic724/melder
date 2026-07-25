@@ -40,9 +40,6 @@ class SpellSymbolicGraph(Cleanable):
 
     Those concerns belong to Phase 3 (local frame / DAG) and Phase 4 (validation).
 
-    Registration:
-        MELDER KERNEL - guarded. A per-spell Phase-2 artifact; not user-bindable.
-
     Subsystem Context:
         The aggregate of the `symbolic_graph` package: it owns the list of
         `SpellSymbolicDependency` edges. Built from the Phase-1 `SpellRequirements`

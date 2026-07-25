@@ -22,11 +22,6 @@ class SpellOccurrenceGraphAnalysis(Cleanable):
         - Stores only occurrence-graph analysis, not execution ordering or
           final plan decisions.
 
-    Registration:
-        MELDER KERNEL. A compiler analysis artifact held on
-        `SpellCompilerArtifact`; not a bind target. (Left untagged as-is; guard
-        classification is the owner's call.)
-
     Subsystem Context:
         The occurrence-analysis output of the `spell_analyzer` package, produced by
         the occurrence-graph analyzer strategy; it borrows a `path_registry` it must

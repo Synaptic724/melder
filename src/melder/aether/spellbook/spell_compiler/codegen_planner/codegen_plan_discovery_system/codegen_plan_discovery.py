@@ -24,10 +24,6 @@ class CodegenPlanDiscovery:
         - The candidate style ids are a bounded allow-list for phase 11, not a
           final emitted-runtime decision.
 
-    Registration:
-        MELDER KERNEL - value dataclass. A frozen result payload;
-        not a bind target. (Guard classification is the owner's call.)
-
     Subsystem Context:
         The output of the `codegen_plan_discovery_system`: produced by a
         `CodegenPlanDiscoveryStrategy` and consumed by the planner facade.

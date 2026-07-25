@@ -25,9 +25,6 @@ class DagNode(Cleanable):
         - Dependencies model "must be created before me".
         - The DAG object is responsible for computing a topological order.
 
-    Registration:
-        MELDER KERNEL - guarded. A compiler graph node; not user-bindable.
-
     Subsystem Context:
         The node type of the `dag` package: `DirectedAcyclicWorkGraph` owns these and
         computes a topological order over them; param-aware edges

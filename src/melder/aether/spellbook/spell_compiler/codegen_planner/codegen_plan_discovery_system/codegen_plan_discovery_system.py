@@ -28,9 +28,6 @@ class CodegenPlanDiscoverySystem(Cleanable):
         - For now it always selects the generalized model-native strategy and
           generalized family.
 
-    Registration:
-        MELDER KERNEL. A compiler facade; not a bind target.
-
     Subsystem Context:
         The selector of the `codegen_plan_discovery_system`: it owns a
         `CodegenPlanDiscoveryStrategyBuilder` and returns the first strategy claim.

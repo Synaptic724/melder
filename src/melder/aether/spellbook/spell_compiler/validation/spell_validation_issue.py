@@ -29,9 +29,6 @@ class SpellValidationIssue(Cleanable):
     details:
         Optional extra context for tooling (parameter name, cycle, etc.).
 
-    Registration:
-        MELDER KERNEL - guarded. A compiler diagnostic value; not user-bindable.
-
     Subsystem Context:
         The unit of the `validation` package: strategies emit these into
         `SpellValidationContext.issues`, and `SpellValidationResult` aggregates

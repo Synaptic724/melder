@@ -15,10 +15,6 @@ class SocketKind(Enum):
     - SPELL_CONTRACT:
         A SpellContract socket that must be satisfied by a provider spell.
 
-    Registration:
-        MELDER KERNEL - guarded. A compiler classification enum; not a
-        user-bindable value.
-
     Subsystem Context:
         The edge-kind vocabulary of the `dag` package: a DAG socket carries one of
         these to say whether it is a normal DI edge or a late-bound contract edge.

@@ -31,9 +31,6 @@ class DirectedAcyclicWorkGraph(Cleanable):
 
     It is intentionally not a general-purpose runtime workflow engine.
 
-    Registration:
-        MELDER KERNEL - guarded. A compiler graph; not user-bindable.
-
     Subsystem Context:
         The graph type of the `dag` package: it owns `DagNode`s and records per-edge
         `SocketKind`, producing the topological order the resolver consumes.

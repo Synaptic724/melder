@@ -63,9 +63,6 @@ class SpellSymbolicDependency(Cleanable):
         For SPELL_CONTRACT shapes, the canonical
         "(frame_key, binding_key)" derived from the contract object.
 
-    Registration:
-        MELDER KERNEL - guarded. A Phase-2 compiler edge; not user-bindable.
-
     Subsystem Context:
         An edge in the `symbolic_graph` package: `SpellSymbolicGraph` holds a list
         of these, one per constructor socket, each carrying a `ParameterDIShape`

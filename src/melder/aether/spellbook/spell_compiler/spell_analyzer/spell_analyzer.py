@@ -40,9 +40,6 @@ class SpellAnalyzer(Cleanable):
         - Safe to construct with an empty strategy registry while the analyzer lane
           is being scaffolded.
 
-    Registration:
-        MELDER KERNEL - guarded. A compiler orchestrator; not user-bindable.
-
     Subsystem Context:
         The orchestrator of the `spell_analyzer` package: it owns a
         `SpellAnalyzerStrategyBuilder` and dispatches named strategy chains over a

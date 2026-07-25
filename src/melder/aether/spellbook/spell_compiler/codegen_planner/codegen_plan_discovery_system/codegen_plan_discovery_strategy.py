@@ -29,9 +29,6 @@ class CodegenPlanDiscoveryStrategy(ABC):
         - Returning `CodegenPlanDiscovery` means discovery should stop and use
           that result.
 
-    Registration:
-        MELDER KERNEL. A compiler strategy contract; not bound as a spell.
-
     Subsystem Context:
         The base of the `codegen_plan_discovery_system/strategies` family; instances
         register into `CodegenPlanDiscoveryStrategyBuilder`.

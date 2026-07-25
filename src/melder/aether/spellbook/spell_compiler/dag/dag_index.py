@@ -43,9 +43,6 @@ class PathRegistry(Cleanable):
     Threading:
         - Not thread-safe. Builder-owned only.
 
-    Registration:
-        MELDER KERNEL - guarded. A compiler build helper; not user-bindable.
-
     Subsystem Context:
         The path-interning substrate of the `dag` package; `DagIndex` owns one and
         keys `SocketRef`s by the PathIds it mints.
@@ -298,10 +295,6 @@ class SocketRef:
         socket_kind:
             The logical kind of socket – normal DI, SpellContract.
 
-    Registration:
-        MELDER KERNEL. A frozen value dataclass; not a
-        bindable service in any case.
-
     Subsystem Context:
         The addressable unit of the `dag` index: `DagIndex` buckets these by path id
         and name, and `DagTargetingEngine` returns them.
@@ -348,9 +341,6 @@ class DagIndex(Cleanable):
 
     This is the shared substrate for `spell_override` targeting. It is
     intentionally dumb: no graph logic, no Melder awareness.
-
-    Registration:
-        MELDER KERNEL - guarded. A compiler index; not user-bindable.
 
     Subsystem Context:
         The shared override-targeting substrate of the `dag` package: it owns a
@@ -537,9 +527,6 @@ class DagTargetingEngine(Cleanable):
     It does *not* know about Melder, SpellCrafter, or contracts – a caller
     provides a `filter_fn` to constrain which sockets are eligible.
 
-    Registration:
-        MELDER KERNEL - guarded. A compiler targeting core; not user-bindable.
-
     Subsystem Context:
         The resolver of the `dag` package: it pairs a `DagIndex` with a `TargetSpec`
         to answer "which sockets does this override key hit".
@@ -713,9 +700,6 @@ class DagIndexBuilder:
 
     At this stage we only support building a shallow index for a *single*
     spell's constructor sockets (param_path_id represents ``(param_name,)``).
-
-    Registration:
-        MELDER KERNEL - guarded. A compiler build helper (static); not user-bindable.
 
     Subsystem Context:
         The constructor helper of the `dag` package: `build_shallow(owner_spell_id,

@@ -26,9 +26,6 @@ class ResolutionFrame(Cleanable):
     It does NOT know about graph structure or spell details; it only stores values
     keyed by ids/names decided by SpellCrafter/DAG builder.
 
-    Registration:
-        MELDER KERNEL - guarded. Per-meld runtime state; not user-bindable.
-
     Subsystem Context:
         The shared state object of the `dag` package's `resolution_frame`: the DAG
         resolver reads caller overrides from it and writes per-node results and

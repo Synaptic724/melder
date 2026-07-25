@@ -9,10 +9,6 @@ class SpellExistenceOccurrence:
     """
     One visible spell-id to existence row captured during the phase-8 spell walk.
 
-    Registration:
-        MELDER KERNEL - value dataclass. A frozen value row with no live
-        references; not a bind target.
-
     Subsystem Context:
         A row inside `SpellExistenceOccurrenceAnalysis`, captured during the Phase-8
         spell walk in the `spell_analyzer` package.
@@ -41,10 +37,6 @@ class SpellExistenceOccurrenceAnalysis:
     Purpose:
         Hold both the raw spell-id/existence rows and the aggregate existence
         counts in one immutable payload with no live spell references.
-
-    Registration:
-        MELDER KERNEL - value dataclass. Immutable aggregate payload with
-        no live spell references; not a bind target.
 
     Subsystem Context:
         The aggregate of `SpellExistenceOccurrence` rows in the `spell_analyzer`

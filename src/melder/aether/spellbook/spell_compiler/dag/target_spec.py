@@ -15,10 +15,6 @@ class TargetSpecKind(Enum):
     * UNIQUE -> unique-by-name wildcard: "*repo".
     * BROADCAST -> broadcast-by-name wildcard: "**logger".
 
-    Registration:
-        MELDER KERNEL - guarded. A compiler classification enum; not a
-        user-bindable value.
-
     Subsystem Context:
         Paired with `TargetSpec`, which parses a raw override key into one of these
         modes.
@@ -54,10 +50,6 @@ class TargetSpec:
         param_name:
             The parameter name used for UNIQUE / BROADCAST specs (e.g. ``"logger"``).
             "None" for PATH specs.
-
-    Registration:
-        MELDER KERNEL. A frozen value dataclass, so it
-        is not a bindable service in any case.
 
     Subsystem Context:
         The parsed form of an override key in the `dag` package; its `kind` is a

@@ -63,9 +63,6 @@ class SpellValidationContext(Cleanable):
     - Optional artifact cleanup is controlled by `cleanup_artifacts`; the
       caller decides whether the context owns those artifacts for teardown.
 
-    Registration:
-        MELDER KERNEL - guarded. A compiler validation carrier; not user-bindable.
-
     Subsystem Context:
         The read-model of the `validation` package: `SpellValidationSystem` builds
         one per spell and passes it to every `SpellValidationStrategy`, which read

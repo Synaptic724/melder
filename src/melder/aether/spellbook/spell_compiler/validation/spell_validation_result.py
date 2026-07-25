@@ -37,9 +37,6 @@ class SpellValidationResult(Cleanable):
     - Convenience properties expose whether any error/warning class is present
       without forcing callers to rescan the issue list manually.
 
-    Registration:
-        MELDER KERNEL - guarded. A compiler result artifact; not user-bindable.
-
     Subsystem Context:
         The output of the `validation` package: built by
         `SpellValidationSystem.validate_spell` from the `SpellValidationIssue`
