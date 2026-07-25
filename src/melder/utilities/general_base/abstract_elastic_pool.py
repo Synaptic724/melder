@@ -60,13 +60,21 @@ class AbstractElasticPool(Generic[_T], Cleanable, ABC):
         `_lock` because it is the destructive lifecycle boundary.
 
     Registration:
-        BASE CLASS - DELIBERATELY UNGUARDED. Do NOT add `__melder_internal__`
-        to this class. The guard resolves the sentinel through `getattr`, which
-        walks the MRO, so tagging this base would tag every pool descended from
-        it, including any a user writes. Concrete Melder-owned pools carry the
-        sentinel individually. Note this class DOES inherit `Cleanable`, which
-        is itself deliberately unguarded for the same reason - the exclusion has
-        to hold at every level of the chain, not just the leaf.
+        GUARDED, and safely so. `AbstractElasticPool` is present in the
+        generated `INTERNAL_MANIFEST`, so binding it directly is refused.
+        Enforcement is an EXACT `(module, qualname)` test that does NOT walk the
+        MRO, so a pool a user writes carries its own identity, misses the
+        manifest, and binds normally.
+
+        HISTORICAL: this base was previously excluded, and so was `Cleanable`,
+        which it inherits - under the retired `__melder_internal__` sentinel the
+        exclusion had to hold at EVERY level of the chain, because `getattr`
+        walked the MRO and a single tagged ancestor poisoned every descendant.
+        That whole-chain constraint is gone. Exact-match lookup makes each class
+        answer only for itself, so `Cleanable` and this class are both guarded
+        while user-written pools below them remain bindable (owner ruling
+        2026-07-24: guard every class, no exclusion list). No class carries a
+        sentinel attribute any more; nothing reads one.
 
     Subsystem Context:
         One of three `utilities/general_base/` base classes, alongside

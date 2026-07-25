@@ -539,6 +539,31 @@ The working developer's tier: SpellBinder fluent binding, spellframes and contra
   REREAD: OPTIONAL
   SCORE_0_TO_10: -
 
+## MEASURE - 2026-07-25 19:33 UTC - closing wave first half: 27 sever_link + 28 upgrade_to_normal
+  WHAT: Owner-directed. Two new lessons close the biggest fence gaps:
+    - 27_sever_link: the UNDO of the dynamic arc - contracts die with the
+      link; the borrower loses the RIGHT TO RESOLVE (next meld refuses) while
+      the owner's live instances are untouched; double-sever refuses. Lesson
+      prints refusal types loosely (exact exception shapes pinned on the
+      owner's first run per harness law); probe uses pytest.raises(Exception)
+      + type prints for the decode pass.
+    - 28_upgrade_to_normal: lesser grows up in place - named, world-
+      registered, discoverable via cloud.get_conduit_by_name, and its
+      per-conduit creations SURVIVE the promotion (identity-asserted).
+      Idiom mirrored from the validated component test
+      test_component_conduit_upgrade_transfers_lesser_creations_and_reuses_
+      unique + the lifecycle integration test (cloud lookup).
+    Concept map updated: both verbs moved from gaps to covered; remaining
+    fence gaps = live link policies + conduit lifecycle hooks.
+  EVIDENCE:
+  - tests/component/melder/aether/conduit/test_conduit_component_creations.py:392-436
+  - tests/integration/melder/conduit/test_conduit_integration_lifecycle.py:318-353
+  - UX_and_AIX_experiences/02_intermediate/27_sever_link.py, 28_upgrade_to_normal.py
+  NEXT: Owner harness run picks up 25 (link fix), 07/08 (rework), 26 probes,
+    and now 27/28 - one run validates the whole tail.
+  REREAD: OPTIONAL
+  SCORE_0_TO_10: -
+
 ## Context / Handoff Summary
 Method: every example imports melder as md ONLY - a deep-path import in an example
 IS the finding. Examples are runnable scripts with honest asserts; they ride the

@@ -45,11 +45,19 @@ class Sync:
         own resources compose cleanup themselves.
 
     Registration:
-        BASE CLASS - DELIBERATELY UNGUARDED. Do NOT add `__melder_internal__`
-        to this class. The guard resolves the sentinel through `getattr`, which
-        walks the MRO, so tagging this mix-in would tag every sync wrapper
-        descended from it, including any a user writes. Concrete Melder-owned
-        wrappers such as `SyncWeakRef` carry the sentinel individually.
+        GUARDED, and safely so. `Sync` is present in the generated
+        `INTERNAL_MANIFEST`, so binding `Sync` itself is refused. Enforcement is
+        an EXACT `(module, qualname)` test that does NOT walk the MRO, so a sync
+        wrapper a user writes carries its own identity, misses the manifest, and
+        binds normally.
+
+        HISTORICAL: this mix-in was previously excluded because the retired
+        `__melder_internal__` sentinel resolved through `getattr` and therefore
+        inherited, which would have made every descendant unbindable. That
+        exclusion is obsolete under the manifest (owner ruling 2026-07-24: guard
+        every class, no exclusion list). Melder-owned wrappers such as
+        `SyncWeakRef` are covered by the manifest like everything else; no class
+        carries a sentinel attribute any more, because nothing reads one.
 
     Subsystem Context:
         One of three `utilities/general_base/` base classes, alongside

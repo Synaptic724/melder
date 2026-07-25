@@ -2145,16 +2145,16 @@ Contract/Interface:
 - `assert_allowed(candidate, context="bind")` is a MODULE-LEVEL FUNCTION in `bind.py`.
   It raises `InternalRegistrationError` when the candidate's `(module, qualname)` is in
   `INTERNAL_MANIFEST`. There is no guard class and no singleton.
-- `_RegistrationGuardProxy` (bound as `_mrg` in the same module) forwards
-  `assert_allowed`. It is a TEST SEAM, not vestigial scaffolding: no production module
-  outside `bind.py` references `_mrg`, but `test_bind.py` substitutes it as a module
-  attribute in seven places - an autouse fixture neutralizing the check for the whole
-  file, plus targeted swaps including a `RejectingGuard` asserting refusal propagates.
-  Collapsing the proxy into a direct function call would silently defeat every one of
-  them, since the patches would still land on `_mrg` while production no longer read it.
-- `_RegistrationGuardProxy.is_internal(...)` has zero callers in `src/`, `tests/`, or
-  `benchmarks/` and is dead on the current tree.
-- Classes answer for themselves; instances resolve through `type(candidate)`.
+- `_internal_identity_of(candidate)` is the pure helper resolving the lookup key.
+  Classes answer for themselves; instances answer through `type(candidate)`. Its
+  `getattr` defaults are deliberate and are NOT the defensive introspection the repo
+  bans: `candidate` is arbitrary USER input whose attribute contract is not visible to
+  us, which is the documented polymorphic/external exception. A target missing either
+  attribute degrades to an empty string and simply misses the manifest.
+- The former `_RegistrationGuardProxy` / `_mrg` object and its `is_internal` method are
+  GONE. `test_bind.py`'s seven patch sites were migrated in the same pass to patch
+  `bind.assert_allowed` directly, all with `raising=True` so a future rename fails LOUD
+  rather than silently creating an attribute nothing reads. Preserve `raising=True`.
 Data Structures:
 - `INTERNAL_MANIFEST`: `FrozenSet[Tuple[str, str]]` of `(module, qualname)` pairs,
   imported from `melder._build_assets._init_manifest.internal_manifest`.

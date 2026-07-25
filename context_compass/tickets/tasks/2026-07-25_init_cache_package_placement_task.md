@@ -450,6 +450,66 @@ finished correcting to a layout which no longer exists.
   REREAD: REQUIRED
   SCORE_0_TO_10: 10
 
+- DATETIME: 2026-07-25T19:50:00Z
+  TYPE: MEASURE
+  CLAIM: CODEGEN/EXEC IS SLOWER, NOT FASTER - owner question answered with numbers.
+    Benchmarked five payload shapes for the 577-entry manifest, fresh interpreter per
+    run, 15 runs, minimum reported. WARM (the normal case, .pyc cached):
+    `exec(compile(src))` 1995us vs the committed module import 2158us - i.e. exec is not
+    a win, and COLD it is only faster because it skips writing a .pyc it can never reuse.
+    That is the whole story: `exec` bypasses the bytecode cache, so it re-parses and
+    re-compiles the payload on EVERY import, whereas a plain module compiles once and
+    then loads marshalled bytecode forever after. marshal-from-.bin was worst at 3024us
+    because it adds a file read the .pyc already does better.
+  EVIDENCE:
+  - src/melder/_build_assets/_init_manifest/_builder.py:160-201
+  IMPACT: The current native-module approach is correct and should stay. Codegen would
+    trade a one-time build cost for a permanent per-import cost.
+  NEXT: Check whether the payload SHAPE inside the module can be improved instead.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 8
+- DATETIME: 2026-07-25T19:50:00Z
+  TYPE: ASSUMPTION_CHALLENGE
+  CLAIM: SECOND RETRACTION IN THIS LANE - my own proposed optimization was measurement
+    error and I have reverted it. I first measured a set display (`frozenset({...})`)
+    at 254us against the committed tuple display at 2164us and called it an 8.5x win,
+    then changed the generator and regenerated the asset. That comparison was INVALID:
+    my synthetic set-display variants omitted the `from typing import FrozenSet, Tuple`
+    line that the real generated file carries, and that import alone costs ~2035us in a
+    cold interpreter. I was timing the typing import, not the payload.
+    Re-measured correctly with typing PRE-IMPORTED - which is the real condition, since
+    melder imports typing long before the manifest - the two shapes are a wash and the
+    tuple form is marginally ahead: 267us tuple vs 288us set. Constant-folding is real
+    (verified: the set display does produce one frozenset const of size 577 in co_consts,
+    the tuple display produces a 577-tuple const) but it only MOVES the hashing cost from
+    the `frozenset()` call into marshal load. Generator reverted to the tuple display.
+  EVIDENCE:
+  - src/melder/_build_assets/_init_manifest/_builder.py:182-186
+  IMPACT: No optimization exists here worth taking. The lesson is the one the repo's own
+    performance rule states: benchmark the REAL artifact under REAL conditions, not a
+    synthetic stand-in that quietly differs. I violated that and it produced a confident
+    wrong answer twice in one session.
+  NEXT: Leave the payload shape alone; the docstring now records the measurement so the
+    next agent does not re-litigate it.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+- DATETIME: 2026-07-25T19:50:00Z
+  TYPE: FACT
+  CLAIM: Owner-reported test failure FIXED. `test_registration_guard_does_not_leak`
+    raised `NameError: name 'g' is not defined` - when I converted that seam from a
+    `Guard()` instance to a closure I replaced the object but left the old assertion
+    `assert g.calls == 1`. Now `assert calls["count"] == 1`. Swept ALL SEVEN converted
+    seams with an AST pass for undefined `g`/`Guard`/`RejectingGuard`/`types` references:
+    zero remain. The now-orphaned `import types` was removed.
+  EVIDENCE:
+  - tests/unit/melder/spellbook/bind/test_bind.py:1227-1235
+  IMPACT: My own conversion introduced the only red in the run. The AST sweep is the
+    check I should have run before reporting the change as complete rather than after
+    the owner hit it.
+  NEXT: Owner re-run of the bind unit lane.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
 ## Context / Handoff Summary
 TAKEOVER COMPLETE. gemini_0 departed having shipped the relocation this ticket was
 opened to design: guard module deleted, manifest builder + generated asset moved to

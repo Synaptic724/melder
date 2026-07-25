@@ -39,13 +39,19 @@ class GroupDiffStrategy(Cleanable):
         strategy cleaned; idempotent.
 
     Registration:
-        BASE CLASS - DELIBERATELY UNGUARDED. Do NOT add `__melder_internal__`
-        to this class, for the same reason as `DiffStrategy`: the sentinel
-        resolves through `getattr` and walks the MRO, so tagging this base would
-        tag every derived strategy including a user's own. The family is
+        GUARDED, and safely so, for the same reason as `DiffStrategy`:
+        `GroupDiffStrategy` is present in the generated `INTERNAL_MANIFEST`, so
+        binding the base itself is refused, while enforcement's EXACT
+        `(module, qualname)` test does not walk the MRO. The family is
         open/closed by design - `GroupDiffEngine.register_strategy()` exists
-        precisely so callers can add comparisons. `MemberDiffStrategy`, the
-        shipped implementation, carries the sentinel individually.
+        precisely so callers can add comparisons - and a user's own strategy
+        carries its own identity, misses the manifest, and stays bindable.
+
+        HISTORICAL: previously excluded because the retired
+        `__melder_internal__` sentinel resolved through `getattr` and inherited
+        down the MRO. Obsolete under the manifest (owner ruling 2026-07-24).
+        `MemberDiffStrategy`, the shipped implementation, is covered by the
+        manifest like everything else; no class carries a sentinel any more.
 
     Subsystem Context:
         The extension point of the COMPOSITION-grain diff family in

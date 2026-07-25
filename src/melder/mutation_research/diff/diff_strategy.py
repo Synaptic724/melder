@@ -34,17 +34,23 @@ class DiffStrategy(Cleanable):
         cleaned; idempotent.
 
     Registration:
-        BASE CLASS - DELIBERATELY UNGUARDED. Do NOT add `__melder_internal__`
-        to this class.
+        GUARDED, and safely so. `DiffStrategy` is present in the generated
+        `INTERNAL_MANIFEST`, so binding the base itself is refused.
 
-        The registration guard resolves its sentinel through `getattr`, which
-        walks the MRO, so tagging this base would tag every strategy derived
-        from it - including one a USER writes. That matters more here than
-        almost anywhere else in the codebase: this family is explicitly
-        open/closed, and `DiffEngine.register_strategy()` exists so callers can
-        add their own comparison. Guarding the base would make user strategies
-        unbindable in the user's own spellbook. The three Melder-owned concrete
-        strategies carry the sentinel individually.
+        User strategies are unaffected, which matters more here than almost
+        anywhere else in the codebase: this family is explicitly open/closed and
+        `DiffEngine.register_strategy()` exists so callers can add their own
+        comparison. Enforcement is an EXACT `(module, qualname)` test that does
+        NOT walk the MRO, so a user's strategy carries its own identity, misses
+        the manifest, and stays bindable in the user's own spellbook.
+
+        HISTORICAL: this base was previously excluded because the retired
+        `__melder_internal__` sentinel resolved through `getattr` and therefore
+        inherited - tagging the base would have made every derived strategy
+        unbindable, user-written ones included. That exclusion is obsolete under
+        the manifest (owner ruling 2026-07-24: guard every class, no exclusion
+        list). The three shipped strategies are covered by the manifest like
+        everything else; no class carries a sentinel attribute any more.
 
     Subsystem Context:
         The extension point of the spell-grain diff family in

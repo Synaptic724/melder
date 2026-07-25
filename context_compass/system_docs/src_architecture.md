@@ -632,19 +632,19 @@ EVIDENCE: src/melder/aether/spellbook/spellbook.py:3480-3520.
   Exported, user-constructible surfaces such as the custom exceptions, `SafeGuard`, and
   `ProtocolCrafter` remain importable and usable while being unbindable.
 - The only live enforcement call site is
-  `bind.py:308  _mrg.assert_allowed(spell, context="bind")`. `_mrg` is a module-level
-  instance of `_RegistrationGuardProxy`, defined beside the function in the same file.
-- THE PROXY IS A TEST SEAM, not vestigial scaffolding. No production module outside
-  `bind.py` references `_mrg`, but `tests/unit/melder/spellbook/bind/test_bind.py`
-  substitutes it as a module attribute in seven places, including an AUTOUSE fixture
-  that neutralizes the check for every test in the file and a `RejectingGuard` that
-  asserts refusal propagates out of `Bind.bind(...)`. Calling the bare `assert_allowed`
-  function directly at the call site would silently defeat all of them: the patches
-  would still apply to `_mrg`, while production code no longer consulted it.
-- Therefore the object shape at module scope is load-bearing for the suite, and the
-  proxy must not be collapsed without updating those seven test sites in the same pass.
-- `_RegistrationGuardProxy.is_internal(...)` is genuinely dead: zero callers exist in
-  `src/`, `tests/`, or `benchmarks/`.
+  `bind.py:363  assert_allowed(spell, context="bind")` - a direct call to the
+  module-level function. Identity resolution is factored into the pure helper
+  `_internal_identity_of(candidate)` in the same module.
+- The former `_RegistrationGuardProxy` / `_mrg` object and its `is_internal` method are
+  GONE, and the seven test sites that patched `_mrg` were migrated in the same pass to
+  patch `bind.assert_allowed` directly.
+- THE TEST SEAM IS NOW FAIL-LOUD. Every one of those `monkeypatch.setattr` calls uses
+  `raising=True`, so if the enforcement seam is ever renamed or moved again, the tests
+  fail immediately instead of silently creating an attribute nothing reads. That matters
+  because `test_bind.py` neutralizes the guard for its whole file via an autouse
+  fixture; a silently-dead patch would let the real 577-entry manifest begin refusing
+  binds mid-suite with no signal pointing back at the fixture. Preserve `raising=True`
+  if these sites are ever touched.
 - The guard is entirely absent from the package root: `melder/__init__.py` neither
   imports nor instantiates any guard, and exports no guard symbol.
 - The first `Aether()` boot eagerly constructs hidden singleton support
@@ -1542,7 +1542,7 @@ Package root:
   writer; build-time only, never imported at runtime.
 - `build_scripts/build_internal_manifest.py` - explicit regeneration entrypoint.
 - Registration refusal itself lives in `src/melder/aether/spellbook/bind/bind.py`
-  (`assert_allowed`, `_RegistrationGuardProxy`); there is no separate guard module.
+  (`assert_allowed`, `_internal_identity_of`); there is no separate guard module.
 - `src/melder/system_document.py` - immutable hardcopy system-document carrier
   used by package-root agent-facing docs.
 - `src/melder/__architecture__.py` - packaged architecture hardcopy export.
