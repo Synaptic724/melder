@@ -1,9 +1,8 @@
 """
 GENERATED DURABLE BUILD ASSET - DO NOT EDIT MANUALLY.
 
-Internal-bind manifest asset. Regenerated automatically when
-the melder version changes or via build_scripts:
-    python build_scripts/build_internal_manifest.py
+Internal-bind manifest asset. Regenerate with:
+    python src/melder/_build_assets/_build_asset_runner.py
 
 Each entry is a `(module, qualname)` pair naming one melder-internal
 class that must never be registered as a spell.
@@ -18,7 +17,7 @@ from typing import FrozenSet
 from typing import Tuple
 
 
-BUILT_FOR_VERSION: str = "0.1.0"
+BUILT_FOR_VERSION: str = "0.1.1"
 MANIFEST_ENTRY_COUNT: int = 577
 
 INTERNAL_MANIFEST: FrozenSet[Tuple[str, str]] = frozenset((

@@ -45,19 +45,12 @@ class Sync:
         own resources compose cleanup themselves.
 
     Registration:
-        GUARDED, and safely so. `Sync` is present in the generated
-        `INTERNAL_MANIFEST`, so binding `Sync` itself is refused. Enforcement is
-        an EXACT `(module, qualname)` test that does NOT walk the MRO, so a sync
-        wrapper a user writes carries its own identity, misses the manifest, and
-        binds normally.
-
-        HISTORICAL: this mix-in was previously excluded because the retired
-        `__melder_internal__` sentinel resolved through `getattr` and therefore
-        inherited, which would have made every descendant unbindable. That
-        exclusion is obsolete under the manifest (owner ruling 2026-07-24: guard
-        every class, no exclusion list). Melder-owned wrappers such as
-        `SyncWeakRef` are covered by the manifest like everything else; no class
-        carries a sentinel attribute any more, because nothing reads one.
+        GUARDED. `Sync` is present in the generated `INTERNAL_MANIFEST`, so
+        binding `Sync` itself is refused. Enforcement is an EXACT
+        `(module, qualname)` test that does NOT walk the MRO, so a sync wrapper
+        a user writes carries its own identity, misses the manifest, and binds
+        normally. Melder-owned wrappers such as `SyncWeakRef` are covered by the
+        manifest individually.
 
     Subsystem Context:
         One of three `utilities/general_base/` base classes, alongside
@@ -77,8 +70,8 @@ class Sync:
     __agent_purpose__: str = (
         "access: public. Base mix-in for thread-safe value wrappers. Subclass "
         "this when you need a shared scalar touched from multiple threads; "
-        "supply _value, _lock, get(), and _coerce(). Deliberately not "
-        "registration-guarded so user subclasses stay bindable."
+        "supply _value, _lock, get(), and _coerce(). Registration-guarded, but "
+        "lookup is exact and does not inherit, so your subclasses stay bindable."
     )
 
     __slots__ = ()

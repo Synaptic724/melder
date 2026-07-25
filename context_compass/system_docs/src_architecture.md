@@ -115,47 +115,21 @@ Each item must include:
 - Where to investigate (file(s) + symbol(s)).
 - Current status (uninvestigated / investigating / blocked).
 
-- SYNC NOTE (2026-06-12 path/rename sweep, filesystem-verified):
-  - C1 path normalization applied in this doc:
-    the Nexus subtree now resolves under `src/melder/nexus/`;
-    the dev-ops subtree remains under
-    `src/melder/aether/aetheric_frame/dev_ops/`;
-    `aetheric_frame.py` and `conduit_cloud.py` now resolve under
-    `src/melder/aether/aetheric_frame/`;
-    mutation-research paths now resolve under
-    `src/melder/mutation_research/`;
-    `spell_crafter/` -> `spell_compiler/` (class `SpellCrafter` is now
-    `SpellCompiler` in `spell_compiler.py`; phase logic lives under
-    `spell_compiler/phases/compiler_phase_*.py`).
-  - Verified renames: `Configuration` -> `SpellbookConfiguration`
-    (`configuration/spellbook_configuration.py`); `conjure(...)` takes
-    `dynamic: bool` (no `automatic` parameter); `MeldGate`/`MeldGateController`
-    files are gone and `utilities/synchronization/creation_gate.py` /
-    `creation_gate_controller.py` exist instead.
-  - Verified removals (paths annotated REMOVED below): runtime
-    `MutationContract` descriptor (`meld/contracts/mutation_contract.py`) and
-    `MUTATION_CONTRACT_DISABLED` are gone from `src/melder`; the
-    `structure_profiles` subsystem is gone; `spell_examiner` AI-profile files
-    are gone (profiles are now `binding_profile.py`, `general_profile.py`,
-    `detailed_profile.py`, and `spell_compiler/profiles/resolution_profile.py`);
-    `rift_event_configuration.py` is gone; `phase12_*_executor.py` are gone;
-    `SpellCrafter._phase8_11_codegen_ir_dirty` no longer exists as the owning
-    surface in `spell_compiler.py`; the live field is on
-    `spell_compiler_artifact.py` as
-    `SpellCompilerArtifact._phase8_11_codegen_ir_dirty`.
-  - Verified compiler phase-artifact ownership:
-    `SpellCompilerArtifact` is the spell-scoped owner of the phase-8-to-11
-    analysis/planning/runtime outputs
-    (`_occurrence_graph_analysis`, `_occurrence_order_analysis`,
-    `_occurrence_instance_analysis`, `_occurrence_contract_analysis`,
-    `_spell_codegen_model`, `_spell_codegen_plan`,
-    `_spell_codegen_creation`, `_codegen_ir`,
-    `_phase8_11_codegen_ir_dirty`), while the later facade layers publish into
-    those slots rather than owning them:
-    `SpellAnalyzer` -> occurrence analyses,
-    `SpellArtifactProcessor` -> `SpellCodegenModel`,
-    `SpellCodegenPlanner` -> `SpellCodegenPlan`,
-    `CodegenCreationSystem` -> `SpellCodegenCreation`.
+- PERMANENTLY REMOVED. These do not exist in `src/melder` and their absence is
+  intentional, so do not treat a failed search for them as a gap:
+  `meld/contracts/mutation_contract.py` (`MutationContract`,
+  `MUTATION_CONTRACT_DISABLED`); the `structure_profiles` subsystem; the
+  `spell_examiner` AI-profile files (live profiles are `binding_profile.py`,
+  `general_profile.py`, `detailed_profile.py`, and
+  `spell_compiler/profiles/resolution_profile.py`); `rift_event_configuration.py`;
+  `phase12_*_executor.py`; `MeldGate` / `MeldGateController` (superseded by
+  `utilities/synchronization/creation_gate.py` and `creation_gate_controller.py`);
+  `SpellCrafter` (renamed `SpellCompiler`); `Configuration` (renamed
+  `SpellbookConfiguration`).
+  The 2026-06-12 path/rename sweep that produced this list is COMPLETE and was
+  re-verified 2026-07-25: every source path cited in this document resolves on disk
+  and no renamed symbol survives as a live claim. Its step-by-step narration was
+  removed as settled history; git carries it.
 
 - UNKNOWN: Producer call sites for advanced state flags
   `SpellState.contract_violation`, `SpellState.mutation_candidate`,
@@ -635,10 +609,9 @@ EVIDENCE: src/melder/aether/spellbook/spellbook.py:3480-3520.
   `bind.py:363  assert_allowed(spell, context="bind")` - a direct call to the
   module-level function. Identity resolution is factored into the pure helper
   `_internal_identity_of(candidate)` in the same module.
-- The former `_RegistrationGuardProxy` / `_mrg` object and its `is_internal` method are
-  GONE, and the seven test sites that patched `_mrg` were migrated in the same pass to
-  patch `bind.assert_allowed` directly.
-- THE TEST SEAM IS NOW FAIL-LOUD. Every one of those `monkeypatch.setattr` calls uses
+- Enforcement is ONE module-level function; there is no guard object or proxy.
+- THE TEST SEAM IS FAIL-LOUD. `test_bind.py` patches `bind.assert_allowed` directly at
+  seven sites, and every one of those `monkeypatch.setattr` calls uses
   `raising=True`, so if the enforcement seam is ever renamed or moved again, the tests
   fail immediately instead of silently creating an attribute nothing reads. That matters
   because `test_bind.py` neutralizes the guard for its whole file via an autouse
@@ -1177,6 +1150,15 @@ Phases 5-11 are conduit-scoped and run after Phase 1-4:
   - publishes `_spell_codegen_plan`
 - Phase 11: `CodegenCreationSystem` spell-static runtime packaging.
   - publishes `_spell_codegen_creation`
+
+Artifact ownership across phases 8-11:
+- `SpellCompilerArtifact` is the spell-scoped OWNER of every phase-8-to-11 slot:
+  `_occurrence_graph_analysis`, `_occurrence_order_analysis`,
+  `_occurrence_instance_analysis`, `_occurrence_contract_analysis`,
+  `_spell_codegen_model`, `_spell_codegen_plan`, `_spell_codegen_creation`,
+  `_codegen_ir`, and `_phase8_11_codegen_ir_dirty`.
+- The phase systems above PUBLISH INTO those slots; they do not own them. Read a
+  phase's output from the artifact, not from the system that produced it.
 
 Existing-creation spells bypass the live Phase 8-11 group because they have no
 occurrence graph, no analyzer-derived model, and no codegen-creation payload
@@ -1916,58 +1898,37 @@ EVIDENCE:
   until the notch/bind_inactive seams are real).
 
 ## Context / Handoff Summary
-- Added the hidden-substrate/public-AR split explicitly: `Aether` now hosts
-  `AetherUtilitySystem` and `Nexus`, while `Nexus` / `Rift` / `RiftSpace`
-  form the public AR runtime surface.
-- Refreshed the Rift lifecycle to the landed staged model: bare Rift creation,
-  primary-space programming from `space_type`, and later explicit
-  `Rift.create_frame_link(...)` attachment with descriptor truth required.
-- Updated the AR runtime story so `CapabilityRiftSpace` is documented as the
-  real broad manual non-codegen room instead of a placeholder.
-- Added the no-create live-creation probe to the meld-resolution narrative so
-  doc readers can discover the "is this already live?" path without reading code.
-- Updated the logging model to the live provider-based path:
-  `AetherUtilitySystem` + `InitHelpers` + `SafeLogger`, with the old
-  logger-factory layer removed from the active runtime story.
-- Refreshed the tooling/introspection layer to the live SpellExaminer
-  profile-builder surface (`general` / `detailed`) instead of the removed
-  AI-profile and structure-profile subsystems.
-- Documented the current AR limitation honestly: `RiftSpace` now has a
-  room-local event system for `RiftEvent` publication, but
-  `Rift.on_nexus_frame_disposed(...)` is still only a logging hook and there
-  is still no Rift-level event orchestration layer.
-- Added DevOps scoping notes: DevOpsManager and ChangeControlManager are per-frame, per-conduit resolution state lives in SpellSystemStates, and RiskManager drives per-conduit gating.
-- Added resolution-style inventory (SpellType + Existence + DI shapes),
-  late-binding contract notes, lazy meld-time validation, and ownership transfer
-  sequences with updated evidence.
-- Deep scan is explicitly not planned; multi-entry meld contract remains
-  documented and docstrings aligned.
-- Clarified unique_per_conduit_cluster storage/sharing (owner Creations +
-  ConduitCluster contracts) and removed the stale README entrypoint mismatch.
-- Documented ConduitCluster cluster-scoped `root_spell_id` usage and default
-  permission behavior during auto-sharing.
-- Updated SpellContract automatic-mode validation to error and noted no deep
-  scan references in `src/melder`.
-- Marked MutationContract usage as blocked via Phase 4 validation while mutation
-  systems are on hold.
-- Reframed Melder as a Dependency Graph Runtime (DGR) and scoped DI-style
-  binding/resolution as a subset capability.
-- Added the concrete transaction-strategy layer to the architecture story:
-  `TransactionStrategyBuilder` now sits between caller metadata and
-  mediator admission, resolving the registered family strategy
-  (`bind`, `link`, `unlink`, `cluster_link`, `transfer_ownership`,
-  `add_to_index`, `remove_from_index`, `notch`) before the embargo table and
-  root session take over.
-- Documented Spellbook cleanup unregistering local lineages from SpellSystemStates. EVIDENCE: src/melder/aether/spellbook/spellbook.py:_cleanup_spells
-- Documented SpellSystemStates unregister notifying RiskManager to force validation gating. EVIDENCE: src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_system_states.py:unregister_lineage
-- Removed stale `meld_engine` references and updated source/evidence maps to
-  the current codegen-creation compiler artifacts
-  (`generalized_no_overrides_codegen_creation_compiler.py`,
-  `generalized_overrides_codegen_creation_compiler.py`) for the
-  compiler-owned runtime packaging model.
-- (TAIL REPAIR 2026-07-07, melder_0: this entry's remainder was lost to a
-  historic mid-write truncation predating recoverable git history; closed
-  here rather than guessed at.)
+
+STATE: This document describes the Melder core as it stands on 2026-07-25, after the
+internal-bind guard replacement and the package-wide sweep that accompanied it. Every
+source path cited here was verified to resolve on that date, and no renamed or removed
+symbol survives as a live claim.
+
+DECISIONS CURRENTLY IN FORCE, and the sections that carry them:
+- Melder is framed as a Dependency Graph Runtime; DI-style binding and resolution are a
+  SUBSET capability, not the whole model. See Architecture Summary.
+- Internal-bind refusal is one module-level function over a committed manifest, exact
+  match, no MRO inheritance. See Entrypoints and Runtime Guardrails.
+- Conjure follows settle-then-inherit: the conduit inherits the world's mode rather than
+  policing the caller's flag. See Operational Invariants.
+- Structural mutation is admitted through one moded scope-acquisition gate. See
+  Contracts, Policies, and Permissions plus the components doc's admission plane.
+- The crystallizer is a passive sink; recording never changes runtime behaviour
+  (the R-A covenant). See Persistence & Restore Architecture.
+
+OPEN: one unknown remains - producer call sites for the advanced `SpellState` flags
+(`contract_violation`, `mutation_candidate`, `mutation_quarantined`, `mutation_failed`).
+It is blocked by design: those producers belong to the MutationResearch runtime-seam
+slice, which is deliberately deferred. See Unknowns and Open Questions.
+
+VOLATILE AREAS, most likely to drift first: the guard/manifest surface (it moved twice
+in one day on 2026-07-25), the crystallizer subsystem split, and the MutationResearch
+composition vocabulary. Re-verify those against source before relying on them.
+
+NOTE ON THIS SECTION: it previously held a 20-entry changelog of edits made TO this
+document, plus a 2026-07-07 marker recording that its tail had been lost to a mid-write
+truncation predating recoverable git history. Both were replaced on 2026-07-25 with the
+state-and-next-steps summary the template specifies; the edit history lives in git.
 
 ## Persistence & Restore Architecture (promoted from patch
 ## restore_engine_2026_07_07 + successor lanes, 2026-07-07)

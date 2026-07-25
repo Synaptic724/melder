@@ -727,11 +727,7 @@
 "id":"melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.solo.steps.solo_creation_context_setup_step.SoloCreationContextSetupStep","label":"SoloCreationContextSetupStep","kind":"class",
 "file":"src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/solo/steps/solo_creation_context_setup_step.py","role":"Solo family setup step.","responsibilities":[
 "resolves the visible root spell for the solo family","derives route-key and emit-key facts from solo model truth","publishes root-only setup data onto family-local solo state for later steps"],"owns_state":[],"phases":[
-"runtime"]},"melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.solo.steps.solo_finalize_creation_context_step.SoloFinalizeCreationContextStep":{
-"id":"melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.solo.steps.solo_finalize_creation_context_step.SoloFinalizeCreationContextStep","label":"SoloFinalizeCreationContextStep","kind":"class",
-"file":"src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/solo/steps/solo_finalize_creation_context_step.py","role":"Solo family final output step.","responsibilities":[
-"wraps root-only solo executors in the shared route-keyed CreationContext doors","publishes final no-overrides and overrides doors onto SpellCodegenCreation","mirrors final solo metadata onto the output artifact"],
-"owns_state":[],"phases":["runtime"]},"melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.solo.steps.solo_lazy_door_step.SoloLazyDoorStep":{
+"runtime"]},"melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.solo.steps.solo_lazy_door_step.SoloLazyDoorStep":{
 "id":"melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.solo.steps.solo_lazy_door_step.SoloLazyDoorStep","label":"SoloLazyDoorStep","kind":"class",
 "file":"src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/solo/steps/solo_lazy_door_step.py","role":"Lazy-door publication step for the solo family.","responsibilities":[
 "publishes cold solo runtime doors without compile or exec work at phase 11","hydrates through the shared solo hydrator on first meld","mirrors lazy-door metadata parity keys onto the final codegen creation output"],
@@ -3076,15 +3072,6 @@
 "from":"melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.solo.steps.solo_creation_context_setup_step.SoloCreationContextSetupStep",
 "to":"melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.solo.solo_codegen_creation_state.SoloCodegenCreationState","relation":"uses",
 "why":"SoloCreationContextSetupStep mutates the family-local solo state while resolving root-only setup facts.","cardinality":"one_to_one","phase":["runtime"],"strength":"borrowed"},{
-"from":"melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.solo.steps.solo_finalize_creation_context_step.SoloFinalizeCreationContextStep",
-"to":"melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.codegen_creation_family_step.CodegenCreationFamilyStep","relation":"specializes",
-"why":"SoloFinalizeCreationContextStep specializes the shared family-step contract.","cardinality":"one_to_one","phase":["runtime"],"strength":"hard"},{
-"from":"melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.solo.steps.solo_finalize_creation_context_step.SoloFinalizeCreationContextStep",
-"to":"melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.creation_runtime_door_compiler","relation":"uses",
-"why":"SoloFinalizeCreationContextStep uses shared runtime-door compiler helpers to wrap final solo executors in route-keyed CreationContext doors.","cardinality":"one_to_one","phase":["runtime"],"strength":"borrowed"},{
-"from":"melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.solo.steps.solo_finalize_creation_context_step.SoloFinalizeCreationContextStep",
-"to":"melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.solo.solo_codegen_creation_state.SoloCodegenCreationState","relation":"uses",
-"why":"SoloFinalizeCreationContextStep mutates the family-local solo state while publishing final CreationContext doors.","cardinality":"one_to_one","phase":["runtime"],"strength":"borrowed"},{
 "from":"melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.solo.steps.solo_lazy_door_step.SoloLazyDoorStep",
 "to":"melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.codegen_creation_family_step.CodegenCreationFamilyStep","relation":"specializes",
 "why":"SoloLazyDoorStep specializes the shared family-step contract.","cardinality":"one_to_one","phase":["runtime"],"strength":"hard"},{

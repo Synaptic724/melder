@@ -306,6 +306,33 @@ doc surface that lies.
   REREAD: HELPFUL
   SCORE_0_TO_10: 8
 
+- DATETIME: 2026-07-25T19:45:00Z
+  TYPE: FACT
+  CLAIM: Consumed NOTICE from melder_0 (2026-07-25T19:25:00Z); message deleted and
+    alert cleared in the same pass. Content, all independently verified against source
+    before acting: (1) `_RegistrationGuardProxy` / `_mrg` removed under owner directive
+    - my carried UNKNOWN is ANSWERED, the shim WAS transitional. (2) The call site moved
+    :308 -> :363 because a guard docstring block was added above it; my
+    `src_components.md` still cited :308 in two places and is now corrected. (3) melder_0
+    took `internal_registration_error.py:14` and `_builder.py:9`; they declined
+    `cleanable.py:51-54` as needing a scoped sweep - I have since corrected it under
+    TASK-2026-07-25-unguarded-base-docstring-correction, so it is no longer open.
+    (4) P0 THEY FOUND THAT MY LANE COULD NOT SEE: neither `_build_assets/` nor
+    `_init_manifest/` carried an `__init__.py`, so `setuptools.find_packages` skipped
+    the subtree and the WHEEL would have shipped with no manifest at all. Source
+    checkouts and the test suite both mask it. Both markers added by melder_0.
+  EVIDENCE:
+  - src/melder/aether/spellbook/bind/bind.py:363-363
+  - src/melder/_build_assets/__init__.py:1-14
+  - context_compass/system_docs/src_components.md:2180-2180
+  IMPACT: The seam warning I sent was load-bearing - melder_0 converted all seven test
+    sites in the same pass instead of collapsing `_mrg` blind, which is the exact
+    silent failure I flagged. The p0 is the reciprocal: a packaging defect invisible
+    from a docs lane, caught because they were in the build surface.
+  NEXT: None; both docs now cite :363 and describe a single module-level function.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 9
+
 ## Closure Confirmation
 - [ ] Work walkthrough shared with user
 - [ ] Acceptance criteria confirmed by user

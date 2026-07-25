@@ -5,7 +5,8 @@ This module is the SINGLE SOURCE OF TRUTH for how the internal registration mani
 It lives inside `src/melder/_build_assets/_init_manifest/` as a durable package asset builder.
 
 Consumers:
-  * `build_scripts/build_internal_manifest.py` - CLI generation script and CI staleness gate.
+  * `_build_assets/_build_asset_runner.py` - discovers this file by convention and
+    drives it through the target_path/render/write contract at the bottom of this module.
   * `melder.aether.spellbook.bind.bind` - imports `INTERNAL_MANIFEST` from
     `internal_manifest.py` and enforces it through `assert_allowed(...)`.
 
@@ -172,9 +173,8 @@ def render_manifest(entries: List[Tuple[str, str]], version: str) -> str:
         '"""',
         "GENERATED DURABLE BUILD ASSET - DO NOT EDIT MANUALLY.",
         "",
-        "Internal-bind manifest asset. Regenerated automatically when",
-        "the melder version changes or via build_scripts:",
-        "    python build_scripts/build_internal_manifest.py",
+        "Internal-bind manifest asset. Regenerate with:",
+        "    python src/melder/_build_assets/_build_asset_runner.py",
         "",
         "Each entry is a `(module, qualname)` pair naming one melder-internal",
         "class that must never be registered as a spell.",
@@ -218,3 +218,55 @@ def write_manifest(version: str) -> Tuple[pathlib.Path, int]:
     temporary.write_text(render_manifest(entries, version), encoding="utf-8")
     temporary.replace(target)
     return target, len(entries)
+
+
+# ---------------------------------------------------------------------------
+# BUILDER CONTRACT
+#
+# `_build_asset_runner.py` discovers this file by convention and requires these
+# three names. They are thin aliases over the descriptive functions above, kept
+# separate so the asset-specific vocabulary (`scan_manifest`, `render_manifest`,
+# `write_manifest`) stays readable while the runner sees one uniform surface.
+# ---------------------------------------------------------------------------
+
+
+def target_path() -> pathlib.Path:
+    """
+    Return the artifact path this builder owns.
+
+    Returns:
+        pathlib.Path: The generated manifest module's absolute path.
+    """
+    return manifest_path()
+
+
+def render(version: str) -> str:
+    """
+    Render the artifact text for one melder version.
+
+    Contract:
+        PURE and DETERMINISTIC - two calls with the same version and the same
+        source tree return byte-identical text. The runner's `--check` gate
+        depends on that: it compares this output against the committed file
+        exactly, so any nondeterminism here would produce phantom staleness.
+
+    Args:
+        version: The melder version to stamp into the artifact.
+
+    Returns:
+        str: Complete module source, newline-terminated.
+    """
+    return render_manifest(scan_manifest(), version)
+
+
+def write(version: str) -> Tuple[pathlib.Path, int]:
+    """
+    Write the artifact to disk.
+
+    Args:
+        version: The melder version to stamp into the artifact.
+
+    Returns:
+        Tuple[pathlib.Path, int]: The written path and the entry count.
+    """
+    return write_manifest(version)

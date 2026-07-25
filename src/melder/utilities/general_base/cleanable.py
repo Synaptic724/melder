@@ -47,27 +47,18 @@ class Cleanable(ABC):
         letting `check_cleaned()` raise over silently returning.
 
     Registration:
-        GUARDED, and safely so. `Cleanable` is present in the generated
-        `INTERNAL_MANIFEST`: binding `Cleanable` itself is refused.
+        GUARDED. `Cleanable` is present in the generated `INTERNAL_MANIFEST`, so
+        binding `Cleanable` itself is refused.
 
         Subclasses are unaffected. Enforcement is an EXACT `(module, qualname)`
-        membership test in `bind.assert_allowed(...)`, and that lookup does NOT
-        walk the MRO. A user subclass carries its own module and qualname, is
-        absent from the manifest, and binds normally. `Cleanable` is referenced
-        across ~277 files and is explicitly intended for user subclassing, so
-        that non-inheritance is what makes guarding the base harmless here.
-
-        HISTORICAL: this class was previously excluded on purpose. The retired
-        `__melder_internal__` sentinel was read via `getattr`, which DOES walk
-        the MRO, so tagging `Cleanable` would have tagged every subclass and made
-        a user's own service unbindable. That exclusion is obsolete - the
-        manifest replaced the sentinel precisely so the blanket "guard every
-        class in the package" rule could exist without a curated exclusion list
-        (owner ruling 2026-07-24). Do not reintroduce the exclusion, and do not
-        add a sentinel attribute; nothing reads one.
+        membership test in `bind.assert_allowed(...)` and does NOT walk the MRO,
+        so a user subclass carries its own module and qualname, is absent from
+        the manifest, and binds normally. `Cleanable` is referenced across ~277
+        files and is explicitly intended for user subclassing; that
+        non-inheritance is what makes guarding the base harmless here.
 
         A regression asserting that a user subclass of `Cleanable` still binds
-        successfully guards the property this section depends on.
+        successfully guards that property.
 
     Subsystem Context:
         One of three `utilities/general_base/` base classes, alongside `Sync`
@@ -91,7 +82,8 @@ class Cleanable(ABC):
         "access: public. Base cleanup contract. Subclass this when your object "
         "owns resources that need deterministic teardown; implement cleanup() "
         "idempotently and guard live-only methods with check_cleaned(). "
-        "Deliberately not registration-guarded so user subclasses stay bindable."
+        "Registration-guarded, but lookup is exact and does not inherit, so "
+        "your subclasses stay bindable."
     )
 
     __slots__ = ['_cleaned']

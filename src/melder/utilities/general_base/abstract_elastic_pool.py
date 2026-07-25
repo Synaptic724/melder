@@ -60,21 +60,13 @@ class AbstractElasticPool(Generic[_T], Cleanable, ABC):
         `_lock` because it is the destructive lifecycle boundary.
 
     Registration:
-        GUARDED, and safely so. `AbstractElasticPool` is present in the
-        generated `INTERNAL_MANIFEST`, so binding it directly is refused.
-        Enforcement is an EXACT `(module, qualname)` test that does NOT walk the
-        MRO, so a pool a user writes carries its own identity, misses the
-        manifest, and binds normally.
-
-        HISTORICAL: this base was previously excluded, and so was `Cleanable`,
-        which it inherits - under the retired `__melder_internal__` sentinel the
-        exclusion had to hold at EVERY level of the chain, because `getattr`
-        walked the MRO and a single tagged ancestor poisoned every descendant.
-        That whole-chain constraint is gone. Exact-match lookup makes each class
-        answer only for itself, so `Cleanable` and this class are both guarded
-        while user-written pools below them remain bindable (owner ruling
-        2026-07-24: guard every class, no exclusion list). No class carries a
-        sentinel attribute any more; nothing reads one.
+        GUARDED. `AbstractElasticPool` is present in the generated
+        `INTERNAL_MANIFEST`, so binding it directly is refused. Enforcement is an
+        EXACT `(module, qualname)` test that does NOT walk the MRO, so a pool a
+        user writes carries its own identity, misses the manifest, and binds
+        normally. `Cleanable`, which this class inherits, is guarded on the same
+        terms: each class answers only for itself, so guarding an ancestor never
+        constrains a descendant.
 
     Subsystem Context:
         One of three `utilities/general_base/` base classes, alongside
@@ -103,8 +95,9 @@ class AbstractElasticPool(Generic[_T], Cleanable, ABC):
     __agent_purpose__: str = (
         "access: public. Base elastic object pool. Subclass this to pool "
         "expensive reusable objects; implement create_object/destroy_object and "
-        "the pool handles stretch, decay, and overflow trimming. Deliberately "
-        "not registration-guarded so user subclasses stay bindable."
+        "the pool handles stretch, decay, and overflow trimming. "
+        "Registration-guarded, but lookup is exact and does not inherit, so "
+        "your subclasses stay bindable."
     )
 
     __slots__ = Cleanable.__slots__ + [

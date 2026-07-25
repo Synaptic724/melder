@@ -65,50 +65,30 @@ Each item must include:
 - Where to investigate (file(s) + symbol(s)).
 - Current status (uninvestigated / investigating / blocked).
 
-- SYNC NOTE (2026-06-12 path/rename sweep, filesystem-verified):
-  - C1 path normalization applied in this doc:
-    the Nexus subtree now resolves under `src/melder/nexus/`;
-    the dev-ops subtree remains under
-    `src/melder/aether/aetheric_frame/dev_ops/`;
-    `aetheric_frame.py` and `conduit_cloud.py` now resolve under
-    `src/melder/aether/aetheric_frame/`;
-    mutation-research paths now resolve under
-    `src/melder/mutation_research/`;
-    `spell_crafter/` -> `spell_compiler/` (class `SpellCrafter` is now
-    `SpellCompiler`; `spell_requirements_finder/` moved up to
-    `spell_compiler/spell_requirements_finder/`).
-  - Verified renames: `Configuration` -> `SpellbookConfiguration`;
-    `conjure(...)` takes `dynamic: bool` (no `automatic` parameter);
-    `MeldGate`/`MeldGateController` files replaced by
-    `utilities/synchronization/creation_gate.py` /
-    `creation_gate_controller.py`; `meld_context/` replaced by
-    `creation_context/` (`creation_context.py`,
-    `creation_context_builder.py`, `creation_context_factory.py`).
-  - Verified removals (paths annotated REMOVED below): runtime
-    `MutationContract` descriptor and `MUTATION_CONTRACT_DISABLED` are gone
-    from `src/melder`; the `structure_profiles` subsystem is gone; the
-    `spell_examiner` AI-profile files are gone (current profiles:
-    `binding_profile.py`, `general_profile.py`, `detailed_profile.py`,
-    `spell_compiler/profiles/resolution_profile.py`);
-    `rift_event_configuration.py` is gone; `phase12_*_executor.py` are gone;
-    `creations/creation.py` (the `Creation` wrapper) is gone and
-    `conduit_creations.py` is the conduit/root specialization seam;
-    `SpellCrafter._phase8_11_codegen_ir_dirty` no longer exists as the owning
-    surface; the live field is
-    `SpellCompilerArtifact._phase8_11_codegen_ir_dirty`.
-  - Verified compiler phase-artifact ownership:
-    `SpellCompilerArtifact` is the spell-scoped owner of the phase-8-to-11
-    analysis/planning/runtime outputs
-    (`_occurrence_graph_analysis`, `_occurrence_order_analysis`,
-    `_occurrence_instance_analysis`, `_occurrence_contract_analysis`,
-    `_spell_codegen_model`, `_spell_codegen_plan`,
-    `_spell_codegen_creation`, `_codegen_ir`,
-    `_phase8_11_codegen_ir_dirty`), while the later facade layers publish into
-    those slots rather than owning them:
-    `SpellAnalyzer` -> occurrence analyses,
-    `SpellArtifactProcessor` -> `SpellCodegenModel`,
-    `SpellCodegenPlanner` -> `SpellCodegenPlan`,
-    `CodegenCreationSystem` -> `SpellCodegenCreation`.
+- PERMANENTLY REMOVED. These do not exist in `src/melder` and their absence is
+  intentional, so do not treat a failed search for them as a gap:
+  the runtime `MutationContract` descriptor and `MUTATION_CONTRACT_DISABLED`; the
+  `structure_profiles` subsystem; the `spell_examiner` AI-profile files (current
+  profiles are `binding_profile.py`, `general_profile.py`, `detailed_profile.py`,
+  `spell_compiler/profiles/resolution_profile.py`); `rift_event_configuration.py`;
+  `phase12_*_executor.py`; `creations/creation.py` (the `Creation` wrapper -
+  `conduit_creations.py` is now the conduit/root specialization seam);
+  `MeldGate` / `MeldGateController` (superseded by
+  `utilities/synchronization/creation_gate.py` and `creation_gate_controller.py`);
+  `meld_context/` (superseded by `creation_context/`); `SpellCrafter` (renamed
+  `SpellCompiler`); `Configuration` (renamed `SpellbookConfiguration`).
+  The 2026-06-12 path/rename sweep that produced this list is COMPLETE and was
+  re-verified 2026-07-25: every source path cited in this document resolves on disk
+  and no renamed symbol survives as a live claim. Its step-by-step narration was
+  removed as settled history; git carries it.
+- ARTIFACT OWNERSHIP, phases 8-11 (a live contract, not sweep bookkeeping):
+  `SpellCompilerArtifact` is the spell-scoped OWNER of `_occurrence_graph_analysis`,
+  `_occurrence_order_analysis`, `_occurrence_instance_analysis`,
+  `_occurrence_contract_analysis`, `_spell_codegen_model`, `_spell_codegen_plan`,
+  `_spell_codegen_creation`, `_codegen_ir`, and `_phase8_11_codegen_ir_dirty`.
+  `SpellAnalyzer`, `SpellArtifactProcessor`, `SpellCodegenPlanner`, and
+  `CodegenCreationSystem` PUBLISH INTO those slots rather than owning them, so read a
+  phase's output from the artifact, not from the system that produced it.
 
 - UNKNOWN: Producer call sites for advanced mutation/contract state flags
   (`SpellState.contract_violation`, `SpellState.mutation_candidate`,
@@ -2151,10 +2131,13 @@ Contract/Interface:
   bans: `candidate` is arbitrary USER input whose attribute contract is not visible to
   us, which is the documented polymorphic/external exception. A target missing either
   attribute degrades to an empty string and simply misses the manifest.
-- The former `_RegistrationGuardProxy` / `_mrg` object and its `is_internal` method are
-  GONE. `test_bind.py`'s seven patch sites were migrated in the same pass to patch
-  `bind.assert_allowed` directly, all with `raising=True` so a future rename fails LOUD
-  rather than silently creating an attribute nothing reads. Preserve `raising=True`.
+- Enforcement is ONE module-level function; there is no guard object or proxy.
+- TEST SEAM: `test_bind.py` patches `bind.assert_allowed` directly at seven sites, all
+  with `raising=True`, so renaming or moving the seam fails LOUD instead of silently
+  creating an attribute nothing reads. That matters because an autouse fixture
+  neutralizes the guard for the whole file; a silently-dead patch would let the real
+  577-entry manifest start refusing binds mid-suite with no signal. Preserve
+  `raising=True` if these sites are ever touched.
 Data Structures:
 - `INTERNAL_MANIFEST`: `FrozenSet[Tuple[str, str]]` of `(module, qualname)` pairs,
   imported from `melder._build_assets._init_manifest.internal_manifest`.
@@ -2177,10 +2160,10 @@ Concurrency/Threading:
 - Stateless. Enforcement is lock-free: a frozenset membership test on an immutable
   module-level object, so it adds no contention to bind.
 Enforcement Surface:
-- Exactly one live call site: `bind.py:308  _mrg.assert_allowed(spell, context="bind")`.
+- Exactly one live call site: `bind.py:363  assert_allowed(spell, context="bind")`.
 Key Files (C1):
 - `src/melder/aether/spellbook/bind/bind.py` (`assert_allowed`,
-  `_RegistrationGuardProxy`)
+  `_internal_identity_of`)
 - `src/melder/_build_assets/_init_manifest/internal_manifest.py` (GENERATED, committed)
 - `src/melder/_build_assets/_init_manifest/_builder.py` (build-time only)
 - `build_scripts/build_internal_manifest.py`

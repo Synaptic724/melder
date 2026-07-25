@@ -1,92 +1,69 @@
 """
-Pre-generate the durable internal-bind manifest asset, and gate against staleness in CI.
+DEPRECATED single-asset entry point. Delegates to the build asset runner.
 
-Melder's registration guard refuses to bind kernel/control-plane classes. The
-authoritative list is a generated `(module, qualname)` manifest living at
-`src/melder/_build_assets/_init_manifest/internal_manifest.py`.
+SUPERSEDED 2026-07-25 by `src/melder/_build_assets/_build_asset_runner.py`, which
+discovers every `_builder.py` beneath `_build_assets/` by convention instead of
+naming one asset. Prefer the runner:
 
-Usage
------
-    python build_scripts/build_internal_manifest.py            # write/update manifest
-    python build_scripts/build_internal_manifest.py --check    # CI staleness & version gate
+    python src/melder/_build_assets/_build_asset_runner.py            # regenerate all
+    python src/melder/_build_assets/_build_asset_runner.py --check    # CI gate
+
+This shim survives only because the path is referenced by existing docs, tickets,
+and generated-file headers. It forwards its arguments unchanged so both spellings
+share ONE code path - there is no second implementation to drift.
 """
-from __future__ import annotations
-
-import argparse
 import importlib.util
 import pathlib
 import sys
-from typing import List
-
-_REPO_ROOT = pathlib.Path(__file__).resolve().parent.parent
-_SRC_ROOT = _REPO_ROOT / "src"
-_PACKAGE_ROOT = _SRC_ROOT / "melder"
+from types import ModuleType
+from typing import List, Optional
 
 
-def _load_isolated(name: str, path: pathlib.Path):
+def _load_runner() -> ModuleType:
     """
-    Load a single module directly from its file, bypassing package import.
+    Load the build asset runner by file path.
+
+    Contract:
+        Loads by path rather than `import melder._build_assets...` for the same
+        reason the runner loads builders by path: importing the package would
+        boot `Aether()` and make asset generation depend on the runtime it
+        describes.
+
+    Returns:
+        ModuleType: The executed runner module.
+
+    Raises:
+        ImportError: When the runner cannot be located or loaded.
     """
-    spec = importlib.util.spec_from_file_location(name, path)
+    repo_root = pathlib.Path(__file__).resolve().parent.parent
+    runner_path = repo_root / "src" / "melder" / "_build_assets" / "_build_asset_runner.py"
+    spec = importlib.util.spec_from_file_location("_melder_build_asset_runner", runner_path)
     if spec is None or spec.loader is None:
-        raise ImportError(f"cannot load {name} from {path}")
+        raise ImportError(f"cannot load build asset runner from {runner_path}")
     module = importlib.util.module_from_spec(spec)
-    sys.modules[name] = module
+    sys.modules["_melder_build_asset_runner"] = module
     spec.loader.exec_module(module)
     return module
 
 
-_builder = _load_isolated(
-    "_melder_manifest_builder",
-    _PACKAGE_ROOT / "_build_assets" / "_init_manifest" / "_builder.py",
-)
-__version__ = _load_isolated(
-    "_melder_version", _PACKAGE_ROOT / "__version__.py"
-).__version__
-
-
-def main(argv: List[str]) -> int:
+def main(argv: Optional[List[str]] = None) -> int:
     """
-    Generate or verify the durable manifest asset.
+    Forward to the runner.
 
     Args:
-        argv: Command-line arguments (excluding the program name).
+        argv: Arguments excluding the program name; defaults to `sys.argv[1:]`.
 
     Returns:
-        int: `0` on success; `1` when `--check` finds the manifest missing or stale.
+        int: The runner's exit code.
     """
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument(
-        "--check",
-        action="store_true",
-        help="verify the committed manifest is current and matches version; write nothing",
+    arguments = sys.argv[1:] if argv is None else argv
+    print(
+        "NOTE: build_scripts/build_internal_manifest.py is superseded by\n"
+        "      python src/melder/_build_assets/_build_asset_runner.py\n",
+        file=sys.stderr,
     )
-    args = parser.parse_args(argv)
-
-    entries = _builder.scan_manifest()
-    rendered = _builder.render_manifest(entries, __version__)
-    target = _builder.manifest_path()
-
-    if args.check:
-        if not target.exists():
-            print("STALE: internal manifest asset has not been generated.", file=sys.stderr)
-            return 1
-        current_text = target.read_text(encoding="utf-8")
-        if current_text != rendered:
-            print(
-                f"STALE: internal manifest asset is out of date or version mismatched (expected v{__version__}).\n"
-                "Regenerate with:\n"
-                "    python build_scripts/build_internal_manifest.py",
-                file=sys.stderr,
-            )
-            return 1
-        print(f"OK: internal manifest asset current ({len(entries)} entries, v{__version__}).")
-        return 0
-
-    written, count = _builder.write_manifest(__version__)
-    print(f"WROTE {written.relative_to(_REPO_ROOT)} ({count} entries, v{__version__})")
-    return 0
+    return _load_runner().main(arguments)
 
 
 if __name__ == "__main__":
-    raise SystemExit(main(sys.argv[1:]))
+    raise SystemExit(main())

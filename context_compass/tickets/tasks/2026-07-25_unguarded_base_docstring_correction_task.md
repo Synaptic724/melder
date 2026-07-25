@@ -155,6 +155,74 @@ docstrings instruct maintainers to preserve an exclusion that no longer exists.
   REREAD: HELPFUL
   SCORE_0_TO_10: 8
 
+- DATETIME: 2026-07-25T19:40:00Z
+  TYPE: MEASURE
+  CLAIM: The five in-scope files are corrected and all parse. Owner feedback mid-task
+    ("don't write the history into docstrings") was applied: every `HISTORICAL:` block
+    I had written was stripped, leaving current-state contract only. I also caught a
+    miss in my own first pass - `__agent_purpose__` on `cleanable`, `sync`, and
+    `abstract_elastic_pool` still carried the identical stale claim
+    ("Deliberately not registration-guarded"), which is the field agents actually read.
+    All three corrected.
+  EVIDENCE:
+  - src/melder/utilities/general_base/cleanable.py:49-62
+  - src/melder/utilities/general_base/cleanable.py:82-86
+  IMPACT: Fixing the prose section but not the machine-readable agent field would have
+    left the wrong claim on the surface most likely to be consumed programmatically.
+  NEXT: None for the five; see the expansion DECISION below.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 8
+- DATETIME: 2026-07-25T19:40:00Z
+  TYPE: DECISION_REQUEST
+  CLAIM: EXPANSION GATE HIT, and the finding underneath it is a CONTRACT BREAK rather
+    than doc rot. 23 further files carry `USER-BINDABLE - deliberately unguarded` or
+    equivalent, and EVERY class spot-checked is PRESENT in the manifest and therefore
+    NOT bindable: all 11 custom exceptions, the four weak containers, CounterSwitch,
+    FastSwitch, TicketFlag, ICleanable, IChannelLogger, SafeGuard, ProtocolCrafter,
+    Package, and the three concrete diff strategies. A user reading
+    `MeldExecutionError`'s docstring is told they may bind it; `Spellbook.bind(...)`
+    will raise `InternalRegistrationError`. That is a promise the runtime breaks.
+    ROOT CAUSE: two owner rulings disagree and the docstrings implement the older one.
+    2026-07-19 ruled the 11 exceptions USER-BINDABLE. 2026-07-24 ruled "guard EVERY
+    class in src/melder, NO exclusion list, utilities included". The manifest implements
+    2026-07-24; ~23 docstrings still teach 2026-07-19.
+  EVIDENCE:
+  - src/melder/_build_assets/_init_manifest/internal_manifest.py
+  - src/melder/utilities/custom_exceptions/meld_execution_error.py:69-69
+  - src/melder/utilities/synchronization/fast_switch.py:73-73
+  IMPACT: The fix direction depends entirely on which ruling is current, and the two
+    directions are opposite. If 2026-07-24 stands, this is ~23 docstring corrections.
+    If the 2026-07-19 intent stands, the MANIFEST is wrong and the fix is a generator
+    exclusion list - a code change to `_builder.py`, not a docs pass. Guessing would
+    either strip a real user-facing capability or entrench its loss.
+  NEXT: Owner ruling on which regime is current before any of the 23 are touched.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-07-25T19:45:00Z
+  TYPE: ASSUMPTION_CHALLENGE
+  CLAIM: CORRECTING MY OWN PRIOR NOTE. I recorded above that the 2026-07-19 and
+    2026-07-24 owner rulings CONFLICT. On the evidence they do not - I misread the
+    earlier one. melder_0's 2026-07-19 handoff to helper_f states the ruling was about
+    EXPORTING: which utilities are "user-facing and worth exposing" from the package
+    root. It closes with the decisive line: "guarding and exporting are orthogonal:
+    `SafeGuard` is guard-tagged AND should be exported, since a user calls it directly
+    but must not `bind()` it." So 2026-07-19 never made anything bindable; it made
+    things IMPORTABLE. The 23 docstrings that read "USER-BINDABLE - deliberately
+    unguarded" conflated the two axes.
+  EVIDENCE:
+  - context_compass/mailbox_board.md:51-61
+  - src/melder/aether/spellbook/bind/bind.py:71-73
+  IMPACT: This collapses the decision. There is no ruling conflict to adjudicate: the
+    manifest is CORRECT and consistent with both rulings, and the 23 docstrings are
+    simply wrong on a single word. The fix direction is therefore unambiguous - correct
+    the docstrings, do NOT add a generator exclusion list. My earlier framing would have
+    sent the owner to arbitrate a conflict that does not exist.
+  NEXT: Owner confirmation to proceed past the 5-file expansion gate; the ruling itself
+    is no longer in question, only the scope authorisation.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
 ## Context / Handoff Summary
 Five base-class docstrings still teach the retired sentinel and instruct maintainers not
 to guard classes the manifest already guards. Correction is prose-only with zero
