@@ -35,17 +35,16 @@
 # Only pytest built-in markers are used across the suite: parametrize, xfail,
 # skip. Test tiers are separated by DIRECTORY (tests/unit, tests/component,
 # tests/integration), not by marker.
-pytest==9.0.3
+pytest==9.1.1
 pytest-cov==7.1.0
-coverage==7.15.0
+coverage==7.15.2
 
 # --- lint ---
-ruff==0.15.15
+ruff==0.16
 
 # --- build ---
 setuptools==83.0.0
 wheel==0.47.0
-build==1.2.2
 
 # --- optional: parallel test runs (`pytest -n auto`) ---
 # pytest-xdist==3.8.0
