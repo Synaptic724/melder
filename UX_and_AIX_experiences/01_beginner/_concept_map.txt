@@ -1,0 +1,51 @@
+CONCEPT MAP - 01_beginner (README tier: GREEN Beginner)
+=========================================================
+The core runtime: bind, resolve, categorize, scope, clean up.
+Static conjure only. Existences: unique / many / unique_per_conduit.
+Strings preferred over enums. No dynamic mode, no permissions, no
+scanning, no lambdas, no spellspaces - those live upstairs.
+
+THE RHYTHM (the whole mental model)
+  bind -> conjure (ONCE - compiles + validates) -> meld
+  01 hello_meld, 21 the_basic_rhythm, 40 beginner_capstone
+
+THE ADDRESS LAW - every spell lives at ONE (frame_key, binding_key)
+  04 named_bindings, 22 same_name_different_frames,
+  24 same_class_many_names, 26 meld_address_forms (all four entry
+  forms incl. spell-id string), 38 meld_a_frame_as_dict
+
+SPELLFRAMES AS CATEGORIES (arc act 1 - see 02_intermediate act 2)
+  09 spellframe_grouping, 25 frames_as_dict_classification,
+  17 protocols_as_shapes (Protocol frames = shapes)
+
+WHAT CAN BIND
+  03 bind_functions_and_instances, 32 factory_functions (callables
+  are ALWAYS unique; fresh-per-meld = a CLASS bound many),
+  33 prebuilt_registry (collection-as-spell), 11 bind_many_at_once,
+  28 real_objects_no_wrappers, 30 double_bind_outcome
+
+LIFETIMES (the beginner three)
+  02 unique_vs_many, 13 unique, 14 many, 15 unique_per_conduit,
+  19 lifecycle_map, 29 many_state_isolation, 34 scope_contrast
+
+SCOPES
+  05 lesser_conduit_scopes, 27 pass_the_conduit_around,
+  36 one_book_one_conduit (ONE conjure per book - law)
+
+TEARDOWN
+  08 disposal_contract (disposal_method_names vocabulary),
+  10 explicit_cleanup, 35 disposal_multiple_methods
+
+TYPED MELDING + DEFAULTS
+  16 typed_melding, 20 defaults_just_work, 18 bootstrap_pattern
+
+VOCABULARY + ERRORS (agent-first reads)
+  06 error_vocabulary, 07 strings_as_vocabulary, 12 agent_first_read,
+  23 reading_the_errors, 31 required_vocabulary,
+  37 bind_vocabulary_cheatsheet, 39 agent_inventory_pattern
+
+LAWS PROVEN IN THIS TIER (harness-validated)
+  - one book conjures ONE conduit, ever
+  - callables force unique; lambdas need binding_name (taught upstairs)
+  - spell names are world-unique at conjure (rename or subclass)
+  - binding_name alone is not an address (needs frame or spell)

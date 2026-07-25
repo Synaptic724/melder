@@ -1,0 +1,16 @@
+CONCEPT MAP - 04_expert (README tier: BLUE Expert)
+====================================================
+Agent rooms, transactions, checkpoints, governed mutation. Mostly
+machine-facing; mostly UNAUTHORED - awaits the advanced tier landing.
+
+PLANNED (per README BLUE + AGENTS charter)
+  - the self-documenting package (__architecture__ etc.)
+  - Nexus/Rift rooms: static -> capability -> codegen escalation,
+    workstation, command systems, compiled ACL dials
+  - the transaction plane (ACID over the object graph; moded claims)
+  - crystallizer: checkpoints, CrystallizerBootstrap cold boot,
+    external persistence mesh (user-owned callables)
+  - mutation research: residency/impact/preview foresight, then
+    stage (bind_inactive) -> notch -> meld hot-swap with rollback
+  - boot melds (owner epic 2026-07-20, unassigned): conjure-time
+    warm-up recipe riding the bind signature into checkpoints

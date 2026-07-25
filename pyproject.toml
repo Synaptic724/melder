@@ -143,6 +143,12 @@ melder = ["py.typed"]
 [tool.setuptools.packages.find]
 where = ["src"]
 include = ["melder*"]
+# EXPLICIT, not inherited from a default. The repo keeps exactly ONE `__init__.py`
+# (the package root), so every subpackage - including the durable build asset at
+# `melder/_build_assets/_init_manifest/` that `bind.py` imports at module scope -
+# is a PEP 420 namespace package. Setting this here means wheel contents never
+# depend on a setuptools default we would have to re-verify on every upgrade.
+namespaces = true
 exclude = [
     "tests*", "docs*", "examples*", "Plans*", "benchmarks*", "benchmark_data*",
     ".github*", ".venv*", "__pycache__", "*.egg-info", "TestIdeas",

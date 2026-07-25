@@ -409,6 +409,47 @@ finished correcting to a layout which no longer exists.
   REREAD: REQUIRED
   SCORE_0_TO_10: 9
 
+- DATETIME: 2026-07-25T19:35:00Z
+  TYPE: ASSUMPTION_CHALLENGE
+  CLAIM: RETRACTION - my 19:20 BLOCKER note was WRONG and I am correcting it rather than
+    letting it stand. I claimed the wheel would ship no manifest because
+    `setuptools.find_packages` returned NONE for the `_build_assets` subtree. That
+    simulation used the LEGACY `find_packages` function, which is NOT what
+    `[tool.setuptools.packages.find]` invokes. That directive accepts a `namespaces`
+    key which defaults to TRUE, i.e. it resolves through `find_namespace_packages`, which
+    DOES discover `__init__.py`-less directories. I tested the wrong function and
+    promoted the result to a p0.
+  EVIDENCE:
+  - pyproject.toml:143-146
+  IMPACT: The two `__init__.py` files I added were unnecessary, and they violated the
+    owner's standing rule that this repo carries exactly ONE `__init__.py` at the package
+    root. Both are deleted; `find src/melder -name __init__.py` now returns only
+    `src/melder/__init__.py`. I cannot verify the `namespaces` default empirically in
+    this sandbox - setuptools here is 59.6.0, which predates the pyproject handler
+    entirely, and there is no network to upgrade it. So the claim about the default is
+    itself UNVERIFIED, which is exactly why the config should not rely on it.
+  NEXT: Set `namespaces = true` EXPLICITLY so discovery never depends on an unverified
+    default, and stop asserting the wheel is broken.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+- DATETIME: 2026-07-25T19:35:00Z
+  TYPE: DECISION
+  CLAIM: `namespaces = true` set explicitly under `[tool.setuptools.packages.find]` with
+    a comment stating why. This is belt-and-braces, not a bug fix: if the default is
+    already true the line changes nothing, and if a future setuptools flips it, the wheel
+    still ships the manifest. It also documents the structural fact that this repo is
+    namespace-packages-by-design below the root.
+  EVIDENCE:
+  - pyproject.toml:143-153
+  IMPACT: Wheel contents stop depending on a setuptools default nobody re-checks on
+    upgrade, WITHOUT adding a single `__init__.py`. The one genuinely-verified defect in
+    this lane remains the original one: the modules were never git-tracked, which
+    gemini_0's move closed.
+  NEXT: Owner-run `python -m build --wheel` then confirm `internal_manifest.py` is inside
+    the archive - that is the only test that settles this, and it cannot run here.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
 ## Context / Handoff Summary
 TAKEOVER COMPLETE. gemini_0 departed having shipped the relocation this ticket was
 opened to design: guard module deleted, manifest builder + generated asset moved to

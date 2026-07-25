@@ -1,0 +1,20 @@
+CONCEPT MAP - 03_advanced (README tier: ORANGE Advanced)
+==========================================================
+Multi-tenant / multi-world systems: frame isolation, read-only rooms,
+clusters at scale, deep overrides. Mostly UNAUTHORED - two seeds exist.
+
+AUTHORED
+  01 existence_unique_per_conduit_cluster (declaration seed; the LIVED
+     version currently sits at 02_intermediate/25 per owner syllabus)
+  02 deep_spell_override_paths ("transport>credentials" path form;
+     flat form is intermediate 08)
+
+PLANNED (per README ORANGE + AGENTS charter)
+  - aetheric frames as isolated worlds (categories arc act 3):
+    Spellbook(aetheric_frame="tenant-a"), per-frame singletons,
+    frames do not link across - the wall is real
+  - AethericFrameConfiguration surface (fenced out of intermediate)
+  - static Nexus rooms as read-only endpoints (health/admin/debug)
+  - wildcard/broadcast override grammar (*name / **name, specificity,
+    conflict refusals - component suite already proves it)
+  - cluster operations at scale (leader lifecycle, teardown)

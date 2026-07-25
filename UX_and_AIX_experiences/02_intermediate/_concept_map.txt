@@ -1,0 +1,64 @@
+CONCEPT MAP - 02_intermediate (README tier: YELLOW Intermediate)
+==================================================================
+Connection: module registration, dynamic linking, late binding across
+subsystems, configurations. Fence: NO nexus, NO mutation research, NO
+crystallizer, NO AethericFrame objects (all upstairs).
+
+README YELLOW COVERAGE (complete)
+  scan_bind + book.scan ............ 01 scan_bind_decorator
+  SpellBinder fluent ............... 02 spellbinder_full_chain,
+                                     10 spellbinder_fluent_basics
+  registration hooks ............... 03 registration_hooks
+  spell spaces ..................... 04 spellspace_scoped_resolution
+  unique_per_conduit_lineage ....... 05 existence_unique_per_conduit_lineage
+  dynamic mode + linking ........... 21 dynamic_linking_basics
+  permissions on contracts ......... 22 permissions_create_vs_read
+  ownership transfer ............... 23 transfer_of_ownership
+  SpellMap ......................... 16 spellmap_defaults
+  collection DI .................... 17 collection_di
+  SpellContract late binding ....... 26 conduit_categories_as_factories
+
+BEYOND THE README (also in this tier)
+  06 spell_metadata_kwargs (bind **kwargs -> spell.metadata)
+  07 lesser_conduits_child_scopes (+ explicit cleanup)
+  08 spell_override_construction (FLAT form only; deep paths -> advanced)
+  09/11 permissions vocabulary
+  12 bind_lambda_spells (binding_name required)
+  13 spell_ids_and_lookup, 14 introspect_the_book
+  15 constructor_di_by_annotation
+  18 live_creation_probe (has_live_creation)
+  19 spellbook_configuration_basics, 20 phase_scheduler_knobs
+  24 conduit_cloud (named lookup)
+  25 clusters_unique_per_cluster (README tags clusters ORANGE/advanced;
+     lesson lives here per owner syllabus - placement is an owner call)
+
+LAWS PROVEN IN THIS TIER (harness-validated, run 3-4)
+  - SETTLE-THEN-INHERIT: first conjure(dynamic=True) settles the world
+    and locks it; later books plain-conjure and INHERIT
+  - SHARING IS A PULL: X.add_spell_to_contract(spell_id=S, conduit=Y)
+    means X pulls S from Y; the named conduit must OWN the spell
+  - SPELLCONTRACT ORDER OF OPERATIONS (per edge): conjure provider ->
+    conjure consumer -> link AFTER both -> pull -> MELD after the fact;
+    chains assemble edge by edge in dependency order
+  - ONE ACTIVE SPELL PER (spellframe, binding_name) SIGNATURE per frame
+    (collection-DI providers need distinct binding names)
+  - CLUSTERS: contracts ride LINKS (link members first); the shared
+    store belongs to an ELECTED LEADER (elect before members join);
+    cluster-shared spells bind with permissions="create"
+  - NORMAL CODE ONLY: user flow is link / add_spell_to_contract / meld -
+    never mediator transactions in curriculum code
+
+THE CATEGORIES ARC (act 2 of 3)
+  beginner 25: spellframes categorize spells WITHIN one world
+  intermediate 26: conduits categorize WORLDS (owners + resolution
+    conditions at the boundary) - the factory layer with no factories
+  advanced: aetheric frames as entire isolated worlds (act 3)
+
+KNOWN GAPS INSIDE THE FENCE (candidate closing wave 27-30)
+  sever_link (the undo of the arc), upgrade_to_normal (lesser grows
+  up), live link policies (whitelist_all/block_all/inbound_only/
+  outbound_only), conduit lifecycle hooks (on_conduit_post_link/unlink)
+
+HARNESS
+  pytest_examples/test_intermediate_examples.py (every lesson runs)
+  pytest_examples/test_intermediate_probes.py (contract probes)
