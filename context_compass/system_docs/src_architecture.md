@@ -7,7 +7,7 @@
 - Status: in_progress
 - Owner:
 - Created: 2026-01-17
-- Updated: 2026-06-13
+- Updated: 2026-07-25
 
 ## Table of Contents
 - Metadata
@@ -188,7 +188,10 @@ Each item must include:
 
 ## Source Coverage and Evidence
 Coverage summary (non-exhaustive):
-- Package entrypoint and guardrails: `__init__.py`, `__melder_registration_guard__.py`.
+- Package entrypoint and guardrails: `__init__.py`, `__melder_registration_guard__.py`,
+  and the generated internal-bind manifest under
+  `__melder_cache__/__init_cache__/` (`manifest_loader.py`, `internal_manifest.py`,
+  `_builder.py`).
 - Spellbook + binding pipeline: `spellbook.py`, `bind.py`, `spell.py`, `spell_index.py`.
 - SpellbookConfiguration and system state:
   `spellbook_configuration.py`, `system_state.py`.
@@ -609,10 +612,30 @@ EVIDENCE: src/melder/aether/spellbook/spellbook.py:3480-3520.
 ## Entrypoints and Runtime Guardrails
 - `melder/__init__.py` warns on Python < 3.14 and on GIL-enabled builds
   via `_detect_nogil_mode()`.
-- `MelderRegistrationGuard` provides a sentinel to tag internal objects
-  and block their registration as spells.
-- `__melder_registration_guard__` is instantiated at import time and
-  referenced by internal classes via `__melder_internal__`.
+- `MelderRegistrationGuard` blocks registration of Melder internals as spells by
+  testing the candidate's `(module, qualname)` against a build-time manifest.
+  Instances resolve through `type(candidate)`, so binding an instance of an internal
+  class is refused exactly like binding the class.
+- Lookup is EXACT MATCH and does NOT walk the MRO. A user subclass of an internal
+  class carries its own module and qualname, is absent from the manifest, and binds
+  normally. This is an owner-accepted behavior change (2026-07-24): the retired
+  `__melder_internal__` sentinel was read with `getattr` and therefore inherited, so
+  tagging any user-extensible base silently made user subclasses unbindable.
+- `INTERNAL_MANIFEST` is a `frozenset` of `(module, qualname)` pairs, loaded at import
+  of `melder.__melder_cache__.__init_cache__.manifest_loader`. Loader contract: use the
+  generated cache module when its `BUILT_FOR_VERSION` matches the running melder
+  version; otherwise scan the package and write a fresh cache; if the cache directory
+  is not writable, compute the identical set in memory and carry on. The cache is a
+  build product and is NOT shipped in the wheel, so a fresh environment cold-boots it.
+  `MANIFEST_ENTRY_COUNT` is 578 in the current generated cache; the generator is
+  `build_scripts/build_internal_manifest.py`.
+- Guarding and exporting are ORTHOGONAL: the guard restricts REGISTRATION, never USE.
+  Exported, user-constructible surfaces such as the custom exceptions, `SafeGuard`, and
+  `ProtocolCrafter` remain importable and usable while being unbindable.
+- `__melder_registration_guard__` is the eagerly instantiated process-wide singleton.
+  Singleton construction is lock-guarded for free-threaded 3.14t; enforcement itself is
+  lock-free. The only live enforcement call site is
+  `bind.py:285  _mrg.assert_allowed(spell, context="bind")`.
 - The first `Aether()` boot eagerly constructs hidden singleton support
   objects, including `AetherUtilitySystem`, `Crystallizer`, and `Nexus`.
 
@@ -1366,7 +1389,10 @@ SpellSpace enforces active-scope semantics and supports reset/versioning.
 ### Sequence: Import to Ready
 1. `import melder`:
    - Runtime warnings for Python version and GIL mode.
+   - `manifest_loader` resolves `INTERNAL_MANIFEST` (cached module, or cold-boot scan
+     plus best-effort cache write, or in-memory scan on a read-only install).
    - `__melder_registration_guard__` singleton instantiated.
+   - `Aether()` boot runs eagerly from the package root.
 
 ### Sequence: Spellbook Initialization
 1. `Spellbook.__init__`:
@@ -1500,7 +1526,13 @@ Detailed C3 and C2 component descriptions are maintained in:
 ## C1 Code Map (Core Only)
 Package root:
 - `src/melder/__init__.py` - runtime warnings, version metadata.
-- `src/melder/__melder_registration_guard__.py` - registration guard sentinel.
+- `src/melder/__melder_registration_guard__.py` - manifest-backed registration guard.
+- `src/melder/__melder_cache__/__init_cache__/manifest_loader.py` - resolves
+  `INTERNAL_MANIFEST` with cache/cold-boot/in-memory fallback.
+- `src/melder/__melder_cache__/__init_cache__/internal_manifest.py` - GENERATED cache
+  of `(module, qualname)` pairs; do not edit by hand.
+- `src/melder/__melder_cache__/__init_cache__/_builder.py` - package scanner and cache
+  writer behind the loader's cold-boot lane.
 - `src/melder/system_document.py` - immutable hardcopy system-document carrier
   used by package-root agent-facing docs.
 - `src/melder/__architecture__.py` - packaged architecture hardcopy export.

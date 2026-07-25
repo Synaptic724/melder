@@ -13,8 +13,8 @@
 "id":"melder.__melder_cache__.__melder_cache__","label":"__melder_cache__","kind":"module","file":"src/melder/__melder_cache__/__melder_cache__.py","role":"Package-local marker module for the default Melder cache root.",
 "responsibilities":["anchors the package-local cache-root fragment used by frame configuration defaults"],"owns_state":[],"phases":["runtime"]},"melder.__melder_registration_guard__.MelderRegistrationGuard":{
 "id":"melder.__melder_registration_guard__.MelderRegistrationGuard","label":"MelderRegistrationGuard","kind":"class","file":"src/melder/__melder_registration_guard__.py",
-"role":"Singleton guard for blocking registration of Melder internals.","responsibilities":["classifies runtime candidates as internal by sentinel tag",
-"blocks spell registration of Melder kernel and control-plane objects"],"owns_state":["_sentinel"],"phases":["init","runtime"]},"melder.__version__":{"id":"melder.__version__","label":"__version__","kind":"module",
+"role":"Singleton guard blocking registration of Melder internals via a build-time manifest.","responsibilities":["classifies candidates as internal by EXACT (module, qualname) manifest lookup that does not inherit",
+"blocks spell registration of Melder kernel and control-plane objects"],"owns_state":[],"phases":["init","runtime"]},"melder.__version__":{"id":"melder.__version__","label":"__version__","kind":"module",
 "file":"src/melder/__version__.py","role":"Top-level version metadata module.","responsibilities":["stores the canonical package version string"],"owns_state":["__version__"],"phases":["runtime"]},
 "melder.aether.aether.Aether":{"id":"melder.aether.aether.Aether","label":"Aether","kind":"class","file":"src/melder/aether/aether.py","role":"Global Melder substrate root.","responsibilities":[
 "owns frames and frame registries","hosts hidden support roots","binds frame configuration","registers conduits and spell lineage state"],"owns_state":["_aetheric_frames","_default_frame","_logger"],"phases":["init",
@@ -4282,3 +4282,4 @@
 "why":"register_defaults births the members strategy.","cardinality":"one_to_one","phase":["init"],"strength":"hard"},{"from":"melder.mutation_research.group_diff.strategies.member_diff_strategy.MemberDiffStrategy",
 "to":"melder.mutation_research.group_diff.group_diff_strategy.GroupDiffStrategy","relation":"specializes","why":"Implements the GroupDiffStrategy contract.","cardinality":"one_to_one","phase":["init"],"strength":"hard"}]
 }
+

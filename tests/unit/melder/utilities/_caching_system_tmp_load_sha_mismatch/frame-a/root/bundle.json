@@ -1,1 +1,1 @@
-{"version": 5, "conduit_name": "root", "spell_payloads": {"ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff": {"resolve_route_key": "sha-mismatch", "no_overrides": {"source": "no-sha-mismatch"}, "overrides": {"source": "over-sha-mismatch"}}}, "sha256": "wrong"}
+{"version": 7, "conduit_name": "root", "spell_payloads": {"ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff": {"resolve_route_key": "sha-mismatch", "no_overrides": {"source": "no-sha-mismatch"}, "overrides": {"source": "over-sha-mismatch"}}}, "sha256": "wrong"}

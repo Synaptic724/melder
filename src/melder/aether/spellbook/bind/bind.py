@@ -17,7 +17,30 @@ from melder.aether.spellbook.existence.existence import Existence
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.aether.conduit.conduit_ward.permissions.permissions import Permissions
 from melder.aether.spellbook.spell import Spell
-from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
+from melder._build_assets._init_manifest.internal_manifest import INTERNAL_MANIFEST
+from melder.utilities.custom_exceptions.internal_registration_error import InternalRegistrationError
+
+def assert_allowed(candidate: Any, context: str = "bind") -> None:
+    target_cls = candidate if isinstance(candidate, type) else type(candidate)
+    mod_name = getattr(target_cls, "__module__", "") or ""
+    qual_name = getattr(target_cls, "__qualname__", "") or ""
+    if (mod_name, qual_name) in INTERNAL_MANIFEST:
+        raise InternalRegistrationError(
+            f"Registration blocked for Melder internal object "
+            f"(type={qual_name}, module='{mod_name}', context='{context}'). "
+            f"Melder kernel/control-plane objects cannot be registered as spells."
+        )
+
+class _RegistrationGuardProxy:
+    def assert_allowed(self, candidate: Any, context: str = "bind") -> None:
+        assert_allowed(candidate, context=context)
+    def is_internal(self, candidate: Any) -> bool:
+        target_cls = candidate if isinstance(candidate, type) else type(candidate)
+        mod_name = getattr(target_cls, "__module__", "") or ""
+        qual_name = getattr(target_cls, "__qualname__", "") or ""
+        return (mod_name, qual_name) in INTERNAL_MANIFEST
+
+_mrg = _RegistrationGuardProxy()
 from melder.aether.spellbook.bind.spell_index import SpellIndex
 from melder.aether.spellbook.spell_compiler.spell_examiner.spell_examiner import SpellExaminer
 from melder.utilities.helpers.id_builder import IDBuilder

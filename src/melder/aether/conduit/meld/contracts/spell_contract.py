@@ -5,9 +5,6 @@ from typing import Any, Optional, Union, Tuple, ClassVar
 # Melder Imports
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.general_helpers import SpellInputUtils
-from melder.__melder_registration_guard__ import (
-    __melder_registration_guard__ as _mrg,
-)
 
 
 class SpellContract(Cleanable):

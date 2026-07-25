@@ -28,9 +28,6 @@ import time
 from dataclasses import dataclass
 from typing import Any, Dict, Iterable, List, Optional, Set, Tuple, TYPE_CHECKING, ClassVar
 
-from melder.__melder_registration_guard__ import (
-    __melder_registration_guard__ as _mrg,
-)
 from melder.aether.aetheric_frame.dev_ops.devops_information_strategy_builder import (
     DevopsInformationStrategyBuilder,
 )

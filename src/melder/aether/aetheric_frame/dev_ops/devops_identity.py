@@ -1,9 +1,6 @@
 import threading
 from typing import TYPE_CHECKING, Any, Dict, Iterable, Optional, Tuple, ClassVar
 
-from melder.__melder_registration_guard__ import (
-    __melder_registration_guard__ as _mrg,
-)
 from melder.utilities.general_base.cleanable import Cleanable
 
 if TYPE_CHECKING:

@@ -2,12 +2,14 @@
 
 ## Metadata
 - Epic ID: EPIC-2026-07-22-internal-bind-guard-replacement
-- Status: in_progress (Lane D perf spike underway; mechanism still NOT designed)
+- Status: in_progress (mechanism RULED and SHIPPED 2026-07-24: build-time manifest.
+  Remaining work is truth-alignment across docs/graph/guard module, carried by
+  STORY-2026-07-25-guard-manifest-truth)
 - Owner: melder_0
-- Agent Name: melder_0
+- Agent Name: melder_0, melder_1
 - Priority: p3
 - Created: 2026-07-22T10:18:00Z
-- Updated: 2026-07-23T22:26:00Z
+- Updated: 2026-07-25T18:19:28Z
 
 ## Objective
 Owner idea (2026-07-22, verbatim intent): investigate REMOVING the
@@ -222,6 +224,60 @@ LANE D - the perf claim, measured:
   REREAD: OPTIONAL
   SCORE_0_TO_10: 10
 
+- DATETIME: 2026-07-25T18:19:28Z
+  TYPE: FACT
+  CLAIM: The ruled mechanism is SHIPPED. `manifest_loader.py` exposes
+    `INTERNAL_MANIFEST` as a frozenset of `(module, qualname)` tuples; the generated
+    cache carries 578 entries stamped `BUILT_FOR_VERSION`; `assert_allowed` is one
+    exact-match membership test; `bind.py:285` remains the single call site. Zero live
+    `__melder_internal__` stamps remain in `src/melder` - the eight textual hits are
+    all docstring prose. `build_scripts/build_internal_manifest.py` exists.
+  EVIDENCE:
+  - src/melder/__melder_cache__/__init_cache__/manifest_loader.py:32-69
+  - src/melder/__melder_cache__/__init_cache__/internal_manifest.py:18-24
+  - src/melder/__melder_registration_guard__.py:189-210
+  - src/melder/aether/spellbook/bind/bind.py:285-285
+  IMPACT: The epic's Exit Shape is substantially met on the code side. What remains is
+    truth-alignment, not mechanism work, so the epic should not read as undesigned.
+  NEXT: Execute STORY-2026-07-25-guard-manifest-truth.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+- DATETIME: 2026-07-25T18:19:28Z
+  TYPE: CONFLICT
+  CLAIM: Read in journal order this epic argues AGAINST its own outcome. The last note
+    before this one (gemini_0, Lane D, 2026-07-23T19:11:52Z) concludes that sentinel
+    pinning is "zero-memory-cost, cycle-free, and preserves automatic MRO subclass
+    protection" - a recommendation to KEEP the sentinel. The owner DECISION one day
+    later (2026-07-24T00:05:00Z) ruled for the manifest and the code shipped. Lane D's
+    conclusion is superseded, but nothing in the epic says so.
+  EVIDENCE:
+  - context_compass/tickets/epics/2026-07-22_internal_bind_guard_replacement_epic.md:203-226
+  - context_compass/tickets/epics/2026-07-22_internal_bind_guard_replacement_epic.md:144-167
+  IMPACT: An agent resuming from the epic tail would defend the retired mechanism and
+    could reintroduce sentinel stamping as a "fix".
+  NEXT: Leave both notes intact - append-only stands - and let this entry plus the
+    corrected Handoff Summary carry the supersession.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
 ## Context / Handoff Summary
-Investigation epic. Lane D performance spike completed by gemini_0. Confirmed sentinel pinning overhead is 1.0% tops at 1,000,000 objects, 0 bytes per-instance memory cost, and 7 microseconds total startup delta over ~350 boot-time checks.
+MECHANISM RULED AND SHIPPED. Owner ruled 2026-07-24 for a build-time manifest of
+`(module, qualname)` string tuples; the code has landed (`manifest_loader.py`,
+generated `internal_manifest.py` at 578 entries, guard rewritten to exact-match
+lookup, `bind.py:285` still the one call site, sentinel stamps gone from source).
+
+IMPORTANT FOR RESUMERS: Lane D (gemini_0, 2026-07-23) recommended KEEPING the sentinel
+and its note sits last in journal order. That recommendation was SUPERSEDED by the
+owner ruling the following day. Do not act on it.
+
+Remaining work is truth-alignment, not mechanism design, and is carried by
+STORY-2026-07-25-guard-manifest-truth: correct five guard-claim drift sites across
+`src_architecture.md` and `src_components.md`, rebuild the empty C1 Code Map as a full
+package inventory, correct the stale guard node in `src_graph.json` and regenerate the
+readable graph, and strip the dead sentinel surface still present in the guard module
+(patch-gated, blocked until patch artifacts exist).
+
+Separately observed and owner-routed elsewhere: a 2026-07-25 gauntlet run raised
+`ModuleNotFoundError: No module named 'melder.__melder_cache__.__init_cache__'`, so the
+documented cold-boot cache rebuild did not engage in that environment.
 

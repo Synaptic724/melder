@@ -88,9 +88,10 @@ def test_init_creates_lock(manager):
     assert isinstance(manager._lock, type(threading.RLock()))
 
 def test_init_sets_sentinel(manager):
-    """Verify the registration guard sentinel is present (library requirement)."""
-    from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
-    assert manager.__melder_internal__ is _mrg.sentinel
+    """Verify the registration guard classifies DevOpsManager as internal."""
+    from melder._build_assets._init_manifest.internal_manifest import INTERNAL_MANIFEST
+    key = (type(manager).__module__, type(manager).__qualname__)
+    assert key in INTERNAL_MANIFEST
 
 # ----------------------------------------------------------------------
 # 2. Property Tests: IncidentManager

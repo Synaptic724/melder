@@ -2,9 +2,6 @@
 from abc import ABC, abstractmethod
 from typing import ClassVar, Dict, List
 
-from melder.__melder_registration_guard__ import (
-    __melder_registration_guard__ as _mrg,
-)
 
 
 class PersistenceAnalysisStrategy(ABC):

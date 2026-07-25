@@ -117,19 +117,14 @@ def test_di_descriptors_are_loaded():
     assert melder.SpellContract is SpellContract
 
 
-def test_registration_guard_sentinel_exists_at_import():
+def test_registration_guard_manifest_exists_at_import():
     """
     Purpose:
-        Owner ruling: the guard is a sentinel and must exist early -
-        redundancy with Aether's own boot is intentional.
-    Contract:
-        The package-level guard instance is live after import.
+        The internal registration guard manifest asset is live and non-empty after import.
     """
-    from melder.__melder_registration_guard__ import MelderRegistrationGuard
+    from melder._build_assets._init_manifest.internal_manifest import INTERNAL_MANIFEST
 
-    assert isinstance(
-        melder.__melder_registration_guard__, MelderRegistrationGuard
-    )
+    assert len(INTERNAL_MANIFEST) > 0
 def test_user_held_work_surfaces_are_loaded():
     """
     Purpose:

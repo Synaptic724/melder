@@ -56,7 +56,6 @@ from melder.__description__ import __description__
 from melder.__graph_details__ import __graph_details__
 from melder.__graph_network__ import __graph_network__
 from melder.__license__ import __license__
-from melder.__melder_registration_guard__ import MelderRegistrationGuard
 from melder.__version__ import __version__
 
 # ---- core runtime objects ----
@@ -155,11 +154,6 @@ from melder.utilities.custom_exceptions.spellbook_validation_error import (
     SpellbookValidationError,
 )
 
-# Eagerly instantiate the registration guard at package import time: the
-# sentinel must exist before ANY internal object can be offered for
-# registration (owner ruling 2026-07-19: Aether's boot also guarantees it,
-# but the guard is a sentinel and the redundancy is intentional).
-__melder_registration_guard__ = MelderRegistrationGuard()
 Aether()
 
 

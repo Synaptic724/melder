@@ -1,8 +1,5 @@
 from typing import TYPE_CHECKING, Any, ClassVar, Optional
 
-from melder.__melder_registration_guard__ import (
-    __melder_registration_guard__ as _mrg,
-)
 from melder.utilities.general_base.abstract_elastic_pool import AbstractElasticPool
 
 if TYPE_CHECKING:

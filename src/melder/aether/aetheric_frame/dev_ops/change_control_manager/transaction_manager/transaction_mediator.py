@@ -13,9 +13,6 @@ from typing import (
     Any,
 )
 
-from melder.__melder_registration_guard__ import (
-    __melder_registration_guard__ as _mrg,
-)
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.aether.aetheric_frame.dev_ops.devops_information_registry import (
     DevopsInformationRegistry,
