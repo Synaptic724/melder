@@ -1,6 +1,6 @@
 <div align="center">
 
-# ⚡ Melder
+# 🧙 Melder
 
 ### The AI-Native Dependency Graph Runtime
 
@@ -48,14 +48,81 @@ provider, an ambiguous binding — you find out at startup, not at 3am.
 
 ### Who it's for
 
-- **Building a small app?** Four lines gets you working DI with real lifetimes
-  and automatic teardown. No config files, no decorators, no base classes.
-- **Building a large backend?** Six lifetime models, nested and linkable scopes,
-  permissioned sharing between subsystems, and a validated graph that fails at
-  boot instead of under load — backed by an internal transaction plane that
-  applies **ACID semantics** to every structural change.
-- **Building with AI?** The runtime is readable, sandboxable, checkpointable, and
-  governable by agents — see [Part II](#part-ii--the-ceiling).
+Melder scales down to a script and up to a distributed backend. Find yourself
+here:
+
+**🟢 You're writing an app and tired of passing objects around**
+Four lines gets you working DI with real lifetimes and automatic teardown. No
+config files, no YAML, no decorators, no base classes, and nothing new to
+install. If you've been threading a database handle through five function
+signatures, this is the fix.
+
+**🟢 You want your wiring checked before you ship it**
+`conjure()` compiles and validates the entire graph up front. Cycles, missing
+providers, ambiguous resolutions — all surface at startup with a specific error,
+not at 3am on the one code path nobody exercised.
+
+**🟡 You're building a web service and want honest request scoping**
+Per-request scopes that actually end, per-connection lifetimes, and cleanup that
+fires deterministically instead of whenever the GC feels like it. Works with any
+framework — Melder doesn't own your entry point.
+
+**🟡 Your app outgrew a single container**
+One registry holding everything eventually becomes its own coupling problem —
+every subsystem can see every other, and one `conjure()` has to know the whole
+world before it starts. Instead, give each subsystem its **own** book and
+conduit: it owns its registry, exposes only what its permissions allow, and
+configures and tears down independently. Link them at runtime and pull specific
+spells across the boundary — `SpellContract` even lets a consumer be built
+*before* its provider exists, which a single shared container can't do.
+
+**🟠 You're running multi-tenant, plugin, or sandboxed workloads**
+Aetheric frames are hard isolation walls inside one interpreter — separate
+registries, separate control planes, separate singletons. One process, many
+worlds, no leakage between them.
+
+**🟠 You write tests and want real isolation**
+A fresh frame per test is a fresh world. No global container to reset, no state
+bleeding between cases, no ordering dependencies.
+
+**🚀 You're doing genuinely concurrent work on 3.14+**
+Lock-disciplined throughout with a documented one-way lock order, built for
+free-threading rather than ported to it. Resolution never enters the transaction
+plane, so concurrent reads don't contend.
+
+**🔵 You're building agent infrastructure**
+Hand an AI a permission-bounded room over a live system: it can read the graph,
+work on real objects, execute validated code, preview a change's blast radius,
+and hot-swap an implementation — with every structural change transacted and
+reversible. See [Part II](#part-ii--the-ceiling).
+
+**🔵 You're building a framework or platform on top**
+The runtime is introspectable by design — the graph is a real structure you can
+query, snapshot, restore, and extend. Melder carries its own architecture docs
+inside the package so tooling can read the system without importing it.
+
+**✨ And whatever you build, the doors are already there**
+This is the part worth understanding before you start. You do not have to decide
+today whether your project will ever involve AI. Build a plain application with
+plain classes — and the moment you want an agent to read your architecture,
+operate on live objects under a permission set, checkpoint a world, or propose a
+change and be shown its blast radius, **those surfaces are already in the
+runtime you're using.**
+
+No migration. No second framework. No rewrite. Nothing to bolt on. Anything you
+build with Melder can be opened up to agents whenever you're ready — because the
+doors were built in from the beginning, sitting closed until you turn the handle.
+
+### Who it's *not* for
+
+Straight answer, so you don't waste an afternoon:
+
+- **You need Python 3.13 or older.** Melder requires **3.14+**. That's not
+  negotiable — the whole concurrency model assumes free-threading.
+- **You want autowiring by magic.** Melder is explicit: you bind what exists.
+  There's no classpath scanning that guesses your intent.
+- **You have three objects and a `main()`.** Just construct them. A DI runtime
+  earns its keep when wiring becomes a real problem, not before.
 
 ### Some of this isn't built for you
 
@@ -78,8 +145,8 @@ fast, strict DI runtime and nothing is missing.
 
 ### Low floor, high ceiling
 
-Melder is **beginner-first by design**. The first lesson is four lines and
-teaches the whole runtime. Nothing in the advanced surface leaks into the simple
+Melder is **beginner-first by design**. Four lines gets you a working graph, and
+those four lines teach the whole runtime. Nothing in the advanced surface leaks into the simple
 path — no mandatory configuration, no ceremony you must understand before your
 first `meld()`.
 
@@ -156,15 +223,15 @@ Every section below is tagged with the level it belongs to. **Read in order and
 stop wherever you have what you need** — nothing later is required to use
 anything earlier.
 
-| | Level | What it means | Who it's for | Curriculum |
-|:--|:---|:---|:---|:---|
-| 🟢 | **Beginner** | The core runtime. Bind, resolve, categorize, scope, clean up. | Everyone. Start here. | `01_beginner/` |
-| 🟡 | **Intermediate** | Connection — module registration, dynamic linking, late binding across subsystems. | When one scope isn't enough. | `02_intermediate/` |
-| 🟠 | **Advanced** | Frame isolation, read-only introspection rooms, clusters, deep overrides. | Multi-tenant or multi-world systems. | `03_expert/` |
-| 🔵 | **Expert** | Agent rooms, transactions, checkpoints, governed mutation. Mostly machine-facing. | Building on Melder, or handing it to an AI. | `04_master/` |
+| | Level | What it means | Who it's for |
+|:--|:---|:---|:---|
+| 🟢 | **Beginner** | The core runtime. Bind, resolve, categorize, scope, clean up. | Everyone. Start here. |
+| 🟡 | **Intermediate** | Connection — module registration, dynamic linking, late binding across subsystems. | When one scope isn't enough. |
+| 🟠 | **Advanced** | Frame isolation, read-only introspection rooms, clusters, deep overrides. | Multi-tenant or multi-world systems. |
+| 🔵 | **Expert** | Agent rooms, transactions, checkpoints, governed mutation. Mostly machine-facing. | Building on Melder, or handing it to an AI. |
 
-These map directly onto the runnable curriculum in
-[`UX_and_AIX_experiences/`](#learn-by-running) — same order, same progression.
+This README is the tour. Step-by-step guides, deeper worked examples, and video
+walkthroughs live in the [documentation](#documentation).
 
 **If you just want dependency injection, the 🟢 sections are the entire
 product.** You can stop at the end of them and never open Part II. Everything
@@ -322,14 +389,19 @@ book.bind(spell=SmsHandler, existence="unique",
 ## 🟢 Six Lifetimes, Not Three
 <sub>**Beginner.** Pick how long things live.</sub>
 
-| Existence | One instance per | Use it for |
-|:---|:---|:---|
-| `unique` | Process (frame) | Config, pools, caches |
-| `unique_per_conduit` | Scope | Request / session state |
-| `many` | Nothing — new every meld | Stateless workers, DTOs |
-| `unique_per_conduit_lineage` | A scope **and its children** | Shared context down a tree |
-| `unique_per_conduit_cluster` | A named group of scopes | Cross-scope coordination |
-| `unique_per_spell_space` | A request-local space | Ephemeral request scoping |
+| | Existence | One instance per | Use it for |
+|:--|:---|:---|:---|
+| 🟢 | `unique` | Process (frame) | Config, pools, caches |
+| 🟢 | `unique_per_conduit` | Scope | Request / session state |
+| 🟢 | `many` | Nothing — new every meld | Stateless workers, DTOs |
+| 🟡 | `unique_per_conduit_lineage` | A scope **and its children** | Shared context down a tree |
+| 🟡 | `unique_per_spell_space` | A request-local space | Ephemeral request scoping |
+| 🟠 | `unique_per_conduit_cluster` | A named group of scopes | Cross-scope coordination |
+
+**The first three are the beginner set** — they cover most systems and need
+nothing but a static conjure. The last three arrive with the features that give
+them meaning: lineage and spell spaces once you have nested scopes, clusters
+once conduits link into groups.
 
 > Callables are always `unique`. Want a fresh object every time? Bind a **class**
 > as `many`.
@@ -557,16 +629,17 @@ mutation risk — the worst a caller can do is look. The `capability` and
 
 ### What else this README skips
 
-Surfaces the curriculum covers that this page doesn't walk through:
+Real surfaces this page doesn't walk through — all covered in the
+[documentation](#documentation):
 
-| Surface | What it does | Lesson |
-|:---|:---|:---|
-| **Spell spaces** | Request-local scopes backing `unique_per_spell_space` | 🟡 `02_intermediate/04` |
-| **Ownership transfer** | Move a spell's stewardship between conduits at runtime, repointing borrowers and clusters | 🟡 `02_intermediate/23` |
-| **Conduit clusters** | A named group of scopes sharing one instance, with an elected leader | 🟡 `02_intermediate/25` · 🟠 `03_expert/01` |
-| **Deep override paths** | Inject a variant into the *middle* of a live graph at meld time — `spell_override={"transport>credentials": obj}` — without rebinding anything | 🟠 `03_expert/02` |
-| **Registration hooks** | pre / activation / post callbacks on the bind lifecycle | 🟡 `02_intermediate/03` |
-| **`SpellBinder`** | A fluent chained alternative to `bind(...)` | 🟡 `02_intermediate/02` |
+| | Surface | What it does |
+|:--|:---|:---|
+| 🟡 | **Spell spaces** | Request-local scopes backing `unique_per_spell_space` |
+| 🟡 | **Registration hooks** | pre / activation / post callbacks on the bind lifecycle |
+| 🟡 | **`SpellBinder`** | A fluent chained alternative to `bind(...)` |
+| 🟡 | **Ownership transfer** | Move a spell's stewardship between conduits at runtime, repointing borrowers and clusters |
+| 🟠 | **Conduit clusters** | A named group of scopes sharing one instance, with an elected leader |
+| 🟠 | **Deep override paths** | Inject a variant into the *middle* of a live graph at meld time — `spell_override={"transport>credentials": obj}` — without rebinding anything |
 
 ---
 
@@ -575,9 +648,6 @@ Surfaces the curriculum covers that this page doesn't walk through:
 # Part II — The Ceiling
 
 *Mostly written for agents. Optional, and off unless you turn it on.*
-
-<sub>🔵 Expert throughout</sub>
-
 Everything above is a very good DI container. This is why Melder exists.
 
 > **A note on the audience.** The surfaces below assume an operator that reads
@@ -937,29 +1007,16 @@ both from the first line.
 
 ---
 
-## Learn by Running
-
-A graded curriculum of runnable, assertion-backed examples. Every file states
-its goal in the header and proves its own contract:
-
-| | Tier | What you learn |
-|:--|:---|:---|
-| 🟢 | **`01_beginner/`** | bind → conjure → meld, lifecycles, spellframes, Protocols, named bindings, scopes, disposal, errors |
-| 🟡 | **`02_intermediate/`** | constructor DI, `SpellMap`, collection DI, `scan_bind`, hooks, spell spaces, dynamic linking, `SpellContract`, clusters, ownership transfer |
-| 🟠 | **`03_expert/`** | cluster-scoped existence, deep override paths, AR rooms and viewers |
-| 🔵 | **`04_master/`** | pod restart, external DB meshes, group composition, campaign evolution |
-
-```bash
-python UX_and_AIX_experiences/01_beginner/01_hello_meld.py
-```
-
-Start at `01_hello_meld.py` and walk forward. The asserts *are* the docs.
-
----
-
 ## Documentation
 
-Full docs → **[melder.readthedocs.io](https://melder.readthedocs.io/en/latest/)**
+This README is the tour. The guides go deeper — worked examples for every level,
+the full API surface, and video walkthroughs of the systems above.
+
+| | Where | What's there |
+|:--|:---|:---|
+| 📘 | **[Getting started](https://www.synapticaisystems.com/melder/intro/)** | The guided introduction — start here after this page |
+| 📚 | **[melder.readthedocs.io](https://melder.readthedocs.io/en/latest/)** | Full API reference and technical documentation |
+| ▶️ | **[Synaptic AI on YouTube](https://www.youtube.com/@SynapticAISystems)** | Walkthroughs, deep dives, and live builds |
 
 ## License
 

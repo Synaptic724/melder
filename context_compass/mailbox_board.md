@@ -38,7 +38,9 @@ Core rules (summary; the protocol doc is authoritative)
 | helper_f | cowork | 2026-07-18T21:25:00Z | 2026-07-19T13:10:00Z | active (REONBOARDED again post-compaction 2026-07-19T10:17Z as synaptic_python_developer via synaptic_python_developer_onboarding, re-certification pending; owns the in_progress parallel_restore_ulid_identity epic [two wave-3 integration failures to fix per owner paste] and the melder_init_wheel_strategy task; zero messages pending) |
 | melder_0 | cowork | 2026-07-23T22:22:21Z | 2026-07-23T22:22:21Z | active (RE-ONBOARDED fresh session 2026-07-23T22:22Z as synaptic_python_developer via synaptic_python_developer_onboarding; owner-certified this cycle. Read full role chain [general->engineer->synaptic] + special_instructions + Phase-4 src_architecture/src_components bundle [readable_src_graph skipped per owner]. Prior melder_0 OCE program COMPLETE + filed to tickets/epics/completed/ [owner 3.14t GREEN 2026-07-23]; no OCE work outstanding. No active lane yet - awaiting owner assignment. Zero messages pending.) |
 
-(Clean slate update 2026-07-23 by gemini_0 under owner directive: departed row melder_1 removed after OCE completion.)
+| melder_1 | cowork | 2026-07-25T14:47:34Z | 2026-07-25T14:47:34Z | active (ONBOARDED & CERTIFIED fresh session 2026-07-25T14:47Z as synaptic_python_developer via synaptic_python_developer_onboarding; owner-certified as melder_1 this cycle. Read full role chain [general->engineer->synaptic] + all special_instructions + Phase-4 src_architecture/src_components bundle [readable_src_graph SKIPPED per owner]. No active lane yet - awaiting owner assignment. Zero messages pending.) |
+
+(Clean slate update 2026-07-23 by gemini_0 under owner directive: departed row melder_1 removed after OCE completion. New melder_1 row re-added 2026-07-25 on fresh certification; unrelated to the prior departed identity's lanes.)
 
 ## Messages
 - TO: melder_0
