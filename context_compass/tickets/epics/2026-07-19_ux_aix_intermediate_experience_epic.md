@@ -564,6 +564,23 @@ The working developer's tier: SpellBinder fluent binding, spellframes and contra
   REREAD: OPTIONAL
   SCORE_0_TO_10: -
 
+## MEASURE - 2026-07-25 19:50 UTC - owner-directed: sever retention beat + lesson 29 scoped cleanup
+  WHAT: (1) Lesson 27 gained the CREATIONS-RETENTION beat: after sever the
+    owner's has_live_creation stays True - severing revokes resolution
+    rights, never memory (probe asserts it too). (2) New lesson 29
+    scoped_cleanup_lesser_conduits: the throwaway-scope pattern - child
+    conduit per job, child.cleanup() fires disposal_method_names
+    scope-locally (job session closed, root session untouched, root keeps
+    resolving), then root.cleanup() one level up; carries the lifecycle
+    law forward from beginner 41. Concept maps updated.
+  EVIDENCE:
+  - UX_and_AIX_experiences/02_intermediate/27_sever_link.py (retention beat)
+  - UX_and_AIX_experiences/02_intermediate/29_scoped_cleanup_lesser_conduits.py
+  NEXT: One owner harness run validates the whole tail: 25 fix, 07/08
+    rework, 26 probes, 27/28/29, beginner 41.
+  REREAD: OPTIONAL
+  SCORE_0_TO_10: -
+
 ## Context / Handoff Summary
 Method: every example imports melder as md ONLY - a deep-path import in an example
 IS the finding. Examples are runnable scripts with honest asserts; they ride the

@@ -54,11 +54,16 @@ THE CATEGORIES ARC (act 2 of 3)
     conditions at the boundary) - the factory layer with no factories
   advanced: aetheric frames as entire isolated worlds (act 3)
 
-THE UNDO + THE PROMOTION (closing wave, first half)
+THE UNDO + THE PROMOTION + SCOPES THAT END (closing wave)
   27 sever_link (contracts die with the link; borrower loses the right
-     to resolve; owner untouched; double-sever refuses)
+     to resolve; the owner's CREATIONS RETAIN everything built -
+     severing revokes rights, never memory; double-sever refuses)
   28 upgrade_to_normal (lesser grows up in place: named, registered,
      creations preserved through the promotion)
+  29 scoped_cleanup_lesser_conduits (throwaway job scopes: child
+     cleanup fires the disposal vocabulary scope-locally, root
+     untouched; the lifecycle law - YOU own memory, cleanup returns it;
+     proof lives in beginner 41)
 
 KNOWN GAPS INSIDE THE FENCE (remaining)
   live link policies (whitelist_all/block_all/inbound_only/

@@ -32,11 +32,7 @@ class InternalRegistrationError(RuntimeError):
           failure or treat it as a broader runtime registration error.
 
     Registration:
-        GUARDED, and exported. Present in `INTERNAL_MANIFEST`, so
-        `Spellbook.bind(...)` refuses it - including this type, which is simply
-        the error that refusal raises; there is no circularity, because raising an
-        error and registering its class are unrelated acts. Guarding restricts
-        REGISTRATION only: import it, raise it, and catch it freely.
+        Exported on the public root surface; import, raise, and catch freely.
 
     Subsystem Context:
         One of the 11 `utilities/custom_exceptions/` types, and the only one

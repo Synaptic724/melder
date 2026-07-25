@@ -41,11 +41,8 @@ class ICleanable(Protocol):
         Describes a cleanup contract; does not have one.
 
     Registration:
-        GUARDED, twice over: the type is present in `INTERNAL_MANIFEST`, and `Bind`
-        independently rejects Protocols as concrete spells. Neither restricts USE.
-        Structurally satisfying or inheriting this shape is free: manifest lookup is
-        an EXACT `(module, qualname)` match and does not inherit, so a user type that
-        satisfies this Protocol carries its own identity and binds normally.
+        `Bind` rejects Protocols as concrete spells outright. User types that
+        satisfy this shape bind normally.
 
     Subsystem Context:
         One of two Protocols in `utilities/interfaces/`, beside

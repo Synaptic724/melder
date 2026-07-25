@@ -75,9 +75,7 @@ class _WeakDictKeysView(Collection[_K]):
     liveness rules.
 
     Registration:
-        INTERNAL VIEW - not guarded and not reachable as a bind target. It is
-        constructed only by `WeakConcurrentDict.keys()` and never handed out as
-        a standalone type.
+        Exported for direct construction and use (owner ruling 2026-07-19).
 
     Subsystem Context:
         One of three private view classes in this module, mirroring

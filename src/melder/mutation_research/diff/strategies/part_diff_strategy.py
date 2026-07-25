@@ -42,11 +42,8 @@ class PartDiffStrategy(DiffStrategy):
         Owned by exactly one `DiffEngine`.
 
     Registration:
-        MELDER KERNEL - guarded. Shipped implementation; the base
-        `DiffStrategy` is itself GUARDED, and user strategies remain bindable anyway:
-        manifest lookup is an EXACT `(module, qualname)` match that does not
-        inherit, so a user's own strategy carries its own identity, is absent from
-        the manifest, and binds normally.
+        Your subclasses bind normally: manifest lookup is an EXACT
+        `(module, qualname)` match and does not inherit.
 
     Subsystem Context:
         The class-code grain of the three shipped spell-diff strategies, between

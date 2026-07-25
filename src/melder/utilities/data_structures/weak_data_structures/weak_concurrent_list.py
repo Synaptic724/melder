@@ -67,11 +67,7 @@ class WeakConcurrentList(Generic[_T], Cleanable):
           still run at teardown instead of being dropped.
 
     Registration:
-        GUARDED, and exported. Owner ruling 2026-07-19 made the weak containers
-        fair to EXPOSE, and they are on the public root surface. Exposure is not
-        bindability: this type is present in `INTERNAL_MANIFEST`, so
-        `Spellbook.bind(...)` refuses it. Construct and use it directly; do not
-        bind it.
+        Exported for direct construction and use (owner ruling 2026-07-19).
 
     Subsystem Context:
         The ordered member of the weak-container trio beside

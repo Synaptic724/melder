@@ -66,10 +66,7 @@ class MeldExecutionError(RuntimeError):
         - `inner`: the underlying exception.
 
     Registration:
-        GUARDED, and exported. Present in `INTERNAL_MANIFEST`, so
-        `Spellbook.bind(...)` refuses it. That restricts REGISTRATION only, never
-        USE: import it, raise it, and catch it freely. Guarding and exporting are
-        orthogonal - this type is on the public root surface AND unbindable.
+        Exported on the public root surface; import, raise, and catch freely.
 
     Subsystem Context:
         One of the 11 `utilities/custom_exceptions/` types and the primary error

@@ -45,12 +45,8 @@ class Sync:
         own resources compose cleanup themselves.
 
     Registration:
-        GUARDED. `Sync` is present in the generated `INTERNAL_MANIFEST`, so
-        binding `Sync` itself is refused. Enforcement is an EXACT
-        `(module, qualname)` test that does NOT walk the MRO, so a sync wrapper
-        a user writes carries its own identity, misses the manifest, and binds
-        normally. Melder-owned wrappers such as `SyncWeakRef` are covered by the
-        manifest individually.
+        Your subclasses bind normally: manifest lookup is an EXACT
+        `(module, qualname)` match and does not inherit.
 
     Subsystem Context:
         One of three `utilities/general_base/` base classes, alongside
@@ -70,8 +66,7 @@ class Sync:
     __agent_purpose__: str = (
         "access: public. Base mix-in for thread-safe value wrappers. Subclass "
         "this when you need a shared scalar touched from multiple threads; "
-        "supply _value, _lock, get(), and _coerce(). Registration-guarded, but "
-        "lookup is exact and does not inherit, so your subclasses stay bindable."
+        "supply _value, _lock, get(), and _coerce(). Your subclasses stay bindable."
     )
 
     __slots__ = ()

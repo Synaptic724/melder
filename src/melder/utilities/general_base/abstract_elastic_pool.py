@@ -60,13 +60,8 @@ class AbstractElasticPool(Generic[_T], Cleanable, ABC):
         `_lock` because it is the destructive lifecycle boundary.
 
     Registration:
-        GUARDED. `AbstractElasticPool` is present in the generated
-        `INTERNAL_MANIFEST`, so binding it directly is refused. Enforcement is an
-        EXACT `(module, qualname)` test that does NOT walk the MRO, so a pool a
-        user writes carries its own identity, misses the manifest, and binds
-        normally. `Cleanable`, which this class inherits, is guarded on the same
-        terms: each class answers only for itself, so guarding an ancestor never
-        constrains a descendant.
+        Your subclasses bind normally: manifest lookup is an EXACT
+        `(module, qualname)` match and does not inherit.
 
     Subsystem Context:
         One of three `utilities/general_base/` base classes, alongside
@@ -95,9 +90,8 @@ class AbstractElasticPool(Generic[_T], Cleanable, ABC):
     __agent_purpose__: str = (
         "access: public. Base elastic object pool. Subclass this to pool "
         "expensive reusable objects; implement create_object/destroy_object and "
-        "the pool handles stretch, decay, and overflow trimming. "
-        "Registration-guarded, but lookup is exact and does not inherit, so "
-        "your subclasses stay bindable."
+        "the pool handles stretch, decay, and overflow trimming. Your subclasses "
+        "stay bindable."
     )
 
     __slots__ = Cleanable.__slots__ + [

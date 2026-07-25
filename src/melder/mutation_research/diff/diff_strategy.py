@@ -34,16 +34,10 @@ class DiffStrategy(Cleanable):
         cleaned; idempotent.
 
     Registration:
-        GUARDED. `DiffStrategy` is present in the generated `INTERNAL_MANIFEST`,
-        so binding the base itself is refused.
-
-        User strategies are unaffected, which matters more here than almost
-        anywhere else in the codebase: this family is explicitly open/closed and
-        `DiffEngine.register_strategy()` exists so callers can add their own
-        comparison. Enforcement is an EXACT `(module, qualname)` test that does
-        NOT walk the MRO, so a user's strategy carries its own identity, misses
-        the manifest, and stays bindable in the user's own spellbook. The three
-        shipped strategies are covered by the manifest individually.
+        Your subclasses bind normally: manifest lookup is an EXACT
+        `(module, qualname)` match and does not inherit. That matters more here
+        than almost anywhere else: the family is explicitly open/closed and
+        `DiffEngine.register_strategy()` exists so callers can add their own.
 
     Subsystem Context:
         The extension point of the spell-grain diff family in

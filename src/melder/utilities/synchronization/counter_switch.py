@@ -71,11 +71,7 @@ class CounterSwitch(Cleanable):
         - `_lock`: guards leader claims and teardown, nothing else.
 
     Registration:
-        GUARDED, and exported. Owner ruling 2026-07-19 made the switches fair to
-        EXPOSE, and they are on the public root surface. Exposure is not
-        bindability: this type is present in `INTERNAL_MANIFEST`, so
-        `Spellbook.bind(...)` refuses it. Hold one as your own coordination
-        latch directly; do not bind it.
+        Exported for direct use as your own flag (owner ruling 2026-07-19).
 
     Subsystem Context:
         Part of `utilities/synchronization/`, in the switch family with

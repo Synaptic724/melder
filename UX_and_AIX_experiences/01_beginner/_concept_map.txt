@@ -32,9 +32,12 @@ SCOPES
   05 lesser_conduit_scopes, 27 pass_the_conduit_around,
   36 one_book_one_conduit (ONE conjure per book - law)
 
-TEARDOWN
+TEARDOWN + THE LIFECYCLE LAW
   08 disposal_contract (disposal_method_names vocabulary),
-  10 explicit_cleanup, 35 disposal_multiple_methods
+  10 explicit_cleanup, 35 disposal_multiple_methods,
+  41 you_own_the_memory_now (weakref PROOF: the runtime holds what it
+     builds - the GC cannot free what the world references; cleanup()
+     is how memory comes back. YOU own the lifecycles now.)
 
 TYPED MELDING + DEFAULTS
   16 typed_melding, 20 defaults_just_work, 18 bootstrap_pattern

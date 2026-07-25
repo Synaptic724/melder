@@ -295,6 +295,7 @@ def test_probe_sever_link_kills_the_contract():
         borrower.meld(spell=Payload)
     print("post-sever meld refusal type:", type(post_sever.value).__name__)
 
+    assert owner.has_live_creation(spell=Payload) is True  # creations retained
     assert owner.meld(spell=Payload) is shared  # owner world untouched
 
     with pytest.raises(Exception) as double_sever:
@@ -326,3 +327,64 @@ def test_probe_upgrade_to_normal_keeps_creations_and_registers():
     cloud = root.get_conduit_cloud()
     assert cloud.get_conduit_by_name("worker") is worker
     print("promotion kept creations and registered the name")
+
+
+def test_probe_scoped_cleanup_child_disposes_root_survives():
+    """Lesson 29 contract: a lesser conduit is a throwaway scope -
+    child.cleanup() fires the book's disposal vocabulary on the CHILD's
+    per-conduit creations only; the root's instance stays open, the
+    root keeps resolving the same instance, and root.cleanup() closes
+    its own on the way out."""
+    class JobSession:
+        def __init__(self) -> None:
+            self.closed = False
+
+        def close(self) -> None:
+            self.closed = True
+
+    book = Spellbook()
+    book.bind(spell=JobSession, existence="unique_per_conduit",
+              disposal_method_names=["close"])
+    root = book.conjure(name="scope-root")
+
+    root_session = root.meld(spell=JobSession)
+    job = root.create_lesser_conduit()
+    job_session = job.meld(spell=JobSession)
+    assert job_session is not root_session
+
+    job.cleanup()
+    assert job_session.closed is True      # child scope disposed its own
+    assert root_session.closed is False    # root untouched
+    assert root.meld(spell=JobSession) is root_session  # root still resolves
+
+    root.cleanup()
+    assert root_session.closed is True     # world teardown closes the rest
+    print("scoped cleanup: child disposed locally, root survived then closed")
+
+
+def test_probe_lifecycle_law_runtime_holds_until_cleanup():
+    """Beginner-41 contract, pinned in the mirror: the runtime HOLDS
+    what it builds - after del + gc the melded unique instance is still
+    alive (creations store references it); after conduit.cleanup() +
+    gc it is collected. A red on the second half is a RETENTION LEAK
+    finding, not a lesson bug."""
+    import gc
+    import weakref
+
+    class HeavyThing:
+        pass
+
+    book = Spellbook()
+    book.bind(spell=HeavyThing, existence="unique")
+    conduit = book.conjure(name="memory-probe")
+
+    thing = conduit.meld(spell=HeavyThing)
+    watcher = weakref.ref(thing)
+    del thing
+    gc.collect()
+    assert watcher() is not None   # the world still holds it
+
+    conduit.cleanup()
+    gc.collect()
+    assert watcher() is None       # cleanup returned the memory
+    print("lifecycle law pinned: held until cleanup, freed after")

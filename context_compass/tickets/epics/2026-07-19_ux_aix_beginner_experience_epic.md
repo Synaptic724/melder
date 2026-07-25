@@ -496,6 +496,21 @@ First-contact UX + the agent first-read: bind/conjure/meld, lifecycles, function
   REREAD: OPTIONAL
   SCORE_0_TO_10: -
 
+## MEASURE - 2026-07-25 19:50 UTC - lesson 41: the lifecycle law (owner-directed)
+  WHAT: New closing lesson 41_you_own_the_memory_now - the DI memory-
+    ownership teach the owner called "very important": the runtime HOLDS
+    what it builds, so the GC cannot free what the world references;
+    cleanup() is how memory comes back. PROVEN in-lesson with a weakref
+    watcher: del drops the user ref (object survives - runtime holds),
+    conduit.cleanup() + gc.collect() kills it (watcher goes None,
+    hard-asserted). A red here on the owner's run would itself be a
+    finding (a retention leak). Concept map updated (TEARDOWN + THE
+    LIFECYCLE LAW).
+  EVIDENCE:
+  - UX_and_AIX_experiences/01_beginner/41_you_own_the_memory_now.py
+  REREAD: OPTIONAL
+  SCORE_0_TO_10: -
+
 ## Context / Handoff Summary
 Method: every example imports melder as md ONLY - a deep-path import in an example
 IS the finding. Examples are runnable scripts with honest asserts; they ride the

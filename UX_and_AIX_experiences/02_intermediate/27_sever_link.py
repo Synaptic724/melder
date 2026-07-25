@@ -45,7 +45,11 @@ def main() -> None:
         print("post-sever meld refused:", type(err).__name__,
               "(the borrower lost the right to resolve, not the owner's object)")
 
-    # The owner's world never noticed - its instance is untouched.
+    # The owner's world never noticed: the CREATIONS STORE still
+    # retains everything that was built. Severing revokes resolution
+    # RIGHTS - it never reaches into anyone's memory.
+    print("owner still holds the live creation:",
+          owner.has_live_creation(spell=SharedDirectory))
     still_alive = owner.meld(spell=SharedDirectory)
     print("owner still resolves its own spell:", still_alive is shared)
 

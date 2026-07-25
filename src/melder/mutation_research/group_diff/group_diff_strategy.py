@@ -39,14 +39,8 @@ class GroupDiffStrategy(Cleanable):
         strategy cleaned; idempotent.
 
     Registration:
-        GUARDED, for the same reason as `DiffStrategy`: `GroupDiffStrategy` is
-        present in the generated `INTERNAL_MANIFEST`, so binding the base itself
-        is refused, while enforcement's EXACT `(module, qualname)` test does not
-        walk the MRO. The family is open/closed by design -
-        `GroupDiffEngine.register_strategy()` exists precisely so callers can add
-        comparisons - and a user's own strategy carries its own identity, misses
-        the manifest, and stays bindable. `MemberDiffStrategy`, the shipped
-        implementation, is covered by the manifest individually.
+        Your subclasses bind normally: manifest lookup is an EXACT
+        `(module, qualname)` match and does not inherit.
 
     Subsystem Context:
         The extension point of the COMPOSITION-grain diff family in
