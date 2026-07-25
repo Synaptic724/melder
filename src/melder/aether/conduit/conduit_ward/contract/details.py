@@ -10,7 +10,6 @@ from melder.aether.conduit.conduit_ward.contract.detail_reason import DetailReas
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
 from melder.aether.spellbook.bind.spell_index import SpellIndex
-from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 class Detail(Cleanable):
     """
@@ -76,7 +75,6 @@ class Detail(Cleanable):
         "access: internal. Spell-level permission entry stored inside a Contract. Melder kernel "
         "machinery: read it to understand the runtime, do not drive it directly."
     )
-    __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
         "_lock",
         "_id",
@@ -305,7 +303,6 @@ class IndexDetail(Cleanable):
         "access: internal. Index-level contract entry stored inside a Contract. Melder kernel "
         "machinery: read it to understand the runtime, do not drive it directly."
     )
-    __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
         "_lock",
         "_id",

@@ -6,7 +6,6 @@ from typing import Sequence, Tuple, Dict, List, Optional, ClassVar
 # Melder imports
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.aether.spellbook.spell_compiler.dag.socket_kind import SocketKind
-from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 
 @dataclass(frozen=True, slots=True)
@@ -72,7 +71,6 @@ class SpellSocketDescriptor:
         Phase 3 (local topology) of the conjure pipeline; Phases 5-7 stitch these
         per-spell descriptors into the system-level blueprint.
     """
-    __melder_internal__: ClassVar[object] = _mrg.sentinel
     # Unannotated on purpose: annotated class vars can be misread as dataclass fields.
     __ast_helper_access__ = "internal"
     __agent_purpose__ = (
@@ -117,7 +115,6 @@ class SpellLocalTopology(Cleanable):
         Phase 3 (local topology) of the conjure pipeline. Effectively immutable after
         construction.
     """
-    __melder_internal__: ClassVar[object] = _mrg.sentinel
     __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (
         "access: internal. Per-spell local topology: the SpellSocketDescriptor tuple plus a "

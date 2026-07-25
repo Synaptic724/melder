@@ -2,7 +2,6 @@ from typing import Collection, Dict, Optional, Set, TYPE_CHECKING, ClassVar
 
 # Melder imports
 from melder.utilities.general_base.cleanable import Cleanable
-from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 if TYPE_CHECKING:
     from melder.aether.spellbook.spell_compiler.topology.spell_local_topology import SpellLocalTopology
 
@@ -24,7 +23,6 @@ class SpellSystemAdjacencySnapshot(Cleanable):
     * This view holds live references to SpellSystemStates data and does not
       copy or own the underlying collections.
     """
-    __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
         "_dependencies",
         "_reverse_dependencies",

@@ -6,7 +6,6 @@ from melder.mutation_research.research_set.transition_entry import (
     TransitionEntry,
 )
 from melder.utilities.general_base.cleanable import Cleanable
-from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 
 class ResearchJournal(Cleanable):
@@ -71,7 +70,6 @@ class ResearchJournal(Cleanable):
         "access: internal. Set-level monotonic append-only log of world-entry events. Melder "
         "kernel machinery: read it to understand the runtime, do not drive it directly."
     )
-    __melder_internal__: ClassVar[object] = _mrg.sentinel
 
     __slots__ = Cleanable.__slots__ + [
         "_entries",

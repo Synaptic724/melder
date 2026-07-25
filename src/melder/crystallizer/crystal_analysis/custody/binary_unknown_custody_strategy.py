@@ -16,7 +16,6 @@ from typing import Any, ClassVar, Dict, Optional, Tuple
 from melder.crystallizer.crystal_analysis.custody.source_custody_strategy import (
     SourceCustodyStrategy,
 )
-from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 
 class BinaryUnknownCustodyStrategy(SourceCustodyStrategy):
@@ -67,7 +66,6 @@ class BinaryUnknownCustodyStrategy(SourceCustodyStrategy):
         "kernel machinery: read it to understand the runtime, do not drive it directly."
     )
 
-    __melder_internal__: ClassVar[object] = _mrg.sentinel
 
     # Compiled-extension suffixes whose file identity is worth capturing.
     BINARY_EXTENSIONS: ClassVar[Tuple[str, ...]] = (".so", ".pyd", ".dylib")

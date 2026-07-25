@@ -1,7 +1,6 @@
 from typing import Dict, List
 
 from melder.utilities.general_base.cleanable import Cleanable
-from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 
 class ContractCrystal(Cleanable):
@@ -72,7 +71,6 @@ class ContractCrystal(Cleanable):
         "Melder kernel machinery: read it to understand the runtime, do not drive it directly."
     )
 
-    __melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
         "_contract_id",
         "_conduit_a_id",

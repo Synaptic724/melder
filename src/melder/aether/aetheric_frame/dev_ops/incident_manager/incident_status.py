@@ -1,5 +1,4 @@
 from enum import auto, Enum
-from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 class IncidentStatus(Enum):
     """
@@ -46,7 +45,6 @@ class IncidentStatus(Enum):
         "access: internal. Lifecycle status for an `Incident`. Melder kernel machinery: read it "
         "to understand the runtime, do not drive it directly."
     )
-    __melder_internal__ = _mrg.sentinel
     open = auto()
     acknowledged = auto()
     resolved = auto()

@@ -1,6 +1,5 @@
 import threading
 from typing import Any, Dict, Optional, Sequence, Tuple, TYPE_CHECKING
-from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 from melder.nexus.configuration.rift_space_type import RiftSpaceType
 from melder.nexus.rift.rift_gate.rift_gate import RiftGate
@@ -125,7 +124,6 @@ class Rift(Cleanable):
         "REQUIRES descriptor truth to exist. Reach the room via .space."
     )
 
-    __melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
         "_id",
         "_rift_name",

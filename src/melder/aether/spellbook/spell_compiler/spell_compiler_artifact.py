@@ -2,7 +2,6 @@ import threading
 from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple, ClassVar
 
 from melder.utilities.general_base.cleanable import Cleanable
-from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 if TYPE_CHECKING:
     from melder.aether.spellbook.spell_compiler.artifact_processor.spell_codegen_model import (
         SpellCodegenModel,
@@ -68,7 +67,6 @@ class SpellCompilerArtifact(Cleanable):
           - `_spell_codegen_plan`
           - `_spell_codegen_creation`
     """
-    __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
         "_lock",
         "spell_id",

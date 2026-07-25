@@ -49,7 +49,7 @@ class ExternalPersistenceManagerConfiguration(Cleanable):
         callable references but never invokes them or deletes remote data.
 
     Registration:
-        MELDER KERNEL - guarded (`__melder_internal__` sentinel). access=public: the user
+        MELDER KERNEL - guarded (internal manifest). access=public: the user
         authors it (registering the mesh callables) and hands it to the crystallizer facade;
         guarding only refuses it as a bind target.
 
@@ -72,7 +72,6 @@ class ExternalPersistenceManagerConfiguration(Cleanable):
         "must disable upload_on_flush explicitly."
     )
 
-    __melder_internal__: ClassVar[object] = _mrg.sentinel
 
     __slots__ = Cleanable.__slots__ + [
         "_id",

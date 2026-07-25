@@ -1,5 +1,4 @@
 from enum import Enum, auto
-from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 class Permissions(Enum):
     """
@@ -61,7 +60,6 @@ class Permissions(Enum):
         "(creation-capable, implies read), block (hard stop). Pass to Spellbook.bind(...). A contract "
         "never grants more than the spell's own permission."
     )
-    __melder_internal__ = _mrg.sentinel
     read = auto()   # Allows read/resolve access only.
     create = auto() # Allows creation-capable use and implies read.
     block = auto()  # Blocks sharing/contracting in normal flows.

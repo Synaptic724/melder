@@ -1,5 +1,4 @@
 from enum import Enum, auto
-from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 
 class SpellState(Enum):
@@ -55,7 +54,6 @@ class SpellState(Enum):
         "access: internal. Fine-grained state flags for a spell index. Melder kernel machinery: "
         "read it to understand the runtime, do not drive it directly."
     )
-    __melder_internal__ = _mrg.sentinel
     # Topology / graph-level
     new_index = auto()             # first time we see this index
     structure_changed = auto()       # profile / wiring changed

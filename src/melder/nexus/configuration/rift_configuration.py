@@ -1,6 +1,5 @@
 import threading
 from typing import Dict, Optional, Tuple, Type, Union
-from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 from melder.nexus.configuration.rift_space_type import RiftSpaceType
 from melder.nexus.configuration.rift_validation_mode import RiftValidationMode
@@ -53,7 +52,6 @@ class RiftConfiguration(Cleanable):
         "Rift's life. Mutable until frozen. Build via Nexus.create_rift_configuration()."
     )
 
-    __melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
         "_id",
         "_lock",

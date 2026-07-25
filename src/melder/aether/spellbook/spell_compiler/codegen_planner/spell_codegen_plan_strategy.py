@@ -1,7 +1,6 @@
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, ClassVar
 
-from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 from melder.aether.spellbook.spell_compiler.artifact_processor.spell_codegen_model import (
     SpellCodegenModel,
@@ -34,7 +33,6 @@ class SpellCodegenPlanStrategy(ABC):
         - They do not own spell/runtime/compiler artifacts.
     """
 
-    __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = ()
 
     @property

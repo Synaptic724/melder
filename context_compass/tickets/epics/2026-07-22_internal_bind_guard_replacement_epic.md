@@ -137,6 +137,65 @@ LANE D - the perf claim, measured:
   ruling and on any mechanism trade-off with user-visible behavior change.
 
 ## Notes
+- DATETIME: 2026-07-24T00:05:00Z
+  TYPE: DECISION
+  CLAIM: OWNER RULING - mechanism is a BUILD-TIME MANIFEST of `(module, qualname)`
+    string tuples, not the sentinel and not a set of class objects. A build
+    script scans `src/melder` and emits a generated module; bind checks
+    `(module, qualname) in MANIFEST`. SCOPE RULING: guard EVERY class in
+    `src/melder` - NO exclusion list, utilities included. Guarding and exporting
+    remain orthogonal (the 9 exceptions + ProtocolCrafter stay importable and
+    catchable, just never bindable - the existing SafeGuard precedent).
+  EVIDENCE:
+  - src/melder/__melder_registration_guard__.py:62-89 (MRO law + orthogonality)
+  IMPACT: The blanket rule is ONLY safe because a (module, qualname) manifest is
+    EXACT-MATCH and does NOT inherit. Listing `Cleanable` blocks `Cleanable`
+    itself; a user subclass carries a different module/qualname, is absent from
+    the manifest, and binds normally. Under the sentinel this was impossible -
+    MRO propagation made a guarded base poison all 325 Cleanable subclasses,
+    which is the entire reason today's curated 357-class split exists. The
+    manifest retires that classification problem outright.
+    ACCEPTED BEHAVIOR CHANGE: user subclasses of internal classes (e.g.
+    `class MyRoom(RiftSpace)`) become BINDABLE; today the inherited sentinel
+    refuses them. Owner-accepted as the deliberate flip.
+  NEXT: Build `build_scripts/build_internal_manifest.py`, the `__init_cache__`
+    codegen + cold-boot fallback, then strip the 397 sentinel stamps.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+- DATETIME: 2026-07-24T00:05:00Z
+  TYPE: MEASURE
+  CLAIM: AST census of `src/melder` (module-level classes). 549 total: 357
+    guarded, 192 unguarded. By top-level dir (guarded/unguarded): aether 154/148,
+    nexus 112/1, crystallizer 59/3, mutation_research 18/5, utilities 13/34,
+    root 1/1. DIRECTORY-BASED GUARDING IS NOT VIABLE - aether is a ~50/50 split.
+    The 192 unguarded are user-extensible bases (Cleanable 325 subclasses;
+    TransactionStrategy 30; CodegenCreationFamilyStep 30;
+    DevopsInformationStrategy 10; CodegenCreationDiscoveryStrategy 10;
+    SpellCodegenStrategy 8; CodegenPlanDiscoveryStrategy 6; SourceCustodyStrategy
+    4; CrystalFactStrategy 4; DiffStrategy 3; Sync; AbstractElasticPool), plus
+    internal analysis data-carriers and the 11 custom exceptions.
+  EVIDENCE:
+  - AST scan over src/melder/**/*.py, 2026-07-23
+  IMPACT: Under the manifest ruling all 549 are covered - STRICTER than today,
+    since the 148 unguarded aether analysis/strategy classes finally get covered
+    at zero risk to user extension. Generator should assert the count at build.
+  NEXT: Manifest generator emits all module-level classes; verify 549 at build.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+- DATETIME: 2026-07-24T00:05:00Z
+  TYPE: FACT
+  CLAIM: `class_wraps` REMOVED from the package root (owner directive). A
+    functools.wraps-style class-decorator helper with ZERO internal consumers -
+    only the `__init__` import, the `__all__` entry, and a docstring mention.
+    All three removed; `grep class_wraps src/` is clean apart from its own module.
+  EVIDENCE:
+  - src/melder/__init__.py (import, __all__ entry, docstring line removed)
+  - tests/unit/melder/test_package_public_surface.py:286,296 (STILL ASSERTS IT -
+    knowingly red until updated)
+  IMPACT: Public root drops 66 -> 65 names. One test red by design.
+  NEXT: Strip the class_wraps assertion from test_package_public_surface.py.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
 - DATETIME: 2026-07-23T19:11:52Z
   TYPE: DECISION
   CLAIM: LANE D PERF SPIKE & ARCHITECTURAL VERDICT COMPLETE (gemini_0, Python 3.14.0 free-threaded / no-GIL).

@@ -34,8 +34,7 @@ Workflow map - every name below is importable from this root:
 - AGENT DOCS: __architecture__, __components__, __graph_network__, and
   __graph_details__ are live hardcopy objects carrying the system's own
   self-description - agents should read these before deep work.
-- TOOLS: ProtocolCrafter (protocol authoring), class_wraps (decorator
-  metadata preservation).
+- TOOLS: ProtocolCrafter (protocol authoring).
 
 The root is deliberately LOADED and flat; internals never import from
 this facade (concrete-path law), so it stays cycle-free. Objects that
@@ -153,7 +152,6 @@ from melder.utilities.custom_exceptions.spellbook_validation_error import (
 
 # ---- agent/tooling helpers ----
 from melder.utilities.ai_native_support_tools.protocol_crafter import ProtocolCrafter
-from melder.utilities.helpers.class_wraps import class_wraps
 
 # Eagerly instantiate the registration guard at package import time: the
 # sentinel must exist before ANY internal object can be offered for
@@ -261,7 +259,6 @@ __all__ = [
     "ViewMultiFrame",
     "DiffEngine",
     "LaneState",
-    "class_wraps",
     "Spell",
     "SpellIndex",
 ]

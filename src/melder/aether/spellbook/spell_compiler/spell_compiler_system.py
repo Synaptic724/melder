@@ -1,5 +1,4 @@
 from typing import TYPE_CHECKING, Any, Dict, Optional, Set, Tuple, ClassVar
-from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 # Melder imports
 from melder.aether.spellbook.spell_compiler.spell_compiler import (
@@ -38,7 +37,6 @@ class SpellCompilerSystem(Cleanable):
         - Delegates through the compiled `SpellCompiler` surface for phases
           1-12.
     """
-    __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
         "_spell_compiler",
         "_spell_validator",

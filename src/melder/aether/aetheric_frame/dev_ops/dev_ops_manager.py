@@ -15,7 +15,6 @@ from melder.utilities.synchronization.creation_gate_controller import CreationGa
 from melder.aether.aetheric_frame.dev_ops.conduit_lineage_gate_ops import (
     ConduitLineageGateOps,
 )
-from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 if TYPE_CHECKING:
     from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states import SpellSystemStates
     from melder.utilities.synchronization.cancellation_event_signal import CancellationEvent
@@ -94,7 +93,6 @@ class DevOpsManager(Cleanable):
         "subsystems. Melder kernel machinery: read it to understand the runtime, do not drive it "
         "directly."
     )
-    __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
         "_lock",
         "_spell_system_states",

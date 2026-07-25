@@ -7,7 +7,6 @@ from melder.aether.spellbook.spell_compiler.system.spell_system_node import Spel
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.aether.spellbook.spell_types.spell_types import SpellType
 from melder.aether.spellbook.existence.existence import Existence
-from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 class SpellSystemIndex(Cleanable):
     """
@@ -24,7 +23,6 @@ class SpellSystemIndex(Cleanable):
     Phase 6 consumes it for system-level validation.
     Phase 7 uses it for change-control / impact analysis.
     """
-    __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + ["_nodes"]
 
     def __init__(self) -> None:

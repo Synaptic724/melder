@@ -3,7 +3,6 @@
 from typing import Dict, List, Optional
 
 from melder.utilities.general_base.cleanable import Cleanable
-from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 
 class SpellbookCrystal(Cleanable):
@@ -81,7 +80,6 @@ class SpellbookCrystal(Cleanable):
         "directly."
     )
 
-    __melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
         "_spellbook_id",
         "_frame_name",

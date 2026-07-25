@@ -1,5 +1,4 @@
 from enum import Enum, auto
-from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 class SpellValidity(Enum):
     """
@@ -77,7 +76,6 @@ class SpellValidity(Enum):
         "access: internal. Coarse validity gate used for both structural and resolution state. "
         "Melder kernel machinery: read it to understand the runtime, do not drive it directly."
     )
-    __melder_internal__ = _mrg.sentinel
     unknown = auto()
     valid = auto()
     gated = auto()

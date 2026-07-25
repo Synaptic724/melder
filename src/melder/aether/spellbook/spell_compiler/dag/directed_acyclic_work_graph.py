@@ -8,7 +8,6 @@ from melder.aether.spellbook.spell_compiler.dag.socket_kind import SocketKind
 # Melder Imports
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
-from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 class DirectedAcyclicWorkGraph(Cleanable):
     """
@@ -43,7 +42,6 @@ class DirectedAcyclicWorkGraph(Cleanable):
         Phase 3 (local frame / DAG) of the conjure pipeline; `topological_levels`
         feeds the parallel-restore execution planner.
     """
-    __melder_internal__: ClassVar[object] = _mrg.sentinel
     __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (
         "access: internal. Minimal DAG of DagNodes keyed by id: add_node/add_dependency (+ "

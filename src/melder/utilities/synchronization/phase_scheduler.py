@@ -31,7 +31,6 @@ from melder.utilities.general_base.cleanable import Cleanable
 
 # Adjust this import path to wherever UnitOfWork is actually defined.
 from melder.utilities.synchronization.unit_of_work import UnitOfWork
-from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 
 
@@ -194,7 +193,6 @@ class PhaseScheduler(Cleanable):
         quiesce matters: without it, a failed conjure could tear down a world
         while units are still writing into it.
     """
-    __melder_internal__: ClassVar[object] = _mrg.sentinel
     __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (
         "access: internal. Persistent multi-phase runner. register_phase() in "

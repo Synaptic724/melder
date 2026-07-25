@@ -18,7 +18,6 @@ from melder.aether.conduit.conduit_ward.contract.detail_reason import DetailReas
 from melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_request.transaction_request import (
     ChangeTransactionType,
 )
-from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 if TYPE_CHECKING:
     from melder.aether.conduit.conduit import Conduit
     from melder.aether.spellbook.spell import Spell
@@ -172,7 +171,6 @@ class ConduitCluster(Cleanable):
         "needed for `unique_per_conduit_cluster` spells). Melder kernel machinery: read it to "
         "understand the runtime, do not drive it directly."
     )
-    __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
         "_lock",
         "_name",

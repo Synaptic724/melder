@@ -9,7 +9,6 @@ from importlib.machinery import ModuleSpec
 from types import ModuleType
 from typing import Any, Dict, List, Mapping, Optional, Sequence
 
-from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 
 class _SyntheticModuleImportLoader(importlib.abc.Loader):
@@ -35,7 +34,7 @@ class _SyntheticModuleImportLoader(importlib.abc.Loader):
         no module and has no independent cleanup surface.
 
     Registration:
-        MELDER KERNEL - guarded (`__melder_internal__` sentinel). Private importlib plumbing
+        MELDER KERNEL - guarded (internal manifest). Private importlib plumbing
         `SyntheticModule` creates lazily; never user-held or bound. access=internal.
 
     Subsystem Context:
@@ -58,7 +57,6 @@ class _SyntheticModuleImportLoader(importlib.abc.Loader):
         "Melder kernel machinery: read it to understand the runtime, do not drive it directly."
     )
 
-    __melder_internal__ = _mrg.sentinel
     def create_module(self, spec: ModuleSpec) -> ModuleType:
         """
         Return the registered synthetic module object for one spec.
@@ -173,7 +171,7 @@ class _SyntheticModuleMetaPathFinder(importlib.abc.MetaPathFinder):
         it does not unregister, unpublish, execute, or clean a module.
 
     Registration:
-        MELDER KERNEL - guarded (`__melder_internal__` sentinel). A private singleton finder
+        MELDER KERNEL - guarded (internal manifest). A private singleton finder
         installed on `sys.meta_path`; internal plumbing, never user-held or bound.
         access=internal.
 
@@ -196,7 +194,6 @@ class _SyntheticModuleMetaPathFinder(importlib.abc.MetaPathFinder):
         "kernel machinery: read it to understand the runtime, do not drive it directly."
     )
 
-    __melder_internal__ = _mrg.sentinel
     def find_spec(
             self,
             fullname: str,
@@ -318,7 +315,6 @@ class SyntheticModule(ModuleType):
         "kernel machinery: read it to understand the runtime, do not drive it directly."
     )
 
-    __melder_internal__ = _mrg.sentinel
     _registry_lock = threading.RLock()
     _registered_modules_by_name: Dict[str, "SyntheticModule"] = {}
     _load_order: List[str] = []

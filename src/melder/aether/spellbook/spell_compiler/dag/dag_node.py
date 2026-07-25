@@ -4,7 +4,6 @@ from typing import Any, Callable, Dict, List, Set, ClassVar
 
 # Melder Imports
 from melder.utilities.general_base.cleanable import Cleanable
-from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 class DagNode(Cleanable):
     """
@@ -39,7 +38,6 @@ class DagNode(Cleanable):
         Phase 3 (local frame / DAG) of the conjure pipeline. Its edges model "must be
         created before me" for resolution ordering.
     """
-    __melder_internal__: ClassVar[object] = _mrg.sentinel
     __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (
         "access: internal. A node in the resolution DAG: a keyed unit of work with "

@@ -28,7 +28,6 @@ from melder.utilities.synchronization.cancellation_event_signal import Cancellat
 from melder.utilities.synchronization.phase_scheduler import PhaseScheduler
 from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_state_change_reason import SpellStateChangeReason
 from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_validity import SpellValidity
-from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 if TYPE_CHECKING:
     from melder.aether.aetheric_frame.aetheric_frame import AethericFrame
@@ -64,7 +63,7 @@ class SpellbookCreationSystem(Cleanable):
         under concurrent teardown calls.
 
     Registration:
-        MELDER KERNEL - guarded (`__melder_internal__` sentinel). Conjure-only
+        MELDER KERNEL - guarded (internal manifest). Conjure-only
         orchestration that `Spellbook` constructs internally for one `conjure(...)`
         run; a user never holds or binds it. `access=internal` - kernel machinery to
         read for understanding, not to drive directly.
@@ -94,7 +93,6 @@ class SpellbookCreationSystem(Cleanable):
         "machinery: read it to understand the runtime, do not drive it directly."
     )
 
-    __melder_internal__: ClassVar[object] = _mrg.sentinel
     _DEFAULT_ROOT_CONDUIT_NAME: ClassVar[str] = "default"
     # Chunk-granularity factor for the fused plan_group (phases 8-11) phase.
     # Measurement basis (29-class gauntlet graph, workers=5, repeats=5):

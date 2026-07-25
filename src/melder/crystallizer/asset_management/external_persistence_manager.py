@@ -51,7 +51,7 @@ class ExternalPersistenceManager(Cleanable):
         close, delete, or otherwise mutate user storage.
 
     Registration:
-        MELDER KERNEL - guarded (`__melder_internal__` sentinel). access=public: it is the
+        MELDER KERNEL - guarded (internal manifest). access=public: it is the
         user's DB seam - the app supplies the transport callables and Melder ships mesh units
         across them - but it is `AssetManagementSystem`-owned and never a bind target.
 
@@ -74,7 +74,6 @@ class ExternalPersistenceManager(Cleanable):
         "and your operational responsibility."
     )
 
-    __melder_internal__: ClassVar[object] = _mrg.sentinel
 
     __slots__ = Cleanable.__slots__ + [
         "_lock",

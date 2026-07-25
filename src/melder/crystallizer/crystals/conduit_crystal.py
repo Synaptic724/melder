@@ -3,7 +3,6 @@
 from typing import Dict, List, Optional
 
 from melder.utilities.general_base.cleanable import Cleanable
-from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 
 class ConduitCrystal(Cleanable):
@@ -78,7 +77,6 @@ class ConduitCrystal(Cleanable):
         "Melder kernel machinery: read it to understand the runtime, do not drive it directly."
     )
 
-    __melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
         "_conduit_id",
         "_spellbook_id",

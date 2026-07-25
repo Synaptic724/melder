@@ -1,5 +1,4 @@
 from typing import TYPE_CHECKING, Any, Dict, Optional, ClassVar
-from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 
 from melder.aether.spellbook.spell_compiler.phases.compiler_phase_1 import (
@@ -73,7 +72,6 @@ class SpellCompiler(Cleanable):
           phase surfaces.
         - Does not instantiate the static helper classes.
     """
-    __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
         "_phase_1",
         "_phase_2",

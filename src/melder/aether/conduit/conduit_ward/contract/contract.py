@@ -15,7 +15,6 @@ if TYPE_CHECKING:
     from melder.aether.conduit.conduit import Conduit
     from melder.aether.conduit.conduit_ward.conduit_ward import ConduitWard
 from melder.utilities.general_base.cleanable import Cleanable
-from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 class Contract(Cleanable):
     """
@@ -85,7 +84,6 @@ class Contract(Cleanable):
         "access: internal. Bidirectional contract between two conduit wards. Melder kernel "
         "machinery: read it to understand the runtime, do not drive it directly."
     )
-    __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
         "_lock",
         "_id",

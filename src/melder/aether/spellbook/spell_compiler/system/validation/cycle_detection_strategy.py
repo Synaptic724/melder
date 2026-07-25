@@ -1,4 +1,4 @@
-﻿from typing import TYPE_CHECKING, Dict, List, Mapping, Optional, Set
+from typing import TYPE_CHECKING, Dict, List, Mapping, Optional, Set
 
 
 # Melder imports

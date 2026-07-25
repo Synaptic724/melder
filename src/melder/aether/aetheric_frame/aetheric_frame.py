@@ -17,7 +17,6 @@ from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_state
 from melder.aether.aetheric_frame.dev_ops.dev_ops_manager import DevOpsManager
 from melder.aether.conduit.conduit_state.conduit_state import ConduitState
 from melder.aether.spellbook.configuration.system_state import SystemState
-from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 if TYPE_CHECKING:
     from melder.aether.conduit.conduit import Conduit
     from melder.aether.spellbook.bind.spell_index import SpellIndex
@@ -103,7 +102,6 @@ class AethericFrame(Cleanable):
         "access: internal. Manage one isolated runtime frame within `Aether`. Melder kernel "
         "machinery: read it to understand the runtime, do not drive it directly."
     )
-    __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
         "_aether",
         "name",

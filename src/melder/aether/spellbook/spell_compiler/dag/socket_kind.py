@@ -1,6 +1,5 @@
 from enum import Enum, auto
 
-from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 
 class SocketKind(Enum):
@@ -28,7 +27,6 @@ class SocketKind(Enum):
         Phase 3 (local frame / DAG) of the conjure pipeline.
     """
 
-    __melder_internal__ = _mrg.sentinel
     __ast_helper_access__ = "internal"
     __agent_purpose__ = (
         "access: internal. Phase-3 DAG edge classifier: NORMAL (regular DI socket) vs "

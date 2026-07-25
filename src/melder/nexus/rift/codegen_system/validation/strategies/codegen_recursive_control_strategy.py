@@ -1,7 +1,6 @@
 import ast
 import threading
 from typing import TYPE_CHECKING, Optional
-from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 from melder.nexus.rift.codegen_system.validation.codegen_validation_result import (
     CodegenValidationResult,
@@ -55,7 +54,6 @@ class CodegenRecursiveControlStrategy(Cleanable):
         "it to understand the runtime, do not drive it directly."
     )
 
-    __melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
         "_lock",
     ]

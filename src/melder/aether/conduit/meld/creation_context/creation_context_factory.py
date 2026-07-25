@@ -14,7 +14,6 @@ from melder.aether.conduit.meld.creation_context.creation_context_builder import
     CreationContextBuilder,
 )
 from melder.utilities.general_base.cleanable import Cleanable
-from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 
 class CreationContextFactory(Cleanable):
@@ -80,7 +79,6 @@ class CreationContextFactory(Cleanable):
         "machinery: read it to understand the runtime, do not drive it directly."
     )
 
-    __melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
         "_dynamic_environment",
         "_creation_gate_controller",

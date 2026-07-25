@@ -6,7 +6,6 @@ from pathlib import Path
 from types import MappingProxyType
 from typing import Any, ClassVar, KeysView, Mapping, Optional, Union
 
-from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
 from melder.utilities.helpers.init_helpers import InitHelpers
@@ -76,7 +75,6 @@ class CachingSystem(Cleanable):
         - Does not automatically delete cache files during cleanup.
     """
 
-    __melder_internal__: ClassVar[object] = _mrg.sentinel
     __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (
         "access: internal. Per-conduit on-disk payload cache (one .melc marshal bundle per "

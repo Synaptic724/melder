@@ -4,7 +4,6 @@ from typing import Any, Dict, List, Optional, ClassVar, Tuple, Union
 
 
 
-from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.aether.spellbook.configuration.system_state import SystemState
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.crystallizer.crystallizer import Crystallizer
@@ -87,7 +86,6 @@ class AethericFrameConfiguration(Cleanable):
         "configure the Spellbook, not this. Read it to learn what a frame will allow."
     )
 
-    __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
         "_id",
         "_lock",

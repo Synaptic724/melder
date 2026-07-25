@@ -6,7 +6,6 @@ from typing import Any, Dict, Type, ClassVar
 
 # Melder imports
 from melder.aether.spellbook.spell_compiler.spell_examiner.inspectors.inspector_utility import InspectorUtility
-from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.utilities.general_base.cleanable import Cleanable
 
 
@@ -36,7 +35,6 @@ class ClassInspector(Cleanable):
     Raises:
         TypeError: If cls is not a class object.
     """
-    __melder_internal__: ClassVar[object]  = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + ["cls", "dunders", "max_repr", "data"]
     utility: ClassVar[type[InspectorUtility]] = InspectorUtility
     def __init__(

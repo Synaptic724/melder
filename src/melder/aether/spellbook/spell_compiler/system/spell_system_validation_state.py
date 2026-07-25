@@ -2,7 +2,6 @@ from typing import TYPE_CHECKING, List, Mapping, Optional, ClassVar
 
 
 
-from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.utilities.general_base.cleanable import Cleanable
 if TYPE_CHECKING:
     from melder.aether.spellbook.spell_compiler.system.spell_system_node import SpellSystemNode
@@ -13,7 +12,6 @@ class SpellSystemValidationState(Cleanable):
     """
     Frame-level system validation verdict.
     """
-    __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
         "_is_valid",
         "_errors",

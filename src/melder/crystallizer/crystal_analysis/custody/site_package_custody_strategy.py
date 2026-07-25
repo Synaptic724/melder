@@ -19,7 +19,6 @@ from typing import Any, Dict, Optional, Tuple, ClassVar
 from melder.crystallizer.crystal_analysis.custody.source_custody_strategy import (
     SourceCustodyStrategy,
 )
-from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 
 class SitePackageCustodyStrategy(SourceCustodyStrategy):
@@ -69,7 +68,6 @@ class SitePackageCustodyStrategy(SourceCustodyStrategy):
         "kernel machinery: read it to understand the runtime, do not drive it directly."
     )
 
-    __melder_internal__: ClassVar[object] = _mrg.sentinel
 
     __slots__ = ("_site_package_root_paths",)
 

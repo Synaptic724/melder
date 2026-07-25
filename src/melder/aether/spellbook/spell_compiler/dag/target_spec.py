@@ -5,7 +5,6 @@ from typing import Tuple, ClassVar
 
 
 # Melder Imports
-from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 class TargetSpecKind(Enum):
     """
     Internal
@@ -27,7 +26,6 @@ class TargetSpecKind(Enum):
     System Context:
         Phase 3 (DAG) override targeting of the conjure/meld pipeline.
     """
-    __melder_internal__ = _mrg.sentinel
     __ast_helper_access__ = "internal"
     __agent_purpose__ = (
         "access: internal. Override-targeting mode: PATH (a>b>c param path), UNIQUE (*name), "
@@ -69,7 +67,6 @@ class TargetSpec:
         Phase 3 (DAG) override targeting - it resolves which socket(s) a meld
         override applies to.
     """
-    __melder_internal__: ClassVar[object] = _mrg.sentinel
     # Unannotated on purpose: an annotated class var could be misread as a
     # dataclass field on some Python versions; unannotated attrs never are.
     __ast_helper_access__ = "internal"

@@ -12,7 +12,6 @@ lanes (per-key backfill, honest shortfalls).
 """
 
 from typing import ClassVar, Dict, Tuple
-from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 
 class RecordVersion:
@@ -50,7 +49,7 @@ class RecordVersion:
         None. This class owns no runtime state or external resource.
 
     Registration:
-        MELDER KERNEL - guarded (`__melder_internal__` sentinel). A static-only version
+        MELDER KERNEL - guarded (internal manifest). A static-only version
         authority: never constructed, never user-held, never a bind target. access=internal.
 
     Subsystem Context:
@@ -73,7 +72,6 @@ class RecordVersion:
         "machinery: read it to understand the runtime, do not drive it directly."
     )
 
-    __melder_internal__ = _mrg.sentinel
     CURRENT: ClassVar[str] = "1.0.0"
     KEY: ClassVar[str] = "record_version"
 

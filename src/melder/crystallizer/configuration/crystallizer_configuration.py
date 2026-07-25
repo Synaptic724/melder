@@ -3,7 +3,6 @@ import threading
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Sequence, Tuple, Type, Union
 
-from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
 
@@ -52,7 +51,7 @@ class CrystallizerConfiguration(Cleanable):
         the live root continues to read policy from it.
 
     Registration:
-        MELDER KERNEL - guarded (`__melder_internal__` sentinel). access=public because a
+        MELDER KERNEL - guarded (internal manifest). access=public because a
         user CONSTRUCTS one, sets policy fluently, and hands it to `Crystallizer.activate(...)`.
         Guarding and being user-constructed are orthogonal: the guard only refuses it as a
         bind target (Melder never injects a configuration); the user still holds and drives it.
@@ -80,7 +79,6 @@ class CrystallizerConfiguration(Cleanable):
         "and checkpoint_interval_minutes for automatic cadence."
     )
 
-    __melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
         "_id",
         "_lock",

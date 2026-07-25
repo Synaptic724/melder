@@ -9,7 +9,6 @@ if TYPE_CHECKING:
     from melder.nexus.rift.rift import Rift
     from melder.nexus.rift.rift_space.rift_space import RiftSpace
     from melder.nexus.rift.rift_space.workstation import Workstation
-from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 from melder.aether.aether import Aether
 from melder.utilities.general_base.cleanable import Cleanable
@@ -85,7 +84,6 @@ class CommandSystem(Cleanable):
         "directly."
     )
 
-    __melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
         "_id",
         "_owner_space_id",

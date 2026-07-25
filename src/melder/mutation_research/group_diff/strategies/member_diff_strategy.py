@@ -3,7 +3,6 @@ from typing import Dict, List, Optional, Tuple, ClassVar
 from melder.mutation_research.group_diff.group_diff_strategy import (
     GroupDiffStrategy,
 )
-from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 
 class MemberDiffStrategy(GroupDiffStrategy):
@@ -65,7 +64,6 @@ class MemberDiffStrategy(GroupDiffStrategy):
         "access: internal. Roster comparison between two composition materials. Melder kernel "
         "machinery: read it to understand the runtime, do not drive it directly."
     )
-    __melder_internal__: ClassVar[object] = _mrg.sentinel
 
     __slots__ = GroupDiffStrategy.__slots__
 

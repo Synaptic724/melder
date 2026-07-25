@@ -9,7 +9,6 @@ from melder.aether.spellbook.spell_compiler.dag.directed_acyclic_work_graph impo
     DirectedAcyclicWorkGraph,
 )
 from melder.aether.spellbook.spell_compiler.dag.dag_index import DagIndex, PathRegistry, SocketRef
-from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 class RootResolutionBlueprint(Cleanable):
     """
@@ -32,7 +31,6 @@ class RootResolutionBlueprint(Cleanable):
         - Consumers should treat exposed list/index data as read-only, even
           when accessors return copies.
     """
-    __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
         "_root_spell_id",
         "_root_lineage_id",

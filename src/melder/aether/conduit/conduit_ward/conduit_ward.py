@@ -26,7 +26,6 @@ from melder.aether.conduit.conduit_ward.contract.contract import Detail, IndexDe
 from melder.aether.conduit.conduit_ward.contract.detail_reason import DetailReason
 from melder.aether.conduit.meld.contracts.spell_contract import SpellContract
 from melder.aether.aetheric_frame.dev_ops.devops_identity import DevopsIdentity
-from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.aether.conduit.conduit_ward.transfer.transfer_of_ownership import TransferOfOwnership
 
 if TYPE_CHECKING:
@@ -140,7 +139,6 @@ class ConduitWard(Cleanable):
         "access: internal. Control-plane for a single Conduit: contracts, index, and policy. "
         "Melder kernel machinery: read it to understand the runtime, do not drive it directly."
     )
-    __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
         "_lock",
         "_conduit",

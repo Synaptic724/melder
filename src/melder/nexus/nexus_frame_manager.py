@@ -1,6 +1,5 @@
 import threading
 from typing import Dict, Optional, Set, Tuple, TYPE_CHECKING
-from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 if TYPE_CHECKING:
     from melder.aether.conduit.conduit import Conduit
@@ -78,7 +77,6 @@ class NexusFrameManager(Cleanable):
         "machinery: read it to understand the runtime, do not drive it directly."
     )
 
-    __melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
         "_id",
         "_lock",

@@ -1,5 +1,4 @@
 from enum import Enum, auto
-from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 class SystemState(Enum):
     """
@@ -50,6 +49,5 @@ class SystemState(Enum):
         "allowed). Dynamic is REQUIRED for linking, severing, ownership transfer, and "
         "lesser-to-normal upgrade. Set it on SpellbookConfiguration."
     )
-    __melder_internal__ = _mrg.sentinel
     automatic = auto()
     dynamic = auto()

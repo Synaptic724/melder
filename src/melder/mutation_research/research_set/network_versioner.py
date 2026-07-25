@@ -4,7 +4,6 @@ import threading
 from typing import Dict, List, Optional, ClassVar
 
 from melder.utilities.general_base.cleanable import Cleanable
-from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 
 class NetworkVersioner(Cleanable):
@@ -69,7 +68,6 @@ class NetworkVersioner(Cleanable):
         "access: internal. Content-addressed version control for the graph network itself. Melder "
         "kernel machinery: read it to understand the runtime, do not drive it directly."
     )
-    __melder_internal__: ClassVar[object] = _mrg.sentinel
 
     __slots__ = Cleanable.__slots__ + [
         "_canonical_by_sha",

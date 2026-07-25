@@ -1,7 +1,6 @@
 import threading
 import time
 from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Mapping, Optional, Sequence, Tuple, Union
-from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 if TYPE_CHECKING:
     from melder.aether.aether import Aether
@@ -128,7 +127,6 @@ class Nexus(Cleanable):
         "authoring."
     )
 
-    __melder_internal__ = _mrg.sentinel
     _instance: ClassVar[Optional["Nexus"]] = None
     _lock: ClassVar[threading.RLock] = threading.RLock()
     _initialized: ClassVar[bool] = False

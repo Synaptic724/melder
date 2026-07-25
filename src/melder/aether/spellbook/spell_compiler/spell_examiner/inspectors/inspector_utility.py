@@ -3,7 +3,6 @@ from typing import Any, Optional, ClassVar
 
 
 
-from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 #region InspectorUtility
 
@@ -22,7 +21,6 @@ class InspectorUtility:
           causes inspection to fail.
         - The utility does not own any mutable runtime state.
     """
-    __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = ()
     @staticmethod
     def safe_repr(obj: Any, max_len: int = 120) -> str:

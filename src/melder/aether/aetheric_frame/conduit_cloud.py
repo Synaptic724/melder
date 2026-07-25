@@ -18,7 +18,6 @@ from melder.aether.aetheric_frame.dev_ops.devops_information_registry import (
 )
 from melder.aether.spellbook.configuration.system_state import SystemState
 from melder.utilities.general_base.cleanable import Cleanable
-from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 
 class ConduitCloud(Cleanable):
@@ -84,7 +83,6 @@ class ConduitCloud(Cleanable):
         "has_conduit_name(...)/has_cluster_name(...) to probe without creating, and the cluster verbs "
         "to form member groups. Reached via AethericFrame.conduit_cloud."
     )
-    __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
         "_lock",
         "_name",

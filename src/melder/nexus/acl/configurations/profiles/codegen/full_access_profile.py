@@ -4,7 +4,6 @@ from melder.nexus.acl.configurations.profiles.codegen.frame_acl_codegen_profile 
 from melder.nexus.acl.configurations.profiles.view.frame_acl_view_profile import (
     FrameACLViewProfile,
 )
-from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 class FullAccessCodegenProfileStrategy:
     """
     Build the reusable `full_access` codegen profile.
@@ -43,7 +42,6 @@ class FullAccessCodegenProfileStrategy:
         "access: internal. Build the reusable `full_access` codegen profile. Melder kernel "
         "machinery: read it to understand the runtime, do not drive it directly."
     )
-    __melder_internal__ = _mrg.sentinel
     _NAME = "full_access"
 
     @property

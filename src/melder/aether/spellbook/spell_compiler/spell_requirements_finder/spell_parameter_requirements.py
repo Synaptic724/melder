@@ -9,7 +9,6 @@ from melder.aether.spellbook.spell_compiler.spell_requirements_finder.parameter_
     ParameterDIShape,
 )
 from melder.utilities.general_base.cleanable import Cleanable
-from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 if TYPE_CHECKING:
     from melder.aether.conduit.meld.contracts.spell_map import SpellMap
 
@@ -47,7 +46,6 @@ class SpellParameterRequirement(Cleanable):
         feeds Phase 2 (symbolic graph) and Phase 3 (DAG) but performs no spellbook
         lookups, no existence decisions, and no graph construction itself.
     """
-    __melder_internal__: ClassVar[object] = _mrg.sentinel
     __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (
         "access: internal. Phase-1 descriptor for ONE constructor parameter: name, position, "

@@ -4,7 +4,6 @@ from types import MappingProxyType
 
 
 
-from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.nexus.frame_descriptor.spell_descriptor_payload import (
     SpellDescriptorPayload,
 )
@@ -55,7 +54,6 @@ class SpellDetailedProfile(SpellGeneralProfile):
         adds the richer inspector payloads.
     """
 
-    __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = SpellGeneralProfile.__slots__ + [
         "_show_dunders",
         "_max_repr",

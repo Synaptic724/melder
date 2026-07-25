@@ -9,7 +9,6 @@ if TYPE_CHECKING:
 from melder.aether.spellbook.existence.existence import Existence
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.synchronization.sync_weak_ref import SyncWeakRef
-from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 
 class SpellBinder(Cleanable):
@@ -68,7 +67,6 @@ class SpellBinder(Cleanable):
         "finalize() to submit. Holds one pending registration at a time; bind(...) resets in-flight "
         "state. Holds the Spellbook weakly."
     )
-    __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
         "_weak_spellbook",
         "_lock",

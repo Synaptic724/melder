@@ -9,7 +9,6 @@ helper.
 from contextlib import contextmanager
 import threading
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
-from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 from melder.nexus.rift.frame_viewer.view_frame import (
     ViewFrame,
@@ -70,7 +69,6 @@ class ViewSpell(Cleanable):
         replaced.
     """
 
-    __melder_internal__ = _mrg.sentinel
     __ast_helper_access__: str = "public"
     __agent_purpose__: str = (
         "access: public. Spell-local helper surface for spell identity, "

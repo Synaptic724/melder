@@ -56,7 +56,6 @@ class ConduitPool(AbstractElasticPool[Any]):
         "Melder kernel machinery: read it to understand the runtime, do not drive it directly."
     )
 
-    __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = AbstractElasticPool.__slots__ + [
         "_root_conduit",
         "_root_conduit_id",

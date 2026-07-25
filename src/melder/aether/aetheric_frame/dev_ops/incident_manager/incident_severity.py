@@ -1,5 +1,4 @@
 from enum import auto, Enum
-from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 class IncidentSeverity(Enum):
     """
@@ -42,7 +41,6 @@ class IncidentSeverity(Enum):
         "access: internal. Severity classification for incidents recorded by `IncidentManager`. "
         "Melder kernel machinery: read it to understand the runtime, do not drive it directly."
     )
-    __melder_internal__ = _mrg.sentinel
     info = auto()
     warning = auto()
     error = auto()

@@ -24,7 +24,6 @@ from melder.crystallizer.crystals.nexus_crystal import NexusCrystal
 from melder.crystallizer.crystals.spell_crystal import SpellCrystal
 from melder.crystallizer.crystals.spellbook_crystal import SpellbookCrystal
 from melder.utilities.general_base.cleanable import Cleanable
-from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 
 class PersistenceProfile(Cleanable):
@@ -70,7 +69,7 @@ class PersistenceProfile(Cleanable):
         the profile lock last.
 
     Registration:
-        MELDER KERNEL - guarded (`__melder_internal__` sentinel). Owned by
+        MELDER KERNEL - guarded (internal manifest). Owned by
         `PersistenceSystem`; Melder constructs it, never a user, and it is never a bind
         target. access=internal.
 
@@ -95,7 +94,6 @@ class PersistenceProfile(Cleanable):
         "directly."
     )
 
-    __melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
         "_profile_name",
         "_lock",

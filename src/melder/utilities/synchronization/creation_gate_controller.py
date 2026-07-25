@@ -3,7 +3,6 @@ from typing import Dict, Optional, ClassVar
 
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.synchronization.creation_gate import CreationGate
-from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 class CreationGateController(Cleanable):
     """
@@ -104,7 +103,6 @@ class CreationGateController(Cleanable):
         spell-index registry serves the same purpose one level down, guarding
         creation-context rebuilds per index.
     """
-    __melder_internal__: ClassVar[object] = _mrg.sentinel
     __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (
         "access: internal. Frame-owned registry of CreationGates across two "

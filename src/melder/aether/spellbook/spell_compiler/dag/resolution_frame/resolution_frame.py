@@ -6,7 +6,6 @@ from typing import Any, Dict, Optional, List, ClassVar
 # Melder imports
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
-from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 class ResolutionFrame(Cleanable):
     """
@@ -39,7 +38,6 @@ class ResolutionFrame(Cleanable):
         Phase 3 (local frame) at build time, reused during meld-time resolution. It
         stores values only, keyed by ids the SpellCompiler / DAG builder decide.
     """
-    __melder_internal__: ClassVar[object] = _mrg.sentinel
     __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (
         "access: internal. Per-meld resolution state: caller overrides, per-node results, and "

@@ -19,7 +19,6 @@ from typing import (
 
 
 
-from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
 FunctionNode = Union[ast.FunctionDef, ast.AsyncFunctionDef]
@@ -83,7 +82,6 @@ class ProtocolCrafter(Cleanable):
         Cleanup is idempotent and only releases the crafter's local state.
     """
 
-    __melder_internal__: ClassVar[object] = _mrg.sentinel
     __ast_helper_access__: str = "public"
     __agent_purpose__: str = (
         "access: public. Generates @runtime_checkable Protocol code from a class/object "

@@ -12,7 +12,6 @@ Lane: EPIC-2026-07-09-crystallizer-subsystem-decomposition, story S4.
 from typing import Any, Dict, List, Optional
 
 from melder.utilities.general_base.cleanable import Cleanable
-from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 
 class LoadPlan(Cleanable):
@@ -41,7 +40,7 @@ class LoadPlan(Cleanable):
         cleanup() deletes carried fields (del posture); idempotent.
 
     Registration:
-        MELDER KERNEL - guarded (`__melder_internal__` sentinel). A single-use value carrier
+        MELDER KERNEL - guarded (internal manifest). A single-use value carrier
         `LoadAdmission` builds; not user-constructed or bound. access=internal.
 
     Subsystem Context:
@@ -62,7 +61,6 @@ class LoadPlan(Cleanable):
         "read it to understand the runtime, do not drive it directly."
     )
 
-    __melder_internal__ = _mrg.sentinel
     __slots__ = (
         "_scope",
         "_profile_name",

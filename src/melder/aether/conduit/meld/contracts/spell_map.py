@@ -116,7 +116,6 @@ class SpellMap(Cleanable):
         "frame-only with spell=None. Zero or multiple matches raise at build time."
     )
 
-    __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
         "spell",
         "spellframe",

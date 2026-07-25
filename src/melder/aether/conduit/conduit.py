@@ -19,7 +19,6 @@ from typing import (
 from melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_request.transaction_request import (
     ChangeTransactionType,
 )
-from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.aether.conduit.conduit_ward.policies.policies import Policies
 from melder.aether.conduit.conduit_ward.contract.detail_reason import DetailReason
 from melder.aether.spellbook.configuration.system_state import SystemState
@@ -192,7 +191,6 @@ class Conduit(Cleanable):
         "_mutation_research",
     ]
     _DEFAULT_ROOT_CONDUIT_NAME: ClassVar[str] = "default"
-    __melder_internal__: ClassVar[object] = _mrg.sentinel
     def __init__(
             self,
             spellbook: Spellbook,

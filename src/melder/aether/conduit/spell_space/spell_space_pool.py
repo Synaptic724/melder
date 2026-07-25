@@ -65,7 +65,6 @@ class SpellSpacePool(AbstractElasticPool[SpellSpace]):
         "machinery: read it to understand the runtime, do not drive it directly."
     )
 
-    __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = AbstractElasticPool.__slots__ + [
         "_owner_conduit_creations",
         "_conduit_meld",

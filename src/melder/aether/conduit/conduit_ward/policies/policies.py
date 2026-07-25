@@ -1,5 +1,4 @@
 from enum import Enum, auto
-from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 class Policies(Enum):
     """
@@ -69,7 +68,6 @@ class Policies(Enum):
         "outbound_only. Pass to conjure(...). Only default is legal when dynamic=False. whitelist_all "
         "is the one mode that can override a per-spell block."
     )
-    __melder_internal__ = _mrg.sentinel
     default = auto()
     whitelist_all = auto()
     block_all = auto()

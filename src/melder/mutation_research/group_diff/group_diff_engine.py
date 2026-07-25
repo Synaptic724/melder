@@ -8,7 +8,6 @@ from melder.mutation_research.group_diff.strategies.member_diff_strategy import 
     MemberDiffStrategy,
 )
 from melder.utilities.general_base.cleanable import Cleanable
-from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 
 class GroupDiffEngine(Cleanable):
@@ -71,7 +70,6 @@ class GroupDiffEngine(Cleanable):
         "material. Melder kernel machinery: read it to understand the runtime, do not drive it "
         "directly."
     )
-    __melder_internal__: ClassVar[object] = _mrg.sentinel
 
     __slots__ = Cleanable.__slots__ + [
         "_material_resolver",

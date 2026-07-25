@@ -4,7 +4,6 @@ from typing import TYPE_CHECKING, Dict, Optional, Set, ClassVar
 
 # Melder imports
 from melder.aether.spellbook.spell_compiler.system.spell_system_adjacency_snapshot import SpellSystemAdjacencySnapshot
-from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 if TYPE_CHECKING:
     from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states import (
         SpellSystemStates,
@@ -26,7 +25,6 @@ class SpellSystemAdjacencyBuilder:
     All higher-level semantics (RootResolutionBlueprints, Phase 6
     validation, etc.) sit on top of this structural view.
     """
-    __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = []
 
     @staticmethod

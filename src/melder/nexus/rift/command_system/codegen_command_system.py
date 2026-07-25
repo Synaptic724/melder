@@ -1,7 +1,6 @@
 import hashlib
 
 from typing import TYPE_CHECKING, Dict, Optional, Tuple
-from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 from melder.nexus.rift.command_system.command_system import (
     CommandSystem,
@@ -76,7 +75,6 @@ class CodegenCommandSystem(CommandSystem):
         "understand the runtime, do not drive it directly."
     )
 
-    __melder_internal__ = _mrg.sentinel
     _CODEGEN_RUNTIME_HELPER_METHOD_NAMES: Tuple[str, ...] = (
         "get_conduit_cloud",
         "get_conduit_by_id",

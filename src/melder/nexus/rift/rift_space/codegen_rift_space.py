@@ -1,5 +1,4 @@
 from typing import TYPE_CHECKING, Dict, Optional
-from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 if TYPE_CHECKING:
     from melder.nexus.rift.rift import Rift
@@ -60,7 +59,6 @@ class CodegenRiftSpace(RiftSpace):
         what was generated is recoverable rather than merely having happened.
     """
 
-    __melder_internal__ = _mrg.sentinel
     __ast_helper_access__: str = "public"
     __agent_purpose__: str = (
         "access: public. The codegen room type - a room that owns an internal CodegenSystem "

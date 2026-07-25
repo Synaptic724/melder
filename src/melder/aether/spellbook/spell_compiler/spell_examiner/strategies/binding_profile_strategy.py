@@ -8,7 +8,6 @@ from melder.aether.spellbook.spell_compiler.spell_examiner.inspectors.inspector_
 from melder.aether.spellbook.spell_compiler.spell_examiner.profiles.binding_profile import ClassBindingProfile, \
     SpellBindingKind, CallableBindingProfile, CallableParameterBindingSummary, \
     InstanceBindingProfile, OtherBindingProfile
-from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 if TYPE_CHECKING:
     from melder.aether.spellbook.spell_compiler.spell_examiner.profiles.binding_profile import (
         SpellBindingProfile,
@@ -21,7 +20,6 @@ class BindingProfileStrategy:
     This is the only strategy used at `Bind` time. It does not depend on
     Spell or any phase artifacts.
     """
-    __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = ("show_dunders", "max_repr")
 
     def __init__(self, *, show_dunders: bool = False, max_repr: int = 120) -> None:

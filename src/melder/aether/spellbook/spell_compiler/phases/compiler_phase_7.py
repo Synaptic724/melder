@@ -1,4 +1,4 @@
-﻿from typing import TYPE_CHECKING, Optional, Set, Dict
+from typing import TYPE_CHECKING, Optional, Set, Dict
 
 #Melder Imports
 from melder.aether.spellbook.spell_compiler.phases.compiler_phase_5 import (

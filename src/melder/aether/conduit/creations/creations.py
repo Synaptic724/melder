@@ -1,7 +1,6 @@
 from threading import RLock
 from typing import Any, ClassVar, Dict, List, Optional, Tuple
 
-from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.utilities.general_base.cleanable import Cleanable
 
 StoredDisposalEntry = Tuple[object, List[str]]
@@ -77,7 +76,6 @@ class Creations(Cleanable):
         "understand the runtime, do not drive it directly."
     )
 
-    __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
         "_owner_conduit_id",
         "_id",

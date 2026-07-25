@@ -10,7 +10,6 @@ from melder.aether.spellbook.spell_compiler.profiles.resolution_profile import S
 from melder.aether.spellbook.spell_compiler.spell_requirements_finder.spell_requirements_finder import (
     SpellRequirementsFinder,
 )
-from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 class ResolutionProfileStrategy:
     """
@@ -20,7 +19,6 @@ class ResolutionProfileStrategy:
     This is where we hook into SpellRequirementsFinder and, later, into
     symbolic graph / frame / validation phases.
     """
-    __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = ()
 
     def __init__(self) -> None:

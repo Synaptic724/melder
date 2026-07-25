@@ -1,7 +1,6 @@
 import json
 import threading
 from typing import TYPE_CHECKING, Optional, Union
-from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 from melder.nexus.acl.builder.frame_acl_command_builder import (
     FrameACLCommandBuilder,
@@ -104,7 +103,6 @@ class FrameACLBuilder(Cleanable):
         "understand the runtime, do not drive it directly."
     )
 
-    __melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
         "_id",
         "_lock",

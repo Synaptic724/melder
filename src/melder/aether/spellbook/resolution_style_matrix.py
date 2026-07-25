@@ -1,6 +1,5 @@
 from typing import Dict, Mapping, Tuple, ClassVar
 
-from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.aether.spellbook.existence.existence import Existence
 from melder.aether.spellbook.spell_types.spell_types import SpellType
 
@@ -103,7 +102,6 @@ class ResolutionStyleMatrix:
         "machinery: read it to understand the runtime, do not drive it directly."
     )
 
-    __melder_internal__: ClassVar[object] = _mrg.sentinel
 
     OWNER: ClassVar[str] = "melder-runtime-maintainers"
     LAST_UPDATED_ISO: ClassVar[str] = "2026-02-13"

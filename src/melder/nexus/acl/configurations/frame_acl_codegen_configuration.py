@@ -2,7 +2,6 @@ import json
 import threading
 from datetime import datetime, timezone
 from typing import Any, Dict, Optional
-from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 from melder.nexus.acl.configurations.profiles.rules.frame_acl_ruleset import FrameACLRuleSet
 from melder.utilities.general_base.cleanable import Cleanable
@@ -67,7 +66,6 @@ class FrameACLCodegenConfiguration(Cleanable):
         "read it to understand the runtime, do not drive it directly."
     )
 
-    __melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
         "_id",
         "_source_configuration_id",

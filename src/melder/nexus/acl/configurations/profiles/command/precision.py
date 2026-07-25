@@ -1,7 +1,6 @@
 from melder.nexus.acl.configurations.profiles.command.frame_acl_command_profile import (
     FrameACLCommandProfile,
 )
-from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 class PrecisionCommandProfileStrategy:
     """
     Build the reusable `precision` command profile.
@@ -35,7 +34,6 @@ class PrecisionCommandProfileStrategy:
         "machinery: read it to understand the runtime, do not drive it directly."
     )
 
-    __melder_internal__ = _mrg.sentinel
     _NAME = "precision"
 
     @property

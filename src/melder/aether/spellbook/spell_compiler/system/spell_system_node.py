@@ -6,7 +6,6 @@ from typing import Iterable, Optional, ClassVar
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.aether.spellbook.spell_types.spell_types import SpellType
 from melder.aether.spellbook.existence.existence import Existence
-from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 class SpellSystemNode(Cleanable):
     """
@@ -27,7 +26,6 @@ class SpellSystemNode(Cleanable):
         * ward_id – owning ward (optional).
         * is_root – whether this spell is considered a root for the frame.
     """
-    __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
         "_spell_id",
         "_lineage_id",

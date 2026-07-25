@@ -5,7 +5,6 @@ from typing import TYPE_CHECKING, Any, Optional, List, ClassVar
 # Melder imports
 from melder.aether.spellbook.existence.existence import Existence
 from melder.utilities.general_base.cleanable import Cleanable
-from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 if TYPE_CHECKING:
     from melder.aether.spellbook.spell_compiler.spell_requirements_finder.spell_requirements import SpellRequirements
 
@@ -30,7 +29,6 @@ class SpellSymbolicNode(Cleanable):
     System Context:
         Phase 2 (symbolic) artifact family carried by `SpellResolutionProfile`.
     """
-    __melder_internal__: ClassVar[object] = _mrg.sentinel
     __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (
         "access: internal. Symbolic dependency-graph node: node_id, kind, metadata bag. "
@@ -92,7 +90,6 @@ class SpellSymbolicEdge(Cleanable):
     System Context:
         Phase 2 (symbolic) artifact family carried by `SpellResolutionProfile`.
     """
-    __melder_internal__: ClassVar[object] = _mrg.sentinel
     __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (
         "access: internal. Symbolic dependency edge: from_node -> to_node, optionally "
@@ -154,7 +151,6 @@ class SpellSymbolicGraph(Cleanable):
     System Context:
         Phase 2 (symbolic) artifact carried by `SpellResolutionProfile`.
     """
-    __melder_internal__: ClassVar[object] = _mrg.sentinel
     __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (
         "access: internal. Phase-2 local symbolic graph in the profile family: spell_id plus "
@@ -235,7 +231,6 @@ class SpellResolutionFrame(Cleanable):
     System Context:
         Phase 3 (concrete resolution frame) artifact carried by `SpellResolutionProfile`.
     """
-    __melder_internal__: ClassVar[object] = _mrg.sentinel
     __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (
         "access: internal. Phase-3 concrete resolution frame in the profile family: spell_id "
@@ -293,7 +288,6 @@ class SpellValidationIssue(Cleanable):
     System Context:
         Phase 4 (validation) artifact family carried by `SpellResolutionProfile`.
     """
-    __melder_internal__: ClassVar[object] = _mrg.sentinel
     __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (
         "access: internal. One validation issue in the profile family: code, message, details. "
@@ -354,7 +348,6 @@ class SpellValidationResult(Cleanable):
     System Context:
         Phase 4 (validation) artifact carried by `SpellResolutionProfile`.
     """
-    __melder_internal__: ClassVar[object] = _mrg.sentinel
     __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (
         "access: internal. Phase-4 readiness summary in the profile family: is_valid plus "
@@ -447,7 +440,6 @@ class SpellResolutionProfile(Cleanable):
         Spans Phases 1-4 as the semantic "how to resolve this spell" payload,
         independent of any execution model.
     """
-    __melder_internal__: ClassVar[object] = _mrg.sentinel
     __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (
         "access: internal. Canonical in-memory 'how to resolve one Spell': "

@@ -1,6 +1,5 @@
 from datetime import datetime, timezone
 from typing import Dict
-from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 from melder.utilities.helpers.id_builder import IDBuilder
 
@@ -42,7 +41,6 @@ class RiftMemory:
         FULL-SOURCE through, so what actually ran stays recoverable.
     """
 
-    __melder_internal__ = _mrg.sentinel
     __ast_helper_access__: str = "public"
     __agent_purpose__: str = (
         "access: public. One immutable executed-step record of a room action - frame, "

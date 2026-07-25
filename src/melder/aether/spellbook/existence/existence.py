@@ -1,5 +1,4 @@
 from enum import Enum, auto
-from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 class Existence(Enum):
     """
@@ -56,7 +55,6 @@ class Existence(Enum):
         "many, unique_per_conduit_cluster, unique_per_conduit_lineage, unique_per_spell_space. Pass "
         "it to Spellbook.bind(...). Method/lambda/existing-object bindings must use unique."
     )
-    __melder_internal__ = _mrg.sentinel
     unique = auto()
     """
     One instance per **Aetheric Frame**.

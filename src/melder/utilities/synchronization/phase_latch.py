@@ -2,7 +2,6 @@ import threading
 from typing import ClassVar, List
 
 # Melder Imports
-from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 
 class PhaseLatch:
@@ -114,7 +113,6 @@ class PhaseLatch:
         world behind.
     """
 
-    __melder_internal__: ClassVar[object] = _mrg.sentinel
     __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (
         "access: internal. Phase completion barrier for PhaseScheduler. Two "

@@ -5,7 +5,6 @@ from typing import Any, Callable, ClassVar, Optional, Union
 
 
 
-from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.aether.aether_configuration import AetherConfiguration
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
@@ -44,7 +43,6 @@ class AetherConfigurationBuilder(Cleanable):
         "Obtain via Aether.create_configuration_builder()."
     )
 
-    __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
         "_id",
         "_lock",

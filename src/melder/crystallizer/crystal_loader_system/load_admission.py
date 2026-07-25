@@ -21,7 +21,6 @@ from typing import Dict, List, Optional, TYPE_CHECKING
 
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.crystallizer.crystal_loader_system.load_plan import LoadPlan
-from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 if TYPE_CHECKING:
     from melder.aether.aether import Aether
@@ -65,7 +64,7 @@ class LoadAdmission(Cleanable):
         borrowed record (del posture); idempotent.
 
     Registration:
-        MELDER KERNEL - guarded (`__melder_internal__` sentinel). The admission plane
+        MELDER KERNEL - guarded (internal manifest). The admission plane
         `CrystalLoaderSystem` constructs and owns; not user-held or bound. access=internal.
 
     Subsystem Context:
@@ -88,7 +87,6 @@ class LoadAdmission(Cleanable):
         "Melder kernel machinery: read it to understand the runtime, do not drive it directly."
     )
 
-    __melder_internal__ = _mrg.sentinel
     # Canonical formation kind order: mirrors the engine's stage order so
     # folds see parents first (class-level constant per module-scope law).
 

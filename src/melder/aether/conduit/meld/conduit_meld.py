@@ -1,6 +1,5 @@
 from typing import TYPE_CHECKING, Optional, Dict, Any, Callable, ClassVar
 
-from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.aether.conduit.meld.meld import Meld
 from melder.aether.spellbook.existence.existence import Existence
 
@@ -75,7 +74,6 @@ class ConduitMeld(Meld):
         "it to understand the runtime, do not drive it directly."
     )
 
-    __melder_internal__: ClassVar[object] = _mrg.sentinel
     # The creation-store surface (`_conduit_creations` / `_root_creations` /
     # `_cluster_creations` / `_spellspace_creations`) and its construction +
     # cleanup live on the base `Meld`. This door adds no store slots of its own.

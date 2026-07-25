@@ -1,7 +1,6 @@
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, ClassVar
 
-from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 if TYPE_CHECKING:
     from melder.aether.spellbook.spell import Spell
@@ -38,7 +37,6 @@ class SpellArtifactProcessorStrategy(ABC):
         - Expected to be reusable across many spells.
     """
 
-    __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = ()
 
     @property

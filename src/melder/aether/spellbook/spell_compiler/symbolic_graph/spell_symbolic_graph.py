@@ -8,7 +8,6 @@ from melder.aether.spellbook.spell_compiler.symbolic_graph.spell_symbolic_depend
     SpellSymbolicDependency,
 )
 from melder.utilities.general_base.cleanable import Cleanable
-from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 class SpellSymbolicGraph(Cleanable):
     """
@@ -54,7 +53,6 @@ class SpellSymbolicGraph(Cleanable):
         (`selected_spell_id`). Symbolic only - it binds to no implementations and
         never touches the live object world; that is Phase 3/4's job.
     """
-    __melder_internal__: ClassVar[object] = _mrg.sentinel
     __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (
         "access: internal. Phase-2 per-spell symbolic graph: the set of SpellSymbolicDependency "

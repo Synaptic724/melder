@@ -1,6 +1,5 @@
 from typing import TYPE_CHECKING, ClassVar
 
-from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.aether.spellbook.spell_compiler.codegen_planner.codegen_plan_discovery_system.codegen_plan_discovery_system import (
     CodegenPlanDiscoverySystem,
 )
@@ -29,7 +28,6 @@ class SpellCodegenPlanner(Cleanable):
         artifact.
     """
 
-    __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
         "_discovery_system",
         "_strategy_builder",

@@ -1,6 +1,5 @@
 import threading
 from typing import TYPE_CHECKING
-from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from types import CodeType
 
 from melder.nexus.rift.codegen_system.execution.codegen_execution_result import (
@@ -47,7 +46,6 @@ class CodegenExecutor(Cleanable):
         "kernel machinery: read it to understand the runtime, do not drive it directly."
     )
 
-    __melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
         "_lock",
     ]

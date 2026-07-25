@@ -6,7 +6,6 @@ from typing import Dict, Optional, Set, List, TYPE_CHECKING, ClassVar
 from melder.aether.aetheric_frame.dev_ops.devops_information_registry import (
     DevopsInformationRegistry,
 )
-from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_validity import SpellValidity
 from melder.utilities.general_base.cleanable import Cleanable
 if TYPE_CHECKING:
@@ -160,7 +159,6 @@ class RiskManager(Cleanable):
         "access: internal. DevOps risk tracking for meld validation gating. Melder kernel "
         "machinery: read it to understand the runtime, do not drive it directly."
     )
-    __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
         "_lock",
         "_spell_system_states",

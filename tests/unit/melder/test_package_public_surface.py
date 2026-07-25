@@ -273,7 +273,7 @@ def test_pass_two_doc_named_surfaces_are_loaded():
         Second C-doc iteration (External Interfaces section): the viewer
         family the doc names as user surfaces, the DiffEngine that
         create_diff_engine() hands users, LaneState (the enum behind the
-        public lane.state property), and the class_wraps decorator helper.
+        public lane.state property).
     Contract:
         Identity with the concrete-path objects.
     """
@@ -283,7 +283,6 @@ def test_pass_two_doc_named_surfaces_are_loaded():
     from melder.nexus.rift.frame_viewer.view_frame import ViewFrame
     from melder.nexus.rift.frame_viewer.view_multiframe import ViewMultiFrame
     from melder.nexus.rift.frame_viewer.view_spell import ViewSpell
-    from melder.utilities.helpers.class_wraps import class_wraps
 
     import melder
 
@@ -293,7 +292,6 @@ def test_pass_two_doc_named_surfaces_are_loaded():
     assert melder.ViewMultiFrame is ViewMultiFrame
     assert melder.DiffEngine is DiffEngine
     assert melder.LaneState is LaneState
-    assert melder.class_wraps is class_wraps
 
 
 def test_all_names_are_unique_and_sorted_groups_are_complete():

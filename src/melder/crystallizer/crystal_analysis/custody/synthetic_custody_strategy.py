@@ -16,7 +16,6 @@ from melder.crystallizer.synthetic_module import SyntheticModule
 from melder.crystallizer.crystal_analysis.custody.source_custody_strategy import (
     SourceCustodyStrategy,
 )
-from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 
 class SyntheticCustodyStrategy(SourceCustodyStrategy):
@@ -70,7 +69,6 @@ class SyntheticCustodyStrategy(SourceCustodyStrategy):
         "machinery: read it to understand the runtime, do not drive it directly."
     )
 
-    __melder_internal__: ClassVar[object] = _mrg.sentinel
 
     __slots__ = ()
 

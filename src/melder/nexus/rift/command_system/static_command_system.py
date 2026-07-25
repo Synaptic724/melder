@@ -1,5 +1,4 @@
 from typing import TYPE_CHECKING, Optional
-from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 from melder.nexus.rift.command_system.command_system import (
     CommandSystem,
@@ -60,7 +59,6 @@ class StaticCommandSystem(CommandSystem):
         "access: internal. Static-room command surface. Melder kernel machinery: read it to "
         "understand the runtime, do not drive it directly."
     )
-    __melder_internal__ = _mrg.sentinel
     _STATIC_COMMAND_METHOD_NAMES: tuple[str, ...] = (
         "meld_existing_spell",
         "describe_spell_status_by_source_id",

@@ -1,5 +1,4 @@
 from typing import TYPE_CHECKING, Dict, Optional
-from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 if TYPE_CHECKING:
     from melder.nexus.rift.command_system.command_system import (
@@ -65,7 +64,6 @@ class CapabilityRiftSpace(RiftSpace):
         "to understand the runtime, do not drive it directly."
     )
 
-    __melder_internal__ = _mrg.sentinel
     def __init__(
             self,
             owner_rift_id: str,

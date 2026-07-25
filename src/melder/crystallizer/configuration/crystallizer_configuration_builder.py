@@ -2,7 +2,6 @@ import threading
 from pathlib import Path
 from typing import Optional, Sequence, Union
 
-from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.crystallizer.configuration.crystallizer_configuration import (
     CrystallizerConfiguration,
 )
@@ -42,7 +41,7 @@ class CrystallizerConfigurationBuilder(Cleanable):
         configuration and the builder is terminal.
 
     Registration:
-        MELDER KERNEL - guarded (`__melder_internal__` sentinel). access=public: a user
+        MELDER KERNEL - guarded (internal manifest). access=public: a user
         constructs and drives the builder, then it hands the configuration off; it is never
         a bind target.
 
@@ -66,7 +65,6 @@ class CrystallizerConfigurationBuilder(Cleanable):
         "build()/finalize()/activate(); ownership transfers and the builder is spent."
     )
 
-    __melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
         "_id",
         "_lock",

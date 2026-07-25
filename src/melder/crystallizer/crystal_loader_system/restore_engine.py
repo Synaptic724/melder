@@ -13,7 +13,6 @@ from melder.utilities.custom_exceptions.phase_execution_error import (
 from melder.utilities.custom_exceptions.phase_timeout_error import (
     PhaseTimeoutError,
 )
-from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 if TYPE_CHECKING:
     from melder.utilities.synchronization.phase_scheduler import (
@@ -60,7 +59,7 @@ class RestoreReport(Cleanable):
         tears down the rebuilt runtime.
 
     Registration:
-        MELDER KERNEL - guarded (`__melder_internal__` sentinel). A detached outcome record the
+        MELDER KERNEL - guarded (internal manifest). A detached outcome record the
         `RestoreEngine` fills and hands back; not user-constructed or bound. access=internal.
 
     Subsystem Context:
@@ -82,7 +81,6 @@ class RestoreReport(Cleanable):
         "read it to understand the runtime, do not drive it directly."
     )
 
-    __melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
         "_lock",
         "_profile_name",
@@ -405,7 +403,7 @@ class RestoreEngine(Cleanable):
         the returned report's ownership passes to the caller; idempotent.
 
     Registration:
-        MELDER KERNEL - guarded (`__melder_internal__` sentinel). Constructed per restore call
+        MELDER KERNEL - guarded (internal manifest). Constructed per restore call
         by the loader; it drives only PUBLIC runtime verbs and is never user-held or bound.
         access=internal.
 
@@ -430,7 +428,6 @@ class RestoreEngine(Cleanable):
         "understand the runtime, do not drive it directly."
     )
 
-    __melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
         "_chain",
         "_report",

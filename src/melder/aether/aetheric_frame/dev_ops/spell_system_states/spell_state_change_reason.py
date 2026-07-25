@@ -1,5 +1,4 @@
 from enum import Enum, auto
-from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 class SpellStateChangeReason(Enum):
     """
@@ -53,7 +52,6 @@ class SpellStateChangeReason(Enum):
         "access: internal. Last event that *changed* the state of an index. Melder kernel "
         "machinery: read it to understand the runtime, do not drive it directly."
     )
-    __melder_internal__ = _mrg.sentinel
     # Registrations / bindings
     new_index = auto()            # first time this index was registered
     register_or_rebind = auto()     # new Spell bound to existing index

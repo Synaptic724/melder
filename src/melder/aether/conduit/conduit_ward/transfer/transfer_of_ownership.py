@@ -15,7 +15,6 @@ from typing import (
 
 
 # Melder imports
-from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.aether.conduit.conduit_ward.permissions.permissions import Permissions
 from melder.aether.conduit.conduit_ward.policies.policies import Policies
 from melder.utilities.general_base.cleanable import Cleanable
@@ -124,7 +123,6 @@ class TransferOfOwnership(Cleanable):
         "owners. Melder kernel machinery: read it to understand the runtime, do not drive it "
         "directly."
     )
-    __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
         "_lock",
         "_source_spellbook",

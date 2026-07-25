@@ -20,7 +20,6 @@ from melder.aether.aetheric_frame.aetheric_frame import AethericFrame
 from melder.aether.aetheric_frame.aetheric_frame_configuration import AethericFrameConfiguration
 from melder.utilities.helpers.init_helpers import InitHelpers
 from melder.utilities.synchronization.load_gate import LoadGate
-from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 if TYPE_CHECKING:
     from melder.mutation_research.mutation_research import MutationResearch
     from melder.aether.conduit.conduit import Conduit
@@ -97,7 +96,6 @@ class Aether(Cleanable):
         "create_configuration()/configure()/activate() for root logger policy, attach_logger(...) to "
         "install one directly."
     )
-    __melder_internal__: ClassVar[object] = _mrg.sentinel
     _instance: ClassVar[Optional["Aether"]] = None
     _lock: ClassVar[RLock] = RLock()
     _initialized: ClassVar[bool] = False

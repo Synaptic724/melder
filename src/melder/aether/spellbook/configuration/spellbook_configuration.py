@@ -2,7 +2,6 @@ import threading
 from typing import Any, Callable, ClassVar, Dict, Iterator, List, Optional, Tuple, Type
 
 
-from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.utilities.helpers.ulid_factory import new_ulid
 
 # Melder imports
@@ -64,7 +63,6 @@ class SpellbookConfiguration(Cleanable):
         "Meld/Conduit/Link/Contract hook registry. Must be frozen before conjure. Idempotent keys "
         "lock after first set, even before freeze."
     )
-    __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
         "_id",
         "_lock",

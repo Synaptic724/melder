@@ -13,7 +13,6 @@ from typing import (
 
 
 
-from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.aether.spellbook.spell_compiler.dag.socket_kind import SocketKind
 from melder.aether.spellbook.spell_compiler.dag.target_spec import TargetSpecKind
 from melder.aether.spellbook.spell_compiler.topology.spell_local_topology import (
@@ -54,7 +53,6 @@ class PathRegistry(Cleanable):
     System Context:
         Phase 3/5 DAG index construction of the conjure pipeline.
     """
-    __melder_internal__: ClassVar[object] = _mrg.sentinel
     __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (
         "access: internal. Interns param-path segments into stable integer PathIds so "
@@ -312,7 +310,6 @@ class SocketRef:
         Phase 3 (DAG) of the conjure pipeline - a `SocketRef` is what a
         `spell_override` targets.
     """
-    __melder_internal__: ClassVar[object] = _mrg.sentinel
     # Unannotated on purpose: annotated class vars can be misread as dataclass
     # fields on some Python versions; unannotated attrs never are.
     __ast_helper_access__ = "internal"
@@ -363,7 +360,6 @@ class DagIndex(Cleanable):
         Phase 3 (DAG) of the conjure pipeline - the lookup layer the override system
         resolves against.
     """
-    __melder_internal__: ClassVar[object] = _mrg.sentinel
     __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (
         "access: internal. Index over SocketRef by exact param-path id and by param name, for "
@@ -551,7 +547,6 @@ class DagTargetingEngine(Cleanable):
     System Context:
         Phase 3 (DAG) override resolution during meld.
     """
-    __melder_internal__: ClassVar[object] = _mrg.sentinel
     __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (
         "access: internal. Resolves a TargetSpec + filter_fn against a DagIndex to the affected "
@@ -733,7 +728,6 @@ class DagIndexBuilder:
     Phases 5–7 will extend this to walk the full system blueprint and assign
     deep param paths (``\"orchestrator>order_service>repo\"`` style).
     """
-    __melder_internal__: ClassVar[object] = _mrg.sentinel
     __ast_helper_access__ = "internal"
     __agent_purpose__ = (
         "access: internal. Static builder for a shallow DagIndex from one spell's local "

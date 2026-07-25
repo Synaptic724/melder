@@ -1,6 +1,5 @@
 from typing import TYPE_CHECKING, ClassVar
 
-from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.aether.spellbook.spell_compiler.artifact_processor.spell_artifact_processor import (
     SpellArtifactProcessor,
 )
@@ -39,7 +38,6 @@ class CompilerPhase9(Cleanable):
         Owns only the processor facade it delegates to.
     """
 
-    __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
         "_artifact_processor",
     ]

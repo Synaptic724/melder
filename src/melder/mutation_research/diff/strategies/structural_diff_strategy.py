@@ -3,7 +3,6 @@ import hashlib
 from typing import Dict, List, Optional, Tuple, ClassVar
 
 from melder.mutation_research.diff.diff_strategy import DiffStrategy
-from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 
 class StructuralDiffStrategy(DiffStrategy):
@@ -61,7 +60,6 @@ class StructuralDiffStrategy(DiffStrategy):
         "access: internal. AST-level structural comparison between two version materials. Melder "
         "kernel machinery: read it to understand the runtime, do not drive it directly."
     )
-    __melder_internal__: ClassVar[object] = _mrg.sentinel
 
     __slots__ = DiffStrategy.__slots__
 

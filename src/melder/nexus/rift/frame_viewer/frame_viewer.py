@@ -8,7 +8,6 @@ projection caches.
 from contextlib import contextmanager
 import threading
 from typing import TYPE_CHECKING, Any, Callable, Dict, Iterator, List, Optional, Tuple
-from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 from melder.aether.conduit.conduit_ward.policies.policies import Policies
 from melder.nexus.rift.frame_viewer.view_conduit import (
@@ -110,7 +109,6 @@ class FrameViewer(Cleanable):
         are borrowed inputs whose lifetime belongs to someone else.
     """
 
-    __melder_internal__ = _mrg.sentinel
     __ast_helper_access__: str = "public"
     __agent_purpose__: str = (
         "access: public. Multi-frame descriptor host for the Rift viewer path. Use this object to inspect hosted "

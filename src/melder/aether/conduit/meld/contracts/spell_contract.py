@@ -112,7 +112,6 @@ class SpellContract(Cleanable):
         "least spell or spellframe. Unsatisfied is an ERROR in automatic mode, a warning in dynamic."
     )
 
-    __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
         "spell",
         "spellframe",

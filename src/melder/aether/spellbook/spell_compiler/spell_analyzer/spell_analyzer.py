@@ -1,6 +1,5 @@
 from typing import TYPE_CHECKING, Any, ClassVar, Dict, Optional, Tuple
 
-from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.aether.spellbook.spell_compiler.spell_analyzer.spell_analyzer_strategy_builder import (
     SpellAnalyzerStrategyBuilder,
 )
@@ -54,7 +53,6 @@ class SpellAnalyzer(Cleanable):
         that enriches `SpellCompilerArtifact` before the planning stages run.
     """
 
-    __melder_internal__: ClassVar[object] = _mrg.sentinel
     __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (
         "access: internal. Phase-8 analyzer orchestrator: runs registered analyzer strategies "

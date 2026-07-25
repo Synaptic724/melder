@@ -6,7 +6,6 @@ from typing import Any, Dict, Callable, ClassVar
 
 # Melder imports
 from melder.aether.spellbook.spell_compiler.spell_examiner.inspectors.inspector_utility import InspectorUtility
-from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.utilities.general_base.cleanable import Cleanable
 
 
@@ -32,7 +31,6 @@ class MethodInspector(Cleanable):
     Raises:
         TypeError: If fn is not callable.
     """
-    __melder_internal__: ClassVar[object] = _mrg.sentinel
     utility: ClassVar[type[InspectorUtility]] = InspectorUtility
     max_repr: ClassVar[int] = 120
     __slots__ = Cleanable.__slots__ +  ["fn", "_max_repr", "data"]

@@ -1,6 +1,5 @@
 import threading
 from typing import List, Optional
-from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 from melder.nexus.acl.configurations.profiles.rules.frame_acl_rule import FrameACLRule
 from melder.nexus.acl.configurations.profiles.rules.frame_acl_ruleset import FrameACLRuleSet
@@ -59,7 +58,6 @@ class FrameACLViewProfile(Cleanable):
         "to understand the runtime, do not drive it directly."
     )
 
-    __melder_internal__ = _mrg.sentinel
     _DEFAULT_SPELL_PAYLOAD_PROFILE_NAME = "general"
     __slots__ = Cleanable.__slots__ + [
         "_id",

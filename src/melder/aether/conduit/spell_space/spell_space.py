@@ -97,7 +97,6 @@ class SpellSpace(Cleanable):
         "spellspace-scoped instances and bumps the version."
     )
 
-    __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
         "_lock",
         "_id",

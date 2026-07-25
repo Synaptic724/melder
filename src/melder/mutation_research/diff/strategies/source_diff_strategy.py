@@ -2,7 +2,6 @@ import difflib
 from typing import Dict, List, ClassVar
 
 from melder.mutation_research.diff.diff_strategy import DiffStrategy
-from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 
 class SourceDiffStrategy(DiffStrategy):
@@ -58,7 +57,6 @@ class SourceDiffStrategy(DiffStrategy):
         "access: internal. Per-module source comparison between two version materials. Melder "
         "kernel machinery: read it to understand the runtime, do not drive it directly."
     )
-    __melder_internal__: ClassVar[object] = _mrg.sentinel
 
     __slots__ = DiffStrategy.__slots__
 

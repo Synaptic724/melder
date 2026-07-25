@@ -1,6 +1,5 @@
 import threading
 from typing import Callable, Dict, Optional
-from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 from melder.nexus.rift.rift_space.event_system.rift_event import RiftEvent
 from melder.utilities.general_base.cleanable import Cleanable
@@ -59,7 +58,6 @@ class RiftEventSystem(Cleanable):
         callbacks - they are cleared exactly once, during room teardown.
     """
 
-    __melder_internal__ = _mrg.sentinel
     __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (
         "access: internal. The room-local event publisher a RiftSpace owns: it registers "

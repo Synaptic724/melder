@@ -10,7 +10,6 @@ from melder.mutation_research.research_set.grouped_research_node import (
 from melder.mutation_research.research_set.research_node import ResearchNode
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
-from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 
 def node_identity(node: object) -> str:
@@ -208,7 +207,6 @@ class ResearchLane(Cleanable):
         "owning `ResearchSet`, so public state change flows through set verbs ONLY. Melder kernel "
         "machinery: read it to understand the runtime, do not drive it directly."
     )
-    __melder_internal__: ClassVar[object] = _mrg.sentinel
 
     __slots__ = Cleanable.__slots__ + [
         "_lane_id",

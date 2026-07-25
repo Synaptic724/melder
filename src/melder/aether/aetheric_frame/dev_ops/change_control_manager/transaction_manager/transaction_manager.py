@@ -17,7 +17,6 @@ from typing import (
 
 # Melder imports
 from melder.utilities.general_base.cleanable import Cleanable
-from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_request.transaction_request import (
     ChangeControlTransactionRequest,
 )
@@ -97,7 +96,6 @@ class ChangeControlTransactionManager(Cleanable):
         "access: internal. Transaction-bookkeeping root for change-control admission. Melder "
         "kernel machinery: read it to understand the runtime, do not drive it directly."
     )
-    __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
         "_lock",
         "_in_flight",

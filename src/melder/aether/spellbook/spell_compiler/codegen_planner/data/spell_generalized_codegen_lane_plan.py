@@ -1,6 +1,5 @@
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, ClassVar
 
-from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.aether.spellbook.existence.existence import Existence
 from melder.utilities.general_base.cleanable import Cleanable
 
@@ -32,7 +31,6 @@ class SpellGeneralizedCodegenPlanVariant:
         deterministically.
     """
 
-    __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = ()
     NO_OVERRIDES: ClassVar[str] = "no_overrides"
     OVERRIDES: ClassVar[str] = "overrides"
@@ -47,7 +45,6 @@ class SpellGeneralizedCodegenPlanTargetKind:
         routing semantics without depending on the legacy enum carrier.
     """
 
-    __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = ()
     CALLER: ClassVar[int] = 1
     OWNER: ClassVar[int] = 2
@@ -64,7 +61,6 @@ class SpellGeneralizedCodegenPlanCallMode:
         have to rediscover them.
     """
 
-    __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = ()
     CALL0: ClassVar[int] = 0
     CALL1: ClassVar[int] = 1
@@ -88,7 +84,6 @@ class SpellGeneralizedCodegenPlanStep:
         `InjectionPlan` objects.
     """
 
-    __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = [
         "_instance_key",
         "_occurrence",
@@ -440,7 +435,6 @@ class SpellGeneralizedCodegenLanePlan(Cleanable):
         system while preserving the same runtime-relevant semantics.
     """
 
-    __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
         "_lane_id",
         "_root_spell_id",
@@ -1055,7 +1049,6 @@ class SpellGeneralizedCodegenPlanBuilder:
         semantic loss.
     """
 
-    __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = [
         "_state",
         "_plan_variant",

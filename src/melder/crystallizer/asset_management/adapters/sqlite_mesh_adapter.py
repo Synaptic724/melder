@@ -8,7 +8,6 @@ from typing import TYPE_CHECKING, ClassVar, Dict, List, Optional
 
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.crystallizer.persistence.record_version import RecordVersion
-from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 if TYPE_CHECKING:
     from melder.crystallizer.asset_management.external_persistence_manager_configuration import (
@@ -68,7 +67,7 @@ class SqliteMeshAdapter(Cleanable):
         is the user's asset and is never deleted by cleanup.
 
     Registration:
-        MELDER KERNEL - guarded (`__melder_internal__` sentinel). A first-party adapter the USER
+        MELDER KERNEL - guarded (internal manifest). A first-party adapter the USER
         imports and registers (melder core never imports it or sqlite3); not a bind target.
         access=internal.
 
@@ -92,7 +91,6 @@ class SqliteMeshAdapter(Cleanable):
         "kernel machinery: read it to understand the runtime, do not drive it directly."
     )
 
-    __melder_internal__: ClassVar[object] = _mrg.sentinel
 
     # Class-level defaults (no module constants law).
     DEFAULT_TABLE_NAME: ClassVar[str] = "melder_mesh_units"

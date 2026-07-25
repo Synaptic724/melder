@@ -4,7 +4,6 @@ from typing import Optional, Dict, Any, ClassVar
 
 # Melder imports
 from melder.utilities.general_base.cleanable import Cleanable
-from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 class SpellValidationIssue(Cleanable):
     """
@@ -43,7 +42,6 @@ class SpellValidationIssue(Cleanable):
         only - but an `error`-severity issue is what ultimately makes a spell
         "broken" and raises `SpellbookValidationError` at the Spellbook boundary.
     """
-    __melder_internal__: ClassVar[object] = _mrg.sentinel
     __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (
         "access: internal. One Phase-4 validation finding: severity ('error'|'warning'), code, "

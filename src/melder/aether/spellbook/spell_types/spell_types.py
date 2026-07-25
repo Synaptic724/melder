@@ -1,5 +1,4 @@
 from enum import Enum, auto
-from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 class SpellType(Enum):
     """
@@ -73,7 +72,6 @@ class SpellType(Enum):
         "access: internal. Canonical runtime binding-family classification for bound spells. "
         "Melder kernel machinery: read it to understand the runtime, do not drive it directly."
     )
-    __melder_internal__ = _mrg.sentinel
     # Class-based construction spell families.
     SPELL = auto()
     SPELL_WITH_SPELLFRAME = auto()

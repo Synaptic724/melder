@@ -3,7 +3,6 @@ from typing import TYPE_CHECKING, ClassVar
 
 
 from melder.utilities.general_base.cleanable import Cleanable
-from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 if TYPE_CHECKING:
     from melder.aether.spellbook.spell_compiler.validation.spell_validation_context import SpellValidationContext
 
@@ -38,7 +37,6 @@ class SpellValidationStrategy(Cleanable):
         order over one `SpellValidationContext` per spell; an emitted error makes
         the spell broken.
     """
-    __melder_internal__: ClassVar[object] = _mrg.sentinel
     __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (
         "access: internal. Base class for Phase-4 validation strategies: implement validate("

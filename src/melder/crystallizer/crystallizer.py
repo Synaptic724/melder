@@ -8,7 +8,6 @@ if TYPE_CHECKING:
     from melder.aether.spellbook.bind.spell_index import SpellIndex
     from melder.aether.spellbook.spell import Spell
 
-from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.crystallizer.configuration.crystallizer_configuration import (
     CrystallizerConfiguration,
 )
@@ -120,7 +119,6 @@ class Crystallizer(Cleanable):
         "plus analyze_impact(...). Every emit verb is a NO-OP while inactive."
     )
 
-    __melder_internal__ = _mrg.sentinel
     _instance = None
     _lock = threading.RLock()
     _initialized = False

@@ -1,6 +1,5 @@
 import threading
 from typing import Any, Dict, Optional
-from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
@@ -50,7 +49,6 @@ class FrameACLRule(Cleanable):
         "understand the runtime, do not drive it directly."
     )
 
-    __melder_internal__ = _mrg.sentinel
     _ALLOW_EFFECT = "allow"
     _DENY_EFFECT = "deny"
     _VALID_EFFECTS = (_ALLOW_EFFECT, _DENY_EFFECT)

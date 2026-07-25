@@ -1,6 +1,5 @@
 import threading
 from typing import Optional, Tuple
-from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 from melder.aether.conduit.conduit_state.conduit_state import ConduitState
 from melder.aether.conduit.conduit_ward.policies.policies import Policies
@@ -51,7 +50,6 @@ class ConduitDescriptorPayload(Cleanable):
         "read it to understand the runtime, do not drive it directly."
     )
 
-    __melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
         "_lock",
         "payload_version",

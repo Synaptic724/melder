@@ -24,7 +24,6 @@ from melder.crystallizer.asset_management.external_persistence_manager import (
 from melder.crystallizer.asset_management.mesh_interface_contract import (
     MeshInterfaceContract,
 )
-from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 if TYPE_CHECKING:
     from melder.crystallizer.asset_management.external_persistence_manager_configuration import (
@@ -75,7 +74,7 @@ class AssetManagementSystem(Cleanable):
         borrowed record is dereferenced, never cleaned.
 
     Registration:
-        MELDER KERNEL - guarded (`__melder_internal__` sentinel). One of the three same-rank
+        MELDER KERNEL - guarded (internal manifest). One of the three same-rank
         children `Crystallizer` owns; Melder constructs it and users reach it only through
         `Crystallizer` facades. access=internal.
 
@@ -99,7 +98,6 @@ class AssetManagementSystem(Cleanable):
         "directly."
     )
 
-    __melder_internal__: ClassVar[object] = _mrg.sentinel
 
     __slots__ = Cleanable.__slots__ + [
         "_lock",

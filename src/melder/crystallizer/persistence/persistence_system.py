@@ -9,7 +9,6 @@ from melder.crystallizer.persistence.persistence_profile import PersistenceProfi
 from melder.crystallizer.crystals.recorded_unit_state import RecordedUnitState
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
-from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 
 class PersistenceSystem(Cleanable):
@@ -52,7 +51,7 @@ class PersistenceSystem(Cleanable):
         asset or loader systems that borrowed it.
 
     Registration:
-        MELDER KERNEL - guarded (`__melder_internal__` sentinel). The record ledger
+        MELDER KERNEL - guarded (internal manifest). The record ledger
         `Crystallizer` constructs and owns; users talk to `Crystallizer` facades only
         and never hold or bind this object. access=internal.
 
@@ -79,7 +78,6 @@ class PersistenceSystem(Cleanable):
         "kernel machinery: read it to understand the runtime, do not drive it directly."
     )
 
-    __melder_internal__ = _mrg.sentinel
     DEFAULT_PROFILE_NAME: str = "default"
 
     __slots__ = Cleanable.__slots__ + [

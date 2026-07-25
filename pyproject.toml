@@ -150,12 +150,12 @@ exclude = [
     "build_scripts*", "performance_hunt*", "profiles*",
 ]
 
-# The `__init_cache__` PACKAGE ships (so the write target exists at runtime and
-# needs no mkdir); its generated CONTENTS never do. Cache artifacts are written
-# per-environment, keyed to the installed version, and are gitignored - so they
-# are absent from the source tree the wheel is built from.
+# The `melder_cache` PACKAGE ships (so the write target exists at runtime and
+# needs no mkdir) along with its loader/builder modules. The GENERATED
+# `internal_manifest.py` does not: it is gitignored, therefore absent from the
+# source tree the wheel is built from, and melder rebuilds it on first import.
 [tool.setuptools.exclude-package-data]
-"melder.__init_cache__" = ["*"]
+"melder.__melder_cache__" = ["internal_manifest.py"]
 
 
 [tool.coverage.run]
@@ -168,7 +168,7 @@ omit = [
     "UX_and_AIX_experiences/*",
     "performance_hunt/*",
     "build_scripts/*",
-    "*/__init_cache__/*",
+    "*/__melder_cache__/__init_cache__/internal_manifest.py",
 ]
 
 [tool.coverage.report]
@@ -179,7 +179,7 @@ omit = [
     "UX_and_AIX_experiences/*",
     "performance_hunt/*",
     "build_scripts/*",
-    "*/__init_cache__/*",
+    "*/__melder_cache__/__init_cache__/internal_manifest.py",
 ]
 exclude_also = [
     "if TYPE_CHECKING:",
@@ -200,7 +200,7 @@ norecursedirs = [
     ".venv",
     ".venv_new",
     "__pycache__",
-    "__init_cache__",
+    "__melder_cache__",
 ]
 markers = [
     "integration: integration tests that wire multiple real components together",
@@ -221,5 +221,6 @@ show_error_codes = true
 pretty = true
 exclude = [
     "^build_scripts/",
-    "__init_cache__",
+    # generated artifact; the loader/builder ARE type-checked
+    "__melder_cache__/__init_cache__/internal_manifest\\.py$",
 ]

@@ -36,7 +36,6 @@ from melder.aether.spellbook.spell import Spell
 from melder.utilities.helpers.init_helpers import InitHelpers
 from melder.utilities.helpers.general_helpers import SpellInputUtils
 from melder.utilities.synchronization.phase_scheduler import PhaseScheduler
-from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.nexus.nexus import Nexus
 
 if TYPE_CHECKING:
@@ -154,7 +153,6 @@ and logging.
         "conjure(...) exactly once to build the root Conduit. Also owns the transaction-backed "
         "SpellIndex verbs: notch_spell, add_spell_into_spellindex, remove_spell_from_spellindex."
     )
-    __melder_internal__: ClassVar[object] = _mrg.sentinel
     _aether: ClassVar[Aether] = Aether()
     __slots__ = Cleanable.__slots__ + [
         "__dict__",

@@ -1,7 +1,6 @@
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any, ClassVar, Dict, Optional
 
-from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 if TYPE_CHECKING:
     from melder.aether.spellbook.spell import Spell
@@ -53,7 +52,6 @@ class SpellAnalyzerStrategy(ABC):
         Phase 8 (occurrence analysis) of the conjure pipeline.
     """
 
-    __melder_internal__: ClassVar[object] = _mrg.sentinel
     __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (
         "access: internal. ABC contract for analyzer strategies: strategy_id + analyze(spell, "

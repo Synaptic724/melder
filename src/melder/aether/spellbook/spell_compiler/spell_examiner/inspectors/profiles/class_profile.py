@@ -4,7 +4,6 @@ from typing import TYPE_CHECKING, Any, Dict, List, Optional, ClassVar
 
 # Melder Imports
 from melder.utilities.general_base.cleanable import Cleanable
-from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 if TYPE_CHECKING:
     from melder.aether.spellbook.spell_compiler.spell_examiner.inspectors.profiles.method_profile import MethodProfile
 
@@ -21,7 +20,6 @@ class ClassProfile(Cleanable):
         - Provenance fields are best-effort and may be None.
         - Cleanup() is idempotent and clears all owned references.
     """
-    __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
         "name",
         "qualname",

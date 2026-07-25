@@ -57,7 +57,6 @@ from melder.aether.spellbook.spell_compiler.validation.strategies.binding_resolu
     BindingResolutionCycleStrategy,
 )
 from melder.utilities.general_base.cleanable import Cleanable
-from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 
 class SpellValidationSystem(Cleanable):
@@ -92,7 +91,6 @@ class SpellValidationSystem(Cleanable):
         produced error makes the spell broken and aborts conjure with
         `SpellbookValidationError` before any Conduit is built.
     """
-    __melder_internal__: ClassVar[object] = _mrg.sentinel
     __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (
         "access: internal. Phase-4 registry+runner: auto-registers the built-in "

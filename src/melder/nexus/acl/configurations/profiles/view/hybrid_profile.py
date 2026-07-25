@@ -1,7 +1,6 @@
 from melder.nexus.acl.configurations.profiles.view.frame_acl_view_profile import (
     FrameACLViewProfile,
 )
-from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 class HybridViewProfileStrategy:
     """
     Build the reusable `hybrid` view profile.
@@ -41,7 +40,6 @@ class HybridViewProfileStrategy:
         "read it to understand the runtime, do not drive it directly."
     )
 
-    __melder_internal__ = _mrg.sentinel
     _NAME = "hybrid"
 
     @property

@@ -19,7 +19,6 @@ from melder.aether.spellbook.spell_compiler.dag.dag_index import DagIndex, Socke
 from melder.aether.spellbook.spell_compiler.blueprints.root_resolution_blueprint import (
     RootResolutionBlueprint,
 )
-from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 if TYPE_CHECKING:
     from melder.aether.spellbook.spell_compiler.system.spell_system_adjacency_snapshot import (
         SpellSystemAdjacencySnapshot,
@@ -45,7 +44,6 @@ class SpellSystemRootBlueprintBuilder:
               - param_name and socket_kind on edges are left unset (None).
           Socket metadata and DagIndex are overlaid in later Phase-5 steps.
     """
-    __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__: list[str] = [
         "_reachable_by_id",
         "_requires_spellspace_request_by_id",

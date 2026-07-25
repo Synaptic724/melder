@@ -1,4 +1,4 @@
-﻿from typing import TYPE_CHECKING, Dict, List, Mapping, Optional, Set, Tuple
+from typing import TYPE_CHECKING, Dict, List, Mapping, Optional, Set, Tuple
 
 if TYPE_CHECKING:
     from melder.aether.spellbook.spell_compiler.blueprints.root_resolution_blueprint import (

@@ -1,6 +1,5 @@
 
 
-from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from enum import IntEnum
 from typing import TYPE_CHECKING, Any, Dict, ClassVar
 
@@ -48,7 +47,6 @@ class _Specificity(IntEnum):
         "access: internal. Precedence tiers for spell-override target specs. Melder kernel "
         "machinery: read it to understand the runtime, do not drive it directly."
     )
-    __melder_internal__ = _mrg.sentinel
     PATH = 3
     UNIQUE = 2
     BROADCAST = 1
@@ -108,7 +106,6 @@ class SpellOverrider(Cleanable):
         "socket-aware OverrideMap for a specific root blueprint. Melder kernel machinery: read it "
         "to understand the runtime, do not drive it directly."
     )
-    __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + ["_blueprint", "_engine"]
 
     def __init__(self, blueprint: RootResolutionBlueprint) -> None:

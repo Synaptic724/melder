@@ -4,7 +4,6 @@ from typing import ClassVar, Dict, List, Optional, Set, Union
 
 
 from melder.utilities.general_base.cleanable import Cleanable
-from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 class LoadGate(Cleanable):
     """
@@ -131,7 +130,6 @@ class LoadGate(Cleanable):
         part of the load and must pass, while genuinely foreign threads keep
         parking exactly as before.
     """
-    __melder_internal__: ClassVar[object] = _mrg.sentinel
     __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (
         "access: internal. Process-wide exclusive load authority. acquire(label) "

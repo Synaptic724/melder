@@ -23,7 +23,6 @@ from melder.aether.spellbook.spell_compiler.validation.spell_validation_issue im
     SpellValidationIssue,
 )
 from melder.utilities.general_base.cleanable import Cleanable
-from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 class SpellValidationContext(Cleanable):
     """
@@ -77,7 +76,6 @@ class SpellValidationContext(Cleanable):
         produced the requirements, symbolic graph, and resolution frame. It
         carries those artifacts to the strategies but performs no validation itself.
     """
-    __melder_internal__: ClassVar[object] = _mrg.sentinel
     __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (
         "access: internal. Phase-4 per-spell validation context handed to each strategy: the "

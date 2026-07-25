@@ -5,7 +5,6 @@ from threading import Condition, RLock
 from typing import Any, Dict, Iterable, List, Optional, Set, Tuple, TYPE_CHECKING, ClassVar
 
 from melder.utilities.general_base.cleanable import Cleanable
-from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 if TYPE_CHECKING:
     from melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_request.transaction_request import (
@@ -62,7 +61,6 @@ class ClaimMode(StrEnum):
         "access: internal. Claim modes for scope-key acquisition. Melder kernel machinery: read "
         "it to understand the runtime, do not drive it directly."
     )
-    __melder_internal__ = _mrg.sentinel
     EXCLUSIVE = "x"
     SHARED = "s"
     INTENT = "ix"
@@ -115,7 +113,6 @@ class ChangeControlEmbargoRecord:
         "access: internal. Immutable record describing one claimed scope key. Melder kernel "
         "machinery: read it to understand the runtime, do not drive it directly."
     )
-    __melder_internal__: ClassVar[object] = _mrg.sentinel
     scope_key: str
     reason_tag: str
     owner_request_id: str
@@ -168,7 +165,6 @@ class AcquisitionDecision:
         "access: internal. Immutable outcome of one all-or-nothing scope acquisition attempt. "
         "Melder kernel machinery: read it to understand the runtime, do not drive it directly."
     )
-    __melder_internal__: ClassVar[object] = _mrg.sentinel
     acquired: bool
     blocking: Tuple[Tuple[str, str, str], ...] = ()
 
@@ -232,7 +228,6 @@ class ChangeControlEmbargoManager(Cleanable):
         "access: internal. Moded scope-key lock table for transaction admission. Melder kernel "
         "machinery: read it to understand the runtime, do not drive it directly."
     )
-    __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
         "_lock",
         "_condition",

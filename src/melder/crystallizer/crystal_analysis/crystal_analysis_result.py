@@ -16,7 +16,6 @@ import threading
 from typing import Any, Dict, List, Mapping, Optional, Sequence, ClassVar
 
 from melder.utilities.general_base.cleanable import Cleanable
-from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 
 class CrystalAnalysisResult(Cleanable):
@@ -79,7 +78,6 @@ class CrystalAnalysisResult(Cleanable):
         "Melder kernel machinery: read it to understand the runtime, do not drive it directly."
     )
 
-    __melder_internal__: ClassVar[object] = _mrg.sentinel
 
     __slots__ = (
         "_lock",

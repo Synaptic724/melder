@@ -1,5 +1,4 @@
 from typing import TYPE_CHECKING, Any, Iterator, List, Optional, Tuple
-from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 from melder.aether.aether import Aether
 from melder.nexus.acl.frame_acl_compiled_access_surface import (
@@ -57,7 +56,6 @@ class StaticFrameViewer(FrameViewer):
         "directly."
     )
 
-    __melder_internal__ = _mrg.sentinel
     __slots__: tuple[()] = ()
     _aether = Aether()
 

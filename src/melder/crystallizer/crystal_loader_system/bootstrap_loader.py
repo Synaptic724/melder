@@ -58,7 +58,7 @@ class CrystallizerBootstrap(Cleanable):
         cleanup never tears down the resulting crystallizer world.
 
     Registration:
-        MELDER KERNEL - guarded (`__melder_internal__` sentinel). access=public: a deploy/pod
+        MELDER KERNEL - guarded (internal manifest). access=public: a deploy/pod
         constructs and drives it for restart orchestration; guarding only refuses it as a bind
         target (Melder never injects it) - it is still user-driven.
 
@@ -82,7 +82,6 @@ class CrystallizerBootstrap(Cleanable):
         "bring a fresh process back to a recorded world in one expression."
     )
 
-    __melder_internal__: ClassVar[object] = _mrg.sentinel
 
     __slots__ = Cleanable.__slots__ + [
         "_crystallizer_configuration",

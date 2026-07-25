@@ -1,5 +1,4 @@
 from typing import TYPE_CHECKING, Dict, Optional
-from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 if TYPE_CHECKING:
     from melder.nexus.rift.codegen_system.codegen_system import CodegenSystem
@@ -53,7 +52,6 @@ class CodegenControlSurface:
         "machinery: read it to understand the runtime, do not drive it directly."
     )
 
-    __melder_internal__ = _mrg.sentinel
     __slots__ = [
         "_codegen_system",
         "_default_frame_name",

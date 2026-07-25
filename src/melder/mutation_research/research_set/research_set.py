@@ -27,7 +27,6 @@ from melder.mutation_research.research_set.transition_entry import (
 )
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
-from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 
 class ResearchSet(Cleanable):
@@ -109,7 +108,6 @@ class ResearchSet(Cleanable):
         "register_spell/register_group, create_lane, attach/detach, join, archive, "
         "walk/history/heads, campaign_view, snapshot_network/restore_network."
     )
-    __melder_internal__: ClassVar[object] = _mrg.sentinel
 
     DEFAULT_LANE_NAME: ClassVar[str] = "default"
 

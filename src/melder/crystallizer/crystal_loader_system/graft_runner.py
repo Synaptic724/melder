@@ -23,7 +23,6 @@ from typing import Any, Dict, List, Optional, Tuple
 
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.crystallizer.persistence.record_version import RecordVersion
-from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 
 class GraftRunner(Cleanable):
@@ -85,7 +84,7 @@ class GraftRunner(Cleanable):
         posture); idempotent.
 
     Registration:
-        MELDER KERNEL - guarded (`__melder_internal__` sentinel). A single-use runner reached
+        MELDER KERNEL - guarded (internal manifest). A single-use runner reached
         through `Crystallizer.graft_index(...)`; not directly user-constructed or bound.
         access=internal.
 
@@ -108,7 +107,6 @@ class GraftRunner(Cleanable):
         "kernel machinery: read it to understand the runtime, do not drive it directly."
     )
 
-    __melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
         "_record",
         "_host_book",

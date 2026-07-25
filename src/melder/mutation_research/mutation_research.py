@@ -9,7 +9,6 @@ if TYPE_CHECKING:
     from melder.aether.aether import Aether
     from melder.crystallizer.crystallizer import Crystallizer
 
-from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.crystallizer.crystals.mutation_research_crystal import (
     MutationResearchCrystal,
 )
@@ -119,7 +118,6 @@ class MutationResearch(Cleanable):
 
     DEFAULT_RESEARCH_SET_NAME: ClassVar[str] = "default"
 
-    __melder_internal__: ClassVar[object] = _mrg.sentinel
     _instance: ClassVar[Optional["MutationResearch"]] = None
     _lock: ClassVar[threading.RLock] = threading.RLock()
     _initialized: ClassVar[bool] = False

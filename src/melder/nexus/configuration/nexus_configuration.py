@@ -1,7 +1,6 @@
 import threading
 from enum import Enum
 from typing import Any, Dict, List, Optional, Sequence, Tuple, Type, Union
-from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 from melder.nexus.configuration.nexus_frame_mode import (
     NexusFrameMode,
@@ -70,7 +69,6 @@ class NexusConfiguration(Cleanable):
         "frozen. Per-Rift settings belong on RiftConfiguration."
     )
 
-    __melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
         "_id",
         "_lock",

@@ -98,7 +98,6 @@ class DevopsFactRecord:
         "region. Melder kernel machinery: read it to understand the runtime, do not drive it "
         "directly."
     )
-    __melder_internal__: ClassVar[object] = _mrg.sentinel
     fact_family: str
     region: str
     last_reported_at: float
@@ -182,7 +181,6 @@ class DevopsInformationRegistry(Cleanable):
         "drive it directly."
     )
 
-    __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
         "_lock",
         "_aetheric_frame_name",

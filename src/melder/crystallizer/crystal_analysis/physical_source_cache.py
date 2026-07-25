@@ -31,7 +31,6 @@ import threading
 from collections import OrderedDict
 from pathlib import Path
 from typing import Dict, Optional, Tuple, ClassVar
-from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 
 class PhysicalSourceCache:
@@ -88,7 +87,6 @@ class PhysicalSourceCache:
         "Melder kernel machinery: read it to understand the runtime, do not drive it directly."
     )
 
-    __melder_internal__: ClassVar[object] = _mrg.sentinel
 
     _SCHEMA_VERSION = 1
     _MAX_ENTRIES = 4096

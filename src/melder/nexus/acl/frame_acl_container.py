@@ -1,6 +1,5 @@
 import threading
 from typing import Callable, Dict, List, Optional
-from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 from melder.nexus.acl.validator.compatibility.frame_acl_set_compatibility_validator import (
     FrameACLSetCompatibilityValidator,
@@ -87,7 +86,6 @@ class FrameACLContainer(Cleanable):
         "understand the runtime, do not drive it directly."
     )
 
-    __melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
         "_id",
         "_lock",

@@ -8,7 +8,6 @@ local descriptor or ACL state.
 import threading
 from contextlib import contextmanager
 from typing import TYPE_CHECKING, Any, Callable, Dict, Iterator, List, Optional, Tuple
-from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 from melder.nexus.rift.frame_viewer.view_action_hooks import (
     decorate_public_view_actions,
@@ -70,7 +69,6 @@ class ViewMultiFrame(Cleanable):
         "read descriptor records without touching any frame's runtime. Obtained from FrameViewer."
     )
 
-    __melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
         "_viewer",
     ]

@@ -13,7 +13,6 @@ from threading import RLock
 from types import TracebackType
 
 # Melder Imports
-from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_state_change_reason import SpellStateChangeReason
 from melder.aether.conduit.meld.creation_context.creation_context_factory import (
     CreationContextFactory,
@@ -194,7 +193,7 @@ class Spell(Cleanable):
           clears references to prevent reuse-after-clean.
 
     Registration:
-        MELDER KERNEL - guarded (`__melder_internal__` sentinel). Melder constructs
+        MELDER KERNEL - guarded (internal manifest). Melder constructs
         every `Spell` during `Bind`; a user never asks Melder to inject one, so
         `bind(Spell)` is the category error the guard refuses. `access=public` is
         deliberate and orthogonal to the guard: agents RECEIVE spells from `bind()`
@@ -234,7 +233,6 @@ class Spell(Cleanable):
         "access: public. One registered binding: identity, existence, permissions, spellframe, hooks. "
         "You receive spells from bind and from viewer surfaces; you do not construct them."
     )
-    __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
         "_active",
         "_activation_hooks",

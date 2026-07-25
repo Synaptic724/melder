@@ -8,7 +8,6 @@ from melder.utilities.general_base.cleanable import Cleanable
 from melder.aether.spellbook.spell_compiler.spell_requirements_finder.parameter_di_shape import (
     ParameterDIShape,
 )
-from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 class SpellSymbolicDependency(Cleanable):
     """
@@ -77,7 +76,6 @@ class SpellSymbolicDependency(Cleanable):
         Phase-1 requirements and Phase-3 DAG construction. It is SYMBOLIC - no
         Spellbook lookups, no concrete dependency spell ids, and no ordering.
     """
-    __melder_internal__: ClassVar[object] = _mrg.sentinel
     __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (
         "access: internal. Phase-2 symbolic socket for ONE constructor parameter: spell_id, "

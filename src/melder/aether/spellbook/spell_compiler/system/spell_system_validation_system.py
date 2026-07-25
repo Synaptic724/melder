@@ -1,4 +1,4 @@
-﻿from typing import (
+from typing import (
     TYPE_CHECKING,
     Dict,
     Iterable,
@@ -33,7 +33,6 @@ if TYPE_CHECKING:
 
 
 
-from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_state_change_reason import (
     SpellStateChangeReason,
 )
@@ -68,7 +67,6 @@ class SpellSystemValidationSystem(Cleanable):
         Callers are responsible for external synchronization when sharing inputs
         across threads. This class does not introduce additional locking.
     """
-    __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
         "_strategies",
     ]

@@ -4,7 +4,6 @@ from typing import Any, Dict, Optional, Tuple, ClassVar
 
 
 # Melder imports
-from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 
 class ChangeTransactionType(StrEnum):
@@ -59,7 +58,6 @@ class ChangeTransactionType(StrEnum):
         "access: internal. Change-control transaction types. Melder kernel machinery: read it to "
         "understand the runtime, do not drive it directly."
     )
-    __melder_internal__ = _mrg.sentinel
     BIND = "bind"
     CONJURE = "conjure"
     LINK = "link"
@@ -158,7 +156,6 @@ class ChangeControlTransactionRequest:
         "access: internal. Immutable transaction request payload for admission and tracking. "
         "Melder kernel machinery: read it to understand the runtime, do not drive it directly."
     )
-    __melder_internal__: ClassVar[object] = _mrg.sentinel
     request_id: str
     request_type: ChangeTransactionType
     created_at: float
@@ -231,7 +228,6 @@ class ChangeControlAdmissionResult:
         "access: internal. Admission decision for a change-control transaction request. Melder "
         "kernel machinery: read it to understand the runtime, do not drive it directly."
     )
-    __melder_internal__: ClassVar[object] = _mrg.sentinel
     admitted: bool
     reasons: Tuple[str, ...] = ()
     conflicts: Tuple[str, ...] = ()

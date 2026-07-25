@@ -4,7 +4,6 @@ from typing import ClassVar
 
 
 # Melder Imports
-from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.utilities.custom_exceptions.operation_cancelled_error import OperationCancelledError
 from melder.utilities.general_base.cleanable import Cleanable
 
@@ -101,7 +100,6 @@ class CancellationEvent(Cleanable):
     )
 
     __slots__ = Cleanable.__slots__ + ["_flag",]
-    __melder_internal__: ClassVar[object] = _mrg.sentinel
 
     def __init__(self, flag: threading.Event) -> None:
         """
@@ -275,7 +273,6 @@ class CancellationEventSignal(Cleanable):
     )
 
     __slots__ = Cleanable.__slots__ + ["_lock", "_flag", "_event"]
-    __melder_internal__: ClassVar[object] = _mrg.sentinel
 
     def __init__(self) -> None:
         """

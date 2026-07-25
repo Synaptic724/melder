@@ -6,7 +6,6 @@ import json
 from typing import ClassVar
 from typing import Optional
 
-from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 
 class StaticSystemDocument:
@@ -75,7 +74,6 @@ class StaticSystemDocument:
         resolution, or cleanup.
     """
 
-    __melder_internal__: ClassVar[object] = _mrg.sentinel
     __ast_helper_access__: str = "public"
     __agent_purpose__: str = (
         "access: public. Immutable packaged hardcopy of a system document. Read "

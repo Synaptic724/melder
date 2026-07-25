@@ -3,7 +3,6 @@ from datetime import datetime, timezone
 from typing import Dict, List, Optional, Tuple, ClassVar
 
 from melder.utilities.general_base.cleanable import Cleanable
-from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 
 class ResearchNode(Cleanable):
@@ -64,7 +63,6 @@ class ResearchNode(Cleanable):
         "access: internal. One immutable version record inside a research lane. Melder kernel "
         "machinery: read it to understand the runtime, do not drive it directly."
     )
-    __melder_internal__: ClassVar[object] = _mrg.sentinel
 
     __slots__ = Cleanable.__slots__ + [
         "_spell_id",

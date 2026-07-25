@@ -7,7 +7,6 @@ from melder.utilities.general_base.cleanable import Cleanable
 from melder.aether.spellbook.spell_compiler.validation.spell_validation_issue import (
     SpellValidationIssue,
 )
-from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 class SpellValidationResult(Cleanable):
     """
@@ -51,7 +50,6 @@ class SpellValidationResult(Cleanable):
         surfaces as `Spell.is_broken` and drives `SpellbookValidationError`;
         warnings ride along without breaking the build.
     """
-    __melder_internal__: ClassVar[object] = _mrg.sentinel
     __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (
         "access: internal. Aggregate Phase-4 result for one spell version: spell_id, spell_name, "

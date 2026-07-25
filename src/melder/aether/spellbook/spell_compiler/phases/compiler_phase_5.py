@@ -1,4 +1,4 @@
-﻿from typing import TYPE_CHECKING, Collection, Dict, List, Mapping, Optional, Set
+from typing import TYPE_CHECKING, Collection, Dict, List, Mapping, Optional, Set
 from melder.aether.spellbook.spell_compiler.phases.shared_compiler_executions import (
     SharedCompilerExecutions,
 )

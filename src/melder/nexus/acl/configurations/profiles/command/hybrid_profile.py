@@ -1,7 +1,6 @@
 from melder.nexus.acl.configurations.profiles.command.frame_acl_command_profile import (
     FrameACLCommandProfile,
 )
-from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 class HybridCommandProfileStrategy:
     """
     Build the reusable `hybrid` command profile.
@@ -40,7 +39,6 @@ class HybridCommandProfileStrategy:
         "read it to understand the runtime, do not drive it directly."
     )
 
-    __melder_internal__ = _mrg.sentinel
     _NAME = "hybrid"
 
     @property

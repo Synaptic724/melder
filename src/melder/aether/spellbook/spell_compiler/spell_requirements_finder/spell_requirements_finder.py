@@ -5,7 +5,6 @@ import threading
 import typing
 import types
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Union, get_args, get_origin, ClassVar
-from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 
 # Melder imports
@@ -86,7 +85,6 @@ class SpellRequirementsFinder(Cleanable):
         inspects signatures and annotations only - it never queries the Spellbook
         or the live object world.
     """
-    __melder_internal__: ClassVar[object] = _mrg.sentinel
     __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (
         "access: internal. Phase-1 driver: inspects one Spell's callable, resolves annotations, "

@@ -5,7 +5,6 @@ from typing import TYPE_CHECKING, Optional, Dict, Tuple, ClassVar
 # Melder Imports
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.ulid_factory import new_ulid
-from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 if TYPE_CHECKING:
     from melder.aether.spellbook.spell import Spell
     from melder.aether.spellbook.spellbook import Spellbook
@@ -72,7 +71,6 @@ class SpellIndex(Cleanable):
         "spell. Hash/equality use only the ULID, so a notch can repoint the active member without "
         "breaking any map. Version history belongs to MutationResearch."
     )
-    __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = (
         "_id",          # The immutable ULID. Used for hashing and equality.
         "_selected_spell_id",  # The active spell's id (a SHA256).

@@ -5,7 +5,6 @@ from pathlib import Path
 from typing import Dict, List, ClassVar
 
 from melder.utilities.general_base.cleanable import Cleanable
-from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 
 class CrystallizerCache(Cleanable):
@@ -40,7 +39,7 @@ class CrystallizerCache(Cleanable):
         and formation files deliberately survive for later reload.
 
     Registration:
-        MELDER KERNEL - guarded (`__melder_internal__` sentinel). Owned by
+        MELDER KERNEL - guarded (internal manifest). Owned by
         `AssetManagementSystem`, not the record; Melder constructs it and users never hold or
         bind it. access=internal.
 
@@ -63,7 +62,6 @@ class CrystallizerCache(Cleanable):
         "Melder kernel machinery: read it to understand the runtime, do not drive it directly."
     )
 
-    __melder_internal__: ClassVar[object] = _mrg.sentinel
 
     __slots__ = Cleanable.__slots__ + [
         "_lock",

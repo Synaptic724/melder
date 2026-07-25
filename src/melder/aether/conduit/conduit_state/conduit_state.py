@@ -1,6 +1,5 @@
 from enum import Enum, auto
 from melder.utilities.helpers.general_helpers import EnumHelpers
-from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 class ConduitState(Enum):
     """
@@ -54,7 +53,6 @@ class ConduitState(Enum):
         "access: internal. Lifecycle classification for a conduit instance. Melder kernel "
         "machinery: read it to understand the runtime, do not drive it directly."
     )
-    __melder_internal__ = _mrg.sentinel
     normal = auto()
     lesser = auto()
     pooled_lesser = auto()

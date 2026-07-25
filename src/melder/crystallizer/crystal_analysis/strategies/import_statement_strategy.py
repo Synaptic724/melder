@@ -14,7 +14,6 @@ from melder.crystallizer.crystal_analysis.strategies.base_strategy import (
     CrystalFactStrategy,
     FactContext,
 )
-from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 
 class ImportStatementStrategy(CrystalFactStrategy):
@@ -79,7 +78,6 @@ class ImportStatementStrategy(CrystalFactStrategy):
         "kernel machinery: read it to understand the runtime, do not drive it directly."
     )
 
-    __melder_internal__ = _mrg.sentinel
     __slots__ = ()
 
     @property

@@ -3,7 +3,6 @@ from typing import Any, Dict, List, Optional, ClassVar
 
 
 # Melder Imports
-from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.utilities.general_base.cleanable import Cleanable
 
 
@@ -20,7 +19,6 @@ class MethodProfile(Cleanable):
         - Provenance fields are best-effort and may be None.
         - Cleanup() is idempotent and clears all owned references.
     """
-    __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
         "name",
         "qualname",

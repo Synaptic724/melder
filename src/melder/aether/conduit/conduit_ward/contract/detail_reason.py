@@ -1,5 +1,4 @@
 from enum import Enum, auto
-from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 class DetailReason(Enum):
     """
@@ -43,7 +42,6 @@ class DetailReason(Enum):
         "access: internal. Why one `Detail` entry exists inside a contract. Melder kernel "
         "machinery: read it to understand the runtime, do not drive it directly."
     )
-    __melder_internal__ = _mrg.sentinel
     root = auto()
     dependency = auto()
     manual = auto()

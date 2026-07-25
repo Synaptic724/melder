@@ -63,7 +63,6 @@ class PersistenceAnalysisStrategy(ABC):
         "machinery: read it to understand the runtime, do not drive it directly."
     )
 
-    __melder_internal__: ClassVar[object] = _mrg.sentinel
 
     @property
     @abstractmethod

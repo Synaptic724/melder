@@ -2,7 +2,6 @@ from typing import Any, Optional, Type, TypeVar, TYPE_CHECKING, ClassVar
 
 
 
-from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.nexus.frame_descriptor.spell_descriptor_payload import (
     SpellDescriptorPayload,
 )
@@ -46,7 +45,6 @@ class SpellGeneralProfile(Cleanable):
         spell-owned `.profile` payload.
     """
 
-    __melder_internal__: ClassVar[object] = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
         "profile_name",
         "profile_version",

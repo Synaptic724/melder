@@ -1,5 +1,4 @@
 from enum import Enum
-from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 
 
@@ -48,7 +47,6 @@ class NexusFrameMode(Enum):
         "use the Rift-scoped path."
     )
 
-    __melder_internal__ = _mrg.sentinel
     single = "single"
     indexed = "indexed"
     one_per_workspace = "one_per_workspace"

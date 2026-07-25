@@ -1,6 +1,5 @@
-﻿import threading
+import threading
 from typing import Callable, Dict, Optional
-from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 from melder.nexus.rift.rift_space.memory_system.rift_memory import RiftMemory
 from melder.utilities.general_base.cleanable import Cleanable
@@ -51,7 +50,6 @@ class RiftMemorySystem(Cleanable):
         under what posture it happened to be worth keeping.
     """
 
-    __melder_internal__ = _mrg.sentinel
     __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (
         "access: internal. The room's memory-sequencing hub: it owns the step/epoch counters "

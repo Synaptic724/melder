@@ -1,7 +1,6 @@
 from typing import Dict, List, ClassVar
 
 from melder.crystallizer.persistence.record_version import RecordVersion
-from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 
 class MeshInterfaceContract:
@@ -48,7 +47,7 @@ class MeshInterfaceContract:
         None. Static authority classes carry no state to clean.
 
     Registration:
-        MELDER KERNEL - guarded (`__melder_internal__` sentinel). A static authority - never
+        MELDER KERNEL - guarded (internal manifest). A static authority - never
         instantiated, never mutated, never a bind target. access=internal (agents read it
         through `Crystallizer.describe_external_interface()`).
 
@@ -72,7 +71,6 @@ class MeshInterfaceContract:
         "Melder kernel machinery: read it to understand the runtime, do not drive it directly."
     )
 
-    __melder_internal__: ClassVar[object] = _mrg.sentinel
 
     # The four first-class unit kinds the asset layer ships today.
     UNIT_KIND_CHECKPOINT: str = "checkpoint"

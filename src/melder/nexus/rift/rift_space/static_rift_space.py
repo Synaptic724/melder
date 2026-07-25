@@ -1,5 +1,4 @@
 from typing import TYPE_CHECKING, Dict, Optional
-from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 if TYPE_CHECKING:
     from melder.nexus.rift.command_system.command_system import (
@@ -59,7 +58,6 @@ class StaticRiftSpace(RiftSpace):
         to release.
     """
 
-    __melder_internal__ = _mrg.sentinel
     __ast_helper_access__: str = "public"
     __agent_purpose__: str = (
         "access: public. The static (lower-risk) room type - live-only, read-shaped, no "

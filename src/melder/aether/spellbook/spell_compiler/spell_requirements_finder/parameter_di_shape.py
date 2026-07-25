@@ -1,5 +1,4 @@
 from enum import Enum, auto
-from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 class ParameterDIShape(Enum):
     """
@@ -56,7 +55,6 @@ class ParameterDIShape(Enum):
         and validation (Phase 4). Nothing here touches the Spellbook or the live
         object world.
     """
-    __melder_internal__ = _mrg.sentinel
     __ast_helper_access__ = "internal"
     __agent_purpose__ = (
         "access: internal. Phase-1 enum classifying how one parameter wants to be satisfied: "

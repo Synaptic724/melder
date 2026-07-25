@@ -1,7 +1,6 @@
 from contextlib import contextmanager
 import threading
 from typing import Any, Callable, Dict, Optional, TYPE_CHECKING, Tuple
-from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 if TYPE_CHECKING:
     from melder.nexus.rift.rift import Rift
@@ -122,7 +121,6 @@ class RiftSpace(Cleanable):
         it looks at, while a capability room actively working on objects should.
     """
 
-    __melder_internal__ = _mrg.sentinel
     __ast_helper_access__: str = "public"
     __agent_purpose__: str = (
         "access: public. The base room/workspace a Rift hosts - it owns the viewer, "

@@ -5,7 +5,6 @@ from contextlib import contextmanager
 
 
 # Command Ops imports
-from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.utilities.helpers.ulid_factory import new_ulid
 from melder.utilities.general_base.sync import Sync
 
@@ -99,7 +98,6 @@ class SyncWeakRef(Sync, Generic[T]):
             "_auto_cleanup",
             "_phantom_fired",
     ]
-    __melder_internal__: ClassVar[object] = _mrg.sentinel
     __ast_helper_access__: str = "internal"
     __agent_purpose__: str = (
         "access: internal. Thread-safe non-owning weak-ref cell with CAS/swap and phantom "

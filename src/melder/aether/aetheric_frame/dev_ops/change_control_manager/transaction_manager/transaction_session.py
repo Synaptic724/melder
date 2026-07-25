@@ -89,7 +89,6 @@ class TransactionSession(Cleanable):
         "directly."
     )
 
-    __melder_internal__: ClassVar[object] = _mrg.sentinel
     STATUS_OPEN: ClassVar[str] = "open"
     STATUS_ABORT_ONLY: ClassVar[str] = "abort_only"
     STATUS_COMMITTING: ClassVar[str] = "committing"

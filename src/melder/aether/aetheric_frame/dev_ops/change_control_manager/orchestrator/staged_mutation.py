@@ -3,7 +3,6 @@ from dataclasses import dataclass, field
 from typing import Any, Dict, Optional, Tuple, TYPE_CHECKING, ClassVar
 
 # Melder imports
-from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 if TYPE_CHECKING:
     from melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_request.transaction_request import (
@@ -85,7 +84,6 @@ class ChangeControlStagedMutation:
         "access: internal. Immutable record describing a staged change-control mutation. Melder "
         "kernel machinery: read it to understand the runtime, do not drive it directly."
     )
-    __melder_internal__: ClassVar[object] = _mrg.sentinel
     request_id: str
     request_type: ChangeTransactionType
     staged_at: float

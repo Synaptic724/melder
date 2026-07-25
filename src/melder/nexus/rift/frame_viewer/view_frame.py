@@ -9,7 +9,6 @@ summaries.
 from contextlib import contextmanager
 import threading
 from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Tuple
-from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 from melder.nexus.rift.frame_link.frame_link import FrameLink
 from melder.nexus.rift.frame_viewer.view_action_hooks import (
@@ -66,7 +65,6 @@ class ViewFrame(Cleanable):
         replaced.
     """
 
-    __melder_internal__ = _mrg.sentinel
     __ast_helper_access__: str = "public"
     __agent_purpose__: str = (
         "access: public. Frame-local helper surface for visible targets, "
