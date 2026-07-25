@@ -28,7 +28,7 @@ class SpellAnalyzerStrategyBuilder(Cleanable):
           deterministic ordered tuple of strategies for one analysis chain.
 
     Registration:
-        MELDER KERNEL - currently UNGUARDED. A compiler registry/builder held by
+        MELDER KERNEL. A compiler registry/builder held by
         `SpellAnalyzer`; not a bind target. (Left untagged as-is; guard classification
         is the owner's call.)
 

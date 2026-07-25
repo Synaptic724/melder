@@ -83,8 +83,7 @@ class SpellOccurrenceGraphAnalyzerStrategy(SpellAnalyzerStrategy):
           for one spell during this analysis pass.
 
     Registration:
-        MELDER KERNEL - guarded via the inherited `SpellAnalyzerStrategy` sentinel
-        (no redundant sentinel). A built-in analyzer strategy; registered, never bound.
+        MELDER KERNEL. A built-in analyzer strategy; registered, never bound.
 
     Subsystem Context:
         The occurrence lane's structural foundation in `spell_analyzer/strategies`:

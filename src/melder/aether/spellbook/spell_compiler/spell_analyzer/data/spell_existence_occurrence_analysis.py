@@ -10,7 +10,7 @@ class SpellExistenceOccurrence:
     One visible spell-id to existence row captured during the phase-8 spell walk.
 
     Registration:
-        MELDER KERNEL - value dataclass, unguarded. A frozen value row with no live
+        MELDER KERNEL - value dataclass. A frozen value row with no live
         references; not a bind target.
 
     Subsystem Context:
@@ -43,7 +43,7 @@ class SpellExistenceOccurrenceAnalysis:
         counts in one immutable payload with no live spell references.
 
     Registration:
-        MELDER KERNEL - value dataclass, unguarded. Immutable aggregate payload with
+        MELDER KERNEL - value dataclass. Immutable aggregate payload with
         no live spell references; not a bind target.
 
     Subsystem Context:

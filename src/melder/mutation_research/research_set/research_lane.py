@@ -51,7 +51,7 @@ class LaneState(enum.Enum):
     Lifecycle states for one research lane.
 
     Registration:
-        VALUE VOCABULARY - deliberately unguarded. An enum is a value a caller
+        VALUE VOCABULARY. An enum is a value a caller
         passes and compares, never an object Melder injects, so there is nothing
         to refuse at bind time.
 
@@ -97,7 +97,7 @@ class LaneType(enum.Enum):
     Policy vocabulary for one research lane (salvaged May classification).
 
     Registration:
-        VALUE VOCABULARY - deliberately unguarded. Users pass this in directly
+        VALUE VOCABULARY. Users pass this in directly
         (`research_create_lane(lane_type=...)`), so it is a value, not an
         injectable object.
 

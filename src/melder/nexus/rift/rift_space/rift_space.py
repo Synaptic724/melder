@@ -89,13 +89,10 @@ class RiftSpace(Cleanable):
         system, and event system, and tears them down as its children.
 
     Registration:
-        MELDER KERNEL - guarded. NOTE for MRO auditors: this is a guarded BASE
-        with three subclasses, and that is SAFE. `StaticRiftSpace`,
-        `CapabilityRiftSpace`, and `CodegenRiftSpace` are all melder-internal
-        and constructed only inside `Rift` (rift.py:917-933) from `space_type`.
-        There is no injection seam - no room class kwarg, no factory hook - so
-        the inherited sentinel can never reach a user-written class. Do not
-        remove the sentinel to "fix" the MRO law.
+        MELDER KERNEL. `StaticRiftSpace`, `CapabilityRiftSpace`, and
+        `CodegenRiftSpace` are all melder-internal and constructed only inside `Rift`
+        (rift.py:917-933) from `space_type`; there is no injection seam - no room
+        class kwarg, no factory hook.
 
     Subsystem Context:
         The room a user works in, hosted by `Rift`. It is an ASSET HOST rather

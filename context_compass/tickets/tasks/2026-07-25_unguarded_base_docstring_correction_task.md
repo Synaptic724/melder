@@ -223,6 +223,51 @@ docstrings instruct maintainers to preserve an exclusion that no longer exists.
   REREAD: REQUIRED
   SCORE_0_TO_10: 10
 
+- DATETIME: 2026-07-25T20:05:00Z
+  TYPE: ASSUMPTION_CHALLENGE
+  CLAIM: Owner asked me to REMOVE the `Registration:` sections as unnecessary, with the
+    caveat to read them first. I read all 412 across `src/melder` (280 distinct bodies),
+    and the reading contradicts the removal: only 56 are thin enough to be pure noise.
+    298 carry genuine non-default guidance that a reader cannot get elsewhere - which
+    door produces the object (`Obtained through Aether.create_configuration()`), whether
+    a user may construct or pass it (`USER-INSTANTIATED but NOT user-bindable`, with
+    `SpellContract(spellframe=IAuthService)` as the worked example), value-vs-object
+    distinctions (`guarded, but USER-FACING as a value`), and explicit MRO-audit
+    reasoning on guarded bases. Removing those would delete real API guidance, exactly
+    the risk the owner flagged.
+  EVIDENCE:
+  - src/melder/aether/conduit/meld/contracts/spell_contract.py
+  - src/melder/aether/conduit/conduit_ward/permissions/permissions.py
+  - src/melder/utilities/general_base/cleanable.py
+  IMPACT: The instruction as literally stated would destroy 298 useful sections to
+    remove 56 useless ones. Reporting instead of executing.
+  NEXT: Owner decision on the three-way split below.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+- DATETIME: 2026-07-25T20:05:00Z
+  TYPE: FACT
+  CLAIM: The reading surfaced a REAL defect class the removal request would have hidden.
+    58 sections are factually WRONG, not merely verbose. 42 cite the RETIRED mechanism -
+    "guarded via the inherited `SpellValidationStrategy` sentinel", "inherit this
+    sentinel via the MRO", "carries the registration guard sentinel", "(ClassVar
+    sentinel)" - none of which exists any more. A further 16 assert the class is
+    UNGUARDED ("currently UNGUARDED value dataclass", "not guarded and not reachable",
+    "VALUE VOCABULARY - deliberately unguarded"), and every one I checked against the
+    manifest is PRESENT in it: CodegenPlanDiscovery, CodegenPlanDiscoveryStrategy,
+    CodegenPlanDiscoveryStrategyBuilder, CodegenPlanDiscoverySystem,
+    SpellExistenceOccurrenceAnalysis, SpellOccurrenceGraphAnalysis,
+    SpellAnalyzerStrategyBuilder, LaneType - 8 of 8 wrong.
+  EVIDENCE:
+  - src/melder/_build_assets/_init_manifest/internal_manifest.py
+  - src/melder/aether/spellbook/spell_compiler/validation/strategies/binding_resolution_cycle_strategy.py:43-43
+  - src/melder/aether/spellbook/spell_compiler/codegen_planner/codegen_plan_discovery_system/codegen_plan_discovery_strategy.py:34-34
+  IMPACT: 42 sections teach a mechanism that no longer exists and 16 state the opposite
+    of shipped behaviour. Wrong outranks verbose: these matter more than the 56 thin
+    ones, and a blanket removal would have deleted the evidence of them.
+  NEXT: Owner ruling - recommend fixing the 58 wrong before touching the 56 thin.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
 ## Context / Handoff Summary
 Five base-class docstrings still teach the retired sentinel and instruct maintainers not
 to guard classes the manifest already guards. Correction is prose-only with zero

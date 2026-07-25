@@ -97,13 +97,9 @@ class Meld(Cleanable, ABC):
         per-spell lock before re-running structural phases.
 
     Registration:
-        MELDER KERNEL - guarded. NOTE for anyone auditing the MRO law: this is
-        a guarded BASE class, which is normally the dangerous pattern. It is
-        safe here and must stay guarded, because both subclasses (`ConduitMeld`,
-        `SpellSpaceMeld`) are melder-internal and are constructed only inside
-        `Conduit.__init__`. There is no injection seam - no `meld=` kwarg, no
-        factory hook - so the inherited sentinel can never reach a class a USER
-        wrote. Do not "fix" this by removing the sentinel.
+        MELDER KERNEL. Both subclasses (`ConduitMeld`, `SpellSpaceMeld`) are
+        melder-internal and constructed only inside `Conduit.__init__`; there is no
+        injection seam - no `meld=` kwarg, no factory hook.
 
     Subsystem Context:
         The abstract core beneath two concrete front doors. `ConduitMeld` is

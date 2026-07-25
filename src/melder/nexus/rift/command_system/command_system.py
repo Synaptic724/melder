@@ -48,11 +48,9 @@ class CommandSystem(Cleanable):
         Rift.
 
     Registration:
-        MELDER KERNEL - guarded. NOTE for MRO auditors: a guarded BASE with
-        three subclasses, and safe for the same reason as `RiftSpace` - the
-        three postures are melder-internal and constructed by their owning room
-        (for example `CapabilityRiftSpace` builds `CapabilityCommandSystem`),
-        with no user injection seam anywhere.
+        MELDER KERNEL. The three postures are melder-internal and constructed by their
+        owning room (for example `CapabilityRiftSpace` builds
+        `CapabilityCommandSystem`), with no user injection seam.
 
     Subsystem Context:
         The MEDIATED command layer above the viewer/workstation split.

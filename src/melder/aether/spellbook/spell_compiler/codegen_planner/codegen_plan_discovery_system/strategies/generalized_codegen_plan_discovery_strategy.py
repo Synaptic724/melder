@@ -24,7 +24,7 @@ class GeneralizedCodegenPlanDiscoveryStrategy(CodegenPlanDiscoveryStrategy):
           11 is allowed to pick from.
 
     Registration:
-        MELDER KERNEL - currently UNGUARDED (inherits the unguarded base). A built-in
+        MELDER KERNEL. A built-in
         discovery strategy; not bound as a spell.
 
     Subsystem Context:

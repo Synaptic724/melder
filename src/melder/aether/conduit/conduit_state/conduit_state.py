@@ -24,8 +24,8 @@ class ConduitState(Enum):
         is a pure static normalizer holding no state.
 
     Registration:
-        MELDER KERNEL - guarded, but readable by value. Users observe conduit
-        state; the sentinel only prevents binding the enum CLASS as a spell.
+        MELDER KERNEL, readable by value. Users observe conduit state; only binding
+        the enum CLASS itself is refused.
 
     Subsystem Context:
         The lifecycle vocabulary for `Conduit`, sitting alongside the ward

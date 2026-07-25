@@ -23,7 +23,7 @@ class SpellOccurrenceGraphAnalysis(Cleanable):
           final plan decisions.
 
     Registration:
-        MELDER KERNEL - currently UNGUARDED. A compiler analysis artifact held on
+        MELDER KERNEL. A compiler analysis artifact held on
         `SpellCompilerArtifact`; not a bind target. (Left untagged as-is; guard
         classification is the owner's call.)
 

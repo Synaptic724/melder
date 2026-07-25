@@ -21,7 +21,7 @@ class SoloCodegenPlanDiscoveryStrategy(CodegenPlanDiscoveryStrategy):
         solo planning family.
 
     Registration:
-        MELDER KERNEL - currently UNGUARDED (inherits the unguarded base). A built-in
+        MELDER KERNEL. A built-in
         discovery strategy; not bound as a spell.
 
     Subsystem Context:

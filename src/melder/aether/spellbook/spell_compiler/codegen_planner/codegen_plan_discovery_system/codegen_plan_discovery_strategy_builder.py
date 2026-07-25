@@ -30,7 +30,7 @@ class CodegenPlanDiscoveryStrategyBuilder(Cleanable):
         - Does not inspect models or emit discovery results itself.
 
     Registration:
-        MELDER KERNEL - currently UNGUARDED. A compiler registry; not a bind target.
+        MELDER KERNEL. A compiler registry; not a bind target.
 
     Subsystem Context:
         The registry holder of the `codegen_plan_discovery_system`, owned by

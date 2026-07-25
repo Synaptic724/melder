@@ -51,10 +51,9 @@ class TransactionStrategy(ABC):
         guard. Concurrency lives in the mediator and the scope claims it holds.
 
     Registration:
-        MELDER KERNEL - guarded. NOTE for MRO auditors: this is a guarded base
-        with many subclasses, which is safe here because every registered
-        strategy family ships with melder and the registry is closed - there is
-        no seam through which a user supplies their own strategy class.
+        MELDER KERNEL. Every registered strategy family ships with melder and the
+        registry is closed; there is no seam through which a user supplies their own
+        strategy class.
 
     Subsystem Context:
         The dispatch contract for the transaction family

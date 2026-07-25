@@ -17,7 +17,7 @@ class TransitionAct(enum.Enum):
         Returning to an old version is a NEW registration, not a rewind.
 
     Registration:
-        VALUE VOCABULARY - deliberately unguarded. An enum is compared and
+        VALUE VOCABULARY. An enum is compared and
         passed, never injected.
 
     Subsystem Context:

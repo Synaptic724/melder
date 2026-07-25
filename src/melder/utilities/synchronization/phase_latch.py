@@ -92,9 +92,8 @@ class PhaseLatch:
         unit and a phase would appear to complete after its first report.
 
     Registration:
-        MELDER KERNEL - guarded. The scheduler owns phase barriers; a user has
-        no reason to register one as a spell. Leaf class with no subclasses, so
-        the sentinel cannot propagate through the MRO.
+        MELDER KERNEL - guarded. The scheduler owns phase barriers; a user has no
+        reason to register one as a spell.
 
     Subsystem Context:
         Part of `utilities/synchronization/`, and specifically the barrier half

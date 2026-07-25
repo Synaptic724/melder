@@ -30,9 +30,8 @@ class Permissions(Enum):
       `Policies.whitelist_all` explicitly allows exposure.
 
     Registration:
-        MELDER KERNEL - guarded, but USER-FACING as a value. A user passes
-        `Permissions.create` into `Spellbook.bind(...)` by value; the sentinel
-        only prevents binding the enum CLASS itself as a spell.
+        MELDER KERNEL, USER-FACING as a value. A user passes `Permissions.create` into
+        `Spellbook.bind(...)` by value; only binding the enum CLASS itself is refused.
 
     Subsystem Context:
         The PER-LINEAGE half of the ward vocabulary, paired with `Policies`

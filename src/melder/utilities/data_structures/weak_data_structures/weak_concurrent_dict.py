@@ -147,7 +147,7 @@ class _WeakDictItemsView(Collection[Tuple[_K, _V]]):
     current semantics.
 
     Registration:
-        INTERNAL VIEW - not guarded and not reachable as a bind target.
+        INTERNAL VIEW.
         Constructed only by `WeakConcurrentDict.items()`.
 
     Subsystem Context:
@@ -225,7 +225,7 @@ class _WeakDictValuesView(Collection[_V]):
     nodes through the parent container's liveness rules.
 
     Registration:
-        INTERNAL VIEW - not guarded and not reachable as a bind target.
+        INTERNAL VIEW.
         Constructed only by `WeakConcurrentDict.values()`.
 
     Subsystem Context:

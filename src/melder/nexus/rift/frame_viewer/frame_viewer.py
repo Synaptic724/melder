@@ -80,10 +80,8 @@ class FrameViewer(Cleanable):
         borrowed runtime inputs.
 
     Registration:
-        MELDER KERNEL - guarded. NOTE for MRO auditors: a guarded BASE with one
-        subclass (`StaticFrameViewer`), which is melder-internal and created by
-        static rooms during room init. No injection seam exists, so the
-        inherited sentinel cannot reach user code.
+        MELDER KERNEL. The one subclass, `StaticFrameViewer`, is melder-internal and
+        created by static rooms during room init; no injection seam exists.
 
     Subsystem Context:
         The READ surface of a room, opposite `CommandSystem` (the mediated

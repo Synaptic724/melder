@@ -18,7 +18,7 @@ class InheritedAgentPurposeDescription(TypedDict):
     Typed inherited-purpose payload for one parent class in the MRO.
 
     Registration:
-        TYPED PAYLOAD - unguarded. A `TypedDict` is a shape, not a runtime
+        TYPED PAYLOAD. A `TypedDict` is a shape, not a runtime
         object; there is nothing to bind and nothing to tag.
 
     Subsystem Context:
@@ -43,7 +43,7 @@ class ClassMemberDescription(TypedDict):
     Typed method/property payload emitted from one AST-described class member.
 
     Registration:
-        TYPED PAYLOAD - unguarded. A shape, not a runtime object.
+        TYPED PAYLOAD. A shape, not a runtime object.
 
     Subsystem Context:
         One of three payload types emitted by `ClassSurfaceAstDescriber`. This
@@ -73,7 +73,7 @@ class ClassSurfaceDescription(TypedDict):
     Typed top-level AST class-surface payload returned by the describer.
 
     Registration:
-        TYPED PAYLOAD - unguarded. A shape, not a runtime object.
+        TYPED PAYLOAD. A shape, not a runtime object.
 
     Subsystem Context:
         The outermost of the three payload types emitted by
@@ -124,9 +124,8 @@ class ClassSurfaceAstDescriber:
         agent can ask what an object offers before deciding to pay for it.
 
     Registration:
-        MELDER KERNEL, but unguarded in practice as a static namespace with no
-        instances - there is nothing to bind. Introspection tooling is called
-        directly.
+        MELDER KERNEL - a static namespace with no instances; there is nothing to
+        bind. Introspection tooling is called directly.
 
     Subsystem Context:
         Sits in `utilities/helpers/` beside the other static namespaces, but

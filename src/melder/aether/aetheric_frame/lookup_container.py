@@ -42,8 +42,8 @@ class LookupContainer:
           after cleanup the container exposes no live surface.
 
     Registration:
-        MELDER KERNEL - currently UNGUARDED. A frame-owned registry (no bind
-        sentinel), constructed by the AethericFrame; never a bind target.
+        MELDER KERNEL. A frame-owned registry, constructed by the AethericFrame; never
+        a bind target.
 
     Subsystem Context:
         The frame-wide binding-signature uniqueness surface. One per

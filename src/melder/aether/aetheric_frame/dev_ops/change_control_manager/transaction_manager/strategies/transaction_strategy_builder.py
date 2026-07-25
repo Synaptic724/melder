@@ -131,8 +131,8 @@ class TransactionStrategyBuilder:
           own lock.
 
     Registration:
-        MELDER KERNEL - currently UNGUARDED. A registry / dispatch seam (no bind
-        sentinel), never a bind target; constructed by the change-control layer.
+        MELDER KERNEL. A registry / dispatch seam, never a bind target; constructed by
+        the change-control layer.
 
     Subsystem Context:
         The transaction-kind -> strategy-class map of the

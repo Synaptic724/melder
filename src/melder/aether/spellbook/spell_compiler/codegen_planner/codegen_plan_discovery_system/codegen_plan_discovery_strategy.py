@@ -30,8 +30,7 @@ class CodegenPlanDiscoveryStrategy(ABC):
           that result.
 
     Registration:
-        MELDER KERNEL - currently UNGUARDED (ABC base; concrete strategies also
-        unguarded). A compiler strategy contract; not bound as a spell.
+        MELDER KERNEL. A compiler strategy contract; not bound as a spell.
 
     Subsystem Context:
         The base of the `codegen_plan_discovery_system/strategies` family; instances

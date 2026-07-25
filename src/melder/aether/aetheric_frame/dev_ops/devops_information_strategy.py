@@ -33,9 +33,8 @@ class DevopsInformationStrategy(ABC):
         per-strategy instance state to guard.
 
     Registration:
-        MELDER KERNEL - guarded. Registered as CLASSES in a closed family; note
-        for MRO auditors that guarding this base is safe because there is no
-        seam through which a user supplies their own information strategy.
+        MELDER KERNEL. Registered as CLASSES in a closed family; there is no seam
+        through which a user supplies their own information strategy.
 
     Subsystem Context:
         The READ family of DevOps, deliberately separate from the transaction

@@ -73,11 +73,10 @@ class SpellContract(Cleanable):
         declares it, which in practice is the lifetime of the defining module.
 
     Registration:
-        MELDER KERNEL - guarded, and USER-INSTANTIATED but NOT user-bindable.
-        A user authors `SpellContract(spellframe=IAuthService)` in their own
-        constructor default; the sentinel only stops anyone `bind()`-ing the
-        SpellContract CLASS as a spell, which would be meaningless because a
-        socket is a declaration of absence, not a service.
+        MELDER KERNEL, USER-INSTANTIATED but NOT user-bindable. A user authors
+        `SpellContract(spellframe=IAuthService)` in their own constructor default;
+        only binding the SpellContract CLASS is refused, which would be meaningless
+        because a socket is a declaration of absence, not a service.
 
     Subsystem Context:
         The late-binding half of the descriptor pair. `SpellMap` resolves

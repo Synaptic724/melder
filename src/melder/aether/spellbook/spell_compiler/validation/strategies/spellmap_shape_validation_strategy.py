@@ -34,8 +34,7 @@ class SpellMapShapeValidationStrategy(SpellValidationStrategy):
         SPELLMAP_BINDING_NAME_NOT_NORMALIZED. Validation only; mutates nothing.
 
     Registration:
-        MELDER KERNEL - guarded via the inherited `SpellValidationStrategy` sentinel
-        (no redundant sentinel). A built-in strategy; registered, never bound.
+        MELDER KERNEL. A built-in strategy; registered, never bound.
 
     Subsystem Context:
         A built-in of the `validation/strategies` family; it inspects the SpellMap

@@ -43,12 +43,10 @@ class Creations(Cleanable):
         see an ExceptionGroup.
 
     Registration:
-        MELDER KERNEL - guarded. NOTE for MRO auditors: this is a guarded BASE
-        (`ConduitCreations` extends it) and that is deliberate and safe. The one
-        subclass is melder-internal and constructed only inside
-        `Conduit.__init__`; there is no injection seam, so the inherited
-        sentinel cannot reach a user class. `ClusterCreations` does NOT extend
-        this class - it extends `Cleanable` directly.
+        MELDER KERNEL. The one subclass, `ConduitCreations`, is melder-internal and
+        constructed only inside `Conduit.__init__`; there is no injection seam.
+        `ClusterCreations` does NOT extend this class - it extends `Cleanable`
+        directly.
 
     Subsystem Context:
         The storage layer beneath `Meld`. Meld decides WHICH store an

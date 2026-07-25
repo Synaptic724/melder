@@ -40,9 +40,8 @@ class SpellAnalyzerStrategy(ABC):
           into a monolith.
 
     Registration:
-        MELDER KERNEL - guarded (ABC base). Concrete analyzer strategies inherit this
-        sentinel via the MRO, so they add no sentinel of their own. Analyzer strategies
-        register into the builder and are never bound as spells.
+        MELDER KERNEL. Analyzer strategies register into the builder and are never
+        bound as spells.
 
     Subsystem Context:
         The base of the `spell_analyzer/strategies` family: `SpellAnalyzerStrategyBuilder`

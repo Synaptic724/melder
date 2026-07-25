@@ -52,11 +52,8 @@ class FromImportStatementStrategy(CrystalFactStrategy):
         `FactContext`, which is itself confined to that pass.
 
     Registration:
-        MELDER KERNEL - guarded. Fact strategies are constructed by
-        `CrystalAnalyzer` for one analysis, never bound as spells.
-        Note the classification split: this concrete leaf IS guarded,
-        while its base `CrystalFactStrategy` is deliberately NOT - see
-        that class's Registration section for the MRO reasoning.
+        MELDER KERNEL - guarded. Fact strategies are constructed by `CrystalAnalyzer`
+        for one analysis, never bound as spells.
 
     Subsystem Context:
         The richest of the four fact strategies sharing the analyzer's

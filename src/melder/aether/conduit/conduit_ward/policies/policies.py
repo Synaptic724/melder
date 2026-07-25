@@ -36,10 +36,9 @@ class Policies(Enum):
           requests initiated by peers.
 
     Registration:
-        MELDER KERNEL - guarded, but USER-FACING as a value. Guarding and using
-        are orthogonal here: a user passes `Policies.default` into
-        `Spellbook.conjure(...)` by value all the time; the sentinel only stops
-        someone binding the enum CLASS itself as a spell, which is never a
+        MELDER KERNEL, USER-FACING as a value. Guarding and using are orthogonal here:
+        a user passes `Policies.default` into `Spellbook.conjure(...)` by value all
+        the time; only binding the enum CLASS itself is refused, which is never a
         meaningful thing to do.
 
     Subsystem Context:

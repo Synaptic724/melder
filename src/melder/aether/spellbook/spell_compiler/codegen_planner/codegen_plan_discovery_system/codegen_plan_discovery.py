@@ -25,7 +25,7 @@ class CodegenPlanDiscovery:
           final emitted-runtime decision.
 
     Registration:
-        MELDER KERNEL - currently UNGUARDED value dataclass. A frozen result payload;
+        MELDER KERNEL - value dataclass. A frozen result payload;
         not a bind target. (Guard classification is the owner's call.)
 
     Subsystem Context:

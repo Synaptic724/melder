@@ -21,12 +21,9 @@ class SpellValidationStrategy(Cleanable):
       truly unrecoverable situations.
 
     Registration:
-        MELDER KERNEL - guarded (base). NOTE: this is a user-extensible strategy
-        base, so an inherited sentinel would normally violate the MRO law - but it
-        is INERT here, because strategies register into `SpellValidationSystem` via
-        `register_strategy` and are NEVER passed to `Spellbook.bind`, so the guard
-        (which only blocks binding) can never fire on a strategy. Concrete
-        strategies therefore add NO sentinel of their own.
+        MELDER KERNEL. A user-extensible strategy base. Strategies register into
+        `SpellValidationSystem` via `register_strategy` and are NEVER passed to
+        `Spellbook.bind`, so refusal cannot fire on a strategy at all.
 
     Subsystem Context:
         The base of the `validation/strategies` family: every built-in strategy

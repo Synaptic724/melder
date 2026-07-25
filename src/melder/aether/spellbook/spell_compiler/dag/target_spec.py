@@ -56,7 +56,7 @@ class TargetSpec:
             "None" for PATH specs.
 
     Registration:
-        MELDER KERNEL - guarded (ClassVar sentinel). A frozen value dataclass, so it
+        MELDER KERNEL. A frozen value dataclass, so it
         is not a bindable service in any case.
 
     Subsystem Context:

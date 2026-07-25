@@ -75,13 +75,11 @@ class SpellMap(Cleanable):
         declares it, which in practice is the lifetime of the defining module.
 
     Registration:
-        MELDER KERNEL - guarded, and this is the subtle case worth naming:
-        the class is USER-INSTANTIATED but NOT user-bindable. A user writes
-        `SpellMap(MyRepo)` in their own constructor default constantly, so
-        instances are authored outside melder - but the sentinel stops anyone
-        `bind()`-ing the SpellMap CLASS itself as a spell, which would be
-        meaningless because a descriptor is a statement of intent, not a
-        service to resolve.
+        MELDER KERNEL, USER-INSTANTIATED but NOT user-bindable. A user writes
+        `SpellMap(MyRepo)` in their own constructor default constantly, so instances
+        are authored outside melder - but binding the SpellMap CLASS itself is
+        refused, which would be meaningless because a descriptor is a statement of
+        intent, not a service to resolve.
 
     Subsystem Context:
         One of the two declarative DI descriptors, paired with `SpellContract`.

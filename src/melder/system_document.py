@@ -51,11 +51,8 @@ class StaticSystemDocument:
         does not need.
 
     Registration:
-        MELDER KERNEL - carries the registration guard sentinel and therefore
-        cannot be registered as a spell through `Spellbook.bind(...)`. Melder
-        constructs these objects itself at import; asking Melder to inject one
-        is a category error. Note this class is a leaf, not a base, so tagging it
-        cannot propagate to user classes through the MRO.
+        MELDER KERNEL. Melder constructs these objects itself at import; asking Melder
+        to inject one is a category error.
 
     Subsystem Context:
         This is the carrier type for the package-root document surfaces. Four

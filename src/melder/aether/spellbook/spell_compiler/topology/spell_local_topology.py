@@ -61,7 +61,7 @@ class SpellSocketDescriptor:
             system-level contract validation.
 
     Registration:
-        MELDER KERNEL - guarded (ClassVar sentinel). A frozen value dataclass.
+        MELDER KERNEL. A frozen value dataclass.
 
     Subsystem Context:
         The local socket view of the `topology` package; `SpellLocalTopology` owns a

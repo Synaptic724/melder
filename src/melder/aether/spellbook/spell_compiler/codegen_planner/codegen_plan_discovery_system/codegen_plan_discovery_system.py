@@ -29,7 +29,7 @@ class CodegenPlanDiscoverySystem(Cleanable):
           generalized family.
 
     Registration:
-        MELDER KERNEL - currently UNGUARDED. A compiler facade; not a bind target.
+        MELDER KERNEL. A compiler facade; not a bind target.
 
     Subsystem Context:
         The selector of the `codegen_plan_discovery_system`: it owns a

@@ -299,7 +299,7 @@ class SocketRef:
             The logical kind of socket – normal DI, SpellContract.
 
     Registration:
-        MELDER KERNEL - guarded (ClassVar sentinel). A frozen value dataclass; not a
+        MELDER KERNEL. A frozen value dataclass; not a
         bindable service in any case.
 
     Subsystem Context:

@@ -117,10 +117,10 @@ and logging.
           object already exists on the frame.
 
     Registration:
-        MELDER KERNEL - guarded. The user DRIVES a Spellbook through its public
-        API (bind/scan/conjure plus the transaction-backed SpellIndex verbs) but
-        can never `bind()` the Spellbook itself - the guard sentinel refuses that
-        category error. `access = "public"` reflects that hands-on driving.
+        MELDER KERNEL - guarded. The user DRIVES a Spellbook through its public API
+        (bind/scan/conjure plus the transaction-backed SpellIndex verbs) but can never
+        `bind()` the Spellbook itself. `access = "public"` reflects that hands-on
+        driving.
 
     Subsystem Context:
         The primary front door of the `aether/spellbook` binding surface. It

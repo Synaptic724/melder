@@ -22,8 +22,7 @@ class ResolutionFramePresenceStrategy(SpellValidationStrategy):
       rebuild missing graph artifacts.
 
     Registration:
-        MELDER KERNEL - guarded via the inherited `SpellValidationStrategy` sentinel
-        (no redundant sentinel). A built-in strategy; registered, never bound.
+        MELDER KERNEL. A built-in strategy; registered, never bound.
 
     Subsystem Context:
         A built-in of the `validation/strategies` family - the most basic structural
