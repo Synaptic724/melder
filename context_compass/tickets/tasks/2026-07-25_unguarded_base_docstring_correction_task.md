@@ -268,6 +268,47 @@ docstrings instruct maintainers to preserve an exclusion that no longer exists.
   REREAD: REQUIRED
   SCORE_0_TO_10: 10
 
+- DATETIME: 2026-07-25T20:30:00Z
+  TYPE: MEASURE
+  CLAIM: Both halves complete. (1) All 58 factually wrong sections corrected: the guard
+    status clause was DROPPED rather than restated, per owner direction that guarding is
+    the understood default. 14 cited the retired inherited sentinel, 16 asserted the
+    class was UNGUARDED while present in the manifest, and 10 MRO-auditor notes had
+    their obsolete reasoning removed while keeping the still-true construction facts.
+    (2) 35 bare-category-label sections removed from 22 files by an EXPLICIT hand-built
+    list matched on exact strings, no pattern. Final state: 377 sections (412 minus 35),
+    zero wrong claims, 552 files parse, zero new trailing whitespace against HEAD.
+  EVIDENCE:
+  - src/melder/nexus/rift/rift_space/rift_space.py
+  - src/melder/aether/spellbook/spell_compiler/profiles/resolution_profile.py
+  IMPACT: Docstrings now agree with the shipped manifest, and the 298 sections carrying
+    a real door or distinction are untouched.
+  NEXT: Owner acceptance.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 8
+- DATETIME: 2026-07-25T20:30:00Z
+  TYPE: RISK
+  CLAIM: SELF-INFLICTED INCIDENT, detected and fully reverted. My first removal attempt
+    used a permissive regex (`[^.]{0,72}`) instead of the reading I had just done, and
+    deleted 124 sections across 109 files - including exactly the genuine ones the owner
+    warned about: "Compiled by the ACL layer and stored as Rift projection state"
+    (view_projection), "Created by `Bind`; users receive indexes rather than
+    constructing them" (spell_index), "Produced by `FrameViewer`; users reach it through
+    the viewer surface" (view_spell). Recovery: a blanket checkout was UNSAFE because
+    514 files under `src/` are modified and not all are mine, so I proved the 109 were
+    touched only by my own passes (94 reproduce as HEAD+clause-fix+removal, 15 as
+    HEAD+StageB+removal, nothing differing elsewhere) and rewrote them as HEAD+fixes
+    with the removal dropped. Verified restored verbatim.
+  EVIDENCE:
+  - src/melder/nexus/rift/projection/view_projection.py
+  - src/melder/aether/spellbook/bind/spell_index.py
+  IMPACT: The lesson is precise: having read the material is worthless if the automation
+    encodes a looser rule than the reading. For semantic removals the list must be
+    explicit and matched on exact strings - which is how the successful 35 were done.
+  NEXT: Never express a judgement-based removal as a shape-based pattern.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
 ## Context / Handoff Summary
 Five base-class docstrings still teach the retired sentinel and instruct maintainers not
 to guard classes the manifest already guards. Correction is prose-only with zero
