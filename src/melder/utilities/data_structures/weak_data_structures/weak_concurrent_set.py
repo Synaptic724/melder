@@ -94,8 +94,11 @@ class WeakConcurrentSet(Generic[_T], Cleanable):
           handlers still run at teardown rather than being dropped.
 
     Registration:
-        USER-BINDABLE - deliberately unguarded. Owner ruling 2026-07-19: the
-        weak containers are fair to expose.
+        GUARDED, and exported. Owner ruling 2026-07-19 made the weak containers
+        fair to EXPOSE, and they are on the public root surface. Exposure is not
+        bindability: this type is present in `INTERNAL_MANIFEST`, so
+        `Spellbook.bind(...)` refuses it. Construct and use it directly; do not
+        bind it.
 
     Subsystem Context:
         The membership member of the weak-container trio beside

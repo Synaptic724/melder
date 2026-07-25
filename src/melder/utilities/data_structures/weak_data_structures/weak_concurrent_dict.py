@@ -377,9 +377,11 @@ class WeakConcurrentDict(Generic[_K, _V], Cleanable):
         - Clears the mapping and releases the lock.
 
     Registration:
-        USER-BINDABLE - deliberately unguarded. Owner ruling 2026-07-19: the
-        weak containers are fair to expose. A user may legitimately ask Melder
-        to inject one as their own cache.
+        GUARDED, and exported. Owner ruling 2026-07-19 made the weak containers
+        fair to EXPOSE, and they are on the public root surface. Exposure is not
+        bindability: this type is present in `INTERNAL_MANIFEST`, so
+        `Spellbook.bind(...)` refuses it. Construct and use one as your own
+        cache directly; do not bind it.
 
     Subsystem Context:
         The mapping member of `utilities/data_structures/weak_data_structures/`

@@ -12,10 +12,11 @@ class IChannelLogger(Protocol):
         inheritance.
 
     Registration:
-        BASE-LIKE - deliberately unguarded, for the same reason `Cleanable` is.
-        The sentinel resolves through `getattr`, so tagging a type that user
-        classes structurally satisfy risks marking user objects internal.
-        Protocols must stay untagged.
+        GUARDED, twice over: the type is present in `INTERNAL_MANIFEST`, and `Bind`
+        independently rejects Protocols as concrete spells. Neither restricts USE.
+        Structurally satisfying or inheriting this shape is free: manifest lookup is
+        an EXACT `(module, qualname)` match and does not inherit, so a user type that
+        satisfies this Protocol carries its own identity and binds normally.
 
     Subsystem Context:
         One of two Protocols in `utilities/interfaces/`, beside `ICleanable`. It

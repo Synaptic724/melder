@@ -28,8 +28,10 @@ class PhaseSchedulerError(RuntimeError):
         - Subclasses `RuntimeError`.
 
     Registration:
-        USER-BINDABLE - deliberately unguarded. Exception types are values users
-        catch and may legitimately register. Note this class IS a base class,
+        GUARDED, and exported. Present in `INTERNAL_MANIFEST`, so
+        `Spellbook.bind(...)` refuses it. That restricts REGISTRATION only, never
+        USE: import it, raise it, and catch it freely. Guarding and exporting are
+        orthogonal - this type is on the public root surface AND unbindable. Note this class IS a base class,
         but the MRO concern does not apply: the sentinel is what must not be
         inherited, and no exception in this family carries one.
 

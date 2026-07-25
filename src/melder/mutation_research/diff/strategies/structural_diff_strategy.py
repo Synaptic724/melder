@@ -38,7 +38,10 @@ class StructuralDiffStrategy(DiffStrategy):
 
     Registration:
         MELDER KERNEL - guarded. Shipped implementation; the base
-        `DiffStrategy` stays unguarded so user strategies remain bindable.
+        `DiffStrategy` is itself GUARDED, and user strategies remain bindable anyway:
+        manifest lookup is an EXACT `(module, qualname)` match that does not
+        inherit, so a user's own strategy carries its own identity, is absent from
+        the manifest, and binds normally.
 
     Subsystem Context:
         The reasoning grain of the three shipped spell-diff strategies, between

@@ -32,9 +32,11 @@ class InternalRegistrationError(RuntimeError):
           failure or treat it as a broader runtime registration error.
 
     Registration:
-        USER-BINDABLE - deliberately unguarded. Exception types are values users
-        catch and may legitimately register; guarding them would be circular,
-        since this is the very error a guard refusal produces.
+        GUARDED, and exported. Present in `INTERNAL_MANIFEST`, so
+        `Spellbook.bind(...)` refuses it - including this type, which is simply
+        the error that refusal raises; there is no circularity, because raising an
+        error and registering its class are unrelated acts. Guarding restricts
+        REGISTRATION only: import it, raise it, and catch it freely.
 
     Subsystem Context:
         One of the 11 `utilities/custom_exceptions/` types, and the only one

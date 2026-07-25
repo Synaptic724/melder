@@ -41,7 +41,10 @@ class MemberDiffStrategy(GroupDiffStrategy):
 
     Registration:
         MELDER KERNEL - guarded. Shipped implementation; the base
-        `GroupDiffStrategy` stays unguarded so user strategies remain bindable.
+        `GroupDiffStrategy` is itself GUARDED, and user strategies remain bindable anyway:
+        manifest lookup is an EXACT `(module, qualname)` match that does not
+        inherit, so a user's own strategy carries its own identity, is absent from
+        the manifest, and binds normally.
 
     Subsystem Context:
         The only shipped composition-grain strategy, mirroring the three

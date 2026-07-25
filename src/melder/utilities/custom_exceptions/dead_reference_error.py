@@ -30,8 +30,10 @@ class DeadReferenceError(ReferenceError):
           over weak containers skip dead entries rather than raising.
 
     Registration:
-        USER-BINDABLE - deliberately unguarded. Exception types are values users
-        catch and may legitimately register.
+        GUARDED, and exported. Present in `INTERNAL_MANIFEST`, so
+        `Spellbook.bind(...)` refuses it. That restricts REGISTRATION only, never
+        USE: import it, raise it, and catch it freely. Guarding and exporting are
+        orthogonal - this type is on the public root surface AND unbindable.
 
     Subsystem Context:
         One of the 11 `utilities/custom_exceptions/` types, and the one tied to

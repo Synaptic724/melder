@@ -35,8 +35,10 @@ class SourceDiffStrategy(DiffStrategy):
 
     Registration:
         MELDER KERNEL - guarded. A shipped strategy is Melder's implementation.
-        Note the BASE `DiffStrategy` is deliberately unguarded so user-written
-        strategies stay bindable; the tag belongs on concrete classes only.
+        `DiffStrategy` is itself GUARDED, and user strategies remain bindable anyway:
+        manifest lookup is an EXACT `(module, qualname)` match that does not
+        inherit, so a user's own strategy carries its own identity, is absent from
+        the manifest, and binds normally.
 
     Subsystem Context:
         The byte-truth grain of the three shipped spell-diff strategies.
