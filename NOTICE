@@ -1,5 +1,8 @@
-This product includes software developed by Mark Geleta.
-Original source repository: https://github.com/Synaptic724/ThreadFactory
+Melder
+Copyright 2025-2026 Mark Thomas Geleta / Synaptic AI Systems
+
+This product includes software developed by Mark Thomas Geleta.
+Source repository: https://github.com/Synaptic724/melder
 
 Licensed under the Apache License, Version 2.0 (the "License").
 You may not use this file except in compliance with the License.
@@ -19,9 +22,13 @@ when redistributing the software, whether in source or binary form.
 
 ---
 
-Third-Party Licenses
+Third-Party Notices
 
-This project incorporates or builds upon code and concepts from the following third-party sources:
+Melder has NO third-party runtime dependencies. Installing it pulls nothing
+else, and no third-party source code is vendored, bundled, or redistributed in
+this package.
+
+The following are acknowledged as influences only.
 
 ---
 
@@ -42,12 +49,14 @@ https://docs.python.org/3/license.html
 
 ---
 
-python-ulid
+ULID Specification
 
-Source: https://github.com/mdomke/python-ulid
-License: MIT
+Source: https://github.com/ulid/spec
 Description:
-Used for ULID generation (Universally Unique Lexicographically Sortable Identifiers).
+Melder generates ULIDs (Universally Unique Lexicographically Sortable
+Identifiers) with an original, self-contained implementation of the public ULID
+specification in `melder.utilities.helpers.ulid_factory`, using only the Python
+standard library. Output is format-compatible with the specification.
 
-License Text:
-https://github.com/mdomke/python-ulid/blob/main/LICENSE
+No third-party ULID library is used, vendored, or required at runtime, and no
+third-party ULID source code was copied.
