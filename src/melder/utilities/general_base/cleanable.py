@@ -47,19 +47,27 @@ class Cleanable(ABC):
         letting `check_cleaned()` raise over silently returning.
 
     Registration:
-        BASE CLASS - DELIBERATELY UNGUARDED. Do NOT add
-        `__melder_internal__` to this class.
+        GUARDED, and safely so. `Cleanable` is present in the generated
+        `INTERNAL_MANIFEST`: binding `Cleanable` itself is refused.
 
-        The registration guard detects internals with
-        `getattr(candidate, "__melder_internal__", None)`, and attribute lookup
-        walks the MRO. Tagging `Cleanable` would therefore tag EVERY subclass,
-        including classes written by users, and `Spellbook.bind(...)` would
-        refuse a user's own service with `InternalRegistrationError`. `Cleanable`
-        is referenced across ~277 files and is explicitly intended for user
-        subclassing, so the blast radius is the entire public surface. Concrete
-        Melder-owned descendants carry the sentinel individually; the base must
-        not. A regression asserting that a user subclass of `Cleanable` still
-        binds successfully guards this rule.
+        Subclasses are unaffected. Enforcement is an EXACT `(module, qualname)`
+        membership test in `bind.assert_allowed(...)`, and that lookup does NOT
+        walk the MRO. A user subclass carries its own module and qualname, is
+        absent from the manifest, and binds normally. `Cleanable` is referenced
+        across ~277 files and is explicitly intended for user subclassing, so
+        that non-inheritance is what makes guarding the base harmless here.
+
+        HISTORICAL: this class was previously excluded on purpose. The retired
+        `__melder_internal__` sentinel was read via `getattr`, which DOES walk
+        the MRO, so tagging `Cleanable` would have tagged every subclass and made
+        a user's own service unbindable. That exclusion is obsolete - the
+        manifest replaced the sentinel precisely so the blanket "guard every
+        class in the package" rule could exist without a curated exclusion list
+        (owner ruling 2026-07-24). Do not reintroduce the exclusion, and do not
+        add a sentinel attribute; nothing reads one.
+
+        A regression asserting that a user subclass of `Cleanable` still binds
+        successfully guards the property this section depends on.
 
     Subsystem Context:
         One of three `utilities/general_base/` base classes, alongside `Sync`

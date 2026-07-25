@@ -1,4 +1,3 @@
-import types
 import inspect
 from typing import Protocol
 import pytest
@@ -1232,7 +1231,7 @@ def test_registration_guard_does_not_leak(monkeypatch):
     monkeypatch.setattr("melder.aether.spellbook.bind.bind.SpellExaminer", lambda: StubExaminer(class_profile()))
     b = Bind(StubSpellbook())
     b.bind(Permissions.read, Existence.unique, aetheric_frame="f", spell=RealClassImplementingProto)
-    assert g.calls == 1
+    assert calls["count"] == 1
 
 
 # Permissions / aetheric_frame plumbing --------------------------------

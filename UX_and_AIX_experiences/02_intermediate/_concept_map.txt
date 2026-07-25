@@ -54,9 +54,14 @@ THE CATEGORIES ARC (act 2 of 3)
     conditions at the boundary) - the factory layer with no factories
   advanced: aetheric frames as entire isolated worlds (act 3)
 
-KNOWN GAPS INSIDE THE FENCE (candidate closing wave 27-30)
-  sever_link (the undo of the arc), upgrade_to_normal (lesser grows
-  up), live link policies (whitelist_all/block_all/inbound_only/
+THE UNDO + THE PROMOTION (closing wave, first half)
+  27 sever_link (contracts die with the link; borrower loses the right
+     to resolve; owner untouched; double-sever refuses)
+  28 upgrade_to_normal (lesser grows up in place: named, registered,
+     creations preserved through the promotion)
+
+KNOWN GAPS INSIDE THE FENCE (remaining)
+  live link policies (whitelist_all/block_all/inbound_only/
   outbound_only), conduit lifecycle hooks (on_conduit_post_link/unlink)
 
 HARNESS

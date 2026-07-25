@@ -7,6 +7,12 @@ the melder version changes or via build_scripts:
 
 Each entry is a `(module, qualname)` pair naming one melder-internal
 class that must never be registered as a spell.
+
+PAYLOAD SHAPE - emitted as a tuple display. A set display folds to a
+frozenset constant in the .pyc instead, but that only MOVES the 577-tuple
+hashing cost from the frozenset() call into marshal load. Measured with
+typing pre-imported (the real condition inside melder): 267us tuple vs
+288us set, i.e. a wash. Do not churn this shape for performance.
 """
 from typing import FrozenSet
 from typing import Tuple

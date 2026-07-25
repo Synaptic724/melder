@@ -1,6 +1,34 @@
 import threading
 import time
-from typing import TYPE_CHECKING, Dict, List, Optional
+from typing import TYPE_CHECKING, Any
+
+from melder.crystallizer.asset_management.asset_management_system import (
+    AssetManagementSystem,
+)
+from melder.crystallizer.asset_management.external_persistence_manager_configuration import (
+    ExternalPersistenceManagerConfiguration,
+)
+from melder.crystallizer.configuration.crystallizer_configuration import (
+    CrystallizerConfiguration,
+)
+from melder.crystallizer.crystal_loader_system.crystal_loader_system import (
+    CrystalLoaderSystem,
+)
+from melder.crystallizer.crystals.contract_crystal import (
+    ContractCrystal,
+)
+from melder.crystallizer.crystals.crystallizer_crystal import (
+    CrystallizerCrystal,
+)
+from melder.crystallizer.crystals.recorded_unit_state import RecordedUnitState
+from melder.crystallizer.crystals.spell_crystal import SpellCrystal
+from melder.crystallizer.crystals.spell_index_crystal import (
+    SpellIndexCrystal,
+)
+from melder.crystallizer.persistence.persistence_system import PersistenceSystem
+from melder.crystallizer.synthetic_module import SyntheticModule
+from melder.utilities.general_base.cleanable import Cleanable
+from melder.utilities.helpers.id_builder import IDBuilder
 
 if TYPE_CHECKING:
     from melder.aether.aether import Aether
@@ -8,33 +36,7 @@ if TYPE_CHECKING:
     from melder.aether.spellbook.bind.spell_index import SpellIndex
     from melder.aether.spellbook.spell import Spell
 
-from melder.crystallizer.configuration.crystallizer_configuration import (
-    CrystallizerConfiguration,
-)
-from melder.crystallizer.crystals.crystallizer_crystal import (
-    CrystallizerCrystal,
-)
-from melder.crystallizer.asset_management.asset_management_system import (
-    AssetManagementSystem,
-)
-from melder.crystallizer.crystal_loader_system.crystal_loader_system import (
-    CrystalLoaderSystem,
-)
-from melder.crystallizer.asset_management.external_persistence_manager_configuration import (
-    ExternalPersistenceManagerConfiguration,
-)
-from melder.crystallizer.crystals.spell_crystal import SpellCrystal
-from melder.crystallizer.synthetic_module import SyntheticModule
-from melder.crystallizer.persistence.persistence_system import PersistenceSystem
-from melder.crystallizer.crystals.contract_crystal import (
-    ContractCrystal,
-)
-from melder.crystallizer.crystals.spell_index_crystal import (
-    SpellIndexCrystal,
-)
-from melder.crystallizer.crystals.recorded_unit_state import RecordedUnitState
-from melder.utilities.general_base.cleanable import Cleanable
-from melder.utilities.helpers.id_builder import IDBuilder
+
 
 class Crystallizer(Cleanable):
     """
@@ -140,7 +142,7 @@ class Crystallizer(Cleanable):
             cls,
             *args: object,
             **kwargs: object,
-    ) -> "Crystallizer":
+    ) -> Crystallizer:
         """
         Ensure `Crystallizer` behaves as a singleton.
 
@@ -162,14 +164,14 @@ class Crystallizer(Cleanable):
         if cls._instance is None:
             with cls._lock:
                 if cls._instance is None:
-                    cls._instance = super(Crystallizer, cls).__new__(cls)
+                    cls._instance = super().__new__(cls)
         return cls._instance
 
     def __init__(
             self,
             *,
-            aether: Optional[Aether] = None,
-            configuration: Optional[CrystallizerConfiguration] = None,
+            aether: Aether | None = None,
+            configuration: CrystallizerConfiguration | None = None,
     ) -> None:
         """
         Initialize the singleton crystallizer root.
@@ -219,8 +221,8 @@ class Crystallizer(Cleanable):
         try:
             super().__init__()
             self._id: str = IDBuilder.create_id()
-            self._aether: Optional[Aether] = aether
-            self._configuration: Optional[CrystallizerConfiguration] = None
+            self._aether: Aether | None = aether
+            self._configuration: CrystallizerConfiguration | None = None
             self._configured: bool = False
             self._activated: bool = False
             self._persistence_system: PersistenceSystem = PersistenceSystem()
@@ -453,7 +455,7 @@ class Crystallizer(Cleanable):
         return self.activated
 
     @property
-    def configuration(self) -> Optional[CrystallizerConfiguration]:
+    def configuration(self) -> CrystallizerConfiguration | None:
         """
         Return the installed configuration, if any.
 
@@ -539,7 +541,7 @@ class Crystallizer(Cleanable):
 
     def activate(
             self,
-            configuration: Optional[CrystallizerConfiguration] = None,
+            configuration: CrystallizerConfiguration | None = None,
     ) -> None:
         """
         Activate the crystallizer root using one activated configuration.
@@ -628,7 +630,7 @@ class Crystallizer(Cleanable):
         ):
             self._aether.configuration.emit_configured_twin_when_recording()
 
-    def _emit_policy_twin(self, profile_name: Optional[str] = None) -> None:
+    def _emit_policy_twin(self, profile_name: str | None = None) -> None:
         """
         Internal emission seam
 
@@ -664,7 +666,7 @@ class Crystallizer(Cleanable):
         """
         if not self._activated or self._configuration is None:
             return
-        configuration_payload: Dict[str, object] = {}
+        configuration_payload: dict[str, object] = {}
         for property_name in self._configuration.available_properties.keys():
             if not self._configuration.has_property(property_name):
                 continue
@@ -799,7 +801,7 @@ class Crystallizer(Cleanable):
         self._require_activated()
         return self._persistence_system.get_spell_crystal(spell_id)
 
-    def describe_mutation_research_record(self) -> Optional[Dict[str, object]]:
+    def describe_mutation_research_record(self) -> dict[str, object] | None:
         """
         Return the recorded MutationResearch twin payload (active profile).
 
@@ -834,9 +836,9 @@ class Crystallizer(Cleanable):
 
     def analyze_impact(
             self,
-            module_name: Optional[str] = None,
-            spell_id: Optional[str] = None,
-    ) -> Dict[str, object]:
+            module_name: str | None = None,
+            spell_id: str | None = None,
+    ) -> dict[str, object]:
         """
         Answer blast-radius questions over the recorded custody surface.
 
@@ -895,7 +897,7 @@ class Crystallizer(Cleanable):
         finally:
             engine.cleanup()
 
-    def capture_index_graft(self, index_id: str) -> Dict[str, object]:
+    def capture_index_graft(self, index_id: str) -> dict[str, object]:
         """
         Capture one spell_index's graft record from the active profile.
 
@@ -932,12 +934,12 @@ class Crystallizer(Cleanable):
 
     def graft_index(
             self,
-            graft_record: Dict[str, object],
+            graft_record: dict[str, object],
             host_spellbook: Any,
             skip_resident: bool = False,
-            merge_into_index: Optional[Any] = None,
+            merge_into_index: Any | None = None,
             adopt_recorded_selection: bool = False,
-    ) -> Dict[str, object]:
+    ) -> dict[str, object]:
         """
         Re-integrate one captured index into a LIVE host book.
 
@@ -1136,7 +1138,7 @@ class Crystallizer(Cleanable):
         self.check_cleaned()
         self._require_activated()
 
-        def _detail_payload(detail) -> Dict[str, object]:
+        def _detail_payload(detail) -> dict[str, object]:
             return {
                 "spell_id": detail.spell_id,
                 "index_id": detail.spell_index.id,
@@ -1146,7 +1148,7 @@ class Crystallizer(Cleanable):
                 "sources": sorted(detail.sources) if detail.sources else [],
             }
 
-        def _subscription_payload(index_detail) -> Dict[str, object]:
+        def _subscription_payload(index_detail) -> dict[str, object]:
             return {
                 "index_id": index_detail.spell_index.id,
                 "selected_spell_id": index_detail.selected_spell_id,
@@ -1447,10 +1449,8 @@ class Crystallizer(Cleanable):
             # at analysis time and governed by the hot-swap law).
             if SyntheticModule.has_live_synthetic_dependents(module_name):
                 self._logger.info(
-                    "Park kept module '{0}' resident: live synthetic "
-                    "dependents exist (R11 reverse-edge law).".format(
-                        module_name,
-                    ),
+                    f"Park kept module '{module_name}' resident: live synthetic "
+                    "dependents exist (R11 reverse-edge law).",
                     "record_spell_activity",
                 )
             else:
@@ -1513,7 +1513,7 @@ class Crystallizer(Cleanable):
     def create_spell_crystal(
             self,
             spell: Spell,
-            spellbook_id: Optional[str] = None,
+            spellbook_id: str | None = None,
     ) -> SpellCrystal:
         """
         Build one `SpellCrystal` using the installed crystallizer policy.
@@ -1649,7 +1649,7 @@ class Crystallizer(Cleanable):
         self._require_activated()
         self._persistence_system.set_active_profile(profile_name)
 
-    def describe_profile(self, profile_name: Optional[str] = None) -> Dict[str, object]:
+    def describe_profile(self, profile_name: str | None = None) -> dict[str, object]:
         """
         Return a detached structural summary of one persistence profile.
 
@@ -1685,7 +1685,7 @@ class Crystallizer(Cleanable):
             return self._persistence_system.active_profile.describe()
         return self._persistence_system.get_profile(profile_name).describe()
 
-    def list_profile_names(self) -> List[str]:
+    def list_profile_names(self) -> list[str]:
         """
         Return the names of all persistence profiles.
 
@@ -1778,8 +1778,8 @@ class Crystallizer(Cleanable):
 
     def create_checkpoint(
             self,
-            profile_name: Optional[str] = None,
-            description: Optional[str] = None,
+            profile_name: str | None = None,
+            description: str | None = None,
     ) -> str:
         """
         Snapshot one persistence profile and return the checkpoint's ULID id.
@@ -1822,7 +1822,7 @@ class Crystallizer(Cleanable):
             description=description,
         )
 
-    def describe_checkpoint(self, checkpoint_id: str) -> Dict[str, object]:
+    def describe_checkpoint(self, checkpoint_id: str) -> dict[str, object]:
         """
         Return a detached copy of one checkpoint's metadata record.
 
@@ -1852,7 +1852,7 @@ class Crystallizer(Cleanable):
         self._require_activated()
         return self._persistence_system.describe_checkpoint(checkpoint_id)
 
-    def list_checkpoint_ids(self) -> List[str]:
+    def list_checkpoint_ids(self) -> list[str]:
         """
         Return all checkpoint ids in exact ledger creation order.
 
@@ -1877,7 +1877,7 @@ class Crystallizer(Cleanable):
         self._require_activated()
         return self._persistence_system.list_checkpoint_ids()
 
-    def describe_record(self) -> Dict[str, object]:
+    def describe_record(self) -> dict[str, object]:
         """
         Return the whole record's one-shot operational summary
         (profiles + twin counts + ledger + cache, in one call).
@@ -1911,7 +1911,7 @@ class Crystallizer(Cleanable):
         )
         return record_description
 
-    def checkpoint_replay_data(self, checkpoint_id: str) -> Dict[str, object]:
+    def checkpoint_replay_data(self, checkpoint_id: str) -> dict[str, object]:
         """
         Return one checkpoint's detached replay inputs (journal window +
         captured payloads) - the restore engine's read surface.
@@ -1944,7 +1944,7 @@ class Crystallizer(Cleanable):
         self._require_activated()
         return self._persistence_system.checkpoint_replay_data(checkpoint_id)
 
-    def flush_checkpoint(self, checkpoint_id: Optional[str] = None) -> List[str]:
+    def flush_checkpoint(self, checkpoint_id: str | None = None) -> list[str]:
         """
         Flush sealed checkpoint(s) into the local crystallizer cache.
 
@@ -1985,7 +1985,7 @@ class Crystallizer(Cleanable):
         # legs (S3 decomposition absorbed the old upload hook).
         return self._asset_management_system.flush_checkpoint(checkpoint_id)
 
-    def reload_cached_checkpoint(self, checkpoint_id: str) -> Dict[str, object]:
+    def reload_cached_checkpoint(self, checkpoint_id: str) -> dict[str, object]:
         """
         Reload one cached checkpoint back into the ledger (history
         recovery; world restore remains `load_checkpoint`).
@@ -2020,7 +2020,7 @@ class Crystallizer(Cleanable):
             checkpoint_id
         )
 
-    def list_cached_checkpoint_ids(self) -> List[str]:
+    def list_cached_checkpoint_ids(self) -> list[str]:
         """
         Return every checkpoint id present in the local cache.
 
@@ -2048,8 +2048,8 @@ class Crystallizer(Cleanable):
 
     def verify_checkpoint_chain(
             self,
-            profile_name: Optional[str] = None,
-    ) -> Dict[str, object]:
+            profile_name: str | None = None,
+    ) -> dict[str, object]:
         """
         Report one profile's checkpoint-chain fold-safety (read-only).
 
@@ -2089,7 +2089,7 @@ class Crystallizer(Cleanable):
     def reload_profile_from_cache(
             self,
             profile_name: str,
-    ) -> Dict[str, object]:
+    ) -> dict[str, object]:
         """
         Reload EVERY cached checkpoint of one profile into the ledger.
 
@@ -2130,9 +2130,9 @@ class Crystallizer(Cleanable):
     def save_formation(
             self,
             formation_name: str,
-            conduit_id: Optional[str] = None,
-            frame_name: Optional[str] = None,
-            profile_name: Optional[str] = None,
+            conduit_id: str | None = None,
+            frame_name: str | None = None,
+            profile_name: str | None = None,
             description: str = "",
     ) -> str:
         """
@@ -2186,10 +2186,10 @@ class Crystallizer(Cleanable):
     def restore_formation(
             self,
             formation_name: str,
-            profile_name: Optional[str] = None,
-            target_frame_name: Optional[str] = None,
+            profile_name: str | None = None,
+            target_frame_name: str | None = None,
             skip_existing: bool = False,
-    ) -> Dict[str, object]:
+    ) -> dict[str, object]:
         """
         Rebuild one stored formation directly (scoped restore).
 
@@ -2258,8 +2258,8 @@ class Crystallizer(Cleanable):
 
     def list_formations(
             self,
-            profile_name: Optional[str] = None,
-    ) -> List[str]:
+            profile_name: str | None = None,
+    ) -> list[str]:
         """
         Return the targeted profile's stored formation names.
 
@@ -2290,8 +2290,8 @@ class Crystallizer(Cleanable):
     def analyze_formation(
             self,
             formation_name: str,
-            profile_name: Optional[str] = None,
-    ) -> Dict[str, object]:
+            profile_name: str | None = None,
+    ) -> dict[str, object]:
         """
         Pre-flight one stored formation's bootload viability.
 
@@ -2340,7 +2340,7 @@ class Crystallizer(Cleanable):
     def analyze_checkpoint(
             self,
             checkpoint_id: str,
-    ) -> Dict[str, object]:
+    ) -> dict[str, object]:
         """
         Pre-flight one sealed checkpoint's bootload viability.
 
@@ -2429,7 +2429,7 @@ class Crystallizer(Cleanable):
             manager_configuration
         )
 
-    def describe_external_persistence_manager(self) -> Dict[str, object]:
+    def describe_external_persistence_manager(self) -> dict[str, object]:
         """
         Return the attached manager's record-safe presence description.
 
@@ -2457,7 +2457,7 @@ class Crystallizer(Cleanable):
     def reload_profile_from_external(
             self,
             profile_name: str,
-    ) -> Dict[str, object]:
+    ) -> dict[str, object]:
         """
         Download and insert EVERY remote checkpoint of one profile.
 
@@ -2498,8 +2498,8 @@ class Crystallizer(Cleanable):
 
     def reload_formations_from_external(
             self,
-            profile_name: Optional[str] = None,
-    ) -> Dict[str, object]:
+            profile_name: str | None = None,
+    ) -> dict[str, object]:
         """
         Download and store EVERY remote formation of one profile.
 
@@ -2546,9 +2546,9 @@ class Crystallizer(Cleanable):
 
     def apply_external_retention(
             self,
-            profile_name: Optional[str] = None,
-            max_checkpoints: Optional[int] = None,
-    ) -> List[str]:
+            profile_name: str | None = None,
+            max_checkpoints: int | None = None,
+    ) -> list[str]:
         """
         Trim the remote checkpoint history to one retention cap.
 
@@ -2641,9 +2641,9 @@ class Crystallizer(Cleanable):
     def delete_formation(
             self,
             formation_name: str,
-            profile_name: Optional[str] = None,
+            profile_name: str | None = None,
             include_remote: bool = False,
-    ) -> Dict[str, object]:
+    ) -> dict[str, object]:
         """
         Delete one stored formation locally and, optionally, remotely.
 
@@ -2689,8 +2689,8 @@ class Crystallizer(Cleanable):
 
     def store_index_graft_external(
             self,
-            graft_record: Dict[str, object],
-            profile_name: Optional[str] = None,
+            graft_record: dict[str, object],
+            profile_name: str | None = None,
     ) -> str:
         """
         Ship one captured spell-index graft through the generic mesh.
@@ -2740,7 +2740,7 @@ class Crystallizer(Cleanable):
     def fetch_index_graft_external(
             self,
             index_id: str,
-    ) -> Dict[str, object]:
+    ) -> dict[str, object]:
         """
         Fetch one graft record back from the user's store, version-gated.
 
@@ -2773,8 +2773,8 @@ class Crystallizer(Cleanable):
 
     def list_index_grafts_external(
             self,
-            profile_name: Optional[str] = None,
-    ) -> List[str]:
+            profile_name: str | None = None,
+    ) -> list[str]:
         """
         List one profile's stored graft ids through the generic lane.
 
@@ -2811,7 +2811,7 @@ class Crystallizer(Cleanable):
             resolved_profile
         )
 
-    def describe_external_interface(self) -> Dict[str, object]:
+    def describe_external_interface(self) -> dict[str, object]:
         """
         Emit the mesh interface contract joined with live presence.
 
@@ -2849,7 +2849,7 @@ class Crystallizer(Cleanable):
     # AssetManagementSystem.flush_checkpoint - one feedstock pull now
     # serves both the cache write and the remote upload leg.
 
-    def load_checkpoint(self, checkpoint_id: str) -> Dict[str, object]:
+    def load_checkpoint(self, checkpoint_id: str) -> dict[str, object]:
         """
         Unfold one checkpoint's world into the live runtime (boot verb).
 

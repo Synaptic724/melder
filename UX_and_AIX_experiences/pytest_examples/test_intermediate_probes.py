@@ -265,3 +265,64 @@ def test_probe_spell_override_targets_spells_inside_the_graph():
     assert root.right.right is not replacement  # untargeted socket kept
     assert root.right.right.marker == "other-default"
     print("spell_override proven: root kwargs + inside-the-graph path swap")
+
+
+def test_probe_sever_link_kills_the_contract():
+    """Lesson 27 contract: contracts ride links - severing removes the
+    borrower's RIGHT TO RESOLVE the pulled spell (next meld refuses)
+    while the owner's own resolution is untouched; a second sever
+    refuses (no contract left to remove). Exception types printed for
+    the decode pass; tighten once run-proven."""
+    import sys
+    from pathlib import Path as _P
+    sys.path.insert(0, str(_P(__file__).parent.parent / "02_intermediate"))
+    from _dynamic_world import dynamic_spellbook
+
+    owner_book = dynamic_spellbook()
+    spell_id = owner_book.bind(spell=Payload, existence="unique")
+    owner = owner_book.conjure(dynamic=True, name="sever-owner")
+    borrower = dynamic_spellbook().conjure(name="sever-borrower")
+
+    assert owner.link(borrower) is True
+    assert borrower.add_spell_to_contract(
+        spell_id=spell_id, conduit=owner, permissions="create")
+    shared = borrower.meld(spell=Payload)
+    assert shared is not None
+
+    owner.sever_link(borrower)
+
+    with pytest.raises(Exception) as post_sever:
+        borrower.meld(spell=Payload)
+    print("post-sever meld refusal type:", type(post_sever.value).__name__)
+
+    assert owner.meld(spell=Payload) is shared  # owner world untouched
+
+    with pytest.raises(Exception) as double_sever:
+        owner.sever_link(borrower)
+    print("double-sever refusal type:", type(double_sever.value).__name__)
+
+
+def test_probe_upgrade_to_normal_keeps_creations_and_registers():
+    """Lesson 28 contract (mirrors the validated component test
+    test_component_conduit_upgrade_transfers_lesser_creations_and_
+    reuses_unique): a promoted lesser keeps its per-conduit creations
+    and becomes name-discoverable in the cloud."""
+    import sys
+    from pathlib import Path as _P
+    sys.path.insert(0, str(_P(__file__).parent.parent / "02_intermediate"))
+    from _dynamic_world import dynamic_spellbook
+
+    book = dynamic_spellbook()
+    book.bind(spell=Payload, existence="unique_per_conduit")
+    root = book.conjure(dynamic=True, name="factory-floor")
+
+    worker = root.create_lesser_conduit()
+    before = worker.meld(spell=Payload)
+
+    worker.upgrade_to_normal(name="worker")
+
+    after = worker.meld(spell=Payload)
+    assert after is before  # creations survive the promotion
+    cloud = root.get_conduit_cloud()
+    assert cloud.get_conduit_by_name("worker") is worker
+    print("promotion kept creations and registered the name")
