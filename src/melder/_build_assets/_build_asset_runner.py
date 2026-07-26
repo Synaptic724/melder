@@ -17,18 +17,33 @@ containing a `_builder.py`; nothing is registered, imported, or configured::
 
     _build_assets/
         _build_asset_runner.py      <- this file
-        _init_metadata/
+        _bind_guard/
             _builder.py             <- discovered automatically
-            init_metadata.py        <- generated loader   (committed)
-            init_metadata.melc      <- generated payload  (committed)
-            init_metadata.pyi       <- generated stub     (committed)
-        _agent_metadata/
+            bind_guard.py           <- loader, hand-written
+            manifest/
+                bind_guard_manifest.py       <- GENERATED, committed
+        _agent_documentation/
             _builder.py             <- same shape, no runner edit needed
-            agent_metadata.{py,melc,pyi}
+            agent_documentation.py
+            manifest/
+                agent_documentation_manifest.py
 
 Adding a behaviour is therefore "create a folder with a `_builder.py`". Removing
-one is "delete the folder". The runner needs no edit either way. Directory name
-and artifact stem match by convention (`_<asset>/<asset>.*`).
+one is "delete the folder". The runner needs no edit either way. Assets are
+named for what they DO - `_bind_guard`, `_agent_documentation` - so the folder
+says which behaviour it owns rather than which file format it happens to use.
+
+WHAT THE RUNNER DOES *NOT* TOUCH
+--------------------------------
+The `.melc` caches under `__melder_cache__/__<asset>__/`. Those are derived,
+gitignored, interpreter-specific, and rebuilt on demand at import time by
+`melder.utilities.caching_system.asset_cache`. This runner's whole surface is
+the COMMITTED manifest: the truth the cache is derived FROM. Building a cache
+here would bake one interpreter's marshal format into a build step that has no
+idea which interpreter will read it.
+
+The split is also why nothing runtime lives in this directory: `_build_assets/`
+holds tools that run at BUILD time and never execute in a user's process.
 
 THE BUILDER CONTRACT
 --------------------
@@ -59,14 +74,9 @@ correct answer - these only make the gate sharper and cheaper:
         SHA256 over the builder's inputs. Turns staleness into a key compare
         instead of a full re-render.
 
-    payload_path() -> pathlib.Path
-        Sidecar the loader reads at import. Checked for EXISTENCE before the
-        key, because a loader whose payload is missing imports fine right up
-        to its `marshal.loads` - a green check on an unimportable package.
-
     manifest_version() -> str
-        SCHEMA version of the artifact format, independent of the melder
-        release. Checked separately from content because a payload in an older
+        SCHEMA version of the manifest shape, independent of the melder
+        release. Checked separately from content because a manifest in an older
         shape may not hydrate at all, so it must never pass on a key match.
 
 ISOLATION
@@ -110,7 +120,6 @@ class BuildAssetRunnerPolicy:
     BUILDER_FILE_NAME: str = "_builder.py"
     REQUIRED_CALLABLES: Tuple[str, ...] = ("target_path", "render", "write")
     FINGERPRINT_CALLABLE: str = "source_fingerprint"
-    PAYLOAD_CALLABLE: str = "payload_path"
     SCHEMA_CALLABLE: str = "manifest_version"
     VERSION_MODULE_NAME: str = "__version__.py"
 
@@ -286,21 +295,6 @@ def check_all(version: str) -> int:
             stale.append(asset_name)
             continue
         committed = target.read_text(encoding="utf-8")
-
-        # A loader whose payload is missing imports fine right up until the
-        # `marshal.loads` at the bottom, so this is checked BEFORE the key: a
-        # matching SHA on a loader with no payload is a green check on a package
-        # that cannot import. The `.melc` is only expected when the builder
-        # declares one, which keeps single-file builders legal.
-        payload = getattr(module, BuildAssetRunnerPolicy.PAYLOAD_CALLABLE, None)
-        if callable(payload) and not payload().exists():
-            print(
-                f"STALE  {asset_name:<20} loader present but payload missing: "
-                f"{payload().name}",
-                file=sys.stderr,
-            )
-            stale.append(asset_name)
-            continue
 
         # FAST PATH - compare KEYS, do not rebuild.
         # A builder exposing `source_fingerprint()` lets staleness be decided by

@@ -38,11 +38,10 @@ def write(version):
     return target, 1
 '''
 
-# A builder exercising the full OPTIONAL contract: fingerprint key, marshal
-# payload sidecar, and schema version. Shaped exactly like the two real ones -
-# bare (unannotated) stamped constants, because the annotations live in a .pyi.
+# A builder exercising the full OPTIONAL contract: fingerprint key and schema
+# version. Shaped exactly like the two real ones - a manifest of bare
+# (unannotated) stamped constants, written into a `manifest/` subdirectory.
 _KEYED_BUILDER = '''
-import marshal
 import pathlib
 
 FINGERPRINT = "0" * 64
@@ -50,10 +49,7 @@ SCHEMA = "1.0.0"
 RENDER_CALLS = []
 
 def target_path():
-    return pathlib.Path(__file__).parent / "artifact.py"
-
-def payload_path():
-    return target_path().with_suffix(".melc")
+    return pathlib.Path(__file__).parent / "manifest" / "artifact_manifest.py"
 
 def source_fingerprint():
     return FINGERPRINT
@@ -64,18 +60,35 @@ def manifest_version():
 def render(version):
     RENDER_CALLS.append(version)
     return (
-        "import marshal\\n"
         'MANIFEST_VERSION = "%s"\\n'
         'BUILT_FOR_VERSION = "%s"\\n'
-        'SOURCE_SHA256 = "%s"\\n' % (SCHEMA, version, FINGERPRINT)
+        'SOURCE_SHA256 = "%s"\\n'
+        'ENTRIES = ((\\'a\\', \\'B\\'),)\\n' % (SCHEMA, version, FINGERPRINT)
     )
 
 def write(version):
-    payload_path().write_bytes(marshal.dumps(frozenset({("a", "B")})))
     target = target_path()
+    target.parent.mkdir(parents=True, exist_ok=True)
     target.write_text(render(version), encoding="utf-8")
     return target, 1
 '''
+
+
+def _load_module_by_path(name: str, path: pathlib.Path) -> Any:
+    """
+    Execute one module directly from its file, bypassing package import.
+
+    Args:
+        name: Name to register the loaded module under.
+        path: Absolute path to the `.py` file.
+
+    Returns:
+        Any: The executed module.
+    """
+    spec = importlib.util.spec_from_file_location(name, path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
 
 
 def _load_runner() -> Any:
@@ -89,10 +102,7 @@ def _load_runner() -> Any:
     Returns:
         Any: The executed runner module.
     """
-    spec = importlib.util.spec_from_file_location("_rt_build_asset_runner", _RUNNER_PATH)
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-    return module
+    return _load_module_by_path("_rt_build_asset_runner", _RUNNER_PATH)
 
 
 @pytest.fixture
@@ -445,20 +455,18 @@ def test_key_match_skips_render_entirely(runner, fake_assets):
     )
 
 
-def test_missing_payload_fails_even_when_the_key_matches(runner, fake_assets):
+def test_missing_manifest_fails_even_when_the_key_matches(runner, fake_assets):
     """
     Purpose:
-        A loader whose marshal sidecar is absent imports fine right up to its
-        `marshal.loads`. Checking the key alone would report OK for a package
-        that cannot be imported - and the payloads were in fact untracked and
-        gitignored when this was written, so a clone hit precisely that.
+        The manifest is the artifact. A source key that still matches says
+        nothing about whether the file it describes is actually on disk, and a
+        missing manifest means the loader has nothing to hydrate from.
     Contract:
-        Payload existence is checked BEFORE the key, so a perfect key match on a
-        payload-less asset still fails.
+        A deleted manifest is stale regardless of the key.
     """
     asset = _make_asset(fake_assets, "_keyed", _KEYED_BUILDER)
     assert runner.build_all("1.0.0") == 0
-    (asset / "artifact.melc").unlink()
+    (asset / "manifest" / "artifact_manifest.py").unlink()
 
     assert runner.check_all("1.0.0") == 1
 
@@ -476,7 +484,7 @@ def test_schema_drift_fails_even_when_the_key_matches(runner, fake_assets):
     asset = _make_asset(fake_assets, "_keyed", _KEYED_BUILDER)
     assert runner.build_all("1.0.0") == 0
 
-    artifact = asset / "artifact.py"
+    artifact = asset / "manifest" / "artifact_manifest.py"
     artifact.write_text(
         artifact.read_text(encoding="utf-8").replace('"1.0.0"', '"0.9.0"', 1),
         encoding="utf-8",
@@ -488,9 +496,9 @@ def test_schema_drift_fails_even_when_the_key_matches(runner, fake_assets):
 def test_a_builder_without_the_optional_contract_still_checks(runner, fake_assets):
     """
     Purpose:
-        The key, payload and schema hooks are OPTIONAL. A builder exposing only
-        the three required callables must keep working through the slow byte
-        comparison rather than being failed for what it does not declare.
+        The key and schema hooks are OPTIONAL. A builder exposing only the three
+        required callables must keep working through the slow byte comparison
+        rather than being failed for what it does not declare.
     Contract:
         The plain builder round-trips green, then goes stale on a version bump.
     """
@@ -520,18 +528,129 @@ def test_committed_assets_are_current_in_this_repository():
     assert live.check_all(live.melder_version()) == 0
 
 
-def test_the_shipped_manifest_builder_satisfies_the_contract():
+@pytest.mark.parametrize("asset_name", ["_bind_guard", "_agent_documentation"])
+def test_every_shipped_builder_satisfies_the_contract(asset_name):
     """
     Purpose:
-        The manifest builder is the reference implementation of the convention;
-        if it drifts from the contract, the pattern documented for future assets
+        These builders are the reference implementation of the convention; if
+        one drifts from the contract, the pattern documented for future assets
         is wrong.
     Contract:
-        The real `_init_metadata` builder exposes all three required callables.
+        Each real builder exposes all three required callables.
     """
     live = _load_runner()
     builders = live.discover_builders()
-    assert "_init_metadata" in [p.parent.name for p in builders]
-    module = live._load_builder(next(p for p in builders if p.parent.name == "_init_metadata"))
+    assert asset_name in [p.parent.name for p in builders]
+    module = live._load_builder(next(p for p in builders if p.parent.name == asset_name))
     for name in live.BuildAssetRunnerPolicy.REQUIRED_CALLABLES:
         assert callable(getattr(module, name))
+
+
+@pytest.mark.parametrize("asset_name", ["_bind_guard", "_agent_documentation"])
+def test_shipped_assets_follow_the_directory_convention(asset_name):
+    """
+    Purpose:
+        Both assets must be structurally identical, because the next one gets
+        built by copying whichever folder someone opens first. An asymmetry here
+        is how the previous layout drifted into two different load postures.
+    Contract:
+        `_<asset>/` holds `_builder.py` and `<asset>.py`, and the committed
+        manifest sits at `_<asset>/manifest/<asset>_manifest.py`.
+    """
+    live = _load_runner()
+    builder = next(p for p in live.discover_builders() if p.parent.name == asset_name)
+    module = live._load_builder(builder)
+
+    bare = asset_name.lstrip("_")
+    asset_dir = builder.parent
+    manifest = module.target_path()
+
+    assert (asset_dir / f"{bare}.py").exists(), f"{asset_name}: loader missing"
+    assert manifest.exists(), f"{asset_name}: manifest missing"
+    assert manifest.parent.name == "manifest", (
+        f"{asset_name}: manifest is not in a manifest/ directory"
+    )
+    assert manifest.name == f"{bare}_manifest.py", (
+        f"{asset_name}: manifest named {manifest.name!r}, breaking the convention"
+    )
+
+
+@pytest.mark.parametrize("asset_name", ["bind_guard", "agent_documentation"])
+def test_shipped_assets_cache_under_melder_cache(asset_name):
+    """
+    Purpose:
+        The `.melc` is a CACHE and must land in the shared cache root, not
+        beside the source it was derived from. A committed marshal bundle is
+        interpreter-specific - `marshal` carries no cross-version guarantee -
+        and this repo runs 3.10 while targeting 3.14t, so the previous layout
+        would have handed one interpreter's bundle to another.
+    Contract:
+        The cache path is `__melder_cache__/__<asset>__/<asset>.melc`, matching
+        the `<root>/<scope>/<name>.melc` shape `CachingSystem` uses, and it is
+        NOT inside `_build_assets`.
+    """
+    # Loaded BY PATH, like everything else in this file: `import melder` would
+    # boot `Aether()` and would also defeat
+    # `test_running_the_runner_never_imports_melder` for any test ordered after
+    # this one.
+    asset_cache = _load_module_by_path(
+        "_rt_asset_cache",
+        _REPO_ROOT / "src" / "melder" / "utilities" / "caching_system" / "asset_cache.py",
+    )
+    path = pathlib.Path(asset_cache.cache_path_for(asset_name))
+    assert path.name == f"{asset_name}.melc"
+    assert path.parent.name == f"__{asset_name}__"
+    assert path.parent.parent.name == "__melder_cache__"
+    assert "_build_assets" not in path.parts
+
+
+@pytest.mark.parametrize("asset_name", ["_bind_guard", "_agent_documentation"])
+def test_shipped_assets_declare_a_schema_version(asset_name):
+    """
+    Purpose:
+        `MANIFEST_VERSION` is what lets a reader tell "built by an older melder"
+        - fine, the SHA decides - from "written in a shape I cannot parse",
+        which is fatal. Without it stamped, `--check` cannot detect schema drift
+        and silently degrades to a content-only comparison.
+    Contract:
+        The builder declares a schema version and the generated loader carries
+        the same value.
+    """
+    live = _load_runner()
+    builder = next(p for p in live.discover_builders() if p.parent.name == asset_name)
+    module = live._load_builder(builder)
+
+    declared = module.manifest_version()
+    assert declared, f"{asset_name}: builder declares no schema version"
+    stamped = f'MANIFEST_VERSION = "{declared}"'
+    assert stamped in module.target_path().read_text(encoding="utf-8"), (
+        f"{asset_name}: manifest is not stamped with the declared schema {declared!r}"
+    )
+
+
+def test_build_assets_holds_no_runtime_code():
+    """
+    Purpose:
+        `_build_assets/` is for tools that run at BUILD time and never execute
+        in a user's process. A hot-path loader living there made the directory
+        mean two unrelated things, which is how `_asset_cache.py` ended up on
+        the boot path inside a folder full of generators.
+    Contract:
+        Every `.py` directly under `_build_assets/` is the runner itself; the
+        only other modules are each asset's `_builder.py`, its loader, and its
+        generated manifest.
+    """
+    live = _load_runner()
+    root = live._assets_root()
+
+    loose = sorted(p.name for p in root.glob("*.py"))
+    assert loose == ["_build_asset_runner.py"], (
+        f"unexpected modules directly under _build_assets/: {loose}"
+    )
+
+    for builder in live.discover_builders():
+        bare = builder.parent.name.lstrip("_")
+        names = sorted(p.name for p in builder.parent.glob("*.py"))
+        assert names == ["_builder.py", f"{bare}.py"], (
+            f"{builder.parent.name}: unexpected modules {names}"
+        )

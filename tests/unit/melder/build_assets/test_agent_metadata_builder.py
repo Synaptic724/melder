@@ -19,7 +19,7 @@ import pytest
 
 _REPO_ROOT = pathlib.Path(__file__).resolve().parents[4]
 _BUILDER_PATH = (
-    _REPO_ROOT / "src" / "melder" / "_build_assets" / "_agent_metadata" / "_builder.py"
+    _REPO_ROOT / "src" / "melder" / "_build_assets" / "_agent_documentation" / "_builder.py"
 )
 
 
@@ -30,7 +30,7 @@ def _load_builder() -> Any:
     Returns:
         Any: The executed builder module.
     """
-    spec = importlib.util.spec_from_file_location("_rt_agent_metadata_builder", _BUILDER_PATH)
+    spec = importlib.util.spec_from_file_location("_rt_agent_documentation_builder", _BUILDER_PATH)
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module

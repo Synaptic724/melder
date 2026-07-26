@@ -22,11 +22,18 @@ class CachingSystem(Cleanable):
         owns it.
 
     Subsystem Context:
-        The only member of `utilities/caching_system/`, and the one utility here
-        that touches DISK. Everything else in `utilities/` is in-memory
-        machinery - locks, counters, weak containers, helpers - which makes this
-        the odd one out and worth knowing about before you assume a utility is
-        side-effect free.
+        One of two members of `utilities/caching_system/`, and one of the two
+        utilities here that touch DISK. Everything else in `utilities/` is
+        in-memory machinery - locks, counters, weak containers, helpers - which
+        makes this directory the odd one out and worth knowing about before you
+        assume a utility is side-effect free.
+
+        The sibling is `asset_cache`, which caches BUILD ASSETS: a
+        process-lifetime, read-mostly bundle hydrated from a committed manifest,
+        with no lock, no logger and no lifecycle. This class is the per-conduit
+        instance cache with all three. Both write `.melc` under
+        `__melder_cache__` and both stamp `sys.implementation.cache_tag`;
+        confusing which one owns a given bundle is a category error.
 
     System Context:
         Scoped to one rooted conduit. It keeps the decoded cache dictionary in

@@ -8,7 +8,10 @@ import json
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, TypedDict, Union, ClassVar, FrozenSet
 
-
+from melder._build_assets._agent_documentation.agent_documentation import (
+    AGENT_METADATA,
+    EXEMPT,
+)
 
 FunctionNode = Union[ast.FunctionDef, ast.AsyncFunctionDef]
 
@@ -170,55 +173,33 @@ class ClassSurfaceAstDescriber:
         "__graph_details__",
     )
 
-    _AGENT_METADATA: ClassVar[Optional[Dict[Tuple[str, str], Tuple[str, str]]]] = None
-    _EXEMPT: ClassVar[Optional[FrozenSet[Tuple[str, str]]]] = None
-
     @staticmethod
-    def _load_agent_metadata() -> Tuple[
+    def _load_agent_documentation() -> Tuple[
         Dict[Tuple[str, str], Tuple[str, str]],
         FrozenSet[Tuple[str, str]],
     ]:
         """
-        Load the generated agent-metadata asset on first use and cache it.
-
-        Purpose:
-            Keep a 206 KB generated module OFF the package boot path.
+        Return the agent-documentation asset.
 
         Contract:
-            The import is deliberately INSIDE this method rather than at module
-            scope. `melder/__init__.py` imports `FrameViewer`, which imports this
-            module, so a module-scope import would make every single
-            `import melder` pay to build a 404-entry dict holding ~76,000
-            characters of prose - for a describer that most processes never call.
-            The internal-bind manifest is eager because `bind` needs it on every
-            boot; this one is lazy because `describe()` is occasional agent
-            tooling. Same asset system, opposite load posture, by design.
+            A plain module-scope import, exactly like `bind.py` consumes the
+            bind-guard asset. Both assets load the same way, at the same point,
+            through the same hydration lane - there is no second posture to
+            reason about.
 
-            The cache lives on the class rather than at module scope, per the
-            repo's module-scope rule.
-
-        Threading / Concurrency:
-            Safe under free-threaded 3.14t without a lock. Two threads racing
-            first access both perform an idempotent `import` - CPython guards
-            `sys.modules` - and then assign the SAME objects, so the race is
-            benign and a lock would only add contention to a path that runs once.
+            This used to hold a class-level `_AGENT_METADATA` / `_EXEMPT` cache
+            populated by a function-scope import, back when the asset was a
+            206 KB module of literals that had to be kept off the boot path.
+            The manifest/cache split removed that cost, and the double-caching
+            with it: `sys.modules` already guarantees one hydration per process,
+            so a second cache in front of it only added a branch on every call
+            and a way for the two layers to disagree.
 
         Returns:
             Tuple[Dict[Tuple[str, str], Tuple[str, str]], FrozenSet[Tuple[str, str]]]:
                 The metadata mapping and the exempt set.
         """
-        if ClassSurfaceAstDescriber._AGENT_METADATA is None:
-            from melder._build_assets._agent_metadata.agent_metadata import (
-                AGENT_METADATA,
-                EXEMPT,
-            )
-
-            ClassSurfaceAstDescriber._AGENT_METADATA = AGENT_METADATA
-            ClassSurfaceAstDescriber._EXEMPT = EXEMPT
-        return (
-            ClassSurfaceAstDescriber._AGENT_METADATA,
-            ClassSurfaceAstDescriber._EXEMPT,
-        )
+        return AGENT_METADATA, EXEMPT
 
     @staticmethod
     def describe_class_surface_ast_json(
@@ -733,7 +714,7 @@ class ClassSurfaceAstDescriber:
             ValueError: When the marker is absent, non-string, or outside the
                 accepted set.
         """
-        agent_metadata, exempt = ClassSurfaceAstDescriber._load_agent_metadata()
+        agent_metadata, exempt = ClassSurfaceAstDescriber._load_agent_documentation()
         target_class = type(target_object)
         identity = (target_class.__module__, target_class.__qualname__)
         if identity in exempt:
@@ -785,7 +766,7 @@ class ClassSurfaceAstDescriber:
         Returns:
             str: Agent-purpose string for the object.
         """
-        agent_metadata, _exempt = ClassSurfaceAstDescriber._load_agent_metadata()
+        agent_metadata, _exempt = ClassSurfaceAstDescriber._load_agent_documentation()
         target_class = type(target_object)
         entry = agent_metadata.get((target_class.__module__, target_class.__qualname__))
         agent_purpose = entry[1] if entry is not None else None
@@ -821,7 +802,7 @@ class ClassSurfaceAstDescriber:
             List[InheritedAgentPurposeDescription]: Parent-class purpose
             entries in MRO order.
         """
-        agent_metadata, _exempt = ClassSurfaceAstDescriber._load_agent_metadata()
+        agent_metadata, _exempt = ClassSurfaceAstDescriber._load_agent_documentation()
         inherited_purposes: List[InheritedAgentPurposeDescription] = []
         for base_class in inspect.getmro(type(target_object))[1:]:
             entry = agent_metadata.get(

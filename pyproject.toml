@@ -138,24 +138,22 @@ version = { attr = "melder.__version__.__version__" }
 # PEP 561: ship the py.typed marker so downstream type checkers consume
 # melder's inline annotations instead of treating the package as Any.
 #
-# The `.melc` entries are NOT optional. setuptools ships `.py` files by virtue of
-# them being modules; every other extension must be named here or it is silently
-# dropped from the wheel. The generated loaders under `_build_assets/` read their
-# marshal payload as a plain data sidecar, so a wheel built without these lines
-# installs loaders whose `marshal.loads` has nothing to open - `import melder`
-# then fails at module scope, in the installed package only, never in the repo.
-#
-# The `.pyi` stubs carry the annotations those loaders deliberately omit; without
-# them downstream mypy infers `Any` and the py.typed promise above is hollow.
+# Nothing else needs listing. The build assets' committed truth is a plain `.py`
+# manifest under `_build_assets/<asset>/manifest/`, which setuptools ships by
+# virtue of it being a module. Their `.melc` caches are NOT packaged on purpose:
+# marshal is interpreter-specific, so a bundle baked at build time would be read
+# by whatever Python the wheel lands on. `_asset_cache` rebuilds it per
+# interpreter on first import, and degrades to the manifest when the install
+# directory is read-only.
 [tool.setuptools.package-data]
-melder = ["py.typed", "_build_assets/*/*.melc", "_build_assets/*/*.pyi"]
+melder = ["py.typed"]
 
 [tool.setuptools.packages.find]
 where = ["src"]
 include = ["melder*"]
 # EXPLICIT, not inherited from a default. The repo keeps exactly ONE `__init__.py`
 # (the package root), so every subpackage - including the durable build asset at
-# `melder/_build_assets/_init_metadata/` that `bind.py` imports at module scope -
+# `melder/_build_assets/_bind_guard/` that `bind.py` imports at module scope -
 # is a PEP 420 namespace package. Setting this here means wheel contents never
 # depend on a setuptools default we would have to re-verify on every upgrade.
 namespaces = true
@@ -166,9 +164,9 @@ exclude = [
     "build_scripts*", "performance_hunt*", "profiles*",
 ]
 
-# The generated internal-bind manifest is a DURABLE build asset: it is committed,
-# and it MUST ship in the wheel because `bind.py` imports it at module scope and
-# there is no runtime rebuild lane. Nothing is excluded here - the previous
+# The generated manifests are DURABLE build assets: committed, and they MUST ship
+# in the wheel because `bind.py` imports the guard at module scope and there is no
+# runtime rebuild lane. Nothing is excluded here - the previous
 # exclude-package-data entry pointed at a path that no longer exists and was
 # silently inert.
 
@@ -183,7 +181,7 @@ omit = [
     "UX_and_AIX_experiences/*",
     "performance_hunt/*",
     "build_scripts/*",
-    "*/_build_assets/_init_metadata/init_metadata.py",
+    "*/_build_assets/_bind_guard/manifest/bind_guard_manifest.py",
 ]
 
 [tool.coverage.report]
@@ -194,7 +192,7 @@ omit = [
     "UX_and_AIX_experiences/*",
     "performance_hunt/*",
     "build_scripts/*",
-    "*/_build_assets/_init_metadata/init_metadata.py",
+    "*/_build_assets/_bind_guard/manifest/bind_guard_manifest.py",
 ]
 exclude_also = [
     "if TYPE_CHECKING:",
@@ -237,5 +235,5 @@ pretty = true
 exclude = [
     "^build_scripts/",
     # generated artifact; the loader/builder ARE type-checked
-    "_build_assets/_init_metadata/init_metadata\\.py$",
+    "_build_assets/_bind_guard/manifest/bind_guard_manifest\\.py$",
 ]

@@ -104,14 +104,18 @@ class AgentMetadataPolicy:
 
     EXEMPT_PATH_PREFIXES: Tuple[str, ...] = ("aether.spellbook.spell_compiler",)
 
-    ASSET_DIR_NAME: str = "_agent_metadata"
-    ASSET_FILE_NAME: str = "agent_metadata.py"
-    PAYLOAD_FILE_NAME: str = "agent_metadata.melc"
-    STUB_FILE_NAME: str = "agent_metadata.pyi"
+    ASSET_DIR_NAME: str = "_agent_documentation"
+    MANIFEST_DIR_NAME: str = "manifest"
+    MANIFEST_FILE_NAME: str = "agent_documentation_manifest.py"
 
-    # SCHEMA version of the asset FORMAT - see the note in the manifest builder.
-    # Independent of BUILT_FOR_VERSION, which tracks the melder release.
-    MANIFEST_VERSION: str = "1.0.0"
+    # SCHEMA version of the manifest SHAPE - see the note in the bind guard
+    # builder. Independent of BUILT_FOR_VERSION, which tracks the melder release.
+    #
+    # 2.0.0: plain literals consumed by a caching loader. 1.0.0 was a generated
+    # loader beside a COMMITTED `.melc`, which put an interpreter-specific
+    # marshal bundle on the import path - not a shape this version can migrate
+    # from, hence MAJOR.
+    MANIFEST_VERSION: str = "2.0.0"
 
     SKIP_DIR_NAMES: Set[str] = {"__pycache__", "__melder_cache__", "_build_assets"}
 
@@ -470,34 +474,16 @@ def target_path() -> pathlib.Path:
     Return the artifact path this builder owns.
 
     Returns:
-        pathlib.Path: `<package>/_build_assets/_agent_metadata/agent_metadata.py`.
+        pathlib.Path: `<package>/_build_assets/_agent_documentation/manifest/
+            agent_documentation_manifest.py`.
     """
     return (
         package_root()
         / "_build_assets"
         / AgentMetadataPolicy.ASSET_DIR_NAME
-        / AgentMetadataPolicy.ASSET_FILE_NAME
+        / AgentMetadataPolicy.MANIFEST_DIR_NAME
+        / AgentMetadataPolicy.MANIFEST_FILE_NAME
     )
-
-
-def payload_path() -> pathlib.Path:
-    """
-    Return the marshal payload path beside the loader module.
-
-    Returns:
-        pathlib.Path: `<asset dir>/agent_metadata.melc`.
-    """
-    return target_path().with_name(AgentMetadataPolicy.PAYLOAD_FILE_NAME)
-
-
-def stub_path() -> pathlib.Path:
-    """
-    Return the type-stub path beside the loader module.
-
-    Returns:
-        pathlib.Path: `<asset dir>/agent_metadata.pyi`.
-    """
-    return target_path().with_name(AgentMetadataPolicy.STUB_FILE_NAME)
 
 
 def manifest_version() -> str:
@@ -548,33 +534,58 @@ def build_payload() -> Dict[str, object]:
     }
 
 
-def render(version: str) -> str:
+def _render_pairs(title: str, pairs: Iterable[Tuple[str, str]]) -> List[str]:
     """
-    Render the THIN LOADER module that hydrates the marshal payload.
-
-    Contract:
-        Imports ONLY `marshal`. Measured on the 577-entry sibling manifest:
-        adding `pathlib` costs 3.77 ms and `typing` 2.88 ms on a cold
-        interpreter, which is more than the structure build they were meant to
-        avoid. Types live in the sibling `.pyi` stub instead.
-
-        PURE and DETERMINISTIC - `--check` compares the stamped SHA, and the
-        text must not vary between runs over one tree.
+    Render one sorted `(module, qualname)` collection as a tuple literal.
 
     Args:
+        title: The constant name to bind.
+        pairs: The entries, already sorted.
+
+    Returns:
+        List[str]: Source lines for the literal.
+    """
+    lines = [f"{title} = ("]
+    lines.extend(f"    ({module!r}, {qualname!r})," for module, qualname in pairs)
+    lines.append(")")
+    return lines
+
+
+def render_from_payload(payload: Dict[str, object], version: str) -> str:
+    """
+    Render the committed manifest module from an ALREADY-BUILT payload.
+
+    Purpose:
+        Let `write` harvest once. `render(version)` harvests internally, so a
+        `write` that called `render` and then re-derived a count from a second
+        `build_payload()` walked all 548 source files TWICE per build - the
+        dominant cost of the whole run, for a number it already had.
+
+    Contract:
+        PURE and DETERMINISTIC - `--check` compares the stamped SHA and the
+        text must not vary between runs over one tree. Every collection is
+        emitted in sorted order for that reason.
+
+        Containers are TUPLES, not dict/frozenset literals. The loader builds
+        the real containers once and caches them, so constructing them here
+        would duplicate work the cache already removes.
+
+    Args:
+        payload: The harvested payload from `build_payload()`.
         version: The melder version to stamp into the artifact.
 
     Returns:
-        str: Complete loader module source, newline-terminated.
+        str: Complete manifest module source, newline-terminated.
     """
-    payload = build_payload()
-    return "\n".join([
+    metadata = payload["agent_metadata"]
+    bases = payload["class_bases"]
+
+    lines = [
         '"""',
-        "GENERATED DURABLE BUILD ASSET - DO NOT EDIT MANUALLY.",
+        "GENERATED BUILD ASSET - DO NOT EDIT MANUALLY.",
         "",
-        "Thin loader for agent-facing class metadata. The payload is a marshal",
-        "bundle beside this file, matching the `.melc` convention used by",
-        "`caching_system` and the internal-bind manifest.",
+        "Agent-facing class documentation, harvested from `AGENT_ACCESS:` and",
+        "`AGENT_PURPOSE:` sections in class docstrings at build time.",
         "",
         "AGENT_METADATA maps (module, qualname) -> (access, purpose).",
         "EXEMPT lists classes deliberately ruled out of agent tooling.",
@@ -582,57 +593,78 @@ def render(version: str) -> str:
         "CLASS_BASES is DIAGNOSTIC ONLY; inheritance resolves through",
         "inspect.getmro at runtime because direct bases drop grandparents.",
         "",
+        "Consumed by `_build_assets/_agent_documentation/agent_documentation.py`,",
+        "which hydrates these into real containers and caches them under",
+        "__melder_cache__/__agent_documentation__/.",
+        "",
         "Regenerate with:",
         "    python src/melder/_build_assets/_build_asset_runner.py",
         '"""',
-        "import marshal",
         "",
         f'MANIFEST_VERSION = "{AgentMetadataPolicy.MANIFEST_VERSION}"',
         f'BUILT_FOR_VERSION = "{version}"',
         f'SOURCE_SHA256 = "{source_fingerprint()}"',
-        f"MARKED_COUNT = {len(payload['agent_metadata'])}",
+        f"MARKED_COUNT = {len(metadata)}",
         f"EXEMPT_COUNT = {len(payload['exempt'])}",
         f"PENDING_COUNT = {len(payload['pending'])}",
         "",
-        '_PAYLOAD = marshal.loads(open(__file__[:-3] + ".melc", "rb").read())',
-        "",
-        'AGENT_METADATA = _PAYLOAD["agent_metadata"]',
-        'EXEMPT = _PAYLOAD["exempt"]',
-        'PENDING = _PAYLOAD["pending"]',
-        'CLASS_BASES = _PAYLOAD["class_bases"]',
-        "",
-    ])
+        "AGENT_METADATA = {",
+    ]
+    for key in sorted(metadata):
+        lines.append(f"    {key!r}: {metadata[key]!r},")
+    lines.extend(["}", ""])
+
+    lines.extend(_render_pairs("EXEMPT", sorted(payload["exempt"])))
+    lines.append("")
+    lines.extend(_render_pairs("PENDING", sorted(payload["pending"])))
+    lines.append("")
+
+    lines.append("CLASS_BASES = {")
+    for key in sorted(bases):
+        lines.append(f"    {key!r}: {bases[key]!r},")
+    lines.extend(["}", ""])
+    return "\n".join(lines)
 
 
-def render_stub() -> str:
+def render(version: str) -> str:
     """
-    Render the `.pyi` stub carrying the annotations the loader omits.
+    Render the committed manifest module.
+
+    Purpose:
+        Plain Python literals - interpreter-independent, reviewable, diffable.
+        A class gaining or losing an `AGENT_ACCESS:` marker shows up as a line
+        in review rather than as a changed binary blob.
+
+    Contract:
+        PURE and DETERMINISTIC - `--check` compares the stamped SHA and the
+        text must not vary between runs over one tree. Every collection is
+        emitted in sorted order for that reason.
+
+        Containers are TUPLES, not dict/frozenset literals. The loader builds
+        the real containers once and caches them, so constructing them here
+        would duplicate work the cache already removes.
+
+    Args:
+        version: The melder version to stamp into the artifact.
 
     Returns:
-        str: Stub source, newline-terminated.
+        str: Complete manifest module source, newline-terminated.
     """
-    return "\n".join([
-        "from typing import Dict",
-        "from typing import FrozenSet",
-        "from typing import Tuple",
-        "",
-        "MANIFEST_VERSION: str",
-        "BUILT_FOR_VERSION: str",
-        "SOURCE_SHA256: str",
-        "MARKED_COUNT: int",
-        "EXEMPT_COUNT: int",
-        "PENDING_COUNT: int",
-        "AGENT_METADATA: Dict[Tuple[str, str], Tuple[str, str]]",
-        "EXEMPT: FrozenSet[Tuple[str, str]]",
-        "PENDING: FrozenSet[Tuple[str, str]]",
-        "CLASS_BASES: Dict[Tuple[str, str], Tuple[str, ...]]",
-        "",
-    ])
+    return render_from_payload(build_payload(), version)
 
 
 def write(version: str) -> Tuple[pathlib.Path, int]:
     """
-    Write the artifact to disk atomically.
+    Write the committed manifest atomically.
+
+    Contract:
+        Writes exactly ONE file. Temp file then `replace`, so an interrupted
+        build never leaves a half-written manifest behind.
+
+        Harvests ONCE and threads the payload through, rather than calling
+        `render` and then re-deriving the count from a second `build_payload()`.
+        Each harvest AST-parses every source file, so the duplicate was the
+        single largest cost in the build.
 
     Args:
         version: The melder version to stamp into the artifact.
@@ -641,24 +673,14 @@ def write(version: str) -> Tuple[pathlib.Path, int]:
         Tuple[pathlib.Path, int]: The written path and the marked-entry count.
 
     Raises:
-        OSError: If the asset directory is not writable.
+        OSError: If the manifest directory is not writable.
     """
-    text = render(version)
+    payload = build_payload()
+    text = render_from_payload(payload, version)
     target = target_path()
     target.parent.mkdir(parents=True, exist_ok=True)
-
-    payload = build_payload()
-    payload_file = payload_path()
-    payload_tmp = payload_file.with_suffix(".melc.tmp")
-    payload_tmp.write_bytes(marshal.dumps(payload))
-    payload_tmp.replace(payload_file)
 
     temporary = target.with_suffix(".py.tmp")
     temporary.write_text(text, encoding="utf-8")
     temporary.replace(target)
-
-    stub = stub_path()
-    stub_tmp = stub.with_suffix(".pyi.tmp")
-    stub_tmp.write_text(render_stub(), encoding="utf-8")
-    stub_tmp.replace(stub)
     return target, len(payload["agent_metadata"])

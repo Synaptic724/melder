@@ -9,7 +9,7 @@ Contract:
 
 import pytest
 
-from melder._build_assets._init_metadata.init_metadata import INTERNAL_MANIFEST
+from melder._build_assets._bind_guard.bind_guard import INTERNAL_MANIFEST
 from melder.aether.aether import Aether
 from melder.aether.spellbook.spellbook import Spellbook
 from melder.utilities.custom_exceptions.internal_registration_error import InternalRegistrationError
