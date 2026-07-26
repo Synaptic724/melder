@@ -80,12 +80,13 @@ class PhysicalSourceCache:
         two ints and a hex digest per path, LRU-bounded - is what lets a
         process-wide cache accelerate analysis without holding files or code
         alive.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Shared stat-guarded fingerprint cache over physical source files.
+        Melder kernel machinery: read it to understand the runtime, do not drive it directly.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Shared stat-guarded fingerprint cache over physical source files. "
-        "Melder kernel machinery: read it to understand the runtime, do not drive it directly."
-    )
 
 
     _SCHEMA_VERSION = 1

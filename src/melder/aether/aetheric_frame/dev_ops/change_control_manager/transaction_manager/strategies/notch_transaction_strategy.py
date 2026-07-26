@@ -101,12 +101,13 @@ class NotchTransactionStrategy(TransactionStrategy):
         The lesson generalizes: transaction claims serialize STRUCTURE, gates
         serialize RUNTIME, and an operation that races runtime readers needs
         both.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Notch transaction resolver (intra-index active-spell repoint). Melder
+        kernel machinery: read it to understand the runtime, do not drive it directly.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Notch transaction resolver (intra-index active-spell repoint). Melder "
-        "kernel machinery: read it to understand the runtime, do not drive it directly."
-    )
 
     @classmethod
     def build_start_plan(

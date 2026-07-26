@@ -95,12 +95,13 @@ class ResolutionStyleMatrix:
         most binding kinds are unique-only. Row count is an artifact of enum
         shape, not a statement about policy - which is precisely why
         `BINDING_FAMILY_POLICY` and not the projection is canonical.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Canonical resolution-style support matrix for Melder. Melder kernel
+        machinery: read it to understand the runtime, do not drive it directly.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Canonical resolution-style support matrix for Melder. Melder kernel "
-        "machinery: read it to understand the runtime, do not drive it directly."
-    )
 
 
     OWNER: ClassVar[str] = "melder-runtime-maintainers"

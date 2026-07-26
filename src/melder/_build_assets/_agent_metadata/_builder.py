@@ -51,13 +51,18 @@ one coherent subtree under an existing owner ruling (recorded at the OCE epic's
 closure as "spell_compiler excluded per owner"). Per-class `AGENT_ACCESS: exempt`
 remains available for one-offs.
 
-DUAL-SOURCE MIGRATION
----------------------
-Harvest prefers the docstring section and FALLS BACK to the legacy class
-attribute. That is what lets the asset be complete and correct from its very
-first run, before a single class has been migrated, and lets the codemod proceed
-subtree by subtree instead of as one atomic 370-file cutover. When the sweep is
-finished and no `attribute` sources remain, the fallback can be deleted.
+MIGRATION COMPLETE (2026-07-25)
+-------------------------------
+Docstrings are now the ONLY source. The migration ran dual-source - docstring
+first, legacy class attribute as fallback - so the asset stayed complete and
+correct at every intermediate step and the codemod could proceed subtree by
+subtree instead of as one atomic 370-file cutover. Both codemods verified by the
+asset being BYTE-IDENTICAL before and after each pass, which is what caught a
+`textwrap` bug that was silently rewriting `lock-free` as `lock- free`.
+
+All 404 marked classes now resolve from docstrings and the fallback is gone.
+`_legacy_attributes` survives only so the codemods and their tests can still read
+what the retired attributes held; nothing in the harvest path calls it.
 """
 import ast
 import pathlib
@@ -251,9 +256,14 @@ def parse_docstring_markers(docstring: str) -> Tuple[Optional[str], Optional[str
 
 def _legacy_attributes(node: ast.ClassDef) -> Tuple[Optional[str], Optional[str]]:
     """
-    Read the retired class attributes as a migration fallback.
+    Read the retired class attributes.
 
     Contract:
+        NO LONGER PART OF THE HARVEST PATH. Every marked class resolves from its
+        docstring since the 2026-07-25 migration. This survives as support for
+        the codemods and their fidelity tests, which still need to read what the
+        retired attributes held.
+
         Handles both annotated (`x: str = "v"`) and plain (`x = "v"`) forms.
         Non-literal values resolve to `None` rather than raising - a computed
         marker is not harvestable and must surface as unmarked, not as a crash.
@@ -293,9 +303,23 @@ def _base_names(node: ast.ClassDef) -> List[str]:
     Return statically resolvable base-class names for one class.
 
     Contract:
-        Only names AST can see. Dynamic or computed bases are invisible here and
-        are reported through `unresolved_bases` rather than guessed at, so the
-        blind spots are named instead of silently wrong.
+        DIAGNOSTIC ONLY - this is NOT the inheritance resolution mechanism.
+
+        `ClassSurfaceAstDescriber._describe_inherited_agent_purposes` walks
+        `inspect.getmro()`, which is TRANSITIVE and C3-linearised. These are
+        DIRECT bases only, so resolving inherited purposes from them would
+        silently DROP every grandparent: a `MyWard(ConduitWard(Cleanable))`
+        would lose `Cleanable` entirely, and `Cleanable` alone has 325
+        descendants. AST cannot fix that by trying harder - linearisation
+        depends on the whole cross-module inheritance graph.
+
+        The describer therefore keeps `inspect.getmro` for the WALK and uses
+        `AGENT_METADATA` only for the LOOKUP. That still removes metadata from
+        class bodies, which is the actual goal, while leaving linearisation to
+        the only thing that computes it correctly.
+
+        Dynamic or computed bases remain invisible here; that is acceptable for
+        diagnostics and is why this must not become load-bearing.
 
     Args:
         node: The class definition being inspected.
@@ -377,9 +401,6 @@ def harvest() -> HarvestResult:
 
             access, purpose = parse_docstring_markers(ast.get_docstring(node) or "")
             source = "docstring"
-            if access is None and purpose is None:
-                access, purpose = _legacy_attributes(node)
-                source = "attribute"
 
             if access == AgentMetadataPolicy.EXEMPT_VALUE:
                 result.exempt.append(key)

@@ -44,14 +44,15 @@ class HookExecutionError(Exception):
         while its lifecycle hooks execute. Hooks are one of the DGR's documented
         extension points, so this error is the boundary where user-supplied
         behavior re-enters Melder's control flow.
+
+    AGENT_ACCESS: public
+
+    AGENT_PURPOSE:
+        access: public. Raised when a user lifecycle hook (pre_cast/activation/post_cast) raises
+        during meld; read original_exception, phase, hook_name. It means YOUR callback failed,
+        not Melder.
     """
 
-    __ast_helper_access__: str = "public"
-    __agent_purpose__: str = (
-        "access: public. Raised when a user lifecycle hook (pre_cast/activation/post_cast) "
-        "raises during meld; read original_exception, phase, hook_name. It means YOUR callback "
-        "failed, not Melder."
-    )
 
     def __init__(self, phase: str, hook_name: str, original_exception: Exception):
         """

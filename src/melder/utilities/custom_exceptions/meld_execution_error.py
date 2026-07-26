@@ -80,14 +80,15 @@ class MeldExecutionError(RuntimeError):
         it raises, a failed meld does NOT roll back the conduit - the object
         world stays live and the caller decides whether to retry, rebind, or
         tear down.
+
+    AGENT_ACCESS: public
+
+    AGENT_PURPOSE:
+        access: public. The single 'resolution failed' signal from the Meld runtime; start at
+        inner for the real cause, node_id/param_name narrow it. A dirty-root gate means
+        revalidate, not a defect.
     """
 
-    __ast_helper_access__: str = "public"
-    __agent_purpose__: str = (
-        "access: public. The single 'resolution failed' signal from the Meld runtime; start at "
-        "inner for the real cause, node_id/param_name narrow it. A dirty-root gate means "
-        "revalidate, not a defect."
-    )
 
     __slots__ = (
         "spell_id",

@@ -67,15 +67,15 @@ class ViewSpell(Cleanable):
         them honest across an ACL refresh - a cached helper would answer from
         the projection it was born with, after that projection had been
         replaced.
+
+    AGENT_ACCESS: public
+
+    AGENT_PURPOSE:
+        access: public. Spell-local helper surface for spell identity, origin, spell-index
+        grouping, filtering, detailed payload access, dunder-member visibility, and spell
+        crosswalk/comparison flows inside one selected frame.
     """
 
-    __ast_helper_access__: str = "public"
-    __agent_purpose__: str = (
-        "access: public. Spell-local helper surface for spell identity, "
-        "origin, spell-index grouping, filtering, detailed payload access, dunder-member "
-        "visibility, and spell crosswalk/comparison flows inside one selected "
-        "frame."
-    )
     __slots__ = Cleanable.__slots__ + [
         "_lock",
         "_frame_view",

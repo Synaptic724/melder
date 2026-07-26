@@ -66,15 +66,15 @@ class Cleanable(ABC):
         expressed through this one contract, which is why its idempotence
         guarantee is load-bearing for the whole system rather than a local
         convenience.
+
+    AGENT_ACCESS: public
+
+    AGENT_PURPOSE:
+        access: public. Base cleanup contract. Subclass this when your object owns resources
+        that need deterministic teardown; implement cleanup() idempotently and guard live-only
+        methods with check_cleaned(). Your subclasses stay bindable.
     """
 
-    __ast_helper_access__: str = "public"
-    __agent_purpose__: str = (
-        "access: public. Base cleanup contract. Subclass this when your object "
-        "owns resources that need deterministic teardown; implement cleanup() "
-        "idempotently and guard live-only methods with check_cleaned(). "
-        "Your subclasses stay bindable."
-    )
 
     __slots__ = ['_cleaned']
 

@@ -72,14 +72,15 @@ class SpellValidationContext(Cleanable):
         Phase 4 (validation) of the conjure pipeline, after Phases 1-3 have
         produced the requirements, symbolic graph, and resolution frame. It
         carries those artifacts to the strategies but performs no validation itself.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Phase-4 per-spell validation context handed to each strategy: the
+        spell, spellbook, and the Phase 1/2/3 artifacts, plus the shared mutable issues list and
+        an optional pass-scoped memo cache. Strategies read fields and append issues; they do
+        not own the list.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Phase-4 per-spell validation context handed to each strategy: the "
-        "spell, spellbook, and the Phase 1/2/3 artifacts, plus the shared mutable issues list "
-        "and an optional pass-scoped memo cache. Strategies read fields and append issues; they "
-        "do not own the list."
-    )
     __slots__ = Cleanable.__slots__ + [
         "spell",
         "spellbook",

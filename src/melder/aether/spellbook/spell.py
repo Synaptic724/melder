@@ -227,12 +227,13 @@ class Spell(Cleanable):
         - Dependency graphs, resolution frames, and resolution profiles are produced
           by the Resolution / Meld layer; `Spell` itself does not execute resolution.
 
+
+    AGENT_ACCESS: public
+
+    AGENT_PURPOSE:
+        access: public. One registered binding: identity, existence, permissions, spellframe,
+        hooks. You receive spells from bind and from viewer surfaces; you do not construct them.
     """
-    __ast_helper_access__: str = "public"
-    __agent_purpose__: str = (
-        "access: public. One registered binding: identity, existence, permissions, spellframe, hooks. "
-        "You receive spells from bind and from viewer surfaces; you do not construct them."
-    )
     __slots__ = Cleanable.__slots__ + [
         "_active",
         "_activation_hooks",

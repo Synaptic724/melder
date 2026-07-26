@@ -54,13 +54,14 @@ class ParameterDIShape(Enum):
         upstream of the symbolic graph (Phase 2), the local frame/DAG (Phase 3),
         and validation (Phase 4). Nothing here touches the Spellbook or the live
         object world.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Phase-1 enum classifying how one parameter wants to be satisfied:
+        IGNORE / PLAIN / SINGLE_BY_ANNOTATION / COLLECTION_BY_ANNOTATION / SPELLMAP_DEFAULT /
+        SPELL_CONTRACT. Describes intent only - it performs no lookups.
     """
-    __ast_helper_access__ = "internal"
-    __agent_purpose__ = (
-        "access: internal. Phase-1 enum classifying how one parameter wants to be satisfied: "
-        "IGNORE / PLAIN / SINGLE_BY_ANNOTATION / COLLECTION_BY_ANNOTATION / SPELLMAP_DEFAULT / "
-        "SPELL_CONTRACT. Describes intent only - it performs no lookups."
-    )
     IGNORE = auto()
     PLAIN = auto()
     SINGLE_BY_ANNOTATION = auto()

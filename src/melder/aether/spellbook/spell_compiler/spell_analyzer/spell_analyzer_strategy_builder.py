@@ -33,14 +33,15 @@ class SpellAnalyzerStrategyBuilder(Cleanable):
 
     System Context:
         Phase 8 (occurrence analysis) of the conjure pipeline.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Registry of analyzer strategies keyed by strategy_id: load_defaults /
+        get_strategy / get_strategies / registered_strategy_names. Owned by SpellAnalyzer; holds
+        no spells or artifacts.
     """
 
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Registry of analyzer strategies keyed by strategy_id: load_defaults / "
-        "get_strategy / get_strategies / registered_strategy_names. Owned by SpellAnalyzer; holds "
-        "no spells or artifacts."
-    )
 
     __slots__ = Cleanable.__slots__ + [
         "_strategies_by_name",

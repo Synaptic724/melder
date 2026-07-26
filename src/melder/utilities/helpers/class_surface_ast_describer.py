@@ -8,6 +8,8 @@ import json
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, TypedDict, Union, ClassVar
 
+from melder._build_assets._agent_metadata.agent_metadata import AGENT_METADATA, EXEMPT
+
 
 
 FunctionNode = Union[ast.FunctionDef, ast.AsyncFunctionDef]
@@ -153,14 +155,15 @@ class ClassSurfaceAstDescriber:
     Lifecycle:
         This class is never instantiated. It owns no mutable runtime state and
         allocates no per-object describer instances.
+
+    AGENT_ACCESS: public
+
+    AGENT_PURPOSE:
+        access: public. THE consumer of __ast_helper_access__ / __agent_purpose__: pass any
+        Melder object and get a source-defined (AST, no import) class-surface description -
+        members, signatures, docstrings, and the inherited agent-purpose chain - as a dict or
+        minified JSON.
     """
-    __ast_helper_access__: str = "public"
-    __agent_purpose__: str = (
-        "access: public. THE consumer of __ast_helper_access__ / __agent_purpose__: pass any "
-        "Melder object and get a source-defined (AST, no import) class-surface description - "
-        "members, signatures, docstrings, and the inherited agent-purpose chain - as a dict or "
-        "minified JSON."
-    )
 
     _SYSTEM_DOC_OBJECT_NAMES: ClassVar[Tuple[str, ...]] = (
         "__architecture__",
@@ -659,18 +662,43 @@ class ClassSurfaceAstDescriber:
         """
         Return the required AST helper access level for one object or raise.
 
+        Contract:
+            Accepts `public`, `internal`, and `private`.
+
+            `internal` was ADDED 2026-07-25 after a census showed the guard was
+            rejecting the codebase's most common value: 325 classes declare
+            `internal`, 79 declare `public`, and NOTHING declares `private`.
+            Describing any of those 325 classes therefore raised `ValueError`,
+            reachable through `FrameViewer.describe_class_surface_ast_json`.
+            `private` is retained as contract even with no live subjects, since
+            the purpose rule below still keys off it.
+
         Args:
             target_object:
                 Runtime object whose AST helper access should be resolved.
 
         Returns:
-            str: Required AST helper access level (`public` or `private`).
+            str: Required AST helper access level (`public`, `internal`, or
+                `private`).
+
+        Raises:
+            ValueError: When the marker is absent, non-string, or outside the
+                accepted set.
         """
-        access_level = type(target_object).__dict__.get("__ast_helper_access__")
+        target_class = type(target_object)
+        identity = (target_class.__module__, target_class.__qualname__)
+        if identity in EXEMPT:
+            return "exempt"
+        entry = AGENT_METADATA.get(identity)
+        access_level = entry[0] if entry is not None else None
         if access_level is None:
             raise ValueError(
-                "AST helper access is missing for class '{0}'.".format(
-                    type(target_object).__name__
+                "Agent metadata is missing for class '{0}' ({1}). Either the class "
+                "has no AGENT_ACCESS: marker in its docstring, or the generated "
+                "asset is stale - regenerate with "
+                "`python src/melder/_build_assets/_build_asset_runner.py`.".format(
+                    target_class.__name__,
+                    "{0}:{1}".format(*identity),
                 )
             )
         if not isinstance(access_level, str):
@@ -680,9 +708,10 @@ class ClassSurfaceAstDescriber:
                     type(target_object).__name__,
                 )
             )
-        if access_level not in {"public", "private"}:
+        if access_level not in {"public", "internal", "private"}:
             raise ValueError(
-                "AST helper access '{0}' is invalid for class '{1}'.".format(
+                "AST helper access '{0}' is invalid for class '{1}'. "
+                "Valid values are 'public', 'internal', and 'private'.".format(
                     access_level,
                     type(target_object).__name__,
                 )
@@ -707,7 +736,9 @@ class ClassSurfaceAstDescriber:
         Returns:
             str: Agent-purpose string for the object.
         """
-        agent_purpose = type(target_object).__dict__.get("__agent_purpose__")
+        target_class = type(target_object)
+        entry = AGENT_METADATA.get((target_class.__module__, target_class.__qualname__))
+        agent_purpose = entry[1] if entry is not None else None
         if isinstance(agent_purpose, str) and agent_purpose:
             return agent_purpose
         if access_level == "private":
@@ -742,7 +773,10 @@ class ClassSurfaceAstDescriber:
         """
         inherited_purposes: List[InheritedAgentPurposeDescription] = []
         for base_class in inspect.getmro(type(target_object))[1:]:
-            inherited_purpose = base_class.__dict__.get("__agent_purpose__")
+            entry = AGENT_METADATA.get(
+                (base_class.__module__, base_class.__qualname__)
+            )
+            inherited_purpose = entry[1] if entry is not None else None
             if not isinstance(inherited_purpose, str) or not inherited_purpose:
                 continue
             inherited_purposes.append(

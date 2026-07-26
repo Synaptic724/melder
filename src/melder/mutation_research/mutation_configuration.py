@@ -38,12 +38,13 @@ class MutationResearchConfiguration(Cleanable):
         that, replace-on-emit would wipe the record moments before hydration
         reads it. `lane_type_enforcement` also lives here, propagating to every
         research set at activation, hydration, and set creation.
+
+    AGENT_ACCESS: public
+
+    AGENT_PURPOSE:
+        access: public. Research-root policy. with_defaults() covers it; set
+        lane_type_enforcement to gate cross-type lane joins. activate() is its emission moment.
     """
-    __ast_helper_access__: str = "public"
-    __agent_purpose__: str = (
-        "access: public. Research-root policy. with_defaults() covers it; set lane_type_enforcement "
-        "to gate cross-type lane joins. activate() is its emission moment."
-    )
 
     __slots__ = Cleanable.__slots__ + [
         "_id",

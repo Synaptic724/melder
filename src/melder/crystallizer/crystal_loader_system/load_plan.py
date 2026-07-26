@@ -54,12 +54,13 @@ class LoadPlan(Cleanable):
         admission adjudication key that drives scope-aware verdict views; the carried windows
         are DETACHED replay payloads, never live runtime objects, which is what lets a load be
         inspected and gated before anything is built.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Value carrier describing one planned load. Melder kernel machinery:
+        read it to understand the runtime, do not drive it directly.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Value carrier describing one planned load. Melder kernel machinery: "
-        "read it to understand the runtime, do not drive it directly."
-    )
 
     __slots__ = (
         "_scope",

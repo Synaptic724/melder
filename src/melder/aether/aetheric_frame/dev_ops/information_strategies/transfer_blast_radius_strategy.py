@@ -62,12 +62,13 @@ class TransferBlastRadiusStrategy(DevopsInformationStrategy):
         the reach, so the caller is told not just what is affected but how
         current that picture is - and can refresh first rather than proceed on
         an old view.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Registry-backed impact set for transferring one conduit's ownership.
+        Melder kernel machinery: read it to understand the runtime, do not drive it directly.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Registry-backed impact set for transferring one conduit's ownership. "
-        "Melder kernel machinery: read it to understand the runtime, do not drive it directly."
-    )
 
     @staticmethod
     def execute(

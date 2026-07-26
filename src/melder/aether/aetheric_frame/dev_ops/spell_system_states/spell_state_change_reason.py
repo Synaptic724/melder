@@ -43,15 +43,14 @@ class SpellStateChangeReason(Enum):
         at a glance, which is the question an operator or agent asks first.
         Mutation overlays are the live producers worth knowing about:
         `Spell.apply_mutation_override` and `clear_mutation_override` emit
-        `mutation_contract_set` / `mutation_contract_cleared` even though the
-        runtime `MutationContract` descriptor itself is gone and Phase 4 blocks
-        that socket family.
+        `mutation_contract_set` / `mutation_contract_cleared`.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Last event that *changed* the state of an index. Melder kernel
+        machinery: read it to understand the runtime, do not drive it directly.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Last event that *changed* the state of an index. Melder kernel "
-        "machinery: read it to understand the runtime, do not drive it directly."
-    )
     # Registrations / bindings
     new_index = auto()            # first time this index was registered
     register_or_rebind = auto()     # new Spell bound to existing index
@@ -73,8 +72,8 @@ class SpellStateChangeReason(Enum):
     # Selection (general, not a mutation)
     selected_different_spell = auto()  # notch repointed the index to a different existing member
 
-    # Mutations (MutationContract / overlay)
-    mutation_contract_set = auto()      # MutationContract applied / overlay set
+    # Mutations (override overlay; the *_contract_* names are historical)
+    mutation_contract_set = auto()      # overlay set
     mutation_contract_cleared = auto()  # overlay removed / back to normal
     mutation_failed = auto()            # last mutation run/validation failed
     mutation_candidate = auto()         # index now backed by a candidate build

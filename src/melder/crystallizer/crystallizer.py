@@ -113,13 +113,15 @@ class Crystallizer(Cleanable):
         -> persistence -> configuration) is what keeps persistence a cohesive
         capability the rest of Melder uses through verbs, not a set of engines
         callers must wire together.
+
+    AGENT_ACCESS: public
+
+    AGENT_PURPOSE:
+        access: public. The persistence facade. Configure and activate it, then use the profile
+        and checkpoint verbs (create_checkpoint, load_checkpoint, describe_profile,
+        list_checkpoint_ids) plus analyze_impact(...). Every emit verb is a NO-OP while
+        inactive.
     """
-    __ast_helper_access__: str = "public"
-    __agent_purpose__: str = (
-        "access: public. The persistence facade. Configure and activate it, then use the profile and "
-        "checkpoint verbs (create_checkpoint, load_checkpoint, describe_profile, list_checkpoint_ids) "
-        "plus analyze_impact(...). Every emit verb is a NO-OP while inactive."
-    )
 
     _instance = None
     _lock = threading.RLock()

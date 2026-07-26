@@ -84,15 +84,16 @@ class FastSwitch(Cleanable):
         for call sites where the cost of a lock would exceed the cost of the
         thing being guarded - which is why its contract pushes correctness onto
         the caller rather than absorbing it.
+
+    AGENT_ACCESS: public
+
+    AGENT_PURPOSE:
+        access: public. Cheapest possible boolean/counter primitive, backed by deque ticket
+        count. Truthy when at least one ticket exists. No lock, no underflow guard - set_false()
+        on empty raises IndexError, and cleanup() is not idempotent. Use only where you own the
+        invariant.
     """
 
-    __ast_helper_access__: str = "public"
-    __agent_purpose__: str = (
-        "access: public. Cheapest possible boolean/counter primitive, backed by "
-        "deque ticket count. Truthy when at least one ticket exists. No lock, no "
-        "underflow guard - set_false() on empty raises IndexError, and cleanup() "
-        "is not idempotent. Use only where you own the invariant."
-    )
 
     __slots__ = ("_tickets",)
 

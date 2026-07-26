@@ -85,12 +85,13 @@ class ClusterJoinTransactionStrategy(TransactionStrategy):
         shared to some peers but not others would leave the cluster's core
         promise (every member resolves every other's shared roots) quietly
         false.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Cluster-join transaction resolver (DevOps scope isolation only).
+        Melder kernel machinery: read it to understand the runtime, do not drive it directly.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Cluster-join transaction resolver (DevOps scope isolation only). "
-        "Melder kernel machinery: read it to understand the runtime, do not drive it directly."
-    )
 
     @classmethod
     def build_start_plan(

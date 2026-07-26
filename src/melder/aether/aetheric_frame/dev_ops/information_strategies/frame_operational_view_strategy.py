@@ -61,12 +61,13 @@ class FrameOperationalViewStrategy(DevopsInformationStrategy):
         makes that safe to hand to tooling and agents. A view carrying live
         objects would let a consumer mutate runtime state through a diagnostic
         read, and would keep those objects alive past their owner's teardown.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Frame-wide operational rollup of the mirrored DevOps state. Melder
+        kernel machinery: read it to understand the runtime, do not drive it directly.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Frame-wide operational rollup of the mirrored DevOps state. Melder "
-        "kernel machinery: read it to understand the runtime, do not drive it directly."
-    )
 
     @staticmethod
     def execute(

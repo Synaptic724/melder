@@ -35,14 +35,15 @@ class CodegenPlanDiscoveryStrategyBuilder(Cleanable):
 
     System Context:
         Phase 10 (codegen planning) discovery of the conjure pipeline.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Registry of phase-10 discovery strategies keyed by strategy_id
+        (registration order = discovery order): solo, many_only, generalized. get_strategy /
+        get_strategies / registered_strategy_names. Owned by CodegenPlanDiscoverySystem.
     """
 
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Registry of phase-10 discovery strategies keyed by strategy_id "
-        "(registration order = discovery order): solo, many_only, generalized. get_strategy / "
-        "get_strategies / registered_strategy_names. Owned by CodegenPlanDiscoverySystem."
-    )
     __slots__ = Cleanable.__slots__ + [
         "_strategies_by_name",
     ]

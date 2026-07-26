@@ -46,12 +46,13 @@ class FrameLink(Cleanable):
         an ACL refresh. They describe what to ask for rather than caching an
         answer, so a stale link produces a fresh refusal rather than stale
         access.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. FrameLink runtime object. Melder kernel machinery: read it to
+        understand the runtime, do not drive it directly.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. FrameLink runtime object. Melder kernel machinery: read it to "
-        "understand the runtime, do not drive it directly."
-    )
 
     __slots__ = Cleanable.__slots__ + [
         "_link_id",

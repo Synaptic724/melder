@@ -151,13 +151,14 @@ class Conduit(Cleanable):
         frame-level state, so tearing one down cannot damage the root; upgrading
         one to normal PRESERVES its already-constructed objects rather than
         rebuilding them, because callers may already hold those instances.
+
+    AGENT_ACCESS: public
+
+    AGENT_PURPOSE:
+        access: public. The runtime scope you hold after conjure. Call meld(...) to resolve
+        instances, create_lesser_conduit(...) for child scopes, enter_spellspace() for request
+        scope, and link(...)/sever_link(...)/transfer_spell_ownership(...) in dynamic mode only.
     """
-    __ast_helper_access__: str = "public"
-    __agent_purpose__: str = (
-        "access: public. The runtime scope you hold after conjure. Call meld(...) to resolve "
-        "instances, create_lesser_conduit(...) for child scopes, enter_spellspace() for request "
-        "scope, and link(...)/sever_link(...)/transfer_spell_ownership(...) in dynamic mode only."
-    )
     __slots__ = Cleanable.__slots__ + [
        "_id",
        "_lock",

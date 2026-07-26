@@ -100,13 +100,15 @@ class SpellContract(Cleanable):
         which is also why `SpellContract` requires at least a `spell` or a
         `spellframe`: with neither there is no identity for a future linker to
         match against, and the socket could never be closed.
+
+    AGENT_ACCESS: public
+
+    AGENT_PURPOSE:
+        access: public. Declares a LATE-BOUND dependency hole for dynamic conduit linking. Write
+        it as a constructor default when the provider will arrive from another conduit. Requires
+        at least spell or spellframe. Unsatisfied is an ERROR in automatic mode, a warning in
+        dynamic.
     """
-    __ast_helper_access__: str = "public"
-    __agent_purpose__: str = (
-        "access: public. Declares a LATE-BOUND dependency hole for dynamic conduit linking. Write it "
-        "as a constructor default when the provider will arrive from another conduit. Requires at "
-        "least spell or spellframe. Unsatisfied is an ERROR in automatic mode, a warning in dynamic."
-    )
 
     __slots__ = Cleanable.__slots__ + [
         "spell",

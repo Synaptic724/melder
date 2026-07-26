@@ -96,13 +96,12 @@ Each item must include:
   unresolved in runtime code.
   Why it matters: Without explicit producers, mutation/contract diagnostics and
   policy gating can drift from actual runtime behavior.
-  Clarification: SpellContract/MutationContract descriptor behavior is already
-  evidenced and no longer unknown. SpellContract contract-unvalidated wiring is
-  present via Phase 4 + `mark_contract_dependents_dirty` call paths; and
-  MutationContract sockets are explicitly blocked in Phase 4 with
-  `MUTATION_CONTRACT_DISABLED`, while mutation overlays still emit
-  `mutation_contract_set` / `mutation_contract_cleared` through
-  `Spell.apply_mutation_override` and `Spell.clear_mutation_override`.
+  Clarification: SpellContract descriptor behavior is already evidenced and no
+  longer unknown - its contract-unvalidated wiring is present via Phase 4 plus the
+  `mark_contract_dependents_dirty` call paths. The mutation override overlay is a
+  separate, live mechanism - `Spell.apply_mutation_override` and
+  `Spell.clear_mutation_override` emit the `mutation_contract_set` /
+  `mutation_contract_cleared` reasons.
   Evidence from current sweep (SYNC NOTE 2026-07-11): the May MR skeleton that
   carried the placeholder hooks (`research/**` with `SpellMutationNode`,
   `CreationMutationNode`, `Research.promote_spell_version`) was DELETED in the
@@ -403,14 +402,12 @@ Responsibilities:
 - SpellMap encodes explicit DI intent and optional override payloads (dict/list/tuple).
 - SpellMap supports concrete spell, spellframe, and frame-only forms and supplies canonical keys via SpellInputUtils.
 - SpellContract declares late-bound sockets to be satisfied via conduit links.
-- Legacy mutation-socket classifications are still recognized by validation,
-  but no live `MutationContract` descriptor class remains in `src/melder`.
-- ParameterDIShape classification drives Phase 1 socket interpretation.
+- ParameterDIShape classification drives Phase 1 socket interpretation. It has SIX
+  members: `IGNORE`, `PLAIN`, `SINGLE_BY_ANNOTATION`, `COLLECTION_BY_ANNOTATION`,
+  `SPELLMAP_DEFAULT`, `SPELL_CONTRACT`.
 
 Inputs:
 - Spell/frame/binding identifiers and optional override payloads (dict/list/tuple).
-- Legacy mutation-socket classification metadata interpreted through
-  `ParameterDIShape.MUTATION_CONTRACT`.
 
 Outputs:
 - Canonical keys (frame_key, binding_key) and lookup triplets consumed by SpellCompiler and validators.
@@ -428,17 +425,14 @@ Invariants/Guarantees:
 - At least one of `spell` or `spellframe` must be provided.
 - Binding names are normalized for case-insensitive matching and default to `__default__` when omitted.
 - SpellMap preserves override payloads as provided; when `None`, no override is attached.
-- SpellContract is intended for dynamic mode usage; legacy mutation-socket
-  classifications are only preserved so validation can block them explicitly.
+- SpellContract is intended for dynamic mode usage.
 
 Failure Modes:
 - ValueError when both `spell` and `spellframe` are None.
-- `ContractProviderPresenceStrategy.validate` emits errors for SpellContract
-  sockets in automatic mode; emits warnings for missing SpellContract providers;
-  emits errors for invalid or ambiguous SpellContract defaults.
-- `ContractProviderPresenceStrategy.validate` emits
-  `MUTATION_CONTRACT_DISABLED` errors for legacy mutation-socket paths while
-  mutation systems are on hold.
+- `ContractProviderPresenceStrategy.validate` emits exactly four codes:
+  `CONTRACT_IN_AUTOMATIC_MODE` for SpellContract sockets in automatic mode,
+  `SPELL_CONTRACT_INVALID` and `SPELL_CONTRACT_AMBIGUOUS` for invalid or
+  multi-provider defaults, and the warning `SPELL_CONTRACT_MISSING_PROVIDER`.
 
 Observability:
 - Exceptions on invalid construction; validation issues reported in Phase 4.
@@ -2144,7 +2138,7 @@ Data Structures:
 - That module is a GENERATED DURABLE BUILD ASSET carrying `BUILT_FOR_VERSION` and
   `MANIFEST_ENTRY_COUNT` (577 at the current build). It is committed, not built at
   import: there is no loader, no first-import scan, and no cache-write fallback.
-  Regeneration is explicit via `python build_scripts/build_internal_manifest.py`.
+  Regeneration is explicit via `python src/melder/_build_assets/_build_asset_runner.py`.
 Semantics:
 - EXACT MATCH, NO INHERITANCE. Listing `Cleanable` blocks `Cleanable` itself; a user
   subclass carries its own module and qualname, is absent from the manifest, and binds
@@ -2166,7 +2160,7 @@ Key Files (C1):
   `_internal_identity_of`)
 - `src/melder/_build_assets/_init_manifest/internal_manifest.py` (GENERATED, committed)
 - `src/melder/_build_assets/_init_manifest/_builder.py` (build-time only)
-- `build_scripts/build_internal_manifest.py`
+- `src/melder/_build_assets/_build_asset_runner.py`
 
 ### Subcomponent: Packaged Hardcopy Document Modules
 Parent Component: Packaged Hardcopy Documents And Public Helper Exports
@@ -2366,19 +2360,15 @@ Concurrency/Threading:
 Key Files (C1):
 - `src/melder/aether/conduit/meld/contracts/spell_map.py`
 
-### Subcomponent: SpellContract and Legacy Mutation-Socket Semantics
+### Subcomponent: SpellContract Descriptor
 Parent Component: DI Descriptors and Contract Sockets
 Purpose:
-- Describe the live SpellContract descriptor plus the retained validation-only
-  semantics for the removed mutation-socket family.
+- Describe the late-bound contract socket a conduit link satisfies.
 Contract/Interface:
 - `SpellContract.lookup_triplet` and `canonical_key`.
-- Legacy mutation-socket classifications are currently blocked by Phase 4
-  validation (`MUTATION_CONTRACT_DISABLED`) while mutation systems are on
-  hold.
+- `SPELL_CONTRACT` is the contract-socket `ParameterDIShape`.
 Data Structures:
-- SpellContract keys and optional override payloads, plus validation-side
-  mutation-socket classification handling.
+- SpellContract keys and optional override payloads.
 Concurrency/Threading:
 - No internal lock.
 Key Files (C1):

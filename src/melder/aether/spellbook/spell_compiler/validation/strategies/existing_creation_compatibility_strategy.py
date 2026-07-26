@@ -56,14 +56,15 @@ class ExistingCreationCompatibilityStrategy(SpellValidationStrategy):
         Phase 4 (validation) of the conjure pipeline. Existing-creation spells bypass
         the live Phase 8-11 codegen group, so this validation gate is the main
         structural check they pass through.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Phase-4 strategy for existing-creation spells: errors if there is no
+        bound instance, existence is not unique, the instance binding profile is missing, or DI
+        parameters are declared. No-op for non-existing-creation spells.
     """
 
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Phase-4 strategy for existing-creation spells: errors if there is no "
-        "bound instance, existence is not unique, the instance binding profile is missing, or DI "
-        "parameters are declared. No-op for non-existing-creation spells."
-    )
     __slots__ = SpellValidationStrategy.__slots__
 
     def __init__(self) -> None:

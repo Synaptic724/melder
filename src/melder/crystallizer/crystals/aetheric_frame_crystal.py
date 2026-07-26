@@ -62,12 +62,13 @@ class AethericFrameCrystal(Cleanable):
         (child twins reference this frame by name, never nest under it) is what
         keeps the record a value graph restore can rebuild in dependency order
         rather than a deep object snapshot.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Pure-data digital twin of one AethericFrame's configured surface.
+        Melder kernel machinery: read it to understand the runtime, do not drive it directly.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Pure-data digital twin of one AethericFrame's configured surface. "
-        "Melder kernel machinery: read it to understand the runtime, do not drive it directly."
-    )
 
     __slots__ = Cleanable.__slots__ + [
         "_frame_name",

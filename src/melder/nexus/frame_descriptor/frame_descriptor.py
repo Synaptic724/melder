@@ -59,12 +59,13 @@ class FrameDescriptor(Cleanable):
         refresh paths depend on. Owning DERIVED records while only REFERENCING the
         live frame is the boundary that lets the Nexus rebuild its view on frame
         change without being responsible for the frame's own teardown.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. FrameDescriptor runtime object. Melder kernel machinery: read it to
+        understand the runtime, do not drive it directly.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. FrameDescriptor runtime object. Melder kernel machinery: read it to "
-        "understand the runtime, do not drive it directly."
-    )
 
     __slots__ = Cleanable.__slots__ + [
         "_id",

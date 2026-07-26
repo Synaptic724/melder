@@ -39,12 +39,13 @@ class CodegenExecutor(Cleanable):
         does.
         That is why the namespace is built only after accepted validation: the
         executor has no way to retract reach once execution begins.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Owner of governed code execution for one codegen request. Melder
+        kernel machinery: read it to understand the runtime, do not drive it directly.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Owner of governed code execution for one codegen request. Melder "
-        "kernel machinery: read it to understand the runtime, do not drive it directly."
-    )
 
     __slots__ = Cleanable.__slots__ + [
         "_lock",

@@ -39,12 +39,13 @@ class FrameACLSetCompatibilityReport(Cleanable):
         errors block a commit, warnings are for an operator to read and
         possibly accept. Collapsing them would force the validator to choose
         between blocking on suspicion and staying silent about it.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. FrameACLSetCompatibilityReport runtime object. Melder kernel
+        machinery: read it to understand the runtime, do not drive it directly.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. FrameACLSetCompatibilityReport runtime object. Melder kernel "
-        "machinery: read it to understand the runtime, do not drive it directly."
-    )
 
     __slots__ = Cleanable.__slots__ + [
         "_id",

@@ -58,12 +58,13 @@ class MemberDiffStrategy(GroupDiffStrategy):
         relation through the transitive parent chain - and absent either one the
         strategy reports removed-plus-added honestly rather than guessing. A
         shared catch-all lane can never manufacture a move on its own.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Roster comparison between two composition materials. Melder kernel
+        machinery: read it to understand the runtime, do not drive it directly.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Roster comparison between two composition materials. Melder kernel "
-        "machinery: read it to understand the runtime, do not drive it directly."
-    )
 
     __slots__ = GroupDiffStrategy.__slots__
 

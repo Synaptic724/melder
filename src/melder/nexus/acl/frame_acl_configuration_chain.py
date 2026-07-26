@@ -62,12 +62,13 @@ class FrameACLConfigurationChain(Cleanable):
         the refresh barrier can swap what a room evaluates against by moving
         current under the lock. Bounding deletion to tail-trim keeps recent
         history intact for rollback while capping unbounded growth.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. FrameACLConfigurationChain runtime object. Melder kernel machinery:
+        read it to understand the runtime, do not drive it directly.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. FrameACLConfigurationChain runtime object. Melder kernel machinery: "
-        "read it to understand the runtime, do not drive it directly."
-    )
 
     __slots__ = Cleanable.__slots__ + [
         "_id",

@@ -80,15 +80,16 @@ class ProtocolCrafter(Cleanable):
 
     Lifecycle:
         Cleanup is idempotent and only releases the crafter's local state.
+
+    AGENT_ACCESS: public
+
+    AGENT_PURPOSE:
+        access: public. Generates @runtime_checkable Protocol code from a class/object
+        (craft_protocol_code) and maintains bounded protocol blocks in interface files
+        (write_protocol_module_from_source_file). Exported for direct use; guarded, so call it -
+        do not bind it. It WRITES to disk, editing a delimited region only.
     """
 
-    __ast_helper_access__: str = "public"
-    __agent_purpose__: str = (
-        "access: public. Generates @runtime_checkable Protocol code from a class/object "
-        "(craft_protocol_code) and maintains bounded protocol blocks in interface files "
-        "(write_protocol_module_from_source_file). Exported for direct use; guarded, so call "
-        "it - do not bind it. It WRITES to disk, editing a delimited region only."
-    )
     __slots__ = Cleanable.__slots__ + [
         "_id",
         "_lock",

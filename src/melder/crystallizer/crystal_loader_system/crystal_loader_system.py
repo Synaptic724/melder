@@ -75,12 +75,13 @@ class CrystalLoaderSystem(Cleanable):
         (standard admission) - and it is cleaned BEFORE the record on teardown
         (borrower-before-owner, the EDGE/LOCK laws), so the record it reads from is always still
         live.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Own the crystallizer's load lanes and their durable state. Melder
+        kernel machinery: read it to understand the runtime, do not drive it directly.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Own the crystallizer's load lanes and their durable state. Melder "
-        "kernel machinery: read it to understand the runtime, do not drive it directly."
-    )
 
     __slots__ = Cleanable.__slots__ + [
         "_lock",

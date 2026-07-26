@@ -79,12 +79,13 @@ class FrameACLContainer(Cleanable):
         builders freely, concurrent drafts could interleave into a contract
         nobody authored - and because a chain bump fans a refresh out across
         every impacted Rift, that incoherence would propagate.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. FrameACLContainer runtime object. Melder kernel machinery: read it to
+        understand the runtime, do not drive it directly.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. FrameACLContainer runtime object. Melder kernel machinery: read it to "
-        "understand the runtime, do not drive it directly."
-    )
 
     __slots__ = Cleanable.__slots__ + [
         "_id",

@@ -21,12 +21,13 @@ class TargetSpecKind(Enum):
 
     System Context:
         Phase 3 (DAG) override targeting of the conjure/meld pipeline.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Override-targeting mode: PATH (a>b>c param path), UNIQUE (*name),
+        BROADCAST (**name). Classifies how an override key targets DAG sockets.
     """
-    __ast_helper_access__ = "internal"
-    __agent_purpose__ = (
-        "access: internal. Override-targeting mode: PATH (a>b>c param path), UNIQUE (*name), "
-        "BROADCAST (**name). Classifies how an override key targets DAG sockets."
-    )
     PATH = auto()
     UNIQUE = auto()
     BROADCAST = auto()
@@ -58,14 +59,15 @@ class TargetSpec:
     System Context:
         Phase 3 (DAG) override targeting - it resolves which socket(s) a meld
         override applies to.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Parsed override target key: kind (TargetSpecKind) plus path (PATH
+        segments) or param_name (UNIQUE/BROADCAST). Built by TargetSpec.parse(raw).
     """
     # Unannotated on purpose: an annotated class var could be misread as a
     # dataclass field on some Python versions; unannotated attrs never are.
-    __ast_helper_access__ = "internal"
-    __agent_purpose__ = (
-        "access: internal. Parsed override target key: kind (TargetSpecKind) plus path (PATH "
-        "segments) or param_name (UNIQUE/BROADCAST). Built by TargetSpec.parse(raw)."
-    )
     kind: TargetSpecKind
     path: Tuple[str, ...] | None = None
     param_name: str | None = None

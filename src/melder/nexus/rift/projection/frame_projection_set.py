@@ -47,12 +47,13 @@ class FrameProjectionSet(Cleanable):
         entrants at the Rift gate, drain in-flight tickets, swap the set,
         reopen. The generation marker makes it possible to tell whether a room
         is running current policy without comparing the projections themselves.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Owned set of consumer-shaped projections for one targeted frame.
+        Melder kernel machinery: read it to understand the runtime, do not drive it directly.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Owned set of consumer-shaped projections for one targeted frame. "
-        "Melder kernel machinery: read it to understand the runtime, do not drive it directly."
-    )
 
     __slots__ = Cleanable.__slots__ + [
         "_frame_name",

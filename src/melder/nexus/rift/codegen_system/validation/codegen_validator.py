@@ -68,12 +68,13 @@ class CodegenValidator(Cleanable):
         is a real user-facing operation, not merely an internal step - and it is
         why an accepted verdict is required before `CodegenSystem` will build a
         live namespace at all.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Root validation orchestrator for one codegen request. Melder kernel
+        machinery: read it to understand the runtime, do not drive it directly.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Root validation orchestrator for one codegen request. Melder kernel "
-        "machinery: read it to understand the runtime, do not drive it directly."
-    )
 
     __slots__ = Cleanable.__slots__ + [
         "_lock",

@@ -50,15 +50,15 @@ class EnumHelpers:
     - Returns already-normalized enum members unchanged when they belong to the
       requested enum type.
     - Raises immediately on `None`, incompatible types, or unknown values.
+
+    AGENT_ACCESS: public
+
+    AGENT_PURPOSE:
+        access: public. Static namespace for coercing raw strings into enum members at API
+        boundaries. Call convert_enum_and_check(...) to accept a friendly string and hold a real
+        member internally; unknown values refuse loudly rather than passing through.
     """
 
-    __ast_helper_access__: str = "public"
-    __agent_purpose__: str = (
-        "access: public. Static namespace for coercing raw strings into enum "
-        "members at API boundaries. Call convert_enum_and_check(...) to accept "
-        "a friendly string and hold a real member internally; unknown values "
-        "refuse loudly rather than passing through."
-    )
 
     @staticmethod
     # maxsize sized to the CLOSED vocabulary: 6 existences + 3 permissions
@@ -216,15 +216,16 @@ class SpellInputUtils:
         intent in the same terms. Phase 4's duplicate-spell-name strategy exists
         precisely because two bindings normalizing to one key would make
         name-based resolution ambiguous.
+
+    AGENT_ACCESS: public
+
+    AGENT_PURPOSE:
+        access: public. Static namespace for spell address normalization. Compose (frame_key,
+        bind_key) via normalize_spell_key(...) so bind and lookup agree exactly. Use
+        DEFAULT_BINDING_NAME rather than hardcoding '__default__' - a call site inventing its
+        own spelling silently misses.
     """
 
-    __ast_helper_access__: str = "public"
-    __agent_purpose__: str = (
-        "access: public. Static namespace for spell address normalization. "
-        "Compose (frame_key, bind_key) via normalize_spell_key(...) so bind and "
-        "lookup agree exactly. Use DEFAULT_BINDING_NAME rather than hardcoding "
-        "'__default__' - a call site inventing its own spelling silently misses."
-    )
 
     # Public constant so everyone uses the same default
     DEFAULT_BINDING_NAME: ClassVar[str] = "__default__"

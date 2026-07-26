@@ -38,12 +38,13 @@ class CodegenExecutionResult(Cleanable):
         Keeping the type executor-owned rather than shared preserves the same
         separation `validate_codegen` relies on - validation-only callers never
         receive runtime fields that could not have been populated.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Execution-layer result for one codegen request. Melder kernel
+        machinery: read it to understand the runtime, do not drive it directly.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Execution-layer result for one codegen request. Melder kernel "
-        "machinery: read it to understand the runtime, do not drive it directly."
-    )
 
     __slots__ = Cleanable.__slots__ + [
         "_lock",

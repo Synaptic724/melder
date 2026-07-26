@@ -68,12 +68,13 @@ class CodegenCommandSystem(CommandSystem):
         `research_preview` is codegen-only for the same reason: it produces a
         read-only candidate mock, which is code-shaped output that capability
         rooms deliberately do not take.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Codegen-room command surface. Melder kernel machinery: read it to
+        understand the runtime, do not drive it directly.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Codegen-room command surface. Melder kernel machinery: read it to "
-        "understand the runtime, do not drive it directly."
-    )
 
     _CODEGEN_RUNTIME_HELPER_METHOD_NAMES: Tuple[str, ...] = (
         "get_conduit_cloud",

@@ -70,12 +70,13 @@ class NexusFrameManager(Cleanable):
         creation path instead.
         Owning no persistent attachment registry is deliberate: derived safety
         from live state cannot go stale, while a mirror of attachments could.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Authoring and topology facade for Nexus-managed frames. Melder kernel
+        machinery: read it to understand the runtime, do not drive it directly.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Authoring and topology facade for Nexus-managed frames. Melder kernel "
-        "machinery: read it to understand the runtime, do not drive it directly."
-    )
 
     __slots__ = Cleanable.__slots__ + [
         "_id",

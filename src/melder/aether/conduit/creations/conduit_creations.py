@@ -52,12 +52,13 @@ class ConduitCreations(Creations):
         the safety boundary: spellspace buckets are request-local and must never
         survive a scope transition, so they are deliberately outside this
         class's reach.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Conduit-owned live creation registry. Melder kernel machinery: read it
+        to understand the runtime, do not drive it directly.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Conduit-owned live creation registry. Melder kernel machinery: read it "
-        "to understand the runtime, do not drive it directly."
-    )
 
     __slots__ = ()
 

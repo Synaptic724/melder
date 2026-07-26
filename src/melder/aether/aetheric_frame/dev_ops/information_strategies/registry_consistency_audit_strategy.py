@@ -63,13 +63,14 @@ class RegistryConsistencyAuditStrategy(DevopsInformationStrategy):
         mirrors themselves. Live-truth probing would require probe contracts on
         the runtime classes and is the catalog's recorded next extension, not a
         gap.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Internal symmetry audit over the registry's mirrored relationship
+        maps. Melder kernel machinery: read it to understand the runtime, do not drive it
+        directly.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Internal symmetry audit over the registry's mirrored relationship "
-        "maps. Melder kernel machinery: read it to understand the runtime, do not drive it "
-        "directly."
-    )
 
     @staticmethod
     def execute(

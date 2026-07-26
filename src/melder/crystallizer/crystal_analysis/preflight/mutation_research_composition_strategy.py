@@ -64,12 +64,13 @@ class MutationResearchCompositionStrategy(PersistenceAnalysisStrategy):
         seams will faithfully rebuild whatever the payload asserts - the
         disagreement is drift evidence for the user to read, not a
         reason to refuse their world.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Verify the folded MR composition's internal agreement before rebuild.
+        Melder kernel machinery: read it to understand the runtime, do not drive it directly.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Verify the folded MR composition's internal agreement before rebuild. "
-        "Melder kernel machinery: read it to understand the runtime, do not drive it directly."
-    )
 
 
     @property

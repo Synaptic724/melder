@@ -54,12 +54,13 @@ class FrameACLProfile(Cleanable):
         shared postures are borrowed, per-frame deviation is owned - and it is
         why the single-family profiles cascade cleanup into their rulesets while
         this one deliberately does not cascade into its family references.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. FrameACLProfile runtime object. Melder kernel machinery: read it to
+        understand the runtime, do not drive it directly.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. FrameACLProfile runtime object. Melder kernel machinery: read it to "
-        "understand the runtime, do not drive it directly."
-    )
 
     __slots__ = Cleanable.__slots__ + [
         "_id",

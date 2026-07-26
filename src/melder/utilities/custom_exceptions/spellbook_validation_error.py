@@ -66,14 +66,15 @@ class SpellbookValidationError(RuntimeError):
         Aether and there is no partial world to clean up. Its runtime
         counterpart is `MeldExecutionError`; between them they split "your graph
         cannot be built" from "your resolution failed while running".
+
+    AGENT_ACCESS: public
+
+    AGENT_PURPOSE:
+        access: public. The build-time 'your graph is broken' error from conjure/meld; the
+        message carries Phase 4/6 diagnostics with strategy attribution. Fix the binding, not
+        the validator.
     """
 
-    __ast_helper_access__: str = "public"
-    __agent_purpose__: str = (
-        "access: public. The build-time 'your graph is broken' error from conjure/meld; the "
-        "message carries Phase 4/6 diagnostics with strategy attribution. Fix the binding, not "
-        "the validator."
-    )
 
     def __init__(self, broken_spells: list[Spell]) -> None:
         """

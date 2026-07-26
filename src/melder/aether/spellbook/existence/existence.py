@@ -48,13 +48,15 @@ class Existence(Enum):
         Constraints exist where a mode would be incoherent: method, lambda, and
         existing-object bindings must use `unique`, because there is nothing
         meaningful to construct per scope.
+
+    AGENT_ACCESS: public
+
+    AGENT_PURPOSE:
+        access: public. Declares instance lifetime at bind: unique (per frame),
+        unique_per_conduit, many, unique_per_conduit_cluster, unique_per_conduit_lineage,
+        unique_per_spell_space. Pass it to Spellbook.bind(...). Method/lambda/existing-object
+        bindings must use unique.
     """
-    __ast_helper_access__: str = "public"
-    __agent_purpose__: str = (
-        "access: public. Declares instance lifetime at bind: unique (per frame), unique_per_conduit, "
-        "many, unique_per_conduit_cluster, unique_per_conduit_lineage, unique_per_spell_space. Pass "
-        "it to Spellbook.bind(...). Method/lambda/existing-object bindings must use unique."
-    )
     unique = auto()
     """
     One instance per **Aetheric Frame**.

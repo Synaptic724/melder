@@ -54,12 +54,13 @@ class StructuralDiffStrategy(DiffStrategy):
         pure documentation edit reports as docstring-only rather than as a body
         change - which is precisely the distinction a reviewer needs and a text
         diff cannot make.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. AST-level structural comparison between two version materials. Melder
+        kernel machinery: read it to understand the runtime, do not drive it directly.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. AST-level structural comparison between two version materials. Melder "
-        "kernel machinery: read it to understand the runtime, do not drive it directly."
-    )
 
     __slots__ = DiffStrategy.__slots__
 

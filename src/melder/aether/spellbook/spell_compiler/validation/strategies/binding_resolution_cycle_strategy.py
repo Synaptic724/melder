@@ -51,14 +51,15 @@ class BindingResolutionCycleStrategy(SpellValidationStrategy):
         Phase 4 (validation) of the conjure pipeline. It models resolution by
         canonical binding key, catching cycles that only appear once
         SpellMap/SpellContract/annotation targets are normalized.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Phase-4 strategy: builds a binding-KEY adjacency graph from the pool's
+        Phase-1 requirements (pass-cached) and emits BINDING_RESOLUTION_CYCLE (error) per cycle
+        reachable from the current spell's key. Catches loops invisible at the spell-id level.
     """
 
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Phase-4 strategy: builds a binding-KEY adjacency graph from the pool's "
-        "Phase-1 requirements (pass-cached) and emits BINDING_RESOLUTION_CYCLE (error) per cycle "
-        "reachable from the current spell's key. Catches loops invisible at the spell-id level."
-    )
     __slots__ = SpellValidationStrategy.__slots__
 
     def __init__(self) -> None:

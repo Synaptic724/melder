@@ -65,12 +65,13 @@ class RecordVersion:
         being misread, and an absent stamp reads as the oldest ("0.0.0") into the tolerance
         lanes - the discipline that lets recorded worlds outlive the code version that
         sealed them.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. The persistence record's schema version authority. Melder kernel
+        machinery: read it to understand the runtime, do not drive it directly.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. The persistence record's schema version authority. Melder kernel "
-        "machinery: read it to understand the runtime, do not drive it directly."
-    )
 
     CURRENT: ClassVar[str] = "1.0.0"
     KEY: ClassVar[str] = "record_version"

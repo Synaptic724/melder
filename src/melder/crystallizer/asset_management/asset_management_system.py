@@ -90,13 +90,14 @@ class AssetManagementSystem(Cleanable):
         the local cache, applies FIFO retention at the record's LIVE cap, and runs the lenient
         remote upload leg (a remote failure never breaks local custody). Reloads are
         insert-if-absent through the record's sink and never trigger retention.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Own the crystallizer's bytes at rest: cache files, formations, DB
+        seam. Melder kernel machinery: read it to understand the runtime, do not drive it
+        directly.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Own the crystallizer's bytes at rest: cache files, formations, DB "
-        "seam. Melder kernel machinery: read it to understand the runtime, do not drive it "
-        "directly."
-    )
 
 
     __slots__ = Cleanable.__slots__ + [

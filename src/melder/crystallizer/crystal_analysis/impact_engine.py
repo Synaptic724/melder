@@ -70,12 +70,13 @@ class ImpactEngine(Cleanable):
         ask impact questions of a sealed world without perturbing it, and
         answering unknown inputs honestly (empty radius plus an unknown marker,
         never a raise) keeps "what does X touch?" a total question.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Index custody manifests and answer blast-radius questions. Melder
+        kernel machinery: read it to understand the runtime, do not drive it directly.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Index custody manifests and answer blast-radius questions. Melder "
-        "kernel machinery: read it to understand the runtime, do not drive it directly."
-    )
 
 
     __slots__ = Cleanable.__slots__ + [

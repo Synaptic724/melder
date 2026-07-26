@@ -61,12 +61,13 @@ class AddToIndexTransactionStrategy(TransactionStrategy):
         deduped when they coincide. A narrower claim covering only the target
         would leave the source index mutable mid-move, and an observer could
         catch the spell in two indexes at once or in none.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Add-to-index transaction resolver (move a spell into a target index).
+        Melder kernel machinery: read it to understand the runtime, do not drive it directly.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Add-to-index transaction resolver (move a spell into a target index). "
-        "Melder kernel machinery: read it to understand the runtime, do not drive it directly."
-    )
 
     @classmethod
     def build_start_plan(

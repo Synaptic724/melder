@@ -71,13 +71,14 @@ class CrystallizerBootstrap(Cleanable):
         error); the chain verdict GATES the load - "broken" refuses loudly because booting a
         wrong world is worse than not booting, while "truncated_prefix" boots and rides the
         report.
+
+    AGENT_ACCESS: public
+
+    AGENT_PURPOSE:
+        access: public. Fluent single-use pod-boot chain: activate, attach the external manager,
+        reload cache, pull remote, verify the chain, restore the newest checkpoint. Use this to
+        bring a fresh process back to a recorded world in one expression.
     """
-    __ast_helper_access__: str = "public"
-    __agent_purpose__: str = (
-        "access: public. Fluent single-use pod-boot chain: activate, attach the external manager, "
-        "reload cache, pull remote, verify the chain, restore the newest checkpoint. Use this to "
-        "bring a fresh process back to a recorded world in one expression."
-    )
 
 
     __slots__ = Cleanable.__slots__ + [

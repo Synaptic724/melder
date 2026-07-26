@@ -59,13 +59,14 @@ class GroupDiffStrategy(Cleanable):
         worth having: a spell diff compares module text, a composition diff
         compares ROSTERS, and collapsing them would force one grain to pretend
         to be the other.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Base contract for one derived-diff computation over COMPOSITION
+        material. Melder kernel machinery: read it to understand the runtime, do not drive it
+        directly.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Base contract for one derived-diff computation over COMPOSITION "
-        "material. Melder kernel machinery: read it to understand the runtime, do not drive it "
-        "directly."
-    )
 
     __slots__ = Cleanable.__slots__
 

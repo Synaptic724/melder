@@ -124,12 +124,13 @@ class Meld(Cleanable, ABC):
         validity, contract validity, per-conduit resolution validity, and
         change-control dirty-root state BEFORE any instance is handed back, and
         re-runs the lazy phases when a lineage's validity is UNKNOWN or GATED.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. ## Meld: Spell Activation and Dependency Resolution. Melder kernel
+        machinery: read it to understand the runtime, do not drive it directly.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. ## Meld: Spell Activation and Dependency Resolution. Melder kernel "
-        "machinery: read it to understand the runtime, do not drive it directly."
-    )
     __slots__ = [
         "_lock",
         "_conduit_id",

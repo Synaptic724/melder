@@ -66,12 +66,13 @@ class SpellType(Enum):
         `METHOD*` and `LAMBDA_METHOD*` carry callable semantics and are
         unique-only for the same reason: there is no per-scope construction to
         vary.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Canonical runtime binding-family classification for bound spells.
+        Melder kernel machinery: read it to understand the runtime, do not drive it directly.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Canonical runtime binding-family classification for bound spells. "
-        "Melder kernel machinery: read it to understand the runtime, do not drive it directly."
-    )
     # Class-based construction spell families.
     SPELL = auto()
     SPELL_WITH_SPELLFRAME = auto()

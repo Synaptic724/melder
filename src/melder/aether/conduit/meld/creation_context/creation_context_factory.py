@@ -72,12 +72,13 @@ class CreationContextFactory(Cleanable):
         threads it into the contexts it builds; `_created_spell_index_ids`
         exists so that provisioning happens once per index rather than once per
         context.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Produce spell-shaped `CreationContext` instances. Melder kernel
+        machinery: read it to understand the runtime, do not drive it directly.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Produce spell-shaped `CreationContext` instances. Melder kernel "
-        "machinery: read it to understand the runtime, do not drive it directly."
-    )
 
     __slots__ = Cleanable.__slots__ + [
         "_dynamic_environment",

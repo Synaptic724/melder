@@ -69,16 +69,16 @@ class InitHelpers:
     - Delegates actual logger policy and fallback behavior to
       `AetherUtilitySystem`.
     - Does not hold runtime state of its own.
+
+    AGENT_ACCESS: public
+
+    AGENT_PURPOSE:
+        access: public. Static seam every runtime constructor uses to obtain a logger.
+        resolve_channel_logger(...) asks the hosted provider (returns a null SafeLogger when
+        channel logging is off - the default, so Melder is silent until policy is installed);
+        resolve_safe_logger(...) wraps a logger you already have.
     """
 
-    __ast_helper_access__: str = "public"
-    __agent_purpose__: str = (
-        "access: public. Static seam every runtime constructor uses to obtain a "
-        "logger. resolve_channel_logger(...) asks the hosted provider (returns "
-        "a null SafeLogger when channel logging is off - the default, so Melder "
-        "is silent until policy is installed); resolve_safe_logger(...) wraps a "
-        "logger you already have."
-    )
 
     __slots__ = ()
 

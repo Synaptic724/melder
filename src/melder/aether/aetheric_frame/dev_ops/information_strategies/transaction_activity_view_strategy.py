@@ -59,12 +59,13 @@ class TransactionActivityViewStrategy(DevopsInformationStrategy):
         type) keeps that query cheap and unambiguous - each axis is a direct
         index lookup rather than a scan, and requiring at least one axis
         prevents an accidental whole-registry dump.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Registry-backed view of live transaction activity along one axis.
+        Melder kernel machinery: read it to understand the runtime, do not drive it directly.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Registry-backed view of live transaction activity along one axis. "
-        "Melder kernel machinery: read it to understand the runtime, do not drive it directly."
-    )
 
     @staticmethod
     def execute(

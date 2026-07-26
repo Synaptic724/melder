@@ -55,12 +55,13 @@ class SpellSpacePool(AbstractElasticPool[SpellSpace]):
         this pool would be a correctness hazard rather than an optimization -
         which is the same reasoning that makes `pooled_lesser` a distinct
         `ConduitState` rather than just an idle `lesser`.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Elastic pool for reusable `SpellSpace` objects. Melder kernel
+        machinery: read it to understand the runtime, do not drive it directly.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Elastic pool for reusable `SpellSpace` objects. Melder kernel "
-        "machinery: read it to understand the runtime, do not drive it directly."
-    )
 
     __slots__ = AbstractElasticPool.__slots__ + [
         "_owner_conduit_creations",

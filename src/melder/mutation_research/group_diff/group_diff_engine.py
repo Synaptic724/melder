@@ -63,13 +63,14 @@ class GroupDiffEngine(Cleanable):
         `MemberDiffStrategy` requires evidence before pairing a removal with an
         addition as a version move: the engine cannot promise the join is
         populated, so the strategy must degrade honestly rather than infer.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Strategy-dispatched derived-diff computation over composition
+        material. Melder kernel machinery: read it to understand the runtime, do not drive it
+        directly.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Strategy-dispatched derived-diff computation over composition "
-        "material. Melder kernel machinery: read it to understand the runtime, do not drive it "
-        "directly."
-    )
 
     __slots__ = Cleanable.__slots__ + [
         "_material_resolver",

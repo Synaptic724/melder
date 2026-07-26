@@ -129,15 +129,15 @@ class LoadGate(Cleanable):
         restore went parallel: the scheduler's restore workers are logically
         part of the load and must pass, while genuinely foreign threads keep
         parking exactly as before.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Process-wide exclusive load authority. acquire(label) claims the
+        system for one loading thread; enroll_worker() adds that span's workers so they pass
+        too; every foreign thread parks at wait_for_passage() until release or times out naming
+        the holding load. One load at a time - nested acquire is a pairing bug, not a wait.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Process-wide exclusive load authority. acquire(label) "
-        "claims the system for one loading thread; enroll_worker() adds that "
-        "span's workers so they pass too; every foreign thread parks at "
-        "wait_for_passage() until release or times out naming the holding load. "
-        "One load at a time - nested acquire is a pairing bug, not a wait."
-    )
     __slots__ = Cleanable.__slots__ + [
         "_condition",
         "_holder_thread_id",

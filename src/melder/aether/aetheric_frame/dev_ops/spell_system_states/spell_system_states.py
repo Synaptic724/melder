@@ -111,12 +111,13 @@ class SpellSystemStates(Cleanable):
         dirties only local `list[Frame]` consumers, and satisfying a
         `SpellContract` dirties only that contract's consumers - not every
         spell in the book.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Per-frame registry for all SpellSystemState instances. Melder kernel
+        machinery: read it to understand the runtime, do not drive it directly.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Per-frame registry for all SpellSystemState instances. Melder kernel "
-        "machinery: read it to understand the runtime, do not drive it directly."
-    )
     __slots__ = Cleanable.__slots__ + [
         "_lock",
         "_frame",

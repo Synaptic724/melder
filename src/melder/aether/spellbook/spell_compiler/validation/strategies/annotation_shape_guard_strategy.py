@@ -44,14 +44,16 @@ class AnnotationShapeGuardStrategy(SpellValidationStrategy):
     System Context:
         Phase 4 (validation) of the conjure pipeline, catching unsupported
         annotation shapes before Phase-3 resolution would fail at runtime.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Phase-4 strategy: rejects unsupported collection DI annotation shapes.
+        Emits UNSUPPORTED_COLLECTION_SHAPE (set/dict/tuple of DI targets),
+        LIST_ELEMENT_NOT_DI_TARGET, and UNRESOLVED_FORWARD_REF. Only list[FrameType] is valid
+        collection DI.
     """
 
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Phase-4 strategy: rejects unsupported collection DI annotation shapes. "
-        "Emits UNSUPPORTED_COLLECTION_SHAPE (set/dict/tuple of DI targets), LIST_ELEMENT_NOT_DI_TARGET, "
-        "and UNRESOLVED_FORWARD_REF. Only list[FrameType] is valid collection DI."
-    )
     __slots__ = SpellValidationStrategy.__slots__
 
     def __init__(self) -> None:

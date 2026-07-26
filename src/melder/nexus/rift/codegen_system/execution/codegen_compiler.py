@@ -36,12 +36,13 @@ class CodegenCompiler(Cleanable):
         Not absorbing execution or validation keeps the stage single-purpose, so
         the one place that turns text into executable code is small enough to
         audit.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Internal compile stage for codegen execution. Melder kernel machinery:
+        read it to understand the runtime, do not drive it directly.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Internal compile stage for codegen execution. Melder kernel machinery: "
-        "read it to understand the runtime, do not drive it directly."
-    )
 
     __slots__ = Cleanable.__slots__ + [
         "_lock",

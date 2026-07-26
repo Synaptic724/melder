@@ -52,12 +52,13 @@ class ChangeTransactionType(StrEnum):
         here plus a strategy - not threading a new ad-hoc string through the
         whole control plane. Scan and embargo are deliberately NOT modeled as
         transaction types (they are not user-driven graph mutations).
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Change-control transaction types. Melder kernel machinery: read it to
+        understand the runtime, do not drive it directly.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Change-control transaction types. Melder kernel machinery: read it to "
-        "understand the runtime, do not drive it directly."
-    )
     BIND = "bind"
     CONJURE = "conjure"
     LINK = "link"
@@ -150,12 +151,13 @@ class ChangeControlTransactionRequest:
         field is where a strategy expresses its concurrency intent per key
         (exclusive/shared/intent); everything downstream - who blocks whom, what
         the lock table records - follows from these normalized keys and modes.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Immutable transaction request payload for admission and tracking.
+        Melder kernel machinery: read it to understand the runtime, do not drive it directly.
     """
-    __ast_helper_access__: ClassVar[str] = "internal"
-    __agent_purpose__: ClassVar[str] = (
-        "access: internal. Immutable transaction request payload for admission and tracking. "
-        "Melder kernel machinery: read it to understand the runtime, do not drive it directly."
-    )
     request_id: str
     request_type: ChangeTransactionType
     created_at: float
@@ -222,12 +224,13 @@ class ChangeControlAdmissionResult:
         refused without decoding lock-table internals. The `reasons` layer keeps
         that explanation machine-readable so callers branch on it without parsing
         identifier tuples.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Admission decision for a change-control transaction request. Melder
+        kernel machinery: read it to understand the runtime, do not drive it directly.
     """
-    __ast_helper_access__: ClassVar[str] = "internal"
-    __agent_purpose__: ClassVar[str] = (
-        "access: internal. Admission decision for a change-control transaction request. Melder "
-        "kernel machinery: read it to understand the runtime, do not drive it directly."
-    )
     admitted: bool
     reasons: Tuple[str, ...] = ()
     conflicts: Tuple[str, ...] = ()

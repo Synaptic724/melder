@@ -46,12 +46,13 @@ class CodegenBuiltinPolicyStrategy(Cleanable):
         That honesty matters: static analysis of Python cannot be exhaustive, so
         the validation chain is defence in depth alongside the namespace
         denylists and the ACL posture, not a proof of safety on its own.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Builtins-policy validation strategy. Melder kernel machinery: read it
+        to understand the runtime, do not drive it directly.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Builtins-policy validation strategy. Melder kernel machinery: read it "
-        "to understand the runtime, do not drive it directly."
-    )
 
     __slots__ = Cleanable.__slots__ + [
         "_lock",

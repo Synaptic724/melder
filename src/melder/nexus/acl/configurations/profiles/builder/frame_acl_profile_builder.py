@@ -53,12 +53,13 @@ class _NamedCleanableProfile(Protocol):
         unrelated types. Narrowing to the smallest surface that supports the
         helpers lets the families stay independent while sharing registry code,
         instead of forcing an inheritance relationship the domain does not have.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Minimal profile surface needed by the generic registry helpers. Melder
+        kernel machinery: read it to understand the runtime, do not drive it directly.
     """
-    __ast_helper_access__: ClassVar[str] = "internal"
-    __agent_purpose__: ClassVar[str] = (
-        "access: internal. Minimal profile surface needed by the generic registry helpers. Melder "
-        "kernel machinery: read it to understand the runtime, do not drive it directly."
-    )
 
     @property
     def name(self) -> str:
@@ -128,12 +129,13 @@ class FrameACLProfileBuilder(Cleanable):
         caller holds is its own to install and clean, while the builder owns only
         the reusable catalog it seeded - so tearing the builder down reclaims the
         presets without touching caller-owned bundles.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Registry and composition root for reusable frame ACL profiles. Melder
+        kernel machinery: read it to understand the runtime, do not drive it directly.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Registry and composition root for reusable frame ACL profiles. Melder "
-        "kernel machinery: read it to understand the runtime, do not drive it directly."
-    )
 
     _DEFAULT_PROFILE_NAME = "safe"
     _DEFAULT_PRECISION_PROFILE_NAME = "precision"

@@ -46,12 +46,13 @@ class ViewProjection(Cleanable):
         projection a stable answer. Reading live ACL state per question would
         let permissions shift mid-operation, which is exactly what the refresh
         barrier - block, drain, swap, reopen - exists to prevent.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Consumer-shaped view projection for one targeted frame. Melder kernel
+        machinery: read it to understand the runtime, do not drive it directly.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Consumer-shaped view projection for one targeted frame. Melder kernel "
-        "machinery: read it to understand the runtime, do not drive it directly."
-    )
 
     __slots__ = Cleanable.__slots__ + [
         "_frame_name",

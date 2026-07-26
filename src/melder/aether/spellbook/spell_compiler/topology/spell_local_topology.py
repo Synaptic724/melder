@@ -67,14 +67,15 @@ class SpellSocketDescriptor:
     System Context:
         Phase 3 (local topology) of the conjure pipeline; Phases 5-7 stitch these
         per-spell descriptors into the system-level blueprint.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Phase-3 immutable per-spell socket descriptor: spell_id, param_name,
+        position, socket_kind, is_collection/is_optional, resolved target_spell_ids, and
+        dependency_key/contract_key. Frozen value object.
     """
     # Unannotated on purpose: annotated class vars can be misread as dataclass fields.
-    __ast_helper_access__ = "internal"
-    __agent_purpose__ = (
-        "access: internal. Phase-3 immutable per-spell socket descriptor: spell_id, param_name, "
-        "position, socket_kind, is_collection/is_optional, resolved target_spell_ids, and "
-        "dependency_key/contract_key. Frozen value object."
-    )
     spell_id: str
     param_name: str
     position: int
@@ -108,13 +109,14 @@ class SpellLocalTopology(Cleanable):
     System Context:
         Phase 3 (local topology) of the conjure pipeline. Effectively immutable after
         construction.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Per-spell local topology: the SpellSocketDescriptor tuple plus a
+        param-name index (sockets / iter_sockets / get_sockets_for_param). Produced once in
+        Phase 3, effectively immutable.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Per-spell local topology: the SpellSocketDescriptor tuple plus a "
-        "param-name index (sockets / iter_sockets / get_sockets_for_param). Produced once in "
-        "Phase 3, effectively immutable."
-    )
     __slots__ = Cleanable.__slots__ + [
         "_spell_id",
         "_sockets",

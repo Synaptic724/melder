@@ -133,12 +133,13 @@ class ConduitWard(Cleanable):
         to this class, and the phase split exists to make it unreachable.
         Everything the ward does is dynamic-mode gated at the conduit surface;
         in automatic mode the graph is fixed at conjure and no contract forms.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Control-plane for a single Conduit: contracts, index, and policy.
+        Melder kernel machinery: read it to understand the runtime, do not drive it directly.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Control-plane for a single Conduit: contracts, index, and policy. "
-        "Melder kernel machinery: read it to understand the runtime, do not drive it directly."
-    )
     __slots__ = Cleanable.__slots__ + [
         "_lock",
         "_conduit",

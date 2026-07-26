@@ -42,12 +42,13 @@ class SystemState(Enum):
         dynamic gate that conjure's `check_system_state` reads. That is also why
         a restore must posture a frame before building its books, and why the
         crystallizer warns when a book's frame twin is missing from a bundle.
+
+    AGENT_ACCESS: public
+
+    AGENT_PURPOSE:
+        access: public. Runtime posture: automatic (fixed graph, safer) or dynamic (rewiring
+        allowed). Dynamic is REQUIRED for linking, severing, ownership transfer, and
+        lesser-to-normal upgrade. Set it on SpellbookConfiguration.
     """
-    __ast_helper_access__: str = "public"
-    __agent_purpose__: str = (
-        "access: public. Runtime posture: automatic (fixed graph, safer) or dynamic (rewiring "
-        "allowed). Dynamic is REQUIRED for linking, severing, ownership transfer, and "
-        "lesser-to-normal upgrade. Set it on SpellbookConfiguration."
-    )
     automatic = auto()
     dynamic = auto()

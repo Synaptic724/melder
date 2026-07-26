@@ -61,12 +61,13 @@ class SitePackageCustodyStrategy(SourceCustodyStrategy):
         drift. Descending through site packages for fact analysis while declining
         custody is the deliberate line between "understand what this world
         imports" and "claim responsibility for code Melder did not author."
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Authority-class custody for installed site-package modules. Melder
+        kernel machinery: read it to understand the runtime, do not drive it directly.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Authority-class custody for installed site-package modules. Melder "
-        "kernel machinery: read it to understand the runtime, do not drive it directly."
-    )
 
 
     __slots__ = ("_site_package_root_paths",)

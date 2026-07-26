@@ -49,14 +49,15 @@ class SpellRequirements(Cleanable):
         A Phase-1 output of the conjure pipeline, consumed downstream by the
         symbolic graph, DAG construction, and validation phases. It never touches
         the Spellbook or the live object world.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Phase-1 per-spell requirements artifact: identity (spell_id, type,
+        existence, spellframe, binding_name) plus the ordered SpellParameterRequirement list.
+        iter_di_parameters / iter_plain_parameters / iter_required_holes classify without
+        resolving.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Phase-1 per-spell requirements artifact: identity (spell_id, type, "
-        "existence, spellframe, binding_name) plus the ordered SpellParameterRequirement list. "
-        "iter_di_parameters / iter_plain_parameters / iter_required_holes classify without "
-        "resolving."
-    )
     __slots__ = Cleanable.__slots__ + [
         "_lock",
         "_spell_id",

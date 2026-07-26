@@ -50,13 +50,14 @@ class PhaseExecutionError(PhaseSchedulerError):
         `SpellbookValidationError` reports at the Spellbook boundary, so a user
         typically sees the validation error while this one carries the
         underlying per-unit detail.
+
+    AGENT_ACCESS: public
+
+    AGENT_PURPOSE:
+        access: public. Raised when units of work in a conjure phase raise; read the full errors
+        list (the message truncates to three). phase_name locates the break.
     """
 
-    __ast_helper_access__: str = "public"
-    __agent_purpose__: str = (
-        "access: public. Raised when units of work in a conjure phase raise; read the full "
-        "errors list (the message truncates to three). phase_name locates the break."
-    )
 
     def __init__(self, phase_name: str, errors: List[BaseException]) -> None:
         """

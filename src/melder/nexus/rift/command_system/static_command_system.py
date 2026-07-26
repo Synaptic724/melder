@@ -53,12 +53,13 @@ class StaticCommandSystem(CommandSystem):
         the matching honesty: once an object is in the canvas it is the caller's,
         and pretending to police it afterwards would promise a containment this
         room cannot actually enforce.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Static-room command surface. Melder kernel machinery: read it to
+        understand the runtime, do not drive it directly.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Static-room command surface. Melder kernel machinery: read it to "
-        "understand the runtime, do not drive it directly."
-    )
     _STATIC_COMMAND_METHOD_NAMES: tuple[str, ...] = (
         "meld_existing_spell",
         "describe_spell_status_by_source_id",

@@ -69,12 +69,13 @@ class SourceDriftStrategy(PersistenceAnalysisStrategy):
         fingerprints, so line-ending differences can never manufacture
         phantom drift. That matters in this repo specifically, where
         mixed CRLF and LF endings are present in real source files.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Compare every bind-time fingerprint against the live disk at load.
+        Melder kernel machinery: read it to understand the runtime, do not drive it directly.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Compare every bind-time fingerprint against the live disk at load. "
-        "Melder kernel machinery: read it to understand the runtime, do not drive it directly."
-    )
 
 
     @property

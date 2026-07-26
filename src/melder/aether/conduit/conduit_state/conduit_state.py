@@ -47,12 +47,13 @@ class ConduitState(Enum):
         branches on: only a normal conduit registers into frame-level surfaces
         and owns the Spellbook lifecycle, so a lesser conduit's teardown can
         never unregister state the root still depends on.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Lifecycle classification for a conduit instance. Melder kernel
+        machinery: read it to understand the runtime, do not drive it directly.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Lifecycle classification for a conduit instance. Melder kernel "
-        "machinery: read it to understand the runtime, do not drive it directly."
-    )
     normal = auto()
     lesser = auto()
     pooled_lesser = auto()

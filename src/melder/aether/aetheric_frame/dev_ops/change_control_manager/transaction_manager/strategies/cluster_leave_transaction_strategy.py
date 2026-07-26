@@ -85,12 +85,13 @@ class ClusterLeaveTransactionStrategy(TransactionStrategy):
         what makes exit safe. The departing member's shares are torn down in
         both directions across the whole membership, so a narrower seal would
         let a peer observe a half-removed member.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Cluster-leave transaction resolver (DevOps scope isolation only).
+        Melder kernel machinery: read it to understand the runtime, do not drive it directly.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Cluster-leave transaction resolver (DevOps scope isolation only). "
-        "Melder kernel machinery: read it to understand the runtime, do not drive it directly."
-    )
 
     @classmethod
     def build_start_plan(

@@ -84,12 +84,13 @@ class SqliteMeshAdapter(Cleanable):
         Store is INSERT OR REPLACE (the record's replace-on-emit precedent), delete is strict
         (raises so retention cannot silently half-run), and each verb uses its own connection so
         the handlers are free-threaded-safe flush-time IO.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. First-party SQLite provider for the external persistence mesh. Melder
+        kernel machinery: read it to understand the runtime, do not drive it directly.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. First-party SQLite provider for the external persistence mesh. Melder "
-        "kernel machinery: read it to understand the runtime, do not drive it directly."
-    )
 
 
     # Class-level defaults (no module constants law).

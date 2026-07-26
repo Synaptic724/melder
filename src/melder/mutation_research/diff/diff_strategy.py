@@ -54,12 +54,13 @@ class DiffStrategy(Cleanable):
         crystallizer custody material. That is why a strategy must never retain
         or mutate what it is handed - retaining material would quietly turn a
         derived answer into a second, divergent copy of the record.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Base contract for one derived-diff computation over version material.
+        Melder kernel machinery: read it to understand the runtime, do not drive it directly.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Base contract for one derived-diff computation over version material. "
-        "Melder kernel machinery: read it to understand the runtime, do not drive it directly."
-    )
 
     __slots__ = Cleanable.__slots__
 

@@ -100,15 +100,16 @@ class TicketFlag(Cleanable):
         that need to know whether anyone is currently inside them can wrap
         entry and exit without hand-maintaining a counter and without paying
         for a lock.
+
+    AGENT_ACCESS: public
+
+    AGENT_PURPOSE:
+        access: public. Depth-counting flag: truthy while at least one ticket is held, and
+        truthy writes STACK. Use `with flag:` to track whether anything is currently inside a
+        region. Safe sibling of FastSwitch - every op is guarded and empty-pop is a no-op rather
+        than an error.
     """
 
-    __ast_helper_access__: str = "public"
-    __agent_purpose__: str = (
-        "access: public. Depth-counting flag: truthy while at least one ticket "
-        "is held, and truthy writes STACK. Use `with flag:` to track whether "
-        "anything is currently inside a region. Safe sibling of FastSwitch - "
-        "every op is guarded and empty-pop is a no-op rather than an error."
-    )
 
     __slots__ = ("_tickets",)
 

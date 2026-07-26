@@ -97,13 +97,14 @@ class ScanBindMetadata:
         Hooks stored as tuples at rest and materialized into FRESH lists only
         when handed to `bind` is the same discipline applied to collections -
         the frozen payload cannot be mutated through a list a caller kept.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Frozen payload describing how a decorated object should be bound
+        later. Melder kernel machinery: read it to understand the runtime, do not drive it
+        directly.
     """
-    __ast_helper_access__: ClassVar[str] = "internal"
-    __agent_purpose__: ClassVar[str] = (
-        "access: internal. Frozen payload describing how a decorated object should be bound "
-        "later. Melder kernel machinery: read it to understand the runtime, do not drive it "
-        "directly."
-    )
     existence: Existence | str
     permissions: Permissions | str
     spellframe: Any | None
@@ -272,13 +273,14 @@ class Scan(Cleanable):
         Delegating ALL validation to `Spellbook.bind` means the deferred path
         and the direct path cannot diverge; there is one set of rules about what
         may become a spell, regardless of how it arrived.
+
+    AGENT_ACCESS: public
+
+    AGENT_PURPOSE:
+        access: public. Deferred registration. Pass ONE module to Spellbook.scan(...) and it
+        binds objects decorated with scan_bind. Module-only - no package traversal - and
+        re-exports are rejected by __module__ check.
     """
-    __ast_helper_access__: str = "public"
-    __agent_purpose__: str = (
-        "access: public. Deferred registration. Pass ONE module to Spellbook.scan(...) and it binds "
-        "objects decorated with scan_bind. Module-only - no package traversal - and re-exports are "
-        "rejected by __module__ check."
-    )
     __slots__ = tuple(Cleanable.__slots__) + ("_spellbook",)
 
     def __init__(self, spellbook: "Spellbook") -> None:

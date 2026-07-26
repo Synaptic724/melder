@@ -48,15 +48,16 @@ class SpellAnalyzer(Cleanable):
     System Context:
         Phase 8 (occurrence analysis) of the conjure pipeline - the post-phase-7 seam
         that enriches `SpellCompilerArtifact` before the planning stages run.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Phase-8 analyzer orchestrator: runs registered analyzer strategies
+        (resolved from its owned SpellAnalyzerStrategyBuilder) over a Spell +
+        SpellCompilerArtifact via analyze_occurrence. Enriches the artifact; does not choose the
+        codegen plan.
     """
 
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Phase-8 analyzer orchestrator: runs registered analyzer strategies "
-        "(resolved from its owned SpellAnalyzerStrategyBuilder) over a Spell + "
-        "SpellCompilerArtifact via analyze_occurrence. Enriches the artifact; does not choose the "
-        "codegen plan."
-    )
     __slots__ = Cleanable.__slots__ + [
         "_strategy_builder",
     ]

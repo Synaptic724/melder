@@ -118,14 +118,15 @@ class Nexus(Cleanable):
         its changed-frame SUBSET rather than wholesale. Single-frame callbacks
         delegate into that same batch primitive, so there is exactly one refresh
         path rather than two that could diverge.
+
+    AGENT_ACCESS: public
+
+    AGENT_PURPOSE:
+        access: public. The PUBLIC AR root over the hidden Aether substrate. Starts unconfigured
+        and disabled - call configure(...) then enable() before
+        create_rift_configuration()/create_rift(...). Owns frame descriptors, ACL, and
+        managed-frame authoring.
     """
-    __ast_helper_access__: str = "public"
-    __agent_purpose__: str = (
-        "access: public. The PUBLIC AR root over the hidden Aether substrate. Starts unconfigured and "
-        "disabled - call configure(...) then enable() before "
-        "create_rift_configuration()/create_rift(...). Owns frame descriptors, ACL, and managed-frame "
-        "authoring."
-    )
 
     _instance: ClassVar[Optional["Nexus"]] = None
     _lock: ClassVar[threading.RLock] = threading.RLock()

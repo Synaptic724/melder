@@ -133,16 +133,16 @@ class UnitOfWork(Cleanable, Future):
         never raises: a raising unit would unwind a pool worker instead of
         reporting into its latch, and the phase barrier would then wait out a
         unit that is already dead.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. One runnable unit bound to a callable, exposed as a Future. Two lanes:
+        run_synchronously() locks and re-raises for normal callers; run_for_scheduler() is
+        lock-free, never raises, and RETURNS the failure so a PhaseScheduler worker can report
+        it into its PhaseLatch. Cleanup releases the bound call but preserves the outcome.
     """
 
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. One runnable unit bound to a callable, exposed as a "
-        "Future. Two lanes: run_synchronously() locks and re-raises for normal "
-        "callers; run_for_scheduler() is lock-free, never raises, and RETURNS "
-        "the failure so a PhaseScheduler worker can report it into its "
-        "PhaseLatch. Cleanup releases the bound call but preserves the outcome."
-    )
     __slots__ = Cleanable.__slots__ + [
         "_func",
         "_args",

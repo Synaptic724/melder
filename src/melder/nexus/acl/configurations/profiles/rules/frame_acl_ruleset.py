@@ -43,12 +43,13 @@ class FrameACLRuleSet(Cleanable):
         mid-edit, and the 1:1 name keying makes "the rule for this operation" an
         O(1) lookup rather than a scan. This is the smallest owned unit the whole
         posture ladder is built from.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. FrameACLRuleSet runtime object. Melder kernel machinery: read it to
+        understand the runtime, do not drive it directly.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. FrameACLRuleSet runtime object. Melder kernel machinery: read it to "
-        "understand the runtime, do not drive it directly."
-    )
 
     __slots__ = Cleanable.__slots__ + [
         "_id",

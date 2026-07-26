@@ -163,14 +163,15 @@ class ConduitCluster(Cleanable):
         is never replayed from a record - the crystallizer's
         `cluster_membership` preflight row reports a recorded leader as INFO
         rather than restoring it, for exactly this reason.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. A membership group of conduits with TWO INDEPENDENT LAYERS: leaderless
+        spell-sharing (the core, always on) and an OPTIONAL elected-leader team store (only ever
+        needed for `unique_per_conduit_cluster` spells). Melder kernel machinery: read it to
+        understand the runtime, do not drive it directly.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. A membership group of conduits with TWO INDEPENDENT LAYERS: leaderless "
-        "spell-sharing (the core, always on) and an OPTIONAL elected-leader team store (only ever "
-        "needed for `unique_per_conduit_cluster` spells). Melder kernel machinery: read it to "
-        "understand the runtime, do not drive it directly."
-    )
     __slots__ = Cleanable.__slots__ + [
         "_lock",
         "_name",

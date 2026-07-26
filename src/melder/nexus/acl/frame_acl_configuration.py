@@ -96,12 +96,13 @@ class FrameACLConfiguration(Cleanable):
         this subsystem exists to prevent.
         Carrying linked-history metadata on the node keeps the chain
         self-describing, so provenance is walkable without a side table.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. FrameACLConfiguration runtime object. Melder kernel machinery: read it
+        to understand the runtime, do not drive it directly.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. FrameACLConfiguration runtime object. Melder kernel machinery: read it "
-        "to understand the runtime, do not drive it directly."
-    )
 
     __slots__ = Cleanable.__slots__ + [
         "_id",

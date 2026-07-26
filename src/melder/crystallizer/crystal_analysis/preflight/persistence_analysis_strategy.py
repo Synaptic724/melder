@@ -53,12 +53,13 @@ class PersistenceAnalysisStrategy(ABC):
         shortfalls that element, info is context - and it is what lets a new
         integrity check be added as a strategy without changing how callers
         consume the verdict.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. One analysis pass over a persistence payload bundle. Melder kernel
+        machinery: read it to understand the runtime, do not drive it directly.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. One analysis pass over a persistence payload bundle. Melder kernel "
-        "machinery: read it to understand the runtime, do not drive it directly."
-    )
 
 
     @property

@@ -90,14 +90,15 @@ class SpellValidationSystem(Cleanable):
         Phase 4 (validation) of the conjure pipeline, run after Phases 1-3. A
         produced error makes the spell broken and aborts conjure with
         `SpellbookValidationError` before any Conduit is built.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Phase-4 registry+runner: auto-registers the built-in
+        SpellValidationStrategy set, runs them in order over one SpellValidationContext per
+        spell, tags issues with their strategy, and returns a SpellValidationResult. Ephemeral -
+        one per validation run, cleaned after.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Phase-4 registry+runner: auto-registers the built-in "
-        "SpellValidationStrategy set, runs them in order over one SpellValidationContext per "
-        "spell, tags issues with their strategy, and returns a SpellValidationResult. Ephemeral "
-        "- one per validation run, cleaned after."
-    )
     __slots__ = Cleanable.__slots__ + [
         "_lock",
         "_strategies",

@@ -35,10 +35,11 @@ class Empty(Exception):
         Not tied to any DGR phase or subsystem. It is a substrate-level
         signal usable anywhere in the stack, which is exactly why it should be
         reached for last rather than first.
+
+    AGENT_ACCESS: public
+
+    AGENT_PURPOSE:
+        access: public. The contextless empty-container signal; catch it when an operation
+        required at least one item. Not queue.Empty - import this one explicitly.
     """
 
-    __ast_helper_access__: str = "public"
-    __agent_purpose__: str = (
-        "access: public. The contextless empty-container signal; catch it when an operation "
-        "required at least one item. Not queue.Empty - import this one explicitly."
-    )

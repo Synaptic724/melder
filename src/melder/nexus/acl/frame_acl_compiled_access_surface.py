@@ -40,12 +40,13 @@ class CompiledFrameACLAccessSurface(Cleanable):
         mid-operation continues against a coherent surface instead of watching
         permissions shift under it. That is exactly why the Nexus refresh path
         blocks entrants and drains before applying new projections.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. CompiledFrameACLAccessSurface runtime object. Melder kernel machinery:
+        read it to understand the runtime, do not drive it directly.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. CompiledFrameACLAccessSurface runtime object. Melder kernel machinery: "
-        "read it to understand the runtime, do not drive it directly."
-    )
 
     __slots__ = Cleanable.__slots__ + [
         "_id",

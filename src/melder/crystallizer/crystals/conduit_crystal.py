@@ -70,12 +70,13 @@ class ConduitCrystal(Cleanable):
         conduits only - lessers are ephemeral scope machinery rebuilt at runtime -
         is the boundary that keeps the record the durable structural truth, not a
         snapshot of transient runtime state.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Pure-data digital twin of one ROOT conduit's structural surface.
+        Melder kernel machinery: read it to understand the runtime, do not drive it directly.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Pure-data digital twin of one ROOT conduit's structural surface. "
-        "Melder kernel machinery: read it to understand the runtime, do not drive it directly."
-    )
 
     __slots__ = Cleanable.__slots__ + [
         "_conduit_id",

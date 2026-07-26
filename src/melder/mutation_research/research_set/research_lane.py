@@ -80,12 +80,13 @@ class LaneState(enum.Enum):
         - `archived`: the lane left the active view as a dead end; the
           organization snapshot machinery can restore views that contained
           it, and residence stays permanent so rediscovery still points here.
+
+    AGENT_ACCESS: public
+
+    AGENT_PURPOSE:
+        access: public. Lifecycle state of one research lane. Read it from lane views;
+        MutationResearch verbs move it.
     """
-    __ast_helper_access__: str = "public"
-    __agent_purpose__: str = (
-        "access: public. Lifecycle state of one research lane. Read it from lane views; "
-        "MutationResearch verbs move it."
-    )
 
     open = "open"
     joined = "joined"
@@ -125,13 +126,14 @@ class LaneType(enum.Enum):
           posture is on (configuration `lane_type_enforcement`, default
           off) - a type-mixing join then requires the same force=True
           supersede the divergence law already uses.
+
+    AGENT_ACCESS: public
+
+    AGENT_PURPOSE:
+        access: public. Lane classification - development, experiment, production, test. Pass to
+        create_lane(...). Cross-type joins require force=True when configuration
+        lane_type_enforcement is on.
     """
-    __ast_helper_access__: str = "public"
-    __agent_purpose__: str = (
-        "access: public. Lane classification - development, experiment, production, test. Pass to "
-        "create_lane(...). Cross-type joins require force=True when configuration "
-        "lane_type_enforcement is on."
-    )
 
     development = "development"
     experiment = "experiment"
@@ -198,15 +200,16 @@ class ResearchLane(Cleanable):
     Lifecycle:
         Owned by exactly one `ResearchSet`; `cleanup()` cleans owned nodes
         then deletes owned fields; idempotent; lock released last.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Governance (single-residence law, BUG-048): Lanes are handed out LIVE
+        as read surfaces. Every mutator on this class is set-internal (underscore-prefixed):
+        residence claims, the journal, snapshots, and persistence emission all live on the
+        owning `ResearchSet`, so public state change flows through set verbs ONLY. Melder kernel
+        machinery: read it to understand the runtime, do not drive it directly.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Governance (single-residence law, BUG-048): Lanes are handed out LIVE "
-        "as read surfaces. Every mutator on this class is set-internal (underscore-prefixed): "
-        "residence claims, the journal, snapshots, and persistence emission all live on the "
-        "owning `ResearchSet`, so public state change flows through set verbs ONLY. Melder kernel "
-        "machinery: read it to understand the runtime, do not drive it directly."
-    )
 
     __slots__ = Cleanable.__slots__ + [
         "_lane_id",

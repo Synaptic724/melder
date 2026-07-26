@@ -35,15 +35,16 @@ class CodegenPlanDiscoverySystem(Cleanable):
     System Context:
         Phase 10 (codegen planning) - it picks the plan strategy/family the planner
         then builds.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Phase-10 discovery facade: iterates its owned
+        CodegenPlanDiscoveryStrategyBuilder's strategies in order and returns the first
+        CodegenPlanDiscovery claim. Reads the model only; builds no plan. Currently defaults to
+        the generalized family.
     """
 
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Phase-10 discovery facade: iterates its owned "
-        "CodegenPlanDiscoveryStrategyBuilder's strategies in order and returns the first "
-        "CodegenPlanDiscovery claim. Reads the model only; builds no plan. Currently defaults to "
-        "the generalized family."
-    )
     __slots__ = Cleanable.__slots__ + [
         "_strategy_builder",
     ]

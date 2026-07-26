@@ -63,12 +63,13 @@ class ResidenceRegistry(Cleanable):
         source. That is also why residence claims are rolled back when a lane
         refuses a node: a claim that outlived its failed add would make a
         never-recorded identity permanently unavailable.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Single-residence partition map for one research set. Melder kernel
+        machinery: read it to understand the runtime, do not drive it directly.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Single-residence partition map for one research set. Melder kernel "
-        "machinery: read it to understand the runtime, do not drive it directly."
-    )
 
     __slots__ = Cleanable.__slots__ + [
         "_lane_id_by_spell_id",

@@ -68,14 +68,15 @@ class Workstation(Cleanable):
         from colliding, and the single active target reflects that a room is one
         person's workspace - a canvas with several simultaneous "current" things
         would make every target-relative command ambiguous.
+
+    AGENT_ACCESS: public
+
+    AGENT_PURPOSE:
+        access: public. The room-local binding canvas (space.workstation): save objects,
+        attribute and method bindings (strong or weak) and one active target across steps.
+        Commands do not store their results, so this is where you keep what matters.
     """
 
-    __ast_helper_access__: str = "public"
-    __agent_purpose__: str = (
-        "access: public. The room-local binding canvas (space.workstation): save objects, "
-        "attribute and method bindings (strong or weak) and one active target across steps. "
-        "Commands do not store their results, so this is where you keep what matters."
-    )
     __slots__ = Cleanable.__slots__ + [
         "_id",
         "_owner_space_id",

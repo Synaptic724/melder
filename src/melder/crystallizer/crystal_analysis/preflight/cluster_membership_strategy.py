@@ -50,12 +50,13 @@ class ClusterMembershipStrategy(PersistenceAnalysisStrategy):
         as a value to restore. Reporting it as a shortfall would tell the
         user something was lost when nothing was; staying silent would
         hide why the live leader may differ from the sealed one.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Detect cluster members missing from the bundle. Melder kernel
+        machinery: read it to understand the runtime, do not drive it directly.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Detect cluster members missing from the bundle. Melder kernel "
-        "machinery: read it to understand the runtime, do not drive it directly."
-    )
 
 
     @property

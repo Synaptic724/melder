@@ -103,16 +103,16 @@ class CounterSwitch(Cleanable):
           has no way to observe or drain in-flight selectors. Using a cleaned
           switch raises AttributeError, which is the intended loud failure for
           out-of-contract use.
+
+    AGENT_ACCESS: public
+
+    AGENT_PURPOSE:
+        access: public. Three-state coordination latch: 0=idle, 1=pending (a leader claimed it),
+        >=2=open. Call selector() to either pass through, become the leader, or park until the
+        leader finishes. Read fast_state for a lock-free hot-path view. Cleanup is terminal -
+        clean up only once your threads are done, never underneath live selectors.
     """
 
-    __ast_helper_access__: str = "public"
-    __agent_purpose__: str = (
-        "access: public. Three-state coordination latch: 0=idle, 1=pending "
-        "(a leader claimed it), >=2=open. Call selector() to either pass "
-        "through, become the leader, or park until the leader finishes. Read "
-        "fast_state for a lock-free hot-path view. Cleanup is terminal - clean "
-        "up only once your threads are done, never underneath live selectors."
-    )
 
     __slots__ = ("_lock", "_event", "_tickets", "fast_state")
     def __init__(self, state: int = 2) -> None:

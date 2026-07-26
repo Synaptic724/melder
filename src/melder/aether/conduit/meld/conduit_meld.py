@@ -67,12 +67,13 @@ class ConduitMeld(Meld):
         while broader-lived ones (`unique`, `unique_per_conduit_cluster`,
         `unique_per_conduit_lineage`) resolve against shared owner storage so
         peers in a cluster or lineage genuinely observe the same instance.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Concrete conduit-facing meld front door. Melder kernel machinery: read
+        it to understand the runtime, do not drive it directly.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Concrete conduit-facing meld front door. Melder kernel machinery: read "
-        "it to understand the runtime, do not drive it directly."
-    )
 
     # The creation-store surface (`_conduit_creations` / `_root_creations` /
     # `_cluster_creations` / `_spellspace_creations`) and its construction +

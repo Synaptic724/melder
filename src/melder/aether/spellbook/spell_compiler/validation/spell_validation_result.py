@@ -46,13 +46,14 @@ class SpellValidationResult(Cleanable):
         Phase 4 (validation) of the conjure pipeline. `has_errors` here is what
         surfaces as `Spell.is_broken` and drives `SpellbookValidationError`;
         warnings ride along without breaking the build.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Aggregate Phase-4 result for one spell version: spell_id, spell_name,
+        the full issues list, plus derived errors/warnings/has_errors/has_warnings views. The
+        artifact Spell.validated / is_broken reads from.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Aggregate Phase-4 result for one spell version: spell_id, spell_name, "
-        "the full issues list, plus derived errors/warnings/has_errors/has_warnings views. The "
-        "artifact Spell.validated / is_broken reads from."
-    )
     __slots__ = Cleanable.__slots__ + [
         "spell_id",
         "spell_name",

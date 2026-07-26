@@ -58,12 +58,13 @@ class UserSourceCustodyStrategy(SourceCustodyStrategy):
         (not site packages, not binaries) is the trust boundary that makes drift
         detection meaningful: it is Melder's answer for the code its user owns and
         can change under it.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Authority-class custody for policy-rooted user source modules. Melder
+        kernel machinery: read it to understand the runtime, do not drive it directly.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Authority-class custody for policy-rooted user source modules. Melder "
-        "kernel machinery: read it to understand the runtime, do not drive it directly."
-    )
 
 
     __slots__ = ("_user_root_paths",)

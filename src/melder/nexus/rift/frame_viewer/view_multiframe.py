@@ -62,12 +62,14 @@ class ViewMultiFrame(Cleanable):
         them honest across an ACL refresh - a cached helper would answer from
         the projection it was born with, after that projection had been
         replaced.
+
+    AGENT_ACCESS: public
+
+    AGENT_PURPOSE:
+        access: public. Descriptor-oriented cross-frame viewer helper. Use it to compare frames
+        and read descriptor records without touching any frame's runtime. Obtained from
+        FrameViewer.
     """
-    __ast_helper_access__: str = "public"
-    __agent_purpose__: str = (
-        "access: public. Descriptor-oriented cross-frame viewer helper. Use it to compare frames and "
-        "read descriptor records without touching any frame's runtime. Obtained from FrameViewer."
-    )
 
     __slots__ = Cleanable.__slots__ + [
         "_viewer",

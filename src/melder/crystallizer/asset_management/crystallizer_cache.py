@@ -55,12 +55,13 @@ class CrystallizerCache(Cleanable):
         a reader never sees a torn cached-item. Checkpoint retention is FIFO by recorded
         checkpoint number while name-addressed formations survive until explicitly deleted - a
         profile's cache folder IS its portable form.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Local filesystem custody for checkpoint cached-items and formations.
+        Melder kernel machinery: read it to understand the runtime, do not drive it directly.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Local filesystem custody for checkpoint cached-items and formations. "
-        "Melder kernel machinery: read it to understand the runtime, do not drive it directly."
-    )
 
 
     __slots__ = Cleanable.__slots__ + [

@@ -100,12 +100,13 @@ class GraftRunner(Cleanable):
         contract is MEMBERSHIP placement, never index-id preservation - fresh ids mint freely,
         the never-rehydrate-ULIDs law applied to indexes), and every structural write rides the
         host's own mediator, so a graft is admitted work rather than an engine bypass.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Re-integrate one captured spell_index into a live host book. Melder
+        kernel machinery: read it to understand the runtime, do not drive it directly.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Re-integrate one captured spell_index into a live host book. Melder "
-        "kernel machinery: read it to understand the runtime, do not drive it directly."
-    )
 
     __slots__ = Cleanable.__slots__ + [
         "_record",

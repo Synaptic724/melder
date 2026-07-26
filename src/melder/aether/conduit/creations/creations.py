@@ -67,12 +67,13 @@ class Creations(Cleanable):
         conduit-specific: the same structure serves conduit, root, cluster,
         lineage, and spellspace scopes, so a lifetime is expressed by WHICH
         instance holds the object, not by a different storage shape per mode.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Scoped live creation registry. Melder kernel machinery: read it to
+        understand the runtime, do not drive it directly.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Scoped live creation registry. Melder kernel machinery: read it to "
-        "understand the runtime, do not drive it directly."
-    )
 
     __slots__ = Cleanable.__slots__ + [
         "_owner_conduit_id",

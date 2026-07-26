@@ -77,12 +77,13 @@ class UnlinkTransactionStrategy(TransactionStrategy):
         contract is gone while its peer still holds it. Holding both
         participants EXCLUSIVE for the duration is what guarantees no third
         party observes that intermediate state.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Unlink (sever-link) transaction resolver. Melder kernel machinery:
+        read it to understand the runtime, do not drive it directly.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Unlink (sever-link) transaction resolver. Melder kernel machinery: "
-        "read it to understand the runtime, do not drive it directly."
-    )
 
     @classmethod
     def build_start_plan(

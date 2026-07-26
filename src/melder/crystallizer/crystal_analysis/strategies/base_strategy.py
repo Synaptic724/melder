@@ -86,12 +86,13 @@ class FactContext(Cleanable):
         strings/ints/tuples, never nodes) is what lets the analyzer MEMOIZE a cold
         pass's facts and then drop the source and tree, so re-analysis of an
         unchanged module costs nothing.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Mutable per-module accumulator shared by one AST dispatch pass. Melder
+        kernel machinery: read it to understand the runtime, do not drive it directly.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Mutable per-module accumulator shared by one AST dispatch pass. Melder "
-        "kernel machinery: read it to understand the runtime, do not drive it directly."
-    )
 
     __slots__ = (
         "_module_name",
@@ -290,12 +291,13 @@ class CrystalFactStrategy(Cleanable, ABC):
         ordering byte-compatible with the pre-decomposition single-pass extractor,
         so decomposing the old monolithic extractor into strategies changed the
         structure without changing a single recorded byte.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Contract for one fact-extraction pass over analyzed modules. Melder
+        kernel machinery: read it to understand the runtime, do not drive it directly.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Contract for one fact-extraction pass over analyzed modules. Melder "
-        "kernel machinery: read it to understand the runtime, do not drive it directly."
-    )
 
     @property
     @abstractmethod

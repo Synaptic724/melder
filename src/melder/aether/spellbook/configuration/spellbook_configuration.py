@@ -56,13 +56,14 @@ class SpellbookConfiguration(Cleanable):
         Hooks living here rather than on the Spellbook is what makes them
         adoptable: a frame-shared configuration carries one hook registry for
         every book that adopts it.
+
+    AGENT_ACCESS: public
+
+    AGENT_PURPOSE:
+        access: public. Rich per-book configuration: typed properties, idempotent keys, and the
+        Meld/Conduit/Link/Contract hook registry. Must be frozen before conjure. Idempotent keys
+        lock after first set, even before freeze.
     """
-    __ast_helper_access__: str = "public"
-    __agent_purpose__: str = (
-        "access: public. Rich per-book configuration: typed properties, idempotent keys, and the "
-        "Meld/Conduit/Link/Contract hook registry. Must be frozen before conjure. Idempotent keys "
-        "lock after first set, even before freeze."
-    )
     __slots__ = Cleanable.__slots__ + [
         "_id",
         "_lock",

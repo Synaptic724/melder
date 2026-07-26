@@ -45,12 +45,13 @@ class CapabilityCommandSystem(CommandSystem):
         It carries the twenty-one research READS but none of the preview,
         synthesis, or group-organization verbs, because those take or produce
         code and belong to the codegen posture.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Capability-room command surface. Melder kernel machinery: read it to
+        understand the runtime, do not drive it directly.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Capability-room command surface. Melder kernel machinery: read it to "
-        "understand the runtime, do not drive it directly."
-    )
 
     _CAPABILITY_COMMAND_METHOD_NAMES: Tuple[str, ...] = (
         "get_conduit_cloud",

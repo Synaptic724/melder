@@ -108,13 +108,14 @@ class MutationResearch(Cleanable):
         exactly why configuration activation must carry the recorded composition
         forward: the config's emission moment necessarily precedes the root's.
 
+
+    AGENT_ACCESS: public
+
+    AGENT_PURPOSE:
+        access: public. The research root, reached through Aether. Configure and activate, then
+        create_research_set(...) and use the read verbs: source_view, impact_view, module_view,
+        part_view, diff_research, residency_view, group_view.
     """
-    __ast_helper_access__: str = "public"
-    __agent_purpose__: str = (
-        "access: public. The research root, reached through Aether. Configure and activate, then "
-        "create_research_set(...) and use the read verbs: source_view, impact_view, module_view, "
-        "part_view, diff_research, residency_view, group_view."
-    )
 
     DEFAULT_RESEARCH_SET_NAME: ClassVar[str] = "default"
 

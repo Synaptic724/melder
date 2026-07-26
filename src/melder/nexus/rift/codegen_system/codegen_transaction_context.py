@@ -51,12 +51,13 @@ class CodegenTransactionContext(Cleanable):
         lifecycle events across stages. Without it, an event stream would show
         validation and execution as unrelated occurrences and a failed request
         could not be reconstructed end to end.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Per-call codegen transaction context. Melder kernel machinery: read it
+        to understand the runtime, do not drive it directly.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Per-call codegen transaction context. Melder kernel machinery: read it "
-        "to understand the runtime, do not drive it directly."
-    )
 
     __slots__ = Cleanable.__slots__ + [
         "_lock",

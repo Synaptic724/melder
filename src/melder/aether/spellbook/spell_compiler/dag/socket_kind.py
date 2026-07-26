@@ -21,12 +21,13 @@ class SocketKind(Enum):
 
     System Context:
         Phase 3 (local frame / DAG) of the conjure pipeline.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Phase-3 DAG edge classifier: NORMAL (regular DI socket) vs
+        SPELL_CONTRACT (late-bound provider socket). Two live socket families only.
     """
 
-    __ast_helper_access__ = "internal"
-    __agent_purpose__ = (
-        "access: internal. Phase-3 DAG edge classifier: NORMAL (regular DI socket) vs "
-        "SPELL_CONTRACT (late-bound provider socket). Two live socket families only."
-    )
     NORMAL = auto()
     SPELL_CONTRACT = auto()

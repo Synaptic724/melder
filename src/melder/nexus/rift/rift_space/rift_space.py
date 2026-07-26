@@ -116,15 +116,16 @@ class RiftSpace(Cleanable):
         The weak-versus-strong workstation default follows the same logic: a
         static room observing the world should not extend the lifetime of what
         it looks at, while a capability room actively working on objects should.
+
+    AGENT_ACCESS: public
+
+    AGENT_PURPOSE:
+        access: public. The base room/workspace a Rift hosts - it owns the viewer, workstation,
+        command system, and the room-local event and memory systems. You work in a concrete room
+        mode (static/capability/codegen) through space.command_system and space.workstation; you
+        do not construct or bind one.
     """
 
-    __ast_helper_access__: str = "public"
-    __agent_purpose__: str = (
-        "access: public. The base room/workspace a Rift hosts - it owns the viewer, "
-        "workstation, command system, and the room-local event and memory systems. You work "
-        "in a concrete room mode (static/capability/codegen) through space.command_system and "
-        "space.workstation; you do not construct or bind one."
-    )
     __slots__ = Cleanable.__slots__ + [
         "_id",
         "_space_name",

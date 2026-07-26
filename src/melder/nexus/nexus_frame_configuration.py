@@ -49,12 +49,13 @@ class NexusFrameConfiguration(Cleanable):
         Nexus-managed creation ROOTED by default - the public result of managed
         creation is a rooted conduit, not a bare frame, and that expectation is
         recorded here rather than assumed by the creation path.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Authored frame configuration for one Nexus-managed frame. Melder
+        kernel machinery: read it to understand the runtime, do not drive it directly.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Authored frame configuration for one Nexus-managed frame. Melder "
-        "kernel machinery: read it to understand the runtime, do not drive it directly."
-    )
 
     __slots__ = Cleanable.__slots__ + [
         "_id",

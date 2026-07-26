@@ -58,12 +58,13 @@ class CrystallizerConfigurationBuilder(Cleanable):
         object - the same settle-before-activate discipline the record depends on - so the
         configuration handed to `Crystallizer.activate(...)` has exactly one owner at each
         step.
+
+    AGENT_ACCESS: public
+
+    AGENT_PURPOSE:
+        access: public. Fluent one-shot builder for CrystallizerConfiguration. Assemble then
+        build()/finalize()/activate(); ownership transfers and the builder is spent.
     """
-    __ast_helper_access__: str = "public"
-    __agent_purpose__: str = (
-        "access: public. Fluent one-shot builder for CrystallizerConfiguration. Assemble then "
-        "build()/finalize()/activate(); ownership transfers and the builder is spent."
-    )
 
     __slots__ = Cleanable.__slots__ + [
         "_id",

@@ -146,13 +146,14 @@ and logging.
         `Spell` it produces is the unit of currency every downstream layer keys
         on - the SpellCompiler phases, SpellSystemStates validity, ChangeControl
         dirty-roots, and Meld resolution all resolve through it.
+
+    AGENT_ACCESS: public
+
+    AGENT_PURPOSE:
+        access: public. The binding authority. Call bind(...)/scan(...) to register, then
+        conjure(...) exactly once to build the root Conduit. Also owns the transaction-backed
+        SpellIndex verbs: notch_spell, add_spell_into_spellindex, remove_spell_from_spellindex.
     """
-    __ast_helper_access__: str = "public"
-    __agent_purpose__: str = (
-        "access: public. The binding authority. Call bind(...)/scan(...) to register, then "
-        "conjure(...) exactly once to build the root Conduit. Also owns the transaction-backed "
-        "SpellIndex verbs: notch_spell, add_spell_into_spellindex, remove_spell_from_spellindex."
-    )
     _aether: ClassVar[Aether] = Aether()
     __slots__ = Cleanable.__slots__ + [
         "__dict__",

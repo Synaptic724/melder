@@ -57,12 +57,13 @@ class ResearchNode(Cleanable):
         stay purely referential and still support source, diff, and impact
         reads. Nodes are minted from the Spellbook's bind and notch confirmation
         points while the research root is active.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. One immutable version record inside a research lane. Melder kernel
+        machinery: read it to understand the runtime, do not drive it directly.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. One immutable version record inside a research lane. Melder kernel "
-        "machinery: read it to understand the runtime, do not drive it directly."
-    )
 
     __slots__ = Cleanable.__slots__ + [
         "_spell_id",

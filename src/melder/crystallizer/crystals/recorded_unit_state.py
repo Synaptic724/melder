@@ -55,13 +55,14 @@ class RecordedUnitState(enum.Enum):
         that as a switch beside a retained twin - rather than a tombstone/eviction,
         which is how ordinary removable twins express absence - is what lets the
         record distinguish "configured but off" from "deliberately destroyed."
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Recorded lifecycle state for singleton units the record tracks by
+        state-switch instead of eviction (MutationResearch, Nexus). Melder kernel machinery:
+        read it to understand the runtime, do not drive it directly.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Recorded lifecycle state for singleton units the record tracks by "
-        "state-switch instead of eviction (MutationResearch, Nexus). Melder kernel machinery: "
-        "read it to understand the runtime, do not drive it directly."
-    )
 
     enabled = "enabled"
     disabled = "disabled"

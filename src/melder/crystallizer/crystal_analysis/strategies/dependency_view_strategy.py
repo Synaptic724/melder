@@ -68,12 +68,13 @@ class DependencyViewStrategy(CrystalFactStrategy):
         topological sort, the remaining nodes are appended deterministically and a
         walk error names them, so the order stays usable AND the honesty ledger
         records that the graph had a cycle rather than silently papering over it.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Derive the topological unfold order over walked modules. Melder kernel
+        machinery: read it to understand the runtime, do not drive it directly.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Derive the topological unfold order over walked modules. Melder kernel "
-        "machinery: read it to understand the runtime, do not drive it directly."
-    )
 
     __slots__ = ()
 

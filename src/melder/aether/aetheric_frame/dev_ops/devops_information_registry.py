@@ -88,13 +88,14 @@ class DevopsFactRecord:
         traces to the request or strategy execution that established it, which
         is what makes a disagreement between two views diagnosable rather than
         merely visible.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Immutable last-reported fact baseline for one fact family in one
+        region. Melder kernel machinery: read it to understand the runtime, do not drive it
+        directly.
     """
-    __ast_helper_access__: ClassVar[str] = "internal"
-    __agent_purpose__: ClassVar[str] = (
-        "access: internal. Immutable last-reported fact baseline for one fact family in one "
-        "region. Melder kernel machinery: read it to understand the runtime, do not drive it "
-        "directly."
-    )
     fact_family: str
     region: str
     last_reported_at: float
@@ -170,13 +171,14 @@ class DevopsInformationRegistry(Cleanable):
         objects unregister themselves as they die, and if the manager owned
         this mirror, manager cleanup would invalidate it while conduits were
         still writing to it.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Frame-local registry of dev-ops identities, relationships, and
+        transaction metadata. Melder kernel machinery: read it to understand the runtime, do not
+        drive it directly.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Frame-local registry of dev-ops identities, relationships, and "
-        "transaction metadata. Melder kernel machinery: read it to understand the runtime, do not "
-        "drive it directly."
-    )
 
     __slots__ = Cleanable.__slots__ + [
         "_lock",

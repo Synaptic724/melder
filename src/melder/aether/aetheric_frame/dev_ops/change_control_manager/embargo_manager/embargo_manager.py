@@ -55,12 +55,13 @@ class ClaimMode(StrEnum):
         without serializing it. Choosing the right mode per key is precisely how
         the DGR gets concurrency on independent subtrees while keeping true
         structural overlap safe.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Claim modes for scope-key acquisition. Melder kernel machinery: read
+        it to understand the runtime, do not drive it directly.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Claim modes for scope-key acquisition. Melder kernel machinery: read "
-        "it to understand the runtime, do not drive it directly."
-    )
     EXCLUSIVE = "x"
     SHARED = "s"
     INTENT = "ix"
@@ -107,12 +108,13 @@ class ChangeControlEmbargoRecord:
         `reason_tag` is what makes the lock table self-describing: an operator
         or agent inspecting a stuck acquisition sees WHAT kind of transaction
         holds each key, not just an opaque id.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Immutable record describing one claimed scope key. Melder kernel
+        machinery: read it to understand the runtime, do not drive it directly.
     """
-    __ast_helper_access__: ClassVar[str] = "internal"
-    __agent_purpose__: ClassVar[str] = (
-        "access: internal. Immutable record describing one claimed scope key. Melder kernel "
-        "machinery: read it to understand the runtime, do not drive it directly."
-    )
     scope_key: str
     reason_tag: str
     owner_request_id: str
@@ -159,12 +161,13 @@ class AcquisitionDecision:
         contends with the seal already covering it, presents as a hang. With
         holder identity in hand the cause is immediately visible; without it,
         the symptom is indistinguishable from ordinary contention.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Immutable outcome of one all-or-nothing scope acquisition attempt.
+        Melder kernel machinery: read it to understand the runtime, do not drive it directly.
     """
-    __ast_helper_access__: ClassVar[str] = "internal"
-    __agent_purpose__: ClassVar[str] = (
-        "access: internal. Immutable outcome of one all-or-nothing scope acquisition attempt. "
-        "Melder kernel machinery: read it to understand the runtime, do not drive it directly."
-    )
     acquired: bool
     blocking: Tuple[Tuple[str, str, str], ...] = ()
 
@@ -222,12 +225,13 @@ class ChangeControlEmbargoManager(Cleanable):
         deadlock-by-partial-claim (a request takes its whole key set or nothing),
         and owner-request keying lets commit and abort both release through a
         single path even though a transaction crosses many call frames.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Moded scope-key lock table for transaction admission. Melder kernel
+        machinery: read it to understand the runtime, do not drive it directly.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Moded scope-key lock table for transaction admission. Melder kernel "
-        "machinery: read it to understand the runtime, do not drive it directly."
-    )
     __slots__ = Cleanable.__slots__ + [
         "_lock",
         "_condition",

@@ -56,12 +56,13 @@ class PersistenceCrystal(Cleanable):
         callables) is what lets a checkpoint survive replace-on-emit cleanup and cross the
         cache/DB boundary; it is the durable unit the loader's admission pipeline folds and
         replays on restore.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. One sealed checkpoint: the snapshot artifact of a profile's segment.
+        Melder kernel machinery: read it to understand the runtime, do not drive it directly.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. One sealed checkpoint: the snapshot artifact of a profile's segment. "
-        "Melder kernel machinery: read it to understand the runtime, do not drive it directly."
-    )
 
     __slots__ = Cleanable.__slots__ + [
         "_id",

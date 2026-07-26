@@ -70,12 +70,13 @@ class SourceCustodyStrategy(Cleanable, ABC):
         never-raise-for-content rule (failures flow to the walk-error ledger) is
         what keeps analysis HONEST - a bad file is reported, not thrown, so one
         unreadable module cannot abort a whole world's record.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Contract for one authority class's custody behavior during analysis.
+        Melder kernel machinery: read it to understand the runtime, do not drive it directly.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Contract for one authority class's custody behavior during analysis. "
-        "Melder kernel machinery: read it to understand the runtime, do not drive it directly."
-    )
 
     @property
     @abstractmethod

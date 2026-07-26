@@ -61,13 +61,14 @@ class NexusConfiguration(Cleanable):
         identically for every Rift. Per-Rift room and history semantics stay
         down on the Rift, because they legitimately differ between Rifts and
         pushing them up would force one Rift's choice onto all of them.
+
+    AGENT_ACCESS: public
+
+    AGENT_PURPOSE:
+        access: public. Process-wide AR policy: creation/access gates, frame topology mode,
+        target-frame restrictions, Rift budgets, and the projection refresh barrier. Mutable
+        until frozen. Per-Rift settings belong on RiftConfiguration.
     """
-    __ast_helper_access__: str = "public"
-    __agent_purpose__: str = (
-        "access: public. Process-wide AR policy: creation/access gates, frame topology mode, "
-        "target-frame restrictions, Rift budgets, and the projection refresh barrier. Mutable until "
-        "frozen. Per-Rift settings belong on RiftConfiguration."
-    )
 
     __slots__ = Cleanable.__slots__ + [
         "_id",

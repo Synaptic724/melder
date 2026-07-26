@@ -38,14 +38,15 @@ class DirectedAcyclicWorkGraph(Cleanable):
     System Context:
         Phase 3 (local frame / DAG) of the conjure pipeline; `topological_levels`
         feeds the parallel-restore execution planner.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Minimal DAG of DagNodes keyed by id: add_node/add_dependency (+ bulk),
+        topological_sort, topological_levels (parallel-execution peeling),
+        collect_dependency_ids, execute. Static build-then-sort; RLock-guarded. Not a general
+        workflow engine.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Minimal DAG of DagNodes keyed by id: add_node/add_dependency (+ "
-        "bulk), topological_sort, topological_levels (parallel-execution peeling), "
-        "collect_dependency_ids, execute. Static build-then-sort; RLock-guarded. Not a general "
-        "workflow engine."
-    )
     __slots__ = Cleanable.__slots__ + [
         "_id",
         "_lock",

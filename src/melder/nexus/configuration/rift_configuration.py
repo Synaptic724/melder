@@ -45,12 +45,13 @@ class RiftConfiguration(Cleanable):
         and access gates, frame topology, and budgets are governance and belong
         to `NexusConfiguration`; room posture and per-Rift defaults legitimately
         differ between Rifts and belong here.
+
+    AGENT_ACCESS: public
+
+    AGENT_PURPOSE:
+        access: public. Per-Rift settings, chiefly space_type which fixes the room posture for
+        the Rift's life. Mutable until frozen. Build via Nexus.create_rift_configuration().
     """
-    __ast_helper_access__: str = "public"
-    __agent_purpose__: str = (
-        "access: public. Per-Rift settings, chiefly space_type which fixes the room posture for the "
-        "Rift's life. Mutable until frozen. Build via Nexus.create_rift_configuration()."
-    )
 
     __slots__ = Cleanable.__slots__ + [
         "_id",

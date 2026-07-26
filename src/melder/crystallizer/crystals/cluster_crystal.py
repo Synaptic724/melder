@@ -60,12 +60,13 @@ class ClusterCrystal(Cleanable):
         equivalence, so those surface as restore shortfalls rather than silent
         reconstruction. That line is what keeps the record trustworthy: it never
         claims to have restored something it only observed.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Digital twin of one frame-local ConduitCluster. Melder kernel
+        machinery: read it to understand the runtime, do not drive it directly.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Digital twin of one frame-local ConduitCluster. Melder kernel "
-        "machinery: read it to understand the runtime, do not drive it directly."
-    )
 
     __slots__ = Cleanable.__slots__ + [
         "_cluster_id",

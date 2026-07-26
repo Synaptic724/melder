@@ -62,12 +62,13 @@ class HydrationStrategy(PersistenceAnalysisStrategy):
         module whose source text was RETAINED drops from blocker to
         info, because the engine's rebuild lane can reconstruct it
         through the synthetic-module path with an honest shortfall.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Detect custody that cannot rebuild its bind target. Melder kernel
+        machinery: read it to understand the runtime, do not drive it directly.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Detect custody that cannot rebuild its bind target. Melder kernel "
-        "machinery: read it to understand the runtime, do not drive it directly."
-    )
 
 
     @property

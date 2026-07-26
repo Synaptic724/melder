@@ -46,12 +46,13 @@ class ConduitPool(AbstractElasticPool[Any]):
         OWNING root rather than a global pool keeps a root's reused conduits
         inside its own lifecycle and cleanup boundary, so tearing down a root
         reclaims exactly its pooled lessers and nothing shared.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Root-conduit-owned elastic pool scaffold for reusable lesser conduits.
+        Melder kernel machinery: read it to understand the runtime, do not drive it directly.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Root-conduit-owned elastic pool scaffold for reusable lesser conduits. "
-        "Melder kernel machinery: read it to understand the runtime, do not drive it directly."
-    )
 
     __slots__ = AbstractElasticPool.__slots__ + [
         "_root_conduit",

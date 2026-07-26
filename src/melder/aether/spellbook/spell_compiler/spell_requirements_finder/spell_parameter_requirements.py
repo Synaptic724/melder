@@ -45,13 +45,14 @@ class SpellParameterRequirement(Cleanable):
         A Phase-1 (requirements extraction) artifact of the conjure pipeline. It
         feeds Phase 2 (symbolic graph) and Phase 3 (DAG) but performs no spellbook
         lookups, no existence decisions, and no graph construction itself.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Phase-1 descriptor for ONE constructor parameter: name, position,
+        kind, annotation, default, plus its ParameterDIShape and any collection-element or
+        SpellMap detail. Read-only capture - it resolves nothing.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Phase-1 descriptor for ONE constructor parameter: name, position, "
-        "kind, annotation, default, plus its ParameterDIShape and any collection-element or "
-        "SpellMap detail. Read-only capture - it resolves nothing."
-    )
     __slots__ = Cleanable.__slots__ + [
         "_lock",
         "_name",

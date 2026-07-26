@@ -76,12 +76,13 @@ class DevopsInformationStrategyBuilder:
         `DevopsFactRecord` baseline. Counting only SUCCESSFUL executions keeps
         that signal honest, since failed attempts say nothing about which
         checks the system genuinely relies on.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Registry-backed resolver for DevOps information strategies. Melder
+        kernel machinery: read it to understand the runtime, do not drive it directly.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Registry-backed resolver for DevOps information strategies. Melder "
-        "kernel machinery: read it to understand the runtime, do not drive it directly."
-    )
 
     __slots__ = [
         "_devops_information_registry",

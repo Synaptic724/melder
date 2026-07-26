@@ -43,12 +43,13 @@ class SpellRecord(Cleanable):
         the point of the whole descriptor layer: AR reads answer from published
         truth rather than reaching into runtime state, which is what makes a
         viewer safe to hand a static room.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Canonical Nexus record for one published spell. Melder kernel
+        machinery: read it to understand the runtime, do not drive it directly.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Canonical Nexus record for one published spell. Melder kernel "
-        "machinery: read it to understand the runtime, do not drive it directly."
-    )
 
     __slots__ = Cleanable.__slots__ + [
         "_id",

@@ -46,10 +46,11 @@ class OperationCancelledError(RuntimeError):
         not a defect report - a cancelled conjure and a failed conjure both end
         without a Conduit, and this type is what tells the caller which one
         happened.
+
+    AGENT_ACCESS: public
+
+    AGENT_PURPOSE:
+        access: public. Raised when a unit of work observes cooperative cancellation; catch it
+        distinctly from real failures - it means aborted, not broken.
     """
 
-    __ast_helper_access__: str = "public"
-    __agent_purpose__: str = (
-        "access: public. Raised when a unit of work observes cooperative cancellation; catch "
-        "it distinctly from real failures - it means aborted, not broken."
-    )

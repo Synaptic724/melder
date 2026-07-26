@@ -48,13 +48,14 @@ class StaticFrameViewer(FrameViewer):
         find out would defeat the room's entire posture, constructing instances
         as a side effect of looking. It also never mutates descriptor
         publication, so a static room cannot change what other Rifts see.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Static-room viewer overlay that filters spell-facing surfaces to
+        live-only. Melder kernel machinery: read it to understand the runtime, do not drive it
+        directly.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Static-room viewer overlay that filters spell-facing surfaces to "
-        "live-only. Melder kernel machinery: read it to understand the runtime, do not drive it "
-        "directly."
-    )
 
     __slots__: tuple[()] = ()
     _aether = Aether()

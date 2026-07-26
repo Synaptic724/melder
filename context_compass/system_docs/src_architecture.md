@@ -138,17 +138,14 @@ Each item must include:
   Why it matters: These flags/reasons exist in DevOps state enums and are used
   for diagnostics/governance, but missing producers make state semantics
   ambiguous during incidents and mutation rollout.
-  Clarification: SpellContract/MutationContract behavior is no longer unknown.
-  SpellContract contract-unvalidated paths are evidenced in
+  Clarification: SpellContract behavior is no longer unknown. Its
+  contract-unvalidated paths are evidenced in
   `src/melder/aether/spellbook/spell_compiler/validation/strategies/contract_provider_presence_strategy.py`,
   `src/melder/aether/spellbook/spell_compiler/spell_compiler.py`,
   `src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_system_states.py`,
   `src/melder/aether/aetheric_frame/dev_ops/change_control_manager/change_control_manager.py`,
   `src/melder/aether/conduit/conduit_ward/conduit_ward.py`, and
   `src/melder/aether/conduit/meld/meld.py`.
-  MutationContract handling is currently explicit Phase 4 blocking
-  (`MUTATION_CONTRACT_DISABLED`) with mutation overlay change-reason wiring in
-  `src/melder/aether/spellbook/spell.py`.
   Where to investigate:
   `src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_system_states.py`,
   `src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_system_state.py`.
@@ -390,8 +387,9 @@ Evidence list (non-exhaustive):
 - Permissions: Spell access levels across conduits (read/create/block).
 - SpellMap: Declarative DI placeholder for explicit spell/frame/binding targets.
 - SpellContract: Late-bound contract socket for dynamic linking across conduits.
-- Legacy mutation-socket semantics: retained validation/change-reason context
-  for the removed `MutationContract` runtime descriptor.
+- Mutation override overlay: `Spell.apply_mutation_override(...)` /
+  `clear_mutation_override()`, emitting the `mutation_contract_set` /
+  `mutation_contract_cleared` change reasons.
 - ParameterDIShape: Phase 1 classification of how a parameter should resolve.
 
 ## System Context (C4)
@@ -599,7 +597,7 @@ EVIDENCE: src/melder/aether/spellbook/spellbook.py:3480-3520.
   from `melder._build_assets._init_manifest.internal_manifest`. That module is a
   GENERATED DURABLE BUILD ASSET: it is committed, carries `BUILT_FOR_VERSION` and
   `MANIFEST_ENTRY_COUNT` (577 at the current build), and is regenerated explicitly with
-  `python build_scripts/build_internal_manifest.py`. `_builder.scan_manifest()` is
+  `python src/melder/_build_assets/_build_asset_runner.py`. `_builder.scan_manifest()` is
   build-time only and is never imported at runtime, so there is no first-import scan,
   no cache write, and no read-only-install fallback lane.
 - Guarding and exporting are ORTHOGONAL: the guard restricts REGISTRATION, never USE.
@@ -1033,9 +1031,9 @@ Lifetime scopes (Existence = 6):
 Constraints:
 - Method/lambda spells must use `Existence.unique` (enforced in `Bind`).
 
-Parameter DI shapes (Phase 1, `ParameterDIShape`):
+Parameter DI shapes (Phase 1, `ParameterDIShape`) - SIX members:
 - `IGNORE`, `PLAIN`, `SINGLE_BY_ANNOTATION`, `COLLECTION_BY_ANNOTATION`,
-  `SPELLMAP_DEFAULT`, `SPELL_CONTRACT`, `MUTATION_CONTRACT`.
+  `SPELLMAP_DEFAULT`, `SPELL_CONTRACT`.
 
 Declarative DI descriptors:
 - `SpellMap` supports four explicit shapes:
@@ -1045,9 +1043,6 @@ Declarative DI descriptors:
   4) `SpellMap(spell=None, spellframe=ILogic, binding_name="primary")`.
 - `SpellContract` declares late-bound contract sockets for dynamic mode;
   linking conduits later supplies providers.
-- Legacy mutation-socket classifications are still recognized by validation,
-  but the runtime descriptor class is gone and Phase 4 blocks that socket
-  family with `MUTATION_CONTRACT_DISABLED` while mutation systems are on hold.
 
 ## DI Resolution Contract (Spec)
 This section records the approved DI resolution contract (19-item spec) for
@@ -1094,8 +1089,6 @@ Spec vs implementation notes:
 - Implementation: Phase 4 `DuplicateSpellNameStrategy` scans local + contracted
   spells by `spell_name` and raises `DUPLICATE_SPELL_NAME` errors to prevent
   name-based resolution ambiguity.
-- Implementation: MutationContract sockets are blocked in Phase 4 with
-  `MUTATION_CONTRACT_DISABLED` while mutation systems are on hold.
 
 ## SpellCompiler and Validation Pipeline
 Phases 1-4 are structural and run before Conduit creation:
@@ -1201,18 +1194,14 @@ Lazy validation at meld time:
   cluster teardown removes only cluster-created contracts, and defaults
   permissions to `spell.permissions` (fallback "create") with optional dependency
   linking.
-- Legacy mutation-socket paths are blocked by Phase 4 validation
-  (`MUTATION_CONTRACT_DISABLED`) while mutation systems are on hold.
 - Conduit link/sever operations fire `on_conduit_post_link` and
   `on_conduit_post_unlink` hooks when configured.
 - `SpellContract` declares late-bound sockets in dynamic mode; conduit linking
   supplies providers and triggers revalidation (Phases 5-11).
-- No live `MutationContract` descriptor class remains in `src/melder`; legacy
-  mutation-socket classifications are only preserved so Phase 4 can block them
-  with `MUTATION_CONTRACT_DISABLED`.
-- Contract provider presence uses warnings for missing SpellContract providers;
-  automatic-mode SpellContract sockets are errors. Legacy mutation-socket
-  paths are blocked while mutation systems are on hold.
+- `ContractProviderPresenceStrategy` is the Phase-4 owner of socket validation and
+  emits exactly four codes: `CONTRACT_IN_AUTOMATIC_MODE` (contracts require dynamic
+  mode), `SPELL_CONTRACT_INVALID`, `SPELL_CONTRACT_AMBIGUOUS` (more than one
+  provider), and the warning `SPELL_CONTRACT_MISSING_PROVIDER`.
 - Ownership transfer (`Conduit.transfer_spell_ownership`) migrates spell
   stewardship between conduits in dynamic mode, with optional creation moves,
   contract/cluster unsharing, and change-control gating.
@@ -1522,7 +1511,7 @@ Package root:
   BUILD ASSET holding `INTERNAL_MANIFEST`; committed, do not edit by hand.
 - `src/melder/_build_assets/_init_manifest/_builder.py` - package scanner and asset
   writer; build-time only, never imported at runtime.
-- `build_scripts/build_internal_manifest.py` - explicit regeneration entrypoint.
+- `src/melder/_build_assets/_build_asset_runner.py` - explicit regeneration entrypoint.
 - Registration refusal itself lives in `src/melder/aether/spellbook/bind/bind.py`
   (`assert_allowed`, `_internal_identity_of`); there is no separate guard module.
 - `src/melder/system_document.py` - immutable hardcopy system-document carrier
@@ -1878,14 +1867,13 @@ EVIDENCE:
 - `src/melder/utilities/ai_native_support_tools/protocol_crafter.py`
 
 ## Open Questions
-- SpellContract and MutationContract are now evidenced, not unknown:
-  SpellContract sockets are validated in Phase 4 (automatic mode -> error,
-  missing provider -> warning), and contract-dependent revalidation is wired by
-  `SpellSystemStates.mark_contract_dependents_dirty` callers plus meld-time
-  resolution gating. MutationContract sockets are explicitly blocked in Phase 4
-  with `MUTATION_CONTRACT_DISABLED`, while mutation overlays still emit
-  `mutation_contract_set` / `mutation_contract_cleared` reasons via
-  `Spell.apply_mutation_override` / `Spell.clear_mutation_override`.
+- SpellContract is now evidenced, not unknown: its sockets are validated in Phase 4
+  (automatic mode -> error, missing provider -> warning), and contract-dependent
+  revalidation is wired by `SpellSystemStates.mark_contract_dependents_dirty`
+  callers plus meld-time resolution gating.
+- The mutation override overlay is live: `Spell.apply_mutation_override` /
+  `Spell.clear_mutation_override` emit the `mutation_contract_set` /
+  `mutation_contract_cleared` change reasons.
 - Remaining unknown: producer call sites for `SpellState.contract_violation`,
   `SpellState.mutation_candidate`, `SpellState.mutation_quarantined`, and
   `SpellState.mutation_failed` are still not present in current `src/melder`

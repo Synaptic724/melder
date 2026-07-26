@@ -50,12 +50,13 @@ class _SyntheticModuleImportLoader(importlib.abc.Loader):
         without callers hand-managing `sys.modules` / `ModuleSpec`; it allocates no world object
         and owns no module, keeping module identity single-sourced in the `SyntheticModule`
         registry.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Loader bridge from importlib into the `SyntheticModule` registry.
+        Melder kernel machinery: read it to understand the runtime, do not drive it directly.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Loader bridge from importlib into the `SyntheticModule` registry. "
-        "Melder kernel machinery: read it to understand the runtime, do not drive it directly."
-    )
 
     def create_module(self, spec: ModuleSpec) -> ModuleType:
         """
@@ -187,12 +188,13 @@ class _SyntheticModuleMetaPathFinder(importlib.abc.MetaPathFinder):
         during restore/synthesis; being install/remove-idempotent (removal never unregisters,
         unpublishes, executes, or cleans a module) keeps import visibility separate from module
         lifecycle.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Finder exposing registered synthetic modules to importlib. Melder
+        kernel machinery: read it to understand the runtime, do not drive it directly.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Finder exposing registered synthetic modules to importlib. Melder "
-        "kernel machinery: read it to understand the runtime, do not drive it directly."
-    )
 
     def find_spec(
             self,
@@ -308,12 +310,13 @@ class SyntheticModule(ModuleType):
         is the thread that ties an executing module back to the durable record it
         was rebuilt from - the reason a synthetic world is reproducible rather
         than merely re-runnable.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Live in-memory module embodiment for crystallized source. Melder
+        kernel machinery: read it to understand the runtime, do not drive it directly.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Live in-memory module embodiment for crystallized source. Melder "
-        "kernel machinery: read it to understand the runtime, do not drive it directly."
-    )
 
     _registry_lock = threading.RLock()
     _registered_modules_by_name: Dict[str, "SyntheticModule"] = {}

@@ -59,12 +59,13 @@ class TransitionAct(enum.Enum):
           scope acts carry the composition's content-addressed sha in
           `to_spell_id` (the same sha namespace as spell identities); the
           member roster and composition ancestry ride `metadata`.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. World-entry act vocabulary for the mutation-research journal. Melder
+        kernel machinery: read it to understand the runtime, do not drive it directly.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. World-entry act vocabulary for the mutation-research journal. Melder "
-        "kernel machinery: read it to understand the runtime, do not drive it directly."
-    )
 
     lane_created = "lane_created"
     registered = "registered"
@@ -124,12 +125,13 @@ class TransitionEntry(Cleanable):
         campaign is active carries it. That is what makes a campaign view a
         WHERE-by-WHEN join across lanes rather than another container: the
         grouping lives on the events, not on the structure.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. One immutable forward-only journal event in a research set. Melder
+        kernel machinery: read it to understand the runtime, do not drive it directly.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. One immutable forward-only journal event in a research set. Melder "
-        "kernel machinery: read it to understand the runtime, do not drive it directly."
-    )
 
     __slots__ = Cleanable.__slots__ + [
         "_sequence",

@@ -71,12 +71,13 @@ class PersistenceSystem(Cleanable):
         world stays byte-identical (the R-A covenant). It holds plain values only
         (callables appear as presence flags), so the ledger can be cached and restored
         without live references.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. The crystallizer's RECORD: profiles and the checkpoint ledger. Melder
+        kernel machinery: read it to understand the runtime, do not drive it directly.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. The crystallizer's RECORD: profiles and the checkpoint ledger. Melder "
-        "kernel machinery: read it to understand the runtime, do not drive it directly."
-    )
 
     DEFAULT_PROFILE_NAME: str = "default"
 

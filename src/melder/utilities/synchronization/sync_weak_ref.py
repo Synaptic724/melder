@@ -83,6 +83,14 @@ class SyncWeakRef(Sync, Generic[T]):
     The target MUST be internally thread-safe if accessed concurrently.
     This class only synchronizes the weak-reference wrapper and its
     phantom/cleanup behaviour.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Thread-safe non-owning weak-ref cell with CAS/swap and phantom
+        on-collect (get/try_get/is_alive, cas/swap/locked). Melder-owned runtime machinery, not
+        part of the exported surface; it synchronizes the CELL, not the referent, and is guarded
+        so it cannot be bound as a spell.
     """
 
     __slots__ = [
@@ -94,13 +102,6 @@ class SyncWeakRef(Sync, Generic[T]):
             "_auto_cleanup",
             "_phantom_fired",
     ]
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Thread-safe non-owning weak-ref cell with CAS/swap and phantom "
-        "on-collect (get/try_get/is_alive, cas/swap/locked). Melder-owned runtime machinery, "
-        "not part of the exported surface; it synchronizes the CELL, not the referent, and is "
-        "guarded so it cannot be bound as a spell."
-    )
 
     # ------------------------------------------------------------------
     # Construction

@@ -60,12 +60,13 @@ class NexusCrystal(Cleanable):
         faithfully. Pairing a thin config twin with a separate state switch is how
         the record captures "how it was set up" and "what state it was left in"
         without conflating the two.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Pure-data digital twin of the Nexus root's configured surface. Melder
+        kernel machinery: read it to understand the runtime, do not drive it directly.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Pure-data digital twin of the Nexus root's configured surface. Melder "
-        "kernel machinery: read it to understand the runtime, do not drive it directly."
-    )
 
     __slots__ = Cleanable.__slots__ + [
         "_configured",

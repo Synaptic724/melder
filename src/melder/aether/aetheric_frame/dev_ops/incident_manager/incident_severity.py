@@ -35,12 +35,13 @@ class IncidentSeverity(Enum):
         automatic escalation, writing an incident would become a runtime action
         with consequences, and components would rationally under-report to
         avoid triggering something. An inert vocabulary can be used honestly.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Severity classification for incidents recorded by `IncidentManager`.
+        Melder kernel machinery: read it to understand the runtime, do not drive it directly.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Severity classification for incidents recorded by `IncidentManager`. "
-        "Melder kernel machinery: read it to understand the runtime, do not drive it directly."
-    )
     info = auto()
     warning = auto()
     error = auto()

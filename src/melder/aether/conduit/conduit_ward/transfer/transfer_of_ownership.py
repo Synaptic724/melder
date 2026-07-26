@@ -116,13 +116,14 @@ class TransferOfOwnership(Cleanable):
         must be cleaned as request state, rather than pretending to move it.
         Transfer is dynamic-mode only - like linking, severing, and upgrade, it
         rewires the graph after conjure, which an automatic-mode world forbids.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Control-plane helper that migrates a spell lineage between conduit
+        owners. Melder kernel machinery: read it to understand the runtime, do not drive it
+        directly.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Control-plane helper that migrates a spell lineage between conduit "
-        "owners. Melder kernel machinery: read it to understand the runtime, do not drive it "
-        "directly."
-    )
     __slots__ = Cleanable.__slots__ + [
         "_lock",
         "_source_spellbook",

@@ -33,14 +33,16 @@ class GeneralizedCodegenPlanDiscoveryStrategy(CodegenPlanDiscoveryStrategy):
 
     System Context:
         Phase 10 (codegen planning) discovery of the conjure pipeline.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Default catch-all phase-10 discovery strategy: always claims,
+        selecting the generalized_codegen_plan strategy / generalized family /
+        generalized_default style. Registered last; runs only when no narrower strategy claimed
+        the model.
     """
 
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Default catch-all phase-10 discovery strategy: always claims, "
-        "selecting the generalized_codegen_plan strategy / generalized family / generalized_default "
-        "style. Registered last; runs only when no narrower strategy claimed the model."
-    )
     __slots__ = ()
 
     @property

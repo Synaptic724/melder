@@ -62,12 +62,13 @@ class NetworkVersioner(Cleanable):
         repeatedly. The undo ring rides the composition payload into the
         crystallizer twin, so `restore_network` can still reach pre-death
         organization states after a world has been reloaded from a checkpoint.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Content-addressed version control for the graph network itself. Melder
+        kernel machinery: read it to understand the runtime, do not drive it directly.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Content-addressed version control for the graph network itself. Melder "
-        "kernel machinery: read it to understand the runtime, do not drive it directly."
-    )
 
     __slots__ = Cleanable.__slots__ + [
         "_canonical_by_sha",

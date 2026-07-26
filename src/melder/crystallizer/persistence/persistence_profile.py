@@ -86,13 +86,14 @@ class PersistenceProfile(Cleanable):
         makes a recorded world replayable in order; twins carry parent-reference edges in
         flat maps (never nested objects), mirroring the AethericFrame ownership hierarchy
         so the loader can rebuild the world top-down on restore.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. One recorded world: the flat, level-mapped twin store for a single
+        profile. Melder kernel machinery: read it to understand the runtime, do not drive it
+        directly.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. One recorded world: the flat, level-mapped twin store for a single "
-        "profile. Melder kernel machinery: read it to understand the runtime, do not drive it "
-        "directly."
-    )
 
     __slots__ = Cleanable.__slots__ + [
         "_profile_name",

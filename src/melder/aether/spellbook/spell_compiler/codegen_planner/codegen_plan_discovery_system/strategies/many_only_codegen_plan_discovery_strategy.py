@@ -31,14 +31,15 @@ class ManyOnlyCodegenPlanDiscoveryStrategy(CodegenPlanDiscoveryStrategy):
 
     System Context:
         Phase 10 (codegen planning) discovery of the conjure pipeline.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Phase-10 discovery strategy: claims a model with >1 visible spell
+        where ALL are Existence.many, selecting the many_only strategy/family. Reads the
+        existence-occurrence shape only; declines otherwise.
     """
 
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Phase-10 discovery strategy: claims a model with >1 visible spell "
-        "where ALL are Existence.many, selecting the many_only strategy/family. Reads the "
-        "existence-occurrence shape only; declines otherwise."
-    )
     __slots__ = ()
 
     @property

@@ -50,12 +50,13 @@ class ConfigurationLossStrategy(PersistenceAnalysisStrategy):
         re-supply, which is why every row is "info": nothing failed, and
         nothing here should refuse a load at the `RestoreEngine`
         fold->preflight verdict gate.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Surface configuration facts a record can never fully rebuild. Melder
+        kernel machinery: read it to understand the runtime, do not drive it directly.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Surface configuration facts a record can never fully rebuild. Melder "
-        "kernel machinery: read it to understand the runtime, do not drive it directly."
-    )
 
 
     @property

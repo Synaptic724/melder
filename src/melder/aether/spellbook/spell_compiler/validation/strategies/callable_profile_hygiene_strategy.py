@@ -53,15 +53,16 @@ class CallableProfileHygieneStrategy(SpellValidationStrategy):
     System Context:
         Phase 4 (validation) of the conjure pipeline, ensuring the bound target and
         its captured binding profile agree before resolution planning.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Phase-4 strategy: checks the spell target matches its binding profile
+        and kind - class spells must be classes with a ClassBindingProfile, method/lambda spells
+        callable with a CallableBindingProfile, existing creations an instance with an instance
+        profile. Validation only.
     """
 
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Phase-4 strategy: checks the spell target matches its binding "
-        "profile and kind - class spells must be classes with a ClassBindingProfile, "
-        "method/lambda spells callable with a CallableBindingProfile, existing creations an "
-        "instance with an instance profile. Validation only."
-    )
     __slots__ = SpellValidationStrategy.__slots__
 
     def __init__(self) -> None:

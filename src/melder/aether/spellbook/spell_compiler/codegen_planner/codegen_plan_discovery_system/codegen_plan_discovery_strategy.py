@@ -35,15 +35,16 @@ class CodegenPlanDiscoveryStrategy(ABC):
 
     System Context:
         Phase 10 (codegen planning) discovery of the conjure pipeline.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. ABC for phase-10 discovery strategies: strategy_id +
+        discover(SpellCodegenModel) -> Optional[CodegenPlanDiscovery]. Reads the model only;
+        return None to decline or a discovery to claim it. Chooses a planning family, not the
+        final style.
     """
 
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. ABC for phase-10 discovery strategies: strategy_id + "
-        "discover(SpellCodegenModel) -> Optional[CodegenPlanDiscovery]. Reads the model only; "
-        "return None to decline or a discovery to claim it. Chooses a planning family, not the "
-        "final style."
-    )
     __slots__ = ()
 
     @property

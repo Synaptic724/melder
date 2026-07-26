@@ -39,14 +39,15 @@ class RiftMemory:
         emission would make the history a live view of the present rather than
         an account of the past. This is the record type codegen rooms emit
         FULL-SOURCE through, so what actually ran stays recoverable.
+
+    AGENT_ACCESS: public
+
+    AGENT_PURPOSE:
+        access: public. One immutable executed-step record of a room action - frame, action,
+        step/epoch counters, metadata - emitted through RiftMemorySystem; you receive it from
+        the room's memory stream and read it, you do not construct it.
     """
 
-    __ast_helper_access__: str = "public"
-    __agent_purpose__: str = (
-        "access: public. One immutable executed-step record of a room action - frame, "
-        "action, step/epoch counters, metadata - emitted through RiftMemorySystem; you "
-        "receive it from the room's memory stream and read it, you do not construct it."
-    )
     __slots__ = [
         "_id",
         "_created_at",

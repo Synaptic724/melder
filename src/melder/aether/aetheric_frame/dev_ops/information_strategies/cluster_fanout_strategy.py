@@ -59,12 +59,13 @@ class ClusterFanoutStrategy(DevopsInformationStrategy):
         Requiring exactly one of `conduit_id` or `cluster_id` keeps the two
         directions of that question distinct rather than silently merging a
         participant-centric and a cluster-centric answer.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Registry-backed cluster fan-out view for one conduit or one cluster.
+        Melder kernel machinery: read it to understand the runtime, do not drive it directly.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Registry-backed cluster fan-out view for one conduit or one cluster. "
-        "Melder kernel machinery: read it to understand the runtime, do not drive it directly."
-    )
 
     @staticmethod
     def execute(

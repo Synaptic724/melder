@@ -59,12 +59,13 @@ class RiftGate(Cleanable):
         is the same reason the conduit `CreationGate` tracks tickets: a meld
         holds its ticket across the whole executor, so ticket-zero genuinely
         means no reader is inside.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Generic gate primitive for coordinating Rift-scoped operations. Melder
+        kernel machinery: read it to understand the runtime, do not drive it directly.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Generic gate primitive for coordinating Rift-scoped operations. Melder "
-        "kernel machinery: read it to understand the runtime, do not drive it directly."
-    )
 
     ENTRY_MODE_WAIT = "wait"
     ENTRY_MODE_RAISE = "raise"

@@ -34,13 +34,14 @@ class DagNode(Cleanable):
     System Context:
         Phase 3 (local frame / DAG) of the conjure pipeline. Its edges model "must be
         created before me" for resolution ordering.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. A node in the resolution DAG: a keyed unit of work with
+        dependency/dependent DagNode sets and param-aware edges (children_by_param /
+        incoming_params). Lightweight - no separate Edge objects.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. A node in the resolution DAG: a keyed unit of work with "
-        "dependency/dependent DagNode sets and param-aware edges (children_by_param / "
-        "incoming_params). Lightweight - no separate Edge objects."
-    )
     __slots__ = Cleanable.__slots__ + [
         "_children_by_param",
         "_dependencies",

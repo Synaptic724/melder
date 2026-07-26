@@ -84,13 +84,14 @@ class SpellRequirementsFinder(Cleanable):
         by Phase 2 (symbolic graph), Phase 3 (DAG), and Phase 4 (validation). It
         inspects signatures and annotations only - it never queries the Spellbook
         or the live object world.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Phase-1 driver: inspects one Spell's callable, resolves annotations,
+        classifies each parameter into a ParameterDIShape, and emits a cached SpellRequirements.
+        Inspection only - no spellbook lookups, no graph/DAG, no resolution.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Phase-1 driver: inspects one Spell's callable, resolves annotations, "
-        "classifies each parameter into a ParameterDIShape, and emits a cached SpellRequirements. "
-        "Inspection only - no spellbook lookups, no graph/DAG, no resolution."
-    )
     __slots__ = Cleanable.__slots__ + [
         "_spell",
         "_requirements",

@@ -70,12 +70,13 @@ class SpellValidity(Enum):
         reasons - policy versus lifecycle - and keeping them distinct is what
         lets diagnostics tell "someone turned this off" apart from "this was
         torn down", which are very different operator problems.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Coarse validity gate used for both structural and resolution state.
+        Melder kernel machinery: read it to understand the runtime, do not drive it directly.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Coarse validity gate used for both structural and resolution state. "
-        "Melder kernel machinery: read it to understand the runtime, do not drive it directly."
-    )
     unknown = auto()
     valid = auto()
     gated = auto()

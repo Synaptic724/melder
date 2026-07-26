@@ -48,12 +48,13 @@ class SpellState(Enum):
         that deliberately defers select/staged/promoted acts until the
         notch/bind_inactive seams are real. They are vocabulary awaiting a
         producer, not dead values.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Fine-grained state flags for a spell index. Melder kernel machinery:
+        read it to understand the runtime, do not drive it directly.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Fine-grained state flags for a spell index. Melder kernel machinery: "
-        "read it to understand the runtime, do not drive it directly."
-    )
     # Topology / graph-level
     new_index = auto()             # first time we see this index
     structure_changed = auto()       # profile / wiring changed

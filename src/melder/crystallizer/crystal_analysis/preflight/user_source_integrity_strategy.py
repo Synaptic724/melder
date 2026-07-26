@@ -57,12 +57,13 @@ class UserSourceIntegrityStrategy(PersistenceAnalysisStrategy):
         is a warning because the live file wins at import; tamper is a
         blocker because retained text is used precisely when no live file
         exists, so altered material would rebuild unchallenged.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Verify retained user-module sources and detect on-disk drift (S2).
+        Melder kernel machinery: read it to understand the runtime, do not drive it directly.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Verify retained user-module sources and detect on-disk drift (S2). "
-        "Melder kernel machinery: read it to understand the runtime, do not drive it directly."
-    )
 
 
     @property

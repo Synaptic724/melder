@@ -62,13 +62,14 @@ class ConduitLineageGateOps(Cleanable):
         blocking quiesce proceed without pinning the facade, and the
         borrow-not-own contract keeps gate lifecycle with the DevOpsManager while
         strategies get a minimal, teardown-safe handle.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Narrow conduit-lineage creation-gate facade for coordinated
+        strategies. Melder kernel machinery: read it to understand the runtime, do not drive it
+        directly.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Narrow conduit-lineage creation-gate facade for coordinated "
-        "strategies. Melder kernel machinery: read it to understand the runtime, do not drive it "
-        "directly."
-    )
 
     __slots__ = Cleanable.__slots__ + [
         "_lock",

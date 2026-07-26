@@ -61,12 +61,13 @@ class SpellIndexCrystal(Cleanable):
         the real coordinates - is what lets restore mint fresh indexes yet still
         rebuild the exact historical membership, while finer-grained movement goes
         through the graft path (a twin alone lacks each member's custody payload).
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Digital twin of one live SpellIndex: the record's membership map.
+        Melder kernel machinery: read it to understand the runtime, do not drive it directly.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Digital twin of one live SpellIndex: the record's membership map. "
-        "Melder kernel machinery: read it to understand the runtime, do not drive it directly."
-    )
 
     __slots__ = Cleanable.__slots__ + [
         "_index_id",

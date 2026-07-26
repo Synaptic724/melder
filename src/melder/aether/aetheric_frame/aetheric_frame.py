@@ -96,12 +96,13 @@ class AethericFrame(Cleanable):
         overwrite it, so the first book to land defines the frame's contract and
         subsequent books join it rather than silently redefining it underneath
         the conduits already running there.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Manage one isolated runtime frame within `Aether`. Melder kernel
+        machinery: read it to understand the runtime, do not drive it directly.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Manage one isolated runtime frame within `Aether`. Melder kernel "
-        "machinery: read it to understand the runtime, do not drive it directly."
-    )
     __slots__ = Cleanable.__slots__ + [
         "_aether",
         "name",

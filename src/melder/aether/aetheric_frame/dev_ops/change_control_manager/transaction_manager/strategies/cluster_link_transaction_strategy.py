@@ -72,12 +72,13 @@ class ClusterLinkTransactionStrategy(TransactionStrategy):
         privilege creep - the runtime work genuinely mutates cross-conduit
         contract surfaces, since a cluster share IS a contract between two
         members.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Cluster-owned share/unshare transaction resolver. Melder kernel
+        machinery: read it to understand the runtime, do not drive it directly.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Cluster-owned share/unshare transaction resolver. Melder kernel "
-        "machinery: read it to understand the runtime, do not drive it directly."
-    )
 
     @classmethod
     def build_start_plan(

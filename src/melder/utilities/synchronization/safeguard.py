@@ -98,14 +98,15 @@ class SafeGuard(Cleanable):
         while flipping registries. Those are exactly the paths where two threads
         could approach the same pair from opposite ends, which is why the
         ordering rule exists rather than ad-hoc nested `with` statements.
+
+    AGENT_ACCESS: public
+
+    AGENT_PURPOSE:
+        access: public. Deadlock-safe multi-lock acquisition. Use as a context manager over
+        several locks: SafeGuard(a, b, c) acquires them in a globally consistent order and
+        releases in reverse. Single-use by default. Import and call directly; cannot be bound as
+        a spell.
     """
-    __ast_helper_access__: str = "public"
-    __agent_purpose__: str = (
-        "access: public. Deadlock-safe multi-lock acquisition. Use as a context "
-        "manager over several locks: SafeGuard(a, b, c) acquires them in a "
-        "globally consistent order and releases in reverse. Single-use by "
-        "default. Import and call directly; cannot be bound as a spell."
-    )
     __slots__ = Cleanable.__slots__ + ["_locks", "_acquired", "_timeout", "_one_time_use", "_cleanup_lock"]
 
     def __init__(self, *locks: Any, timeout: Optional[float] = None, one_time_use: bool = True):

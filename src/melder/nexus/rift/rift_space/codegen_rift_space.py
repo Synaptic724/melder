@@ -57,14 +57,15 @@ class CodegenRiftSpace(RiftSpace):
         event publication inside the monitor layer. Codegen rooms also carry the
         full 34-command research family and emit full-source memory records, so
         what was generated is recoverable rather than merely having happened.
+
+    AGENT_ACCESS: public
+
+    AGENT_PURPOSE:
+        access: public. The codegen room type - a room that owns an internal CodegenSystem for
+        validate/execute-code workflows plus a slim runtime-helper surface and the full research
+        command family. You get it as a Rift's space when space_type=codegen.
     """
 
-    __ast_helper_access__: str = "public"
-    __agent_purpose__: str = (
-        "access: public. The codegen room type - a room that owns an internal CodegenSystem "
-        "for validate/execute-code workflows plus a slim runtime-helper surface and the full "
-        "research command family. You get it as a Rift's space when space_type=codegen."
-    )
     __slots__ = [
         "_codegen_system",
     ]

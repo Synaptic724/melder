@@ -78,12 +78,13 @@ class Contract(Cleanable):
         why a formation captured around only one conduit raises the
         crystallizer's `contract_peer` warning rather than restoring a
         half-contract silently.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Bidirectional contract between two conduit wards. Melder kernel
+        machinery: read it to understand the runtime, do not drive it directly.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Bidirectional contract between two conduit wards. Melder kernel "
-        "machinery: read it to understand the runtime, do not drive it directly."
-    )
     __slots__ = Cleanable.__slots__ + [
         "_lock",
         "_id",

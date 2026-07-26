@@ -56,14 +56,15 @@ class StaticRiftSpace(RiftSpace):
         merely watches should not extend the lifetime of what it watches, or a
         long-lived static room would quietly pin objects the runtime is trying
         to release.
+
+    AGENT_ACCESS: public
+
+    AGENT_PURPOSE:
+        access: public. The static (lower-risk) room type - live-only, read-shaped, no topology
+        mutation or create-path activation, weak-by-default binds. You get it as a Rift's space
+        when space_type=static, to observe the world without changing it.
     """
 
-    __ast_helper_access__: str = "public"
-    __agent_purpose__: str = (
-        "access: public. The static (lower-risk) room type - live-only, read-shaped, no "
-        "topology mutation or create-path activation, weak-by-default binds. You get it as a "
-        "Rift's space when space_type=static, to observe the world without changing it."
-    )
     def __init__(
             self,
             owner_rift_id: str,

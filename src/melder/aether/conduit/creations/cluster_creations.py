@@ -59,12 +59,13 @@ class ClusterCreations(Cleanable):
         re-target it, so safety comes from that transaction-level quiesce rather
         than facade-local synchronization - and disabled-until-a-leader-exists is
         an explicit refusal, not a silent empty store.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Facade over a cluster's elected-leader live creation store. Melder
+        kernel machinery: read it to understand the runtime, do not drive it directly.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Facade over a cluster's elected-leader live creation store. Melder "
-        "kernel machinery: read it to understand the runtime, do not drive it directly."
-    )
 
     __slots__ = Cleanable.__slots__ + ["_store", "_active"]
 

@@ -67,12 +67,13 @@ class CrystallizerCrystal(Cleanable):
         root, and otherwise the engine just reports the recorded policy as
         context. That keeps "how this world was recorded" answerable without
         letting the record mutate the running recorder.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Pure-data digital twin of the crystallizer's own configured surface.
+        Melder kernel machinery: read it to understand the runtime, do not drive it directly.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Pure-data digital twin of the crystallizer's own configured surface. "
-        "Melder kernel machinery: read it to understand the runtime, do not drive it directly."
-    )
 
     __slots__ = Cleanable.__slots__ + [
         "_configuration_payload",

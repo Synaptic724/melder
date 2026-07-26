@@ -67,12 +67,13 @@ class SpellSpaceMeld(Meld):
         the ACTIVE spellspace for its conduit, and `reset()` clears
         spellspace-scoped instances and bumps the version rather than reusing
         stale ones.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Concrete spellspace-facing meld front door. Melder kernel machinery:
+        read it to understand the runtime, do not drive it directly.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Concrete spellspace-facing meld front door. Melder kernel machinery: "
-        "read it to understand the runtime, do not drive it directly."
-    )
 
     # The shared stores (`_conduit_creations` / `_root_creations` /
     # `_cluster_creations`) and the spellspace scope store

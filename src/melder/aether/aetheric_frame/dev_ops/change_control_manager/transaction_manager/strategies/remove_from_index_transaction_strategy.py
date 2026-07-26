@@ -56,13 +56,14 @@ class RemoveFromIndexTransactionStrategy(TransactionStrategy):
         and one conduit are involved, because the destination index is created
         here rather than being an existing surface some other transaction might
         be holding.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Remove-from-index transaction resolver (move a spell out to a fresh
+        index). Melder kernel machinery: read it to understand the runtime, do not drive it
+        directly.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Remove-from-index transaction resolver (move a spell out to a fresh "
-        "index). Melder kernel machinery: read it to understand the runtime, do not drive it "
-        "directly."
-    )
 
     @classmethod
     def build_start_plan(

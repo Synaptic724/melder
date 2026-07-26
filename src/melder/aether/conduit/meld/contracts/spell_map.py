@@ -103,13 +103,14 @@ class SpellMap(Cleanable):
         than silently picking. That is the whole reason the explicit
         `binding_name` form exists - it is the documented way to disambiguate
         when several spells legitimately satisfy the same frame.
+
+    AGENT_ACCESS: public
+
+    AGENT_PURPOSE:
+        access: public. Declarative DI descriptor for normal in-graph resolution. Write it as a
+        constructor default: SpellMap(MyRepo), SpellMap(ILogic, binding_name='primary'), or
+        frame-only with spell=None. Zero or multiple matches raise at build time.
     """
-    __ast_helper_access__: str = "public"
-    __agent_purpose__: str = (
-        "access: public. Declarative DI descriptor for normal in-graph resolution. Write it as a "
-        "constructor default: SpellMap(MyRepo), SpellMap(ILogic, binding_name='primary'), or "
-        "frame-only with spell=None. Zero or multiple matches raise at build time."
-    )
 
     __slots__ = Cleanable.__slots__ + [
         "spell",

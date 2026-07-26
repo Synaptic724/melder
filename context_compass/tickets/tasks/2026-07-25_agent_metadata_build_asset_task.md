@@ -172,6 +172,109 @@ and MUST NOT start until `architecture_patch.md` and
   REREAD: REQUIRED
   SCORE_0_TO_10: 10
 
+- DATETIME: 2026-07-25T20:25:00Z
+  TYPE: MEASURE
+  CLAIM: Asset generated and reconciled: 404 marked / 163 exempt / 10 pending. The
+    counts differ from the earlier audit (394/173) for a GOOD reason - the harvester
+    walks NESTED classes and the audit walked top-level only. `Cleanable._CleanupContext`
+    appearing in pending is the proof. Coverage went up; the audit had undercounted.
+    The runner discovered the new asset with zero configuration, which is the
+    convention working as designed.
+  EVIDENCE:
+  - src/melder/_build_assets/_agent_metadata/agent_metadata.py
+  IMPACT: Nested classes were previously invisible to the whole agent-metadata story.
+  NEXT: Pin the behaviour with tests before any codemod touches a class body.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+- DATETIME: 2026-07-25T20:25:00Z
+  TYPE: FACT
+  CLAIM: The 10 PENDING classes are a coherent set, not scatter. THREE are the
+    describer's own result types (`ClassMemberDescription`, `ClassSurfaceDescription`,
+    `InheritedAgentPurposeDescription`) - the tool that consumes this metadata does not
+    describe itself. THREE are private dict views (`_WeakDictItemsView`/`KeysView`/
+    `ValuesView`). ONE is a nested cleanup context. TWO are Protocols (`IChannelLogger`,
+    `ICleanable`). One is `Package`.
+  EVIDENCE:
+  - src/melder/utilities/helpers/class_surface_ast_describer.py:31-38
+  IMPACT: This is exactly the catalog the owner asked for: work that was previously
+    indistinguishable from "done" is now an explicit, short, actionable list.
+  NEXT: Leave all ten pending; none block phase 1.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 8
+- DATETIME: 2026-07-25T20:25:00Z
+  TYPE: DECISION
+  CLAIM: OWNER RULING on `Package` (utilities/helpers/package.py): DELIBERATELY PARKED
+    as `pending`, not exempt and not marked. Owner rationale: it captures callables
+    well and may warrant exposure through `melder.__init__`; CommandOps carries a copy
+    the owner intends to reconcile so both objects are identical; the keep-vs-remove
+    call is explicitly deferred to the end. NOTE the standing tension - an earlier
+    melder_0 handoff recorded `Package` as dead code (933 lines, zero src references,
+    alias `Pack` unused, consumed only by its own two test files) and PROPOSED DELETION
+    under the oce-utilities epic, with the owner having ruled DO NOT EXPOSE at that
+    time. This ruling supersedes that direction pending the final decision.
+  EVIDENCE:
+  - src/melder/utilities/helpers/package.py
+  IMPACT: `Package` must NOT be auto-marked, auto-exempted, or deleted by any sweep in
+    this lane. Its presence in PENDING is intentional signal, and a future agent
+    tidying the pending list to zero would be destroying a recorded decision.
+  NEXT: Revisit only when the owner settles keep-vs-remove and the CommandOps
+    reconciliation lands.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-07-25T20:45:00Z
+  TYPE: FACT
+  CLAIM: PHASE 1 COMPLETE and verified. Harvester + generated asset land under the
+    runner with zero configuration (404 marked / 163 exempt / 10 pending, v0.1.1).
+    19 tests authored; all 19 assertions re-executed as plain Python because pytest is
+    unavailable in this sandbox, and all pass - including the two that matter: FIDELITY
+    (every harvested value is byte-identical to the legacy attribute across all 788
+    live markers) and PRECEDENCE (docstring beats attribute, never the reverse).
+  EVIDENCE:
+  - src/melder/_build_assets/_agent_metadata/agent_metadata.py
+  - tests/unit/melder/build_assets/test_agent_metadata_builder.py
+  IMPACT: The codemod now has a safety net. Without the fidelity test the sweep would
+    rewrite 76,200 characters of authored prose on faith.
+  NEXT: Author the two phase-2 patch docs; the gate blocks the codemod until they exist.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+- DATETIME: 2026-07-25T20:45:00Z
+  TYPE: DECISION
+  CLAIM: `build_scripts/` DELETED under owner query. After the runner landed, the only
+    remaining content was a 69-line forwarding shim I had written to preserve the old
+    entry point. Every other reference was either a `pyproject.toml` EXCLUSION rule or
+    prose. The two system docs naming it were repointed to the runner, since deleting
+    it is what made them stale. The pyproject exclusions were deliberately KEPT: they
+    cost nothing and now act as insurance, because `namespaces = true` makes stray
+    directories packageable in a way they were not before.
+  EVIDENCE:
+  - pyproject.toml:143-153
+  IMPACT: One entry point instead of two, and no shim that can drift from the runner.
+  NEXT: None for this item.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 8
+- DATETIME: 2026-07-25T20:45:00Z
+  TYPE: ASSUMPTION_CHALLENGE
+  CLAIM: The owner's red `test_version_module_exposes_expected_base_version` was
+    PRE-EXISTING, not caused by this session - `git diff --quiet` on
+    `src/melder/__version__.py` passes, so 0.1.1 is the COMMITTED value and the test has
+    been pinning 0.1.0 since before I arrived. I did not bump the literal to 0.1.1,
+    because a hardcoded version assertion fails for a DELIBERATE release bump, which is
+    exactly the shape `testing_overview.md` rejects ("fail for a real regression and NOT
+    for a harmless change"). Bumping it trains people to edit the test instead of read
+    it, forever.
+  EVIDENCE:
+  - tests/unit/melder/test_package_version_metadata.py
+  IMPACT: Replaced with two contract tests: the version is well-formed, and EVERY
+    generated asset's `BUILT_FOR_VERSION` equals `melder.__version__`. The second is
+    what the old pin was reaching for and is load-bearing - the internal manifest IS the
+    enforced registration policy, so an asset stamped for a previous release means the
+    wheel silently enforces a stale class list. Verified the new test would have caught
+    the exact 0.1.0-vs-0.1.1 drift found earlier today.
+  NEXT: Owner runs the version test lane.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
 ## Context / Handoff Summary
 PHASE 1 (additive, in progress): harvester + generated asset under the build-asset
 runner. Nothing consumes it yet, so no runtime behaviour changes and the patch gate

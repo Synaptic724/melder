@@ -49,13 +49,14 @@ class SpellSymbolicGraph(Cleanable):
         Phase 2 (symbolic graph) of the conjure pipeline, scoped per spell version
         (`selected_spell_id`). Symbolic only - it binds to no implementations and
         never touches the live object world; that is Phase 3/4's job.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Phase-2 per-spell symbolic graph: the set of SpellSymbolicDependency
+        edges (one per constructor socket) for one spell version. No DAG ordering, no concrete
+        spell ids, no existence policy.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Phase-2 per-spell symbolic graph: the set of SpellSymbolicDependency "
-        "edges (one per constructor socket) for one spell version. No DAG ordering, no concrete "
-        "spell ids, no existence policy."
-    )
     __slots__ = Cleanable.__slots__ + [
         "_lock",
         "_spell_id",

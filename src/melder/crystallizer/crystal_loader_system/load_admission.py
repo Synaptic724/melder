@@ -80,12 +80,13 @@ class LoadAdmission(Cleanable):
         adjudication is a VIEW - raw preflight findings are never rewritten, scope-expected
         warnings are only RECLASSIFIED into the additive "admission" payload. It never creates a
         frame merely to inspect host posture.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Plan, execute, and adjudicate admission-gated load transactions.
+        Melder kernel machinery: read it to understand the runtime, do not drive it directly.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Plan, execute, and adjudicate admission-gated load transactions. "
-        "Melder kernel machinery: read it to understand the runtime, do not drive it directly."
-    )
 
     # Canonical formation kind order: mirrors the engine's stage order so
     # folds see parents first (class-level constant per module-scope law).

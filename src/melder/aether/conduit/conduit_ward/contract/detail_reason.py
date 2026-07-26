@@ -36,12 +36,13 @@ class DetailReason(Enum):
         added deliberately. `root` and `dependency` are written by automatic
         dependency linking; `manual` marks the deliberate ad-hoc path; `other`
         is the honest fallback rather than a guess.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Why one `Detail` entry exists inside a contract. Melder kernel
+        machinery: read it to understand the runtime, do not drive it directly.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Why one `Detail` entry exists inside a contract. Melder kernel "
-        "machinery: read it to understand the runtime, do not drive it directly."
-    )
     root = auto()
     dependency = auto()
     manual = auto()

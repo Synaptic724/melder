@@ -71,12 +71,13 @@ class GroupedResearchNode(Cleanable):
         Owned by exactly one `ResearchLane` at a time (single-residence
         invariant applies to group identities exactly as to spell
         identities); `cleanup()` deletes owned fields; idempotent.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. One immutable COMPOSITION record inside a research lane. Melder kernel
+        machinery: read it to understand the runtime, do not drive it directly.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. One immutable COMPOSITION record inside a research lane. Melder kernel "
-        "machinery: read it to understand the runtime, do not drive it directly."
-    )
 
     NODE_TYPE = "group"
 

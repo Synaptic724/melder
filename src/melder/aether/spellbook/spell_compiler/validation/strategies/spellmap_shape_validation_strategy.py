@@ -44,14 +44,15 @@ class SpellMapShapeValidationStrategy(SpellValidationStrategy):
     System Context:
         Phase 4 (validation) of the conjure pipeline, guarding the explicit
         SpellMap DI descriptor shape.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Phase-4 strategy for SPELLMAP_DEFAULT params: errors on missing /
+        invalid SpellMap or a SpellMap with no spell/spellframe target; warns when binding_name
+        is not normalized. Validation only.
     """
 
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Phase-4 strategy for SPELLMAP_DEFAULT params: errors on missing / "
-        "invalid SpellMap or a SpellMap with no spell/spellframe target; warns when binding_name "
-        "is not normalized. Validation only."
-    )
     __slots__ = SpellValidationStrategy.__slots__
 
     def __init__(self) -> None:

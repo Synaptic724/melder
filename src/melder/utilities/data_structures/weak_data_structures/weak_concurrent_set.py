@@ -107,15 +107,16 @@ class WeakConcurrentSet(Generic[_T], Cleanable):
         Substrate-level, outside the DGR boot order. It suits the
         "who is currently participating" question - membership registries that
         must not keep participants alive merely by remembering them.
+
+    AGENT_ACCESS: public
+
+    AGENT_PURPOSE:
+        access: public. Set holding members WEAKLY - membership is a question about lifetime,
+        since a member nothing else references drops out on its own. `x in s` is point-in-time
+        and len() is advisory unless you just pruned. freeze() speeds reads but does not stop
+        collection.
     """
 
-    __ast_helper_access__: str = "public"
-    __agent_purpose__: str = (
-        "access: public. Set holding members WEAKLY - membership is a question "
-        "about lifetime, since a member nothing else references drops out on "
-        "its own. `x in s` is point-in-time and len() is advisory unless you "
-        "just pruned. freeze() speeds reads but does not stop collection."
-    )
 
     __slots__ = (
             Cleanable.__slots__

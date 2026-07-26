@@ -69,14 +69,15 @@ class StaticSystemDocument:
         an agent orients itself on system structure before it has a Spellbook, a
         Conduit, or any live object world. Nothing here participates in binding,
         resolution, or cleanup.
+
+    AGENT_ACCESS: public
+
+    AGENT_PURPOSE:
+        access: public. Immutable packaged hardcopy of a system document. Read
+        `melder.__architecture__`, `__components__`, `__graph_network__`, `__graph_details__` to
+        orient inside the runtime without leaving the process.
     """
 
-    __ast_helper_access__: str = "public"
-    __agent_purpose__: str = (
-        "access: public. Immutable packaged hardcopy of a system document. Read "
-        "`melder.__architecture__`, `__components__`, `__graph_network__`, `__graph_details__` to "
-        "orient inside the runtime without leaving the process."
-    )
     __slots__ = [
         "_document_name",
         "_document_json",

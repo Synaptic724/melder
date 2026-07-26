@@ -52,12 +52,13 @@ class ChangeControlConflictManager(Cleanable):
         Returning request IDS rather than a boolean keeps it consistent with
         `AcquisitionDecision` - callers can name who they are waiting on, which
         is the difference between a diagnosable stall and a mysterious one.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Conflict detector for scope overlap between change-control requests.
+        Melder kernel machinery: read it to understand the runtime, do not drive it directly.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Conflict detector for scope overlap between change-control requests. "
-        "Melder kernel machinery: read it to understand the runtime, do not drive it directly."
-    )
     __slots__ = Cleanable.__slots__ + [
         "_lock",
     ]

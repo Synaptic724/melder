@@ -51,12 +51,13 @@ class DevopsIdentity(Cleanable):
         across call frames and helper objects. Cleanup unregistering the identity
         before teardown is the invariant that keeps the registry from pointing at
         dead objects.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Frame-local dev-ops identity surface for runtime objects. Melder
+        kernel machinery: read it to understand the runtime, do not drive it directly.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Frame-local dev-ops identity surface for runtime objects. Melder "
-        "kernel machinery: read it to understand the runtime, do not drive it directly."
-    )
 
     __slots__ = Cleanable.__slots__ + [
         "_lock",

@@ -35,13 +35,14 @@ class AetherConfigurationBuilder(Cleanable):
         That is what makes ownership unambiguous - at every moment exactly one
         object is responsible for the configuration, and there is never a window
         where both the builder and the caller could mutate it.
+
+    AGENT_ACCESS: public
+
+    AGENT_PURPOSE:
+        access: public. Fluent one-shot builder for AetherConfiguration. Assemble, then
+        build()/finalize()/activate() - ownership transfers on that call and the builder is
+        spent. Obtain via Aether.create_configuration_builder().
     """
-    __ast_helper_access__: str = "public"
-    __agent_purpose__: str = (
-        "access: public. Fluent one-shot builder for AetherConfiguration. Assemble, then "
-        "build()/finalize()/activate() - ownership transfers on that call and the builder is spent. "
-        "Obtain via Aether.create_configuration_builder()."
-    )
 
     __slots__ = Cleanable.__slots__ + [
         "_id",

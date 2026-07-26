@@ -63,13 +63,14 @@ class ExternalPersistenceManager(Cleanable):
         USER CODE run outside any record lock, and the record stores presence flags only, never
         the code. Write lanes are lenient by default (local custody survives a remote failure;
         strict mode re-raises); download lanes refuse loudly when no handler is attached.
+
+    AGENT_ACCESS: public
+
+    AGENT_PURPOSE:
+        access: public. Your DB seam. Supply store/fetch/list/delete callables and melder ships
+        recorded units to them. Uploads are lenient and counted; deletes are strict. Entirely
+        opt-in and your operational responsibility.
     """
-    __ast_helper_access__: str = "public"
-    __agent_purpose__: str = (
-        "access: public. Your DB seam. Supply store/fetch/list/delete callables and melder ships "
-        "recorded units to them. Uploads are lenient and counted; deletes are strict. Entirely opt-in "
-        "and your operational responsibility."
-    )
 
 
     __slots__ = Cleanable.__slots__ + [

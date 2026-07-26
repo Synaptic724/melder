@@ -52,12 +52,13 @@ class NexusFrameBuilder(Cleanable):
         separate: the builder stages intent, the manager applies strict-create
         semantics and topology rules. That is why `build()` and `create()` are
         distinct - a caller may want the configuration without realizing it.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Fluent authored-frame builder for Nexus-managed frames. Melder kernel
+        machinery: read it to understand the runtime, do not drive it directly.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Fluent authored-frame builder for Nexus-managed frames. Melder kernel "
-        "machinery: read it to understand the runtime, do not drive it directly."
-    )
 
     __slots__ = Cleanable.__slots__ + [
         "_manager",

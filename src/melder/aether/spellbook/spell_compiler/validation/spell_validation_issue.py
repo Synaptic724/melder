@@ -38,13 +38,14 @@ class SpellValidationIssue(Cleanable):
         Phase 4 (validation) of the conjure pipeline. A structural diagnostic
         only - but an `error`-severity issue is what ultimately makes a spell
         "broken" and raises `SpellbookValidationError` at the Spellbook boundary.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. One Phase-4 validation finding: severity ('error'|'warning'), code,
+        message, optional source (emitting strategy) and details. The unit strategies append
+        into the context's issues list.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. One Phase-4 validation finding: severity ('error'|'warning'), code, "
-        "message, optional source (emitting strategy) and details. The unit strategies append "
-        "into the context's issues list."
-    )
     __slots__ = Cleanable.__slots__ + [
         "severity",
         "code",

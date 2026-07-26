@@ -60,13 +60,14 @@ class Policies(Enum):
         it lets a lineage marked `Permissions.block` pass the ward gate. That
         makes it the widest authority in the conduit layer and the value to
         reach for last, not first.
+
+    AGENT_ACCESS: public
+
+    AGENT_PURPOSE:
+        access: public. Ward contracting mode: default, whitelist_all, block_all, inbound_only,
+        outbound_only. Pass to conjure(...). Only default is legal when dynamic=False.
+        whitelist_all is the one mode that can override a per-spell block.
     """
-    __ast_helper_access__: str = "public"
-    __agent_purpose__: str = (
-        "access: public. Ward contracting mode: default, whitelist_all, block_all, inbound_only, "
-        "outbound_only. Pass to conjure(...). Only default is legal when dynamic=False. whitelist_all "
-        "is the one mode that can override a per-spell block."
-    )
     default = auto()
     whitelist_all = auto()
     block_all = auto()

@@ -46,13 +46,14 @@ class RiftSpaceType(Enum):
         the alias rather than breaking those inputs is the compatibility posture
         the repo prefers, and its docstring says plainly that it is temporary -
         which is what makes eventual removal a decision rather than a surprise.
+
+    AGENT_ACCESS: public
+
+    AGENT_PURPOSE:
+        access: public. Room posture, chosen ONCE at Rift creation: static (live-only, no
+        mutation), capability (broad manual, no codegen), codegen (slim manual surface plus the
+        codegen engine). `dynamic` is a legacy alias for codegen.
     """
-    __ast_helper_access__: str = "public"
-    __agent_purpose__: str = (
-        "access: public. Room posture, chosen ONCE at Rift creation: static (live-only, no mutation), "
-        "capability (broad manual, no codegen), codegen (slim manual surface plus the codegen "
-        "engine). `dynamic` is a legacy alias for codegen."
-    )
 
     static = "static"
     capability = "capability"

@@ -119,16 +119,16 @@ class CreationGate(Cleanable):
         while structural change lands. The temporary-freeze mode exists for
         exactly that: drain in-flight melds, mutate topology, reopen - without
         the terminal refusal a real close would impose.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Per-conduit admission gate for creation work. admit_ticket() enters
+        guarded work (appending its ticket BEFORE checking, so drains always count it);
+        close_and_drain() freezes temporarily and parks callers; close_and_wait_until_free()
+        closes terminally and fails them. Drains poll until the ticket count is zero.
     """
 
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Per-conduit admission gate for creation work. "
-        "admit_ticket() enters guarded work (appending its ticket BEFORE "
-        "checking, so drains always count it); close_and_drain() freezes "
-        "temporarily and parks callers; close_and_wait_until_free() closes "
-        "terminally and fails them. Drains poll until the ticket count is zero."
-    )
     __slots__ = Cleanable.__slots__ + ["_lock", "enabled", "_event", "_tickets", "_closed"]
 
     def __init__(self, enabled: bool = True) -> None:

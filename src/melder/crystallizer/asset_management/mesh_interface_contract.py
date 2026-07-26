@@ -64,12 +64,13 @@ class MeshInterfaceContract:
         descriptive only - Melder never generates storage code (callables-first), the "columns"
         row is a suggested identity model, not DDL - mirroring the `RecordVersion`
         static-authority precedent.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Static authority describing the external persistence mesh interface.
+        Melder kernel machinery: read it to understand the runtime, do not drive it directly.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Static authority describing the external persistence mesh interface. "
-        "Melder kernel machinery: read it to understand the runtime, do not drive it directly."
-    )
 
 
     # The four first-class unit kinds the asset layer ships today.

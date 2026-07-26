@@ -114,12 +114,13 @@ class ConduitResolutionState(Cleanable):
         `Meld` reads this on the resolution path and reruns phases 5-11 for
         THIS conduit alone when the verdict is UNKNOWN or GATED - which is what
         keeps revalidation proportional to the conduit that needs it.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Per-conduit resolution validity container. Melder kernel machinery:
+        read it to understand the runtime, do not drive it directly.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Per-conduit resolution validity container. Melder kernel machinery: "
-        "read it to understand the runtime, do not drive it directly."
-    )
     __slots__ = Cleanable.__slots__ + [
         "_conduit_id",
         "_lock",

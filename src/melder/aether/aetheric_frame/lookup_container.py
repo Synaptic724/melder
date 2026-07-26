@@ -62,12 +62,13 @@ class LookupContainer:
         lockstep under one non-reentrant lock lets any layer trust that a
         signature lookup never observes a half-applied claim, so notch (which
         re-points the active spell_id) is atomic from every reader's view.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Frame-wide, thread-safe registry of ACTIVE binding-signature lookups.
+        Melder kernel machinery: read it to understand the runtime, do not drive it directly.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Frame-wide, thread-safe registry of ACTIVE binding-signature lookups. "
-        "Melder kernel machinery: read it to understand the runtime, do not drive it directly."
-    )
 
     __slots__ = ("_lookup", "_reverse", "_lock", "_cleaned")
 

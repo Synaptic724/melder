@@ -80,15 +80,15 @@ class WeakConcurrentList(Generic[_T], Cleanable):
         Substrate-level, outside the DGR boot order. Fits the "track these
         without owning them" shape - observers, registries, and pools that must
         not be the reason their contents stay alive.
+
+    AGENT_ACCESS: public
+
+    AGENT_PURPOSE:
+        access: public. Ordered container holding elements WEAKLY - it never keeps its contents
+        alive. Indices are NOT stable: entries vanish on collection, so iterate directly rather
+        than by index, and expect DeadReferenceError from a stale one.
     """
 
-    __ast_helper_access__: str = "public"
-    __agent_purpose__: str = (
-        "access: public. Ordered container holding elements WEAKLY - it never "
-        "keeps its contents alive. Indices are NOT stable: entries vanish on "
-        "collection, so iterate directly rather than by index, and expect "
-        "DeadReferenceError from a stale one."
-    )
 
     __slots__ = (
             Cleanable.__slots__

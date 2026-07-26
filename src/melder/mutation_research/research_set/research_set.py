@@ -101,13 +101,14 @@ class ResearchSet(Cleanable):
         combining content happens in the codegen workshop and re-enters as a
         multi-parent `register_spell`, so the record only ever gains facts. It
         never rewrites them.
+
+    AGENT_ACCESS: public
+
+    AGENT_PURPOSE:
+        access: public. One research network - lanes, journal, residence partition. Use
+        register_spell/register_group, create_lane, attach/detach, join, archive,
+        walk/history/heads, campaign_view, snapshot_network/restore_network.
     """
-    __ast_helper_access__: str = "public"
-    __agent_purpose__: str = (
-        "access: public. One research network - lanes, journal, residence partition. Use "
-        "register_spell/register_group, create_lane, attach/detach, join, archive, "
-        "walk/history/heads, campaign_view, snapshot_network/restore_network."
-    )
 
     DEFAULT_LANE_NAME: ClassVar[str] = "default"
 

@@ -81,12 +81,13 @@ class ChangeControlOrchestrator(Cleanable):
         the SAME admission-state resources so a mutation leaves no residue on
         either path, and running hooks outside the lock keeps user-registered
         commit/abort work from blocking unrelated admissions.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Serialized control-plane coordinator for change-control requests.
+        Melder kernel machinery: read it to understand the runtime, do not drive it directly.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Serialized control-plane coordinator for change-control requests. "
-        "Melder kernel machinery: read it to understand the runtime, do not drive it directly."
-    )
     __slots__ = Cleanable.__slots__ + [
         "_lock",
         "_staged",

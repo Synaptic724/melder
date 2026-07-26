@@ -394,16 +394,16 @@ class WeakConcurrentDict(Generic[_K, _V], Cleanable):
         needs to remember objects it does not own, and must not be the reason
         those objects stay alive. `DeadReferenceError` is the failure it raises
         when a caller asks for a referent that is already gone.
+
+    AGENT_ACCESS: public
+
+    AGENT_PURPOSE:
+        access: public. Dict with STRONG keys and WEAK values - putting an object in never keeps
+        it alive, so use it as a cache, not a store. An entry can die between two statements, so
+        `k in d` then `d[k]` may raise DeadReferenceError. Dead entries stay visible until
+        pruned; freeze() speeds reads but does not stop collection.
     """
 
-    __ast_helper_access__: str = "public"
-    __agent_purpose__: str = (
-        "access: public. Dict with STRONG keys and WEAK values - putting an "
-        "object in never keeps it alive, so use it as a cache, not a store. An "
-        "entry can die between two statements, so `k in d` then `d[k]` may "
-        "raise DeadReferenceError. Dead entries stay visible until pruned; "
-        "freeze() speeds reads but does not stop collection."
-    )
 
     __slots__ = (
             Cleanable.__slots__

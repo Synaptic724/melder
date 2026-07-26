@@ -59,12 +59,13 @@ class BinaryUnknownCustodyStrategy(SourceCustodyStrategy):
         without weakening it: a compiled .so/.pyd/.dylib leaf exposes a HASH of its
         bytes for drift detection, never a parse of them, so the record can verify
         a native dependency changed without pretending to understand its contents.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Terminal fallback custody for the `unknown` authority class. Melder
+        kernel machinery: read it to understand the runtime, do not drive it directly.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Terminal fallback custody for the `unknown` authority class. Melder "
-        "kernel machinery: read it to understand the runtime, do not drive it directly."
-    )
 
 
     # Compiled-extension suffixes whose file identity is worth capturing.

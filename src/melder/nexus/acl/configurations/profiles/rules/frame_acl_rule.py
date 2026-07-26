@@ -42,12 +42,13 @@ class FrameACLRule(Cleanable):
         edit silently rewrite another's meaning.
         Stable identity for the object's lifetime lets diagnostics name the
         exact rule behind a verdict rather than describing it.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. FrameACLRule runtime object. Melder kernel machinery: read it to
+        understand the runtime, do not drive it directly.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. FrameACLRule runtime object. Melder kernel machinery: read it to "
-        "understand the runtime, do not drive it directly."
-    )
 
     _ALLOW_EFFECT = "allow"
     _DENY_EFFECT = "deny"

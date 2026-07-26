@@ -86,13 +86,14 @@ class DevOpsManager(Cleanable):
         requiring a caller to know that dirty roots live in change control,
         risk posture lives in the risk manager, and validity lives in the state
         registry.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Frame-level ownership root for DevOps and admission-control
+        subsystems. Melder kernel machinery: read it to understand the runtime, do not drive it
+        directly.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Frame-level ownership root for DevOps and admission-control "
-        "subsystems. Melder kernel machinery: read it to understand the runtime, do not drive it "
-        "directly."
-    )
     __slots__ = Cleanable.__slots__ + [
         "_lock",
         "_spell_system_states",

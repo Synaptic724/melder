@@ -39,14 +39,15 @@ class CircularDependencyStrategy(SpellValidationStrategy):
         Phase 4 (validation) of the conjure pipeline. It reuses
         `validation_pass_cache` so one adjacency build serves the whole scheduler
         pass.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Phase-4 strategy: DFS over the spellbook-wide dependency adjacency
+        (pass-cached) from the current spell; emits CIRCULAR_DEPENDENCY (error) with the cycle
+        path when a reachable cycle is found. Ignores dangling ids.
     """
 
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Phase-4 strategy: DFS over the spellbook-wide dependency adjacency "
-        "(pass-cached) from the current spell; emits CIRCULAR_DEPENDENCY (error) with the cycle "
-        "path when a reachable cycle is found. Ignores dangling ids."
-    )
     __slots__ = SpellValidationStrategy.__slots__
 
     def __init__(self) -> None:

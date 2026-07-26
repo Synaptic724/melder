@@ -75,13 +75,14 @@ class DiffEngine(Cleanable):
         open/closed - adding a grain means registering a strategy, never editing
         this class - and why nothing it produces is written back into the
         record. A verdict is an answer, not a fact the system remembers.
+
+    AGENT_ACCESS: public
+
+    AGENT_PURPOSE:
+        access: public. Computes derived diffs over RECORDED custody material - never the live
+        disk. Choose grain by strategy: source, structural, or parts. Obtain via
+        MutationResearch.create_diff_engine().
     """
-    __ast_helper_access__: str = "public"
-    __agent_purpose__: str = (
-        "access: public. Computes derived diffs over RECORDED custody material - never the live disk. "
-        "Choose grain by strategy: source, structural, or parts. Obtain via "
-        "MutationResearch.create_diff_engine()."
-    )
 
     __slots__ = Cleanable.__slots__ + [
         "_material_resolver",

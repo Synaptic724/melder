@@ -52,13 +52,14 @@ class Permissions(Enum):
         defaults to the spell's own `permissions` with a `create` fallback:
         a cluster exists precisely so members can construct from each other's
         lineages, and a `read`-only default would make the cluster inert.
+
+    AGENT_ACCESS: public
+
+    AGENT_PURPOSE:
+        access: public. Capability ceiling for a lineage: read (resolve/inspect only), create
+        (creation-capable, implies read), block (hard stop). Pass to Spellbook.bind(...). A
+        contract never grants more than the spell's own permission.
     """
-    __ast_helper_access__: str = "public"
-    __agent_purpose__: str = (
-        "access: public. Capability ceiling for a lineage: read (resolve/inspect only), create "
-        "(creation-capable, implies read), block (hard stop). Pass to Spellbook.bind(...). A contract "
-        "never grants more than the spell's own permission."
-    )
     read = auto()   # Allows read/resolve access only.
     create = auto() # Allows creation-capable use and implies read.
     block = auto()  # Blocks sharing/contracting in normal flows.

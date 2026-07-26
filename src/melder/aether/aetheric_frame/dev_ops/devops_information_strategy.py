@@ -57,12 +57,13 @@ class DevopsInformationStrategy(ABC):
         Receiving the LIVE registry while returning detached results is
         therefore not a contradiction: the strategy reads current truth at
         execution time precisely so the snapshot it produces is current.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Abstract base for DevOps information strategies. Melder kernel
+        machinery: read it to understand the runtime, do not drive it directly.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Abstract base for DevOps information strategies. Melder kernel "
-        "machinery: read it to understand the runtime, do not drive it directly."
-    )
 
     @staticmethod
     @abstractmethod

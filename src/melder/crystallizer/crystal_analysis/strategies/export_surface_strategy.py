@@ -84,12 +84,13 @@ class ExportSurfaceStrategy(CrystalFactStrategy):
         that it might be wrong. The same principle governs the public-name
         fallback, which reports only what is plainly visible at the
         module's top level.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Derive one module's static export surface. Melder kernel machinery:
+        read it to understand the runtime, do not drive it directly.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Derive one module's static export surface. Melder kernel machinery: "
-        "read it to understand the runtime, do not drive it directly."
-    )
 
     __slots__ = ()
 

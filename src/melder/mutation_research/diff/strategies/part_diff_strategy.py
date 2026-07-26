@@ -58,12 +58,13 @@ class PartDiffStrategy(DiffStrategy):
         part - imports, constants - is compared as one synthetic
         `<module_body>` region, so nothing silently escapes the verdict just
         because it does not live inside a function or class.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Part-grain text comparison between two version materials. Melder
+        kernel machinery: read it to understand the runtime, do not drive it directly.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Part-grain text comparison between two version materials. Melder "
-        "kernel machinery: read it to understand the runtime, do not drive it directly."
-    )
 
     __slots__ = DiffStrategy.__slots__
 

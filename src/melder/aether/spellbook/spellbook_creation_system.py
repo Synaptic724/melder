@@ -86,12 +86,13 @@ class SpellbookCreationSystem(Cleanable):
         freeze and the settle-then-inherit effective-mode resolution, it gates whether a
         `Conduit` is born and threads the effective dynamic mode through phases 1-11 and
         cloud registration. One-run helper, cleaned after each conjure.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Internal conjure orchestration system for Spellbook. Melder kernel
+        machinery: read it to understand the runtime, do not drive it directly.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Internal conjure orchestration system for Spellbook. Melder kernel "
-        "machinery: read it to understand the runtime, do not drive it directly."
-    )
 
     _DEFAULT_ROOT_CONDUIT_NAME: ClassVar[str] = "default"
     # Chunk-granularity factor for the fused plan_group (phases 8-11) phase.

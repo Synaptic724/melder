@@ -81,15 +81,15 @@ class WeakRefNode(Cleanable, Generic[_T]):
         `DeadReferenceError`: a container asks a node for a live referent, the
         node has none, and the caller learns their object is gone rather than
         silently receiving None.
+
+    AGENT_ACCESS: public
+
+    AGENT_PURPOSE:
+        access: public. Weak-reference cell with GC notification - the element type inside every
+        weak container. Holds no lock: the owning container synchronizes it. Its on_collect
+        callback runs on the GC thread, so anything it touches must be small and best-effort.
     """
 
-    __ast_helper_access__: str = "public"
-    __agent_purpose__: str = (
-        "access: public. Weak-reference cell with GC notification - the element "
-        "type inside every weak container. Holds no lock: the owning container "
-        "synchronizes it. Its on_collect callback runs on the GC thread, so "
-        "anything it touches must be small and best-effort."
-    )
 
     __slots__ = (
             Cleanable.__slots__

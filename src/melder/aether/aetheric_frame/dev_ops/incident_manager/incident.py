@@ -72,12 +72,13 @@ class Incident(Cleanable):
         agent-readable line for a board or log, while `details` carries the
         structured payload tooling actually parses. Collapsing them would make
         one of those two consumers do string surgery.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Mutable incident record with controlled status transitions. Melder
+        kernel machinery: read it to understand the runtime, do not drive it directly.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Mutable incident record with controlled status transitions. Melder "
-        "kernel machinery: read it to understand the runtime, do not drive it directly."
-    )
 
     __slots__ = Cleanable.__slots__ + [
         "_lock",

@@ -208,6 +208,91 @@ are not buried under it.
   REREAD: REQUIRED
   SCORE_0_TO_10: 9
 
+- DATETIME: 2026-07-25T23:05:00Z
+  TYPE: FACT
+  CLAIM: AUDIT GAP, found by the owner not by me. Both docs listed
+    `MUTATION_CONTRACT_DISABLED` under PERMANENTLY REMOVED and then cited it as LIVE
+    Phase-4 behaviour in eleven places. Verified against source before editing, and the
+    removal entries were the correct ones: `MUTATION_CONTRACT_DISABLED` has ZERO
+    occurrences in `src/`; `ParameterDIShape` has SIX members and no
+    `MUTATION_CONTRACT` (both docs listed seven);
+    `ContractProviderPresenceStrategy` emits four codes, none about mutation -
+    `CONTRACT_IN_AUTOMATIC_MODE`, `SPELL_CONTRACT_INVALID`,
+    `SPELL_CONTRACT_AMBIGUOUS`, and the warning `SPELL_CONTRACT_MISSING_PROVIDER`.
+  EVIDENCE:
+  - src/melder/aether/spellbook/spell_compiler/spell_requirements_finder/parameter_di_shape.py:64-69
+  - src/melder/aether/spellbook/spell_compiler/validation/strategies/contract_provider_presence_strategy.py:145-210
+  IMPACT: MY AUDIT COULD NOT HAVE CAUGHT THIS. I verified that every cited path and
+    symbol RESOLVES, and that no renamed symbol survived - but a doc declaring a
+    constant removed and then describing its behaviour is SELF-contradiction, not
+    drift against source. Path-existence and symbol-existence checks are blind to it.
+    A future audit needs a third check: does the document agree with itself?
+  NEXT: Add self-consistency to the audit method if this lane is ever repeated.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+- DATETIME: 2026-07-25T23:05:00Z
+  TYPE: DECISION
+  CLAIM: Kept a distinction the docs had collapsed, rather than deleting both halves.
+    The mutation SOCKET is gone; the mutation OVERLAY is LIVE -
+    `Spell.apply_mutation_override` / `clear_mutation_override` exist at
+    spell.py:1540,1586 and still emit `mutation_contract_set` /
+    `mutation_contract_cleared`. Those reason names imply a socket that no longer
+    exists, so both docs now state explicitly that the names are historical and the
+    overlay is unrelated to the removed socket. The owner confirmed this split.
+    Also corrected the same stale claim in code at
+    `spell_state_change_reason.py:46-48` and its enum comment, and matched that file
+    to its LF index form so the change reads as 6 lines instead of 101.
+  EVIDENCE:
+  - src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_state_change_reason.py:44-49
+  - src/melder/aether/spellbook/spell.py:1540-1586
+  IMPACT: Deleting the overlay references as "stale" would have removed a real
+    mechanism; leaving them ambiguous is what produced the contradiction in the first
+    place. `grep -rE "MUTATION_CONTRACT_DISABLED|Phase 4 blocks" src/` is now clean.
+  NEXT: None; seven surviving doc mentions are all either removal entries or negative
+    claims.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-07-25T23:20:00Z
+  TYPE: DECISION
+  CLAIM: SETTLED RULE for a removed concept, after I over-corrected twice on it.
+    Pass 1 I explained the absence ("the socket is GONE, the names are historical,
+    there is no `ParameterDIShape` for it") - owner: don't mention it, that confuses
+    agents. Pass 2 I stripped every mention INCLUDING the `PERMANENTLY REMOVED`
+    entries - owner: that list is fine, it functions as a version-control /
+    deprecation statement and is handy. The rule that satisfies both:
+    NAME IT ONCE, IN THE DEPRECATION RECORD; NEVER DESCRIBE ITS BEHAVIOUR.
+  EVIDENCE:
+  - context_compass/system_docs/src_architecture.md:118-121
+  - context_compass/system_docs/src_components.md:68-70
+  IMPACT: A removed concept appearing in a deprecation list answers "was this ever a
+    thing?" cheaply. The same concept appearing in a behaviour section teaches a
+    mechanism that does not exist. The failure mode is the second, not the first, and
+    my instinct to purge everything was as wrong as the original contradiction.
+  NEXT: Apply the same rule to any future removal: one deprecation-list line, zero
+    behavioural prose.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+- DATETIME: 2026-07-25T23:20:00Z
+  TYPE: MEASURE
+  CLAIM: Final state verified. Six mentions across both docs, each in its correct
+    place: two are the `PERMANENTLY REMOVED` deprecation entries (arch:120-121,
+    comp:70), and four name the LIVE overlay's real change-reason identifiers
+    `mutation_contract_set` / `mutation_contract_cleared` with no archaeology
+    (arch:391-392, arch:1875-1876, comp:103-104). Two further regex hits at comp:93,97
+    are the phrase "mutation/contract state flags", which is the genuine open UNKNOWN
+    about `SpellState.contract_violation` / `mutation_candidate` /
+    `mutation_quarantined` / `mutation_failed` - unrelated, correctly left alone. Zero
+    mentions remain in `src/`. Diffs 20/32 and 20/30, each file matched to its own
+    index EOL form, zero NUL.
+  EVIDENCE:
+  - context_compass/system_docs/src_components.md:93-96
+  IMPACT: No behavioural claim about the removed socket survives anywhere, while the
+    deprecation record and the live overlay both remain intact.
+  NEXT: Owner acceptance.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 8
+
 ## Context / Handoff Summary
 Post-sweep drift audit of the three canonical system artifacts. Measured result: one
 dead graph node out of 536, zero dangling edges, zero dead paths across 695 citations,

@@ -105,13 +105,15 @@ class FrameViewer(Cleanable):
         Cleanup mirrors the borrow: it clears viewer-owned references ONLY and
         never touches the owning Rift or its projection objects, because those
         are borrowed inputs whose lifetime belongs to someone else.
+
+    AGENT_ACCESS: public
+
+    AGENT_PURPOSE:
+        access: public. Multi-frame descriptor host for the Rift viewer path. Use this object to
+        inspect hosted frames, compare descriptor records, and call the explicit viewer methods
+        for frame-local behavior.
     """
 
-    __ast_helper_access__: str = "public"
-    __agent_purpose__: str = (
-        "access: public. Multi-frame descriptor host for the Rift viewer path. Use this object to inspect hosted "
-        "frames, compare descriptor records, and call the explicit viewer methods for frame-local behavior."
-    )
     __slots__ = Cleanable.__slots__ + [
         "_id",
         "_lock",

@@ -55,12 +55,13 @@ class _ConduitRiskState:
         whether a conduit is risky because the spell itself is broken
         everywhere or because THIS conduit cannot currently resolve it, which
         are different problems with different fixes.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Per-conduit bucket of risk-tracking state. Melder kernel machinery:
+        read it to understand the runtime, do not drive it directly.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Per-conduit bucket of risk-tracking state. Melder kernel machinery: "
-        "read it to understand the runtime, do not drive it directly."
-    )
     __slots__ = [
         "spellbook",
         "lineages",
@@ -153,12 +154,13 @@ class RiskManager(Cleanable):
         `SpellSystemStates.unregister_lineage` notifies this manager to FORCE
         validation gating - removing a lineage must never leave a stale "valid"
         verdict behind that meld could still act on.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. DevOps risk tracking for meld validation gating. Melder kernel
+        machinery: read it to understand the runtime, do not drive it directly.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. DevOps risk tracking for meld validation gating. Melder kernel "
-        "machinery: read it to understand the runtime, do not drive it directly."
-    )
     __slots__ = Cleanable.__slots__ + [
         "_lock",
         "_spell_system_states",

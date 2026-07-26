@@ -74,12 +74,13 @@ class RestoreReport(Cleanable):
         ONLY inside the translation map - they never escape into the rebuilt world
         (never-rehydrate-ULIDs). Its mutators/readers are RLock-serialized because the parallel
         restore driver reports built counts and mappings from scheduler worker threads.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Detached outcome record for one restore run. Melder kernel machinery:
+        read it to understand the runtime, do not drive it directly.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Detached outcome record for one restore run. Melder kernel machinery: "
-        "read it to understand the runtime, do not drive it directly."
-    )
 
     __slots__ = Cleanable.__slots__ + [
         "_lock",
@@ -420,13 +421,14 @@ class RestoreEngine(Cleanable):
         down every unit this run built (reverse order) and re-raises with the stage cause
         chained. Fresh identities are always minted (never-rehydrate-ULIDs), and re-emission is
         intended - the rebuilt world re-records itself into the active profile as it comes up.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Single-use driver that unfolds one folded checkpoint chain into the
+        live runtime through the PUBLIC verbs (boot lane). Melder kernel machinery: read it to
+        understand the runtime, do not drive it directly.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Single-use driver that unfolds one folded checkpoint chain into the "
-        "live runtime through the PUBLIC verbs (boot lane). Melder kernel machinery: read it to "
-        "understand the runtime, do not drive it directly."
-    )
 
     __slots__ = Cleanable.__slots__ + [
         "_chain",

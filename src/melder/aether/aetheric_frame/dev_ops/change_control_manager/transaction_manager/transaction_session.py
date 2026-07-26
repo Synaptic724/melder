@@ -78,13 +78,14 @@ class TransactionSession(Cleanable):
         deep in a nested frame can poison the whole root's commit without
         unwinding by hand - the reliability guarantee every coordination strategy
         (gate freezes, mirror maintenance) builds on.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Live transaction session rooted at one admitted change-control
+        request. Melder kernel machinery: read it to understand the runtime, do not drive it
+        directly.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Live transaction session rooted at one admitted change-control "
-        "request. Melder kernel machinery: read it to understand the runtime, do not drive it "
-        "directly."
-    )
 
     STATUS_OPEN: ClassVar[str] = "open"
     STATUS_ABORT_ONLY: ClassVar[str] = "abort_only"

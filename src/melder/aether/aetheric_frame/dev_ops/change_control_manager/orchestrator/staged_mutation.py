@@ -78,12 +78,13 @@ class ChangeControlStagedMutation:
         initiator, spellbook), not about live state that could shift underneath
         it. That immutability is why the payload can be shared freely across the
         hook and thread boundaries a transaction spans.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Immutable record describing a staged change-control mutation. Melder
+        kernel machinery: read it to understand the runtime, do not drive it directly.
     """
-    __ast_helper_access__: ClassVar[str] = "internal"
-    __agent_purpose__: ClassVar[str] = (
-        "access: internal. Immutable record describing a staged change-control mutation. Melder "
-        "kernel machinery: read it to understand the runtime, do not drive it directly."
-    )
     request_id: str
     request_type: ChangeTransactionType
     staged_at: float

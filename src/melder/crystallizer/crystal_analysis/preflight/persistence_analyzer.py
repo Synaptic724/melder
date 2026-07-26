@@ -93,12 +93,13 @@ class PersistenceAnalyzer(Cleanable):
         (blockers > warnings > clean, info never changes it) is what lets a caller
         gate on severity - refuse on blockers, proceed-with-shortfalls on warnings
         - turning restore from a hope into a checked operation.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Strategy-driven bootload pre-flight for persistence payload bundles.
+        Melder kernel machinery: read it to understand the runtime, do not drive it directly.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Strategy-driven bootload pre-flight for persistence payload bundles. "
-        "Melder kernel machinery: read it to understand the runtime, do not drive it directly."
-    )
 
 
     __slots__ = Cleanable.__slots__ + [

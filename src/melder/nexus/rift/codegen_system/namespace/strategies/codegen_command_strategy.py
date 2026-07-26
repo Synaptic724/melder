@@ -41,12 +41,13 @@ class CodegenCommandStrategy(Cleanable):
         The strategy split is what makes the namespace auditable: reading which
         strategies ran, and what configuration enabled, answers "what could this
         code reach" without tracing builder code.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Namespace exposure strategy for the room-facing command surface.
+        Melder kernel machinery: read it to understand the runtime, do not drive it directly.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Namespace exposure strategy for the room-facing command surface. "
-        "Melder kernel machinery: read it to understand the runtime, do not drive it directly."
-    )
 
     __slots__ = Cleanable.__slots__ + [
         "_lock",

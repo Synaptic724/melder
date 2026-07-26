@@ -55,12 +55,13 @@ class FrameACLCommandBuilder(Cleanable):
         draft, nothing is persisted until the container installs the finished
         configuration. The instance lock matters under the nogil runtime because
         one fluent call can change several draft fields together.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. FrameACLCommandBuilder runtime object. Melder kernel machinery: read
+        it to understand the runtime, do not drive it directly.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. FrameACLCommandBuilder runtime object. Melder kernel machinery: read "
-        "it to understand the runtime, do not drive it directly."
-    )
 
     __slots__ = Cleanable.__slots__ + [
         "_id",

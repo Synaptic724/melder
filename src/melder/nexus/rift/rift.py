@@ -116,13 +116,14 @@ class Rift(Cleanable):
         Known limitation, stated honestly: `on_nexus_frame_disposed(...)` is
         still only a logging seam. Rooms have a real room-local event system,
         but there is no Rift-level event orchestration layer yet.
+
+    AGENT_ACCESS: public
+
+    AGENT_PURPOSE:
+        access: public. One live AR connection. Created bare by Nexus with a single primary room
+        from space_type; attach targets afterwards with create_frame_link(frame_name), which
+        REQUIRES descriptor truth to exist. Reach the room via .space.
     """
-    __ast_helper_access__: str = "public"
-    __agent_purpose__: str = (
-        "access: public. One live AR connection. Created bare by Nexus with a single primary room "
-        "from space_type; attach targets afterwards with create_frame_link(frame_name), which "
-        "REQUIRES descriptor truth to exist. Reach the room via .space."
-    )
 
     __slots__ = Cleanable.__slots__ + [
         "_id",

@@ -39,13 +39,14 @@ class NexusFrameMode(Enum):
         choice applies uniformly to every Rift - which is the point. A gate that
         varied per Rift could be escaped by creating a differently configured
         one, so the governance that matters lives here rather than on the Rift.
+
+    AGENT_ACCESS: public
+
+    AGENT_PURPOSE:
+        access: public. Frame topology: single (one shared), indexed (named, shared by name),
+        one_per_workspace (private per Rift). Note one_per_workspace REJECTS raw manager
+        creation - use the Rift-scoped path.
     """
-    __ast_helper_access__: str = "public"
-    __agent_purpose__: str = (
-        "access: public. Frame topology: single (one shared), indexed (named, shared by name), "
-        "one_per_workspace (private per Rift). Note one_per_workspace REJECTS raw manager creation - "
-        "use the Rift-scoped path."
-    )
 
     single = "single"
     indexed = "indexed"

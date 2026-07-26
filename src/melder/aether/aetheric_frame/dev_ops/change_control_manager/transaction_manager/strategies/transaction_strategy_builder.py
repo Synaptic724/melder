@@ -151,12 +151,13 @@ class TransactionStrategyBuilder:
         registry is populated once at init and read-only thereafter, so dispatch
         needs no lock - the concurrency all lives in the mediator and the scope
         claims each resolved strategy requests.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Registry-backed resolver for transaction strategies. Melder kernel
+        machinery: read it to understand the runtime, do not drive it directly.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Registry-backed resolver for transaction strategies. Melder kernel "
-        "machinery: read it to understand the runtime, do not drive it directly."
-    )
 
     __slots__ = [
         "_transaction_manager",

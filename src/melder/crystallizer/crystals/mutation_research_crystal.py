@@ -79,13 +79,14 @@ class MutationResearchCrystal(Cleanable):
         face) while hydration keeps reading the composition - one truth, two
         projections, generated together so a query can never see a node the
         rebuild loop won't.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Pure-data digital twin of the MutationResearch root's configured
+        surface. Melder kernel machinery: read it to understand the runtime, do not drive it
+        directly.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Pure-data digital twin of the MutationResearch root's configured "
-        "surface. Melder kernel machinery: read it to understand the runtime, do not drive it "
-        "directly."
-    )
 
     __slots__ = Cleanable.__slots__ + [
         "_activated",

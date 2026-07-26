@@ -85,15 +85,15 @@ class SafeLogger(Cleanable):
         through `AetherConfiguration` - quiet-by-default is a deliberate library
         posture, not a missing feature. Teardown paths log best-effort so a
         failure during cleanup never cascades into a second failure.
+
+    AGENT_ACCESS: public
+
+    AGENT_PURPOSE:
+        access: public. One logging surface over channel loggers, stdlib loggers, or nothing at
+        all. Wrapping None is legal and silent, which is why every runtime object can take a
+        logger during boot without checking whether logging is configured. Cleaned LAST in an
+        owner's teardown so children can still log while being torn down.
     """
-    __ast_helper_access__: str = "public"
-    __agent_purpose__: str = (
-        "access: public. One logging surface over channel loggers, stdlib "
-        "loggers, or nothing at all. Wrapping None is legal and silent, which "
-        "is why every runtime object can take a logger during boot without "
-        "checking whether logging is configured. Cleaned LAST in an owner's "
-        "teardown so children can still log while being torn down."
-    )
     __slots__ = Cleanable.__slots__ + ["_logger", "_id", "_level", "_level_name", "_is_channel"]
     _LEVELS: ClassVar[Dict[str, int]] = {
         "notset": logging.NOTSET,

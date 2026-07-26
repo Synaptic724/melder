@@ -62,12 +62,13 @@ class AetherCrystal(Cleanable):
         empty config payload therefore means "root emitted without installed
         policy," not "no Aether existed" - the same selective-capture honesty the
         rest of the record follows.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Pure-data digital twin of the Aether root's configured surface. Melder
+        kernel machinery: read it to understand the runtime, do not drive it directly.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Pure-data digital twin of the Aether root's configured surface. Melder "
-        "kernel machinery: read it to understand the runtime, do not drive it directly."
-    )
 
     __slots__ = Cleanable.__slots__ + [
         "_configuration_payload",

@@ -76,13 +76,14 @@ class ConduitCloud(Cleanable):
         formation is composed into a live world. A probe must also never BIRTH
         what it checks for, which is why admission reads the frame registry
         directly rather than going through `_ensure_frame`.
+
+    AGENT_ACCESS: public
+
+    AGENT_PURPOSE:
+        access: public. Frame-scoped discovery and cluster facade. Use
+        has_conduit_name(...)/has_cluster_name(...) to probe without creating, and the cluster
+        verbs to form member groups. Reached via AethericFrame.conduit_cloud.
     """
-    __ast_helper_access__: str = "public"
-    __agent_purpose__: str = (
-        "access: public. Frame-scoped discovery and cluster facade. Use "
-        "has_conduit_name(...)/has_cluster_name(...) to probe without creating, and the cluster verbs "
-        "to form member groups. Reached via AethericFrame.conduit_cloud."
-    )
     __slots__ = Cleanable.__slots__ + [
         "_lock",
         "_name",

@@ -45,12 +45,13 @@ class CodegenControlSurface:
         `CodegenRecursiveControlStrategy`: static analysis rejects obvious
         direct recursion, while this wrapper enforces the posture even when the
         call is reached indirectly.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Runtime wrapper for the `codegen` namespace object. Melder kernel
+        machinery: read it to understand the runtime, do not drive it directly.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Runtime wrapper for the `codegen` namespace object. Melder kernel "
-        "machinery: read it to understand the runtime, do not drive it directly."
-    )
 
     __slots__ = [
         "_codegen_system",

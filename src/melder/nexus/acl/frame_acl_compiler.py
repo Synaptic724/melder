@@ -56,12 +56,13 @@ class FrameACLCompiler(Cleanable):
         would report a policy far narrower than what actually applies.
         Its output feeds `FrameLinkContract` selection, which is why a Rift
         attaches to compiled answers and never to raw ACL objects.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. FrameACLCompiler runtime object. Melder kernel machinery: read it to
+        understand the runtime, do not drive it directly.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. FrameACLCompiler runtime object. Melder kernel machinery: read it to "
-        "understand the runtime, do not drive it directly."
-    )
 
     __slots__ = Cleanable.__slots__ + [
         "_id",

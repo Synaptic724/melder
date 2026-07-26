@@ -31,14 +31,15 @@ class ResolutionFramePresenceStrategy(SpellValidationStrategy):
     System Context:
         Phase 4 (validation) of the conjure pipeline, verifying Phase-3 artifacts
         exist before the deeper strategies run.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Phase-4 structural gate: emits MISSING_RESOLUTION_FRAME (error) when
+        Phase 3 produced no resolution frame, or MISSING_DEPENDENCY_GRAPH (warning) when the
+        frame exists but the spell has no attached dependency graph.
     """
 
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Phase-4 structural gate: emits MISSING_RESOLUTION_FRAME (error) when "
-        "Phase 3 produced no resolution frame, or MISSING_DEPENDENCY_GRAPH (warning) when the "
-        "frame exists but the spell has no attached dependency graph."
-    )
     __slots__ = SpellValidationStrategy.__slots__
 
     def __init__(self) -> None:

@@ -117,12 +117,13 @@ class ChangeControlManager(Cleanable):
         graph, in what order, and what must be re-checked afterward" - the layer
         Spellbook delegates to whenever a registration or contract actually
         changes.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Change-control registry for an Aetheric Frame. Melder kernel
+        machinery: read it to understand the runtime, do not drive it directly.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Change-control registry for an Aetheric Frame. Melder kernel "
-        "machinery: read it to understand the runtime, do not drive it directly."
-    )
     __slots__ = Cleanable.__slots__ + [
         "_lock",
         "_spell_system_states",

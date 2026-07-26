@@ -30,14 +30,16 @@ class SoloCodegenPlanDiscoveryStrategy(CodegenPlanDiscoveryStrategy):
 
     System Context:
         Phase 10 (codegen planning) discovery of the conjure pipeline.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Phase-10 discovery strategy: claims a single-visible-spell model
+        (selecting the generalized_solo strategy / solo family), but declines when any
+        collection socket is present - those route to collection-aware families.
+        Collection-blind.
     """
 
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Phase-10 discovery strategy: claims a single-visible-spell model "
-        "(selecting the generalized_solo strategy / solo family), but declines when any "
-        "collection socket is present - those route to collection-aware families. Collection-blind."
-    )
     __slots__ = ()
 
     @property

@@ -64,13 +64,14 @@ class SpellIndex(Cleanable):
         The explicit non-ownership of lookup-map propagation is the boundary
         that keeps this class small: the index organizes ids, the spell_id
         resolves, and the Spellbook is what republishes lookups on a notch.
+
+    AGENT_ACCESS: public
+
+    AGENT_PURPOSE:
+        access: public. The stable lineage identity (immutable ULID) pointing at a mutable
+        selected spell. Hash/equality use only the ULID, so a notch can repoint the active
+        member without breaking any map. Version history belongs to MutationResearch.
     """
-    __ast_helper_access__: str = "public"
-    __agent_purpose__: str = (
-        "access: public. The stable lineage identity (immutable ULID) pointing at a mutable selected "
-        "spell. Hash/equality use only the ULID, so a notch can repoint the active member without "
-        "breaking any map. Version history belongs to MutationResearch."
-    )
     __slots__ = (
         "_id",          # The immutable ULID. Used for hashing and equality.
         "_selected_spell_id",  # The active spell's id (a SHA256).

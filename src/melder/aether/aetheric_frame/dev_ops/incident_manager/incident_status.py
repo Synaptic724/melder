@@ -39,12 +39,13 @@ class IncidentStatus(Enum):
         disposition, and without it operators would resolve incidents they had
         merely decided to live with, destroying the distinction between fixed
         and tolerated.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Lifecycle status for an `Incident`. Melder kernel machinery: read it
+        to understand the runtime, do not drive it directly.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Lifecycle status for an `Incident`. Melder kernel machinery: read it "
-        "to understand the runtime, do not drive it directly."
-    )
     open = auto()
     acknowledged = auto()
     resolved = auto()

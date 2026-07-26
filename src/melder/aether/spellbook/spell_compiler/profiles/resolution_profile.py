@@ -25,12 +25,13 @@ class SpellSymbolicNode(Cleanable):
 
     System Context:
         Phase 2 (symbolic) artifact family carried by `SpellResolutionProfile`.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Symbolic dependency-graph node: node_id, kind, metadata bag.
+        Placeholder-level tagged node in the resolution_profile symbolic model.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Symbolic dependency-graph node: node_id, kind, metadata bag. "
-        "Placeholder-level tagged node in the resolution_profile symbolic model."
-    )
     __slots__ = Cleanable.__slots__ + ["node_id", "kind", "metadata"]
 
     def __init__(self, node_id: str, kind: str, metadata: Optional[dict[str, Any]] = None) -> None:
@@ -83,12 +84,13 @@ class SpellSymbolicEdge(Cleanable):
 
     System Context:
         Phase 2 (symbolic) artifact family carried by `SpellResolutionProfile`.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Symbolic dependency edge: from_node -> to_node, optionally
+        via_parameter. Part of the resolution_profile symbolic graph.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Symbolic dependency edge: from_node -> to_node, optionally "
-        "via_parameter. Part of the resolution_profile symbolic graph."
-    )
     __slots__ = Cleanable.__slots__ + ["from_node", "to_node", "via_parameter"]
 
     def __init__(self, from_node: str, to_node: str, via_parameter: Optional[str] = None) -> None:
@@ -141,13 +143,14 @@ class SpellSymbolicGraph(Cleanable):
 
     System Context:
         Phase 2 (symbolic) artifact carried by `SpellResolutionProfile`.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Phase-2 local symbolic graph in the profile family: spell_id plus
+        owned SpellSymbolicNode/SpellSymbolicEdge lists. Structural only - no global DAG, no
+        Spellbook resolution. Distinct from spell_compiler/symbolic_graph's version.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Phase-2 local symbolic graph in the profile family: spell_id plus "
-        "owned SpellSymbolicNode/SpellSymbolicEdge lists. Structural only - no global DAG, no "
-        "Spellbook resolution. Distinct from spell_compiler/symbolic_graph's version."
-    )
     __slots__ = Cleanable.__slots__ + ["spell_id", "nodes", "edges"]
 
     def __init__(
@@ -218,13 +221,14 @@ class SpellResolutionFrame(Cleanable):
 
     System Context:
         Phase 3 (concrete resolution frame) artifact carried by `SpellResolutionProfile`.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Phase-3 concrete resolution frame in the profile family: spell_id plus
+        ordered_node_ids (the topological order the resolver walks). Distinct from
+        dag/resolution_frame's ResolutionFrame.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Phase-3 concrete resolution frame in the profile family: spell_id "
-        "plus ordered_node_ids (the topological order the resolver walks). Distinct from "
-        "dag/resolution_frame's ResolutionFrame."
-    )
     __slots__ = Cleanable.__slots__ + ["spell_id", "ordered_node_ids"]
 
     def __init__(self, spell_id: str, ordered_node_ids: Optional[List[str]] = None) -> None:
@@ -272,12 +276,13 @@ class SpellValidationIssue(Cleanable):
 
     System Context:
         Phase 4 (validation) artifact family carried by `SpellResolutionProfile`.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. One validation issue in the profile family: code, message, details.
+        Distinct from validation/SpellValidationIssue.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. One validation issue in the profile family: code, message, details. "
-        "Distinct from validation/SpellValidationIssue."
-    )
     __slots__ = Cleanable.__slots__ + ["code", "message", "details"]
 
     def __init__(self, code: str, message: str, details: Optional[dict[str, Any]] = None) -> None:
@@ -329,13 +334,14 @@ class SpellValidationResult(Cleanable):
 
     System Context:
         Phase 4 (validation) artifact carried by `SpellResolutionProfile`.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Phase-4 readiness summary in the profile family: is_valid plus
+        errors/warnings lists of the profile SpellValidationIssue. Distinct from
+        validation/SpellValidationResult.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Phase-4 readiness summary in the profile family: is_valid plus "
-        "errors/warnings lists of the profile SpellValidationIssue. Distinct from "
-        "validation/SpellValidationResult."
-    )
     __slots__ = Cleanable.__slots__ + ["is_valid", "errors", "warnings"]
 
     def __init__(
@@ -418,13 +424,14 @@ class SpellResolutionProfile(Cleanable):
     System Context:
         Spans Phases 1-4 as the semantic "how to resolve this spell" payload,
         independent of any execution model.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Canonical in-memory 'how to resolve one Spell':
+        spell_id/existence/spellframe/binding_name plus the Phase 1-4 artifacts
+        (requirements/symbolic_graph/resolution_frame/validation). Execution-model-independent.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Canonical in-memory 'how to resolve one Spell': "
-        "spell_id/existence/spellframe/binding_name plus the Phase 1-4 artifacts "
-        "(requirements/symbolic_graph/resolution_frame/validation). Execution-model-independent."
-    )
     __slots__ = Cleanable.__slots__ + [
         "spell_id",
         "existence",

@@ -64,12 +64,13 @@ class ContractCrystal(Cleanable):
         both exist - hence edges last. Endpoint and index ids are record-local
         (translated on restore); spell SHAs are the stable coordinates that
         survive a boot unchanged.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Digital twin of one ward Contract: the record's relationship map.
+        Melder kernel machinery: read it to understand the runtime, do not drive it directly.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Digital twin of one ward Contract: the record's relationship map. "
-        "Melder kernel machinery: read it to understand the runtime, do not drive it directly."
-    )
 
     __slots__ = Cleanable.__slots__ + [
         "_contract_id",

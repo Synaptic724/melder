@@ -71,12 +71,13 @@ class CrystalAnalysisResult(Cleanable):
         re-consumed by mutation research. The write-then-frozen discipline (the
         analyzer is the only writer and never retains the result) is what makes
         those detached reads safe without a real freeze bit.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Detached, serialization-friendly result of one module-world analysis.
+        Melder kernel machinery: read it to understand the runtime, do not drive it directly.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Detached, serialization-friendly result of one module-world analysis. "
-        "Melder kernel machinery: read it to understand the runtime, do not drive it directly."
-    )
 
 
     __slots__ = (

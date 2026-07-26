@@ -49,13 +49,14 @@ class PathRegistry(Cleanable):
 
     System Context:
         Phase 3/5 DAG index construction of the conjure pipeline.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Interns param-path segments into stable integer PathIds so Phase-5/8
+        builds compare and extend paths cheaply: extend_path / resolve_path_id /
+        materialize_path / format_path / clone. Builder-owned, not thread-safe.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Interns param-path segments into stable integer PathIds so "
-        "Phase-5/8 builds compare and extend paths cheaply: extend_path / resolve_path_id / "
-        "materialize_path / format_path / clone. Builder-owned, not thread-safe."
-    )
     __slots__ = Cleanable.__slots__ + [
         "_root_path_id",
         "_parent_ids",
@@ -302,15 +303,16 @@ class SocketRef:
     System Context:
         Phase 3 (DAG) of the conjure pipeline - a `SocketRef` is what a
         `spell_override` targets.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Immutable identity of ONE DAG socket: node_id (owning spell version),
+        param_name, param_path_id (interned), socket_kind. Precomputed hash so it works as a
+        dict key. Frozen dataclass.
     """
     # Unannotated on purpose: annotated class vars can be misread as dataclass
     # fields on some Python versions; unannotated attrs never are.
-    __ast_helper_access__ = "internal"
-    __agent_purpose__ = (
-        "access: internal. Immutable identity of ONE DAG socket: node_id (owning spell "
-        "version), param_name, param_path_id (interned), socket_kind. Precomputed hash so it "
-        "works as a dict key. Frozen dataclass."
-    )
     node_id: str
     param_name: str
     param_path_id: int
@@ -349,13 +351,14 @@ class DagIndex(Cleanable):
     System Context:
         Phase 3 (DAG) of the conjure pipeline - the lookup layer the override system
         resolves against.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Index over SocketRef by exact param-path id and by param name, for
+        spell_override targeting: rebuild / add_socket / get_by_exact_path / get_by_name.
+        Intentionally dumb - no graph logic.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Index over SocketRef by exact param-path id and by param name, for "
-        "spell_override targeting: rebuild / add_socket / get_by_exact_path / get_by_name. "
-        "Intentionally dumb - no graph logic."
-    )
     __slots__ = Cleanable.__slots__ + [
         "_path_registry",
         "_by_exact_path_id",
@@ -533,13 +536,14 @@ class DagTargetingEngine(Cleanable):
 
     System Context:
         Phase 3 (DAG) override resolution during meld.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Resolves a TargetSpec + filter_fn against a DagIndex to the affected
+        SocketRefs, enforcing cardinality: PATH/BROADCAST 1+, UNIQUE exactly one, 0 matches
+        raises. Knows nothing about Melder/contracts.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Resolves a TargetSpec + filter_fn against a DagIndex to the affected "
-        "SocketRefs, enforcing cardinality: PATH/BROADCAST 1+, UNIQUE exactly one, 0 matches "
-        "raises. Knows nothing about Melder/contracts."
-    )
     __slots__ = Cleanable.__slots__ + ["_index",]
 
     def __init__(self, index: DagIndex) -> None:
@@ -711,13 +715,13 @@ class DagIndexBuilder:
 
     Phases 5–7 will extend this to walk the full system blueprint and assign
     deep param paths (``\"orchestrator>order_service>repo\"`` style).
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Static builder for a shallow DagIndex from one spell's local topology
+        sockets (single-segment param paths). Phases 5-7 will extend it to deep param paths.
     """
-    __ast_helper_access__ = "internal"
-    __agent_purpose__ = (
-        "access: internal. Static builder for a shallow DagIndex from one spell's local "
-        "topology sockets (single-segment param paths). Phases 5-7 will extend it to deep "
-        "param paths."
-    )
     __slots__ = ()
     @staticmethod
     def build_shallow(

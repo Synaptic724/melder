@@ -44,12 +44,13 @@ class ContractTypes(Enum):
         endpoints with per-side `Detail` / `IndexDetail` projections rather than
         one shared table, which is why the crystallizer's `contract_peer`
         preflight row warns when only one side of a pair is present in a bundle.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Perspective label for a `Detail` stored inside one side of a
+        `Contract`. Melder kernel machinery: read it to understand the runtime, do not drive it
+        directly.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Perspective label for a `Detail` stored inside one side of a "
-        "`Contract`. Melder kernel machinery: read it to understand the runtime, do not drive it "
-        "directly."
-    )
     initiated = auto()
     received = auto()

@@ -73,12 +73,13 @@ class ConjureTransactionStrategy(TransactionStrategy):
         what moves conjure from "riding the Spellbook lock" to being properly
         admitted - and because scope keys are per-spellbook, different books
         still conjure in parallel.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Conjure transaction resolver (spellbook -> root conduit genesis).
+        Melder kernel machinery: read it to understand the runtime, do not drive it directly.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Conjure transaction resolver (spellbook -> root conduit genesis). "
-        "Melder kernel machinery: read it to understand the runtime, do not drive it directly."
-    )
 
     @classmethod
     def build_start_plan(

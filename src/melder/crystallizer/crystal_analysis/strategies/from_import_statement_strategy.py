@@ -80,12 +80,13 @@ class FromImportStatementStrategy(CrystalFactStrategy):
         SOURCE-STABLE syntax is safe to reuse, while import resolution
         depends on the live environment and can legitimately differ
         between the sealing run and the replay.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Extract dependency candidates and member maps from from-imports.
+        Melder kernel machinery: read it to understand the runtime, do not drive it directly.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Extract dependency candidates and member maps from from-imports. "
-        "Melder kernel machinery: read it to understand the runtime, do not drive it directly."
-    )
 
     __slots__ = ()
 

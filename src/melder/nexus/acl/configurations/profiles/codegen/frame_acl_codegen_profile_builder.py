@@ -67,12 +67,13 @@ class FrameACLCodegenProfileBuilder(Cleanable):
         them keeps the catalog extensible: a deployment can add a posture
         without forking the builder, which is the same registered-strategy
         pattern the transaction and information families use.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. FrameACLCodegenProfileBuilder runtime object. Melder kernel machinery:
+        read it to understand the runtime, do not drive it directly.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. FrameACLCodegenProfileBuilder runtime object. Melder kernel machinery: "
-        "read it to understand the runtime, do not drive it directly."
-    )
 
     __slots__ = Cleanable.__slots__ + [
         "_id",

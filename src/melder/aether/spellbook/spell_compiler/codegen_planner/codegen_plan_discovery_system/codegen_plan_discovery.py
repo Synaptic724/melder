@@ -30,15 +30,16 @@ class CodegenPlanDiscovery:
 
     System Context:
         Phase 10 (codegen planning) family selection of the conjure pipeline.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Phase-10 discovery result: selected_strategy_id, plan_family_id,
+        candidate_codegen_style_ids (a bounded allow-list for Phase 11), and discovery_reason.
+        Chooses a family, not the final emitter.
     """
 
     # Unannotated on purpose: annotated class vars can be misread as dataclass fields.
-    __ast_helper_access__ = "internal"
-    __agent_purpose__ = (
-        "access: internal. Phase-10 discovery result: selected_strategy_id, plan_family_id, "
-        "candidate_codegen_style_ids (a bounded allow-list for Phase 11), and discovery_reason. "
-        "Chooses a family, not the final emitter."
-    )
     selected_strategy_id: str
     discovery_reason: str
     plan_family_id: str = "unknown"

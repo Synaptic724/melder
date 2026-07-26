@@ -38,12 +38,13 @@ class CodegenValidationResult(Cleanable):
         Carrying acceptance state alongside reason and issues means a rejection
         explains itself. A bare boolean would force the caller to re-run
         validation with different instrumentation to learn why.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Validation-layer result for one codegen request. Melder kernel
+        machinery: read it to understand the runtime, do not drive it directly.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Validation-layer result for one codegen request. Melder kernel "
-        "machinery: read it to understand the runtime, do not drive it directly."
-    )
 
     __slots__ = Cleanable.__slots__ + [
         "_lock",

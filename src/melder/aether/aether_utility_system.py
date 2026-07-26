@@ -54,12 +54,13 @@ class AetherUtilitySystem(Cleanable):
         Resetting singleton state during cleanup is a deliberate testability
         affordance rather than an accident - a process-wide singleton that could
         not be reset would make test isolation impossible.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Process-wide utility host for Aether-owned helper systems. Melder
+        kernel machinery: read it to understand the runtime, do not drive it directly.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Process-wide utility host for Aether-owned helper systems. Melder "
-        "kernel machinery: read it to understand the runtime, do not drive it directly."
-    )
 
     _instance: ClassVar[Optional["AetherUtilitySystem"]] = None
     _singleton_lock: ClassVar[threading.RLock] = threading.RLock()

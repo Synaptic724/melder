@@ -45,12 +45,13 @@ class InternalRegistrationError(RuntimeError):
         before any compiler phase, conduit, or resolution work happens. It is
         the boundary that keeps Melder's own object world out of the user's
         spell registry, which is why the sentinel exists at all.
+
+    AGENT_ACCESS: public
+
+    AGENT_PURPOSE:
+        access: public. Raised by the registration guard when bind() is handed a Melder
+        internal; catch it to detect a kernel-object-bound-as-spell mistake. The guard
+        constructs it - you do not.
     """
 
-    __ast_helper_access__: str = "public"
-    __agent_purpose__: str = (
-        "access: public. Raised by the registration guard when bind() is handed a Melder "
-        "internal; catch it to detect a kernel-object-bound-as-spell mistake. The guard "
-        "constructs it - you do not."
-    )
 

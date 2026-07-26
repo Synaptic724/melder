@@ -38,14 +38,16 @@ class DuplicateSpellNameStrategy(SpellValidationStrategy):
     System Context:
         Phase 4 (validation) of the conjure pipeline. It guards the name-based meld
         entry mode (`meld(spell_name=...)`) against ambiguity.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Phase-4 strategy: collects visible spells sharing a spell_name
+        (pass-cached) and emits DUPLICATE_SPELL_NAME (error) when more than one collide, since
+        meld(spell_name=...) would be ambiguous. Advises disambiguating via
+        spellframe/binding_name.
     """
 
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Phase-4 strategy: collects visible spells sharing a spell_name "
-        "(pass-cached) and emits DUPLICATE_SPELL_NAME (error) when more than one collide, since "
-        "meld(spell_name=...) would be ambiguous. Advises disambiguating via spellframe/binding_name."
-    )
     __slots__ = SpellValidationStrategy.__slots__
 
     def __init__(self) -> None:

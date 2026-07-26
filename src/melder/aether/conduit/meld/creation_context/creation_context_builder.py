@@ -54,13 +54,14 @@ class CreationContextBuilder:
         and raising with the analyzer -> processor -> planner -> codegen
         ordering named is far more useful than letting a `None` executor
         surface as an obscure failure deep inside meld.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Build spell-bound `CreationContext` objects from phase-11 creation
+        inputs. Melder kernel machinery: read it to understand the runtime, do not drive it
+        directly.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Build spell-bound `CreationContext` objects from phase-11 creation "
-        "inputs. Melder kernel machinery: read it to understand the runtime, do not drive it "
-        "directly."
-    )
 
     __slots__ = ()
 

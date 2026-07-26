@@ -49,14 +49,15 @@ class SpellAnalyzerStrategy(ABC):
 
     System Context:
         Phase 8 (occurrence analysis) of the conjure pipeline.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. ABC contract for analyzer strategies: strategy_id + analyze(spell,
+        artifact, analysis_pass_cache). Reads Spell + SpellCompilerArtifact and writes its own
+        analysis-artifact family back; never chooses the codegen plan.
     """
 
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. ABC contract for analyzer strategies: strategy_id + analyze(spell, "
-        "artifact, analysis_pass_cache). Reads Spell + SpellCompilerArtifact and writes its own "
-        "analysis-artifact family back; never chooses the codegen plan."
-    )
     __slots__ = ()
 
     @property

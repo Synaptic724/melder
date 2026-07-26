@@ -62,12 +62,13 @@ class SyntheticCustodyStrategy(SourceCustodyStrategy):
         world from the record alone, without the original process. This is the
         authority that turns "a world made of generated modules" into something
         that survives a boot.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Authority-class custody for `SyntheticModule` objects. Melder kernel
+        machinery: read it to understand the runtime, do not drive it directly.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Authority-class custody for `SyntheticModule` objects. Melder kernel "
-        "machinery: read it to understand the runtime, do not drive it directly."
-    )
 
 
     __slots__ = ()

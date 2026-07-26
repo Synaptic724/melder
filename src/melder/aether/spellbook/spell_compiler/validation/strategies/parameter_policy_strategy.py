@@ -44,14 +44,15 @@ class ParameterPolicyStrategy(SpellValidationStrategy):
     System Context:
         Phase 4 (validation) of the conjure pipeline, enforcing which parameter
         shapes DI is allowed to satisfy.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Phase-4 strategy: enforces DI policy on parameters - no variadic DI,
+        single/collection DI must carry a resolvable non-builtin annotation/element. Emits the
+        DI_* / VARIADIC_DI_UNSUPPORTED errors. Validation only.
     """
 
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Phase-4 strategy: enforces DI policy on parameters - no variadic DI, "
-        "single/collection DI must carry a resolvable non-builtin annotation/element. Emits the "
-        "DI_* / VARIADIC_DI_UNSUPPORTED errors. Validation only."
-    )
     __slots__ = SpellValidationStrategy.__slots__
 
     def __init__(self) -> None:

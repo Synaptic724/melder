@@ -60,14 +60,15 @@ class Sync:
         or resolution constructs a `Sync`; it exists so that shared scalar state
         touched from multiple threads has one correct locking discipline instead
         of each call site inventing its own.
+
+    AGENT_ACCESS: public
+
+    AGENT_PURPOSE:
+        access: public. Base mix-in for thread-safe value wrappers. Subclass this when you need
+        a shared scalar touched from multiple threads; supply _value, _lock, get(), and
+        _coerce(). Your subclasses stay bindable.
     """
 
-    __ast_helper_access__: str = "public"
-    __agent_purpose__: str = (
-        "access: public. Base mix-in for thread-safe value wrappers. Subclass "
-        "this when you need a shared scalar touched from multiple threads; "
-        "supply _value, _lock, get(), and _coerce(). Your subclasses stay bindable."
-    )
 
     __slots__ = ()
     _is_sync_value: ClassVar[bool] = True

@@ -41,12 +41,13 @@ class _Specificity(IntEnum):
         specific spec wins makes the general-plus-exception idiom work without
         the caller having to order their own dict, which would be fragile and
         silently order-dependent.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Precedence tiers for spell-override target specs. Melder kernel
+        machinery: read it to understand the runtime, do not drive it directly.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Precedence tiers for spell-override target specs. Melder kernel "
-        "machinery: read it to understand the runtime, do not drive it directly."
-    )
     PATH = 3
     UNIQUE = 2
     BROADCAST = 1
@@ -99,13 +100,14 @@ class SpellOverrider(Cleanable):
         wrong object or to nothing at all, and both fail invisibly at runtime
         rather than at resolution. Failing loudly at map time is the whole
         point of resolving specs up front instead of during construction.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Runtime helper that turns a raw spell_override dict into a
+        socket-aware OverrideMap for a specific root blueprint. Melder kernel machinery: read it
+        to understand the runtime, do not drive it directly.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Runtime helper that turns a raw spell_override dict into a "
-        "socket-aware OverrideMap for a specific root blueprint. Melder kernel machinery: read it "
-        "to understand the runtime, do not drive it directly."
-    )
     __slots__ = Cleanable.__slots__ + ["_blueprint", "_engine"]
 
     def __init__(self, blueprint: RootResolutionBlueprint) -> None:

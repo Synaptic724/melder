@@ -81,13 +81,14 @@ class UnelectConduitClusterLeaderTransactionStrategy(TransactionStrategy):
         only mechanism that reaches a non-transactional reader, and reopening
         afterwards on every exit path is mandatory - a gate left closed wedges
         the conduit permanently.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Unelect-cluster-leader transaction resolver (freeze envelope; no
+        domain effect). Melder kernel machinery: read it to understand the runtime, do not drive
+        it directly.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Unelect-cluster-leader transaction resolver (freeze envelope; no "
-        "domain effect). Melder kernel machinery: read it to understand the runtime, do not drive "
-        "it directly."
-    )
 
     @classmethod
     def build_start_plan(

@@ -86,13 +86,14 @@ class SpellSpace(Cleanable):
         LIFO-validated `__exit__` recycle) and confining the managed lane to one
         thread is what lets the pool hand spaces back and forth without per-cycle
         wrapper objects or cross-thread synchronization.
+
+    AGENT_ACCESS: public
+
+    AGENT_PURPOSE:
+        access: public. Explicit request scope for Existence.unique_per_spell_space. Enter via
+        conduit.enter_spellspace(); meld only while it is the ACTIVE spellspace; reset() clears
+        spellspace-scoped instances and bumps the version.
     """
-    __ast_helper_access__: str = "public"
-    __agent_purpose__: str = (
-        "access: public. Explicit request scope for Existence.unique_per_spell_space. Enter via "
-        "conduit.enter_spellspace(); meld only while it is the ACTIVE spellspace; reset() clears "
-        "spellspace-scoped instances and bumps the version."
-    )
 
     __slots__ = Cleanable.__slots__ + [
         "_lock",

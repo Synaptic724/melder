@@ -34,13 +34,14 @@ class ResolutionFrame(Cleanable):
     System Context:
         Phase 3 (local frame) at build time, reused during meld-time resolution. It
         stores values only, keyed by ids the SpellCompiler / DAG builder decide.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Per-meld resolution state: caller overrides, per-node results, and
+        per-node errors keyed by node id. Created once per resolution run, RLock-guarded,
+        cleaned after. Knows no graph structure.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Per-meld resolution state: caller overrides, per-node results, and "
-        "per-node errors keyed by node id. Created once per resolution run, RLock-guarded, "
-        "cleaned after. Knows no graph structure."
-    )
     __slots__ = Cleanable.__slots__ + [
         "_errors",
         "_id",

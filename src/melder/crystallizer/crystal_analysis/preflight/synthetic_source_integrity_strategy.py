@@ -56,12 +56,13 @@ class SyntheticSourceIntegrityStrategy(PersistenceAnalysisStrategy):
         Contrast `SourceDriftStrategy`, which only warns - there the live
         file wins at import, so divergence is a notice rather than a
         danger.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Verify recorded synthetic module sources against their SHA256. Melder
+        kernel machinery: read it to understand the runtime, do not drive it directly.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Verify recorded synthetic module sources against their SHA256. Melder "
-        "kernel machinery: read it to understand the runtime, do not drive it directly."
-    )
 
 
     @property

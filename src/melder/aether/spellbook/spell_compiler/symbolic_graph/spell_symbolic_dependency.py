@@ -72,13 +72,14 @@ class SpellSymbolicDependency(Cleanable):
         Produced in Phase 2 (symbolic graph) of the conjure pipeline, between
         Phase-1 requirements and Phase-3 DAG construction. It is SYMBOLIC - no
         Spellbook lookups, no concrete dependency spell ids, and no ordering.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Phase-2 symbolic socket for ONE constructor parameter: spell_id,
+        param_name, position, di_shape, target_annotation, is_collection, spellmap_default,
+        contract_key. Symbolic only - not yet tied to concrete spell ids.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Phase-2 symbolic socket for ONE constructor parameter: spell_id, "
-        "param_name, position, di_shape, target_annotation, is_collection, spellmap_default, "
-        "contract_key. Symbolic only - not yet tied to concrete spell ids."
-    )
     __slots__ = Cleanable.__slots__ + [
         "_lock",
         "_spell_id",

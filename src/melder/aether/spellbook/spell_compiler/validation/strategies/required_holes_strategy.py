@@ -34,14 +34,15 @@ class RequiredHolesStrategy(SpellValidationStrategy):
     System Context:
         Phase 4 (validation) of the conjure pipeline. It emits warnings only - they
         ride along without breaking the build.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Phase-4 strategy: emits a REQUIRED_HOLE warning per PLAIN,
+        default-less parameter - a hole Melder DI will never fill, so the caller must supply it
+        via overrides or manual composition. Reporting only.
     """
 
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Phase-4 strategy: emits a REQUIRED_HOLE warning per PLAIN, "
-        "default-less parameter - a hole Melder DI will never fill, so the caller must supply it "
-        "via overrides or manual composition. Reporting only."
-    )
     __slots__ = SpellValidationStrategy.__slots__
 
     def __init__(self) -> None:

@@ -41,12 +41,13 @@ class ConduitRecord(Cleanable):
         Holding only DIRECTLY TARGETABLE information is the matching
         restraint - the record answers "can I aim at this", not "what is
         everything about it", which is the payload's job.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Canonical Nexus record for one published conduit. Melder kernel
+        machinery: read it to understand the runtime, do not drive it directly.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Canonical Nexus record for one published conduit. Melder kernel "
-        "machinery: read it to understand the runtime, do not drive it directly."
-    )
 
     __slots__ = Cleanable.__slots__ + [
         "_id",

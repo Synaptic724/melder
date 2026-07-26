@@ -59,15 +59,15 @@ class IDBuilder:
         registries on. Because those ids appear in change-control scope keys and
         transaction claims, the dotted format is effectively part of the
         system's wire contract even though it is only a string.
+
+    AGENT_ACCESS: public
+
+    AGENT_PURPOSE:
+        access: public. Static namespace for building dotted lineage ids. create_id() mints a
+        fresh ULID segment; compose() and the conduit/ward helpers join an object chain into the
+        canonical dotted form. Stateless - call the methods directly, never instantiate.
     """
 
-    __ast_helper_access__: str = "public"
-    __agent_purpose__: str = (
-        "access: public. Static namespace for building dotted lineage ids. "
-        "create_id() mints a fresh ULID segment; compose() and the conduit/ward "
-        "helpers join an object chain into the canonical dotted form. Stateless "
-        "- call the methods directly, never instantiate."
-    )
 
     @staticmethod
     def create_id() -> str:

@@ -87,15 +87,16 @@ class Aether(Cleanable):
         exposing them on the public surface is what keeps the substrate hidden:
         `Nexus` is the public AR root, and reaching AR or mutation control
         through `Aether` is deliberately not a supported path.
+
+    AGENT_ACCESS: public
+
+    AGENT_PURPOSE:
+        access: public. The global singleton root. `Aether()` returns the process-wide instance
+        and boots the hidden substrate (utility system, Crystallizer, Nexus, LoadGate). Creates
+        ZERO frames - the first Spellbook births the frame it names. Use
+        create_configuration()/configure()/activate() for root logger policy, attach_logger(...)
+        to install one directly.
     """
-    __ast_helper_access__: str = "public"
-    __agent_purpose__: str = (
-        "access: public. The global singleton root. `Aether()` returns the process-wide instance and "
-        "boots the hidden substrate (utility system, Crystallizer, Nexus, LoadGate). Creates ZERO "
-        "frames - the first Spellbook births the frame it names. Use "
-        "create_configuration()/configure()/activate() for root logger policy, attach_logger(...) to "
-        "install one directly."
-    )
     _instance: ClassVar[Optional["Aether"]] = None
     _lock: ClassVar[RLock] = RLock()
     _initialized: ClassVar[bool] = False

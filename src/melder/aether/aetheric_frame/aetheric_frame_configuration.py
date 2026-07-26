@@ -78,13 +78,14 @@ class AethericFrameConfiguration(Cleanable):
         at both landing branches - closing the captured-once-at-ctor gap. A
         recorded frame posture therefore governs the live mediator after a
         restore, rather than being decoration on a twin.
+
+    AGENT_ACCESS: public
+
+    AGENT_PURPOSE:
+        access: public. Narrow frame posture (system_state, ai_native_enabled, rift_enabled, and
+        the disable_* change-control gates). Derived at conjure from your SpellbookConfiguration
+        - configure the Spellbook, not this. Read it to learn what a frame will allow.
     """
-    __ast_helper_access__: str = "public"
-    __agent_purpose__: str = (
-        "access: public. Narrow frame posture (system_state, ai_native_enabled, rift_enabled, and the "
-        "disable_* change-control gates). Derived at conjure from your SpellbookConfiguration - "
-        "configure the Spellbook, not this. Read it to learn what a frame will allow."
-    )
 
     __slots__ = Cleanable.__slots__ + [
         "_id",

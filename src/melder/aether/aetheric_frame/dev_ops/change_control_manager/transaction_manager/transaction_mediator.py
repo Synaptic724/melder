@@ -108,12 +108,13 @@ class TransactionMediator(Cleanable):
         transaction still holds its scopes, which is what lets downstream
         mirrors (link edges, cluster membership) be maintained eagerly and
         race-free at the mutation site.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Frame-local live transaction session mediator. Melder kernel
+        machinery: read it to understand the runtime, do not drive it directly.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Frame-local live transaction session mediator. Melder kernel "
-        "machinery: read it to understand the runtime, do not drive it directly."
-    )
 
     __slots__ = Cleanable.__slots__ + [
         "_lock",

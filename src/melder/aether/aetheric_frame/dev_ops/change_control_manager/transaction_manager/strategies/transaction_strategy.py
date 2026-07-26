@@ -77,12 +77,13 @@ class TransactionStrategy(ABC):
         implementations, and `Protocol` only for genuine structural typing.
         This family is registered, closed, and dispatched polymorphically -
         precisely the sanctioned ABC case.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Abstract base for transaction strategy classes. Melder kernel
+        machinery: read it to understand the runtime, do not drive it directly.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Abstract base for transaction strategy classes. Melder kernel "
-        "machinery: read it to understand the runtime, do not drive it directly."
-    )
 
     @staticmethod
     @abstractmethod

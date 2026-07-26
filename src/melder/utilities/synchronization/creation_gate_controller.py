@@ -102,15 +102,15 @@ class CreationGateController(Cleanable):
         change-control needs when topology mutates under live resolution. The
         spell-index registry serves the same purpose one level down, guarding
         creation-context rebuilds per index.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Frame-owned registry of CreationGates across two scopes: conduit gates
+        (indexed root->conduit, with a reverse lookup so a whole lineage can be drained in one
+        fan-out) and spell-index gates. Use it to freeze a lineage, drain in-flight melds, land
+        a structural change, then reopen. Missing keys are quiet no-ops, not errors.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Frame-owned registry of CreationGates across two "
-        "scopes: conduit gates (indexed root->conduit, with a reverse lookup so "
-        "a whole lineage can be drained in one fan-out) and spell-index gates. "
-        "Use it to freeze a lineage, drain in-flight melds, land a structural "
-        "change, then reopen. Missing keys are quiet no-ops, not errors."
-    )
     __slots__ = Cleanable.__slots__ + [
         "_lock",
         "_conduit_creation_gates",

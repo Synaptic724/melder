@@ -154,12 +154,13 @@ class CrystalAnalyzer(Cleanable):
         against the LIVE environment, so the memo never lets analysis go stale. It
         retains no source, nodes, modules, or results, so it can never extend an
         object's lifetime or interfere with module GC.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Compose custody and fact strategies into one analysis pass. Melder
+        kernel machinery: read it to understand the runtime, do not drive it directly.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Compose custody and fact strategies into one analysis pass. Melder "
-        "kernel machinery: read it to understand the runtime, do not drive it directly."
-    )
 
     # Process-local memo of immutable syntax facts. Capacity bounds retained
     # value data; LRU eviction releases only tuples/strings and has no effect

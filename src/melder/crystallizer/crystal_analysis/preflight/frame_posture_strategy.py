@@ -53,12 +53,13 @@ class FramePostureStrategy(PersistenceAnalysisStrategy):
         world boots either way - which is why this warns rather than
         blocks - but the user is running on a fallback posture rather
         than recorded truth, and only this row tells them so.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Detect books whose frame posture is missing from the bundle. Melder
+        kernel machinery: read it to understand the runtime, do not drive it directly.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Detect books whose frame posture is missing from the bundle. Melder "
-        "kernel machinery: read it to understand the runtime, do not drive it directly."
-    )
 
 
     @property

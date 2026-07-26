@@ -64,12 +64,13 @@ class ResearchJournal(Cleanable):
         BOUNDED window of this journal rather than all of it - full history
         rides the checkpoint sequence instead - so a durable snapshot never
         grows without limit while the live log stays complete.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Set-level monotonic append-only log of world-entry events. Melder
+        kernel machinery: read it to understand the runtime, do not drive it directly.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Set-level monotonic append-only log of world-entry events. Melder "
-        "kernel machinery: read it to understand the runtime, do not drive it directly."
-    )
 
     __slots__ = Cleanable.__slots__ + [
         "_entries",

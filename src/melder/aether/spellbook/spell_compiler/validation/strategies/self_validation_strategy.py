@@ -31,14 +31,15 @@ class SelfDependencyStrategy(SpellValidationStrategy):
     System Context:
         Phase 4 (validation) of the conjure pipeline. Its error marks the spell
         broken and aborts conjure.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Phase-4 strategy: emits one SELF_DEPENDENCY error if a spell's
+        dependency list contains its own selected_spell_id. Direct self-dependency only, not
+        longer cycles.
     """
 
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Phase-4 strategy: emits one SELF_DEPENDENCY error if a spell's "
-        "dependency list contains its own selected_spell_id. Direct self-dependency only, not "
-        "longer cycles."
-    )
     __slots__ = SpellValidationStrategy.__slots__
 
     def __init__(self) -> None:

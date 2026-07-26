@@ -161,13 +161,14 @@ class Bind(Cleanable):
         Bind is also a RECORDING moment: it is the structural emission point for
         the crystallizer, so custody is born here (gated on
         `activated AND dynamic posture`) rather than being swept up later.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Spellbook registration gateway for classes, callables, and concrete
+        objects. Melder kernel machinery: read it to understand the runtime, do not drive it
+        directly.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Spellbook registration gateway for classes, callables, and concrete "
-        "objects. Melder kernel machinery: read it to understand the runtime, do not drive it "
-        "directly."
-    )
     __slots__ = Cleanable.__slots__ + [
         "_id",
         "_lock",

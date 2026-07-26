@@ -35,12 +35,13 @@ class RiftValidationMode(Enum):
         choice applies uniformly to every Rift - which is the point. A gate that
         varied per Rift could be escaped by creating a differently configured
         one, so the governance that matters lives here rather than on the Rift.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Validation posture for Rift codegen/runtime execution. Melder kernel
+        machinery: read it to understand the runtime, do not drive it directly.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Validation posture for Rift codegen/runtime execution. Melder kernel "
-        "machinery: read it to understand the runtime, do not drive it directly."
-    )
 
     strict = "strict"
     relaxed = "relaxed"

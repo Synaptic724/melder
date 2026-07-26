@@ -88,16 +88,16 @@ class CancellationEvent(Cleanable):
         cancellation aborts cooperatively and reports into its `PhaseLatch`,
         which is why `OperationCancelledError` counts as a completion rather
         than a failure.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Read-only view of a shared cancellation flag. Poll is_set (lock-free)
+        or call throw_if_set() to abort cooperatively. You cannot cancel through this type -
+        only the owning CancellationEventSignal can. Borrowed: never clean up a view you were
+        handed, it is shared by every observer.
     """
 
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Read-only view of a shared cancellation flag. Poll "
-        "is_set (lock-free) or call throw_if_set() to abort cooperatively. You "
-        "cannot cancel through this type - only the owning "
-        "CancellationEventSignal can. Borrowed: never clean up a view you were "
-        "handed, it is shared by every observer."
-    )
 
     __slots__ = Cleanable.__slots__ + ["_flag",]
 
@@ -262,15 +262,15 @@ class CancellationEventSignal(Cleanable):
         rest rather than waiting them out - which is why cancelled units report
         as completions into the latch instead of errors, and why a cancelled
         conjure ends without a Conduit but is not a defect.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Coordinator side of cooperative cancellation. Call cancel() to stop
+        every observer; hand workers the .event view so they can poll without contending.
+        WARNING: cleanup() cancels as part of teardown - it is an abort, not a release.
     """
 
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Coordinator side of cooperative cancellation. Call "
-        "cancel() to stop every observer; hand workers the .event view so they "
-        "can poll without contending. WARNING: cleanup() cancels as part of "
-        "teardown - it is an abort, not a release."
-    )
 
     __slots__ = Cleanable.__slots__ + ["_lock", "_flag", "_event"]
 

@@ -69,12 +69,13 @@ class Detail(Cleanable):
         This pairs directly with `DetailReason`: `dependency` rows are the ones
         carrying justifying sources, while a `manual` grant was never owned by
         any root and therefore survives root removal entirely.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Spell-level permission entry stored inside a Contract. Melder kernel
+        machinery: read it to understand the runtime, do not drive it directly.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Spell-level permission entry stored inside a Contract. Melder kernel "
-        "machinery: read it to understand the runtime, do not drive it directly."
-    )
     __slots__ = Cleanable.__slots__ + [
         "_lock",
         "_id",
@@ -297,12 +298,13 @@ class IndexDetail(Cleanable):
         makes it a safe durable key while the member it targets keeps moving;
         the record mirrors that split by snapshotting index MEMBERSHIP as its
         own twin (`SpellIndexCrystal`) rather than folding it into the spell.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Index-level contract entry stored inside a Contract. Melder kernel
+        machinery: read it to understand the runtime, do not drive it directly.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Index-level contract entry stored inside a Contract. Melder kernel "
-        "machinery: read it to understand the runtime, do not drive it directly."
-    )
     __slots__ = Cleanable.__slots__ + [
         "_lock",
         "_id",

@@ -15,15 +15,16 @@ class SpellExistenceOccurrence:
 
     System Context:
         Phase 8 (occurrence analysis) of the conjure pipeline. Value-only.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. One Phase-8 value row: spell_id + its Existence +
+        has_disposal_methods. Frozen value object captured during the spell walk.
     """
 
     # Unannotated on purpose: annotated class vars can be misread as dataclass
     # fields on some Python versions; unannotated attrs never are.
-    __ast_helper_access__ = "internal"
-    __agent_purpose__ = (
-        "access: internal. One Phase-8 value row: spell_id + its Existence + "
-        "has_disposal_methods. Frozen value object captured during the spell walk."
-    )
     spell_id: str
     existence: Existence
     has_disposal_methods: bool
@@ -45,15 +46,16 @@ class SpellExistenceOccurrenceAnalysis:
     System Context:
         Phase 8 (occurrence analysis) of the conjure pipeline; feeds later planning
         without holding live spells.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Phase-8 existence-occurrence payload: root_existence,
+        total_spell_count, spell_existence_rows, existence_counts, and disposal counts.
+        Immutable, no live spell refs.
     """
 
     # Unannotated on purpose: annotated class vars can be misread as dataclass fields.
-    __ast_helper_access__ = "internal"
-    __agent_purpose__ = (
-        "access: internal. Phase-8 existence-occurrence payload: root_existence, "
-        "total_spell_count, spell_existence_rows, existence_counts, and disposal counts. "
-        "Immutable, no live spell refs."
-    )
     root_existence: Optional[Existence]
     total_spell_count: int
     spell_existence_rows: Tuple[SpellExistenceOccurrence, ...]

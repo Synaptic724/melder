@@ -92,12 +92,13 @@ class CreationContext(Cleanable):
         created)` there would allocate and immediately discard a tuple on every
         resolution. The hooks lane keeps the tuple door because it genuinely
         needs the `created` flag to decide whether activation hooks fire.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Spell-bound runtime executor context. Melder kernel machinery: read it
+        to understand the runtime, do not drive it directly.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Spell-bound runtime executor context. Melder kernel machinery: read it "
-        "to understand the runtime, do not drive it directly."
-    )
 
     __slots__ = Cleanable.__slots__ + [
         "_spell",

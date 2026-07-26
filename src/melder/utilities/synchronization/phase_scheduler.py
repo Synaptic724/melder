@@ -192,16 +192,16 @@ class PhaseScheduler(Cleanable):
         the Spellbook surfaces to a user as a failed conjure - which is why the
         quiesce matters: without it, a failed conjure could tear down a world
         while units are still writing into it.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Persistent multi-phase runner. register_phase() in order, then
+        run_all_phases(): each phase is a barrier, units run on a reused worker pool, a unit
+        failure wakes the barrier immediately, and the phase QUIESCES before raising so caller
+        teardown never races in-flight stragglers. Never kills threads - cancellation is
+        cooperative, so a unit that ignores its cancel event leaks a worker.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Persistent multi-phase runner. register_phase() in "
-        "order, then run_all_phases(): each phase is a barrier, units run on a "
-        "reused worker pool, a unit failure wakes the barrier immediately, and "
-        "the phase QUIESCES before raising so caller teardown never races "
-        "in-flight stragglers. Never kills threads - cancellation is "
-        "cooperative, so a unit that ignores its cancel event leaks a worker."
-    )
     __slots__ = Cleanable.__slots__ + [
         "_configuration",
         "_workers",

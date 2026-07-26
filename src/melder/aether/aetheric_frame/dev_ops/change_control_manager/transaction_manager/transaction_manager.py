@@ -90,12 +90,13 @@ class ChangeControlTransactionManager(Cleanable):
         support/diagnostic state today, NOT admission input; it is maintained
         eagerly at the mutation site under held claims so that promoting it into
         policy later is a decision rather than a rewrite.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Transaction-bookkeeping root for change-control admission. Melder
+        kernel machinery: read it to understand the runtime, do not drive it directly.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Transaction-bookkeeping root for change-control admission. Melder "
-        "kernel machinery: read it to understand the runtime, do not drive it directly."
-    )
     __slots__ = Cleanable.__slots__ + [
         "_lock",
         "_in_flight",

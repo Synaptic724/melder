@@ -50,12 +50,13 @@ class SourceDiffStrategy(DiffStrategy):
         physical-source retention is an opt-in custody lane - synthetic modules
         always carry text, user modules only when retention is on - so a
         recorded world can legitimately have fingerprints without source.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Per-module source comparison between two version materials. Melder
+        kernel machinery: read it to understand the runtime, do not drive it directly.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Per-module source comparison between two version materials. Melder "
-        "kernel machinery: read it to understand the runtime, do not drive it directly."
-    )
 
     __slots__ = DiffStrategy.__slots__
 

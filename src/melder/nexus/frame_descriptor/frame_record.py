@@ -44,12 +44,13 @@ class FrameRecord(Cleanable):
         REQUIRES descriptor truth to already exist, so a frame that has not
         published cannot be linked. That ordering is what prevents a Rift from
         attaching to something the AR layer cannot describe.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Canonical Nexus record for one AR-publishable frame. Melder kernel
+        machinery: read it to understand the runtime, do not drive it directly.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Canonical Nexus record for one AR-publishable frame. Melder kernel "
-        "machinery: read it to understand the runtime, do not drive it directly."
-    )
 
     __slots__ = Cleanable.__slots__ + [
         "_id",

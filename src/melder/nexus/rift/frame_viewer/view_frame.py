@@ -63,14 +63,14 @@ class ViewFrame(Cleanable):
         them honest across an ACL refresh - a cached helper would answer from
         the projection it was born with, after that projection had been
         replaced.
+
+    AGENT_ACCESS: public
+
+    AGENT_PURPOSE:
+        access: public. Frame-local helper surface for visible targets, frame summaries,
+        inventory, search, collision detection, and frame-local access explanations.
     """
 
-    __ast_helper_access__: str = "public"
-    __agent_purpose__: str = (
-        "access: public. Frame-local helper surface for visible targets, "
-        "frame summaries, inventory, search, collision detection, and "
-        "frame-local access explanations."
-    )
     __slots__ = Cleanable.__slots__ + [
         "_lock",
         "_frame_name",

@@ -46,15 +46,16 @@ class ContractProviderPresenceStrategy(SpellValidationStrategy):
         Phase 4 (validation) of the conjure pipeline. Contract sockets are
         late-bound and only resolvable in dynamic mode; this strategy is where an
         automatic-mode contract, or a missing/ambiguous provider, is surfaced up front.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Phase-4 strategy for SPELL_CONTRACT sockets: errors
+        CONTRACT_IN_AUTOMATIC_MODE (contracts need dynamic mode), SPELL_CONTRACT_INVALID,
+        SPELL_CONTRACT_AMBIGUOUS (>1 provider); warns SPELL_CONTRACT_MISSING_PROVIDER. Provider
+        map is pass-cached.
     """
 
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Phase-4 strategy for SPELL_CONTRACT sockets: errors "
-        "CONTRACT_IN_AUTOMATIC_MODE (contracts need dynamic mode), SPELL_CONTRACT_INVALID, "
-        "SPELL_CONTRACT_AMBIGUOUS (>1 provider); warns SPELL_CONTRACT_MISSING_PROVIDER. Provider "
-        "map is pass-cached."
-    )
     __slots__ = SpellValidationStrategy.__slots__
 
     def __init__(self) -> None:

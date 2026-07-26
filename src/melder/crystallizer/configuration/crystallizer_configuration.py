@@ -71,13 +71,14 @@ class CrystallizerConfiguration(Cleanable):
         hard-required), and a recorded-policy reload freezes a fresh instance over
         compatibility defaults so a restored world records under the SAME policy that sealed
         it.
+
+    AGENT_ACCESS: public
+
+    AGENT_PURPOSE:
+        access: public. Capture and durability policy. with_defaults() is complete easy mode;
+        only user_source_root_paths is hard-required. Set retain_user_sources for opt-in
+        physical custody and checkpoint_interval_minutes for automatic cadence.
     """
-    __ast_helper_access__: str = "public"
-    __agent_purpose__: str = (
-        "access: public. Capture and durability policy. with_defaults() is complete easy mode; only "
-        "user_source_root_paths is hard-required. Set retain_user_sources for opt-in physical custody "
-        "and checkpoint_interval_minutes for automatic cadence."
-    )
 
     __slots__ = Cleanable.__slots__ + [
         "_id",

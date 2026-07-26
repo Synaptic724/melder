@@ -35,14 +35,15 @@ class DanglingDependenciesStrategy(SpellValidationStrategy):
     System Context:
         Phase 4 (validation) of the conjure pipeline, checking dependency existence
         against the owning Spellbook's live `_spell_id_pool`.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Phase-4 strategy: checks every id in spell.dependencies exists in the
+        owning Spellbook's _spell_id_pool. Emits DANGLING_DEPENDENCY (error) per missing id, or
+        NO_SPELLBOOK_FOR_DEPENDENCY_CHECK (warning) when no spellbook is attached.
     """
 
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Phase-4 strategy: checks every id in spell.dependencies exists in the "
-        "owning Spellbook's _spell_id_pool. Emits DANGLING_DEPENDENCY (error) per missing id, or "
-        "NO_SPELLBOOK_FOR_DEPENDENCY_CHECK (warning) when no spellbook is attached."
-    )
     __slots__ = SpellValidationStrategy.__slots__
 
     def __init__(self) -> None:

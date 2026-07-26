@@ -63,12 +63,13 @@ class IncidentManager(Cleanable):
         subscriptions or hooks: consumers pull the current state when they want
         it, so an operator query can never inject latency into the runtime that
         produced the record.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Frame-local registry of `Incident` records. Melder kernel machinery:
+        read it to understand the runtime, do not drive it directly.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Frame-local registry of `Incident` records. Melder kernel machinery: "
-        "read it to understand the runtime, do not drive it directly."
-    )
 
     __slots__ = Cleanable.__slots__ + [
         "_lock",

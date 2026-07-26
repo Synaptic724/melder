@@ -68,12 +68,13 @@ class ImportStatementStrategy(CrystalFactStrategy):
         The dependency edges this pass contributes are what later become
         the `ImpactEngine`'s reverse-import index, so a missed import
         would understate a change's blast radius.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Extract flat import targets from `import ...` statements. Melder
+        kernel machinery: read it to understand the runtime, do not drive it directly.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Extract flat import targets from `import ...` statements. Melder "
-        "kernel machinery: read it to understand the runtime, do not drive it directly."
-    )
 
     __slots__ = ()
 

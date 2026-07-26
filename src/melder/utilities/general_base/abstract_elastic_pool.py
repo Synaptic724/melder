@@ -78,6 +78,13 @@ class AbstractElasticPool(Generic[_T], Cleanable, ABC):
         `ConduitPool`, so every request-local spellspace and every reused lesser
         conduit passes through this policy. Pool behavior therefore shows up as
         meld latency, which is why the counters are advisory rather than locked.
+
+    AGENT_ACCESS: public
+
+    AGENT_PURPOSE:
+        access: public. Base elastic object pool. Subclass this to pool expensive reusable
+        objects; implement create_object/destroy_object and the pool handles stretch, decay, and
+        overflow trimming. Your subclasses stay bindable.
     """
 
     _DEFAULT_BASELINE_IDLE: ClassVar[int] = 0
@@ -86,13 +93,6 @@ class AbstractElasticPool(Generic[_T], Cleanable, ABC):
     _DEFAULT_DECAY_PERCENT_PER_INTERVAL: ClassVar[int] = 10
     _DEFAULT_DECAY_INTERVAL_SECONDS: ClassVar[float] = 600.0
 
-    __ast_helper_access__: str = "public"
-    __agent_purpose__: str = (
-        "access: public. Base elastic object pool. Subclass this to pool "
-        "expensive reusable objects; implement create_object/destroy_object and "
-        "the pool handles stretch, decay, and overflow trimming. Your subclasses "
-        "stay bindable."
-    )
 
     __slots__ = Cleanable.__slots__ + [
         "_baseline_idle",

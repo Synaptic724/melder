@@ -32,12 +32,13 @@ class PermissiveViewProfileStrategy:
         comprehensible change rather than an unrelated policy swap. `precision`
         sits outside that ordering deliberately: it is the posture for
         enumerating exactly what is permitted instead of picking a tier.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Build the reusable `permissive` view profile. Melder kernel machinery:
+        read it to understand the runtime, do not drive it directly.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Build the reusable `permissive` view profile. Melder kernel machinery: "
-        "read it to understand the runtime, do not drive it directly."
-    )
 
     _NAME = "permissive"
 

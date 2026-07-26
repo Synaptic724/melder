@@ -33,13 +33,15 @@ class SpellValidationStrategy(Cleanable):
         Phase 4 (validation) of the conjure pipeline. Strategies run in registry
         order over one `SpellValidationContext` per spell; an emitted error makes
         the spell broken.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Base class for Phase-4 validation strategies: implement
+        validate(context) to inspect one spell and append SpellValidationIssue; name/description
+        identify it in the registry. Never mutate the spell/spellbook; prefer appending issues
+        to raising.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Base class for Phase-4 validation strategies: implement validate("
-        "context) to inspect one spell and append SpellValidationIssue; name/description identify "
-        "it in the registry. Never mutate the spell/spellbook; prefer appending issues to raising."
-    )
     __slots__ = Cleanable.__slots__ + [
         "_name",
         "_description",

@@ -68,12 +68,13 @@ class ElectConduitClusterLeaderTransactionStrategy(TransactionStrategy):
         seals the footprint and `ConduitCluster` binds the team store inside
         the held window, exactly as Spellbook runs `_apply_notch` between start
         and end. Strategies own isolation; call sites own effect.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Elect-cluster-leader transaction resolver (concurrency envelope only).
+        Melder kernel machinery: read it to understand the runtime, do not drive it directly.
     """
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Elect-cluster-leader transaction resolver (concurrency envelope only). "
-        "Melder kernel machinery: read it to understand the runtime, do not drive it directly."
-    )
 
     @classmethod
     def build_start_plan(

@@ -94,15 +94,16 @@ class SpellOccurrenceGraphAnalyzerStrategy(SpellAnalyzerStrategy):
         Phase 8 (occurrence analysis) of the conjure pipeline. It expands the graph
         but computes no execution order, instance/sharedness, or contract-payload
         analysis - later strategies own those.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Phase-8 occurrence-graph builder strategy: turns Phase-5 rooted
+        blueprint + live topology into a path-aware occurrence graph, publishing
+        _occurrence_graph_analysis (+ fast_key + input_signature) onto SpellCompilerArtifact.
+        Existing-creation spells no-op.
     """
 
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Phase-8 occurrence-graph builder strategy: turns Phase-5 rooted "
-        "blueprint + live topology into a path-aware occurrence graph, publishing "
-        "_occurrence_graph_analysis (+ fast_key + input_signature) onto SpellCompilerArtifact. "
-        "Existing-creation spells no-op."
-    )
 
     __slots__ = ()
 

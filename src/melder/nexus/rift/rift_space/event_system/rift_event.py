@@ -57,14 +57,15 @@ class RiftEvent:
         correct at the cost of letting a slow callback extend the operation -
         the honest trade for a room-local surface whose callbacks are registered
         by the room's own owner.
+
+    AGENT_ACCESS: public
+
+    AGENT_PURPOSE:
+        access: public. One immutable room event - type, ids, payload, and timestamp fixed at
+        creation - delivered to the RiftSpace callbacks you register; you receive and read it,
+        you do not construct it.
     """
 
-    __ast_helper_access__: str = "public"
-    __agent_purpose__: str = (
-        "access: public. One immutable room event - type, ids, payload, and timestamp "
-        "fixed at creation - delivered to the RiftSpace callbacks you register; you receive "
-        "and read it, you do not construct it."
-    )
     __slots__ = [
         "_id",
         "_event_type",

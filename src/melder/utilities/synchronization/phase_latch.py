@@ -110,15 +110,15 @@ class PhaseLatch:
         teardown while unit bodies touch objects the caller is about to destroy
         - that ordering is what keeps a failed conjure from leaving a half-torn
         world behind.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Phase completion barrier for PhaseScheduler. Two events: wait() wakes
+        on all-done OR first error (fail-fast), wait_all_reported() wakes only when nothing is
+        still running (quiesce before teardown). One latch per phase run; never reused.
     """
 
-    __ast_helper_access__: str = "internal"
-    __agent_purpose__: str = (
-        "access: internal. Phase completion barrier for PhaseScheduler. Two "
-        "events: wait() wakes on all-done OR first error (fail-fast), "
-        "wait_all_reported() wakes only when nothing is still running (quiesce "
-        "before teardown). One latch per phase run; never reused."
-    )
 
     __slots__ = ["_lock", "_event", "_all_reported_event", "_remaining", "_errors"]
 

@@ -61,13 +61,14 @@ class ExternalPersistenceManagerConfiguration(Cleanable):
         objects (callables-first law), so a recorded world stays code-free and portable. The
         facade freezes this configuration and transfers ownership to the asset system, and a
         read-only configuration must explicitly disable upload-on-flush.
+
+    AGENT_ACCESS: public
+
+    AGENT_PURPOSE:
+        access: public. Registers the mesh callables: with_store_handler / with_fetch_handler /
+        with_list_units_handler / with_delete_handler / with_stream_emissions. Read-only configs
+        must disable upload_on_flush explicitly.
     """
-    __ast_helper_access__: str = "public"
-    __agent_purpose__: str = (
-        "access: public. Registers the mesh callables: with_store_handler / with_fetch_handler / "
-        "with_list_units_handler / with_delete_handler / with_stream_emissions. Read-only configs "
-        "must disable upload_on_flush explicitly."
-    )
 
 
     __slots__ = Cleanable.__slots__ + [
