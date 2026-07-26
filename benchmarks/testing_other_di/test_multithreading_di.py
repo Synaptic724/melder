@@ -7,8 +7,9 @@ import inspect
 import os
 import threading
 import time
+from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Any, Callable
+from typing import Any
 
 import pytest
 
@@ -20,7 +21,6 @@ from tests.mocks.spellbook.deep_layers import (
     get_depth_7_classes,
     get_depth_9_classes,
 )
-
 
 # ======================================================================================
 # Shared helpers
@@ -106,7 +106,7 @@ class _RuntimeOps:
 
 def _build_runtime_dependency_injector() -> _RuntimeOps:
     dependency_injector = pytest.importorskip("dependency_injector")
-    from dependency_injector import providers  # noqa: F401
+    from dependency_injector import providers
 
     depth9_classes = get_depth_9_classes()
     depth7_classes = get_depth_7_classes()
@@ -280,7 +280,15 @@ class _InjectorState:
 
 def _build_runtime_injector() -> _RuntimeOps:
     pytest.importorskip("injector")
-    from injector import Binder, Injector, Module, Scope, ScopeDecorator, InstanceProvider, inject
+    from injector import (
+        Binder,
+        Injector,
+        InstanceProvider,
+        Module,
+        Scope,
+        ScopeDecorator,
+        inject,
+    )
 
     depth9_classes = get_depth_9_classes()
     depth7_classes = get_depth_7_classes()

@@ -11,12 +11,12 @@ import sys
 import threading
 import time
 import typing
+from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any
 
 import pytest
-
 
 # Keep this `True` so the shared gauntlet always runs through a standalone
 # `-X gil=0` subprocess when launched from pytest. Set to `False` only if you
@@ -102,7 +102,7 @@ def _pctl_ns(sorted_values: list[int], q: float) -> int:
     return sorted_values[ix]
 
 
-def _ms(ns: int | float) -> float:
+def _ms(ns: float) -> float:
     return float(ns) / 1_000_000.0
 
 
@@ -177,7 +177,7 @@ class Layer1Scope:
 
 
 class Layer2Scope:
-    __slots__ = ("prior", "branch")
+    __slots__ = ("branch", "prior")
 
     def __init__(self, prior: Layer1Scope, branch: AppSingletonB) -> None:
         self.prior = prior
@@ -185,7 +185,7 @@ class Layer2Scope:
 
 
 class Layer3Scope:
-    __slots__ = ("prior", "branch")
+    __slots__ = ("branch", "prior")
 
     def __init__(self, prior: Layer2Scope, branch: AppSingletonC) -> None:
         self.prior = prior
@@ -193,7 +193,7 @@ class Layer3Scope:
 
 
 class Layer4Scope:
-    __slots__ = ("prior", "branch")
+    __slots__ = ("branch", "prior")
 
     def __init__(self, prior: Layer3Scope, branch: AppSingletonD) -> None:
         self.prior = prior
@@ -220,7 +220,7 @@ class RequestScopeMarker:
 
 
 class RequestGroup:
-    __slots__ = ("session", "leaves")
+    __slots__ = ("leaves", "session")
 
     def __init__(
             self,
@@ -241,7 +241,7 @@ class RequestGroup:
 
 
 class RequestRoot:
-    __slots__ = ("session", "groups")
+    __slots__ = ("groups", "session")
 
     def __init__(
             self,
@@ -277,7 +277,7 @@ class WorkerAScopeMarker:
 
 
 class WorkerAGroup:
-    __slots__ = ("session", "leaves")
+    __slots__ = ("leaves", "session")
 
     def __init__(
             self,
@@ -294,7 +294,7 @@ class WorkerAGroup:
 
 
 class WorkerAJobRoot:
-    __slots__ = ("session", "groups")
+    __slots__ = ("groups", "session")
 
     def __init__(
             self,
@@ -328,7 +328,7 @@ class WorkerBScopeMarker:
 
 
 class WorkerBGroup:
-    __slots__ = ("session", "leaves")
+    __slots__ = ("leaves", "session")
 
     def __init__(
             self,
@@ -342,7 +342,7 @@ class WorkerBGroup:
 
 
 class WorkerBJobRoot:
-    __slots__ = ("session", "groups", "shared")
+    __slots__ = ("groups", "session", "shared")
 
     def __init__(
             self,
@@ -474,9 +474,9 @@ class _RuntimeOps:
     name: str
     spawn_singletons: Callable[[], None]
     bootstrap_fanout: Callable[[], None]
-    request_scope_cycle: Callable[[int], "_ScopeCycleMetrics"]
-    worker_a_scope_cycle: Callable[[int], "_ScopeCycleMetrics"]
-    worker_b_scope_cycle: Callable[[int], "_ScopeCycleMetrics"]
+    request_scope_cycle: Callable[[int], _ScopeCycleMetrics]
+    worker_a_scope_cycle: Callable[[int], _ScopeCycleMetrics]
+    worker_b_scope_cycle: Callable[[int], _ScopeCycleMetrics]
     cleanup: Callable[[], None]
 
 
@@ -1421,8 +1421,7 @@ class _GcPauseProbe:
             self.collections_total += 1
             self.collected_objects += collected
             self.pause_total_ns += pause_ns
-            if pause_ns > self.pause_max_ns:
-                self.pause_max_ns = pause_ns
+            self.pause_max_ns = max(self.pause_max_ns, pause_ns)
 
     def install(self) -> None:
         """Append the pause-recording hook to gc.callbacks."""

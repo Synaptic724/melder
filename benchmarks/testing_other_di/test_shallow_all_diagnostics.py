@@ -1,9 +1,10 @@
 import gc
 import os
-from pathlib import Path
 import sys
 import time
-from typing import Any, Callable, Dict, Tuple
+from collections.abc import Callable
+from pathlib import Path
+from typing import Any
 
 import pytest
 
@@ -51,10 +52,10 @@ def _env_int_nonneg(name: str, default: int) -> int:
         value = int(raw)
     except ValueError as exc:
         raise AssertionError(f"{name} must be an int, got: {raw!r}") from exc
-    return value if value >= 0 else 0
+    return max(value, 0)
 
 
-def _build_melder_conduit(graph: object) -> Tuple[Any, str, str, Callable[[], None]]:
+def _build_melder_conduit(graph: object) -> tuple[Any, str, str, Callable[[], None]]:
     """
     Purpose:
         Build a Melder Conduit wired to the test_shallow_all graph specs.
@@ -81,17 +82,17 @@ def _build_melder_conduit(graph: object) -> Tuple[Any, str, str, Callable[[], No
     cfg = spellbook.get_configuration()
     cfg.set_property("phase_scheduler_workers_per_spellbook", 1)
 
-    ids_a: Dict[type, str] = {}
+    ids_a: dict[type, str] = {}
     for cls in graph.root_a_classes:
         ids_a[cls] = spellbook.bind(spell=cls, existence=Existence.many, permissions="create")
 
-    ids_b: Dict[type, str] = {}
+    ids_b: dict[type, str] = {}
     for cls in graph.root_b_classes:
         if cls in ids_a:
             continue
         ids_b[cls] = spellbook.bind(spell=cls, existence=Existence.many, permissions="create")
 
-    ids_space: Dict[type, str] = {}
+    ids_space: dict[type, str] = {}
     for cls in graph.spellspace_classes:
         if cls in ids_a or cls in ids_b:
             continue
@@ -156,8 +157,8 @@ def _lookup_spell(meld: Any, spell_id: str) -> Any:
 
 def _install_runtime_route_tracer(
     runtime: Any,
-    root_classes: Tuple[type, ...],
-) -> Tuple[Dict[type, str], Dict[str, int], Callable[[], None]]:
+    root_classes: tuple[type, ...],
+) -> tuple[dict[type, str], dict[str, int], Callable[[], None]]:
     """
     Purpose:
         Wrap MeldRuntime methods to record which execution route is used.
@@ -171,8 +172,8 @@ def _install_runtime_route_tracer(
         Tuple[Dict[type, str], Dict[str, int], Callable[[], None]]:
             (routes_by_root, route_counts, restore)
     """
-    routes_by_root: Dict[type, str] = {}
-    route_counts: Dict[str, int] = {}
+    routes_by_root: dict[type, str] = {}
+    route_counts: dict[str, int] = {}
 
     def _record(spell: Any, route: str) -> None:
         """
@@ -385,7 +386,7 @@ def _print_row(
     """
     print(
         f"{graph_name:7} {root_label:4} {preferred_route:23} "
-        f"{str(fast_plan):8} {str(shortcut):8} {actual_route:17} "
+        f"{fast_plan!s:8} {shortcut!s:8} {actual_route:17} "
         f"{_fmt_int(step_count):5} {_fmt_int(max_depth):9} {_fmt_int(max_deps):8} "
         f"{avg_us:8.1f}"
     )
@@ -421,8 +422,7 @@ def test_shallow_all_melder_route_diagnostics(graph: object) -> None:
         )
 
         warmup_iters = _env_int_nonneg("DI_ROUTE_WARMUP", 1)
-        if warmup_iters < 1:
-            warmup_iters = 1
+        warmup_iters = max(warmup_iters, 1)
         time_iters = _env_int_nonneg("DI_ROUTE_ITERS", 50)
 
         _print_header()
