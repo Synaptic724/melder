@@ -17,7 +17,7 @@ from melder.aether.spellbook.existence.existence import Existence
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.aether.conduit.conduit_ward.permissions.permissions import Permissions
 from melder.aether.spellbook.spell import Spell
-from melder._build_assets._init_manifest.internal_manifest import INTERNAL_MANIFEST
+from melder._build_assets._init_metadata.init_metadata import INTERNAL_MANIFEST
 from melder.utilities.custom_exceptions.internal_registration_error import InternalRegistrationError
 
 

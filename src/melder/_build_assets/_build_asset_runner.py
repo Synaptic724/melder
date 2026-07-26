@@ -17,14 +17,18 @@ containing a `_builder.py`; nothing is registered, imported, or configured::
 
     _build_assets/
         _build_asset_runner.py      <- this file
-        _init_manifest/
+        _init_metadata/
             _builder.py             <- discovered automatically
-            internal_manifest.py    <- its generated output
-        <next_asset>/
-            _builder.py             <- drop it in; the runner finds it
+            init_metadata.py        <- generated loader   (committed)
+            init_metadata.melc      <- generated payload  (committed)
+            init_metadata.pyi       <- generated stub     (committed)
+        _agent_metadata/
+            _builder.py             <- same shape, no runner edit needed
+            agent_metadata.{py,melc,pyi}
 
 Adding a behaviour is therefore "create a folder with a `_builder.py`". Removing
-one is "delete the folder". The runner needs no edit either way.
+one is "delete the folder". The runner needs no edit either way. Directory name
+and artifact stem match by convention (`_<asset>/<asset>.*`).
 
 THE BUILDER CONTRACT
 --------------------
@@ -46,6 +50,25 @@ A directory whose `_builder.py` is missing any of the three is reported as a
 CONTRACT VIOLATION and fails the run, rather than being skipped quietly - a
 builder that cannot be checked is worse than no builder at all.
 
+OPTIONAL, EACH BUYING ONE CHECK
+-------------------------------
+Absent, the runner falls back to the slow byte comparison and still gives a
+correct answer - these only make the gate sharper and cheaper:
+
+    source_fingerprint() -> str
+        SHA256 over the builder's inputs. Turns staleness into a key compare
+        instead of a full re-render.
+
+    payload_path() -> pathlib.Path
+        Sidecar the loader reads at import. Checked for EXISTENCE before the
+        key, because a loader whose payload is missing imports fine right up
+        to its `marshal.loads` - a green check on an unimportable package.
+
+    manifest_version() -> str
+        SCHEMA version of the artifact format, independent of the melder
+        release. Checked separately from content because a payload in an older
+        shape may not hydrate at all, so it must never pass on a key match.
+
 ISOLATION
 ---------
 Builders are loaded BY FILE PATH through `importlib.util.spec_from_file_location`,
@@ -62,6 +85,7 @@ USAGE
 """
 import argparse
 import importlib.util
+import re
 import pathlib
 import sys
 from types import ModuleType
@@ -85,6 +109,9 @@ class BuildAssetRunnerPolicy:
 
     BUILDER_FILE_NAME: str = "_builder.py"
     REQUIRED_CALLABLES: Tuple[str, ...] = ("target_path", "render", "write")
+    FINGERPRINT_CALLABLE: str = "source_fingerprint"
+    PAYLOAD_CALLABLE: str = "payload_path"
+    SCHEMA_CALLABLE: str = "manifest_version"
     VERSION_MODULE_NAME: str = "__version__.py"
 
 
@@ -254,12 +281,74 @@ def check_all(version: str) -> int:
         asset_name = builder_path.parent.name
         module = _load_builder(builder_path)
         target = module.target_path()
-        expected = module.render(version)
         if not target.exists():
             print(f"STALE  {asset_name:<20} not generated: {target}", file=sys.stderr)
             stale.append(asset_name)
             continue
-        if target.read_text(encoding="utf-8") != expected:
+        committed = target.read_text(encoding="utf-8")
+
+        # A loader whose payload is missing imports fine right up until the
+        # `marshal.loads` at the bottom, so this is checked BEFORE the key: a
+        # matching SHA on a loader with no payload is a green check on a package
+        # that cannot import. The `.melc` is only expected when the builder
+        # declares one, which keeps single-file builders legal.
+        payload = getattr(module, BuildAssetRunnerPolicy.PAYLOAD_CALLABLE, None)
+        if callable(payload) and not payload().exists():
+            print(
+                f"STALE  {asset_name:<20} loader present but payload missing: "
+                f"{payload().name}",
+                file=sys.stderr,
+            )
+            stale.append(asset_name)
+            continue
+
+        # FAST PATH - compare KEYS, do not rebuild.
+        # A builder exposing `source_fingerprint()` lets staleness be decided by
+        # one SHA256 over raw source bytes instead of a full AST parse + harvest
+        # + render. The slow path below only runs for builders without a key.
+        #
+        # The patterns match a BARE assignment (`NAME = "..."`), which is what
+        # the lean loaders emit. They previously required `NAME: str = "..."`;
+        # when annotations moved out to the .pyi stubs, every match silently
+        # became `None` and every asset silently took the slow path. Nothing
+        # failed - the gate just quietly stopped being fast. `test_fast_path_*`
+        # in the runner tests now asserts the render path is never entered.
+        fingerprint = getattr(module, BuildAssetRunnerPolicy.FINGERPRINT_CALLABLE, None)
+        if callable(fingerprint):
+            stamped = re.search(r'^SOURCE_SHA256\s*=\s*"([0-9a-f]{64})"', committed, re.MULTILINE)
+            stamped_version = re.search(r'^BUILT_FOR_VERSION\s*=\s*"([^"]+)"', committed, re.MULTILINE)
+            stamped_schema = re.search(r'^MANIFEST_VERSION\s*=\s*"([^"]+)"', committed, re.MULTILINE)
+            schema_of = getattr(module, BuildAssetRunnerPolicy.SCHEMA_CALLABLE, None)
+            expected_schema = schema_of() if callable(schema_of) else None
+            if stamped and stamped_version:
+                # Schema drift is checked separately from content drift: a
+                # payload written in an older SHAPE is not merely out of date,
+                # it may not hydrate at all, so it must never pass on a key match.
+                if stamped_schema and expected_schema and stamped_schema.group(1) != expected_schema:
+                    print(
+                        f"STALE  {asset_name:<20} manifest schema moved "
+                        f"{stamped_schema.group(1)} -> {expected_schema}",
+                        file=sys.stderr,
+                    )
+                    stale.append(asset_name)
+                    continue
+                if stamped.group(1) == fingerprint() and stamped_version.group(1) == version:
+                    schema = stamped_schema.group(1) if stamped_schema else "?"
+                    print(
+                        f"OK     {asset_name:<20} current "
+                        f"(v{version}, schema {schema}, key match)"
+                    )
+                    continue
+                print(
+                    f"STALE  {asset_name:<20} source key or version moved "
+                    f"(expected v{version})",
+                    file=sys.stderr,
+                )
+                stale.append(asset_name)
+                continue
+
+        # SLOW PATH - only for builders that expose no fingerprint key.
+        if committed != module.render(version):
             print(
                 f"STALE  {asset_name:<20} out of date or version-mismatched "
                 f"(expected v{version})",

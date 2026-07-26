@@ -6,9 +6,7 @@ import ast
 import inspect
 import json
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple, TypedDict, Union, ClassVar
-
-from melder._build_assets._agent_metadata.agent_metadata import AGENT_METADATA, EXEMPT
+from typing import Any, Dict, List, Optional, Tuple, TypedDict, Union, ClassVar, FrozenSet
 
 
 
@@ -171,6 +169,56 @@ class ClassSurfaceAstDescriber:
         "__graph_network__",
         "__graph_details__",
     )
+
+    _AGENT_METADATA: ClassVar[Optional[Dict[Tuple[str, str], Tuple[str, str]]]] = None
+    _EXEMPT: ClassVar[Optional[FrozenSet[Tuple[str, str]]]] = None
+
+    @staticmethod
+    def _load_agent_metadata() -> Tuple[
+        Dict[Tuple[str, str], Tuple[str, str]],
+        FrozenSet[Tuple[str, str]],
+    ]:
+        """
+        Load the generated agent-metadata asset on first use and cache it.
+
+        Purpose:
+            Keep a 206 KB generated module OFF the package boot path.
+
+        Contract:
+            The import is deliberately INSIDE this method rather than at module
+            scope. `melder/__init__.py` imports `FrameViewer`, which imports this
+            module, so a module-scope import would make every single
+            `import melder` pay to build a 404-entry dict holding ~76,000
+            characters of prose - for a describer that most processes never call.
+            The internal-bind manifest is eager because `bind` needs it on every
+            boot; this one is lazy because `describe()` is occasional agent
+            tooling. Same asset system, opposite load posture, by design.
+
+            The cache lives on the class rather than at module scope, per the
+            repo's module-scope rule.
+
+        Threading / Concurrency:
+            Safe under free-threaded 3.14t without a lock. Two threads racing
+            first access both perform an idempotent `import` - CPython guards
+            `sys.modules` - and then assign the SAME objects, so the race is
+            benign and a lock would only add contention to a path that runs once.
+
+        Returns:
+            Tuple[Dict[Tuple[str, str], Tuple[str, str]], FrozenSet[Tuple[str, str]]]:
+                The metadata mapping and the exempt set.
+        """
+        if ClassSurfaceAstDescriber._AGENT_METADATA is None:
+            from melder._build_assets._agent_metadata.agent_metadata import (
+                AGENT_METADATA,
+                EXEMPT,
+            )
+
+            ClassSurfaceAstDescriber._AGENT_METADATA = AGENT_METADATA
+            ClassSurfaceAstDescriber._EXEMPT = EXEMPT
+        return (
+            ClassSurfaceAstDescriber._AGENT_METADATA,
+            ClassSurfaceAstDescriber._EXEMPT,
+        )
 
     @staticmethod
     def describe_class_surface_ast_json(
@@ -685,11 +733,12 @@ class ClassSurfaceAstDescriber:
             ValueError: When the marker is absent, non-string, or outside the
                 accepted set.
         """
+        agent_metadata, exempt = ClassSurfaceAstDescriber._load_agent_metadata()
         target_class = type(target_object)
         identity = (target_class.__module__, target_class.__qualname__)
-        if identity in EXEMPT:
+        if identity in exempt:
             return "exempt"
-        entry = AGENT_METADATA.get(identity)
+        entry = agent_metadata.get(identity)
         access_level = entry[0] if entry is not None else None
         if access_level is None:
             raise ValueError(
@@ -736,8 +785,9 @@ class ClassSurfaceAstDescriber:
         Returns:
             str: Agent-purpose string for the object.
         """
+        agent_metadata, _exempt = ClassSurfaceAstDescriber._load_agent_metadata()
         target_class = type(target_object)
-        entry = AGENT_METADATA.get((target_class.__module__, target_class.__qualname__))
+        entry = agent_metadata.get((target_class.__module__, target_class.__qualname__))
         agent_purpose = entry[1] if entry is not None else None
         if isinstance(agent_purpose, str) and agent_purpose:
             return agent_purpose
@@ -771,9 +821,10 @@ class ClassSurfaceAstDescriber:
             List[InheritedAgentPurposeDescription]: Parent-class purpose
             entries in MRO order.
         """
+        agent_metadata, _exempt = ClassSurfaceAstDescriber._load_agent_metadata()
         inherited_purposes: List[InheritedAgentPurposeDescription] = []
         for base_class in inspect.getmro(type(target_object))[1:]:
-            entry = AGENT_METADATA.get(
+            entry = agent_metadata.get(
                 (base_class.__module__, base_class.__qualname__)
             )
             inherited_purpose = entry[1] if entry is not None else None

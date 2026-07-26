@@ -38,6 +38,45 @@ def write(version):
     return target, 1
 '''
 
+# A builder exercising the full OPTIONAL contract: fingerprint key, marshal
+# payload sidecar, and schema version. Shaped exactly like the two real ones -
+# bare (unannotated) stamped constants, because the annotations live in a .pyi.
+_KEYED_BUILDER = '''
+import marshal
+import pathlib
+
+FINGERPRINT = "0" * 64
+SCHEMA = "1.0.0"
+RENDER_CALLS = []
+
+def target_path():
+    return pathlib.Path(__file__).parent / "artifact.py"
+
+def payload_path():
+    return target_path().with_suffix(".melc")
+
+def source_fingerprint():
+    return FINGERPRINT
+
+def manifest_version():
+    return SCHEMA
+
+def render(version):
+    RENDER_CALLS.append(version)
+    return (
+        "import marshal\\n"
+        'MANIFEST_VERSION = "%s"\\n'
+        'BUILT_FOR_VERSION = "%s"\\n'
+        'SOURCE_SHA256 = "%s"\\n' % (SCHEMA, version, FINGERPRINT)
+    )
+
+def write(version):
+    payload_path().write_bytes(marshal.dumps(frozenset({("a", "B")})))
+    target = target_path()
+    target.write_text(render(version), encoding="utf-8")
+    return target, 1
+'''
+
 
 def _load_runner() -> Any:
     """
@@ -378,6 +417,89 @@ def test_running_the_runner_never_imports_melder(runner, fake_assets):
     assert "melder" not in sys.modules
 
 
+# The optional contract: key, payload, schema -------------------------------
+
+
+def test_key_match_skips_render_entirely(runner, fake_assets):
+    """
+    Purpose:
+        The fast path's whole value is NOT rendering. It regressed once already
+        and nothing caught it: the stamped-constant patterns required
+        `NAME: str = "..."`, but the lean loaders emit bare `NAME = "..."`, so
+        every match returned None and every asset silently took the slow path.
+        The gate stayed CORRECT and quietly stopped being fast, which is exactly
+        the kind of regression a green suite hides.
+    Contract:
+        On a key match, `render` is never called.
+    """
+    _make_asset(fake_assets, "_keyed", _KEYED_BUILDER)
+    assert runner.build_all("1.0.0") == 0
+    assert runner.check_all("1.0.0") == 0
+
+    # `_load_builder` re-executes the builder per call, so the module now in
+    # sys.modules is the one `check_all` just loaded and its call log covers
+    # that invocation alone.
+    module = sys.modules["_melder_asset_builder__keyed"]
+    assert module.RENDER_CALLS == [], (
+        "render() ran during --check; the fast path did not fire"
+    )
+
+
+def test_missing_payload_fails_even_when_the_key_matches(runner, fake_assets):
+    """
+    Purpose:
+        A loader whose marshal sidecar is absent imports fine right up to its
+        `marshal.loads`. Checking the key alone would report OK for a package
+        that cannot be imported - and the payloads were in fact untracked and
+        gitignored when this was written, so a clone hit precisely that.
+    Contract:
+        Payload existence is checked BEFORE the key, so a perfect key match on a
+        payload-less asset still fails.
+    """
+    asset = _make_asset(fake_assets, "_keyed", _KEYED_BUILDER)
+    assert runner.build_all("1.0.0") == 0
+    (asset / "artifact.melc").unlink()
+
+    assert runner.check_all("1.0.0") == 1
+
+
+def test_schema_drift_fails_even_when_the_key_matches(runner, fake_assets):
+    """
+    Purpose:
+        `MANIFEST_VERSION` tracks payload SHAPE, `BUILT_FOR_VERSION` tracks the
+        release. An asset written in an older shape may not hydrate at all, so
+        it is not merely out of date - it must never pass on a content match.
+    Contract:
+        A committed asset stamped with a superseded schema is stale even though
+        its source key and build version are both current.
+    """
+    asset = _make_asset(fake_assets, "_keyed", _KEYED_BUILDER)
+    assert runner.build_all("1.0.0") == 0
+
+    artifact = asset / "artifact.py"
+    artifact.write_text(
+        artifact.read_text(encoding="utf-8").replace('"1.0.0"', '"0.9.0"', 1),
+        encoding="utf-8",
+    )
+
+    assert runner.check_all("1.0.0") == 1
+
+
+def test_a_builder_without_the_optional_contract_still_checks(runner, fake_assets):
+    """
+    Purpose:
+        The key, payload and schema hooks are OPTIONAL. A builder exposing only
+        the three required callables must keep working through the slow byte
+        comparison rather than being failed for what it does not declare.
+    Contract:
+        The plain builder round-trips green, then goes stale on a version bump.
+    """
+    _make_asset(fake_assets, "_plain")
+    assert runner.build_all("1.0.0") == 0
+    assert runner.check_all("1.0.0") == 0
+    assert runner.check_all("2.0.0") == 1
+
+
 # The real repository -------------------------------------------------------
 
 
@@ -405,11 +527,11 @@ def test_the_shipped_manifest_builder_satisfies_the_contract():
         if it drifts from the contract, the pattern documented for future assets
         is wrong.
     Contract:
-        The real `_init_manifest` builder exposes all three required callables.
+        The real `_init_metadata` builder exposes all three required callables.
     """
     live = _load_runner()
     builders = live.discover_builders()
-    assert "_init_manifest" in [p.parent.name for p in builders]
-    module = live._load_builder(next(p for p in builders if p.parent.name == "_init_manifest"))
+    assert "_init_metadata" in [p.parent.name for p in builders]
+    module = live._load_builder(next(p for p in builders if p.parent.name == "_init_metadata"))
     for name in live.BuildAssetRunnerPolicy.REQUIRED_CALLABLES:
         assert callable(getattr(module, name))

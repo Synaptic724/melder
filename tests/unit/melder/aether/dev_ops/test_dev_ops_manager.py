@@ -89,7 +89,7 @@ def test_init_creates_lock(manager):
 
 def test_init_sets_sentinel(manager):
     """Verify the registration guard classifies DevOpsManager as internal."""
-    from melder._build_assets._init_manifest.internal_manifest import INTERNAL_MANIFEST
+    from melder._build_assets._init_metadata.init_metadata import INTERNAL_MANIFEST
     key = (type(manager).__module__, type(manager).__qualname__)
     assert key in INTERNAL_MANIFEST
 

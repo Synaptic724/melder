@@ -122,7 +122,7 @@ def test_registration_guard_manifest_exists_at_import():
     Purpose:
         The internal registration guard manifest asset is live and non-empty after import.
     """
-    from melder._build_assets._init_manifest.internal_manifest import INTERNAL_MANIFEST
+    from melder._build_assets._init_metadata.init_metadata import INTERNAL_MANIFEST
 
     assert len(INTERNAL_MANIFEST) > 0
 def test_user_held_work_surfaces_are_loaded():

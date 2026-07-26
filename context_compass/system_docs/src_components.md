@@ -3732,7 +3732,7 @@ unbreakable tokens (`configuration_standards.md`).
 REGENERATION: this section is a derived inventory. Re-walk the package rather
 than hand-editing entries, so it cannot drift silently from source.
 
-Module count: 550 (excluding `__init__.py`).
+Module count: 553 (excluding `__init__.py`).
 
 **Package root** - 9 modules
 
@@ -3746,8 +3746,11 @@ Module count: 550 (excluding `__init__.py`).
 - `src/melder/__version__.py` - Version metadata exposed by the top-level Melder package
 - `src/melder/system_document.py` - Top-level hardcopy system document object for agent-facing Melder surfaces
 
-**_build_assets/ - generated durable build assets** - 2 modules
+**_build_assets/ - generated durable build assets** - 5 modules
 
+- `src/melder/_build_assets/_agent_metadata/_builder.py` - Agent-metadata harvester and durable asset builder
+- `src/melder/_build_assets/_agent_metadata/agent_metadata.py` - GENERATED DURABLE BUILD ASSET - DO NOT EDIT MANUALLY
+- `src/melder/_build_assets/_build_asset_runner.py` - Discovery-driven runner for every durable build asset melder ships
 - `src/melder/_build_assets/_init_manifest/_builder.py` - Internal-bind manifest scanner and durable asset builder
 - `src/melder/_build_assets/_init_manifest/internal_manifest.py` - GENERATED DURABLE BUILD ASSET - DO NOT EDIT MANUALLY
 
@@ -3758,14 +3761,14 @@ Module count: 550 (excluding `__init__.py`).
 
 **aether/ - substrate, spellbook, conduit, dev-ops control plane** - 295 modules
 
-- `src/melder/aether/aether.py` - The global singleton root
-- `src/melder/aether/aether_configuration.py` - Root logger-activation policy for AetherUtilitySystem
-- `src/melder/aether/aether_configuration_builder.py` - Fluent one-shot builder for AetherConfiguration
-- `src/melder/aether/aether_utility_system.py` - Process-wide utility host for Aether-owned helper systems
+- `src/melder/aether/aether.py` - The global singleton root that owns all `AethericFrame` instances
+- `src/melder/aether/aether_configuration.py` - Mutable-to-frozen configuration surface for Aether root policy
+- `src/melder/aether/aether_configuration_builder.py` - One-shot builder for Aether root configuration assembly
+- `src/melder/aether/aether_utility_system.py` - Internal Process-wide utility host for Aether-owned helper systems
 - `src/melder/aether/aetheric_frame/aetheric_frame.py` - Manage one isolated runtime frame within `Aether`
 - `src/melder/aether/aetheric_frame/aetheric_frame_configuration.py`
-  Narrow frame posture (system_state, ai_native_enabled, rift_enabled, and the disable_* change...
-- `src/melder/aether/aetheric_frame/conduit_cloud.py` - Frame-scoped discovery and cluster facade
+  Internal Narrow frame-level runtime posture for AR and Nexus-facing behavior
+- `src/melder/aether/aetheric_frame/conduit_cloud.py` - Frame-scoped conduit and cluster service facade
 - `src/melder/aether/aetheric_frame/dev_ops/change_control_manager/change_control_manager.py`
   Change-control registry for an Aetheric Frame
 - `src/melder/aether/aetheric_frame/dev_ops/change_control_manager/conflict_manager/conflict_manager.py`
@@ -3864,7 +3867,8 @@ Module count: 550 (excluding `__init__.py`).
   Coarse validity gate used for both structural and resolution state
 - `src/melder/aether/aetheric_frame/lookup_container.py`
   Frame-wide, thread-safe registry of ACTIVE binding-signature lookups
-- `src/melder/aether/conduit/conduit.py` - The runtime scope you hold after conjure
+- `src/melder/aether/conduit/conduit.py`
+  A `Conduit` is the runtime scope, execution boundary, and contract-aware access surface for o...
 - `src/melder/aether/conduit/conduit_cluster.py`
   A membership group of conduits with TWO INDEPENDENT LAYERS: leaderless spell-sharing (the cor...
 - `src/melder/aether/conduit/conduit_pool.py` - Root-conduit-owned elastic pool scaffold for reusable lesser conduits
@@ -3877,9 +3881,8 @@ Module count: 550 (excluding `__init__.py`).
 - `src/melder/aether/conduit/conduit_ward/contract/detail_reason.py` - Why one `Detail` entry exists inside a contract
 - `src/melder/aether/conduit/conduit_ward/contract/details.py` - Spell-level permission entry stored inside a Contract
 - `src/melder/aether/conduit/conduit_ward/permissions/permissions.py`
-  Capability ceiling for a lineage: read (resolve/inspect only), create (creation-capable, impl...
-- `src/melder/aether/conduit/conduit_ward/policies/policies.py`
-  Ward contracting mode: default, whitelist_all, block_all, inbound_only, outbound_only
+  Capability ceiling for a spell lineage in ward-local and contracted views
+- `src/melder/aether/conduit/conduit_ward/policies/policies.py` - Runtime policy mode for conduit-to-conduit contracting
 - `src/melder/aether/conduit/conduit_ward/transfer/transfer_of_ownership.py`
   Control-plane helper that migrates a spell lineage between conduit owners
 - `src/melder/aether/conduit/creations/cluster_creations.py`
@@ -3888,17 +3891,19 @@ Module count: 550 (excluding `__init__.py`).
 - `src/melder/aether/conduit/creations/creations.py` - Scoped live creation registry
 - `src/melder/aether/conduit/meld/conduit_meld.py` - Concrete conduit-facing meld front door
 - `src/melder/aether/conduit/meld/contracts/spell_contract.py`
-  Declares a LATE-BOUND dependency hole for dynamic conduit linking
-- `src/melder/aether/conduit/meld/contracts/spell_map.py` - Declarative DI descriptor for normal in-graph resolution
+  Declarative late-binding contract socket for dynamic conduit linking
+- `src/melder/aether/conduit/meld/contracts/spell_map.py`
+  Declarative DI descriptor for normal spellbook-local resolution
 - `src/melder/aether/conduit/meld/creation_context/creation_context.py` - Spell-bound runtime executor context
 - `src/melder/aether/conduit/meld/creation_context/creation_context_builder.py`
   Build spell-bound `CreationContext` objects from phase-11 creation inputs
 - `src/melder/aether/conduit/meld/creation_context/creation_context_factory.py`
   Produce spell-shaped `CreationContext` instances
-- `src/melder/aether/conduit/meld/meld.py` - ## Meld: Spell Activation and Dependency Resolution
+- `src/melder/aether/conduit/meld/meld.py`
+  ## Meld: Spell Activation and Dependency Resolution Meld is the **shared runtime core** for s...
 - `src/melder/aether/conduit/meld/overrides/spell_overrider.py` - Precedence tiers for spell-override target specs
 - `src/melder/aether/conduit/meld/spellspace_meld.py` - Concrete spellspace-facing meld front door
-- `src/melder/aether/conduit/spell_space/spell_space.py` - Explicit request scope for Existence.unique_per_spell_space
+- `src/melder/aether/conduit/spell_space/spell_space.py` - Explicit scope handle for `Existence.unique_per_spell_space`
 - `src/melder/aether/conduit/spell_space/spell_space_pool.py` - Elastic pool for reusable `SpellSpace` objects
 - `src/melder/aether/conduit/spell_space/spell_space_thread_state.py`
   Per-thread spellspace storage for one `SpellSpaceThreadState`
@@ -3906,15 +3911,13 @@ Module count: 550 (excluding `__init__.py`).
   Spellbook registration gateway for classes, callables, and concrete objects
 - `src/melder/aether/spellbook/bind/scan.py` - Frozen payload describing how a decorated object should be bound later
 - `src/melder/aether/spellbook/bind/spell_index.py`
-  The stable lineage identity (immutable ULID) pointing at a mutable selected spell
+  A stable SpellIndex identity that points to a mutable selected-spell id and holds the set of...
 - `src/melder/aether/spellbook/configuration/spellbook_configuration.py`
-  Rich per-book configuration: typed properties, idempotent keys, and the Meld/Conduit/Link/Con...
-- `src/melder/aether/spellbook/configuration/system_state.py`
-  Runtime posture: automatic (fixed graph, safer) or dynamic (rewiring allowed)
-- `src/melder/aether/spellbook/existence/existence.py`
-  Declares instance lifetime at bind: unique (per frame), unique_per_conduit, many, unique_per_...
+  Mutable build-time configuration surface for one spellbook/runtime context
+- `src/melder/aether/spellbook/configuration/system_state.py` - High-level runtime posture for a spellbook/system
+- `src/melder/aether/spellbook/existence/existence.py` - Lifecycle mode for a spell binding
 - `src/melder/aether/spellbook/resolution_style_matrix.py` - Canonical resolution-style support matrix for Melder
-- `src/melder/aether/spellbook/spell.py` - One registered binding: identity, existence, permissions, spellframe, hooks
+- `src/melder/aether/spellbook/spell.py` - Internal Represents one registered spell inside the Melder runtime
 - `src/melder/aether/spellbook/spell_compiler/artifact_processor/data/spell_injection_analysis.py`
   Processor-owned parameter source descriptor
 - `src/melder/aether/spellbook/spell_compiler/artifact_processor/data/spell_occurrence_contract_analysis.py`
@@ -4082,19 +4085,19 @@ Module count: 550 (excluding `__init__.py`).
 - `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/solo/steps/solo_overrides_codegen_creation_step.py`
   Solo family overrides executor build step
 - `src/melder/aether/spellbook/spell_compiler/codegen_planner/codegen_plan_discovery_system/codegen_plan_discovery.py`
-  Phase-10 discovery result: selected_strategy_id, plan_family_id, candidate_codegen_style_ids...
+  Discovery result for one codegen-plan selection pass
 - `src/melder/aether/spellbook/spell_compiler/codegen_planner/codegen_plan_discovery_system/codegen_plan_discovery_strategy.py`
-  ABC for phase-10 discovery strategies: strategy_id + discover(SpellCodegenModel) -> Optional[...
+  One phase-10 discovery strategy contract
 - `src/melder/aether/spellbook/spell_compiler/codegen_planner/codegen_plan_discovery_system/codegen_plan_discovery_strategy_builder.py`
-  Registry of phase-10 discovery strategies keyed by strategy_id (registration order = discover...
+  Registry holder for phase-10 discovery strategies
 - `src/melder/aether/spellbook/spell_compiler/codegen_planner/codegen_plan_discovery_system/codegen_plan_discovery_system.py`
-  Phase-10 discovery facade: iterates its owned CodegenPlanDiscoveryStrategyBuilder's strategie...
+  Select the best current codegen-plan strategy for one model
 - `src/melder/aether/spellbook/spell_compiler/codegen_planner/codegen_plan_discovery_system/strategies/generalized_codegen_plan_discovery_strategy.py`
-  Default catch-all phase-10 discovery strategy: always claims, selecting the generalized_codeg...
+  Default generalized phase-10 discovery strategy
 - `src/melder/aether/spellbook/spell_compiler/codegen_planner/codegen_plan_discovery_system/strategies/many_only_codegen_plan_discovery_strategy.py`
-  Phase-10 discovery strategy: claims a model with >1 visible spell where ALL are Existence.man...
+  Phase-10 discovery strategy for graphs made only of `Existence.many` spells
 - `src/melder/aether/spellbook/spell_compiler/codegen_planner/codegen_plan_discovery_system/strategies/solo_codegen_plan_discovery_strategy.py`
-  Phase-10 discovery strategy: claims a single-visible-spell model (selecting the generalized_s...
+  Phase-10 discovery strategy for the solo spell category
 - `src/melder/aether/spellbook/spell_compiler/codegen_planner/data/many_only_codegen_plan.py`
   Many-only lane variant labels
 - `src/melder/aether/spellbook/spell_compiler/codegen_planner/data/spell_generalized_codegen_lane_plan.py`
@@ -4116,17 +4119,17 @@ Module count: 550 (excluding `__init__.py`).
 - `src/melder/aether/spellbook/spell_compiler/codegen_planner/strategies/spell_many_only_codegen_plan_strategy.py`
   Standalone many-only phase-10 planner strategy
 - `src/melder/aether/spellbook/spell_compiler/dag/dag_index.py`
-  Interns param-path segments into stable integer PathIds so Phase-5/8 builds compare and exten...
+  Internal Intern parameter path segments into stable integer PathIds
 - `src/melder/aether/spellbook/spell_compiler/dag/dag_node.py`
-  A node in the resolution DAG: a keyed unit of work with dependency/dependent DagNode sets and...
+  Internal Represents a single node in a Directed Acyclic Graph used for resolution
 - `src/melder/aether/spellbook/spell_compiler/dag/directed_acyclic_work_graph.py`
-  Minimal DAG of DagNodes keyed by id: add_node/add_dependency (+ bulk), topological_sort, topo...
+  Internal A minimal Directed Acyclic Graph implementation specialized for Melder
 - `src/melder/aether/spellbook/spell_compiler/dag/resolution_frame/resolution_frame.py`
-  Per-meld resolution state: caller overrides, per-node results, and per-node errors keyed by n...
+  Internal Per-meld resolution state shared across all nodes in a resolution DAG
 - `src/melder/aether/spellbook/spell_compiler/dag/socket_kind.py`
-  Phase-3 DAG edge classifier: NORMAL (regular DI socket) vs SPELL_CONTRACT (late-bound provide...
+  Internal Classify the socket kind represented by a DAG edge
 - `src/melder/aether/spellbook/spell_compiler/dag/target_spec.py`
-  Override-targeting mode: PATH (a>b>c param path), UNIQUE (*name), BROADCAST (**name)
+  Internal Represents the three supported targeting modes for overrides: * PATH -> explicit par...
 - `src/melder/aether/spellbook/spell_compiler/executor_code_cache.py` - Process-wide compiled-executor code-object cache
 - `src/melder/aether/spellbook/spell_compiler/executor_factory_cache.py`
   Process-wide compiled-executor *factory* cache
@@ -4150,19 +4153,19 @@ Module count: 550 (excluding `__init__.py`).
 - `src/melder/aether/spellbook/spell_compiler/phases/utility.py`
   Shared static generic helper surface for compiler phases
 - `src/melder/aether/spellbook/spell_compiler/profiles/resolution_profile.py`
-  Symbolic dependency-graph node: node_id, kind, metadata bag
+  Placeholder representation of a symbolic node in a spell's dependency graph
 - `src/melder/aether/spellbook/spell_compiler/spell_analyzer/data/spell_existence_occurrence_analysis.py`
-  One Phase-8 value row: spell_id + its Existence + has_disposal_methods
+  One visible spell-id to existence row captured during the phase-8 spell walk
 - `src/melder/aether/spellbook/spell_compiler/spell_analyzer/data/spell_occurrence_graph_analysis.py`
-  Phase-8 occurrence-graph artifact: owns the expanded occurrence_graph and cheap metrics (occu...
+  Occurrence-graph analysis artifact
 - `src/melder/aether/spellbook/spell_compiler/spell_analyzer/spell_analyzer.py`
-  Phase-8 analyzer orchestrator: runs registered analyzer strategies (resolved from its owned S...
+  Compiler-side spell analyzer orchestrator
 - `src/melder/aether/spellbook/spell_compiler/spell_analyzer/spell_analyzer_strategy.py`
-  ABC contract for analyzer strategies: strategy_id + analyze(spell, artifact, analysis_pass_ca...
+  One spell-analyzer strategy contract
 - `src/melder/aether/spellbook/spell_compiler/spell_analyzer/spell_analyzer_strategy_builder.py`
-  Registry of analyzer strategies keyed by strategy_id: load_defaults / get_strategy / get_stra...
+  Registry holder for analyzer strategies
 - `src/melder/aether/spellbook/spell_compiler/spell_analyzer/strategies/spell_occurrence_graph_analyzer_strategy.py`
-  Phase-8 occurrence-graph builder strategy: turns Phase-5 rooted blueprint + live topology int...
+  Build the occurrence-graph analysis artifact for one spell
 - `src/melder/aether/spellbook/spell_compiler/spell_compiler.py`
   Compiler-owned facade over the extracted spell compiler phase surfaces
 - `src/melder/aether/spellbook/spell_compiler/spell_compiler_artifact.py` - Spell-scoped compiler artifact container
@@ -4191,17 +4194,17 @@ Module count: 550 (excluding `__init__.py`).
 - `src/melder/aether/spellbook/spell_compiler/spell_examiner/strategies/resolution_profile_strategy.py`
   Strategy for producing **SpellResolutionProfile** instances from fully formed Spell objects
 - `src/melder/aether/spellbook/spell_compiler/spell_requirements_finder/parameter_di_shape.py`
-  Phase-1 enum classifying how one parameter wants to be satisfied: IGNORE / PLAIN / SINGLE_BY_...
+  High-level classification of how a single parameter is expected to be satisfied during resolu...
 - `src/melder/aether/spellbook/spell_compiler/spell_requirements_finder/spell_parameter_requirements.py`
-  Phase-1 descriptor for ONE constructor parameter: name, position, kind, annotation, default...
+  Phase 1 description of a **single constructor parameter** for a spell
 - `src/melder/aether/spellbook/spell_compiler/spell_requirements_finder/spell_requirements.py`
-  Phase-1 per-spell requirements artifact: identity (spell_id, type, existence, spellframe, bin...
+  Phase 1 **per-spell requirements artifact**
 - `src/melder/aether/spellbook/spell_compiler/spell_requirements_finder/spell_requirements_finder.py`
-  Phase-1 driver: inspects one Spell's callable, resolves annotations, classifies each paramete...
+  Build the Phase 1 requirement artifact for one bound: class: 'Spell`
 - `src/melder/aether/spellbook/spell_compiler/symbolic_graph/spell_symbolic_dependency.py`
-  Phase-2 symbolic socket for ONE constructor parameter: spell_id, param_name, position, di_sha...
+  Phase 2 representation of a **single constructor socket** for a spell
 - `src/melder/aether/spellbook/spell_compiler/symbolic_graph/spell_symbolic_graph.py`
-  Phase-2 per-spell symbolic graph: the set of SpellSymbolicDependency edges (one per construct...
+  Phase 2 **per-spell symbolic graph**
 - `src/melder/aether/spellbook/spell_compiler/system/spell_system_adjacency_builder.py`
   Builder for: class:`SpellSystemAdjacencySnapshot`
 - `src/melder/aether/spellbook/spell_compiler/system/spell_system_adjacency_snapshot.py`
@@ -4267,64 +4270,73 @@ Module count: 550 (excluding `__init__.py`).
 - `src/melder/aether/spellbook/spell_compiler/system/validation/visibility_gap_strategy.py`
   Guard that spellbook visibility filtering has not silently amputated needed dependencies from...
 - `src/melder/aether/spellbook/spell_compiler/topology/spell_local_topology.py`
-  Phase-3 immutable per-spell socket descriptor: spell_id, param_name, position, socket_kind, i...
+  Internal Immutable description of a single constructor socket on a spell
 - `src/melder/aether/spellbook/spell_compiler/validation/spell_validation_context.py`
-  Phase-4 per-spell validation context handed to each strategy: the spell, spellbook, and the P...
+  Per-spell context passed to each validation strategy
 - `src/melder/aether/spellbook/spell_compiler/validation/spell_validation_issue.py`
-  One Phase-4 validation finding: severity ('error'|'warning'), code, message, optional source...
+  Single validation issue (error or warning) produced by a strategy
 - `src/melder/aether/spellbook/spell_compiler/validation/spell_validation_result.py`
-  Aggregate Phase-4 result for one spell version: spell_id, spell_name, the full issues list, p...
+  Aggregate validation result for a single spell
 - `src/melder/aether/spellbook/spell_compiler/validation/strategies/annotation_shape_guard_strategy.py`
-  Phase-4 strategy: rejects unsupported collection DI annotation shapes
+  Validate DI annotation shapes for unsupported collection forms
 - `src/melder/aether/spellbook/spell_compiler/validation/strategies/binding_resolution_cycle_strategy.py`
-  Phase-4 strategy: builds a binding-KEY adjacency graph from the pool's Phase-1 requirements (...
+  Detect binding-key cycles implied by spell requirements
 - `src/melder/aether/spellbook/spell_compiler/validation/strategies/callable_profile_hygiene_strategy.py`
-  Phase-4 strategy: checks the spell target matches its binding profile and kind - class spells...
+  Validate that the bound spell target matches its binding profile and type
 - `src/melder/aether/spellbook/spell_compiler/validation/strategies/circular_dependency_strategy.py`
-  Phase-4 strategy: DFS over the spellbook-wide dependency adjacency (pass-cached) from the cur...
+  Detect circular dependency chains in the spell dependency graph
 - `src/melder/aether/spellbook/spell_compiler/validation/strategies/contract_provider_presence_strategy.py`
-  Phase-4 strategy for SPELL_CONTRACT sockets: errors CONTRACT_IN_AUTOMATIC_MODE (contracts nee...
+  Validate that contract sockets have a resolvable provider in the Spellbook
 - `src/melder/aether/spellbook/spell_compiler/validation/strategies/dangling_dependency_strategy.py`
-  Phase-4 strategy: checks every id in spell.dependencies exists in the owning Spellbook's _spe...
+  Verify that all dependency spell_ids attached to a spell actually exist
 - `src/melder/aether/spellbook/spell_compiler/validation/strategies/duplicate_spell_name_strategy.py`
-  Phase-4 strategy: collects visible spells sharing a spell_name (pass-cached) and emits DUPLIC...
+  Detect spells that share the same ``spell_name`` within the visible Spellbook (local + contra...
 - `src/melder/aether/spellbook/spell_compiler/validation/strategies/existing_creation_compatibility_strategy.py`
-  Phase-4 strategy for existing-creation spells: errors if there is no bound instance, existenc...
+  Validate existing-creation spells are wired with valid instances and policies
 - `src/melder/aether/spellbook/spell_compiler/validation/strategies/parameter_policy_strategy.py`
-  Phase-4 strategy: enforces DI policy on parameters - no variadic DI, single/collection DI mus...
+  Enforce parameter policies around DI usage
 - `src/melder/aether/spellbook/spell_compiler/validation/strategies/required_holes_strategy.py`
-  Phase-4 strategy: emits a REQUIRED_HOLE warning per PLAIN, default-less parameter - a hole Me...
+  Surface any **required holes** discovered in Phase 1
 - `src/melder/aether/spellbook/spell_compiler/validation/strategies/resolution_frame_presence_strategy.py`
-  Phase-4 structural gate: emits MISSING_RESOLUTION_FRAME (error) when Phase 3 produced no reso...
+  Ensure Phase 3 has actually produced a resolution frame and DAG
 - `src/melder/aether/spellbook/spell_compiler/validation/strategies/self_validation_strategy.py`
-  Phase-4 strategy: emits one SELF_DEPENDENCY error if a spell's dependency list contains its o...
+  Detect trivial self-dependencies (a spell depending on itself)
 - `src/melder/aether/spellbook/spell_compiler/validation/strategies/spell_validation_strategy.py`
-  Base class for Phase-4 validation strategies: implement validate(context) to inspect one spel...
+  Base class for all spell validation strategies
 - `src/melder/aether/spellbook/spell_compiler/validation/strategies/spellmap_shape_validation_strategy.py`
-  Phase-4 strategy for SPELLMAP_DEFAULT params: errors on missing / invalid SpellMap or a Spell...
+  Validate SpellMap defaults for structural correctness
 - `src/melder/aether/spellbook/spell_compiler/validation/validation_system.py`
-  Phase-4 registry+runner: auto-registers the built-in SpellValidationStrategy set, runs them i...
+  Central registry + runner for spell validation strategies
 - `src/melder/aether/spellbook/spell_types/spell_types.py`
   Canonical runtime binding-family classification for bound spells
-- `src/melder/aether/spellbook/spellbinder.py` - Fluent alternative to Spellbook.bind(...)
-- `src/melder/aether/spellbook/spellbook.py` - The binding authority
+- `src/melder/aether/spellbook/spellbinder.py`
+  Fluent registration helper for configuring one Spellbook bind operation at a time
+- `src/melder/aether/spellbook/spellbook.py`
+  Public API The `Spellbook` is the primary local authority for spell binding, spell lookup, co...
 - `src/melder/aether/spellbook/spellbook_creation_system.py` - Internal conjure orchestration system for Spellbook
 
 **nexus/ - AR runtime surface** - 122 modules
 
-- `src/melder/nexus/acl/builder/frame_acl_builder.py` - FrameACLBuilder runtime object
-- `src/melder/nexus/acl/builder/frame_acl_codegen_builder.py` - FrameACLCodegenBuilder runtime object
-- `src/melder/nexus/acl/builder/frame_acl_command_builder.py` - FrameACLCommandBuilder runtime object
-- `src/melder/nexus/acl/builder/frame_acl_view_builder.py` - FrameACLViewBuilder runtime object
-- `src/melder/nexus/acl/configurations/frame_acl_codegen_configuration.py` - FrameACLCodegenConfiguration runtime object
-- `src/melder/nexus/acl/configurations/frame_acl_command_configuration.py` - FrameACLCommandConfiguration runtime object
-- `src/melder/nexus/acl/configurations/frame_acl_view_configuration.py` - FrameACLViewConfiguration runtime object
+- `src/melder/nexus/acl/builder/frame_acl_builder.py`
+  Purpose: Provide the frame-local mutable ACL authoring surface for one `FrameACLContainer`
+- `src/melder/nexus/acl/builder/frame_acl_codegen_builder.py`
+  Purpose: Provide a fluent authoring surface for one active codegen ACL draft
+- `src/melder/nexus/acl/builder/frame_acl_command_builder.py`
+  Purpose: Provide fluent authoring for one active command-family ACL draft
+- `src/melder/nexus/acl/builder/frame_acl_view_builder.py`
+  Purpose: Provide fluent authoring for one active view-family ACL draft
+- `src/melder/nexus/acl/configurations/frame_acl_codegen_configuration.py`
+  Purpose: Represent one applied codegen-side ACL configuration revision
+- `src/melder/nexus/acl/configurations/frame_acl_command_configuration.py`
+  Purpose: Represent one applied command-side ACL configuration revision
+- `src/melder/nexus/acl/configurations/frame_acl_view_configuration.py`
+  Purpose: Represent one applied view-side ACL configuration revision
 - `src/melder/nexus/acl/configurations/profiles/builder/frame_acl_profile_builder.py`
   Minimal profile surface needed by the generic registry helpers
 - `src/melder/nexus/acl/configurations/profiles/codegen/frame_acl_codegen_profile.py`
-  FrameACLCodegenProfile runtime object
+  Purpose: Hold one reusable typed codegen-profile ruleset bundle
 - `src/melder/nexus/acl/configurations/profiles/codegen/frame_acl_codegen_profile_builder.py`
-  FrameACLCodegenProfileBuilder runtime object
+  Purpose: Own the reusable codegen-profile construction strategies and build codegen profile i...
 - `src/melder/nexus/acl/configurations/profiles/codegen/full_access_profile.py`
   Build the reusable `full_access` codegen profile
 - `src/melder/nexus/acl/configurations/profiles/codegen/hybrid_profile.py` - Build the reusable `hybrid` codegen profile
@@ -4335,35 +4347,45 @@ Module count: 550 (excluding `__init__.py`).
 - `src/melder/nexus/acl/configurations/profiles/codegen/stdlib_import_sets.py`
   UNKNOWN - no module docstring, `__agent_purpose__`, or class docstring
 - `src/melder/nexus/acl/configurations/profiles/command/frame_acl_command_profile.py`
-  FrameACLCommandProfile runtime object
+  Purpose: Hold one reusable typed command-profile ruleset bundle
 - `src/melder/nexus/acl/configurations/profiles/command/frame_acl_command_profile_builder.py`
-  FrameACLCommandProfileBuilder runtime object
+  Purpose: Own the reusable command-profile construction strategies and build command profile i...
 - `src/melder/nexus/acl/configurations/profiles/command/hybrid_profile.py` - Build the reusable `hybrid` command profile
 - `src/melder/nexus/acl/configurations/profiles/command/permissive_profile.py`
   Build the reusable `permissive` command profile
 - `src/melder/nexus/acl/configurations/profiles/command/precision.py` - Build the reusable `precision` command profile
 - `src/melder/nexus/acl/configurations/profiles/command/safe_profile.py` - Build the reusable `safe` command profile
-- `src/melder/nexus/acl/configurations/profiles/frame_acl_profile.py` - FrameACLProfile runtime object
-- `src/melder/nexus/acl/configurations/profiles/rules/frame_acl_rule.py` - FrameACLRule runtime object
-- `src/melder/nexus/acl/configurations/profiles/rules/frame_acl_ruleset.py` - FrameACLRuleSet runtime object
-- `src/melder/nexus/acl/configurations/profiles/view/frame_acl_view_profile.py` - FrameACLViewProfile runtime object
+- `src/melder/nexus/acl/configurations/profiles/frame_acl_profile.py`
+  Purpose: Represent one composed ACL profile that pairs reusable view, command, and codegen ba...
+- `src/melder/nexus/acl/configurations/profiles/rules/frame_acl_rule.py`
+  Purpose: Represent one typed ACL rule used by reusable view/codegen profiles
+- `src/melder/nexus/acl/configurations/profiles/rules/frame_acl_ruleset.py`
+  Purpose: Hold one named collection of typed ACL rules
+- `src/melder/nexus/acl/configurations/profiles/view/frame_acl_view_profile.py`
+  Purpose: Hold one reusable typed view-profile ruleset bundle
 - `src/melder/nexus/acl/configurations/profiles/view/frame_acl_view_profile_builder.py`
-  FrameACLViewProfileBuilder runtime object
+  Purpose: Own the reusable view-profile construction strategies and build view profile instanc...
 - `src/melder/nexus/acl/configurations/profiles/view/hybrid_profile.py` - Build the reusable `hybrid` view profile
 - `src/melder/nexus/acl/configurations/profiles/view/permissive_profile.py`
   Build the reusable `permissive` view profile
 - `src/melder/nexus/acl/configurations/profiles/view/precision.py` - Build the reusable `precision` view profile
 - `src/melder/nexus/acl/configurations/profiles/view/safe_profile.py` - Build the reusable `safe` view profile
-- `src/melder/nexus/acl/frame_acl_compiled_access_surface.py` - CompiledFrameACLAccessSurface runtime object
-- `src/melder/nexus/acl/frame_acl_compiler.py` - FrameACLCompiler runtime object
-- `src/melder/nexus/acl/frame_acl_configuration.py` - FrameACLConfiguration runtime object
-- `src/melder/nexus/acl/frame_acl_configuration_chain.py` - FrameACLConfigurationChain runtime object
-- `src/melder/nexus/acl/frame_acl_container.py` - FrameACLContainer runtime object
+- `src/melder/nexus/acl/frame_acl_compiled_access_surface.py`
+  Purpose: Hold one derived consumer-facing ACL access surface for a frame
+- `src/melder/nexus/acl/frame_acl_compiler.py`
+  Purpose: Compile typed ACL configuration over payload-backed descriptor records into a downst...
+- `src/melder/nexus/acl/frame_acl_configuration.py`
+  Purpose: Represent one frame-scoped typed ACL configuration node owned by a `FrameACLConfigur...
+- `src/melder/nexus/acl/frame_acl_configuration_chain.py`
+  Purpose: Own one named revision chain for one ACL configuration family
+- `src/melder/nexus/acl/frame_acl_container.py`
+  Purpose: Hold all frame-local ACL subsystem objects for one frame in one place
 - `src/melder/nexus/acl/validator/compatibility/frame_acl_set_compatibility_report.py`
-  FrameACLSetCompatibilityReport runtime object
+  Purpose: Hold one detached compatibility-validation result for a frame ACL bundle
 - `src/melder/nexus/acl/validator/compatibility/frame_acl_set_compatibility_validator.py`
-  FrameACLSetCompatibilityValidator runtime object
-- `src/melder/nexus/acl/validator/frame_acl_validator.py` - FrameACLValidator runtime object
+  Purpose: Validate whether one selected frame ACL bundle is internally coherent across view, c...
+- `src/melder/nexus/acl/validator/frame_acl_validator.py`
+  Purpose: Validate that frame-local ACL configuration nodes are structurally compatible with o...
 - `src/melder/nexus/acl/validator/profiles/codegen/precision_strategy.py`
   UNKNOWN - no module docstring, `__agent_purpose__`, or class docstring
 - `src/melder/nexus/acl/validator/profiles/codegen/safe_strategy.py`
@@ -4378,83 +4400,89 @@ Module count: 550 (excluding `__init__.py`).
   UNKNOWN - no module docstring, `__agent_purpose__`, or class docstring
 - `src/melder/nexus/acl/validator/profiles/view/safe_strategy.py`
   UNKNOWN - no module docstring, `__agent_purpose__`, or class docstring
-- `src/melder/nexus/configuration/nexus_configuration.py`
-  Process-wide AR policy: creation/access gates, frame topology mode, target-frame restrictions...
-- `src/melder/nexus/configuration/nexus_frame_mode.py`
-  Frame topology: single (one shared), indexed (named, shared by name), one_per_workspace (priv...
-- `src/melder/nexus/configuration/rift_access_mode.py` - System-level policy for direct Rift retrieval
+- `src/melder/nexus/configuration/nexus_configuration.py` - Internal Process-wide configuration for `Nexus`
+- `src/melder/nexus/configuration/nexus_frame_mode.py` - Internal Topology mode for Nexus-assigned internal frames
+- `src/melder/nexus/configuration/rift_access_mode.py` - Internal System-level policy for direct Rift retrieval
 - `src/melder/nexus/configuration/rift_configuration.py`
-  Per-Rift settings, chiefly space_type which fixes the room posture for the Rift's life
-- `src/melder/nexus/configuration/rift_creation_mode.py` - System-level policy for Rift creation/programming
-- `src/melder/nexus/configuration/rift_space_type.py`
-  Room posture, chosen ONCE at Rift creation: static (live-only, no mutation), capability (broa...
-- `src/melder/nexus/configuration/rift_validation_mode.py` - Validation posture for Rift codegen/runtime execution
-- `src/melder/nexus/frame_acl_manager.py` - FrameACLManager runtime object
+  Internal Per-Rift configuration object used by `Nexus` to build one live Rift
+- `src/melder/nexus/configuration/rift_creation_mode.py` - Internal System-level policy for Rift creation/programming
+- `src/melder/nexus/configuration/rift_space_type.py` - Internal Supported top-level room types for a Rift
+- `src/melder/nexus/configuration/rift_validation_mode.py`
+  Internal Validation posture for Rift codegen/runtime execution
+- `src/melder/nexus/frame_acl_manager.py`
+  Purpose: Coordinate all frame-scoped ACL containers owned by one `Nexus` instance
 - `src/melder/nexus/frame_descriptor/conduit_descriptor_payload.py` - Descriptor-safe published conduit payload
-- `src/melder/nexus/frame_descriptor/conduit_record.py` - Canonical Nexus record for one published conduit
-- `src/melder/nexus/frame_descriptor/frame_descriptor.py` - FrameDescriptor runtime object
+- `src/melder/nexus/frame_descriptor/conduit_record.py` - Internal Canonical Nexus record for one published conduit
+- `src/melder/nexus/frame_descriptor/frame_descriptor.py`
+  Purpose: Aggregate the Nexus-owned metadata and indexes for one frame-scoped state surface
 - `src/melder/nexus/frame_descriptor/frame_descriptor_payload.py` - Descriptor-safe published frame payload
-- `src/melder/nexus/frame_descriptor/frame_record.py` - Canonical Nexus record for one AR-publishable frame
+- `src/melder/nexus/frame_descriptor/frame_record.py` - Internal Canonical Nexus record for one AR-publishable frame
 - `src/melder/nexus/frame_descriptor/spell_descriptor_payload.py` - Descriptor-safe published spell payload
 - `src/melder/nexus/frame_descriptor/spell_record.py` - Canonical Nexus record for one published spell
-- `src/melder/nexus/frame_descriptor_manager.py` - FrameDescriptorManager runtime object
-- `src/melder/nexus/nexus.py` - The PUBLIC AR root over the hidden Aether substrate
+- `src/melder/nexus/frame_descriptor_manager.py`
+  Purpose: Own the Nexus frame-scoped descriptor and canonical-record subsystem
+- `src/melder/nexus/nexus.py`
+  Purpose: Provide the public singleton root for Rift-domain registry, configuration, ACL-conta...
 - `src/melder/nexus/nexus_frame_builder.py` - Fluent authored-frame builder for Nexus-managed frames
 - `src/melder/nexus/nexus_frame_configuration.py` - Authored frame configuration for one Nexus-managed frame
 - `src/melder/nexus/nexus_frame_manager.py` - Authoring and topology facade for Nexus-managed frames
-- `src/melder/nexus/rift/codegen_system/codegen_system.py` - Root codegen orchestration object
-- `src/melder/nexus/rift/codegen_system/codegen_transaction_context.py` - Per-call codegen transaction context
-- `src/melder/nexus/rift/codegen_system/execution/codegen_compiler.py` - Internal compile stage for codegen execution
+- `src/melder/nexus/rift/codegen_system/codegen_system.py` - Internal Root codegen orchestration object
+- `src/melder/nexus/rift/codegen_system/codegen_transaction_context.py` - Internal Per-call codegen transaction context
+- `src/melder/nexus/rift/codegen_system/execution/codegen_compiler.py`
+  Internal Internal compile stage for codegen execution
 - `src/melder/nexus/rift/codegen_system/execution/codegen_execution_result.py`
-  Execution-layer result for one codegen request
+  Internal Execution-layer result for one codegen request
 - `src/melder/nexus/rift/codegen_system/execution/codegen_executor.py`
-  Owner of governed code execution for one codegen request
+  Internal Owner of governed code execution for one codegen request
 - `src/melder/nexus/rift/codegen_system/namespace/codegen_control_surface.py`
-  Runtime wrapper for the `codegen` namespace object
-- `src/melder/nexus/rift/codegen_system/namespace/codegen_namespace.py` - Live namespace payload for one codegen request
-- `src/melder/nexus/rift/codegen_system/namespace/codegen_namespace_builder.py` - Builder for live codegen namespaces
+  Internal Runtime wrapper for the `codegen` namespace object
+- `src/melder/nexus/rift/codegen_system/namespace/codegen_namespace.py`
+  Internal Live namespace payload for one codegen request
+- `src/melder/nexus/rift/codegen_system/namespace/codegen_namespace_builder.py`
+  Internal Builder for live codegen namespaces
 - `src/melder/nexus/rift/codegen_system/namespace/codegen_namespace_configuration.py`
-  Namespace exposure policy for one codegen request
+  Internal Namespace exposure policy for one codegen request
 - `src/melder/nexus/rift/codegen_system/namespace/strategies/codegen_builtins_strategy.py`
-  Namespace exposure strategy for Python builtins
+  Internal Namespace exposure strategy for Python builtins
 - `src/melder/nexus/rift/codegen_system/namespace/strategies/codegen_command_strategy.py`
-  Namespace exposure strategy for the room-facing command surface
+  Internal Namespace exposure strategy for the room-facing command surface
 - `src/melder/nexus/rift/codegen_system/namespace/strategies/codegen_control_strategy.py`
-  Namespace exposure strategy for the room-owned codegen object
+  Internal Namespace exposure strategy for the room-owned codegen object
 - `src/melder/nexus/rift/codegen_system/namespace/strategies/codegen_room_objects_strategy.py`
-  Namespace exposure strategy for stable room/runtime objects
+  Internal Namespace exposure strategy for stable room/runtime objects
 - `src/melder/nexus/rift/codegen_system/namespace/strategies/codegen_target_strategy.py`
-  Namespace exposure strategy for the current room target
+  Internal Namespace exposure strategy for the current room target
 - `src/melder/nexus/rift/codegen_system/namespace/strategies/codegen_workstation_strategy.py`
-  Namespace exposure strategy for the room-local workstation
+  Internal Namespace exposure strategy for the room-local workstation
 - `src/melder/nexus/rift/codegen_system/observability/codegen_event_publisher.py`
-  Room-event publisher for codegen lifecycle signals
+  Internal Room-event publisher for codegen lifecycle signals
 - `src/melder/nexus/rift/codegen_system/observability/codegen_monitor.py`
-  Thin room-event monitor for codegen lifecycle publication
-- `src/melder/nexus/rift/codegen_system/validation/codegen_validation_reporter.py` - Validation payload/report formatter
+  Internal Thin room-event monitor for codegen lifecycle publication
+- `src/melder/nexus/rift/codegen_system/validation/codegen_validation_reporter.py`
+  Internal Validation payload/report formatter
 - `src/melder/nexus/rift/codegen_system/validation/codegen_validation_result.py`
-  Validation-layer result for one codegen request
+  Internal Validation-layer result for one codegen request
 - `src/melder/nexus/rift/codegen_system/validation/codegen_validator.py`
-  Root validation orchestrator for one codegen request
+  Internal Root validation orchestrator for one codegen request
 - `src/melder/nexus/rift/codegen_system/validation/strategies/codegen_ast_structure_strategy.py`
-  Structural AST validation strategy
+  Internal Structural AST validation strategy
 - `src/melder/nexus/rift/codegen_system/validation/strategies/codegen_attribute_access_strategy.py`
-  Attribute-access validation strategy
+  Internal Attribute-access validation strategy
 - `src/melder/nexus/rift/codegen_system/validation/strategies/codegen_builtin_policy_strategy.py`
-  Builtins-policy validation strategy
+  Internal Builtins-policy validation strategy
 - `src/melder/nexus/rift/codegen_system/validation/strategies/codegen_import_policy_strategy.py`
-  Import-policy validation strategy
+  Internal Import-policy validation strategy
 - `src/melder/nexus/rift/codegen_system/validation/strategies/codegen_name_resolution_strategy.py`
-  Name-resolution validation strategy
+  Internal Name-resolution validation strategy
 - `src/melder/nexus/rift/codegen_system/validation/strategies/codegen_recursive_control_strategy.py`
-  Recursive-codegen validation strategy
+  Internal Recursive-codegen validation strategy
 - `src/melder/nexus/rift/codegen_system/validation/strategies/codegen_reflection_policy_strategy.py`
-  Reflection-policy validation strategy
-- `src/melder/nexus/rift/command_system/capability_command_system.py` - Capability-room command surface
-- `src/melder/nexus/rift/command_system/codegen_command_system.py` - Codegen-room command surface
+  Internal Reflection-policy validation strategy
+- `src/melder/nexus/rift/command_system/capability_command_system.py` - Internal Capability-room command surface
+- `src/melder/nexus/rift/command_system/codegen_command_system.py` - Internal Codegen-room command surface
 - `src/melder/nexus/rift/command_system/command_system.py`
-  Room-local shared command infrastructure plus common read/target helpers
-- `src/melder/nexus/rift/command_system/static_command_system.py` - Static-room command surface
+  Internal Room-local shared command infrastructure plus common read/target helpers
+- `src/melder/nexus/rift/command_system/static_command_system.py` - Internal Static-room command surface
 - `src/melder/nexus/rift/frame_link/frame_link.py` - Internal FrameLink placeholder
 - `src/melder/nexus/rift/frame_link/frame_link_contract.py` - Internal FrameLinkContract object
 - `src/melder/nexus/rift/frame_viewer/frame_viewer.py`
@@ -4473,27 +4501,26 @@ Module count: 550 (excluding `__init__.py`).
 - `src/melder/nexus/rift/projection/frame_projection_set.py`
   Owned set of consumer-shaped projections for one targeted frame
 - `src/melder/nexus/rift/projection/view_projection.py` - Consumer-shaped view projection for one targeted frame
-- `src/melder/nexus/rift/rift.py` - One live AR connection
+- `src/melder/nexus/rift/rift.py` - Internal Live Rift runtime object created and registered by `Nexus`
 - `src/melder/nexus/rift/rift_gate/rift_gate.py` - Generic gate primitive for coordinating Rift-scoped operations
 - `src/melder/nexus/rift/rift_gate_controller/rift_gate_controller.py`
   Central registry and control plane for `RiftGate` instances
-- `src/melder/nexus/rift/rift_space/capability_rift_space.py` - CapabilityRiftSpace runtime object
+- `src/melder/nexus/rift/rift_space/capability_rift_space.py`
+  Internal Purpose: Represent the middle-ground concrete room type for broad manual runtime acc...
 - `src/melder/nexus/rift/rift_space/codegen_rift_space.py`
-  The codegen room type - a room that owns an internal CodegenSystem for validate/execute-code...
+  Internal Purpose: Represent the richer concrete room type for codegen/local-construction work...
 - `src/melder/nexus/rift/rift_space/event_system/rift_event.py`
-  One immutable room event - type, ids, payload, and timestamp fixed at creation - delivered to...
+  Internal Immutable emitted event object for `RiftSpace`
 - `src/melder/nexus/rift/rift_space/event_system/rift_event_system.py`
-  The room-local event publisher a RiftSpace owns: it registers callbacks and builds/emits Rift...
+  Internal Room-local callback-driven event publisher owned by `RiftSpace`
 - `src/melder/nexus/rift/rift_space/memory_system/rift_memory.py`
-  One immutable executed-step record of a room action - frame, action, step/epoch counters, met...
+  Internal Immutable executed-step record emitted from `RiftSpace`
 - `src/melder/nexus/rift/rift_space/memory_system/rift_memory_system.py`
-  The room's memory-sequencing hub: it owns the step/epoch counters and shared metadata and min...
-- `src/melder/nexus/rift/rift_space/rift_space.py`
-  The base room/workspace a Rift hosts - it owns the viewer, workstation, command system, and t...
+  Internal Locked source of truth for RiftSpace memory sequencing and shared context
+- `src/melder/nexus/rift/rift_space/rift_space.py` - Internal Base room/workspace class for `Rift`
 - `src/melder/nexus/rift/rift_space/static_rift_space.py`
-  The static (lower-risk) room type - live-only, read-shaped, no topology mutation or create-pa...
-- `src/melder/nexus/rift/rift_space/workstation.py`
-  The room-local binding canvas (space.workstation): save objects, attribute and method binding...
+  Internal Purpose: Represent the lower-risk concrete room type
+- `src/melder/nexus/rift/rift_space/workstation.py` - Internal Room-local binding canvas owned by one `RiftSpace`
 
 **crystallizer/ - persistence record, assets, loader** - 59 modules
 
@@ -4503,14 +4530,16 @@ Module count: 550 (excluding `__init__.py`).
   Bytes-at-rest custody for the crystallizer (V3 asset_management identity)
 - `src/melder/crystallizer/asset_management/crystallizer_cache.py`
   Local filesystem custody for checkpoint cached-items and formations
-- `src/melder/crystallizer/asset_management/external_persistence_manager.py` - Your DB seam
+- `src/melder/crystallizer/asset_management/external_persistence_manager.py`
+  User-callable transport for the crystallizer's external mesh
 - `src/melder/crystallizer/asset_management/external_persistence_manager_configuration.py`
-  Registers the mesh callables: with_store_handler / with_fetch_handler / with_list_units_handl...
+  Handler configuration for the optional external persistence mesh
 - `src/melder/crystallizer/asset_management/mesh_interface_contract.py`
   Static authority describing the external persistence mesh interface
-- `src/melder/crystallizer/configuration/crystallizer_configuration.py` - Capture and durability policy
+- `src/melder/crystallizer/configuration/crystallizer_configuration.py`
+  Authoring surface for crystallizer capture and durability policy
 - `src/melder/crystallizer/configuration/crystallizer_configuration_builder.py`
-  Fluent one-shot builder for CrystallizerConfiguration
+  One-shot ownership helper for crystallizer configuration authoring
 - `src/melder/crystallizer/crystal_analysis/crystal_analysis_result.py`
   Value-only carrier for one crystal analysis pass
 - `src/melder/crystallizer/crystal_analysis/crystal_analyzer.py`
@@ -4563,7 +4592,7 @@ Module count: 550 (excluding `__init__.py`).
 - `src/melder/crystallizer/crystal_analysis/strategies/import_statement_strategy.py`
   Fact strategy for plain `import x` statements
 - `src/melder/crystallizer/crystal_loader_system/bootstrap_loader.py`
-  Fluent single-use pod-boot chain: activate, attach the external manager, reload cache, pull r...
+  Fluent pod-boot lane: from a fresh process to a rebuilt world
 - `src/melder/crystallizer/crystal_loader_system/crystal_loader_system.py`
   The unfold owner: durable load state over the mediated boot pipeline
 - `src/melder/crystallizer/crystal_loader_system/graft_runner.py`
@@ -4575,7 +4604,7 @@ Module count: 550 (excluding `__init__.py`).
 - `src/melder/crystallizer/crystal_loader_system/restore_engine.py` - Detached outcome record for one restore run
 - `src/melder/crystallizer/crystal_loader_system/user_world_rebuild.py`
   Shared user-world rebuild lane (spell_index_graft 2026-07-12 follow-up)
-- `src/melder/crystallizer/crystallizer.py` - The persistence facade
+- `src/melder/crystallizer/crystallizer.py` - Public facade and singleton ownership root for crystallizer behavior
 - `src/melder/crystallizer/crystals/aether_crystal.py` - Pure-data digital twin of the Aether root's configured surface
 - `src/melder/crystallizer/crystals/aetheric_frame_crystal.py`
   Pure-data digital twin of one AethericFrame's configured surface
@@ -4610,7 +4639,7 @@ Module count: 550 (excluding `__init__.py`).
 **mutation_research/ - research record and diff engines** - 20 modules
 
 - `src/melder/mutation_research/diff/diff_engine.py`
-  Computes derived diffs over RECORDED custody material - never the live disk
+  Strategy-dispatched derived-diff computation over custody material
 - `src/melder/mutation_research/diff/diff_strategy.py`
   Base contract for one derived-diff computation over version material
 - `src/melder/mutation_research/diff/strategies/part_diff_strategy.py`
@@ -4625,20 +4654,21 @@ Module count: 550 (excluding `__init__.py`).
   Base contract for one derived-diff computation over COMPOSITION material
 - `src/melder/mutation_research/group_diff/strategies/member_diff_strategy.py`
   Roster comparison between two composition materials
-- `src/melder/mutation_research/mutation_configuration.py` - Research-root policy
+- `src/melder/mutation_research/mutation_configuration.py`
+  Mutable-to-frozen configuration surface for the mutation-research root
 - `src/melder/mutation_research/mutation_configuration_builder.py`
-  Fluent one-shot builder for MutationResearchConfiguration; ownership transfers at build()/fin...
-- `src/melder/mutation_research/mutation_research.py` - The research root, reached through Aether
+  One-shot builder for mutation-research configuration assembly
+- `src/melder/mutation_research/mutation_research.py` - Singleton mutation-research root hosted by `Aether`
 - `src/melder/mutation_research/research_set/grouped_research_node.py`
   One immutable COMPOSITION record inside a research lane
 - `src/melder/mutation_research/research_set/network_versioner.py`
   Content-addressed version control for the graph network itself
 - `src/melder/mutation_research/research_set/research_journal.py`
   Set-level monotonic append-only log of world-entry events
-- `src/melder/mutation_research/research_set/research_lane.py` - Lifecycle state of one research lane
+- `src/melder/mutation_research/research_set/research_lane.py` - Lifecycle states for one research lane
 - `src/melder/mutation_research/research_set/research_node.py` - One immutable version record inside a research lane
 - `src/melder/mutation_research/research_set/research_set.py`
-  One research network - lanes, journal, residence partition
+  The overarching research network: every lane, one journal, one partition
 - `src/melder/mutation_research/research_set/residence_registry.py`
   Single-residence partition map for one research set
 - `src/melder/mutation_research/research_set/transition_entry.py`
@@ -4649,81 +4679,83 @@ Module count: 550 (excluding `__init__.py`).
 **utilities/ - shared primitives and helpers** - 42 modules
 
 - `src/melder/utilities/ai_native_support_tools/protocol_crafter.py`
-  Generates @runtime_checkable Protocol code from a class/object (craft_protocol_code) and main...
-- `src/melder/utilities/caching_system/caching_system.py`
-  Per-conduit on-disk payload cache (one .melc marshal bundle per frame_name/conduit_name); ups...
+  Purpose: Generate protocol code from a target class or object and maintain protocol blocks in...
+- `src/melder/utilities/caching_system/caching_system.py` - Conduit-scoped cache persistence utility
 - `src/melder/utilities/custom_exceptions/dead_reference_error.py`
-  Raised when a weak-reference target is requested after collection; catch it (it subclasses Re...
+  Purpose: Signal that a weak-reference target was requested after the referent was already col...
 - `src/melder/utilities/custom_exceptions/empty_error.py`
-  The contextless empty-container signal; catch it when an operation required at least one item
+  Purpose: Signal that an operation required at least one item and the container was empty
 - `src/melder/utilities/custom_exceptions/hook_execution_error.py`
-  Raised when a user lifecycle hook (pre_cast/activation/post_cast) raises during meld; read or...
+  Purpose: Signal that a user-supplied lifecycle hook raised during spell melding, while preser...
 - `src/melder/utilities/custom_exceptions/internal_registration_error.py`
-  Raised by the registration guard when bind() is handed a Melder internal; catch it to detect...
+  Purpose: Signal that code tried to register a Melder-owned object that is intentionally prote...
 - `src/melder/utilities/custom_exceptions/meld_execution_error.py`
-  The single 'resolution failed' signal from the Meld runtime; start at inner for the real caus...
+  Purpose: Represent any failure of DAG-based meld execution inside the Meld runtime as ONE sta...
 - `src/melder/utilities/custom_exceptions/operation_cancelled_error.py`
-  Raised when a unit of work observes cooperative cancellation; catch it distinctly from real f...
+  Purpose: Signal that work stopped because cooperative cancellation was observed - an abort, n...
 - `src/melder/utilities/custom_exceptions/phase_execution_error.py`
-  Raised when units of work in a conjure phase raise; read the full errors list (the message tr...
+  Purpose: Signal that one or more units of work inside a scheduled phase raised, aborting the...
 - `src/melder/utilities/custom_exceptions/phase_scheduler_error.py`
-  Base type for PhaseScheduler failures; catch it to mean 'the conjure phase pipeline aborted'...
+  Purpose: Base exception for PhaseScheduler failures
 - `src/melder/utilities/custom_exceptions/phase_timeout_error.py`
-  Raised when a conjure phase exceeds its barrier timeout; phase_name + timeout_ms locate it
+  Purpose: Signal that one scheduled phase exceeded its configured barrier timeout and the reso...
 - `src/melder/utilities/custom_exceptions/spell_space_scope_error.py`
-  Raised when a unique_per_spell_space spell is resolved with no active SpellSpace, or a SpellS...
+  Purpose: Signal that a SpellSpace scoping rule was violated - a lifetime or ownership failure...
 - `src/melder/utilities/custom_exceptions/spellbook_validation_error.py`
-  The build-time 'your graph is broken' error from conjure/meld; the message carries Phase 4/6...
+  Raised when the Spellbook resolution pipeline (requirements -> symbolic graph -> local frame...
 - `src/melder/utilities/data_structures/weak_data_structures/weak_concurrent_dict.py`
-  Dict with STRONG keys and WEAK values - putting an object in never keeps it alive, so use it...
+  Dynamic keys view over the live-key surface of a WeakConcurrentDict
 - `src/melder/utilities/data_structures/weak_data_structures/weak_concurrent_list.py`
-  Ordered container holding elements WEAKLY - it never keeps its contents alive
+  WeakConcurrentList ================== A thread-safe list-like container that stores **weak re...
 - `src/melder/utilities/data_structures/weak_data_structures/weak_concurrent_set.py`
-  Set holding members WEAKLY - membership is a question about lifetime, since a member nothing...
+  WeakConcurrentSet ================= A thread-safe, *weakly referenced* set of objects
 - `src/melder/utilities/data_structures/weak_data_structures/weak_ref_node.py`
-  Weak-reference cell with GC notification - the element type inside every weak container
-- `src/melder/utilities/general_base/abstract_elastic_pool.py` - Base elastic object pool
-- `src/melder/utilities/general_base/cleanable.py` - Base cleanup contract
-- `src/melder/utilities/general_base/sync.py` - Base mix-in for thread-safe value wrappers
+  WeakRefNode =========== A reusable weak-reference node for weak data structures, with phantom...
+- `src/melder/utilities/general_base/abstract_elastic_pool.py` - Reusable bounded elastic object-pool base
+- `src/melder/utilities/general_base/cleanable.py`
+  Purpose: Abstract base class for objects that own an explicit cleanup lifecycle
+- `src/melder/utilities/general_base/sync.py` - Purpose: Abstract helper mix-in for thread-safe sync-value wrappers
 - `src/melder/utilities/helpers/class_surface_ast_describer.py`
   Shared AST-backed class-surface describer for agent-facing object introspection
 - `src/melder/utilities/helpers/class_wraps.py` - UNKNOWN - no module docstring, `__agent_purpose__`, or class docstring
 - `src/melder/utilities/helpers/general_helpers.py`
-  Static namespace for coercing raw strings into enum members at API boundaries
-- `src/melder/utilities/helpers/id_builder.py` - Static namespace for building dotted lineage ids
-- `src/melder/utilities/helpers/init_helpers.py` - Static seam every runtime constructor uses to obtain a logger
+  Purpose: Small helper surface for enum normalization and validation, so callers can accept a...
+- `src/melder/utilities/helpers/id_builder.py`
+  Purpose: Build stable lineage-style identifiers for runtime-owned objects, so every id in the...
+- `src/melder/utilities/helpers/init_helpers.py` - Centralized startup-time helper wrappers for logger resolution
 - `src/melder/utilities/helpers/package.py` - A lightweight, thread-safe wrapper around a callable (sync or coroutine)
 - `src/melder/utilities/helpers/ulid_factory.py` - Minimal internal ULID generator
 - `src/melder/utilities/interfaces/ichannellogger.py`
   Purpose: Describe the channel-logger shape structurally, so the runtime can accept any confor...
 - `src/melder/utilities/interfaces/icleanable.py` - Protocol definition for Cleanable
-- `src/melder/utilities/logger/safe_logger.py`
-  One logging surface over channel loggers, stdlib loggers, or nothing at all
-- `src/melder/utilities/synchronization/cancellation_event_signal.py` - Read-only view of a shared cancellation flag
-- `src/melder/utilities/synchronization/counter_switch.py`
-  Three-state coordination latch: 0=idle, 1=pending (a leader claimed it), >=2=open
-- `src/melder/utilities/synchronization/creation_gate.py` - Per-conduit admission gate for creation work
+- `src/melder/utilities/logger/safe_logger.py` - Unified logger adapter over channel loggers and stdlib loggers
+- `src/melder/utilities/synchronization/cancellation_event_signal.py`
+  Lightweight, read-only view over a shared cancellation signal
+- `src/melder/utilities/synchronization/counter_switch.py` - Deque-backed selector latch with minimal leader election
+- `src/melder/utilities/synchronization/creation_gate.py`
+  Generic gate primitive for coordinating creation and cleanup operations
 - `src/melder/utilities/synchronization/creation_gate_controller.py`
-  Frame-owned registry of CreationGates across two scopes: conduit gates (indexed root->conduit...
-- `src/melder/utilities/synchronization/fast_switch.py`
-  Cheapest possible boolean/counter primitive, backed by deque ticket count
-- `src/melder/utilities/synchronization/load_gate.py` - Process-wide exclusive load authority
-- `src/melder/utilities/synchronization/phase_latch.py` - Phase completion barrier for PhaseScheduler
-- `src/melder/utilities/synchronization/phase_scheduler.py` - Persistent multi-phase runner
-- `src/melder/utilities/synchronization/safeguard.py` - Deadlock-safe multi-lock acquisition
+  Central registry and control plane for CreationGate instances
+- `src/melder/utilities/synchronization/fast_switch.py` - Ultra-light ticket-backed boolean switch for hot paths
+- `src/melder/utilities/synchronization/load_gate.py`
+  Exclusive system-wide gate granting one loading thread total authority
+- `src/melder/utilities/synchronization/phase_latch.py` - Countdown completion latch for one phase barrier
+- `src/melder/utilities/synchronization/phase_scheduler.py` - Coordinated, multiphase scheduler for Spellbook resolution
+- `src/melder/utilities/synchronization/safeguard.py`
+  Acquire an ordered, de-duplicated set of locks, then release in reverse order
 - `src/melder/utilities/synchronization/sync_weak_ref.py`
-  Thread-safe non-owning weak-ref cell with CAS/swap and phantom on-collect (get/try_get/is_ali...
-- `src/melder/utilities/synchronization/ticket_flag.py`
-  Depth-counting flag: truthy while at least one ticket is held, and truthy writes STACK
-- `src/melder/utilities/synchronization/unit_of_work.py` - One runnable unit bound to a callable, exposed as a Future
+  Subsystem Context: Lives in `utilities/synchronization/` rather than with the weak containers...
+- `src/melder/utilities/synchronization/ticket_flag.py` - Deque-backed boolean-style flag using ticket cardinality
+- `src/melder/utilities/synchronization/unit_of_work.py`
+  Future-based encapsulation of a single unit of work, with integrated cancellation support via...
 
-UNKNOWN entries: 17 of 550.
+UNKNOWN entries: 17 of 553.
 
 HISTORICAL NOTE: this section previously held two entries plus a 2026-07-07
 tail-repair marker recording that its remainder was lost to a mid-write
 truncation predating recoverable git history. It was rebuilt in full on
-2026-07-25 under TASK-2026-07-25-c1-code-map-restore, and regenerated the same
-day after the guard/manifest relocation sweep moved and removed modules.
+2026-07-25 under TASK-2026-07-25-c1-code-map-restore, and regenerated twice the
+same day as the guard/manifest relocation and build-asset work moved modules.
 ## Crystallizer Persistence & Restore (promoted from patch
 ## restore_engine_2026_07_07 + successor lanes, 2026-07-07)
 

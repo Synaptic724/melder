@@ -65,6 +65,8 @@ All 404 marked classes now resolve from docstrings and the fallback is gone.
 what the retired attributes held; nothing in the harvest path calls it.
 """
 import ast
+import hashlib
+import marshal
 import pathlib
 import re
 from typing import Dict, Iterable, List, Optional, Set, Tuple
@@ -104,6 +106,12 @@ class AgentMetadataPolicy:
 
     ASSET_DIR_NAME: str = "_agent_metadata"
     ASSET_FILE_NAME: str = "agent_metadata.py"
+    PAYLOAD_FILE_NAME: str = "agent_metadata.melc"
+    STUB_FILE_NAME: str = "agent_metadata.pyi"
+
+    # SCHEMA version of the asset FORMAT - see the note in the manifest builder.
+    # Independent of BUILT_FOR_VERSION, which tracks the melder release.
+    MANIFEST_VERSION: str = "1.0.0"
 
     SKIP_DIR_NAMES: Set[str] = {"__pycache__", "__melder_cache__", "_build_assets"}
 
@@ -116,6 +124,36 @@ def package_root() -> pathlib.Path:
         pathlib.Path: Directory containing the melder package.
     """
     return pathlib.Path(__file__).resolve().parent.parent.parent
+
+
+
+def source_fingerprint() -> str:
+    """
+    SHA256 over the scanned source tree, WITHOUT parsing any of it.
+
+    Purpose:
+        Make staleness a KEY COMPARISON instead of a rebuild.
+
+    Contract:
+        Hashes each scanned file's repo-relative path and raw bytes, in sorted
+        order, into one digest. Reading bytes is roughly an order of magnitude
+        cheaper than the AST parse + harvest + render the previous `--check`
+        performed on every invocation, and it is exact: any content change,
+        rename, addition, or deletion moves the digest.
+
+        Deliberately hashes BYTES, not parsed content - a formatting-only edit
+        moves the digest and triggers one regeneration, which is the safe
+        direction to be wrong in.
+
+    Returns:
+        str: Hex digest of the scanned source tree.
+    """
+    root = package_root()
+    digest = hashlib.sha256()
+    for path in _iter_source_files(root):
+        digest.update(str(path.relative_to(root)).replace("\\", "/").encode("utf-8"))
+        digest.update(path.read_bytes())
+    return digest.hexdigest()
 
 
 def _iter_source_files(root: pathlib.Path) -> Iterable[pathlib.Path]:
@@ -442,87 +480,154 @@ def target_path() -> pathlib.Path:
     )
 
 
-def render(version: str) -> str:
+def payload_path() -> pathlib.Path:
     """
-    Render the artifact text for one melder version.
-
-    Contract:
-        PURE and DETERMINISTIC - two calls at one version over one source tree
-        return byte-identical text. The runner's `--check` gate is a byte
-        comparison, so nondeterminism here would produce phantom staleness.
-
-    Args:
-        version: The melder version to stamp into the artifact.
+    Return the marshal payload path beside the loader module.
 
     Returns:
-        str: Complete module source, newline-terminated.
+        pathlib.Path: `<asset dir>/agent_metadata.melc`.
+    """
+    return target_path().with_name(AgentMetadataPolicy.PAYLOAD_FILE_NAME)
+
+
+def stub_path() -> pathlib.Path:
+    """
+    Return the type-stub path beside the loader module.
+
+    Returns:
+        pathlib.Path: `<asset dir>/agent_metadata.pyi`.
+    """
+    return target_path().with_name(AgentMetadataPolicy.STUB_FILE_NAME)
+
+
+def manifest_version() -> str:
+    """
+    Return the SCHEMA version of this asset's format.
+
+    Contract:
+        Part of the runner's optional contract. Exposed as a callable rather
+        than a module constant so the policy class stays the single home for
+        the value, per the repo's module scope rule.
+
+    Returns:
+        str: The payload format version, independent of the melder release.
+    """
+    return AgentMetadataPolicy.MANIFEST_VERSION
+
+
+def build_payload() -> Dict[str, object]:
+    """
+    Assemble the marshalled payload for this asset.
+
+    Contract:
+        ONE dict holding every collection, so hydration is a single
+        `marshal.loads` rather than four separate structure builds. Keys are
+        stable; adding one is a MINOR `MANIFEST_VERSION` bump, changing an
+        existing shape is MAJOR.
+
+    Returns:
+        Dict[str, object]: `agent_metadata`, `exempt`, `pending`, `class_bases`.
 
     Raises:
         ValueError: When any class declares an access value outside
-            `VALID_ACCESS`. This is a BUILD-TIME failure on purpose: the same
-            mistake previously surfaced as a runtime raise from
-            `ClassSurfaceAstDescriber`, potentially in production.
+            `VALID_ACCESS`. Deliberately a BUILD-TIME failure: the same mistake
+            previously surfaced as a runtime raise from `ClassSurfaceAstDescriber`.
     """
     result = harvest()
-
     if result.invalid_access:
         detail = ", ".join(f"{m}:{q}={a!r}" for m, q, a in sorted(result.invalid_access))
         raise ValueError(
             f"invalid AGENT_ACCESS value(s): {detail}. "
             f"Valid values are {sorted(AgentMetadataPolicy.VALID_ACCESS)}."
         )
+    return {
+        "agent_metadata": {k: (v[0], v[1]) for k, v in result.marked.items()},
+        "exempt": frozenset(result.exempt),
+        "pending": frozenset(result.pending),
+        "class_bases": {k: tuple(v) for k, v in result.bases.items() if v},
+    }
 
-    lines: List[str] = [
+
+def render(version: str) -> str:
+    """
+    Render the THIN LOADER module that hydrates the marshal payload.
+
+    Contract:
+        Imports ONLY `marshal`. Measured on the 577-entry sibling manifest:
+        adding `pathlib` costs 3.77 ms and `typing` 2.88 ms on a cold
+        interpreter, which is more than the structure build they were meant to
+        avoid. Types live in the sibling `.pyi` stub instead.
+
+        PURE and DETERMINISTIC - `--check` compares the stamped SHA, and the
+        text must not vary between runs over one tree.
+
+    Args:
+        version: The melder version to stamp into the artifact.
+
+    Returns:
+        str: Complete loader module source, newline-terminated.
+    """
+    payload = build_payload()
+    return "\n".join([
         '"""',
         "GENERATED DURABLE BUILD ASSET - DO NOT EDIT MANUALLY.",
         "",
-        "Agent-facing class metadata, harvested from docstrings at build time.",
-        "Regenerate with:",
-        "    python src/melder/_build_assets/_build_asset_runner.py",
+        "Thin loader for agent-facing class metadata. The payload is a marshal",
+        "bundle beside this file, matching the `.melc` convention used by",
+        "`caching_system` and the internal-bind manifest.",
         "",
         "AGENT_METADATA maps (module, qualname) -> (access, purpose).",
         "EXEMPT lists classes deliberately ruled out of agent tooling.",
         "PENDING lists classes not yet marked - fill these in over time.",
-        "CLASS_BASES carries statically resolvable base names so inherited",
-        "purposes resolve without a runtime MRO walk.",
+        "CLASS_BASES is DIAGNOSTIC ONLY; inheritance resolves through",
+        "inspect.getmro at runtime because direct bases drop grandparents.",
+        "",
+        "Regenerate with:",
+        "    python src/melder/_build_assets/_build_asset_runner.py",
         '"""',
+        "import marshal",
+        "",
+        f'MANIFEST_VERSION = "{AgentMetadataPolicy.MANIFEST_VERSION}"',
+        f'BUILT_FOR_VERSION = "{version}"',
+        f'SOURCE_SHA256 = "{source_fingerprint()}"',
+        f"MARKED_COUNT = {len(payload['agent_metadata'])}",
+        f"EXEMPT_COUNT = {len(payload['exempt'])}",
+        f"PENDING_COUNT = {len(payload['pending'])}",
+        "",
+        '_PAYLOAD = marshal.loads(open(__file__[:-3] + ".melc", "rb").read())',
+        "",
+        'AGENT_METADATA = _PAYLOAD["agent_metadata"]',
+        'EXEMPT = _PAYLOAD["exempt"]',
+        'PENDING = _PAYLOAD["pending"]',
+        'CLASS_BASES = _PAYLOAD["class_bases"]',
+        "",
+    ])
+
+
+def render_stub() -> str:
+    """
+    Render the `.pyi` stub carrying the annotations the loader omits.
+
+    Returns:
+        str: Stub source, newline-terminated.
+    """
+    return "\n".join([
         "from typing import Dict",
         "from typing import FrozenSet",
         "from typing import Tuple",
         "",
+        "MANIFEST_VERSION: str",
+        "BUILT_FOR_VERSION: str",
+        "SOURCE_SHA256: str",
+        "MARKED_COUNT: int",
+        "EXEMPT_COUNT: int",
+        "PENDING_COUNT: int",
+        "AGENT_METADATA: Dict[Tuple[str, str], Tuple[str, str]]",
+        "EXEMPT: FrozenSet[Tuple[str, str]]",
+        "PENDING: FrozenSet[Tuple[str, str]]",
+        "CLASS_BASES: Dict[Tuple[str, str], Tuple[str, ...]]",
         "",
-        f'BUILT_FOR_VERSION: str = "{version}"',
-        f"MARKED_COUNT: int = {len(result.marked)}",
-        f"EXEMPT_COUNT: int = {len(result.exempt)}",
-        f"PENDING_COUNT: int = {len(result.pending)}",
-        "",
-        "AGENT_METADATA: Dict[Tuple[str, str], Tuple[str, str]] = {",
-    ]
-    for (module_name, qualname) in sorted(result.marked):
-        access, purpose, _source = result.marked[(module_name, qualname)]
-        lines.append(
-            f'    ("{module_name}", "{qualname}"): ({access!r}, {purpose!r}),'
-        )
-    lines.append("}")
-    lines.append("")
-    lines.append("EXEMPT: FrozenSet[Tuple[str, str]] = frozenset((")
-    for module_name, qualname in result.exempt:
-        lines.append(f'    ("{module_name}", "{qualname}"),')
-    lines.append("))")
-    lines.append("")
-    lines.append("PENDING: FrozenSet[Tuple[str, str]] = frozenset((")
-    for module_name, qualname in result.pending:
-        lines.append(f'    ("{module_name}", "{qualname}"),')
-    lines.append("))")
-    lines.append("")
-    lines.append("CLASS_BASES: Dict[Tuple[str, str], Tuple[str, ...]] = {")
-    for key in sorted(result.bases):
-        bases = result.bases[key]
-        if bases:
-            lines.append(f'    ("{key[0]}", "{key[1]}"): {tuple(bases)!r},')
-    lines.append("}")
-    lines.append("")
-    return "\n".join(lines)
+    ])
 
 
 def write(version: str) -> Tuple[pathlib.Path, int]:
@@ -541,7 +646,19 @@ def write(version: str) -> Tuple[pathlib.Path, int]:
     text = render(version)
     target = target_path()
     target.parent.mkdir(parents=True, exist_ok=True)
+
+    payload = build_payload()
+    payload_file = payload_path()
+    payload_tmp = payload_file.with_suffix(".melc.tmp")
+    payload_tmp.write_bytes(marshal.dumps(payload))
+    payload_tmp.replace(payload_file)
+
     temporary = target.with_suffix(".py.tmp")
     temporary.write_text(text, encoding="utf-8")
     temporary.replace(target)
-    return target, text.count("): (")
+
+    stub = stub_path()
+    stub_tmp = stub.with_suffix(".pyi.tmp")
+    stub_tmp.write_text(render_stub(), encoding="utf-8")
+    stub_tmp.replace(stub)
+    return target, len(payload["agent_metadata"])

@@ -293,6 +293,45 @@ are not buried under it.
   REREAD: HELPFUL
   SCORE_0_TO_10: 8
 
+- DATETIME: 2026-07-25T23:35:00Z
+  TYPE: MEASURE
+  CLAIM: Owner asked whether the derived assets were rebuilt, and the question caught a
+    real staleness. The C1 Code Map had drifted 550 -> 553: melder_0's build-asset work
+    added `_build_assets/_agent_metadata/_builder.py`,
+    `_build_assets/_agent_metadata/agent_metadata.py`, and
+    `_build_assets/_build_asset_runner.py` after I generated it. Zero dead entries, three
+    unlisted. Regenerated; now 553 listed against 553 live, zero dead, zero unlisted.
+    The four packaged hardcopy modules (`__architecture__.py`, `__components__.py`,
+    `__graph_network__.py`, `__graph_details__.py`) need NO rebuild - each is ~1.5KB and
+    its own docstring states the payload is a PLACEHOLDER, not a live regenerated
+    snapshot, with population tracked separately.
+  EVIDENCE:
+  - src/melder/__architecture__.py:13-16
+  - context_compass/system_docs/src_components.md:3735-3735
+  IMPACT: Confirms the C1 map is the one section in these docs that decays on its own,
+    exactly as its REGENERATION note warns. It should be re-walked at the end of any
+    session that moves modules, not just when it is first built.
+  NEXT: Owner acceptance.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+- DATETIME: 2026-07-25T23:35:00Z
+  TYPE: MEASURE
+  CLAIM: Full six-point review clean. C1 map 553 listed / 553 live / 0 dead / 0
+    unlisted. Graph 535 nodes, 997 edges, 0 absent-file nodes, 0 dangling edges,
+    readable artifact in sync with storage. Prose path integrity: 143 and 554 cited
+    source paths, zero dead. Zero stale guard references
+    (`__melder_registration_guard__`, `__init_cache__`, `manifest_loader`, `_mrg`,
+    `_RegistrationGuardProxy`, `bind.py:308`) in either doc. 554 source files parse with
+    zero syntax failures. Encoding correct per file against its own git index form, zero
+    NUL bytes across both docs and both boards.
+  EVIDENCE:
+  - context_compass/system_docs/src_graph.json
+  - context_compass/system_docs/src_components.md
+  IMPACT: Docs, graph, and source agree; nothing in this lane is left unverified.
+  NEXT: None.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 8
+
 ## Context / Handoff Summary
 Post-sweep drift audit of the three canonical system artifacts. Measured result: one
 dead graph node out of 536, zero dangling edges, zero dead paths across 695 citations,

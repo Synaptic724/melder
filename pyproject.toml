@@ -137,15 +137,25 @@ version = { attr = "melder.__version__.__version__" }
 
 # PEP 561: ship the py.typed marker so downstream type checkers consume
 # melder's inline annotations instead of treating the package as Any.
+#
+# The `.melc` entries are NOT optional. setuptools ships `.py` files by virtue of
+# them being modules; every other extension must be named here or it is silently
+# dropped from the wheel. The generated loaders under `_build_assets/` read their
+# marshal payload as a plain data sidecar, so a wheel built without these lines
+# installs loaders whose `marshal.loads` has nothing to open - `import melder`
+# then fails at module scope, in the installed package only, never in the repo.
+#
+# The `.pyi` stubs carry the annotations those loaders deliberately omit; without
+# them downstream mypy infers `Any` and the py.typed promise above is hollow.
 [tool.setuptools.package-data]
-melder = ["py.typed"]
+melder = ["py.typed", "_build_assets/*/*.melc", "_build_assets/*/*.pyi"]
 
 [tool.setuptools.packages.find]
 where = ["src"]
 include = ["melder*"]
 # EXPLICIT, not inherited from a default. The repo keeps exactly ONE `__init__.py`
 # (the package root), so every subpackage - including the durable build asset at
-# `melder/_build_assets/_init_manifest/` that `bind.py` imports at module scope -
+# `melder/_build_assets/_init_metadata/` that `bind.py` imports at module scope -
 # is a PEP 420 namespace package. Setting this here means wheel contents never
 # depend on a setuptools default we would have to re-verify on every upgrade.
 namespaces = true
@@ -173,7 +183,7 @@ omit = [
     "UX_and_AIX_experiences/*",
     "performance_hunt/*",
     "build_scripts/*",
-    "*/_build_assets/_init_manifest/internal_manifest.py",
+    "*/_build_assets/_init_metadata/init_metadata.py",
 ]
 
 [tool.coverage.report]
@@ -184,7 +194,7 @@ omit = [
     "UX_and_AIX_experiences/*",
     "performance_hunt/*",
     "build_scripts/*",
-    "*/_build_assets/_init_manifest/internal_manifest.py",
+    "*/_build_assets/_init_metadata/init_metadata.py",
 ]
 exclude_also = [
     "if TYPE_CHECKING:",
@@ -227,5 +237,5 @@ pretty = true
 exclude = [
     "^build_scripts/",
     # generated artifact; the loader/builder ARE type-checked
-    "_build_assets/_init_manifest/internal_manifest\\.py$",
+    "_build_assets/_init_metadata/init_metadata\\.py$",
 ]
