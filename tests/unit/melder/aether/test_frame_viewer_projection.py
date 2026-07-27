@@ -2460,35 +2460,71 @@ def test_ast_describer_onboarding_and_agent_purpose_json_are_minified() -> None:
     assert "access: public" in viewer_purpose["agent_purpose"]
 
 
+# These fixtures carried `__ast_helper_access__` / `__agent_purpose__` class
+# attributes until the 2026-07-25 migration moved that metadata into docstrings
+# and then into a generated manifest. They are written in the CURRENT grammar
+# for a second reason beyond consistency: being test-local, they can never
+# appear in the generated manifest, so they exercise the describer's live
+# docstring fallback - the path every caller-owned class takes.
+
+
 class _PrivateAstTarget:
-    __ast_helper_access__ = "private"
-    __agent_purpose__ = "access: private. Private target used for AST helper tests."
+    """
+    Private target used for AST helper tests.
+
+    AGENT_ACCESS: private
+
+    AGENT_PURPOSE:
+        access: private. Private target used for AST helper tests.
+    """
 
     def visible(self) -> None:
         raise AssertionError("Should never be described through the private AST path.")
 
 
 class _MissingAstAccessTarget:
-    __agent_purpose__ = "access: public. Missing access marker for AST helper tests."
+    """
+    Missing access marker for AST helper tests.
+
+    AGENT_PURPOSE:
+        access: public. Missing access marker for AST helper tests.
+    """
 
     def visible(self) -> None:
         raise AssertionError("Should never be described when access metadata is missing.")
 
 
 class _AstPurposeBase:
-    __agent_purpose__ = "access: public. Parent AST purpose."
+    """
+    Parent AST purpose.
+
+    AGENT_ACCESS: public
+
+    AGENT_PURPOSE:
+        access: public. Parent AST purpose.
+    """
 
 
 class _ExplicitAstChild(_AstPurposeBase):
-    __ast_helper_access__ = "public"
-    __agent_purpose__ = "access: public. Child AST purpose."
+    """
+    Child AST purpose.
+
+    AGENT_ACCESS: public
+
+    AGENT_PURPOSE:
+        access: public. Child AST purpose.
+    """
 
     def visible(self) -> None:
         raise AssertionError("Only class-surface metadata should be described.")
 
 
 class _InheritedOnlyAstChild(_AstPurposeBase):
-    __ast_helper_access__ = "public"
+    """
+    Child with access but no purpose of its own.
+
+    AGENT_ACCESS: public
+    """
 
     def visible(self) -> None:
         raise AssertionError("Only class-surface metadata should be described.")
@@ -2514,7 +2550,12 @@ def test_ast_describer_private_and_missing_access_guards_work() -> None:
     }
     with pytest.raises(ValueError, match="private class and cannot show any data"):
         ClassSurfaceAstDescriber.describe_class_surface_ast_json(private_target)
-    with pytest.raises(ValueError, match="AST helper access is missing"):
+    # Message reworded by the docstring/manifest migration. The BEHAVIOUR is
+    # unchanged - a class with no AGENT_ACCESS: marker still refuses - but the
+    # text now names the class and says how to fix it, since the two causes
+    # (unmarked class vs stale generated asset) are indistinguishable from the
+    # raise site. Matching on the stable prefix rather than the full sentence.
+    with pytest.raises(ValueError, match="Agent metadata is missing for class"):
         ClassSurfaceAstDescriber.describe_class_surface_ast_json(missing_access_target)
 
 

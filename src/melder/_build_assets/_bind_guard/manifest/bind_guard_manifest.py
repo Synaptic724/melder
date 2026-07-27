@@ -15,8 +15,8 @@ Regenerate with:
 
 MANIFEST_VERSION = "2.0.0"
 BUILT_FOR_VERSION = "0.1.1"
-SOURCE_SHA256 = "7b4423c0342446f43779c2c30161229bce0601f1595622c92b73d3bedff350cb"
-ENTRY_COUNT = 578
+SOURCE_SHA256 = "803b5c5aa1c5831f8659be202c8b86acd74968eeee7b87b905909ee1d8041e12"
+ENTRY_COUNT = 582
 
 ENTRIES = (
     ('melder.aether.aether', 'Aether'),
@@ -547,6 +547,10 @@ ENTRIES = (
     ('melder.nexus.rift.rift_space.static_rift_space', 'StaticRiftSpace'),
     ('melder.nexus.rift.rift_space.workstation', 'Workstation'),
     ('melder.system_document', 'StaticSystemDocument'),
+    ('melder.utilities.ai_native_support_tools.agent_text_reader', 'AgentTextReader'),
+    ('melder.utilities.ai_native_support_tools.agent_text_reader', 'IndexedText'),
+    ('melder.utilities.ai_native_support_tools.agent_text_reader', 'ReaderPolicy'),
+    ('melder.utilities.ai_native_support_tools.agent_text_reader', 'TextChunk'),
     ('melder.utilities.ai_native_support_tools.protocol_crafter', 'ProtocolCrafter'),
     ('melder.utilities.caching_system.asset_cache', 'AssetCachePolicy'),
     ('melder.utilities.caching_system.caching_system', 'CachingSystem'),

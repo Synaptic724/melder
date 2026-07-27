@@ -7,12 +7,19 @@ Purpose:
     and configuration sequencing, and execution lifecycle.
 
 Contract:
-    - Module-level `StaticSystemDocument` instance, built at import.
-    - `render_markdown()` returns the document body; `render_json()` returns the
-      raw hardcopy envelope.
-    - CURRENT STATE: the payload is a PLACEHOLDER, not a live regenerated
-      architecture snapshot. Populating it is tracked separately from the
-      contract work.
+    - Module-level `StaticSystemDocument` instance, built at import from the
+      committed manifest at `_build_assets/_system_documents/`.
+    - `render_markdown()` returns the whole body; `render_json()` the raw
+      hardcopy envelope.
+    - BOUNDED READS are the intended path: `reader(...)`, `head(n)`, `tail(n)`,
+      `lines(start, count)`, plus `line_count` / `char_count` to size a read
+      before committing context to it. `render_markdown()` has no budget and
+      will hand back the entire document in one call.
+    - CURRENT STATE: a structured TEMPLATE, not a populated document. The
+      section skeleton is real; the body is scaffolding. Ask
+      `melder._build_assets._system_documents.system_documents.is_populated(
+      "__architecture__")` rather than pattern-matching the prose - population is
+      tracked as data precisely so callers do not have to guess.
 
 Subsystem Context:
     One of four package-root document surfaces built on
@@ -23,17 +30,10 @@ Subsystem Context:
 System Context:
     Answers at import time, before the `Aether()` substrate boot, and is
     queryable WITHOUT conjuring a conduit. It participates in no binding,
-    resolution, or cleanup path.
+    resolution, or cleanup path. Its line index is built on FIRST bounded read,
+    so a process that never queries it pays only for construction.
 """
 
-from melder.system_document import StaticSystemDocument
+from melder._build_assets._system_documents.system_documents import get
 
-
-__architecture__ = StaticSystemDocument(
-    document_name="__architecture__",
-    document_json='{"m":"placeholder: packaged Melder architecture hardcopy"}',
-    agent_purpose=(
-        "access: public. Top-level Melder architecture document object. "
-        "Query this first for top-down system understanding."
-    ),
-)
+__architecture__ = get("__architecture__")

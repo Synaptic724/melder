@@ -388,3 +388,223 @@ def test_probe_lifecycle_law_runtime_holds_until_cleanup():
     gc.collect()
     assert watcher() is None       # cleanup returned the memory
     print("lifecycle law pinned: held until cleanup, freed after")
+
+
+def test_probe_config_idempotent_and_freeze_laws():
+    """Lessons 19/30 contract: disposal + disposal_method_names are
+    set-once (second set refuses); conjure freezes the WHOLE config
+    (any set_property after refuses). Types printed for the decode."""
+    book = Spellbook()
+    config = book.get_configuration()
+    config.set_property("disposal", True)
+    config.set_property("disposal_method_names", ["close"])
+    with pytest.raises(Exception) as idem:
+        config.set_property("disposal", False)
+    print("idempotent re-set refusal:", type(idem.value).__name__)
+    book.bind(spell=Payload, existence="unique")
+    book.conjure(name="config-law-probe")
+    with pytest.raises(Exception) as frozen:
+        config.set_property("phase_scheduler_workers_per_spellbook", 2)
+    print("post-conjure set refusal:", type(frozen.value).__name__)
+
+
+def test_probe_config_hook_families_fire():
+    """Lessons 32-34 contract: meld pre/post fire per meld; the conduit
+    lifecycle fires in order around conjure/cleanup; link + contract +
+    unlink hooks fire across the dynamic arc (owner-book side)."""
+    import sys
+    from pathlib import Path as _P
+    sys.path.insert(0, str(_P(__file__).parent.parent / "02_intermediate"))
+    from _dynamic_world import dynamic_spellbook
+
+    seen = []
+    owner_book = dynamic_spellbook()
+    config = owner_book.get_configuration()
+    for name in ("on_meld_pre_resolve", "on_meld_post_resolve",
+                 "on_conduit_pre_created", "on_conduit_post_created",
+                 "on_conduit_activated", "on_conduit_post_link",
+                 "on_contract_created", "on_contract_removed",
+                 "on_conduit_post_unlink", "on_conduit_cleanup_start",
+                 "on_conduit_cleanup_complete"):
+        config.add_hook(owner_book.id, name,
+                        (lambda n: lambda *a, **k: seen.append(n))(name))
+
+    spell_id = owner_book.bind(spell=Payload, existence="unique")
+    owner = owner_book.conjure(dynamic=True, name="hookprobe-owner")
+    borrower = dynamic_spellbook().conjure(name="hookprobe-borrower")
+
+    owner.meld(spell=Payload)
+    owner.link(borrower)
+    borrower.add_spell_to_contract(spell_id=spell_id, conduit=owner,
+                                   permissions="create")
+    owner.sever_link(borrower)
+    owner.cleanup()
+
+    print("hook stream:", seen)
+    assert "on_meld_pre_resolve" in seen and "on_meld_post_resolve" in seen
+    assert "on_conduit_pre_created" in seen
+    assert "on_conduit_post_link" in seen
+    assert seen.index("on_conduit_pre_created") < seen.index(
+        "on_conduit_cleanup_start")
+    print("all hook families observable; stream printed for the decode")
+
+
+def test_probe_config_definition_laws():
+    """Lesson 31 contract: the four laws pinned - closed registry
+    (unknown key), idempotent pair (set-once), freeze (post-conjure),
+    completion (a bare unfinished config refuses at conjure). Types
+    printed for the decode pass."""
+    config = md.SpellbookConfiguration()
+    config.with_defaults()
+    config.set_property("disposal", True)
+    config.set_property("disposal_method_names", ["close"])
+    config.set_property("phase_scheduler_workers_per_spellbook", 1)
+
+    with pytest.raises(Exception) as unknown:
+        config.set_property("not_a_real_property", 1)
+    print("unknown key:", type(unknown.value).__name__)
+
+    with pytest.raises(Exception) as idem:
+        config.set_property("disposal", False)
+    print("idempotent re-set:", type(idem.value).__name__)
+
+    book = Spellbook(configuration=config)
+    book.bind(spell=Payload, existence="unique")
+    book.conjure(name="definition-probe")
+    with pytest.raises(Exception) as frozen:
+        config.set_property("phase_scheduler_workers_per_spellbook", 2)
+    print("post-freeze:", type(frozen.value).__name__)
+
+    bare = Spellbook(configuration=md.SpellbookConfiguration())
+    bare.bind(spell=Payload, existence="unique", binding_name="bare")
+    with pytest.raises(Exception) as incomplete:
+        bare.conjure(name="bare-probe")
+    print("incomplete config at conjure:", type(incomplete.value).__name__)
+
+
+def test_probe_manual_config_share_across_books():
+    """Lesson 35 contract, shape 1 (fully public): ONE configuration
+    object handed to two books - both read the same object, both
+    conjure under it."""
+    class Alpha:
+        pass
+
+    class Beta:
+        pass
+
+    shared = md.SpellbookConfiguration()
+    shared.with_defaults()
+    shared.set_property("phase_scheduler_workers_per_spellbook", 1)
+    book_a = Spellbook(configuration=shared)
+    book_b = Spellbook(configuration=shared)
+    assert book_a.get_configuration() is book_b.get_configuration()
+    book_a.bind(spell=Alpha, existence="unique")
+    book_b.bind(spell=Beta, existence="unique")
+    assert book_a.conjure(name="share-a").meld(spell=Alpha) is not None
+    assert book_b.conjure(name="share-b").meld(spell=Beta) is not None
+    print("manual share: one object, two books, both conjured")
+
+
+def test_probe_config_is_per_book_by_default():
+    """DEFAULT LAW: spellbook configuration is PER-BOOK, not per-frame.
+    Two books on the SAME frame mint two DIFFERENT configuration
+    objects, because the frame posture ships with
+    shared_framewide_spellbook_configuration=False
+    (AethericFrameConfiguration ctor default, aetheric_frame_configuration.py:118;
+    frame-minted posture, aetheric_frame.py:224; with_defaults() resets it
+    to False, :1177 - and dynamic_defaults()/automatic_defaults() are
+    with_defaults() plus a state, so they are False too).
+    This probe is the tripwire: if the runtime ever defaults sharing ON,
+    this test goes red on purpose."""
+    first = Spellbook(aetheric_frame="per-book-default")
+    second = Spellbook(aetheric_frame="per-book-default")
+    assert first.get_configuration() is not second.get_configuration()
+    assert first.is_configuration_locked() is False
+    assert second.is_configuration_locked() is False
+    assert (
+        first._aetheric_frame_configuration
+        .shared_framewide_spellbook_configuration
+        is False
+    )
+    print("default posture: per-book configs, sharing flag off")
+
+
+def test_probe_frame_owned_config_needs_switch_and_publication():
+    """FRAME-OWNED SHARING, exact mechanics (spellbook.py:5238/5306/5620,
+    aether.py:1194). Turning one-config-per-frame ON takes TWO steps, and
+    the flag alone is not enough:
+
+      step 1 - THE SWITCH: the frame's retained posture must carry
+               shared_framewide_spellbook_configuration=True. Every
+               sharing gate early-outs while it is False:
+               _get_configuration_from_aether (:5306),
+               _bind_configuration_to_aether (:5620),
+               _is_frame_owned_shared_configuration (:5347).
+      step 2 - PUBLICATION: some book must call configure_aether_frame(),
+               the ONLY caller of _bind_configuration_to_aether
+               (spellbook.py:5909-5910). conjure() does NOT publish.
+
+    This half of the probe proves step 1 alone does nothing: flag on,
+    nobody published, so the second book still mints its own config.
+
+    FINDING: neither step has a public door for the switch itself - the
+    only setters are the AethericFrameConfiguration constructor kwarg
+    (:118) and with_shared_framewide_spellbook_configuration() (:607),
+    and configure_aether_frame() never touches it. Pinned here through
+    the retained posture the Spellbook holds BY REFERENCE
+    (_initialize_aetheric_frame_configuration, spellbook.py:5359-5376)."""
+    first = Spellbook(aetheric_frame="switch-only-frame")
+    first._aetheric_frame_configuration.\
+        with_shared_framewide_spellbook_configuration(True)
+
+    second = Spellbook(aetheric_frame="switch-only-frame")
+    assert second.get_configuration() is not first.get_configuration()
+    assert second.is_configuration_locked() is False
+    print("switch without publication: still per-book")
+
+
+def test_probe_frame_owned_config_adoption_via_seam():
+    """FRAME-OWNED SHARING, both steps (the shape lesson 35 describes).
+    Switch on, then the first book PUBLISHES through
+    configure_aether_frame() - which freezes its rich config
+    (_validate_and_freeze_configuration, :5909) and binds it to the frame
+    (:5910 -> aether._bind_configuration, aether.py:1194, first-wins).
+    Every book constructed AFTER that adopts the frame-owned object at
+    __init__ (_initialize_configuration, spellbook.py:311/5238) and is
+    marked LOCKED. Handing a DIFFERENT config object to a later book on
+    that frame is refused outright (:5257).
+
+    Note disposal=None here: the auto-minted book config already carries
+    disposal/disposal_method_names from load_default_dictionary(), and
+    both are idempotent set-once keys (spellbook_configuration.py:148),
+    so configure_aether_frame() can only set them on a book built from a
+    user-supplied config that left them unset."""
+    class Gamma:
+        pass
+
+    first = Spellbook(aetheric_frame="probe-shared-frame")
+    first._aetheric_frame_configuration.\
+        with_shared_framewide_spellbook_configuration(True)
+    published = first.get_configuration()
+    first.configure_aether_frame(
+        system_state=None,
+        disposal=None,
+        disposal_method_names=None,
+    )
+    assert first.is_configuration_locked() is True
+
+    second = Spellbook(aetheric_frame="probe-shared-frame")
+    assert second.get_configuration() is published
+    assert second.is_configuration_locked() is True
+
+    with pytest.raises(RuntimeError, match="does not match"):
+        Spellbook(
+            aetheric_frame="probe-shared-frame",
+            configuration=md.SpellbookConfiguration("probe-shared-frame"),
+        )
+
+    first.bind(spell=Payload, existence="unique")
+    second.bind(spell=Gamma, existence="unique")
+    assert first.conjure(name="shared-first").meld(spell=Payload) is not None
+    assert second.conjure(name="shared-second").meld(spell=Gamma) is not None
+    print("frame-owned adoption pinned: switch + publish -> one config per frame")

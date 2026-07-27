@@ -65,9 +65,43 @@ THE UNDO + THE PROMOTION + SCOPES THAT END (closing wave)
      untouched; the lifecycle law - YOU own memory, cleanup returns it;
      proof lives in beginner 41)
 
+CONFIGURATION, KNOB BY KNOB (owner-directed wave, 2026-07-26)
+  30 config_disposal_and_the_frozen_law (disposal + disposal_method_
+     names; IDEMPOTENT set-once law; conjure FREEZES the whole config)
+  31 spellbook_config_defined (the DEFINITION pass: the four items
+     with real semantics - disposal switch, teardown vocabulary,
+     pipeline workers, barrier timeout - and the four laws: closed
+     registry, idempotent pair, freeze, completion)
+  32 config_meld_hooks (on_meld_pre/post_resolve - the pipeline is
+     watchable; hooks are keyed by BOOK id)
+  33 config_conduit_lifecycle_hooks (pre/post_created, activated,
+     cleanup_start/complete - a conduit's whole life in order)
+  34 config_link_and_contract_hooks (post_link/post_unlink +
+     contract_created/removed - the dynamic arc observed end to end;
+     CLOSES the parked conduit-hooks gap)
+  (19 basics + 20 scheduler knobs complete the property set: the five
+   properties are disposal, disposal_method_names, phase_scheduler_
+   workers_per_spellbook, phase_scheduler_barrier_timeout_milliseconds,
+   generalized_singleton_specialization_enabled)
+
+  35 one_config_every_book (CONFIGURATION IS PER-BOOK BY DEFAULT: two
+     books on the SAME frame mint two SEPARATE configurations. Two ways
+     to get one policy across books - (1) MANUAL SHARE: hand the same
+     SpellbookConfiguration object to every book, fully public; (2)
+     FRAME-OWNED SHARE: needs BOTH the switch
+     (shared_framewide_spellbook_configuration=True on the frame
+     posture) AND publication (one book calls configure_aether_frame(),
+     the ONLY caller that binds a config to the frame - conjure() does
+     NOT publish, spellbook.py:5909-5910). Then every LATER book adopts
+     the frame-owned object at construction, locked, and a different
+     config handed to a later book is refused. First publisher wins;
+     adoption is total - no per-book override; cleanup() leaves the
+     shared object alone. Machinery + the per-book default pinned by
+     three probes; the switch has NO public staging door - recorded
+     finding)
+
 KNOWN GAPS INSIDE THE FENCE (remaining)
-  live link policies (whitelist_all/block_all/inbound_only/
-  outbound_only), conduit lifecycle hooks (on_conduit_post_link/unlink)
+  live link policies (whitelist_all/block_all/inbound_only/outbound_only)
 
 HARNESS
   pytest_examples/test_intermediate_examples.py (every lesson runs)

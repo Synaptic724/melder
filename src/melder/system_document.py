@@ -4,7 +4,16 @@ Top-level hardcopy system document object for agent-facing Melder surfaces.
 
 import json
 from typing import ClassVar
+from typing import List
 from typing import Optional
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:  # pragma: no cover - typing only, never imported at runtime
+    from melder.utilities.ai_native_support_tools.agent_text_reader import (
+        AgentTextReader,
+        IndexedText,
+        TextChunk,
+    )
 
 
 
@@ -82,6 +91,7 @@ class StaticSystemDocument:
         "_document_name",
         "_document_json",
         "_document_markdown",
+        "_indexed",
     ]
 
     def __init__(
@@ -142,6 +152,13 @@ class StaticSystemDocument:
         self._document_name = document_name
         self._document_json = document_json
         self._document_markdown = markdown_text
+        # Built on FIRST bounded read, never at construction. These four
+        # documents are imported by `melder/__init__.py` at package scope, so
+        # anything done here is paid by every `import melder` - including by the
+        # majority of processes that never ask a document anything. Indexing is
+        # cheap but not free, and the payloads are the largest things melder
+        # ships, so the cost is deferred to the first caller who wants paging.
+        self._indexed: Optional["IndexedText"] = None
         _ = agent_purpose
 
     @property
@@ -193,3 +210,135 @@ class StaticSystemDocument:
             str: Markdown payload extracted from the hardcopy JSON.
         """
         return self._document_markdown
+
+    def _indexed_text(self) -> "IndexedText":
+        """
+        Return this document's line index, building it on first use.
+
+        Contract:
+            Import is INSIDE the method for the same reason the index is lazy:
+            `melder/__init__.py` imports all four documents at package scope, so
+            a module-scope import here would put the reader on the boot path of
+            every process.
+
+            Not locked. Two threads racing first access both build an index over
+            the same immutable string and assign equivalent objects, so the race
+            is benign and a lock would add contention to a path that settles
+            after one call.
+
+        Returns:
+            IndexedText: The shared, immutable index over this document.
+        """
+        if self._indexed is None:
+            from melder.utilities.ai_native_support_tools.agent_text_reader import (
+                IndexedText,
+            )
+
+            self._indexed = IndexedText(self._document_markdown)
+        return self._indexed
+
+    @property
+    def line_count(self) -> int:
+        """
+        Return the document's line count.
+
+        Purpose:
+            Let an agent size a read BEFORE committing any context to it.
+
+        Returns:
+            int: Total lines in the markdown payload.
+        """
+        return self._indexed_text().line_count
+
+    @property
+    def char_count(self) -> int:
+        """
+        Return the document's character count.
+
+        Returns:
+            int: Total characters in the markdown payload.
+        """
+        return self._indexed_text().char_count
+
+    def reader(
+            self,
+            *,
+            line_target: int = 50,
+            char_target: int = 8_192,
+    ) -> "AgentTextReader":
+        """
+        Return a private, resumable cursor over this document.
+
+        Purpose:
+            THE intended way to consume a system document. `render_markdown()`
+            hands back the entire payload in one call, which for a populated
+            document is the whole point of failure - this returns exactly the
+            budget the caller asked for and reports whether more remains.
+
+        Contract:
+            Each caller gets its OWN cursor; the indexed document behind it is
+            shared and never copied, so many agents may read one document
+            concurrently without a lock. Budgets are validated against
+            `ReaderPolicy` - `line_target` must be 2-100.
+
+        Args:
+            line_target: Lines per read.
+            char_target: Characters per read; whichever budget binds first wins.
+
+        Returns:
+            AgentTextReader: A cursor owned solely by the caller.
+
+        Raises:
+            ValueError: If either budget is outside its documented bounds.
+        """
+        return self._indexed_text().reader(
+            line_target=line_target, char_target=char_target
+        )
+
+    def head(self, lines: int = 50, *, chars: Optional[int] = None) -> "TextChunk":
+        """
+        Return the opening lines of this document.
+
+        Purpose:
+            The cheapest orientation available: read the top of the architecture
+            document to learn what it covers before deciding to page the rest.
+
+        Args:
+            lines: How many leading lines (2-100).
+            chars: Optional character cap.
+
+        Returns:
+            TextChunk: The leading span, with `has_more` set when more remains.
+        """
+        return self._indexed_text().head(lines, chars=chars)
+
+    def tail(self, lines: int = 50, *, chars: Optional[int] = None) -> "TextChunk":
+        """
+        Return the closing lines of this document.
+
+        Args:
+            lines: How many trailing lines (2-100).
+            chars: Optional character cap.
+
+        Returns:
+            TextChunk: The trailing span.
+        """
+        return self._indexed_text().tail(lines, chars=chars)
+
+    def lines(self, start: int, count: int) -> str:
+        """
+        Return a contiguous run of lines by index.
+
+        Contract:
+            Clamps at the end rather than raising, so reading past the last line
+            returns what exists. Random access for a caller that already knows
+            where it wants to look.
+
+        Args:
+            start: Zero-based first line, inclusive.
+            count: How many lines.
+
+        Returns:
+            str: The requested lines.
+        """
+        return self._indexed_text().lines_text(start, count)

@@ -180,13 +180,25 @@ def test_docstring_wins_over_the_legacy_attribute(builder, tmp_path, monkeypatch
     assert (access, purpose, source) == ("public", "from docstring", "docstring")
 
 
-def test_legacy_attribute_is_used_when_no_docstring_marker_exists(builder, tmp_path, monkeypatch):
+def test_legacy_attributes_are_no_longer_a_source(builder, tmp_path, monkeypatch):
     """
     Purpose:
-        Dual-source is what makes the asset correct BEFORE any class is
-        migrated, so the codemod can proceed subtree by subtree.
+        INVERTED from what it originally asserted, because the thing it tested
+        was scaffolding that has since been removed on purpose.
+
+        The harvest ran DUAL-SOURCE during the migration - docstring first,
+        legacy class attribute as fallback - so the asset stayed correct while
+        the codemod moved 370 files subtree by subtree. That migration completed
+        and the fallback was deleted; docstrings are now the only source.
+
+        Keeping the old assertion would have demanded the fallback come back.
+        This one pins the opposite, so a well-meaning reintroduction of
+        attribute reading fails here instead of quietly resurrecting 808 class
+        attributes the migration removed.
     Contract:
-        An unmigrated class still harvests, flagged `attribute`.
+        A class carrying ONLY the retired attributes harvests as PENDING, not
+        marked - it looks exactly like a class nobody has annotated yet, which
+        is what it now is.
     """
     pkg = tmp_path / "melder"
     pkg.mkdir()
@@ -198,11 +210,9 @@ def test_legacy_attribute_is_used_when_no_docstring_marker_exists(builder, tmp_p
         encoding="utf-8",
     )
     monkeypatch.setattr(builder, "package_root", lambda: pkg)
-    assert builder.harvest().marked[("melder.sample", "Legacy")] == (
-        "internal",
-        "legacy prose",
-        "attribute",
-    )
+    result = builder.harvest()
+    assert ("melder.sample", "Legacy") not in result.marked
+    assert ("melder.sample", "Legacy") in result.pending
 
 
 # Three-state classification ------------------------------------------------

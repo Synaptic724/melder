@@ -581,6 +581,155 @@ The working developer's tier: SpellBinder fluent binding, spellframes and contra
   REREAD: OPTIONAL
   SCORE_0_TO_10: -
 
+## MEASURE - 2026-07-26 17:42 UTC - configuration knob-by-knob wave (owner-directed): lessons 30-34
+  WHAT: Full SpellbookConfiguration inventory read from source (5 properties:
+    disposal, disposal_method_names, phase_scheduler_workers_per_spellbook,
+    phase_scheduler_barrier_timeout_milliseconds,
+    generalized_singleton_specialization_enabled; 11 hooks in 4 families;
+    idempotent keys = the disposal pair; add_hook keyed by BOOK id). Five new
+    lessons: 30 disposal + idempotent + freeze laws; 31 the specialization
+    speed knob (zero semantic change); 32 meld pipeline hooks; 33 conduit
+    lifecycle hooks in order; 34 link + contract hooks across the arc -
+    CLOSES the parked conduit-hooks gap. Remaining fence gap: live link
+    policies only. Probes: 3 new intermediate rows (config laws,
+    specialization semantics, all hook families with stream print).
+  EVIDENCE:
+  - src/melder/aether/spellbook/configuration/spellbook_configuration.py:136-176,659-700
+  - UX_and_AIX_experiences/02_intermediate/30-34_*.py
+  REREAD: OPTIONAL
+  SCORE_0_TO_10: -
+
+## MEASURE - 2026-07-26 20:11 UTC - owner flagged lesson 31 as fabricated; corrected from source + wave audited
+  WHAT: GUILTY on 31: the property name came from available_properties, but I
+    wrote its MECHANISM from the inline comment instead of reading the
+    consumer. Source truth (generalized_hydrator.py:540-600 +
+    generalized_manifest_no_overrides_compiler.py:1118+): the knob arms the
+    generalized no-overrides lane's THIRD door stage (cold -> hot ->
+    SPECIALIZED) - after the first successful hot execution the executor body
+    is REBUILT with owner-store `unique` DEPENDENCY singletons captured in
+    its closure behind per-dep EPOCH GUARDS, then self-swapped into the
+    published context; the flag reads once per hydration and
+    missing/unavailable = OFF. My original demo (dependency-less unique
+    melded thrice) exercised none of it. Lesson 31 + its probe + the concept
+    map line rewritten to the honest shape: MANY root over UNIQUE dep -
+    fresh roots, one captured dep, semantics identical to knob-off.
+  AUDIT of the rest of the wave (owner-ordered): lesson 30 idempotent law
+    EXACT per set_property source (RuntimeError "Cannot modify idempotent
+    property ... once set"; frozen refusal separate); lesson 34 contract
+    hooks REAL (on_contract_created firing sites conduit.py:5277,5554);
+    32/33 hook wiring documented in C-docs (meld pre/post, conjure and
+    cleanup hook firing). No other fabrications found.
+  EVIDENCE:
+  - src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/hydration/generalized_hydrator.py:540-600
+  - src/melder/aether/spellbook/configuration/spellbook_configuration.py:228-236
+  - src/melder/aether/conduit/conduit.py:5277,5554
+  LESSON: a config comment is not a mechanism - read the CONSUMER before
+    explaining a knob.
+  REREAD: OPTIONAL
+  SCORE_0_TO_10: -
+
+## DECISION+MEASURE - 2026-07-26 23:06 UTC - config curriculum re-cut per owner rulings
+  RULINGS: (1) compiler-lane knobs are NOT curriculum - 31 specialization
+    lesson RETIRED to _to_delete with its probe; (2) advanced 06 caching
+    lesson RETIRED ("why would someone turn off cache"; cache teaching waits
+    for the crystallizer arc and must name WHERE the cache lives on disk);
+    (3) spellbook config gets a proper DEFINITION pass; (4) AFC enters
+    INTERMEDIATE via the framewide-spellbook-config story.
+  LANDED:
+    - 31_spellbook_config_defined: the four items with real semantics
+      (disposal switch, teardown vocabulary, pipeline workers, barrier
+      timeout as the anti-hang knob) + the four laws (closed registry /
+      idempotent pair / freeze / completion - bare config refuses at
+      conjure). Written for someone who knows nothing.
+    - 35_one_config_every_book: manual share (ONE config object handed to
+      every book - fully public, identity-asserted) + the frame-owned
+      automatic adoption via shared_framewide_spellbook_configuration
+      (mechanism source-verified at spellbook.py:5292-5358: flag gates
+      adoption of the frame-owned rich config; first book binds it, later
+      books adopt THE SAME OBJECT).
+    - Probes: 3 new rows (definition laws w/ refusal types printed; manual
+      share; frame-owned adoption pinned VIA SEAM - the staging door for the
+      posture flag is a recorded public-surface FINDING, same family as the
+      devops brakes).
+  EVIDENCE:
+  - src/melder/aether/spellbook/spellbook.py:5292-5358 (adoption machinery)
+  - src/melder/aether/spellbook/configuration/spellbook_configuration.py (full def inventory, 1185 lines)
+  REREAD: OPTIONAL
+  SCORE_0_TO_10: -
+
+## MEASURE+DECISION - 2026-07-27 11:36 UTC - framewide spellbook config: owner challenge, full trace, lesson 35 corrected
+  OWNER CHALLENGE: "how is your single config shared with everyone ... the
+    aetheric_frame_configueration ... by default will have it shared with all
+    spellbooks" - then "I thought by default it would use 1 spellbook
+    configuration unless you override it".
+  TRACE (whole path read, no inference):
+    - DEFAULT IS PER-BOOK, not per-frame. shared_framewide_spellbook_
+      configuration is False at every origin: AFC ctor default
+      (aetheric_frame_configuration.py:118), the frame's minted posture
+      (aetheric_frame.py:224), and with_defaults() resets it to False
+      (:1177) - so dynamic_defaults()/automatic_defaults(), which are
+      with_defaults() + a state (:1362, :1399), are False too.
+    - Every sharing path early-outs while the flag is False:
+      _get_configuration_from_aether (spellbook.py:5306),
+      _bind_configuration_to_aether (:5620),
+      _is_frame_owned_shared_configuration (:5347). With it off,
+      _initialize_configuration falls to the mint branch (:5281-5283):
+      fresh SpellbookConfiguration + load_default_dictionary, unlocked.
+    - TURNING IT ON TAKES TWO STEPS, and the flag alone does nothing:
+      (1) SWITCH - frame posture carries the flag True; the Spellbook holds
+          the frame-owned posture BY REFERENCE
+          (_initialize_aetheric_frame_configuration, :5359-5376).
+      (2) PUBLICATION - configure_aether_frame() is the ONLY caller of
+          _bind_configuration_to_aether (:5909-5910). conjure() does NOT
+          publish (conjure path carries no bind call; the creation system
+          only freezes, spellbook_creation_system.py:298).
+    - AFTER both: later books adopt the frame-owned object at __init__
+      (:311 -> :5238) and are LOCKED; a DIFFERENT config handed to a later
+      book raises "Aether configuration does not match" (:5257); first
+      publisher wins (aether.py:1194 leaves an existing config in place); a
+      pre-existing book that later publishes ADOPTS and cleans up its own
+      local config (:5626-5637); adoption is total - no per-book override;
+      book cleanup SKIPS cleaning a frame-owned shared config (:479-486).
+  FINDINGS (public-surface program):
+    - The SWITCH has no public door: only the AFC ctor kwarg (:118) and
+      with_shared_framewide_spellbook_configuration() (:607) set it, and
+      configure_aether_frame() never touches it. (Already entry #2 in the
+      pile; now with the full mechanism attached.)
+    - configure_aether_frame(disposal=...) is unusable on an auto-minted
+      book: load_default_dictionary already sets disposal and
+      disposal_method_names, and both are idempotent set-once
+      (spellbook_configuration.py:148), so the door raises "Cannot modify
+      idempotent property". It only works on a user-supplied config that
+      left them unset. NEW FINDING.
+  LANDED:
+    - 35_one_config_every_book REWRITTEN: leads with the per-book default
+      (asserted: two books, same frame, two configs), keeps manual share as
+      the runnable public path, and states the frame-owned mechanics
+      correctly (switch + publication, conjure does not publish).
+    - Probes RECUT to the truth - the old row claimed conjure() published,
+      which is FALSE and would have gone red on the owner's harness:
+      * test_probe_config_is_per_book_by_default - tripwire: goes red on
+        purpose if the runtime ever defaults sharing ON.
+      * test_probe_frame_owned_config_needs_switch_and_publication - switch
+        alone changes nothing.
+      * test_probe_frame_owned_config_adoption_via_seam - switch + publish,
+        adoption identity, locked flag, mismatched-config refusal, both
+        worlds conjure and meld.
+  OPEN FOR OWNER: is default-shared the INTENT? If yes it is a one-line flip
+    (mint the frame posture with True, aetheric_frame.py:224) plus a ruling
+    on whether with_defaults() (:1177) keeps bulldozing the flag to False.
+    Lesson + probes today document the CODE as written.
+  EVIDENCE:
+  - src/melder/aether/aetheric_frame/aetheric_frame_configuration.py:118,607,1177,1362,1399
+  - src/melder/aether/aetheric_frame/aetheric_frame.py:224
+  - src/melder/aether/spellbook/spellbook.py:311,5238,5257,5281,5306,5347,5359,5620,5626,5909
+  - src/melder/aether/aether.py:1194
+  - src/melder/aether/spellbook/configuration/spellbook_configuration.py:148,559
+  LESSON: "shared by default" was the owner's intent, not the code's
+    behaviour - trace every origin AND every gate before writing the law.
+  REREAD: OPTIONAL
+  SCORE_0_TO_10: -
+
 ## Context / Handoff Summary
 Method: every example imports melder as md ONLY - a deep-path import in an example
 IS the finding. Examples are runnable scripts with honest asserts; they ride the

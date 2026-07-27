@@ -43,20 +43,31 @@ def test_generated_build_assets_are_stamped_for_the_live_version() -> None:
     import melder
     from melder.__version__ import __version__
 
+    # Generated manifests live at `_build_assets/<asset>/manifest/<asset>_manifest.py`,
+    # and stamp BARE constants - the annotations moved out when the loaders were
+    # split from the data. Both details have moved once already, and each time the
+    # glob or the pattern silently matched NOTHING, turning this gate into a
+    # no-op that still reported green. Hence the explicit emptiness assertion
+    # below: this test must fail loudly when it stops finding assets, not pass
+    # vacuously.
     assets_root = Path(melder.__file__).parent / "_build_assets"
     stamped = {}
-    for generated in sorted(assets_root.glob("*/*.py")):
-        if generated.name == "_builder.py":
-            continue
+    for generated in sorted(assets_root.glob("*/manifest/*.py")):
         match = re.search(
-            r'^BUILT_FOR_VERSION:\s*str\s*=\s*"([^"]+)"',
+            r'^BUILT_FOR_VERSION\s*=\s*"([^"]+)"',
             generated.read_text(encoding="utf-8"),
             re.MULTILINE,
         )
         if match:
-            stamped[generated.parent.name] = match.group(1)
+            stamped[generated.parent.parent.name] = match.group(1)
 
-    assert stamped, "no generated build assets carried a BUILT_FOR_VERSION stamp"
+    assert stamped, (
+        "no generated build assets carried a BUILT_FOR_VERSION stamp - the glob or "
+        "the pattern has drifted from the generated layout, so this gate is inert"
+    )
+    assert len(stamped) == len(list(assets_root.glob("*/manifest/*.py"))), (
+        f"only {len(stamped)} of the discovered manifests were stamped: {stamped}"
+    )
     drifted = {name: v for name, v in stamped.items() if v != __version__}
     assert not drifted, f"assets stamped for the wrong version: {drifted} (package is {__version__})"
 

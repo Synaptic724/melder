@@ -687,6 +687,68 @@ class ClassSurfaceAstDescriber:
         return ""
 
     @staticmethod
+    def _markers_from_docstring(target_class: type) -> Optional[Tuple[str, str]]:
+        """
+        Resolve one class's agent markers from its OWN docstring, live.
+
+        Purpose:
+            Make the describer work on classes the generated manifest does not
+            and cannot contain.
+
+        Contract:
+            The manifest is a BUILD-TIME CACHE of docstring markers for classes
+            inside the melder package. Nothing outside that package is in it -
+            not a user's own class, not a test fixture - so a manifest-only
+            lookup made `describe_agent_purpose_json` raise `ValueError` for
+            every caller-owned object. That is a regression against the class
+            attributes this asset replaced, which any class could carry.
+
+            This reads the SAME grammar the harvester reads, from
+            `target_class.__doc__`, and is consulted only on a manifest miss, so
+            melder's own classes still resolve from the cache and pay nothing.
+
+            `-OO` strips docstrings from bytecode, so this fallback returns
+            `None` under it. That is acceptable and deliberate: melder's own
+            classes are unaffected because their markers are baked into the
+            manifest at build time, and a caller running `-OO` has already
+            chosen to discard the prose this reads.
+
+        Args:
+            target_class: The class whose docstring should be parsed.
+
+        Returns:
+            Optional[Tuple[str, str]]: `(access, purpose)`, or `None` when the
+                class carries no docstring or no `AGENT_ACCESS:` marker.
+        """
+        docstring = getattr(target_class, "__doc__", None)
+        if not docstring:
+            return None
+
+        access: Optional[str] = None
+        purpose_lines: List[str] = []
+        collecting = False
+        for raw_line in docstring.splitlines():
+            stripped = raw_line.strip()
+            if stripped.startswith("AGENT_ACCESS:"):
+                access = stripped[len("AGENT_ACCESS:"):].strip()
+                collecting = False
+                continue
+            if stripped.startswith("AGENT_PURPOSE:"):
+                collecting = True
+                continue
+            if collecting:
+                # The block runs until the next ALL-CAPS marker or section
+                # header, matching the harvester's grammar.
+                if stripped.endswith(":") and stripped[:-1].replace("_", "").isalpha():
+                    collecting = False
+                    continue
+                if stripped:
+                    purpose_lines.append(stripped)
+        if access is None:
+            return None
+        return access, " ".join(purpose_lines)
+
+    @staticmethod
     def _get_required_access_level(target_object: object) -> str:
         """
         Return the required AST helper access level for one object or raise.
@@ -720,6 +782,8 @@ class ClassSurfaceAstDescriber:
         if identity in exempt:
             return "exempt"
         entry = agent_metadata.get(identity)
+        if entry is None:
+            entry = ClassSurfaceAstDescriber._markers_from_docstring(target_class)
         access_level = entry[0] if entry is not None else None
         if access_level is None:
             raise ValueError(
@@ -769,6 +833,8 @@ class ClassSurfaceAstDescriber:
         agent_metadata, _exempt = ClassSurfaceAstDescriber._load_agent_documentation()
         target_class = type(target_object)
         entry = agent_metadata.get((target_class.__module__, target_class.__qualname__))
+        if entry is None:
+            entry = ClassSurfaceAstDescriber._markers_from_docstring(target_class)
         agent_purpose = entry[1] if entry is not None else None
         if isinstance(agent_purpose, str) and agent_purpose:
             return agent_purpose
@@ -808,6 +874,8 @@ class ClassSurfaceAstDescriber:
             entry = agent_metadata.get(
                 (base_class.__module__, base_class.__qualname__)
             )
+            if entry is None:
+                entry = ClassSurfaceAstDescriber._markers_from_docstring(base_class)
             inherited_purpose = entry[1] if entry is not None else None
             if not isinstance(inherited_purpose, str) or not inherited_purpose:
                 continue

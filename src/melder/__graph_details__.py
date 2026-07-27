@@ -1,37 +1,38 @@
 """
-Packaged hardcopy runtime object for future Melder graph-details documentation.
+Packaged hardcopy runtime object for Melder graph-detail documentation.
 
 Purpose:
-    Publish `melder.__graph_details__`, the interpretation guide for the graph
-    surface: what each node field and edge relation MEANS, so an agent reads
-    `owns_lifecycle_of` versus `borrows` correctly instead of guessing.
+    Publish `melder.__graph_details__`, per-node detail: sockets, existence,
+    permissions, and the compiled resolution plan.
 
 Contract:
-    - Module-level `StaticSystemDocument` instance, built at import.
-    - `render_markdown()` returns the document body; `render_json()` returns the
-      raw hardcopy envelope.
-    - CURRENT STATE: the payload is a PLACEHOLDER. Until populated, edge and
-      node semantics live in the repository's graph usage documentation.
+    - Module-level `StaticSystemDocument` instance, built at import from the
+      committed manifest at `_build_assets/_system_documents/`.
+    - `render_markdown()` returns the whole body; `render_json()` the raw
+      hardcopy envelope.
+    - BOUNDED READS are the intended path: `reader(...)`, `head(n)`, `tail(n)`,
+      `lines(start, count)`, plus `line_count` / `char_count` to size a read
+      before committing context to it. `render_markdown()` has no budget and
+      will hand back the entire document in one call.
+    - CURRENT STATE: a structured TEMPLATE, not a populated document. The
+      section skeleton is real; the body is scaffolding. Ask
+      `melder._build_assets._system_documents.system_documents.is_populated(
+      "__graph_details__")` rather than pattern-matching the prose - population is
+      tracked as data precisely so callers do not have to guess.
 
 Subsystem Context:
-    Fourth of the four package-root document surfaces and the terminal one in
-    the read chain. `__graph_network__` supplies the topology; this supplies the
-    vocabulary needed to read it without inferring meaning from names.
+    One of four package-root document surfaces built on
+    `melder.system_document.StaticSystemDocument`. Read order for an agent is
+    architecture -> components -> graph network -> graph details: this document
+    is the last step of that chain.
 
 System Context:
     Answers at import time, before the `Aether()` substrate boot, and is
     queryable WITHOUT conjuring a conduit. It participates in no binding,
-    resolution, or cleanup path.
+    resolution, or cleanup path. Its line index is built on FIRST bounded read,
+    so a process that never queries it pays only for construction.
 """
 
-from melder.system_document import StaticSystemDocument
+from melder._build_assets._system_documents.system_documents import get
 
-
-__graph_details__ = StaticSystemDocument(
-    document_name="__graph_details__",
-    document_json='{"m":"placeholder: packaged Melder graph details hardcopy"}',
-    agent_purpose=(
-        "access: public. Top-level Melder graph-details document object. "
-        "Query this for graph-detail explanations once the hardcopy is populated."
-    ),
-)
+__graph_details__ = get("__graph_details__")

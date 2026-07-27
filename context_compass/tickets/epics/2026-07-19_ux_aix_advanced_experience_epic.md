@@ -41,6 +41,55 @@ The AR + research tier: Nexus enablement, rifts, rooms by RiftSpaceType, worksta
   REREAD: OPTIONAL
   SCORE_0_TO_10: -
 
+## MEASURE - 2026-07-26 17:13 UTC - advanced tier opens: owner syllabus wave 1 (lessons 03-05)
+  WHAT: Owner syllabus for advanced: devops config, aetheric_frame config,
+    frame management/layers of separation, utility-system logger, "static
+    and compatibility mode", crystallizer basics LAST (owner adding epic
+    items himself). Wave 1 authored after source verification:
+    - 03_frames_as_worlds: categories arc ACT 3 - Spellbook(aetheric_frame=)
+      births an isolated world; same class + name in two frames, zero
+      collision; unique = singleton PER FRAME; per-frame reuse asserted.
+    - 04_frame_posture_public_door: configure_aether_frame(system_state=
+      "dynamic") pre-conjure -> plain conjures INHERIT and link (settle law
+      driven from the config side); posture freezes at first conjure -
+      reconfigure refuses (caught + printed).
+    - 05_utility_system_logger: boots-silent law; attach_logger /
+      enable_logging public doors; None detaches (BUG-278 retire law noted
+      in source read).
+    Harness: test_advanced_examples.py runner (sys.modules import law) +
+    test_advanced_probes.py (4 rows: frame isolation pin, posture+freeze,
+    devops-flag gate via seam, logger lifecycle).
+  FINDINGS:
+    - NO PUBLIC DOOR for frame devops flags (disable_*): component suite
+      stages via PRIVATE book._aetheric_frame_configuration. Probe pins the
+      gate through the seam; init/public-surface gap recorded for owner.
+    - "compatibility mode" absent from src/melder - awaiting owner
+      definition (concept map notes it).
+  EVIDENCE:
+  - src/melder/aether/aetheric_frame/aetheric_frame_configuration.py:366-1364 (verb sweep)
+  - src/melder/aether/aether.py:502-560 (attach_logger contract, BUG-278)
+  - src/melder/aether/spellbook/spellbook.py:203 (aetheric_frame ctor door)
+  - grep: no public frame accessor on Aether; "compatibility" absent
+  NEXT: Owner runs the harness (advanced rows now included); crystallizer
+    lessons wait for the owner's epic additions + the acquisition-path
+    probe's print.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: -
+
+## MEASURE - 2026-07-26 17:42 UTC - posture knob wave: lessons 06-07 + probes
+  WHAT: 06 frame_caching_knob (system_caching_enabled via the public
+    configure_aether_frame door). 07 frame_posture_cheatsheet - all 15
+    AethericFrameConfiguration knobs mapped and explained in one runnable
+    reference (mode / AR eligibility / sharing / caching / 7 devops brakes /
+    transaction patience / 3 presets / freeze law), the advanced twin of
+    beginner 37. Advanced probes now 5 rows (+caching door). Findings stand:
+    no public staging door for devops brakes or cache_root_path.
+  EVIDENCE:
+  - UX_and_AIX_experiences/03_advanced/06-07_*.py
+  - UX_and_AIX_experiences/pytest_examples/test_advanced_probes.py
+  REREAD: OPTIONAL
+  SCORE_0_TO_10: -
+
 ## Context / Handoff Summary
 Method: every example imports melder as md ONLY - a deep-path import in an example
 IS the finding. Examples are runnable scripts with honest asserts; they ride the

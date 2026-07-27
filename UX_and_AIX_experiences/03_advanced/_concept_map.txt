@@ -8,6 +8,29 @@ AUTHORED
      version currently sits at 02_intermediate/25 per owner syllabus)
   02 deep_spell_override_paths ("transport>credentials" path form;
      flat form is intermediate 08)
+  03 frames_as_worlds (categories arc ACT 3: aetheric_frame= births an
+     isolated world; same class + same name in two frames, zero
+     collision; unique = one singleton PER FRAME)
+  04 frame_posture_public_door (configure_aether_frame sets the world's
+     system_state BEFORE conjure; plain conjures inherit; the posture
+     freezes at first conjure - reconfigure refuses)
+  05 utility_system_logger (boots-silent law; attach_logger /
+     enable_logging are the public post-boot doors; None detaches)
+
+  06 RETIRED (owner ruling 2026-07-26: a turn-off-the-cache lesson is
+     useless; cache teaching belongs with the crystallizer arc and must
+     name WHERE the cache lives on disk)
+  07 frame_posture_cheatsheet (ALL 15 posture knobs mapped: mode, AR
+     eligibility, sharing, caching, the 7 devops brakes, transaction
+     patience, the 3 presets, the freeze law)
+
+FINDINGS (recorded for the owner's init/public-surface program)
+  - NO PUBLIC DOOR for frame devops flags (disable_linking/bind/
+    cluster/transfer/contract_mutation/all_transactions): staging goes
+    through the PRIVATE retained posture only. Probe pins the gate via
+    the seam (test_advanced_probes).
+  - "compatibility mode" (owner syllabus item) does not exist in
+    src/melder today - awaiting owner definition in the advanced epic.
 
 PLANNED (per README ORANGE + AGENTS charter)
   - aetheric frames as isolated worlds (categories arc act 3):

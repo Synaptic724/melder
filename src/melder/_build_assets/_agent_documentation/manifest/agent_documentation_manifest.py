@@ -20,10 +20,10 @@ Regenerate with:
 
 MANIFEST_VERSION = "2.0.0"
 BUILT_FOR_VERSION = "0.1.1"
-SOURCE_SHA256 = "7b4423c0342446f43779c2c30161229bce0601f1595622c92b73d3bedff350cb"
-MARKED_COUNT = 404
+SOURCE_SHA256 = "803b5c5aa1c5831f8659be202c8b86acd74968eeee7b87b905909ee1d8041e12"
+MARKED_COUNT = 406
 EXEMPT_COUNT = 163
-PENDING_COUNT = 11
+PENDING_COUNT = 13
 
 AGENT_METADATA = {
     ('melder.aether.aether', 'Aether'): ('public', 'access: public. The global singleton root. `Aether()` returns the process-wide instance and boots the hidden substrate (utility system, Crystallizer, Nexus, LoadGate). Creates ZERO frames - the first Spellbook births the frame it names. Use create_configuration()/configure()/activate() for root logger policy, attach_logger(...) to install one directly.'),
@@ -391,6 +391,8 @@ AGENT_METADATA = {
     ('melder.nexus.rift.rift_space.static_rift_space', 'StaticRiftSpace'): ('public', "access: public. The static (lower-risk) room type - live-only, read-shaped, no topology mutation or create-path activation, weak-by-default binds. You get it as a Rift's space when space_type=static, to observe the world without changing it."),
     ('melder.nexus.rift.rift_space.workstation', 'Workstation'): ('public', 'access: public. The room-local binding canvas (space.workstation): save objects, attribute and method bindings (strong or weak) and one active target across steps. Commands do not store their results, so this is where you keep what matters.'),
     ('melder.system_document', 'StaticSystemDocument'): ('public', 'access: public. Immutable packaged hardcopy of a system document. Read `melder.__architecture__`, `__components__`, `__graph_network__`, `__graph_details__` to orient inside the runtime without leaving the process.'),
+    ('melder.utilities.ai_native_support_tools.agent_text_reader', 'AgentTextReader'): ('public', 'access: public. Your own resumable cursor over a large document. Set line_target (2-100) and char_target; call read() repeatedly and each call returns the next chunk with has_more telling you whether to continue. Use head(n)/tail(n) to orient and peek() to look ahead - none of the three move the cursor - and seek_line()/reset() to reposition. Iterate it directly to stream. Reads stop at whichever budget binds first and the chunk says which one via truncated_by.'),
+    ('melder.utilities.ai_native_support_tools.agent_text_reader', 'IndexedText'): ('public', 'access: public. Immutable indexed document shared by many readers. Query line_count/char_count to size a read, head(n)/tail(n) to orient cheaply before committing context, line_text/lines_text for direct random access, or call reader(...) to get your own resumable cursor. Construct one per document and share it; construct a reader per agent.'),
     ('melder.utilities.ai_native_support_tools.protocol_crafter', 'ProtocolCrafter'): ('public', 'access: public. Generates @runtime_checkable Protocol code from a class/object (craft_protocol_code) and maintains bounded protocol blocks in interface files (write_protocol_module_from_source_file). Exported for direct use; guarded, so call it - do not bind it. It WRITES to disk, editing a delimited region only.'),
     ('melder.utilities.caching_system.caching_system', 'CachingSystem'): ('internal', "access: internal. Per-conduit on-disk payload cache (one .melc marshal bundle per frame_name/conduit_name); upsert/get/remove_spell_payload plus emit() to write. Melder-owned and guarded - the owning conduit gives you this behaviour, you do not construct or bind it. Distinct from the crystallizer's restore record."),
     ('melder.utilities.custom_exceptions.dead_reference_error', 'DeadReferenceError'): ('public', 'access: public. Raised when a weak-reference target is requested after collection; catch it (it subclasses ReferenceError) or hold a strong reference. It means you outlived the referent.'),
@@ -599,6 +601,8 @@ EXEMPT = (
 )
 
 PENDING = (
+    ('melder.utilities.ai_native_support_tools.agent_text_reader', 'ReaderPolicy'),
+    ('melder.utilities.ai_native_support_tools.agent_text_reader', 'TextChunk'),
     ('melder.utilities.caching_system.asset_cache', 'AssetCachePolicy'),
     ('melder.utilities.data_structures.weak_data_structures.weak_concurrent_dict', '_WeakDictItemsView'),
     ('melder.utilities.data_structures.weak_data_structures.weak_concurrent_dict', '_WeakDictKeysView'),
@@ -1059,6 +1063,7 @@ CLASS_BASES = {
     ('melder.nexus.rift.rift_space.rift_space', 'RiftSpace'): ('Cleanable',),
     ('melder.nexus.rift.rift_space.static_rift_space', 'StaticRiftSpace'): ('RiftSpace',),
     ('melder.nexus.rift.rift_space.workstation', 'Workstation'): ('Cleanable',),
+    ('melder.utilities.ai_native_support_tools.agent_text_reader', 'TextChunk'): ('NamedTuple',),
     ('melder.utilities.ai_native_support_tools.protocol_crafter', 'ProtocolCrafter'): ('Cleanable',),
     ('melder.utilities.caching_system.caching_system', 'CachingSystem'): ('Cleanable',),
     ('melder.utilities.custom_exceptions.dead_reference_error', 'DeadReferenceError'): ('ReferenceError',),
