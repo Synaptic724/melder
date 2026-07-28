@@ -1,15 +1,84 @@
 # Epic: Replace __melder_registration_guard__ with a bind-time internal lookup
 
+- Completed: 2026-07-27T23:19:33Z
+- Summary: Guard replacement SHIPPED and owner-accepted. The retired
+  `__melder_internal__` sentinel and the `MelderRegistrationGuard` /
+  `_RegistrationGuardProxy` objects are gone from live code; refusal is now one
+  module-level `assert_allowed(candidate, context="bind")` over an immutable
+  `INTERNAL_MANIFEST` frozenset, exact `(module, qualname)` match with no MRO
+  walk. Closure verified against live source on 2026-07-27, NOT taken on claim.
+
 ## Metadata
 - Epic ID: EPIC-2026-07-22-internal-bind-guard-replacement
-- Status: in_progress (mechanism RULED and SHIPPED 2026-07-24: build-time manifest.
-  Remaining work is truth-alignment across docs/graph/guard module, carried by
-  STORY-2026-07-25-guard-manifest-truth)
+- Status: done
 - Owner: melder_0
-- Agent Name: melder_0, melder_1
+- Agent Name: melder_0, melder_1 (turned in by helper_f under owner directive
+  2026-07-27)
 - Priority: p3
 - Created: 2026-07-22T10:18:00Z
-- Updated: 2026-07-25T18:19:28Z
+- Updated: 2026-07-27T23:19:33Z
+
+## State Transition Event
+- from_state: in_progress
+- to_state: done
+- transition_reason: Owner directed turn-in 2026-07-27. Exit shape re-verified
+  against live source by helper_f rather than accepted on ticket claim:
+  `assert_allowed` live at `src/melder/aether/spellbook/bind/bind.py:364`;
+  `INTERNAL_MANIFEST` resolves from
+  `src/melder/_build_assets/_bind_guard/bind_guard.py:93`; a repo-wide sweep for
+  `MelderRegistrationGuard|_RegistrationGuardProxy|__melder_internal__` returns
+  exactly ONE hit, `bind.py:68`, which is an ACCURATE docstring sentence
+  explaining the behaviour change away from the retired sentinel - documentation,
+  not residue, and retained per the preserve-comments rule.
+
+## Closure Caveats (carried forward, do NOT lose)
+- CANONICAL DOCS ARE STALE AGAINST THIS EPIC'S OWN DELIVERABLE. The manifest
+  MOVED AGAIN after the docs were written: `src_architecture.md:597-602` and
+  `src_components.md:2136-2163` cite
+  `_build_assets/_init_manifest/internal_manifest.py`, a path that NO LONGER
+  EXISTS on disk. melder_1 counts 13 such citations across the two docs.
+  The mechanism is correct; the documented path is wrong TODAY.
+- CORRECTION (helper_f, 2026-07-27T23:19:33Z, filed against my own error):
+  an earlier revision of this section named the live path as
+  `_build_assets/_bind_guard/bind_guard.py`. THAT IS WRONG AND WAS CAUGHT
+  INDEPENDENTLY BY BOTH melder_0 AND melder_1 via the mailbox before it reached
+  a doc fix. `bind_guard.py` is the LOADER - its own module docstring says the
+  truth lives in a committed manifest and that only the manifest is generated,
+  the loader being ordinary reviewed code. The COMMITTED MANIFEST is
+  `_build_assets/_bind_guard/manifest/bind_guard_manifest.py`
+  (`MANIFEST_VERSION 2.0.0`, `BUILT_FOR_VERSION 0.1.1`, `ENTRY_COUNT 582` -
+  verified in source, not taken on claim). Repairing the docs from my original
+  wording would have written the SECOND-NEWEST path. Root cause of the error:
+  I read `bind_guard.py:93` (`INTERNAL_MANIFEST = _PAYLOAD["entries"]`), saw the
+  symbol bound there, and stopped without tracing `_PAYLOAD` to its source.
+- Note the entry count also drifted: both canonical docs say 577; live is 582.
+- THREE `_build_assets/` subpackages now exist and only the retired one is
+  described in the canonical docs: `_bind_guard/` (582), `_agent_documentation/`
+  (406 marked), `_system_documents/` (4 docs, no cache by design). The runtime
+  `.melc` cache helper moved OUT of `_build_assets/` to
+  `utilities/caching_system/asset_cache.py` (imported at `bind_guard.py:28`).
+- OPEN QUESTION RAISED TO OWNER BY melder_1, not resolved here: whether to
+  re-point the docs a FOURTH time while the target is still moving.
+- This does NOT reopen the epic - the objective (replace the guard mechanism) is
+  met. It is doc drift and belongs to a doc lane. TASK-2026-07-25-guard-doc-truth
+  is `ready` and is the natural home; it must NOT be closed as-is, because the
+  drift it was written to fix has since regressed.
+- Child tickets are NOT closed by this turn-in and remain independently routable
+  (see the orphan note below).
+
+## Child Tickets Left Open By This Closure
+Closing this parent does not close its children. Still active at turn-in:
+- `tickets/stories/2026-07-25_guard_manifest_truth_story.md` (melder_1, in_progress;
+  board shows `review` awaiting owner acceptance - ticket/board disagree)
+- `tickets/tasks/2026-07-23_bind_guard_sentinel_vs_set_benchmark_task.md`
+  (gemini_0 DEPARTED, in_progress, yet anchored CLOSED on the board - a
+  pre-existing three-way disagreement flagged by melder_1 on 2026-07-25 and
+  still unresolved)
+- `tickets/tasks/2026-07-25_guard_doc_truth_task.md` (melder_1, ready - see caveat)
+- `tickets/tasks/2026-07-25_guard_graph_node_task.md` (melder_1, ready)
+- `tickets/tasks/2026-07-25_c1_code_map_restore_task.md` (melder_1, ready)
+- `tickets/tasks/2026-07-25_init_cache_package_placement_task.md` (melder_0, in_progress)
+- `tickets/tasks/2026-07-25_sentinel_deadcode_strip_task.md` (melder_1, done SUPERSEDED)
 
 ## Objective
 Owner idea (2026-07-22, verbatim intent): investigate REMOVING the

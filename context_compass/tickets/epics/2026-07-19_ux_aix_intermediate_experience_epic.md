@@ -730,6 +730,149 @@ The working developer's tier: SpellBinder fluent binding, spellframes and contra
   REREAD: OPTIONAL
   SCORE_0_TO_10: -
 
+## CORRECTION - 2026-07-27 22:20 UTC - I was wrong twice; owner was right about the frame posture
+
+MEASURE: owner pushed back a second time ("go research the code because
+your not understanding"). Re-traced the whole surface instead of
+re-asserting. Two defects in my previous note, one of them shipped into
+four files.
+
+DEFECT 1 (mine, shipped): "conjure() does NOT publish - configure_aether_
+frame() is the ONLY caller of _bind_configuration_to_aether" is FALSE. I
+grepped spellbook.py ONLY, not the tree. The second caller lives in
+spellbook_creation_system.py:299, inside _prepare_spellbook_for_conjure,
+which runs `if not spellbook.is_configuration_locked(): _validate_and_
+freeze_configuration(); _bind_aetheric_frame_configuration_to_aether();
+_bind_configuration_to_aether()`. Reached from Spellbook.conjure
+(spellbook.py:6248 -> creation system :210 -> :278). So conjure IS a
+publication door. The ORIGINAL probe comment I "corrected" was right.
+
+DEFECT 2 (mine, analytical): the owner's claim was about the
+AethericFrameConfiguration; I answered about shared_framewide_spellbook_
+configuration, which governs a DIFFERENT object. He is CORRECT: the
+frame POSTURE is shared with every spellbook on the frame BY DEFAULT,
+unconditionally, no flag. AethericFrame mints exactly one posture
+(aetheric_frame.py:218-224); Spellbook._initialize_aetheric_frame_
+configuration (spellbook.py:5359-5376) only RETRIEVES it via
+Aether._get_aetheric_frame_configuration (aether.py:1264-1297 ->
+frame.frame_configuration, aetheric_frame.py:563-573) and retains the
+reference. A Spellbook never mints its own. Therefore configure_aether_
+frame(system_state=..., system_caching_enabled=...) mutates the SHARED
+object (spellbook.py:5884-5889) and reconfigures the whole frame for
+every book on it.
+
+DECISION: the standing law is TWO OBJECTS, TWO DEFAULTS.
+  - AethericFrameConfiguration (narrow posture): shared framewide by
+    default, always. No opt-in.
+  - SpellbookConfiguration (rich per-book config): per-book by default;
+    frame-owned sharing needs the switch (shared_framewide_spellbook_
+    configuration=True, minted False at aetheric_frame.py:224) AND a
+    publication through either door.
+The three consumer gates on the rich-config path are unchanged and still
+verified: spellbook.py:5306, :5347, :5620.
+
+ALSO TRACED (new, not previously recorded): AethericFrame.
+bind_frame_configuration (aetheric_frame.py:626-724) ABSORBS a different
+incoming posture field-by-field into the existing frame-owned object
+(including with_shared_framewide_spellbook_configuration at :687) and
+cleanup()s the incoming one, then freezes. conjure(dynamic=True) settles
+the world by mutating and rebinding the SAME retained object
+(spellbook.py:6045-6061) precisely to avoid bulldozing pre-conjure flags.
+
+LANDED: probe file - step-2 law rewritten to name BOTH doors, and a new
+probe test_probe_frame_posture_is_shared_framewide_by_default pins the
+owner's law (same posture object across two books; mutation through one
+visible through the other; rich configs still separate). Lesson 35
+docstring now opens with the two-objects/two-defaults split. Concept map
+lesson-35 block rewritten. Four probes now, not three.
+
+FINDINGS (unchanged, re-verified): no public injection door for a
+user-built AethericFrameConfiguration - the only constructions are
+aetheric_frame.py:219, restore_engine.py:1654, nexus_frame_
+configuration.py:327, and no Spellbook accessor exposes the retained
+posture (grep for a public frame-configuration door returns nothing).
+The class IS exported (melder/__init__.py:68/198) with no way to install
+one. Also unchanged: configure_aether_frame(disposal=...) is unusable on
+an auto-minted book (idempotent pre-set).
+
+LESSON: grep the TREE, not the file. A single-file caller search
+produced a confident, wrong, shipped law. And when the owner names an
+object, trace THAT object before defending a different one.
+
+EVIDENCE: spellbook_creation_system.py:296-300; spellbook.py:5359-5376,
+:5238-5289, :5306, :5347, :5597-5650, :5854-5910, :6045-6061, :6248;
+aetheric_frame.py:218-224, :563-573, :626-724; aether.py:1264-1297,
+:1194; aetheric_frame_configuration.py:118, :607, :659-700, :1177,
+:1580; melder/__init__.py:68, :198.
+
+## MEASURE+DECISION - 2026-07-27 22:25 UTC - the shared-config PROCESS, written for users; switch door is BLOCKING
+
+MEASURE: owner asked for the actual process a user follows to get ONE
+SpellbookConfiguration shared by every spellbook, and told me to stop
+demonstrating posture sharing with the caching knob. Ran the exhaustive
+tree grep I should have run the first time.
+
+EXHAUSTIVE SWITCH TRACE (`grep -rn shared_framewide src/`, excluding the
+posture class itself) - SIX sites, all of them:
+  aetheric_frame.py:224   mint, passes False
+  aetheric_frame.py:687-688  bind_frame_configuration absorbs the flag
+                             from a DIFFERENT incoming posture
+  spellbook.py:5308, :5349, :5620  the three consumer gates
+Every construction site in the runtime leaves it False or omits it:
+aetheric_frame.py:219 (False), restore_engine.py:1654, and
+nexus_frame_configuration.py:327 `to_aetheric_frame_configuration()`
+which does not pass the kwarg at all. No Spellbook accessor exposes the
+retained posture. AetherConfiguration/AetherConfigurationBuilder are
+logging-only. CONCLUSION: shape 2 (frame-owned shared rich config) is
+COMPLETE machinery that is UNREACHABLE from any public API.
+
+ORDERING LAW (new, source-verified): the switch must be flipped BEFORE
+the frame's first conjure. conjure -> _prepare_spellbook_for_conjure
+calls _bind_aetheric_frame_configuration_to_aether, which binds the
+retained posture and FREEZES it (aetheric_frame.py:667-726), and
+with_shared_framewide_spellbook_configuration raises "Cannot modify
+frame configuration after it is frozen" once frozen
+(aetheric_frame_configuration.py:653-656). Note configure_aether_frame
+does NOT freeze the posture - it only freezes and binds the RICH config
+- so it is not the deadline; the first conjure is.
+
+DECISION: lesson 35 now teaches the PROCESS, not the trivia. Shape 1
+(manual share) is presented as THE answer that works today, as three
+numbered steps - build one config for the frame, set policy once, hand
+the same object to every book - with the runnable proof. Shape 2 is
+documented in full with its ordering law and an explicit HONEST GAP
+paragraph saying no public switch exists. Probes now pin all four facts;
+the posture-sharing probe uses THE SWITCH ITSELF as its observable
+instead of system_caching_enabled (owner: the cache knob is a dumb
+demonstration of a configuration law - agreed, it taught nothing about
+the subject).
+
+BLOCKING FOR OWNER - the door. Cheapest correct placement is a
+`shared_framewide_spellbook_configuration: Optional[bool] = None` kwarg
+on configure_aether_frame(): that method already mutates the shared
+frame posture (system_state, system_caching_enabled) and already runs
+_validate_and_freeze_configuration + _bind_configuration_to_aether right
+after, so setting the flag there lands in exactly the right order -
+switch, freeze, publish, later books adopt. It does not freeze the
+posture, so it does not fight the ordering law. Until that exists, the
+curriculum cannot show shape 2 as normal code, because a lesson may
+import melder as md ONLY and the only setters are the posture ctor
+kwarg (:118) and with_shared_framewide_spellbook_configuration() (:607).
+
+LANDED: 35_one_config_every_book.py rewritten around the two-object
+split and the two shapes with numbered steps (5030 bytes, CRLF, AST OK);
+probe file's posture probe re-cut off the caching knob; concept map
+lesson-35 block rewritten to the process; four probes total.
+
+EVIDENCE: aetheric_frame.py:218-224, :563-573, :626-726, :687-688;
+aetheric_frame_configuration.py:118, :607, :653-656, :1177;
+spellbook.py:5238-5289, :5308, :5349, :5359-5376, :5558-5568,
+:5597-5650, :5854-5910, :6045-6061, :6248;
+spellbook_creation_system.py:296-300;
+spellbook_configuration.py:113, :1049; aether.py:1194, :1264-1297;
+nexus_frame_configuration.py:327; nexus_frame_manager.py:994-1029;
+restore_engine.py:1654; melder/__init__.py:68, :198.
+
 ## Context / Handoff Summary
 Method: every example imports melder as md ONLY - a deep-path import in an example
 IS the finding. Examples are runnable scripts with honest asserts; they ride the

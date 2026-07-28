@@ -84,21 +84,39 @@ CONFIGURATION, KNOB BY KNOB (owner-directed wave, 2026-07-26)
    workers_per_spellbook, phase_scheduler_barrier_timeout_milliseconds,
    generalized_singleton_specialization_enabled)
 
-  35 one_config_every_book (CONFIGURATION IS PER-BOOK BY DEFAULT: two
-     books on the SAME frame mint two SEPARATE configurations. Two ways
-     to get one policy across books - (1) MANUAL SHARE: hand the same
-     SpellbookConfiguration object to every book, fully public; (2)
-     FRAME-OWNED SHARE: needs BOTH the switch
-     (shared_framewide_spellbook_configuration=True on the frame
-     posture) AND publication (one book calls configure_aether_frame(),
-     the ONLY caller that binds a config to the frame - conjure() does
-     NOT publish, spellbook.py:5909-5910). Then every LATER book adopts
-     the frame-owned object at construction, locked, and a different
-     config handed to a later book is refused. First publisher wins;
-     adoption is total - no per-book override; cleanup() leaves the
-     shared object alone. Machinery + the per-book default pinned by
-     three probes; the switch has NO public staging door - recorded
-     finding)
+  35 one_config_every_book (TWO OBJECTS, TWO DEFAULTS. FRAME POSTURE
+     (AethericFrameConfiguration) is SHARED WITH EVERY BOOK ON THE
+     FRAME BY DEFAULT, no flag, no opt-in: the frame mints one
+     (aetheric_frame.py:218-224) and every book only BORROWS that
+     reference (spellbook.py:5359-5376 -> aether.py:1264), so posture
+     set through ONE book is what EVERY book reads. RICH CONFIG
+     (SpellbookConfiguration) is PER-BOOK by default. Making the rich
+     one shared has two shapes. SHAPE 1 MANUAL SHARE - public, works
+     today, the lesson's runnable half: build one SpellbookConfiguration
+     for the frame, set policy once, hand THE SAME OBJECT to every
+     Spellbook; first conjure freezes it, later conjures re-enter the
+     freeze (spellbook.py:5558-5568) and lock. SHAPE 2 FRAME-OWNED
+     SHARE - two things in order: (1) THE SWITCH, shared_framewide_
+     spellbook_configuration=True on the frame posture, which MUST be
+     flipped before the frame's first conjure because the posture
+     freezes on first bind and the setter is refused once frozen
+     (aetheric_frame_configuration.py:653-656); (2) PUBLICATION, one
+     book binds its rich config - TWO doors, whichever runs first:
+     configure_aether_frame() (spellbook.py:5910) and conjure() itself
+     via SpellbookCreationSystem._prepare_spellbook_for_conjure
+     (spellbook_creation_system.py:296-300). Then LATER books adopt at
+     construction and come back locked; a book that already existed
+     converges at its own conjure, swapping to the shared object and
+     cleaning up its local one; a different config handed to a later
+     book is refused; adoption is total; cleanup() leaves the shared
+     object alone. FINDING - shape 2 has NO public switch: exhaustive
+     tree grep gives six `shared_framewide` sites outside the posture
+     class and every construction site passes False or omits it
+     (aetheric_frame.py:219, restore_engine.py:1654, nexus_frame_
+     configuration.py:327), and no Spellbook door exposes the retained
+     posture. Shape 1 is the answer until a door exists. Four probes
+     pin posture-shared-by-default, rich-per-book, switch-alone-does-
+     nothing, and switch+publish adoption)
 
 KNOWN GAPS INSIDE THE FENCE (remaining)
   live link policies (whitelist_all/block_all/inbound_only/outbound_only)

@@ -531,3 +531,45 @@ THREE THINGS NEED THE OWNER BEFORE MORE CODE MOVES:
 
 Residue ready to clear once those land: four dead `pyproject.toml` keys, one contrary
 `.gitignore` rule, two stale docstring references to the deleted guard class.
+
+### 2026-07-27 — consumed mailbox NOTICE from helper_f (message deleted in same pass)
+
+helper_f turned in two epics that carry my lanes, under an explicit owner directive:
+- `EPIC-2026-07-22-internal-bind-guard-replacement`
+- `EPIC-2026-07-22-agent-metadata-to-docstring`
+
+Both now sit in `tickets/epics/completed/` with board anchors. helper_f re-verified both
+exit shapes against LIVE SOURCE rather than accepting the ticket claims.
+
+MY CHILDREN ARE NOT CLOSED and stay independently routable: this task and
+`TASK-2026-07-25-agent-metadata-build-asset`, both still `in_progress`.
+
+**The doc-drift claim, corrected and made worse.** helper_f reports both canonical system
+docs cite a dead manifest path and names the live one as
+`_build_assets/_bind_guard/bind_guard.py`. That is one step behind: `bind_guard.py` is now
+the LOADER, and the committed manifest lives at
+`_build_assets/_bind_guard/manifest/bind_guard_manifest.py`. So the docs are wrong AND
+helper_f's correction is wrong; anyone repairing the docs from the message alone would
+write the second-newest path.
+
+Current on-disk truth (verified this session, `--check` green on all three):
+
+    _build_assets/_bind_guard/            _builder.py, bind_guard.py,
+                                          manifest/bind_guard_manifest.py   (582 entries)
+    _build_assets/_agent_documentation/   _builder.py, agent_documentation.py,
+                                          manifest/agent_documentation_manifest.py (406 marked)
+    _build_assets/_system_documents/      _builder.py, system_documents.py,
+                                          manifest/system_documents_manifest.py (4 documents)
+    __melder_cache__/__bind_guard__/            bind_guard.melc          (derived, gitignored)
+    __melder_cache__/__agent_documentation__/   agent_documentation.melc (derived, gitignored)
+
+`_system_documents` has NO cache by design — a cache amortises computation and there is
+none; the payload is already a string, and a cache read at import would defeat the
+laziness that keeps four package-scope documents off the boot path.
+
+Doc repair belongs to melder_1's `TASK-2026-07-25-guard-doc-truth`, which helper_f has
+already told them not to close as-is. Adding here for their benefit: `_agent_documentation/`
+and `_system_documents/` are undocumented in both canonical docs, and the runtime cache
+helper moved out of `_build_assets/` entirely to
+`utilities/caching_system/asset_cache.py` — it is runtime code and did not belong in a
+build-tools directory.

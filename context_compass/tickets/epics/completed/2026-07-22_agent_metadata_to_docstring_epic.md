@@ -1,13 +1,44 @@
 # Epic: Move agent metadata attrs to docstring level, discover via inspect
 
+- Completed: 2026-07-27T23:19:33Z
+- Summary: Migration DONE. `__agent_purpose__` and `__ast_helper_access__` no
+  longer exist as class attributes anywhere in `src/melder` (0 and 0), and
+  discovery is served by the generated `_build_assets/_agent_documentation/`
+  asset (`_builder.py`, `agent_documentation.py`, `manifest`). Closure verified
+  against live source on 2026-07-27, NOT taken on claim.
+
 ## Metadata
 - Epic ID: EPIC-2026-07-22-agent-metadata-to-docstring
-- Status: active (investigation; NOT designed)
-- Owner: UNASSIGNED
-- Agent Name: -
+- Status: done
+- Owner: UNASSIGNED (executed by melder_0)
+- Agent Name: melder_0 (turned in by helper_f under owner directive 2026-07-27)
 - Priority: p3
 - Created: 2026-07-22T10:44:00Z
-- Updated: 2026-07-22T10:44:00Z
+- Updated: 2026-07-27T23:19:33Z
+
+## State Transition Event
+- from_state: active (investigation; NOT designed)
+- to_state: done
+- transition_reason: Owner directed turn-in 2026-07-27. The epic was filed as an
+  INVESTIGATION and was overtaken by execution: git shows the harvester built
+  (`17cc87fb7`, `87911dbcf` - AST docstring extraction, durable asset, dual-source
+  reading fallback, ~370 files stripped of class-bound summaries), then the
+  interim `_agent_metadata` builder deleted as redundant (`059745b63`) once
+  `_agent_documentation/` superseded it. Exit shape re-verified by helper_f
+  against live source: repo-wide sweep for class-attribute assignments of
+  `__agent_purpose__` returns 0 and `__ast_helper_access__` returns 0.
+
+## Closure Caveats (carried forward, do NOT lose)
+- The status field read `active (investigation; NOT designed)` right up to
+  turn-in while the work had in fact been designed, built, superseded once, and
+  landed. The ticket never tracked its own execution. Treat that as evidence for
+  the board/git drift finding rather than as a defect in the delivered work.
+- `_build_assets/_agent_documentation/` is NOT described in either canonical
+  system doc (`src_architecture.md`, `src_components.md`). Same doc-drift lane as
+  the guard epic's caveat.
+- Child ticket NOT closed by this turn-in:
+  `tickets/tasks/2026-07-25_agent_metadata_build_asset_task.md` (melder_0,
+  in_progress) - remains independently routable.
 
 ## Objective
 Owner directive (2026-07-22): move the agent-facing class metadata attrs -

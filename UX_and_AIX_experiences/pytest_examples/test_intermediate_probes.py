@@ -540,12 +540,20 @@ def test_probe_frame_owned_config_needs_switch_and_publication():
                _get_configuration_from_aether (:5306),
                _bind_configuration_to_aether (:5620),
                _is_frame_owned_shared_configuration (:5347).
-      step 2 - PUBLICATION: some book must call configure_aether_frame(),
-               the ONLY caller of _bind_configuration_to_aether
-               (spellbook.py:5909-5910). conjure() does NOT publish.
+      step 2 - PUBLICATION: some book must bind its rich config to the
+               frame. TWO doors do this, whichever runs first:
+               configure_aether_frame() (spellbook.py:5910) and
+               conjure() itself - SpellbookCreationSystem
+               ._prepare_spellbook_for_conjure calls
+               _validate_and_freeze_configuration +
+               _bind_aetheric_frame_configuration_to_aether +
+               _bind_configuration_to_aether whenever the book is not
+               already locked (spellbook_creation_system.py:296-300,
+               reached from Spellbook.conjure -> :6248 -> :210 -> :278).
 
     This half of the probe proves step 1 alone does nothing: flag on,
-    nobody published, so the second book still mints its own config.
+    nobody published through EITHER door (no configure_aether_frame,
+    no conjure), so the second book still mints its own config.
 
     FINDING: neither step has a public door for the switch itself - the
     only setters are the AethericFrameConfiguration constructor kwarg
@@ -608,3 +616,144 @@ def test_probe_frame_owned_config_adoption_via_seam():
     assert first.conjure(name="shared-first").meld(spell=Payload) is not None
     assert second.conjure(name="shared-second").meld(spell=Gamma) is not None
     print("frame-owned adoption pinned: switch + publish -> one config per frame")
+
+
+def test_probe_frame_posture_is_shared_framewide_by_default():
+    """OWNER LAW, source-verified: the AethericFrameConfiguration - the
+    narrow frame POSTURE - is shared with EVERY spellbook on the frame BY
+    DEFAULT. No flag, no opt-in, no publication step.
+
+    The frame mints exactly ONE posture object at construction
+    (aetheric_frame.py:218-224) and hands that same reference to every
+    book. Spellbook._initialize_aetheric_frame_configuration
+    (spellbook.py:5359-5376) only RETRIEVES it, through
+    Aether._get_aetheric_frame_configuration (aether.py:1264-1297 ->
+    frame.frame_configuration, aetheric_frame.py:563-573). A Spellbook
+    NEVER mints its own posture.
+
+    Consequence: posture set through ONE book IS the posture every book
+    on that frame reads - configure_aether_frame() mutates that shared
+    object directly (spellbook.py:5884-5889), and so does any reach
+    through the retained reference.
+
+    Do NOT confuse this with shared_framewide_spellbook_configuration:
+    that flag governs a DIFFERENT object - the rich
+    SpellbookConfiguration - and it is False on the minted posture
+    (aetheric_frame.py:224). Two objects, two different default answers.
+    """
+    first = Spellbook(aetheric_frame="shared-posture-frame")
+    second = Spellbook(aetheric_frame="shared-posture-frame")
+
+    # ONE posture object for the whole frame - no opt-in required.
+    assert (
+        first._aetheric_frame_configuration
+        is second._aetheric_frame_configuration
+    )
+
+    # Reach through one book; every book on the frame sees it. The
+    # observable IS the switch this lesson is about - flipping it
+    # through book one is how book two would ever adopt a shared rich
+    # config. It is refused only after the posture freezes
+    # (aetheric_frame_configuration.py:653-656), and the posture freezes
+    # on the frame's FIRST conjure - both books here are unconjured.
+    assert (
+        second._aetheric_frame_configuration
+        .shared_framewide_spellbook_configuration is False
+    )
+    first._aetheric_frame_configuration.\
+        with_shared_framewide_spellbook_configuration(True)
+    assert (
+        second._aetheric_frame_configuration
+        .shared_framewide_spellbook_configuration is True
+    )
+
+    # ...while the RICH configs stay per-book: still two objects.
+    assert first.get_configuration() is not second.get_configuration()
+    print("frame posture: one object shared framewide by default")
+
+
+def test_probe_conjure_alone_publishes_frame_owned_config():
+    """PUBLICATION DOOR 2 - conjure() itself. No configure_aether_frame()
+    anywhere in this probe: switch on, first book conjures, later book
+    adopts. Spellbook.conjure (:6248) -> SpellbookCreationSystem (:210)
+    -> _prepare_spellbook_for_conjure (spellbook_creation_system.py:278):
+
+        if not spellbook.is_configuration_locked():
+            spellbook._validate_and_freeze_configuration()
+            spellbook._bind_aetheric_frame_configuration_to_aether()
+            spellbook._bind_configuration_to_aether()
+
+    CORRECTION PROBE: an earlier governance note in this repo claimed
+    conjure does NOT publish, from a grep of spellbook.py alone. It was
+    wrong - the second caller lives in the creation system. This test is
+    the guard so that claim cannot come back."""
+    first = Spellbook(aetheric_frame="conjure-publishes")
+    first._aetheric_frame_configuration.\
+        with_shared_framewide_spellbook_configuration(True)
+    policy = first.get_configuration()
+    policy.set_property("phase_scheduler_workers_per_spellbook", 1)
+
+    first.bind(spell=Payload, existence="unique")
+    first.conjure(name="publisher")
+    assert first.is_configuration_locked() is True
+
+    second = Spellbook(aetheric_frame="conjure-publishes")
+    assert second.get_configuration() is policy
+    assert second.is_configuration_locked() is True
+    assert second.get_configuration().get_property(
+        "phase_scheduler_workers_per_spellbook"
+    ) == 1
+    print("conjure published: later book adopted the frame-owned config")
+
+
+def test_probe_pre_existing_book_converges_at_its_own_conjure():
+    """A book that existed BEFORE publication is NOT orphaned. At its own
+    conjure, _bind_configuration_to_aether finds the frame-owned config
+    already bound, swaps this book onto it, marks it locked, and
+    cleanup()s the local config it was carrying
+    (spellbook.py:5626-5650)."""
+    class Gamma:
+        pass
+
+    first = Spellbook(aetheric_frame="converge-frame")
+    first._aetheric_frame_configuration.\
+        with_shared_framewide_spellbook_configuration(True)
+
+    early = Spellbook(aetheric_frame="converge-frame")
+    local = early.get_configuration()
+    assert local is not first.get_configuration()
+
+    policy = first.get_configuration()
+    first.configure_aether_frame(
+        system_state=None,
+        disposal=None,
+        disposal_method_names=None,
+    )
+    # Publication does not reach backwards into books already built.
+    assert early.get_configuration() is local
+    assert early.is_configuration_locked() is False
+
+    early.bind(spell=Gamma, existence="unique")
+    early.conjure(name="late-comer")
+    assert early.get_configuration() is policy
+    assert early.is_configuration_locked() is True
+    print("pre-existing book converged onto the shared config at conjure")
+
+
+def test_probe_switch_is_refused_after_posture_freeze():
+    """THE SWITCH HAS A DEADLINE. The frame posture freezes on the
+    frame's FIRST conjure: _prepare_spellbook_for_conjure calls
+    _bind_aetheric_frame_configuration_to_aether, which routes to
+    AethericFrame.bind_frame_configuration and freezes the retained
+    posture (aetheric_frame.py:667-726). After that,
+    with_shared_framewide_spellbook_configuration refuses
+    (aetheric_frame_configuration.py:653-656). Flip the switch BEFORE
+    anything on the frame conjures."""
+    book = Spellbook(aetheric_frame="freeze-deadline")
+    book.bind(spell=Payload, existence="unique")
+    book.conjure(name="freezer")
+
+    with pytest.raises(RuntimeError, match="after it is frozen"):
+        book._aetheric_frame_configuration.\
+            with_shared_framewide_spellbook_configuration(True)
+    print("switch refused after posture freeze - flip it before first conjure")
