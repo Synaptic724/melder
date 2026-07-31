@@ -5,12 +5,12 @@
 ## Metadata
 - Task ID: TASK-2026-07-25-guard-graph-node
 - Story: STORY-2026-07-25-guard-manifest-truth
-- Status: ready
+- Status: done
 - Owner: melder_1
 - Agent Name: melder_1
 - Priority: p2
 - Created: 2026-07-25T18:19:28Z
-- Updated: 2026-07-25T18:19:28Z
+- Updated: 2026-07-31T23:03:22Z
 
 ## Objective
 Make the `MelderRegistrationGuard` graph node state manifest truth in canonical
@@ -175,6 +175,18 @@ storage, then regenerate the readable consumption artifact from it.
     deterministic regardless of which variant an agent picks.
   NEXT: Raise the recipe's LF/CRLF inconsistency to the owner at story walkthrough.
   REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-07-31T23:03:22Z
+  TYPE: DECISION
+  CLAIM: CLOSED at owner turn-in 2026-07-31. Dead graph node removed and re-verified at closure: src_graph.json holds 535 nodes and
+    SoloFinalizeCreationContextStep is absent. Validation section had read 'Not run'; the check
+    was executed at turn-in rather than closed on claim.
+  EVIDENCE:
+  - context_compass/tickets/tasks/2026-07-25_guard_graph_node_task.md
+  IMPACT: Ticket moved to completed/; board row removed and replaced by one anchor.
+  NEXT: none
+  REREAD: HELPFUL
   SCORE_0_TO_10: 8
 
 ## Context / Handoff Summary

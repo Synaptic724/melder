@@ -174,6 +174,71 @@ creation path plus a result object - dramatically cheaper than D.
    here. Note also that four `SpellState` flags still have no producers - that
    may be exactly where a dirty-unwind state belongs.
 
+## Recommended Direction (owner-set 2026-07-31: lightweight, Aether-hosted)
+
+Owner ruling: transactionalize the TOP level, store the plane in Aether, model it
+on the DevOps plane but do NOT reproduce its depth - "lightweight but just as
+effective".
+
+### The insight that keeps it small
+The lightweight thing already exists ONE LAYER DOWN, and it is
+`ChangeControlEmbargoManager`, NOT `TransactionMediator`. The embargo manager is
+purely the claim table (modes, atomic all-or-nothing acquisition, blocking
+evidence, release-wakes-waiters, cleanup-notifies). All the DEPTH -
+strategy families, `apply_commit_delta`, commit validators, the 15 registered
+transaction types - lives in the mediator ABOVE it. So the top level can hoist
+the claim table WITHOUT hoisting the machinery.
+
+### KEEP (the minimum that is still "just as effective")
+- CLAIM TABLE with scope keys. Scope key at this level = FRAME NAME (plus a
+  world-scope key, see the LoadGate law below).
+- CLAIM MODES, starting at `x` / `s` only. `ix` (intent) exists below to let
+  additive piece-work coexist with whole-unit exclusivity; add it here only when
+  a concrete case appears, not up front.
+- SESSION with commit/abort and a recorded OUTCOME. `TransactionSession` already
+  carries exactly what the owner's two-outcome policy needs: `mark_abort_only`,
+  `mark_aborted`, `mark_committed`, `status`, `failure_reason`,
+  `register_rollback_action`, `run_abort_pipeline`.
+- SAME-THREAD JOIN semantics. Without it a load re-entering its own span
+  deadlocks against itself.
+- TEACH-GRADE BLOCKING EVIDENCE on wait timeout (scope key + holder). LoadGate
+  already does a light version of this; keep the behaviour.
+- PER-REQUEST OUTCOME POLICY: `on_failure: unwind | leave_broken`, honoured by
+  the session. This is where the owner's two outcomes actually live.
+
+### DROP (present below, not needed above)
+- `TransactionStrategyBuilder` + per-family strategies. The top level has a
+  handful of unit kinds, and `LoadPlan` ALREADY does planning and level
+  compilation - there is nothing for a strategy registry to add.
+- `apply_commit_delta` / `DevopsFactRecord` baselines. That exists to serve
+  DevOps information strategies; the top level has no such consumer.
+- Commit validators / commit hooks, until a caller needs one.
+
+### LAW 1 - LoadGate becomes a degenerate claim, not a deleted component
+The current global-exclusive LoadGate is EXACTLY equivalent to one exclusive
+claim on a world scope key. Re-express it that way rather than removing it:
+every load that legitimately needs the whole world keeps today's behaviour
+unchanged, while frame-scoped loads (formations are single-frame BY LAW -
+"multi-frame windows refuse") claim only their frame and gain disjoint
+parallelism. Backwards compatible by construction.
+
+### LAW 2 - Declare the one-way order BEFORE building anything
+Two admission planes can deadlock against each other (AB-BA): a load holding an
+Aether claim while an inner frame transaction waits on a frame claim held by a
+thread waiting on the Aether claim. The order is:
+    AETHER PLANE CLAIMS -> FRAME PLANE CLAIMS, NEVER THE REVERSE.
+MutationResearch's entire threadsafety story is a declared one-way lock order
+(`spellbook -> emission -> root -> set -> child/crystallizer`); this plane needs
+the same discipline stated up front, not discovered in a bug.
+
+### What this does NOT deliver (state plainly, do not oversell)
+It organizes threads; it does NOT unify transactions. Inner frame-level
+transactions still open their own per-identity root sessions and still genuinely
+commit as the load proceeds. Turning N sibling commits into ONE transaction
+requires the frame mediator to know about and JOIN the Aether session - that is
+the deep version the owner explicitly does not want. Sell this plane on DISJOINT
+PARALLELISM and AGENT REPAIR, not on transactional integrity.
+
 ## Milestones (Track Progress)
 - [ ] Milestone 1: Lane 1 answered with a real repro - what happens today.
 - [ ] Milestone 2: Lane 2 answered - is unwind needed, yes or no.

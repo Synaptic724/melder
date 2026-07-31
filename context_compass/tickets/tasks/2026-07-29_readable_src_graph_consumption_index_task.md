@@ -292,6 +292,50 @@ graph edits and no regeneration in this task.
   REREAD: REQUIRED
   SCORE_0_TO_10: 10
 
+- DATETIME: 2026-07-29T23:04:00Z
+  TYPE: MEASURE
+  CLAIM: The graph is NOT over-described; its size tracks repo size almost exactly.
+    `src/melder` holds 560 non-`__init__.py` files against 535 graph nodes = 0.96 nodes
+    per eligible file, so node count is pinned 1:1 to file count by the exhaustive
+    coverage rule, not by authoring choice. Source is 259,068 LOC / 10,385,201 B; the
+    graph is 767,788 B = 7.4% of source, or 3.0 bytes of graph per LOC. Description
+    budget per node is ~1.5 sentences (mean `role` 63 chars, mean `responsibilities` 164)
+    for a file averaging 463 LOC - roughly 30:1 compression. The tree contains 589
+    top-level classes and 6,354 `def` statements, and the graph carries NO function-level
+    detail at all.
+  EVIDENCE:
+  - context_compass/system_docs/graph_details_document.md:205-225
+  IMPACT: Kills "the graph is bloated" as a framing - per-object density is already
+    frugal and cannot be meaningfully reduced without breaching the schema mandate. The
+    cost is structural: size multiplied by TREE DEPTH, since ids are fully-qualified
+    dotted paths (mean 90 chars) stored twice per edge. A shallow tree of 560 files would
+    produce a far smaller graph.
+  NEXT: Add sharding to the DECISION_REQUEST as a fourth option alongside interning.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-07-29T23:04:00Z
+  TYPE: TRADEOFF
+  CLAIM: Subsystem sharding is a viable alternative to indexing and may dominate it. File
+    distribution is heavily lopsided: aether 295 (53%), nexus 122 (22%), crystallizer 59
+    (11%), utilities 44 (8%), mutation_research 20 (4%), _build_assets 10 (2%). aether +
+    nexus alone are 75% of the tree. Sharding on those boundaries means a crystallizer
+    lane loads ~11% of the graph rather than 100%, with NO index machinery to maintain
+    and no `content_sha256` staleness contract to enforce. Cost: cross-subsystem edges
+    need an owning shard or a separate cross-edge file; at 1.86 edges per node the
+    cross-boundary set should be modest, but it is UNMEASURED.
+  EVIDENCE:
+  - context_compass/agent_onboarding/default/engineer/skills/graph_details_usage.md:34-38
+  - context_compass/special_instructions/new_skills/system_doc_index_usage.md:29-51
+  IMPACT: An index over a regenerated artifact goes stale on every regeneration and must
+    carry line_count + content_sha256 + line_ending to be safe; a shard boundary does
+    not, because it is semantic rather than positional. Sharding is the lower-maintenance
+    answer if cross-edge count is genuinely low.
+  NEXT: If the owner favours sharding, measure the cross-subsystem edge count first -
+    that single number decides whether sharding is clean or messy.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
 ## Context / Handoff Summary
 Owner (2026-07-29) skipped `readable_src_graph.json` and `src_graph.json` as onboarding
 reads and assigned `helper_f1` the question of why the artifact grew unreadable. First

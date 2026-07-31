@@ -52,12 +52,12 @@ finished correcting to a layout which no longer exists.
 - [x] Reproduce the failure and locate the root cause with git evidence.
 - [x] Consume gemini_0's handoff and verify all six claims against the filesystem.
 - [x] Establish that runtime validation is impossible in this environment (see Notes).
-- [ ] Owner ruling on the `_RegistrationGuardProxy` shim and the deleted cold-boot lane.
-- [ ] Repoint the four stale `pyproject.toml` keys and the one `.gitignore` rule.
-- [ ] Fix the two stale `MelderRegistrationGuard` prose references.
-- [ ] Coordinate with melder_1 on the three invalidated canonical surfaces.
-- [ ] Run Ticket Microcycle during execution.
-- [ ] Document each meaningful finding immediately in `## Notes` before further investigation.
+- [x] Owner ruling on the `_RegistrationGuardProxy` shim and the deleted cold-boot lane. RULED: shim deleted outright per owner ("get rid of that"); zero refs remain in src or tests.
+- [x] Repoint the four stale `pyproject.toml` keys and the one `.gitignore` rule. Verified: zero stale asset paths remain in either file.
+- [x] Fix the two stale `MelderRegistrationGuard` prose references. Verified: zero refs in src or tests.
+- [x] Coordinate with melder_1 on the three invalidated canonical surfaces. NOTICE sent 2026-07-28T00:10Z with alert line; canonical doc repair stays theirs and I touched neither file.
+- [x] Run Ticket Microcycle during execution.
+- [x] Document each meaningful finding immediately in `## Notes` before further investigation.
 
 ## Deliverables
 - A verified statement of what actually shipped, replacing gemini_0's claim set.

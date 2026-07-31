@@ -5,12 +5,12 @@
 ## Metadata
 - Task ID: TASK-2026-07-25-c1-code-map-restore
 - Story: STORY-2026-07-25-guard-manifest-truth
-- Status: review
+- Status: done
 - Owner: melder_1
 - Agent Name: melder_1
 - Priority: p2
 - Created: 2026-07-25T18:19:28Z
-- Updated: 2026-07-30T11:44:02Z
+- Updated: 2026-07-31T23:03:22Z
 
 ## Objective
 Replace the two-entry truncation stub at `src_components.md:3714` with a complete,
@@ -220,6 +220,19 @@ filesystem-verified C1 inventory of the `src/melder` package.
   NEXT: Owner acceptance.
   REREAD: REQUIRED
   SCORE_0_TO_10: 9
+
+- DATETIME: 2026-07-31T23:03:22Z
+  TYPE: DECISION
+  CLAIM: CLOSED at owner turn-in 2026-07-31. C1 inventory 553 -> 560 by surgical splice. A wholesale rebuild measured 599 lines against the
+    section's 1037; the shortfall was the two-line entry format, so overwriting would have
+    destroyed 438 lines of accepted descriptions. 549 entries preserved byte-for-byte, 4 dead
+    paths dropped, 11 modules inserted, 8 group headers recomputed. Diff 36/25.
+  EVIDENCE:
+  - context_compass/tickets/tasks/2026-07-25_c1_code_map_restore_task.md
+  IMPACT: Ticket moved to completed/; board row removed and replaced by one anchor.
+  NEXT: none
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 8
 
 ## Context / Handoff Summary
 Section is a two-entry stub. Owner ruled full package inventory. `src_architecture.md`

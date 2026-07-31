@@ -56,11 +56,11 @@ and MUST NOT start until `architecture_patch.md` and
 - [x] Audit the unmarked gap and confirm the owner's spell_compiler theory (94%).
 - [x] Confirm every marked class already has a docstring (394/394 - pure move).
 - [x] Settle the grammar with the owner.
-- [ ] Build the harvester with dual-source reading (docstring first, attr fallback).
-- [ ] Generate the asset; reconcile counts against the audit.
-- [ ] Tests for grammar parsing, exemption, pending catalog, and value fidelity.
-- [ ] PHASE 2 (separate, patch-gated): codemod, strip, repoint.
-- [ ] Document each meaningful finding immediately in `## Notes`.
+- [x] Build the harvester with dual-source reading (docstring first, attr fallback). Dual-source served the migration and was REMOVED on completion; docstrings are now the only source.
+- [x] Generate the asset; reconcile counts against the audit. 406 marked / 163 exempt / 13 pending; `--check` green.
+- [x] Tests for grammar parsing, exemption, pending catalog, and value fidelity. Also inverted the legacy-attribute test so reintroducing attr reading fails loudly.
+- [x] PHASE 2 (separate, patch-gated): codemod, strip, repoint. 808 assignments removed across 404 classes; zero remain in src or tests; ~76 KB of prose left the class dicts.
+- [x] Document each meaningful finding immediately in `## Notes`.
 
 ## Deliverables
 - `_build_assets/_agent_metadata/_builder.py` and its generated asset.

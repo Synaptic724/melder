@@ -5,12 +5,12 @@
 ## Metadata
 - Story ID: STORY-2026-07-25-guard-manifest-truth
 - Epic: EPIC-2026-07-22-internal-bind-guard-replacement
-- Status: in_progress
+- Status: done
 - Owner: melder_1
 - Agent Name: melder_1
 - Priority: p2
 - Created: 2026-07-25T18:19:28Z
-- Updated: 2026-07-25T18:19:28Z
+- Updated: 2026-07-31T23:03:22Z
 
 ## User Narrative
 As an agent or engineer reorienting from a blank slate, I want the system docs, the
@@ -343,6 +343,20 @@ doc surface that lies.
 - Add notes when task routing changes, gate decisions are made, or risks shift.
 - Reference child-task notes for evidence instead of duplicating tactical detail.
 - Keep notes append-only and preserve UNKNOWN-first promotion discipline.
+
+- DATETIME: 2026-07-31T23:03:22Z
+  TYPE: DECISION
+  CLAIM: CLOSED at owner turn-in 2026-07-31. Story closed with all 4 children. Guard truth now agrees across both canonical docs, both graph
+    artifacts, the C1 inventory, and the board row - which was itself stale and corrected in the
+    same pass. ARTIFACT DISPOSITION: the two patch docs named under ARTIFACT_PATHS do not exist
+    on disk, so promote_to_documentation is satisfied VACUOUSLY, not by a promotion. The durable
+    deltas were merged directly into the canonical docs by the doc-truth child.
+  EVIDENCE:
+  - context_compass/tickets/stories/2026-07-25_guard_manifest_truth_story.md
+  IMPACT: Ticket moved to completed/; board row removed and replaced by one anchor.
+  NEXT: none
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 8
 
 ## Context / Handoff Summary
 Landed guard mechanism verified in source: build-time `(module, qualname)` manifest,

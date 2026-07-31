@@ -5,12 +5,12 @@
 ## Metadata
 - Task ID: TASK-2026-07-25-system-doc-graph-drift-audit
 - Story: STORY-2026-07-25-guard-manifest-truth
-- Status: in_progress
+- Status: done
 - Owner: melder_1
 - Agent Name: melder_1
 - Priority: p2
 - Created: 2026-07-25T19:42:08Z
-- Updated: 2026-07-25T19:42:08Z
+- Updated: 2026-07-31T23:03:22Z
 
 ## Objective
 Audit the three canonical system artifacts for drift after the 539-file sweep, fix what
@@ -329,6 +329,18 @@ are not buried under it.
   - context_compass/system_docs/src_components.md
   IMPACT: Docs, graph, and source agree; nothing in this lane is left unverified.
   NEXT: None.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-07-31T23:03:22Z
+  TYPE: DECISION
+  CLAIM: CLOSED at owner turn-in 2026-07-31. Audit found no broad rot: 1 dead node of 536, 0 dangling edges, 695/695 cited paths resolved,
+    0 symbol drift. Two 2026-06-12 SYNC NOTE blocks compressed with content preserved; the
+    phase-8-11 artifact-ownership sub-block MOVED not cut, being a live contract.
+  EVIDENCE:
+  - context_compass/tickets/tasks/2026-07-25_system_doc_graph_drift_audit_task.md
+  IMPACT: Ticket moved to completed/; board row removed and replaced by one anchor.
+  NEXT: none
   REREAD: HELPFUL
   SCORE_0_TO_10: 8
 

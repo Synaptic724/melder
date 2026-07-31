@@ -5,12 +5,12 @@
 ## Metadata
 - Task ID: TASK-2026-07-25-sentinel-deadcode-strip
 - Story: STORY-2026-07-25-guard-manifest-truth
-- Status: done (SUPERSEDED - the target code was deleted by the owner's sweep)
+- Status: done
 - Owner: melder_1
 - Agent Name: melder_1
 - Priority: p2
 - Created: 2026-07-25T18:19:28Z
-- Updated: 2026-07-25T18:19:28Z
+- Updated: 2026-07-31T23:03:22Z
 
 ## Objective
 Delete the sentinel machinery the manifest replaced, so the guard module stops
@@ -195,6 +195,17 @@ exposing a surface whose own docstring instructs a pattern that no longer works.
   NEXT: Owner routing - these are two docstring edits, deliberately not taken as a
     drive-by inside a documentation lane.
   REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-07-31T23:03:22Z
+  TYPE: DECISION
+  CLAIM: CLOSED at owner turn-in 2026-07-31. Closed SUPERSEDED - the target code was deleted by the owner's sweep before this lane ran, so
+    the patch gate is moot. No code change attributable to this ticket.
+  EVIDENCE:
+  - context_compass/tickets/tasks/2026-07-25_sentinel_deadcode_strip_task.md
+  IMPACT: Ticket moved to completed/; board row removed and replaced by one anchor.
+  NEXT: none
+  REREAD: HELPFUL
   SCORE_0_TO_10: 8
 
 ## Context / Handoff Summary

@@ -5,12 +5,12 @@
 ## Metadata
 - Task ID: TASK-2026-07-25-attention-board-truth-repair
 - Story: none (standalone board-hygiene task)
-- Status: in_progress
+- Status: done
 - Owner: melder_1
 - Agent Name: melder_1
 - Priority: p2
 - Created: 2026-07-25T19:10:00Z
-- Updated: 2026-07-25T19:10:00Z
+- Updated: 2026-07-31T23:03:22Z
 
 ## Objective
 Make `attention_board.md` tell the truth about what is live, what is stale, and what is
@@ -185,6 +185,18 @@ owner.
   NEXT: For the remainder of this session, add the board row in the same pass that
     creates the ticket, before any implementation edit.
   REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-07-31T23:03:22Z
+  TYPE: DECISION
+  CLAIM: CLOSED at owner turn-in 2026-07-31. Board pointers repaired without pre-empting any lane: dead anchor pointer fixed, helper_f's 4
+    rows annotated stale but left UNCHANGED (declaring another agent's lane dead is an owner
+    call). All 16 board ticket paths resolve.
+  EVIDENCE:
+  - context_compass/tickets/tasks/2026-07-25_attention_board_truth_repair_task.md
+  IMPACT: Ticket moved to completed/; board row removed and replaced by one anchor.
+  NEXT: none
+  REREAD: HELPFUL
   SCORE_0_TO_10: 8
 
 ## Context / Handoff Summary

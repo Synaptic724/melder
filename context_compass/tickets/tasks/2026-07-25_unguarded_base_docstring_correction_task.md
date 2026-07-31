@@ -5,12 +5,12 @@
 ## Metadata
 - Task ID: TASK-2026-07-25-unguarded-base-docstring-correction
 - Story: STORY-2026-07-25-guard-manifest-truth
-- Status: in_progress
+- Status: review
 - Owner: melder_1
 - Agent Name: melder_1
 - Priority: p2
 - Created: 2026-07-25T19:25:00Z
-- Updated: 2026-07-25T19:25:00Z
+- Updated: 2026-07-31T23:05:38Z
 
 ## Objective
 Replace the retired-sentinel justification in five base-class `Registration:` sections
@@ -308,6 +308,22 @@ docstrings instruct maintainers to preserve an exclusion that no longer exists.
   NEXT: Never express a judgement-based removal as a shape-based pattern.
   REREAD: REQUIRED
   SCORE_0_TO_10: 10
+
+- DATETIME: 2026-07-31T23:05:38Z
+  TYPE: RISK
+  CLAIM: Board row for this lane was MALFORMED - 15 cells against the table's 12. Two
+    generations of next/outcome/exit_signal had been appended rather than replaced, and the
+    older triple claimed 'Owner acceptance -> close, anchor' on a lane that is BLOCKED on an
+    owner ruling. Merged to 12 cells, keeping both bodies of content, and set
+    blocker=decision_request which had been sitting at 'none'.
+  EVIDENCE:
+  - context_compass/attention_board.md:71
+  IMPACT: A reader scanning blockers would have seen 'none' and read the lane as merely
+    awaiting acceptance, when 23 files still teach a contract break. Same append-instead-of-
+    replace fault that produced duplicate rows three times earlier in this session.
+  NEXT: Owner ruling on the 2026-07-19 vs 2026-07-24 regime.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
 
 ## Context / Handoff Summary
 Five base-class docstrings still teach the retired sentinel and instruct maintainers not

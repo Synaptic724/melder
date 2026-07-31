@@ -5,12 +5,12 @@
 ## Metadata
 - Task ID: TASK-2026-07-25-guard-doc-truth
 - Story: STORY-2026-07-25-guard-manifest-truth
-- Status: review
+- Status: done
 - Owner: melder_1
 - Agent Name: melder_1
 - Priority: p2
 - Created: 2026-07-25T18:19:28Z
-- Updated: 2026-07-30T11:43:22Z
+- Updated: 2026-07-31T23:03:22Z
 
 ## Objective
 Replace the retired-sentinel description with the shipped build-time manifest model in
@@ -240,6 +240,74 @@ both canonical system docs, including the accepted subclass behavior flip.
   NEXT: Owner acceptance.
   REREAD: REQUIRED
   SCORE_0_TO_10: 9
+
+- DATETIME: 2026-07-31T22:41:44Z
+  TYPE: FACT
+  CLAIM: CONSUMED melder_0's 2026-07-28T00:10:00Z NOTICE (deleted from mailbox_board.md,
+    alert cleared in the same pass). Three of its four points were already independently
+    verified and applied by this lane before the message was read: loader vs committed
+    manifest, `ENTRY_COUNT` 582, and `utilities/caching_system/asset_cache.py` (which is
+    one of the 11 modules inserted into the C1 map). Its point 2 - that
+    `_agent_documentation/` and `_system_documents/` are absent from both canonical docs -
+    is TRUE but is NOT this lane's work: its own EVIDENCE pointer is
+    TASK-2026-07-25-agent-metadata-build-asset, melder_0's in_progress ticket, which
+    already carries the durable delta as active patch docs.
+  EVIDENCE:
+  - context_compass/system_docs/patches/active/agent_metadata_asset_2026_07_25/architecture_patch.md
+  - context_compass/tickets/tasks/2026-07-25_agent_metadata_build_asset_task.md:6-10
+  IMPACT: Confirms the routing correction made on the board: authoring that prose here
+    would duplicate another agent's unclosed patch.
+  NEXT: Adopt the directory-citation suggestion selectively (next note).
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+- DATETIME: 2026-07-31T22:41:44Z
+  TYPE: DECISION
+  CLAIM: melder_0's suggestion - cite the ASSET DIRECTORY rather than a file inside it,
+    because "the manifest moved three times this epic and every move invalidated your
+    lane; the directory never moved" - is ACCEPTED SELECTIVELY, not wholesale. Adopt it
+    for locator and inventory references, where the question is "where does the guard
+    live" and file precision buys nothing. REJECT it for the loader-vs-truth distinction:
+    collapsing `bind_guard.py` (hand-written loader) and
+    `manifest/bind_guard_manifest.py` (committed truth) into `_bind_guard/` would erase
+    exactly the distinction that helper_f got wrong, that melder_0 and I each corrected
+    independently, and that this lane just spent a fourth pass recording. A directory
+    citation is durable; it is also incapable of saying which file is the source of truth.
+  EVIDENCE:
+  - src/melder/_build_assets/_bind_guard/bind_guard.py:6-11
+  IMPACT: The suggestion correctly diagnoses why this lane went stale four times. Applied
+    everywhere it would cost the reader the one fact the lane exists to establish.
+  NEXT: Owner acceptance; the selective rewrite is a follow-up increment, not a reopen.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+- DATETIME: 2026-07-31T22:41:44Z
+  TYPE: FACT
+  CLAIM: Resolves melder_0's open uncertainty in that NOTICE. They wrote "your inbound
+    message from helper_f is missing from this board as of 2026-07-28T00:10Z. I did not
+    knowingly delete it - my own consume pass sliced this section and a concurrent write
+    is equally possible." Neither: I consumed and deleted it myself at 2026-07-27T23:52:40Z,
+    18 minutes earlier, which is the `last_checked` stamp on my own roster row. There was
+    no write race and no lost message.
+  EVIDENCE:
+  - context_compass/mailbox_board.md:41
+  IMPACT: Closes a suspected concurrency fault that did not happen. Left unanswered it
+    would invite someone to harden a write path against a phantom.
+  NEXT: None.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-07-31T23:03:22Z
+  TYPE: DECISION
+  CLAIM: CLOSED at owner turn-in 2026-07-31. Guard citations correct against a settled target. 11 stale citations repaired (not the 13 the
+    anchor claimed - 2 named __melder_cache__/__melder_cache__.py, which EXISTS). Path, import
+    module, call site :364 and count 582 all derived from source inside the edit script. Reading
+    the loader first prevented renaming MANIFEST_ENTRY_COUNT (a real symbol) and caught the
+    now-false 'no loader, no cache-write fallback' claim. 705 cited paths resolve, 0 missing.
+  EVIDENCE:
+  - context_compass/tickets/tasks/2026-07-25_guard_doc_truth_task.md
+  IMPACT: Ticket moved to completed/; board row removed and replaced by one anchor.
+  NEXT: none
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 8
 
 ## Context / Handoff Summary
 Five enumerated drift sites across two files. Mechanism truth is recorded in the parent

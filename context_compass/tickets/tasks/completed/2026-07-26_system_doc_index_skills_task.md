@@ -5,12 +5,12 @@
 ## Metadata
 - Task ID: TASK-2026-07-26-system-doc-index-skills
 - Story: none (standalone; foundation for the index implementation that follows)
-- Status: in_progress
+- Status: done
 - Owner: melder_1
 - Agent Name: melder_1
 - Priority: p2
 - Created: 2026-07-26T17:13:51Z
-- Updated: 2026-07-26T17:13:51Z
+- Updated: 2026-07-31T23:03:22Z
 
 ## Objective
 Write the two skills that govern line-range indexes over the large system docs - one for
@@ -207,6 +207,19 @@ to build against instead of inventing one mid-flight.
   NEXT: Owner keeps or discards the two generated indexes; the skills stand either way.
   REREAD: REQUIRED
   SCORE_0_TO_10: 9
+
+- DATETIME: 2026-07-31T23:03:22Z
+  TYPE: DECISION
+  CLAIM: CLOSED at owner turn-in 2026-07-31. Both index skills authored AND dogfooded by running their own recipes verbatim, which found 3
+    defects invisible on reading: an unextractable fence, a title section spanning 5,174 of
+    5,176 lines, and 2 redundant schema fields worth 3,900 tokens. Indexes generated as a
+    validation by-product; both pass all four checks and were regenerated after every doc edit.
+  EVIDENCE:
+  - context_compass/tickets/tasks/2026-07-26_system_doc_index_skills_task.md
+  IMPACT: Ticket moved to completed/; board row removed and replaced by one anchor.
+  NEXT: none
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 8
 
 ## Context / Handoff Summary
 Skills-before-implementation, per owner instruction. Two skills authored under

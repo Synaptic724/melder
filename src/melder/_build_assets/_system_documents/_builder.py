@@ -72,6 +72,27 @@ class SystemDocumentsBuildPolicy:
     MANIFEST_DIR_NAME: str = "manifest"
     MANIFEST_FILE_NAME: str = "system_documents_manifest.py"
 
+    # Payloads live in their OWN modules, one per document, and the manifest
+    # holds only metadata. This is not tidiness - it is the difference between
+    # `import melder` costing four bytes of metadata and costing 1.9 MB.
+    #
+    # The manifest is imported eagerly through
+    # `__init__.py -> __architecture__ -> system_documents -> manifest`. Inlining
+    # the real documents there would load ALL FOUR on every process start,
+    # defeating the laziness `StaticSystemDocument` exists to provide - it defers
+    # INDEXING, and cannot defer a module-scope import it does not control.
+    #
+    # Splitting them means the loader imports one payload module the first time
+    # a document's body is actually asked for, and never for the other three.
+    PAYLOAD_DIR_NAME: str = "payloads"
+
+    # Where ingested content comes from. NOT shipped in the wheel
+    # (`context_compass*` is excluded), which is exactly why the builder INLINES
+    # the bytes at build time rather than reading them at runtime: the source of
+    # truth stays a single reviewed file in the repo, and the wheel stays
+    # self-contained.
+    INGEST_ROOT: str = "context_compass/system_docs"
+
     MARKDOWN_KEY: str = "m"
 
     READ_ORDER: Tuple[str, ...] = (
@@ -232,6 +253,20 @@ Where to look when a node refuses to resolve.
 }
 
 
+# Documents whose real content is READY to be ingested from `INGEST_ROOT`.
+#
+# Per-document on purpose, not a global switch: `src_architecture.md` and
+# `src_components.md` are hand-maintained prose that stabilises on a different
+# schedule from the two graph documents, and `src_graph.json` in particular is a
+# single 750,000-character line that only a character budget can page. Flipping
+# one document on must not drag the others in before they are ready.
+#
+# Adding a name here is the ENTIRE population step: the builder reads the source,
+# inlines it, sets `populated=True`, and the fingerprint moves so `--check`
+# catches it. Nothing else changes.
+READY_TO_INGEST: Tuple[str, ...] = ()
+
+
 def package_root() -> pathlib.Path:
     """
     Return the `melder` package directory.
@@ -240,6 +275,80 @@ def package_root() -> pathlib.Path:
         pathlib.Path: Directory containing the melder package.
     """
     return pathlib.Path(__file__).resolve().parent.parent.parent
+
+
+def repository_root() -> pathlib.Path:
+    """
+    Return the repository root, which holds `context_compass/`.
+
+    Contract:
+        `<repo>/src/melder` -> `<repo>`. Only used at BUILD time to ingest
+        document sources; nothing at runtime resolves this path, because the
+        content is inlined into the generated payloads.
+
+    Returns:
+        pathlib.Path: The repository root.
+    """
+    return package_root().parent.parent
+
+
+def payload_dir() -> pathlib.Path:
+    """
+    Return the directory holding the generated per-document payload modules.
+
+    Returns:
+        pathlib.Path: `<asset dir>/payloads`.
+    """
+    return (
+        package_root()
+        / SystemDocumentsBuildPolicy.BUILD_ASSETS_DIR_NAME
+        / SystemDocumentsBuildPolicy.ASSET_DIR_NAME
+        / SystemDocumentsBuildPolicy.PAYLOAD_DIR_NAME
+    )
+
+
+def payload_module_name(document_name: str) -> str:
+    """
+    Return the module basename for one document's payload.
+
+    Args:
+        document_name: A dunder-shaped document name, e.g. `__architecture__`.
+
+    Returns:
+        str: Payload module basename, e.g. `architecture_payload`.
+    """
+    return f"{document_name.strip('_')}_payload"
+
+
+def resolve_body(document_name: str) -> Tuple[str, bool]:
+    """
+    Return one document's body and whether it is real content or a template.
+
+    Contract:
+        A document listed in `READY_TO_INGEST` is read from its source under
+        `INGEST_ROOT` and marked populated. Anything else - including a document
+        listed as ready whose source file is ABSENT - falls back to its template
+        and is marked NOT populated.
+
+        The missing-source case falls back rather than raising on purpose: a
+        trimmed checkout or a wheel build from an sdist has no `context_compass/`
+        at all, and refusing to build there would make the package unbuildable
+        outside a full clone. The `populated` flag carries the truth instead, so
+        a caller can always tell what it actually got.
+
+    Args:
+        document_name: The document to resolve.
+
+    Returns:
+        Tuple[str, bool]: The body text and its populated flag.
+    """
+    template = TEMPLATES[document_name]
+    if document_name not in READY_TO_INGEST:
+        return template["body"], False
+    source = repository_root() / template["source"]
+    if not source.is_file():
+        return template["body"], False
+    return source.read_text(encoding="utf-8"), True
 
 
 def manifest_path() -> pathlib.Path:
