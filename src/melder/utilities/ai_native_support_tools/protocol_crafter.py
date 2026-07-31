@@ -2,25 +2,19 @@ import ast
 import inspect
 import re
 import threading
+from collections.abc import Callable, Sequence
 from pathlib import Path
 from typing import (
     Any,
-    Callable,
-    Dict,
-    List,
-    Optional,
-    Sequence,
-    Tuple,
+    ClassVar,
     Union,
     get_args,
     get_origin,
-    ClassVar,
 )
-
-
 
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
+
 FunctionNode = Union[ast.FunctionDef, ast.AsyncFunctionDef]
 
 
@@ -237,10 +231,10 @@ class ProtocolCrafter(Cleanable):
         self.check_cleaned()
         with self._lock:
             target_class, target_instance = self._normalize_target(target)
-            protocol_name = "I{0}".format(target_class.__name__)
+            protocol_name = f"I{target_class.__name__}"
             class_docstring = self._build_docstring_lines(
                 inspect.getdoc(target_class),
-                fallback="Protocol mirror for {0}.".format(target_class.__name__),
+                fallback=f"Protocol mirror for {target_class.__name__}.",
                 indent="    ",
             )
             attribute_map = self._collect_attributes(
@@ -253,9 +247,9 @@ class ProtocolCrafter(Cleanable):
                 include_inheritance=include_inheritance,
             )
 
-            lines: List[str] = [
+            lines: list[str] = [
                 "@runtime_checkable",
-                "class {0}(Protocol):".format(protocol_name),
+                f"class {protocol_name}(Protocol):",
             ]
             lines.extend(class_docstring)
 
@@ -267,7 +261,7 @@ class ProtocolCrafter(Cleanable):
                 lines.append("")
                 for attribute_name, annotation_text in attribute_map.items():
                     lines.append(
-                        "    {0}: {1}".format(attribute_name, annotation_text)
+                        f"    {attribute_name}: {annotation_text}"
                     )
 
             if method_map:
@@ -280,10 +274,10 @@ class ProtocolCrafter(Cleanable):
 
     def craft_protocol_module_code_from_source_file(
             self,
-            source_file_path: Union[str, Path],
+            source_file_path: str | Path,
             class_name: str,
             *,
-            protocol_name: Optional[str] = None,
+            protocol_name: str | None = None,
     ) -> str:
         """
         Build one complete protocol-module string from a source file and class.
@@ -307,9 +301,9 @@ class ProtocolCrafter(Cleanable):
         with self._lock:
             source_path = Path(source_file_path)
             class_node = self._load_source_class(source_path, class_name)
-            resolved_protocol_name = protocol_name or "I{0}".format(class_name)
+            resolved_protocol_name = protocol_name or f"I{class_name}"
             class_docstring = ast.get_docstring(class_node) or (
-                "Protocol mirror for {0}.".format(class_name)
+                f"Protocol mirror for {class_name}."
             )
             attribute_nodes = self._build_protocol_attributes_from_source(
                 class_node,
@@ -331,11 +325,11 @@ class ProtocolCrafter(Cleanable):
 
     def write_protocol_module_from_source_file(
             self,
-            source_file_path: Union[str, Path],
+            source_file_path: str | Path,
             class_name: str,
-            output_directory: Union[str, Path],
+            output_directory: str | Path,
             *,
-            protocol_name: Optional[str] = None,
+            protocol_name: str | None = None,
     ) -> Path:
         """
         Write one generated protocol module into a chosen directory.
@@ -372,7 +366,7 @@ class ProtocolCrafter(Cleanable):
         """
         self.check_cleaned()
         with self._lock:
-            resolved_protocol_name = protocol_name or "I{0}".format(class_name)
+            resolved_protocol_name = protocol_name or f"I{class_name}"
             module_text = self.craft_protocol_module_code_from_source_file(
                 source_file_path,
                 class_name,
@@ -387,7 +381,7 @@ class ProtocolCrafter(Cleanable):
 
     def craft_joined_protocol_module_code(
             self,
-            targets: Sequence[Tuple[Union[str, Path], str]],
+            targets: Sequence[tuple[str | Path, str]],
             protocol_name: str,
     ) -> str:
         """
@@ -436,9 +430,9 @@ class ProtocolCrafter(Cleanable):
 
     def write_joined_protocol_module(
             self,
-            targets: Sequence[Tuple[Union[str, Path], str]],
+            targets: Sequence[tuple[str | Path, str]],
             protocol_name: str,
-            output_directory: Union[str, Path],
+            output_directory: str | Path,
     ) -> Path:
         """
         Write one joined protocol module into a chosen directory.
@@ -485,7 +479,7 @@ class ProtocolCrafter(Cleanable):
 
     def add_protocol_to_interface_file(
             self,
-            interface_file_path: Union[str, Path],
+            interface_file_path: str | Path,
             protocol_code: str,
     ) -> str:
         """
@@ -514,9 +508,7 @@ class ProtocolCrafter(Cleanable):
             existing_text = path.read_text(encoding="utf-8") if path.exists() else ""
             if self._contains_protocol(existing_text, protocol_name):
                 raise ValueError(
-                    "Protocol '{0}' already exists in the interface file.".format(
-                        protocol_name
-                    )
+                    f"Protocol '{protocol_name}' already exists in the interface file."
                 )
             stripped_existing_text = existing_text.rstrip()
             stripped_protocol_code = protocol_code.strip()
@@ -535,7 +527,7 @@ class ProtocolCrafter(Cleanable):
 
     def remove_protocol_from_interface_file(
             self,
-            interface_file_path: Union[str, Path],
+            interface_file_path: str | Path,
             protocol_name: str,
     ) -> str:
         """
@@ -564,7 +556,7 @@ class ProtocolCrafter(Cleanable):
             path.write_text(updated_text, encoding="utf-8")
             return updated_text
 
-    def _normalize_target(self, target: object) -> Tuple[type, Optional[object]]:
+    def _normalize_target(self, target: object) -> tuple[type, object | None]:
         """
         Normalize one protocol-crafting target into class and optional instance state.
 
@@ -589,10 +581,10 @@ class ProtocolCrafter(Cleanable):
     def _collect_attributes(
             self,
             target_class: type,
-            target_instance: Optional[object],
+            target_instance: object | None,
             *,
             include_inheritance: bool,
-    ) -> Dict[str, str]:
+    ) -> dict[str, str]:
         """
         Collect protocol attribute declarations for the target.
 
@@ -607,7 +599,7 @@ class ProtocolCrafter(Cleanable):
         Returns:
             Dict[str, str]: Attribute name to rendered annotation text.
         """
-        attribute_map: Dict[str, str] = {}
+        attribute_map: dict[str, str] = {}
         classes_to_scan = self._resolve_classes_to_scan(
             target_class,
             include_inheritance=include_inheritance,
@@ -648,7 +640,7 @@ class ProtocolCrafter(Cleanable):
             target_class: type,
             *,
             include_inheritance: bool,
-    ) -> Dict[str, List[str]]:
+    ) -> dict[str, list[str]]:
         """
         Collect protocol method declarations for the target.
 
@@ -661,7 +653,7 @@ class ProtocolCrafter(Cleanable):
         Returns:
             Dict[str, List[str]]: Method name to generated code lines.
         """
-        method_map: Dict[str, List[str]] = {}
+        method_map: dict[str, list[str]] = {}
         classes_to_scan = self._resolve_classes_to_scan(
             target_class,
             include_inheritance=include_inheritance,
@@ -684,7 +676,7 @@ class ProtocolCrafter(Cleanable):
             target_class: type,
             *,
             include_inheritance: bool,
-    ) -> List[type]:
+    ) -> list[type]:
         """
         Return the class scan order for attribute and method collection.
 
@@ -708,7 +700,7 @@ class ProtocolCrafter(Cleanable):
             self,
             method_name: str,
             function_object: Callable[..., Any],
-    ) -> List[str]:
+    ) -> list[str]:
         """
         Build the generated protocol lines for one mirrored method.
 
@@ -725,11 +717,11 @@ class ProtocolCrafter(Cleanable):
         signature_text = self._render_signature(function_object)
         docstring_lines = self._build_docstring_lines(
             inspect.getdoc(function_object),
-            fallback="Protocol mirror for `{0}`.".format(method_name),
+            fallback=f"Protocol mirror for `{method_name}`.",
             indent="        ",
         )
         method_lines = [
-            "    def {0}{1}:".format(method_name, signature_text),
+            f"    def {method_name}{signature_text}:",
         ]
         method_lines.extend(docstring_lines)
         method_lines.append("        ...")
@@ -748,7 +740,7 @@ class ProtocolCrafter(Cleanable):
         """
         signature = inspect.signature(function_object)
         parameters = list(signature.parameters.values())
-        rendered_parameters: List[str] = []
+        rendered_parameters: list[str] = []
         saw_var_positional = False
         for index, parameter in enumerate(parameters):
             if (
@@ -786,20 +778,16 @@ class ProtocolCrafter(Cleanable):
             str: Rendered parameter text.
         """
         if parameter.kind is inspect.Parameter.VAR_POSITIONAL:
-            parameter_name = "*{0}".format(parameter.name)
+            parameter_name = f"*{parameter.name}"
         elif parameter.kind is inspect.Parameter.VAR_KEYWORD:
-            parameter_name = "**{0}".format(parameter.name)
+            parameter_name = f"**{parameter.name}"
         else:
             parameter_name = parameter.name
 
         if parameter.annotation is not inspect._empty:
-            parameter_name += ": {0}".format(
-                self._render_annotation(parameter.annotation)
-            )
+            parameter_name += f": {self._render_annotation(parameter.annotation)}"
         if parameter.default is not inspect._empty:
-            parameter_name += " = {0}".format(
-                self._render_default_value(parameter.default)
-            )
+            parameter_name += f" = {self._render_default_value(parameter.default)}"
         return parameter_name
 
     def _render_default_value(self, value: object) -> str:
@@ -846,60 +834,38 @@ class ProtocolCrafter(Cleanable):
         if origin is Union:
             non_none_args = [item for item in args if item is not type(None)]
             if len(non_none_args) == 1 and len(args) == 2:
-                return "Optional[{0}]".format(
-                    self._render_annotation(non_none_args[0])
-                )
+                return f"Optional[{self._render_annotation(non_none_args[0])}]"
             return "Union[{0}]".format(
                 ", ".join(self._render_annotation(item) for item in args)
             )
-        if origin in (list, List):
-            return "List[{0}]".format(
-                self._render_annotation(args[0] if args else Any)
-            )
-        if origin in (dict, Dict):
+        if origin in (list, list):
+            return f"List[{self._render_annotation(args[0] if args else Any)}]"
+        if origin in (dict, dict):
             key_annotation = args[0] if len(args) > 0 else Any
             value_annotation = args[1] if len(args) > 1 else Any
-            return "Dict[{0}, {1}]".format(
-                self._render_annotation(key_annotation),
-                self._render_annotation(value_annotation),
-            )
-        if origin in (tuple, Tuple):
+            return f"Dict[{self._render_annotation(key_annotation)}, {self._render_annotation(value_annotation)}]"
+        if origin in (tuple, tuple):
             if len(args) == 2 and args[1] is Ellipsis:
-                return "Tuple[{0}, ...]".format(
-                    self._render_annotation(args[0])
-                )
+                return f"Tuple[{self._render_annotation(args[0])}, ...]"
             return "Tuple[{0}]".format(
                 ", ".join(self._render_annotation(item) for item in args)
             )
         if origin is set:
-            return "Set[{0}]".format(
-                self._render_annotation(args[0] if args else Any)
-            )
+            return f"Set[{self._render_annotation(args[0] if args else Any)}]"
         if origin is frozenset:
-            return "FrozenSet[{0}]".format(
-                self._render_annotation(args[0] if args else Any)
-            )
+            return f"FrozenSet[{self._render_annotation(args[0] if args else Any)}]"
         if origin is not None:
             origin_name = getattr(origin, "__name__", None)
             if origin_name == "Sequence":
-                return "Sequence[{0}]".format(
-                    self._render_annotation(args[0] if args else Any)
-                )
+                return f"Sequence[{self._render_annotation(args[0] if args else Any)}]"
             if origin_name == "Mapping":
                 key_annotation = args[0] if len(args) > 0 else Any
                 value_annotation = args[1] if len(args) > 1 else Any
-                return "Mapping[{0}, {1}]".format(
-                    self._render_annotation(key_annotation),
-                    self._render_annotation(value_annotation),
-                )
+                return f"Mapping[{self._render_annotation(key_annotation)}, {self._render_annotation(value_annotation)}]"
             if origin_name == "Iterable":
-                return "Iterable[{0}]".format(
-                    self._render_annotation(args[0] if args else Any)
-                )
+                return f"Iterable[{self._render_annotation(args[0] if args else Any)}]"
             if origin_name == "Iterator":
-                return "Iterator[{0}]".format(
-                    self._render_annotation(args[0] if args else Any)
-                )
+                return f"Iterator[{self._render_annotation(args[0] if args else Any)}]"
             if origin_name == "Callable":
                 if len(args) != 2:
                     return "Callable[..., Any]"
@@ -914,10 +880,7 @@ class ProtocolCrafter(Cleanable):
                             for item in callable_args
                         )
                     )
-                return "Callable[{0}, {1}]".format(
-                    callable_arguments_text,
-                    self._render_annotation(callable_return),
-                )
+                return f"Callable[{callable_arguments_text}, {self._render_annotation(callable_return)}]"
 
         module_name = getattr(annotation, "__module__", "")
         annotation_name = getattr(annotation, "__name__", None)
@@ -929,7 +892,7 @@ class ProtocolCrafter(Cleanable):
             return annotation_name
         if annotation_name in self._TYPING_FAMILY_NAMES:
             return annotation_name
-        return "\"{0}\"".format(annotation_name)
+        return f"\"{annotation_name}\""
 
     def _annotation_from_value(self, value: object) -> str:
         """
@@ -964,7 +927,7 @@ class ProtocolCrafter(Cleanable):
     def _unwrap_method_candidate(
             self,
             value: object,
-    ) -> Optional[Callable[..., Any]]:
+    ) -> Callable[..., Any] | None:
         """
         Return the underlying function for one method-like class member.
 
@@ -987,11 +950,11 @@ class ProtocolCrafter(Cleanable):
 
     def _build_docstring_lines(
             self,
-            docstring_text: Optional[str],
+            docstring_text: str | None,
             *,
             fallback: str,
             indent: str,
-    ) -> List[str]:
+    ) -> list[str]:
         """
         Build one indented triple-quoted docstring block.
 
@@ -1039,7 +1002,7 @@ class ProtocolCrafter(Cleanable):
         """
         if not source_file_path.exists():
             raise ValueError(
-                "Source file '{0}' does not exist.".format(source_file_path)
+                f"Source file '{source_file_path}' does not exist."
             )
         try:
             source_tree = ast.parse(
@@ -1048,22 +1011,19 @@ class ProtocolCrafter(Cleanable):
             )
         except SyntaxError as error:
             raise ValueError(
-                "Source file '{0}' could not be parsed.".format(source_file_path)
+                f"Source file '{source_file_path}' could not be parsed."
             ) from error
         for node in source_tree.body:
             if isinstance(node, ast.ClassDef) and node.name == class_name:
                 return node
         raise ValueError(
-            "Class '{0}' was not found in '{1}'.".format(
-                class_name,
-                source_file_path,
-            )
+            f"Class '{class_name}' was not found in '{source_file_path}'."
         )
 
     def _load_joined_source_models(
             self,
-            targets: Sequence[Tuple[Union[str, Path], str]],
-    ) -> List[Tuple[Path, str, ast.ClassDef]]:
+            targets: Sequence[tuple[str | Path, str]],
+    ) -> list[tuple[Path, str, ast.ClassDef]]:
         """
         Resolve multiple `(file, class)` targets into parsed class nodes.
 
@@ -1074,7 +1034,7 @@ class ProtocolCrafter(Cleanable):
         Returns:
             List[Tuple[Path, str, ast.ClassDef]]: Parsed target models.
         """
-        models: List[Tuple[Path, str, ast.ClassDef]] = []
+        models: list[tuple[Path, str, ast.ClassDef]] = []
         for source_file_path, class_name in targets:
             source_path = Path(source_file_path)
             class_node = self._load_source_class(source_path, class_name)
@@ -1086,7 +1046,7 @@ class ProtocolCrafter(Cleanable):
             class_node: ast.ClassDef,
             class_name: str,
             protocol_name: str,
-    ) -> List[ast.AnnAssign]:
+    ) -> list[ast.AnnAssign]:
         """
         Build public protocol attributes from one source class.
 
@@ -1101,19 +1061,17 @@ class ProtocolCrafter(Cleanable):
         Returns:
             List[ast.AnnAssign]: Protocol attribute nodes.
         """
-        attribute_nodes: List[ast.AnnAssign] = []
+        attribute_nodes: list[ast.AnnAssign] = []
         for attribute_name, annotation_text in self._collect_public_source_attributes(
                 class_node,
                 class_name,
                 protocol_name,
         ):
-            attribute_source = "{0}: {1}".format(attribute_name, annotation_text)
+            attribute_source = f"{attribute_name}: {annotation_text}"
             parsed_attribute = ast.parse(attribute_source).body[0]
             if not isinstance(parsed_attribute, ast.AnnAssign):
                 raise ValueError(
-                    "ProtocolCrafter generated a non-attribute node for '{0}'.".format(
-                        attribute_name,
-                    )
+                    f"ProtocolCrafter generated a non-attribute node for '{attribute_name}'."
                 )
             attribute_nodes.append(parsed_attribute)
         return attribute_nodes
@@ -1123,7 +1081,7 @@ class ProtocolCrafter(Cleanable):
             class_node: ast.ClassDef,
             class_name: str,
             protocol_name: str,
-    ) -> List[Union[ast.FunctionDef, ast.AsyncFunctionDef]]:
+    ) -> list[ast.FunctionDef | ast.AsyncFunctionDef]:
         """
         Build public protocol methods from one source class.
 
@@ -1139,7 +1097,7 @@ class ProtocolCrafter(Cleanable):
             List[Union[ast.FunctionDef, ast.AsyncFunctionDef]]:
                 Protocol method nodes.
         """
-        method_nodes: List[Union[ast.FunctionDef, ast.AsyncFunctionDef]] = []
+        method_nodes: list[ast.FunctionDef | ast.AsyncFunctionDef] = []
         for function_node in self._collect_public_source_methods(class_node):
             method_nodes.append(
                 self._build_protocol_method_from_source(
@@ -1155,7 +1113,7 @@ class ProtocolCrafter(Cleanable):
             class_node: ast.ClassDef,
             class_name: str,
             self_protocol_name: str,
-    ) -> List[Tuple[str, str]]:
+    ) -> list[tuple[str, str]]:
         """
         Collect public attribute declarations from one source class.
 
@@ -1170,7 +1128,7 @@ class ProtocolCrafter(Cleanable):
         Returns:
             List[Tuple[str, str]]: `(attribute_name, annotation_text)` pairs.
         """
-        attribute_items: List[Tuple[str, str]] = []
+        attribute_items: list[tuple[str, str]] = []
         for statement in class_node.body:
             if isinstance(statement, ast.AnnAssign) and isinstance(
                     statement.target,
@@ -1212,7 +1170,7 @@ class ProtocolCrafter(Cleanable):
     def _collect_public_source_methods(
             self,
             class_node: ast.ClassDef,
-    ) -> List[Union[ast.FunctionDef, ast.AsyncFunctionDef]]:
+    ) -> list[ast.FunctionDef | ast.AsyncFunctionDef]:
         """
         Collect public source methods suitable for protocol generation.
 
@@ -1224,7 +1182,7 @@ class ProtocolCrafter(Cleanable):
             List[Union[ast.FunctionDef, ast.AsyncFunctionDef]]:
                 Public method definitions in source order.
         """
-        method_nodes: List[Union[ast.FunctionDef, ast.AsyncFunctionDef]] = []
+        method_nodes: list[ast.FunctionDef | ast.AsyncFunctionDef] = []
         for statement in class_node.body:
             if not isinstance(statement, (ast.FunctionDef, ast.AsyncFunctionDef)):
                 continue
@@ -1235,9 +1193,9 @@ class ProtocolCrafter(Cleanable):
 
     def _build_joined_protocol_attributes(
             self,
-            source_models: Sequence[Tuple[Path, str, ast.ClassDef]],
+            source_models: Sequence[tuple[Path, str, ast.ClassDef]],
             protocol_name: str,
-    ) -> List[ast.AnnAssign]:
+    ) -> list[ast.AnnAssign]:
         """
         Build the shared attribute surface across multiple classes.
 
@@ -1253,7 +1211,7 @@ class ProtocolCrafter(Cleanable):
         if not source_models:
             return []
         placeholder_name = "__SELF_PROTOCOL__"
-        attribute_maps: List[Dict[str, str]] = []
+        attribute_maps: list[dict[str, str]] = []
         for _, class_name, class_node in source_models:
             attribute_maps.append(
                 dict(
@@ -1267,7 +1225,7 @@ class ProtocolCrafter(Cleanable):
         common_names = set(attribute_maps[0].keys())
         for attribute_map in attribute_maps[1:]:
             common_names &= set(attribute_map.keys())
-        attribute_nodes: List[ast.AnnAssign] = []
+        attribute_nodes: list[ast.AnnAssign] = []
         for attribute_name in sorted(common_names):
             annotation_text = attribute_maps[0][attribute_name]
             if all(
@@ -1278,25 +1236,20 @@ class ProtocolCrafter(Cleanable):
                     placeholder_name,
                     protocol_name,
                 )
-                attribute_source = "{0}: {1}".format(
-                    attribute_name,
-                    final_annotation_text,
-                )
+                attribute_source = f"{attribute_name}: {final_annotation_text}"
                 parsed_attribute = ast.parse(attribute_source).body[0]
                 if not isinstance(parsed_attribute, ast.AnnAssign):
                     raise ValueError(
-                        "ProtocolCrafter generated a non-attribute node for shared attribute '{0}'.".format(
-                            attribute_name,
-                        )
+                        f"ProtocolCrafter generated a non-attribute node for shared attribute '{attribute_name}'."
                     )
                 attribute_nodes.append(parsed_attribute)
         return attribute_nodes
 
     def _build_joined_protocol_methods(
             self,
-            source_models: Sequence[Tuple[Path, str, ast.ClassDef]],
+            source_models: Sequence[tuple[Path, str, ast.ClassDef]],
             protocol_name: str,
-    ) -> List[Union[ast.FunctionDef, ast.AsyncFunctionDef]]:
+    ) -> list[ast.FunctionDef | ast.AsyncFunctionDef]:
         """
         Build the shared method surface across multiple classes.
 
@@ -1313,13 +1266,13 @@ class ProtocolCrafter(Cleanable):
         if not source_models:
             return []
         placeholder_name = "__SELF_PROTOCOL__"
-        method_maps: List[
-            Dict[str, Tuple[str, str, Optional[str], Union[ast.FunctionDef, ast.AsyncFunctionDef]]]
+        method_maps: list[
+            dict[str, tuple[str, str, str | None, ast.FunctionDef | ast.AsyncFunctionDef]]
         ] = []
         for _, class_name, class_node in source_models:
-            method_map: Dict[
+            method_map: dict[
                 str,
-                Tuple[str, str, Optional[str], Union[ast.FunctionDef, ast.AsyncFunctionDef]]
+                tuple[str, str, str | None, ast.FunctionDef | ast.AsyncFunctionDef]
             ] = {}
             for function_node in self._collect_public_source_methods(class_node):
                 method_map[function_node.name] = (
@@ -1336,7 +1289,7 @@ class ProtocolCrafter(Cleanable):
         common_names = set(method_maps[0].keys())
         for method_map in method_maps[1:]:
             common_names &= set(method_map.keys())
-        method_nodes: List[Union[ast.FunctionDef, ast.AsyncFunctionDef]] = []
+        method_nodes: list[ast.FunctionDef | ast.AsyncFunctionDef] = []
         for method_name in sorted(common_names):
             first_key, first_class_name, first_docstring, first_function_node = method_maps[0][method_name]
             if all(
@@ -1349,9 +1302,7 @@ class ProtocolCrafter(Cleanable):
                     for method_map in method_maps
                 }
                 if len(normalized_docstrings) > 1:
-                    override_docstring = "Shared protocol member for `{0}`.".format(
-                        method_name
-                    )
+                    override_docstring = f"Shared protocol member for `{method_name}`."
                 method_nodes.append(
                     self._build_protocol_method_from_source(
                         first_function_node,
@@ -1368,7 +1319,7 @@ class ProtocolCrafter(Cleanable):
             class_name: str,
             protocol_name: str,
             *,
-            override_docstring: Optional[str] = None,
+            override_docstring: str | None = None,
     ) -> FunctionNode:
         """
         Build one protocol method node from one source function node.
@@ -1393,19 +1344,15 @@ class ProtocolCrafter(Cleanable):
             class_name,
             protocol_name,
         )
-        method_lines: List[str] = []
+        method_lines: list[str] = []
         method_lines.extend(self._build_supported_decorator_lines(function_node))
         method_lines.append(
-            "{0} {1}{2}:".format(
-                prefix,
-                function_node.name,
-                signature_text,
-            )
+            f"{prefix} {function_node.name}{signature_text}:"
         )
         method_lines.extend(
             self._build_docstring_lines(
                 override_docstring if override_docstring is not None else ast.get_docstring(function_node),
-                fallback="Protocol mirror for `{0}`.".format(function_node.name),
+                fallback=f"Protocol mirror for `{function_node.name}`.",
                 indent="    ",
             )
         )
@@ -1413,9 +1360,7 @@ class ProtocolCrafter(Cleanable):
         parsed_method = ast.parse("\n".join(method_lines)).body[0]
         if not isinstance(parsed_method, (ast.FunctionDef, ast.AsyncFunctionDef)):
             raise ValueError(
-                "ProtocolCrafter generated a non-function node for '{0}'.".format(
-                    function_node.name,
-                )
+                f"ProtocolCrafter generated a non-function node for '{function_node.name}'."
             )
         return parsed_method
 
@@ -1440,7 +1385,7 @@ class ProtocolCrafter(Cleanable):
             str: Rendered signature text.
         """
         arguments = function_node.args
-        rendered_parameters: List[str] = []
+        rendered_parameters: list[str] = []
         positional_arguments = list(arguments.posonlyargs) + list(arguments.args)
         default_offset = len(positional_arguments) - len(arguments.defaults)
         for index, parameter in enumerate(arguments.posonlyargs):
@@ -1516,7 +1461,7 @@ class ProtocolCrafter(Cleanable):
     def _render_source_parameter_text(
             self,
             parameter: ast.arg,
-            default_node: Optional[ast.expr],
+            default_node: ast.expr | None,
             class_name: str,
             self_protocol_name: str,
             *,
@@ -1540,7 +1485,7 @@ class ProtocolCrafter(Cleanable):
         Returns:
             str: Rendered parameter text.
         """
-        parameter_text = "{0}{1}".format(prefix, parameter.arg)
+        parameter_text = f"{prefix}{parameter.arg}"
         if parameter.annotation is not None:
             parameter_text += ": {0}".format(
                 self._render_source_annotation_text(
@@ -1550,9 +1495,7 @@ class ProtocolCrafter(Cleanable):
                 )
             )
         if default_node is not None:
-            parameter_text += " = {0}".format(
-                self._render_source_default_text(default_node)
-            )
+            parameter_text += f" = {self._render_source_default_text(default_node)}"
         return parameter_text
 
     def _render_source_default_text(self, default_node: ast.expr) -> str:
@@ -1574,7 +1517,7 @@ class ProtocolCrafter(Cleanable):
             if default_node.value is Ellipsis:
                 return "..."
         if isinstance(default_node, ast.Tuple):
-            rendered_items: List[str] = []
+            rendered_items: list[str] = []
             for item in default_node.elts:
                 if not isinstance(item, ast.Constant):
                     return "..."
@@ -1592,7 +1535,7 @@ class ProtocolCrafter(Cleanable):
             class_node: ast.ClassDef,
             class_name: str,
             self_protocol_name: str,
-    ) -> List[Tuple[str, str]]:
+    ) -> list[tuple[str, str]]:
         """
         Collect public instance attributes assigned in `__init__`.
 
@@ -1615,7 +1558,7 @@ class ProtocolCrafter(Cleanable):
             class_name,
             self_protocol_name,
         )
-        attribute_items: List[Tuple[str, str]] = []
+        attribute_items: list[tuple[str, str]] = []
         for statement in init_node.body:
             if isinstance(statement, ast.AnnAssign):
                 public_target = self._get_public_self_attribute_target(statement.target)
@@ -1650,7 +1593,7 @@ class ProtocolCrafter(Cleanable):
     def _find_source_init_method(
             self,
             class_node: ast.ClassDef,
-    ) -> Optional[ast.FunctionDef]:
+    ) -> ast.FunctionDef | None:
         """
         Return the source `__init__` method when present.
 
@@ -1671,7 +1614,7 @@ class ProtocolCrafter(Cleanable):
             init_node: ast.FunctionDef,
             class_name: str,
             self_protocol_name: str,
-    ) -> Dict[str, str]:
+    ) -> dict[str, str]:
         """
         Build a name-to-annotation map for `__init__` parameters.
 
@@ -1686,7 +1629,7 @@ class ProtocolCrafter(Cleanable):
         Returns:
             Dict[str, str]: Parameter annotation map.
         """
-        annotation_map: Dict[str, str] = {}
+        annotation_map: dict[str, str] = {}
         positional_arguments = list(init_node.args.posonlyargs) + list(init_node.args.args)
         for parameter in positional_arguments + list(init_node.args.kwonlyargs):
             if parameter.arg == "self":
@@ -1715,7 +1658,7 @@ class ProtocolCrafter(Cleanable):
     def _infer_init_assignment_annotation_text(
             self,
             value_node: ast.expr,
-            parameter_annotations: Dict[str, str],
+            parameter_annotations: dict[str, str],
     ) -> str:
         """
         Infer an instance-attribute annotation from one `__init__` assignment.
@@ -1734,7 +1677,7 @@ class ProtocolCrafter(Cleanable):
         return self._infer_source_attribute_annotation_text(value_node)
 
     @staticmethod
-    def _get_public_self_attribute_target(target: ast.expr) -> Optional[ast.Attribute]:
+    def _get_public_self_attribute_target(target: ast.expr) -> ast.Attribute | None:
         """
         Return one public `self.<name>` assignment target when present.
 
@@ -1759,7 +1702,7 @@ class ProtocolCrafter(Cleanable):
 
     def _render_source_annotation_text(
             self,
-            annotation_node: Optional[ast.expr],
+            annotation_node: ast.expr | None,
             class_name: str,
             self_protocol_name: str,
     ) -> str:
@@ -1853,7 +1796,7 @@ class ProtocolCrafter(Cleanable):
                 item for item in rendered_members if item != "None"
             ]
             if len(non_none_members) == 1 and len(rendered_members) == 2:
-                return "Optional[{0}]".format(non_none_members[0])
+                return f"Optional[{non_none_members[0]}]"
             return "Union[{0}]".format(", ".join(rendered_members))
         if isinstance(annotation_node, ast.Tuple):
             return "Tuple[{0}]".format(
@@ -1951,7 +1894,7 @@ class ProtocolCrafter(Cleanable):
     def _expand_subscript_slice(
             self,
             slice_node: ast.expr,
-    ) -> List[ast.expr]:
+    ) -> list[ast.expr]:
         """
         Expand one subscript slice into one or more argument nodes.
 
@@ -1969,7 +1912,7 @@ class ProtocolCrafter(Cleanable):
     def _flatten_pep604_union(
             self,
             annotation_node: ast.expr,
-    ) -> List[ast.expr]:
+    ) -> list[ast.expr]:
         """
         Flatten one `A | B | C` annotation tree into a linear member list.
 
@@ -1992,7 +1935,7 @@ class ProtocolCrafter(Cleanable):
 
     def _build_source_method_key(
             self,
-            function_node: Union[ast.FunctionDef, ast.AsyncFunctionDef],
+            function_node: ast.FunctionDef | ast.AsyncFunctionDef,
             class_name: str,
             self_protocol_name: str,
     ) -> str:
@@ -2019,14 +1962,14 @@ class ProtocolCrafter(Cleanable):
             self._extract_supported_decorator_names(function_node)
         )
         async_key = "async" if isinstance(function_node, ast.AsyncFunctionDef) else "sync"
-        return "{0}|{1}|{2}".format(async_key, decorator_key, signature_text)
+        return f"{async_key}|{decorator_key}|{signature_text}"
 
     def _build_protocol_module_ast(
             self,
             protocol_name: str,
             class_docstring: str,
             attribute_nodes: Sequence[ast.AnnAssign],
-            method_nodes: Sequence[Union[ast.FunctionDef, ast.AsyncFunctionDef]],
+            method_nodes: Sequence[ast.FunctionDef | ast.AsyncFunctionDef],
     ) -> ast.Module:
         """
         Assemble one full protocol module AST.
@@ -2044,7 +1987,7 @@ class ProtocolCrafter(Cleanable):
         Returns:
             ast.Module: Fully assembled protocol module.
         """
-        class_body: List[ast.stmt] = [ast.Expr(value=ast.Constant(value=class_docstring))]
+        class_body: list[ast.stmt] = [ast.Expr(value=ast.Constant(value=class_docstring))]
         class_body.extend(attribute_nodes)
         class_body.extend(method_nodes)
         if len(class_body) == 1:
@@ -2076,7 +2019,7 @@ class ProtocolCrafter(Cleanable):
     def _collect_protocol_typing_import_names(
             self,
             class_node: ast.ClassDef,
-    ) -> List[str]:
+    ) -> list[str]:
         """
         Collect the minimal ordered typing imports needed by one protocol class.
 
@@ -2107,7 +2050,7 @@ class ProtocolCrafter(Cleanable):
         Returns:
             str: Rendered protocol module text.
         """
-        lines: List[str] = []
+        lines: list[str] = []
         for index, statement in enumerate(module_node.body):
             if index > 0:
                 lines.append("")
@@ -2131,9 +2074,9 @@ class ProtocolCrafter(Cleanable):
             str: Rendered import line.
         """
         imported_names = ", ".join(alias.name for alias in import_node.names)
-        return "from {0} import {1}".format(import_node.module, imported_names)
+        return f"from {import_node.module} import {imported_names}"
 
-    def _render_protocol_class(self, class_node: ast.ClassDef) -> List[str]:
+    def _render_protocol_class(self, class_node: ast.ClassDef) -> list[str]:
         """
         Render one protocol class node into formatted source lines.
 
@@ -2144,11 +2087,11 @@ class ProtocolCrafter(Cleanable):
         Returns:
             List[str]: Rendered class source lines.
         """
-        lines: List[str] = []
+        lines: list[str] = []
         for decorator in class_node.decorator_list:
-            lines.append("@{0}".format(ast.unparse(decorator)))
+            lines.append(f"@{ast.unparse(decorator)}")
         base_text = ", ".join(ast.unparse(base) for base in class_node.bases) or "object"
-        lines.append("class {0}({1}):".format(class_node.name, base_text))
+        lines.append(f"class {class_node.name}({base_text}):")
         body_lines = self._render_protocol_class_body(class_node.body)
         if body_lines:
             lines.extend(body_lines)
@@ -2156,7 +2099,7 @@ class ProtocolCrafter(Cleanable):
             lines.append("    ...")
         return lines
 
-    def _render_protocol_class_body(self, body: Sequence[ast.stmt]) -> List[str]:
+    def _render_protocol_class_body(self, body: Sequence[ast.stmt]) -> list[str]:
         """
         Render the body of one generated protocol class.
 
@@ -2167,7 +2110,7 @@ class ProtocolCrafter(Cleanable):
         Returns:
             List[str]: Rendered body lines with indentation.
         """
-        rendered_blocks: List[List[str]] = []
+        rendered_blocks: list[list[str]] = []
         for statement in body:
             if self._is_string_expr(statement):
                 rendered_blocks.append(
@@ -2189,7 +2132,7 @@ class ProtocolCrafter(Cleanable):
                 continue
             if self._is_ellipsis_expr(statement):
                 rendered_blocks.append(["    ..."])
-        lines: List[str] = []
+        lines: list[str] = []
         for index, block in enumerate(rendered_blocks):
             if index > 0:
                 lines.append("")
@@ -2216,14 +2159,14 @@ class ProtocolCrafter(Cleanable):
         """
         target_text = ast.unparse(attribute_node.target)
         annotation_text = ast.unparse(attribute_node.annotation)
-        return "{0}{1}: {2}".format(indent, target_text, annotation_text)
+        return f"{indent}{target_text}: {annotation_text}"
 
     def _render_protocol_method_lines(
             self,
-            method_node: Union[ast.FunctionDef, ast.AsyncFunctionDef],
+            method_node: ast.FunctionDef | ast.AsyncFunctionDef,
             *,
             indent: str,
-    ) -> List[str]:
+    ) -> list[str]:
         """
         Render one generated protocol method with stable formatting.
 
@@ -2236,18 +2179,13 @@ class ProtocolCrafter(Cleanable):
         Returns:
             List[str]: Rendered method lines.
         """
-        lines: List[str] = []
+        lines: list[str] = []
         for decorator in method_node.decorator_list:
-            lines.append("{0}@{1}".format(indent, ast.unparse(decorator)))
+            lines.append(f"{indent}@{ast.unparse(decorator)}")
         prefix = "async def" if isinstance(method_node, ast.AsyncFunctionDef) else "def"
         signature_text = self._render_ast_function_signature_text(method_node)
         lines.append(
-            "{0}{1} {2}{3}:".format(
-                indent,
-                prefix,
-                method_node.name,
-                signature_text,
-            )
+            f"{indent}{prefix} {method_node.name}{signature_text}:"
         )
         body_index = 0
         if method_node.body and self._is_string_expr(method_node.body[0]):
@@ -2270,7 +2208,7 @@ class ProtocolCrafter(Cleanable):
 
     def _render_ast_function_signature_text(
             self,
-            function_node: Union[ast.FunctionDef, ast.AsyncFunctionDef],
+            function_node: ast.FunctionDef | ast.AsyncFunctionDef,
     ) -> str:
         """
         Render one generated function signature from its AST node.
@@ -2283,7 +2221,7 @@ class ProtocolCrafter(Cleanable):
             str: Rendered signature text.
         """
         arguments = function_node.args
-        rendered_parameters: List[str] = []
+        rendered_parameters: list[str] = []
         positional_arguments = list(arguments.posonlyargs) + list(arguments.args)
         default_offset = len(positional_arguments) - len(arguments.defaults)
         for index, parameter in enumerate(arguments.posonlyargs):
@@ -2325,7 +2263,7 @@ class ProtocolCrafter(Cleanable):
     def _render_ast_parameter_text(
             self,
             parameter: ast.arg,
-            default_node: Optional[ast.expr],
+            default_node: ast.expr | None,
             *,
             prefix: str = "",
     ) -> str:
@@ -2343,11 +2281,11 @@ class ProtocolCrafter(Cleanable):
         Returns:
             str: Rendered parameter text.
         """
-        parameter_text = "{0}{1}".format(prefix, parameter.arg)
+        parameter_text = f"{prefix}{parameter.arg}"
         if parameter.annotation is not None:
-            parameter_text += ": {0}".format(ast.unparse(parameter.annotation))
+            parameter_text += f": {ast.unparse(parameter.annotation)}"
         if default_node is not None:
-            parameter_text += " = {0}".format(self._render_source_default_text(default_node))
+            parameter_text += f" = {self._render_source_default_text(default_node)}"
         return parameter_text
 
     def _format_docstring_lines(
@@ -2355,7 +2293,7 @@ class ProtocolCrafter(Cleanable):
             docstring_text: str,
             *,
             indent: str,
-    ) -> List[str]:
+    ) -> list[str]:
         """
         Format one docstring block with stable indentation.
 
@@ -2450,7 +2388,7 @@ class ProtocolCrafter(Cleanable):
     def _write_protocol_module_text(
             self,
             module_text: str,
-            output_directory: Union[str, Path],
+            output_directory: str | Path,
             protocol_name: str,
     ) -> Path:
         """
@@ -2486,12 +2424,12 @@ class ProtocolCrafter(Cleanable):
         Returns:
             str: Default lowercase interface filename.
         """
-        return "{0}.py".format(protocol_name.lower())
+        return f"{protocol_name.lower()}.py"
 
     def _extract_supported_decorator_names(
             self,
-            function_node: Union[ast.FunctionDef, ast.AsyncFunctionDef],
-    ) -> List[str]:
+            function_node: ast.FunctionDef | ast.AsyncFunctionDef,
+    ) -> list[str]:
         """
         Return supported decorator names for protocol method generation.
 
@@ -2502,7 +2440,7 @@ class ProtocolCrafter(Cleanable):
         Returns:
             List[str]: Supported decorator names in source order.
         """
-        decorator_names: List[str] = []
+        decorator_names: list[str] = []
         for decorator in function_node.decorator_list:
             if isinstance(decorator, ast.Name) and decorator.id in {
                 "property",
@@ -2517,8 +2455,8 @@ class ProtocolCrafter(Cleanable):
 
     def _build_supported_decorator_lines(
             self,
-            function_node: Union[ast.FunctionDef, ast.AsyncFunctionDef],
-    ) -> List[str]:
+            function_node: ast.FunctionDef | ast.AsyncFunctionDef,
+    ) -> list[str]:
         """
         Render supported decorators into source lines for one protocol method.
 
@@ -2530,13 +2468,13 @@ class ProtocolCrafter(Cleanable):
             List[str]: Decorator source lines.
         """
         return [
-            "@{0}".format(decorator_name)
+            f"@{decorator_name}"
             for decorator_name in self._extract_supported_decorator_names(function_node)
         ]
 
     def _should_skip_source_method(
             self,
-            function_node: Union[ast.FunctionDef, ast.AsyncFunctionDef],
+            function_node: ast.FunctionDef | ast.AsyncFunctionDef,
     ) -> bool:
         """
         Return whether one source method should be skipped for protocol output.
@@ -2662,7 +2600,7 @@ class ProtocolCrafter(Cleanable):
         """
         return bool(
             re.search(
-                r"^class\s+{0}\s*\(".format(re.escape(protocol_name)),
+                rf"^class\s+{re.escape(protocol_name)}\s*\(",
                 interface_file_text,
                 flags=re.MULTILINE,
             )
@@ -2694,17 +2632,15 @@ class ProtocolCrafter(Cleanable):
         for index, line in enumerate(lines):
             stripped_line = line.lstrip()
             if stripped_line.startswith(
-                "class {0}(".format(protocol_name)
+                f"class {protocol_name}("
             ) or stripped_line.startswith(
-                "class {0}:".format(protocol_name)
+                f"class {protocol_name}:"
             ):
                 class_line_index = index
                 break
         if class_line_index is None:
             raise ValueError(
-                "Protocol '{0}' was not found in the interface file.".format(
-                    protocol_name
-                )
+                f"Protocol '{protocol_name}' was not found in the interface file."
             )
 
         start_index = class_line_index

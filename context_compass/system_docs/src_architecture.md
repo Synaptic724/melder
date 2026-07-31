@@ -161,7 +161,7 @@ Each item must include:
 Coverage summary (non-exhaustive):
 - Package entrypoint and guardrails: `__init__.py`, the registration refusal in
   `aether/spellbook/bind/bind.py`, and the generated internal-bind manifest under
-  `_build_assets/_init_manifest/` (`internal_manifest.py`, `_builder.py`).
+  `_build_assets/_bind_guard/` (`bind_guard.py` loader, `manifest/bind_guard_manifest.py`).
 - Spellbook + binding pipeline: `spellbook.py`, `bind.py`, `spell.py`, `spell_index.py`.
 - SpellbookConfiguration and system state:
   `spellbook_configuration.py`, `system_state.py`.
@@ -217,7 +217,7 @@ Coverage summary (non-exhaustive):
 
 Evidence list (non-exhaustive):
 - `src/melder/__init__.py`
-- `src/melder/_build_assets/_init_manifest/internal_manifest.py`
+- `src/melder/_build_assets/_bind_guard/manifest/bind_guard_manifest.py`
 - `src/melder/system_document.py`
 - `src/melder/__architecture__.py`
 - `src/melder/__components__.py`
@@ -593,18 +593,20 @@ EVIDENCE: src/melder/aether/spellbook/spellbook.py:3480-3520.
   normally. This is an owner-accepted behavior change (2026-07-24): the retired
   `__melder_internal__` sentinel was read with `getattr` and therefore inherited, so
   tagging any user-extensible base silently made user subclasses unbindable.
-- `INTERNAL_MANIFEST` is a `frozenset` of `(module, qualname)` pairs imported directly
-  from `melder._build_assets._init_manifest.internal_manifest`. That module is a
-  GENERATED DURABLE BUILD ASSET: it is committed, carries `BUILT_FOR_VERSION` and
-  `MANIFEST_ENTRY_COUNT` (577 at the current build), and is regenerated explicitly with
-  `python src/melder/_build_assets/_build_asset_runner.py`. `_builder.scan_manifest()` is
-  build-time only and is never imported at runtime, so there is no first-import scan,
-  no cache write, and no read-only-install fallback lane.
+- `INTERNAL_MANIFEST` is a `frozenset` of `(module, qualname)` pairs imported from the
+  hand-written loader `melder._build_assets._bind_guard.bind_guard`, which re-exports it
+  alongside `MANIFEST_VERSION`, `BUILT_FOR_VERSION` and `MANIFEST_ENTRY_COUNT` (582 at
+  the current build). The TRUTH is the COMMITTED manifest
+  `_bind_guard/manifest/bind_guard_manifest.py`; the loader hydrates it through a `.melc`
+  under `__melder_cache__/__bind_guard__/` that is an ACCELERATOR and never the source.
+  The manifest module is imported lazily on cache miss only, so a warm process never
+  parses it. `_builder.py` is build-time only and is regenerated explicitly with
+  `python src/melder/_build_assets/_build_asset_runner.py`.
 - Guarding and exporting are ORTHOGONAL: the guard restricts REGISTRATION, never USE.
   Exported, user-constructible surfaces such as the custom exceptions, `SafeGuard`, and
   `ProtocolCrafter` remain importable and usable while being unbindable.
 - The only live enforcement call site is
-  `bind.py:363  assert_allowed(spell, context="bind")` - a direct call to the
+  `bind.py:364  assert_allowed(spell, context="bind")` - a direct call to the
   module-level function. Identity resolution is factored into the pure helper
   `_internal_identity_of(candidate)` in the same module.
 - Enforcement is ONE module-level function; there is no guard object or proxy.
@@ -613,7 +615,7 @@ EVIDENCE: src/melder/aether/spellbook/spellbook.py:3480-3520.
   `raising=True`, so if the enforcement seam is ever renamed or moved again, the tests
   fail immediately instead of silently creating an attribute nothing reads. That matters
   because `test_bind.py` neutralizes the guard for its whole file via an autouse
-  fixture; a silently-dead patch would let the real 577-entry manifest begin refusing
+  fixture; a silently-dead patch would let the real 582-entry manifest begin refusing
   binds mid-suite with no signal pointing back at the fixture. Preserve `raising=True`
   if these sites are ever touched.
 - The guard is entirely absent from the package root: `melder/__init__.py` neither
@@ -1507,9 +1509,11 @@ Detailed C3 and C2 component descriptions are maintained in:
 ## C1 Code Map (Core Only)
 Package root:
 - `src/melder/__init__.py` - runtime warnings, version metadata.
-- `src/melder/_build_assets/_init_manifest/internal_manifest.py` - GENERATED DURABLE
-  BUILD ASSET holding `INTERNAL_MANIFEST`; committed, do not edit by hand.
-- `src/melder/_build_assets/_init_manifest/_builder.py` - package scanner and asset
+- `src/melder/_build_assets/_bind_guard/bind_guard.py` - hand-written loader publishing
+  `INTERNAL_MANIFEST`; hydrates the committed manifest via an accelerator cache.
+- `src/melder/_build_assets/_bind_guard/manifest/bind_guard_manifest.py` - GENERATED
+  DURABLE BUILD ASSET holding `ENTRIES`; committed, do not edit by hand.
+- `src/melder/_build_assets/_bind_guard/_builder.py` - package scanner and asset
   writer; build-time only, never imported at runtime.
 - `src/melder/_build_assets/_build_asset_runner.py` - explicit regeneration entrypoint.
 - Registration refusal itself lives in `src/melder/aether/spellbook/bind/bind.py`
@@ -1771,7 +1775,7 @@ EVIDENCE:
 ## Information Sources
 - `README.md`
 - `src/melder/__init__.py`
-- `src/melder/_build_assets/_init_manifest/internal_manifest.py`
+- `src/melder/_build_assets/_bind_guard/manifest/bind_guard_manifest.py`
 - `src/melder/system_document.py`
 - `src/melder/__architecture__.py`
 - `src/melder/__components__.py`

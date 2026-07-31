@@ -287,3 +287,80 @@ That IS system-impacting and must not begin before its two patch docs exist.
 Key design choice: the harvester reads DUAL-SOURCE - docstring section first, class
 attribute as fallback - so the asset is complete and correct from the first run, and
 the codemod can proceed subtree by subtree instead of as one atomic 370-file cutover.
+
+### 2026-07-28 — session record: manifest/cache split, third asset, reader
+
+All claims below were verified against live source in-session; `--check` is green on
+all three assets. Owner-run pytest confirmed seven failures and all seven are resolved.
+
+**1. Naming and layout, owner-directed.**
+`_init_manifest` -> `_bind_guard`, `_agent_metadata` -> `_agent_documentation`. Assets are
+now named for what they DO. Every asset is `_<asset>/` holding `_builder.py` (the tool),
+`<asset>.py` (the loader), and `manifest/<asset>_manifest.py` (GENERATED, committed).
+
+**2. The manifest/cache split — the correction that mattered most.**
+I had the `.melc` as the TRUTH, committed beside the loader. That was incoherent:
+`marshal` carries no cross-version guarantee, this repo runs 3.10 while targeting 3.14t,
+so a committed bundle is one interpreter's bytes handed to another. `CachingSystem` already
+documents the rule by stamping `sys.implementation.cache_tag` on every bundle it writes.
+Now: manifest = committed truth (plain literals, diffable); `.melc` = derived cache under
+`__melder_cache__/__<asset>__/`, gitignored, per-interpreter, regeneration-based integrity.
+
+**3. `asset_cache.py` is runtime code and left `_build_assets/`.**
+Now `utilities/caching_system/asset_cache.py`, beside `CachingSystem`. `_build_assets/`
+holds build-time tools only; a hot-path loader living there made the directory mean two
+things. `CachingSystem`'s "only member of this directory" docstring corrected.
+
+**4. Third asset: `_system_documents`.**
+Publishes the four package-root document objects. Deliberately has NO cache — a cache
+amortises computation and there is none (the payload is already a string), and a cache read
+at import would defeat the laziness that keeps four package-scope documents off the boot
+path. `StaticSystemDocument` gained `reader()/head()/tail()/lines()/line_count/char_count`,
+all lazy: the line index is built on FIRST bounded read. Verified in a clean process that
+constructing all four leaves every `_indexed` as `None`.
+
+**5. `AgentTextReader` + `IndexedText`** at `utilities/ai_native_support_tools/`.
+Shared immutable index + per-agent cursor, no lock anywhere. Offset `array("q")` rather
+than `splitlines()` because 4,263 tracked `str` objects per document is the GC pressure
+`CachingSystem` measured at ~13% warm wall. Bounds: `line_target` 2-100 enforced.
+
+**BUGS FOUND AND FIXED (each was silent):**
+- `--check` fast path was DEAD. Patterns required `NAME: str = "..."`; loaders emit bare
+  `NAME = "..."` since annotations moved to stubs. Every match returned None, every asset
+  took the slow path, the gate stayed correct and quietly stopped being fast.
+- `*.melc` in `.gitignore` swallowed the payloads while the loaders stayed tracked — a
+  clone had imports pointing at files never checked in. Resolved by the split; cache is
+  correctly ignored again.
+- `pyproject.toml` `package-data` shipped no `.melc`/`.pyi`. Moot after the split.
+- Agent-documentation `write()` AST-parsed all 548 files TWICE (render + a second
+  `build_payload()` for the count). Threaded the payload through instead.
+- `test_package_version_metadata.py` globbed `*/*.py` and matched the annotated stamp —
+  both had drifted, and the failure mode was an EMPTY match set reporting green. Fixed and
+  given an explicit non-empty assertion so it cannot go inert again.
+- Per-asset tests hardcoded two asset names, which is how `_system_documents` shipped
+  uncovered. Now discovery-driven off `discover_builders()`.
+
+**REGRESSION I INTRODUCED AND FIXED:** `_get_required_access_level` raised `ValueError` for
+any class not in the manifest — i.e. every class outside melder. Added
+`_markers_from_docstring`, a live fallback consulted only on a manifest miss, so a caller's
+own class is describable again and melder's classes still resolve from the cache.
+
+**MEASUREMENT DISCIPLINE — recorded because I got it wrong repeatedly.**
+A `.melc` cache was measured SLOWER than importing the manifest (0.438 vs 0.355 ms) because
+the `.pyc` already IS a marshal cache; my earlier "14.9x" was against a manifest that
+executed a `frozenset(...)` literal and imported `typing`. Separately, my concurrency test
+asserted a shared cursor never repeats a span — a guess that passed under this GIL-bound
+sandbox and failed on the owner's real run (7,310 chunks over 518 distinct spans). I then
+over-corrected and asserted duplication MUST occur, which failed here. The test now asserts
+only what holds under any parallelism. Both were the same error: asserting an
+environment-dependent outcome I had not observed.
+
+**COUNTS:** bind_guard 582 entries (582 not 578 because `AssetCachePolicy` and the two
+reader classes entered scanned directories); agent_documentation 406 marked / 163 exempt /
+13 pending; system_documents 4, all `populated=False` templates.
+
+**NOT DONE, explicitly:** `cleanable.py:51-54` still teaches the retired sentinel mechanism.
+Canonical doc repair is melder_1's lane and I did not touch either file — message sent
+2026-07-28T00:10Z. The four documents are TEMPLATES; populating them from
+`context_compass/system_docs/` raises a two-homes question for the owner, since those
+sources are excluded from the wheel.

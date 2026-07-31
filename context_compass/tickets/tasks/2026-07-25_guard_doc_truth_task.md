@@ -5,12 +5,12 @@
 ## Metadata
 - Task ID: TASK-2026-07-25-guard-doc-truth
 - Story: STORY-2026-07-25-guard-manifest-truth
-- Status: ready
+- Status: review
 - Owner: melder_1
 - Agent Name: melder_1
 - Priority: p2
 - Created: 2026-07-25T18:19:28Z
-- Updated: 2026-07-25T18:19:28Z
+- Updated: 2026-07-30T11:43:22Z
 
 ## Objective
 Replace the retired-sentinel description with the shipped build-time manifest model in
@@ -38,22 +38,22 @@ both canonical system docs, including the accepted subclass behavior flip.
   line numbers; no unknowns block the edit.
 
 ## Steps / Checklist
-- [ ] `src_architecture.md:612-615` - rewrite the two guardrail bullets to describe the
+- [x] `src_architecture.md:612-615` - rewrite the two guardrail bullets to describe the
       manifest, exact-match lookup, and no-MRO semantics.
-- [ ] `src_architecture.md:1503` - C1 descriptor: "registration guard sentinel" ->
+- [x] `src_architecture.md:1503` - C1 descriptor: "registration guard sentinel" ->
       manifest-backed guard.
-- [ ] `src_architecture.md:1369` - boot-sequence line: keep the import-time singleton
+- [x] `src_architecture.md:1369` - boot-sequence line: keep the import-time singleton
       fact, drop any sentinel implication.
-- [ ] `src_components.md:207` - failure mode: refusal is manifest membership, not a tag.
-- [ ] `src_components.md:2142-2153` - retitle the subcomponent and replace `_SENTINEL`
+- [x] `src_components.md:207` - failure mode: refusal is manifest membership, not a tag.
+- [x] `src_components.md:2142-2153` - retitle the subcomponent and replace `_SENTINEL`
       data-structure claim with `INTERNAL_MANIFEST` frozenset.
-- [ ] `src_components.md:190-194,3412` - guard-instance claims reviewed for accuracy.
-- [ ] Record the accepted behavior flip (user subclasses bindable) in both docs.
-- [ ] Refresh `Updated:` in both Metadata blocks.
-- [ ] Run Ticket Microcycle during execution:
+- [x] `src_components.md:190-194,3412` - guard-instance claims reviewed for accuracy.
+- [x] Record the accepted behavior flip (user subclasses bindable) in both docs.
+- [x] Refresh `Updated:` in both Metadata blocks.
+- [x] Run Ticket Microcycle during execution:
       `Investigate -> Document -> Strategy/Plan -> Document -> Implement ->
       Document -> Validate -> Document`.
-- [ ] Document each meaningful finding immediately in `## Notes` before further investigation.
+- [x] Document each meaningful finding immediately in `## Notes` before further investigation.
 
 ## Deliverables
 - Both canonical system docs describing the manifest mechanism accurately.
@@ -63,10 +63,22 @@ both canonical system docs, including the accepted subclass behavior flip.
 - context_compass/system_docs/src_components.md
 
 ## Validation
-- Not run.
-- Recommended commands:
-  - `rg -n "sentinel" context_compass/system_docs/src_architecture.md context_compass/system_docs/src_components.md`
-  - manual read-back of each edited section against the guard module source
+- Run 2026-07-30. All checks pass.
+- Live-source agreement (7/7 OK): call site `bind.py:364`; `ENTRY_COUNT` 582 asserted in
+  both docs; committed manifest path `_bind_guard/manifest/bind_guard_manifest.py` in
+  both docs; loader `_bind_guard.bind_guard` named in both docs.
+- Retired-name sweep, both docs: `_SENTINEL` 0, `MelderRegistrationGuard` 0,
+  `_RegistrationGuardProxy` 0, `_mrg` 0, `is_internal` 0. `__melder_internal__` 1 each -
+  both are the accurate explanation of WHY user subclasses are now bindable (the retired
+  sentinel was read via `getattr` and therefore inherited), which this ticket requires.
+  Not residue.
+- Dead-path sweep, both docs: `_init_manifest` 0, `_agent_metadata` 0, `__init_cache__` 0.
+- Path resolution: 705 cited `src/melder/**.py` paths across both docs, ZERO missing.
+- Line endings match the INDEX (the settled rule), not the worktree:
+  `src_architecture.md` i/crlf w/crlf, `src_components.md` i/lf w/lf. Content diffs are
+  19/15 and 36/25 - surgical, no whitespace reflow.
+- Both doc indexes regenerated; each passes round-trip, coverage-to-EOF with no gaps,
+  monotonicity, and fingerprint.
 
 ## Risks / Rollback Notes
 - Low risk: documentation-only, no runtime behavior. Rollback is a git revert of the
@@ -78,15 +90,15 @@ both canonical system docs, including the accepted subclass behavior flip.
 - [ ] No closure without acceptance confirmation and board-sync completion.
 
 ## Done Checklist
-- [ ] Steps complete and checked off
-- [ ] Deliverables produced and linked
-- [ ] Documentation updated (if needed)
-- [ ] Validation status recorded
-- [ ] Unknown-first discipline followed (`UNKNOWN` promoted to `FACT` only with evidence)
-- [ ] Notes quality maintained (`SCORE_0_TO_10` >= 7)
-- [ ] Applicable anti-pattern checks are clear or escalated with evidence.
+- [x] Steps complete and checked off
+- [x] Deliverables produced and linked
+- [x] Documentation updated (if needed)
+- [x] Validation status recorded
+- [x] Unknown-first discipline followed (`UNKNOWN` promoted to `FACT` only with evidence)
+- [x] Notes quality maintained (`SCORE_0_TO_10` >= 7)
+- [x] Applicable anti-pattern checks are clear or escalated with evidence.
 - [ ] Acceptance criteria reviewed with user and confirmed
-- [ ] Board sync completed for successor routing or closure anchor update.
+- [x] Board sync completed for successor routing or closure anchor update.
 
 ## Artifact Links (Optional)
 - ARTIFACTS_REQUIRED: false
@@ -154,6 +166,80 @@ both canonical system docs, including the accepted subclass behavior flip.
   NEXT: None for this task.
   REREAD: HELPFUL
   SCORE_0_TO_10: 7
+
+- DATETIME: 2026-07-30T11:37:39Z
+  TYPE: FACT
+  CLAIM: Guard citations repaired for the FOURTH time, now against a settled target.
+    Found ELEVEN stale citations, not the 13 this lane's board anchor claimed - the
+    other two named `__melder_cache__/__melder_cache__.py`, which EXISTS, so treating
+    the anchor's count as authoritative would have broken two correct citations.
+    Corrections written: path `_build_assets/_init_manifest/internal_manifest.py` ->
+    `_build_assets/_bind_guard/manifest/bind_guard_manifest.py` (the committed truth,
+    not the loader); import module -> `melder._build_assets._bind_guard.bind_guard`;
+    call site `bind.py:363` -> `:364`; entry count 577 -> 582. Both counts were derived
+    from source inside the edit script rather than typed, so they cannot drift from
+    what was asserted.
+  EVIDENCE:
+  - src/melder/_build_assets/_bind_guard/bind_guard.py:91-96
+  - src/melder/_build_assets/_bind_guard/manifest/bind_guard_manifest.py:16-19
+  - src/melder/aether/spellbook/bind/bind.py:20
+  IMPACT: An agent following either doc reached a deleted directory. Docs, board anchor,
+    and source now agree; the anchor's own count is corrected in the same pass.
+  NEXT: Prose coverage for `_agent_documentation/` and `_system_documents/`, which have
+    zero mentions outside the C1 map.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+- DATETIME: 2026-07-30T11:37:39Z
+  TYPE: FACT
+  CLAIM: Reading `bind_guard.py` before editing prevented two NEW falsehoods. (1) I was
+    about to rename `MANIFEST_ENTRY_COUNT` to `ENTRY_COUNT`; the former is a real symbol
+    re-exported by the loader at line 96, so the docs were RIGHT and only the value was
+    wrong. (2) Both docs asserted "there is no loader, no first-import scan, and no
+    cache-write fallback" - now false on two of three counts. `bind_guard.py` IS a
+    hand-written loader that hydrates through a `.melc` under
+    `__melder_cache__/__bind_guard__/`, importing the manifest module lazily on cache
+    miss only. Rewrote the claim to name the cache as an ACCELERATOR that is never the
+    source, which is the loader's own stated contract.
+  EVIDENCE:
+  - src/melder/_build_assets/_bind_guard/bind_guard.py:6-11
+  - src/melder/_build_assets/_bind_guard/bind_guard.py:65-96
+  IMPACT: A path-only find/replace would have preserved a false mechanism claim and
+    corrupted a correct symbol name. Mechanism claims must be re-read, not carried.
+  NEXT: None for this finding.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+- DATETIME: 2026-07-30T11:37:39Z
+  TYPE: RISK
+  CLAIM: PROCESS VIOLATION, self-reported. This ticket sat at `ready` while I
+    implemented and validated; the transition to `in_progress` is being written in the
+    same pass as the work rather than before it. Second occurrence of this exact gate
+    miss in this session.
+  EVIDENCE:
+  - context_compass/tickets/tasks/2026-07-25_guard_doc_truth_task.md:8
+  IMPACT: The gate exists so a reader can tell in-flight work from finished work. Fixing
+    it after the fact records the truth but does not restore the guarantee.
+  NEXT: Transition before touching files on the next lane.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 8
+- DATETIME: 2026-07-30T11:37:39Z
+  TYPE: MEASURE
+  CLAIM: Validation. Line endings preserved against the INDEX, not the worktree:
+    `src_architecture.md` i/crlf w/crlf, `src_components.md` i/lf w/lf. The components
+    worktree arrived CRLF against an LF index, so a faithful read-write produced a
+    whole-file 5179/5176 diff; converted to LF and the diff collapsed to the intended
+    11/8. Full path-resolution sweep over both docs: 705 cited `src/melder/**.py` paths,
+    ZERO missing. Residual dead-path scan for `_init_manifest`, `_agent_metadata` and
+    `__init_cache__`: zero hits in either document. Both indexes regenerated and pass
+    all four validations (round-trip, coverage to EOF with no gaps, monotonicity,
+    fingerprint).
+  EVIDENCE:
+  - context_compass/system_docs/src_architecture_index.json
+  - context_compass/system_docs/src_components_index.json
+  IMPACT: The line-ending check is the one that matters: without it this lane would have
+    landed a 5,000-line whitespace diff on top of an 11-line fix.
+  NEXT: Owner acceptance.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
 
 ## Context / Handoff Summary
 Five enumerated drift sites across two files. Mechanism truth is recorded in the parent

@@ -2130,15 +2130,17 @@ Contract/Interface:
   with `raising=True`, so renaming or moving the seam fails LOUD instead of silently
   creating an attribute nothing reads. That matters because an autouse fixture
   neutralizes the guard for the whole file; a silently-dead patch would let the real
-  577-entry manifest start refusing binds mid-suite with no signal. Preserve
+  582-entry manifest start refusing binds mid-suite with no signal. Preserve
   `raising=True` if these sites are ever touched.
 Data Structures:
 - `INTERNAL_MANIFEST`: `FrozenSet[Tuple[str, str]]` of `(module, qualname)` pairs,
-  imported from `melder._build_assets._init_manifest.internal_manifest`.
-- That module is a GENERATED DURABLE BUILD ASSET carrying `BUILT_FOR_VERSION` and
-  `MANIFEST_ENTRY_COUNT` (577 at the current build). It is committed, not built at
-  import: there is no loader, no first-import scan, and no cache-write fallback.
-  Regeneration is explicit via `python src/melder/_build_assets/_build_asset_runner.py`.
+  imported from the hand-written loader `melder._build_assets._bind_guard.bind_guard`,
+  which also re-exports `MANIFEST_VERSION`, `BUILT_FOR_VERSION` and
+  `MANIFEST_ENTRY_COUNT` (582 at the current build).
+- The TRUTH is the COMMITTED manifest `_bind_guard/manifest/bind_guard_manifest.py`. The
+  loader hydrates it through a `.melc` under `__melder_cache__/__bind_guard__/` that is an
+  ACCELERATOR, never the source; the manifest module is imported lazily on cache miss
+  only. Regeneration: `python src/melder/_build_assets/_build_asset_runner.py`.
 Semantics:
 - EXACT MATCH, NO INHERITANCE. Listing `Cleanable` blocks `Cleanable` itself; a user
   subclass carries its own module and qualname, is absent from the manifest, and binds
@@ -2158,8 +2160,9 @@ Enforcement Surface:
 Key Files (C1):
 - `src/melder/aether/spellbook/bind/bind.py` (`assert_allowed`,
   `_internal_identity_of`)
-- `src/melder/_build_assets/_init_manifest/internal_manifest.py` (GENERATED, committed)
-- `src/melder/_build_assets/_init_manifest/_builder.py` (build-time only)
+- `src/melder/_build_assets/_bind_guard/bind_guard.py` (hand-written loader)
+- `src/melder/_build_assets/_bind_guard/manifest/bind_guard_manifest.py` (GENERATED, committed)
+- `src/melder/_build_assets/_bind_guard/_builder.py` (build-time only)
 - `src/melder/_build_assets/_build_asset_runner.py`
 
 ### Subcomponent: Packaged Hardcopy Document Modules
@@ -3721,7 +3724,7 @@ sequenceDiagram
 
 ## C1 Code Map (Full Package Inventory)
 
-Generated from source on 2026-07-25 by AST walk over `src/melder`, one entry per
+Generated from source on 2026-07-30 by AST walk over `src/melder`, one entry per
 module (`__init__.py` excluded). Purpose text is taken from the module's own
 self-description in priority order: module docstring, then `__agent_purpose__`,
 then the first class docstring. Nothing here is inferred from a filename; modules
@@ -3732,7 +3735,7 @@ unbreakable tokens (`configuration_standards.md`).
 REGENERATION: this section is a derived inventory. Re-walk the package rather
 than hand-editing entries, so it cannot drift silently from source.
 
-Module count: 553 (excluding `__init__.py`).
+Module count: 560 (excluding `__init__.py`).
 
 **Package root** - 9 modules
 
@@ -3746,13 +3749,25 @@ Module count: 553 (excluding `__init__.py`).
 - `src/melder/__version__.py` - Version metadata exposed by the top-level Melder package
 - `src/melder/system_document.py` - Top-level hardcopy system document object for agent-facing Melder surfaces
 
-**_build_assets/ - generated durable build assets** - 5 modules
+**_build_assets/ - generated durable build assets** - 10 modules
 
-- `src/melder/_build_assets/_agent_metadata/_builder.py` - Agent-metadata harvester and durable asset builder
-- `src/melder/_build_assets/_agent_metadata/agent_metadata.py` - GENERATED DURABLE BUILD ASSET - DO NOT EDIT MANUALLY
+- `src/melder/_build_assets/_agent_documentation/_builder.py` - Agent-metadata harvester and durable asset builder
+- `src/melder/_build_assets/_agent_documentation/agent_documentation.py`
+  Agent-facing class documentation harvested from docstrings at build time
+- `src/melder/_build_assets/_agent_documentation/manifest/agent_documentation_manifest.py`
+  GENERATED BUILD ASSET - DO NOT EDIT MANUALLY
+- `src/melder/_build_assets/_bind_guard/_builder.py`
+  Internal-bind guard: source scanner and committed-manifest builder
+- `src/melder/_build_assets/_bind_guard/bind_guard.py`
+  Internal-bind guard manifest: the class list `assert_allowed(...)` enforces
+- `src/melder/_build_assets/_bind_guard/manifest/bind_guard_manifest.py` - GENERATED BUILD ASSET - DO NOT EDIT MANUALLY
 - `src/melder/_build_assets/_build_asset_runner.py` - Discovery-driven runner for every durable build asset melder ships
-- `src/melder/_build_assets/_init_manifest/_builder.py` - Internal-bind manifest scanner and durable asset builder
-- `src/melder/_build_assets/_init_manifest/internal_manifest.py` - GENERATED DURABLE BUILD ASSET - DO NOT EDIT MANUALLY
+- `src/melder/_build_assets/_system_documents/_builder.py`
+  System documents: template source and committed-manifest builder
+- `src/melder/_build_assets/_system_documents/manifest/system_documents_manifest.py`
+  GENERATED BUILD ASSET - DO NOT EDIT MANUALLY
+- `src/melder/_build_assets/_system_documents/system_documents.py`
+  Loader for melder's four package-root system documents
 
 **__melder_cache__/ - runtime cache surfaces** - 1 modules
 
@@ -4676,10 +4691,14 @@ Module count: 553 (excluding `__init__.py`).
 - `src/melder/mutation_research/synthesis/structural_synthesizer.py`
   AST-guided source composition over two recorded version texts
 
-**utilities/ - shared primitives and helpers** - 42 modules
+**utilities/ - shared primitives and helpers** - 44 modules
 
+- `src/melder/utilities/ai_native_support_tools/agent_text_reader.py`
+  Bounded, resumable text reader for agent consumption of large documents
 - `src/melder/utilities/ai_native_support_tools/protocol_crafter.py`
   Purpose: Generate protocol code from a target class or object and maintain protocol blocks in...
+- `src/melder/utilities/caching_system/asset_cache.py`
+  Shared hydration lane for durable build assets: committed manifest -> hot cache
 - `src/melder/utilities/caching_system/caching_system.py` - Conduit-scoped cache persistence utility
 - `src/melder/utilities/custom_exceptions/dead_reference_error.py`
   Purpose: Signal that a weak-reference target was requested after the referent was already col...
@@ -4748,14 +4767,6 @@ Module count: 553 (excluding `__init__.py`).
 - `src/melder/utilities/synchronization/ticket_flag.py` - Deque-backed boolean-style flag using ticket cardinality
 - `src/melder/utilities/synchronization/unit_of_work.py`
   Future-based encapsulation of a single unit of work, with integrated cancellation support via...
-
-UNKNOWN entries: 17 of 553.
-
-HISTORICAL NOTE: this section previously held two entries plus a 2026-07-07
-tail-repair marker recording that its remainder was lost to a mid-write
-truncation predating recoverable git history. It was rebuilt in full on
-2026-07-25 under TASK-2026-07-25-c1-code-map-restore, and regenerated twice the
-same day as the guard/manifest relocation and build-asset work moved modules.
 ## Crystallizer Persistence & Restore (promoted from patch
 ## restore_engine_2026_07_07 + successor lanes, 2026-07-07)
 

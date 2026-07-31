@@ -14,7 +14,7 @@ test a code path nobody actually uses.
 import importlib.util
 import pathlib
 import sys
-from typing import Any
+from typing import Any, List
 
 import pytest
 
@@ -103,6 +103,38 @@ def _load_runner() -> Any:
         Any: The executed runner module.
     """
     return _load_module_by_path("_rt_build_asset_runner", _RUNNER_PATH)
+
+
+def _shipped_asset_names() -> List[str]:
+    """
+    Return every real asset name, DISCOVERED rather than hardcoded.
+
+    Purpose:
+        A hardcoded list is how `_system_documents` shipped uncovered. It was
+        added as a third asset while the per-asset tests below still named only
+        two, so every structural guarantee they enforce silently did not apply
+        to it - and nothing failed to say so.
+
+    Contract:
+        Derived from the runner's own discovery, so adding an asset directory
+        automatically subjects it to every parametrized test in this file.
+
+    Returns:
+        List[str]: Asset directory names, sorted.
+    """
+    return sorted(p.parent.name for p in _load_runner().discover_builders())
+
+
+# Assets whose loader hydrates through a `.melc` cache. NOT every asset has one,
+# and the omission is a design decision rather than an oversight:
+# `_system_documents` deliberately has no cache because a cache amortises
+# COMPUTATION and there is none - its payload is already a string - and because
+# a cache read at import would defeat the laziness that keeps four
+# package-scope documents off the boot path.
+#
+# Listed explicitly rather than discovered so that REMOVING a cache from an
+# asset that should have one fails here instead of quietly reducing coverage.
+_CACHED_ASSETS = ("bind_guard", "agent_documentation")
 
 
 @pytest.fixture
@@ -528,7 +560,7 @@ def test_committed_assets_are_current_in_this_repository():
     assert live.check_all(live.melder_version()) == 0
 
 
-@pytest.mark.parametrize("asset_name", ["_bind_guard", "_agent_documentation"])
+@pytest.mark.parametrize("asset_name", _shipped_asset_names())
 def test_every_shipped_builder_satisfies_the_contract(asset_name):
     """
     Purpose:
@@ -546,7 +578,7 @@ def test_every_shipped_builder_satisfies_the_contract(asset_name):
         assert callable(getattr(module, name))
 
 
-@pytest.mark.parametrize("asset_name", ["_bind_guard", "_agent_documentation"])
+@pytest.mark.parametrize("asset_name", _shipped_asset_names())
 def test_shipped_assets_follow_the_directory_convention(asset_name):
     """
     Purpose:
@@ -575,7 +607,7 @@ def test_shipped_assets_follow_the_directory_convention(asset_name):
     )
 
 
-@pytest.mark.parametrize("asset_name", ["bind_guard", "agent_documentation"])
+@pytest.mark.parametrize("asset_name", _CACHED_ASSETS)
 def test_shipped_assets_cache_under_melder_cache(asset_name):
     """
     Purpose:
@@ -604,7 +636,7 @@ def test_shipped_assets_cache_under_melder_cache(asset_name):
     assert "_build_assets" not in path.parts
 
 
-@pytest.mark.parametrize("asset_name", ["_bind_guard", "_agent_documentation"])
+@pytest.mark.parametrize("asset_name", _shipped_asset_names())
 def test_shipped_assets_declare_a_schema_version(asset_name):
     """
     Purpose:

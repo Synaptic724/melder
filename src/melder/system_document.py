@@ -4,7 +4,6 @@ Top-level hardcopy system document object for agent-facing Melder surfaces.
 
 import json
 from typing import ClassVar
-from typing import List
 from typing import Optional
 from typing import TYPE_CHECKING
 

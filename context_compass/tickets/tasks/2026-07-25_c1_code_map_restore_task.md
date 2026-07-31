@@ -5,12 +5,12 @@
 ## Metadata
 - Task ID: TASK-2026-07-25-c1-code-map-restore
 - Story: STORY-2026-07-25-guard-manifest-truth
-- Status: ready
+- Status: review
 - Owner: melder_1
 - Agent Name: melder_1
 - Priority: p2
 - Created: 2026-07-25T18:19:28Z
-- Updated: 2026-07-25T18:19:28Z
+- Updated: 2026-07-30T11:44:02Z
 
 ## Objective
 Replace the two-entry truncation stub at `src_components.md:3714` with a complete,
@@ -40,21 +40,21 @@ filesystem-verified C1 inventory of the `src/melder` package.
   filesystem, which is directly readable, so no unknowns block the work.
 
 ## Steps / Checklist
-- [ ] Walk `src/melder` and capture the module inventory programmatically.
-- [ ] Group by subsystem boundary (root, aether, spellbook, conduit, dev_ops, nexus,
+- [x] Walk `src/melder` and capture the module inventory programmatically.
+- [x] Group by subsystem boundary (root, aether, spellbook, conduit, dev_ops, nexus,
       crystallizer, mutation_research, utilities, cache).
-- [ ] Write one accurate purpose line per module; mark anything unverified `UNKNOWN`
+- [x] Write one accurate purpose line per module; mark anything unverified `UNKNOWN`
       rather than guessing from the filename.
-- [ ] Reconcile against `src_architecture.md:1500-1646` so the two maps do not
+- [x] Reconcile against `src_architecture.md:1500-1646` so the two maps do not
       contradict each other.
-- [ ] Replace the section body; remove the 2026-07-07 truncation note only once real
+- [x] Replace the section body; remove the 2026-07-07 truncation note only once real
       content stands in its place, and preserve the historical fact that a truncation
       occurred.
-- [ ] Update the section heading if "Core" no longer describes the scope.
-- [ ] Run Ticket Microcycle during execution:
+- [x] Update the section heading if "Core" no longer describes the scope.
+- [x] Run Ticket Microcycle during execution:
       `Investigate -> Document -> Strategy/Plan -> Document -> Implement ->
       Document -> Validate -> Document`.
-- [ ] Document each meaningful finding immediately in `## Notes` before further investigation.
+- [x] Document each meaningful finding immediately in `## Notes` before further investigation.
 
 ## Deliverables
 - A complete, verified C1 Code Map section in `src_components.md`.
@@ -63,10 +63,22 @@ filesystem-verified C1 inventory of the `src/melder` package.
 - context_compass/system_docs/src_components.md
 
 ## Validation
-- Not run.
-- Recommended commands:
-  - path-existence check of every listed file against `src/melder`
-  - `rg -n "TAIL REPAIR" context_compass/system_docs/src_components.md`
+- Run 2026-07-30. All checks pass.
+- Path existence: every one of the 560 listed modules resolves on disk. Across BOTH
+  system docs, 705 cited `src/melder/**.py` paths, ZERO missing.
+- Header arithmetic: all eight group counts sum to 560, matching a live AST walk of
+  `src/melder` excluding `__init__.py`. Section header `Module count:` agrees.
+- Cross-doc reconciliation (`src_architecture.md` partial map vs this one): arch cites 4
+  `_build_assets` paths, this map cites all 10 live ones, arch is a strict SUBSET with
+  zero contradictions, and no live `_build_assets` module is absent from this map.
+- `TAIL REPAIR` / truncation note: no longer present. The single `truncat` hit at
+  :4814 is an unrelated crystallizer record-integrity state, not a repair marker.
+- Heading is `C1 Code Map (Full Package Inventory)` - `Core` is already gone, so the
+  scope-rename step needed no action.
+- Format preserved: the two-line entry form (path line, then indented description) is
+  reproduced by the 120-char rule derived from the section itself. Diff is 36/25 against
+  a 1,045-line section, i.e. no reflow of the 549 untouched entries.
+- Line endings match the index: `src_components.md` i/lf w/lf.
 
 ## Risks / Rollback Notes
 - RISK: a full inventory is the fastest-drifting doc section in the repo. Mitigation:
@@ -80,15 +92,15 @@ filesystem-verified C1 inventory of the `src/melder` package.
 - [ ] No path listed that was not filesystem-verified.
 
 ## Done Checklist
-- [ ] Steps complete and checked off
-- [ ] Deliverables produced and linked
-- [ ] Documentation updated (if needed)
-- [ ] Validation status recorded
-- [ ] Unknown-first discipline followed (`UNKNOWN` promoted to `FACT` only with evidence)
-- [ ] Notes quality maintained (`SCORE_0_TO_10` >= 7)
-- [ ] Applicable anti-pattern checks are clear or escalated with evidence.
+- [x] Steps complete and checked off
+- [x] Deliverables produced and linked
+- [x] Documentation updated (if needed)
+- [x] Validation status recorded
+- [x] Unknown-first discipline followed (`UNKNOWN` promoted to `FACT` only with evidence)
+- [x] Notes quality maintained (`SCORE_0_TO_10` >= 7)
+- [x] Applicable anti-pattern checks are clear or escalated with evidence.
 - [ ] Acceptance criteria reviewed with user and confirmed
-- [ ] Board sync completed for successor routing or closure anchor update.
+- [x] Board sync completed for successor routing or closure anchor update.
 
 ## Artifact Links (Optional)
 - ARTIFACTS_REQUIRED: false
@@ -172,6 +184,42 @@ filesystem-verified C1 inventory of the `src/melder` package.
   NEXT: Raise both to the owner at story walkthrough for a routing decision.
   REREAD: HELPFUL
   SCORE_0_TO_10: 7
+
+- DATETIME: 2026-07-30T11:37:39Z
+  TYPE: MEASURE
+  CLAIM: C1 Code Map regenerated: 553 -> 560 entries. Drift was 4 stale paths
+    (`_agent_metadata/` x2 and `_init_manifest/` x2, all deleted from source) and 11
+    absent modules (three `_build_assets` families plus
+    `utilities/caching_system/asset_cache.py` and
+    `utilities/ai_native_support_tools/agent_text_reader.py`). Group counts recomputed:
+    `_build_assets/` 5 -> 10, `utilities/` 42 -> 44; all eight group headers now sum to
+    560, matching a live AST walk excluding `__init__.py`.
+  EVIDENCE:
+  - context_compass/system_docs/src_components.md:3725-3739
+  IMPACT: The map claimed 553 in its own header while source held 560, and pointed at
+    four directories that no longer exist.
+  NEXT: Regenerate whenever `_build_assets/` changes shape again.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+- DATETIME: 2026-07-30T11:37:39Z
+  TYPE: DECISION
+  CLAIM: Chose a SURGICAL splice over a full regeneration, and a measurement decided it.
+    A wholesale rebuild produced 599 lines against the section's 1037 - a 438-line
+    shortfall that turned out to be the section's two-line entry format: `- path` alone
+    followed by an INDENTED description, used when `- path - desc` would exceed the
+    120-char cap (longest one-line entry is exactly 120; shortest would-be one-line
+    among two-line entries is 121). Overwriting would have reflowed 553 accepted
+    descriptions and destroyed 438 lines. Instead the 549 surviving entries were
+    preserved byte-for-byte, 4 dropped, 11 inserted in sorted position with the width
+    rule reproduced. Resulting diff: 36/25.
+  EVIDENCE:
+  - context_compass/system_docs/src_components.md:3740-3752
+  IMPACT: The section's own REGENERATION note says re-walk rather than hand-edit, which
+    reads as a mandate to rebuild wholesale. Followed literally it would have caused a
+    large destructive diff. The generator must reproduce the format, not just the data.
+  NEXT: Owner acceptance.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
 
 ## Context / Handoff Summary
 Section is a two-entry stub. Owner ruled full package inventory. `src_architecture.md`
