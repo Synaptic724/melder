@@ -47,17 +47,25 @@ ruling.
 - [x] T2: claimant identity
 - [x] T3: claim table (atomic acquire / release / blocking evidence)
 - [x] T4: transaction vocabulary + frozen request + admission verdict
-- [ ] T5: admission orchestrator (one acquisition under the admission lock)
-- [ ] T6: session (status, join/leave, rollback actions, abort pipeline,
+- [x] T5: admission orchestrator (one acquisition under the admission lock)
+- [x] T6: session (status, join/leave, rollback actions, abort pipeline,
       OUTCOME POLICY: unwind | leave_broken)
-- [ ] T7: mediator front door + transaction manager (ingress, per-identity root
-      sessions, same-thread joins, bounded wait)
-- [ ] T8: strategy ABC + registry + staged transaction
-- [ ] T9: information registry + information strategies (fact baselines + live
-      activity indexes - the reporting half)
-- [ ] T10: root wiring (the object Aether holds)
+- [x] T7: mediator front door + scope-key helper. NOTE: no separate
+      `TransactionManager` - DevOps splits request-building and in-flight
+      tracking across the manager, but in-flight lives on the orchestrator here
+      and request building is a static factory on the request itself. A third
+      class would only forward.
+- [x] T8: strategy ABC + registry + staged transaction
+- [x] T9: information registry (fact baselines + activity indexes by scope,
+      submitter, and type). Concrete information STRATEGIES (the catalog) are
+      deferred - the registry is the mechanism, the catalog is content.
+- [x] T10: root wiring - `Mediator` IS the root Aether holds. DevOps splits
+      `ChangeControlManager` (owner) from `TransactionMediator` (front door)
+      because its root carries frame duties (dirty roots, revalidation, risk)
+      with no counterpart here; splitting would leave a root that only forwards.
 - [ ] T11: unit tests incl. the no-melder.aether-import test and a concurrency
-      proof
+      proof (OWNER-RUN on 3.14t; the standalone harnesses below are logic
+      evidence only)
 
 ## Deliberate Divergences From DevOps (each with a reason)
 - `scope_claims` IS COMPLETE AND EXPLICIT - every scope key carries its own
@@ -141,6 +149,57 @@ Not run. `pytest tests/unit/melder/aether/aetheric_mediator -q` once tests exist
   REREAD: REQUIRED
   SCORE_0_TO_10: 8
 
+- DATETIME: 2026-08-01T00:05:04Z
+  TYPE: MEASURE
+  CLAIM: T5-T10 COMPLETE. 14 modules, 3,679 LOC, all compiling, and the ONLY
+    external import across the whole package is
+    `melder.utilities.general_base.cleanable`. End-to-end behaviour proven with
+    two real strategies (whole-world `CheckpointLoad` claiming world=x, and
+    frame-scoped `FormationLoad` claiming world=ix + frame=x):
+    1. `missing_types()` reports the 4 unregistered vocabulary members at boot.
+    2. Two DISJOINT formation loads admit CONCURRENTLY on one world via ix.
+    3. A whole-world load correctly BLOCKS behind them and times out with
+       `wait_timeout` after the configured bound.
+    4. Reporting answers by scope and by type while transactions are in flight.
+    5. Same identity on the same thread JOINS (same object, depth 2) rather
+       than opening a second root.
+    6. Commit releases claims AND stamps a freshness baseline; `stale_regions`
+       correctly reports both a stale region and a never-reported one.
+    7. LEAVE_BROKEN terminates BROKEN, runs NOTHING, and returns the residue
+       ledger.
+    8. Claims are RELEASED even under LEAVE_BROKEN.
+    9. The whole-world load admits once the frames clear.
+    10. Plane drains to zero claims and zero in-flight.
+  EVIDENCE:
+  - src/melder/aether/aetheric_mediator/mediator.py
+  - src/melder/aether/aetheric_mediator/transaction_session.py
+  - src/melder/aether/aetheric_mediator/information_registry.py
+  IMPACT: The LoadGate re-expression is DEMONSTRATED, not just argued: whole-world
+    exclusivity and disjoint frame parallelism coexist under one claim table with
+    no new mechanism. The owner's two-outcome policy works end to end.
+  NEXT: T11 - real tests on 3.14t (owner-run), then the three subsystem surveys.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+- DATETIME: 2026-08-01T00:05:04Z
+  TYPE: RISK
+  CLAIM: ALL harness evidence to date ran on PYTHON 3.10 against COPIES with
+    `StrEnum` and `Cleanable` SHIMMED and imports rewritten. It proves the
+    ALGORITHM. It does NOT prove the shipped wiring, `__slots__` behaviour
+    against the real `Cleanable`, or anything under free-threaded 3.14t.
+  EVIDENCE:
+  - src/melder/aether/aetheric_mediator/mediator.py
+  IMPACT: Nobody should read "10/10 checks pass" as "this is tested". T11 is
+    real work, not a formality.
+  NEXT: Owner runs the suite on 3.14t once T11 tests exist.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
 ## Context / Handoff Summary
-Standalone package. The one rule that matters: it must not import
+Standalone package, 14 modules. The one rule that matters: it must not import
 `melder.aether`. Everything else follows from that.
+
+Core is COMPLETE through T10 and demonstrated end to end. What remains before
+this is trustworthy: T11 real tests on 3.14t, the three subsystem surveys, and
+owner rulings on the epic's open questions - especially whether the top plane
+claims FRAME scope keys (it currently does, via `ScopeKey.frame`) and whether
+inner frame transactions JOIN the top session or stay siblings.

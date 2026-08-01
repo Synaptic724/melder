@@ -356,6 +356,48 @@ class ClaimTable(Cleanable):
             self._condition.notify_all()
         return released
 
+    def wait_for_change(self, timeout_seconds: float) -> bool:
+        """
+        Park until some claim is released, or until `timeout_seconds` passes.
+
+        Purpose:
+            Let a bounded retry loop OUTSIDE this table wait efficiently
+            instead of polling. The admission orchestrator must not hold its
+            own admission lock while waiting - doing so would block every
+            other admission behind one contended request - so it releases
+            that lock and parks here instead.
+
+        Contract:
+            - Waits on the table's own condition, so a waiter wakes on the
+              next release or cleanup rather than on a timer.
+            - Returns promptly and truthfully if the table is cleaned while
+              parked; callers must re-check state after waking and must not
+              assume a wake means their claims are now free.
+            - This is a NOTIFICATION primitive, not an acquisition. It grants
+              nothing.
+
+        Args:
+            timeout_seconds: Maximum time to park. Must be non-negative.
+
+        Returns:
+            bool: True if woken by a notification, False on timeout.
+
+        Raises:
+            ValueError: If `timeout_seconds` is negative.
+            RuntimeError: If the table has been cleaned before waiting.
+        """
+        self.check_cleaned()
+        if timeout_seconds < 0:
+            raise ValueError(
+                "timeout_seconds must be non-negative; got {0!r}.".format(
+                    timeout_seconds
+                )
+            )
+        with self._condition:
+            if self._cleaned:
+                return False
+            return self._condition.wait(timeout=timeout_seconds)
+
     def held_scopes(self, holder: Identity) -> Tuple[str, ...]:
         """
         Return the scope keys currently held by `holder`, sorted.
