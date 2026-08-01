@@ -1,5 +1,5 @@
 """
-The scope-claim table for the AethericMediator plane.
+The scope-claim table for the mediator plane.
 
 Dependency rule (non-negotiable, epic constraint 4): this module imports the
 standard library and `melder.utilities` ONLY. It must never reach into
@@ -15,7 +15,7 @@ import threading
 import time
 from typing import Dict, List, Mapping, Tuple
 
-from melder.aether.aetheric_mediator.aetheric_identity import AethericIdentity
+from melder.aether.aetheric_mediator.identity import Identity
 from melder.aether.aetheric_mediator.claim_mode import ClaimCompatibility, ClaimMode
 from melder.utilities.general_base.cleanable import Cleanable
 
@@ -48,7 +48,7 @@ class ClaimBlock:
             self,
             *,
             scope_key: str,
-            holder: AethericIdentity,
+            holder: Identity,
             held_mode: ClaimMode,
             requested_mode: ClaimMode,
     ) -> None:
@@ -69,7 +69,7 @@ class ClaimBlock:
             None.
         """
         self._scope_key: str = scope_key
-        self._holder: AethericIdentity = holder
+        self._holder: Identity = holder
         self._held_mode: ClaimMode = held_mode
         self._requested_mode: ClaimMode = requested_mode
 
@@ -79,7 +79,7 @@ class ClaimBlock:
         return self._scope_key
 
     @property
-    def holder(self) -> AethericIdentity:
+    def holder(self) -> Identity:
         """Return the identity currently holding the scope."""
         return self._holder
 
@@ -124,7 +124,7 @@ class _GrantedClaim:
 
     __slots__ = ["holder", "mode"]
 
-    def __init__(self, *, holder: AethericIdentity, mode: ClaimMode) -> None:
+    def __init__(self, *, holder: Identity, mode: ClaimMode) -> None:
         """
         Build one granted-claim record.
 
@@ -135,13 +135,13 @@ class _GrantedClaim:
         Returns:
             None.
         """
-        self.holder: AethericIdentity = holder
+        self.holder: Identity = holder
         self.mode: ClaimMode = mode
 
 
-class AethericClaimTable(Cleanable):
+class ClaimTable(Cleanable):
     """
-    Atomic, mode-aware scope-claim table for the AethericMediator plane.
+    Atomic, mode-aware scope-claim table for the mediator plane.
 
     Purpose:
         Serialise structural work across subsystems by scope rather than
@@ -226,7 +226,7 @@ class AethericClaimTable(Cleanable):
 
     def try_acquire(
             self,
-            holder: AethericIdentity,
+            holder: Identity,
             requested: Mapping[str, ClaimMode],
     ) -> Tuple[ClaimBlock, ...]:
         """
@@ -260,7 +260,7 @@ class AethericClaimTable(Cleanable):
 
     def acquire(
             self,
-            holder: AethericIdentity,
+            holder: Identity,
             requested: Mapping[str, ClaimMode],
             timeout_seconds: float,
     ) -> None:
@@ -301,7 +301,7 @@ class AethericClaimTable(Cleanable):
             while True:
                 if self._cleaned:
                     raise RuntimeError(
-                        "AethericClaimTable was cleaned while {0} waited for "
+                        "ClaimTable was cleaned while {0} waited for "
                         "passage.".format(holder.describe())
                     )
                 blocks = self._collect_blocks(holder, requested)
@@ -311,7 +311,7 @@ class AethericClaimTable(Cleanable):
                 remaining = deadline - time.monotonic()
                 if remaining <= 0:
                     raise RuntimeError(
-                        "AethericClaimTable acquisition timed out after {0}s "
+                        "ClaimTable acquisition timed out after {0}s "
                         "for {1}; blocked by: {2}".format(
                             timeout_seconds,
                             holder.describe(),
@@ -320,7 +320,7 @@ class AethericClaimTable(Cleanable):
                     )
                 self._condition.wait(timeout=remaining)
 
-    def release_holder(self, holder: AethericIdentity) -> int:
+    def release_holder(self, holder: Identity) -> int:
         """
         Release every claim held by `holder` and wake waiters.
 
@@ -356,7 +356,7 @@ class AethericClaimTable(Cleanable):
             self._condition.notify_all()
         return released
 
-    def held_scopes(self, holder: AethericIdentity) -> Tuple[str, ...]:
+    def held_scopes(self, holder: Identity) -> Tuple[str, ...]:
         """
         Return the scope keys currently held by `holder`, sorted.
 
@@ -409,7 +409,7 @@ class AethericClaimTable(Cleanable):
 
     def _collect_blocks(
             self,
-            holder: AethericIdentity,
+            holder: Identity,
             requested: Mapping[str, ClaimMode],
     ) -> Tuple[ClaimBlock, ...]:
         """
@@ -448,7 +448,7 @@ class AethericClaimTable(Cleanable):
 
     def _grant(
             self,
-            holder: AethericIdentity,
+            holder: Identity,
             requested: Mapping[str, ClaimMode],
     ) -> None:
         """

@@ -74,23 +74,42 @@ be written against them.
    ACTIVE; they emit their basic conditions to the plane.
 7. Lightweight, but just as effective.
 
-## Component Split (modelled on DevOps, trimmed)
+## Component Split (modelled on DevOps)
 
-CORE - all three subsystems need it:
-- identity of a claimant (per-identity sessions are what make joins work)
-- request carrying a transaction type + `scope_claims`
-- claim table with MODES (`x` exclusive / `s` shared / `ix` intent) and atomic
-  all-or-nothing acquisition with `(scope_key, holder, mode)` blocking evidence
-- orchestrated admission - one acquisition under one admission lock
-- mediator front door - ingress, per-identity root sessions, same-thread joins,
-  bounded wait-and-retry, commit/abort finalisation
-- session - the live span: status, depth, join/leave, rollback actions, abort
-  pipeline, failure reason, and the OUTCOME POLICY
-- strategy seam - the ABC + registry, as an EXTENSION POINT
+CORRECTED 2026-07-31 after actually reading the DevOps subsystem. An earlier
+revision of this section listed the strategy layer as an optional "seam" and
+proposed dropping `apply_commit_delta`. BOTH WERE WRONG. See the findings notes.
 
-DELIBERATELY OMITTED (DevOps-specific, no consumer up here):
-- the 15 DevOps strategy families (each subsystem registers its own)
-- `apply_commit_delta` / `DevopsFactRecord` baselines
+The DevOps plane is FIVE pieces, and the port needs all five:
+
+1. VOCABULARY - a closed `StrEnum` of transaction types. `StrEnum` specifically,
+   because these values TRAVEL into request payloads, admission evidence, and
+   logs. Its own contract states the discipline: adding a structural operation
+   means adding a member here PLUS a strategy, never threading a new ad-hoc
+   string through the control plane.
+2. REQUEST - an immutable frozen record, FROZEN BEFORE ADMISSION so admission is
+   deterministic and replayable: conflict detection and claim acquisition read a
+   fixed snapshot, so one request cannot admit differently depending on when its
+   fields are read. Carries scope keys, per-key `scope_claims` modes, hashes,
+   identity edges, and metadata.
+3. VERDICT - an immutable admission result returning EVIDENCE, NOT A BOOL:
+   machine-readable `reasons`, blocking `conflicts`, contended `embargoes`. This
+   is the single most important piece for the owner's reporting requirement.
+4. STRATEGY - an ABC with four hooks (`build_start_plan`, `on_start`, `on_end`,
+   `apply_commit_delta`), registered as CLASSES not instances, stateless.
+5. CLAIM TABLE + ORCHESTRATED ADMISSION - moded, atomic, all-or-nothing, with
+   named blocking evidence.
+
+Plus the plane-level pieces this port already assumed: identity, mediator front
+door (ingress, per-identity root sessions, same-thread joins, bounded wait),
+and session (status, depth, join/leave, rollback actions, abort pipeline,
+outcome policy).
+
+STILL OMITTED (genuinely DevOps-specific):
+- the concrete DevOps strategy families; each subsystem registers its own
+- the registry's RELATIONAL mirrors (spellbook<->conduit ownership, link and
+  cluster membership maps). Relational truth belongs to each subsystem; the top
+  plane should hold transaction ACTIVITY and FACT BASELINES only. OPEN QUESTION 4.
 - commit validators / commit hooks, until a caller needs one
 - `StagedMutation`, unless staging proves necessary
 
@@ -125,6 +144,20 @@ DELIBERATELY OMITTED (DevOps-specific, no consumer up here):
    larger build and the owner has leaned against it.
 3. What are each subsystem's "basic conditions" that get emitted on enable? The
    three surveys answer this.
+4. Does the aetheric registry mirror subsystem RELATIONSHIPS, or only
+   transaction ACTIVITY plus fact baselines? DevOps mirrors a great deal -
+   spellbook<->conduit ownership, conduit links, cluster membership - and those
+   mirrors are what its information strategies read. Proposed answer: the top
+   plane holds activity and facts ONLY, and relational truth stays owned by each
+   subsystem. Not yet ruled.
+5. Does `apply_commit_delta` come up here? Its job below is stamping freshness
+   baselines so readers can skip re-derivation. If reporting means "activity plus
+   admission evidence", it can be dropped; if it means "and I can tell what is
+   stale", it must come. Leaning KEEP, given the owner named logging/reporting as
+   a driver.
+6. What is the aetheric SCOPE HIERARCHY? The `ix` finding makes this concrete and
+   urgent: `world` -> `frame:<name>` -> subsystem keys is the shape that makes
+   LoadGate a degenerate case. Needs confirming against the three surveys.
 
 ## Stories (Required to Complete)
 - [ ] Story: STORY-2026-07-31-aetheric-mediator-core - build the standalone plane
@@ -202,6 +235,92 @@ rule should be a test, not a convention.
   NEXT: Keep every survey task's Required Reads explicit and short.
   REREAD: HELPFUL
   SCORE_0_TO_10: 8
+
+- DATETIME: 2026-07-31T23:00:41Z
+  TYPE: FACT
+  CLAIM: THE STRATEGY LAYER IS THE POINT, NOT DECORATION. `build_start_plan` is
+    where SCOPE PROPORTIONALITY is decided, and that decision is the whole
+    difference between a claim plane and a global mutex with extra steps.
+    `BindTransactionStrategy` exists almost entirely to answer "what does a bind
+    actually touch": pre-conjure ONE spellbook; post-conjure the book + paired
+    root conduit + its ward + any cluster memberships. It EXPLICITLY REFUSES to
+    model bind as multi-conduit fanout, because "a generic topology expansion
+    would claim every conduit associated with the book and serialize unrelated
+    work across the whole frame".
+  EVIDENCE:
+  - src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/bind_transaction_strategy.py:22-85
+  - src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/transaction_strategy.py:20-86
+  IMPACT: Corrects this epic's earlier framing of strategies as an optional
+    extension seam. Without them, callers hand-author their own scope sets and
+    the plane degenerates to ad-hoc claiming - the exact failure it exists to
+    end. ALSO: each subsystem SURVEY's real output IS the input to a strategy.
+    "What does a checkpoint load actually touch?" is `build_start_plan` for
+    `checkpoint_load`. The surveys and the strategies are the same work.
+  NEXT: Read `transaction_strategy_builder.py` for the registration/dispatch
+    contract before designing the aetheric equivalent.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+- DATETIME: 2026-07-31T23:00:41Z
+  TYPE: FACT
+  CLAIM: `INTENT` IS A HIERARCHICAL PARENT-SCOPE MARKER, AND IT ALREADY SOLVES
+    THE LOADGATE RE-EXPRESSION. DevOps documents it as marking "a parent scope so
+    a whole-spellbook claim (transfer) blocks piece-work without serializing it".
+    Applied here: a whole-world load claims `world` EXCLUSIVE and shuts
+    everything out (today's LoadGate, verbatim); a frame-scoped load claims
+    `world` INTENT + `frame:A` EXCLUSIVE; a second claims `world` INTENT +
+    `frame:B` EXCLUSIVE. The two coexist on the parent, never contend on the
+    children, and the whole-world load still excludes both.
+  EVIDENCE:
+  - src/melder/aether/aetheric_frame/dev_ops/change_control_manager/embargo_manager/embargo_manager.py:18-67
+  IMPACT: The disjoint-parallelism goal needs NO new mechanism. It falls out of
+    mode semantics that already ship and are already proven. LoadGate is not
+    replaced by something novel - it is the degenerate `x`-on-world case.
+  NEXT: Confirm the aetheric scope hierarchy (`world` -> `frame:<name>` ->
+    subsystem keys?) as part of the surveys.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+- DATETIME: 2026-07-31T23:00:41Z
+  TYPE: MEASURE
+  CLAIM: The bootstrapped `ClaimCompatibility` matrix was VERIFIED against
+    DevOps and matches exactly. `EXCLUSIVE` admits nothing; `SHARED` coexists
+    with `SHARED` only; `INTENT` coexists with `INTENT` only - so SHARED vs
+    INTENT is denied in DevOps too. The conservative default taken during
+    bootstrap was correct, and is now evidenced rather than assumed. Two
+    corrections applied to the shipped file: `ClaimMode` switched from `Enum` to
+    `StrEnum` (DevOps uses `StrEnum` deliberately because the values travel into
+    payloads and LOGS), and the docstring now cites provenance instead of
+    describing a guess.
+  EVIDENCE:
+  - src/melder/aether/aetheric_frame/dev_ops/change_control_manager/embargo_manager/embargo_manager.py:27-33
+  - src/melder/aether/aetheric_mediator/claim_mode.py
+  IMPACT: Removes a live correctness risk in already-written code, and aligns
+    the log/payload representation with the plane it is modelled on.
+  NEXT: Continue with the builder and orchestrator.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 8
+- DATETIME: 2026-07-31T23:00:41Z
+  TYPE: FACT
+  CLAIM: THE REPORTING THE OWNER WANTS IS TWO MECHANISMS, BOTH FALLING OUT OF
+    THE PLANE EXISTING - it is not a logging layer bolted on afterwards.
+    (1) FACT BASELINES: `apply_commit_delta` runs at commit WHILE THE
+    TRANSACTION STILL HOLDS ITS CLAIMS, and its BASE-CLASS DEFAULT stamps
+    `report_fact(fact_family, region, reporter)` per region (`spellbook:<id>`,
+    `conduit:<id>`). Information strategies then read those baselines and skip
+    re-derivation when nothing has changed since.
+    (2) LIVE ACTIVITY INDEXES: the registry keeps
+    `list_live_transactions_for_scope` / `_for_identity` / `_for_type`, which is
+    literally "what is happening right now, along one axis".
+  EVIDENCE:
+  - src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/transaction_strategy.py:168-229
+  - src/melder/aether/aetheric_frame/dev_ops/devops_information_registry.py:385-471
+  - src/melder/aether/aetheric_frame/dev_ops/devops_information_registry.py:1476-1629
+  IMPACT: Reverses this epic's earlier proposal to DROP `apply_commit_delta`.
+    Dropping it would delete the freshness half of the reporting story the owner
+    explicitly asked for. It stays unless the owner rules otherwise
+    (open question 5).
+  NEXT: Owner ruling on open questions 4 and 5.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
 
 ## Closure Confirmation
 - [ ] Work walkthrough shared with user

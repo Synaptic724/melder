@@ -1,5 +1,5 @@
 """
-Claimant identity for the AethericMediator plane.
+Claimant identity for the mediator plane.
 
 Dependency-free beyond the standard library by design: the plane is constructed
 before any `AethericFrame` exists, so nothing here may import `melder.aether`.
@@ -13,9 +13,9 @@ rather than a bare thread id.
 from typing import Optional
 
 
-class AethericIdentity:
+class Identity:
     """
-    The immutable identity of one claimant on the AethericMediator plane.
+    The immutable identity of one claimant on the mediator plane.
 
     Purpose:
         Name WHO holds or requests a claim, in a form that is stable across
@@ -97,12 +97,12 @@ class AethericIdentity:
         """
         if not kind or not kind.strip():
             raise ValueError(
-                "AethericIdentity requires a non-empty 'kind'; an unnamed "
+                "Identity requires a non-empty 'kind'; an unnamed "
                 "claimant cannot be reported as a blocking holder."
             )
         if not identity_id or not identity_id.strip():
             raise ValueError(
-                "AethericIdentity requires a non-empty 'identity_id'; a blank "
+                "Identity requires a non-empty 'identity_id'; a blank "
                 "id would make unrelated claimants compare equal."
             )
         self._kind: str = kind
@@ -184,11 +184,11 @@ class AethericIdentity:
 
         Returns:
             bool:
-                True when `other` is an `AethericIdentity` with the same
+                True when `other` is an `Identity` with the same
                 kind and id. `NotImplemented` is returned for foreign types
                 so Python can fall back to the reflected comparison.
         """
-        if not isinstance(other, AethericIdentity):
+        if not isinstance(other, Identity):
             return NotImplemented
         return (
             self._kind == other._kind
@@ -211,6 +211,6 @@ class AethericIdentity:
         Returns:
             str: A repr carrying the identity pair.
         """
-        return "AethericIdentity(kind={0!r}, identity_id={1!r})".format(
+        return "Identity(kind={0!r}, identity_id={1!r})".format(
             self._kind, self._identity_id
         )

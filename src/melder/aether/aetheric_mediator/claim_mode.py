@@ -1,5 +1,5 @@
 """
-Claim vocabulary for the AethericMediator plane.
+Claim vocabulary for the mediator plane.
 
 This module is deliberately dependency-free beyond the standard library: the
 plane must be constructible before any `AethericFrame` exists, so nothing here
@@ -10,28 +10,48 @@ The vocabulary mirrors the working DevOps change-control plane
 matrix is already proven in production under free-threaded 3.14t.
 """
 
-from enum import Enum
+from enum import StrEnum
 from typing import ClassVar, FrozenSet, Tuple
 
 
-class ClaimMode(Enum):
+class ClaimMode(StrEnum):
     """
     The access posture one holder requests over one scope key.
 
     Purpose:
         Express the difference between "nobody else may touch this",
-        "several readers may share this", and "I am doing additive
-        piece-work here, so a whole-unit writer must be excluded but my
-        peers need not be".
+        "several readers may share this", and "I hold a PARENT scope while
+        doing piece-work beneath it, so a whole-unit writer must be excluded
+        but my peers need not be".
 
     Contract:
-        - Values are the short forms used throughout the DevOps plane and
-          its documentation, so evidence written against one plane reads
-          correctly against the other.
+        - `EXCLUSIVE` ("x"): no other claim of ANY mode may coexist.
+        - `SHARED` ("s"): coexists with other `SHARED` claims ONLY.
+        - `INTENT` ("ix"): coexists with other `INTENT` claims ONLY. It is
+          the HIERARCHICAL PARENT-SCOPE MARKER - hold `ix` on the parent
+          while holding `x` on the child, and disjoint children proceed in
+          parallel while a whole-parent `x` still excludes every one of them.
+        - These are the DevOps plane's semantics VERBATIM, verified against
+          `embargo_manager.ClaimMode`, not a parallel invention. Evidence
+          written against one plane therefore reads correctly against the
+          other.
+        - `StrEnum`, matching DevOps, because these values TRAVEL: they land
+          in request payloads, admission evidence, and logs, and must survive
+          string-oriented APIs without special casing.
         - Compatibility is NOT defined here. It lives in
           `ClaimCompatibility` so the matrix can be a real class attribute;
-          a mapping declared inside an `Enum` body would be swallowed as a
+          a mapping declared inside an enum body would be swallowed as a
           member rather than kept as data.
+
+    The hierarchical pattern this plane is built for:
+        A whole-world load claims `world` EXCLUSIVE and excludes everything.
+        A frame-scoped load claims `world` INTENT plus `frame:A` EXCLUSIVE.
+        A second frame-scoped load claims `world` INTENT plus `frame:B`
+        EXCLUSIVE. The two coexist on the parent and never contend on the
+        children, so disjoint loads run in parallel - while the whole-world
+        load still shuts both out. This is exactly the behaviour the
+        crystallizer's global `LoadGate` provides today, re-expressed as
+        claims rather than a single global mutex.
 
     Registration:
         MELDER KERNEL - guarded. Vocabulary only; never bound as a spell.
@@ -61,23 +81,21 @@ class ClaimCompatibility:
         - EXCLUSIVE excludes everything, in both directions.
         - SHARED coexists with SHARED.
         - INTENT coexists with INTENT.
-        - SHARED vs INTENT is CONSERVATIVELY DENIED. See the note below;
-          this is a deliberate, flagged default rather than a derived rule.
-        - The matrix is symmetric by construction: every permitted pair is
-          stored in both orders so callers never have to normalise.
+        - SHARED vs INTENT is DENIED, matching DevOps exactly. Verified
+          against `embargo_manager.ClaimMode`, whose contract states SHARED
+          "permits coexistence with other SHARED claims only" and INTENT
+          "permits coexistence with other INTENT claims only".
+        - The matrix is therefore symmetric AND diagonal: a mode coexists
+          only with itself, and EXCLUSIVE not even with that.
 
-    SHARED vs INTENT - why denied:
-        The DevOps plane documents only three rules: `s`/`s` coexist,
-        `ix`/`ix` coexist, and `x` excludes everything. It does not state
-        what happens between `s` and `ix`, and `ix` there means "additive
-        piece-work on this unit" (a spellbook accepting binds and links)
-        while `s` means "reading this unit". Additive work can change what
-        a reader observes, so permitting the pair would be a guess that
-        fails OPEN - the dangerous direction. Denying it fails CLOSED: the
-        worst case is unnecessary serialisation, which is visible and
-        fixable, rather than an undetected read of shifting state.
-        This must be revisited once the three subsystem surveys land; if a
-        real case needs the pair, widen it deliberately and record why.
+    Provenance:
+        An earlier revision of this class denied SHARED/INTENT as a
+        CONSERVATIVE GUESS, on the reasoning that permitting an undocumented
+        pair fails open while denying it fails closed. That guess was
+        subsequently checked against `embargo_manager.ClaimMode` and proved
+        to match the shipped semantics exactly. The rule is now EVIDENCED
+        rather than assumed, and this note is kept so a future reader does
+        not "restore" a permissiveness that was never there.
 
     Threading:
         Pure and stateless. Safe to call from any thread without
