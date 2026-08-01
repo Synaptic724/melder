@@ -12,8 +12,10 @@ rather than a bare thread id.
 
 from typing import Optional
 
+from melder.utilities.general_base.cleanable import Cleanable
 
-class Identity:
+
+class Identity(Cleanable):
     """
     The immutable identity of one claimant on the mediator plane.
 
@@ -34,9 +36,31 @@ class Identity:
           be entered from more than one thread (an enrolled worker cohort),
           so thread identity is diagnostic evidence rather than part of the
           identity itself.
-        - Not `Cleanable`: this owns no resource and has no teardown. It is
-          a value, and giving it a lifecycle would imply an ownership it
-          does not have.
+
+    Lifecycle / Cleanup:
+        `Cleanable`, and CALLER-OWNED. This is the one type here the plane
+        does not own: a subsystem constructs its identity, hands it in, and
+        keeps it. The plane BORROWS it for the life of a transaction, so
+        nothing inside this package ever calls `cleanup()` on one - the same
+        rule `AdmissionOrchestrator` follows for the claim table it borrows.
+        The contract exists so the OWNING subsystem can release it at ITS end
+        of life, which is the only place that knows when that is.
+
+        WHY THIS WAS NOT SAFE UNTIL THE SESSION MAPS WERE REKEYED, recorded
+        because it is the trap a future reader would otherwise re-enter: the
+        mediator used to key its per-thread session maps on the Identity
+        OBJECT. Cleaning one deletes the fields `__hash__` reads, so a cleaned
+        identity raises from `__hash__` and every map still holding it as a
+        key is corrupt - lookups miss, and the entry can never be removed.
+        `Mediator` now keys on `identity_key()`, a plain string captured at
+        insertion, so a caller cleaning its own identity can no longer reach
+        into the plane's bookkeeping. An earlier revision of this docstring
+        said this type "must not" be `Cleanable` for exactly that reason; the
+        reason was real, and it was fixed rather than argued with.
+
+        `__eq__` and `__hash__` REFUSE on a cleaned identity rather than
+        raising `AttributeError` from a deleted slot. A loud, named failure at
+        the point of misuse beats a mangled traceback from inside a dict.
 
     Owned State:
         Three immutable strings plus one optional integer. No collections,
@@ -44,7 +68,8 @@ class Identity:
 
     Threading:
         Safe to share freely. Immutability is the whole thread-safety
-        story; no lock is needed or provided.
+        story; no lock is needed or provided. Cleanup is the owning
+        subsystem's single terminal act, not concurrent activity.
 
     Registration:
         MELDER KERNEL - guarded. Constructed by plane callers; never bound
@@ -57,7 +82,9 @@ class Identity:
         plane. Sessions key on it and blocking evidence names it.
     """
 
-    __slots__ = ["_kind", "_identity_id", "_label", "_thread_ident"]
+    __slots__ = Cleanable.__slots__ + [
+        "_kind", "_identity_id", "_label", "_thread_ident",
+    ]
 
     def __init__(
             self,
@@ -105,10 +132,64 @@ class Identity:
                 "Identity requires a non-empty 'identity_id'; a blank "
                 "id would make unrelated claimants compare equal."
             )
+        super().__init__()
         self._kind: str = kind
         self._identity_id: str = identity_id
         self._label: Optional[str] = label
         self._thread_ident: Optional[int] = thread_ident
+
+    def cleanup(self) -> None:
+        """
+        Idempotently release this identity's fields.
+
+        Contract:
+            CALLED BY THE OWNING SUBSYSTEM, NEVER BY THE PLANE. Nothing inside
+            `aetheric_mediator` cleans an identity it was handed - it is
+            borrowed for the life of a transaction, and cleaning a borrowed
+            object is how one component tears down another's state.
+
+            Clean only once the identity is finished submitting work. A
+            cleaned identity refuses equality and hashing, so any claim still
+            held under it, and any session still keyed to it, must be
+            finalised first.
+
+        Returns:
+            None.
+        """
+        if self._cleaned:
+            return
+        self._cleaned = True
+        del self._kind
+        del self._identity_id
+        del self._label
+        del self._thread_ident
+
+    def identity_key(self) -> str:
+        """
+        Return the stable string form used to key maps on this identity.
+
+        Purpose:
+            Let callers index by identity WITHOUT holding the object as a
+            dict key, so a later `cleanup()` cannot corrupt their map.
+
+        Contract:
+            `"<kind>:<identity_id>"` - the same pair equality and hashing use,
+            so two identities equal under `__eq__` produce the same key. It is
+            a plain string: capture it at insertion and the map keeps working
+            no matter what happens to the identity afterwards.
+
+            `Mediator` keys its per-thread session maps on this rather than on
+            the identity object, which is what makes `Identity` safe to make
+            `Cleanable` at all.
+
+        Returns:
+            str: The stable map key.
+
+        Raises:
+            RuntimeError: If the identity has been cleaned.
+        """
+        self.check_cleaned()
+        return "{0}:{1}".format(self._kind, self._identity_id)
 
     @property
     def kind(self) -> str:
@@ -117,7 +198,11 @@ class Identity:
 
         Returns:
             str: The stable lowercase family name.
+
+        Raises:
+            RuntimeError: If the identity has been cleaned.
         """
+        self.check_cleaned()
         return self._kind
 
     @property
@@ -127,7 +212,11 @@ class Identity:
 
         Returns:
             str: The identity id.
+
+        Raises:
+            RuntimeError: If the identity has been cleaned.
         """
+        self.check_cleaned()
         return self._identity_id
 
     @property
@@ -137,7 +226,11 @@ class Identity:
 
         Returns:
             Optional[str]: The label, or None when none was given.
+
+        Raises:
+            RuntimeError: If the identity has been cleaned.
         """
+        self.check_cleaned()
         return self._label
 
     @property
@@ -150,7 +243,11 @@ class Identity:
 
         Returns:
             Optional[int]: The thread id, or None when none was supplied.
+
+        Raises:
+            RuntimeError: If the identity has been cleaned.
         """
+        self.check_cleaned()
         return self._thread_ident
 
     def describe(self) -> str:
@@ -166,7 +263,11 @@ class Identity:
             str: A one-line rendering such as
                 `crystallizer:checkpoint_load:01J...` optionally followed by
                 the label and thread.
+
+        Raises:
+            RuntimeError: If the identity has been cleaned.
         """
+        self.check_cleaned()
         rendered = "{0}:{1}".format(self._kind, self._identity_id)
         if self._label is not None:
             rendered = "{0} ({1})".format(rendered, self._label)
@@ -190,6 +291,11 @@ class Identity:
         """
         if not isinstance(other, Identity):
             return NotImplemented
+        # BOTH SIDES ARE GUARDED. Comparing against a cleaned identity would
+        # otherwise raise `AttributeError` from a deleted slot, several frames
+        # away from the mistake. Refusing here names the actual problem.
+        self.check_cleaned()
+        other.check_cleaned()
         return (
             self._kind == other._kind
             and self._identity_id == other._identity_id
@@ -199,9 +305,20 @@ class Identity:
         """
         Hash on `(kind, identity_id)`, matching equality exactly.
 
+        Contract:
+            REFUSES on a cleaned identity. A cleaned identity has no stable
+            hash - its fields are gone - and silently returning some other
+            value would corrupt every map holding it. Callers that need a key
+            surviving cleanup use `identity_key()`, which is why the mediator
+            does exactly that.
+
         Returns:
             int: The hash of the identity pair.
+
+        Raises:
+            RuntimeError: If the identity has been cleaned.
         """
+        self.check_cleaned()
         return hash((self._kind, self._identity_id))
 
     def __repr__(self) -> str:

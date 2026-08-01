@@ -25,6 +25,7 @@ from melder.aether.aetheric_mediator.admission_result import (
 from melder.aether.aetheric_mediator.claim_mode import ClaimCompatibility, ClaimMode
 from melder.aether.aetheric_mediator.claim_table import ClaimTable
 from melder.aether.aetheric_mediator.identity import Identity
+from melder.aether.aetheric_mediator.mediator import Mediator
 from melder.aether.aetheric_mediator.information_registry import InformationRegistry
 from melder.aether.aetheric_mediator.scope_keys import ScopeKey
 from melder.aether.aetheric_mediator.staged_transaction import StagedTransaction
@@ -604,11 +605,36 @@ def test_join_depth_and_double_fail_are_guarded():
 
 
 def test_commit_refuses_while_still_joined():
-    """An inner scope must not terminate an outer one."""
+    """
+    An inner scope must not terminate an outer one.
+
+    Points at `mark_committing`, which is where the DEPTH guard now lives.
+    It used to point at `mark_committed`, and that assertion would still pass
+    after the commit pipeline was ported - but for the wrong reason: from OPEN,
+    `mark_committed` now refuses on STATUS before depth is ever consulted. The
+    depth rule would have kept a green test while losing its coverage.
+    """
     session = _session()
     session.join()
     with pytest.raises(RuntimeError):
+        session.mark_committing()
+
+
+def test_committed_is_unreachable_without_passing_through_committing():
+    """
+    COMMITTED means "the commit pipeline ran", so it needs a path to say so.
+
+    The old shape marked COMMITTED up front, which is why a transaction that
+    died inside its own commit still reported success.
+    """
+    session = _session()
+    session.leave()
+    with pytest.raises(RuntimeError):
         session.mark_committed()
+    session.mark_committing()
+    assert session.status is SessionStatus.COMMITTING
+    session.mark_committed()
+    assert session.status is SessionStatus.COMMITTED
 
 
 def test_foreign_thread_join_fails_fast_naming_the_owner():
@@ -818,8 +844,6 @@ def test_default_metadata_is_frozen_not_a_fresh_mutable_dict():
         staged.metadata["sneak"] = 1
 
 
-
-
 # --------------------------------------------------------------------------
 # _RollbackAction: the one complex-typed record in the package
 # --------------------------------------------------------------------------
@@ -849,3 +873,265 @@ def test_rollback_action_cleanup_is_idempotent():
     entry.cleanup()
     entry.cleanup()
     assert entry.cleaned
+
+
+# --------------------------------------------------------------------------
+# Participant roster
+#
+# Aether pushes this plane down into Crystallizer, MutationResearch and Nexus,
+# and each announces itself here. The direction is the whole point: the plane
+# never reaches out, so it never needs to import `melder.aether`.
+# --------------------------------------------------------------------------
+
+def test_registering_is_idempotent_and_reports_first_arrival():
+    """An activate/deactivate/activate cycle must be safe to repeat blindly."""
+    plane = Mediator(max_wait_seconds=0.1)
+    try:
+        assert plane.register_participant("crystallizer") is True
+        assert plane.register_participant("crystallizer") is False
+        assert plane.has_participant("crystallizer")
+        assert plane.unregister_participant("crystallizer") is True
+        assert plane.unregister_participant("crystallizer") is False
+        assert not plane.has_participant("crystallizer")
+        assert plane.register_participant("crystallizer") is True
+    finally:
+        plane.cleanup()
+
+
+def test_the_roster_answers_which_subsystems_are_live():
+    """The plane can name the live subsystems without referencing any of them."""
+    plane = Mediator(max_wait_seconds=0.1)
+    try:
+        for name in ("nexus", "crystallizer", "mutation_research"):
+            plane.register_participant(name)
+        assert plane.participants() == (
+            "crystallizer", "mutation_research", "nexus",
+        )
+        plane.unregister_participant("nexus")
+        assert plane.participants() == ("crystallizer", "mutation_research")
+    finally:
+        plane.cleanup()
+
+
+def test_registering_grants_no_claim():
+    """
+    The roster is not admission. Announcing must not reserve anything.
+
+    If registration ever started taking a claim, a subsystem coming up would
+    silently begin blocking transactions it has no business blocking.
+    """
+    plane = Mediator(max_wait_seconds=0.1)
+    try:
+        plane.register_participant("crystallizer")
+        assert plane.describe()["claims"]["scope_count"] == 0
+        assert plane.describe()["admission"]["in_flight_count"] == 0
+    finally:
+        plane.cleanup()
+
+
+def test_an_unnameable_participant_is_refused():
+    """
+    A blank name would not match any `ScopeKey.subsystem(...)` key.
+
+    Silently accepting one produces a roster entry nothing can ever claim
+    against, which reads as "the subsystem is live" while being unreachable.
+    """
+    plane = Mediator(max_wait_seconds=0.1)
+    try:
+        with pytest.raises(ValueError):
+            plane.register_participant("")
+        with pytest.raises(ValueError):
+            plane.register_participant("   ")
+    finally:
+        plane.cleanup()
+
+
+def test_the_roster_is_visible_in_the_plane_snapshot():
+    """`describe()` must answer 'who is live' beside 'what is happening'."""
+    plane = Mediator(max_wait_seconds=0.1)
+    try:
+        plane.register_participant("nexus")
+        assert plane.describe()["participants"] == ("nexus",)
+    finally:
+        plane.cleanup()
+
+
+def test_roster_calls_refuse_after_cleanup():
+    """Every roster verb is guarded, like the rest of the plane surface."""
+    plane = Mediator(max_wait_seconds=0.1)
+    plane.cleanup()
+    for call in (
+        lambda: plane.register_participant("crystallizer"),
+        lambda: plane.unregister_participant("crystallizer"),
+        lambda: plane.has_participant("crystallizer"),
+        lambda: plane.participants(),
+    ):
+        with pytest.raises(RuntimeError):
+            call()
+
+
+def test_concurrent_registration_of_one_name_elects_exactly_one_first():
+    """
+    Free-threaded 3.14t: `first` must be a real election, not a racy read.
+
+    Eight threads announcing the same subsystem must produce exactly ONE True.
+    A check-then-set outside the lock would let several threads all believe
+    they were first and each run whatever one-time setup that gates.
+    """
+    plane = Mediator(max_wait_seconds=0.1)
+    try:
+        barrier = threading.Barrier(8)
+        results = []
+        results_lock = threading.Lock()
+
+        def announce() -> None:
+            """Announce the same participant from every thread at once."""
+            barrier.wait()
+            outcome = plane.register_participant("crystallizer")
+            with results_lock:
+                results.append(outcome)
+
+        threads = [threading.Thread(target=announce) for _ in range(8)]
+        for thread in threads:
+            thread.start()
+        for thread in threads:
+            thread.join(timeout=10.0)
+
+        assert len(results) == 8
+        assert results.count(True) == 1, (
+            "expected exactly one thread to win first-arrival; got {0}. "
+            "register_participant is not electing under the lock.".format(
+                results.count(True)
+            )
+        )
+    finally:
+        plane.cleanup()
+
+
+# --------------------------------------------------------------------------
+# Reference discipline in the claim table
+#
+# Two records live in this table and they have OPPOSITE answers. A granted
+# claim retains a live identity for the span of a claim, so it is Cleanable and
+# the TABLE cleans it at teardown - not on release, which is ordinary activity.
+# A blocking record is rendered and discarded inside one refusal, so it holds no
+# reference at all; removing the reference beats managing one.
+# --------------------------------------------------------------------------
+
+def test_blocking_evidence_holds_no_live_identity():
+    """
+    Evidence outlives the attempt that produced it - it gets logged and kept.
+
+    `AdmissionResult` already requires evidence be "strings, never live
+    Identity"; this is the same rule one level down, enforced by there being
+    no accessor that could return a claimant.
+    """
+    table = ClaimTable()
+    try:
+        holder = _identity("crystallizer", "loader")
+        table.try_acquire(holder, {"s1": ClaimMode.EXCLUSIVE})
+        blocks = table.try_acquire(_identity("agent", "7"), {"s1": ClaimMode.SHARED})
+        assert len(blocks) == 1
+        block = blocks[0]
+        assert block.holder_description == holder.describe()
+        assert not hasattr(block, "holder"), (
+            "ClaimBlock exposes a live Identity again; a retained diagnostic "
+            "would keep the claimant alive for as long as the message is kept"
+        )
+    finally:
+        table.cleanup()
+
+
+def test_table_cleanup_cleans_every_granted_record():
+    """Teardown releases identities on the cleaning thread, not on the GC."""
+    table = ClaimTable()
+    holder = _identity()
+    table.try_acquire(holder, {"s1": ClaimMode.EXCLUSIVE, "s2": ClaimMode.SHARED})
+    granted = [claim for claims in table._claims.values() for claim in claims]
+    assert len(granted) == 2
+    table.cleanup()
+    assert all(claim.cleaned for claim in granted)
+
+
+def test_granted_claim_cleanup_is_idempotent():
+    """The table may sweep a rebuilt list without checking each record first."""
+    from melder.aether.aetheric_mediator.claim_table import _GrantedClaim
+
+    claim = _GrantedClaim(holder=_identity(), mode=ClaimMode.EXCLUSIVE)
+    claim.cleanup()
+    claim.cleanup()
+    assert claim.cleaned
+    assert not hasattr(claim, "holder")
+
+
+def test_identity_hashes_and_compares_by_value_while_live():
+    """
+    Two references to the same claimant are the same claimant.
+
+    Equality and hashing are over `(kind, identity_id)` only - `label` and
+    `thread_ident` are presentation and diagnostics.
+    """
+    first = _identity("crystallizer", "loader")
+    second = _identity("crystallizer", "loader")
+    registry = {first: "session"}
+    assert registry[second] == "session"
+    assert first.identity_key() == second.identity_key()
+
+
+def test_a_cleaned_identity_cannot_corrupt_a_map_keyed_on_identity_key():
+    """
+    The hazard that used to keep `Identity` out of `Cleanable`, closed at the
+    cause rather than argued with.
+
+    `Identity` is CALLER-OWNED, so a subsystem may clean its own identity
+    whenever it is finished. The mediator used to key its per-thread session
+    maps on the OBJECT, which meant that cleanup made `__hash__` raise and
+    corrupted every map still holding it - lookups miss and the entry can
+    never be removed.
+
+    `identity_key()` is captured at insertion and is a plain string, so the
+    map is immune to whatever happens to the identity afterwards. That is the
+    property `Mediator._remember_session` / `_current_session` /
+    `_forget_session` now depend on, so it is asserted here directly.
+    """
+    identity = _identity("crystallizer", "loader")
+    key = identity.identity_key()
+    sessions = {key: "session"}
+
+    identity.cleanup()
+
+    assert sessions[key] == "session", "the live map must survive its owner"
+    assert sessions.pop(key) == "session", "and the entry must stay removable"
+
+
+def test_a_cleaned_identity_refuses_hashing_and_equality_loudly():
+    """
+    A cleaned identity has no stable hash, so it must say so.
+
+    The failure has to be a named `RuntimeError` at the point of misuse, not
+    an `AttributeError` surfacing from a deleted slot several frames deep
+    inside a dict lookup.
+    """
+    identity = _identity("crystallizer", "loader")
+    other = _identity("crystallizer", "loader")
+    identity.cleanup()
+
+    with pytest.raises(RuntimeError):
+        hash(identity)
+    with pytest.raises(RuntimeError):
+        identity == other
+    with pytest.raises(RuntimeError):
+        other == identity
+    with pytest.raises(RuntimeError):
+        identity.describe()
+    with pytest.raises(RuntimeError):
+        identity.identity_key()
+
+
+def test_identity_cleanup_is_idempotent():
+    """A caller tearing down may clean unconditionally, as everywhere else."""
+    identity = _identity("crystallizer", "loader")
+    identity.cleanup()
+    identity.cleanup()
+    assert identity.cleaned
+    assert not hasattr(identity, "_kind")

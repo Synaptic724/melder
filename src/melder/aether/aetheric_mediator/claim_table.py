@@ -20,7 +20,7 @@ from melder.aether.aetheric_mediator.claim_mode import ClaimCompatibility, Claim
 from melder.utilities.general_base.cleanable import Cleanable
 
 
-class ClaimBlock:
+class ClaimBlock(Cleanable):
     """
     One reason an acquisition could not be granted.
 
@@ -29,8 +29,43 @@ class ClaimBlock:
         acquisition: which scope, held by whom, in what mode.
 
     Contract:
-        Immutable. Produced by the table, consumed by callers building an
-        error message. Never mutated after construction.
+        - Immutable. Produced by the table, consumed by callers building an
+          error message. Never mutated after construction.
+        - VALUE-ONLY. It stores the holder's RENDERED DESCRIPTION, never the
+          live `Identity`. The constructor takes the identity because that is
+          what the caller has, and renders it immediately.
+
+          This is not a stylistic choice. `AdmissionResult` already declares
+          that evidence must be "strings, never live `Identity` or
+          `ClaimBlock` references", because a refusal record outlives the
+          admission attempt that produced it - it gets logged, shipped, and
+          retained. Holding a live claimant inside a diagnostic would keep
+          that claimant alive for as long as anything kept the message.
+
+          Removing the reference is strictly better than managing it: there
+          is no way for a stale block to resurrect a dead identity, and the
+          cleanup below therefore has only strings and enum members to drop
+          rather than a live claimant to be careful about.
+
+    Lifecycle / Cleanup:
+        `Cleanable`, cleaned by whoever RENDERED it - which is always the
+        immediate caller, because a block exists only to become an evidence
+        line:
+          - `AdmissionOrchestrator.admit` renders the blocks into the refused
+            `AdmissionResult`, then cleans them.
+          - `ClaimTable.acquire` renders them into its timeout message, then
+            cleans them before raising.
+        Both are the block's genuine end of life: once rendered there is
+        nothing left to read, and `AdmissionResult` already declares that
+        evidence travels as STRINGS and never as live `ClaimBlock` references.
+
+        Blocks are produced on the refusal path - the contended path - which
+        is precisely where deferred teardown would accumulate fastest.
+
+    Threading:
+        NO INTERNAL LOCK. A block is built under the table's condition, handed
+        to exactly one caller, rendered, and cleaned by that same caller. It is
+        never shared.
 
     Registration:
         MELDER KERNEL - guarded. Diagnostic value object; never bound.
@@ -38,11 +73,14 @@ class ClaimBlock:
     AGENT_ACCESS: internal
 
     AGENT_PURPOSE:
-        access: internal. Blocking evidence for a refused scope claim -
-        names the scope, the holder, and the held mode.
+        access: internal. Blocking evidence for a refused scope claim - names
+        the scope, the holder description, and the held mode. Value-only and
+        cleanable; the caller that renders it cleans it.
     """
 
-    __slots__ = ["_scope_key", "_holder", "_held_mode", "_requested_mode"]
+    __slots__ = Cleanable.__slots__ + [
+        "_scope_key", "_holder_description", "_held_mode", "_requested_mode",
+    ]
 
     def __init__(
             self,
@@ -55,11 +93,16 @@ class ClaimBlock:
         """
         Build one immutable blocking record.
 
+        Contract:
+            The identity is RENDERED HERE and the reference dropped. Nothing
+            on this object outlives the constructor as a live object.
+
         Args:
             scope_key:
                 The contested scope key.
             holder:
-                The identity currently holding the scope.
+                The identity currently holding the scope. Rendered to a
+                description; the reference is not retained.
             held_mode:
                 The mode the holder holds it in.
             requested_mode:
@@ -68,61 +111,142 @@ class ClaimBlock:
         Returns:
             None.
         """
+        super().__init__()
         self._scope_key: str = scope_key
-        self._holder: Identity = holder
+        self._holder_description: str = holder.describe()
         self._held_mode: ClaimMode = held_mode
         self._requested_mode: ClaimMode = requested_mode
 
+    def cleanup(self) -> None:
+        """
+        Idempotently drop this block's rendered evidence.
+
+        Contract:
+            Called by whoever rendered the block - the orchestrator building a
+            refused verdict, or `acquire` building its timeout message. Read
+            everything you need BEFORE cleaning; both callers render first.
+
+        Returns:
+            None.
+        """
+        if self._cleaned:
+            return
+        self._cleaned = True
+        del self._scope_key
+        del self._holder_description
+        del self._held_mode
+        del self._requested_mode
+
     @property
     def scope_key(self) -> str:
-        """Return the contested scope key."""
+        """
+        Return the contested scope key.
+
+        Raises:
+            RuntimeError: If the block has been cleaned.
+        """
+        self.check_cleaned()
         return self._scope_key
 
     @property
-    def holder(self) -> Identity:
-        """Return the identity currently holding the scope."""
-        return self._holder
+    def holder_description(self) -> str:
+        """
+        Return the rendered description of the holder blocking this claim.
+
+        Contract:
+            A STRING, deliberately - see the class contract. There is no
+            accessor returning the live `Identity`, because this record must
+            stay safe to log and retain.
+
+        Raises:
+            RuntimeError: If the block has been cleaned.
+        """
+        self.check_cleaned()
+        return self._holder_description
 
     @property
     def held_mode(self) -> ClaimMode:
-        """Return the mode the scope is currently held in."""
+        """
+        Return the mode the scope is currently held in.
+
+        Raises:
+            RuntimeError: If the block has been cleaned.
+        """
+        self.check_cleaned()
         return self._held_mode
 
     @property
     def requested_mode(self) -> ClaimMode:
-        """Return the mode that was refused."""
+        """
+        Return the mode that was refused.
+
+        Raises:
+            RuntimeError: If the block has been cleaned.
+        """
+        self.check_cleaned()
         return self._requested_mode
 
     def describe(self) -> str:
         """
         Render this block for an error message.
 
+        Contract:
+            Render BEFORE cleaning. Both in-package callers do exactly that -
+            the rendered string is the whole point of the object, and once it
+            exists the block is finished.
+
         Returns:
             str: A one-line rendering naming scope, holder, and both modes.
+
+        Raises:
+            RuntimeError: If the block has been cleaned.
         """
+        self.check_cleaned()
         return "{0} held {1} by {2} (requested {3})".format(
             self._scope_key,
             self._held_mode.value,
-            self._holder.describe(),
+            self._holder_description,
             self._requested_mode.value,
         )
 
 
-class _GrantedClaim:
+class _GrantedClaim(Cleanable):
     """
     One granted claim on one scope key.
 
+    Purpose:
+        Record that one identity holds one scope in one mode, for exactly as
+        long as the claim is held.
+
     Contract:
-        Internal to the table. Mode is replaced only through the table's own
-        grant path, never mutated by callers.
+        - Internal to the table. Mode is replaced only through the table's own
+          grant path, never mutated by callers.
+        - CLEANABLE BECAUSE IT HOLDS A LIVE `Identity`, and the table cleans
+          its internals when the TABLE is finished with them. It must retain
+          the live identity rather than a rendered string, because release
+          matches on identity equality.
+        - CLEANED AT TEARDOWN, NOT DURING ACTIVITY. `ClaimTable.cleanup` walks
+          these and cleans them because that is the end of their life.
+          `release_holder` does NOT: a release is ordinary runtime activity,
+          the dropped records simply fall out of the rebuilt list, and marking
+          a record "cleaned" mid-run would be teardown ceremony on a hot path.
+          Everything here happens under the table's condition anyway, so no
+          reader can be holding a stale list to keep them alive.
+
+    Threading:
+        NO INTERNAL LOCK, deliberately. Every read, write, and cleanup of a
+        granted claim happens while the owning `ClaimTable` holds its
+        condition, so a second lock here would be pure overhead on the
+        acquisition hot path.
 
     AGENT_ACCESS: internal
 
     AGENT_PURPOSE:
         access: internal. Table-owned record of one granted scope claim.
+        Cleanable - it retains a live Identity for the life of the claim.
     """
 
-    __slots__ = ["holder", "mode"]
+    __slots__ = Cleanable.__slots__ + ["holder", "mode"]
 
     def __init__(self, *, holder: Identity, mode: ClaimMode) -> None:
         """
@@ -135,8 +259,27 @@ class _GrantedClaim:
         Returns:
             None.
         """
+        super().__init__()
         self.holder: Identity = holder
         self.mode: ClaimMode = mode
+
+    def cleanup(self) -> None:
+        """
+        Idempotently release the held identity reference.
+
+        Contract:
+            Called by the owning table while it holds its condition, on both
+            the release and the teardown path. Idempotent, so a table sweeping
+            a rebuilt list may call it without first checking.
+
+        Returns:
+            None.
+        """
+        if self._cleaned:
+            return
+        self._cleaned = True
+        del self.holder
+        del self.mode
 
 
 class ClaimTable(Cleanable):
@@ -238,6 +381,8 @@ class ClaimTable(Cleanable):
                 return
             self._cleaned = True
             for granted in self._claims.values():
+                for claim in granted:
+                    claim.cleanup()
                 granted.clear()
             self._claims.clear()
             self._condition.notify_all()
@@ -345,13 +490,21 @@ class ClaimTable(Cleanable):
                     self._grant(holder, requested)
                     return
                 remaining = deadline - time.monotonic()
+                # RENDER, THEN RELEASE. A block exists to become an evidence
+                # line; once rendered it is finished, and this loop can spin
+                # many times under contention, so releasing here rather than
+                # letting each refused set fall out by refcount keeps the
+                # contended path from being the one that accumulates.
+                rendered = "; ".join(block.describe() for block in blocks)
+                for block in blocks:
+                    block.cleanup()
                 if remaining <= 0:
                     raise RuntimeError(
                         "ClaimTable acquisition timed out after {0}s "
                         "for {1}; blocked by: {2}".format(
                             timeout_seconds,
                             holder.describe(),
-                            "; ".join(block.describe() for block in blocks),
+                            rendered,
                         )
                     )
                 self._condition.wait(timeout=remaining)

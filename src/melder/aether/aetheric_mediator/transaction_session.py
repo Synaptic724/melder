@@ -242,6 +242,7 @@ class TransactionSession(Cleanable):
         "_outcome_policy",
         "_rollback_actions",
         "_unwind_failures",
+        "_leave_broken_residue",
     ]
 
     def __init__(
@@ -281,6 +282,15 @@ class TransactionSession(Cleanable):
         self._failure_reason: Optional[str] = None
         self._rollback_actions: List[_RollbackAction] = []
         self._unwind_failures: List[str] = []
+        # THE LEDGER `LEAVE_BROKEN` PROMISES. `fail` returns the residue to its
+        # caller, but finalisation then discards the inverses, so a caller that
+        # did not capture the return - or a transaction that broke during
+        # COMMIT, where nobody is holding a return value at all - would lose the
+        # only record of what was left in the world. Retaining it here makes the
+        # ledger a property of the session rather than of whoever happened to
+        # call which method, which is what "left for an agent to repair" needs
+        # in order to mean anything.
+        self._leave_broken_residue: Tuple[str, ...] = ()
 
     def cleanup(self) -> None:
         """
@@ -319,6 +329,20 @@ class TransactionSession(Cleanable):
                 entry.cleanup()
             self._rollback_actions.clear()
             self._unwind_failures.clear()
+            # THIS SESSION IS THE OWNER OF BOTH RECORDS, so this is where
+            # they die. `del` alone would only drop THIS reference; the
+            # orchestrator's `_in_flight` and the information registry's
+            # `_active` borrow the same two objects, and a borrowed reference
+            # outliving the owner is exactly the deferred teardown this repo
+            # exists to avoid. Cleaning them here means the thread tearing
+            # down the session releases their fields deterministically.
+            #
+            # SAFE BECAUSE THE BORROWERS ARE ALREADY GONE by the time any
+            # normal path reaches here: `Mediator._finalize` unregisters both
+            # borrows, and `Mediator.cleanup` tears the borrowers down BEFORE
+            # the sessions for the same reason.
+            self._request.cleanup()
+            self._staged.cleanup()
         del self._request
         del self._staged
         del self._holder
@@ -329,6 +353,7 @@ class TransactionSession(Cleanable):
         del self._outcome_policy
         del self._rollback_actions
         del self._unwind_failures
+        del self._leave_broken_residue
         del self._lock
 
     @property
@@ -385,6 +410,34 @@ class TransactionSession(Cleanable):
         self.check_cleaned()
         with self._lock:
             return self._failure_reason
+
+    @property
+    def leave_broken_residue(self) -> Tuple[str, ...]:
+        """
+        Return what this session deliberately left in the world, if anything.
+
+        Contract:
+            Non-empty ONLY for a session that ended `BROKEN` under
+            `OutcomePolicy.LEAVE_BROKEN`. Each entry is the description of an
+            inverse that was registered and deliberately NOT run, so this is
+            the work list for whoever repairs the half-built world.
+
+            Survives finalisation on purpose. `discard_inverses` empties
+            `registered_inverses` as soon as the transaction is terminal, so
+            without this the ledger would exist only in the return value of
+            `fail(...)` - lost entirely when a commit pipeline broke the
+            session and no caller was holding that return.
+
+        Returns:
+            Tuple[str, ...]: Residue descriptions, empty for every other
+                terminal status.
+
+        Raises:
+            RuntimeError: If cleaned.
+        """
+        self.check_cleaned()
+        with self._lock:
+            return self._leave_broken_residue
 
     def join(self) -> int:
         """
@@ -487,9 +540,24 @@ class TransactionSession(Cleanable):
                 _RollbackAction(action=action, description=description)
             )
 
-    def mark_committed(self) -> None:
+    def mark_committing(self) -> None:
         """
-        Mark this session successfully committed.
+        Enter the COMMITTING state before the commit pipeline runs.
+
+        Purpose:
+            Make "the commit is in progress" a real, observable state rather
+            than an instant, so a transaction that dies inside its own commit
+            pipeline does not report itself as having succeeded.
+
+        Contract:
+            - OPEN -> COMMITTING, at join depth zero only.
+            - This is the state `fail(...)` accepts alongside OPEN, which is
+              what lets a failed commit unwind instead of being discarded.
+            - Ported from DevOps, where `_finalize_root_session` marks
+              committing, runs the pipeline, and only then marks committed. The
+              earlier shape here marked COMMITTED up front, so a raising hook
+              left a session claiming success - and `SessionStatus.COMMITTING`
+              existed in the vocabulary while nothing ever assigned it.
 
         Returns:
             None.
@@ -501,7 +569,7 @@ class TransactionSession(Cleanable):
         with self._lock:
             if self._status is not SessionStatus.OPEN:
                 raise RuntimeError(
-                    "cannot commit a session in status {0}.".format(
+                    "cannot begin committing a session in status {0}.".format(
                         self._status.value
                     )
                 )
@@ -510,6 +578,34 @@ class TransactionSession(Cleanable):
                     "cannot commit session for request {0!r} at join depth "
                     "{1}; inner scopes must leave first.".format(
                         self._request.request_id, self._depth
+                    )
+                )
+            self._status = SessionStatus.COMMITTING
+
+    def mark_committed(self) -> None:
+        """
+        Mark this session successfully committed.
+
+        Contract:
+            COMMITTING -> COMMITTED, and only that transition. Reaching
+            COMMITTED now REQUIRES having passed through COMMITTING, which is
+            what makes the state honest: a session can only claim success after
+            its commit pipeline has actually returned. A session that was
+            failed, broken, or never entered commit still refuses here.
+
+        Returns:
+            None.
+
+        Raises:
+            RuntimeError: If cleaned, or not currently COMMITTING.
+        """
+        self.check_cleaned()
+        with self._lock:
+            if self._status is not SessionStatus.COMMITTING:
+                raise RuntimeError(
+                    "cannot mark a session committed from status {0}; it must "
+                    "be COMMITTING, which means its commit pipeline ran.".format(
+                        self._status.value
                     )
                 )
             self._status = SessionStatus.COMMITTED
@@ -522,8 +618,17 @@ class TransactionSession(Cleanable):
             - `UNWIND`: runs every registered inverse NEWEST FIRST, outside
               the lock, best-effort per action. Terminal status `ABORTED`.
             - `LEAVE_BROKEN`: runs NOTHING. Terminal status `BROKEN`, and the
-              returned residue lists what was deliberately left in place.
+              returned residue lists what was deliberately left in place. The
+              residue is ALSO retained on the session and surfaced through
+              `describe()`, so the ledger survives a caller that ignores the
+              return value - and survives the commit-failure path, where there
+              is no caller holding one.
             - Either way the reason is recorded and the session is terminal.
+            - ACCEPTS `OPEN` OR `COMMITTING`. Committing is not a safe harbour:
+              a transaction that dies inside its own commit pipeline is exactly
+              the case that most needs to unwind, and refusing it here is what
+              previously forced the mediator to discard the inverses instead of
+              running them.
 
         Args:
             reason: Why the transaction failed.
@@ -538,7 +643,10 @@ class TransactionSession(Cleanable):
         """
         self.check_cleaned()
         with self._lock:
-            if self._status is not SessionStatus.OPEN:
+            if self._status not in (
+                SessionStatus.OPEN,
+                SessionStatus.COMMITTING,
+            ):
                 raise RuntimeError(
                     "cannot fail a session already in status {0}.".format(
                         self._status.value
@@ -550,6 +658,10 @@ class TransactionSession(Cleanable):
                 residue = tuple(
                     entry.description for entry in self._rollback_actions
                 )
+                # Retained, not just returned - finalisation discards the
+                # inverses immediately afterwards, so this is the only place
+                # the ledger can survive.
+                self._leave_broken_residue = residue
                 self._status = SessionStatus.BROKEN
                 return SessionStatus.BROKEN, residue
             self._status = SessionStatus.ABORTING
@@ -699,4 +811,9 @@ class TransactionSession(Cleanable):
                     entry.description for entry in self._rollback_actions
                 ],
                 "unwind_failures": list(self._unwind_failures),
+                # Empty unless this session ended BROKEN. It is the durable
+                # answer to "what is still out there for someone to repair",
+                # and it deliberately outlives `discard_inverses`, which
+                # empties `registered_inverses` moments later.
+                "leave_broken_residue": list(self._leave_broken_residue),
             }

@@ -111,6 +111,7 @@ class Mediator(Cleanable):
         "_max_wait_seconds",
         "_thread_local",
         "_sessions_by_request_id",
+        "_participants",
     ]
 
     # Longest single park in the admission retry loop, and therefore the worst
@@ -151,16 +152,28 @@ class Mediator(Cleanable):
         self._max_wait_seconds: float = max_wait_seconds
         self._thread_local: threading.local = threading.local()
         self._sessions_by_request_id: Dict[str, TransactionSession] = {}
+        self._participants: Dict[str, float] = {}
 
     def cleanup(self) -> None:
         """
         Idempotently tear down the plane and its children.
 
         Contract:
-            Children are cleaned in REVERSE dependency order, and the claim
-            table LAST, because its cleanup is what wakes any thread still
-            parked waiting for passage. Cleaning it first would leave waiters
-            parked against a half-dead plane.
+            Children are cleaned in REVERSE dependency order, with two rules
+            that are load-bearing rather than stylistic:
+
+            BORROWERS BEFORE OWNERS. `AdmissionOrchestrator._in_flight` and
+            `InformationRegistry._active` BORROW the `TransactionRequest` and
+            `StagedTransaction` records that the SESSIONS own and clean.
+            Tearing the sessions down first would leave both borrowers holding
+            cleaned records, so a concurrent `describe()` landing mid-teardown
+            would raise from inside reporting instead of reporting an empty
+            plane. Dropping the borrowed references first makes that window
+            impossible rather than unlikely.
+
+            THE CLAIM TABLE IS LAST, because its cleanup is what wakes any
+            thread still parked in `wait_for_change`. Cleaning it first would
+            leave waiters parked against a half-dead plane.
 
         Returns:
             None.
@@ -178,14 +191,23 @@ class Mediator(Cleanable):
             self._cleaned = True
             sessions = list(self._sessions_by_request_id.values())
             self._sessions_by_request_id.clear()
-        for session in sessions:
-            if not session.cleaned:
-                session.cleanup()
+            # Names and floats only - nothing here owns a subsystem, so this
+            # is a clear, not a teardown cascade.
+            self._participants.clear()
+        # Borrowers first - see the contract above.
         self._strategy_builder.cleanup()
         self._information_registry.cleanup()
         self._orchestrator.cleanup()
+        # Then the owners: each session cleans the request and staged records
+        # it owns.
+        for session in sessions:
+            if not session.cleaned:
+                session.cleanup()
+        # Then the table, so anything still parked wakes against a plane that
+        # has finished dying rather than one mid-teardown.
         self._claim_table.cleanup()
         del self._sessions_by_request_id
+        del self._participants
         del self._thread_local
         del self._max_wait_seconds
         del self._strategy_builder
@@ -193,6 +215,109 @@ class Mediator(Cleanable):
         del self._orchestrator
         del self._claim_table
         del self._lock
+
+    def register_participant(self, participant: str) -> bool:
+        """
+        Record that one subsystem exists and may submit transactions.
+
+        Purpose:
+            Let the plane answer "which subsystems are live" without ever
+            importing, referencing, or reaching into any of them.
+
+        Contract:
+            - THE SUBSYSTEM ANNOUNCES ITSELF; THE PLANE NEVER REACHES OUT.
+              This direction is what keeps epic constraint 4 intact. Aether
+              pushes this plane into Crystallizer, MutationResearch, and Nexus
+              from above, and each announces itself here on activation. If the
+              plane instead had to discover them, it would need to import
+              `melder.aether` and the whole isolation property collapses.
+            - A NAME IS ALL THAT IS STORED. No handle, no reference, no
+              callback - just the participant's stable name and when it
+              announced. The plane holds nothing it could accidentally keep
+              alive, and there is nothing here to clean up beyond a dict of
+              strings.
+            - IDEMPOTENT. Re-announcing refreshes the timestamp and returns
+              False, so an activate/deactivate/activate cycle is safe and a
+              subsystem never needs to check first.
+            - THIS IS NOT ADMISSION. Registering grants no claim and gates
+              nothing. It is a roster, not a permission.
+
+        Args:
+            participant:
+                Stable lowercase subsystem name, matching the name used to
+                build its `ScopeKey.subsystem(...)` key.
+
+        Returns:
+            bool: True on first registration, False when already present.
+
+        Raises:
+            RuntimeError: If the plane has been cleaned.
+            ValueError: If `participant` is empty or whitespace-only.
+        """
+        self.check_cleaned()
+        if not participant or not participant.strip():
+            raise ValueError(
+                "register_participant requires a non-empty subsystem name; it "
+                "must match the name used for ScopeKey.subsystem(...)."
+            )
+        with self._lock:
+            first = participant not in self._participants
+            self._participants[participant] = time.time()
+            return first
+
+    def unregister_participant(self, participant: str) -> bool:
+        """
+        Record that one subsystem is no longer live.
+
+        Contract:
+            Idempotent: unregistering an absent participant returns False, so
+            a teardown path may call this unconditionally. Does NOT release
+            any claims that subsystem holds - claims belong to transactions
+            and are released by finalising those, never by roster changes.
+
+        Args:
+            participant: The subsystem name to drop.
+
+        Returns:
+            bool: True when a live participant was removed.
+
+        Raises:
+            RuntimeError: If the plane has been cleaned.
+        """
+        self.check_cleaned()
+        with self._lock:
+            return self._participants.pop(participant, None) is not None
+
+    def has_participant(self, participant: str) -> bool:
+        """
+        Report whether one subsystem has announced itself.
+
+        Args:
+            participant: The subsystem name to test.
+
+        Returns:
+            bool: True when the subsystem is registered.
+
+        Raises:
+            RuntimeError: If the plane has been cleaned.
+        """
+        self.check_cleaned()
+        with self._lock:
+            return participant in self._participants
+
+    def participants(self) -> Tuple[str, ...]:
+        """
+        Return every registered subsystem name, sorted.
+
+        Returns:
+            Tuple[str, ...]: Sorted participant names, empty when none.
+
+        Raises:
+            RuntimeError: If the plane has been cleaned.
+        """
+        self.check_cleaned()
+        with self._lock:
+            return tuple(sorted(self._participants))
 
     @property
     def strategies(self) -> StrategyBuilder:
@@ -274,14 +399,25 @@ class Mediator(Cleanable):
         )
         verdict = self._admit_with_wait(request=request, holder=submitter)
         if not verdict.admitted:
-            raise RuntimeError(
-                "transaction {0} was refused: {1}".format(
-                    request.describe(), verdict.describe()
-                )
+            # Render the refusal, THEN release the verdict. The message is the
+            # last thing anybody needs from it, and the exception carries a
+            # string rather than the object by design.
+            refusal = "transaction {0} was refused: {1}".format(
+                request.describe(), verdict.describe()
             )
+            verdict.cleanup()
+            raise RuntimeError(refusal)
+        # Admitted. The verdict carried one bit, it has been read, and nothing
+        # downstream takes a reference to it.
+        verdict.cleanup()
         staged = StagedTransaction.from_request(
             request=request, admitted_at=time.time()
         )
+        # Held as a PLAIN STRING for the rest of this method. The session is
+        # about to take ownership of `request`, and the failure path below
+        # cleans it - so every later use of the id must not depend on the
+        # record still being readable.
+        request_id = request.request_id
         session = TransactionSession(
             request=request,
             staged=staged,
@@ -289,7 +425,7 @@ class Mediator(Cleanable):
             outcome_policy=outcome_policy,
         )
         with self._lock:
-            self._sessions_by_request_id[request.request_id] = session
+            self._sessions_by_request_id[request_id] = session
         self._remember_session(submitter, session)
         try:
             self._information_registry.register_activity(staged)
@@ -301,19 +437,51 @@ class Mediator(Cleanable):
             # received and therefore can never finalise. Release everything
             # and re-raise the original cause.
             #
+            # ORDER REVERSED, and the reversal is required rather than
+            # cosmetic. `_finalize` FIRST, `session.cleanup()` SECOND.
+            #
+            # The session owns the request and staged records and now CLEANS
+            # them, while `_finalize` still has to drop the borrowed
+            # references the orchestrator and the information registry are
+            # holding. Cleaning first would leave both borrowers pointing at
+            # cleaned records for the window between the two calls, and
+            # `register_activity` may well have succeeded before `on_start`
+            # raised - so a concurrent `reporting.describe()` would raise from
+            # inside reporting. Finalising first drops the borrows while the
+            # records are still whole.
+            #
+            # The previous order relied on the `cleaned` guard in `_finalize`
+            # to skip a discard on a session still nominally OPEN. That guard
+            # is now an explicit status check, so this ordering no longer has
+            # to encode a second meaning.
+            #
             # FULL cleanup here, not the discard `_finalize` performs. This
             # session never escaped: `begin` raises instead of returning it,
             # so no caller can hold a handle and none can ever inspect its
-            # outcome. Nothing is owed to anybody, and this thread is the
-            # last one that will ever see the object - so it frees it now
-            # rather than leaving it to a later collector pass. Cleaning
-            # BEFORE `_finalize` is deliberate: the `cleaned` guard there
-            # then correctly skips a discard on a session that is still
-            # nominally OPEN and therefore could not be discarded anyway.
-            session.cleanup()
-            self._finalize(
-                request=request, holder=submitter, session=session
-            )
+            # outcome. Nothing is owed to anybody, and this thread is the last
+            # one that will ever see the object - so it frees it now rather
+            # than leaving it to a later collector pass.
+            try:
+                # A FAILED `on_start` STILL OWES ITS `on_end`. DevOps routes
+                # exactly this case through `end_transaction_by_request_id(
+                # success=False)` so `_finalize_root_session`'s finally fires
+                # the end hook - because a strategy that froze a runtime gate
+                # part-way through `on_start` has no other path to its reopen.
+                # This plane previously had no dispatch here at all, so that
+                # freeze leaked and the only symptom would be a gate nobody
+                # could reopen.
+                #
+                # The session is NOT failed first: `on_start` never receives
+                # the session, so no inverses can have been registered, and
+                # unwinding an empty set to reach a status nothing will
+                # observe - the object is cleaned two lines later - is
+                # ceremony rather than truth.
+                strategy.on_end(submitter=submitter, staged=staged)
+            finally:
+                self._finalize(
+                    request_id=request_id, holder=submitter, session=session
+                )
+                session.cleanup()
             raise
         return session
 
@@ -322,11 +490,42 @@ class Mediator(Cleanable):
         Commit one session, stamping reporting and releasing its claims.
 
         Contract:
-            Order matters and is deliberate: `apply_commit_delta` runs BEFORE
-            the claims are released, so the freshness stamp it writes is
-            race-free against overlapping writers. Releasing first would open
-            a window where another transaction could mutate the region
-            between the stamp and the release.
+            THE PIPELINE, ported from `TransactionMediator._finalize_root_
+            session` rather than re-derived:
+
+                COMMITTING -> apply_commit_delta -> COMMITTED
+                             \-> on failure: fail(...) per outcome policy
+                on_end (always, exactly once)
+                _finalize (always, even if on_end raises)
+
+            `apply_commit_delta` runs BEFORE the claims are released, so the
+            freshness stamp it writes is race-free against overlapping
+            writers. Releasing first would open a window where another
+            transaction could mutate the region between the stamp and the
+            release.
+
+            A FAILED COMMIT UNWINDS. If the delta raises, the session is
+            FAILED through its own outcome policy - inverses run under
+            `UNWIND`, or the residue is recorded under `LEAVE_BROKEN` - and
+            the original exception is re-raised. The previous shape marked the
+            session COMMITTED up front and let finalisation DISCARD the
+            inverses without running them, so a transaction that died inside
+            its commit left the world half-mutated with its rollback thrown
+            away and no ledger. That was neither of the two outcomes this
+            plane offers.
+
+            `on_end` FIRES EXACTLY ONCE, ON EVERY PATH, from the outer
+            `finally`. This is the reliability law DevOps records explicitly:
+            a strategy that froze a runtime gate in `on_start` is guaranteed
+            its reopen. Dispatching it inside the success path - as this
+            method did - means a raising delta silently skips it and the
+            freeze leaks. If `on_end` itself raises while another exception is
+            in flight, it chains over it with the original preserved as
+            context; a gate left closed must never be silent.
+
+            `_finalize` RUNS EVEN IF `on_end` RAISES. A failing end hook must
+            still release the in-flight registration and the claims, or the
+            plane holds scopes for a transaction nobody will ever finalise.
 
         Args:
             session: The session to commit. Must be at join depth zero.
@@ -337,6 +536,8 @@ class Mediator(Cleanable):
         Raises:
             RuntimeError: If the plane is cleaned, or the session is not
                 finalisable.
+            BaseException: Whatever the commit delta or the end hook raised,
+                after the session has been failed and the claims released.
         """
         self.check_cleaned()
         if session.depth > 0:
@@ -344,30 +545,56 @@ class Mediator(Cleanable):
                 "cannot commit a session at join depth {0}; inner scopes must "
                 "leave first.".format(session.depth)
             )
-        request = session.request
         holder = session.holder
         # The staged record was built ONCE at admission and lives on the
         # session. Rebuilding it here allocated a fresh deep copy of the
         # metadata on every commit AND restamped `admitted_at` with the commit
         # time, which made the field lie.
         staged = session.staged
-        strategy = self._strategy_builder.resolve(request.transaction_type)
-        session.mark_committed()
+        # Plain string, for the same lifetime reason as in `begin`: the
+        # session owns and cleans these records, so finalisation must not
+        # depend on one still being readable. The staged record carries both
+        # values, so reading `session.request` here would only add a second
+        # record to keep alive for no additional information.
+        request_id = staged.request_id
+        strategy = self._strategy_builder.resolve(staged.transaction_type)
+        # COMMITTING first, so a pipeline that dies mid-flight is observably
+        # mid-flight rather than observably successful.
+        session.mark_committing()
         try:
-            strategy.apply_commit_delta(
-                information_registry=self._information_registry,
-                submitter=holder,
-                staged=staged,
-            )
-            strategy.on_end(submitter=holder, staged=staged)
+            try:
+                strategy.apply_commit_delta(
+                    information_registry=self._information_registry,
+                    submitter=holder,
+                    staged=staged,
+                )
+            except BaseException as error:
+                # THE TRANSACTION FAILS THROUGH ITS OWN POLICY. Under UNWIND
+                # the inverses actually run; under LEAVE_BROKEN the residue is
+                # recorded on the session. Either way the session reaches a
+                # truthful terminal state before `_finalize` discards the
+                # inverses - which is what makes the discard safe rather than
+                # destructive.
+                #
+                # `fail` is given the cause because a bare "commit failed"
+                # reason strands whoever reads the session afterwards.
+                session.fail(
+                    "commit pipeline failed: {0}: {1}".format(
+                        type(error).__name__, error
+                    )
+                )
+                raise
+            else:
+                session.mark_committed()
         finally:
-            # CLEANUP RUNS EVEN WHEN A HOOK RAISES, matching the DevOps
-            # contract: a failing commit hook must still release the
-            # in-flight registration and the claims. The exception
-            # propagates - the caller learns the commit failed - but the
-            # plane is not left holding scopes for a transaction nobody
-            # will ever finalise.
-            self._finalize(request=request, holder=holder, session=session)
+            try:
+                # EXACTLY ONCE, ON EVERY PATH - see the contract. This is
+                # outside the success branch on purpose.
+                strategy.on_end(submitter=holder, staged=staged)
+            finally:
+                self._finalize(
+                    request_id=request_id, holder=holder, session=session
+                )
 
     def fail(
             self,
@@ -382,6 +609,18 @@ class Mediator(Cleanable):
             broken is the product decision; holding the claims forever would
             wedge the plane, which is a different and purely harmful failure.
 
+            `on_end` FIRES EXACTLY ONCE and `_finalize` runs even if it
+            raises - the same law `commit` states at length. Both terminal
+            entrypoints owe a strategy its end hook, or a gate frozen in
+            `on_start` leaks depending on which way the transaction happened
+            to end.
+
+            UNDER `LEAVE_BROKEN` THE RESIDUE IS ALSO RETAINED on the session
+            and readable through `leave_broken_residue` / `describe()`, not
+            only returned here. Finalisation discards the inverses moments
+            later, so a caller that ignores this return value would otherwise
+            have no record of what was left in the world.
+
         Args:
             session: The session to terminate.
             reason: Why the transaction failed.
@@ -395,11 +634,13 @@ class Mediator(Cleanable):
             RuntimeError: If the plane has been cleaned.
         """
         self.check_cleaned()
-        request = session.request
         holder = session.holder
         staged = session.staged
+        # Plain string; see `commit` for why finalisation never holds the
+        # record itself.
+        request_id = staged.request_id
         status, records = session.fail(reason)
-        strategy = self._strategy_builder.resolve(request.transaction_type)
+        strategy = self._strategy_builder.resolve(staged.transaction_type)
         try:
             strategy.on_end(submitter=holder, staged=staged)
         finally:
@@ -407,7 +648,9 @@ class Mediator(Cleanable):
             # even when the family's own end hook also fails. A transaction
             # that failed twice is still a transaction whose scopes must be
             # freed.
-            self._finalize(request=request, holder=holder, session=session)
+            self._finalize(
+                request_id=request_id, holder=holder, session=session
+            )
         return status, records
 
     def describe(self) -> Dict[str, object]:
@@ -428,6 +671,7 @@ class Mediator(Cleanable):
             "admission": self._orchestrator.describe(),
             "reporting": self._information_registry.describe(),
             "strategies": self._strategy_builder.describe(),
+            "participants": self.participants(),
         }
 
     def _admit_with_wait(
@@ -488,7 +732,9 @@ class Mediator(Cleanable):
                 return verdict
             remaining = deadline - time.monotonic()
             if remaining <= 0:
-                return AdmissionResult.refused(
+                # Carry the last refusal's evidence forward into the timeout
+                # verdict FIRST, then release the verdict it came from.
+                timed_out = AdmissionResult.refused(
                     reasons=(
                         AdmissionReason.SCOPE_CONTENDED,
                         AdmissionReason.WAIT_TIMEOUT,
@@ -496,6 +742,13 @@ class Mediator(Cleanable):
                     blocked_scopes=verdict.blocked_scopes,
                     evidence=verdict.evidence,
                 )
+                verdict.cleanup()
+                return timed_out
+            # THIS ATTEMPT IS SUPERSEDED. Nothing further will read this
+            # verdict - the next pass allocates its own - so this loop is
+            # where it ends, and under contention this loop is exactly where
+            # discarded verdicts would otherwise pile up.
+            verdict.cleanup()
             self._claim_table.wait_for_change(
                 timeout_seconds=min(remaining, self._WAIT_SLICE_SECONDS)
             )
@@ -503,15 +756,25 @@ class Mediator(Cleanable):
     def _finalize(
             self,
             *,
-            request: TransactionRequest,
+            request_id: str,
             holder: Identity,
             session: TransactionSession,
     ) -> None:
         """
         Release claims and drop all live bookkeeping for one session.
 
+        Contract:
+            TAKES THE REQUEST ID, NOT THE REQUEST. That is deliberate and it
+            is a lifetime decision, not a style one. `TransactionRequest` is
+            now `Cleanable` and is cleaned by the session that owns it, so a
+            finaliser that read `request.request_id` would be reaching into a
+            record whose owner may already have torn it down - which is
+            exactly what the `begin` failure path does. Holding the plain
+            string decouples finalisation from the record's lifetime
+            completely, so the ordering of these two teardowns stops mattering.
+
         Args:
-            request: The request being finalised.
+            request_id: The id of the request being finalised.
             holder: The claiming identity.
             session: The session being finalised.
 
@@ -519,13 +782,13 @@ class Mediator(Cleanable):
             None.
         """
         self._orchestrator.release(
-            request_id=request.request_id,
+            request_id=request_id,
             holder=holder,
             claim_table=self._claim_table,
         )
-        self._information_registry.unregister_activity(request.request_id)
+        self._information_registry.unregister_activity(request_id)
         with self._lock:
-            self._sessions_by_request_id.pop(request.request_id, None)
+            self._sessions_by_request_id.pop(request_id, None)
         self._forget_session(holder)
         # THE FINISHING THREAD OWNS THE TEARDOWN. A rollback inverse is a
         # closure that normally captures the session, so an unfinalised
@@ -539,7 +802,16 @@ class Mediator(Cleanable):
         # outcome of its own transaction, and every guarded accessor raises
         # once cleaned. Ownership of the session object itself stays with
         # whoever called `begin`; only the cyclic edge is the plane's to cut.
-        if not session.cleaned:
+        #
+        # BOTH GUARDS ARE REQUIRED. `discard_inverses` refuses on a session
+        # that is still OPEN, because an open session may still need to
+        # unwind - and the `begin` failure path finalises a session that never
+        # left OPEN, since `strategy.on_start` raised before any caller could
+        # commit or fail it. Checking the status explicitly says that out
+        # loud. It previously worked only as a side effect of that path
+        # cleaning the session first, which made a correct outcome depend on
+        # an ordering nothing stated.
+        if not session.cleaned and session.status is not SessionStatus.OPEN:
             session.discard_inverses()
 
     def _current_session(
@@ -558,7 +830,13 @@ class Mediator(Cleanable):
         sessions = getattr(self._thread_local, "sessions", None)
         if not sessions:
             return None
-        session = sessions.get(submitter)
+        # KEYED ON THE STRING, NOT THE OBJECT. `Identity` is `Cleanable` and
+        # CALLER-OWNED, so a subsystem may clean its own identity at any time.
+        # A cleaned identity refuses `__hash__`, and a map keyed on the object
+        # would be permanently corrupt the moment that happened - lookups miss
+        # and the entry can never be removed. The string key is captured at
+        # insertion and is immune.
+        session = sessions.get(submitter.identity_key())
         if session is None or session.cleaned:
             return None
         if session.status is not SessionStatus.OPEN:
@@ -584,7 +862,8 @@ class Mediator(Cleanable):
         if sessions is None:
             sessions = {}
             self._thread_local.sessions = sessions
-        sessions[submitter] = session
+        # See `_current_session` for why this is a string key.
+        sessions[submitter.identity_key()] = session
 
     def _forget_session(self, submitter: Identity) -> None:
         """
@@ -598,4 +877,5 @@ class Mediator(Cleanable):
         """
         sessions = getattr(self._thread_local, "sessions", None)
         if sessions is not None:
-            sessions.pop(submitter, None)
+            # See `_current_session` for why this is a string key.
+            sessions.pop(submitter.identity_key(), None)

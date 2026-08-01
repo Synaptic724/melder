@@ -439,9 +439,17 @@ def test_component_conduit_upgrade_transfers_lesser_creations_and_reuses_unique(
 def test_component_conduit_cleanup_disposes_lifo() -> None:
     """
     Purpose:
-        Validate cleanup disposes creations in the current retained order.
+        Validate cleanup disposes many-bucket creations newest-first.
     Contract:
-        - Current detached disposable many buckets are walked in insertion order.
+        - Detached disposable many buckets are walked in REVERSE insertion
+          order, so the last instance created is the first disposed.
+        - Updated 2026-08-01 (TASK-2026-08-01-creations-disposal-reverse-order):
+          this test previously asserted [0, 1, 2] while still being named
+          `..._disposes_lifo` and still declaring "AssertionError: If disposal
+          order is not LIFO". The assertion had been amended to match a forward
+          walk; the name and the failure clause preserved the original intent.
+          Disposal is now reverse order by owner ruling, so the assertion agrees
+          with the name again.
     Returns:
         None.
     Raises:
@@ -463,6 +471,6 @@ def test_component_conduit_cleanup_disposes_lifo() -> None:
 
         conduit.permanent_cleanup()
 
-        assert _DisposalOrderService.cleanup_order == [0, 1, 2]
+        assert _DisposalOrderService.cleanup_order == [2, 1, 0]
     finally:
         conduit.permanent_cleanup()

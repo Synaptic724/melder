@@ -363,6 +363,47 @@ class AethericFrameConfiguration(Cleanable):
                 )
             return True
 
+    def finalize(self) -> "AethericFrameConfiguration":
+        """
+        Fluent
+
+        Freeze the posture and return `self` so a `with_*` chain can end.
+
+        Purpose:
+            Every `with_*` builder on this class returns `self`, but until now
+            there was no way to CLOSE that chain - callers had to freeze as a
+            separate statement or hand an unfrozen posture to the frame and let
+            `bind_frame_configuration` settle it. This is the terminator, and it
+            mirrors `NexusConfiguration.finalize()` exactly.
+
+        Contract:
+            - Returns THIS SAME instance after freezing it; it never allocates or
+              clones a detached posture. That matters here more than elsewhere:
+              the frame's settlement law requires the RETAINED posture object to
+              be the one that is bound, so a cloning finalize would be actively
+              harmful.
+            - Freezes with no origin attribution, because a user closing an
+              authoring chain does not yet know the owning spellbook or frame.
+              The runtime's own path still calls `freeze(origin_spellbook_id,
+              origin_frame_name)` directly when it does know them.
+            - Idempotent, inheriting `freeze()`'s silent early return.
+
+        Threading:
+            State transitions are applied under the configuration lock by
+            `freeze()`.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()` through `freeze()`.
+
+        Raises:
+            RuntimeError: If the configuration has been cleaned.
+
+        Returns:
+            AethericFrameConfiguration: This configuration instance.
+        """
+        self.freeze()
+        return self
+
     def freeze(
             self,
             origin_spellbook_id: Optional[str] = None,

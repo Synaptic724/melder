@@ -22,7 +22,7 @@ from melder.aether.aetheric_mediator.staged_transaction import StagedTransaction
 from melder.utilities.general_base.cleanable import Cleanable
 
 
-class FactRecord:
+class FactRecord(Cleanable):
     """
     One "this region was last changed by this reporter at this time" baseline.
 
@@ -30,13 +30,43 @@ class FactRecord:
         Immutable. Replaced wholesale on each report rather than mutated, so a
         reader holding one never observes it change underneath.
 
+    Lifecycle / Cleanup:
+        `Cleanable`, with TWO owner-is-finished moments, both inside the
+        registry that owns it:
+
+        REPLACE-ON-EMIT. `report_fact` REPLACES the baseline for a region, and
+        the displaced record is cleaned by the thread doing the replacing. This
+        is the crystallizer's own recorded rule - "replace-on-emit: a displaced
+        twin is CLEANED; runtime holders must fetch fresh per use" - applied to
+        the one place in this plane with the same shape. A region that is
+        written on every commit would otherwise leave one dead baseline per
+        commit for a collector to find later.
+
+        TEARDOWN. `InformationRegistry.cleanup` walks the remaining baselines
+        and cleans them before dropping the map.
+
+        Readers are never handed the record itself - `get_fact` and `describe`
+        return detached dicts - so cleaning a displaced baseline cannot pull
+        state out from under a caller.
+
+    Threading:
+        Immutable after construction; no lock. Every mutation of the map that
+        holds these, and every cleanup of one, happens under the registry's
+        `RLock`.
+
+    Registration:
+        MELDER KERNEL - guarded. Built by the registry; never user-built.
+
     AGENT_ACCESS: internal
 
     AGENT_PURPOSE:
         access: internal. Immutable freshness baseline for one region.
+        Cleanable; cleaned when displaced or at registry teardown.
     """
 
-    __slots__ = ["fact_family", "region", "reporter", "reported_at"]
+    __slots__ = Cleanable.__slots__ + [
+        "fact_family", "region", "reporter", "reported_at",
+    ]
 
     def __init__(
             self,
@@ -58,10 +88,32 @@ class FactRecord:
         Returns:
             None.
         """
+        super().__init__()
         self.fact_family: str = fact_family
         self.region: str = region
         self.reporter: str = reporter
         self.reported_at: float = reported_at
+
+    def cleanup(self) -> None:
+        """
+        Idempotently drop this baseline's fields.
+
+        Contract:
+            Called by the owning `InformationRegistry` - when this record is
+            displaced by a newer baseline for the same region, and at registry
+            teardown. Idempotent, so the teardown sweep may call it without
+            first checking whether a replace already did.
+
+        Returns:
+            None.
+        """
+        if self._cleaned:
+            return
+        self._cleaned = True
+        del self.fact_family
+        del self.region
+        del self.reporter
+        del self.reported_at
 
     def age_seconds(self, now: Optional[float] = None) -> float:
         """
@@ -72,7 +124,11 @@ class FactRecord:
 
         Returns:
             float: Age in seconds, never negative.
+
+        Raises:
+            RuntimeError: If the record has been cleaned.
         """
+        self.check_cleaned()
         current = time.time() if now is None else now
         return max(0.0, current - self.reported_at)
 
@@ -82,7 +138,11 @@ class FactRecord:
 
         Returns:
             Dict[str, object]: Family, region, reporter, timestamp, age.
+
+        Raises:
+            RuntimeError: If the record has been cleaned.
         """
+        self.check_cleaned()
         return {
             "fact_family": self.fact_family,
             "region": self.region,
@@ -164,6 +224,13 @@ class InformationRegistry(Cleanable):
             if self._cleaned:
                 return
             self._cleaned = True
+            # The registry OWNS its baselines, so it cleans them. It only
+            # BORROWS the staged records in `_active` - those belong to the
+            # sessions and are cleaned there - so `_active` is cleared, never
+            # walked. Getting that asymmetry backwards would tear down another
+            # owner's records mid-teardown.
+            for record in self._facts.values():
+                record.cleanup()
             self._facts.clear()
             self._active.clear()
         del self._facts
@@ -198,12 +265,21 @@ class InformationRegistry(Cleanable):
         """
         self.check_cleaned()
         with self._lock:
+            # REPLACE-ON-EMIT: the displaced baseline is cleaned by the thread
+            # that displaces it. A hot region is re-stamped on every commit, so
+            # without this each commit would leave one dead record behind.
+            # Safe under the lock, and safe against readers: nobody is ever
+            # handed the record itself - `get_fact` and `describe` return
+            # detached dicts built while this lock is held.
+            displaced = self._facts.get(region)
             self._facts[region] = FactRecord(
                 fact_family=fact_family,
                 region=region,
                 reporter=reporter,
                 reported_at=time.time(),
             )
+            if displaced is not None:
+                displaced.cleanup()
 
     def get_fact(self, region: str) -> Optional[Dict[str, object]]:
         """

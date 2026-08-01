@@ -10,7 +10,47 @@ transaction proceeds believing it is isolated when it is not. That failure mode
 is why this helper exists rather than callers formatting their own strings.
 """
 
-from typing import ClassVar
+from enum import StrEnum
+
+
+class ScopePrefix(StrEnum):
+    """
+    The closed vocabulary of scope-key namespaces.
+
+    Purpose:
+        Name the LEVELS this plane can isolate at, in one place, as a type
+        rather than as three loose class strings.
+
+    Contract:
+        - CLOSED. Adding a level means adding a member here and a builder on
+          `ScopeKey`. A caller reaching for a prefix that is not a member is
+          the signal that a level is missing, not an invitation to format a
+          string by hand.
+        - `StrEnum`, matching every other vocabulary in this package
+          (`ClaimMode`, `TransactionType`, `OutcomePolicy`, `SessionStatus`),
+          because these values TRAVEL: they are embedded in the scope keys
+          that land in claim tables, admission evidence, and logs, and must
+          survive string-oriented APIs without special casing.
+        - `WORLD` is a COMPLETE key on its own; the other two are namespaces
+          that take a name. That asymmetry is real - there is exactly one
+          world - and `ScopeKey` is where it is expressed.
+
+    Threading:
+        Stateless enum; safe to share across threads.
+
+    Registration:
+        MELDER KERNEL - guarded. Key vocabulary; never bound.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Closed vocabulary of scope-key namespaces - world,
+        frame, subsystem. Build keys through `ScopeKey`, never by hand.
+    """
+
+    WORLD = "world"
+    FRAME = "frame"
+    SUBSYSTEM = "subsystem"
 
 
 class ScopeKey:
@@ -35,6 +75,14 @@ class ScopeKey:
           like `frame:`, which would collide with every other empty-named
           claim and quietly serialise unrelated work.
 
+    Lifecycle / Cleanup:
+        NEVER INSTANTIATED, so there is nothing to clean and no `Cleanable`
+        contract. This is a namespace of static builders over the
+        `ScopePrefix` vocabulary - it holds no instance state, and no code in
+        this package or outside it constructs one. Stating that explicitly
+        matters: "not `Cleanable`" should always be a reasoned position rather
+        than something a reader has to infer from an absence.
+
     Threading:
         Pure and stateless; safe to call from any thread.
 
@@ -47,10 +95,6 @@ class ScopeKey:
         access: internal. Canonical builders for plane scope keys. Never
         hand-format a scope key; a typo silently loses isolation.
     """
-
-    WORLD: ClassVar[str] = "world"
-    FRAME_PREFIX: ClassVar[str] = "frame"
-    SUBSYSTEM_PREFIX: ClassVar[str] = "subsystem"
 
     @staticmethod
     def world() -> str:
@@ -65,7 +109,7 @@ class ScopeKey:
         Returns:
             str: The world scope key.
         """
-        return ScopeKey.WORLD
+        return ScopePrefix.WORLD.value
 
     @staticmethod
     def frame(frame_name: str) -> str:
@@ -86,7 +130,7 @@ class ScopeKey:
                 "ScopeKey.frame requires a non-empty frame name; an empty key "
                 "collides with every other empty-named claim."
             )
-        return "{0}:{1}".format(ScopeKey.FRAME_PREFIX, frame_name)
+        return "{0}:{1}".format(ScopePrefix.FRAME.value, frame_name)
 
     @staticmethod
     def subsystem(subsystem_name: str) -> str:
@@ -111,7 +155,7 @@ class ScopeKey:
             raise ValueError(
                 "ScopeKey.subsystem requires a non-empty subsystem name."
             )
-        return "{0}:{1}".format(ScopeKey.SUBSYSTEM_PREFIX, subsystem_name)
+        return "{0}:{1}".format(ScopePrefix.SUBSYSTEM.value, subsystem_name)
 
     @staticmethod
     def is_world(scope_key: str) -> bool:
@@ -124,4 +168,4 @@ class ScopeKey:
         Returns:
             bool: True when the key is the world root.
         """
-        return scope_key == ScopeKey.WORLD
+        return scope_key == ScopePrefix.WORLD.value

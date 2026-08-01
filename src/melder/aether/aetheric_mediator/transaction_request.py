@@ -10,13 +10,13 @@ when its fields happen to be read.
 """
 
 import time
-from dataclasses import dataclass, field
 from types import MappingProxyType
-from typing import Any, Dict, Mapping, Tuple
+from typing import Any, Dict, Mapping, Optional, Tuple
 
 from melder.aether.aetheric_mediator.claim_mode import ClaimMode
 from melder.aether.aetheric_mediator.identity import Identity
 from melder.aether.aetheric_mediator.transaction_type import TransactionType
+from melder.utilities.general_base.cleanable import Cleanable
 
 
 class MetadataPolicy:
@@ -41,6 +41,11 @@ class MetadataPolicy:
           own lifecycle, defeats `describe()`, and turns a loggable payload
           into a liveness leak. Failing at construction costs one traversal of
           a small dict; failing later costs a debugging session.
+
+    Lifecycle / Cleanup:
+        NEVER INSTANTIATED, so there is nothing to clean and no `Cleanable`
+        contract. Two static methods over caller-supplied mappings; the
+        records they validate carry the lifecycle, not this.
 
     Threading:
         Pure and stateless.
@@ -78,12 +83,17 @@ class MetadataPolicy:
             - Copies once, at the construction boundary, so a later caller
               mutation cannot reach into a frozen record.
             - Returns a READ-ONLY view, and freezes every nested container the
-              same way. `@dataclass(frozen=True)` only blocks REBINDING a
-              field; it does nothing about `record.metadata["k"] = v`. A plain
-              `Dict` field therefore leaves a record that advertises itself as
-              immutable, safe to log, and safe to retain, while any holder can
-              quietly edit it. Freezing here makes the promise true instead of
-              aspirational.
+              same way. A read-only ATTRIBUTE does nothing about
+              `record.metadata["k"] = v`: the property refuses to rebind the
+              field, and the holder edits the mapping the field points at
+              instead. A plain `Dict` therefore leaves a record that
+              advertises itself as immutable, safe to log, and safe to retain,
+              while any holder can quietly edit it. Freezing here makes the
+              promise true instead of aspirational.
+              (This reasoning predates the conversion of these records from
+              frozen dataclasses to normal classes and survives it unchanged -
+              `frozen=True` had exactly the same blind spot, which is why the
+              deep freeze was introduced in the first place.)
             - Because the result is genuinely immutable it is SAFE TO SHARE.
               That is what lets `StagedTransaction` carry the request's own
               mapping instead of re-copying it, removing a per-transaction
@@ -159,8 +169,7 @@ class MetadataPolicy:
         )
 
 
-@dataclass(frozen=True)
-class TransactionRequest:
+class TransactionRequest(Cleanable):
     """
     The immutable record of one transaction request, frozen before admission.
 
@@ -199,8 +208,31 @@ class TransactionRequest:
     Owned State:
         Values and tuples of values only. Holds no live references.
 
+    Lifecycle / Cleanup:
+        `Cleanable`, and cleaned by ONE owner at ONE moment:
+        `TransactionSession.cleanup()`. The session is the per-transaction
+        owner and its teardown is this record's genuine end of life.
+
+        WHY NOT THE ORCHESTRATOR, which also holds it: `_in_flight` BORROWS
+        this record for the span between admission and release. A borrower
+        that cleaned it would tear down state its owner is still publishing -
+        the caller can legitimately read `session.request` after commit to
+        find out what it just did. `AdmissionOrchestrator.cleanup` therefore
+        clears its dict without cleaning the values, the same way it already
+        refuses to release claims in the table it borrows.
+
+        NOT CLEANED MID-RUN. Release, commit, and failure are ordinary runtime
+        activity; none of them ends this record's life, because the session
+        outlives all three and stays readable on purpose.
+
+        `Mediator.cleanup` orders teardown accordingly: BORROWERS FIRST
+        (strategy registry, information registry, orchestrator), then the
+        sessions that own these records, then the claim table last.
+
     Threading:
-        Immutable; safe to share across threads without synchronisation.
+        Immutable after construction; safe to share across threads without
+        synchronisation. No lock, deliberately - there is no mutable state to
+        guard, and cleanup happens once at the owning session's teardown.
 
     Registration:
         MELDER KERNEL - guarded. Built from a strategy's start plan by the
@@ -211,21 +243,214 @@ class TransactionRequest:
     AGENT_PURPOSE:
         access: internal. Immutable pre-admission transaction record carrying
         the submitter, the transaction type, and the complete scope-claim set.
+        Cleanable; cleaned by the owning session at teardown.
     """
 
-    request_id: str
-    transaction_type: TransactionType
-    submitter_kind: str
-    submitter_id: str
-    created_at: float
-    scope_claims: Tuple[Tuple[str, str], ...] = ()
-    # A READ-ONLY mapping, not a `Dict`. `frozen=True` stops the field being
-    # rebound; it does not stop a holder mutating the dict the field points
-    # at. `MetadataPolicy.normalize` returns a deeply frozen structure - proxy
-    # mappings and tuples all the way down - so this annotation describes what
-    # the field can actually do. `Any` remains because the permitted value
-    # domain is recursive; `MetadataPolicy` defines and ENFORCES it.
-    metadata: Mapping[str, Any] = field(default_factory=MetadataPolicy.empty)
+    __slots__ = Cleanable.__slots__ + [
+        "_request_id",
+        "_transaction_type",
+        "_submitter_kind",
+        "_submitter_id",
+        "_created_at",
+        "_scope_claims",
+        "_metadata",
+    ]
+
+    def __init__(
+            self,
+            *,
+            request_id: str,
+            transaction_type: TransactionType,
+            submitter_kind: str,
+            submitter_id: str,
+            created_at: float,
+            scope_claims: Tuple[Tuple[str, str], ...] = (),
+            metadata: Optional[Mapping[str, Any]] = None,
+    ) -> None:
+        """
+        Build one frozen request record.
+
+        Contract:
+            Prefer the `build(...)` factory, which normalises the submitter,
+            sorts the claims, and validates the metadata. This constructor
+            performs no normalisation and exists so `build` has something to
+            construct.
+
+            `metadata` defaults to `None` rather than to a shared empty
+            mapping so no mutable default is ever shared; the empty case
+            resolves to `MetadataPolicy.empty()`, a read-only proxy.
+
+        Args:
+            request_id: Unique id for this request.
+            transaction_type: The closed-vocabulary operation.
+            submitter_kind: The submitter identity's family.
+            submitter_id: The submitter identity's id within that family.
+            created_at: Unix timestamp of construction.
+            scope_claims: Sorted `(scope_key, mode_value)` pairs.
+            metadata: Deeply frozen value-only mapping, or None for empty.
+
+        Returns:
+            None.
+        """
+        super().__init__()
+        self._request_id: str = request_id
+        self._transaction_type: TransactionType = transaction_type
+        self._submitter_kind: str = submitter_kind
+        self._submitter_id: str = submitter_id
+        self._created_at: float = created_at
+        self._scope_claims: Tuple[Tuple[str, str], ...] = scope_claims
+        # A READ-ONLY mapping, not a `Dict`. `MetadataPolicy.normalize`
+        # returns a deeply frozen structure - proxy mappings and tuples all
+        # the way down - so this annotation describes what the field can
+        # actually do. `Any` remains because the permitted value domain is
+        # recursive; `MetadataPolicy` defines and ENFORCES it.
+        self._metadata: Mapping[str, Any] = (
+            MetadataPolicy.empty() if metadata is None else metadata
+        )
+
+    def cleanup(self) -> None:
+        """
+        Idempotently drop this record's fields at the owning session's teardown.
+
+        Contract:
+            Called from `TransactionSession.cleanup()` and from nowhere else.
+            After this runs every accessor raises, which is correct: a cleaned
+            request describes a transaction whose owner is gone.
+
+            No lock is taken. The record is immutable, so there is no state a
+            concurrent reader could catch half-changed, and adding a lock here
+            would put one on an object allocated once per transaction purely
+            to guard a single teardown that its owner already serialises.
+
+        Returns:
+            None.
+        """
+        if self._cleaned:
+            return
+        self._cleaned = True
+        del self._request_id
+        del self._transaction_type
+        del self._submitter_kind
+        del self._submitter_id
+        del self._created_at
+        del self._scope_claims
+        del self._metadata
+
+    @property
+    def request_id(self) -> str:
+        """
+        Return the unique id of this request.
+
+        Returns:
+            str: The request id, which is also the reporter identity in fact
+                records and admission evidence.
+
+        Raises:
+            RuntimeError: If the record has been cleaned.
+        """
+        self.check_cleaned()
+        return self._request_id
+
+    @property
+    def transaction_type(self) -> TransactionType:
+        """
+        Return the closed-vocabulary operation being performed.
+
+        Returns:
+            TransactionType: The vocabulary member.
+
+        Raises:
+            RuntimeError: If the record has been cleaned.
+        """
+        self.check_cleaned()
+        return self._transaction_type
+
+    @property
+    def submitter_kind(self) -> str:
+        """
+        Return the submitting identity's family.
+
+        Returns:
+            str: The submitter kind string.
+
+        Raises:
+            RuntimeError: If the record has been cleaned.
+        """
+        self.check_cleaned()
+        return self._submitter_kind
+
+    @property
+    def submitter_id(self) -> str:
+        """
+        Return the submitting identity's id within its family.
+
+        Returns:
+            str: The submitter id string.
+
+        Raises:
+            RuntimeError: If the record has been cleaned.
+        """
+        self.check_cleaned()
+        return self._submitter_id
+
+    @property
+    def created_at(self) -> float:
+        """
+        Return when this request was built.
+
+        Contract:
+            Construction time, NOT admission time. Admission time lives on
+            `StagedTransaction.admitted_at`, and conflating the two is how a
+            report starts describing the wrong moment.
+
+        Returns:
+            float: Unix timestamp of construction.
+
+        Raises:
+            RuntimeError: If the record has been cleaned.
+        """
+        self.check_cleaned()
+        return self._created_at
+
+    @property
+    def scope_claims(self) -> Tuple[Tuple[str, str], ...]:
+        """
+        Return the complete `(scope_key, mode_value)` claim set, sorted.
+
+        Contract:
+            COMPLETE and EXPLICIT - every claimed scope carries its own mode
+            and there is no implicit default. Stored in string form so the
+            record stays value-only; `claim_map()` is the one sanctioned
+            conversion back to live `ClaimMode` values.
+
+        Returns:
+            Tuple[Tuple[str, str], ...]: Sorted claim pairs.
+
+        Raises:
+            RuntimeError: If the record has been cleaned.
+        """
+        self.check_cleaned()
+        return self._scope_claims
+
+    @property
+    def metadata(self) -> Mapping[str, Any]:
+        """
+        Return the deeply frozen, value-only diagnostic metadata.
+
+        Contract:
+            READ-ONLY at every depth - proxy mappings and tuples all the way
+            down, enforced by `MetadataPolicy` at construction. Safe to share:
+            `StagedTransaction` carries this same object rather than copying
+            it, because there is no mutability left to defend against.
+
+        Returns:
+            Mapping[str, Any]: The frozen metadata mapping.
+
+        Raises:
+            RuntimeError: If the record has been cleaned.
+        """
+        self.check_cleaned()
+        return self._metadata
 
     @staticmethod
     def build(

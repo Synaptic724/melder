@@ -2609,22 +2609,39 @@ def test_ast_describer_reports_inherited_purposes_without_using_them_as_direct_p
     }
 
 
-def test_top_level_system_document_objects_exist_and_render_placeholder_content() -> None:
-    assert melder.__architecture__.render_json() == (
-        '{"m":"placeholder: packaged Melder architecture hardcopy"}'
-    )
-    assert melder.__components__.render_json() == (
-        '{"m":"placeholder: packaged Melder components hardcopy"}'
-    )
-    assert melder.__graph_network__.render_json() == (
-        '{"m":"placeholder: packaged Melder graph network hardcopy"}'
-    )
-    assert melder.__graph_details__.render_json() == (
-        '{"m":"placeholder: packaged Melder graph details hardcopy"}'
-    )
-    assert melder.__architecture__.render_markdown() == (
-        "placeholder: packaged Melder architecture hardcopy"
-    )
+def test_top_level_system_document_objects_exist_and_render_content() -> None:
+    """
+    Purpose:
+        The four package-root documents must exist, construct, and render.
+
+    Contract:
+        Asserts STRUCTURE, not prose. This test previously pinned the exact
+        placeholder string of each document, which made it fail the moment the
+        documents moved from four hardcoded one-liners to a generated build
+        asset - even though nothing about the published surface changed.
+
+        The bodies will change again when the real content is ingested from
+        `context_compass/system_docs/`, and they should not break this test when
+        they do. Population state is tracked as DATA (`is_populated`) precisely
+        so a test can branch on it instead of matching text.
+    """
+    import json
+
+    from melder._build_assets._system_documents import system_documents
+
+    for name in ("__architecture__", "__components__", "__graph_network__", "__graph_details__"):
+        document = getattr(melder, name)
+        assert document is system_documents.get(name)
+        assert document.document_name == name
+
+        # The envelope is well-formed and carries the markdown under key `m`,
+        # which is the contract StaticSystemDocument validates at construction.
+        envelope = json.loads(document.render_json())
+        assert envelope["m"] == document.render_markdown()
+        assert document.render_markdown().strip()
+
+        # Population is queryable rather than inferred from the prose.
+        assert isinstance(system_documents.is_populated(name), bool)
 
 
 def test_view_spell_detailed_methods_surface_profile_sections_and_dunders() -> None:

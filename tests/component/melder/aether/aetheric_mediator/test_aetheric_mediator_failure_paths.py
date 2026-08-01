@@ -1057,3 +1057,247 @@ def test_the_wait_slice_never_extends_a_caller_past_its_own_deadline():
     finally:
         if not plane.cleaned:
             plane.cleanup()
+
+
+# --------------------------------------------------------------------------
+# The commit pipeline, ported from DevOps `_finalize_root_session`
+#
+# Three linked defects lived here before the port, all in the same
+# hand-written mechanism:
+#   - a failing commit DISCARDED the inverses instead of running them, so
+#     `OutcomePolicy.UNWIND` was silently not honoured;
+#   - the session reported COMMITTED after its own commit had raised, and
+#     `SessionStatus.COMMITTING` was vocabulary nothing ever assigned;
+#   - `on_end` was dispatched inside the success path, so a raising commit
+#     delta skipped it and any gate a strategy froze in `on_start` leaked.
+# --------------------------------------------------------------------------
+
+
+class _EndCounting(TransactionStrategy):
+    """Strategy that counts its own end dispatches and can arm failures."""
+
+    ends = 0
+    raise_on_start = False
+    raise_on_commit_delta = False
+
+    @staticmethod
+    def build_start_plan(*, submitter, metadata):
+        """Claim one frame exclusively."""
+        return {ScopeKey.frame(metadata["frame"]): ClaimMode.EXCLUSIVE}
+
+    @staticmethod
+    def on_start(*, submitter, staged) -> None:
+        """Raise when armed, to exercise the post-admission failure path."""
+        if _EndCounting.raise_on_start:
+            raise RuntimeError("on_start exploded")
+
+    @staticmethod
+    def on_end(*, submitter, staged) -> None:
+        """Count every dispatch; the law is exactly one per terminal end."""
+        _EndCounting.ends += 1
+
+    @classmethod
+    def apply_commit_delta(cls, *, information_registry, submitter, staged) -> None:
+        """Raise when armed, to exercise the commit-failure path."""
+        if _EndCounting.raise_on_commit_delta:
+            raise RuntimeError("commit delta exploded")
+        super().apply_commit_delta(
+            information_registry=information_registry,
+            submitter=submitter,
+            staged=staged,
+        )
+
+
+@pytest.fixture()
+def counting_plane():
+    """A plane whose SUBSYSTEM_ENABLE family counts its end dispatches."""
+    _EndCounting.ends = 0
+    _EndCounting.raise_on_start = False
+    _EndCounting.raise_on_commit_delta = False
+    built = Mediator(max_wait_seconds=0.25)
+    built.strategies.register(
+        transaction_type=TransactionType.SUBSYSTEM_ENABLE, strategy=_EndCounting
+    )
+    yield built
+    if not built.cleaned:
+        built.cleanup()
+    _EndCounting.ends = 0
+    _EndCounting.raise_on_start = False
+    _EndCounting.raise_on_commit_delta = False
+
+
+def _open(plane, who, policy=OutcomePolicy.UNWIND):
+    """Open one SUBSYSTEM_ENABLE session already lowered to depth zero."""
+    session = plane.begin(
+        transaction_type=TransactionType.SUBSYSTEM_ENABLE,
+        submitter=_who(who),
+        metadata={"frame": "A"},
+        outcome_policy=policy,
+    )
+    session.leave()
+    return session
+
+
+def test_a_failing_commit_runs_the_inverses_instead_of_discarding_them(
+    counting_plane,
+):
+    """
+    UNWIND must mean unwind, including when the COMMIT is what failed.
+
+    The regression: `_finalize` calls `discard_inverses()`, which throws the
+    rollback actions away. Before the port the session was already marked
+    COMMITTED, so nothing had run them first - the world stayed half-mutated
+    and the inverses went in the bin.
+    """
+    session = _open(counting_plane, "unwinder")
+    ran = []
+    session.register_rollback_action(
+        action=lambda: ran.append("outer"), description="undo outer"
+    )
+    session.register_rollback_action(
+        action=lambda: ran.append("inner"), description="undo inner"
+    )
+    _EndCounting.raise_on_commit_delta = True
+
+    with pytest.raises(RuntimeError, match="commit delta exploded"):
+        counting_plane.commit(session)
+
+    assert ran == ["inner", "outer"], "inverses must run newest-first"
+    assert session.status is SessionStatus.ABORTED
+    assert "commit delta exploded" in session.failure_reason
+
+
+def test_a_failing_commit_under_leave_broken_keeps_a_readable_ledger(
+    counting_plane,
+):
+    """
+    LEAVE_BROKEN is only meaningful if the ledger outlives finalisation.
+
+    `fail(...)` returns the residue, but on the commit path NOBODY is holding
+    that return value - the mediator raises the original error instead. The
+    residue is therefore retained on the session, and it has to survive
+    `discard_inverses`, which empties `registered_inverses` immediately after.
+    """
+    session = _open(counting_plane, "breaker", policy=OutcomePolicy.LEAVE_BROKEN)
+    ran = []
+    session.register_rollback_action(
+        action=lambda: ran.append("never"), description="detach conduit 7"
+    )
+    _EndCounting.raise_on_commit_delta = True
+
+    with pytest.raises(RuntimeError, match="commit delta exploded"):
+        counting_plane.commit(session)
+
+    assert ran == [], "LEAVE_BROKEN must run nothing"
+    assert session.status is SessionStatus.BROKEN
+    assert session.leave_broken_residue == ("detach conduit 7",)
+    described = session.describe()
+    assert described["leave_broken_residue"] == ["detach conduit 7"]
+    assert described["registered_inverses"] == [], (
+        "finalisation discards the inverses; the ledger must not go with them"
+    )
+
+
+def test_on_end_fires_exactly_once_when_the_commit_delta_raises(counting_plane):
+    """
+    A strategy that froze a gate in `on_start` is owed its reopen.
+
+    DevOps dispatches `on_end` from `_finalize_root_session`'s finally for
+    exactly this reason. Dispatched inside the success path instead, a raising
+    delta skips it and the freeze leaks with no symptom but a stuck gate.
+    """
+    session = _open(counting_plane, "ender")
+    _EndCounting.raise_on_commit_delta = True
+
+    with pytest.raises(RuntimeError, match="commit delta exploded"):
+        counting_plane.commit(session)
+
+    assert _EndCounting.ends == 1
+
+
+def test_on_end_fires_when_on_start_raises(counting_plane):
+    """
+    A half-run `on_start` owes its reopen too - DevOps ends that session
+    through the same finalisation path rather than unwinding it by hand.
+    """
+    _EndCounting.raise_on_start = True
+
+    with pytest.raises(RuntimeError, match="on_start exploded"):
+        counting_plane.begin(
+            transaction_type=TransactionType.SUBSYSTEM_ENABLE,
+            submitter=_who("starter"),
+            metadata={"frame": "A"},
+        )
+
+    assert _EndCounting.ends == 1
+    assert counting_plane.describe()["claims"]["scope_count"] == 0
+
+
+def test_a_failing_commit_still_releases_every_claim(counting_plane):
+    """
+    Leaving the WORLD broken is a product decision; leaving the CLAIM TABLE
+    broken just wedges the plane. Both outcome policies must drain.
+    """
+    for policy in (OutcomePolicy.UNWIND, OutcomePolicy.LEAVE_BROKEN):
+        session = _open(counting_plane, "drainer", policy=policy)
+        session.register_rollback_action(
+            action=lambda: None, description="something"
+        )
+        _EndCounting.raise_on_commit_delta = True
+        with pytest.raises(RuntimeError, match="commit delta exploded"):
+            counting_plane.commit(session)
+        described = counting_plane.describe()
+        assert described["claims"]["scope_count"] == 0, policy
+        assert described["admission"]["in_flight_count"] == 0, policy
+        assert described["reporting"]["active_count"] == 0, policy
+
+
+def test_a_successful_commit_still_passes_through_committing(counting_plane):
+    """The happy path must not have been broken by making failure honest."""
+    session = _open(counting_plane, "happy")
+    counting_plane.commit(session)
+    assert session.status is SessionStatus.COMMITTED
+    assert session.failure_reason is None
+    assert session.leave_broken_residue == ()
+    assert _EndCounting.ends == 1
+    assert counting_plane.describe()["claims"]["scope_count"] == 0
+
+
+def test_a_caller_may_clean_its_own_identity_without_harming_the_plane(
+    counting_plane,
+):
+    """
+    `Identity` is CALLER-OWNED. The plane borrows it and never cleans it, and
+    a caller cleaning its own must not reach into the plane's bookkeeping.
+
+    This is the integration half of the unit-level guard. The mediator keys
+    its per-thread session maps on `identity_key()` - a plain string captured
+    at insertion - precisely so that a cleaned identity cannot make `__hash__`
+    raise inside `_forget_session` and strand an entry that can then never be
+    removed. Keyed on the object, the SECOND transaction below would have been
+    the failure: the first identity's entry would still be sitting in the map,
+    unhashable and unremovable.
+    """
+    first = _who("owner-cleans")
+    session = counting_plane.begin(
+        transaction_type=TransactionType.SUBSYSTEM_ENABLE,
+        submitter=first,
+        metadata={"frame": "A"},
+    )
+    session.leave()
+    counting_plane.commit(session)
+
+    first.cleanup()
+
+    second = counting_plane.begin(
+        transaction_type=TransactionType.SUBSYSTEM_ENABLE,
+        submitter=_who("owner-cleans"),
+        metadata={"frame": "A"},
+    )
+    second.leave()
+    counting_plane.commit(second)
+
+    assert second.status is SessionStatus.COMMITTED
+    described = counting_plane.describe()
+    assert described["claims"]["scope_count"] == 0
+    assert described["admission"]["in_flight_count"] == 0

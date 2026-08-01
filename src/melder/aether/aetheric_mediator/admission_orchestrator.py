@@ -205,11 +205,21 @@ class AdmissionOrchestrator(Cleanable):
                 blocked_scopes = tuple(
                     sorted({block.scope_key for block in blocks})
                 )
-                return AdmissionResult.refused(
+                # RENDER FIRST, THEN RELEASE THE BLOCKS. The verdict carries
+                # strings by contract - `AdmissionResult` states that evidence
+                # is "strings, never live `Identity` or `ClaimBlock`
+                # references" - so once the evidence tuple exists the blocks
+                # have nothing left to give. This is their end of life, and
+                # cleaning them here is what makes that contract true rather
+                # than merely stated.
+                verdict = AdmissionResult.refused(
                     reasons=(AdmissionReason.SCOPE_CONTENDED,),
                     blocked_scopes=blocked_scopes,
                     evidence=tuple(block.describe() for block in blocks),
                 )
+                for block in blocks:
+                    block.cleanup()
+                return verdict
             self._in_flight[request.request_id] = request
             return AdmissionResult.granted()
 

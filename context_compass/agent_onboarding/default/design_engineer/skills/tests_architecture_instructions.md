@@ -12,18 +12,77 @@
 - `context_compass/system_docs/tests_architecture.md`
 
 ## Example Documents (Required Read)
+- `context_compass/examples/example_architecture/tests_architecture.md`
 - `context_compass/examples/example_architecture/src_architecture.md`
 - `context_compass/examples/example_components/tests_components.md`
 - `context_compass/examples/example_components/src_components.md`
 - `context_compass/system_docs/tests_architecture.md` (active baseline)
 
+Read the two architecture examples as a pair. They share a section contract on
+purpose: one maps the runtime, the other maps how the runtime is verified. If
+your output makes the test map structurally different from the source map, the
+divergence is the defect.
+
 ## Required Inputs (Read First)
 - `context_compass/system_docs/tests_components.md`
 - `context_compass/system_docs/src_architecture.md`
 - `context_compass/system_docs/src_components.md`
-- `context_compass/system_docs/readable_src_graph.json`
+- `context_compass/system_docs/src_graph.md`
 - `context_compass/agent_onboarding/default/design_engineer/skills/tests_components_instructions.md`
 - Active ticket and `context_compass/attention_board.md` route
+
+## Indexing Contract (Non-Negotiable)
+
+This document is AUTHORED. Nothing generates its prose. The only generated
+artifact is its index, and the index is only as useful as the heading structure
+you give it.
+
+Regenerate the index in the SAME pass that edits the document:
+
+```bash
+python context_compass/tools/system_documents/index_document.py \
+    --doc context_compass/system_docs/tests_architecture.md
+```
+
+Heading discipline the index depends on:
+- **Exactly one H1.** A second one and the indexer cannot identify the document
+  title, so it stops omitting it and emits a section spanning the whole file.
+- **The navigable unit is H2 `## <Concern>`.** Consistent depth, never mixed.
+- **Names unique and stable.** Index rows are selected on name; two sections
+  sharing a name are indistinguishable to a consumer.
+- **No container headings in this document.** Every H2 is a selectable concern,
+  so there is no wrapper heading to select by mistake. Keep it that way: the
+  moment an H2 exists only to group other headings, it indexes as a range
+  covering all of them, and a reader selecting it loads that whole span
+  believing they sliced one section. On a production `src_components.md` - not
+  the starter shipped here - that mistake costs 37% of the document in a single
+  slice.
+
+Consume the index by slicing, never by reading the document whole:
+
+```bash
+python context_compass/tools/system_documents/index_document.py \
+    --doc context_compass/system_docs/tests_architecture.md --slice "<section name>"
+```
+
+It verifies the index before returning anything, refuses on a stale index, and
+lists candidates rather than guessing when a name is ambiguous. Section names
+are therefore the query - keep them unique and descriptive.
+
+Verify before trusting any range:
+
+```bash
+python context_compass/tools/system_documents/index_document.py \
+    --doc context_compass/system_docs/tests_architecture.md --check
+```
+
+An index records `line_count`, `content_sha256`, and `line_ending`. Insert one
+line near the top and every range below it is wrong while still parsing and
+still returning content - the WRONG content, confidently. On mismatch: STOP,
+regenerate, do not eyeball an offset.
+
+Full format specification:
+`agent_onboarding/default/engineer/skills/system_document_build.md`
 
 ## Unknowns Gate (Non-Negotiable)
 - Start unknown-heavy and explicit.
@@ -34,19 +93,41 @@
 `tests_architecture.md` must contain these sections in order:
 1. `## Metadata`
 2. `## Scope and Intent`
-3. `## DO NOT ASSUME / Unknowns Gate`
-4. `## Unknowns`
-5. `## System Context (C4)`
-6. `## External Interfaces and Entry Points`
-7. `## Core Responsibilities`
-8. `## Data Flows and Lifecycle`
-9. `## Invariants and Guarantees`
-10. `## C1 Code Map (Key Paths)`
-11. `## Diagrams`
-12. `## Information Sources`
-13. `## Context / Handoff Summary`
+3. `## Indexing`
+4. `## DO NOT ASSUME / Unknowns Gate`
+5. `## Unknowns`
+6. `## System Context (C4)`
+7. `## External Interfaces and Entry Points`
+8. `## Core Responsibilities`
+9. `## Data Flows and Lifecycle`
+10. `## Invariants and Guarantees`
+11. `## C1 Code Map (Key Paths)`
+12. `## Diagrams`
+13. `## Information Sources`
+14. `## Context / Handoff Summary`
 
-## Discovery-First Build Sequence (Required)
+## C1 Code Map Contract
+Each C1 key-path entry must include:
+- `path`
+- `start_line`
+- `end_line`
+- `loc`
+- `verified_at` (UTC DateTime `YYYY-MM-DDTHH:MM:SSZ`)
+
+Ranges are measured, never estimated. If the exact range is not verified, keep
+the claim `UNKNOWN` and add an investigation target in `## Unknowns` rather than
+writing a plausible number.
+
+## Diagram Contract
+- Include one ASCII flow diagram.
+- Include one Mermaid flow diagram.
+- Keep labels operational (surface, flow, boundary), not decorative.
+- Keep diagram terms aligned with section terminology.
+- Diagram the verification path, not the runtime path. If this diagram could be
+  dropped into `src_architecture.md` unchanged, it is describing the wrong
+  system.
+
+## Build Sequence (Discovery-First, Required)
 1. Confirm active ticket route and test-system scope.
 2. Read required example documents and extract reusable C4 section patterns.
 3. Inventory test entry surfaces (`tests/`, runner config, fixtures).
@@ -55,16 +136,16 @@
 6. Document lifecycle flow (setup, execution, teardown) with evidence.
 7. Capture invariants and failure paths observed in sources.
 8. Build C1 key-path map with ranges, LOC, and verification timestamps.
-9. Add ASCII + Mermaid diagrams aligned to written flow.
-10. Refresh `Information Sources` and `Context / Handoff Summary`.
+9. Add ASCII + Mermaid diagrams per the Diagram Contract.
+10. If patch lane is active, confirm the architecture patch has not moved a
+    boundary this document still describes the old way.
+11. Refresh `Information Sources` and `Context / Handoff Summary`.
 
-## C1 Map Contract
-Each C1 key-path entry must include:
-- `path`
-- `start_line`
-- `end_line`
-- `loc`
-- `verified_at` (UTC DateTime)
+Do not skip sequence order. If blocked, write a `BLOCKER` note in the active
+ticket before expanding scope. If a test-architecture claim conflicts with
+`src_architecture.md`, log `CONFLICT` in ticket notes and escalate before
+proceeding - the mismatch is the finding, and resolving it silently in either
+direction destroys it.
 
 ## Quality Gate (Pass/Fail)
 Pass only when all checks are true:
@@ -84,6 +165,14 @@ Pass only when all checks are true:
 - Fixture lifecycle behavior changed.
 - Test boundary/interfaces changed.
 - C1 ranges became stale from test-file edits.
+- `tests_components.md` introduces term/boundary changes.
+- `src_architecture.md` changed a boundary this document verifies. The source
+  map moving without the test map moving is the most common way these two drift.
+- `src_graph.md` changed because documented source wiring or ownership
+  relationships changed.
+- `src_graph_index.md` changed because canonical object relationships or
+  ownership moved.
+- Active `architecture_patch.md` changed for the same patch id.
 
 ## Anti-Patterns (Reject)
 - Generic "tests do X" statements without evidence.

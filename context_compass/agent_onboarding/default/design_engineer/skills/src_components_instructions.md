@@ -15,13 +15,13 @@
 - `context_compass/examples/example_components/src_components.md`
 - `context_compass/examples/example_components/tests_components.md`
 - `context_compass/examples/example_architecture/src_architecture.md`
+- `context_compass/examples/example_architecture/tests_architecture.md`
 - `context_compass/system_docs/src_components.md` (active baseline)
 
 ## Required Inputs (Read First)
 - `context_compass/system_docs/src_architecture.md`
-- `context_compass/system_docs/graph_details_document.md`
-- `context_compass/system_docs/readable_src_graph.json`
-- `context_compass/system_docs/src_graph.json`
+- `context_compass/system_docs/src_graph.md`
+- `context_compass/system_docs/src_graph_index.md`
 - `context_compass/system_docs/tests_components.md`
 - `context_compass/system_docs/tests_architecture.md`
 - `context_compass/system_docs/patches/active/<patch_id>/component_patch_<component>.md`
@@ -34,6 +34,58 @@
 - `context_compass/agent_onboarding/default/design_engineer/skills/code_description_patch_contracts.md`
 - Active ticket and `context_compass/attention_board.md` route
 
+## Indexing Contract (Non-Negotiable)
+
+This document is AUTHORED. Nothing generates its prose. The only generated
+artifact is its index, and the index is only as useful as the heading structure
+you give it.
+
+Regenerate the index in the SAME pass that edits the document:
+
+```bash
+python context_compass/tools/system_documents/index_document.py \
+    --doc context_compass/system_docs/src_components.md
+```
+
+Heading discipline the index depends on:
+- **Exactly one H1.** A second one and the indexer cannot identify the document
+  title, so it stops omitting it and emits a section spanning the whole file.
+- **The navigable unit is H3 `### Component: <Name>`.** Consistent depth, never mixed.
+- **Names unique and stable.** Index rows are selected on name; two sections
+  sharing a name are indistinguishable to a consumer.
+- **Never leave a container heading as the read target.** `## C3 Components
+  Catalog` wraps only other headings, so it indexes as a range covering every
+  component beneath it. Select a component, never the catalog. Measured on a
+  production `src_components.md` - not the starter shipped here - that catalog
+  indexes as a **1,945-line** section, so a reader selecting it loads 37% of the
+  document believing they sliced it.
+
+Consume the index by slicing, never by reading the document whole:
+
+```bash
+python context_compass/tools/system_documents/index_document.py \
+    --doc context_compass/system_docs/src_components.md --slice "<section name>"
+```
+
+It verifies the index before returning anything, refuses on a stale index, and
+lists candidates rather than guessing when a name is ambiguous. Section names
+are therefore the query - keep them unique and descriptive.
+
+Verify before trusting any range:
+
+```bash
+python context_compass/tools/system_documents/index_document.py \
+    --doc context_compass/system_docs/src_components.md --check
+```
+
+An index records `line_count`, `content_sha256`, and `line_ending`. Insert one
+line near the top and every range below it is wrong while still parsing and
+still returning content - the WRONG content, confidently. On mismatch: STOP,
+regenerate, do not eyeball an offset.
+
+Full format specification:
+`agent_onboarding/default/engineer/skills/system_document_build.md`
+
 ## Unknowns Gate (Non-Negotiable)
 - Default to `UNKNOWN` for unevidenced component claims.
 - Promote to `FACT` only with direct evidence.
@@ -43,15 +95,16 @@
 `src_components.md` must contain these sections in order:
 1. `## Metadata`
 2. `## Scope`
-3. `## DO NOT ASSUME / Unknowns Gate`
-4. `## Unknowns`
-5. `## C3 Components Catalog`
-6. `## C2 Subcomponents Catalog`
-7. `## Method-Level Call Flows (C1)`
-8. `## C1 Code Map (Core)`
-9. `## Diagrams`
-10. `## Information Sources`
-11. `## Context / Handoff Summary`
+3. `## Indexing`
+4. `## DO NOT ASSUME / Unknowns Gate`
+5. `## Unknowns`
+6. `## C3 Components Catalog`
+7. `## C2 Subcomponents Catalog`
+8. `## Method-Level Call Flows (C1)`
+9. `## C1 Code Map (Core)`
+10. `## Diagrams`
+11. `## Information Sources`
+12. `## Context / Handoff Summary`
 
 ## Component Entry Contract (C3 Minimum)
 Each C3 component entry must include:
@@ -75,7 +128,11 @@ Each C3 component entry must include:
   - `start_line`
   - `end_line`
   - `loc`
-  - `verified_at` (UTC DateTime)
+  - `verified_at` (UTC DateTime `YYYY-MM-DDTHH:MM:SSZ`)
+
+Ranges are measured, never estimated. If the exact range is not verified, keep
+the claim `UNKNOWN` and add an investigation target in `## Unknowns` rather than
+writing a plausible number.
 
 ## Build Sequence (Bottom-Up, Required)
 1. Confirm active ticket route and component scope.
@@ -113,9 +170,9 @@ Pass only when all checks are true:
 - Lifecycle/cleanup ordering changed.
 - Core method-level flows changed.
 - Architecture boundaries/terms changed.
-- `readable_src_graph.json` changed because documented source wiring or
+- `src_graph.md` changed because documented source wiring or
   ownership relationships changed.
-- `src_graph.json` changed because canonical object relationships or ownership
+- `src_graph_index.md` changed because canonical object relationships or ownership
   moved.
 - C1 ranges became stale from code edits.
 - Active component/code-description patch docs changed for the same patch id.

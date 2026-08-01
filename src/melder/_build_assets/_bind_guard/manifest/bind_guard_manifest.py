@@ -15,8 +15,8 @@ Regenerate with:
 
 MANIFEST_VERSION = "2.0.0"
 BUILT_FOR_VERSION = "0.1.1"
-SOURCE_SHA256 = "32510b692aa4934162879170409526bd380477eea67e276ed2482468241abe5a"
-ENTRY_COUNT = 582
+SOURCE_SHA256 = "c09facc159f9da6b953712504351f71d05c770a66c233228e2763e3261df7e3c"
+ENTRY_COUNT = 606
 
 ENTRIES = (
     ('melder.aether.aether', 'Aether'),
@@ -83,6 +83,30 @@ ENTRIES = (
     ('melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states', 'SpellSystemStates'),
     ('melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_validity', 'SpellValidity'),
     ('melder.aether.aetheric_frame.lookup_container', 'LookupContainer'),
+    ('melder.aether.aetheric_mediator.admission_orchestrator', 'AdmissionOrchestrator'),
+    ('melder.aether.aetheric_mediator.admission_result', 'AdmissionReason'),
+    ('melder.aether.aetheric_mediator.admission_result', 'AdmissionResult'),
+    ('melder.aether.aetheric_mediator.claim_mode', 'ClaimCompatibility'),
+    ('melder.aether.aetheric_mediator.claim_mode', 'ClaimMode'),
+    ('melder.aether.aetheric_mediator.claim_table', 'ClaimBlock'),
+    ('melder.aether.aetheric_mediator.claim_table', 'ClaimTable'),
+    ('melder.aether.aetheric_mediator.claim_table', '_GrantedClaim'),
+    ('melder.aether.aetheric_mediator.identity', 'Identity'),
+    ('melder.aether.aetheric_mediator.information_registry', 'FactRecord'),
+    ('melder.aether.aetheric_mediator.information_registry', 'InformationRegistry'),
+    ('melder.aether.aetheric_mediator.mediator', 'Mediator'),
+    ('melder.aether.aetheric_mediator.scope_keys', 'ScopeKey'),
+    ('melder.aether.aetheric_mediator.scope_keys', 'ScopePrefix'),
+    ('melder.aether.aetheric_mediator.staged_transaction', 'StagedTransaction'),
+    ('melder.aether.aetheric_mediator.strategy_builder', 'StrategyBuilder'),
+    ('melder.aether.aetheric_mediator.transaction_request', 'MetadataPolicy'),
+    ('melder.aether.aetheric_mediator.transaction_request', 'TransactionRequest'),
+    ('melder.aether.aetheric_mediator.transaction_session', 'OutcomePolicy'),
+    ('melder.aether.aetheric_mediator.transaction_session', 'SessionStatus'),
+    ('melder.aether.aetheric_mediator.transaction_session', 'TransactionSession'),
+    ('melder.aether.aetheric_mediator.transaction_session', '_RollbackAction'),
+    ('melder.aether.aetheric_mediator.transaction_strategy', 'TransactionStrategy'),
+    ('melder.aether.aetheric_mediator.transaction_type', 'TransactionType'),
     ('melder.aether.conduit.conduit', 'Conduit'),
     ('melder.aether.conduit.conduit_cluster', 'ConduitCluster'),
     ('melder.aether.conduit.conduit_pool', 'ConduitPool'),

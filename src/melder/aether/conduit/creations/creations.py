@@ -42,6 +42,13 @@ class Creations(Cleanable):
         object must not strand the rest of the scope's teardown, so callers may
         see an ExceptionGroup.
 
+        Disposal runs in REVERSE CREATION ORDER, newest entry first, including
+        within a `many` bucket. Resolution registers a dependency before the
+        dependent that holds it, so forward teardown would dispose the
+        dependency while a dependent's own disposal method may still need it.
+        This covers ordering within ONE scope; ordering between scopes is the
+        conduit cleanup cascade's job.
+
     Registration:
         MELDER KERNEL. The one subclass, `ConduitCreations`, is melder-internal and
         constructed only inside `Conduit.__init__`; there is no injection seam.
@@ -222,19 +229,34 @@ class Creations(Cleanable):
             disposable_registry:
                 Detached cleanup-only metadata mapping.
 
+        Ordering:
+            REVERSE CREATION ORDER. Entries are disposed newest-first, and the
+            same rule applies inside a `many` bucket. This matters because
+            resolution builds a dependency before the dependent that holds it,
+            so the dependency is registered FIRST; walking forward would tear it
+            down while a dependent's own disposal method may still reach for it.
+            No ordering structure is needed to achieve this - `_disposable_creations`
+            is a plain dict, dict iteration is insertion-ordered by language
+            guarantee, and insertion happens at creation time, so the registry
+            already IS the creation-order record.
+
+            This orders teardown WITHIN one scope only. Ordering BETWEEN scopes
+            (lesser conduit before root, narrower existence before broader) is
+            owned by the conduit cleanup cascade, not by this method.
+
         Returns:
             List[Exception]:
-                Collected disposal failures.
+                Collected disposal failures, in the order the failures occurred.
         """
         errors: List[Exception] = []
-        for value in disposable_registry.values():
+        for value in reversed(disposable_registry.values()):
             if isinstance(value, tuple):
                 maybe_error = self._attempt_cleanup(value)
                 if maybe_error:
                     errors.append(maybe_error)
                 continue
             if isinstance(value, list):
-                for entry in value:
+                for entry in reversed(value):
                     maybe_error = self._attempt_cleanup(entry)
                     if maybe_error:
                         errors.append(maybe_error)

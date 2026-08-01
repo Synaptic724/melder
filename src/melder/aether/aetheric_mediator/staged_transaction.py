@@ -8,18 +8,17 @@ A request is what was ASKED FOR; a staged transaction is what was GRANTED, and
 it is what commit-time hooks adjudicate against.
 """
 
-from dataclasses import dataclass, field
-from typing import Any, Mapping, Tuple
+from typing import Any, Mapping, Optional, Tuple
 
 from melder.aether.aetheric_mediator.transaction_request import (
     MetadataPolicy,
     TransactionRequest,
 )
 from melder.aether.aetheric_mediator.transaction_type import TransactionType
+from melder.utilities.general_base.cleanable import Cleanable
 
 
-@dataclass(frozen=True)
-class StagedTransaction:
+class StagedTransaction(Cleanable):
     """
     The immutable record of one admitted transaction.
 
@@ -42,8 +41,32 @@ class StagedTransaction:
         - `granted_scopes` is sorted, matching the request's normalisation, so
           two staged records over the same scopes render identically.
 
+    Lifecycle / Cleanup:
+        `Cleanable`, cleaned by ONE owner at ONE moment:
+        `TransactionSession.cleanup()`, exactly like the request it was built
+        from. The session owns both records for the life of the transaction.
+
+        `InformationRegistry._active` BORROWS this record while the
+        transaction is live and drops it at `unregister_activity`, which the
+        mediator calls from `_finalize`. A borrower must not clean it: the
+        session stays readable after commit so a caller can inspect what it
+        just did, and reporting must never be the thing that revokes that.
+
+        ORDERING THIS DEPENDS ON: `Mediator.cleanup` tears down the
+        information registry BEFORE the sessions. Cleaning sessions first
+        would leave the registry holding cleaned staged records, and a
+        concurrent `describe()` during teardown would then raise from inside
+        reporting rather than reporting an empty plane.
+
+        NOTE ON THE SHARED MAPPING: `metadata` is the SAME object the request
+        carries. Both records clean it, and both are correct - each `del`s its
+        own slot; neither mutates the frozen mapping, and whichever runs
+        second simply drops the last reference.
+
     Threading:
-        Immutable; safe to share across threads.
+        Immutable after construction; safe to share across threads. No lock -
+        there is no mutable state, and the single teardown is serialised by
+        the owning session.
 
     Registration:
         MELDER KERNEL - guarded. Built at admission; never user-constructed.
@@ -52,17 +75,189 @@ class StagedTransaction:
 
     AGENT_PURPOSE:
         access: internal. Immutable post-admission record of one granted
-        transaction, consumed by commit-time hooks and reporting.
+        transaction, consumed by commit-time hooks and reporting. Cleanable;
+        cleaned by the owning session at teardown.
     """
 
-    request_id: str
-    transaction_type: TransactionType
-    submitter_kind: str
-    submitter_id: str
-    admitted_at: float
-    granted_scopes: Tuple[str, ...] = ()
-    # Read-only, and the SAME OBJECT the request carries - see `from_request`.
-    metadata: Mapping[str, Any] = field(default_factory=MetadataPolicy.empty)
+    __slots__ = Cleanable.__slots__ + [
+        "_request_id",
+        "_transaction_type",
+        "_submitter_kind",
+        "_submitter_id",
+        "_admitted_at",
+        "_granted_scopes",
+        "_metadata",
+    ]
+
+    def __init__(
+            self,
+            *,
+            request_id: str,
+            transaction_type: TransactionType,
+            submitter_kind: str,
+            submitter_id: str,
+            admitted_at: float,
+            granted_scopes: Tuple[str, ...] = (),
+            metadata: Optional[Mapping[str, Any]] = None,
+    ) -> None:
+        """
+        Build one post-admission record.
+
+        Contract:
+            Prefer the `from_request(...)` factory - it is the path that
+            guarantees this record is built exactly once per transaction, at
+            admission, with an honest `admitted_at`.
+
+        Args:
+            request_id: The admitted request's id.
+            transaction_type: The closed-vocabulary operation.
+            submitter_kind: The submitter identity's family.
+            submitter_id: The submitter identity's id within that family.
+            admitted_at: Unix timestamp of admission.
+            granted_scopes: The sorted scope keys actually granted.
+            metadata: The request's deeply frozen mapping, or None for empty.
+
+        Returns:
+            None.
+        """
+        super().__init__()
+        self._request_id: str = request_id
+        self._transaction_type: TransactionType = transaction_type
+        self._submitter_kind: str = submitter_kind
+        self._submitter_id: str = submitter_id
+        self._admitted_at: float = admitted_at
+        self._granted_scopes: Tuple[str, ...] = granted_scopes
+        # Read-only, and the SAME OBJECT the request carries - see
+        # `from_request` for why it is shared rather than copied.
+        self._metadata: Mapping[str, Any] = (
+            MetadataPolicy.empty() if metadata is None else metadata
+        )
+
+    def cleanup(self) -> None:
+        """
+        Idempotently drop this record's fields at the owning session's teardown.
+
+        Contract:
+            Called from `TransactionSession.cleanup()` and nowhere else. Every
+            accessor raises afterwards, which is the honest outcome: a cleaned
+            staged record describes a transaction whose owner is gone.
+
+        Returns:
+            None.
+        """
+        if self._cleaned:
+            return
+        self._cleaned = True
+        del self._request_id
+        del self._transaction_type
+        del self._submitter_kind
+        del self._submitter_id
+        del self._admitted_at
+        del self._granted_scopes
+        del self._metadata
+
+    @property
+    def request_id(self) -> str:
+        """
+        Return the admitted request's id.
+
+        Returns:
+            str: The request id, used as the reporter in fact records.
+
+        Raises:
+            RuntimeError: If the record has been cleaned.
+        """
+        self.check_cleaned()
+        return self._request_id
+
+    @property
+    def transaction_type(self) -> TransactionType:
+        """
+        Return the closed-vocabulary operation that was admitted.
+
+        Returns:
+            TransactionType: The vocabulary member.
+
+        Raises:
+            RuntimeError: If the record has been cleaned.
+        """
+        self.check_cleaned()
+        return self._transaction_type
+
+    @property
+    def submitter_kind(self) -> str:
+        """
+        Return the submitting identity's family.
+
+        Returns:
+            str: The submitter kind string.
+
+        Raises:
+            RuntimeError: If the record has been cleaned.
+        """
+        self.check_cleaned()
+        return self._submitter_kind
+
+    @property
+    def submitter_id(self) -> str:
+        """
+        Return the submitting identity's id within its family.
+
+        Returns:
+            str: The submitter id string.
+
+        Raises:
+            RuntimeError: If the record has been cleaned.
+        """
+        self.check_cleaned()
+        return self._submitter_id
+
+    @property
+    def admitted_at(self) -> float:
+        """
+        Return when admission granted this transaction's claims.
+
+        Contract:
+            ADMISSION time, stamped once. It is not restamped at commit or
+            failure; a record that moved this field would report the wrong
+            moment while appearing authoritative.
+
+        Returns:
+            float: Unix timestamp of admission.
+
+        Raises:
+            RuntimeError: If the record has been cleaned.
+        """
+        self.check_cleaned()
+        return self._admitted_at
+
+    @property
+    def granted_scopes(self) -> Tuple[str, ...]:
+        """
+        Return the scope keys this transaction actually holds, sorted.
+
+        Returns:
+            Tuple[str, ...]: The granted scope keys.
+
+        Raises:
+            RuntimeError: If the record has been cleaned.
+        """
+        self.check_cleaned()
+        return self._granted_scopes
+
+    @property
+    def metadata(self) -> Mapping[str, Any]:
+        """
+        Return the deeply frozen, value-only metadata carried from the request.
+
+        Returns:
+            Mapping[str, Any]: The frozen metadata mapping.
+
+        Raises:
+            RuntimeError: If the record has been cleaned.
+        """
+        self.check_cleaned()
+        return self._metadata
 
     @staticmethod
     def from_request(

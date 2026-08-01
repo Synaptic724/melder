@@ -9,9 +9,10 @@ say which scope stopped it and who held that scope, or the caller cannot retry
 intelligently and an operator cannot see why anything is stuck.
 """
 
-from dataclasses import dataclass
 from enum import StrEnum
 from typing import Tuple
+
+from melder.utilities.general_base.cleanable import Cleanable
 
 
 class AdmissionReason(StrEnum):
@@ -48,8 +49,7 @@ class AdmissionReason(StrEnum):
     INVALID_REQUEST = "invalid_request"
 
 
-@dataclass(frozen=True)
-class AdmissionResult:
+class AdmissionResult(Cleanable):
     """
     The immutable verdict for one admission attempt.
 
@@ -77,11 +77,41 @@ class AdmissionResult:
           message.
 
     Owned State:
-        Value fields only. Holds no reference to the table, the session, or
-        any holder.
+        Value fields only - one bool and three tuples of strings. Holds no
+        reference to the table, the session, or any holder.
+
+    Lifecycle / Cleanup:
+        `Cleanable`. OWNER RULING, 2026-08-01, and it REVERSES the position an
+        earlier revision of this docstring argued at length. That argument -
+        that a verdict has no owner and no moment, so a cleanup contract would
+        be ceremony - is recorded here rather than deleted, because the reader
+        who wonders why a four-field value object carries a lifecycle deserves
+        the actual history:
+
+            the verdict has an owner and a moment after all, and naming them
+            forced them to be looked for rather than assumed absent.
+
+        THE OWNER IS THE ADMISSION LOOP; THE MOMENT IS WHEN IT LETS GO:
+          - `Mediator._admit_with_wait` builds one verdict per attempt. A
+            refused verdict is finished the instant the loop has harvested
+            what it needs and is about to park - so it is cleaned there,
+            before the next attempt allocates its replacement. Under real
+            contention that loop can spin many times, which makes this the
+            hot path for accumulation rather than a rare one.
+          - `Mediator.begin` cleans the verdict it received once it has read
+            the outcome - after rendering the refusal message, in the refused
+            case, because the message is the last thing anyone needs from it.
+
+        NOTHING RETAINS A VERDICT past that: it is never stored on the
+        session, the orchestrator, or the registry, and the refusal path turns
+        it into an error message string rather than keeping the object. So
+        every `cleanup()` call is made by the code that is demonstrably done
+        with it, which is the discriminator the repo actually uses.
 
     Threading:
-        Immutable; safe to share across threads without synchronisation.
+        Immutable; safe to share across threads without synchronisation. No
+        lock: a verdict is built by one thread, read by that same thread, and
+        cleaned by it.
 
     Registration:
         MELDER KERNEL - guarded. Produced by admission; never user-built.
@@ -93,13 +123,125 @@ class AdmissionResult:
         contended scope keys, and rendered blocking evidence.
     """
 
-    # Every field is a value or a tuple of values. Tuples are immutable, so
-    # `= ()` is a safe shared default and `field(default_factory=...)` - which
-    # exists to avoid shared MUTABLE defaults - would be noise here.
-    admitted: bool
-    reasons: Tuple[AdmissionReason, ...] = ()
-    blocked_scopes: Tuple[str, ...] = ()
-    evidence: Tuple[str, ...] = ()
+    # Slotted rather than dict-backed: a verdict is allocated on every refused
+    # admission attempt, so the per-instance dict is real cost on the one path
+    # that is by definition already contended.
+    __slots__ = Cleanable.__slots__ + [
+        "_admitted", "_reasons", "_blocked_scopes", "_evidence",
+    ]
+
+    def __init__(
+            self,
+            *,
+            admitted: bool,
+            reasons: Tuple[AdmissionReason, ...] = (),
+            blocked_scopes: Tuple[str, ...] = (),
+            evidence: Tuple[str, ...] = (),
+    ) -> None:
+        """
+        Build one immutable verdict.
+
+        Contract:
+            Prefer the `granted()` and `refused(...)` factories - `refused`
+            enforces the non-empty-reason rule that makes a refusal legal.
+            Tuples are immutable, so the empty-tuple defaults are safe to
+            share across every instance.
+
+        Args:
+            admitted: Whether the request was admitted.
+            reasons: Machine-readable refusal codes; empty when admitted.
+            blocked_scopes: Contended scope keys, for programmatic retry.
+            evidence: Rendered blocking lines, for a human or agent.
+
+        Returns:
+            None.
+        """
+        super().__init__()
+        self._admitted: bool = admitted
+        self._reasons: Tuple[AdmissionReason, ...] = reasons
+        self._blocked_scopes: Tuple[str, ...] = blocked_scopes
+        self._evidence: Tuple[str, ...] = evidence
+
+    def cleanup(self) -> None:
+        """
+        Idempotently drop this verdict once its reader is finished with it.
+
+        Contract:
+            Called by the admission loop that owns it - `_admit_with_wait` for
+            each superseded attempt, `begin` for the one it received. Read the
+            outcome and render any message BEFORE cleaning; both callers do.
+
+            Idempotent, so `begin` may clean a verdict `_admit_with_wait`
+            already released without checking first.
+
+        Returns:
+            None.
+        """
+        if self._cleaned:
+            return
+        self._cleaned = True
+        del self._admitted
+        del self._reasons
+        del self._blocked_scopes
+        del self._evidence
+
+    @property
+    def admitted(self) -> bool:
+        """
+        Report whether the request was admitted.
+
+        Returns:
+            bool: True when the claims are held on return from admission.
+
+        Raises:
+            RuntimeError: If the verdict has been cleaned.
+        """
+        self.check_cleaned()
+        return self._admitted
+
+    @property
+    def reasons(self) -> Tuple[AdmissionReason, ...]:
+        """
+        Return the machine-readable refusal codes.
+
+        Returns:
+            Tuple[AdmissionReason, ...]: Empty when admitted; otherwise at
+                least one code, because a refusal without a reason is not a
+                legal verdict.
+
+        Raises:
+            RuntimeError: If the verdict has been cleaned.
+        """
+        self.check_cleaned()
+        return self._reasons
+
+    @property
+    def blocked_scopes(self) -> Tuple[str, ...]:
+        """
+        Return the contended scope keys, for programmatic retry.
+
+        Returns:
+            Tuple[str, ...]: Sorted contended keys, empty when admitted.
+
+        Raises:
+            RuntimeError: If the verdict has been cleaned.
+        """
+        self.check_cleaned()
+        return self._blocked_scopes
+
+    @property
+    def evidence(self) -> Tuple[str, ...]:
+        """
+        Return the rendered blocking lines, for a reader diagnosing a stall.
+
+        Returns:
+            Tuple[str, ...]: One line per block, empty when admitted.
+
+        Raises:
+            RuntimeError: If the verdict has been cleaned.
+        """
+        self.check_cleaned()
+        return self._evidence
 
     @staticmethod
     def granted() -> "AdmissionResult":

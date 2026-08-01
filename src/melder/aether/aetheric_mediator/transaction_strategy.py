@@ -65,6 +65,13 @@ class TransactionStrategy(ABC):
         the same analysis: claim what the operation genuinely reaches, and no
         more.
 
+    Lifecycle / Cleanup:
+        NEVER INSTANTIATED, so there is nothing to clean and no `Cleanable`
+        contract. Strategies are REGISTERED AS CLASSES and every hook is
+        static or class level - `StrategyBuilder` stores the type object
+        itself and dispatches on it. A strategy with instance state would need
+        a lifecycle; the contract deliberately forbids having any.
+
     Threading:
         Stateless. Safe to dispatch from any thread.
 

@@ -1511,6 +1511,18 @@ Owned State:
 Lifecycle/Cleanup:
 - Cleanup detaches both registries first, disposes through
   `_disposable_creations`, then drops the live field surface.
+- DISPOSAL ORDER IS REVERSE CREATION ORDER (2026-08-01): both the across-keys
+  walk and the within-`many`-bucket walk run newest-first. Resolution registers
+  a dependency BEFORE the dependent that holds it, so forward teardown disposed
+  the dependency while a dependent's own disposal method could still reach for
+  it - the same defect class as python-dependency-injector issue #432. No
+  ordering structure was added: `_disposable_creations` is a plain dict, dict
+  iteration is insertion-ordered by language guarantee, and insertion happens at
+  creation time, so the registry already IS the creation-order record.
+  EVIDENCE: src/melder/aether/conduit/creations/creations.py:214-253.
+- That covers ordering WITHIN one scope. Ordering BETWEEN scopes (lesser conduit
+  before root, narrower existence before broader) remains owned by the conduit
+  cleanup cascade, so the two axes compose without any graph walk.
 - SpellSpace cleanup resets scope and unregisters from owner.
 
 Concurrency/Threading:
@@ -1928,6 +1940,151 @@ Key Files (C1):
 - `src/melder/aether/aetheric_frame/dev_ops/information_strategies/frame_operational_view_strategy.py`
 - `src/melder/aether/aetheric_frame/dev_ops/information_strategies/registry_consistency_audit_strategy.py`
 - `tests/unit/melder/aether/dev_ops/test_devops_information_strategies.py`
+
+### Component: Aetheric Mediator Plane (BUILT, NOT WIRED)
+Purpose:
+- Provide the top-level, above-frame transaction plane that serializes
+  structural work across Crystallizer, MutationResearch, and Nexus by SCOPE
+  rather than globally.
+
+STATUS - READ BEFORE ANYTHING ELSE:
+- NOTHING CONSTRUCTS THIS. `Aether` does not build it, no subsystem submits to
+  it, and no runtime path passes through it. It is a complete, tested,
+  standalone package on disk and is documented here for that reason - not
+  because it participates in any live flow.
+- EVIDENCE: a repo-wide search for `aetheric_mediator` outside the package
+  returns zero source hits (tests only).
+- Every statement below describes the package's OWN contracts, not current
+  runtime behaviour.
+
+Responsibilities:
+- Admit at most one conflicting structural transaction per scope, atomically
+  and all-or-nothing across a whole claim set.
+- Express the crystallizer `LoadGate` as a degenerate claim: `world` EXCLUSIVE
+  is the global gate; `world` INTENT plus `frame:<name>` EXCLUSIVE lets
+  disjoint frame work run in parallel beneath a parent a whole-world load can
+  still take.
+- Carry per-identity, per-thread sessions with depth-counted same-thread joins.
+- Dispatch per-family strategies that decide SCOPE PROPORTIONALITY.
+- Apply an explicit per-transaction outcome policy on failure.
+- Report live activity and freshness baselines without touching subsystem
+  state.
+- Hold a participant roster so the plane can answer "which subsystems are
+  live" without importing or referencing any of them.
+
+Inputs:
+- `TransactionType` plus a claiming `Identity` and caller metadata.
+- Strategy classes registered by each subsystem.
+- Subsystem self-announcements through `register_participant(...)`.
+
+Outputs:
+- `TransactionSession` objects; `AdmissionResult` verdicts carrying refusal
+  evidence; detached reporting payloads.
+
+Owned State:
+- `Mediator`: `_claim_table`, `_orchestrator`, `_information_registry`,
+  `_strategy_builder`, `_max_wait_seconds`, thread-local session maps,
+  `_sessions_by_request_id`, `_participants`.
+- `ClaimTable`: `_claims` (scope key -> granted claims) and one `Condition`.
+- `AdmissionOrchestrator`: the admission lock and `_in_flight`. It BORROWS the
+  claim table and never owns it.
+- `InformationRegistry`: `_facts` (owned) and `_active` (borrowed staged
+  records).
+
+Lifecycle/Cleanup:
+- EVERY CONSTRUCTED CLASS IS `Cleanable` AND SOMETHING NAMED CLEANS IT. 24
+  classes: 14 Cleanable-with-cleanup, 6 `StrEnum` vocabularies, 4 static
+  namespaces that are never instantiated and document that they are not.
+- `Mediator.cleanup` orders teardown BORROWERS BEFORE OWNERS - strategy
+  registry, information registry, orchestrator, THEN the sessions that own the
+  `TransactionRequest` and `StagedTransaction` records, THEN the claim table
+  LAST because its cleanup is what wakes any thread still parked in
+  `wait_for_change`.
+- `TransactionSession` owns and cleans the request and staged records;
+  borrowers clear their references without cleaning them.
+- `FactRecord` is REPLACE-ON-EMIT: `report_fact` cleans the baseline it
+  displaces, mirroring the crystallizer's twin rule.
+- `ClaimBlock` and `AdmissionResult` are cleaned by whoever RENDERED them -
+  the refusal path is the contended path and would otherwise accumulate.
+- `Identity` is CALLER-OWNED. The plane borrows it and never cleans one.
+
+Concurrency/Threading:
+- LOCK ORDER: `orchestrator._lock` -> `claim_table._condition`. This is the
+  ONLY cross-object nesting, and it is one-way because `ClaimTable` is a LEAF.
+- ADMIT MUST NEVER WAIT. `try_acquire` returns evidence rather than parking;
+  bounded waiting lives in `Mediator._admit_with_wait`, which parks only after
+  admission has returned and released. A wait inside `admit` would hold the
+  lock `release(...)` needs, deadlocking on first contention.
+- Waiting is SLICED at one second per park, ported from
+  `TransactionMediator._admit_with_scope_wait`, because the check and the park
+  are two separate acquisitions and a release landing between them is missed.
+- Foreign code - strategy hooks and rollback inverses - is never invoked while
+  a plane lock is held.
+- Session maps key on `Identity.identity_key()`, a plain string, so a caller
+  cleaning its own identity cannot make `__hash__` raise inside the plane's
+  bookkeeping.
+
+Invariants/Guarantees:
+- Zero imports of `melder.aether` from inside the package, enforced by test.
+- Admission is all-or-nothing; a partial claim set is impossible.
+- Refusal is EVIDENCED - `AdmissionResult` never returns a bare False.
+- Scope claims are COMPLETE AND EXPLICIT; no implicit exclusive default,
+  diverging from DevOps deliberately.
+- Re-entry is a NO-OP, not an upgrade: a holder re-claiming a scope keeps its
+  existing mode. Upgrades are unimplemented on purpose.
+- COMMITTED is reachable only through COMMITTING, so a transaction that dies
+  inside its own commit cannot report success.
+- Claims are released on EVERY terminal path, including `LEAVE_BROKEN`.
+- Strategy `on_end` fires EXACTLY ONCE per terminal end on every path, ported
+  from `_finalize_root_session`; a strategy that froze a gate in `on_start` is
+  guaranteed its reopen.
+
+Failure Modes:
+- Refused admission raises with the blocking scope keys and holders named.
+- Scope-wait timeout raises carrying the last refusal's evidence.
+- An unregistered `TransactionType` raises; there is NO default strategy,
+  because a guessed claim set is how isolation is lost quietly.
+- A failing commit delta fails the session through its own outcome policy -
+  inverses run under `UNWIND`, residue is recorded under `LEAVE_BROKEN` - then
+  re-raises.
+- A cross-thread join fails fast naming the owning thread rather than waiting.
+
+Observability:
+- `Mediator.describe()` returns claims, admission, reporting, strategy
+  coverage, and participants as one detached snapshot.
+- `TransactionSession.describe()` carries status, policy, depth, failure
+  reason, registered inverses, unwind failures, and the leave-broken residue.
+
+Extension Points:
+- Per-subsystem strategy families registered into `StrategyBuilder`.
+- Concrete information strategies over the registry (deferred by design - the
+  registry is the mechanism, the catalog is content).
+
+Known Gaps (recorded, not hidden):
+- UNWIRED.
+- `TransactionType` membership is PROVISIONAL pending the three subsystem
+  surveys.
+- NO SCOPE HASHES is PROVISIONAL and coupled to
+  `EPIC-2026-08-01-conflict-manager-zombie`: the retired DevOps conflict scan
+  matched on HASHES while this table matches on KEYS.
+- `ClaimTable.acquire` (blocking) has zero production call sites and is kept
+  only behind a docstring refusing the unsafe usage.
+
+Key Files (C1):
+- `src/melder/aether/aetheric_mediator/mediator.py`
+- `src/melder/aether/aetheric_mediator/claim_table.py`
+- `src/melder/aether/aetheric_mediator/claim_mode.py`
+- `src/melder/aether/aetheric_mediator/admission_orchestrator.py`
+- `src/melder/aether/aetheric_mediator/admission_result.py`
+- `src/melder/aether/aetheric_mediator/transaction_session.py`
+- `src/melder/aether/aetheric_mediator/transaction_request.py`
+- `src/melder/aether/aetheric_mediator/staged_transaction.py`
+- `src/melder/aether/aetheric_mediator/transaction_strategy.py`
+- `src/melder/aether/aetheric_mediator/strategy_builder.py`
+- `src/melder/aether/aetheric_mediator/transaction_type.py`
+- `src/melder/aether/aetheric_mediator/information_registry.py`
+- `src/melder/aether/aetheric_mediator/identity.py`
+- `src/melder/aether/aetheric_mediator/scope_keys.py`
 
 ### Component: Logging and Initialization Helpers
 Purpose:
@@ -3735,7 +3892,18 @@ unbreakable tokens (`configuration_standards.md`).
 REGENERATION: this section is a derived inventory. Re-walk the package rather
 than hand-editing entries, so it cannot drift silently from source.
 
-Module count: 560 (excluding `__init__.py`).
+PARTIAL WALK, 2026-08-01, DECLARED RATHER THAN SILENT. The 2026-07-30 walk
+above predates `aether/aetheric_mediator/`, which was created 2026-07-31. That
+package was walked on 2026-08-01 under the same rule (module docstring, then
+`__agent_purpose__`, then first class docstring) and its 14 entries appear in
+their own block below. THE REST OF THIS INVENTORY IS STILL THE 2026-07-30 WALK
+and has not been re-verified since. The count below is a MEASURED total of
+`src/melder/**/*.py` excluding `__init__.py` at 2026-08-01, not 560 plus an
+assumption - it happens to reconcile exactly (560 + 14), which is itself
+evidence that no other module moved in between. A full re-walk is still owed
+and is the only thing that can confirm the other 560 entries.
+
+Module count: 574 (excluding `__init__.py`), measured 2026-08-01.
 
 **Package root** - 9 modules
 
@@ -4329,6 +4497,32 @@ Module count: 560 (excluding `__init__.py`).
 - `src/melder/aether/spellbook/spellbook.py`
   Public API The `Spellbook` is the primary local authority for spell binding, spell lookup, co...
 - `src/melder/aether/spellbook/spellbook_creation_system.py` - Internal conjure orchestration system for Spellbook
+
+**aether/aetheric_mediator/ - standalone top-level transaction plane** - 14 modules
+(walked 2026-08-01; created 2026-07-31, after the walk above. NOT WIRED -
+nothing in `src/melder` constructs any of these; a repo-wide search for
+`aetheric_mediator` outside the package returns zero source hits.)
+
+- `src/melder/aether/aetheric_mediator/admission_orchestrator.py`
+  The serialized admission decision point for the mediator plane
+- `src/melder/aether/aetheric_mediator/admission_result.py`
+  The admission verdict for one transaction request on the mediator plane
+- `src/melder/aether/aetheric_mediator/claim_mode.py` - Claim vocabulary for the mediator plane
+- `src/melder/aether/aetheric_mediator/claim_table.py` - The scope-claim table for the mediator plane
+- `src/melder/aether/aetheric_mediator/identity.py` - Claimant identity for the mediator plane
+- `src/melder/aether/aetheric_mediator/information_registry.py` - The reporting surface for the mediator plane
+- `src/melder/aether/aetheric_mediator/mediator.py` - The mediator plane root - the object Aether holds
+- `src/melder/aether/aetheric_mediator/scope_keys.py` - Canonical scope-key construction for the mediator plane
+- `src/melder/aether/aetheric_mediator/staged_transaction.py`
+  The immutable post-admission record for the mediator plane
+- `src/melder/aether/aetheric_mediator/strategy_builder.py`
+  The registry that resolves a transaction type to its strategy class
+- `src/melder/aether/aetheric_mediator/transaction_request.py`
+  The immutable pre-admission request record for the mediator plane
+- `src/melder/aether/aetheric_mediator/transaction_session.py` - The live transaction span for the mediator plane
+- `src/melder/aether/aetheric_mediator/transaction_strategy.py`
+  The dispatch contract every plane transaction family implements
+- `src/melder/aether/aetheric_mediator/transaction_type.py` - The closed transaction vocabulary for the mediator plane
 
 **nexus/ - AR runtime surface** - 122 modules
 

@@ -97,6 +97,11 @@ class ClaimCompatibility:
         rather than assumed, and this note is kept so a future reader does
         not "restore" a permissiveness that was never there.
 
+    Lifecycle / Cleanup:
+        NEVER INSTANTIATED, so there is nothing to clean and no `Cleanable`
+        contract. This is a static policy table: one `ClassVar` frozenset of
+        permitted pairs plus two static predicates. No code constructs one.
+
     Threading:
         Pure and stateless. Safe to call from any thread without
         synchronisation; holds no instance state and mutates nothing.

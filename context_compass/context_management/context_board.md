@@ -21,17 +21,7 @@ Scope rules
 | context_id | ticket | context_artifact_path | context_type | owner | agent_name | status | next | updated_at | reread |
 |---|---|---|---|---|---|---|---|---|---|
 
-## Active Context Notes
-- DATETIME: 2026-06-03T12:23:49Z
-  TYPE: FACT
-  CLAIM: This board starts empty by design. Context management is optional and
-    should only be populated when a ticket explicitly opts into it.
-  NEXT: add rows only when a ticket sets `CONTEXT_MANAGEMENT_REQUIRED: true`,
-    points at one or more `CONTEXT_ID` values, and links one or more context
-    artifacts through those ids.
-  REREAD: REQUIRED
 
 ## Recently Cleared Context Links
 | context_id | ticket | context_artifact_path | reason | cleared_at |
 |---|---|---|---|---|
-| CTX-2026-06-07-phase10-solo-and-many-only-discovery | tickets/stories/archive/2026-06-06_phase10_solo_and_many_only_discovery_story.md | context_management/artifacts/2026-06-07_phase10_solo_and_many_only_discovery_context.md | owner clean-slate 2026-07-18: owning story archived; context artifact retained on disk | 2026-07-18T21:25:00Z |

@@ -52,7 +52,26 @@ Disposition values
 | tickets/stories/2026-07-19_melder_init_composition_story.md | system_docs/patches/active/melder_init_composition_2026_07_19/architecture_patch.md | patch_doc | active | promote_to_documentation | Package-root composition rulings, curated surface, invariants, wheel posture. | 2026-07-19T11:53:00Z | REQUIRED |
 | tickets/stories/2026-07-19_melder_init_composition_story.md | system_docs/patches/active/melder_init_composition_2026_07_19/component_patch_package_root.md | patch_doc | active | promote_to_documentation | Init/pyproject before-after, additive export deltas, DEBUG_MODE removal. | 2026-07-19T11:53:00Z | REQUIRED |
 
+
 ## Active Artifact Notes
+- DATETIME: 2026-08-01T18:02:00Z
+  TYPE: FACT
+  CLAIM: CLOSURE-SYNC DRIFT REPAIRED (bootstrap_0, owner-directed cleanup). The
+    `2026-08-01_configuration_diff_catalogue.md` row sat in Active Artifact Links
+    pointing at `tickets/tasks/2026-08-01_config_structural_survey_task.md`, but that
+    ticket had already moved to `tickets/tasks/completed/`. It was closed without
+    running artifact closure sync, so this board advertised an active artifact against
+    a closed lane. Row cleared under its own declared disposition
+    (`promote_to_documentation`). NO acceptance claim is made about examples_0's work -
+    pointer repair only, matching the precedent melder_1 set in
+    TASK-2026-07-25-attention-board-truth-repair.
+  EVIDENCE:
+  - tickets/tasks/completed/2026-08-01_config_structural_survey_task.md
+  IMPACT: Every remaining Active Artifact Links row now resolves to a ticket that
+    exists at the path given; all active row paths were checked against disk.
+  NEXT: Run artifact closure sync at ticket close rather than as later board repair.
+  REREAD: HELPFUL
+
 - DATETIME: 2026-07-18T21:25:00Z
   TYPE: FACT
   CLAIM: Clean slate under owner directive: every previously active artifact link (25 rows)

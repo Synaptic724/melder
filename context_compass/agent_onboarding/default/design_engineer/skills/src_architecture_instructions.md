@@ -13,15 +13,15 @@
 
 ## Example Documents (Required Read)
 - `context_compass/examples/example_architecture/src_architecture.md`
+- `context_compass/examples/example_architecture/tests_architecture.md`
 - `context_compass/examples/example_components/src_components.md`
 - `context_compass/examples/example_components/tests_components.md`
 - `context_compass/system_docs/src_architecture.md` (active baseline)
 
 ## Required Inputs (Read First)
 - `context_compass/system_docs/src_components.md`
-- `context_compass/system_docs/graph_details_document.md`
-- `context_compass/system_docs/readable_src_graph.json`
-- `context_compass/system_docs/src_graph.json`
+- `context_compass/system_docs/src_graph.md`
+- `context_compass/system_docs/src_graph_index.md`
 - `context_compass/system_docs/tests_architecture.md`
 - `context_compass/system_docs/tests_components.md`
 - `context_compass/system_docs/patches/active/<patch_id>/architecture_patch.md`
@@ -30,6 +30,59 @@
 - `context_compass/agent_onboarding/default/design_engineer/skills/patch_framework_design.md`
 - `context_compass/agent_onboarding/default/design_engineer/skills/architecture_patch_contracts.md`
 - Active ticket and `context_compass/attention_board.md` route
+
+## Indexing Contract (Non-Negotiable)
+
+This document is AUTHORED. Nothing generates its prose. The only generated
+artifact is its index, and the index is only as useful as the heading structure
+you give it.
+
+Regenerate the index in the SAME pass that edits the document:
+
+```bash
+python context_compass/tools/system_documents/index_document.py \
+    --doc context_compass/system_docs/src_architecture.md
+```
+
+Heading discipline the index depends on:
+- **Exactly one H1.** A second one and the indexer cannot identify the document
+  title, so it stops omitting it and emits a section spanning the whole file.
+- **The navigable unit is H2 `## <Concern>`.** Consistent depth, never mixed.
+- **Names unique and stable.** Index rows are selected on name; two sections
+  sharing a name are indistinguishable to a consumer.
+- **No container headings in this document.** Every H2 is a selectable concern,
+  so there is no wrapper heading to select by mistake. Keep it that way: the
+  moment an H2 exists only to group other headings, it indexes as a range
+  covering all of them, and a reader selecting it loads that whole span
+  believing they sliced one section. On a production `src_components.md` - not
+  the starter shipped here - that mistake costs 37% of the document in a single
+  slice.
+
+Consume the index by slicing, never by reading the document whole:
+
+```bash
+python context_compass/tools/system_documents/index_document.py \
+    --doc context_compass/system_docs/src_architecture.md --slice "<section name>"
+```
+
+It verifies the index before returning anything, refuses on a stale index, and
+lists candidates rather than guessing when a name is ambiguous. Section names
+are therefore the query - keep them unique and descriptive.
+
+Verify before trusting any range:
+
+```bash
+python context_compass/tools/system_documents/index_document.py \
+    --doc context_compass/system_docs/src_architecture.md --check
+```
+
+An index records `line_count`, `content_sha256`, and `line_ending`. Insert one
+line near the top and every range below it is wrong while still parsing and
+still returning content - the WRONG content, confidently. On mismatch: STOP,
+regenerate, do not eyeball an offset.
+
+Full format specification:
+`agent_onboarding/default/engineer/skills/system_document_build.md`
 
 ## Unknowns Gate (Non-Negotiable)
 - New claims start as `UNKNOWN`.
@@ -40,20 +93,21 @@
 `src_architecture.md` must contain these sections in order:
 1. `## Metadata`
 2. `## Scope and Intent`
-3. `## DO NOT ASSUME / Unknowns Gate`
-4. `## Unknowns`
-5. `## System Context (C4)`
-6. `## System Boundary and External Interfaces`
-7. `## Architecture Summary (C4)`
-8. `## Entrypoints and Runtime Guardrails`
-9. `## Boot and Configuration Sequence`
-10. `## Data Flows and Sequences`
-11. `## Operational Invariants`
-12. `## Failure Modes and Error Paths`
-13. `## C1 Code Map (Core Only)`
-14. `## Diagrams`
-15. `## Information Sources`
-16. `## Context / Handoff Summary`
+3. `## Indexing`
+4. `## DO NOT ASSUME / Unknowns Gate`
+5. `## Unknowns`
+6. `## System Context (C4)`
+7. `## System Boundary and External Interfaces`
+8. `## Architecture Summary (C4)`
+9. `## Entrypoints and Runtime Guardrails`
+10. `## Boot and Configuration Sequence`
+11. `## Data Flows and Sequences`
+12. `## Operational Invariants`
+13. `## Failure Modes and Error Paths`
+14. `## C1 Code Map (Core Only)`
+15. `## Diagrams`
+16. `## Information Sources`
+17. `## Context / Handoff Summary`
 
 ## C1 Code Map Contract
 Every C1 entry must include:
@@ -63,8 +117,9 @@ Every C1 entry must include:
 - `loc`
 - `verified_at` (UTC DateTime `YYYY-MM-DDTHH:MM:SSZ`)
 
-If exact range is not verified, keep claim `UNKNOWN` and add an investigation
-target in `## Unknowns`.
+Ranges are measured, never estimated. If the exact range is not verified, keep
+the claim `UNKNOWN` and add an investigation target in `## Unknowns` rather than
+writing a plausible number.
 
 ## Diagram Contract
 - Include one ASCII architecture diagram.
@@ -110,9 +165,9 @@ Pass only when all checks are true:
 - Invariants/failure modes changed.
 - C1 line ranges became stale from code edits.
 - `src_components.md` introduces term/boundary changes.
-- `readable_src_graph.json` changed because documented source wiring or
+- `src_graph.md` changed because documented source wiring or
   ownership relationships changed.
-- `src_graph.json` changed because canonical object relationships or ownership
+- `src_graph_index.md` changed because canonical object relationships or ownership
   moved.
 - Active `architecture_patch.md` changed for the same patch id.
 

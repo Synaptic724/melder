@@ -1,4 +1,4 @@
-﻿# Context Compass
+# Context Compass
 
 Context Compass is a policy-driven context orchestrator for AI-assisted execution.
 It gives agents a deterministic way to onboard, route work, preserve context,
@@ -40,15 +40,16 @@ Context Compass addresses that by making execution contract-driven:
 
 ## Agent Support
 
-This Codex distribution is wired to a single runtime entrypoint.
+This distribution is wired to a single runtime entrypoint: `AGENTS.MD`.
 
-Select the correct folder and place it into your repo.
+`AGENTS.MD` is a widely adopted convention for repository-level agent
+instructions, so most coding-agent runtimes pick it up without configuration. If
+yours looks for a different filename, point that file at `AGENTS.MD` rather than
+duplicating the policy - two copies of a contract drift, and the drift is silent.
 
-Within Context Compass Codex support:
-- Codex entrypoint: `AGENTS.MD`
-
-The routing and policy core remains shared.
-This distribution uses `AGENTS.MD` as the only runtime entrypoint.
+Context Compass is runtime-neutral by design. Nothing in the routing or policy
+core depends on which vendor's agent is reading it; the requirements are file
+access, shell or tool access, and the ability to follow written instructions.
 
 ## Core Design Principles
 
@@ -64,7 +65,7 @@ This distribution uses `AGENTS.MD` as the only runtime entrypoint.
 ```text
 context_compass/
   AGENTS.MD
-  SKILLS.md
+  SKILLS.MD
   CONTEXT_COMPACTION.md
   PROFILE_CLASS_CREATION_GUIDE.md
   README.md
@@ -112,12 +113,14 @@ context_compass/
 
 The agent starts from the runtime entrypoint:
 
-- Codex reads `AGENTS.MD` and resolves directly into the shared policy chain.
+- The agent reads `AGENTS.MD` and resolves directly into the shared policy chain.
 
 ### 2) Role Routing
 
-`SKILLS.md` defines available roles and role-to-skill-map paths.
-The selected role resolves to a `SKILLS.md` chain with parent-first inheritance.
+`SKILLS.MD` is the single role registry. Its table declares every role and the
+`SKILLS.MD` path each one resolves to. The selected role resolves to a
+`SKILLS.MD` chain with parent-first inheritance, walked via the
+`INHERITS_SKILLS_FROM` header in each file.
 
 Each role declares:
 
@@ -157,6 +160,10 @@ This prevents "performative compliance" and keeps behavior auditable.
 
 Context Compass currently includes both software and fiction workflows.
 
+The authoritative list is the registry table in `SKILLS.MD`. The lanes below are
+a reader's overview and may lag the registry; when they disagree, the registry
+wins.
+
 ### Software Lane
 
 - `general`
@@ -183,25 +190,35 @@ Context Compass currently includes both software and fiction workflows.
 
 ## Configuration Authority
 
-Primary runtime config lives in:
+Two files with two distinct jobs.
 
-- `config/context_compass_config.yaml`
+**`SKILLS.MD` - the single role registry.**
+One table declares every role: its `SKILLS.MD` path, its parent role, whether
+it is user-defined, whether it is selectable after onboarding, and whether it
+reads READMEs. A role exists if and only if it has a row there. Adding a role
+is a one-row edit.
 
-Key sections include:
+**`config/context_compass_config.yaml` - behaviour settings only.**
+It does not enumerate roles and is never consulted to resolve one.
 
-- `profiles` for active/allowed profile control,
-- `router` for role-to-skill-map mapping,
+- `profiles.onboarding` for first-time onboarding state and transitions,
+- `system_of_record.enforce` for whether agents may use their own harness's task
+  tracking instead of this package (default `true`, meaning they may not),
 - `workflow` for ticket microcycle behavior,
 - `artifacts` for artifact retention rules,
-- `codex` for read-window and chunking limits.
+- `documentation_format` for line length and evidence formatting,
+- `reading` for read-window and chunking limits.
+
+There is no stored active role. Role selection is per agent, per session, so
+several agents can hold different roles in the same repository at once.
 
 ## Quick Start
 
 1. Place `context_compass/` in your repository.
-2. Ensure the Codex runtime entrypoint exists:
-   - Codex: `AGENTS.MD`
-3. Select an active profile in `config/context_compass_config.yaml`.
-4. Start onboarding through `SKILLS.md` role resolution.
+2. Ensure your agent reads `AGENTS.MD` at the repository root, or points its own
+   entrypoint file at it.
+3. Select a role from the role map in `SKILLS.MD`.
+4. Start onboarding through `SKILLS.MD` role resolution.
 5. Request `CERTIFY: APPROVED`.
 6. Execute through ticket routing (`attention_board.md` + active ticket notes).
 
