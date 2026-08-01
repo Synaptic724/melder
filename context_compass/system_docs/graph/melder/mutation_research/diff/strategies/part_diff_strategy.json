@@ -1,0 +1,80 @@
+{
+ "schema_version": 1,
+ "source": "src/melder/mutation_research/diff/strategies/part_diff_strategy.py",
+ "source_sha256": "aac8ad62e54883710ab7a51caa8e784c1cd956b8af126fe8bea074b52a9aee57",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.mutation_research.diff.strategies.part_diff_strategy": {
+   "id": "melder.mutation_research.diff.strategies.part_diff_strategy",
+   "label": "part_diff_strategy",
+   "kind": "module",
+   "file": "src/melder/mutation_research/diff/strategies/part_diff_strategy.py",
+   "lineno": 1
+  },
+  "melder.mutation_research.diff.strategies.part_diff_strategy.PartDiffStrategy": {
+   "id": "melder.mutation_research.diff.strategies.part_diff_strategy.PartDiffStrategy",
+   "label": "PartDiffStrategy",
+   "kind": "class",
+   "file": "src/melder/mutation_research/diff/strategies/part_diff_strategy.py",
+   "lineno": 8,
+   "bases": [
+    "DiffStrategy"
+   ],
+   "markers": [],
+   "public_methods": [
+    "diff",
+    "name"
+   ],
+   "shape": {
+    "method_count": 7,
+    "has_bases": true,
+    "trivial": false
+   },
+   "role": "Part-grain text comparison between two version materials: per common module, top-level classes/functions compare as individual code regions (added/removed WITH full text, changed as unified diffs, module-body residue as its own region) - the class-code grain of the derived-diff family (owner ruling 2026-07-11: the agent chooses module or class grain).",
+   "responsibilities": [
+    "per-module part split incl. decorator spans; <module_body> residue region so imports/constants never escape comparison",
+    "parse errors report per module naming the failing side; text-less modules ride text_unavailable_modules"
+   ],
+   "phases": [
+    "runtime",
+    "cleanup"
+   ]
+  }
+ },
+ "edges_out": [
+  {
+   "from": "melder.mutation_research.diff.strategies.part_diff_strategy.PartDiffStrategy",
+   "to_label": "DiffStrategy",
+   "relation": "specializes",
+   "to": "melder.mutation_research.diff.diff_strategy.DiffStrategy"
+  }
+ ],
+ "edge_candidates": [],
+ "published_aliases": [],
+ "imports": {
+  "Dict": "typing.Dict",
+  "List": "typing.List",
+  "Optional": "typing.Optional",
+  "Tuple": "typing.Tuple",
+  "ClassVar": "typing.ClassVar",
+  "DiffStrategy": "melder.mutation_research.diff.diff_strategy.DiffStrategy"
+ },
+ "collapse_candidate": {
+  "module": "melder.mutation_research.diff.strategies.part_diff_strategy",
+  "class": "melder.mutation_research.diff.strategies.part_diff_strategy.PartDiffStrategy",
+  "label": "PartDiffStrategy"
+ },
+ "edges_authored": [
+  {
+   "from": "melder.mutation_research.diff.strategies.part_diff_strategy.PartDiffStrategy",
+   "to": "melder.mutation_research.diff.diff_strategy.DiffStrategy",
+   "relation": "specializes",
+   "why": "Implements the DiffStrategy contract (name + diff over materials).",
+   "cardinality": "one_to_one",
+   "strength": "hard",
+   "phase": [
+    "init"
+   ]
+  }
+ ]
+}

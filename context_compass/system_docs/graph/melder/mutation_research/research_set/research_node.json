@@ -1,0 +1,106 @@
+{
+ "schema_version": 1,
+ "source": "src/melder/mutation_research/research_set/research_node.py",
+ "source_sha256": "071813ad25077930b4a684165b638c1ddb473e38033f706dc4198a5e91319dd8",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.mutation_research.research_set.research_node": {
+   "id": "melder.mutation_research.research_set.research_node",
+   "label": "research_node",
+   "kind": "module",
+   "file": "src/melder/mutation_research/research_set/research_node.py",
+   "lineno": 1
+  },
+  "melder.mutation_research.research_set.research_node.ResearchNode": {
+   "id": "melder.mutation_research.research_set.research_node.ResearchNode",
+   "label": "ResearchNode",
+   "kind": "class",
+   "file": "src/melder/mutation_research/research_set/research_node.py",
+   "lineno": 8,
+   "bases": [
+    "Cleanable"
+   ],
+   "markers": [],
+   "public_methods": [
+    "author",
+    "campaign",
+    "cleanup",
+    "created_at",
+    "describe",
+    "from_payload",
+    "metadata",
+    "module_source_sha256",
+    "parent_spell_ids",
+    "reason",
+    "spell_id"
+   ],
+   "shape": {
+    "method_count": 11,
+    "has_bases": true,
+    "trivial": false
+   },
+   "role": "Immutable reference-based version record: spell_id IS the custody SpellCrystal id (no source pinning).",
+   "responsibilities": [
+    "carries spell_id + module_sha + parent ancestry + author/reason/campaign",
+    "multi-parent records express codegen-workshop composition (no merge machinery exists)"
+   ],
+   "owns_state": [
+    "_spell_id",
+    "_module_source_sha256",
+    "_parent_spell_ids"
+   ],
+   "phases": [
+    "init",
+    "runtime",
+    "cleanup"
+   ]
+  }
+ },
+ "edges_out": [
+  {
+   "from": "melder.mutation_research.research_set.research_node.ResearchNode",
+   "to_label": "Cleanable",
+   "relation": "specializes",
+   "to": "melder.utilities.general_base.cleanable.Cleanable"
+  }
+ ],
+ "edge_candidates": [
+  {
+   "from": "melder.mutation_research.research_set.research_node.ResearchNode",
+   "to_label": "ValueError",
+   "relation": "creates",
+   "confidence": "candidate"
+  }
+ ],
+ "published_aliases": [],
+ "imports": {
+  "datetime": "datetime.datetime",
+  "timezone": "datetime.timezone",
+  "Dict": "typing.Dict",
+  "List": "typing.List",
+  "Optional": "typing.Optional",
+  "Tuple": "typing.Tuple",
+  "ClassVar": "typing.ClassVar",
+  "Cleanable": "melder.utilities.general_base.cleanable.Cleanable"
+ },
+ "collapse_candidate": {
+  "module": "melder.mutation_research.research_set.research_node",
+  "class": "melder.mutation_research.research_set.research_node.ResearchNode",
+  "label": "ResearchNode"
+ },
+ "edges_authored": [
+  {
+   "from": "melder.mutation_research.research_set.research_node.ResearchNode",
+   "to": "melder.utilities.general_base.cleanable.Cleanable",
+   "relation": "specializes",
+   "why": "Inherits the explicit cleanup lifecycle from Cleanable.",
+   "cardinality": "one_to_one",
+   "strength": "hard",
+   "phase": [
+    "init",
+    "runtime",
+    "cleanup"
+   ]
+  }
+ ]
+}

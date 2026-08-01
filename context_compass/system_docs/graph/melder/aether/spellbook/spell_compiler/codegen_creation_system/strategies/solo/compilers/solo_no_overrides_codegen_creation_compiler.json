@@ -1,0 +1,50 @@
+{
+ "schema_version": 1,
+ "source": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/solo/compilers/solo_no_overrides_codegen_creation_compiler.py",
+ "source_sha256": "79fd95f6729b4df8e63c6e372b97764c72f2ce7737a69e50b897e41fe7b506b1",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.solo.compilers.solo_no_overrides_codegen_creation_compiler": {
+   "id": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.solo.compilers.solo_no_overrides_codegen_creation_compiler",
+   "label": "solo_no_overrides_codegen_creation_compiler",
+   "kind": "module",
+   "file": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/solo/compilers/solo_no_overrides_codegen_creation_compiler.py",
+   "lineno": 1,
+   "role": "Root-only no-overrides compiler for the solo family.",
+   "responsibilities": [
+    "emits deterministic root-only no-overrides executor source for the solo family",
+    "hydrates callable executors from emitted source against one root spell",
+    "uses the process-wide emitted-source code-object cache for solo no-overrides executors"
+   ],
+   "phases": [
+    "runtime"
+   ]
+  }
+ },
+ "edges_out": [],
+ "edge_candidates": [],
+ "published_aliases": [],
+ "imports": {
+  "Any": "typing.Any",
+  "Callable": "typing.Callable",
+  "Optional": "typing.Optional",
+  "Sequence": "typing.Sequence",
+  "Tuple": "typing.Tuple",
+  "Union": "typing.Union",
+  "get_or_compile_executor_code": "melder.aether.spellbook.spell_compiler.executor_code_cache.get_or_compile_executor_code"
+ },
+ "collapse_candidate": null,
+ "edges_authored": [
+  {
+   "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.solo.compilers.solo_no_overrides_codegen_creation_compiler",
+   "to": "melder.aether.spellbook.spell_compiler.executor_code_cache",
+   "relation": "uses",
+   "why": "solo_no_overrides_codegen_creation_compiler uses the process-wide emitted-source code-object cache for root-only no-overrides executors.",
+   "cardinality": "one_to_one",
+   "strength": "borrowed",
+   "phase": [
+    "runtime"
+   ]
+  }
+ ]
+}

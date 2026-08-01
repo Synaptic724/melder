@@ -1,0 +1,103 @@
+{
+ "schema_version": 1,
+ "source": "src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_4.py",
+ "source_sha256": "664981bca31acec490ea136791a51dc199896eb3468da26be1e6086738e5a2b1",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.aether.spellbook.spell_compiler.phases.compiler_phase_4": {
+   "id": "melder.aether.spellbook.spell_compiler.phases.compiler_phase_4",
+   "label": "compiler_phase_4",
+   "kind": "module",
+   "file": "src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_4.py",
+   "lineno": 1
+  },
+  "melder.aether.spellbook.spell_compiler.phases.compiler_phase_4.CompilerPhase4": {
+   "id": "melder.aether.spellbook.spell_compiler.phases.compiler_phase_4.CompilerPhase4",
+   "label": "CompilerPhase4",
+   "kind": "class",
+   "file": "src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_4.py",
+   "lineno": 39,
+   "bases": [],
+   "markers": [],
+   "public_methods": [
+    "run"
+   ],
+   "shape": {
+    "method_count": 1,
+    "has_bases": false,
+    "trivial": false
+   },
+   "role": "Compiler-owned phase-4 structural validation surface.",
+   "responsibilities": [
+    "runs SpellValidationSystem over phase-1 to phase-3 artifacts",
+    "publishes SpellValidationResult and broken-state flags onto SpellCompilerArtifact",
+    "updates SpellSystemStates structural validity and contract gating when available"
+   ],
+   "phases": [
+    "validation"
+   ]
+  }
+ },
+ "edges_out": [],
+ "edge_candidates": [
+  {
+   "from": "melder.aether.spellbook.spell_compiler.phases.compiler_phase_4.CompilerPhase4",
+   "to_label": "RuntimeError",
+   "relation": "creates",
+   "confidence": "candidate"
+  }
+ ],
+ "published_aliases": [],
+ "imports": {
+  "TYPE_CHECKING": "typing.TYPE_CHECKING",
+  "Any": "typing.Any",
+  "Dict": "typing.Dict",
+  "Optional": "typing.Optional",
+  "SpellState": "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_state.SpellState",
+  "SpellStateChangeReason": "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_state_change_reason.SpellStateChangeReason",
+  "SpellValidity": "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_validity.SpellValidity",
+  "SharedCompilerExecutions": "melder.aether.spellbook.spell_compiler.phases.shared_compiler_executions.SharedCompilerExecutions",
+  "CompilerPhaseUtility": "melder.aether.spellbook.spell_compiler.phases.utility.CompilerPhaseUtility",
+  "SpellSystemStates": "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states.SpellSystemStates",
+  "Spell": "melder.aether.spellbook.spell.Spell",
+  "SpellCompilerArtifact": "melder.aether.spellbook.spell_compiler.spell_compiler_artifact.SpellCompilerArtifact",
+  "SpellValidationSystem": "melder.aether.spellbook.spell_compiler.validation.validation_system.SpellValidationSystem",
+  "CancellationEvent": "melder.utilities.synchronization.cancellation_event_signal.CancellationEvent"
+ },
+ "collapse_candidate": null,
+ "edges_authored": [
+  {
+   "from": "melder.aether.spellbook.spell_compiler.phases.compiler_phase_4.CompilerPhase4",
+   "to": "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states.SpellSystemStates",
+   "relation": "uses",
+   "why": "CompilerPhase4 updates structural validity and contract gating in SpellSystemStates when frame state is available.",
+   "cardinality": "one_to_one",
+   "strength": "borrowed",
+   "phase": [
+    "validation"
+   ]
+  },
+  {
+   "from": "melder.aether.spellbook.spell_compiler.phases.compiler_phase_4.CompilerPhase4",
+   "to": "melder.aether.spellbook.spell_compiler.phases.utility.CompilerPhaseUtility",
+   "relation": "uses",
+   "why": "CompilerPhase4 uses CompilerPhaseUtility for shared cancellation handling.",
+   "cardinality": "one_to_one",
+   "strength": "borrowed",
+   "phase": [
+    "validation"
+   ]
+  },
+  {
+   "from": "melder.aether.spellbook.spell_compiler.phases.compiler_phase_4.CompilerPhase4",
+   "to": "melder.aether.spellbook.spell_compiler.validation.validation_system.SpellValidationSystem",
+   "relation": "uses",
+   "why": "CompilerPhase4 delegates structural validation to SpellValidationSystem.",
+   "cardinality": "one_to_one",
+   "strength": "borrowed",
+   "phase": [
+    "validation"
+   ]
+  }
+ ]
+}

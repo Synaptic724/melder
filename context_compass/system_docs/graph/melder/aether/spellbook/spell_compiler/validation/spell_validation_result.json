@@ -1,0 +1,94 @@
+{
+ "schema_version": 1,
+ "source": "src/melder/aether/spellbook/spell_compiler/validation/spell_validation_result.py",
+ "source_sha256": "b504454892d3d824d3d898826d0073fee0eb5d38da489ec31d86a99e7ab68ad3",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.aether.spellbook.spell_compiler.validation.spell_validation_result": {
+   "id": "melder.aether.spellbook.spell_compiler.validation.spell_validation_result",
+   "label": "spell_validation_result",
+   "kind": "module",
+   "file": "src/melder/aether/spellbook/spell_compiler/validation/spell_validation_result.py",
+   "lineno": 1
+  },
+  "melder.aether.spellbook.spell_compiler.validation.spell_validation_result.SpellValidationResult": {
+   "id": "melder.aether.spellbook.spell_compiler.validation.spell_validation_result.SpellValidationResult",
+   "label": "SpellValidationResult",
+   "kind": "class",
+   "file": "src/melder/aether/spellbook/spell_compiler/validation/spell_validation_result.py",
+   "lineno": 11,
+   "bases": [
+    "Cleanable"
+   ],
+   "markers": [],
+   "public_methods": [
+    "cleanup",
+    "errors",
+    "has_errors",
+    "has_warnings",
+    "warnings"
+   ],
+   "shape": {
+    "method_count": 5,
+    "has_bases": true,
+    "trivial": false
+   },
+   "role": "Aggregate spell validation result.",
+   "responsibilities": [
+    "stores the ordered issue list and exposes error/warning summary flags for one spell validation run"
+   ],
+   "owns_state": [
+    "spell_id",
+    "spell_name",
+    "issues"
+   ],
+   "phases": [
+    "validation",
+    "cleanup"
+   ]
+  }
+ },
+ "edges_out": [
+  {
+   "from": "melder.aether.spellbook.spell_compiler.validation.spell_validation_result.SpellValidationResult",
+   "to_label": "Cleanable",
+   "relation": "specializes",
+   "to": "melder.utilities.general_base.cleanable.Cleanable"
+  }
+ ],
+ "edge_candidates": [
+  {
+   "from": "melder.aether.spellbook.spell_compiler.validation.spell_validation_result.SpellValidationResult",
+   "to_label": "ValueError",
+   "relation": "creates",
+   "confidence": "candidate"
+  }
+ ],
+ "published_aliases": [],
+ "imports": {
+  "Optional": "typing.Optional",
+  "List": "typing.List",
+  "ClassVar": "typing.ClassVar",
+  "Cleanable": "melder.utilities.general_base.cleanable.Cleanable",
+  "SpellValidationIssue": "melder.aether.spellbook.spell_compiler.validation.spell_validation_issue.SpellValidationIssue"
+ },
+ "collapse_candidate": {
+  "module": "melder.aether.spellbook.spell_compiler.validation.spell_validation_result",
+  "class": "melder.aether.spellbook.spell_compiler.validation.spell_validation_result.SpellValidationResult",
+  "label": "SpellValidationResult"
+ },
+ "edges_authored": [
+  {
+   "from": "melder.aether.spellbook.spell_compiler.validation.spell_validation_result.SpellValidationResult",
+   "to": "melder.aether.spellbook.spell_compiler.validation.spell_validation_issue.SpellValidationIssue",
+   "relation": "owns_lifecycle_of",
+   "why": "SpellValidationResult owns the SpellValidationIssue objects collected for one spell.",
+   "cardinality": "one_to_many",
+   "strength": "hard",
+   "phase": [
+    "validation",
+    "cleanup"
+   ]
+  }
+ ]
+}

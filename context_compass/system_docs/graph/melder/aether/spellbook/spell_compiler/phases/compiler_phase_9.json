@@ -1,0 +1,111 @@
+{
+ "schema_version": 1,
+ "source": "src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_9.py",
+ "source_sha256": "3358ee58ae938c94b0bd262f452000cd8b71e1d7bc7d34745486278e30c1850c",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.aether.spellbook.spell_compiler.phases.compiler_phase_9": {
+   "id": "melder.aether.spellbook.spell_compiler.phases.compiler_phase_9",
+   "label": "compiler_phase_9",
+   "kind": "module",
+   "file": "src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_9.py",
+   "lineno": 1
+  },
+  "melder.aether.spellbook.spell_compiler.phases.compiler_phase_9.CompilerPhase9": {
+   "id": "melder.aether.spellbook.spell_compiler.phases.compiler_phase_9.CompilerPhase9",
+   "label": "CompilerPhase9",
+   "kind": "class",
+   "file": "src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_9.py",
+   "lineno": 15,
+   "bases": [
+    "Cleanable"
+   ],
+   "markers": [],
+   "public_methods": [
+    "cleanup",
+    "run"
+   ],
+   "shape": {
+    "method_count": 2,
+    "has_bases": true,
+    "trivial": false
+   },
+   "role": "Live compiler phase-9 wrapper over SpellArtifactProcessor.",
+   "responsibilities": [
+    "owns and reuses SpellArtifactProcessor as the live phase-9 collaborator",
+    "publishes SpellCodegenModel onto SpellCompilerArtifact",
+    "bridges the current phase scheduler onto the processor seam without reviving old injection-plan code"
+   ],
+   "owns_state": [
+    "_artifact_processor"
+   ],
+   "phases": [
+    "runtime",
+    "cleanup"
+   ]
+  }
+ },
+ "edges_out": [
+  {
+   "from": "melder.aether.spellbook.spell_compiler.phases.compiler_phase_9.CompilerPhase9",
+   "to_label": "Cleanable",
+   "relation": "specializes",
+   "to": "melder.utilities.general_base.cleanable.Cleanable"
+  }
+ ],
+ "edge_candidates": [
+  {
+   "from": "melder.aether.spellbook.spell_compiler.phases.compiler_phase_9.CompilerPhase9",
+   "to_label": "SpellArtifactProcessor",
+   "relation": "creates",
+   "confidence": "candidate"
+  }
+ ],
+ "published_aliases": [],
+ "imports": {
+  "TYPE_CHECKING": "typing.TYPE_CHECKING",
+  "ClassVar": "typing.ClassVar",
+  "SpellArtifactProcessor": "melder.aether.spellbook.spell_compiler.artifact_processor.spell_artifact_processor.SpellArtifactProcessor",
+  "Cleanable": "melder.utilities.general_base.cleanable.Cleanable",
+  "Spell": "melder.aether.spellbook.spell.Spell",
+  "SpellCompilerArtifact": "melder.aether.spellbook.spell_compiler.spell_compiler_artifact.SpellCompilerArtifact"
+ },
+ "collapse_candidate": null,
+ "edges_authored": [
+  {
+   "from": "melder.aether.spellbook.spell_compiler.phases.compiler_phase_9.CompilerPhase9",
+   "to": "melder.aether.spellbook.spell_compiler.artifact_processor.spell_artifact_processor.SpellArtifactProcessor",
+   "relation": "owns_lifecycle_of",
+   "why": "CompilerPhase9 owns SpellArtifactProcessor as its live phase-9 collaborator.",
+   "cardinality": "one_to_one",
+   "strength": "hard",
+   "phase": [
+    "runtime",
+    "cleanup"
+   ]
+  },
+  {
+   "from": "melder.aether.spellbook.spell_compiler.phases.compiler_phase_9.CompilerPhase9",
+   "to": "melder.aether.spellbook.spell_compiler.spell_compiler_artifact.SpellCompilerArtifact",
+   "relation": "uses",
+   "why": "CompilerPhase9 publishes SpellCodegenModel onto the current SpellCompilerArtifact through the processor facade.",
+   "cardinality": "one_to_one",
+   "strength": "borrowed",
+   "phase": [
+    "runtime"
+   ]
+  },
+  {
+   "from": "melder.aether.spellbook.spell_compiler.phases.compiler_phase_9.CompilerPhase9",
+   "to": "melder.utilities.general_base.cleanable.Cleanable",
+   "relation": "specializes",
+   "why": "CompilerPhase9 inherits the explicit cleanup lifecycle from Cleanable.",
+   "cardinality": "one_to_one",
+   "strength": "hard",
+   "phase": [
+    "runtime",
+    "cleanup"
+   ]
+  }
+ ]
+}

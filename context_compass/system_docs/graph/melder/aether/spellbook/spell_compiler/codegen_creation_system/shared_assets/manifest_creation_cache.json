@@ -1,0 +1,88 @@
+{
+ "schema_version": 1,
+ "source": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/manifest_creation_cache.py",
+ "source_sha256": "a802674822570f82dd6cde5521db1269a4b182445824b479707064a14405d9a1",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.manifest_creation_cache": {
+   "id": "melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.manifest_creation_cache",
+   "label": "manifest_creation_cache",
+   "kind": "module",
+   "file": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/manifest_creation_cache.py",
+   "lineno": 1,
+   "role": "Shared cross-family manifest cache envelope for manifest-first phase-11 families.",
+   "responsibilities": [
+    "builds the shared manifest cache package envelope for manifest-first families",
+    "checks package shape for manifest-first cache payloads",
+    "dispatches lazy CreationContext reload to the owning family cache loader by family id"
+   ],
+   "owns_state": [
+    "MANIFEST_METADATA_KEY",
+    "PACKAGE_VERSION",
+    "GENERALIZED_FAMILY_ID",
+    "SOLO_FAMILY_ID",
+    "MANY_ONLY_FAMILY_ID"
+   ],
+   "phases": [
+    "runtime"
+   ]
+  }
+ },
+ "edges_out": [],
+ "edge_candidates": [],
+ "published_aliases": [],
+ "imports": {
+  "Any": "typing.Any",
+  "Dict": "typing.Dict",
+  "load_generalized_lazy": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.generalized_creation_cache.load_creation_context_lazy",
+  "load_solo_lazy": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.solo.solo_creation_cache.load_creation_context_lazy",
+  "load_many_only_lazy": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.many_only_creation_cache.load_creation_context_lazy"
+ },
+ "collapse_candidate": null,
+ "edges_authored": [
+  {
+   "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.manifest_creation_cache",
+   "to": "melder.aether.conduit.meld.creation_context.creation_context.CreationContext",
+   "relation": "creates",
+   "why": "manifest_creation_cache dispatches lazy CreationContext reload through family-specific manifest cache loaders.",
+   "cardinality": "one_to_many",
+   "strength": "hard",
+   "phase": [
+    "runtime"
+   ]
+  },
+  {
+   "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.manifest_creation_cache",
+   "to": "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation.spell_codegen_creation.SpellCodegenCreation",
+   "relation": "uses",
+   "why": "manifest_creation_cache builds package envelopes from live SpellCodegenCreation metadata and family ids.",
+   "cardinality": "one_to_one",
+   "strength": "borrowed",
+   "phase": [
+    "runtime"
+   ]
+  },
+  {
+   "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.manifest_creation_cache",
+   "to": "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation.spell_codegen_creation_cache",
+   "relation": "uses",
+   "why": "manifest_creation_cache routes lazy reload into the concrete family caches that rebuild CreationContext from manifest packages.",
+   "cardinality": "one_to_one",
+   "strength": "borrowed",
+   "phase": [
+    "runtime"
+   ]
+  },
+  {
+   "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.manifest_creation_cache",
+   "to": "melder.aether.spellbook.spell_compiler.codegen_planner.data.spell_generalized_codegen_lane_plan.SpellGeneralizedCodegenLanePlan",
+   "relation": "uses",
+   "why": "manifest_creation_cache dispatches generalized lane-plan reload through the cached phase-11 row and transient-plan surfaces on SpellGeneralizedCodegenLanePlan.",
+   "cardinality": "one_to_one",
+   "strength": "borrowed",
+   "phase": [
+    "runtime"
+   ]
+  }
+ ]
+}

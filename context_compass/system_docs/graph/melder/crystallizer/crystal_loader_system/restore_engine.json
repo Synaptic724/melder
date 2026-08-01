@@ -1,0 +1,255 @@
+{
+ "schema_version": 1,
+ "source": "src/melder/crystallizer/crystal_loader_system/restore_engine.py",
+ "source_sha256": "bd3aade6c2f0f8ad9e487b6fdc0ac31ecddf0c0c452451a460ff07d97c3320e8",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.crystallizer.crystal_loader_system.restore_engine": {
+   "id": "melder.crystallizer.crystal_loader_system.restore_engine",
+   "label": "restore_engine",
+   "kind": "module",
+   "file": "src/melder/crystallizer/crystal_loader_system/restore_engine.py",
+   "lineno": 1
+  },
+  "melder.crystallizer.crystal_loader_system.restore_engine.RestoreReport": {
+   "id": "melder.crystallizer.crystal_loader_system.restore_engine.RestoreReport",
+   "label": "RestoreReport",
+   "kind": "class",
+   "file": "src/melder/crystallizer/crystal_loader_system/restore_engine.py",
+   "lineno": 23,
+   "bases": [
+    "Cleanable"
+   ],
+   "markers": [],
+   "public_methods": [
+    "add_shortfall",
+    "cleanup",
+    "describe",
+    "map_identity",
+    "mark_complete",
+    "mark_failed",
+    "record_built",
+    "set_plan_summary",
+    "set_preflight",
+    "translate"
+   ],
+   "shape": {
+    "method_count": 10,
+    "has_bases": true,
+    "trivial": false
+   }
+  },
+  "melder.crystallizer.crystal_loader_system.restore_engine.RestoreEngine": {
+   "id": "melder.crystallizer.crystal_loader_system.restore_engine.RestoreEngine",
+   "label": "RestoreEngine",
+   "kind": "class",
+   "file": "src/melder/crystallizer/crystal_loader_system/restore_engine.py",
+   "lineno": 374,
+   "bases": [
+    "Cleanable"
+   ],
+   "markers": [],
+   "public_methods": [
+    "cleanup",
+    "restore"
+   ],
+   "shape": {
+    "method_count": 42,
+    "has_bases": true,
+    "trivial": false
+   },
+   "role": "Single-use all-or-nothing world restorer: folds a checkpoint chain and replays it through PUBLIC runtime verbs.",
+   "responsibilities": [
+    "fold: oldest-first later-wins with tombstones and custody routing; journal-without-payload is an honesty shortfall",
+    "canonical stage order: aether -> crystallizer policy (report) -> MR (report) -> nexus -> frames -> books/binds/conjure/staged/selections -> links -> clusters -> contracts",
+    "configuration rebuilds ride the reload verbs (recorded truth, never defaults)",
+    "M3: rebuilds recorded synthetic modules (register->publish->execute) before hydration",
+    "fresh identities always (old->new in the report); failure tears down in reverse order"
+   ],
+   "owns_state": [
+    "folded stores",
+    "built_stack",
+    "report"
+   ],
+   "phases": [
+    "runtime"
+   ]
+  }
+ },
+ "edges_out": [
+  {
+   "from": "melder.crystallizer.crystal_loader_system.restore_engine.RestoreReport",
+   "to_label": "Cleanable",
+   "relation": "specializes",
+   "to": "melder.utilities.general_base.cleanable.Cleanable"
+  },
+  {
+   "from": "melder.crystallizer.crystal_loader_system.restore_engine.RestoreEngine",
+   "to_label": "Cleanable",
+   "relation": "specializes",
+   "to": "melder.utilities.general_base.cleanable.Cleanable"
+  }
+ ],
+ "edge_candidates": [
+  {
+   "from": "melder.crystallizer.crystal_loader_system.restore_engine.RestoreReport",
+   "to_label": "RLock",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.crystallizer.crystal_loader_system.restore_engine.RestoreReport",
+   "to_label": "ValueError",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.crystallizer.crystal_loader_system.restore_engine.RestoreEngine",
+   "to_label": "RestoreReport",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.crystallizer.crystal_loader_system.restore_engine.RestoreEngine",
+   "to_label": "Lock",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.crystallizer.crystal_loader_system.restore_engine.RestoreEngine",
+   "to_label": "DirectedAcyclicWorkGraph",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.crystallizer.crystal_loader_system.restore_engine.RestoreEngine",
+   "to_label": "PersistenceAnalyzer",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.crystallizer.crystal_loader_system.restore_engine.RestoreEngine",
+   "to_label": "Aether",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.crystallizer.crystal_loader_system.restore_engine.RestoreEngine",
+   "to_label": "MutationResearchConfiguration",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.crystallizer.crystal_loader_system.restore_engine.RestoreEngine",
+   "to_label": "NexusConfiguration",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.crystallizer.crystal_loader_system.restore_engine.RestoreEngine",
+   "to_label": "Nexus",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.crystallizer.crystal_loader_system.restore_engine.RestoreEngine",
+   "to_label": "SpellbookConfiguration",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.crystallizer.crystal_loader_system.restore_engine.RestoreEngine",
+   "to_label": "Spellbook",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.crystallizer.crystal_loader_system.restore_engine.RestoreEngine",
+   "to_label": "ValueError",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.crystallizer.crystal_loader_system.restore_engine.RestoreEngine",
+   "to_label": "RuntimeError",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.crystallizer.crystal_loader_system.restore_engine.RestoreEngine",
+   "to_label": "AethericFrameConfiguration",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.crystallizer.crystal_loader_system.restore_engine.RestoreEngine",
+   "to_label": "SyntheticModule",
+   "relation": "creates",
+   "confidence": "candidate"
+  }
+ ],
+ "published_aliases": [],
+ "imports": {
+  "Path": "pathlib.Path",
+  "Any": "typing.Any",
+  "Dict": "typing.Dict",
+  "List": "typing.List",
+  "Optional": "typing.Optional",
+  "Set": "typing.Set",
+  "Tuple": "typing.Tuple",
+  "TYPE_CHECKING": "typing.TYPE_CHECKING",
+  "Cleanable": "melder.utilities.general_base.cleanable.Cleanable",
+  "PhaseExecutionError": "melder.utilities.custom_exceptions.phase_execution_error.PhaseExecutionError",
+  "PhaseTimeoutError": "melder.utilities.custom_exceptions.phase_timeout_error.PhaseTimeoutError",
+  "PhaseScheduler": "melder.utilities.synchronization.phase_scheduler.PhaseScheduler",
+  "DirectedAcyclicWorkGraph": "melder.aether.spellbook.spell_compiler.dag.directed_acyclic_work_graph.DirectedAcyclicWorkGraph",
+  "PersistenceAnalyzer": "melder.crystallizer.crystal_analysis.preflight.persistence_analyzer.PersistenceAnalyzer",
+  "Aether": "melder.aether.aether.Aether",
+  "AetherConfiguration": "melder.aether.aether_configuration.AetherConfiguration",
+  "MutationResearchConfiguration": "melder.mutation_research.mutation_configuration.MutationResearchConfiguration",
+  "NexusConfiguration": "melder.nexus.configuration.nexus_configuration.NexusConfiguration",
+  "Nexus": "melder.nexus.nexus.Nexus",
+  "AethericFrameConfiguration": "melder.aether.aetheric_frame.aetheric_frame_configuration.AethericFrameConfiguration",
+  "SpellbookConfiguration": "melder.aether.spellbook.configuration.spellbook_configuration.SpellbookConfiguration",
+  "Spellbook": "melder.aether.spellbook.spellbook.Spellbook",
+  "SyntheticModule": "melder.crystallizer.synthetic_module.SyntheticModule",
+  "rebuild_absent_user_modules": "melder.crystallizer.crystal_loader_system.user_world_rebuild.rebuild_absent_user_modules",
+  "SystemState": "melder.aether.spellbook.configuration.system_state.SystemState"
+ },
+ "collapse_candidate": null,
+ "edges_authored": [
+  {
+   "from": "melder.crystallizer.crystal_loader_system.restore_engine.RestoreEngine",
+   "to": "melder.crystallizer.synthetic_module.SyntheticModule",
+   "relation": "creates",
+   "why": "Loader chain M3: recorded synthetic sources rebuild as live modules before target hydration.",
+   "cardinality": "one_to_many",
+   "strength": "hard",
+   "phase": [
+    "runtime"
+   ]
+  },
+  {
+   "from": "melder.crystallizer.crystal_loader_system.restore_engine.RestoreEngine",
+   "to": "melder.crystallizer.crystal_analysis.preflight",
+   "relation": "uses",
+   "why": "The folded-bundle preflight runs inside restore() before any replay (authoritative admission truth).",
+   "cardinality": "one_to_one",
+   "strength": "soft",
+   "phase": [
+    "runtime"
+   ]
+  },
+  {
+   "from": "melder.crystallizer.crystal_loader_system.restore_engine.RestoreEngine",
+   "to": "melder.crystallizer.crystal_loader_system.user_world_rebuild",
+   "relation": "delegates_to",
+   "why": "_rebuild_user_world delegates the S2 rebuild mechanics via callbacks so the rebuild laws live in exactly one place.",
+   "cardinality": "one_to_one",
+   "strength": "borrowed",
+   "phase": [
+    "runtime"
+   ]
+  }
+ ]
+}

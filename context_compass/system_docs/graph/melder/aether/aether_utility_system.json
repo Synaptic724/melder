@@ -1,0 +1,120 @@
+{
+ "schema_version": 1,
+ "source": "src/melder/aether/aether_utility_system.py",
+ "source_sha256": "6d2ff6dda5d4b3c17e6753fd617a726da495844942cc6b05dc66db7021961574",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.aether.aether_utility_system": {
+   "id": "melder.aether.aether_utility_system",
+   "label": "aether_utility_system",
+   "kind": "module",
+   "file": "src/melder/aether/aether_utility_system.py",
+   "lineno": 1
+  },
+  "melder.aether.aether_utility_system.AetherUtilitySystem": {
+   "id": "melder.aether.aether_utility_system.AetherUtilitySystem",
+   "label": "AetherUtilitySystem",
+   "kind": "class",
+   "file": "src/melder/aether/aether_utility_system.py",
+   "lineno": 10,
+   "bases": [
+    "Cleanable"
+   ],
+   "markers": [],
+   "public_methods": [
+    "cleanup",
+    "clear_channel_logger_resolver",
+    "clear_default_logger",
+    "emit_root_twin_when_recording",
+    "has_channel_logger_resolver",
+    "has_default_logger",
+    "is_channel_logger_activation_enabled",
+    "register_channel_logger_resolver",
+    "register_default_logger",
+    "resolve_channel_logger",
+    "resolve_safe_logger",
+    "set_channel_logger_activation_enabled"
+   ],
+   "shape": {
+    "method_count": 13,
+    "has_bases": true,
+    "trivial": false
+   },
+   "role": "Process-wide utility and logger provider host.",
+   "responsibilities": [
+    "stores the channel-logger resolver",
+    "stores the default logger fallback",
+    "resolves SafeLogger-compatible providers for runtime objects"
+   ],
+   "owns_state": [
+    "_channel_logger_resolver",
+    "_default_logger"
+   ],
+   "phases": [
+    "init",
+    "runtime",
+    "cleanup"
+   ]
+  }
+ },
+ "edges_out": [
+  {
+   "from": "melder.aether.aether_utility_system.AetherUtilitySystem",
+   "to_label": "Cleanable",
+   "relation": "specializes",
+   "to": "melder.utilities.general_base.cleanable.Cleanable"
+  }
+ ],
+ "edge_candidates": [
+  {
+   "from": "melder.aether.aether_utility_system.AetherUtilitySystem",
+   "to_label": "RLock",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.aether.aether_utility_system.AetherUtilitySystem",
+   "to_label": "SafeLogger",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.aether.aether_utility_system.AetherUtilitySystem",
+   "to_label": "TypeError",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.aether.aether_utility_system.AetherUtilitySystem",
+   "to_label": "Crystallizer",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.aether.aether_utility_system.AetherUtilitySystem",
+   "to_label": "AetherCrystal",
+   "relation": "creates",
+   "confidence": "candidate"
+  }
+ ],
+ "published_aliases": [],
+ "imports": {
+  "Any": "typing.Any",
+  "Callable": "typing.Callable",
+  "Dict": "typing.Dict",
+  "Iterable": "typing.Iterable",
+  "Optional": "typing.Optional",
+  "Union": "typing.Union",
+  "ClassVar": "typing.ClassVar",
+  "Cleanable": "melder.utilities.general_base.cleanable.Cleanable",
+  "IChannelLogger": "melder.utilities.interfaces.ichannellogger.IChannelLogger",
+  "SafeLogger": "melder.utilities.logger.safe_logger.SafeLogger",
+  "Crystallizer": "melder.crystallizer.crystallizer.Crystallizer",
+  "AetherCrystal": "melder.crystallizer.crystals.aether_crystal.AetherCrystal"
+ },
+ "collapse_candidate": {
+  "module": "melder.aether.aether_utility_system",
+  "class": "melder.aether.aether_utility_system.AetherUtilitySystem",
+  "label": "AetherUtilitySystem"
+ }
+}

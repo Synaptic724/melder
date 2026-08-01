@@ -1,0 +1,35 @@
+{
+ "schema_version": 1,
+ "source": "src/melder/utilities/caching_system/asset_cache.py",
+ "source_sha256": "d3562f6f5f5a9a839b0b1341d8cfdfea5ac1fa537c9daaac380251f9002a6c8a",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.utilities.caching_system.asset_cache": {
+   "id": "melder.utilities.caching_system.asset_cache",
+   "label": "asset_cache",
+   "kind": "module",
+   "file": "src/melder/utilities/caching_system/asset_cache.py",
+   "lineno": 1
+  },
+  "melder.utilities.caching_system.asset_cache.AssetCachePolicy": {
+   "id": "melder.utilities.caching_system.asset_cache.AssetCachePolicy",
+   "label": "AssetCachePolicy",
+   "kind": "class",
+   "file": "src/melder/utilities/caching_system/asset_cache.py",
+   "lineno": 85,
+   "bases": [],
+   "markers": [],
+   "public_methods": [],
+   "shape": {
+    "method_count": 0,
+    "has_bases": false,
+    "trivial": true
+   }
+  }
+ },
+ "edges_out": [],
+ "edge_candidates": [],
+ "published_aliases": [],
+ "imports": {},
+ "collapse_candidate": null
+}

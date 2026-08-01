@@ -1,0 +1,58 @@
+{
+ "schema_version": 1,
+ "source": "src/melder/utilities/custom_exceptions/phase_execution_error.py",
+ "source_sha256": "c3008b3a2fafa402399eca7663ba41e0b990122a024d3cb9996a835090879950",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.utilities.custom_exceptions.phase_execution_error": {
+   "id": "melder.utilities.custom_exceptions.phase_execution_error",
+   "label": "phase_execution_error",
+   "kind": "module",
+   "file": "src/melder/utilities/custom_exceptions/phase_execution_error.py",
+   "lineno": 1
+  },
+  "melder.utilities.custom_exceptions.phase_execution_error.PhaseExecutionError": {
+   "id": "melder.utilities.custom_exceptions.phase_execution_error.PhaseExecutionError",
+   "label": "PhaseExecutionError",
+   "kind": "class",
+   "file": "src/melder/utilities/custom_exceptions/phase_execution_error.py",
+   "lineno": 7,
+   "bases": [
+    "PhaseSchedulerError"
+   ],
+   "markers": [],
+   "public_methods": [],
+   "shape": {
+    "method_count": 0,
+    "has_bases": true,
+    "trivial": false
+   },
+   "role": "Exception raised when a phase unit fails during execution.",
+   "responsibilities": [
+    "specializes PhaseSchedulerError for unit execution failures"
+   ],
+   "phases": [
+    "runtime"
+   ]
+  }
+ },
+ "edges_out": [
+  {
+   "from": "melder.utilities.custom_exceptions.phase_execution_error.PhaseExecutionError",
+   "to_label": "PhaseSchedulerError",
+   "relation": "specializes",
+   "to": "melder.utilities.custom_exceptions.phase_scheduler_error.PhaseSchedulerError"
+  }
+ ],
+ "edge_candidates": [],
+ "published_aliases": [],
+ "imports": {
+  "List": "typing.List",
+  "PhaseSchedulerError": "melder.utilities.custom_exceptions.phase_scheduler_error.PhaseSchedulerError"
+ },
+ "collapse_candidate": {
+  "module": "melder.utilities.custom_exceptions.phase_execution_error",
+  "class": "melder.utilities.custom_exceptions.phase_execution_error.PhaseExecutionError",
+  "label": "PhaseExecutionError"
+ }
+}

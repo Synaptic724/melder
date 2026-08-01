@@ -1,0 +1,119 @@
+{
+ "schema_version": 1,
+ "source": "src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/cluster_link_transaction_strategy.py",
+ "source_sha256": "5ee7c19dea74c2673e4a7d6c2efb3a39e7d0056067e491a78f829cda8262054d",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.cluster_link_transaction_strategy": {
+   "id": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.cluster_link_transaction_strategy",
+   "label": "cluster_link_transaction_strategy",
+   "kind": "module",
+   "file": "src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/cluster_link_transaction_strategy.py",
+   "lineno": 1
+  },
+  "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.cluster_link_transaction_strategy.ClusterLinkTransactionStrategy": {
+   "id": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.cluster_link_transaction_strategy.ClusterLinkTransactionStrategy",
+   "label": "ClusterLinkTransactionStrategy",
+   "kind": "class",
+   "file": "src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/cluster_link_transaction_strategy.py",
+   "lineno": 19,
+   "bases": [
+    "TransactionStrategy"
+   ],
+   "markers": [],
+   "public_methods": [
+    "build_start_plan",
+    "on_end",
+    "on_start"
+   ],
+   "shape": {
+    "method_count": 6,
+    "has_bases": true,
+    "trivial": false
+   },
+   "role": "Transaction strategy for cluster-owned share and unshare requests.",
+   "responsibilities": [
+    "resolves participant conduits and owning cluster identity for cluster-link requests",
+    "derives conduit, conduit-ward, spellbook, and cluster scopes for admission",
+    "normalizes affected identities and capabilities for cluster-driven contract mutation"
+   ],
+   "phases": [
+    "runtime"
+   ]
+  }
+ },
+ "edges_out": [
+  {
+   "from": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.cluster_link_transaction_strategy.ClusterLinkTransactionStrategy",
+   "to_label": "TransactionStrategy",
+   "relation": "specializes",
+   "to": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.transaction_strategy.TransactionStrategy"
+  }
+ ],
+ "edge_candidates": [
+  {
+   "from": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.cluster_link_transaction_strategy.ClusterLinkTransactionStrategy",
+   "to_label": "RuntimeError",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.cluster_link_transaction_strategy.ClusterLinkTransactionStrategy",
+   "to_label": "TypeError",
+   "relation": "creates",
+   "confidence": "candidate"
+  }
+ ],
+ "published_aliases": [],
+ "imports": {
+  "TYPE_CHECKING": "typing.TYPE_CHECKING",
+  "Dict": "typing.Dict",
+  "Set": "typing.Set",
+  "Tuple": "typing.Tuple",
+  "DevopsInformationRegistry": "melder.aether.aetheric_frame.dev_ops.devops_information_registry.DevopsInformationRegistry",
+  "TransactionStrategy": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.transaction_strategy.TransactionStrategy",
+  "ClaimMode": "melder.aether.aetheric_frame.dev_ops.change_control_manager.embargo_manager.embargo_manager.ClaimMode",
+  "ChangeControlTransactionManager": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.transaction_manager.ChangeControlTransactionManager",
+  "DevopsIdentity": "melder.aether.aetheric_frame.dev_ops.devops_identity.DevopsIdentity"
+ },
+ "collapse_candidate": {
+  "module": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.cluster_link_transaction_strategy",
+  "class": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.cluster_link_transaction_strategy.ClusterLinkTransactionStrategy",
+  "label": "ClusterLinkTransactionStrategy"
+ },
+ "edges_authored": [
+  {
+   "from": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.cluster_link_transaction_strategy.ClusterLinkTransactionStrategy",
+   "to": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.transaction_strategy.TransactionStrategy",
+   "relation": "specializes",
+   "why": "ClusterLinkTransactionStrategy specializes the shared transaction strategy contract for cluster-owned share/unshare requests.",
+   "cardinality": "one_to_one",
+   "strength": "hard",
+   "phase": [
+    "runtime"
+   ]
+  },
+  {
+   "from": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.cluster_link_transaction_strategy.ClusterLinkTransactionStrategy",
+   "to": "melder.aether.aetheric_frame.dev_ops.devops_identity.DevopsIdentity",
+   "relation": "uses",
+   "why": "ClusterLinkTransactionStrategy reads cluster, conduit, and spellbook DevopsIdentity data while building cluster-link admission scopes.",
+   "cardinality": "one_to_many",
+   "strength": "borrowed",
+   "phase": [
+    "runtime"
+   ]
+  },
+  {
+   "from": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.cluster_link_transaction_strategy.ClusterLinkTransactionStrategy",
+   "to": "melder.aether.aetheric_frame.dev_ops.devops_information_registry.DevopsInformationRegistry",
+   "relation": "borrows",
+   "why": "ClusterLinkTransactionStrategy borrows the frame registry to resolve cluster identities, participant conduits, and owning spellbooks.",
+   "cardinality": "one_to_one",
+   "strength": "borrowed",
+   "phase": [
+    "runtime"
+   ]
+  }
+ ]
+}

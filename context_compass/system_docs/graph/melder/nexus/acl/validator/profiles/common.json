@@ -1,0 +1,31 @@
+{
+ "schema_version": 1,
+ "source": "src/melder/nexus/acl/validator/profiles/common.py",
+ "source_sha256": "e3e015d54d01ae578cfec9b095179e4e43d6d55ad0aaa833df616b1d394455c4",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.nexus.acl.validator.profiles.common": {
+   "id": "melder.nexus.acl.validator.profiles.common",
+   "label": "common",
+   "kind": "module",
+   "file": "src/melder/nexus/acl/validator/profiles/common.py",
+   "lineno": 1,
+   "role": "Shared no-op helper module for ACL profile validators.",
+   "responsibilities": [
+    "provides one validator-side profile strategy or helper surface"
+   ],
+   "phases": [
+    "validation",
+    "runtime"
+   ]
+  }
+ },
+ "edges_out": [],
+ "edge_candidates": [],
+ "published_aliases": [],
+ "imports": {
+  "Any": "typing.Any",
+  "FrameDescriptor": "melder.nexus.frame_descriptor.frame_descriptor.FrameDescriptor"
+ },
+ "collapse_candidate": null
+}

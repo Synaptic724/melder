@@ -1,0 +1,97 @@
+{
+ "schema_version": 1,
+ "source": "src/melder/utilities/synchronization/load_gate.py",
+ "source_sha256": "6981e7c5b1f45e30cd55be4c446ce89d1c83e4a512de609c72376a13dc08970a",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.utilities.synchronization.load_gate": {
+   "id": "melder.utilities.synchronization.load_gate",
+   "label": "load_gate",
+   "kind": "module",
+   "file": "src/melder/utilities/synchronization/load_gate.py",
+   "lineno": 1
+  },
+  "melder.utilities.synchronization.load_gate.LoadGate": {
+   "id": "melder.utilities.synchronization.load_gate.LoadGate",
+   "label": "LoadGate",
+   "kind": "class",
+   "file": "src/melder/utilities/synchronization/load_gate.py",
+   "lineno": 8,
+   "bases": [
+    "Cleanable"
+   ],
+   "markers": [],
+   "public_methods": [
+    "acquire",
+    "cleanup",
+    "describe",
+    "enroll_worker",
+    "is_held",
+    "release",
+    "wait_for_passage",
+    "withdraw_worker"
+   ],
+   "shape": {
+    "method_count": 8,
+    "has_bases": true,
+    "trivial": false
+   },
+   "role": "Exclusive system-wide load-authority gate (holder-thread passthrough; teach-grade timeout; tombstoned teardown).",
+   "responsibilities": [
+    "grants one crystallizer load exclusive authority",
+    "parks foreign new-root transaction starts until release"
+   ],
+   "owns_state": [
+    "_condition",
+    "_holder_thread_id",
+    "_holder_label"
+   ],
+   "phases": [
+    "runtime"
+   ]
+  }
+ },
+ "edges_out": [
+  {
+   "from": "melder.utilities.synchronization.load_gate.LoadGate",
+   "to_label": "Cleanable",
+   "relation": "specializes",
+   "to": "melder.utilities.general_base.cleanable.Cleanable"
+  }
+ ],
+ "edge_candidates": [
+  {
+   "from": "melder.utilities.synchronization.load_gate.LoadGate",
+   "to_label": "Condition",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.utilities.synchronization.load_gate.LoadGate",
+   "to_label": "ValueError",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.utilities.synchronization.load_gate.LoadGate",
+   "to_label": "RuntimeError",
+   "relation": "creates",
+   "confidence": "candidate"
+  }
+ ],
+ "published_aliases": [],
+ "imports": {
+  "ClassVar": "typing.ClassVar",
+  "Dict": "typing.Dict",
+  "List": "typing.List",
+  "Optional": "typing.Optional",
+  "Set": "typing.Set",
+  "Union": "typing.Union",
+  "Cleanable": "melder.utilities.general_base.cleanable.Cleanable"
+ },
+ "collapse_candidate": {
+  "module": "melder.utilities.synchronization.load_gate",
+  "class": "melder.utilities.synchronization.load_gate.LoadGate",
+  "label": "LoadGate"
+ }
+}

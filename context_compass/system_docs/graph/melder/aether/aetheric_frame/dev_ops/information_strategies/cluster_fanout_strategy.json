@@ -1,0 +1,98 @@
+{
+ "schema_version": 1,
+ "source": "src/melder/aether/aetheric_frame/dev_ops/information_strategies/cluster_fanout_strategy.py",
+ "source_sha256": "43177f1316467688645a09a318199fd148f7576fda2ee13372082109542a7789",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.aether.aetheric_frame.dev_ops.information_strategies.cluster_fanout_strategy": {
+   "id": "melder.aether.aetheric_frame.dev_ops.information_strategies.cluster_fanout_strategy",
+   "label": "cluster_fanout_strategy",
+   "kind": "module",
+   "file": "src/melder/aether/aetheric_frame/dev_ops/information_strategies/cluster_fanout_strategy.py",
+   "lineno": 1
+  },
+  "melder.aether.aetheric_frame.dev_ops.information_strategies.cluster_fanout_strategy.ClusterFanoutStrategy": {
+   "id": "melder.aether.aetheric_frame.dev_ops.information_strategies.cluster_fanout_strategy.ClusterFanoutStrategy",
+   "label": "ClusterFanoutStrategy",
+   "kind": "class",
+   "file": "src/melder/aether/aetheric_frame/dev_ops/information_strategies/cluster_fanout_strategy.py",
+   "lineno": 16,
+   "bases": [
+    "DevopsInformationStrategy"
+   ],
+   "markers": [],
+   "public_methods": [
+    "execute"
+   ],
+   "shape": {
+    "method_count": 1,
+    "has_bases": true,
+    "trivial": false
+   },
+   "role": "Registry-backed dev-ops information strategy for cluster membership fan-out views.",
+   "responsibilities": [
+    "computes sibling or member conduit fan-out from mirrored cluster membership maps",
+    "returns detached conduit and cluster id sets without touching live runtime objects",
+    "adds freshness views for the touched conduit regions when requested"
+   ],
+   "phases": [
+    "runtime"
+   ]
+  }
+ },
+ "edges_out": [
+  {
+   "from": "melder.aether.aetheric_frame.dev_ops.information_strategies.cluster_fanout_strategy.ClusterFanoutStrategy",
+   "to_label": "DevopsInformationStrategy",
+   "relation": "specializes",
+   "to": "melder.aether.aetheric_frame.dev_ops.devops_information_strategy.DevopsInformationStrategy"
+  }
+ ],
+ "edge_candidates": [
+  {
+   "from": "melder.aether.aetheric_frame.dev_ops.information_strategies.cluster_fanout_strategy.ClusterFanoutStrategy",
+   "to_label": "ValueError",
+   "relation": "creates",
+   "confidence": "candidate"
+  }
+ ],
+ "published_aliases": [],
+ "imports": {
+  "TYPE_CHECKING": "typing.TYPE_CHECKING",
+  "Dict": "typing.Dict",
+  "List": "typing.List",
+  "Set": "typing.Set",
+  "DevopsInformationStrategy": "melder.aether.aetheric_frame.dev_ops.devops_information_strategy.DevopsInformationStrategy",
+  "InformationFreshnessInspector": "melder.aether.aetheric_frame.dev_ops.information_strategies.information_strategy_support.InformationFreshnessInspector",
+  "DevopsInformationRegistry": "melder.aether.aetheric_frame.dev_ops.devops_information_registry.DevopsInformationRegistry"
+ },
+ "collapse_candidate": {
+  "module": "melder.aether.aetheric_frame.dev_ops.information_strategies.cluster_fanout_strategy",
+  "class": "melder.aether.aetheric_frame.dev_ops.information_strategies.cluster_fanout_strategy.ClusterFanoutStrategy",
+  "label": "ClusterFanoutStrategy"
+ },
+ "edges_authored": [
+  {
+   "from": "melder.aether.aetheric_frame.dev_ops.information_strategies.cluster_fanout_strategy.ClusterFanoutStrategy",
+   "to": "melder.aether.aetheric_frame.dev_ops.devops_information_strategy.DevopsInformationStrategy",
+   "relation": "specializes",
+   "why": "ClusterFanoutStrategy specializes the shared dev-ops information strategy contract.",
+   "cardinality": "one_to_one",
+   "strength": "hard",
+   "phase": [
+    "runtime"
+   ]
+  },
+  {
+   "from": "melder.aether.aetheric_frame.dev_ops.information_strategies.cluster_fanout_strategy.ClusterFanoutStrategy",
+   "to": "melder.aether.aetheric_frame.dev_ops.information_strategies.information_strategy_support.InformationFreshnessInspector",
+   "relation": "uses",
+   "why": "ClusterFanoutStrategy uses InformationFreshnessInspector to report freshness for touched conduit regions.",
+   "cardinality": "one_to_one",
+   "strength": "borrowed",
+   "phase": [
+    "runtime"
+   ]
+  }
+ ]
+}

@@ -1,0 +1,20 @@
+{
+ "schema_version": 1,
+ "source": "src/melder/_build_assets/_system_documents/manifest/system_documents_manifest.py",
+ "source_sha256": "f4b858f3c614151960963b7da767aa82aba96ae21258369f0aaa551d93d91965",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder._build_assets._system_documents.manifest.system_documents_manifest": {
+   "id": "melder._build_assets._system_documents.manifest.system_documents_manifest",
+   "label": "system_documents_manifest",
+   "kind": "module",
+   "file": "src/melder/_build_assets/_system_documents/manifest/system_documents_manifest.py",
+   "lineno": 1
+  }
+ },
+ "edges_out": [],
+ "edge_candidates": [],
+ "published_aliases": [],
+ "imports": {},
+ "collapse_candidate": null
+}

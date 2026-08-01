@@ -1,0 +1,129 @@
+{
+ "schema_version": 1,
+ "source": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/steps/generalized_no_overrides_codegen_creation_step.py",
+ "source_sha256": "27f86bc755a0ecffac6d94ad584a89e5b8abbd2c9cede8e9c940c41e1fbfbc81",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.steps.generalized_no_overrides_codegen_creation_step": {
+   "id": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.steps.generalized_no_overrides_codegen_creation_step",
+   "label": "generalized_no_overrides_codegen_creation_step",
+   "kind": "module",
+   "file": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/steps/generalized_no_overrides_codegen_creation_step.py",
+   "lineno": 1
+  },
+  "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.steps.generalized_no_overrides_codegen_creation_step.GeneralizedNoOverridesCodegenCreationStep": {
+   "id": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.steps.generalized_no_overrides_codegen_creation_step.GeneralizedNoOverridesCodegenCreationStep",
+   "label": "GeneralizedNoOverridesCodegenCreationStep",
+   "kind": "class",
+   "file": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/steps/generalized_no_overrides_codegen_creation_step.py",
+   "lineno": 15,
+   "bases": [
+    "CodegenCreationFamilyStep"
+   ],
+   "markers": [],
+   "public_methods": [
+    "apply",
+    "step_id"
+   ],
+   "shape": {
+    "method_count": 3,
+    "has_bases": true,
+    "trivial": false
+   },
+   "role": "Generalized family no-overrides executor build step.",
+   "responsibilities": [
+    "compiles the spell-static no-overrides executor from generalized lane truth",
+    "stores the compiled no-overrides executor and code object on family state and final output metadata",
+    "derives a deterministic no-overrides executor signature from lane rows and transient schema"
+   ],
+   "phases": [
+    "runtime"
+   ]
+  }
+ },
+ "edges_out": [
+  {
+   "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.steps.generalized_no_overrides_codegen_creation_step.GeneralizedNoOverridesCodegenCreationStep",
+   "to_label": "CodegenCreationFamilyStep",
+   "relation": "specializes",
+   "to": "melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.codegen_creation_family_step.CodegenCreationFamilyStep"
+  }
+ ],
+ "edge_candidates": [
+  {
+   "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.steps.generalized_no_overrides_codegen_creation_step.GeneralizedNoOverridesCodegenCreationStep",
+   "to_label": "RuntimeError",
+   "relation": "creates",
+   "confidence": "candidate"
+  }
+ ],
+ "published_aliases": [],
+ "imports": {
+  "compile_no_overrides_codegen_creation_executor_from_plan": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_no_overrides_codegen_creation_compiler.compile_no_overrides_codegen_creation_executor_from_plan",
+  "SharedCompilerExecutions": "melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.codegen_creation_schema_helpers.CodegenCreationSchemaHelpers",
+  "GeneralizedCodegenCreationState": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.generalized_codegen_creation_state.GeneralizedCodegenCreationState",
+  "CodegenCreationFamilyStep": "melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.codegen_creation_family_step.CodegenCreationFamilyStep"
+ },
+ "collapse_candidate": {
+  "module": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.steps.generalized_no_overrides_codegen_creation_step",
+  "class": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.steps.generalized_no_overrides_codegen_creation_step.GeneralizedNoOverridesCodegenCreationStep",
+  "label": "GeneralizedNoOverridesCodegenCreationStep"
+ },
+ "edges_authored": [
+  {
+   "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.steps.generalized_no_overrides_codegen_creation_step.GeneralizedNoOverridesCodegenCreationStep",
+   "to": "melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.codegen_creation_family_step.CodegenCreationFamilyStep",
+   "relation": "specializes",
+   "why": "GeneralizedNoOverridesCodegenCreationStep specializes the shared family-step contract.",
+   "cardinality": "one_to_one",
+   "strength": "hard",
+   "phase": [
+    "runtime"
+   ]
+  },
+  {
+   "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.steps.generalized_no_overrides_codegen_creation_step.GeneralizedNoOverridesCodegenCreationStep",
+   "to": "melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.codegen_creation_schema_helpers.CodegenCreationSchemaHelpers",
+   "relation": "uses",
+   "why": "GeneralizedNoOverridesCodegenCreationStep uses shared schema helpers to build transient schema and deterministic executor signatures.",
+   "cardinality": "one_to_one",
+   "strength": "borrowed",
+   "phase": [
+    "runtime"
+   ]
+  },
+  {
+   "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.steps.generalized_no_overrides_codegen_creation_step.GeneralizedNoOverridesCodegenCreationStep",
+   "to": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_no_overrides_codegen_creation_compiler",
+   "relation": "uses",
+   "why": "GeneralizedNoOverridesCodegenCreationStep delegates generalized no-overrides executor compilation from plan truth to generalized_no_overrides_codegen_creation_compiler.",
+   "cardinality": "one_to_one",
+   "strength": "borrowed",
+   "phase": [
+    "runtime"
+   ]
+  },
+  {
+   "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.steps.generalized_no_overrides_codegen_creation_step.GeneralizedNoOverridesCodegenCreationStep",
+   "to": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.generalized_codegen_creation_state.GeneralizedCodegenCreationState",
+   "relation": "uses",
+   "why": "GeneralizedNoOverridesCodegenCreationStep mutates the family-local generalized state while publishing the no-overrides executor.",
+   "cardinality": "one_to_one",
+   "strength": "borrowed",
+   "phase": [
+    "runtime"
+   ]
+  },
+  {
+   "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.steps.generalized_no_overrides_codegen_creation_step.GeneralizedNoOverridesCodegenCreationStep",
+   "to": "melder.aether.spellbook.spell_compiler.codegen_planner.data.spell_generalized_codegen_lane_plan.SpellGeneralizedCodegenLanePlan",
+   "relation": "uses",
+   "why": "GeneralizedNoOverridesCodegenCreationStep reads SpellGeneralizedCodegenLanePlan fast-transient payloads and ordered steps when compiling generalized no-overrides executors.",
+   "cardinality": "one_to_one",
+   "strength": "borrowed",
+   "phase": [
+    "runtime"
+   ]
+  }
+ ]
+}

@@ -1,0 +1,145 @@
+{
+ "schema_version": 1,
+ "source": "src/melder/nexus/acl/validator/frame_acl_validator.py",
+ "source_sha256": "787ba58b3298d389728dd61d49f4acf7b2260c3b20777f7e257773b07bd9eeb6",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.nexus.acl.validator.frame_acl_validator": {
+   "id": "melder.nexus.acl.validator.frame_acl_validator",
+   "label": "frame_acl_validator",
+   "kind": "module",
+   "file": "src/melder/nexus/acl/validator/frame_acl_validator.py",
+   "lineno": 1
+  },
+  "melder.nexus.acl.validator.frame_acl_validator.FrameACLValidator": {
+   "id": "melder.nexus.acl.validator.frame_acl_validator.FrameACLValidator",
+   "label": "FrameACLValidator",
+   "kind": "class",
+   "file": "src/melder/nexus/acl/validator/frame_acl_validator.py",
+   "lineno": 61,
+   "bases": [
+    "Cleanable"
+   ],
+   "markers": [],
+   "public_methods": [
+    "cleanup",
+    "frame_name",
+    "last_validated_configuration_id",
+    "validate_configuration",
+    "validate_configuration_against_descriptor"
+   ],
+   "shape": {
+    "method_count": 32,
+    "has_bases": true,
+    "trivial": false
+   },
+   "role": "Frame-scoped ACL validator against descriptor truth.",
+   "responsibilities": [
+    "validates typed ACL configuration for one frame",
+    "checks descriptor payload contracts against ACL requirements",
+    "validates selector-aware spell rules against published descriptor records"
+   ],
+   "owns_state": [
+    "_frame_name",
+    "_profile_builder",
+    "_last_validated_configuration_id"
+   ],
+   "phases": [
+    "validation",
+    "refresh",
+    "cleanup"
+   ]
+  }
+ },
+ "edges_out": [
+  {
+   "from": "melder.nexus.acl.validator.frame_acl_validator.FrameACLValidator",
+   "to_label": "Cleanable",
+   "relation": "specializes",
+   "to": "melder.utilities.general_base.cleanable.Cleanable"
+  }
+ ],
+ "edge_candidates": [
+  {
+   "from": "melder.nexus.acl.validator.frame_acl_validator.FrameACLValidator",
+   "to_label": "RLock",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.nexus.acl.validator.frame_acl_validator.FrameACLValidator",
+   "to_label": "ValueError",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.nexus.acl.validator.frame_acl_validator.FrameACLValidator",
+   "to_label": "FrameACLProfileBuilder",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.nexus.acl.validator.frame_acl_validator.FrameACLValidator",
+   "to_label": "TypeError",
+   "relation": "creates",
+   "confidence": "candidate"
+  }
+ ],
+ "published_aliases": [],
+ "imports": {
+  "Dict": "typing.Dict",
+  "Optional": "typing.Optional",
+  "Set": "typing.Set",
+  "Tuple": "typing.Tuple",
+  "FrameACLProfileBuilder": "melder.nexus.acl.configurations.profiles.builder.frame_acl_profile_builder.FrameACLProfileBuilder",
+  "FrameACLCodegenProfile": "melder.nexus.acl.configurations.profiles.codegen.frame_acl_codegen_profile.FrameACLCodegenProfile",
+  "FrameACLCommandProfile": "melder.nexus.acl.configurations.profiles.command.frame_acl_command_profile.FrameACLCommandProfile",
+  "FrameDescriptor": "melder.nexus.frame_descriptor.frame_descriptor.FrameDescriptor",
+  "Cleanable": "melder.utilities.general_base.cleanable.Cleanable",
+  "FrameACLViewConfiguration": "melder.nexus.acl.configurations.frame_acl_view_configuration.FrameACLViewConfiguration",
+  "FrameACLViewProfile": "melder.nexus.acl.configurations.profiles.view.frame_acl_view_profile.FrameACLViewProfile",
+  "validate_noop_profile_configuration": "melder.nexus.acl.validator.profiles.common.validate_noop_profile_configuration",
+  "validate_precision_codegen_profile_configuration": "melder.nexus.acl.validator.profiles.codegen.precision_strategy.validate_profile_configuration",
+  "_SAFE_CODEGEN_FORBIDDEN_OVERRIDES": "melder.nexus.acl.validator.profiles.codegen.safe_strategy._SAFE_CODEGEN_FORBIDDEN_OVERRIDES",
+  "validate_safe_codegen_profile_configuration": "melder.nexus.acl.validator.profiles.codegen.safe_strategy.validate_profile_configuration",
+  "validate_precision_command_profile_configuration": "melder.nexus.acl.validator.profiles.command.precision_strategy.validate_profile_configuration",
+  "validate_safe_command_profile_configuration": "melder.nexus.acl.validator.profiles.command.safe_strategy.validate_profile_configuration",
+  "validate_precision_view_profile_configuration": "melder.nexus.acl.validator.profiles.view.precision_strategy.validate_profile_configuration",
+  "_SAFE_VIEW_FORBIDDEN_OVERRIDES": "melder.nexus.acl.validator.profiles.view.safe_strategy._SAFE_VIEW_FORBIDDEN_OVERRIDES",
+  "validate_safe_view_profile_configuration": "melder.nexus.acl.validator.profiles.view.safe_strategy.validate_profile_configuration",
+  "SpellInputUtils": "melder.utilities.helpers.general_helpers.SpellInputUtils",
+  "IDBuilder": "melder.utilities.helpers.id_builder.IDBuilder",
+  "FrameACLCommandConfiguration": "melder.nexus.acl.configurations.frame_acl_command_configuration.FrameACLCommandConfiguration",
+  "FrameACLCodegenConfiguration": "melder.nexus.acl.configurations.frame_acl_codegen_configuration.FrameACLCodegenConfiguration",
+  "FrameACLConfiguration": "melder.nexus.acl.frame_acl_configuration.FrameACLConfiguration",
+  "FrameACLRule": "melder.nexus.acl.configurations.profiles.rules.frame_acl_rule.FrameACLRule",
+  "FrameACLRuleSet": "melder.nexus.acl.configurations.profiles.rules.frame_acl_ruleset.FrameACLRuleSet"
+ },
+ "collapse_candidate": null,
+ "edges_authored": [
+  {
+   "from": "melder.nexus.acl.validator.frame_acl_validator.FrameACLValidator",
+   "to": "melder.nexus.acl.frame_acl_configuration.FrameACLConfiguration",
+   "relation": "validates",
+   "why": "FrameACLValidator validates a typed ACL bundle for the frame.",
+   "cardinality": "one_to_many",
+   "strength": "hard",
+   "phase": [
+    "validation",
+    "refresh"
+   ]
+  },
+  {
+   "from": "melder.nexus.acl.validator.frame_acl_validator.FrameACLValidator",
+   "to": "melder.nexus.frame_descriptor.frame_descriptor.FrameDescriptor",
+   "relation": "validates",
+   "why": "FrameACLValidator validates descriptor record contracts and selector rules against descriptor truth.",
+   "cardinality": "one_to_one",
+   "strength": "hard",
+   "phase": [
+    "validation",
+    "refresh"
+   ]
+  }
+ ]
+}

@@ -1,0 +1,25 @@
+{
+ "schema_version": 1,
+ "source": "src/melder/_build_assets/_system_documents/system_documents.py",
+ "source_sha256": "99d0fbf752220491a20489c73aa5cc5014200f9ee36161e1f1472b05c316356e",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder._build_assets._system_documents.system_documents": {
+   "id": "melder._build_assets._system_documents.system_documents",
+   "label": "system_documents",
+   "kind": "module",
+   "file": "src/melder/_build_assets/_system_documents/system_documents.py",
+   "lineno": 1
+  }
+ },
+ "edges_out": [],
+ "edge_candidates": [],
+ "published_aliases": [],
+ "imports": {
+  "Dict": "typing.Dict",
+  "Tuple": "typing.Tuple",
+  "_manifest": "melder._build_assets._system_documents.manifest.system_documents_manifest",
+  "StaticSystemDocument": "melder.system_document.StaticSystemDocument"
+ },
+ "collapse_candidate": null
+}

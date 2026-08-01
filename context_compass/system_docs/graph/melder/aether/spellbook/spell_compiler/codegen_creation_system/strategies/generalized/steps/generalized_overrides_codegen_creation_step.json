@@ -1,0 +1,130 @@
+{
+ "schema_version": 1,
+ "source": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/steps/generalized_overrides_codegen_creation_step.py",
+ "source_sha256": "7990538b2d787b998169a5f9e25186015cfe5170aeb9f531d1cb70925e0e9c6f",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.steps.generalized_overrides_codegen_creation_step": {
+   "id": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.steps.generalized_overrides_codegen_creation_step",
+   "label": "generalized_overrides_codegen_creation_step",
+   "kind": "module",
+   "file": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/steps/generalized_overrides_codegen_creation_step.py",
+   "lineno": 1
+  },
+  "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.steps.generalized_overrides_codegen_creation_step.GeneralizedOverridesCodegenCreationStep": {
+   "id": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.steps.generalized_overrides_codegen_creation_step.GeneralizedOverridesCodegenCreationStep",
+   "label": "GeneralizedOverridesCodegenCreationStep",
+   "kind": "class",
+   "file": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/steps/generalized_overrides_codegen_creation_step.py",
+   "lineno": 18,
+   "bases": [
+    "CodegenCreationFamilyStep"
+   ],
+   "markers": [],
+   "public_methods": [
+    "apply",
+    "step_id"
+   ],
+   "shape": {
+    "method_count": 5,
+    "has_bases": true,
+    "trivial": false
+   },
+   "role": "Generalized family overrides packaging step.",
+   "responsibilities": [
+    "builds override-targeting and override-runtime scratch inputs from generalized plan and model truth",
+    "stores override targeting, plan signature, path registry, and baseline executor on family state",
+    "mirrors override lane metadata onto the final codegen creation output"
+   ],
+   "phases": [
+    "runtime"
+   ]
+  }
+ },
+ "edges_out": [
+  {
+   "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.steps.generalized_overrides_codegen_creation_step.GeneralizedOverridesCodegenCreationStep",
+   "to_label": "CodegenCreationFamilyStep",
+   "relation": "specializes",
+   "to": "melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.codegen_creation_family_step.CodegenCreationFamilyStep"
+  }
+ ],
+ "edge_candidates": [
+  {
+   "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.steps.generalized_overrides_codegen_creation_step.GeneralizedOverridesCodegenCreationStep",
+   "to_label": "RuntimeError",
+   "relation": "creates",
+   "confidence": "candidate"
+  }
+ ],
+ "published_aliases": [],
+ "imports": {
+  "SpellOverrideTargetingCodegenCreation": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.artifacts.spell_override_targeting_codegen_creation.SpellOverrideTargetingCodegenCreation",
+  "compile_overrides_codegen_creation_executor": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_overrides_codegen_creation_compiler.compile_overrides_codegen_creation_executor",
+  "SharedCompilerExecutions": "melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.codegen_creation_schema_helpers.CodegenCreationSchemaHelpers",
+  "GeneralizedCodegenCreationState": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.generalized_codegen_creation_state.GeneralizedCodegenCreationState",
+  "CodegenCreationFamilyStep": "melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.codegen_creation_family_step.CodegenCreationFamilyStep"
+ },
+ "collapse_candidate": {
+  "module": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.steps.generalized_overrides_codegen_creation_step",
+  "class": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.steps.generalized_overrides_codegen_creation_step.GeneralizedOverridesCodegenCreationStep",
+  "label": "GeneralizedOverridesCodegenCreationStep"
+ },
+ "edges_authored": [
+  {
+   "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.steps.generalized_overrides_codegen_creation_step.GeneralizedOverridesCodegenCreationStep",
+   "to": "melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.codegen_creation_family_step.CodegenCreationFamilyStep",
+   "relation": "specializes",
+   "why": "GeneralizedOverridesCodegenCreationStep specializes the shared family-step contract.",
+   "cardinality": "one_to_one",
+   "strength": "hard",
+   "phase": [
+    "runtime"
+   ]
+  },
+  {
+   "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.steps.generalized_overrides_codegen_creation_step.GeneralizedOverridesCodegenCreationStep",
+   "to": "melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.codegen_creation_schema_helpers.CodegenCreationSchemaHelpers",
+   "relation": "uses",
+   "why": "GeneralizedOverridesCodegenCreationStep uses shared schema helpers to derive override-compatible step rows and plan signatures.",
+   "cardinality": "one_to_one",
+   "strength": "borrowed",
+   "phase": [
+    "runtime"
+   ]
+  },
+  {
+   "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.steps.generalized_overrides_codegen_creation_step.GeneralizedOverridesCodegenCreationStep",
+   "to": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.artifacts.spell_override_targeting_codegen_creation.SpellOverrideTargetingCodegenCreation",
+   "relation": "creates",
+   "why": "GeneralizedOverridesCodegenCreationStep creates the compiler-owned generalized override targeting artifact from processor analysis.",
+   "cardinality": "one_to_one",
+   "strength": "hard",
+   "phase": [
+    "runtime"
+   ]
+  },
+  {
+   "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.steps.generalized_overrides_codegen_creation_step.GeneralizedOverridesCodegenCreationStep",
+   "to": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_overrides_codegen_creation_compiler",
+   "relation": "uses",
+   "why": "GeneralizedOverridesCodegenCreationStep delegates generalized baseline override executor compilation to generalized_overrides_codegen_creation_compiler.",
+   "cardinality": "one_to_one",
+   "strength": "borrowed",
+   "phase": [
+    "runtime"
+   ]
+  },
+  {
+   "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.steps.generalized_overrides_codegen_creation_step.GeneralizedOverridesCodegenCreationStep",
+   "to": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.generalized_codegen_creation_state.GeneralizedCodegenCreationState",
+   "relation": "uses",
+   "why": "GeneralizedOverridesCodegenCreationStep mutates the family-local generalized state while publishing override scratch artifacts.",
+   "cardinality": "one_to_one",
+   "strength": "borrowed",
+   "phase": [
+    "runtime"
+   ]
+  }
+ ]
+}

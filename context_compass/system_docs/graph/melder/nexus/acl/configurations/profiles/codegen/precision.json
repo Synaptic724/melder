@@ -1,0 +1,82 @@
+{
+ "schema_version": 1,
+ "source": "src/melder/nexus/acl/configurations/profiles/codegen/precision.py",
+ "source_sha256": "5fc15816d81c3d1720c5824e0bcef0631516adbfc0e124cd3db9175a7807fd8e",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.nexus.acl.configurations.profiles.codegen.precision": {
+   "id": "melder.nexus.acl.configurations.profiles.codegen.precision",
+   "label": "precision",
+   "kind": "module",
+   "file": "src/melder/nexus/acl/configurations/profiles/codegen/precision.py",
+   "lineno": 1,
+   "role": "Factory module for reusable precision codegen ACL profile.",
+   "responsibilities": [
+    "constructs one reusable ACL profile variant"
+   ],
+   "phases": [
+    "runtime"
+   ]
+  },
+  "melder.nexus.acl.configurations.profiles.codegen.precision.PrecisionCodegenProfileStrategy": {
+   "id": "melder.nexus.acl.configurations.profiles.codegen.precision.PrecisionCodegenProfileStrategy",
+   "label": "PrecisionCodegenProfileStrategy",
+   "kind": "class",
+   "file": "src/melder/nexus/acl/configurations/profiles/codegen/precision.py",
+   "lineno": 12,
+   "bases": [],
+   "markers": [],
+   "public_methods": [
+    "build",
+    "name"
+   ],
+   "shape": {
+    "method_count": 2,
+    "has_bases": false,
+    "trivial": false
+   }
+  }
+ },
+ "edges_out": [],
+ "edge_candidates": [
+  {
+   "from": "melder.nexus.acl.configurations.profiles.codegen.precision.PrecisionCodegenProfileStrategy",
+   "to_label": "FrameACLCodegenProfile",
+   "relation": "creates",
+   "confidence": "candidate"
+  }
+ ],
+ "published_aliases": [],
+ "imports": {
+  "FrameACLCodegenProfile": "melder.nexus.acl.configurations.profiles.codegen.frame_acl_codegen_profile.FrameACLCodegenProfile",
+  "PRECISION_DENIED_BUILTIN_NAMES": "melder.nexus.acl.configurations.profiles.codegen.stdlib_import_sets.PRECISION_DENIED_BUILTIN_NAMES",
+  "PRECISION_DENIED_IMPORT_MODULE_ROOTS": "melder.nexus.acl.configurations.profiles.codegen.stdlib_import_sets.PRECISION_DENIED_IMPORT_MODULE_ROOTS",
+  "PRECISION_IMPORT_MODULE_ROOTS": "melder.nexus.acl.configurations.profiles.codegen.stdlib_import_sets.PRECISION_IMPORT_MODULE_ROOTS",
+  "FrameACLViewProfile": "melder.nexus.acl.configurations.profiles.view.frame_acl_view_profile.FrameACLViewProfile"
+ },
+ "collapse_candidate": null,
+ "edges_authored": [
+  {
+   "from": "melder.nexus.acl.configurations.profiles.codegen.precision",
+   "to": "melder.nexus.acl.configurations.profiles.codegen.frame_acl_codegen_profile.FrameACLCodegenProfile",
+   "relation": "creates",
+   "why": "This factory module constructs one reusable codegen ACL profile variant.",
+   "cardinality": "one_to_one",
+   "strength": "soft",
+   "phase": [
+    "runtime"
+   ]
+  },
+  {
+   "from": "melder.nexus.acl.configurations.profiles.codegen.precision",
+   "to": "melder.nexus.acl.configurations.profiles.codegen.stdlib_import_sets",
+   "relation": "uses",
+   "why": "The precision codegen profile factory uses the shared stdlib import-root constants.",
+   "cardinality": "many_to_one",
+   "strength": "borrowed",
+   "phase": [
+    "runtime"
+   ]
+  }
+ ]
+}

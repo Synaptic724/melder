@@ -1759,4 +1759,48 @@ blocked by design - the advanced `SpellState` flag producers belong to the
 MutationResearch runtime-seam slice.
 
 WHERE THE NEXT READER SHOULD START: the `src_components.md` pass. The migration
-file 
+file above is its input. UNTIL THAT PASS LANDS, the component-level material it
+holds is in NEITHER canonical document. That is a real coverage gap; it is
+deliberate, bounded, and recorded here rather than left to be discovered.
+
+The graph pass follows. `src_graph.json` and `readable_src_graph.json` are the
+RETIRED artifacts; the replacement is `src_graph.md` + `src_graph_index.md` per
+`agent_onboarding/default/engineer/skills/src_graph_generation.md`.
+
+
+### Carried forward from the previous revision (2026-07-25)
+
+This is the prior handoff summary, PRESERVED VERBATIM. The recomposition above
+replaced it, and replacing it would have silently destroyed the decision record
+it carries - which is the more valuable half of a handoff summary.
+
+STATE: This document describes the Melder core as it stands on 2026-07-25, after the
+internal-bind guard replacement and the package-wide sweep that accompanied it. Every
+source path cited here was verified to resolve on that date, and no renamed or removed
+symbol survives as a live claim.
+
+DECISIONS CURRENTLY IN FORCE, and the sections that carry them:
+- Melder is framed as a Dependency Graph Runtime; DI-style binding and resolution are a
+  SUBSET capability, not the whole model. See Architecture Summary.
+- Internal-bind refusal is one module-level function over a committed manifest, exact
+  match, no MRO inheritance. See Entrypoints and Runtime Guardrails.
+- Conjure follows settle-then-inherit: the conduit inherits the world's mode rather than
+  policing the caller's flag. See Operational Invariants.
+- Structural mutation is admitted through one moded scope-acquisition gate. See
+  Contracts, Policies, and Permissions plus the components doc's admission plane.
+- The crystallizer is a passive sink; recording never changes runtime behaviour
+  (the R-A covenant). See Persistence & Restore Architecture.
+
+OPEN: one unknown remains - producer call sites for the advanced `SpellState` flags
+(`contract_violation`, `mutation_candidate`, `mutation_quarantined`, `mutation_failed`).
+It is blocked by design: those producers belong to the MutationResearch runtime-seam
+slice, which is deliberately deferred. See Unknowns and Open Questions.
+
+VOLATILE AREAS, most likely to drift first: the guard/manifest surface (it moved twice
+in one day on 2026-07-25), the crystallizer subsystem split, and the MutationResearch
+composition vocabulary. Re-verify those against source before relying on them.
+
+NOTE ON THIS SECTION: it previously held a 20-entry changelog of edits made TO this
+document, plus a 2026-07-07 marker recording that its tail had been lost to a mid-write
+truncation predating recoverable git history. Both were replaced on 2026-07-25 with the
+state-and-next-steps summary the template specifies; the edit history lives in git.

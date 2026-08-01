@@ -1,0 +1,57 @@
+{
+ "schema_version": 1,
+ "source": "src/melder/_build_assets/_agent_documentation/_builder.py",
+ "source_sha256": "cece79d162fb78ea95352b0e0c9f427a5dfa0b4cd54dbb1493be4289aec2a3a6",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder._build_assets._agent_documentation._builder": {
+   "id": "melder._build_assets._agent_documentation._builder",
+   "label": "_builder",
+   "kind": "module",
+   "file": "src/melder/_build_assets/_agent_documentation/_builder.py",
+   "lineno": 1
+  },
+  "melder._build_assets._agent_documentation._builder.AgentMetadataPolicy": {
+   "id": "melder._build_assets._agent_documentation._builder.AgentMetadataPolicy",
+   "label": "AgentMetadataPolicy",
+   "kind": "class",
+   "file": "src/melder/_build_assets/_agent_documentation/_builder.py",
+   "lineno": 75,
+   "bases": [],
+   "markers": [],
+   "public_methods": [],
+   "shape": {
+    "method_count": 0,
+    "has_bases": false,
+    "trivial": true
+   }
+  },
+  "melder._build_assets._agent_documentation._builder.HarvestResult": {
+   "id": "melder._build_assets._agent_documentation._builder.HarvestResult",
+   "label": "HarvestResult",
+   "kind": "class",
+   "file": "src/melder/_build_assets/_agent_documentation/_builder.py",
+   "lineno": 381,
+   "bases": [],
+   "markers": [],
+   "public_methods": [],
+   "shape": {
+    "method_count": 0,
+    "has_bases": false,
+    "trivial": true
+   }
+  }
+ },
+ "edges_out": [],
+ "edge_candidates": [],
+ "published_aliases": [],
+ "imports": {
+  "Dict": "typing.Dict",
+  "Iterable": "typing.Iterable",
+  "List": "typing.List",
+  "Optional": "typing.Optional",
+  "Set": "typing.Set",
+  "Tuple": "typing.Tuple"
+ },
+ "collapse_candidate": null
+}

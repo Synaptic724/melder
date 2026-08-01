@@ -1,0 +1,192 @@
+{
+ "schema_version": 1,
+ "source": "src/melder/nexus/configuration/nexus_configuration.py",
+ "source_sha256": "734266175f9406060e0d6c2f1e5cf4b833e5c0ccee988bb183d7ba7eb1cfd78d",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.nexus.configuration.nexus_configuration": {
+   "id": "melder.nexus.configuration.nexus_configuration",
+   "label": "nexus_configuration",
+   "kind": "module",
+   "file": "src/melder/nexus/configuration/nexus_configuration.py",
+   "lineno": 1
+  },
+  "melder.nexus.configuration.nexus_configuration.NexusConfiguration": {
+   "id": "melder.nexus.configuration.nexus_configuration.NexusConfiguration",
+   "label": "NexusConfiguration",
+   "kind": "class",
+   "file": "src/melder/nexus/configuration/nexus_configuration.py",
+   "lineno": 17,
+   "bases": [
+    "Cleanable"
+   ],
+   "markers": [],
+   "public_methods": [
+    "build",
+    "cleanup",
+    "emit_configured_twin_when_recording",
+    "finalize",
+    "freeze",
+    "frozen",
+    "get_property",
+    "has_property",
+    "id",
+    "load_default_dictionary",
+    "load_recorded_dictionary",
+    "set_property",
+    "validate",
+    "with_allow_external_rift_registration",
+    "with_allow_nested_rift_creation",
+    "with_allowed_target_frame_names",
+    "with_auto_create_nexus_frames",
+    "with_creation_token",
+    "with_creation_token_required",
+    "with_default_auto_activate_on_program",
+    "with_default_auto_create_space",
+    "with_default_nexus_frame_name",
+    "with_default_space_type",
+    "with_default_validation_mode",
+    "with_defaults",
+    "with_denied_target_frame_names",
+    "with_direct_rift_access",
+    "with_max_active_rift_count",
+    "with_max_nexus_frame_count",
+    "with_max_target_frame_count",
+    "with_multiple_target_frames",
+    "with_nexus_frame_mode",
+    "with_projection_refresh_gate",
+    "with_projection_refresh_gate_poll_interval_seconds",
+    "with_projection_refresh_gate_timeout_seconds",
+    "with_rift_access_token",
+    "with_rift_access_token_required",
+    "with_rift_creation_enabled",
+    "with_target_frame_override"
+   ],
+   "shape": {
+    "method_count": 42,
+    "has_bases": true,
+    "trivial": false
+   },
+   "role": "Process-wide configuration for Nexus.",
+   "responsibilities": [
+    "stores typed process-wide Rift creation/access and frame-topology policy",
+    "freezes into the active Nexus governance surface"
+   ],
+   "owns_state": [
+    "_properties",
+    "available_properties"
+   ],
+   "phases": [
+    "init",
+    "runtime",
+    "cleanup"
+   ]
+  }
+ },
+ "edges_out": [
+  {
+   "from": "melder.nexus.configuration.nexus_configuration.NexusConfiguration",
+   "to_label": "Cleanable",
+   "relation": "specializes",
+   "to": "melder.utilities.general_base.cleanable.Cleanable"
+  }
+ ],
+ "edge_candidates": [
+  {
+   "from": "melder.nexus.configuration.nexus_configuration.NexusConfiguration",
+   "to_label": "RLock",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.nexus.configuration.nexus_configuration.NexusConfiguration",
+   "to_label": "RuntimeError",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.nexus.configuration.nexus_configuration.NexusConfiguration",
+   "to_label": "ValueError",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.nexus.configuration.nexus_configuration.NexusConfiguration",
+   "to_label": "TypeError",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.nexus.configuration.nexus_configuration.NexusConfiguration",
+   "to_label": "Crystallizer",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.nexus.configuration.nexus_configuration.NexusConfiguration",
+   "to_label": "NexusCrystal",
+   "relation": "creates",
+   "confidence": "candidate"
+  }
+ ],
+ "published_aliases": [],
+ "imports": {
+  "Enum": "enum.Enum",
+  "Any": "typing.Any",
+  "Dict": "typing.Dict",
+  "List": "typing.List",
+  "Optional": "typing.Optional",
+  "Sequence": "typing.Sequence",
+  "Tuple": "typing.Tuple",
+  "Type": "typing.Type",
+  "Union": "typing.Union",
+  "NexusFrameMode": "melder.nexus.configuration.nexus_frame_mode.NexusFrameMode",
+  "RiftSpaceType": "melder.nexus.configuration.rift_space_type.RiftSpaceType",
+  "RiftValidationMode": "melder.nexus.configuration.rift_validation_mode.RiftValidationMode",
+  "Cleanable": "melder.utilities.general_base.cleanable.Cleanable",
+  "Crystallizer": "melder.crystallizer.crystallizer.Crystallizer",
+  "NexusCrystal": "melder.crystallizer.crystals.nexus_crystal.NexusCrystal",
+  "EnumHelpers": "melder.utilities.helpers.general_helpers.EnumHelpers",
+  "IDBuilder": "melder.utilities.helpers.id_builder.IDBuilder"
+ },
+ "collapse_candidate": {
+  "module": "melder.nexus.configuration.nexus_configuration",
+  "class": "melder.nexus.configuration.nexus_configuration.NexusConfiguration",
+  "label": "NexusConfiguration"
+ },
+ "edges_authored": [
+  {
+   "from": "melder.nexus.configuration.nexus_configuration.NexusConfiguration",
+   "to": "melder.nexus.configuration.nexus_frame_mode.NexusFrameMode",
+   "relation": "uses",
+   "why": "NexusConfiguration stores NexusFrameMode as the topology posture for internal Nexus frames.",
+   "cardinality": "many_to_one",
+   "strength": "borrowed",
+   "phase": [
+    "runtime"
+   ]
+  },
+  {
+   "from": "melder.nexus.configuration.nexus_configuration.NexusConfiguration",
+   "to": "melder.nexus.configuration.rift_space_type.RiftSpaceType",
+   "relation": "uses",
+   "why": "NexusConfiguration stores RiftSpaceType as the default room type for newly created Rifts.",
+   "cardinality": "many_to_one",
+   "strength": "borrowed",
+   "phase": [
+    "runtime"
+   ]
+  },
+  {
+   "from": "melder.nexus.configuration.nexus_configuration.NexusConfiguration",
+   "to": "melder.nexus.configuration.rift_validation_mode.RiftValidationMode",
+   "relation": "uses",
+   "why": "NexusConfiguration stores RiftValidationMode as the default validation posture for new Rifts.",
+   "cardinality": "many_to_one",
+   "strength": "borrowed",
+   "phase": [
+    "runtime"
+   ]
+  }
+ ]
+}

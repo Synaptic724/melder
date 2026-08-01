@@ -1,0 +1,53 @@
+{
+ "schema_version": 1,
+ "source": "src/melder/aether/aetheric_frame/dev_ops/incident_manager/incident_severity.py",
+ "source_sha256": "966bdce0c44d82ca1ce50a275e4df1550ef9b80cfd5de4d3acc753b1dbaed631",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.aether.aetheric_frame.dev_ops.incident_manager.incident_severity": {
+   "id": "melder.aether.aetheric_frame.dev_ops.incident_manager.incident_severity",
+   "label": "incident_severity",
+   "kind": "module",
+   "file": "src/melder/aether/aetheric_frame/dev_ops/incident_manager/incident_severity.py",
+   "lineno": 1
+  },
+  "melder.aether.aetheric_frame.dev_ops.incident_manager.incident_severity.IncidentSeverity": {
+   "id": "melder.aether.aetheric_frame.dev_ops.incident_manager.incident_severity.IncidentSeverity",
+   "label": "IncidentSeverity",
+   "kind": "enum",
+   "file": "src/melder/aether/aetheric_frame/dev_ops/incident_manager/incident_severity.py",
+   "lineno": 3,
+   "bases": [],
+   "markers": [
+    "Enum"
+   ],
+   "public_methods": [],
+   "shape": {
+    "method_count": 0,
+    "has_bases": true,
+    "trivial": false
+   },
+   "role": "Severity enum for incident records.",
+   "responsibilities": [
+    "labels informational through critical incident urgency levels"
+   ],
+   "owns_state": [
+    "info",
+    "warning",
+    "error",
+    "critical"
+   ],
+   "phases": [
+    "runtime"
+   ]
+  }
+ },
+ "edges_out": [],
+ "edge_candidates": [],
+ "published_aliases": [],
+ "imports": {
+  "auto": "enum.auto",
+  "Enum": "enum.Enum"
+ },
+ "collapse_candidate": null
+}

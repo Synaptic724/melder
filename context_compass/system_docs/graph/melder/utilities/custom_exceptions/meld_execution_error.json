@@ -1,0 +1,50 @@
+{
+ "schema_version": 1,
+ "source": "src/melder/utilities/custom_exceptions/meld_execution_error.py",
+ "source_sha256": "c4ef62802568d6b6dc2caeb0081b205a16537811418061db8b4a59d1eb3543fb",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.utilities.custom_exceptions.meld_execution_error": {
+   "id": "melder.utilities.custom_exceptions.meld_execution_error",
+   "label": "meld_execution_error",
+   "kind": "module",
+   "file": "src/melder/utilities/custom_exceptions/meld_execution_error.py",
+   "lineno": 1
+  },
+  "melder.utilities.custom_exceptions.meld_execution_error.MeldExecutionError": {
+   "id": "melder.utilities.custom_exceptions.meld_execution_error.MeldExecutionError",
+   "label": "MeldExecutionError",
+   "kind": "class",
+   "file": "src/melder/utilities/custom_exceptions/meld_execution_error.py",
+   "lineno": 5,
+   "bases": [],
+   "markers": [
+    "RuntimeError"
+   ],
+   "public_methods": [],
+   "shape": {
+    "method_count": 0,
+    "has_bases": true,
+    "trivial": false
+   },
+   "role": "Runtime exception for meld execution failures.",
+   "responsibilities": [
+    "captures spell/runtime context for meld execution errors"
+   ],
+   "phases": [
+    "runtime"
+   ]
+  }
+ },
+ "edges_out": [],
+ "edge_candidates": [],
+ "published_aliases": [],
+ "imports": {
+  "Optional": "typing.Optional"
+ },
+ "collapse_candidate": {
+  "module": "melder.utilities.custom_exceptions.meld_execution_error",
+  "class": "melder.utilities.custom_exceptions.meld_execution_error.MeldExecutionError",
+  "label": "MeldExecutionError"
+ }
+}

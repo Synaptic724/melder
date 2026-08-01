@@ -1,0 +1,47 @@
+{
+ "schema_version": 1,
+ "source": "src/melder/__graph_details__.py",
+ "source_sha256": "803c769755fed1087b1c04158f87e095eb04364da6b04ceb7872ac40231b5e1e",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.__graph_details__": {
+   "id": "melder.__graph_details__",
+   "label": "__graph_details__",
+   "kind": "module",
+   "file": "src/melder/__graph_details__.py",
+   "lineno": 1,
+   "role": "Top-level packaged graph-details hardcopy module.",
+   "responsibilities": [
+    "publishes the top-level packaged graph-details document object"
+   ],
+   "owns_state": [
+    "__graph_details__"
+   ],
+   "phases": [
+    "init",
+    "runtime"
+   ]
+  }
+ },
+ "edges_out": [],
+ "edge_candidates": [],
+ "published_aliases": [],
+ "imports": {
+  "get": "melder._build_assets._system_documents.system_documents.get"
+ },
+ "collapse_candidate": null,
+ "edges_authored": [
+  {
+   "from": "melder.__graph_details__",
+   "to": "melder.system_document.StaticSystemDocument",
+   "relation": "creates",
+   "why": "The packaged graph-details module instantiates one top-level StaticSystemDocument for graph-details hardcopy access.",
+   "cardinality": "one_to_one",
+   "strength": "hard",
+   "phase": [
+    "init",
+    "runtime"
+   ]
+  }
+ ]
+}

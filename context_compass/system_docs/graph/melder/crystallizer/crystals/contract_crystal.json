@@ -1,0 +1,58 @@
+{
+ "schema_version": 1,
+ "source": "src/melder/crystallizer/crystals/contract_crystal.py",
+ "source_sha256": "f2580fa98427009bb17ce90b9de226723dd1e47f34d00f6cbcc0c864814a24bd",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.crystallizer.crystals.contract_crystal": {
+   "id": "melder.crystallizer.crystals.contract_crystal",
+   "label": "contract_crystal",
+   "kind": "module",
+   "file": "src/melder/crystallizer/crystals/contract_crystal.py",
+   "lineno": 1
+  },
+  "melder.crystallizer.crystals.contract_crystal.ContractCrystal": {
+   "id": "melder.crystallizer.crystals.contract_crystal.ContractCrystal",
+   "label": "ContractCrystal",
+   "kind": "class",
+   "file": "src/melder/crystallizer/crystals/contract_crystal.py",
+   "lineno": 6,
+   "bases": [
+    "Cleanable"
+   ],
+   "markers": [],
+   "public_methods": [
+    "cleanup",
+    "conduit_a_id",
+    "conduit_b_id",
+    "contract_id",
+    "describe"
+   ],
+   "shape": {
+    "method_count": 5,
+    "has_bases": true,
+    "trivial": false
+   }
+  }
+ },
+ "edges_out": [
+  {
+   "from": "melder.crystallizer.crystals.contract_crystal.ContractCrystal",
+   "to_label": "Cleanable",
+   "relation": "specializes",
+   "to": "melder.utilities.general_base.cleanable.Cleanable"
+  }
+ ],
+ "edge_candidates": [],
+ "published_aliases": [],
+ "imports": {
+  "Dict": "typing.Dict",
+  "List": "typing.List",
+  "Cleanable": "melder.utilities.general_base.cleanable.Cleanable"
+ },
+ "collapse_candidate": {
+  "module": "melder.crystallizer.crystals.contract_crystal",
+  "class": "melder.crystallizer.crystals.contract_crystal.ContractCrystal",
+  "label": "ContractCrystal"
+ }
+}

@@ -1,0 +1,65 @@
+{
+ "schema_version": 1,
+ "source": "src/melder/crystallizer/crystal_analysis/custody/site_package_custody_strategy.py",
+ "source_sha256": "ec7bf496fb23832e6f9b6b61174811e7001f86507270d4e7f87df0eb82086711",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.crystallizer.crystal_analysis.custody.site_package_custody_strategy": {
+   "id": "melder.crystallizer.crystal_analysis.custody.site_package_custody_strategy",
+   "label": "site_package_custody_strategy",
+   "kind": "module",
+   "file": "src/melder/crystallizer/crystal_analysis/custody/site_package_custody_strategy.py",
+   "lineno": 1
+  },
+  "melder.crystallizer.crystal_analysis.custody.site_package_custody_strategy.SitePackageCustodyStrategy": {
+   "id": "melder.crystallizer.crystal_analysis.custody.site_package_custody_strategy.SitePackageCustodyStrategy",
+   "label": "SitePackageCustodyStrategy",
+   "kind": "class",
+   "file": "src/melder/crystallizer/crystal_analysis/custody/site_package_custody_strategy.py",
+   "lineno": 24,
+   "bases": [
+    "SourceCustodyStrategy"
+   ],
+   "markers": [],
+   "public_methods": [
+    "claims_sha256_source_fingerprint",
+    "cleanup",
+    "descends",
+    "fingerprint",
+    "harvest_provenance",
+    "kind",
+    "matches",
+    "resolve_source"
+   ],
+   "shape": {
+    "method_count": 8,
+    "has_bases": true,
+    "trivial": false
+   }
+  }
+ },
+ "edges_out": [
+  {
+   "from": "melder.crystallizer.crystal_analysis.custody.site_package_custody_strategy.SitePackageCustodyStrategy",
+   "to_label": "SourceCustodyStrategy",
+   "relation": "specializes",
+   "to": "melder.crystallizer.crystal_analysis.custody.source_custody_strategy.SourceCustodyStrategy"
+  }
+ ],
+ "edge_candidates": [],
+ "published_aliases": [],
+ "imports": {
+  "Path": "pathlib.Path",
+  "Any": "typing.Any",
+  "Dict": "typing.Dict",
+  "Optional": "typing.Optional",
+  "Tuple": "typing.Tuple",
+  "ClassVar": "typing.ClassVar",
+  "SourceCustodyStrategy": "melder.crystallizer.crystal_analysis.custody.source_custody_strategy.SourceCustodyStrategy"
+ },
+ "collapse_candidate": {
+  "module": "melder.crystallizer.crystal_analysis.custody.site_package_custody_strategy",
+  "class": "melder.crystallizer.crystal_analysis.custody.site_package_custody_strategy.SitePackageCustodyStrategy",
+  "label": "SitePackageCustodyStrategy"
+ }
+}

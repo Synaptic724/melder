@@ -1,0 +1,129 @@
+{
+ "schema_version": 1,
+ "source": "src/melder/nexus/rift/rift_space/memory_system/rift_memory_system.py",
+ "source_sha256": "2d990f2b60b14e08dfd9a4c103d1e49cc84121b415dc9f11ccbb3ec41aeebed2",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.nexus.rift.rift_space.memory_system.rift_memory_system": {
+   "id": "melder.nexus.rift.rift_space.memory_system.rift_memory_system",
+   "label": "rift_memory_system",
+   "kind": "module",
+   "file": "src/melder/nexus/rift/rift_space/memory_system/rift_memory_system.py",
+   "lineno": 1
+  },
+  "melder.nexus.rift.rift_space.memory_system.rift_memory_system.RiftMemorySystem": {
+   "id": "melder.nexus.rift.rift_space.memory_system.rift_memory_system.RiftMemorySystem",
+   "label": "RiftMemorySystem",
+   "kind": "class",
+   "file": "src/melder/nexus/rift/rift_space/memory_system/rift_memory_system.py",
+   "lineno": 10,
+   "bases": [
+    "Cleanable"
+   ],
+   "markers": [],
+   "public_methods": [
+    "cleanup",
+    "clear_context",
+    "create_and_emit_memory",
+    "create_memory",
+    "describe_state",
+    "emit_memory",
+    "epoch_counter",
+    "increment_epoch",
+    "increment_step",
+    "memory_enabled",
+    "register_memory_callback",
+    "reset_epoch",
+    "reset_step",
+    "rift_id",
+    "space_type",
+    "step_counter",
+    "unregister_memory_callback",
+    "update_context"
+   ],
+   "shape": {
+    "method_count": 18,
+    "has_bases": true,
+    "trivial": false
+   },
+   "role": "Locked source of truth for RiftSpace memory sequencing and shared context.",
+   "responsibilities": [
+    "owns step and epoch counters plus shared context metadata",
+    "produces immutable RiftMemory snapshots for room actions"
+   ],
+   "owns_state": [
+    "_rift_id",
+    "_space_type",
+    "_step_counter",
+    "_epoch_counter",
+    "_metadata",
+    "_memory_callbacks_by_subscription_id"
+   ],
+   "phases": [
+    "runtime",
+    "cleanup"
+   ]
+  }
+ },
+ "edges_out": [
+  {
+   "from": "melder.nexus.rift.rift_space.memory_system.rift_memory_system.RiftMemorySystem",
+   "to_label": "Cleanable",
+   "relation": "specializes",
+   "to": "melder.utilities.general_base.cleanable.Cleanable"
+  }
+ ],
+ "edge_candidates": [
+  {
+   "from": "melder.nexus.rift.rift_space.memory_system.rift_memory_system.RiftMemorySystem",
+   "to_label": "RLock",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.nexus.rift.rift_space.memory_system.rift_memory_system.RiftMemorySystem",
+   "to_label": "ValueError",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.nexus.rift.rift_space.memory_system.rift_memory_system.RiftMemorySystem",
+   "to_label": "RiftMemory",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.nexus.rift.rift_space.memory_system.rift_memory_system.RiftMemorySystem",
+   "to_label": "TypeError",
+   "relation": "creates",
+   "confidence": "candidate"
+  }
+ ],
+ "published_aliases": [],
+ "imports": {
+  "Callable": "typing.Callable",
+  "Dict": "typing.Dict",
+  "Optional": "typing.Optional",
+  "RiftMemory": "melder.nexus.rift.rift_space.memory_system.rift_memory.RiftMemory",
+  "Cleanable": "melder.utilities.general_base.cleanable.Cleanable",
+  "IDBuilder": "melder.utilities.helpers.id_builder.IDBuilder"
+ },
+ "collapse_candidate": {
+  "module": "melder.nexus.rift.rift_space.memory_system.rift_memory_system",
+  "class": "melder.nexus.rift.rift_space.memory_system.rift_memory_system.RiftMemorySystem",
+  "label": "RiftMemorySystem"
+ },
+ "edges_authored": [
+  {
+   "from": "melder.nexus.rift.rift_space.memory_system.rift_memory_system.RiftMemorySystem",
+   "to": "melder.nexus.rift.rift_space.memory_system.rift_memory.RiftMemory",
+   "relation": "creates",
+   "why": "RiftMemorySystem creates immutable RiftMemory snapshots for room-level actions.",
+   "cardinality": "one_to_many",
+   "strength": "hard",
+   "phase": [
+    "runtime"
+   ]
+  }
+ ]
+}

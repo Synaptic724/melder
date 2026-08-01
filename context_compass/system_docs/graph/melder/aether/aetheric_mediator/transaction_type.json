@@ -1,0 +1,39 @@
+{
+ "schema_version": 1,
+ "source": "src/melder/aether/aetheric_mediator/transaction_type.py",
+ "source_sha256": "ad06c201df3df1f132def820b66b3d81d02c682594e8111ceed9e2ec84d28c2f",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.aether.aetheric_mediator.transaction_type": {
+   "id": "melder.aether.aetheric_mediator.transaction_type",
+   "label": "transaction_type",
+   "kind": "module",
+   "file": "src/melder/aether/aetheric_mediator/transaction_type.py",
+   "lineno": 1
+  },
+  "melder.aether.aetheric_mediator.transaction_type.TransactionType": {
+   "id": "melder.aether.aetheric_mediator.transaction_type.TransactionType",
+   "label": "TransactionType",
+   "kind": "enum",
+   "file": "src/melder/aether/aetheric_mediator/transaction_type.py",
+   "lineno": 15,
+   "bases": [],
+   "markers": [
+    "StrEnum"
+   ],
+   "public_methods": [],
+   "shape": {
+    "method_count": 0,
+    "has_bases": true,
+    "trivial": false
+   }
+  }
+ },
+ "edges_out": [],
+ "edge_candidates": [],
+ "published_aliases": [],
+ "imports": {
+  "StrEnum": "enum.StrEnum"
+ },
+ "collapse_candidate": null
+}

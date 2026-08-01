@@ -1,0 +1,127 @@
+{
+ "schema_version": 1,
+ "source": "src/melder/nexus/acl/validator/compatibility/frame_acl_set_compatibility_validator.py",
+ "source_sha256": "4b87953b661afef44faa59d2dca7a7553408d052752cecc461f832d94c9a5622",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.nexus.acl.validator.compatibility.frame_acl_set_compatibility_validator": {
+   "id": "melder.nexus.acl.validator.compatibility.frame_acl_set_compatibility_validator",
+   "label": "frame_acl_set_compatibility_validator",
+   "kind": "module",
+   "file": "src/melder/nexus/acl/validator/compatibility/frame_acl_set_compatibility_validator.py",
+   "lineno": 1
+  },
+  "melder.nexus.acl.validator.compatibility.frame_acl_set_compatibility_validator.FrameACLSetCompatibilityValidator": {
+   "id": "melder.nexus.acl.validator.compatibility.frame_acl_set_compatibility_validator.FrameACLSetCompatibilityValidator",
+   "label": "FrameACLSetCompatibilityValidator",
+   "kind": "class",
+   "file": "src/melder/nexus/acl/validator/compatibility/frame_acl_set_compatibility_validator.py",
+   "lineno": 20,
+   "bases": [
+    "Cleanable"
+   ],
+   "markers": [],
+   "public_methods": [
+    "cleanup",
+    "frame_name",
+    "last_report",
+    "validate_configuration"
+   ],
+   "shape": {
+    "method_count": 11,
+    "has_bases": true,
+    "trivial": false
+   },
+   "role": "Cross-family ACL bundle compatibility validator.",
+   "responsibilities": [
+    "validates whether selected view, command, and codegen ACL policies are internally coherent",
+    "produces compatibility reports for one frame ACL bundle"
+   ],
+   "owns_state": [
+    "_frame_name",
+    "_profile_builder",
+    "_last_report"
+   ],
+   "phases": [
+    "validation",
+    "refresh",
+    "cleanup"
+   ]
+  }
+ },
+ "edges_out": [
+  {
+   "from": "melder.nexus.acl.validator.compatibility.frame_acl_set_compatibility_validator.FrameACLSetCompatibilityValidator",
+   "to_label": "Cleanable",
+   "relation": "specializes",
+   "to": "melder.utilities.general_base.cleanable.Cleanable"
+  }
+ ],
+ "edge_candidates": [
+  {
+   "from": "melder.nexus.acl.validator.compatibility.frame_acl_set_compatibility_validator.FrameACLSetCompatibilityValidator",
+   "to_label": "RLock",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.nexus.acl.validator.compatibility.frame_acl_set_compatibility_validator.FrameACLSetCompatibilityValidator",
+   "to_label": "ValueError",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.nexus.acl.validator.compatibility.frame_acl_set_compatibility_validator.FrameACLSetCompatibilityValidator",
+   "to_label": "TypeError",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.nexus.acl.validator.compatibility.frame_acl_set_compatibility_validator.FrameACLSetCompatibilityValidator",
+   "to_label": "FrameACLSetCompatibilityReport",
+   "relation": "creates",
+   "confidence": "candidate"
+  }
+ ],
+ "published_aliases": [],
+ "imports": {
+  "TYPE_CHECKING": "typing.TYPE_CHECKING",
+  "Optional": "typing.Optional",
+  "Set": "typing.Set",
+  "Tuple": "typing.Tuple",
+  "FrameACLSetCompatibilityReport": "melder.nexus.acl.validator.compatibility.frame_acl_set_compatibility_report.FrameACLSetCompatibilityReport",
+  "Cleanable": "melder.utilities.general_base.cleanable.Cleanable",
+  "IDBuilder": "melder.utilities.helpers.id_builder.IDBuilder",
+  "FrameACLCommandConfiguration": "melder.nexus.acl.configurations.frame_acl_command_configuration.FrameACLCommandConfiguration",
+  "FrameACLCodegenConfiguration": "melder.nexus.acl.configurations.frame_acl_codegen_configuration.FrameACLCodegenConfiguration",
+  "FrameACLConfiguration": "melder.nexus.acl.frame_acl_configuration.FrameACLConfiguration",
+  "FrameACLViewConfiguration": "melder.nexus.acl.configurations.frame_acl_view_configuration.FrameACLViewConfiguration"
+ },
+ "collapse_candidate": null,
+ "edges_authored": [
+  {
+   "from": "melder.nexus.acl.validator.compatibility.frame_acl_set_compatibility_validator.FrameACLSetCompatibilityValidator",
+   "to": "melder.nexus.acl.frame_acl_configuration.FrameACLConfiguration",
+   "relation": "validates",
+   "why": "FrameACLSetCompatibilityValidator validates whether a selected ACL bundle is internally coherent across view, command, and codegen families.",
+   "cardinality": "one_to_many",
+   "strength": "hard",
+   "phase": [
+    "validation",
+    "refresh"
+   ]
+  },
+  {
+   "from": "melder.nexus.acl.validator.compatibility.frame_acl_set_compatibility_validator.FrameACLSetCompatibilityValidator",
+   "to": "melder.nexus.acl.validator.compatibility.frame_acl_set_compatibility_report.FrameACLSetCompatibilityReport",
+   "relation": "creates",
+   "why": "FrameACLSetCompatibilityValidator creates detached compatibility reports for validated ACL bundles.",
+   "cardinality": "one_to_many",
+   "strength": "hard",
+   "phase": [
+    "validation",
+    "refresh"
+   ]
+  }
+ ]
+}

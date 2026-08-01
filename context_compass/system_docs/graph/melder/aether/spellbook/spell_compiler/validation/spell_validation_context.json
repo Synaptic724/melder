@@ -1,0 +1,101 @@
+{
+ "schema_version": 1,
+ "source": "src/melder/aether/spellbook/spell_compiler/validation/spell_validation_context.py",
+ "source_sha256": "f62acebbfabc9fe68bb9a4cb67e07912345b3cebe17b2878c3402646536f0488",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.aether.spellbook.spell_compiler.validation.spell_validation_context": {
+   "id": "melder.aether.spellbook.spell_compiler.validation.spell_validation_context",
+   "label": "spell_validation_context",
+   "kind": "module",
+   "file": "src/melder/aether/spellbook/spell_compiler/validation/spell_validation_context.py",
+   "lineno": 1
+  },
+  "melder.aether.spellbook.spell_compiler.validation.spell_validation_context.SpellValidationContext": {
+   "id": "melder.aether.spellbook.spell_compiler.validation.spell_validation_context.SpellValidationContext",
+   "label": "SpellValidationContext",
+   "kind": "class",
+   "file": "src/melder/aether/spellbook/spell_compiler/validation/spell_validation_context.py",
+   "lineno": 27,
+   "bases": [
+    "Cleanable"
+   ],
+   "markers": [],
+   "public_methods": [
+    "cleanup"
+   ],
+   "shape": {
+    "method_count": 1,
+    "has_bases": true,
+    "trivial": false
+   },
+   "role": "Per-spell context passed to validation strategies.",
+   "responsibilities": [
+    "holds one spell plus its already-built validation artifacts and shared issue list"
+   ],
+   "owns_state": [
+    "spell",
+    "spellbook",
+    "requirements",
+    "symbolic_graph",
+    "resolution_frame",
+    "issues"
+   ],
+   "phases": [
+    "validation",
+    "cleanup"
+   ]
+  }
+ },
+ "edges_out": [
+  {
+   "from": "melder.aether.spellbook.spell_compiler.validation.spell_validation_context.SpellValidationContext",
+   "to_label": "Cleanable",
+   "relation": "specializes",
+   "to": "melder.utilities.general_base.cleanable.Cleanable"
+  }
+ ],
+ "edge_candidates": [
+  {
+   "from": "melder.aether.spellbook.spell_compiler.validation.spell_validation_context.SpellValidationContext",
+   "to_label": "ValueError",
+   "relation": "creates",
+   "confidence": "candidate"
+  }
+ ],
+ "published_aliases": [],
+ "imports": {
+  "TYPE_CHECKING": "typing.TYPE_CHECKING",
+  "Any": "typing.Any",
+  "Dict": "typing.Dict",
+  "Optional": "typing.Optional",
+  "List": "typing.List",
+  "ClassVar": "typing.ClassVar",
+  "SpellValidationIssue": "melder.aether.spellbook.spell_compiler.validation.spell_validation_issue.SpellValidationIssue",
+  "Cleanable": "melder.utilities.general_base.cleanable.Cleanable",
+  "Spell": "melder.aether.spellbook.spell.Spell",
+  "Spellbook": "melder.aether.spellbook.spellbook.Spellbook",
+  "SpellResolutionFrame": "melder.aether.spellbook.spell_compiler.profiles.resolution_profile.SpellResolutionFrame",
+  "SpellRequirements": "melder.aether.spellbook.spell_compiler.spell_requirements_finder.spell_requirements.SpellRequirements",
+  "SpellSymbolicGraph": "melder.aether.spellbook.spell_compiler.symbolic_graph.spell_symbolic_graph.SpellSymbolicGraph",
+  "CancellationEvent": "melder.utilities.synchronization.cancellation_event_signal.CancellationEvent"
+ },
+ "collapse_candidate": {
+  "module": "melder.aether.spellbook.spell_compiler.validation.spell_validation_context",
+  "class": "melder.aether.spellbook.spell_compiler.validation.spell_validation_context.SpellValidationContext",
+  "label": "SpellValidationContext"
+ },
+ "edges_authored": [
+  {
+   "from": "melder.aether.spellbook.spell_compiler.validation.spell_validation_context.SpellValidationContext",
+   "to": "melder.aether.spellbook.spell_compiler.validation.spell_validation_issue.SpellValidationIssue",
+   "relation": "uses",
+   "why": "SpellValidationContext carries the shared issue list that spell validation strategies append to.",
+   "cardinality": "one_to_many",
+   "strength": "borrowed",
+   "phase": [
+    "validation"
+   ]
+  }
+ ]
+}

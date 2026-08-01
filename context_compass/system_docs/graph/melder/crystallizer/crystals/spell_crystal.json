@@ -1,0 +1,170 @@
+{
+ "schema_version": 1,
+ "source": "src/melder/crystallizer/crystals/spell_crystal.py",
+ "source_sha256": "6de86f4d2339d75918c4a680413d1f73861c4b15528a37b4b3fdc0a33fec05cd",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.crystallizer.crystals.spell_crystal": {
+   "id": "melder.crystallizer.crystals.spell_crystal",
+   "label": "spell_crystal",
+   "kind": "module",
+   "file": "src/melder/crystallizer/crystals/spell_crystal.py",
+   "lineno": 1
+  },
+  "melder.crystallizer.crystals.spell_crystal.SpellCrystal": {
+   "id": "melder.crystallizer.crystals.spell_crystal.SpellCrystal",
+   "label": "SpellCrystal",
+   "kind": "class",
+   "file": "src/melder/crystallizer/crystals/spell_crystal.py",
+   "lineno": 17,
+   "bases": [
+    "Cleanable"
+   ],
+   "markers": [],
+   "public_methods": [
+    "binding_name",
+    "cleanup",
+    "describe",
+    "disposal_method_names",
+    "existence_name",
+    "id",
+    "module_targets",
+    "module_to_direct_dependencies",
+    "module_to_extension",
+    "module_to_kind",
+    "module_to_path",
+    "path_targets",
+    "permissions_name",
+    "profile_family",
+    "rebindability",
+    "root_file_extension",
+    "root_module_kind",
+    "root_module_name",
+    "root_module_path",
+    "root_target_kind",
+    "root_target_name",
+    "root_target_qualname",
+    "site_package_root_paths",
+    "site_package_targets",
+    "spell_name",
+    "spellbook_id",
+    "spellframe_name",
+    "synthetic_module_targets",
+    "unknown_targets",
+    "user_source_root_paths",
+    "user_source_targets",
+    "walk_errors"
+   ],
+   "shape": {
+    "method_count": 34,
+    "has_bases": true,
+    "trivial": false
+   },
+   "role": "Spell custody twin + module-dependency manifest; carries the full bind signature and, for synthetic roots, the rebuildable module SOURCES (M3); opt-in user-source TEXT rides beside them (S2).",
+   "responsibilities": [
+    "captures identity and the full bind signature for one live spell target",
+    "delegates the module-world walk to a single-use CrystalAnalyzer (V3 carrier law)",
+    "carries the returned CrystalAnalysisResult and exposes it via delegating properties"
+   ],
+   "owns_state": [
+    "_analysis (one carried CrystalAnalysisResult)"
+   ],
+   "phases": [
+    "init",
+    "runtime",
+    "cleanup"
+   ]
+  }
+ },
+ "edges_out": [
+  {
+   "from": "melder.crystallizer.crystals.spell_crystal.SpellCrystal",
+   "to_label": "Cleanable",
+   "relation": "specializes",
+   "to": "melder.utilities.general_base.cleanable.Cleanable"
+  }
+ ],
+ "edge_candidates": [
+  {
+   "from": "melder.crystallizer.crystals.spell_crystal.SpellCrystal",
+   "to_label": "RLock",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.crystallizer.crystals.spell_crystal.SpellCrystal",
+   "to_label": "CrystalAnalyzer",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.crystallizer.crystals.spell_crystal.SpellCrystal",
+   "to_label": "TypeError",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.crystallizer.crystals.spell_crystal.SpellCrystal",
+   "to_label": "ValueError",
+   "relation": "creates",
+   "confidence": "candidate"
+  }
+ ],
+ "published_aliases": [],
+ "imports": {
+  "Path": "pathlib.Path",
+  "TYPE_CHECKING": "typing.TYPE_CHECKING",
+  "Any": "typing.Any",
+  "Dict": "typing.Dict",
+  "List": "typing.List",
+  "Optional": "typing.Optional",
+  "Sequence": "typing.Sequence",
+  "Tuple": "typing.Tuple",
+  "Union": "typing.Union",
+  "Cleanable": "melder.utilities.general_base.cleanable.Cleanable",
+  "IDBuilder": "melder.utilities.helpers.id_builder.IDBuilder",
+  "Spell": "melder.aether.spellbook.spell.Spell",
+  "CrystalAnalysisResult": "melder.crystallizer.crystal_analysis.crystal_analysis_result.CrystalAnalysisResult",
+  "CrystalAnalyzer": "melder.crystallizer.crystal_analysis.crystal_analyzer.CrystalAnalyzer"
+ },
+ "collapse_candidate": {
+  "module": "melder.crystallizer.crystals.spell_crystal",
+  "class": "melder.crystallizer.crystals.spell_crystal.SpellCrystal",
+  "label": "SpellCrystal"
+ },
+ "edges_authored": [
+  {
+   "from": "melder.crystallizer.crystals.spell_crystal.SpellCrystal",
+   "to": "melder.crystallizer.synthetic_module.SyntheticModule",
+   "relation": "uses",
+   "why": "SpellCrystal classifies and reasons about crystallized SyntheticModule targets while building module-world manifests.",
+   "cardinality": "one_to_many",
+   "strength": "borrowed",
+   "phase": [
+    "runtime"
+   ]
+  },
+  {
+   "from": "melder.crystallizer.crystals.spell_crystal.SpellCrystal",
+   "to": "melder.crystallizer.crystal_analysis.crystal_analyzer",
+   "relation": "creates",
+   "why": "Bind-time custody delegates analysis to a single-use analyzer (V3 carrier law).",
+   "cardinality": "one_to_many",
+   "strength": "soft",
+   "phase": [
+    "runtime"
+   ]
+  },
+  {
+   "from": "melder.crystallizer.crystals.spell_crystal.SpellCrystal",
+   "to": "melder.crystallizer.crystal_analysis.crystal_analysis_result",
+   "relation": "owns_lifecycle_of",
+   "why": "The crystal CARRIES exactly one analysis result (cleaned children-first).",
+   "cardinality": "one_to_one",
+   "strength": "hard",
+   "phase": [
+    "runtime"
+   ]
+  }
+ ]
+}

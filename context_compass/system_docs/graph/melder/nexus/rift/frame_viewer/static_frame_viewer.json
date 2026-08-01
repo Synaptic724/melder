@@ -1,0 +1,111 @@
+{
+ "schema_version": 1,
+ "source": "src/melder/nexus/rift/frame_viewer/static_frame_viewer.py",
+ "source_sha256": "9db5d16d9971de73bcca0d913a3bbe97f51eb943139dcd224d832139b72c0926",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.nexus.rift.frame_viewer.static_frame_viewer": {
+   "id": "melder.nexus.rift.frame_viewer.static_frame_viewer",
+   "label": "static_frame_viewer",
+   "kind": "module",
+   "file": "src/melder/nexus/rift/frame_viewer/static_frame_viewer.py",
+   "lineno": 1
+  },
+  "melder.nexus.rift.frame_viewer.static_frame_viewer.StaticFrameViewer": {
+   "id": "melder.nexus.rift.frame_viewer.static_frame_viewer.StaticFrameViewer",
+   "label": "StaticFrameViewer",
+   "kind": "class",
+   "file": "src/melder/nexus/rift/frame_viewer/static_frame_viewer.py",
+   "lineno": 14,
+   "bases": [
+    "FrameViewer"
+   ],
+   "markers": [],
+   "public_methods": [
+    "clone",
+    "from_frame_viewer",
+    "list_spell_source_ids_for_frame"
+   ],
+   "shape": {
+    "method_count": 9,
+    "has_bases": true,
+    "trivial": false
+   },
+   "role": "Static-room viewer specialization.",
+   "responsibilities": [
+    "filters spell-facing visibility down to already-live spells",
+    "rebuilds filtered compiled access surfaces from the base view surface"
+   ],
+   "owns_state": [
+    "_base_compiled_access_surfaces_by_frame_name",
+    "_filtered_compiled_access_surfaces_by_frame_name"
+   ],
+   "phases": [
+    "refresh",
+    "runtime",
+    "cleanup"
+   ]
+  }
+ },
+ "edges_out": [
+  {
+   "from": "melder.nexus.rift.frame_viewer.static_frame_viewer.StaticFrameViewer",
+   "to_label": "FrameViewer",
+   "relation": "specializes",
+   "to": "melder.nexus.rift.frame_viewer.frame_viewer.FrameViewer"
+  }
+ ],
+ "edge_candidates": [
+  {
+   "from": "melder.nexus.rift.frame_viewer.static_frame_viewer.StaticFrameViewer",
+   "to_label": "Aether",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.nexus.rift.frame_viewer.static_frame_viewer.StaticFrameViewer",
+   "to_label": "CompiledFrameACLAccessSurface",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.nexus.rift.frame_viewer.static_frame_viewer.StaticFrameViewer",
+   "to_label": "ValueError",
+   "relation": "creates",
+   "confidence": "candidate"
+  }
+ ],
+ "published_aliases": [],
+ "imports": {
+  "TYPE_CHECKING": "typing.TYPE_CHECKING",
+  "Any": "typing.Any",
+  "Iterator": "typing.Iterator",
+  "List": "typing.List",
+  "Optional": "typing.Optional",
+  "Tuple": "typing.Tuple",
+  "Aether": "melder.aether.aether.Aether",
+  "CompiledFrameACLAccessSurface": "melder.nexus.acl.frame_acl_compiled_access_surface.CompiledFrameACLAccessSurface",
+  "FrameViewer": "melder.nexus.rift.frame_viewer.frame_viewer.FrameViewer",
+  "Existence": "melder.aether.spellbook.existence.existence.Existence",
+  "SpellRecord": "melder.nexus.frame_descriptor.spell_record.SpellRecord"
+ },
+ "collapse_candidate": {
+  "module": "melder.nexus.rift.frame_viewer.static_frame_viewer",
+  "class": "melder.nexus.rift.frame_viewer.static_frame_viewer.StaticFrameViewer",
+  "label": "StaticFrameViewer"
+ },
+ "edges_authored": [
+  {
+   "from": "melder.nexus.rift.frame_viewer.static_frame_viewer.StaticFrameViewer",
+   "to": "melder.nexus.rift.frame_viewer.frame_viewer.FrameViewer",
+   "relation": "specializes",
+   "why": "StaticFrameViewer is the static-room specialization of the base viewer asset.",
+   "cardinality": "many_to_one",
+   "strength": "hard",
+   "phase": [
+    "refresh",
+    "runtime"
+   ]
+  }
+ ]
+}

@@ -1,0 +1,120 @@
+{
+ "schema_version": 1,
+ "source": "src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_request/transaction_request.py",
+ "source_sha256": "0aba680529cdf0ef518595219b1577eb830b45499bdc447cbed4b11f66f3c0df",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_request.transaction_request": {
+   "id": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_request.transaction_request",
+   "label": "transaction_request",
+   "kind": "module",
+   "file": "src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_request/transaction_request.py",
+   "lineno": 1
+  },
+  "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_request.transaction_request.ChangeTransactionType": {
+   "id": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_request.transaction_request.ChangeTransactionType",
+   "label": "ChangeTransactionType",
+   "kind": "enum",
+   "file": "src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_request/transaction_request.py",
+   "lineno": 9,
+   "bases": [],
+   "markers": [
+    "StrEnum"
+   ],
+   "public_methods": [],
+   "shape": {
+    "method_count": 0,
+    "has_bases": true,
+    "trivial": false
+   },
+   "role": "Enum of supported change-control transaction kinds.",
+   "responsibilities": [
+    "labels bind, link, transfer ownership, mutation, and cluster link transactions"
+   ],
+   "owns_state": [
+    "BIND",
+    "LINK",
+    "TRANSFER_OWNERSHIP",
+    "MUTATION",
+    "CLUSTER_LINK"
+   ],
+   "phases": [
+    "runtime"
+   ]
+  },
+  "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_request.transaction_request.ChangeControlTransactionRequest": {
+   "id": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_request.transaction_request.ChangeControlTransactionRequest",
+   "label": "ChangeControlTransactionRequest",
+   "kind": "class",
+   "file": "src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_request/transaction_request.py",
+   "lineno": 81,
+   "bases": [],
+   "markers": [],
+   "public_methods": [],
+   "shape": {
+    "method_count": 0,
+    "has_bases": false,
+    "trivial": true
+   },
+   "role": "Immutable pre-admission transaction request payload.",
+   "responsibilities": [
+    "stores normalized scope, binding, and contract metadata for one mutation request",
+    "acts as the canonical request record used by admission and staging logic"
+   ],
+   "owns_state": [
+    "request_id",
+    "request_type",
+    "scope_keys",
+    "scope_hashes",
+    "binding_keys",
+    "contract_keys",
+    "metadata"
+   ],
+   "phases": [
+    "runtime"
+   ]
+  },
+  "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_request.transaction_request.ChangeControlAdmissionResult": {
+   "id": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_request.transaction_request.ChangeControlAdmissionResult",
+   "label": "ChangeControlAdmissionResult",
+   "kind": "class",
+   "file": "src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_request/transaction_request.py",
+   "lineno": 176,
+   "bases": [],
+   "markers": [],
+   "public_methods": [],
+   "shape": {
+    "method_count": 0,
+    "has_bases": false,
+    "trivial": true
+   },
+   "role": "Immutable admission decision payload for one transaction request.",
+   "responsibilities": [
+    "stores the admitted verdict plus conflict and embargo evidence for one request"
+   ],
+   "owns_state": [
+    "admitted",
+    "reasons",
+    "conflicts",
+    "embargoes"
+   ],
+   "phases": [
+    "runtime"
+   ]
+  }
+ },
+ "edges_out": [],
+ "edge_candidates": [],
+ "published_aliases": [],
+ "imports": {
+  "dataclass": "dataclasses.dataclass",
+  "field": "dataclasses.field",
+  "StrEnum": "enum.StrEnum",
+  "Any": "typing.Any",
+  "Dict": "typing.Dict",
+  "Optional": "typing.Optional",
+  "Tuple": "typing.Tuple",
+  "ClassVar": "typing.ClassVar"
+ },
+ "collapse_candidate": null
+}

@@ -1,0 +1,165 @@
+{
+ "schema_version": 1,
+ "source": "src/melder/nexus/acl/configurations/profiles/view/frame_acl_view_profile.py",
+ "source_sha256": "6444c1289648699e5c63a003b3ca449819dddcff45745f9d3bf73d586a7ad97d",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.nexus.acl.configurations.profiles.view.frame_acl_view_profile": {
+   "id": "melder.nexus.acl.configurations.profiles.view.frame_acl_view_profile",
+   "label": "frame_acl_view_profile",
+   "kind": "module",
+   "file": "src/melder/nexus/acl/configurations/profiles/view/frame_acl_view_profile.py",
+   "lineno": 1
+  },
+  "melder.nexus.acl.configurations.profiles.view.frame_acl_view_profile.FrameACLViewProfile": {
+   "id": "melder.nexus.acl.configurations.profiles.view.frame_acl_view_profile.FrameACLViewProfile",
+   "label": "FrameACLViewProfile",
+   "kind": "class",
+   "file": "src/melder/nexus/acl/configurations/profiles/view/frame_acl_view_profile.py",
+   "lineno": 11,
+   "bases": [
+    "Cleanable"
+   ],
+   "markers": [],
+   "public_methods": [
+    "build_rule",
+    "build_ruleset",
+    "cleanup",
+    "coerce_ruleset",
+    "conduit_ruleset",
+    "create_default",
+    "create_hybrid",
+    "create_permissive",
+    "create_precision",
+    "create_safe",
+    "frame_ruleset",
+    "id",
+    "member_ruleset",
+    "minimum_spell_payload_type",
+    "minimum_spell_payload_version",
+    "name",
+    "required_nexus_label",
+    "required_nexus_version",
+    "spell_ruleset",
+    "validation_strategy_name",
+    "version"
+   ],
+   "shape": {
+    "method_count": 24,
+    "has_bases": true,
+    "trivial": false
+   },
+   "role": "Reusable typed view-profile ruleset bundle.",
+   "responsibilities": [
+    "owns frame, conduit, spell, and member view rulesets",
+    "carries required Nexus dataset and minimum spell-payload floors"
+   ],
+   "owns_state": [
+    "_required_nexus_label",
+    "_required_nexus_version",
+    "_minimum_spell_payload_type",
+    "_minimum_spell_payload_version",
+    "_frame_ruleset",
+    "_conduit_ruleset",
+    "_spell_ruleset",
+    "_member_ruleset"
+   ],
+   "phases": [
+    "runtime",
+    "cleanup"
+   ]
+  }
+ },
+ "edges_out": [
+  {
+   "from": "melder.nexus.acl.configurations.profiles.view.frame_acl_view_profile.FrameACLViewProfile",
+   "to_label": "Cleanable",
+   "relation": "specializes",
+   "to": "melder.utilities.general_base.cleanable.Cleanable"
+  }
+ ],
+ "edge_candidates": [
+  {
+   "from": "melder.nexus.acl.configurations.profiles.view.frame_acl_view_profile.FrameACLViewProfile",
+   "to_label": "RLock",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.nexus.acl.configurations.profiles.view.frame_acl_view_profile.FrameACLViewProfile",
+   "to_label": "FrameACLRule",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.nexus.acl.configurations.profiles.view.frame_acl_view_profile.FrameACLViewProfile",
+   "to_label": "FrameACLRuleSet",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.nexus.acl.configurations.profiles.view.frame_acl_view_profile.FrameACLViewProfile",
+   "to_label": "ValueError",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.nexus.acl.configurations.profiles.view.frame_acl_view_profile.FrameACLViewProfile",
+   "to_label": "TypeError",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.nexus.acl.configurations.profiles.view.frame_acl_view_profile.FrameACLViewProfile",
+   "to_label": "SafeViewProfileStrategy",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.nexus.acl.configurations.profiles.view.frame_acl_view_profile.FrameACLViewProfile",
+   "to_label": "HybridViewProfileStrategy",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.nexus.acl.configurations.profiles.view.frame_acl_view_profile.FrameACLViewProfile",
+   "to_label": "PermissiveViewProfileStrategy",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.nexus.acl.configurations.profiles.view.frame_acl_view_profile.FrameACLViewProfile",
+   "to_label": "PrecisionViewProfileStrategy",
+   "relation": "creates",
+   "confidence": "candidate"
+  }
+ ],
+ "published_aliases": [],
+ "imports": {
+  "List": "typing.List",
+  "Optional": "typing.Optional",
+  "FrameACLRule": "melder.nexus.acl.configurations.profiles.rules.frame_acl_rule.FrameACLRule",
+  "FrameACLRuleSet": "melder.nexus.acl.configurations.profiles.rules.frame_acl_ruleset.FrameACLRuleSet",
+  "Cleanable": "melder.utilities.general_base.cleanable.Cleanable",
+  "IDBuilder": "melder.utilities.helpers.id_builder.IDBuilder",
+  "SafeViewProfileStrategy": "melder.nexus.acl.configurations.profiles.view.safe_profile.SafeViewProfileStrategy",
+  "HybridViewProfileStrategy": "melder.nexus.acl.configurations.profiles.view.hybrid_profile.HybridViewProfileStrategy",
+  "PermissiveViewProfileStrategy": "melder.nexus.acl.configurations.profiles.view.permissive_profile.PermissiveViewProfileStrategy",
+  "PrecisionViewProfileStrategy": "melder.nexus.acl.configurations.profiles.view.precision.PrecisionViewProfileStrategy"
+ },
+ "collapse_candidate": null,
+ "edges_authored": [
+  {
+   "from": "melder.nexus.acl.configurations.profiles.view.frame_acl_view_profile.FrameACLViewProfile",
+   "to": "melder.nexus.acl.configurations.profiles.rules.frame_acl_ruleset.FrameACLRuleSet",
+   "relation": "owns_lifecycle_of",
+   "why": "FrameACLViewProfile owns the reusable view-family rulesets.",
+   "cardinality": "one_to_many",
+   "strength": "hard",
+   "phase": [
+    "runtime",
+    "cleanup"
+   ]
+  }
+ ]
+}

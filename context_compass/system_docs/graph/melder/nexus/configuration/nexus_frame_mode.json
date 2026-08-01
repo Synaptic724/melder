@@ -1,0 +1,51 @@
+{
+ "schema_version": 1,
+ "source": "src/melder/nexus/configuration/nexus_frame_mode.py",
+ "source_sha256": "c78acdae8d9fe916c2be144aec7f42f890cbbd34cff0578894a12699f549e72c",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.nexus.configuration.nexus_frame_mode": {
+   "id": "melder.nexus.configuration.nexus_frame_mode",
+   "label": "nexus_frame_mode",
+   "kind": "module",
+   "file": "src/melder/nexus/configuration/nexus_frame_mode.py",
+   "lineno": 1
+  },
+  "melder.nexus.configuration.nexus_frame_mode.NexusFrameMode": {
+   "id": "melder.nexus.configuration.nexus_frame_mode.NexusFrameMode",
+   "label": "NexusFrameMode",
+   "kind": "enum",
+   "file": "src/melder/nexus/configuration/nexus_frame_mode.py",
+   "lineno": 5,
+   "bases": [],
+   "markers": [
+    "Enum"
+   ],
+   "public_methods": [],
+   "shape": {
+    "method_count": 0,
+    "has_bases": true,
+    "trivial": false
+   },
+   "role": "Topology mode enum for Nexus-assigned internal frames.",
+   "responsibilities": [
+    "labels single, indexed, and one-per-workspace Nexus frame allocation modes"
+   ],
+   "owns_state": [
+    "single",
+    "indexed",
+    "one_per_workspace"
+   ],
+   "phases": [
+    "runtime"
+   ]
+  }
+ },
+ "edges_out": [],
+ "edge_candidates": [],
+ "published_aliases": [],
+ "imports": {
+  "Enum": "enum.Enum"
+ },
+ "collapse_candidate": null
+}

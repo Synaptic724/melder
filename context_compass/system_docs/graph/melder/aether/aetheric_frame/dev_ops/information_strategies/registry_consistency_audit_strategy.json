@@ -1,0 +1,79 @@
+{
+ "schema_version": 1,
+ "source": "src/melder/aether/aetheric_frame/dev_ops/information_strategies/registry_consistency_audit_strategy.py",
+ "source_sha256": "845b32324e0d0916a8adf84c5539edefa30a905e19b803c7900d336cf79b4984",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.aether.aetheric_frame.dev_ops.information_strategies.registry_consistency_audit_strategy": {
+   "id": "melder.aether.aetheric_frame.dev_ops.information_strategies.registry_consistency_audit_strategy",
+   "label": "registry_consistency_audit_strategy",
+   "kind": "module",
+   "file": "src/melder/aether/aetheric_frame/dev_ops/information_strategies/registry_consistency_audit_strategy.py",
+   "lineno": 1
+  },
+  "melder.aether.aetheric_frame.dev_ops.information_strategies.registry_consistency_audit_strategy.RegistryConsistencyAuditStrategy": {
+   "id": "melder.aether.aetheric_frame.dev_ops.information_strategies.registry_consistency_audit_strategy.RegistryConsistencyAuditStrategy",
+   "label": "RegistryConsistencyAuditStrategy",
+   "kind": "class",
+   "file": "src/melder/aether/aetheric_frame/dev_ops/information_strategies/registry_consistency_audit_strategy.py",
+   "lineno": 13,
+   "bases": [
+    "DevopsInformationStrategy"
+   ],
+   "markers": [],
+   "public_methods": [
+    "execute"
+   ],
+   "shape": {
+    "method_count": 1,
+    "has_bases": true,
+    "trivial": false
+   },
+   "role": "Registry-backed dev-ops information strategy for mirrored-map symmetry audits.",
+   "responsibilities": [
+    "checks forward and reverse registry maps for asymmetry across ownership, links, clusters, and transactions",
+    "returns detached consistency findings without mutating the registry",
+    "acts as a sampled control-plane bookkeeping audit over registry deltas"
+   ],
+   "phases": [
+    "runtime"
+   ]
+  }
+ },
+ "edges_out": [
+  {
+   "from": "melder.aether.aetheric_frame.dev_ops.information_strategies.registry_consistency_audit_strategy.RegistryConsistencyAuditStrategy",
+   "to_label": "DevopsInformationStrategy",
+   "relation": "specializes",
+   "to": "melder.aether.aetheric_frame.dev_ops.devops_information_strategy.DevopsInformationStrategy"
+  }
+ ],
+ "edge_candidates": [],
+ "published_aliases": [],
+ "imports": {
+  "TYPE_CHECKING": "typing.TYPE_CHECKING",
+  "Dict": "typing.Dict",
+  "List": "typing.List",
+  "Tuple": "typing.Tuple",
+  "DevopsInformationStrategy": "melder.aether.aetheric_frame.dev_ops.devops_information_strategy.DevopsInformationStrategy",
+  "DevopsInformationRegistry": "melder.aether.aetheric_frame.dev_ops.devops_information_registry.DevopsInformationRegistry"
+ },
+ "collapse_candidate": {
+  "module": "melder.aether.aetheric_frame.dev_ops.information_strategies.registry_consistency_audit_strategy",
+  "class": "melder.aether.aetheric_frame.dev_ops.information_strategies.registry_consistency_audit_strategy.RegistryConsistencyAuditStrategy",
+  "label": "RegistryConsistencyAuditStrategy"
+ },
+ "edges_authored": [
+  {
+   "from": "melder.aether.aetheric_frame.dev_ops.information_strategies.registry_consistency_audit_strategy.RegistryConsistencyAuditStrategy",
+   "to": "melder.aether.aetheric_frame.dev_ops.devops_information_strategy.DevopsInformationStrategy",
+   "relation": "specializes",
+   "why": "RegistryConsistencyAuditStrategy specializes the shared dev-ops information strategy contract.",
+   "cardinality": "one_to_one",
+   "strength": "hard",
+   "phase": [
+    "runtime"
+   ]
+  }
+ ]
+}

@@ -1,0 +1,51 @@
+{
+ "schema_version": 1,
+ "source": "src/melder/nexus/configuration/rift_validation_mode.py",
+ "source_sha256": "3d4021a01aa8db6698c4218aca28f8ca066167117250bbae3051b8999b6d61a5",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.nexus.configuration.rift_validation_mode": {
+   "id": "melder.nexus.configuration.rift_validation_mode",
+   "label": "rift_validation_mode",
+   "kind": "module",
+   "file": "src/melder/nexus/configuration/rift_validation_mode.py",
+   "lineno": 1
+  },
+  "melder.nexus.configuration.rift_validation_mode.RiftValidationMode": {
+   "id": "melder.nexus.configuration.rift_validation_mode.RiftValidationMode",
+   "label": "RiftValidationMode",
+   "kind": "enum",
+   "file": "src/melder/nexus/configuration/rift_validation_mode.py",
+   "lineno": 5,
+   "bases": [],
+   "markers": [
+    "Enum"
+   ],
+   "public_methods": [],
+   "shape": {
+    "method_count": 0,
+    "has_bases": true,
+    "trivial": false
+   },
+   "role": "Validation posture enum for Rift execution.",
+   "responsibilities": [
+    "labels strict, relaxed, and unsafe Rift validation modes"
+   ],
+   "owns_state": [
+    "strict",
+    "relaxed",
+    "unsafe"
+   ],
+   "phases": [
+    "runtime"
+   ]
+  }
+ },
+ "edges_out": [],
+ "edge_candidates": [],
+ "published_aliases": [],
+ "imports": {
+  "Enum": "enum.Enum"
+ },
+ "collapse_candidate": null
+}

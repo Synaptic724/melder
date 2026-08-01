@@ -1,0 +1,101 @@
+{
+ "schema_version": 1,
+ "source": "src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_7.py",
+ "source_sha256": "ecc6134e55ec2e73c8272116da67aad450c1b286ff7802f8e7de5387d658b46a",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.aether.spellbook.spell_compiler.phases.compiler_phase_7": {
+   "id": "melder.aether.spellbook.spell_compiler.phases.compiler_phase_7",
+   "label": "compiler_phase_7",
+   "kind": "module",
+   "file": "src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_7.py",
+   "lineno": 1
+  },
+  "melder.aether.spellbook.spell_compiler.phases.compiler_phase_7.CompilerPhase7": {
+   "id": "melder.aether.spellbook.spell_compiler.phases.compiler_phase_7.CompilerPhase7",
+   "label": "CompilerPhase7",
+   "kind": "class",
+   "file": "src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_7.py",
+   "lineno": 20,
+   "bases": [],
+   "markers": [],
+   "public_methods": [
+    "run_frame_wide",
+    "run_local"
+   ],
+   "shape": {
+    "method_count": 5,
+    "has_bases": false,
+    "trivial": false
+   },
+   "role": "Compiler-owned phase-7 change-control wiring surface.",
+   "responsibilities": [
+    "rebuilds or upserts change-control component-of mappings from phase-5 root blueprints",
+    "registers conduit-scoped revalidators with ChangeControlManager",
+    "bridges dirty-root revalidation back into SpellCompilerSystem re-entry"
+   ],
+   "phases": [
+    "runtime"
+   ]
+  }
+ },
+ "edges_out": [],
+ "edge_candidates": [
+  {
+   "from": "melder.aether.spellbook.spell_compiler.phases.compiler_phase_7.CompilerPhase7",
+   "to_label": "RuntimeError",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.aether.spellbook.spell_compiler.phases.compiler_phase_7.CompilerPhase7",
+   "to_label": "CompilerPhase5",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.aether.spellbook.spell_compiler.phases.compiler_phase_7.CompilerPhase7",
+   "to_label": "SpellCompilerSystem",
+   "relation": "creates",
+   "confidence": "candidate"
+  }
+ ],
+ "published_aliases": [],
+ "imports": {
+  "TYPE_CHECKING": "typing.TYPE_CHECKING",
+  "Optional": "typing.Optional",
+  "Set": "typing.Set",
+  "Dict": "typing.Dict",
+  "CompilerPhase5": "melder.aether.spellbook.spell_compiler.phases.compiler_phase_5.CompilerPhase5",
+  "RootResolutionBlueprint": "melder.aether.spellbook.spell_compiler.blueprints.root_resolution_blueprint.RootResolutionBlueprint",
+  "SpellCompilerArtifact": "melder.aether.spellbook.spell_compiler.spell_compiler_artifact.SpellCompilerArtifact",
+  "Spellbook": "melder.aether.spellbook.spellbook.Spellbook",
+  "CancellationEvent": "melder.utilities.synchronization.cancellation_event_signal.CancellationEvent",
+  "SpellCompilerSystem": "melder.aether.spellbook.spell_compiler.spell_compiler_system.SpellCompilerSystem"
+ },
+ "collapse_candidate": null,
+ "edges_authored": [
+  {
+   "from": "melder.aether.spellbook.spell_compiler.phases.compiler_phase_7.CompilerPhase7",
+   "to": "melder.aether.aetheric_frame.dev_ops.change_control_manager.change_control_manager.ChangeControlManager",
+   "relation": "uses",
+   "why": "CompilerPhase7 rebuilds or upserts component-of mappings and registers conduit revalidators through ChangeControlManager.",
+   "cardinality": "one_to_one",
+   "strength": "borrowed",
+   "phase": [
+    "runtime"
+   ]
+  },
+  {
+   "from": "melder.aether.spellbook.spell_compiler.phases.compiler_phase_7.CompilerPhase7",
+   "to": "melder.aether.spellbook.spell_compiler.spell_compiler_system.SpellCompilerSystem",
+   "relation": "uses",
+   "why": "CompilerPhase7 revalidation hooks re-enter SpellCompilerSystem when dirty roots need full phase reruns.",
+   "cardinality": "one_to_one",
+   "strength": "borrowed",
+   "phase": [
+    "runtime"
+   ]
+  }
+ ]
+}

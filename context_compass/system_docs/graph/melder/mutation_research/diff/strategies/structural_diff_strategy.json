@@ -1,0 +1,79 @@
+{
+ "schema_version": 1,
+ "source": "src/melder/mutation_research/diff/strategies/structural_diff_strategy.py",
+ "source_sha256": "698cfb86a7fa122ec81ee0dd4817949fa1e8067a58c9280c70ed28751c7481c9",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.mutation_research.diff.strategies.structural_diff_strategy": {
+   "id": "melder.mutation_research.diff.strategies.structural_diff_strategy",
+   "label": "structural_diff_strategy",
+   "kind": "module",
+   "file": "src/melder/mutation_research/diff/strategies/structural_diff_strategy.py",
+   "lineno": 1
+  },
+  "melder.mutation_research.diff.strategies.structural_diff_strategy.StructuralDiffStrategy": {
+   "id": "melder.mutation_research.diff.strategies.structural_diff_strategy.StructuralDiffStrategy",
+   "label": "StructuralDiffStrategy",
+   "kind": "class",
+   "file": "src/melder/mutation_research/diff/strategies/structural_diff_strategy.py",
+   "lineno": 8,
+   "bases": [
+    "DiffStrategy"
+   ],
+   "markers": [],
+   "public_methods": [
+    "diff",
+    "name"
+   ],
+   "shape": {
+    "method_count": 11,
+    "has_bases": true,
+    "trivial": false
+   },
+   "role": "AST-level structural comparison strategy (the reasoning layer of the diff family).",
+   "responsibilities": [
+    "reports per-module class/function adds, removes, and changes split into signature, docstring, and body aspects",
+    "docstring-stripped AST fingerprints decide body change; unparseable source reports a loud per-module parse_error, never a crash"
+   ],
+   "phases": [
+    "runtime"
+   ]
+  }
+ },
+ "edges_out": [
+  {
+   "from": "melder.mutation_research.diff.strategies.structural_diff_strategy.StructuralDiffStrategy",
+   "to_label": "DiffStrategy",
+   "relation": "specializes",
+   "to": "melder.mutation_research.diff.diff_strategy.DiffStrategy"
+  }
+ ],
+ "edge_candidates": [],
+ "published_aliases": [],
+ "imports": {
+  "Dict": "typing.Dict",
+  "List": "typing.List",
+  "Optional": "typing.Optional",
+  "Tuple": "typing.Tuple",
+  "ClassVar": "typing.ClassVar",
+  "DiffStrategy": "melder.mutation_research.diff.diff_strategy.DiffStrategy"
+ },
+ "collapse_candidate": {
+  "module": "melder.mutation_research.diff.strategies.structural_diff_strategy",
+  "class": "melder.mutation_research.diff.strategies.structural_diff_strategy.StructuralDiffStrategy",
+  "label": "StructuralDiffStrategy"
+ },
+ "edges_authored": [
+  {
+   "from": "melder.mutation_research.diff.strategies.structural_diff_strategy.StructuralDiffStrategy",
+   "to": "melder.mutation_research.diff.diff_strategy.DiffStrategy",
+   "relation": "specializes",
+   "why": "StructuralDiffStrategy specializes the abstract diff-strategy contract.",
+   "cardinality": "one_to_one",
+   "strength": "hard",
+   "phase": [
+    "runtime"
+   ]
+  }
+ ]
+}

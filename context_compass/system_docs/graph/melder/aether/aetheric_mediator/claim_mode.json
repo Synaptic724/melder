@@ -1,0 +1,67 @@
+{
+ "schema_version": 1,
+ "source": "src/melder/aether/aetheric_mediator/claim_mode.py",
+ "source_sha256": "55dcf960df0f529c93f2ac1c868cceb41bed5f71192cd17c8c2ec8f50942952b",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.aether.aetheric_mediator.claim_mode": {
+   "id": "melder.aether.aetheric_mediator.claim_mode",
+   "label": "claim_mode",
+   "kind": "module",
+   "file": "src/melder/aether/aetheric_mediator/claim_mode.py",
+   "lineno": 1
+  },
+  "melder.aether.aetheric_mediator.claim_mode.ClaimMode": {
+   "id": "melder.aether.aetheric_mediator.claim_mode.ClaimMode",
+   "label": "ClaimMode",
+   "kind": "enum",
+   "file": "src/melder/aether/aetheric_mediator/claim_mode.py",
+   "lineno": 17,
+   "bases": [],
+   "markers": [
+    "StrEnum"
+   ],
+   "public_methods": [],
+   "shape": {
+    "method_count": 0,
+    "has_bases": true,
+    "trivial": false
+   }
+  },
+  "melder.aether.aetheric_mediator.claim_mode.ClaimCompatibility": {
+   "id": "melder.aether.aetheric_mediator.claim_mode.ClaimCompatibility",
+   "label": "ClaimCompatibility",
+   "kind": "class",
+   "file": "src/melder/aether/aetheric_mediator/claim_mode.py",
+   "lineno": 72,
+   "bases": [],
+   "markers": [],
+   "public_methods": [
+    "is_exclusive",
+    "permits"
+   ],
+   "shape": {
+    "method_count": 2,
+    "has_bases": false,
+    "trivial": false
+   }
+  }
+ },
+ "edges_out": [],
+ "edge_candidates": [
+  {
+   "from": "melder.aether.aetheric_mediator.claim_mode.ClaimCompatibility",
+   "to_label": "TypeError",
+   "relation": "creates",
+   "confidence": "candidate"
+  }
+ ],
+ "published_aliases": [],
+ "imports": {
+  "StrEnum": "enum.StrEnum",
+  "ClassVar": "typing.ClassVar",
+  "FrozenSet": "typing.FrozenSet",
+  "Tuple": "typing.Tuple"
+ },
+ "collapse_candidate": null
+}

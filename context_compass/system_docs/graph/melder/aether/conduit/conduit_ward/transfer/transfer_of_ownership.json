@@ -1,0 +1,181 @@
+{
+ "schema_version": 1,
+ "source": "src/melder/aether/conduit/conduit_ward/transfer/transfer_of_ownership.py",
+ "source_sha256": "b8ece173fc7064dd6fc4e108efc6cb998738548ab7193ccfdcbeccbbc69ab916",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.aether.conduit.conduit_ward.transfer.transfer_of_ownership": {
+   "id": "melder.aether.conduit.conduit_ward.transfer.transfer_of_ownership",
+   "label": "transfer_of_ownership",
+   "kind": "module",
+   "file": "src/melder/aether/conduit/conduit_ward/transfer/transfer_of_ownership.py",
+   "lineno": 1
+  },
+  "melder.aether.conduit.conduit_ward.transfer.transfer_of_ownership.TransferOfOwnership": {
+   "id": "melder.aether.conduit.conduit_ward.transfer.transfer_of_ownership.TransferOfOwnership",
+   "label": "TransferOfOwnership",
+   "kind": "class",
+   "file": "src/melder/aether/conduit/conduit_ward/transfer/transfer_of_ownership.py",
+   "lineno": 40,
+   "bases": [
+    "Cleanable"
+   ],
+   "markers": [],
+   "public_methods": [
+    "cleanup",
+    "execute",
+    "preflight"
+   ],
+   "shape": {
+    "method_count": 45,
+    "has_bases": true,
+    "trivial": false
+   },
+   "role": "Control-plane helper that migrates a spell lineage between conduit owners.",
+   "responsibilities": [
+    "preflights and executes dynamic spell ownership transfer between conduits",
+    "owns rollback bookkeeping, change-intent registration, and incident reporting for transfer operations"
+   ],
+   "owns_state": [
+    "source_conduit",
+    "target_conduit",
+    "spell",
+    "_preflight_summary",
+    "_change_control_manager",
+    "_incident_manager",
+    "_rollback_actions"
+   ],
+   "phases": [
+    "runtime"
+   ]
+  }
+ },
+ "edges_out": [
+  {
+   "from": "melder.aether.conduit.conduit_ward.transfer.transfer_of_ownership.TransferOfOwnership",
+   "to_label": "Cleanable",
+   "relation": "specializes",
+   "to": "melder.utilities.general_base.cleanable.Cleanable"
+  }
+ ],
+ "edge_candidates": [
+  {
+   "from": "melder.aether.conduit.conduit_ward.transfer.transfer_of_ownership.TransferOfOwnership",
+   "to_label": "RLock",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.aether.conduit.conduit_ward.transfer.transfer_of_ownership.TransferOfOwnership",
+   "to_label": "RuntimeError",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.aether.conduit.conduit_ward.transfer.transfer_of_ownership.TransferOfOwnership",
+   "to_label": "SafeGuard",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.aether.conduit.conduit_ward.transfer.transfer_of_ownership.TransferOfOwnership",
+   "to_label": "TransferOfOwnership",
+   "relation": "creates",
+   "confidence": "candidate"
+  }
+ ],
+ "published_aliases": [],
+ "imports": {
+  "partial": "functools.partial",
+  "TYPE_CHECKING": "typing.TYPE_CHECKING",
+  "Any": "typing.Any",
+  "Callable": "typing.Callable",
+  "Dict": "typing.Dict",
+  "List": "typing.List",
+  "Optional": "typing.Optional",
+  "Set": "typing.Set",
+  "cast": "typing.cast",
+  "ClassVar": "typing.ClassVar",
+  "Permissions": "melder.aether.conduit.conduit_ward.permissions.permissions.Permissions",
+  "Policies": "melder.aether.conduit.conduit_ward.policies.policies.Policies",
+  "Cleanable": "melder.utilities.general_base.cleanable.Cleanable",
+  "SpellIndex": "melder.aether.spellbook.bind.spell_index.SpellIndex",
+  "Existence": "melder.aether.spellbook.existence.existence.Existence",
+  "new_ulid": "melder.utilities.helpers.ulid_factory.new_ulid",
+  "SafeGuard": "melder.utilities.synchronization.safeguard.SafeGuard",
+  "DetailReason": "melder.aether.conduit.conduit_ward.contract.detail_reason.DetailReason",
+  "SpellStateChangeReason": "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_state_change_reason.SpellStateChangeReason",
+  "SpellState": "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_state.SpellState",
+  "SpellValidity": "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_validity.SpellValidity",
+  "IncidentSeverity": "melder.aether.aetheric_frame.dev_ops.incident_manager.incident_severity.IncidentSeverity",
+  "Conduit": "melder.aether.conduit.conduit.Conduit",
+  "ChangeControlManager": "melder.aether.aetheric_frame.dev_ops.change_control_manager.change_control_manager.ChangeControlManager",
+  "Aether": "melder.aether.aether.Aether",
+  "Spell": "melder.aether.spellbook.spell.Spell",
+  "Spellbook": "melder.aether.spellbook.spellbook.Spellbook",
+  "ConduitCloud": "melder.aether.aetheric_frame.conduit_cloud.ConduitCloud",
+  "IncidentManager": "melder.aether.aetheric_frame.dev_ops.incident_manager.incident_manager.IncidentManager"
+ },
+ "collapse_candidate": {
+  "module": "melder.aether.conduit.conduit_ward.transfer.transfer_of_ownership",
+  "class": "melder.aether.conduit.conduit_ward.transfer.transfer_of_ownership.TransferOfOwnership",
+  "label": "TransferOfOwnership"
+ },
+ "edges_authored": [
+  {
+   "from": "melder.aether.conduit.conduit_ward.transfer.transfer_of_ownership.TransferOfOwnership",
+   "to": "melder.aether.aetheric_frame.dev_ops.change_control_manager.change_control_manager.ChangeControlManager",
+   "relation": "borrows",
+   "why": "TransferOfOwnership records and clears change intent through the frame change-control manager.",
+   "cardinality": "many_to_one",
+   "strength": "borrowed",
+   "phase": [
+    "runtime"
+   ]
+  },
+  {
+   "from": "melder.aether.conduit.conduit_ward.transfer.transfer_of_ownership.TransferOfOwnership",
+   "to": "melder.aether.aetheric_frame.dev_ops.incident_manager.incident_manager.IncidentManager",
+   "relation": "borrows",
+   "why": "TransferOfOwnership uses the frame incident manager to report failed moves.",
+   "cardinality": "many_to_one",
+   "strength": "borrowed",
+   "phase": [
+    "runtime"
+   ]
+  },
+  {
+   "from": "melder.aether.conduit.conduit_ward.transfer.transfer_of_ownership.TransferOfOwnership",
+   "to": "melder.aether.aetheric_frame.dev_ops.incident_manager.incident_severity.IncidentSeverity",
+   "relation": "uses",
+   "why": "TransferOfOwnership uses IncidentSeverity when reporting failed transfer incidents.",
+   "cardinality": "many_to_one",
+   "strength": "borrowed",
+   "phase": [
+    "runtime"
+   ]
+  },
+  {
+   "from": "melder.aether.conduit.conduit_ward.transfer.transfer_of_ownership.TransferOfOwnership",
+   "to": "melder.aether.conduit.conduit.Conduit",
+   "relation": "uses",
+   "why": "TransferOfOwnership coordinates ownership migration between source and target conduits.",
+   "cardinality": "many_to_one",
+   "strength": "borrowed",
+   "phase": [
+    "runtime"
+   ]
+  },
+  {
+   "from": "melder.aether.conduit.conduit_ward.transfer.transfer_of_ownership.TransferOfOwnership",
+   "to": "melder.aether.spellbook.bind.spell_index.SpellIndex",
+   "relation": "uses",
+   "why": "TransferOfOwnership resolves and migrates one spell lineage identified by SpellIndex.",
+   "cardinality": "many_to_one",
+   "strength": "borrowed",
+   "phase": [
+    "runtime"
+   ]
+  }
+ ]
+}

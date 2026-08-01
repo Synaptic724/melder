@@ -1,0 +1,102 @@
+{
+ "schema_version": 1,
+ "source": "src/melder/aether/conduit/conduit_pool.py",
+ "source_sha256": "d6865864423b5c48579f0d9beedec8058e6c88cb7bb9ca8e12bb8b772fe28343",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.aether.conduit.conduit_pool": {
+   "id": "melder.aether.conduit.conduit_pool",
+   "label": "conduit_pool",
+   "kind": "module",
+   "file": "src/melder/aether/conduit/conduit_pool.py",
+   "lineno": 1
+  },
+  "melder.aether.conduit.conduit_pool.ConduitPool": {
+   "id": "melder.aether.conduit.conduit_pool.ConduitPool",
+   "label": "ConduitPool",
+   "kind": "class",
+   "file": "src/melder/aether/conduit/conduit_pool.py",
+   "lineno": 9,
+   "bases": [
+    "AbstractElasticPool"
+   ],
+   "markers": [],
+   "public_methods": [
+    "create_object",
+    "destroy_object",
+    "return_lesser_conduit",
+    "root_conduit",
+    "root_conduit_id"
+   ],
+   "shape": {
+    "method_count": 5,
+    "has_bases": true,
+    "trivial": false
+   },
+   "role": "Root-conduit-owned pool for reusable lesser conduit shells.",
+   "responsibilities": [
+    "retains reusable lesser conduit shells for one root conduit",
+    "returns one idle lesser shell when available",
+    "destroys overflow lesser conduits through the permanent cleanup lane"
+   ],
+   "owns_state": [
+    "_root_conduit",
+    "_root_conduit_id"
+   ],
+   "phases": [
+    "init",
+    "runtime",
+    "cleanup"
+   ]
+  }
+ },
+ "edges_out": [
+  {
+   "from": "melder.aether.conduit.conduit_pool.ConduitPool",
+   "to_label": "AbstractElasticPool",
+   "relation": "specializes",
+   "to": "melder.utilities.general_base.abstract_elastic_pool.AbstractElasticPool"
+  }
+ ],
+ "edge_candidates": [],
+ "published_aliases": [],
+ "imports": {
+  "TYPE_CHECKING": "typing.TYPE_CHECKING",
+  "Any": "typing.Any",
+  "ClassVar": "typing.ClassVar",
+  "Optional": "typing.Optional",
+  "AbstractElasticPool": "melder.utilities.general_base.abstract_elastic_pool.AbstractElasticPool",
+  "Conduit": "melder.aether.conduit.conduit.Conduit"
+ },
+ "collapse_candidate": {
+  "module": "melder.aether.conduit.conduit_pool",
+  "class": "melder.aether.conduit.conduit_pool.ConduitPool",
+  "label": "ConduitPool"
+ },
+ "edges_authored": [
+  {
+   "from": "melder.aether.conduit.conduit_pool.ConduitPool",
+   "to": "melder.aether.conduit.conduit.Conduit",
+   "relation": "borrows",
+   "why": "ConduitPool keeps a stable reference to the root conduit that owns the reusable lesser-conduit pool.",
+   "cardinality": "one_to_one",
+   "strength": "borrowed",
+   "phase": [
+    "runtime"
+   ]
+  },
+  {
+   "from": "melder.aether.conduit.conduit_pool.ConduitPool",
+   "to": "melder.utilities.general_base.abstract_elastic_pool.AbstractElasticPool",
+   "relation": "specializes",
+   "why": "ConduitPool specializes AbstractElasticPool for reusable lesser conduit shells.",
+   "cardinality": "one_to_one",
+   "strength": "hard",
+   "phase": [
+    "init",
+    "runtime",
+    "cleanup"
+   ]
+  }
+ ]
+}

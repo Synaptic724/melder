@@ -1,0 +1,56 @@
+{
+ "schema_version": 1,
+ "source": "src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_validity.py",
+ "source_sha256": "c7b0c7882dd7d307af0744789241282021494a4c491d13bfed741cbb157dbc41",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_validity": {
+   "id": "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_validity",
+   "label": "spell_validity",
+   "kind": "module",
+   "file": "src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_validity.py",
+   "lineno": 1
+  },
+  "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_validity.SpellValidity": {
+   "id": "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_validity.SpellValidity",
+   "label": "SpellValidity",
+   "kind": "enum",
+   "file": "src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_validity.py",
+   "lineno": 3,
+   "bases": [],
+   "markers": [
+    "Enum"
+   ],
+   "public_methods": [],
+   "shape": {
+    "method_count": 0,
+    "has_bases": true,
+    "trivial": false
+   },
+   "role": "Coarse validity gate enum for structural and resolution state.",
+   "responsibilities": [
+    "labels unknown, valid, gated, invalid, disabled, and cleaned validity states"
+   ],
+   "owns_state": [
+    "unknown",
+    "valid",
+    "gated",
+    "invalid",
+    "disabled",
+    "cleaned"
+   ],
+   "phases": [
+    "validation",
+    "runtime"
+   ]
+  }
+ },
+ "edges_out": [],
+ "edge_candidates": [],
+ "published_aliases": [],
+ "imports": {
+  "Enum": "enum.Enum",
+  "auto": "enum.auto"
+ },
+ "collapse_candidate": null
+}

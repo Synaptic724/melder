@@ -1,0 +1,165 @@
+{
+ "schema_version": 1,
+ "source": "src/melder/nexus/nexus_frame_manager.py",
+ "source_sha256": "aa0e9693a651e05754c6279372e20921e46ba4b6e5b6fd3e7065b1efb48198b1",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.nexus.nexus_frame_manager": {
+   "id": "melder.nexus.nexus_frame_manager",
+   "label": "nexus_frame_manager",
+   "kind": "module",
+   "file": "src/melder/nexus/nexus_frame_manager.py",
+   "lineno": 1
+  },
+  "melder.nexus.nexus_frame_manager.NexusFrameManager": {
+   "id": "melder.nexus.nexus_frame_manager.NexusFrameManager",
+   "label": "NexusFrameManager",
+   "kind": "class",
+   "file": "src/melder/nexus/nexus_frame_manager.py",
+   "lineno": 20,
+   "bases": [
+    "Cleanable"
+   ],
+   "markers": [],
+   "public_methods": [
+    "authorize_frame_link_for_rift",
+    "begin",
+    "cleanup",
+    "create",
+    "create_dynamic_frame",
+    "create_frame_for_rift",
+    "exists",
+    "get_frame_for_rift",
+    "get_frame_names_to_cleanup_for_removed_rift",
+    "handle_aether_frame_disposal",
+    "id",
+    "list_accessible_frame_names_for_rift",
+    "list_frame_names",
+    "remove"
+   ],
+   "shape": {
+    "method_count": 31,
+    "has_bases": true,
+    "trivial": false
+   },
+   "role": "Nexus-owned manager for authored managed frames.",
+   "responsibilities": [
+    "stores authored Nexus-frame configurations by frame name",
+    "creates NexusFrameBuilder authoring surfaces",
+    "realizes rooted conduits for Nexus-managed frames",
+    "tracks live Nexus-managed frames and their metadata"
+   ],
+   "owns_state": [
+    "_nexus_frames_by_name",
+    "_frame_configurations_by_name",
+    "_nexus"
+   ],
+   "phases": [
+    "runtime",
+    "cleanup"
+   ]
+  }
+ },
+ "edges_out": [
+  {
+   "from": "melder.nexus.nexus_frame_manager.NexusFrameManager",
+   "to_label": "Cleanable",
+   "relation": "specializes",
+   "to": "melder.utilities.general_base.cleanable.Cleanable"
+  }
+ ],
+ "edge_candidates": [
+  {
+   "from": "melder.nexus.nexus_frame_manager.NexusFrameManager",
+   "to_label": "RLock",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.nexus.nexus_frame_manager.NexusFrameManager",
+   "to_label": "NexusFrameBuilder",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.nexus.nexus_frame_manager.NexusFrameManager",
+   "to_label": "FrameDescriptorPayload",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.nexus.nexus_frame_manager.NexusFrameManager",
+   "to_label": "FrameRecord",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.nexus.nexus_frame_manager.NexusFrameManager",
+   "to_label": "Spellbook",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.nexus.nexus_frame_manager.NexusFrameManager",
+   "to_label": "ValueError",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.nexus.nexus_frame_manager.NexusFrameManager",
+   "to_label": "TypeError",
+   "relation": "creates",
+   "confidence": "candidate"
+  }
+ ],
+ "published_aliases": [],
+ "imports": {
+  "Dict": "typing.Dict",
+  "Optional": "typing.Optional",
+  "Set": "typing.Set",
+  "Tuple": "typing.Tuple",
+  "TYPE_CHECKING": "typing.TYPE_CHECKING",
+  "NexusFrameMode": "melder.nexus.configuration.nexus_frame_mode.NexusFrameMode",
+  "FrameDescriptorPayload": "melder.nexus.frame_descriptor.frame_descriptor_payload.FrameDescriptorPayload",
+  "FrameRecord": "melder.nexus.frame_descriptor.frame_record.FrameRecord",
+  "NexusFrameBuilder": "melder.nexus.nexus_frame_builder.NexusFrameBuilder",
+  "SystemState": "melder.aether.spellbook.configuration.system_state.SystemState",
+  "Cleanable": "melder.utilities.general_base.cleanable.Cleanable",
+  "IDBuilder": "melder.utilities.helpers.id_builder.IDBuilder",
+  "NexusFrameConfiguration": "melder.nexus.nexus_frame_configuration.NexusFrameConfiguration",
+  "Conduit": "melder.aether.conduit.conduit.Conduit",
+  "Nexus": "melder.nexus.nexus.Nexus",
+  "AethericFrame": "melder.aether.aetheric_frame.aetheric_frame.AethericFrame",
+  "Spellbook": "melder.aether.spellbook.spellbook.Spellbook"
+ },
+ "collapse_candidate": {
+  "module": "melder.nexus.nexus_frame_manager",
+  "class": "melder.nexus.nexus_frame_manager.NexusFrameManager",
+  "label": "NexusFrameManager"
+ },
+ "edges_authored": [
+  {
+   "from": "melder.nexus.nexus_frame_manager.NexusFrameManager",
+   "to": "melder.nexus.nexus_frame_builder.NexusFrameBuilder",
+   "relation": "creates",
+   "why": "NexusFrameManager creates NexusFrameBuilder instances to stage authored managed-frame configuration.",
+   "cardinality": "one_to_many",
+   "strength": "hard",
+   "phase": [
+    "runtime"
+   ]
+  },
+  {
+   "from": "melder.nexus.nexus_frame_manager.NexusFrameManager",
+   "to": "melder.nexus.nexus_frame_configuration.NexusFrameConfiguration",
+   "relation": "owns_lifecycle_of",
+   "why": "NexusFrameManager stores and manages authored NexusFrameConfiguration objects by frame name.",
+   "cardinality": "one_to_many",
+   "strength": "hard",
+   "phase": [
+    "runtime",
+    "cleanup"
+   ]
+  }
+ ]
+}

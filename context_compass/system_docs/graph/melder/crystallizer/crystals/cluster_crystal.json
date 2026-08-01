@@ -1,0 +1,58 @@
+{
+ "schema_version": 1,
+ "source": "src/melder/crystallizer/crystals/cluster_crystal.py",
+ "source_sha256": "1546a6bda835766a2220b602f0c9580dc639e9412151387859044ba0825840c4",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.crystallizer.crystals.cluster_crystal": {
+   "id": "melder.crystallizer.crystals.cluster_crystal",
+   "label": "cluster_crystal",
+   "kind": "module",
+   "file": "src/melder/crystallizer/crystals/cluster_crystal.py",
+   "lineno": 1
+  },
+  "melder.crystallizer.crystals.cluster_crystal.ClusterCrystal": {
+   "id": "melder.crystallizer.crystals.cluster_crystal.ClusterCrystal",
+   "label": "ClusterCrystal",
+   "kind": "class",
+   "file": "src/melder/crystallizer/crystals/cluster_crystal.py",
+   "lineno": 6,
+   "bases": [
+    "Cleanable"
+   ],
+   "markers": [],
+   "public_methods": [
+    "cleanup",
+    "cluster_id",
+    "describe",
+    "frame_name"
+   ],
+   "shape": {
+    "method_count": 4,
+    "has_bases": true,
+    "trivial": false
+   }
+  }
+ },
+ "edges_out": [
+  {
+   "from": "melder.crystallizer.crystals.cluster_crystal.ClusterCrystal",
+   "to_label": "Cleanable",
+   "relation": "specializes",
+   "to": "melder.utilities.general_base.cleanable.Cleanable"
+  }
+ ],
+ "edge_candidates": [],
+ "published_aliases": [],
+ "imports": {
+  "Dict": "typing.Dict",
+  "List": "typing.List",
+  "Optional": "typing.Optional",
+  "Cleanable": "melder.utilities.general_base.cleanable.Cleanable"
+ },
+ "collapse_candidate": {
+  "module": "melder.crystallizer.crystals.cluster_crystal",
+  "class": "melder.crystallizer.crystals.cluster_crystal.ClusterCrystal",
+  "label": "ClusterCrystal"
+ }
+}

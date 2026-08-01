@@ -1,0 +1,40 @@
+{
+ "schema_version": 1,
+ "source": "src/melder/_build_assets/_build_asset_runner.py",
+ "source_sha256": "a70d3f111fbf30f1f7b849c6e95892db14ee1f26bc14d1b8b3233ee2b8db1321",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder._build_assets._build_asset_runner": {
+   "id": "melder._build_assets._build_asset_runner",
+   "label": "_build_asset_runner",
+   "kind": "module",
+   "file": "src/melder/_build_assets/_build_asset_runner.py",
+   "lineno": 1
+  },
+  "melder._build_assets._build_asset_runner.BuildAssetRunnerPolicy": {
+   "id": "melder._build_assets._build_asset_runner.BuildAssetRunnerPolicy",
+   "label": "BuildAssetRunnerPolicy",
+   "kind": "class",
+   "file": "src/melder/_build_assets/_build_asset_runner.py",
+   "lineno": 105,
+   "bases": [],
+   "markers": [],
+   "public_methods": [],
+   "shape": {
+    "method_count": 0,
+    "has_bases": false,
+    "trivial": true
+   }
+  }
+ },
+ "edges_out": [],
+ "edge_candidates": [],
+ "published_aliases": [],
+ "imports": {
+  "ModuleType": "types.ModuleType",
+  "List": "typing.List",
+  "Optional": "typing.Optional",
+  "Tuple": "typing.Tuple"
+ },
+ "collapse_candidate": null
+}

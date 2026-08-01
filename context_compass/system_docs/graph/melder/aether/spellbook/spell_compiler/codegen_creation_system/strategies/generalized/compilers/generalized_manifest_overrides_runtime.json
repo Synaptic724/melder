@@ -1,0 +1,116 @@
+{
+ "schema_version": 1,
+ "source": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/compilers/generalized_manifest_overrides_runtime.py",
+ "source_sha256": "8f1bc3227dade24fb9142928df376cbc8310dba844b55214e21c6f8034cfbb5a",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_manifest_overrides_runtime": {
+   "id": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_manifest_overrides_runtime",
+   "label": "generalized_manifest_overrides_runtime",
+   "kind": "module",
+   "file": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/compilers/generalized_manifest_overrides_runtime.py",
+   "lineno": 1,
+   "role": "Family-owned override runtime for generalized shapes.",
+   "responsibilities": [
+    "builds shape-dispatching override executors over generalized plan rows",
+    "memoizes emitted override-shape source process-wide and bound executors per spell",
+    "hydrates override executors through the process-wide executor factory cache and override targeting data"
+   ],
+   "owns_state": [
+    "_OVERRIDES_STATIC_NAMESPACE",
+    "_SHAPE_SOURCE_CACHE_MAX_ENTRIES",
+    "_shape_source_cache"
+   ],
+   "phases": [
+    "runtime"
+   ]
+  }
+ },
+ "edges_out": [],
+ "edge_candidates": [],
+ "published_aliases": [],
+ "imports": {
+  "Any": "typing.Any",
+  "Callable": "typing.Callable",
+  "Dict": "typing.Dict",
+  "Optional": "typing.Optional",
+  "Sequence": "typing.Sequence",
+  "Tuple": "typing.Tuple",
+  "Existence": "melder.aether.spellbook.existence.existence.Existence",
+  "EMPTY_OVERRIDE_VALUES": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_runtime_library.EMPTY_OVERRIDE_VALUES",
+  "MISSING": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_runtime_library.MISSING",
+  "SpellGeneralizedCodegenPlanTargetKind": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_runtime_library.SpellGeneralizedCodegenPlanTargetKind",
+  "build_kwargs_with_overrides": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_runtime_library.build_kwargs_with_overrides",
+  "build_overrides_codegen_creation_step_target_counts_from_rows": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_runtime_library.build_overrides_codegen_creation_step_target_counts_from_rows",
+  "build_step_override_targets": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_runtime_library.build_step_override_targets",
+  "build_step_override_values": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_runtime_library.build_step_override_values",
+  "construct_spell_instance_with_overrides": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_runtime_library.construct_spell_instance_with_overrides",
+  "emit_overrides_codegen_creation_executor_shape_source": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_runtime_library.emit_overrides_codegen_creation_executor_shape_source",
+  "get_existing_creation": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_runtime_library.get_existing_creation",
+  "invoke_spell_with_kwargs": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_runtime_library.invoke_spell_with_kwargs",
+  "raise_override_on_existing_instance": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_runtime_library.raise_override_on_existing_instance",
+  "register_spell_instance_prebound": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_runtime_library.register_spell_instance_prebound",
+  "CodegenStepRuntimeRow": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_runtime_rows.CodegenStepRuntimeRow",
+  "build_executor_factory_source": "melder.aether.spellbook.spell_compiler.executor_factory_cache.build_executor_factory_source",
+  "get_or_build_executor_factory": "melder.aether.spellbook.spell_compiler.executor_factory_cache.get_or_build_executor_factory",
+  "MeldExecutionError": "melder.utilities.custom_exceptions.meld_execution_error.MeldExecutionError"
+ },
+ "collapse_candidate": null,
+ "edges_authored": [
+  {
+   "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_manifest_overrides_runtime",
+   "to": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.artifacts.spell_override_targeting_codegen_creation.SpellOverrideTargetingCodegenCreation",
+   "relation": "uses",
+   "why": "generalized_manifest_overrides_runtime specializes override executors against the compiler-owned generalized override targeting artifact.",
+   "cardinality": "one_to_one",
+   "strength": "borrowed",
+   "phase": [
+    "runtime"
+   ]
+  },
+  {
+   "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_manifest_overrides_runtime",
+   "to": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_overrides_codegen_creation_compiler",
+   "relation": "uses",
+   "why": "generalized_manifest_overrides_runtime uses generalized_overrides_codegen_creation_compiler for shape-source emission, target-count prefiltering, and cached override code-object binding.",
+   "cardinality": "one_to_one",
+   "strength": "borrowed",
+   "phase": [
+    "runtime"
+   ]
+  },
+  {
+   "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_manifest_overrides_runtime",
+   "to": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_runtime_library",
+   "relation": "uses",
+   "why": "generalized_manifest_overrides_runtime uses the generalized runtime library for override-lane helpers, targeting, and emitted source support.",
+   "cardinality": "one_to_one",
+   "strength": "borrowed",
+   "phase": [
+    "runtime"
+   ]
+  },
+  {
+   "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_manifest_overrides_runtime",
+   "to": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_runtime_rows.CodegenStepRuntimeRow",
+   "relation": "uses",
+   "why": "generalized_manifest_overrides_runtime binds runtime rows into shape-specialized override executors.",
+   "cardinality": "one_to_one",
+   "strength": "borrowed",
+   "phase": [
+    "runtime"
+   ]
+  },
+  {
+   "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_manifest_overrides_runtime",
+   "to": "melder.aether.spellbook.spell_compiler.executor_factory_cache",
+   "relation": "uses",
+   "why": "generalized_manifest_overrides_runtime uses the process-wide executor factory cache to compile and bind shared override-shape executor factories.",
+   "cardinality": "one_to_one",
+   "strength": "borrowed",
+   "phase": [
+    "runtime"
+   ]
+  }
+ ]
+}

@@ -1,0 +1,48 @@
+{
+ "schema_version": 1,
+ "source": "src/melder/utilities/custom_exceptions/operation_cancelled_error.py",
+ "source_sha256": "e7011f744f19aa8d04fae6b84c3fc554c162260bae00ce111e254d2ed209fa6a",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.utilities.custom_exceptions.operation_cancelled_error": {
+   "id": "melder.utilities.custom_exceptions.operation_cancelled_error",
+   "label": "operation_cancelled_error",
+   "kind": "module",
+   "file": "src/melder/utilities/custom_exceptions/operation_cancelled_error.py",
+   "lineno": 1
+  },
+  "melder.utilities.custom_exceptions.operation_cancelled_error.OperationCancelledError": {
+   "id": "melder.utilities.custom_exceptions.operation_cancelled_error.OperationCancelledError",
+   "label": "OperationCancelledError",
+   "kind": "class",
+   "file": "src/melder/utilities/custom_exceptions/operation_cancelled_error.py",
+   "lineno": 4,
+   "bases": [],
+   "markers": [
+    "RuntimeError"
+   ],
+   "public_methods": [],
+   "shape": {
+    "method_count": 0,
+    "has_bases": true,
+    "trivial": false
+   },
+   "role": "Exception raised for cooperative cancellation.",
+   "responsibilities": [
+    "signals cancellation through shared cancellation events"
+   ],
+   "phases": [
+    "runtime"
+   ]
+  }
+ },
+ "edges_out": [],
+ "edge_candidates": [],
+ "published_aliases": [],
+ "imports": {},
+ "collapse_candidate": {
+  "module": "melder.utilities.custom_exceptions.operation_cancelled_error",
+  "class": "melder.utilities.custom_exceptions.operation_cancelled_error.OperationCancelledError",
+  "label": "OperationCancelledError"
+ }
+}

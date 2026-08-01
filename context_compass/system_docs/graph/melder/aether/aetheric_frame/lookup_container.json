@@ -1,0 +1,66 @@
+{
+ "schema_version": 1,
+ "source": "src/melder/aether/aetheric_frame/lookup_container.py",
+ "source_sha256": "65c82840423ad9cd10a762ef3660a60e9ca0f38759714b35b0c36f9456a26004",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.aether.aetheric_frame.lookup_container": {
+   "id": "melder.aether.aetheric_frame.lookup_container",
+   "label": "lookup_container",
+   "kind": "module",
+   "file": "src/melder/aether/aetheric_frame/lookup_container.py",
+   "lineno": 1
+  },
+  "melder.aether.aetheric_frame.lookup_container.LookupContainer": {
+   "id": "melder.aether.aetheric_frame.lookup_container.LookupContainer",
+   "label": "LookupContainer",
+   "kind": "class",
+   "file": "src/melder/aether/aetheric_frame/lookup_container.py",
+   "lineno": 5,
+   "bases": [],
+   "markers": [],
+   "public_methods": [
+    "claim",
+    "cleanup",
+    "contains",
+    "contains_spell_id",
+    "get",
+    "get_sig_by_spell_id",
+    "release",
+    "release_by_spell_id",
+    "update"
+   ],
+   "shape": {
+    "method_count": 9,
+    "has_bases": false,
+    "trivial": false
+   }
+  }
+ },
+ "edges_out": [],
+ "edge_candidates": [
+  {
+   "from": "melder.aether.aetheric_frame.lookup_container.LookupContainer",
+   "to_label": "Lock",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.aether.aetheric_frame.lookup_container.LookupContainer",
+   "to_label": "RuntimeError",
+   "relation": "creates",
+   "confidence": "candidate"
+  }
+ ],
+ "published_aliases": [],
+ "imports": {
+  "Dict": "typing.Dict",
+  "Optional": "typing.Optional",
+  "Tuple": "typing.Tuple"
+ },
+ "collapse_candidate": {
+  "module": "melder.aether.aetheric_frame.lookup_container",
+  "class": "melder.aether.aetheric_frame.lookup_container.LookupContainer",
+  "label": "LookupContainer"
+ }
+}

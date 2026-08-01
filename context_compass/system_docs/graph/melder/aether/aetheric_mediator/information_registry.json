@@ -1,0 +1,102 @@
+{
+ "schema_version": 1,
+ "source": "src/melder/aether/aetheric_mediator/information_registry.py",
+ "source_sha256": "1e9fa3eff6f3e8ffce3d1d901d7366dbce4c9645c091a2c8c4e9981c7e41e97f",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.aether.aetheric_mediator.information_registry": {
+   "id": "melder.aether.aetheric_mediator.information_registry",
+   "label": "information_registry",
+   "kind": "module",
+   "file": "src/melder/aether/aetheric_mediator/information_registry.py",
+   "lineno": 1
+  },
+  "melder.aether.aetheric_mediator.information_registry.FactRecord": {
+   "id": "melder.aether.aetheric_mediator.information_registry.FactRecord",
+   "label": "FactRecord",
+   "kind": "class",
+   "file": "src/melder/aether/aetheric_mediator/information_registry.py",
+   "lineno": 25,
+   "bases": [
+    "Cleanable"
+   ],
+   "markers": [],
+   "public_methods": [
+    "age_seconds",
+    "cleanup",
+    "describe"
+   ],
+   "shape": {
+    "method_count": 3,
+    "has_bases": true,
+    "trivial": false
+   }
+  },
+  "melder.aether.aetheric_mediator.information_registry.InformationRegistry": {
+   "id": "melder.aether.aetheric_mediator.information_registry.InformationRegistry",
+   "label": "InformationRegistry",
+   "kind": "class",
+   "file": "src/melder/aether/aetheric_mediator/information_registry.py",
+   "lineno": 155,
+   "bases": [
+    "Cleanable"
+   ],
+   "markers": [],
+   "public_methods": [
+    "activity_by_scope",
+    "activity_by_submitter",
+    "activity_by_type",
+    "cleanup",
+    "describe",
+    "get_fact",
+    "register_activity",
+    "report_fact",
+    "stale_regions",
+    "unregister_activity"
+   ],
+   "shape": {
+    "method_count": 10,
+    "has_bases": true,
+    "trivial": false
+   }
+  }
+ },
+ "edges_out": [
+  {
+   "from": "melder.aether.aetheric_mediator.information_registry.FactRecord",
+   "to_label": "Cleanable",
+   "relation": "specializes",
+   "to": "melder.utilities.general_base.cleanable.Cleanable"
+  },
+  {
+   "from": "melder.aether.aetheric_mediator.information_registry.InformationRegistry",
+   "to_label": "Cleanable",
+   "relation": "specializes",
+   "to": "melder.utilities.general_base.cleanable.Cleanable"
+  }
+ ],
+ "edge_candidates": [
+  {
+   "from": "melder.aether.aetheric_mediator.information_registry.InformationRegistry",
+   "to_label": "RLock",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.aether.aetheric_mediator.information_registry.InformationRegistry",
+   "to_label": "FactRecord",
+   "relation": "creates",
+   "confidence": "candidate"
+  }
+ ],
+ "published_aliases": [],
+ "imports": {
+  "Dict": "typing.Dict",
+  "List": "typing.List",
+  "Optional": "typing.Optional",
+  "Tuple": "typing.Tuple",
+  "StagedTransaction": "melder.aether.aetheric_mediator.staged_transaction.StagedTransaction",
+  "Cleanable": "melder.utilities.general_base.cleanable.Cleanable"
+ },
+ "collapse_candidate": null
+}

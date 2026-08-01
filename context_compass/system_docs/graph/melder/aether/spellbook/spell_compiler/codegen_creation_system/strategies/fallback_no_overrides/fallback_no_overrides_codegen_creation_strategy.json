@@ -1,0 +1,107 @@
+{
+ "schema_version": 1,
+ "source": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/fallback_no_overrides/fallback_no_overrides_codegen_creation_strategy.py",
+ "source_sha256": "0b6e2cd219b1ebe28a196f01c2a935802a7de947da468fde86d02ab03e5bd8c9",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.fallback_no_overrides.fallback_no_overrides_codegen_creation_strategy": {
+   "id": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.fallback_no_overrides.fallback_no_overrides_codegen_creation_strategy",
+   "label": "fallback_no_overrides_codegen_creation_strategy",
+   "kind": "module",
+   "file": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/fallback_no_overrides/fallback_no_overrides_codegen_creation_strategy.py",
+   "lineno": 1
+  },
+  "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.fallback_no_overrides.fallback_no_overrides_codegen_creation_strategy.FallbackNoOverridesCodegenCreationStrategy": {
+   "id": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.fallback_no_overrides.fallback_no_overrides_codegen_creation_strategy.FallbackNoOverridesCodegenCreationStrategy",
+   "label": "FallbackNoOverridesCodegenCreationStrategy",
+   "kind": "class",
+   "file": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/fallback_no_overrides/fallback_no_overrides_codegen_creation_strategy.py",
+   "lineno": 21,
+   "bases": [
+    "SpellCodegenStrategy"
+   ],
+   "markers": [],
+   "public_methods": [
+    "apply",
+    "strategy_id"
+   ],
+   "shape": {
+    "method_count": 2,
+    "has_bases": true,
+    "trivial": false
+   },
+   "role": "Fallback public phase-11 strategy for no-overrides-only creation output.",
+   "responsibilities": [
+    "preserves the existing fallback discovery/result contract for no-overrides creation",
+    "routes actual work through the generalized no-overrides family step",
+    "populates SpellCodegenCreation through a minimal generalized family state"
+   ],
+   "owns_state": [
+    "_step"
+   ],
+   "phases": [
+    "runtime"
+   ]
+  }
+ },
+ "edges_out": [
+  {
+   "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.fallback_no_overrides.fallback_no_overrides_codegen_creation_strategy.FallbackNoOverridesCodegenCreationStrategy",
+   "to_label": "SpellCodegenStrategy",
+   "relation": "specializes",
+   "to": "melder.aether.spellbook.spell_compiler.codegen_creation_system.spell_codegen_strategy.SpellCodegenStrategy"
+  }
+ ],
+ "edge_candidates": [
+  {
+   "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.fallback_no_overrides.fallback_no_overrides_codegen_creation_strategy.FallbackNoOverridesCodegenCreationStrategy",
+   "to_label": "GeneralizedNoOverridesCodegenCreationStep",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.fallback_no_overrides.fallback_no_overrides_codegen_creation_strategy.FallbackNoOverridesCodegenCreationStrategy",
+   "to_label": "GeneralizedCodegenCreationState",
+   "relation": "creates",
+   "confidence": "candidate"
+  }
+ ],
+ "published_aliases": [],
+ "imports": {
+  "SpellCodegenModel": "melder.aether.spellbook.spell_compiler.artifact_processor.spell_codegen_model.SpellCodegenModel",
+  "SpellCodegenCreation": "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation.spell_codegen_creation.SpellCodegenCreation",
+  "SpellCodegenStrategy": "melder.aether.spellbook.spell_compiler.codegen_creation_system.spell_codegen_strategy.SpellCodegenStrategy",
+  "GeneralizedCodegenCreationState": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.generalized_codegen_creation_state.GeneralizedCodegenCreationState",
+  "GeneralizedNoOverridesCodegenCreationStep": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.steps.generalized_no_overrides_codegen_creation_step.GeneralizedNoOverridesCodegenCreationStep",
+  "SpellCodegenPlan": "melder.aether.spellbook.spell_compiler.codegen_planner.spell_codegen_plan.SpellCodegenPlan"
+ },
+ "collapse_candidate": {
+  "module": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.fallback_no_overrides.fallback_no_overrides_codegen_creation_strategy",
+  "class": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.fallback_no_overrides.fallback_no_overrides_codegen_creation_strategy.FallbackNoOverridesCodegenCreationStrategy",
+  "label": "FallbackNoOverridesCodegenCreationStrategy"
+ },
+ "edges_authored": [
+  {
+   "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.fallback_no_overrides.fallback_no_overrides_codegen_creation_strategy.FallbackNoOverridesCodegenCreationStrategy",
+   "to": "melder.aether.spellbook.spell_compiler.codegen_creation_system.spell_codegen_strategy.SpellCodegenStrategy",
+   "relation": "specializes",
+   "why": "FallbackNoOverridesCodegenCreationStrategy specializes the abstract SpellCodegenStrategy contract.",
+   "cardinality": "one_to_one",
+   "strength": "hard",
+   "phase": [
+    "runtime"
+   ]
+  },
+  {
+   "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.fallback_no_overrides.fallback_no_overrides_codegen_creation_strategy.FallbackNoOverridesCodegenCreationStrategy",
+   "to": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.generalized_codegen_creation_state.GeneralizedCodegenCreationState",
+   "relation": "creates",
+   "why": "FallbackNoOverridesCodegenCreationStrategy creates GeneralizedCodegenCreationState as the minimal generalized family scratch state for no-overrides output.",
+   "cardinality": "one_to_one",
+   "strength": "hard",
+   "phase": [
+    "runtime"
+   ]
+  }
+ ]
+}

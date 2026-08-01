@@ -1,0 +1,186 @@
+{
+ "schema_version": 1,
+ "source": "src/melder/utilities/synchronization/cancellation_event_signal.py",
+ "source_sha256": "01d39811c4a7d05d53dde2502499c1c5a5aee0177587f8c06c31b731f7664dea",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.utilities.synchronization.cancellation_event_signal": {
+   "id": "melder.utilities.synchronization.cancellation_event_signal",
+   "label": "cancellation_event_signal",
+   "kind": "module",
+   "file": "src/melder/utilities/synchronization/cancellation_event_signal.py",
+   "lineno": 1
+  },
+  "melder.utilities.synchronization.cancellation_event_signal.CancellationEvent": {
+   "id": "melder.utilities.synchronization.cancellation_event_signal.CancellationEvent",
+   "label": "CancellationEvent",
+   "kind": "class",
+   "file": "src/melder/utilities/synchronization/cancellation_event_signal.py",
+   "lineno": 11,
+   "bases": [
+    "Cleanable"
+   ],
+   "markers": [],
+   "public_methods": [
+    "cleanup",
+    "is_set",
+    "throw_if_set"
+   ],
+   "shape": {
+    "method_count": 3,
+    "has_bases": true,
+    "trivial": false
+   },
+   "role": "Read-only view over a shared cancellation signal.",
+   "responsibilities": [
+    "exposes lock-free cancellation polling for worker code",
+    "throws a standardized cancellation error when signalled"
+   ],
+   "owns_state": [
+    "_flag"
+   ],
+   "phases": [
+    "runtime",
+    "cleanup"
+   ]
+  },
+  "melder.utilities.synchronization.cancellation_event_signal.CancellationEventSignal": {
+   "id": "melder.utilities.synchronization.cancellation_event_signal.CancellationEventSignal",
+   "label": "CancellationEventSignal",
+   "kind": "class",
+   "file": "src/melder/utilities/synchronization/cancellation_event_signal.py",
+   "lineno": 183,
+   "bases": [
+    "Cleanable"
+   ],
+   "markers": [],
+   "public_methods": [
+    "cancel",
+    "cleanup",
+    "event",
+    "is_set"
+   ],
+   "shape": {
+    "method_count": 4,
+    "has_bases": true,
+    "trivial": false
+   },
+   "role": "Mutable source of shared cancellation events.",
+   "responsibilities": [
+    "owns the underlying event flag",
+    "produces and cleans the shared CancellationEvent view",
+    "signals cooperative cancellation for worker pipelines"
+   ],
+   "owns_state": [
+    "_flag",
+    "_event"
+   ],
+   "phases": [
+    "runtime",
+    "cleanup"
+   ]
+  }
+ },
+ "edges_out": [
+  {
+   "from": "melder.utilities.synchronization.cancellation_event_signal.CancellationEvent",
+   "to_label": "Cleanable",
+   "relation": "specializes",
+   "to": "melder.utilities.general_base.cleanable.Cleanable"
+  },
+  {
+   "from": "melder.utilities.synchronization.cancellation_event_signal.CancellationEventSignal",
+   "to_label": "Cleanable",
+   "relation": "specializes",
+   "to": "melder.utilities.general_base.cleanable.Cleanable"
+  }
+ ],
+ "edge_candidates": [
+  {
+   "from": "melder.utilities.synchronization.cancellation_event_signal.CancellationEvent",
+   "to_label": "ValueError",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.utilities.synchronization.cancellation_event_signal.CancellationEvent",
+   "to_label": "OperationCancelledError",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.utilities.synchronization.cancellation_event_signal.CancellationEventSignal",
+   "to_label": "Lock",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.utilities.synchronization.cancellation_event_signal.CancellationEventSignal",
+   "to_label": "Event",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.utilities.synchronization.cancellation_event_signal.CancellationEventSignal",
+   "to_label": "CancellationEvent",
+   "relation": "creates",
+   "confidence": "candidate"
+  }
+ ],
+ "published_aliases": [],
+ "imports": {
+  "ClassVar": "typing.ClassVar",
+  "OperationCancelledError": "melder.utilities.custom_exceptions.operation_cancelled_error.OperationCancelledError",
+  "Cleanable": "melder.utilities.general_base.cleanable.Cleanable"
+ },
+ "collapse_candidate": null,
+ "edges_authored": [
+  {
+   "from": "melder.utilities.synchronization.cancellation_event_signal.CancellationEvent",
+   "to": "melder.utilities.custom_exceptions.operation_cancelled_error.OperationCancelledError",
+   "relation": "creates",
+   "why": "CancellationEvent throws OperationCancelledError when cancellation is signalled.",
+   "cardinality": "one_to_many",
+   "strength": "hard",
+   "phase": [
+    "runtime"
+   ]
+  },
+  {
+   "from": "melder.utilities.synchronization.cancellation_event_signal.CancellationEvent",
+   "to": "melder.utilities.general_base.cleanable.Cleanable",
+   "relation": "specializes",
+   "why": "CancellationEvent uses the common cleanable lifecycle contract for its shared-event view.",
+   "cardinality": "one_to_one",
+   "strength": "hard",
+   "phase": [
+    "runtime",
+    "cleanup"
+   ]
+  },
+  {
+   "from": "melder.utilities.synchronization.cancellation_event_signal.CancellationEventSignal",
+   "to": "melder.utilities.general_base.cleanable.Cleanable",
+   "relation": "specializes",
+   "why": "CancellationEventSignal inherits the common explicit-cleanup lifecycle from Cleanable.",
+   "cardinality": "one_to_one",
+   "strength": "hard",
+   "phase": [
+    "runtime",
+    "cleanup"
+   ]
+  },
+  {
+   "from": "melder.utilities.synchronization.cancellation_event_signal.CancellationEventSignal",
+   "to": "melder.utilities.synchronization.cancellation_event_signal.CancellationEvent",
+   "relation": "owns_lifecycle_of",
+   "why": "CancellationEventSignal owns the shared CancellationEvent wrapper it exposes to worker code.",
+   "cardinality": "one_to_one",
+   "strength": "hard",
+   "phase": [
+    "runtime",
+    "cleanup"
+   ]
+  }
+ ]
+}

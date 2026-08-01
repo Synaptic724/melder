@@ -1,0 +1,292 @@
+{
+ "schema_version": 1,
+ "source": "src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_6.py",
+ "source_sha256": "065df3f0df42cf575583152c479444cc6ea4d60addaab19277120a55e68dcf17",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.aether.spellbook.spell_compiler.phases.compiler_phase_6": {
+   "id": "melder.aether.spellbook.spell_compiler.phases.compiler_phase_6",
+   "label": "compiler_phase_6",
+   "kind": "module",
+   "file": "src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_6.py",
+   "lineno": 1
+  },
+  "melder.aether.spellbook.spell_compiler.phases.compiler_phase_6.CompilerPhase6": {
+   "id": "melder.aether.spellbook.spell_compiler.phases.compiler_phase_6.CompilerPhase6",
+   "label": "CompilerPhase6",
+   "kind": "class",
+   "file": "src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_6.py",
+   "lineno": 112,
+   "bases": [],
+   "markers": [],
+   "public_methods": [
+    "run_frame_wide",
+    "run_local"
+   ],
+   "shape": {
+    "method_count": 7,
+    "has_bases": false,
+    "trivial": false
+   },
+   "role": "Compiler-owned phase-6 system validation surface.",
+   "responsibilities": [
+    "builds the canonical system-validation strategy pipeline",
+    "runs system validation over phase-5 artifacts and phase-4 results",
+    "publishes SpellSystemValidationState and conduit-scoped validity back through SpellSystemStates"
+   ],
+   "phases": [
+    "validation",
+    "runtime"
+   ]
+  }
+ },
+ "edges_out": [],
+ "edge_candidates": [
+  {
+   "from": "melder.aether.spellbook.spell_compiler.phases.compiler_phase_6.CompilerPhase6",
+   "to_label": "SpellSystemValidationSystem",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.aether.spellbook.spell_compiler.phases.compiler_phase_6.CompilerPhase6",
+   "to_label": "RuntimeError",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.aether.spellbook.spell_compiler.phases.compiler_phase_6.CompilerPhase6",
+   "to_label": "CycleDetectionStrategy",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.aether.spellbook.spell_compiler.phases.compiler_phase_6.CompilerPhase6",
+   "to_label": "BrokenSpellInDagStrategy",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.aether.spellbook.spell_compiler.phases.compiler_phase_6.CompilerPhase6",
+   "to_label": "GraphConsistencyStrategy",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.aether.spellbook.spell_compiler.phases.compiler_phase_6.CompilerPhase6",
+   "to_label": "MissingPhase4Strategy",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.aether.spellbook.spell_compiler.phases.compiler_phase_6.CompilerPhase6",
+   "to_label": "RootReachabilityStrategy",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.aether.spellbook.spell_compiler.phases.compiler_phase_6.CompilerPhase6",
+   "to_label": "RootCoverageStrategy",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.aether.spellbook.spell_compiler.phases.compiler_phase_6.CompilerPhase6",
+   "to_label": "IndexDependencySanityStrategy",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.aether.spellbook.spell_compiler.phases.compiler_phase_6.CompilerPhase6",
+   "to_label": "VisibilityGapStrategy",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.aether.spellbook.spell_compiler.phases.compiler_phase_6.CompilerPhase6",
+   "to_label": "EmptyCollectionStrategy",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.aether.spellbook.spell_compiler.phases.compiler_phase_6.CompilerPhase6",
+   "to_label": "TopologyDependencyMismatchStrategy",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.aether.spellbook.spell_compiler.phases.compiler_phase_6.CompilerPhase6",
+   "to_label": "IdentityMixingStrategy",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.aether.spellbook.spell_compiler.phases.compiler_phase_6.CompilerPhase6",
+   "to_label": "ContractedVersionDriftStrategy",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.aether.spellbook.spell_compiler.phases.compiler_phase_6.CompilerPhase6",
+   "to_label": "LineageAlignmentStrategy",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.aether.spellbook.spell_compiler.phases.compiler_phase_6.CompilerPhase6",
+   "to_label": "IndexCoverageStrategy",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.aether.spellbook.spell_compiler.phases.compiler_phase_6.CompilerPhase6",
+   "to_label": "LineageVersionConflictStrategy",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.aether.spellbook.spell_compiler.phases.compiler_phase_6.CompilerPhase6",
+   "to_label": "RootLineageConflictStrategy",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.aether.spellbook.spell_compiler.phases.compiler_phase_6.CompilerPhase6",
+   "to_label": "OwnershipConsistencyStrategy",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.aether.spellbook.spell_compiler.phases.compiler_phase_6.CompilerPhase6",
+   "to_label": "DependencyTypeSanityStrategy",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.aether.spellbook.spell_compiler.phases.compiler_phase_6.CompilerPhase6",
+   "to_label": "ScopeOrderingStrategy",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.aether.spellbook.spell_compiler.phases.compiler_phase_6.CompilerPhase6",
+   "to_label": "ContractGraphCycleStrategy",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.aether.spellbook.spell_compiler.phases.compiler_phase_6.CompilerPhase6",
+   "to_label": "RootScaleLimitStrategy",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.aether.spellbook.spell_compiler.phases.compiler_phase_6.CompilerPhase6",
+   "to_label": "RootViabilityStrategy",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.aether.spellbook.spell_compiler.phases.compiler_phase_6.CompilerPhase6",
+   "to_label": "SocketRefSanityStrategy",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.aether.spellbook.spell_compiler.phases.compiler_phase_6.CompilerPhase6",
+   "to_label": "SpellSystemValidationState",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.aether.spellbook.spell_compiler.phases.compiler_phase_6.CompilerPhase6",
+   "to_label": "SystemDiagnostic",
+   "relation": "creates",
+   "confidence": "candidate"
+  }
+ ],
+ "published_aliases": [],
+ "imports": {
+  "TYPE_CHECKING": "typing.TYPE_CHECKING",
+  "Any": "typing.Any",
+  "Collection": "typing.Collection",
+  "Dict": "typing.Dict",
+  "List": "typing.List",
+  "Optional": "typing.Optional",
+  "Set": "typing.Set",
+  "Tuple": "typing.Tuple",
+  "SpellStateChangeReason": "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_state_change_reason.SpellStateChangeReason",
+  "SpellValidity": "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_validity.SpellValidity",
+  "SpellSystemValidationState": "melder.aether.spellbook.spell_compiler.system.spell_system_validation_state.SpellSystemValidationState",
+  "SpellSystemValidationSystem": "melder.aether.spellbook.spell_compiler.system.spell_system_validation_system.SpellSystemValidationSystem",
+  "SystemDiagnostic": "melder.aether.spellbook.spell_compiler.system.system_diagnostic.SystemDiagnostic",
+  "SystemDiagnosticSeverity": "melder.aether.spellbook.spell_compiler.system.system_diagnostic.SystemDiagnosticSeverity",
+  "BrokenSpellInDagStrategy": "melder.aether.spellbook.spell_compiler.system.validation.broken_spell_in_dag_strategy.BrokenSpellInDagStrategy",
+  "ContractGraphCycleStrategy": "melder.aether.spellbook.spell_compiler.system.validation.contract_graph_cycle_strategy.ContractGraphCycleStrategy",
+  "ContractedVersionDriftStrategy": "melder.aether.spellbook.spell_compiler.system.validation.contracted_version_drift_strategy.ContractedVersionDriftStrategy",
+  "CycleDetectionStrategy": "melder.aether.spellbook.spell_compiler.system.validation.cycle_detection_strategy.CycleDetectionStrategy",
+  "DependencyTypeSanityStrategy": "melder.aether.spellbook.spell_compiler.system.validation.dependency_type_sanity_strategy.DependencyTypeSanityStrategy",
+  "GraphConsistencyStrategy": "melder.aether.spellbook.spell_compiler.system.validation.graph_consistency_strategy.GraphConsistencyStrategy",
+  "IdentityMixingStrategy": "melder.aether.spellbook.spell_compiler.system.validation.identity_mixing_strategy.IdentityMixingStrategy",
+  "IndexCoverageStrategy": "melder.aether.spellbook.spell_compiler.system.validation.index_coverage_strategy.IndexCoverageStrategy",
+  "IndexDependencySanityStrategy": "melder.aether.spellbook.spell_compiler.system.validation.index_dependency_sanity_strategy.IndexDependencySanityStrategy",
+  "LineageAlignmentStrategy": "melder.aether.spellbook.spell_compiler.system.validation.lineage_alignment_strategy.LineageAlignmentStrategy",
+  "LineageVersionConflictStrategy": "melder.aether.spellbook.spell_compiler.system.validation.lineage_version_conflict_strategy.LineageVersionConflictStrategy",
+  "MissingPhase4Strategy": "melder.aether.spellbook.spell_compiler.system.validation.missing_phase4_strategy.MissingPhase4Strategy",
+  "OwnershipConsistencyStrategy": "melder.aether.spellbook.spell_compiler.system.validation.ownership_consistency_strategy.OwnershipConsistencyStrategy",
+  "RootCoverageStrategy": "melder.aether.spellbook.spell_compiler.system.validation.root_coverage_strategy.RootCoverageStrategy",
+  "RootLineageConflictStrategy": "melder.aether.spellbook.spell_compiler.system.validation.root_lineage_conflict_strategy.RootLineageConflictStrategy",
+  "RootReachabilityStrategy": "melder.aether.spellbook.spell_compiler.system.validation.root_reachability_strategy.RootReachabilityStrategy",
+  "RootScaleLimitStrategy": "melder.aether.spellbook.spell_compiler.system.validation.root_scale_limit_strategy.RootScaleLimitStrategy",
+  "RootViabilityStrategy": "melder.aether.spellbook.spell_compiler.system.validation.root_viability_strategy.RootViabilityStrategy",
+  "ScopeOrderingStrategy": "melder.aether.spellbook.spell_compiler.system.validation.scope_ordering_strategy.ScopeOrderingStrategy",
+  "SocketRefSanityStrategy": "melder.aether.spellbook.spell_compiler.system.validation.socket_ref_sanity_strategy.SocketRefSanityStrategy",
+  "TopologyDependencyMismatchStrategy": "melder.aether.spellbook.spell_compiler.system.validation.topology_dependency_mismatch_strategy.TopologyDependencyMismatchStrategy",
+  "VisibilityGapStrategy": "melder.aether.spellbook.spell_compiler.system.validation.visibility_gap_strategy.VisibilityGapStrategy",
+  "EmptyCollectionStrategy": "melder.aether.spellbook.spell_compiler.system.validation.empty_collection_strategy.EmptyCollectionStrategy",
+  "RootResolutionBlueprint": "melder.aether.spellbook.spell_compiler.blueprints.root_resolution_blueprint.RootResolutionBlueprint",
+  "Spell": "melder.aether.spellbook.spell.Spell",
+  "Spellbook": "melder.aether.spellbook.spellbook.Spellbook",
+  "SpellSystemStates": "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states.SpellSystemStates",
+  "SpellCompilerArtifact": "melder.aether.spellbook.spell_compiler.spell_compiler_artifact.SpellCompilerArtifact",
+  "SpellSystemIndex": "melder.aether.spellbook.spell_compiler.system.spell_system_index.SpellSystemIndex",
+  "CancellationEvent": "melder.utilities.synchronization.cancellation_event_signal.CancellationEvent"
+ },
+ "collapse_candidate": null,
+ "edges_authored": [
+  {
+   "from": "melder.aether.spellbook.spell_compiler.phases.compiler_phase_6.CompilerPhase6",
+   "to": "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states.SpellSystemStates",
+   "relation": "uses",
+   "why": "CompilerPhase6 publishes conduit-scoped system-validation outcomes back through SpellSystemStates.",
+   "cardinality": "one_to_one",
+   "strength": "borrowed",
+   "phase": [
+    "validation",
+    "runtime"
+   ]
+  },
+  {
+   "from": "melder.aether.spellbook.spell_compiler.phases.compiler_phase_6.CompilerPhase6",
+   "to": "melder.aether.spellbook.spell_compiler.system.spell_system_validation_state.SpellSystemValidationState",
+   "relation": "creates",
+   "why": "CompilerPhase6 records SpellSystemValidationState as the aggregated verdict for local or frame-wide phase-6 execution.",
+   "cardinality": "one_to_one",
+   "strength": "hard",
+   "phase": [
+    "validation"
+   ]
+  },
+  {
+   "from": "melder.aether.spellbook.spell_compiler.phases.compiler_phase_6.CompilerPhase6",
+   "to": "melder.aether.spellbook.spell_compiler.system.spell_system_validation_system.SpellSystemValidationSystem",
+   "relation": "creates",
+   "why": "CompilerPhase6 builds the canonical system-validation runner from its fixed phase-6 strategy set.",
+   "cardinality": "one_to_one",
+   "strength": "hard",
+   "phase": [
+    "validation"
+   ]
+  }
+ ]
+}

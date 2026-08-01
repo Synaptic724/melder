@@ -1,0 +1,144 @@
+{
+ "schema_version": 1,
+ "source": "src/melder/utilities/helpers/class_surface_ast_describer.py",
+ "source_sha256": "5957ab2079e0f29c6aa5a67137706f04fdd88bc126d0388111bf2152f6e99106",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.utilities.helpers.class_surface_ast_describer": {
+   "id": "melder.utilities.helpers.class_surface_ast_describer",
+   "label": "class_surface_ast_describer",
+   "kind": "module",
+   "file": "src/melder/utilities/helpers/class_surface_ast_describer.py",
+   "lineno": 1
+  },
+  "melder.utilities.helpers.class_surface_ast_describer.InheritedAgentPurposeDescription": {
+   "id": "melder.utilities.helpers.class_surface_ast_describer.InheritedAgentPurposeDescription",
+   "label": "InheritedAgentPurposeDescription",
+   "kind": "record",
+   "file": "src/melder/utilities/helpers/class_surface_ast_describer.py",
+   "lineno": 19,
+   "bases": [],
+   "markers": [
+    "TypedDict"
+   ],
+   "public_methods": [],
+   "shape": {
+    "method_count": 0,
+    "has_bases": true,
+    "trivial": false
+   }
+  },
+  "melder.utilities.helpers.class_surface_ast_describer.ClassMemberDescription": {
+   "id": "melder.utilities.helpers.class_surface_ast_describer.ClassMemberDescription",
+   "label": "ClassMemberDescription",
+   "kind": "record",
+   "file": "src/melder/utilities/helpers/class_surface_ast_describer.py",
+   "lineno": 44,
+   "bases": [],
+   "markers": [
+    "TypedDict"
+   ],
+   "public_methods": [],
+   "shape": {
+    "method_count": 0,
+    "has_bases": true,
+    "trivial": false
+   }
+  },
+  "melder.utilities.helpers.class_surface_ast_describer.ClassSurfaceDescription": {
+   "id": "melder.utilities.helpers.class_surface_ast_describer.ClassSurfaceDescription",
+   "label": "ClassSurfaceDescription",
+   "kind": "record",
+   "file": "src/melder/utilities/helpers/class_surface_ast_describer.py",
+   "lineno": 74,
+   "bases": [],
+   "markers": [
+    "TypedDict"
+   ],
+   "public_methods": [],
+   "shape": {
+    "method_count": 0,
+    "has_bases": true,
+    "trivial": false
+   }
+  },
+  "melder.utilities.helpers.class_surface_ast_describer.ClassSurfaceAstDescriber": {
+   "id": "melder.utilities.helpers.class_surface_ast_describer.ClassSurfaceAstDescriber",
+   "label": "ClassSurfaceAstDescriber",
+   "kind": "class",
+   "file": "src/melder/utilities/helpers/class_surface_ast_describer.py",
+   "lineno": 106,
+   "bases": [],
+   "markers": [],
+   "public_methods": [
+    "describe_agent_onboarding_json",
+    "describe_agent_purpose_json",
+    "describe_class_surface_ast",
+    "describe_class_surface_ast_json",
+    "list_class_method_names_ast_json"
+   ],
+   "shape": {
+    "method_count": 18,
+    "has_bases": false,
+    "trivial": false
+   },
+   "role": "Helper for extracting structural class-surface descriptions via AST.",
+   "responsibilities": [
+    "describes class surfaces structurally for tooling/AI use"
+   ],
+   "phases": [
+    "validation",
+    "runtime"
+   ]
+  }
+ },
+ "edges_out": [],
+ "edge_candidates": [
+  {
+   "from": "melder.utilities.helpers.class_surface_ast_describer.ClassSurfaceAstDescriber",
+   "to_label": "ValueError",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.utilities.helpers.class_surface_ast_describer.ClassSurfaceAstDescriber",
+   "to_label": "Path",
+   "relation": "creates",
+   "confidence": "candidate"
+  }
+ ],
+ "published_aliases": [],
+ "imports": {
+  "Path": "pathlib.Path",
+  "Any": "typing.Any",
+  "Dict": "typing.Dict",
+  "List": "typing.List",
+  "Optional": "typing.Optional",
+  "Tuple": "typing.Tuple",
+  "TypedDict": "typing.TypedDict",
+  "Union": "typing.Union",
+  "ClassVar": "typing.ClassVar",
+  "FrozenSet": "typing.FrozenSet",
+  "AGENT_METADATA": "melder._build_assets._agent_documentation.agent_documentation.AGENT_METADATA",
+  "EXEMPT": "melder._build_assets._agent_documentation.agent_documentation.EXEMPT"
+ },
+ "collapse_candidate": {
+  "module": "melder.utilities.helpers.class_surface_ast_describer",
+  "class": "melder.utilities.helpers.class_surface_ast_describer.ClassSurfaceAstDescriber",
+  "label": "ClassSurfaceAstDescriber"
+ },
+ "edges_authored": [
+  {
+   "from": "melder.utilities.helpers.class_surface_ast_describer.ClassSurfaceAstDescriber",
+   "to": "melder.aether.spellbook.spell_compiler.spell_examiner.inspectors.profiles.class_profile.ClassProfile",
+   "relation": "uses",
+   "why": "ClassSurfaceAstDescriber operates over class-surface/profile-style structural data.",
+   "cardinality": "many_to_one",
+   "strength": "borrowed",
+   "phase": [
+    "validation",
+    "runtime"
+   ]
+  }
+ ]
+}

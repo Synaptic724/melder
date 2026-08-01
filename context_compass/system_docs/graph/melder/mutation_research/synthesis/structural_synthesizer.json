@@ -1,0 +1,90 @@
+{
+ "schema_version": 1,
+ "source": "src/melder/mutation_research/synthesis/structural_synthesizer.py",
+ "source_sha256": "b76fd8c0f9b15b48e23211d5aab983b129343941a53b61ce20e2e0db400af88b",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.mutation_research.synthesis.structural_synthesizer": {
+   "id": "melder.mutation_research.synthesis.structural_synthesizer",
+   "label": "structural_synthesizer",
+   "kind": "module",
+   "file": "src/melder/mutation_research/synthesis/structural_synthesizer.py",
+   "lineno": 1
+  },
+  "melder.mutation_research.synthesis.structural_synthesizer.StructuralSynthesizer": {
+   "id": "melder.mutation_research.synthesis.structural_synthesizer.StructuralSynthesizer",
+   "label": "StructuralSynthesizer",
+   "kind": "class",
+   "file": "src/melder/mutation_research/synthesis/structural_synthesizer.py",
+   "lineno": 9,
+   "bases": [
+    "Cleanable"
+   ],
+   "markers": [],
+   "public_methods": [
+    "cleanup",
+    "extract_part",
+    "list_parts",
+    "synthesize"
+   ],
+   "shape": {
+    "method_count": 8,
+    "has_bases": true,
+    "trivial": false
+   },
+   "role": "AST-guided source composition over two recorded version texts: pick named top-level functions/classes from a donor and splice them into a base (replace same-named, append new, decorators travel) - the SELECTION+SYNTHESIS half of the May surgical-mutation flow (the diff family is the report half). Pure text-in/text-out; never touches custody, never executes, never records.",
+   "responsibilities": [
+    "synthesize(base, donor, take_functions/take_classes) -> composed source + per-selection provenance",
+    "unknown selections refuse loudly naming available donor parts; parse errors answer honestly per side",
+    "stateless between calls; owned lazily by the MutationResearch root",
+    "extract_part(source, name, kind=None) = the query companion (part span/text lookup; misses answer None, unparseable source is loud)",
+    "list_parts(source) = the inventory companion (every top-level part with code, source order)",
+    "part FINGERPRINTS: list_parts rows carry sha256 over exact part text (depth-3 change index - inventories compare part-by-part without pulling texts)"
+   ],
+   "owns_state": [
+    "_lock"
+   ],
+   "phases": [
+    "runtime",
+    "cleanup"
+   ]
+  }
+ },
+ "edges_out": [
+  {
+   "from": "melder.mutation_research.synthesis.structural_synthesizer.StructuralSynthesizer",
+   "to_label": "Cleanable",
+   "relation": "specializes",
+   "to": "melder.utilities.general_base.cleanable.Cleanable"
+  }
+ ],
+ "edge_candidates": [
+  {
+   "from": "melder.mutation_research.synthesis.structural_synthesizer.StructuralSynthesizer",
+   "to_label": "RLock",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.mutation_research.synthesis.structural_synthesizer.StructuralSynthesizer",
+   "to_label": "ValueError",
+   "relation": "creates",
+   "confidence": "candidate"
+  }
+ ],
+ "published_aliases": [],
+ "imports": {
+  "Dict": "typing.Dict",
+  "List": "typing.List",
+  "Optional": "typing.Optional",
+  "Set": "typing.Set",
+  "Tuple": "typing.Tuple",
+  "ClassVar": "typing.ClassVar",
+  "Cleanable": "melder.utilities.general_base.cleanable.Cleanable"
+ },
+ "collapse_candidate": {
+  "module": "melder.mutation_research.synthesis.structural_synthesizer",
+  "class": "melder.mutation_research.synthesis.structural_synthesizer.StructuralSynthesizer",
+  "label": "StructuralSynthesizer"
+ }
+}

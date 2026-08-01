@@ -1,0 +1,191 @@
+{
+ "schema_version": 1,
+ "source": "src/melder/crystallizer/synthetic_module.py",
+ "source_sha256": "51a28d7dd534865da97435a6a672bd43b43b0875a3fa9ade345d31f69cb55717",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.crystallizer.synthetic_module": {
+   "id": "melder.crystallizer.synthetic_module",
+   "label": "synthetic_module",
+   "kind": "module",
+   "file": "src/melder/crystallizer/synthetic_module.py",
+   "lineno": 1
+  },
+  "melder.crystallizer.synthetic_module._SyntheticModuleImportLoader": {
+   "id": "melder.crystallizer.synthetic_module._SyntheticModuleImportLoader",
+   "label": "_SyntheticModuleImportLoader",
+   "kind": "class",
+   "file": "src/melder/crystallizer/synthetic_module.py",
+   "lineno": 14,
+   "bases": [
+    "Loader"
+   ],
+   "markers": [],
+   "public_methods": [
+    "create_module",
+    "exec_module",
+    "get_source"
+   ],
+   "shape": {
+    "method_count": 3,
+    "has_bases": true,
+    "trivial": false
+   }
+  },
+  "melder.crystallizer.synthetic_module._SyntheticModuleMetaPathFinder": {
+   "id": "melder.crystallizer.synthetic_module._SyntheticModuleMetaPathFinder",
+   "label": "_SyntheticModuleMetaPathFinder",
+   "kind": "class",
+   "file": "src/melder/crystallizer/synthetic_module.py",
+   "lineno": 154,
+   "bases": [
+    "MetaPathFinder"
+   ],
+   "markers": [],
+   "public_methods": [
+    "find_spec"
+   ],
+   "shape": {
+    "method_count": 1,
+    "has_bases": true,
+    "trivial": false
+   }
+  },
+  "melder.crystallizer.synthetic_module.SyntheticModule": {
+   "id": "melder.crystallizer.synthetic_module.SyntheticModule",
+   "label": "SyntheticModule",
+   "kind": "class",
+   "file": "src/melder/crystallizer/synthetic_module.py",
+   "lineno": 227,
+   "bases": [
+    "ModuleType"
+   ],
+   "markers": [],
+   "public_methods": [
+    "binding_signature",
+    "build_registered_spec",
+    "check_cleaned",
+    "cleaned",
+    "cleanup",
+    "clear_import_registry",
+    "create_module_for_spec",
+    "create_package_shell",
+    "describe",
+    "exec_registered_module",
+    "execute_source",
+    "executed_source",
+    "export_names",
+    "external_dependency_names",
+    "has_live_synthetic_dependents",
+    "import_registered_module",
+    "install_import_hook",
+    "internal_dependency_names",
+    "is_cleaned",
+    "is_package",
+    "loaded_module_names",
+    "materialize",
+    "materialized_directory_path",
+    "merge_namespace",
+    "parent_name",
+    "physical_file_path",
+    "publish_to_sys_modules",
+    "published_in_sys_modules",
+    "register_in_import_registry",
+    "reload_via_importlib",
+    "remove_import_hook",
+    "set_materialization_location",
+    "source_sha256",
+    "source_text",
+    "spell_crystal_id",
+    "unpublish_from_sys_modules",
+    "unregister_from_import_registry",
+    "update_analysis",
+    "update_source_text"
+   ],
+   "shape": {
+    "method_count": 47,
+    "has_bases": true,
+    "trivial": false
+   },
+   "role": "Live in-memory module embodiment for crystallized source.",
+   "responsibilities": [
+    "stores live source text and dependency metadata for one managed module",
+    "supports sys.modules and importlib publication and execution",
+    "owns synthetic import registry and cleanup-aware module activation helpers"
+   ],
+   "owns_state": [
+    "_registered_modules_by_name",
+    "_source_text",
+    "_internal_dependency_names",
+    "_external_dependency_names"
+   ],
+   "phases": [
+    "init",
+    "runtime",
+    "cleanup"
+   ]
+  }
+ },
+ "edges_out": [
+  {
+   "from": "melder.crystallizer.synthetic_module._SyntheticModuleImportLoader",
+   "to_label": "Loader",
+   "relation": "specializes"
+  },
+  {
+   "from": "melder.crystallizer.synthetic_module._SyntheticModuleMetaPathFinder",
+   "to_label": "MetaPathFinder",
+   "relation": "specializes"
+  },
+  {
+   "from": "melder.crystallizer.synthetic_module.SyntheticModule",
+   "to_label": "ModuleType",
+   "relation": "specializes",
+   "to": "types.ModuleType"
+  }
+ ],
+ "edge_candidates": [
+  {
+   "from": "melder.crystallizer.synthetic_module._SyntheticModuleImportLoader",
+   "to_label": "ImportError",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.crystallizer.synthetic_module.SyntheticModule",
+   "to_label": "RLock",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.crystallizer.synthetic_module.SyntheticModule",
+   "to_label": "ValueError",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.crystallizer.synthetic_module.SyntheticModule",
+   "to_label": "RuntimeError",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.crystallizer.synthetic_module.SyntheticModule",
+   "to_label": "ImportError",
+   "relation": "creates",
+   "confidence": "candidate"
+  }
+ ],
+ "published_aliases": [],
+ "imports": {
+  "ModuleSpec": "importlib.machinery.ModuleSpec",
+  "ModuleType": "types.ModuleType",
+  "Any": "typing.Any",
+  "Dict": "typing.Dict",
+  "List": "typing.List",
+  "Mapping": "typing.Mapping",
+  "Optional": "typing.Optional",
+  "Sequence": "typing.Sequence"
+ },
+ "collapse_candidate": null
+}

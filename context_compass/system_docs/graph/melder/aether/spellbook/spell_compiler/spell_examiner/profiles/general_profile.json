@@ -1,0 +1,118 @@
+{
+ "schema_version": 1,
+ "source": "src/melder/aether/spellbook/spell_compiler/spell_examiner/profiles/general_profile.py",
+ "source_sha256": "4239588cce771124b2b209fafac9d67a6b63e8c659cfc43069999e94a3f91c23",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.aether.spellbook.spell_compiler.spell_examiner.profiles.general_profile": {
+   "id": "melder.aether.spellbook.spell_compiler.spell_examiner.profiles.general_profile",
+   "label": "general_profile",
+   "kind": "module",
+   "file": "src/melder/aether/spellbook/spell_compiler/spell_examiner/profiles/general_profile.py",
+   "lineno": 1
+  },
+  "melder.aether.spellbook.spell_compiler.spell_examiner.profiles.general_profile.SpellGeneralProfile": {
+   "id": "melder.aether.spellbook.spell_compiler.spell_examiner.profiles.general_profile.SpellGeneralProfile",
+   "label": "SpellGeneralProfile",
+   "kind": "class",
+   "file": "src/melder/aether/spellbook/spell_compiler/spell_examiner/profiles/general_profile.py",
+   "lineno": 28,
+   "bases": [
+    "Cleanable"
+   ],
+   "markers": [],
+   "public_methods": [
+    "cleanup",
+    "complete_with_spell",
+    "create_from_target",
+    "to_descriptor_payload"
+   ],
+   "shape": {
+    "method_count": 4,
+    "has_bases": true,
+    "trivial": false
+   },
+   "role": "Combined general spell profile with binding and resolution halves.",
+   "responsibilities": [
+    "holds a binding profile and optional resolution profile for one spell",
+    "completes the same profile object once a real Spell exists"
+   ],
+   "owns_state": [
+    "binding_profile",
+    "resolution_profile"
+   ],
+   "phases": [
+    "validation",
+    "runtime",
+    "cleanup"
+   ]
+  }
+ },
+ "edges_out": [
+  {
+   "from": "melder.aether.spellbook.spell_compiler.spell_examiner.profiles.general_profile.SpellGeneralProfile",
+   "to_label": "Cleanable",
+   "relation": "specializes",
+   "to": "melder.utilities.general_base.cleanable.Cleanable"
+  }
+ ],
+ "edge_candidates": [
+  {
+   "from": "melder.aether.spellbook.spell_compiler.spell_examiner.profiles.general_profile.SpellGeneralProfile",
+   "to_label": "BindingProfileStrategy",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.aether.spellbook.spell_compiler.spell_examiner.profiles.general_profile.SpellGeneralProfile",
+   "to_label": "ResolutionProfileStrategy",
+   "relation": "creates",
+   "confidence": "candidate"
+  }
+ ],
+ "published_aliases": [],
+ "imports": {
+  "Any": "typing.Any",
+  "Optional": "typing.Optional",
+  "Type": "typing.Type",
+  "TypeVar": "typing.TypeVar",
+  "TYPE_CHECKING": "typing.TYPE_CHECKING",
+  "ClassVar": "typing.ClassVar",
+  "SpellDescriptorPayload": "melder.nexus.frame_descriptor.spell_descriptor_payload.SpellDescriptorPayload",
+  "BindingProfileStrategy": "melder.aether.spellbook.spell_compiler.spell_examiner.strategies.binding_profile_strategy.BindingProfileStrategy",
+  "ResolutionProfileStrategy": "melder.aether.spellbook.spell_compiler.spell_examiner.strategies.resolution_profile_strategy.ResolutionProfileStrategy",
+  "Cleanable": "melder.utilities.general_base.cleanable.Cleanable",
+  "Spell": "melder.aether.spellbook.spell.Spell",
+  "SpellBindingProfile": "melder.aether.spellbook.spell_compiler.spell_examiner.profiles.binding_profile.SpellBindingProfile",
+  "SpellResolutionProfile": "melder.aether.spellbook.spell_compiler.profiles.resolution_profile.SpellResolutionProfile"
+ },
+ "collapse_candidate": null,
+ "edges_authored": [
+  {
+   "from": "melder.aether.spellbook.spell_compiler.spell_examiner.profiles.general_profile.SpellGeneralProfile",
+   "to": "melder.aether.spellbook.spell_compiler.profiles.resolution_profile.SpellResolutionProfile",
+   "relation": "owns_lifecycle_of",
+   "why": "SpellGeneralProfile owns the optional resolution profile once phase 2 completion has happened.",
+   "cardinality": "one_to_one",
+   "strength": "hard",
+   "phase": [
+    "validation",
+    "runtime",
+    "cleanup"
+   ]
+  },
+  {
+   "from": "melder.aether.spellbook.spell_compiler.spell_examiner.profiles.general_profile.SpellGeneralProfile",
+   "to": "melder.aether.spellbook.spell_compiler.spell_examiner.profiles.binding_profile.SpellBindingProfile",
+   "relation": "owns_lifecycle_of",
+   "why": "SpellGeneralProfile owns the binding profile artifact for the spell candidate.",
+   "cardinality": "one_to_one",
+   "strength": "hard",
+   "phase": [
+    "validation",
+    "runtime",
+    "cleanup"
+   ]
+  }
+ ]
+}

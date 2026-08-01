@@ -1,0 +1,118 @@
+{
+ "schema_version": 1,
+ "source": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/many_only/steps/many_only_no_overrides_codegen_creation_step.py",
+ "source_sha256": "bf9d110a318860799c384bcf78d3589c437ae0a036c14358dc8203acc840e0a6",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.steps.many_only_no_overrides_codegen_creation_step": {
+   "id": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.steps.many_only_no_overrides_codegen_creation_step",
+   "label": "many_only_no_overrides_codegen_creation_step",
+   "kind": "module",
+   "file": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/many_only/steps/many_only_no_overrides_codegen_creation_step.py",
+   "lineno": 1
+  },
+  "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.steps.many_only_no_overrides_codegen_creation_step.ManyOnlyNoOverridesCodegenCreationStep": {
+   "id": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.steps.many_only_no_overrides_codegen_creation_step.ManyOnlyNoOverridesCodegenCreationStep",
+   "label": "ManyOnlyNoOverridesCodegenCreationStep",
+   "kind": "class",
+   "file": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/many_only/steps/many_only_no_overrides_codegen_creation_step.py",
+   "lineno": 15,
+   "bases": [
+    "CodegenCreationFamilyStep"
+   ],
+   "markers": [],
+   "public_methods": [
+    "apply",
+    "step_id"
+   ],
+   "shape": {
+    "method_count": 3,
+    "has_bases": true,
+    "trivial": false
+   },
+   "role": "Many-only family no-overrides executor build step.",
+   "responsibilities": [
+    "compiles the spell-static no-overrides executor from many-only lane truth",
+    "stores the many-only no-overrides executor and code object on family state and final output metadata",
+    "derives a deterministic many-only no-overrides executor signature"
+   ],
+   "phases": [
+    "runtime"
+   ]
+  }
+ },
+ "edges_out": [
+  {
+   "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.steps.many_only_no_overrides_codegen_creation_step.ManyOnlyNoOverridesCodegenCreationStep",
+   "to_label": "CodegenCreationFamilyStep",
+   "relation": "specializes",
+   "to": "melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.codegen_creation_family_step.CodegenCreationFamilyStep"
+  }
+ ],
+ "edge_candidates": [
+  {
+   "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.steps.many_only_no_overrides_codegen_creation_step.ManyOnlyNoOverridesCodegenCreationStep",
+   "to_label": "RuntimeError",
+   "relation": "creates",
+   "confidence": "candidate"
+  }
+ ],
+ "published_aliases": [],
+ "imports": {
+  "compile_no_overrides_codegen_creation_executor_from_plan": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.compilers.many_only_no_overrides_codegen_creation_compiler.compile_no_overrides_codegen_creation_executor_from_plan",
+  "ManyOnlyCodegenCreationHelpers": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.many_only_codegen_creation_helpers.ManyOnlyCodegenCreationHelpers",
+  "ManyOnlyCodegenCreationState": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.many_only_codegen_creation_state.ManyOnlyCodegenCreationState",
+  "CodegenCreationFamilyStep": "melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.codegen_creation_family_step.CodegenCreationFamilyStep"
+ },
+ "collapse_candidate": {
+  "module": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.steps.many_only_no_overrides_codegen_creation_step",
+  "class": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.steps.many_only_no_overrides_codegen_creation_step.ManyOnlyNoOverridesCodegenCreationStep",
+  "label": "ManyOnlyNoOverridesCodegenCreationStep"
+ },
+ "edges_authored": [
+  {
+   "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.steps.many_only_no_overrides_codegen_creation_step.ManyOnlyNoOverridesCodegenCreationStep",
+   "to": "melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.codegen_creation_family_step.CodegenCreationFamilyStep",
+   "relation": "specializes",
+   "why": "ManyOnlyNoOverridesCodegenCreationStep specializes the shared family-step contract.",
+   "cardinality": "one_to_one",
+   "strength": "hard",
+   "phase": [
+    "runtime"
+   ]
+  },
+  {
+   "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.steps.many_only_no_overrides_codegen_creation_step.ManyOnlyNoOverridesCodegenCreationStep",
+   "to": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.compilers.many_only_no_overrides_codegen_creation_compiler",
+   "relation": "uses",
+   "why": "ManyOnlyNoOverridesCodegenCreationStep delegates spell-static no-overrides executor compilation to the many-only no-overrides compiler module.",
+   "cardinality": "one_to_one",
+   "strength": "borrowed",
+   "phase": [
+    "runtime"
+   ]
+  },
+  {
+   "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.steps.many_only_no_overrides_codegen_creation_step.ManyOnlyNoOverridesCodegenCreationStep",
+   "to": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.many_only_codegen_creation_helpers.ManyOnlyCodegenCreationHelpers",
+   "relation": "uses",
+   "why": "ManyOnlyNoOverridesCodegenCreationStep uses ManyOnlyCodegenCreationHelpers to derive deterministic executor signatures from many-only lane truth.",
+   "cardinality": "one_to_one",
+   "strength": "borrowed",
+   "phase": [
+    "runtime"
+   ]
+  },
+  {
+   "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.steps.many_only_no_overrides_codegen_creation_step.ManyOnlyNoOverridesCodegenCreationStep",
+   "to": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.many_only_codegen_creation_state.ManyOnlyCodegenCreationState",
+   "relation": "uses",
+   "why": "ManyOnlyNoOverridesCodegenCreationStep mutates the family-local many-only state while publishing the no-overrides executor.",
+   "cardinality": "one_to_one",
+   "strength": "borrowed",
+   "phase": [
+    "runtime"
+   ]
+  }
+ ]
+}

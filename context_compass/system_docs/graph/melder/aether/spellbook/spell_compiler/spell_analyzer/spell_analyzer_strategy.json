@@ -1,0 +1,72 @@
+{
+ "schema_version": 1,
+ "source": "src/melder/aether/spellbook/spell_compiler/spell_analyzer/spell_analyzer_strategy.py",
+ "source_sha256": "b31c309a598f90173089a6c5bd6df62c6136485d5761a86082391221a71c422a",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.aether.spellbook.spell_compiler.spell_analyzer.spell_analyzer_strategy": {
+   "id": "melder.aether.spellbook.spell_compiler.spell_analyzer.spell_analyzer_strategy",
+   "label": "spell_analyzer_strategy",
+   "kind": "module",
+   "file": "src/melder/aether/spellbook/spell_compiler/spell_analyzer/spell_analyzer_strategy.py",
+   "lineno": 1
+  },
+  "melder.aether.spellbook.spell_compiler.spell_analyzer.spell_analyzer_strategy.SpellAnalyzerStrategy": {
+   "id": "melder.aether.spellbook.spell_compiler.spell_analyzer.spell_analyzer_strategy.SpellAnalyzerStrategy",
+   "label": "SpellAnalyzerStrategy",
+   "kind": "abstract",
+   "file": "src/melder/aether/spellbook/spell_compiler/spell_analyzer/spell_analyzer_strategy.py",
+   "lineno": 12,
+   "bases": [],
+   "markers": [
+    "ABC"
+   ],
+   "public_methods": [
+    "analyze",
+    "strategy_id"
+   ],
+   "shape": {
+    "method_count": 2,
+    "has_bases": true,
+    "trivial": false
+   },
+   "role": "Abstract contract for one spell-analyzer strategy.",
+   "responsibilities": [
+    "defines the stable strategy_id contract for analyzer strategies",
+    "defines the analyze seam over Spell and SpellCompilerArtifact",
+    "keeps bounded analysis artifact enrichment separate from the top-level analyzer facade"
+   ],
+   "phases": [
+    "runtime"
+   ]
+  }
+ },
+ "edges_out": [],
+ "edge_candidates": [],
+ "published_aliases": [],
+ "imports": {
+  "ABC": "abc.ABC",
+  "abstractmethod": "abc.abstractmethod",
+  "TYPE_CHECKING": "typing.TYPE_CHECKING",
+  "Any": "typing.Any",
+  "ClassVar": "typing.ClassVar",
+  "Dict": "typing.Dict",
+  "Optional": "typing.Optional",
+  "Spell": "melder.aether.spellbook.spell.Spell",
+  "SpellCompilerArtifact": "melder.aether.spellbook.spell_compiler.spell_compiler_artifact.SpellCompilerArtifact"
+ },
+ "collapse_candidate": null,
+ "edges_authored": [
+  {
+   "from": "melder.aether.spellbook.spell_compiler.spell_analyzer.spell_analyzer_strategy.SpellAnalyzerStrategy",
+   "to": "melder.aether.spellbook.spell_compiler.spell_compiler_artifact.SpellCompilerArtifact",
+   "relation": "uses",
+   "why": "SpellAnalyzerStrategy implementations read and enrich SpellCompilerArtifact with bounded analysis artifacts.",
+   "cardinality": "one_to_one",
+   "strength": "borrowed",
+   "phase": [
+    "runtime"
+   ]
+  }
+ ]
+}

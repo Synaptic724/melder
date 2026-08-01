@@ -1,0 +1,269 @@
+{
+ "schema_version": 1,
+ "candidates": [
+  {
+   "id": "src.melder",
+   "kind": "package",
+   "file": "src/melder/",
+   "member_count": 10,
+   "shared_suffix": "",
+   "cohesion": 0.9
+  },
+  {
+   "id": "src.melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies",
+   "kind": "package",
+   "file": "src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/",
+   "member_count": 17,
+   "shared_suffix": "strategy",
+   "cohesion": 0.94
+  },
+  {
+   "id": "src.melder.aether.aetheric_frame.dev_ops.information_strategies",
+   "kind": "package",
+   "file": "src/melder/aether/aetheric_frame/dev_ops/information_strategies/",
+   "member_count": 6,
+   "shared_suffix": "strategy",
+   "cohesion": 0.83
+  },
+  {
+   "id": "src.melder.aether.conduit.creations",
+   "kind": "package",
+   "file": "src/melder/aether/conduit/creations/",
+   "member_count": 3,
+   "shared_suffix": "creations",
+   "cohesion": 0.67
+  },
+  {
+   "id": "src.melder.aether.conduit.meld",
+   "kind": "package",
+   "file": "src/melder/aether/conduit/meld/",
+   "member_count": 3,
+   "shared_suffix": "meld",
+   "cohesion": 0.67
+  },
+  {
+   "id": "src.melder.aether.spellbook.spell_compiler.artifact_processor.data",
+   "kind": "package",
+   "file": "src/melder/aether/spellbook/spell_compiler/artifact_processor/data/",
+   "member_count": 6,
+   "shared_suffix": "analysis",
+   "cohesion": 1.0
+  },
+  {
+   "id": "src.melder.aether.spellbook.spell_compiler.artifact_processor.strategies",
+   "kind": "package",
+   "file": "src/melder/aether/spellbook/spell_compiler/artifact_processor/strategies/",
+   "member_count": 7,
+   "shared_suffix": "strategy",
+   "cohesion": 1.0
+  },
+  {
+   "id": "src.melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.strategies",
+   "kind": "package",
+   "file": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/codegen_creation_discovery_system/strategies/",
+   "member_count": 5,
+   "shared_suffix": "strategy",
+   "cohesion": 1.0
+  },
+  {
+   "id": "src.melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.steps",
+   "kind": "package",
+   "file": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/steps/",
+   "member_count": 5,
+   "shared_suffix": "step",
+   "cohesion": 1.0
+  },
+  {
+   "id": "src.melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.steps",
+   "kind": "package",
+   "file": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/many_only/steps/",
+   "member_count": 5,
+   "shared_suffix": "step",
+   "cohesion": 1.0
+  },
+  {
+   "id": "src.melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.solo.steps",
+   "kind": "package",
+   "file": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/solo/steps/",
+   "member_count": 5,
+   "shared_suffix": "step",
+   "cohesion": 1.0
+  },
+  {
+   "id": "src.melder.aether.spellbook.spell_compiler.codegen_planner.codegen_plan_discovery_system.strategies",
+   "kind": "package",
+   "file": "src/melder/aether/spellbook/spell_compiler/codegen_planner/codegen_plan_discovery_system/strategies/",
+   "member_count": 3,
+   "shared_suffix": "strategy",
+   "cohesion": 1.0
+  },
+  {
+   "id": "src.melder.aether.spellbook.spell_compiler.codegen_planner.strategies",
+   "kind": "package",
+   "file": "src/melder/aether/spellbook/spell_compiler/codegen_planner/strategies/",
+   "member_count": 4,
+   "shared_suffix": "strategy",
+   "cohesion": 1.0
+  },
+  {
+   "id": "src.melder.aether.spellbook.spell_compiler.spell_examiner.inspectors",
+   "kind": "package",
+   "file": "src/melder/aether/spellbook/spell_compiler/spell_examiner/inspectors/",
+   "member_count": 3,
+   "shared_suffix": "inspector",
+   "cohesion": 0.67
+  },
+  {
+   "id": "src.melder.aether.spellbook.spell_compiler.spell_examiner.profiles",
+   "kind": "package",
+   "file": "src/melder/aether/spellbook/spell_compiler/spell_examiner/profiles/",
+   "member_count": 3,
+   "shared_suffix": "profile",
+   "cohesion": 1.0
+  },
+  {
+   "id": "src.melder.aether.spellbook.spell_compiler.system.validation",
+   "kind": "package",
+   "file": "src/melder/aether/spellbook/spell_compiler/system/validation/",
+   "member_count": 24,
+   "shared_suffix": "strategy",
+   "cohesion": 0.96
+  },
+  {
+   "id": "src.melder.aether.spellbook.spell_compiler.validation.strategies",
+   "kind": "package",
+   "file": "src/melder/aether/spellbook/spell_compiler/validation/strategies/",
+   "member_count": 14,
+   "shared_suffix": "strategy",
+   "cohesion": 1.0
+  },
+  {
+   "id": "src.melder.crystallizer.crystal_analysis.custody",
+   "kind": "package",
+   "file": "src/melder/crystallizer/crystal_analysis/custody/",
+   "member_count": 5,
+   "shared_suffix": "strategy",
+   "cohesion": 1.0
+  },
+  {
+   "id": "src.melder.crystallizer.crystal_analysis.preflight",
+   "kind": "package",
+   "file": "src/melder/crystallizer/crystal_analysis/preflight/",
+   "member_count": 12,
+   "shared_suffix": "strategy",
+   "cohesion": 0.92
+  },
+  {
+   "id": "src.melder.crystallizer.crystal_analysis.strategies",
+   "kind": "package",
+   "file": "src/melder/crystallizer/crystal_analysis/strategies/",
+   "member_count": 5,
+   "shared_suffix": "strategy",
+   "cohesion": 1.0
+  },
+  {
+   "id": "src.melder.crystallizer.crystals",
+   "kind": "package",
+   "file": "src/melder/crystallizer/crystals/",
+   "member_count": 12,
+   "shared_suffix": "crystal",
+   "cohesion": 0.92
+  },
+  {
+   "id": "src.melder.mutation_research.diff.strategies",
+   "kind": "package",
+   "file": "src/melder/mutation_research/diff/strategies/",
+   "member_count": 3,
+   "shared_suffix": "strategy",
+   "cohesion": 1.0
+  },
+  {
+   "id": "src.melder.nexus.acl.builder",
+   "kind": "package",
+   "file": "src/melder/nexus/acl/builder/",
+   "member_count": 4,
+   "shared_suffix": "builder",
+   "cohesion": 1.0
+  },
+  {
+   "id": "src.melder.nexus.acl.configurations",
+   "kind": "package",
+   "file": "src/melder/nexus/acl/configurations/",
+   "member_count": 3,
+   "shared_suffix": "configuration",
+   "cohesion": 1.0
+  },
+  {
+   "id": "src.melder.nexus.acl.configurations.profiles.codegen",
+   "kind": "package",
+   "file": "src/melder/nexus/acl/configurations/profiles/codegen/",
+   "member_count": 8,
+   "shared_suffix": "profile",
+   "cohesion": 0.62
+  },
+  {
+   "id": "src.melder.nexus.acl.configurations.profiles.command",
+   "kind": "package",
+   "file": "src/melder/nexus/acl/configurations/profiles/command/",
+   "member_count": 6,
+   "shared_suffix": "profile",
+   "cohesion": 0.67
+  },
+  {
+   "id": "src.melder.nexus.acl.configurations.profiles.view",
+   "kind": "package",
+   "file": "src/melder/nexus/acl/configurations/profiles/view/",
+   "member_count": 6,
+   "shared_suffix": "profile",
+   "cohesion": 0.67
+  },
+  {
+   "id": "src.melder.nexus.rift.codegen_system.namespace.strategies",
+   "kind": "package",
+   "file": "src/melder/nexus/rift/codegen_system/namespace/strategies/",
+   "member_count": 6,
+   "shared_suffix": "strategy",
+   "cohesion": 1.0
+  },
+  {
+   "id": "src.melder.nexus.rift.codegen_system.validation.strategies",
+   "kind": "package",
+   "file": "src/melder/nexus/rift/codegen_system/validation/strategies/",
+   "member_count": 7,
+   "shared_suffix": "strategy",
+   "cohesion": 1.0
+  },
+  {
+   "id": "src.melder.nexus.rift.command_system",
+   "kind": "package",
+   "file": "src/melder/nexus/rift/command_system/",
+   "member_count": 4,
+   "shared_suffix": "system",
+   "cohesion": 1.0
+  },
+  {
+   "id": "src.melder.nexus.rift.projection",
+   "kind": "package",
+   "file": "src/melder/nexus/rift/projection/",
+   "member_count": 4,
+   "shared_suffix": "projection",
+   "cohesion": 0.75
+  },
+  {
+   "id": "src.melder.nexus.rift.rift_space",
+   "kind": "package",
+   "file": "src/melder/nexus/rift/rift_space/",
+   "member_count": 5,
+   "shared_suffix": "space",
+   "cohesion": 0.8
+  },
+  {
+   "id": "src.melder.utilities.custom_exceptions",
+   "kind": "package",
+   "file": "src/melder/utilities/custom_exceptions/",
+   "member_count": 11,
+   "shared_suffix": "error",
+   "cohesion": 1.0
+  }
+ ]
+}

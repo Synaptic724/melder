@@ -1,0 +1,82 @@
+{
+ "schema_version": 1,
+ "source": "src/melder/utilities/synchronization/phase_latch.py",
+ "source_sha256": "4a62eb0825561d3f56a407d2f4785aeeb6675d4461e1f33a9dd65830c127d12c",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.utilities.synchronization.phase_latch": {
+   "id": "melder.utilities.synchronization.phase_latch",
+   "label": "phase_latch",
+   "kind": "module",
+   "file": "src/melder/utilities/synchronization/phase_latch.py",
+   "lineno": 1
+  },
+  "melder.utilities.synchronization.phase_latch.PhaseLatch": {
+   "id": "melder.utilities.synchronization.phase_latch.PhaseLatch",
+   "label": "PhaseLatch",
+   "kind": "class",
+   "file": "src/melder/utilities/synchronization/phase_latch.py",
+   "lineno": 7,
+   "bases": [],
+   "markers": [],
+   "public_methods": [
+    "complete",
+    "errors",
+    "record_error",
+    "wait",
+    "wait_all_reported"
+   ],
+   "shape": {
+    "method_count": 5,
+    "has_bases": false,
+    "trivial": false
+   },
+   "role": "Per-phase countdown latch used by PhaseScheduler barriers.",
+   "responsibilities": [
+    "tracks remaining unit completions for one phase barrier",
+    "records failed units and wakes the control thread immediately on error",
+    "provides timeout-bounded wait plus copied error snapshots for control flow"
+   ],
+   "owns_state": [
+    "_event",
+    "_remaining",
+    "_errors"
+   ],
+   "phases": [
+    "runtime",
+    "cleanup"
+   ]
+  }
+ },
+ "edges_out": [],
+ "edge_candidates": [
+  {
+   "from": "melder.utilities.synchronization.phase_latch.PhaseLatch",
+   "to_label": "Lock",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.utilities.synchronization.phase_latch.PhaseLatch",
+   "to_label": "Event",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.utilities.synchronization.phase_latch.PhaseLatch",
+   "to_label": "ValueError",
+   "relation": "creates",
+   "confidence": "candidate"
+  }
+ ],
+ "published_aliases": [],
+ "imports": {
+  "ClassVar": "typing.ClassVar",
+  "List": "typing.List"
+ },
+ "collapse_candidate": {
+  "module": "melder.utilities.synchronization.phase_latch",
+  "class": "melder.utilities.synchronization.phase_latch.PhaseLatch",
+  "label": "PhaseLatch"
+ }
+}

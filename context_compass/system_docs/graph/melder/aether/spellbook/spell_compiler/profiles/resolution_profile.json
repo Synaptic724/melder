@@ -1,0 +1,240 @@
+{
+ "schema_version": 1,
+ "source": "src/melder/aether/spellbook/spell_compiler/profiles/resolution_profile.py",
+ "source_sha256": "b252441f12013987e41df07e73921be09465c0d627c8ca6a6e902d19446e0a31",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.aether.spellbook.spell_compiler.profiles.resolution_profile": {
+   "id": "melder.aether.spellbook.spell_compiler.profiles.resolution_profile",
+   "label": "resolution_profile",
+   "kind": "module",
+   "file": "src/melder/aether/spellbook/spell_compiler/profiles/resolution_profile.py",
+   "lineno": 1
+  },
+  "melder.aether.spellbook.spell_compiler.profiles.resolution_profile.SpellSymbolicNode": {
+   "id": "melder.aether.spellbook.spell_compiler.profiles.resolution_profile.SpellSymbolicNode",
+   "label": "SpellSymbolicNode",
+   "kind": "class",
+   "file": "src/melder/aether/spellbook/spell_compiler/profiles/resolution_profile.py",
+   "lineno": 11,
+   "bases": [
+    "Cleanable"
+   ],
+   "markers": [],
+   "public_methods": [
+    "cleanup"
+   ],
+   "shape": {
+    "method_count": 1,
+    "has_bases": true,
+    "trivial": false
+   }
+  },
+  "melder.aether.spellbook.spell_compiler.profiles.resolution_profile.SpellSymbolicEdge": {
+   "id": "melder.aether.spellbook.spell_compiler.profiles.resolution_profile.SpellSymbolicEdge",
+   "label": "SpellSymbolicEdge",
+   "kind": "class",
+   "file": "src/melder/aether/spellbook/spell_compiler/profiles/resolution_profile.py",
+   "lineno": 74,
+   "bases": [
+    "Cleanable"
+   ],
+   "markers": [],
+   "public_methods": [
+    "cleanup"
+   ],
+   "shape": {
+    "method_count": 1,
+    "has_bases": true,
+    "trivial": false
+   }
+  },
+  "melder.aether.spellbook.spell_compiler.profiles.resolution_profile.SpellSymbolicGraph": {
+   "id": "melder.aether.spellbook.spell_compiler.profiles.resolution_profile.SpellSymbolicGraph",
+   "label": "SpellSymbolicGraph",
+   "kind": "class",
+   "file": "src/melder/aether/spellbook/spell_compiler/profiles/resolution_profile.py",
+   "lineno": 131,
+   "bases": [
+    "Cleanable"
+   ],
+   "markers": [],
+   "public_methods": [
+    "cleanup"
+   ],
+   "shape": {
+    "method_count": 1,
+    "has_bases": true,
+    "trivial": false
+   }
+  },
+  "melder.aether.spellbook.spell_compiler.profiles.resolution_profile.SpellResolutionFrame": {
+   "id": "melder.aether.spellbook.spell_compiler.profiles.resolution_profile.SpellResolutionFrame",
+   "label": "SpellResolutionFrame",
+   "kind": "class",
+   "file": "src/melder/aether/spellbook/spell_compiler/profiles/resolution_profile.py",
+   "lineno": 210,
+   "bases": [
+    "Cleanable"
+   ],
+   "markers": [],
+   "public_methods": [
+    "cleanup"
+   ],
+   "shape": {
+    "method_count": 1,
+    "has_bases": true,
+    "trivial": false
+   },
+   "role": "Per-spell Phase 3 ordered resolution summary.",
+   "responsibilities": [
+    "stores the owning spell id plus topological node order",
+    "captures the concrete local-frame resolution order for one spell",
+    "feeds Phase 4 validation and later rooted plan phases"
+   ],
+   "owns_state": [
+    "spell_id",
+    "ordered_node_ids"
+   ],
+   "phases": [
+    "validation",
+    "runtime",
+    "cleanup"
+   ]
+  },
+  "melder.aether.spellbook.spell_compiler.profiles.resolution_profile.SpellValidationIssue": {
+   "id": "melder.aether.spellbook.spell_compiler.profiles.resolution_profile.SpellValidationIssue",
+   "label": "SpellValidationIssue",
+   "kind": "class",
+   "file": "src/melder/aether/spellbook/spell_compiler/profiles/resolution_profile.py",
+   "lineno": 268,
+   "bases": [
+    "Cleanable"
+   ],
+   "markers": [],
+   "public_methods": [
+    "cleanup"
+   ],
+   "shape": {
+    "method_count": 1,
+    "has_bases": true,
+    "trivial": false
+   }
+  },
+  "melder.aether.spellbook.spell_compiler.profiles.resolution_profile.SpellValidationResult": {
+   "id": "melder.aether.spellbook.spell_compiler.profiles.resolution_profile.SpellValidationResult",
+   "label": "SpellValidationResult",
+   "kind": "class",
+   "file": "src/melder/aether/spellbook/spell_compiler/profiles/resolution_profile.py",
+   "lineno": 325,
+   "bases": [
+    "Cleanable"
+   ],
+   "markers": [],
+   "public_methods": [
+    "cleanup"
+   ],
+   "shape": {
+    "method_count": 1,
+    "has_bases": true,
+    "trivial": false
+   }
+  },
+  "melder.aether.spellbook.spell_compiler.profiles.resolution_profile.SpellResolutionProfile": {
+   "id": "melder.aether.spellbook.spell_compiler.profiles.resolution_profile.SpellResolutionProfile",
+   "label": "SpellResolutionProfile",
+   "kind": "class",
+   "file": "src/melder/aether/spellbook/spell_compiler/profiles/resolution_profile.py",
+   "lineno": 401,
+   "bases": [
+    "Cleanable"
+   ],
+   "markers": [],
+   "public_methods": [
+    "cleanup"
+   ],
+   "shape": {
+    "method_count": 1,
+    "has_bases": true,
+    "trivial": false
+   },
+   "role": "Canonical in-memory representation of how to resolve one spell.",
+   "responsibilities": [
+    "composes the phase 1-4 artifacts (requirements, symbolic graph, resolution frame, validation) for one spell",
+    "carries the semantic payload for DI and DAG resolution independent of execution model"
+   ],
+   "owns_state": [
+    "spell_id",
+    "existence",
+    "spellframe",
+    "binding_name",
+    "requirements",
+    "symbolic_graph",
+    "resolution_frame",
+    "validation"
+   ],
+   "phases": [
+    "validation",
+    "runtime",
+    "cleanup"
+   ]
+  }
+ },
+ "edges_out": [
+  {
+   "from": "melder.aether.spellbook.spell_compiler.profiles.resolution_profile.SpellSymbolicNode",
+   "to_label": "Cleanable",
+   "relation": "specializes",
+   "to": "melder.utilities.general_base.cleanable.Cleanable"
+  },
+  {
+   "from": "melder.aether.spellbook.spell_compiler.profiles.resolution_profile.SpellSymbolicEdge",
+   "to_label": "Cleanable",
+   "relation": "specializes",
+   "to": "melder.utilities.general_base.cleanable.Cleanable"
+  },
+  {
+   "from": "melder.aether.spellbook.spell_compiler.profiles.resolution_profile.SpellSymbolicGraph",
+   "to_label": "Cleanable",
+   "relation": "specializes",
+   "to": "melder.utilities.general_base.cleanable.Cleanable"
+  },
+  {
+   "from": "melder.aether.spellbook.spell_compiler.profiles.resolution_profile.SpellResolutionFrame",
+   "to_label": "Cleanable",
+   "relation": "specializes",
+   "to": "melder.utilities.general_base.cleanable.Cleanable"
+  },
+  {
+   "from": "melder.aether.spellbook.spell_compiler.profiles.resolution_profile.SpellValidationIssue",
+   "to_label": "Cleanable",
+   "relation": "specializes",
+   "to": "melder.utilities.general_base.cleanable.Cleanable"
+  },
+  {
+   "from": "melder.aether.spellbook.spell_compiler.profiles.resolution_profile.SpellValidationResult",
+   "to_label": "Cleanable",
+   "relation": "specializes",
+   "to": "melder.utilities.general_base.cleanable.Cleanable"
+  },
+  {
+   "from": "melder.aether.spellbook.spell_compiler.profiles.resolution_profile.SpellResolutionProfile",
+   "to_label": "Cleanable",
+   "relation": "specializes",
+   "to": "melder.utilities.general_base.cleanable.Cleanable"
+  }
+ ],
+ "edge_candidates": [],
+ "published_aliases": [],
+ "imports": {
+  "TYPE_CHECKING": "typing.TYPE_CHECKING",
+  "Any": "typing.Any",
+  "Optional": "typing.Optional",
+  "List": "typing.List",
+  "ClassVar": "typing.ClassVar",
+  "Existence": "melder.aether.spellbook.existence.existence.Existence",
+  "Cleanable": "melder.utilities.general_base.cleanable.Cleanable",
+  "SpellRequirements": "melder.aether.spellbook.spell_compiler.spell_requirements_finder.spell_requirements.SpellRequirements"
+ },
+ "collapse_candidate": null
+}

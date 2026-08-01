@@ -1,0 +1,39 @@
+{
+ "schema_version": 1,
+ "source": "src/melder/_build_assets/_system_documents/_builder.py",
+ "source_sha256": "1941b32dbfe03f5537b5e2e0fe0f59c38869eb30ccbed78048516283195f236e",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder._build_assets._system_documents._builder": {
+   "id": "melder._build_assets._system_documents._builder",
+   "label": "_builder",
+   "kind": "module",
+   "file": "src/melder/_build_assets/_system_documents/_builder.py",
+   "lineno": 1
+  },
+  "melder._build_assets._system_documents._builder.SystemDocumentsBuildPolicy": {
+   "id": "melder._build_assets._system_documents._builder.SystemDocumentsBuildPolicy",
+   "label": "SystemDocumentsBuildPolicy",
+   "kind": "class",
+   "file": "src/melder/_build_assets/_system_documents/_builder.py",
+   "lineno": 50,
+   "bases": [],
+   "markers": [],
+   "public_methods": [],
+   "shape": {
+    "method_count": 0,
+    "has_bases": false,
+    "trivial": true
+   }
+  }
+ },
+ "edges_out": [],
+ "edge_candidates": [],
+ "published_aliases": [],
+ "imports": {
+  "Dict": "typing.Dict",
+  "List": "typing.List",
+  "Tuple": "typing.Tuple"
+ },
+ "collapse_candidate": null
+}

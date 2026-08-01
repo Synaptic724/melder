@@ -1,0 +1,78 @@
+{
+ "schema_version": 1,
+ "source": "src/melder/aether/conduit/meld/creation_context/creation_context_builder.py",
+ "source_sha256": "49100a2cc7bb7a1a5af2cc0bc81398a6b410263d9307e44276764c98826c96cc",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.aether.conduit.meld.creation_context.creation_context_builder": {
+   "id": "melder.aether.conduit.meld.creation_context.creation_context_builder",
+   "label": "creation_context_builder",
+   "kind": "module",
+   "file": "src/melder/aether/conduit/meld/creation_context/creation_context_builder.py",
+   "lineno": 1
+  },
+  "melder.aether.conduit.meld.creation_context.creation_context_builder.CreationContextBuilder": {
+   "id": "melder.aether.conduit.meld.creation_context.creation_context_builder.CreationContextBuilder",
+   "label": "CreationContextBuilder",
+   "kind": "class",
+   "file": "src/melder/aether/conduit/meld/creation_context/creation_context_builder.py",
+   "lineno": 15,
+   "bases": [],
+   "markers": [],
+   "public_methods": [
+    "build"
+   ],
+   "shape": {
+    "method_count": 4,
+    "has_bases": false,
+    "trivial": false
+   },
+   "role": "Stateless builder for spell-shaped CreationContext instances.",
+   "responsibilities": [
+    "builds CreationContext objects from spell-static data",
+    "selects route and override lane configuration for one spell context"
+   ],
+   "phases": [
+    "runtime",
+    "cleanup"
+   ]
+  }
+ },
+ "edges_out": [],
+ "edge_candidates": [
+  {
+   "from": "melder.aether.conduit.meld.creation_context.creation_context_builder.CreationContextBuilder",
+   "to_label": "CreationContext",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.aether.conduit.meld.creation_context.creation_context_builder.CreationContextBuilder",
+   "to_label": "RuntimeError",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.aether.conduit.meld.creation_context.creation_context_builder.CreationContextBuilder",
+   "to_label": "MeldExecutionError",
+   "relation": "creates",
+   "confidence": "candidate"
+  }
+ ],
+ "published_aliases": [],
+ "imports": {
+  "TYPE_CHECKING": "typing.TYPE_CHECKING",
+  "Any": "typing.Any",
+  "Callable": "typing.Callable",
+  "Optional": "typing.Optional",
+  "CreationContext": "melder.aether.conduit.meld.creation_context.creation_context.CreationContext",
+  "MeldExecutionError": "melder.utilities.custom_exceptions.meld_execution_error.MeldExecutionError",
+  "Spell": "melder.aether.spellbook.spell.Spell",
+  "CreationGate": "melder.utilities.synchronization.creation_gate.CreationGate"
+ },
+ "collapse_candidate": {
+  "module": "melder.aether.conduit.meld.creation_context.creation_context_builder",
+  "class": "melder.aether.conduit.meld.creation_context.creation_context_builder.CreationContextBuilder",
+  "label": "CreationContextBuilder"
+ }
+}

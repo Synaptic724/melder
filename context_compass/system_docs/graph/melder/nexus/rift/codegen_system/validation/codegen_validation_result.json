@@ -1,0 +1,94 @@
+{
+ "schema_version": 1,
+ "source": "src/melder/nexus/rift/codegen_system/validation/codegen_validation_result.py",
+ "source_sha256": "2a9adf54f233d1c262c10fe0b84ffa7eea8104c2191e402ca5a337c3e50b413d",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.nexus.rift.codegen_system.validation.codegen_validation_result": {
+   "id": "melder.nexus.rift.codegen_system.validation.codegen_validation_result",
+   "label": "codegen_validation_result",
+   "kind": "module",
+   "file": "src/melder/nexus/rift/codegen_system/validation/codegen_validation_result.py",
+   "lineno": 1
+  },
+  "melder.nexus.rift.codegen_system.validation.codegen_validation_result.CodegenValidationResult": {
+   "id": "melder.nexus.rift.codegen_system.validation.codegen_validation_result.CodegenValidationResult",
+   "label": "CodegenValidationResult",
+   "kind": "class",
+   "file": "src/melder/nexus/rift/codegen_system/validation/codegen_validation_result.py",
+   "lineno": 8,
+   "bases": [
+    "Cleanable"
+   ],
+   "markers": [],
+   "public_methods": [
+    "accepted",
+    "cleanup",
+    "frame_name",
+    "not_implemented",
+    "reason",
+    "syntax_error",
+    "to_payload",
+    "transaction_id",
+    "validation_accepted",
+    "validation_failed",
+    "validation_issues"
+   ],
+   "shape": {
+    "method_count": 11,
+    "has_bases": true,
+    "trivial": false
+   },
+   "role": "Validation-layer result for one codegen request.",
+   "responsibilities": [
+    "stores acceptance state reason and validation issues",
+    "serializes to the public validation payload shape"
+   ],
+   "owns_state": [
+    "_accepted",
+    "_frame_name",
+    "_reason",
+    "_validation_issues",
+    "_transaction_id"
+   ],
+   "phases": [
+    "validation",
+    "cleanup"
+   ]
+  }
+ },
+ "edges_out": [
+  {
+   "from": "melder.nexus.rift.codegen_system.validation.codegen_validation_result.CodegenValidationResult",
+   "to_label": "Cleanable",
+   "relation": "specializes",
+   "to": "melder.utilities.general_base.cleanable.Cleanable"
+  }
+ ],
+ "edge_candidates": [
+  {
+   "from": "melder.nexus.rift.codegen_system.validation.codegen_validation_result.CodegenValidationResult",
+   "to_label": "RLock",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.nexus.rift.codegen_system.validation.codegen_validation_result.CodegenValidationResult",
+   "to_label": "ValueError",
+   "relation": "creates",
+   "confidence": "candidate"
+  }
+ ],
+ "published_aliases": [],
+ "imports": {
+  "Dict": "typing.Dict",
+  "Optional": "typing.Optional",
+  "Tuple": "typing.Tuple",
+  "Cleanable": "melder.utilities.general_base.cleanable.Cleanable"
+ },
+ "collapse_candidate": {
+  "module": "melder.nexus.rift.codegen_system.validation.codegen_validation_result",
+  "class": "melder.nexus.rift.codegen_system.validation.codegen_validation_result.CodegenValidationResult",
+  "label": "CodegenValidationResult"
+ }
+}

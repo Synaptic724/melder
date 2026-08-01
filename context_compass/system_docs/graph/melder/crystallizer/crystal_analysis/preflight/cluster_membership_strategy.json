@@ -1,0 +1,56 @@
+{
+ "schema_version": 1,
+ "source": "src/melder/crystallizer/crystal_analysis/preflight/cluster_membership_strategy.py",
+ "source_sha256": "527c5ee43b8819996451bceedd4280d8672a1de927068e5b75d41b7a4e0fee8c",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.crystallizer.crystal_analysis.preflight.cluster_membership_strategy": {
+   "id": "melder.crystallizer.crystal_analysis.preflight.cluster_membership_strategy",
+   "label": "cluster_membership_strategy",
+   "kind": "module",
+   "file": "src/melder/crystallizer/crystal_analysis/preflight/cluster_membership_strategy.py",
+   "lineno": 1
+  },
+  "melder.crystallizer.crystal_analysis.preflight.cluster_membership_strategy.ClusterMembershipStrategy": {
+   "id": "melder.crystallizer.crystal_analysis.preflight.cluster_membership_strategy.ClusterMembershipStrategy",
+   "label": "ClusterMembershipStrategy",
+   "kind": "class",
+   "file": "src/melder/crystallizer/crystal_analysis/preflight/cluster_membership_strategy.py",
+   "lineno": 9,
+   "bases": [
+    "PersistenceAnalysisStrategy"
+   ],
+   "markers": [],
+   "public_methods": [
+    "analyze",
+    "name"
+   ],
+   "shape": {
+    "method_count": 2,
+    "has_bases": true,
+    "trivial": false
+   }
+  }
+ },
+ "edges_out": [
+  {
+   "from": "melder.crystallizer.crystal_analysis.preflight.cluster_membership_strategy.ClusterMembershipStrategy",
+   "to_label": "PersistenceAnalysisStrategy",
+   "relation": "specializes",
+   "to": "melder.crystallizer.crystal_analysis.preflight.persistence_analysis_strategy.PersistenceAnalysisStrategy"
+  }
+ ],
+ "edge_candidates": [],
+ "published_aliases": [],
+ "imports": {
+  "ClassVar": "typing.ClassVar",
+  "Dict": "typing.Dict",
+  "List": "typing.List",
+  "PersistenceAnalysisStrategy": "melder.crystallizer.crystal_analysis.preflight.persistence_analysis_strategy.PersistenceAnalysisStrategy"
+ },
+ "collapse_candidate": {
+  "module": "melder.crystallizer.crystal_analysis.preflight.cluster_membership_strategy",
+  "class": "melder.crystallizer.crystal_analysis.preflight.cluster_membership_strategy.ClusterMembershipStrategy",
+  "label": "ClusterMembershipStrategy"
+ }
+}

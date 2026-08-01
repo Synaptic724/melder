@@ -12,11 +12,11 @@ Line numbers are 1-based and inclusive on both ends.
 | --- | --- |
 | document | `src_architecture.md` |
 | index_version | 1.1.0 |
-| generated_at | 2026-08-01T18:39:38Z |
-| line_count | 1751 |
+| generated_at | 2026-08-01T18:44:22Z |
+| line_count | 1806 |
 | line_ending | lf |
-| content_sha256 | `b076f52f31d1b06a5c437c5e6b252c57ac09005fb0504f1540f932631f6ae287` |
-| sections | 36 |
+| content_sha256 | `00d32feba079e43707b220bd5ee435b7d4465d0aeafb68268a22cfbd3896831c` |
+| sections | 37 |
 
 Recompute all three of `line_count`, `line_ending`, and `content_sha256`
 before slicing. On any mismatch: STOP, do not slice, do not eyeball an
@@ -54,12 +54,13 @@ which you did.
 | 571-575 | 3 | Data Flows and Sequences > Sequence: Cleanup |
 | 576-639 | 2 | Operational Invariants |
 | 640-669 | 2 | Failure Modes and Error Paths |
-| 670-1520 | 2 | C1 Code Map (Core Only) |
-| 1521-1604 | 2 | Diagrams |
-| 1522-1538 | 3 | Diagrams > ASCII Context Diagram (C4) |
-| 1539-1555 | 3 | Diagrams > Mermaid Context Diagram (C4) |
-| 1556-1567 | 3 | Diagrams > ASCII Conjure Pipeline Diagram |
-| 1568-1585 | 3 | Diagrams > Mermaid Meld Flow |
-| 1586-1604 | 3 | Diagrams > Mermaid Conduit Upgrade |
-| 1605-1716 | 2 | Information Sources |
-| 1717-1751 | 2 | Context / Handoff Summary |
+| 670-1537 | 2 | C1 Code Map (Core Only) |
+| 1538-1621 | 2 | Diagrams |
+| 1539-1555 | 3 | Diagrams > ASCII Context Diagram (C4) |
+| 1556-1572 | 3 | Diagrams > Mermaid Context Diagram (C4) |
+| 1573-1584 | 3 | Diagrams > ASCII Conjure Pipeline Diagram |
+| 1585-1602 | 3 | Diagrams > Mermaid Meld Flow |
+| 1603-1621 | 3 | Diagrams > Mermaid Conduit Upgrade |
+| 1622-1733 | 2 | Information Sources |
+| 1734-1806 | 2 | Context / Handoff Summary |
+| 1771-1806 | 3 | Context / Handoff Summary > Carried forward from the previous revision (2026-07-25) |

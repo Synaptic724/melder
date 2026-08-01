@@ -1,0 +1,38 @@
+{
+ "schema_version": 1,
+ "source": "src/melder/_build_assets/_agent_documentation/agent_documentation.py",
+ "source_sha256": "97d18a65dca4046578e0354a3aecafe376e9fff01a15cbc1ec5727514b31793c",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder._build_assets._agent_documentation.agent_documentation": {
+   "id": "melder._build_assets._agent_documentation.agent_documentation",
+   "label": "agent_documentation",
+   "kind": "module",
+   "file": "src/melder/_build_assets/_agent_documentation/agent_documentation.py",
+   "lineno": 1
+  },
+  "melder._build_assets._agent_documentation.agent_documentation.AgentDocumentationAsset": {
+   "id": "melder._build_assets._agent_documentation.agent_documentation.AgentDocumentationAsset",
+   "label": "AgentDocumentationAsset",
+   "kind": "class",
+   "file": "src/melder/_build_assets/_agent_documentation/agent_documentation.py",
+   "lineno": 50,
+   "bases": [],
+   "markers": [],
+   "public_methods": [],
+   "shape": {
+    "method_count": 0,
+    "has_bases": false,
+    "trivial": true
+   }
+  }
+ },
+ "edges_out": [],
+ "edge_candidates": [],
+ "published_aliases": [],
+ "imports": {
+  "hydrate": "melder.utilities.caching_system.asset_cache.hydrate",
+  "source": "melder._build_assets._agent_documentation.manifest.agent_documentation_manifest"
+ },
+ "collapse_candidate": null
+}

@@ -1,0 +1,31 @@
+{
+ "schema_version": 1,
+ "source": "src/melder/__author__.py",
+ "source_sha256": "6224a0e1d7310b8917d79a1f985ba6fe0edcc0f724545879eeccdf19a05e9f8b",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.__author__": {
+   "id": "melder.__author__",
+   "label": "__author__",
+   "kind": "module",
+   "file": "src/melder/__author__.py",
+   "lineno": 1,
+   "role": "Top-level author metadata module.",
+   "responsibilities": [
+    "stores human-readable package author metadata"
+   ],
+   "owns_state": [
+    "CREATOR",
+    "GITHUB"
+   ],
+   "phases": [
+    "runtime"
+   ]
+  }
+ },
+ "edges_out": [],
+ "edge_candidates": [],
+ "published_aliases": [],
+ "imports": {},
+ "collapse_candidate": null
+}

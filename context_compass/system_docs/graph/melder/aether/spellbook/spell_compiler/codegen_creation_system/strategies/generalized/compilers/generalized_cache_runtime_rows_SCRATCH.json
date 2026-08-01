@@ -1,0 +1,27 @@
+{
+ "schema_version": 1,
+ "source": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/compilers/generalized_cache_runtime_rows_SCRATCH.py",
+ "source_sha256": "0f697022b9d45ccdedeffc887e615d5aec2545c615556cffcd9a768d1caa842b",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_cache_runtime_rows_SCRATCH": {
+   "id": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_cache_runtime_rows_SCRATCH",
+   "label": "generalized_cache_runtime_rows_SCRATCH",
+   "kind": "module",
+   "file": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/compilers/generalized_cache_runtime_rows_SCRATCH.py",
+   "lineno": 1,
+   "role": "Scratch placeholder module for the replaced generalized cache runtime rows surface.",
+   "responsibilities": [
+    "marks the retired generalized cache runtime-rows surface as intentionally empty pending cleanup"
+   ],
+   "phases": [
+    "runtime"
+   ]
+  }
+ },
+ "edges_out": [],
+ "edge_candidates": [],
+ "published_aliases": [],
+ "imports": {},
+ "collapse_candidate": null
+}

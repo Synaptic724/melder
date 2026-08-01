@@ -1,0 +1,167 @@
+{
+ "schema_version": 1,
+ "source": "src/melder/utilities/ai_native_support_tools/agent_text_reader.py",
+ "source_sha256": "861feac5e49604ebe027d404ed382f4d081fe22466ed907424cdb9cce4916057",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.utilities.ai_native_support_tools.agent_text_reader": {
+   "id": "melder.utilities.ai_native_support_tools.agent_text_reader",
+   "label": "agent_text_reader",
+   "kind": "module",
+   "file": "src/melder/utilities/ai_native_support_tools/agent_text_reader.py",
+   "lineno": 1
+  },
+  "melder.utilities.ai_native_support_tools.agent_text_reader.ReaderPolicy": {
+   "id": "melder.utilities.ai_native_support_tools.agent_text_reader.ReaderPolicy",
+   "label": "ReaderPolicy",
+   "kind": "class",
+   "file": "src/melder/utilities/ai_native_support_tools/agent_text_reader.py",
+   "lineno": 69,
+   "bases": [],
+   "markers": [],
+   "public_methods": [],
+   "shape": {
+    "method_count": 0,
+    "has_bases": false,
+    "trivial": true
+   }
+  },
+  "melder.utilities.ai_native_support_tools.agent_text_reader.TextChunk": {
+   "id": "melder.utilities.ai_native_support_tools.agent_text_reader.TextChunk",
+   "label": "TextChunk",
+   "kind": "record",
+   "file": "src/melder/utilities/ai_native_support_tools/agent_text_reader.py",
+   "lineno": 111,
+   "bases": [],
+   "markers": [
+    "NamedTuple"
+   ],
+   "public_methods": [],
+   "shape": {
+    "method_count": 0,
+    "has_bases": true,
+    "trivial": false
+   }
+  },
+  "melder.utilities.ai_native_support_tools.agent_text_reader.IndexedText": {
+   "id": "melder.utilities.ai_native_support_tools.agent_text_reader.IndexedText",
+   "label": "IndexedText",
+   "kind": "class",
+   "file": "src/melder/utilities/ai_native_support_tools/agent_text_reader.py",
+   "lineno": 154,
+   "bases": [],
+   "markers": [],
+   "public_methods": [
+    "char_count",
+    "head",
+    "line_count",
+    "line_of_offset",
+    "line_start",
+    "line_text",
+    "lines_text",
+    "reader",
+    "split_lines",
+    "tail",
+    "text"
+   ],
+   "shape": {
+    "method_count": 13,
+    "has_bases": false,
+    "trivial": false
+   }
+  },
+  "melder.utilities.ai_native_support_tools.agent_text_reader.AgentTextReader": {
+   "id": "melder.utilities.ai_native_support_tools.agent_text_reader.AgentTextReader",
+   "label": "AgentTextReader",
+   "kind": "class",
+   "file": "src/melder/utilities/ai_native_support_tools/agent_text_reader.py",
+   "lineno": 569,
+   "bases": [],
+   "markers": [],
+   "public_methods": [
+    "char_target",
+    "current_line",
+    "current_offset",
+    "document",
+    "exhausted",
+    "head",
+    "line_target",
+    "peek",
+    "read",
+    "remaining_chars",
+    "remaining_lines",
+    "reset",
+    "seek_line",
+    "set_targets",
+    "stream",
+    "stream_chars",
+    "stream_lines",
+    "tail"
+   ],
+   "shape": {
+    "method_count": 21,
+    "has_bases": false,
+    "trivial": false
+   }
+  }
+ },
+ "edges_out": [],
+ "edge_candidates": [
+  {
+   "from": "melder.utilities.ai_native_support_tools.agent_text_reader.IndexedText",
+   "to_label": "TextChunk",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.utilities.ai_native_support_tools.agent_text_reader.IndexedText",
+   "to_label": "AgentTextReader",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.utilities.ai_native_support_tools.agent_text_reader.IndexedText",
+   "to_label": "TypeError",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.utilities.ai_native_support_tools.agent_text_reader.IndexedText",
+   "to_label": "IndexError",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.utilities.ai_native_support_tools.agent_text_reader.IndexedText",
+   "to_label": "ValueError",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.utilities.ai_native_support_tools.agent_text_reader.AgentTextReader",
+   "to_label": "TypeError",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.utilities.ai_native_support_tools.agent_text_reader.AgentTextReader",
+   "to_label": "ValueError",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.utilities.ai_native_support_tools.agent_text_reader.AgentTextReader",
+   "to_label": "TextChunk",
+   "relation": "creates",
+   "confidence": "candidate"
+  }
+ ],
+ "published_aliases": [],
+ "imports": {
+  "Iterator": "typing.Iterator",
+  "List": "typing.List",
+  "NamedTuple": "typing.NamedTuple",
+  "Optional": "typing.Optional"
+ },
+ "collapse_candidate": null
+}

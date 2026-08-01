@@ -1,0 +1,94 @@
+{
+ "schema_version": 1,
+ "source": "src/melder/aether/spellbook/resolution_style_matrix.py",
+ "source_sha256": "8836b4f4eeb47a7e655229cd6f189e26924e5bb999b17042e044fba83c565afc",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.aether.spellbook.resolution_style_matrix": {
+   "id": "melder.aether.spellbook.resolution_style_matrix",
+   "label": "resolution_style_matrix",
+   "kind": "module",
+   "file": "src/melder/aether/spellbook/resolution_style_matrix.py",
+   "lineno": 1
+  },
+  "melder.aether.spellbook.resolution_style_matrix.ResolutionStyleMatrix": {
+   "id": "melder.aether.spellbook.resolution_style_matrix.ResolutionStyleMatrix",
+   "label": "ResolutionStyleMatrix",
+   "kind": "class",
+   "file": "src/melder/aether/spellbook/resolution_style_matrix.py",
+   "lineno": 44,
+   "bases": [],
+   "markers": [],
+   "public_methods": [
+    "get_contract_item_status",
+    "get_entry",
+    "get_family_for_spell_type",
+    "get_family_policy",
+    "get_matrix_by_spell_type",
+    "validate"
+   ],
+   "shape": {
+    "method_count": 6,
+    "has_bases": false,
+    "trivial": false
+   },
+   "role": "Canonical support matrix for resolution styles.",
+   "responsibilities": [
+    "maps binding families and spell types to supported existence modes",
+    "tracks resolution contract item support status"
+   ],
+   "owns_state": [
+    "BINDING_FAMILY_POLICY",
+    "SPELL_TYPE_TO_BINDING_FAMILY",
+    "MATRIX_BY_SPELL_TYPE",
+    "CONTRACT_ITEM_STATUS"
+   ],
+   "phases": [
+    "validation",
+    "runtime"
+   ]
+  }
+ },
+ "edges_out": [],
+ "edge_candidates": [],
+ "published_aliases": [],
+ "imports": {
+  "Dict": "typing.Dict",
+  "Mapping": "typing.Mapping",
+  "Tuple": "typing.Tuple",
+  "ClassVar": "typing.ClassVar",
+  "Existence": "melder.aether.spellbook.existence.existence.Existence",
+  "SpellType": "melder.aether.spellbook.spell_types.spell_types.SpellType"
+ },
+ "collapse_candidate": {
+  "module": "melder.aether.spellbook.resolution_style_matrix",
+  "class": "melder.aether.spellbook.resolution_style_matrix.ResolutionStyleMatrix",
+  "label": "ResolutionStyleMatrix"
+ },
+ "edges_authored": [
+  {
+   "from": "melder.aether.spellbook.resolution_style_matrix.ResolutionStyleMatrix",
+   "to": "melder.aether.spellbook.existence.existence.Existence",
+   "relation": "uses",
+   "why": "ResolutionStyleMatrix defines which Existence modes each binding family supports.",
+   "cardinality": "many_to_one",
+   "strength": "borrowed",
+   "phase": [
+    "validation",
+    "runtime"
+   ]
+  },
+  {
+   "from": "melder.aether.spellbook.resolution_style_matrix.ResolutionStyleMatrix",
+   "to": "melder.aether.spellbook.spell_types.spell_types.SpellType",
+   "relation": "uses",
+   "why": "ResolutionStyleMatrix projects support policy across SpellType families.",
+   "cardinality": "many_to_one",
+   "strength": "borrowed",
+   "phase": [
+    "validation",
+    "runtime"
+   ]
+  }
+ ]
+}

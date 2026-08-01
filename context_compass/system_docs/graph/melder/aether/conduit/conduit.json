@@ -1,0 +1,441 @@
+{
+ "schema_version": 1,
+ "source": "src/melder/aether/conduit/conduit.py",
+ "source_sha256": "f7611eacae8947592240fbb97f3fa5d7541f589e9755d411703d088bf0a0b74b",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.aether.conduit.conduit": {
+   "id": "melder.aether.conduit.conduit",
+   "label": "conduit",
+   "kind": "module",
+   "file": "src/melder/aether/conduit/conduit.py",
+   "lineno": 1
+  },
+  "melder.aether.conduit.conduit.Conduit": {
+   "id": "melder.aether.conduit.conduit.Conduit",
+   "label": "Conduit",
+   "kind": "class",
+   "file": "src/melder/aether/conduit/conduit.py",
+   "lineno": 78,
+   "bases": [
+    "Cleanable"
+   ],
+   "markers": [],
+   "public_methods": [
+    "add_index_to_contract",
+    "add_spell_to_contract",
+    "add_spell_to_contract_with_dependencies",
+    "add_spells_to_contract",
+    "add_to_spell_index",
+    "begin_transaction",
+    "bind",
+    "bind_inactive",
+    "check_spell_id",
+    "cleanup",
+    "cleanup_lesser_conduits",
+    "cleanup_spell",
+    "create_lesser_conduit",
+    "create_spellspace",
+    "describe_live_creation_status",
+    "describe_spells_in_conduit",
+    "disable_meld",
+    "enable_meld",
+    "end_transaction",
+    "enter_spellspace",
+    "find_contracted_spell",
+    "find_spell_id",
+    "find_spell_key",
+    "get_active_spellspace",
+    "get_all_spells_in_contracts",
+    "get_conduit_by_spell_id",
+    "get_conduit_cloud",
+    "get_contracted_conduits",
+    "get_initiated_conduit",
+    "get_initiated_conduits",
+    "get_lesser_conduit",
+    "get_links",
+    "get_provider_conduit",
+    "get_provider_conduits",
+    "get_resolution_state",
+    "get_spell_by_id",
+    "get_spell_by_index_id",
+    "get_spell_in_contracts",
+    "get_spell_permissions",
+    "get_spells_in_contract_by_conduit",
+    "get_spells_in_contract_by_conduit_name",
+    "has_live_creation",
+    "id",
+    "inspect_spell",
+    "link",
+    "meld",
+    "meld_existing_spell",
+    "mutation_research",
+    "name",
+    "name",
+    "notch_spell",
+    "permanent_cleanup",
+    "prewarm_lesser_conduits",
+    "prewarm_spellspaces",
+    "register_conduit_hooks",
+    "remove_from_spell_index",
+    "remove_index_from_contract",
+    "remove_root_from_contracts",
+    "remove_spell_from_contract",
+    "remove_spells_from_contract",
+    "scan",
+    "set_new_policy",
+    "sever_link",
+    "snapshot_state",
+    "transaction",
+    "transfer_spell_ownership",
+    "upgrade_to_normal",
+    "validate_contracts_and_define",
+    "validate_received_contracts",
+    "validate_resolution"
+   ],
+   "shape": {
+    "method_count": 118,
+    "has_bases": true,
+    "trivial": false
+   },
+   "role": "Runtime execution scope for spell resolution.",
+   "responsibilities": [
+    "hosts meld execution",
+    "owns concrete conduit-facing runtime helpers and pooled spellspace state",
+    "creates lesser conduits",
+    "supports dynamic linking and ownership transfer in dynamic mode"
+   ],
+   "owns_state": [
+    "_meld",
+    "_creations",
+    "_conduit_ward",
+    "_creation_gate",
+    "_spellspace_stack",
+    "_spellspace_pool",
+    "_conduit_pool",
+    "_transaction_identity"
+   ],
+   "phases": [
+    "init",
+    "runtime",
+    "cleanup"
+   ]
+  }
+ },
+ "edges_out": [
+  {
+   "from": "melder.aether.conduit.conduit.Conduit",
+   "to_label": "Cleanable",
+   "relation": "specializes",
+   "to": "melder.utilities.general_base.cleanable.Cleanable"
+  }
+ ],
+ "edge_candidates": [
+  {
+   "from": "melder.aether.conduit.conduit.Conduit",
+   "to_label": "RLock",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.aether.conduit.conduit.Conduit",
+   "to_label": "SpellSpaceThreadState",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.aether.conduit.conduit.Conduit",
+   "to_label": "ConduitCreations",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.aether.conduit.conduit.Conduit",
+   "to_label": "ConduitMeld",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.aether.conduit.conduit.Conduit",
+   "to_label": "SpellSpacePool",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.aether.conduit.conduit.Conduit",
+   "to_label": "ConduitWard",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.aether.conduit.conduit.Conduit",
+   "to_label": "RuntimeError",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.aether.conduit.conduit.Conduit",
+   "to_label": "TransferOfOwnership",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.aether.conduit.conduit.Conduit",
+   "to_label": "TypeError",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.aether.conduit.conduit.Conduit",
+   "to_label": "ValueError",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.aether.conduit.conduit.Conduit",
+   "to_label": "ConduitPool",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.aether.conduit.conduit.Conduit",
+   "to_label": "ClusterCreations",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.aether.conduit.conduit.Conduit",
+   "to_label": "ConduitCrystal",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.aether.conduit.conduit.Conduit",
+   "to_label": "DevopsIdentity",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.aether.conduit.conduit.Conduit",
+   "to_label": "Conduit",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.aether.conduit.conduit.Conduit",
+   "to_label": "Scan",
+   "relation": "creates",
+   "confidence": "candidate"
+  }
+ ],
+ "published_aliases": [],
+ "imports": {
+  "contextmanager": "contextlib.contextmanager",
+  "ModuleType": "types.ModuleType",
+  "TracebackType": "types.TracebackType",
+  "TYPE_CHECKING": "typing.TYPE_CHECKING",
+  "Optional": "typing.Optional",
+  "Union": "typing.Union",
+  "Any": "typing.Any",
+  "Tuple": "typing.Tuple",
+  "Callable": "typing.Callable",
+  "Iterable": "typing.Iterable",
+  "Dict": "typing.Dict",
+  "Generator": "typing.Generator",
+  "ClassVar": "typing.ClassVar",
+  "Set": "typing.Set",
+  "ChangeTransactionType": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_request.transaction_request.ChangeTransactionType",
+  "Policies": "melder.aether.conduit.conduit_ward.policies.policies.Policies",
+  "DetailReason": "melder.aether.conduit.conduit_ward.contract.detail_reason.DetailReason",
+  "SystemState": "melder.aether.spellbook.configuration.system_state.SystemState",
+  "Existence": "melder.aether.spellbook.existence.existence.Existence",
+  "Cleanable": "melder.utilities.general_base.cleanable.Cleanable",
+  "IDBuilder": "melder.utilities.helpers.id_builder.IDBuilder",
+  "InitHelpers": "melder.utilities.helpers.init_helpers.InitHelpers",
+  "ConduitState": "melder.aether.conduit.conduit_state.conduit_state.ConduitState",
+  "ConduitMeld": "melder.aether.conduit.meld.conduit_meld.ConduitMeld",
+  "ConduitWard": "melder.aether.conduit.conduit_ward.conduit_ward.ConduitWard",
+  "ConduitCreations": "melder.aether.conduit.creations.conduit_creations.ConduitCreations",
+  "ClusterCreations": "melder.aether.conduit.creations.cluster_creations.ClusterCreations",
+  "ConduitPool": "melder.aether.conduit.conduit_pool.ConduitPool",
+  "ConduitCrystal": "melder.crystallizer.crystals.conduit_crystal.ConduitCrystal",
+  "SpellSpace": "melder.aether.conduit.spell_space.spell_space.SpellSpace",
+  "SpellSpacePool": "melder.aether.conduit.spell_space.spell_space_pool.SpellSpacePool",
+  "SpellSpaceThreadState": "melder.aether.conduit.spell_space.spell_space_thread_state.SpellSpaceThreadState",
+  "SpellSpaceScopeError": "melder.utilities.custom_exceptions.spell_space_scope_error.SpellSpaceScopeError",
+  "DevopsIdentity": "melder.aether.aetheric_frame.dev_ops.devops_identity.DevopsIdentity",
+  "Scan": "melder.aether.spellbook.bind.scan.Scan",
+  "SpellbookConfiguration": "melder.aether.spellbook.configuration.spellbook_configuration.SpellbookConfiguration",
+  "SpellStateChangeReason": "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_state_change_reason.SpellStateChangeReason",
+  "Nexus": "melder.nexus.nexus.Nexus",
+  "AethericFrame": "melder.aether.aetheric_frame.aetheric_frame.AethericFrame",
+  "ConduitCloud": "melder.aether.aetheric_frame.conduit_cloud.ConduitCloud",
+  "TransactionMediator": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.transaction_mediator.TransactionMediator",
+  "Spell": "melder.aether.spellbook.spell.Spell",
+  "SpellIndex": "melder.aether.spellbook.bind.spell_index.SpellIndex",
+  "Spellbook": "melder.aether.spellbook.spellbook.Spellbook",
+  "DevopsInformationRegistry": "melder.aether.aetheric_frame.dev_ops.devops_information_registry.DevopsInformationRegistry",
+  "ConduitResolutionState": "melder.aether.aetheric_frame.dev_ops.spell_system_states.conduit_resolution_state.ConduitResolutionState",
+  "SafeLogger": "melder.utilities.logger.safe_logger.SafeLogger",
+  "CreationGate": "melder.utilities.synchronization.creation_gate.CreationGate",
+  "CreationGateController": "melder.utilities.synchronization.creation_gate_controller.CreationGateController",
+  "Crystallizer": "melder.crystallizer.crystallizer.Crystallizer",
+  "MutationResearch": "melder.mutation_research.mutation_research.MutationResearch",
+  "TransferOfOwnership": "melder.aether.conduit.conduit_ward.transfer.transfer_of_ownership.TransferOfOwnership"
+ },
+ "collapse_candidate": {
+  "module": "melder.aether.conduit.conduit",
+  "class": "melder.aether.conduit.conduit.Conduit",
+  "label": "Conduit"
+ },
+ "edges_authored": [
+  {
+   "from": "melder.aether.conduit.conduit.Conduit",
+   "to": "melder.aether.aether.Aether",
+   "relation": "borrows",
+   "why": "Conduit uses the global Aether substrate for frame, registry, and cloud interactions without owning the singleton lifecycle.",
+   "cardinality": "many_to_one",
+   "strength": "borrowed",
+   "phase": [
+    "runtime"
+   ]
+  },
+  {
+   "from": "melder.aether.conduit.conduit.Conduit",
+   "to": "melder.aether.aetheric_frame.dev_ops.devops_identity.DevopsIdentity",
+   "relation": "owns_lifecycle_of",
+   "why": "Normal conduits create and own one DevopsIdentity for transaction and topology reporting.",
+   "cardinality": "one_to_one",
+   "strength": "hard",
+   "phase": [
+    "init",
+    "runtime",
+    "cleanup"
+   ]
+  },
+  {
+   "from": "melder.aether.conduit.conduit.Conduit",
+   "to": "melder.aether.aetheric_frame.dev_ops.devops_information_registry.DevopsInformationRegistry",
+   "relation": "borrows",
+   "why": "Conduit borrows the frame dev-ops information registry to attach and refresh its transaction identity.",
+   "cardinality": "one_to_one",
+   "strength": "borrowed",
+   "phase": [
+    "runtime"
+   ]
+  },
+  {
+   "from": "melder.aether.conduit.conduit.Conduit",
+   "to": "melder.aether.conduit.conduit_pool.ConduitPool",
+   "relation": "owns_lifecycle_of",
+   "why": "Normal conduits own ConduitPool as the reusable lesser-conduit shell pool.",
+   "cardinality": "one_to_one",
+   "strength": "hard",
+   "phase": [
+    "init",
+    "runtime",
+    "cleanup"
+   ]
+  },
+  {
+   "from": "melder.aether.conduit.conduit.Conduit",
+   "to": "melder.aether.conduit.conduit_state.conduit_state.ConduitState",
+   "relation": "uses",
+   "why": "Conduit uses ConduitState to distinguish normal, lesser, and cleaned conduit lifecycles.",
+   "cardinality": "many_to_one",
+   "strength": "borrowed",
+   "phase": [
+    "runtime",
+    "cleanup"
+   ]
+  },
+  {
+   "from": "melder.aether.conduit.conduit.Conduit",
+   "to": "melder.aether.conduit.conduit_ward.conduit_ward.ConduitWard",
+   "relation": "owns_lifecycle_of",
+   "why": "Conduit owns ConduitWard as its contract and lineage manager.",
+   "cardinality": "one_to_one",
+   "strength": "hard",
+   "phase": [
+    "init",
+    "runtime",
+    "cleanup"
+   ]
+  },
+  {
+   "from": "melder.aether.conduit.conduit.Conduit",
+   "to": "melder.aether.conduit.creations.conduit_creations.ConduitCreations",
+   "relation": "owns_lifecycle_of",
+   "why": "Conduit owns ConduitCreations as its conduit/root live creation registry.",
+   "cardinality": "one_to_one",
+   "strength": "hard",
+   "phase": [
+    "init",
+    "runtime",
+    "cleanup"
+   ]
+  },
+  {
+   "from": "melder.aether.conduit.conduit.Conduit",
+   "to": "melder.aether.conduit.meld.conduit_meld.ConduitMeld",
+   "relation": "owns_lifecycle_of",
+   "why": "Conduit owns ConduitMeld as its conduit-facing resolution runtime component.",
+   "cardinality": "one_to_one",
+   "strength": "hard",
+   "phase": [
+    "init",
+    "runtime",
+    "cleanup"
+   ]
+  },
+  {
+   "from": "melder.aether.conduit.conduit.Conduit",
+   "to": "melder.aether.conduit.spell_space.spell_space.SpellSpace",
+   "relation": "creates",
+   "why": "Conduit creates and owns spellspace scopes for unique_per_spell_space execution windows.",
+   "cardinality": "one_to_many",
+   "strength": "hard",
+   "phase": [
+    "runtime",
+    "cleanup"
+   ]
+  },
+  {
+   "from": "melder.aether.conduit.conduit.Conduit",
+   "to": "melder.aether.conduit.spell_space.spell_space_pool.SpellSpacePool",
+   "relation": "owns_lifecycle_of",
+   "why": "Conduit owns SpellSpacePool as the reusable spellspace scope pool.",
+   "cardinality": "one_to_one",
+   "strength": "hard",
+   "phase": [
+    "init",
+    "runtime",
+    "cleanup"
+   ]
+  },
+  {
+   "from": "melder.aether.conduit.conduit.Conduit",
+   "to": "melder.aether.conduit.spell_space.spell_space_thread_state.SpellSpaceThreadState",
+   "relation": "owns_lifecycle_of",
+   "why": "Conduit owns the per-thread spellspace stack holder used by managed spellspace entry and exit.",
+   "cardinality": "one_to_one",
+   "strength": "hard",
+   "phase": [
+    "init",
+    "runtime",
+    "cleanup"
+   ]
+  },
+  {
+   "from": "melder.aether.conduit.conduit.Conduit",
+   "to": "melder.utilities.synchronization.creation_gate_controller.CreationGateController",
+   "relation": "borrows",
+   "why": "Conduit resolves and reuses the frame-owned CreationGateController for meld admission and lineage gate management.",
+   "cardinality": "many_to_one",
+   "strength": "borrowed",
+   "phase": [
+    "runtime"
+   ]
+  }
+ ]
+}

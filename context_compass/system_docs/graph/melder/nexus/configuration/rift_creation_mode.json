@@ -1,0 +1,51 @@
+{
+ "schema_version": 1,
+ "source": "src/melder/nexus/configuration/rift_creation_mode.py",
+ "source_sha256": "0547c46c1f72ef77bbef4cf1ec5f0d9c58ebec25966c3a7ccc8610b212fd5857",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.nexus.configuration.rift_creation_mode": {
+   "id": "melder.nexus.configuration.rift_creation_mode",
+   "label": "rift_creation_mode",
+   "kind": "module",
+   "file": "src/melder/nexus/configuration/rift_creation_mode.py",
+   "lineno": 1
+  },
+  "melder.nexus.configuration.rift_creation_mode.RiftCreationMode": {
+   "id": "melder.nexus.configuration.rift_creation_mode.RiftCreationMode",
+   "label": "RiftCreationMode",
+   "kind": "enum",
+   "file": "src/melder/nexus/configuration/rift_creation_mode.py",
+   "lineno": 5,
+   "bases": [],
+   "markers": [
+    "Enum"
+   ],
+   "public_methods": [],
+   "shape": {
+    "method_count": 0,
+    "has_bases": true,
+    "trivial": false
+   },
+   "role": "System-level policy enum for Rift creation/programming.",
+   "responsibilities": [
+    "labels open, token-required, and prebuilt-only Rift creation modes"
+   ],
+   "owns_state": [
+    "open",
+    "token_required",
+    "prebuilt_only"
+   ],
+   "phases": [
+    "runtime"
+   ]
+  }
+ },
+ "edges_out": [],
+ "edge_candidates": [],
+ "published_aliases": [],
+ "imports": {
+  "Enum": "enum.Enum"
+ },
+ "collapse_candidate": null
+}

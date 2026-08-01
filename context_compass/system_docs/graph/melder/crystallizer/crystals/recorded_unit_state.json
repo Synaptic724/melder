@@ -1,0 +1,37 @@
+{
+ "schema_version": 1,
+ "source": "src/melder/crystallizer/crystals/recorded_unit_state.py",
+ "source_sha256": "559c4771a52ede5d345ca69913b7c680d9f5f37ce0f4e4afbb28c92db0558d54",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.crystallizer.crystals.recorded_unit_state": {
+   "id": "melder.crystallizer.crystals.recorded_unit_state",
+   "label": "recorded_unit_state",
+   "kind": "module",
+   "file": "src/melder/crystallizer/crystals/recorded_unit_state.py",
+   "lineno": 1
+  },
+  "melder.crystallizer.crystals.recorded_unit_state.RecordedUnitState": {
+   "id": "melder.crystallizer.crystals.recorded_unit_state.RecordedUnitState",
+   "label": "RecordedUnitState",
+   "kind": "enum",
+   "file": "src/melder/crystallizer/crystals/recorded_unit_state.py",
+   "lineno": 4,
+   "bases": [],
+   "markers": [
+    "Enum"
+   ],
+   "public_methods": [],
+   "shape": {
+    "method_count": 0,
+    "has_bases": true,
+    "trivial": false
+   }
+  }
+ },
+ "edges_out": [],
+ "edge_candidates": [],
+ "published_aliases": [],
+ "imports": {},
+ "collapse_candidate": null
+}

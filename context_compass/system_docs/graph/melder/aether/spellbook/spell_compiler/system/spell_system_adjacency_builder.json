@@ -1,0 +1,98 @@
+{
+ "schema_version": 1,
+ "source": "src/melder/aether/spellbook/spell_compiler/system/spell_system_adjacency_builder.py",
+ "source_sha256": "f55706a1b58f86f462289ed2e6b2f55f7ddfdbee7b378a38c616a094f57b6e06",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.aether.spellbook.spell_compiler.system.spell_system_adjacency_builder": {
+   "id": "melder.aether.spellbook.spell_compiler.system.spell_system_adjacency_builder",
+   "label": "spell_system_adjacency_builder",
+   "kind": "module",
+   "file": "src/melder/aether/spellbook/spell_compiler/system/spell_system_adjacency_builder.py",
+   "lineno": 1
+  },
+  "melder.aether.spellbook.spell_compiler.system.spell_system_adjacency_builder.SpellSystemAdjacencyBuilder": {
+   "id": "melder.aether.spellbook.spell_compiler.system.spell_system_adjacency_builder.SpellSystemAdjacencyBuilder",
+   "label": "SpellSystemAdjacencyBuilder",
+   "kind": "class",
+   "file": "src/melder/aether/spellbook/spell_compiler/system/spell_system_adjacency_builder.py",
+   "lineno": 13,
+   "bases": [],
+   "markers": [],
+   "public_methods": [
+    "build"
+   ],
+   "shape": {
+    "method_count": 1,
+    "has_bases": false,
+    "trivial": false
+   },
+   "role": "Builder from SpellSystemStates into an adjacency snapshot.",
+   "responsibilities": [
+    "reads direct dependency and topology state from SpellSystemStates",
+    "derives reverse dependencies and structural roots",
+    "produces a frame-wide SpellSystemAdjacencySnapshot"
+   ],
+   "phases": [
+    "validation",
+    "runtime"
+   ]
+  }
+ },
+ "edges_out": [],
+ "edge_candidates": [
+  {
+   "from": "melder.aether.spellbook.spell_compiler.system.spell_system_adjacency_builder.SpellSystemAdjacencyBuilder",
+   "to_label": "SpellSystemAdjacencySnapshot",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.aether.spellbook.spell_compiler.system.spell_system_adjacency_builder.SpellSystemAdjacencyBuilder",
+   "to_label": "RuntimeError",
+   "relation": "creates",
+   "confidence": "candidate"
+  }
+ ],
+ "published_aliases": [],
+ "imports": {
+  "TYPE_CHECKING": "typing.TYPE_CHECKING",
+  "Dict": "typing.Dict",
+  "Optional": "typing.Optional",
+  "Set": "typing.Set",
+  "ClassVar": "typing.ClassVar",
+  "SpellSystemAdjacencySnapshot": "melder.aether.spellbook.spell_compiler.system.spell_system_adjacency_snapshot.SpellSystemAdjacencySnapshot",
+  "SpellSystemStates": "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states.SpellSystemStates",
+  "SpellLocalTopology": "melder.aether.spellbook.spell_compiler.topology.spell_local_topology.SpellLocalTopology"
+ },
+ "collapse_candidate": {
+  "module": "melder.aether.spellbook.spell_compiler.system.spell_system_adjacency_builder",
+  "class": "melder.aether.spellbook.spell_compiler.system.spell_system_adjacency_builder.SpellSystemAdjacencyBuilder",
+  "label": "SpellSystemAdjacencyBuilder"
+ },
+ "edges_authored": [
+  {
+   "from": "melder.aether.spellbook.spell_compiler.system.spell_system_adjacency_builder.SpellSystemAdjacencyBuilder",
+   "to": "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states.SpellSystemStates",
+   "relation": "borrows",
+   "why": "SpellSystemAdjacencyBuilder reads direct dependency and topology state from SpellSystemStates without owning that service.",
+   "cardinality": "many_to_one",
+   "strength": "borrowed",
+   "phase": [
+    "validation",
+    "runtime"
+   ]
+  },
+  {
+   "from": "melder.aether.spellbook.spell_compiler.system.spell_system_adjacency_builder.SpellSystemAdjacencyBuilder",
+   "to": "melder.aether.spellbook.spell_compiler.system.spell_system_adjacency_snapshot.SpellSystemAdjacencySnapshot",
+   "relation": "creates",
+   "why": "SpellSystemAdjacencyBuilder produces the frame-wide adjacency snapshot used by later Phase 5 rooted builders.",
+   "cardinality": "one_to_one",
+   "strength": "hard",
+   "phase": [
+    "validation"
+   ]
+  }
+ ]
+}

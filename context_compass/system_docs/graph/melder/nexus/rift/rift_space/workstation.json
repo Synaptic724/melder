@@ -1,0 +1,114 @@
+{
+ "schema_version": 1,
+ "source": "src/melder/nexus/rift/rift_space/workstation.py",
+ "source_sha256": "36da76ad52ff0de4a8ad21a936f41afb436998ad8615f2a8ff7fb049cc340778",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.nexus.rift.rift_space.workstation": {
+   "id": "melder.nexus.rift.rift_space.workstation",
+   "label": "workstation",
+   "kind": "module",
+   "file": "src/melder/nexus/rift/rift_space/workstation.py",
+   "lineno": 1
+  },
+  "melder.nexus.rift.rift_space.workstation.Workstation": {
+   "id": "melder.nexus.rift.rift_space.workstation.Workstation",
+   "label": "Workstation",
+   "kind": "class",
+   "file": "src/melder/nexus/rift/rift_space/workstation.py",
+   "lineno": 11,
+   "bases": [
+    "Cleanable"
+   ],
+   "markers": [],
+   "public_methods": [
+    "bind_attribute",
+    "bind_method",
+    "bind_object",
+    "call_target",
+    "cleanup",
+    "cleanup_target",
+    "clear_target",
+    "describe_bindings",
+    "get",
+    "get_target",
+    "owner_space_id",
+    "release",
+    "set_target",
+    "workstation_id"
+   ],
+   "shape": {
+    "method_count": 25,
+    "has_bases": true,
+    "trivial": false
+   },
+   "role": "Room-local binding canvas.",
+   "responsibilities": [
+    "stores bound objects, attributes, and methods",
+    "tracks one active target",
+    "supports result rebinding for later room work"
+   ],
+   "owns_state": [
+    "_objects_by_name",
+    "_attributes_by_name",
+    "_methods_by_name",
+    "_active_target_name"
+   ],
+   "phases": [
+    "runtime",
+    "cleanup"
+   ]
+  }
+ },
+ "edges_out": [
+  {
+   "from": "melder.nexus.rift.rift_space.workstation.Workstation",
+   "to_label": "Cleanable",
+   "relation": "specializes",
+   "to": "melder.utilities.general_base.cleanable.Cleanable"
+  }
+ ],
+ "edge_candidates": [
+  {
+   "from": "melder.nexus.rift.rift_space.workstation.Workstation",
+   "to_label": "RLock",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.nexus.rift.rift_space.workstation.Workstation",
+   "to_label": "WeakConcurrentDict",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.nexus.rift.rift_space.workstation.Workstation",
+   "to_label": "ValueError",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.nexus.rift.rift_space.workstation.Workstation",
+   "to_label": "RuntimeError",
+   "relation": "creates",
+   "confidence": "candidate"
+  }
+ ],
+ "published_aliases": [],
+ "imports": {
+  "Any": "typing.Any",
+  "Callable": "typing.Callable",
+  "Dict": "typing.Dict",
+  "List": "typing.List",
+  "Optional": "typing.Optional",
+  "Tuple": "typing.Tuple",
+  "WeakConcurrentDict": "melder.utilities.data_structures.weak_data_structures.weak_concurrent_dict.WeakConcurrentDict",
+  "Cleanable": "melder.utilities.general_base.cleanable.Cleanable",
+  "IDBuilder": "melder.utilities.helpers.id_builder.IDBuilder"
+ },
+ "collapse_candidate": {
+  "module": "melder.nexus.rift.rift_space.workstation",
+  "class": "melder.nexus.rift.rift_space.workstation.Workstation",
+  "label": "Workstation"
+ }
+}

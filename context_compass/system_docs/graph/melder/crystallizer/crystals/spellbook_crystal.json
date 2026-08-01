@@ -1,0 +1,68 @@
+{
+ "schema_version": 1,
+ "source": "src/melder/crystallizer/crystals/spellbook_crystal.py",
+ "source_sha256": "441686b61f928c43917a22007f75e96b440421ed0ebbdd0f7fd651c9aef4d269",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.crystallizer.crystals.spellbook_crystal": {
+   "id": "melder.crystallizer.crystals.spellbook_crystal",
+   "label": "spellbook_crystal",
+   "kind": "module",
+   "file": "src/melder/crystallizer/crystals/spellbook_crystal.py",
+   "lineno": 1
+  },
+  "melder.crystallizer.crystals.spellbook_crystal.SpellbookCrystal": {
+   "id": "melder.crystallizer.crystals.spellbook_crystal.SpellbookCrystal",
+   "label": "SpellbookCrystal",
+   "kind": "class",
+   "file": "src/melder/crystallizer/crystals/spellbook_crystal.py",
+   "lineno": 8,
+   "bases": [
+    "Cleanable"
+   ],
+   "markers": [],
+   "public_methods": [
+    "bind_order",
+    "cleanup",
+    "configuration_payload",
+    "describe",
+    "frame_name",
+    "hook_names",
+    "spellbook_id"
+   ],
+   "shape": {
+    "method_count": 7,
+    "has_bases": true,
+    "trivial": false
+   }
+  }
+ },
+ "edges_out": [
+  {
+   "from": "melder.crystallizer.crystals.spellbook_crystal.SpellbookCrystal",
+   "to_label": "Cleanable",
+   "relation": "specializes",
+   "to": "melder.utilities.general_base.cleanable.Cleanable"
+  }
+ ],
+ "edge_candidates": [
+  {
+   "from": "melder.crystallizer.crystals.spellbook_crystal.SpellbookCrystal",
+   "to_label": "ValueError",
+   "relation": "creates",
+   "confidence": "candidate"
+  }
+ ],
+ "published_aliases": [],
+ "imports": {
+  "Dict": "typing.Dict",
+  "List": "typing.List",
+  "Optional": "typing.Optional",
+  "Cleanable": "melder.utilities.general_base.cleanable.Cleanable"
+ },
+ "collapse_candidate": {
+  "module": "melder.crystallizer.crystals.spellbook_crystal",
+  "class": "melder.crystallizer.crystals.spellbook_crystal.SpellbookCrystal",
+  "label": "SpellbookCrystal"
+ }
+}

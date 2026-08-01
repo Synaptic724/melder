@@ -1,0 +1,80 @@
+{
+ "schema_version": 1,
+ "source": "src/melder/nexus/acl/configurations/profiles/codegen/safe_profile.py",
+ "source_sha256": "20c7eb9eefd956d03d8b41c96ffb3402e346e70f590fc9cf096719b872916b37",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.nexus.acl.configurations.profiles.codegen.safe_profile": {
+   "id": "melder.nexus.acl.configurations.profiles.codegen.safe_profile",
+   "label": "safe_profile",
+   "kind": "module",
+   "file": "src/melder/nexus/acl/configurations/profiles/codegen/safe_profile.py",
+   "lineno": 1,
+   "role": "Factory module for reusable safe codegen ACL profile.",
+   "responsibilities": [
+    "constructs one reusable ACL profile variant"
+   ],
+   "phases": [
+    "runtime"
+   ]
+  },
+  "melder.nexus.acl.configurations.profiles.codegen.safe_profile.SafeCodegenProfileStrategy": {
+   "id": "melder.nexus.acl.configurations.profiles.codegen.safe_profile.SafeCodegenProfileStrategy",
+   "label": "SafeCodegenProfileStrategy",
+   "kind": "class",
+   "file": "src/melder/nexus/acl/configurations/profiles/codegen/safe_profile.py",
+   "lineno": 10,
+   "bases": [],
+   "markers": [],
+   "public_methods": [
+    "build",
+    "name"
+   ],
+   "shape": {
+    "method_count": 2,
+    "has_bases": false,
+    "trivial": false
+   }
+  }
+ },
+ "edges_out": [],
+ "edge_candidates": [
+  {
+   "from": "melder.nexus.acl.configurations.profiles.codegen.safe_profile.SafeCodegenProfileStrategy",
+   "to_label": "FrameACLCodegenProfile",
+   "relation": "creates",
+   "confidence": "candidate"
+  }
+ ],
+ "published_aliases": [],
+ "imports": {
+  "FrameACLCodegenProfile": "melder.nexus.acl.configurations.profiles.codegen.frame_acl_codegen_profile.FrameACLCodegenProfile",
+  "SAFE_DENIED_BUILTIN_NAMES": "melder.nexus.acl.configurations.profiles.codegen.stdlib_import_sets.SAFE_DENIED_BUILTIN_NAMES",
+  "FrameACLViewProfile": "melder.nexus.acl.configurations.profiles.view.frame_acl_view_profile.FrameACLViewProfile"
+ },
+ "collapse_candidate": null,
+ "edges_authored": [
+  {
+   "from": "melder.nexus.acl.configurations.profiles.codegen.safe_profile",
+   "to": "melder.nexus.acl.configurations.profiles.codegen.frame_acl_codegen_profile.FrameACLCodegenProfile",
+   "relation": "creates",
+   "why": "This factory module constructs one reusable codegen ACL profile variant.",
+   "cardinality": "one_to_one",
+   "strength": "soft",
+   "phase": [
+    "runtime"
+   ]
+  },
+  {
+   "from": "melder.nexus.acl.configurations.profiles.codegen.safe_profile",
+   "to": "melder.nexus.acl.configurations.profiles.codegen.stdlib_import_sets",
+   "relation": "uses",
+   "why": "The safe codegen profile factory uses the shared stdlib import-root constants.",
+   "cardinality": "many_to_one",
+   "strength": "borrowed",
+   "phase": [
+    "runtime"
+   ]
+  }
+ ]
+}

@@ -1,0 +1,46 @@
+{
+ "schema_version": 1,
+ "source": "src/melder/nexus/acl/validator/profiles/codegen/safe_strategy.py",
+ "source_sha256": "ad6dce2125bf25ed6293ffa8b7c02876dc8a8a3c61e9205a317f34ee08339e03",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.nexus.acl.validator.profiles.codegen.safe_strategy": {
+   "id": "melder.nexus.acl.validator.profiles.codegen.safe_strategy",
+   "label": "safe_strategy",
+   "kind": "module",
+   "file": "src/melder/nexus/acl/validator/profiles/codegen/safe_strategy.py",
+   "lineno": 1,
+   "role": "Validator strategy module for safe codegen-profile configuration.",
+   "responsibilities": [
+    "provides one validator-side profile strategy or helper surface"
+   ],
+   "phases": [
+    "validation",
+    "runtime"
+   ]
+  }
+ },
+ "edges_out": [],
+ "edge_candidates": [],
+ "published_aliases": [],
+ "imports": {
+  "Set": "typing.Set",
+  "FrameACLCodegenProfile": "melder.nexus.acl.configurations.profiles.codegen.frame_acl_codegen_profile.FrameACLCodegenProfile",
+  "FrameACLCodegenConfiguration": "melder.nexus.acl.configurations.frame_acl_codegen_configuration.FrameACLCodegenConfiguration",
+  "FrameACLRuleSet": "melder.nexus.acl.configurations.profiles.rules.frame_acl_ruleset.FrameACLRuleSet"
+ },
+ "collapse_candidate": null,
+ "edges_authored": [
+  {
+   "from": "melder.nexus.acl.validator.profiles.codegen.safe_strategy",
+   "to": "melder.nexus.acl.configurations.profiles.codegen.frame_acl_codegen_profile.FrameACLCodegenProfile",
+   "relation": "validates",
+   "why": "The safe codegen validator strategy validates safe codegen profile configuration.",
+   "cardinality": "many_to_one",
+   "strength": "soft",
+   "phase": [
+    "validation"
+   ]
+  }
+ ]
+}

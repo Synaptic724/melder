@@ -1,0 +1,167 @@
+{
+ "schema_version": 1,
+ "source": "src/melder/aether/conduit/conduit_ward/contract/details.py",
+ "source_sha256": "d54ab07715f910d8acde02ad5305cd12248cd372db60529b7d4f71a4f429beeb",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.aether.conduit.conduit_ward.contract.details": {
+   "id": "melder.aether.conduit.conduit_ward.contract.details",
+   "label": "details",
+   "kind": "module",
+   "file": "src/melder/aether/conduit/conduit_ward/contract/details.py",
+   "lineno": 1
+  },
+  "melder.aether.conduit.conduit_ward.contract.details.Detail": {
+   "id": "melder.aether.conduit.conduit_ward.contract.details.Detail",
+   "label": "Detail",
+   "kind": "class",
+   "file": "src/melder/aether/conduit/conduit_ward/contract/details.py",
+   "lineno": 14,
+   "bases": [
+    "Cleanable"
+   ],
+   "markers": [],
+   "public_methods": [
+    "add_source",
+    "cleanup",
+    "has_spell",
+    "remove_source"
+   ],
+   "shape": {
+    "method_count": 4,
+    "has_bases": true,
+    "trivial": false
+   },
+   "role": "Spell-level permission entry stored inside a contract.",
+   "responsibilities": [
+    "stores lineage identity, version-at-contract time, permission, and direction metadata",
+    "tracks source root spell ids for reversible dependency-linked sharing"
+   ],
+   "owns_state": [
+    "spell_index",
+    "spell_id",
+    "permissions",
+    "contract_type",
+    "reason",
+    "sources"
+   ],
+   "phases": [
+    "runtime",
+    "cleanup"
+   ]
+  },
+  "melder.aether.conduit.conduit_ward.contract.details.IndexDetail": {
+   "id": "melder.aether.conduit.conduit_ward.contract.details.IndexDetail",
+   "label": "IndexDetail",
+   "kind": "class",
+   "file": "src/melder/aether/conduit/conduit_ward/contract/details.py",
+   "lineno": 245,
+   "bases": [
+    "Cleanable"
+   ],
+   "markers": [],
+   "public_methods": [
+    "add_source",
+    "cleanup",
+    "has_spell",
+    "index_id",
+    "remove_source",
+    "update_selected"
+   ],
+   "shape": {
+    "method_count": 6,
+    "has_bases": true,
+    "trivial": false
+   }
+  }
+ },
+ "edges_out": [
+  {
+   "from": "melder.aether.conduit.conduit_ward.contract.details.Detail",
+   "to_label": "Cleanable",
+   "relation": "specializes",
+   "to": "melder.utilities.general_base.cleanable.Cleanable"
+  },
+  {
+   "from": "melder.aether.conduit.conduit_ward.contract.details.IndexDetail",
+   "to_label": "Cleanable",
+   "relation": "specializes",
+   "to": "melder.utilities.general_base.cleanable.Cleanable"
+  }
+ ],
+ "edge_candidates": [
+  {
+   "from": "melder.aether.conduit.conduit_ward.contract.details.Detail",
+   "to_label": "RLock",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.aether.conduit.conduit_ward.contract.details.Detail",
+   "to_label": "TypeError",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.aether.conduit.conduit_ward.contract.details.IndexDetail",
+   "to_label": "RLock",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.aether.conduit.conduit_ward.contract.details.IndexDetail",
+   "to_label": "TypeError",
+   "relation": "creates",
+   "confidence": "candidate"
+  }
+ ],
+ "published_aliases": [],
+ "imports": {
+  "RLock": "threading.RLock",
+  "Permissions": "melder.aether.conduit.conduit_ward.permissions.permissions.Permissions",
+  "ContractTypes": "melder.aether.conduit.conduit_ward.contract.contract_types.contract_types.ContractTypes",
+  "Set": "typing.Set",
+  "ClassVar": "typing.ClassVar",
+  "Optional": "typing.Optional",
+  "DetailReason": "melder.aether.conduit.conduit_ward.contract.detail_reason.DetailReason",
+  "Cleanable": "melder.utilities.general_base.cleanable.Cleanable",
+  "IDBuilder": "melder.utilities.helpers.id_builder.IDBuilder",
+  "SpellIndex": "melder.aether.spellbook.bind.spell_index.SpellIndex"
+ },
+ "collapse_candidate": null,
+ "edges_authored": [
+  {
+   "from": "melder.aether.conduit.conduit_ward.contract.details.Detail",
+   "to": "melder.aether.conduit.conduit_ward.contract.contract_types.contract_types.ContractTypes",
+   "relation": "uses",
+   "why": "Detail stores ContractTypes to mark whether the entry is initiated or received from the owning ward perspective.",
+   "cardinality": "many_to_one",
+   "strength": "borrowed",
+   "phase": [
+    "runtime"
+   ]
+  },
+  {
+   "from": "melder.aether.conduit.conduit_ward.contract.details.Detail",
+   "to": "melder.aether.conduit.conduit_ward.contract.detail_reason.DetailReason",
+   "relation": "uses",
+   "why": "Detail stores DetailReason to explain why the contract entry exists.",
+   "cardinality": "many_to_one",
+   "strength": "borrowed",
+   "phase": [
+    "runtime"
+   ]
+  },
+  {
+   "from": "melder.aether.conduit.conduit_ward.contract.details.Detail",
+   "to": "melder.aether.conduit.conduit_ward.permissions.permissions.Permissions",
+   "relation": "uses",
+   "why": "Detail stores Permissions as the granted capability level for one contracted lineage entry.",
+   "cardinality": "many_to_one",
+   "strength": "borrowed",
+   "phase": [
+    "runtime"
+   ]
+  }
+ ]
+}

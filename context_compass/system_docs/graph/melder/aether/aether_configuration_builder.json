@@ -1,0 +1,140 @@
+{
+ "schema_version": 1,
+ "source": "src/melder/aether/aether_configuration_builder.py",
+ "source_sha256": "ba6e54f5361a57f1c7900b74c8135266ff70991428c49e1046a7754e3209aa73",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.aether.aether_configuration_builder": {
+   "id": "melder.aether.aether_configuration_builder",
+   "label": "aether_configuration_builder",
+   "kind": "module",
+   "file": "src/melder/aether/aether_configuration_builder.py",
+   "lineno": 1
+  },
+  "melder.aether.aether_configuration_builder.AetherConfigurationBuilder": {
+   "id": "melder.aether.aether_configuration_builder.AetherConfigurationBuilder",
+   "label": "AetherConfigurationBuilder",
+   "kind": "class",
+   "file": "src/melder/aether/aether_configuration_builder.py",
+   "lineno": 14,
+   "bases": [
+    "Cleanable"
+   ],
+   "markers": [],
+   "public_methods": [
+    "build",
+    "cleanup",
+    "with_channel_logger_activation_enabled",
+    "with_channel_logger_resolver",
+    "with_default_logger",
+    "with_defaults"
+   ],
+   "shape": {
+    "method_count": 8,
+    "has_bases": true,
+    "trivial": false
+   },
+   "role": "One-shot builder for Aether root configuration assembly.",
+   "responsibilities": [
+    "owns a mutable AetherConfiguration during fluent assembly",
+    "applies default and explicit logger-policy builder steps",
+    "finalizes and hands off configuration ownership to the caller"
+   ],
+   "owns_state": [
+    "_id",
+    "_configuration",
+    "_finalized"
+   ],
+   "phases": [
+    "init",
+    "runtime",
+    "cleanup"
+   ]
+  }
+ },
+ "edges_out": [
+  {
+   "from": "melder.aether.aether_configuration_builder.AetherConfigurationBuilder",
+   "to_label": "Cleanable",
+   "relation": "specializes",
+   "to": "melder.utilities.general_base.cleanable.Cleanable"
+  }
+ ],
+ "edge_candidates": [
+  {
+   "from": "melder.aether.aether_configuration_builder.AetherConfigurationBuilder",
+   "to_label": "RLock",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.aether.aether_configuration_builder.AetherConfigurationBuilder",
+   "to_label": "AetherConfiguration",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.aether.aether_configuration_builder.AetherConfigurationBuilder",
+   "to_label": "RuntimeError",
+   "relation": "creates",
+   "confidence": "candidate"
+  }
+ ],
+ "published_aliases": [],
+ "imports": {
+  "Path": "pathlib.Path",
+  "Any": "typing.Any",
+  "Callable": "typing.Callable",
+  "ClassVar": "typing.ClassVar",
+  "Optional": "typing.Optional",
+  "Union": "typing.Union",
+  "AetherConfiguration": "melder.aether.aether_configuration.AetherConfiguration",
+  "Cleanable": "melder.utilities.general_base.cleanable.Cleanable",
+  "IDBuilder": "melder.utilities.helpers.id_builder.IDBuilder"
+ },
+ "collapse_candidate": {
+  "module": "melder.aether.aether_configuration_builder",
+  "class": "melder.aether.aether_configuration_builder.AetherConfigurationBuilder",
+  "label": "AetherConfigurationBuilder"
+ },
+ "edges_authored": [
+  {
+   "from": "melder.aether.aether_configuration_builder.AetherConfigurationBuilder",
+   "to": "melder.aether.aether_configuration.AetherConfiguration",
+   "relation": "owns_lifecycle_of",
+   "why": "AetherConfigurationBuilder owns a mutable AetherConfiguration until it finalizes and hands it off.",
+   "cardinality": "one_to_one",
+   "strength": "hard",
+   "phase": [
+    "init",
+    "runtime",
+    "cleanup"
+   ]
+  },
+  {
+   "from": "melder.aether.aether_configuration_builder.AetherConfigurationBuilder",
+   "to": "melder.utilities.general_base.cleanable.Cleanable",
+   "relation": "specializes",
+   "why": "AetherConfigurationBuilder inherits the explicit cleanup lifecycle from Cleanable.",
+   "cardinality": "one_to_one",
+   "strength": "hard",
+   "phase": [
+    "init",
+    "runtime",
+    "cleanup"
+   ]
+  },
+  {
+   "from": "melder.aether.aether_configuration_builder.AetherConfigurationBuilder",
+   "to": "melder.utilities.helpers.id_builder.IDBuilder",
+   "relation": "uses",
+   "why": "AetherConfigurationBuilder uses IDBuilder for its stable builder identifier.",
+   "cardinality": "many_to_one",
+   "strength": "borrowed",
+   "phase": [
+    "init",
+    "runtime"
+   ]
+  }
+ ]
+}

@@ -1,0 +1,30 @@
+{
+ "schema_version": 1,
+ "source": "src/melder/__description__.py",
+ "source_sha256": "00da429aa273d4b6a3aa23db50b76a3eb0c69b04d8218d37ad2d55e7a0671f72",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.__description__": {
+   "id": "melder.__description__",
+   "label": "__description__",
+   "kind": "module",
+   "file": "src/melder/__description__.py",
+   "lineno": 1,
+   "role": "Top-level package description metadata module.",
+   "responsibilities": [
+    "stores the one-line human-readable package description"
+   ],
+   "owns_state": [
+    "__description__"
+   ],
+   "phases": [
+    "runtime"
+   ]
+  }
+ },
+ "edges_out": [],
+ "edge_candidates": [],
+ "published_aliases": [],
+ "imports": {},
+ "collapse_candidate": null
+}

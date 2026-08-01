@@ -1,0 +1,97 @@
+{
+ "schema_version": 1,
+ "source": "src/melder/mutation_research/research_set/grouped_research_node.py",
+ "source_sha256": "714c246c1385edcc973474ee1dad632c0ec239f0db8f0e1bb5b49d79e4285afa",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.mutation_research.research_set.grouped_research_node": {
+   "id": "melder.mutation_research.research_set.grouped_research_node",
+   "label": "grouped_research_node",
+   "kind": "module",
+   "file": "src/melder/mutation_research/research_set/grouped_research_node.py",
+   "lineno": 1
+  },
+  "melder.mutation_research.research_set.grouped_research_node.GroupedResearchNode": {
+   "id": "melder.mutation_research.research_set.grouped_research_node.GroupedResearchNode",
+   "label": "GroupedResearchNode",
+   "kind": "class",
+   "file": "src/melder/mutation_research/research_set/grouped_research_node.py",
+   "lineno": 9,
+   "bases": [
+    "Cleanable"
+   ],
+   "markers": [],
+   "public_methods": [
+    "author",
+    "campaign",
+    "cleanup",
+    "compute_group_id",
+    "created_at",
+    "describe",
+    "from_payload",
+    "group_id",
+    "member_count",
+    "member_spell_ids",
+    "metadata",
+    "parent_group_ids",
+    "reason"
+   ],
+   "shape": {
+    "method_count": 13,
+    "has_bases": true,
+    "trivial": false
+   },
+   "role": "Immutable COMPOSITION record - its OWN node type beside ResearchNode (owner ruling 2026-07-11): pins member spell_ids by reference; identity = content-addressed sha256 over the canonical member list; parent_group_ids = composition ancestry; PURELY INFORMATIONAL (no custody crystal, no gating). A lane of these is a subsystem timeline.",
+   "responsibilities": [
+    "content-addressed group_id (identical roster = same identity = rediscovery)",
+    "describe()/from_payload() exact inverses w/ node_type=\"group\" tag + recorded-id integrity refusal"
+   ],
+   "owns_state": [
+    "_group_id",
+    "_member_spell_ids",
+    "_parent_group_ids",
+    "_author",
+    "_reason",
+    "_campaign",
+    "_created_at",
+    "_metadata"
+   ],
+   "phases": [
+    "runtime",
+    "cleanup"
+   ]
+  }
+ },
+ "edges_out": [
+  {
+   "from": "melder.mutation_research.research_set.grouped_research_node.GroupedResearchNode",
+   "to_label": "Cleanable",
+   "relation": "specializes",
+   "to": "melder.utilities.general_base.cleanable.Cleanable"
+  }
+ ],
+ "edge_candidates": [
+  {
+   "from": "melder.mutation_research.research_set.grouped_research_node.GroupedResearchNode",
+   "to_label": "ValueError",
+   "relation": "creates",
+   "confidence": "candidate"
+  }
+ ],
+ "published_aliases": [],
+ "imports": {
+  "datetime": "datetime.datetime",
+  "timezone": "datetime.timezone",
+  "Dict": "typing.Dict",
+  "List": "typing.List",
+  "Optional": "typing.Optional",
+  "Tuple": "typing.Tuple",
+  "ClassVar": "typing.ClassVar",
+  "Cleanable": "melder.utilities.general_base.cleanable.Cleanable"
+ },
+ "collapse_candidate": {
+  "module": "melder.mutation_research.research_set.grouped_research_node",
+  "class": "melder.mutation_research.research_set.grouped_research_node.GroupedResearchNode",
+  "label": "GroupedResearchNode"
+ }
+}

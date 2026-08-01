@@ -1,0 +1,107 @@
+{
+ "schema_version": 1,
+ "source": "src/melder/aether/spellbook/spell_compiler/system/spell_system_index.py",
+ "source_sha256": "dbe83451516f9e1bdb3ecf5301b2d9b5f0d11a84c0f1ca8336f11fef8932a779",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.aether.spellbook.spell_compiler.system.spell_system_index": {
+   "id": "melder.aether.spellbook.spell_compiler.system.spell_system_index",
+   "label": "spell_system_index",
+   "kind": "module",
+   "file": "src/melder/aether/spellbook/spell_compiler/system/spell_system_index.py",
+   "lineno": 1
+  },
+  "melder.aether.spellbook.spell_compiler.system.spell_system_index.SpellSystemIndex": {
+   "id": "melder.aether.spellbook.spell_compiler.system.spell_system_index.SpellSystemIndex",
+   "label": "SpellSystemIndex",
+   "kind": "class",
+   "file": "src/melder/aether/spellbook/spell_compiler/system/spell_system_index.py",
+   "lineno": 11,
+   "bases": [
+    "Cleanable"
+   ],
+   "markers": [],
+   "public_methods": [
+    "cleanup",
+    "ensure_node",
+    "get_node",
+    "iter_nodes",
+    "nodes",
+    "upsert_node"
+   ],
+   "shape": {
+    "method_count": 6,
+    "has_bases": true,
+    "trivial": false
+   },
+   "role": "Frame-level Phase 5+ system index keyed by spell version id.",
+   "responsibilities": [
+    "stores spell-system nodes for a rooted frame view",
+    "merges node metadata and dependencies across Phase 5 assembly",
+    "feeds system validation and change-control analysis"
+   ],
+   "owns_state": [
+    "_nodes"
+   ],
+   "phases": [
+    "validation",
+    "runtime",
+    "cleanup"
+   ]
+  }
+ },
+ "edges_out": [
+  {
+   "from": "melder.aether.spellbook.spell_compiler.system.spell_system_index.SpellSystemIndex",
+   "to_label": "Cleanable",
+   "relation": "specializes",
+   "to": "melder.utilities.general_base.cleanable.Cleanable"
+  }
+ ],
+ "edge_candidates": [
+  {
+   "from": "melder.aether.spellbook.spell_compiler.system.spell_system_index.SpellSystemIndex",
+   "to_label": "SpellSystemNode",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.aether.spellbook.spell_compiler.system.spell_system_index.SpellSystemIndex",
+   "to_label": "ValueError",
+   "relation": "creates",
+   "confidence": "candidate"
+  }
+ ],
+ "published_aliases": [],
+ "imports": {
+  "Dict": "typing.Dict",
+  "Iterable": "typing.Iterable",
+  "Mapping": "typing.Mapping",
+  "Optional": "typing.Optional",
+  "ClassVar": "typing.ClassVar",
+  "SpellSystemNode": "melder.aether.spellbook.spell_compiler.system.spell_system_node.SpellSystemNode",
+  "Cleanable": "melder.utilities.general_base.cleanable.Cleanable",
+  "SpellType": "melder.aether.spellbook.spell_types.spell_types.SpellType",
+  "Existence": "melder.aether.spellbook.existence.existence.Existence"
+ },
+ "collapse_candidate": {
+  "module": "melder.aether.spellbook.spell_compiler.system.spell_system_index",
+  "class": "melder.aether.spellbook.spell_compiler.system.spell_system_index.SpellSystemIndex",
+  "label": "SpellSystemIndex"
+ },
+ "edges_authored": [
+  {
+   "from": "melder.aether.spellbook.spell_compiler.system.spell_system_index.SpellSystemIndex",
+   "to": "melder.aether.spellbook.spell_compiler.system.spell_system_node.SpellSystemNode",
+   "relation": "owns_lifecycle_of",
+   "why": "SpellSystemIndex stores and cleans version-scoped SpellSystemNode entries for the rooted system view.",
+   "cardinality": "one_to_many",
+   "strength": "hard",
+   "phase": [
+    "validation",
+    "runtime",
+    "cleanup"
+   ]
+  }
+ ]
+}

@@ -1,0 +1,82 @@
+{
+ "schema_version": 1,
+ "source": "src/melder/crystallizer/crystal_loader_system/load_plan.py",
+ "source_sha256": "50c9d32c61f22c65d2ee997496d456efd77a4e1a6e426a0c404d62e407464b5e",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.crystallizer.crystal_loader_system.load_plan": {
+   "id": "melder.crystallizer.crystal_loader_system.load_plan",
+   "label": "load_plan",
+   "kind": "module",
+   "file": "src/melder/crystallizer/crystal_loader_system/load_plan.py",
+   "lineno": 1
+  },
+  "melder.crystallizer.crystal_loader_system.load_plan.LoadPlan": {
+   "id": "melder.crystallizer.crystal_loader_system.load_plan.LoadPlan",
+   "label": "LoadPlan",
+   "kind": "class",
+   "file": "src/melder/crystallizer/crystal_loader_system/load_plan.py",
+   "lineno": 17,
+   "bases": [
+    "Cleanable"
+   ],
+   "markers": [],
+   "public_methods": [
+    "chain",
+    "checkpoint_ids",
+    "cleanup",
+    "describe",
+    "kind_key_counts",
+    "profile_name",
+    "scope",
+    "skip_existing",
+    "source_label",
+    "target_frame_name"
+   ],
+   "shape": {
+    "method_count": 10,
+    "has_bases": true,
+    "trivial": false
+   },
+   "role": "Declarative single-use load plan: scope (world|conduit|frame), profile, per-kind key counts, carried detached windows.",
+   "responsibilities": [
+    "describe() = counts + identity, never payload dumps"
+   ],
+   "owns_state": [
+    "detached chain windows"
+   ],
+   "phases": [
+    "runtime"
+   ]
+  }
+ },
+ "edges_out": [
+  {
+   "from": "melder.crystallizer.crystal_loader_system.load_plan.LoadPlan",
+   "to_label": "Cleanable",
+   "relation": "specializes",
+   "to": "melder.utilities.general_base.cleanable.Cleanable"
+  }
+ ],
+ "edge_candidates": [
+  {
+   "from": "melder.crystallizer.crystal_loader_system.load_plan.LoadPlan",
+   "to_label": "ValueError",
+   "relation": "creates",
+   "confidence": "candidate"
+  }
+ ],
+ "published_aliases": [],
+ "imports": {
+  "Any": "typing.Any",
+  "Dict": "typing.Dict",
+  "List": "typing.List",
+  "Optional": "typing.Optional",
+  "Cleanable": "melder.utilities.general_base.cleanable.Cleanable"
+ },
+ "collapse_candidate": {
+  "module": "melder.crystallizer.crystal_loader_system.load_plan",
+  "class": "melder.crystallizer.crystal_loader_system.load_plan.LoadPlan",
+  "label": "LoadPlan"
+ }
+}

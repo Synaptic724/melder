@@ -1,0 +1,185 @@
+{
+ "schema_version": 1,
+ "source": "src/melder/aether/aetheric_frame/aetheric_frame_configuration.py",
+ "source_sha256": "5b1c7ac0bf439a58283eb27dde2da87f6790da2f87fb27a21c4974c52f9ed1c3",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.aether.aetheric_frame.aetheric_frame_configuration": {
+   "id": "melder.aether.aetheric_frame.aetheric_frame_configuration",
+   "label": "aetheric_frame_configuration",
+   "kind": "module",
+   "file": "src/melder/aether/aetheric_frame/aetheric_frame_configuration.py",
+   "lineno": 1
+  },
+  "melder.aether.aetheric_frame.aetheric_frame_configuration.AethericFrameConfiguration": {
+   "id": "melder.aether.aetheric_frame.aetheric_frame_configuration.AethericFrameConfiguration",
+   "label": "AethericFrameConfiguration",
+   "kind": "class",
+   "file": "src/melder/aether/aetheric_frame/aetheric_frame_configuration.py",
+   "lineno": 16,
+   "bases": [
+    "Cleanable"
+   ],
+   "markers": [],
+   "public_methods": [
+    "ai_native_enabled",
+    "automatic_defaults",
+    "cleanup",
+    "describe_posture",
+    "disable_all_transactions_after_conjure",
+    "disable_bind",
+    "disable_conduit_cluster",
+    "disable_contract_mutation",
+    "disable_linking",
+    "disable_mutations",
+    "disable_transfer_of_ownership",
+    "dynamic_defaults",
+    "finalize",
+    "freeze",
+    "from_recorded_posture",
+    "id",
+    "matches_posture",
+    "max_transaction_wait_time_in_seconds",
+    "origin_spellbook_id",
+    "resolve_conjure_cache_root_path",
+    "resolve_system_cache_root_path",
+    "rift_enabled",
+    "shared_framewide_spellbook_configuration",
+    "system_cache_root_path",
+    "system_caching_enabled",
+    "system_state",
+    "validate",
+    "with_ai_native",
+    "with_defaults",
+    "with_disable_all_transactions_after_conjure",
+    "with_disable_bind",
+    "with_disable_conduit_cluster",
+    "with_disable_contract_mutation",
+    "with_disable_linking",
+    "with_disable_mutations",
+    "with_disable_transfer_of_ownership",
+    "with_max_transaction_wait_time_in_seconds",
+    "with_rift_enabled",
+    "with_shared_framewide_spellbook_configuration",
+    "with_system_cache_root_path",
+    "with_system_caching_enabled",
+    "with_system_state"
+   ],
+   "shape": {
+    "method_count": 44,
+    "has_bases": true,
+    "trivial": false
+   },
+   "role": "Narrow frame-level runtime posture object for AR-facing behavior.",
+   "responsibilities": [
+    "stores frame-level system state, ai-native, and rift posture",
+    "carries provenance for the spellbook that first derived the frame posture"
+   ],
+   "owns_state": [
+    "_origin_spellbook_id",
+    "_system_state",
+    "_ai_native_enabled",
+    "_rift_enabled"
+   ],
+   "phases": [
+    "init",
+    "runtime",
+    "cleanup"
+   ]
+  }
+ },
+ "edges_out": [
+  {
+   "from": "melder.aether.aetheric_frame.aetheric_frame_configuration.AethericFrameConfiguration",
+   "to_label": "Cleanable",
+   "relation": "specializes",
+   "to": "melder.utilities.general_base.cleanable.Cleanable"
+  }
+ ],
+ "edge_candidates": [
+  {
+   "from": "melder.aether.aetheric_frame.aetheric_frame_configuration.AethericFrameConfiguration",
+   "to_label": "RLock",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.aether.aetheric_frame.aetheric_frame_configuration.AethericFrameConfiguration",
+   "to_label": "Path",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.aether.aetheric_frame.aetheric_frame_configuration.AethericFrameConfiguration",
+   "to_label": "TypeError",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.aether.aetheric_frame.aetheric_frame_configuration.AethericFrameConfiguration",
+   "to_label": "ValueError",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.aether.aetheric_frame.aetheric_frame_configuration.AethericFrameConfiguration",
+   "to_label": "Crystallizer",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.aether.aetheric_frame.aetheric_frame_configuration.AethericFrameConfiguration",
+   "to_label": "SafeGuard",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.aether.aetheric_frame.aetheric_frame_configuration.AethericFrameConfiguration",
+   "to_label": "RuntimeError",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.aether.aetheric_frame.aetheric_frame_configuration.AethericFrameConfiguration",
+   "to_label": "AethericFrameCrystal",
+   "relation": "creates",
+   "confidence": "candidate"
+  }
+ ],
+ "published_aliases": [],
+ "imports": {
+  "Path": "pathlib.Path",
+  "Any": "typing.Any",
+  "Dict": "typing.Dict",
+  "List": "typing.List",
+  "Optional": "typing.Optional",
+  "ClassVar": "typing.ClassVar",
+  "Tuple": "typing.Tuple",
+  "Union": "typing.Union",
+  "SystemState": "melder.aether.spellbook.configuration.system_state.SystemState",
+  "Cleanable": "melder.utilities.general_base.cleanable.Cleanable",
+  "Crystallizer": "melder.crystallizer.crystallizer.Crystallizer",
+  "AethericFrameCrystal": "melder.crystallizer.crystals.aetheric_frame_crystal.AethericFrameCrystal",
+  "EnumHelpers": "melder.utilities.helpers.general_helpers.EnumHelpers",
+  "IDBuilder": "melder.utilities.helpers.id_builder.IDBuilder",
+  "SafeGuard": "melder.utilities.synchronization.safeguard.SafeGuard"
+ },
+ "collapse_candidate": {
+  "module": "melder.aether.aetheric_frame.aetheric_frame_configuration",
+  "class": "melder.aether.aetheric_frame.aetheric_frame_configuration.AethericFrameConfiguration",
+  "label": "AethericFrameConfiguration"
+ },
+ "edges_authored": [
+  {
+   "from": "melder.aether.aetheric_frame.aetheric_frame_configuration.AethericFrameConfiguration",
+   "to": "melder.__melder_cache__.__melder_cache__",
+   "relation": "uses",
+   "why": "AethericFrameConfiguration anchors its default system-cache root to the package-local __melder_cache__ fragment.",
+   "cardinality": "one_to_one",
+   "strength": "borrowed",
+   "phase": [
+    "runtime"
+   ]
+  }
+ ]
+}

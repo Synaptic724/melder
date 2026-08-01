@@ -1,0 +1,44 @@
+{
+ "schema_version": 1,
+ "source": "src/melder/nexus/acl/validator/profiles/codegen/precision_strategy.py",
+ "source_sha256": "acbaeb6a6b0c0eed81ff2126c321298deaef750f053ed4b0dfd95e458705700c",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.nexus.acl.validator.profiles.codegen.precision_strategy": {
+   "id": "melder.nexus.acl.validator.profiles.codegen.precision_strategy",
+   "label": "precision_strategy",
+   "kind": "module",
+   "file": "src/melder/nexus/acl/validator/profiles/codegen/precision_strategy.py",
+   "lineno": 1,
+   "role": "Validator strategy module for precision codegen-profile configuration.",
+   "responsibilities": [
+    "provides one validator-side profile strategy or helper surface"
+   ],
+   "phases": [
+    "validation",
+    "runtime"
+   ]
+  }
+ },
+ "edges_out": [],
+ "edge_candidates": [],
+ "published_aliases": [],
+ "imports": {
+  "FrameACLCodegenProfile": "melder.nexus.acl.configurations.profiles.codegen.frame_acl_codegen_profile.FrameACLCodegenProfile",
+  "FrameACLCodegenConfiguration": "melder.nexus.acl.configurations.frame_acl_codegen_configuration.FrameACLCodegenConfiguration"
+ },
+ "collapse_candidate": null,
+ "edges_authored": [
+  {
+   "from": "melder.nexus.acl.validator.profiles.codegen.precision_strategy",
+   "to": "melder.nexus.acl.configurations.profiles.codegen.frame_acl_codegen_profile.FrameACLCodegenProfile",
+   "relation": "validates",
+   "why": "The precision codegen validator strategy validates precision codegen profile configuration.",
+   "cardinality": "many_to_one",
+   "strength": "soft",
+   "phase": [
+    "validation"
+   ]
+  }
+ ]
+}

@@ -1,0 +1,62 @@
+{
+ "schema_version": 1,
+ "source": "src/melder/crystallizer/crystal_analysis/physical_source_cache.py",
+ "source_sha256": "dcc0efbcde459a0b8f2284833dfdfb0243db2bbb7a2b2e95ff3be5110b88c7bb",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.crystallizer.crystal_analysis.physical_source_cache": {
+   "id": "melder.crystallizer.crystal_analysis.physical_source_cache",
+   "label": "physical_source_cache",
+   "kind": "module",
+   "file": "src/melder/crystallizer/crystal_analysis/physical_source_cache.py",
+   "lineno": 1
+  },
+  "melder.crystallizer.crystal_analysis.physical_source_cache.PhysicalSourceCache": {
+   "id": "melder.crystallizer.crystal_analysis.physical_source_cache.PhysicalSourceCache",
+   "label": "PhysicalSourceCache",
+   "kind": "class",
+   "file": "src/melder/crystallizer/crystal_analysis/physical_source_cache.py",
+   "lineno": 36,
+   "bases": [],
+   "markers": [],
+   "public_methods": [
+    "fingerprint_if_unchanged",
+    "read_text_and_fingerprint"
+   ],
+   "shape": {
+    "method_count": 4,
+    "has_bases": false,
+    "trivial": false
+   }
+  }
+ },
+ "edges_out": [],
+ "edge_candidates": [
+  {
+   "from": "melder.crystallizer.crystal_analysis.physical_source_cache.PhysicalSourceCache",
+   "to_label": "RLock",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.crystallizer.crystal_analysis.physical_source_cache.PhysicalSourceCache",
+   "to_label": "OrderedDict",
+   "relation": "creates",
+   "confidence": "candidate"
+  }
+ ],
+ "published_aliases": [],
+ "imports": {
+  "OrderedDict": "collections.OrderedDict",
+  "Path": "pathlib.Path",
+  "Dict": "typing.Dict",
+  "Optional": "typing.Optional",
+  "Tuple": "typing.Tuple",
+  "ClassVar": "typing.ClassVar"
+ },
+ "collapse_candidate": {
+  "module": "melder.crystallizer.crystal_analysis.physical_source_cache",
+  "class": "melder.crystallizer.crystal_analysis.physical_source_cache.PhysicalSourceCache",
+  "label": "PhysicalSourceCache"
+ }
+}

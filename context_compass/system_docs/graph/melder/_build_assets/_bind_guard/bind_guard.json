@@ -1,0 +1,38 @@
+{
+ "schema_version": 1,
+ "source": "src/melder/_build_assets/_bind_guard/bind_guard.py",
+ "source_sha256": "051831289a91e4851c1016448743c7d8dc084e4da82cf6ac9c8531581a76dae2",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder._build_assets._bind_guard.bind_guard": {
+   "id": "melder._build_assets._bind_guard.bind_guard",
+   "label": "bind_guard",
+   "kind": "module",
+   "file": "src/melder/_build_assets/_bind_guard/bind_guard.py",
+   "lineno": 1
+  },
+  "melder._build_assets._bind_guard.bind_guard.BindGuardAsset": {
+   "id": "melder._build_assets._bind_guard.bind_guard.BindGuardAsset",
+   "label": "BindGuardAsset",
+   "kind": "class",
+   "file": "src/melder/_build_assets/_bind_guard/bind_guard.py",
+   "lineno": 31,
+   "bases": [],
+   "markers": [],
+   "public_methods": [],
+   "shape": {
+    "method_count": 0,
+    "has_bases": false,
+    "trivial": true
+   }
+  }
+ },
+ "edges_out": [],
+ "edge_candidates": [],
+ "published_aliases": [],
+ "imports": {
+  "hydrate": "melder.utilities.caching_system.asset_cache.hydrate",
+  "source": "melder._build_assets._bind_guard.manifest.bind_guard_manifest"
+ },
+ "collapse_candidate": null
+}

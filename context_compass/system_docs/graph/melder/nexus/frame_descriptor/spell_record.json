@@ -1,0 +1,110 @@
+{
+ "schema_version": 1,
+ "source": "src/melder/nexus/frame_descriptor/spell_record.py",
+ "source_sha256": "9590552fd20bc8d222e6ced64a656099b0dfb596dba6bb8eeb291cd98013981d",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.nexus.frame_descriptor.spell_record": {
+   "id": "melder.nexus.frame_descriptor.spell_record",
+   "label": "spell_record",
+   "kind": "module",
+   "file": "src/melder/nexus/frame_descriptor/spell_record.py",
+   "lineno": 1
+  },
+  "melder.nexus.frame_descriptor.spell_record.SpellRecord": {
+   "id": "melder.nexus.frame_descriptor.spell_record.SpellRecord",
+   "label": "SpellRecord",
+   "kind": "class",
+   "file": "src/melder/nexus/frame_descriptor/spell_record.py",
+   "lineno": 11,
+   "bases": [
+    "Cleanable"
+   ],
+   "markers": [],
+   "public_methods": [
+    "cleanup",
+    "record_key"
+   ],
+   "shape": {
+    "method_count": 2,
+    "has_bases": true,
+    "trivial": false
+   },
+   "role": "Canonical Nexus record for one published spell.",
+   "responsibilities": [
+    "stores published spell identity, lineage, and provenance",
+    "owns one spell descriptor payload"
+   ],
+   "owns_state": [
+    "origin_spellbook_id",
+    "owner_conduit_id",
+    "spell_id",
+    "spell_index_id",
+    "spell_name",
+    "payload"
+   ],
+   "phases": [
+    "runtime",
+    "cleanup"
+   ]
+  }
+ },
+ "edges_out": [
+  {
+   "from": "melder.nexus.frame_descriptor.spell_record.SpellRecord",
+   "to_label": "Cleanable",
+   "relation": "specializes",
+   "to": "melder.utilities.general_base.cleanable.Cleanable"
+  }
+ ],
+ "edge_candidates": [
+  {
+   "from": "melder.nexus.frame_descriptor.spell_record.SpellRecord",
+   "to_label": "RLock",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.nexus.frame_descriptor.spell_record.SpellRecord",
+   "to_label": "ValueError",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.nexus.frame_descriptor.spell_record.SpellRecord",
+   "to_label": "TypeError",
+   "relation": "creates",
+   "confidence": "candidate"
+  }
+ ],
+ "published_aliases": [],
+ "imports": {
+  "Any": "typing.Any",
+  "Optional": "typing.Optional",
+  "Tuple": "typing.Tuple",
+  "Existence": "melder.aether.spellbook.existence.existence.Existence",
+  "Permissions": "melder.aether.conduit.conduit_ward.permissions.permissions.Permissions",
+  "SpellDescriptorPayload": "melder.nexus.frame_descriptor.spell_descriptor_payload.SpellDescriptorPayload",
+  "Cleanable": "melder.utilities.general_base.cleanable.Cleanable",
+  "IDBuilder": "melder.utilities.helpers.id_builder.IDBuilder"
+ },
+ "collapse_candidate": {
+  "module": "melder.nexus.frame_descriptor.spell_record",
+  "class": "melder.nexus.frame_descriptor.spell_record.SpellRecord",
+  "label": "SpellRecord"
+ },
+ "edges_authored": [
+  {
+   "from": "melder.nexus.frame_descriptor.spell_record.SpellRecord",
+   "to": "melder.nexus.frame_descriptor.spell_descriptor_payload.SpellDescriptorPayload",
+   "relation": "owns_lifecycle_of",
+   "why": "SpellRecord owns the published spell payload object.",
+   "cardinality": "one_to_one",
+   "strength": "hard",
+   "phase": [
+    "runtime",
+    "cleanup"
+   ]
+  }
+ ]
+}

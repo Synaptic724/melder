@@ -1,0 +1,101 @@
+{
+ "schema_version": 1,
+ "source": "src/melder/nexus/rift/codegen_system/validation/strategies/codegen_import_policy_strategy.py",
+ "source_sha256": "1abe2d8b1e5c511fbd65ad24b21cec8c25c3256d641a3858fe03013257a81f00",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.nexus.rift.codegen_system.validation.strategies.codegen_import_policy_strategy": {
+   "id": "melder.nexus.rift.codegen_system.validation.strategies.codegen_import_policy_strategy",
+   "label": "codegen_import_policy_strategy",
+   "kind": "module",
+   "file": "src/melder/nexus/rift/codegen_system/validation/strategies/codegen_import_policy_strategy.py",
+   "lineno": 1
+  },
+  "melder.nexus.rift.codegen_system.validation.strategies.codegen_import_policy_strategy.CodegenImportPolicyStrategy": {
+   "id": "melder.nexus.rift.codegen_system.validation.strategies.codegen_import_policy_strategy.CodegenImportPolicyStrategy",
+   "label": "CodegenImportPolicyStrategy",
+   "kind": "class",
+   "file": "src/melder/nexus/rift/codegen_system/validation/strategies/codegen_import_policy_strategy.py",
+   "lineno": 19,
+   "bases": [
+    "Cleanable"
+   ],
+   "markers": [],
+   "public_methods": [
+    "cleanup",
+    "validate"
+   ],
+   "shape": {
+    "method_count": 4,
+    "has_bases": true,
+    "trivial": false
+   },
+   "role": "Import-policy validation strategy.",
+   "responsibilities": [
+    "validates import statements against the selected codegen posture"
+   ],
+   "owns_state": [
+    "_lock"
+   ],
+   "phases": [
+    "validation",
+    "cleanup"
+   ]
+  }
+ },
+ "edges_out": [
+  {
+   "from": "melder.nexus.rift.codegen_system.validation.strategies.codegen_import_policy_strategy.CodegenImportPolicyStrategy",
+   "to_label": "Cleanable",
+   "relation": "specializes",
+   "to": "melder.utilities.general_base.cleanable.Cleanable"
+  }
+ ],
+ "edge_candidates": [
+  {
+   "from": "melder.nexus.rift.codegen_system.validation.strategies.codegen_import_policy_strategy.CodegenImportPolicyStrategy",
+   "to_label": "RLock",
+   "relation": "creates",
+   "confidence": "candidate"
+  }
+ ],
+ "published_aliases": [],
+ "imports": {
+  "TYPE_CHECKING": "typing.TYPE_CHECKING",
+  "Optional": "typing.Optional",
+  "CodegenValidationResult": "melder.nexus.rift.codegen_system.validation.codegen_validation_result.CodegenValidationResult",
+  "Cleanable": "melder.utilities.general_base.cleanable.Cleanable",
+  "CodegenTransactionContext": "melder.nexus.rift.codegen_system.codegen_transaction_context.CodegenTransactionContext",
+  "CodegenNamespaceConfiguration": "melder.nexus.rift.codegen_system.namespace.codegen_namespace_configuration.CodegenNamespaceConfiguration"
+ },
+ "collapse_candidate": {
+  "module": "melder.nexus.rift.codegen_system.validation.strategies.codegen_import_policy_strategy",
+  "class": "melder.nexus.rift.codegen_system.validation.strategies.codegen_import_policy_strategy.CodegenImportPolicyStrategy",
+  "label": "CodegenImportPolicyStrategy"
+ },
+ "edges_authored": [
+  {
+   "from": "melder.nexus.rift.codegen_system.validation.strategies.codegen_import_policy_strategy.CodegenImportPolicyStrategy",
+   "to": "melder.nexus.rift.codegen_system.namespace.codegen_namespace_configuration.CodegenNamespaceConfiguration",
+   "relation": "uses",
+   "why": "CodegenImportPolicyStrategy reads CodegenNamespaceConfiguration to enforce import policy.",
+   "cardinality": "one_to_one",
+   "strength": "borrowed",
+   "phase": [
+    "validation"
+   ]
+  },
+  {
+   "from": "melder.nexus.rift.codegen_system.validation.strategies.codegen_import_policy_strategy.CodegenImportPolicyStrategy",
+   "to": "melder.utilities.general_base.cleanable.Cleanable",
+   "relation": "specializes",
+   "why": "CodegenImportPolicyStrategy inherits the explicit cleanup lifecycle from Cleanable.",
+   "cardinality": "one_to_one",
+   "strength": "hard",
+   "phase": [
+    "validation",
+    "cleanup"
+   ]
+  }
+ ]
+}

@@ -1,0 +1,47 @@
+{
+ "schema_version": 1,
+ "source": "src/melder/crystallizer/asset_management/mesh_interface_contract.py",
+ "source_sha256": "a259bfcd841896cc234e0648c10a87f33529e47003bba12adeb90567c45e77bd",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.crystallizer.asset_management.mesh_interface_contract": {
+   "id": "melder.crystallizer.asset_management.mesh_interface_contract",
+   "label": "mesh_interface_contract",
+   "kind": "module",
+   "file": "src/melder/crystallizer/asset_management/mesh_interface_contract.py",
+   "lineno": 1
+  },
+  "melder.crystallizer.asset_management.mesh_interface_contract.MeshInterfaceContract": {
+   "id": "melder.crystallizer.asset_management.mesh_interface_contract.MeshInterfaceContract",
+   "label": "MeshInterfaceContract",
+   "kind": "class",
+   "file": "src/melder/crystallizer/asset_management/mesh_interface_contract.py",
+   "lineno": 6,
+   "bases": [],
+   "markers": [],
+   "public_methods": [
+    "describe",
+    "unit_kinds"
+   ],
+   "shape": {
+    "method_count": 2,
+    "has_bases": false,
+    "trivial": false
+   }
+  }
+ },
+ "edges_out": [],
+ "edge_candidates": [],
+ "published_aliases": [],
+ "imports": {
+  "Dict": "typing.Dict",
+  "List": "typing.List",
+  "ClassVar": "typing.ClassVar",
+  "RecordVersion": "melder.crystallizer.persistence.record_version.RecordVersion"
+ },
+ "collapse_candidate": {
+  "module": "melder.crystallizer.asset_management.mesh_interface_contract",
+  "class": "melder.crystallizer.asset_management.mesh_interface_contract.MeshInterfaceContract",
+  "label": "MeshInterfaceContract"
+ }
+}

@@ -1,0 +1,30 @@
+{
+ "schema_version": 1,
+ "source": "src/melder/__license__.py",
+ "source_sha256": "32a0c207263a67198778111a13eb17f8a6f3b847b5fefb6bdadfd1be93e149a4",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.__license__": {
+   "id": "melder.__license__",
+   "label": "__license__",
+   "kind": "module",
+   "file": "src/melder/__license__.py",
+   "lineno": 1,
+   "role": "Top-level license metadata module.",
+   "responsibilities": [
+    "stores the package license label and embedded license context"
+   ],
+   "owns_state": [
+    "__license__"
+   ],
+   "phases": [
+    "runtime"
+   ]
+  }
+ },
+ "edges_out": [],
+ "edge_candidates": [],
+ "published_aliases": [],
+ "imports": {},
+ "collapse_candidate": null
+}

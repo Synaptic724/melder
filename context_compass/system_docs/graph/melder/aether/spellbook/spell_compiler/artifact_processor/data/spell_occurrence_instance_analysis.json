@@ -1,0 +1,87 @@
+{
+ "schema_version": 1,
+ "source": "src/melder/aether/spellbook/spell_compiler/artifact_processor/data/spell_occurrence_instance_analysis.py",
+ "source_sha256": "ee498d93020b247aee8a7a6312f3f0d62c61b9aabd4e1686826c30b6a1124c87",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_occurrence_instance_analysis": {
+   "id": "melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_occurrence_instance_analysis",
+   "label": "spell_occurrence_instance_analysis",
+   "kind": "module",
+   "file": "src/melder/aether/spellbook/spell_compiler/artifact_processor/data/spell_occurrence_instance_analysis.py",
+   "lineno": 1
+  },
+  "melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_occurrence_instance_analysis.SpellOccurrenceInstanceAnalysis": {
+   "id": "melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_occurrence_instance_analysis.SpellOccurrenceInstanceAnalysis",
+   "label": "SpellOccurrenceInstanceAnalysis",
+   "kind": "class",
+   "file": "src/melder/aether/spellbook/spell_compiler/artifact_processor/data/spell_occurrence_instance_analysis.py",
+   "lineno": 9,
+   "bases": [
+    "Cleanable"
+   ],
+   "markers": [],
+   "public_methods": [
+    "cleanup"
+   ],
+   "shape": {
+    "method_count": 1,
+    "has_bases": true,
+    "trivial": false
+   },
+   "role": "Processor-owned occurrence instance/sharedness section for one spell model.",
+   "responsibilities": [
+    "stores instance-key and canonical-occurrence decisions derived from occurrence graph truth",
+    "tracks shared spell ids and total instance counts for one fitted model",
+    "owns cleanup of the fitted instance/sharedness section state"
+   ],
+   "owns_state": [
+    "instance_keys_by_spell_id",
+    "canonical_occurrences_by_spell_id",
+    "root_instance_key",
+    "shared_spell_ids"
+   ],
+   "phases": [
+    "runtime",
+    "cleanup"
+   ]
+  }
+ },
+ "edges_out": [
+  {
+   "from": "melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_occurrence_instance_analysis.SpellOccurrenceInstanceAnalysis",
+   "to_label": "Cleanable",
+   "relation": "specializes",
+   "to": "melder.utilities.general_base.cleanable.Cleanable"
+  }
+ ],
+ "edge_candidates": [],
+ "published_aliases": [],
+ "imports": {
+  "Dict": "typing.Dict",
+  "List": "typing.List",
+  "Optional": "typing.Optional",
+  "Set": "typing.Set",
+  "Tuple": "typing.Tuple",
+  "Cleanable": "melder.utilities.general_base.cleanable.Cleanable"
+ },
+ "collapse_candidate": {
+  "module": "melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_occurrence_instance_analysis",
+  "class": "melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_occurrence_instance_analysis.SpellOccurrenceInstanceAnalysis",
+  "label": "SpellOccurrenceInstanceAnalysis"
+ },
+ "edges_authored": [
+  {
+   "from": "melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_occurrence_instance_analysis.SpellOccurrenceInstanceAnalysis",
+   "to": "melder.utilities.general_base.cleanable.Cleanable",
+   "relation": "specializes",
+   "why": "SpellOccurrenceInstanceAnalysis inherits the explicit cleanup lifecycle from Cleanable.",
+   "cardinality": "one_to_one",
+   "strength": "hard",
+   "phase": [
+    "runtime",
+    "cleanup"
+   ]
+  }
+ ]
+}
