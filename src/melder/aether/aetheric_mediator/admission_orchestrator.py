@@ -68,8 +68,32 @@ class AdmissionOrchestrator(Cleanable):
     Threading:
         One `RLock` guards admission and the in-flight registry. The lock is
         held across the whole decision so two admissions cannot interleave
-        between "check" and "acquire". No foreign code is invoked while
-        holding it.
+        between "check" and "acquire".
+
+        LOCK ORDER FOR THE WHOLE PLANE - `orchestrator._lock` then
+        `claim_table._condition`. This is the ONLY cross-object lock nesting
+        that exists here: `admit` holds the admission lock while calling
+        `ClaimTable.try_acquire`, which takes the table's condition. Nothing
+        acquires them in the other order, because `ClaimTable` is a LEAF - it
+        never calls the orchestrator, the mediator, the registry, or a session.
+
+        ADMIT MUST NEVER WAIT. This is the law the whole design rests on and
+        it is easy to break by accident. `try_acquire` is non-blocking on
+        purpose: it returns blocking evidence rather than parking. Bounded
+        waiting lives in `Mediator._admit_with_wait`, which parks on
+        `ClaimTable.wait_for_change(...)` only AFTER `admit` has returned and
+        this lock is released.
+
+        If waiting were ever moved inside `admit`, a parked thread would hold
+        the exact lock that `release(...)` must take to free the claims it is
+        waiting for. The plane would deadlock on the first real contention -
+        which is the only workload it exists to serve. Do not call any
+        blocking table method from inside this lock; `ClaimTable.acquire` in
+        particular is blocking and must never be reached from here.
+
+        `release(...)` is deliberately asymmetric: it takes this lock, mutates
+        `_in_flight`, RELEASES, and only then touches the table. So the
+        release path never nests at all.
 
     Registration:
         MELDER KERNEL - guarded. Constructed by the plane root; never bound.

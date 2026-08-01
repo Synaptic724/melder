@@ -609,6 +609,7 @@ def test_commit_frees_the_inverse_closures_before_returning(plane):
         )
         _register_capturing_inverses(session, freed)
         assert freed == [], "nothing should be freed while the session is open"
+        session.leave()
         plane.commit(session)
         assert sorted(freed) == ["inverse-0", "inverse-1", "inverse-2"], (
             "commit returned with the rollback closures still alive; their "
@@ -704,6 +705,7 @@ def test_finalisation_keeps_the_outcome_readable(plane):
         metadata={"frame": "A"},
     )
     _register_capturing_inverses(session, [], count=1)
+    session.leave()
     plane.commit(session)
     assert not session.cleaned
     assert session.status is SessionStatus.COMMITTED
@@ -722,6 +724,7 @@ def test_discard_refuses_while_the_session_is_open(plane):
     with pytest.raises(RuntimeError):
         session.discard_inverses()
     assert len(session.describe()["registered_inverses"]) == 2
+    session.leave()
     plane.commit(session)
 
 
@@ -733,6 +736,7 @@ def test_discard_is_idempotent_and_reports_once(plane):
         metadata={"frame": "A"},
     )
     _register_capturing_inverses(session, [], count=2)
+    session.leave()
     plane.commit(session)
     assert session.discard_inverses() == ()
 
@@ -809,6 +813,7 @@ def test_staged_record_is_built_once_and_never_restamped(plane):
     )
     admitted_at = session.staged.admitted_at
     time.sleep(0.05)
+    session.leave()
     plane.commit(session)
     assert len(seen) == 3, "expected on_start, commit delta, and on_end"
     first = seen[0]
@@ -818,3 +823,237 @@ def test_staged_record_is_built_once_and_never_restamped(plane):
             "metadata copy and restamps admitted_at with the commit time"
         )
     assert first.admitted_at == admitted_at
+
+
+# --------------------------------------------------------------------------
+# Inverses are released AS THEY RUN, not in a batch at the end
+#
+# `_RollbackAction` owns a `Callable`, which is the one genuinely complex type
+# in this package: a closure pins whatever its defining scope held. DevOps
+# treats its own hooks this way - `ChangeControlManager.cleanup` explicitly
+# `del`s `_commit_hook`, `_abort_hook` and the rest - so these records are
+# `Cleanable` and the unwind releases each one the moment it is done with it.
+# --------------------------------------------------------------------------
+
+
+def _register_sentinel_inverse(session, log, name, explode=False):
+    """
+    Register one inverse holding a sentinel, leaving NO reference behind.
+
+    THIS MUST BE A FUNCTION, not an inline loop in a test body. A `def` inside
+    a test binds the closure to a local name, and the test's own frame then
+    keeps that closure - and its sentinel - alive for the rest of the test. A
+    loop is worse: the name survives pointing at the LAST closure built, so
+    every iteration but the final one looks correctly released and the last one
+    looks leaked. That failure is indistinguishable from a real retention bug
+    while the production code is perfectly correct. Returning from here drops
+    the frame and with it the only stray reference.
+
+    Args:
+        session: The session to register the inverse on.
+        log: Shared list the sentinel appends its name to when deallocated.
+        name: The sentinel's name.
+        explode: When True the inverse raises, to exercise the failing path.
+    """
+    sentinel = _Sentinel(log, name)
+
+    def inverse(carried=sentinel) -> None:
+        """Hold the sentinel until this record is released."""
+        _ = carried
+        if explode:
+            raise RuntimeError("inverse exploded")
+
+    session.register_rollback_action(
+        action=inverse, description="undo {0}".format(name)
+    )
+
+
+def test_each_inverse_is_released_as_soon_as_it_has_run(plane):
+    """
+    By the time the last inverse runs, the earlier ones are already freed.
+
+    Inverses run newest-first, so the FIRST action registered runs LAST and can
+    observe how much has been released by then. Releasing only after the loop
+    would leave every closure alive here and the observation would be zero.
+    """
+    freed = []
+    observed = []
+    with _gc_off():
+        session = plane.begin(
+            transaction_type=TransactionType.FORMATION_LOAD,
+            submitter=_who("stepwise"),
+            metadata={"frame": "A"},
+            outcome_policy=OutcomePolicy.UNWIND,
+        )
+        session.register_rollback_action(
+            action=lambda: observed.append(len(freed)),
+            description="observer, runs last",
+        )
+        for index in (1, 2):
+            _register_sentinel_inverse(session, freed, "inverse-{0}".format(index))
+        session.leave()
+        plane.fail(session, "boom")
+    assert observed == [2], (
+        "expected both earlier inverses to be released before the last one "
+        "ran; got {0!r}, which means the closures are held for the whole "
+        "unwind".format(observed)
+    )
+
+
+def test_a_raising_inverse_does_not_pin_the_remaining_closures(plane):
+    """
+    The `finally` release is what makes a failing unwind safe.
+
+    A raising inverse produces a caught exception whose traceback references
+    the unwind frame - and so the local list of pending records. Releasing in a
+    `finally` bounds that to the record in hand.
+    """
+    freed = []
+    with _gc_off():
+        session = plane.begin(
+            transaction_type=TransactionType.FORMATION_LOAD,
+            submitter=_who("exploder"),
+            metadata={"frame": "A"},
+            outcome_policy=OutcomePolicy.UNWIND,
+        )
+        for index in (0, 1):
+            _register_sentinel_inverse(session, freed, "inverse-{0}".format(index))
+        _register_sentinel_inverse(session, freed, "exploder", explode=True)
+        session.leave()
+        status, failures = plane.fail(session, "boom")
+        assert status is SessionStatus.ABORTED
+        assert len(failures) == 1 and "exploded" in failures[0]
+        assert sorted(freed) == ["exploder", "inverse-0", "inverse-1"], (
+            "a failing inverse retained closures; got {0!r}".format(sorted(freed))
+        )
+
+
+def test_unwind_empties_the_session_list_so_ownership_is_unambiguous(plane):
+    """
+    `fail` hands the records to the unwind; the session keeps none.
+
+    Two places holding the same records is how a double-release or a missed
+    release happens, so ownership transfers outright.
+    """
+    session = plane.begin(
+        transaction_type=TransactionType.FORMATION_LOAD,
+        submitter=_who("owner"),
+        metadata={"frame": "A"},
+        outcome_policy=OutcomePolicy.UNWIND,
+    )
+    session.register_rollback_action(action=lambda: None, description="undo")
+    session.leave()
+    plane.fail(session, "boom")
+    assert session.describe()["registered_inverses"] == []
+    assert session.discard_inverses() == ()
+
+
+# --------------------------------------------------------------------------
+# Sliced admission waiting (ported from the DevOps plane)
+#
+# Admission runs THROUGH the orchestrator, so the check and the park are two
+# separate acquisitions of the table's condition and the window between them
+# cannot be closed by restructuring the loop - closing it would mean holding
+# the table lock across the admission call, which is the AB-BA the design
+# avoids. `TransactionMediator._admit_with_scope_wait` in DevOps hit this first
+# and answered it by slicing each park, so a missed notification costs one
+# slice instead of the whole wait budget.
+# --------------------------------------------------------------------------
+
+def test_a_release_landing_in_the_admission_window_is_not_slept_through():
+    """
+    REGRESSION: a release that lands between a refused admission and the park
+    that follows it is MISSED, and nothing notifies again until the NEXT
+    release. If the blocker was the last holder, there is no next release.
+
+    Before the park was sliced, that cost the FULL `max_wait_seconds` with the
+    contended scope sitting free the entire time. This test is single-threaded
+    and forces the release into the window by construction, so it cannot pass
+    or fail on timing luck.
+    """
+    plane = Mediator(max_wait_seconds=8.0)
+    try:
+        plane.strategies.register(
+            transaction_type=TransactionType.FORMATION_LOAD, strategy=_Hooked
+        )
+        blocker = plane.begin(
+            transaction_type=TransactionType.FORMATION_LOAD,
+            submitter=_who("blocker"),
+            metadata={"frame": "A"},
+        )
+        blocker.leave()
+
+        fired = []
+        real_wait = ClaimTable.wait_for_change
+
+        def release_then_park(self, timeout_seconds):
+            """Commit the blocker INSIDE the window, then park as production does."""
+            if not fired:
+                fired.append(True)
+                plane.commit(blocker)
+            return real_wait(self, timeout_seconds)
+
+        ClaimTable.wait_for_change = release_then_park
+        try:
+            started = time.monotonic()
+            session = plane.begin(
+                transaction_type=TransactionType.FORMATION_LOAD,
+                submitter=_who("waiter"),
+                metadata={"frame": "A"},
+            )
+            elapsed = time.monotonic() - started
+        finally:
+            ClaimTable.wait_for_change = real_wait
+
+        assert fired, (
+            "the racing wait never ran, so nothing was proven - the waiter was "
+            "admitted without ever being refused"
+        )
+        session.leave()
+        plane.commit(session)
+
+        assert elapsed < 4.0, (
+            "admission took {0:.1f}s after a release that landed in the "
+            "missed-notification window. The park is not sliced: it is "
+            "sleeping out the whole max_wait_seconds budget with the scope "
+            "already free.".format(elapsed)
+        )
+    finally:
+        if not plane.cleaned:
+            plane.cleanup()
+
+
+def test_the_wait_slice_never_extends_a_caller_past_its_own_deadline():
+    """
+    Slicing must bound the MISS, never the total. A caller that asked for a
+    short budget must still time out on schedule, not run on in one-second
+    slices.
+    """
+    plane = Mediator(max_wait_seconds=0.4)
+    try:
+        plane.strategies.register(
+            transaction_type=TransactionType.FORMATION_LOAD, strategy=_Hooked
+        )
+        held = plane.begin(
+            transaction_type=TransactionType.FORMATION_LOAD,
+            submitter=_who("holder"),
+            metadata={"frame": "A"},
+        )
+        started = time.monotonic()
+        with pytest.raises(RuntimeError) as excinfo:
+            plane.begin(
+                transaction_type=TransactionType.FORMATION_LOAD,
+                submitter=_who("late"),
+                metadata={"frame": "A"},
+            )
+        elapsed = time.monotonic() - started
+        assert "wait_timeout" in str(excinfo.value)
+        assert elapsed < 1.0, (
+            "a 0.4s budget waited {0:.1f}s - the slice is being treated as a "
+            "floor rather than a cap".format(elapsed)
+        )
+        held.leave()
+        plane.commit(held)
+    finally:
+        if not plane.cleaned:
+            plane.cleanup()

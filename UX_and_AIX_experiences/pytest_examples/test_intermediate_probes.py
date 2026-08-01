@@ -394,10 +394,17 @@ def test_probe_config_idempotent_and_freeze_laws():
     """Lessons 19/30 contract: disposal + disposal_method_names are
     set-once (second set refuses); conjure freezes the WHOLE config
     (any set_property after refuses). Types printed for the decode."""
-    book = Spellbook()
-    config = book.get_configuration()
+    # CONFIGURE-THEN-LOCK. A bare Spellbook() has already taken the standard
+    # default set, and that set is COMPLETE - it fills disposal too. Since
+    # disposal is set-once, a defaulted book has no room left for it. State
+    # the policy first, then build the book on it.
+    config = md.SpellbookConfiguration()
     config.set_property("disposal", True)
     config.set_property("disposal_method_names", ["close"])
+    config.set_property("phase_scheduler_workers_per_spellbook", 5)
+    config.set_property(
+        "phase_scheduler_barrier_timeout_milliseconds", 60000)
+    book = Spellbook(configuration=config)
     with pytest.raises(Exception) as idem:
         config.set_property("disposal", False)
     print("idempotent re-set refusal:", type(idem.value).__name__)
@@ -454,11 +461,15 @@ def test_probe_config_definition_laws():
     (unknown key), idempotent pair (set-once), freeze (post-conjure),
     completion (a bare unfinished config refuses at conjure). Types
     printed for the decode pass."""
+    # No with_defaults() here: this config states every value itself.
+    # Defaults are complete and terminal, so asking for them first would
+    # consume the set-once disposal pair before these lines could write it.
     config = md.SpellbookConfiguration()
-    config.with_defaults()
     config.set_property("disposal", True)
     config.set_property("disposal_method_names", ["close"])
     config.set_property("phase_scheduler_workers_per_spellbook", 1)
+    config.set_property(
+        "phase_scheduler_barrier_timeout_milliseconds", 30000)
 
     with pytest.raises(Exception) as unknown:
         config.set_property("not_a_real_property", 1)

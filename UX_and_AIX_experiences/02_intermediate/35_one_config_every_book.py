@@ -96,8 +96,11 @@ def main() -> None:
 
     book_a.bind(spell=ServiceA, existence="unique")
     book_b.bind(spell=ServiceB, existence="unique")
-    conduit_a = book_a.conjure()
-    conduit_b = book_b.conjure()
+    # Root conduit names are unique PER FRAME, and an unnamed conjure takes
+    # the name "default". Two books in one frame therefore need two names -
+    # the shared configuration is what they have in common, not their identity.
+    conduit_a = book_a.conjure(name="shared-policy-a")
+    conduit_b = book_b.conjure(name="shared-policy-b")
     assert isinstance(conduit_a.meld(spell=ServiceA), ServiceA)
     assert isinstance(conduit_b.meld(spell=ServiceB), ServiceB)
     print("both worlds conjured under the one shared policy")

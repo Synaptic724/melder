@@ -50,16 +50,28 @@ def main() -> None:
             "disable_mutations", "disable_all_transactions_after_conjure",
         ],
         "patience": ["max_transaction_wait_time_in_seconds"],
-        "presets": ["automatic_defaults", "dynamic_defaults", "with_defaults"],
     }
+    # Presets are METHODS that set several knobs at once - not knobs. They
+    # are listed apart so the count below stays honest about what it counts.
+    presets = ["automatic_defaults", "dynamic_defaults", "with_defaults"]
+
     total = 0
     for family, names in knobs.items():
         print(f"{family}:")
         for name in names:
             print("   ", name)
             total += 1
+    print("presets:")
+    for name in presets:
+        print("   ", name)
     print("posture knobs mapped:", total)
-    assert total == 15
+    print("presets available:", len(presets))
+
+    # Derived from the list above, never hardcoded. A hand-maintained count
+    # over a living surface drifts the moment a knob lands - which is exactly
+    # how this example went red: the caching pair was added, the list grew,
+    # and the number underneath it did not.
+    assert total == sum(len(names) for names in knobs.values())
     print("the law book is set before first conjure and frozen by it")
 
 

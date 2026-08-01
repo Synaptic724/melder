@@ -42,8 +42,12 @@ class Service:
 
 
 def main() -> None:
+    # NOTE the absent with_defaults() call. This configuration states every
+    # value it needs, so asking for the standard set first would only fight
+    # it: defaults are COMPLETE, and the disposal pair is set-once, so a
+    # default set leaves nothing for you to override. with_defaults() is for
+    # when you want the standard policy and nothing else.
     configuration = md.SpellbookConfiguration()
-    configuration.with_defaults()
     configuration.set_property("disposal", True)
     configuration.set_property("disposal_method_names", ["close"])
     configuration.set_property("phase_scheduler_workers_per_spellbook", 1)

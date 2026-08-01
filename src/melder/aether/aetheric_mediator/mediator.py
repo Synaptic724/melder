@@ -113,6 +113,14 @@ class Mediator(Cleanable):
         "_sessions_by_request_id",
     ]
 
+    # Longest single park in the admission retry loop, and therefore the worst
+    # case for a release notification missed in the window between a refused
+    # admission and the park that follows it. A CLASS attribute, not a module
+    # constant, per the repo's module-scope rule. Matched to the DevOps plane's
+    # one-second slice; see `_admit_with_wait` for why the window exists at all
+    # and cannot be closed by restructuring this loop.
+    _WAIT_SLICE_SECONDS: float = 1.0
+
     def __init__(self, *, max_wait_seconds: float = 30.0) -> None:
         """
         Build one plane root with its owned children.
@@ -436,6 +444,31 @@ class Mediator(Cleanable):
             releases it on every refused attempt and this loop parks on the
             claim table's condition instead.
 
+            THE CHECK AND THE WAIT ARE TWO SEPARATE ACQUISITIONS, and that is
+            forced rather than sloppy. Admission runs THROUGH the orchestrator,
+            which owns its own lock, the in-flight registry, and the identity
+            check. Holding the table's condition across that call would nest
+            the table lock under the admission lock in the opposite order from
+            `admit`, which is the AB-BA this design exists to avoid. So the
+            window between "refused" and "parked" is real and cannot be closed
+            here. `ClaimTable.acquire` closes it by doing check-and-wait under
+            one acquisition, but it can only do that because it bypasses
+            admission entirely - which would lose the in-flight registry, the
+            identity check, and any admission policy.
+
+            SLICED WAITING IS THE ANSWER, taken from the working DevOps plane
+            (`TransactionMediator._admit_with_scope_wait`). A release
+            notification landing inside that window is MISSED, because this
+            thread is not parked yet and nothing notifies again until the next
+            release. Waiting the full remaining time would leave a transaction
+            asleep for up to `max_wait_seconds` with its scope already free.
+            Capping each park at one second bounds that worst case to one
+            second per retry, at the cost of an extra wakeup per second while
+            genuinely contended.
+
+            DO NOT DELETE THE `min(...)` AS REDUNDANT. It looks redundant - the
+            deadline is already enforced above - and it is not.
+
         Args:
             request: The frozen request.
             holder: The claiming identity.
@@ -463,7 +496,9 @@ class Mediator(Cleanable):
                     blocked_scopes=verdict.blocked_scopes,
                     evidence=verdict.evidence,
                 )
-            self._claim_table.wait_for_change(timeout_seconds=remaining)
+            self._claim_table.wait_for_change(
+                timeout_seconds=min(remaining, self._WAIT_SLICE_SECONDS)
+            )
 
     def _finalize(
             self,

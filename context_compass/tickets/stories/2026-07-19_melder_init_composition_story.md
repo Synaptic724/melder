@@ -204,6 +204,30 @@ license-files declared, wheel-ready.
   REREAD: REQUIRED
   SCORE_0_TO_10: 9
 
+- DATETIME: 2026-08-01T12:05:00Z
+  TYPE: DECISION
+  CLAIM: CONSUMED mailbox HANDOFF from melder_0 (sent 2026-07-19T02:15:00Z, sat
+    unconsumed 13 days because helper_f went silent). Owner ruled 2026-07-19 which
+    utilities are user-facing and worth exporting from the root: `SafeGuard`,
+    `CounterSwitch`, `FastSwitch`, `IDBuilder`, `InitHelpers`, `EnumHelpers`, the
+    weak containers (`WeakConcurrentDict`/`List`/`Set`, `WeakRefNode`), and all 11
+    exception types from `utilities/custom_exceptions/`. Owner ruled `Package`
+    DO NOT EXPOSE. melder_0 explicitly did NOT touch the root export list - it is
+    this lane's to own.
+  EVIDENCE:
+  - context_compass/tickets/epics/2026-07-19_oce_utilities_epic.md
+  IMPACT: GUARDING AND EXPORTING ARE ORTHOGONAL - the distinction that makes this
+    actionable. `SafeGuard` is guard-tagged AND should be exported: a user CALLS it
+    directly but must never `bind()` it. Any export pass that treats "in the bind
+    guard manifest" as "do not export" will wrongly drop it. This is confirmed by
+    src_architecture.md:605-607, which states the guard restricts REGISTRATION and
+    never USE.
+  NEXT: Owner ruling on whether the 66-name root surface reopens for these names,
+    or whether they were already absorbed in one of the four export iterations.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
+
 ## Context / Handoff Summary
 Implementation lane for the init/wheel program; rulings live in the parent strategy
 task; hand-off mechanics (wheelhouse --find-links, editable co-dev) documented there.

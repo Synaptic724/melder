@@ -372,6 +372,55 @@ rule should be a test, not a convention.
   REREAD: REQUIRED
   SCORE_0_TO_10: 8
 
+- DATETIME: 2026-08-01 05:20
+  TYPE: IMPLEMENT
+  CLAIM: Audited every class in the plane against the rule that a record
+    holding a COMPLEX type must be a normal class with cleanup, not a
+    dataclass. Exactly one violated it, and it was the worst possible one.
+  EVIDENCE:
+    - Full AST audit: only 3 dataclasses remain - `AdmissionResult`,
+      `TransactionRequest`, `StagedTransaction` - and all three are frozen
+      value records. Their one non-scalar field, `metadata`, is now a deeply
+      frozen mapping enforced by `MetadataPolicy`, so they are legitimately
+      dataclasses. Everything else was already a normal slotted class.
+    - src/melder/aether/aetheric_mediator/transaction_session.py:_RollbackAction
+      THE VIOLATION. It owns `action: Callable` - a closure, which pins
+      whatever its defining scope held (session, frame, conduit, spellbook) -
+      and had no cleanup. Now `Cleanable` with an explicit `cleanup` that
+      `del`s the closure. Precedent is direct: `ChangeControlManager.cleanup`
+      explicitly `del`s `_commit_hook`, `_abort_hook`, `_commit_validator`,
+      `_structural_validator`, `_dirty_marker` rather than trusting them to
+      fall away.
+    - transaction_session.py:_run_inverses
+      Releases each record in a `finally` as it runs, not in a batch after the
+      loop. A raising inverse produces a caught exception whose traceback
+      references the unwind frame and therefore every closure still pending;
+      releasing as we go bounds that to the record in hand.
+    - transaction_session.py:fail
+      UNWIND now empties `_rollback_actions` when it hands the records to the
+      unwind. Ownership transfers outright, so exactly one place is
+      responsible for releasing them - two holders is how a double-release or
+      a missed release happens.
+    - claim_table.py:cleanup
+      `_claims` is `Dict[str, List[_GrantedClaim]]` but only the outer dict
+      was cleared. Inner lists are now emptied first, mirroring how
+      `ChangeControlManager.cleanup` walks its nested per-conduit maps
+      clearing innermost sets before their containers. Matters because
+      `release` REBUILDS these lists, so a concurrent reader can hold an
+      older one.
+  IMPACT: The only complex-typed record in the package now releases on
+    command, on the thread that finished with it, including on the failing
+    unwind path. No dataclass in the plane holds a reference type.
+  NEXT: Judgment call recorded for owner review - `_GrantedClaim` and
+    `ClaimBlock` hold live `Identity` objects rather than flattened strings,
+    which differs from `TransactionRequest`, which deliberately flattens the
+    submitter. Left as-is: `Identity` is an immutable value object of str/int
+    slots, so it is not a liveness leak, and making every granted claim
+    `Cleanable` would add per-claim overhead on the acquisition hot path for
+    no lifecycle benefit. Reverse this if `Identity` ever gains a reference.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
 ## Closure Confirmation
 - [ ] Work walkthrough shared with user
 - [ ] Acceptance criteria confirmed by user

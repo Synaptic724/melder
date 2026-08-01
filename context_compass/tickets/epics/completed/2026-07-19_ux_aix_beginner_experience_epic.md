@@ -1,13 +1,28 @@
 # Epic: UX/AIX Beginner experience exploration
 
+- Completed: 2026-08-01T10:52:07Z
+- Summary: Tier 01 delivered as 41 declarative beginner lessons in
+  `UX_and_AIX_experiences/01_beginner/` plus the pytest harness, all under the
+  `import melder as md` law (a deep-path import in an example IS the finding).
+  Owner closed it verbally this session after the 2026-07-21 assessment
+  ("beginner and intermediate are in a good spot").
+- Caveat RETIRED 2026-08-01T11:04:00Z by owner run: the EXIT_GATE wanted every
+  example green on the owner's 3.14t. At closure the recorded green run covered
+  only 40 lessons + 15 probes (2026-07-21), leaving lesson
+  `41_you_own_the_memory_now.py` (authored 2026-07-25) unverified. The owner ran
+  the harness immediately after closure and
+  `test_beginner_example_runs_green[41_you_own_the_memory_now]` PASSED, along
+  with all 41 beginner lessons and every contract probe. The EXIT_GATE is now
+  fully evidenced and this closure needs no reopen. Tier 01: 41/41 green.
+
 ## Metadata
 - Epic ID: EPIC-2026-07-19-ux-aix-beginner
-- Status: done_pending_owner_walkthrough
+- Status: done
 - Owner: cowork
 - Agent Name: examples_0
 - Priority: p2
 - Created: 2026-07-19T12:52:00Z
-- Updated: 2026-08-01T10:41:33Z
+- Updated: 2026-08-01T10:52:07Z
 
 ## Objective
 First-contact UX + the agent first-read: bind/conjure/meld, lifecycles, function and instance spells, named bindings, scan_bind, scopes, the error vocabulary, and the hardcopy self-documentation. Prove the root serves the first hour with zero deep-path imports.
@@ -533,6 +548,34 @@ First-contact UX + the agent first-read: bind/conjure/meld, lifecycles, function
 - to_state: assigned examples_0
 - transition_reason: owner directive this session (claim the four UX/AIX epics, remove helper_f
   from ownership). Status field deliberately untouched - assignment changed, lifecycle did not.
+
+- DATETIME: 2026-08-01T10:52:07Z
+  TYPE: DECISION
+  CLAIM: CLOSED on explicit owner acceptance this session. EXIT_GATE walked clause by clause:
+    (1) "every example runs green on the owner's 3.14t" - PARTIALLY evidenced. The recorded green
+    run is the 2026-07-21 owner assessment covering 40 lessons + 15 probes; lesson 41 was authored
+    2026-07-25, AFTER that run, and carries no green evidence anywhere in this ticket. Closing
+    anyway on owner authority, with the gap named rather than smoothed over.
+    (2) "init-surface gaps landed on the init story or recorded as rejected curation calls" - MET;
+    the tier's gaps route through the init composition story and the rejected calls carry reasons
+    in the notes above. (3) "owner walkthrough of the tier" - MET verbally this session.
+  EVIDENCE:
+    - tickets/epics/2026-07-19_ux_aix_beginner_experience_epic.md:33-40
+    - UX_and_AIX_experiences/01_beginner/41_you_own_the_memory_now.py
+  IMPACT: Tier 01 is closed. If lesson 41 ever runs red, that is a REAL retention finding and this
+    closure is the thing that has to reopen - it is not a docs nit.
+  NEXT: Owner runs `pytest UX_and_AIX_experiences/pytest_examples -v` on 3.14t at convenience to
+    retire the lesson-41 caveat; a red reopens this epic.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+## State Transition Event - 2026-08-01T10:52:07Z
+- from_state: done_pending_owner_walkthrough
+- to_state: done
+- transition_reason: explicit owner acceptance this session ("you can close and turn in beginner").
+  Moved to tickets/epics/completed/ with the lesson-41 unverified-run caveat recorded in the
+  completion summary. Zero artifacts and zero child tickets, so artifact-board and child-closure
+  sync were both no-ops - verified, not assumed.
 
 ## Context / Handoff Summary
 Method: every example imports melder as md ONLY - a deep-path import in an example

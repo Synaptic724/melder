@@ -23,13 +23,22 @@ class PooledThing:
 
 
 def main() -> None:
-    book = md.Spellbook()
-    config = book.get_configuration()
-
-    # The disposal pair - the config-side alternative to passing
-    # disposal_method_names at bind (beginner 08).
+    # CONFIGURE, THEN LOCK - the order is the lesson.
+    # The disposal pair is SET-ONCE. A book you construct bare has already
+    # taken the standard default set, and that set is COMPLETE - it fills
+    # every required property, disposal included. Complete means finished:
+    # there is no room left to write disposal into it afterwards.
+    # So you pick one path. Take the defaults and live with them, or state
+    # your own policy up front and hand it to the book. This lesson states
+    # its own.
+    config = md.SpellbookConfiguration()
     config.set_property("disposal", True)
     config.set_property("disposal_method_names", ["close"])
+    config.set_property("phase_scheduler_workers_per_spellbook", 5)
+    config.set_property(
+        "phase_scheduler_barrier_timeout_milliseconds", 60000)
+
+    book = md.Spellbook(configuration=config)
     book.bind(spell=PooledThing, existence="unique")
 
     # IDEMPOTENT LAW: these two are set-once. A second set refuses.

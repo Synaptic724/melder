@@ -87,24 +87,57 @@ class SessionStatus(StrEnum):
     BROKEN = "broken"
 
 
-class _RollbackAction:
+class _RollbackAction(Cleanable):
     """
     One registered inverse, paired with a description of what it undoes.
 
+    Purpose:
+        Own the single most dangerous reference in this package - a
+        caller-supplied closure - and give the owning session a way to release
+        it at an exact, chosen moment.
+
     Contract:
-        The DESCRIPTION IS NOT OPTIONAL and is the reason this is a class
-        rather than a bare callable. Under `LEAVE_BROKEN` the action is never
-        invoked, so the description becomes the ONLY record of what was left
-        in place. An undescribed rollback action is invisible residue.
+        - The DESCRIPTION IS NOT OPTIONAL and is the reason this is a class
+          rather than a bare callable. Under `LEAVE_BROKEN` the action is never
+          invoked, so the description becomes the ONLY record of what was left
+          in place. An undescribed rollback action is invisible residue.
+        - CLEANABLE BECAUSE `action` IS A COMPLEX TYPE. A closure captures
+          whatever its defining scope held - the session, a frame, a conduit,
+          a spellbook - so this small record can transitively pin a large live
+          graph. `Callable` is exactly the field the repo's value-only
+          dataclass rule exists to keep out of plain records, and DevOps
+          treats its own hooks the same way: `ChangeControlManager.cleanup`
+          explicitly `del`s `_commit_hook`, `_abort_hook`, and the rest rather
+          than trusting them to fall away.
+        - RELYING ON `list.clear()` ALONE IS NOT ENOUGH. Clearing the owning
+          list drops these records by refcount only if nothing else is holding
+          one. During unwind `_run_inverses` holds them in a local list, and a
+          raising inverse attaches a traceback that keeps that frame - and so
+          every remaining closure - alive for as long as the exception is
+          referenced. An explicit release closes that path.
+
+    Owned State:
+        - `action`: the inverse. Released by `cleanup`.
+        - `description`: plain-language record of what the inverse undoes.
+
+    Threading:
+        NO INTERNAL LOCK, deliberately. Each record is owned by exactly one
+        `TransactionSession` and is only ever built or cleaned while that
+        session's lock is held, so a lock here would be pure overhead on an
+        object created several times per transaction.
+
+    Registration:
+        MELDER KERNEL - guarded. Session-internal; never bound.
 
     AGENT_ACCESS: internal
 
     AGENT_PURPOSE:
         access: internal. A registered inverse plus the description that
-        survives when the inverse is deliberately not run.
+        survives when the inverse is deliberately not run. Cleanable so the
+        captured closure is released deterministically.
     """
 
-    __slots__ = ["action", "description"]
+    __slots__ = Cleanable.__slots__ + ["action", "description"]
 
     def __init__(self, *, action: Callable[[], None], description: str) -> None:
         """
@@ -117,8 +150,28 @@ class _RollbackAction:
         Returns:
             None.
         """
+        super().__init__()
         self.action: Callable[[], None] = action
         self.description: str = description
+
+    def cleanup(self) -> None:
+        """
+        Idempotently release the captured closure.
+
+        Contract:
+            Callers that need the description must read it BEFORE cleaning;
+            `discard_inverses` and `fail` both snapshot it first. Dropping it
+            here rather than keeping it is the honest choice: a cleaned record
+            owns nothing.
+
+        Returns:
+            None.
+        """
+        if self._cleaned:
+            return
+        self._cleaned = True
+        del self.action
+        del self.description
 
 
 class TransactionSession(Cleanable):
@@ -259,6 +312,11 @@ class TransactionSession(Cleanable):
             self._cleaned = True
             # Order matters: break the closure cycle FIRST, so nothing keeps
             # this session alive while the remaining fields are dropped.
+            # Release each record before clearing the list - the closure is
+            # the complex reference, and `clear()` only drops it if nothing
+            # else happens to be holding the record.
+            for entry in self._rollback_actions:
+                entry.cleanup()
             self._rollback_actions.clear()
             self._unwind_failures.clear()
         del self._request
@@ -495,7 +553,12 @@ class TransactionSession(Cleanable):
                 self._status = SessionStatus.BROKEN
                 return SessionStatus.BROKEN, residue
             self._status = SessionStatus.ABORTING
+            # OWNERSHIP TRANSFERS to `pending`. Emptying the list here means
+            # exactly one place is responsible for releasing these records -
+            # `_run_inverses`, as each one finishes - instead of leaving a
+            # second reference behind for `discard_inverses` to trip over.
             pending = list(reversed(self._rollback_actions))
+            self._rollback_actions.clear()
         failures = self._run_inverses(pending)
         with self._lock:
             self._unwind_failures.extend(failures)
@@ -507,9 +570,19 @@ class TransactionSession(Cleanable):
         Invoke inverses outside the lock, collecting failures.
 
         Contract:
-            Best-effort PER ACTION: one failure never prevents the remaining
-            inverses from running. Runs outside the session lock because these
-            are foreign callables that may block or re-enter.
+            - Best-effort PER ACTION: one failure never prevents the remaining
+              inverses from running. Runs outside the session lock because
+              these are foreign callables that may block or re-enter.
+            - EACH RECORD IS RELEASED THE MOMENT IT HAS RUN. This is not
+              tidiness. A failing inverse raises, and the caught exception
+              carries a traceback that references THIS frame - including
+              `pending`, and therefore every closure still in it, and
+              everything those closures captured. Releasing as we go bounds
+              that to the one record currently in hand rather than letting a
+              single early failure pin the whole unwind set for as long as the
+              exception lives.
+            - `pending` is owned here: `fail` emptied the session's list when
+              it handed the records over.
 
         Args:
             pending: Inverses in the order they should run (newest first).
@@ -527,6 +600,9 @@ class TransactionSession(Cleanable):
                         entry.description, type(error).__name__, error
                     )
                 )
+            finally:
+                entry.cleanup()
+        pending.clear()
         return failures
 
     def discard_inverses(self) -> Tuple[str, ...]:
@@ -582,9 +658,15 @@ class TransactionSession(Cleanable):
                     "session is still OPEN; it may still need to unwind."
                     .format(self._request.request_id)
                 )
+            # Snapshot the descriptions BEFORE releasing, then release each
+            # record explicitly rather than trusting `clear()` to be the only
+            # thing holding them. Deepest-first, matching how DevOps tears
+            # down its own nested state.
             discarded = tuple(
                 entry.description for entry in self._rollback_actions
             )
+            for entry in self._rollback_actions:
+                entry.cleanup()
             self._rollback_actions.clear()
             return discarded
 

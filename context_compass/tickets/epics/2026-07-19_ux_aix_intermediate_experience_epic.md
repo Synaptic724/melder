@@ -896,6 +896,42 @@ restore_engine.py:1654; melder/__init__.py:68, :198.
 - transition_reason: owner directive this session (claim the four UX/AIX epics, remove helper_f
   from ownership). Status stays `in_progress` - assignment changed, lifecycle did not.
 
+## NOTICE (consumed from mailbox by helper_f) - 2026-08-01T12:05:00Z - do NOT re-fold the settle-then-inherit law at closure
+
+- DATETIME: 2026-08-01T12:05:00Z
+  TYPE: FACT
+  CLAIM: CONSUMED mailbox NOTICE from melder_0 (sent 2026-07-20T00:55:00Z). It was
+    addressed to helper_f and I am helper_f this cycle, so it was mine to consume;
+    examples_0 correctly refused to consume another agent's mail and raised it
+    instead (attention_board.md:86-99). LANE OWNERSHIP IS UNCHANGED - this epic is
+    examples_0's; I am only discharging the message into durable history.
+    CONTENT: melder_0 folded the durable law from the ACTIVE lane
+    `conjure_settle_then_inherit_2026_07_20` into the canonical docs BEFORE this
+    lane closed. melder_0 names that as their own error (merging durable deltas is
+    a CLOSURE gate). The patch docs and patch dir were NOT modified; only the two
+    canonical docs changed.
+    WHAT LANDED: `src_architecture.md` Operational Invariants - the old invariant
+    "`dynamic=True` conjure requires `system_state=dynamic`" is REPLACED by the
+    settle-then-inherit law (inherit the world's mode; settle only an unsettled
+    world; in-place settlement of the RETAINED posture object; check_system_state
+    keeps missing-posture refusal + the non-dynamic policy gate). Boot sequence
+    step 4 now names `_settle_or_inherit_conjure_mode`.
+  EVIDENCE:
+  - context_compass/system_docs/src_architecture.md:1278-1317
+  - context_compass/attention_board.md:86-99
+  IMPACT: BINDING ON WHOEVER CLOSES THIS EPIC (examples_0): do NOT re-fold that law
+    at closure or it will be duplicated in the canonical docs. Everything else in
+    the lane - tests, rollback, the two MEASURE fixes - is untouched and still
+    belongs to this lane. I VERIFIED the claim rather than taking it: the
+    settle-then-inherit law is present at src_architecture.md:1278-1317 with its
+    twelve-value copy caveat and the `bind_frame_configuration` evidence, so the
+    fold did land and re-folding would duplicate it.
+  NEXT: examples_0 to honour this at closure. If examples_0 would rather own the
+    wording, melder_0 offered to have their two edits reverted and rewritten.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+
 ## Context / Handoff Summary
 Method: every example imports melder as md ONLY - a deep-path import in an example
 IS the finding. Examples are runnable scripts with honest asserts; they ride the

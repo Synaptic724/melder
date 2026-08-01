@@ -818,3 +818,34 @@ def test_default_metadata_is_frozen_not_a_fresh_mutable_dict():
         staged.metadata["sneak"] = 1
 
 
+
+
+# --------------------------------------------------------------------------
+# _RollbackAction: the one complex-typed record in the package
+# --------------------------------------------------------------------------
+
+def test_rollback_action_is_cleanable_and_releases_its_closure():
+    """
+    A record owning a `Callable` must be able to let go of it on command.
+
+    This is why it is a `Cleanable` class and not a value dataclass: a closure
+    transitively pins whatever its defining scope held.
+    """
+    from melder.aether.aetheric_mediator.transaction_session import _RollbackAction
+
+    entry = _RollbackAction(action=lambda: None, description="undo")
+    assert not entry.cleaned
+    assert entry.description == "undo"
+    entry.cleanup()
+    assert entry.cleaned
+    assert not hasattr(entry, "action"), "the closure must be released"
+
+
+def test_rollback_action_cleanup_is_idempotent():
+    """A second release must not raise on already-deleted slots."""
+    from melder.aether.aetheric_mediator.transaction_session import _RollbackAction
+
+    entry = _RollbackAction(action=lambda: None, description="undo")
+    entry.cleanup()
+    entry.cleanup()
+    assert entry.cleaned

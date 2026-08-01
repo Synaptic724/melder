@@ -209,8 +209,18 @@ class ClaimTable(Cleanable):
         Idempotently drop all claims and wake every waiter.
 
         Contract:
-            Waiters are notified BEFORE state is dropped so they wake, see a
-            cleaned table, and exit rather than parking forever.
+            - Waiters are notified BEFORE state is dropped so they wake, see a
+              cleaned table, and exit rather than parking forever.
+            - `_claims` is NESTED (`Dict[str, List[_GrantedClaim]]`), so the
+              inner lists are emptied before the outer dict. Clearing only the
+              outer level releases each list by refcount, which is enough
+              ONLY while nothing else holds one - and `release` rebuilds these
+              lists, so a concurrent reader can legitimately be holding an
+              older one. Emptying deepest-first drops the `_GrantedClaim`
+              records, and with them their `Identity` references, on this
+              thread regardless. This mirrors `ChangeControlManager.cleanup`,
+              which walks its nested per-conduit maps clearing the innermost
+              sets before the containers above them.
 
         Returns:
             None.
@@ -227,6 +237,8 @@ class ClaimTable(Cleanable):
             if self._cleaned:
                 return
             self._cleaned = True
+            for granted in self._claims.values():
+                granted.clear()
             self._claims.clear()
             self._condition.notify_all()
         del self._claims
@@ -274,6 +286,22 @@ class ClaimTable(Cleanable):
     ) -> None:
         """
         Acquire atomically, waiting up to `timeout_seconds` for passage.
+
+        THIS METHOD BLOCKS. NEVER CALL IT WHILE HOLDING ANOTHER PLANE LOCK.
+            Specifically, it must never be reached from inside
+            `AdmissionOrchestrator.admit`, which already holds the admission
+            lock when it touches this table. A thread parked here while
+            holding the admission lock owns the exact lock that
+            `AdmissionOrchestrator.release(...)` must take to free the claims
+            it is waiting for, so the plane would deadlock on the first real
+            contention. Use `try_acquire` from any path that already holds a
+            lock, and let `Mediator._admit_with_wait` do the waiting - it
+            parks only after admission has returned and released.
+
+            The name is the trap: `acquire` reads like the default and
+            `try_acquire` reads like the special case, when the reverse is
+            true for every caller inside this package. It has NO production
+            call sites today.
 
         Contract:
             Retries on every notification until granted or the deadline
@@ -378,9 +406,17 @@ class ClaimTable(Cleanable):
         Contract:
             - Waits on the table's own condition, so a waiter wakes on the
               next release or cleanup rather than on a timer.
-            - Returns promptly and truthfully if the table is cleaned while
-              parked; callers must re-check state after waking and must not
-              assume a wake means their claims are now free.
+            - CHECKED ON BOTH SIDES OF THE PARK. `cleanup` notifies every
+              waiter before dropping state, so a thread parked here when the
+              plane dies wakes with `notified=True` and would otherwise report
+              a perfectly ordinary wakeup. Re-checking after waking makes the
+              teardown surface HERE, naming this table, instead of one hop
+              later as an incidental failure inside the caller's next
+              acquisition attempt. Mirrors
+              `ChangeControlEmbargoManager.wait_for_release`.
+            - A WAKE IS A HINT, NOT A GRANT. Callers must re-attempt their
+              full acquisition after waking and must never assume their claims
+              are now free.
             - This is a NOTIFICATION primitive, not an acquisition. It grants
               nothing.
 
@@ -392,7 +428,8 @@ class ClaimTable(Cleanable):
 
         Raises:
             ValueError: If `timeout_seconds` is negative.
-            RuntimeError: If the table has been cleaned before waiting.
+            RuntimeError: If the table was already cleaned, or is cleaned
+                while this thread is parked.
         """
         self.check_cleaned()
         if timeout_seconds < 0:
@@ -402,9 +439,9 @@ class ClaimTable(Cleanable):
                 )
             )
         with self._condition:
-            if self._cleaned:
-                return False
-            return self._condition.wait(timeout=timeout_seconds)
+            notified = self._condition.wait(timeout=timeout_seconds)
+        self.check_cleaned()
+        return notified
 
     def held_scopes(self, holder: Identity) -> Tuple[str, ...]:
         """
