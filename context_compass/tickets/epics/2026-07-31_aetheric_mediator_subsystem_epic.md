@@ -322,6 +322,56 @@ rule should be a test, not a convention.
   REREAD: REQUIRED
   SCORE_0_TO_10: 9
 
+- DATETIME: 2026-08-01 04:40
+  TYPE: IMPLEMENT
+  CLAIM: The plane deferred teardown to the cycle collector on EVERY
+    transaction, and its two "frozen" records were mutable in place. Both are
+    now closed, and the fixes overlap: freezing the metadata is what made the
+    per-transaction copies removable.
+  EVIDENCE:
+    - src/melder/aether/aetheric_mediator/transaction_session.py:532-590
+      New `discard_inverses()`. A rollback inverse is a closure and a useful
+      one captures the session, giving
+      `session -> _rollback_actions -> _RollbackAction -> closure -> session`.
+      Refcounting cannot see through that, so every finished transaction was
+      surviving until an unrelated collector pass. Terminal-only, idempotent,
+      returns the discarded descriptions.
+    - src/melder/aether/aetheric_mediator/mediator.py:_finalize
+      Calls `discard_inverses()`, so the thread that finishes the transaction
+      cuts the cycle. Deliberately NOT a full `cleanup()`: every accessor is
+      guarded by `check_cleaned()`, so cleaning here would stop a caller
+      reading the outcome of its own transaction.
+    - src/melder/aether/aetheric_mediator/mediator.py:begin (except branch)
+      Full `cleanup()` there instead, and BEFORE `_finalize`. That session
+      never escaped - `begin` raises rather than returning it - so nobody is
+      owed a readable outcome, and the `cleaned` guard in `_finalize` then
+      correctly skips a discard on a session still nominally OPEN.
+    - src/melder/aether/aetheric_mediator/staged_transaction.py:63-110
+      `from_request` was called 3x per transaction (begin/commit/fail). Beyond
+      the wasted allocations, `admitted_at=time.time()` in commit/fail
+      RESTAMPED the field with the commit time, so it reported the wrong
+      moment. Built once at admission now, carried on the session.
+    - src/melder/aether/aetheric_mediator/transaction_request.py:MetadataPolicy
+      `normalize` now returns a DEEPLY frozen structure - proxy mappings and
+      tuples at every depth. `@dataclass(frozen=True)` only blocks rebinding a
+      field, so the old `Dict[str, Any]` left both records advertising
+      themselves as detached and safe to retain while any holder could edit
+      them.
+    - Allocation count per transaction went 3 metadata structures -> 1:
+      `begin` built two independent dicts from one input (and so the strategy
+      planned against a different object than the request carried), and
+      `from_request` copied again. The staged record now SHARES the request's
+      mapping, which is safe only because it is frozen.
+  IMPACT: Transaction teardown is deterministic and owned by the finishing
+    thread, matching the repo's cleanup discipline. The immutability the two
+    records claim in their docstrings is now real rather than aspirational.
+  NEXT: Owner runs the suite. Component tests added for deallocation run with
+    `gc` DISABLED so an observation is proof rather than a timing artefact;
+    one test deliberately documents the hazard by showing an unfinalised
+    session frees nothing until the collector is re-enabled.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
 ## Closure Confirmation
 - [ ] Work walkthrough shared with user
 - [ ] Acceptance criteria confirmed by user

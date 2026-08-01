@@ -9,7 +9,7 @@ say which scope stopped it and who held that scope, or the caller cannot retry
 intelligently and an operator cannot see why anything is stuck.
 """
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from enum import StrEnum
 from typing import Tuple
 
@@ -93,10 +93,13 @@ class AdmissionResult:
         contended scope keys, and rendered blocking evidence.
     """
 
+    # Every field is a value or a tuple of values. Tuples are immutable, so
+    # `= ()` is a safe shared default and `field(default_factory=...)` - which
+    # exists to avoid shared MUTABLE defaults - would be noise here.
     admitted: bool
     reasons: Tuple[AdmissionReason, ...] = ()
     blocked_scopes: Tuple[str, ...] = ()
-    evidence: Tuple[str, ...] = field(default_factory=tuple)
+    evidence: Tuple[str, ...] = ()
 
     @staticmethod
     def granted() -> "AdmissionResult":

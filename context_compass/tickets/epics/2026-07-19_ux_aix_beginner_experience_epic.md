@@ -4,10 +4,10 @@
 - Epic ID: EPIC-2026-07-19-ux-aix-beginner
 - Status: done_pending_owner_walkthrough
 - Owner: cowork
-- Agent Name: helper_f
+- Agent Name: examples_0
 - Priority: p2
 - Created: 2026-07-19T12:52:00Z
-- Updated: 2026-07-19T12:52:00Z
+- Updated: 2026-08-01T10:41:33Z
 
 ## Objective
 First-contact UX + the agent first-read: bind/conjure/meld, lifecycles, function and instance spells, named bindings, scan_bind, scopes, the error vocabulary, and the hardcopy self-documentation. Prove the root serves the first hour with zero deep-path imports.
@@ -510,6 +510,29 @@ First-contact UX + the agent first-read: bind/conjure/meld, lifecycles, function
   - UX_and_AIX_experiences/01_beginner/41_you_own_the_memory_now.py
   REREAD: OPTIONAL
   SCORE_0_TO_10: -
+
+- DATETIME: 2026-08-01T10:41:33Z
+  TYPE: DECISION
+  CLAIM: Ownership reassigned helper_f -> examples_0 under owner directive this session. ONLY the
+    `Agent Name` field changed. `Owner: cowork` is deliberately unchanged: `owner` is the
+    executor/runtime identity and `agent_name` is the assignment identity - different fields.
+    No status, scope, acceptance criterion, or prior note was altered; helper_f's authored notes
+    stand as the durable record of who did this work before the handover.
+  EVIDENCE:
+    - agent_onboarding/default/general/skills/agent_identity.md:21-24
+    - tickets/epics/2026-07-19_ux_aix_beginner_experience_epic.md:5-10
+  IMPACT: This tier is routable under examples_0; the 2026-07-25 board staleness notice about
+    helper_f's silent lanes no longer gates it.
+  NEXT: Owner ruling on the two carry-overs recorded in the attention-board note before tier work
+    resumes (bind_kwargs_transplant story ownership; helper_f's two unconsumed mailbox messages).
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
+## State Transition Event - 2026-08-01T10:41:33Z
+- from_state: assigned helper_f
+- to_state: assigned examples_0
+- transition_reason: owner directive this session (claim the four UX/AIX epics, remove helper_f
+  from ownership). Status field deliberately untouched - assignment changed, lifecycle did not.
 
 ## Context / Handoff Summary
 Method: every example imports melder as md ONLY - a deep-path import in an example

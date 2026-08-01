@@ -84,6 +84,9 @@ class StrategyBuilder(Cleanable):
         if self._cleaned:
             return
         with self._lock:
+            # Re-check under the lock; the outer check is a fast path only.
+            if self._cleaned:
+                return
             self._cleaned = True
             self._strategies.clear()
         del self._strategies

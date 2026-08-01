@@ -160,6 +160,13 @@ class Mediator(Cleanable):
         if self._cleaned:
             return
         with self._lock:
+            # Re-check under the lock; the outer check is a fast path only.
+            # Critical here specifically: without it two concurrent cleanups
+            # would BOTH tear down the owned children, so the loser would
+            # call cleanup() on already-deleted slots AND could double-clean
+            # sessions it did not own.
+            if self._cleaned:
+                return
             self._cleaned = True
             sessions = list(self._sessions_by_request_id.values())
             self._sessions_by_request_id.clear()
@@ -237,16 +244,25 @@ class Mediator(Cleanable):
             existing.join()
             return existing
         strategy = self._strategy_builder.resolve(transaction_type)
+        # ONE defensive copy, used for both the planning call and the record.
+        # This previously built two independent dicts from the same input,
+        # which cost an extra allocation per transaction and - more subtly -
+        # meant the strategy planned against a DIFFERENT object than the one
+        # the frozen request went on to carry. `TransactionRequest.build`
+        # freezes this into the deeply immutable mapping that the request and
+        # its staged record then SHARE, so one transaction owns exactly one
+        # metadata structure from here to teardown.
+        supplied = dict(metadata or {})
         claims = strategy.build_start_plan(
             submitter=submitter,
-            metadata=dict(metadata or {}),
+            metadata=supplied,
         )
         request = TransactionRequest.build(
             request_id=uuid.uuid4().hex,
             transaction_type=transaction_type,
             submitter=submitter,
             scope_claims=claims,
-            metadata=dict(metadata or {}),
+            metadata=supplied,
         )
         verdict = self._admit_with_wait(request=request, holder=submitter)
         if not verdict.admitted:
@@ -260,6 +276,7 @@ class Mediator(Cleanable):
         )
         session = TransactionSession(
             request=request,
+            staged=staged,
             holder=submitter,
             outcome_policy=outcome_policy,
         )
@@ -275,11 +292,20 @@ class Mediator(Cleanable):
             # otherwise leave them held forever by a session no caller ever
             # received and therefore can never finalise. Release everything
             # and re-raise the original cause.
+            #
+            # FULL cleanup here, not the discard `_finalize` performs. This
+            # session never escaped: `begin` raises instead of returning it,
+            # so no caller can hold a handle and none can ever inspect its
+            # outcome. Nothing is owed to anybody, and this thread is the
+            # last one that will ever see the object - so it frees it now
+            # rather than leaving it to a later collector pass. Cleaning
+            # BEFORE `_finalize` is deliberate: the `cleaned` guard there
+            # then correctly skips a discard on a session that is still
+            # nominally OPEN and therefore could not be discarded anyway.
+            session.cleanup()
             self._finalize(
                 request=request, holder=submitter, session=session
             )
-            if not session.cleaned:
-                session.cleanup()
             raise
         return session
 
@@ -312,9 +338,11 @@ class Mediator(Cleanable):
             )
         request = session.request
         holder = session.holder
-        staged = StagedTransaction.from_request(
-            request=request, admitted_at=time.time()
-        )
+        # The staged record was built ONCE at admission and lives on the
+        # session. Rebuilding it here allocated a fresh deep copy of the
+        # metadata on every commit AND restamped `admitted_at` with the commit
+        # time, which made the field lie.
+        staged = session.staged
         strategy = self._strategy_builder.resolve(request.transaction_type)
         session.mark_committed()
         try:
@@ -361,9 +389,7 @@ class Mediator(Cleanable):
         self.check_cleaned()
         request = session.request
         holder = session.holder
-        staged = StagedTransaction.from_request(
-            request=request, admitted_at=time.time()
-        )
+        staged = session.staged
         status, records = session.fail(reason)
         strategy = self._strategy_builder.resolve(request.transaction_type)
         try:
@@ -466,6 +492,20 @@ class Mediator(Cleanable):
         with self._lock:
             self._sessions_by_request_id.pop(request.request_id, None)
         self._forget_session(holder)
+        # THE FINISHING THREAD OWNS THE TEARDOWN. A rollback inverse is a
+        # closure that normally captures the session, so an unfinalised
+        # session holds the cycle `session -> _rollback_actions -> closure ->
+        # session`, which reference counting cannot free. Discarding the
+        # inverses here means the thread that just finished the transaction
+        # releases that graph immediately rather than leaving it for a
+        # cycle-collector pass on some later schedule.
+        #
+        # NOT a full `cleanup()`: the caller must still be able to read the
+        # outcome of its own transaction, and every guarded accessor raises
+        # once cleaned. Ownership of the session object itself stays with
+        # whoever called `begin`; only the cyclic edge is the plane's to cut.
+        if not session.cleaned:
+            session.discard_inverses()
 
     def _current_session(
             self,

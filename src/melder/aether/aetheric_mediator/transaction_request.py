@@ -11,11 +11,152 @@ when its fields happen to be read.
 
 import time
 from dataclasses import dataclass, field
+from types import MappingProxyType
 from typing import Any, Dict, Mapping, Tuple
 
 from melder.aether.aetheric_mediator.claim_mode import ClaimMode
 from melder.aether.aetheric_mediator.identity import Identity
 from melder.aether.aetheric_mediator.transaction_type import TransactionType
+
+
+class MetadataPolicy:
+    """
+    The value-only guard for transaction metadata.
+
+    Purpose:
+        Enforce - rather than merely document - the rule that a frozen
+        transaction record carries VALUES ONLY, so it stays detached, safe to
+        log, safe to ship, and safe to retain after the runtime objects it
+        describes are gone.
+
+    Contract:
+        - PERMITTED: `None`, `bool`, `int`, `float`, `str` (which covers
+          `StrEnum` members), and `tuple`/`list`/`dict` recursively composed of
+          those. Dict keys must be `str`.
+        - REJECTED: everything else, loudly, at the construction boundary.
+        - The rejection is deliberate and it is the whole point. Metadata is
+          caller-supplied and typed `Any` in the DevOps plane, which means a
+          caller can put a live `Conduit` or `Spellbook` into what is supposed
+          to be a detached record. That reference then outlives the object's
+          own lifecycle, defeats `describe()`, and turns a loggable payload
+          into a liveness leak. Failing at construction costs one traversal of
+          a small dict; failing later costs a debugging session.
+
+    Threading:
+        Pure and stateless.
+
+    Registration:
+        MELDER KERNEL - guarded. Policy helper; never bound.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Value-only guard for transaction metadata. Rejects
+        object references at the construction boundary.
+    """
+
+    @staticmethod
+    def empty() -> Mapping[str, Any]:
+        """
+        Return the frozen empty metadata mapping.
+
+        Contract:
+            Exists so the dataclass default can be an IMMUTABLE mapping without
+            a module-level constant. Cheap: an empty dict and a proxy over it.
+
+        Returns:
+            Mapping[str, Any]: A read-only empty mapping.
+        """
+        return MappingProxyType({})
+
+    @staticmethod
+    def normalize(metadata: Mapping[str, Any], owner: str) -> Mapping[str, Any]:
+        """
+        Return a DEEPLY FROZEN copy of `metadata`, rejecting non-value content.
+
+        Contract:
+            - Copies once, at the construction boundary, so a later caller
+              mutation cannot reach into a frozen record.
+            - Returns a READ-ONLY view, and freezes every nested container the
+              same way. `@dataclass(frozen=True)` only blocks REBINDING a
+              field; it does nothing about `record.metadata["k"] = v`. A plain
+              `Dict` field therefore leaves a record that advertises itself as
+              immutable, safe to log, and safe to retain, while any holder can
+              quietly edit it. Freezing here makes the promise true instead of
+              aspirational.
+            - Because the result is genuinely immutable it is SAFE TO SHARE.
+              That is what lets `StagedTransaction` carry the request's own
+              mapping instead of re-copying it, removing a per-transaction
+              allocation whose only purpose was defending against a mutability
+              this method no longer permits.
+
+        Args:
+            metadata: The caller-supplied mapping.
+            owner: What is being built, used in the error message.
+
+        Returns:
+            Mapping[str, Any]: A read-only, deeply frozen copy.
+
+        Raises:
+            TypeError: If any key is not a `str`, or any value is not a
+                permitted value type or a container of them.
+        """
+        normalized: Dict[str, Any] = {}
+        for key, value in metadata.items():
+            if not isinstance(key, str):
+                raise TypeError(
+                    "{0} metadata keys must be str; got {1!r}.".format(owner, key)
+                )
+            normalized[key] = MetadataPolicy._check_value(value, owner, key)
+        return MappingProxyType(normalized)
+
+    @staticmethod
+    def _check_value(value: Any, owner: str, path: str) -> Any:
+        """
+        Validate one metadata value, recursing into containers.
+
+        Contract:
+            Containers come back FROZEN, not merely copied: sequences become
+            `tuple`, mappings become read-only views. A shallow copy of the top
+            level would still hand out mutable nested lists and dicts, so the
+            record would only look detached one level down.
+
+        Args:
+            value: The value to validate.
+            owner: What is being built, for the error message.
+            path: The key path reached so far, for the error message.
+
+        Returns:
+            Any: The value, frozen when it is a container.
+
+        Raises:
+            TypeError: If the value is not a permitted value or container.
+        """
+        if value is None or isinstance(value, (bool, int, float, str)):
+            return value
+        if isinstance(value, (tuple, list)):
+            return tuple(
+                MetadataPolicy._check_value(item, owner, "{0}[{1}]".format(path, index))
+                for index, item in enumerate(value)
+            )
+        if isinstance(value, dict):
+            nested: Dict[str, Any] = {}
+            for nested_key, nested_value in value.items():
+                if not isinstance(nested_key, str):
+                    raise TypeError(
+                        "{0} metadata keys must be str; got {1!r} under "
+                        "{2!r}.".format(owner, nested_key, path)
+                    )
+                nested[nested_key] = MetadataPolicy._check_value(
+                    nested_value, owner, "{0}.{1}".format(path, nested_key)
+                )
+            return MappingProxyType(nested)
+        raise TypeError(
+            "{0} metadata must be VALUE-ONLY so the frozen record stays "
+            "detached and loggable; {1!r} at {2!r} is a {3}. Pass an "
+            "identifier (for example a conduit id) rather than the live "
+            "object.".format(owner, value, path, type(value).__name__)
+        )
 
 
 @dataclass(frozen=True)
@@ -32,11 +173,18 @@ class TransactionRequest:
           a snapshot, so the same request cannot admit differently depending on
           read timing. This is the property that makes admission deterministic
           and replayable.
-        - VALUE-ONLY FIELDS. The submitter is stored as its two identity
-          STRINGS rather than as an `Identity` object, honouring the repo rule
-          that dataclasses carry values and containers of values only. DevOps
-          does the same thing for the same reason - it stores
-          `initiator_conduit_id: str`, not a conduit.
+        - VALUE-ONLY FIELDS, ENFORCED NOT ASSUMED. The submitter is stored as
+          its two identity STRINGS rather than as an `Identity` object,
+          honouring the repo rule that dataclasses carry values and containers
+          of values only. DevOps does the same thing for the same reason - it
+          stores `initiator_conduit_id: str`, not a conduit.
+          `metadata` DIVERGES from the DevOps field shape, which is a plain
+          `Dict[str, Any]`: here it is validated through
+          `MetadataPolicy.normalize` at construction and stored as a DEEPLY
+          FROZEN read-only mapping. The validation stops `Any` from admitting
+          an object reference; the freezing stops a holder from editing a
+          record this class promises is detached. A `Dict` field would leave
+          both doors open, because `frozen=True` guards rebinding only.
         - `scope_claims` IS COMPLETE AND EXPLICIT. Every scope key carries its
           own mode; there is NO implicit default. This DELIBERATELY DIVERGES
           from DevOps, where keys absent from `scope_claims` default to
@@ -71,7 +219,13 @@ class TransactionRequest:
     submitter_id: str
     created_at: float
     scope_claims: Tuple[Tuple[str, str], ...] = ()
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    # A READ-ONLY mapping, not a `Dict`. `frozen=True` stops the field being
+    # rebound; it does not stop a holder mutating the dict the field points
+    # at. `MetadataPolicy.normalize` returns a deeply frozen structure - proxy
+    # mappings and tuples all the way down - so this annotation describes what
+    # the field can actually do. `Any` remains because the permitted value
+    # domain is recursive; `MetadataPolicy` defines and ENFORCES it.
+    metadata: Mapping[str, Any] = field(default_factory=MetadataPolicy.empty)
 
     @staticmethod
     def build(
@@ -80,7 +234,7 @@ class TransactionRequest:
             transaction_type: TransactionType,
             submitter: Identity,
             scope_claims: Mapping[str, ClaimMode],
-            metadata: Dict[str, Any],
+            metadata: Mapping[str, Any],
     ) -> "TransactionRequest":
         """
         Build one frozen request from live inputs.
@@ -106,8 +260,10 @@ class TransactionRequest:
                 transaction claiming nothing is isolating nothing, and is
                 almost certainly a caller bug rather than a legitimate no-op.
             metadata:
-                Caller-supplied diagnostic metadata. Copied defensively so a
-                later mutation by the caller cannot alter a frozen request.
+                Caller-supplied diagnostic metadata. VALUE-ONLY: validated and
+                deep-copied through `MetadataPolicy`, so a later caller
+                mutation cannot alter a frozen request and no live object can
+                be smuggled into a record that must stay detached.
 
         Returns:
             TransactionRequest: The frozen request.
@@ -116,7 +272,9 @@ class TransactionRequest:
             ValueError:
                 If `request_id` is empty, or `scope_claims` is empty.
             TypeError:
-                If any value in `scope_claims` is not a `ClaimMode`.
+                If any value in `scope_claims` is not a `ClaimMode`, or if
+                `metadata` contains anything other than values and containers
+                of values.
         """
         if not request_id or not request_id.strip():
             raise ValueError(
@@ -144,7 +302,7 @@ class TransactionRequest:
             submitter_id=submitter.identity_id,
             created_at=time.time(),
             scope_claims=tuple(normalized),
-            metadata=dict(metadata),
+            metadata=MetadataPolicy.normalize(metadata, "TransactionRequest"),
         )
 
     def claim_map(self) -> Dict[str, ClaimMode]:

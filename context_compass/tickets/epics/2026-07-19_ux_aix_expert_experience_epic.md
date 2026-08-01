@@ -4,10 +4,10 @@
 - Epic ID: EPIC-2026-07-19-ux-aix-expert
 - Status: pending
 - Owner: cowork
-- Agent Name: helper_f
+- Agent Name: examples_0
 - Priority: p2
 - Created: 2026-07-19T12:52:00Z
-- Updated: 2026-07-19T12:52:00Z
+- Updated: 2026-08-01T10:41:33Z
 
 ## Objective
 The operator's tier: CrystallizerBootstrap pod restart, external persistence meshes (user DB callables), profile/checkpoint operations, group composition and campaign evolution, synthesis previews, class_wraps-built custom decorators over bound spells, multi-frame orchestration.
@@ -39,6 +39,28 @@ The operator's tier: CrystallizerBootstrap pod restart, external persistence mes
     04_expert. Historical notes below keep their original wording.
   REREAD: OPTIONAL
   SCORE_0_TO_10: -
+
+- DATETIME: 2026-08-01T10:41:33Z
+  TYPE: DECISION
+  CLAIM: Ownership reassigned helper_f -> examples_0 under owner directive this session. ONLY the
+    `Agent Name` field changed. `Owner: cowork` is deliberately unchanged: `owner` is the
+    executor/runtime identity and `agent_name` is the assignment identity - different fields.
+    No status, scope, acceptance criterion, or prior note was altered.
+  EVIDENCE:
+    - agent_onboarding/default/general/skills/agent_identity.md:21-24
+    - tickets/epics/2026-07-19_ux_aix_expert_experience_epic.md:5-10
+  IMPACT: Tier stays `pending` and is the thinnest of the four (46 lines) - it carries the ladder
+    ruling and little else, so it needs the most authoring once the lower tiers land.
+  NEXT: Blocked behind beginner/intermediate/advanced; no expert authoring until the ladder below
+    it is owner-accepted.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 7
+
+## State Transition Event - 2026-08-01T10:41:33Z
+- from_state: assigned helper_f
+- to_state: assigned examples_0
+- transition_reason: owner directive this session (claim the four UX/AIX epics, remove helper_f
+  from ownership). Status stays `pending` - assignment changed, lifecycle did not.
 
 ## Context / Handoff Summary
 Method: every example imports melder as md ONLY - a deep-path import in an example

@@ -109,6 +109,11 @@ class AdmissionOrchestrator(Cleanable):
         if self._cleaned:
             return
         with self._lock:
+            # Re-check under the lock; the outer check is a fast path only.
+            # Two threads passing it concurrently would both reach the
+            # deletions below and the loser would raise AttributeError.
+            if self._cleaned:
+                return
             self._cleaned = True
             self._in_flight.clear()
         del self._in_flight

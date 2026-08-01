@@ -9,9 +9,12 @@ it is what commit-time hooks adjudicate against.
 """
 
 from dataclasses import dataclass, field
-from typing import Any, Dict, Tuple
+from typing import Any, Mapping, Tuple
 
-from melder.aether.aetheric_mediator.transaction_request import TransactionRequest
+from melder.aether.aetheric_mediator.transaction_request import (
+    MetadataPolicy,
+    TransactionRequest,
+)
 from melder.aether.aetheric_mediator.transaction_type import TransactionType
 
 
@@ -27,6 +30,10 @@ class StagedTransaction:
     Contract:
         - IMMUTABLE and VALUE-ONLY, so it is safe to log, ship, retain, or
           hand to a strategy that should not be able to mutate live state.
+          `metadata` is carried forward from a `TransactionRequest`, which
+          already validated it through `MetadataPolicy`, so it is value-only
+          by construction rather than by convention. It is re-copied here so
+          the two records never share a mutable dict.
         - It records what was GRANTED, not what was requested. For this plane
           those coincide, because admission is all-or-nothing - a partial
           grant is impossible by construction. Keeping them as separate types
@@ -54,7 +61,8 @@ class StagedTransaction:
     submitter_id: str
     admitted_at: float
     granted_scopes: Tuple[str, ...] = ()
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    # Read-only, and the SAME OBJECT the request carries - see `from_request`.
+    metadata: Mapping[str, Any] = field(default_factory=MetadataPolicy.empty)
 
     @staticmethod
     def from_request(
@@ -64,6 +72,21 @@ class StagedTransaction:
     ) -> "StagedTransaction":
         """
         Build the staged record for one admitted request.
+
+        Contract:
+            CALLED EXACTLY ONCE PER TRANSACTION, at admission. The result is
+            carried on the `TransactionSession`, and commit and failure read it
+            from there. Rebuilding it per phase would reallocate the record on
+            every call and - worse - restamp `admitted_at` with the time of
+            that call, so the field would report the commit moment while
+            claiming to report admission.
+
+            The metadata mapping is SHARED WITH THE REQUEST, not copied. It is
+            deeply frozen by `MetadataPolicy`, so there is nothing to defend
+            against: no holder of either record can mutate it. Copying would
+            allocate a second structure per transaction, purely to guard a
+            mutability that no longer exists, and would leave two objects for
+            the finishing thread to release instead of one.
 
         Args:
             request: The frozen request that was just admitted.
@@ -79,7 +102,7 @@ class StagedTransaction:
             submitter_id=request.submitter_id,
             admitted_at=admitted_at,
             granted_scopes=request.scope_keys(),
-            metadata=dict(request.metadata),
+            metadata=request.metadata,
         )
 
     def regions(self) -> Tuple[str, ...]:

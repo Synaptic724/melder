@@ -4,10 +4,10 @@
 - Epic ID: EPIC-2026-07-19-ux-aix-advanced
 - Status: pending
 - Owner: cowork
-- Agent Name: helper_f
+- Agent Name: examples_0
 - Priority: p2
 - Created: 2026-07-19T12:52:00Z
-- Updated: 2026-07-19T12:52:00Z
+- Updated: 2026-08-01T10:41:33Z
 
 ## Objective
 The AR + research tier: Nexus enablement, rifts, rooms by RiftSpaceType, workstation binding canvases, frame viewers and the View* family, research sets with typed lanes, diff/impact/foresight reads, drift views.
@@ -89,6 +89,28 @@ The AR + research tier: Nexus enablement, rifts, rooms by RiftSpaceType, worksta
   - UX_and_AIX_experiences/pytest_examples/test_advanced_probes.py
   REREAD: OPTIONAL
   SCORE_0_TO_10: -
+
+- DATETIME: 2026-08-01T10:41:33Z
+  TYPE: DECISION
+  CLAIM: Ownership reassigned helper_f -> examples_0 under owner directive this session. ONLY the
+    `Agent Name` field changed. `Owner: cowork` is deliberately unchanged: `owner` is the
+    executor/runtime identity and `agent_name` is the assignment identity - different fields.
+    No status, scope, acceptance criterion, or prior note was altered.
+  EVIDENCE:
+    - agent_onboarding/default/general/skills/agent_identity.md:21-24
+    - tickets/epics/2026-07-19_ux_aix_advanced_experience_epic.md:5-10
+  IMPACT: Tier stays `pending`; the owner syllabus wave 1 recorded here (lessons 03-05) is now
+    examples_0's to author.
+  NEXT: Beginner and intermediate tiers gate this one - do not open advanced authoring until the
+    owner's 3.14t walkthrough of those tiers lands.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
+## State Transition Event - 2026-08-01T10:41:33Z
+- from_state: assigned helper_f
+- to_state: assigned examples_0
+- transition_reason: owner directive this session (claim the four UX/AIX epics, remove helper_f
+  from ownership). Status stays `pending` - assignment changed, lifecycle did not.
 
 ## Context / Handoff Summary
 Method: every example imports melder as md ONLY - a deep-path import in an example

@@ -4,10 +4,10 @@
 - Epic ID: EPIC-2026-07-19-ux-aix-intermediate
 - Status: in_progress
 - Owner: cowork
-- Agent Name: helper_f
+- Agent Name: examples_0
 - Priority: p2
 - Created: 2026-07-19T12:52:00Z
-- Updated: 2026-07-19T12:52:00Z
+- Updated: 2026-08-01T10:41:33Z
 
 ## Objective
 The working developer's tier: SpellBinder fluent binding, spellframes and contracts (SpellMap/SpellContract), SpellSpace scoped resolution, spellbook and aether configuration (+builders), conduit linking and the ConduitCloud, SpellIndex membership verbs, crystallizer activation + first checkpoint.
@@ -872,6 +872,29 @@ spellbook_creation_system.py:296-300;
 spellbook_configuration.py:113, :1049; aether.py:1194, :1264-1297;
 nexus_frame_configuration.py:327; nexus_frame_manager.py:994-1029;
 restore_engine.py:1654; melder/__init__.py:68, :198.
+
+- DATETIME: 2026-08-01T10:41:33Z
+  TYPE: DECISION
+  CLAIM: Ownership reassigned helper_f -> examples_0 under owner directive this session. ONLY the
+    `Agent Name` field changed. `Owner: cowork` is deliberately unchanged: `owner` is the
+    executor/runtime identity and `agent_name` is the assignment identity - different fields.
+    No status, scope, acceptance criterion, or prior note was altered.
+  EVIDENCE:
+    - agent_onboarding/default/general/skills/agent_identity.md:21-24
+    - tickets/epics/2026-07-19_ux_aix_intermediate_experience_epic.md:5-10
+  IMPACT: This is the only one of the four tiers reading `in_progress`, so it is the live lane and
+    the one where a stale assignment would have done real damage.
+  NEXT: Owner ruling on the inbound helper_f mailbox message dated 2026-07-20T00:55:00Z, which
+    names THIS epic: melder_0 already folded the settle-then-inherit law into src_architecture.md
+    and warns the lane owner not to re-fold it at closure. That warning transfers with the epic.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+## State Transition Event - 2026-08-01T10:41:33Z
+- from_state: assigned helper_f
+- to_state: assigned examples_0
+- transition_reason: owner directive this session (claim the four UX/AIX epics, remove helper_f
+  from ownership). Status stays `in_progress` - assignment changed, lifecycle did not.
 
 ## Context / Handoff Summary
 Method: every example imports melder as md ONLY - a deep-path import in an example

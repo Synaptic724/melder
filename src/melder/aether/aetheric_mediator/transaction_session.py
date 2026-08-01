@@ -14,6 +14,7 @@ from enum import StrEnum
 from typing import Callable, Dict, List, Optional, Tuple
 
 from melder.aether.aetheric_mediator.identity import Identity
+from melder.aether.aetheric_mediator.staged_transaction import StagedTransaction
 from melder.aether.aetheric_mediator.transaction_request import TransactionRequest
 from melder.utilities.general_base.cleanable import Cleanable
 
@@ -179,6 +180,7 @@ class TransactionSession(Cleanable):
     __slots__ = Cleanable.__slots__ + [
         "_lock",
         "_request",
+        "_staged",
         "_holder",
         "_owner_thread_id",
         "_depth",
@@ -193,6 +195,7 @@ class TransactionSession(Cleanable):
             self,
             *,
             request: TransactionRequest,
+            staged: "StagedTransaction",
             holder: Identity,
             outcome_policy: OutcomePolicy = OutcomePolicy.UNWIND,
     ) -> None:
@@ -201,6 +204,11 @@ class TransactionSession(Cleanable):
 
         Args:
             request: The admitted frozen request.
+            staged: The post-admission record, built ONCE at admission and
+                carried here. It is not rebuilt at commit or failure: doing so
+                allocated a fresh copy of the metadata on every terminal path
+                AND stamped `admitted_at` with the COMMIT time, which made the
+                field lie about when admission happened.
             holder: The claiming identity.
             outcome_policy: What to do to the world if this transaction fails.
                 Defaults to `UNWIND`, the conservative posture.
@@ -211,12 +219,13 @@ class TransactionSession(Cleanable):
         super().__init__()
         self._lock: threading.RLock = threading.RLock()
         self._request: TransactionRequest = request
+        self._staged: "StagedTransaction" = staged
         self._holder: Identity = holder
         self._owner_thread_id: int = threading.get_ident()
         self._depth: int = 1
         self._status: SessionStatus = SessionStatus.OPEN
-        self._failure_reason: Optional[str] = None
         self._outcome_policy: OutcomePolicy = outcome_policy
+        self._failure_reason: Optional[str] = None
         self._rollback_actions: List[_RollbackAction] = []
         self._unwind_failures: List[str] = []
 
@@ -225,8 +234,16 @@ class TransactionSession(Cleanable):
         Idempotently drop session state WITHOUT running rollback actions.
 
         Contract:
-            Cleaning is not aborting. Firing inverses here would mutate the
-            world during teardown with nothing recording that it happened.
+            - Cleaning is not aborting. Firing inverses here would mutate the
+              world during teardown with nothing recording that it happened.
+            - CLEARING `_rollback_actions` IS REFERENCE-CYCLE BREAKING, NOT
+              JUST TIDINESS. A rollback closure almost always captures the
+              session it was registered on, forming
+              `session -> _rollback_actions -> _RollbackAction -> closure ->
+              session`. Reference counting CANNOT collect that; only the cycle
+              collector can, on its own schedule. Clearing the list here breaks
+              the cycle so the finishing thread frees the graph immediately
+              rather than deferring it to a GC pass.
 
         Returns:
             None.
@@ -234,10 +251,18 @@ class TransactionSession(Cleanable):
         if self._cleaned:
             return
         with self._lock:
+            # Re-check under the lock; the outer check is a fast path only.
+            # Without this, two concurrent cleanups both reach the deletions
+            # below and the loser raises AttributeError.
+            if self._cleaned:
+                return
             self._cleaned = True
+            # Order matters: break the closure cycle FIRST, so nothing keeps
+            # this session alive while the remaining fields are dropped.
             self._rollback_actions.clear()
             self._unwind_failures.clear()
         del self._request
+        del self._staged
         del self._holder
         del self._owner_thread_id
         del self._depth
@@ -253,6 +278,22 @@ class TransactionSession(Cleanable):
         """Return the frozen request this session was opened for."""
         self.check_cleaned()
         return self._request
+
+    @property
+    def staged(self) -> "StagedTransaction":
+        """
+        Return the post-admission record, built once at admission.
+
+        Contract:
+            The SAME object for the life of the session. Callers must not
+            rebuild it; `admitted_at` means admission time and rebuilding
+            would silently restamp it.
+
+        Returns:
+            StagedTransaction: The immutable post-admission record.
+        """
+        self.check_cleaned()
+        return self._staged
 
     @property
     def holder(self) -> Identity:
@@ -487,6 +528,65 @@ class TransactionSession(Cleanable):
                     )
                 )
         return failures
+
+    def discard_inverses(self) -> Tuple[str, ...]:
+        """
+        Drop the registered inverses once this session is terminal.
+
+        Purpose:
+            BREAK THE ONE REFERENCE CYCLE THIS OBJECT CAN FORM, on the thread
+            that finished the transaction, at the moment it finishes.
+
+        Why this exists:
+            A rollback inverse is a closure, and a useful one almost always
+            captures the session it will roll back:
+
+                session.register_inverse(
+                    "detach conduit", lambda: frame.detach(conduit)
+                )
+
+            That gives `session -> _rollback_actions -> _RollbackAction ->
+            action closure -> session`. A cycle is invisible to reference
+            counting: when the caller drops its last handle the refcount does
+            NOT reach zero, so the whole graph - session, request, staged
+            record, metadata, and everything the closures captured - survives
+            until a cycle-collector pass runs on some later, unrelated
+            schedule. That is precisely the deferred, non-deterministic
+            teardown this repo is built to avoid.
+
+        Contract:
+            - TERMINAL ONLY. Refuses while the session is still OPEN, because
+              an open session may still need to unwind. By the time this runs
+              the inverses are dead weight in every case: UNWIND already ran
+              them, LEAVE_BROKEN already copied their descriptions into the
+              residue it returned, and COMMITTED will never need them.
+            - Returns the discarded descriptions so a caller that wants a
+              post-mortem gets one without retaining the closures.
+            - IDEMPOTENT: a second call returns an empty tuple.
+            - Does NOT clean the session. Status, request, staged record, and
+              failure reason all stay readable, so the caller can still
+              inspect the outcome of its own transaction. Only the closures -
+              the sole cyclic edge - are released here.
+
+        Returns:
+            Tuple[str, ...]: Descriptions of the inverses that were discarded.
+
+        Raises:
+            RuntimeError: If cleaned, or if the session is still OPEN.
+        """
+        self.check_cleaned()
+        with self._lock:
+            if self._status is SessionStatus.OPEN:
+                raise RuntimeError(
+                    "cannot discard inverses for request {0!r} while the "
+                    "session is still OPEN; it may still need to unwind."
+                    .format(self._request.request_id)
+                )
+            discarded = tuple(
+                entry.description for entry in self._rollback_actions
+            )
+            self._rollback_actions.clear()
+            return discarded
 
     def describe(self) -> Dict[str, object]:
         """

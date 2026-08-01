@@ -218,6 +218,14 @@ class ClaimTable(Cleanable):
         if self._cleaned:
             return
         with self._condition:
+            # RE-CHECK UNDER THE LOCK. The check above is only a cheap fast
+            # path; without this second check two threads can both pass it,
+            # both enter here, and both fall through to the deletions below -
+            # the second raising AttributeError on an already-deleted slot.
+            # Free-threaded 3.14t removes the accidental serialisation that
+            # used to hide this.
+            if self._cleaned:
+                return
             self._cleaned = True
             self._claims.clear()
             self._condition.notify_all()
